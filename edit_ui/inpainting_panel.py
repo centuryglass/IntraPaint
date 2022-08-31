@@ -52,15 +52,43 @@ class InpaintingPanel(QWidget):
         self.enableScaleCheckbox.setText("Scale edited areas")
         self.enableScaleCheckbox.setToolTip("Enabling scaling allows for larger sample areas and better results at small scales, but increases the time required to generate images for small areas.")
         self.enableScaleCheckbox.setChecked(True)
-        self.enableScaleCheckbox.stateChanged.connect(lambda isChecked: self.enableScaleToggled.emit(isChecked))
-        
 
+        self.upscaleModeLabel = QLabel(self)
+        self.upscaleModeLabel.setText("Upscaling mode:")
+        self.upscaleModeList = QComboBox(self)
+        self.upscaleModeList.setToolTip("Image scaling mode used when increasing image scale");
+        self.downscaleModeLabel = QLabel(self)
+        self.downscaleModeLabel.setText("Downscaling mode:")
+        self.downscaleModeList = QComboBox(self)
+        self.downscaleModeList.setToolTip("Image scaling mode used when decreasing image scale");
+        filterTypes = [
+            ('Bilinear', Image.BILINEAR),
+            ('Nearest', Image.NEAREST),
+            ('Hamming', Image.HAMMING),
+            ('Bicubic', Image.BICUBIC),
+            ('Lanczos', Image.LANCZOS),
+            ('Box', Image.BOX)
+        ]
+        for name, imageFilter in filterTypes:
+            self.upscaleModeList.addItem(name, imageFilter)
+            self.downscaleModeList.addItem(name, imageFilter)
+        
+        def onEnableScaleToggle(isChecked):
+            self.enableScaleToggled.emit(isChecked)
+            for widget in [self.upscaleModeLabel, self.upscaleModeList, self.downscaleModeLabel, self.downscaleModeList]:
+                widget.setEnabled(isChecked)
+        self.enableScaleCheckbox.stateChanged.connect(onEnableScaleToggle)
+        
         self.moreOptionsBar.addWidget(QLabel(self, text="Guidance scale:"), stretch=0)
         self.moreOptionsBar.addWidget(self.guidanceScaleBox, stretch=20)
         self.moreOptionsBar.addWidget(QLabel(self, text="Skip timesteps:"), stretch=0)
         self.moreOptionsBar.addWidget(self.skipStepsBox, stretch=20)
         self.moreOptionsBar.addWidget(self.enableScaleCheckbox, stretch=10)
-
+        self.moreOptionsBar.addWidget(self.upscaleModeLabel, stretch=0)
+        self.moreOptionsBar.addWidget(self.upscaleModeList, stretch=10)
+        self.moreOptionsBar.addWidget(self.downscaleModeLabel, stretch=0)
+        self.moreOptionsBar.addWidget(self.downscaleModeList, stretch=10)
+        
 
         self.layout = QGridLayout()
         # Row 1 and 2:
@@ -80,3 +108,9 @@ class InpaintingPanel(QWidget):
 
     def scalingEnabled(self):
         return self.enableScaleCheckbox.isChecked()
+
+    def upscaleMode(self):
+        return self.upscaleModeList.currentData()
+
+    def downscaleMode(self):
+        return self.downscaleModeList.currentData()

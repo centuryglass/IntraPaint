@@ -8,7 +8,7 @@ from edit_ui.sample_selector import SampleSelector
 from edit_ui.ui_utils import showErrorDialog
 import PyQt5.QtGui as QtGui
 from PIL import Image, ImageFilter
-import sys
+import sys, os, glob
 
 class MainWindow(QMainWindow):
     """Creates a user interface to simplify repeated inpainting operations on image sections."""
@@ -32,6 +32,7 @@ class MainWindow(QMainWindow):
                 lambda: self.imagePanel.imageViewer.getSelectedSection(),
                 self.imagePanel.imageViewer.onSelection)
         self._draggingDivider = False
+        self._timelapsePath = None
         self.thread = None
 
         def inpaintAndShowSamples(selection, mask, prompt, batchSize, batchCount, negative, guidanceScale, skipSteps):
@@ -43,14 +44,21 @@ class MainWindow(QMainWindow):
                 return
             self.thread = QThread()
 
+            def resizeImage(pilImage, width, height):
+                """Resize a PIL image using the appropriate scaling mode:"""
+                if width == pilImage.width and height == pilImage.height:
+                    return pilImage
+                if width > pilImage.width or height > pilImage.height:
+                    return pilImage.resize((width, height), self.inpaintPanel.upscaleMode())
+                return pilImage.resize((width, height), self.inpaintPanel.downscaleMode())
+
 
             # If sketch mode was used, write the sketch onto the image selection:
             inpaintImage = selection
             inpaintMask = mask
             sketchImage = self.maskPanel.maskCreator.getSketch()
             if sketchImage is not None:
-                if sketchImage.width != inpaintImage.width or sketchImage.height != inpaintImage.height:
-                    sketchImage = sketchImage.resize(inpaintImage.width, inpaintImage.height).convert('RGBA')
+                sketchImage = resizeImage(sketchImage, inpaintImage.width, inpaintImage.height).convert('RGBA')
                 inpaintImage = inpaintImage.convert('RGBA')
                 inpaintImage = Image.alpha_composite(inpaintImage, sketchImage).convert('RGB')
             keepSketch = (sketchImage is not None) and self.maskPanel.keepSketchCheckbox.isChecked()
@@ -67,10 +75,10 @@ class MainWindow(QMainWindow):
                 width = max(64, width - (width % 64))
                 height = int(selection.height * scale + 1)
                 height = max(64, height - (height % 64))
-                inpaintImage = inpaintImage.resize((width, height))
-                inpaintMask = mask.resize((width, height))
-            elif inpaintMask.width != inpaintImage.width or inpaintMask.height != inpaintImage.height:
-                inpaintMask = mask.resize((inpaintImage.width, inpaintImage.height))
+                inpaintImage = resizeImage(inpaintImage, width, height)
+                inpaintMask = resizeImage(mask, width, height)
+            else:
+                inpaintMask = resizeImage(mask, inpaintImage.width, inpaintImage.height)
 
 
 
@@ -80,8 +88,7 @@ class MainWindow(QMainWindow):
                 errorSignal = pyqtSignal(str)
                 def run(self):
                     def sendImage(img, y, x):
-                        if img.width != selection.width or img.height != selection.height:
-                            img = img.resize((selection.width, selection.height))
+                        img = resizeImage(img, selection.width, selection.height)
                         self.imageReady.emit(img, y, x)
                     try:
                         doInpaint(inpaintImage,
@@ -110,6 +117,11 @@ class MainWindow(QMainWindow):
             def selectSample(pilImage):
                 self.imagePanel.imageViewer.insertIntoSelection(pilImage)
                 closeSampleSelector()
+                if self._timelapsePath:
+                    filename = os.path.join(self._timelapsePath, f"{self._nextTimelapseFrame:05}.png")
+                    self.imagePanel.saveImage(filename)
+                    self._nextTimelapseFrame += 1
+                    
 
             def loadSamplePreview(img, y, x):
                 # Inpainting can create subtle changes outside the mask area, which can gradually impact image quality
@@ -184,6 +196,20 @@ class MainWindow(QMainWindow):
             self.inpaintPanel.batchCountBox.setValue(args.num_batches)
         if ('batch_size' in args) and args.batch_size:
             self.inpaintPanel.batchSizeBox.setValue(args.batch_size)
+        if ('timelapse_path' in args) and args.timelapse_path:
+            self.setTimelapsePath(args.timelapse_path)
+
+    def setTimelapsePath(self, path):
+        if not os.path.exists(path):
+            os.mkdir(path)
+        elif os.path.isfile(path):
+            raise Exception("setTimelapsePath: expected directory path, got file: " + path)
+        self._timelapsePath = path
+        self._nextTimelapseFrame = 0
+        for name in glob.glob(f"{path}/*.png"):
+            n=int(os.path.splitext(ntpath.basename(name))[0])
+            if n > self._lastTimelapseFrame:
+                self._nextTimelapseFrame = n + 1
 
     def getMask(self):
         return self.maskPanel.getMask()

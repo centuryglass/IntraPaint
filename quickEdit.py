@@ -67,6 +67,24 @@ sample_fn, clip_score_fn = createSampleFunction(
         ddpm=args.ddpm,
         ddim=args.ddim)
 
+        
+#baseSaveFn = getSaveFn(args.prefix, args.batch_size, ldm, clip_model, clip_preprocess, device),
+
+def maskedSaveFn(i, sample):
+    def saveImage(k, numpyData):
+        npy_filename = f'output_npy/{args.prefix}{i * args.batch_size + k:05}.npy'
+        with open(npy_filename, 'wb') as outfile:
+            np.save(outfile, numpyData.detach().cpu().numpy())
+        pilImage = imageFromNumpyData(numpyData, ldm)
+        filename = f'output/{prefix}{i * batch_size + k:05}.png'
+        #if args.mask:
+        #    mask_image = Image.open(fetch(args.mask)).convert('L').point( lambda p: 255 if p < 1 else 0 )
+        #    source_image = Image.open(fetch(args.edit))
+        #    cleanImage = Image.composite(source_image, pilImage, mask_image)
+        #    cleanImage.save(filename)
+        pilImage.save(filename)
+
+
 gc.collect()
 generateSamples(device,
         ldm,

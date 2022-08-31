@@ -13,6 +13,8 @@ parser.add_argument('--edit_width', type = int, required = False, default = 256,
 
 parser.add_argument('--edit_height', type = int, required = False, default = 256,
                             help='height of the edit image in the generation frame (need to be multiple of 8)')
+parser.add_argument('--timelapse_path', type = str, required = False,
+                            help='subdirectory to store snapshots for creating a timelapse of all editing operations')
 parser.add_argument('--ui_test', dest='ui_test', action='store_true') # Test UI without loading real functionality
 args = parser.parse_args()
 

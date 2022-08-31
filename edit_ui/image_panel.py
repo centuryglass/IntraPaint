@@ -4,6 +4,7 @@ import PyQt5.QtGui as QtGui
 from PyQt5.QtGui import QPainter, QPen
 from PIL import Image
 from edit_ui.image_viewer import ImageViewer
+from edit_ui.new_image_modal import NewImageModal
 from edit_ui.ui_utils import showErrorDialog
 import os, sys
 
@@ -115,6 +116,25 @@ class ImagePanel(QWidget):
                 showErrorDialog(self, "Open failed", err)
         self.fileSelectButton.clicked.connect(openImageFile)
 
+        self.newImageButton = QPushButton(self)
+        self.newImageButton.setText("New Image")
+        def newImage():
+            imageModal = NewImageModal()
+            imageSize = imageModal.showImageModal()
+            if imageSize:
+                if self.imageViewer.hasImage():
+                    confirmBox = QMessageBox(self)
+                    confirmBox.setWindowTitle("Create new image?")
+                    confirmBox.setWindowTitle("Create new image?")
+                    confirmBox.setText("This will discard all unsaved changes.")
+                    confirmBox.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
+                    response = confirmBox.exec()
+                    if response == QMessageBox.Cancel:
+                        return
+                newImage = Image.new('RGB', (imageSize.width(), imageSize.height()), color = 'white')
+                self.loadImage(newImage)
+        self.newImageButton.clicked.connect(newImage)
+
         self.imgReloadButton = QPushButton(self)
         self.imgReloadButton.setText("Reload image")
         def reloadImage():
@@ -153,8 +173,7 @@ class ImagePanel(QWidget):
                 file, fileSelected = QFileDialog.getSaveFileName(self, 'Save Image', filter=pngFilter)
             try:
                 if file and fileSelected:
-                    image = self.imageViewer.getImage()
-                    image.save(file, "PNG")
+                    self.saveImage(file)
             except Exception as err:
                 showErrorDialog(self, "Save failed", str(err))
                 print(f"Saving image failed: {err}")
@@ -170,31 +189,37 @@ class ImagePanel(QWidget):
         self.layout.addItem(makeSpacer(), 0, 6, 1, 1)
         self.layout.addWidget(self.imageViewer, 1, 1, 1, 14)
         self.layout.addWidget(self.fileSelectButton, 2, 1, 1, 1)
-        self.layout.addWidget(QLabel(self, text="Image path:"), 2, 2, 1, 1)
-        self.layout.addWidget(self.fileTextBox, 2, 3, 1, 1)
+        self.layout.addWidget(self.newImageButton, 2, 2, 1, 1)
+        self.layout.addWidget(QLabel(self, text="Image path:"), 2, 3, 1, 1)
+        self.layout.addWidget(self.fileTextBox, 2, 4, 1, 1)
 
 
-        self.layout.addWidget(QLabel(self, text="X:"), 2, 4, 1, 1)
-        self.layout.addWidget(self.xCoordBox, 2, 5, 1, 1)
-        self.layout.addWidget(QLabel(self, text="Y:"), 2, 6, 1, 1)
-        self.layout.addWidget(self.yCoordBox, 2, 7, 1, 1)
+        self.layout.addWidget(QLabel(self, text="X:"), 2, 5, 1, 1)
+        self.layout.addWidget(self.xCoordBox, 2, 6, 1, 1)
+        self.layout.addWidget(QLabel(self, text="Y:"), 2, 7, 1, 1)
+        self.layout.addWidget(self.yCoordBox, 2, 8, 1, 1)
 
-        self.layout.addWidget(QLabel(self, text="W:"), 2, 8, 1, 1)
-        self.layout.addWidget(self.widthBox, 2, 9, 1, 1)
-        self.layout.addWidget(QLabel(self, text="H:"), 2, 10, 1, 1)
-        self.layout.addWidget(self.heightBox, 2, 11, 1, 1)
+        self.layout.addWidget(QLabel(self, text="W:"), 2, 9, 1, 1)
+        self.layout.addWidget(self.widthBox, 2, 10, 1, 1)
+        self.layout.addWidget(QLabel(self, text="H:"), 2, 11, 1, 1)
+        self.layout.addWidget(self.heightBox, 2, 12, 1, 1)
 
-        self.layout.addWidget(self.imgReloadButton, 2, 12, 1, 1)
-        self.layout.addWidget(self.saveButton, 2, 13, 1, 1)
+        self.layout.addWidget(self.imgReloadButton, 2, 13, 1, 1)
+        self.layout.addWidget(self.saveButton, 2, 14, 1, 1)
 
         self.layout.setRowMinimumHeight(1, 300)
-        self.layout.setColumnStretch(3, 255)
+        self.layout.setColumnStretch(4, 255)
         self.setLayout(self.layout)
 
-    def loadImage(self, filePath):
+    def saveImage(self, filePath):
+        image = self.imageViewer.getImage()
+        image.save(filePath, "PNG")
+
+    def loadImage(self, image):
         try:
-            self.imageViewer.setImage(filePath)
-            self.fileTextBox.setText(filePath)
+            self.imageViewer.setImage(image)
+            if isinstance(image, str): # image is a file path:
+                self.fileTextBox.setText(image)
             imageSize = self.imageViewer.imageSize()
             if imageSize:
                 if imageSize.width() < 64 or imageSize.height() < 64:
@@ -205,7 +230,7 @@ class ImagePanel(QWidget):
                             imageSize.height() - self.imageViewer.selectionHeight(), 0))
                 self.reloadScaleBounds()
         except Exception as err:
-            print(f"Failed to load image from '{filePath}': {err}")
+            print(f"Failed to load image from '{image}': {err}")
             showErrorDialog(self, "Loading image failed", err)
 
 

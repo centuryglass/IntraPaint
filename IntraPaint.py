@@ -23,6 +23,8 @@ parser.add_argument('--server_url', type = str, required = False, default = '',
                     help='Image generation server URL. If not provided, you will be prompted for a URL on launch.')
 parser.add_argument('--fast_ngrok_connection', type = str, required = False, default = '',
                     help='If true, connection rates will not be limited when using ngrok. This may cause rate limiting if you do not have a paid account.')
+parser.add_argument('--timelapse_path', type = str, required = False,
+                            help='subdirectory to store snapshots for creating a timelapse of all editing operations')
 
 args = parser.parse_args()
 app = QApplication(sys.argv)
