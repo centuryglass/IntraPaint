@@ -78,7 +78,7 @@ class MaskPanel(QWidget):
         self.colorPickerButton.setVisible(False)
 
         self.keepSketchCheckbox = QCheckBox(self)
-        self.keepSketchCheckbox.setText("Save sketch in results")
+        self.keepSketchCheckbox.setText("Save in results")
         self.keepSketchCheckbox.setToolTip("Set whether parts of the sketch not covered by the mask should appear in generated images")
 
         
@@ -94,13 +94,13 @@ class MaskPanel(QWidget):
         self.layout.addWidget(self.maskCreator, 1, 1, 1, 6)
         self.layout.addWidget(QLabel(self, text="Brush size:"), 2, 1, 1, 1)
         self.layout.addWidget(self.brushSizeBox, 2, 2, 1, 1)
-        self.layout.addWidget(self.eraserCheckbox, 2, 3, 1, 1)
-        self.layout.addWidget(self.clearMaskButton, 2, 4, 1, 2)
+        self.layout.addWidget(self.clearMaskButton, 2, 3, 1, 2)
         self.layout.addWidget(self.maskModeButton, 3, 1, 1, 1)
         self.layout.addWidget(self.keepSketchCheckbox, 3, 2, 1, 1)
+        self.layout.addWidget(self.eraserCheckbox, 3, 3, 1, 1)
         self.layout.addWidget(self.sketchModeButton, 4, 1, 1, 1)
         self.layout.addWidget(self.colorPickerButton, 4, 2, 1, 1)
-        self.layout.setRowMinimumHeight(1, 300)
+        self.layout.setRowMinimumHeight(1, 250)
         self.setLayout(self.layout)
 
     def paintEvent(self, event):

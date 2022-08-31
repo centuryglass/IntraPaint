@@ -207,7 +207,7 @@ class ImagePanel(QWidget):
         self.layout.addWidget(self.imgReloadButton, 2, 13, 1, 1)
         self.layout.addWidget(self.saveButton, 2, 14, 1, 1)
 
-        self.layout.setRowMinimumHeight(1, 300)
+        self.layout.setRowMinimumHeight(1, 250)
         self.layout.setColumnStretch(4, 255)
         self.setLayout(self.layout)
 
