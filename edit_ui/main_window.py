@@ -161,11 +161,37 @@ class MainWindow(QMainWindow):
             self.worker.finished.connect(self.worker.deleteLater)
             self.thread.start()
 
+        def zoomOut():
+            image = self.imagePanel.imageViewer.getImage()
+            if image is None:
+                print("Can't zoom, no image is loaded")
+                return
+            # Find next unused number in ./zoom/xxxxx.png:
+            zoomCount = 0
+            while os.path.exists(f"zoom/{zoomCount:05}.png"):
+                zoomCount += 1
+            # Save current image, update zoom count:
+            image.save(f"zoom/{zoomCount:05}.png")
+            zoomCount += 1
+
+            # scale image content to 86%, paste it centered into the image:
+            newSize = (int(image.width * 0.86), int(image.height * 0.86))
+            scaledImage = image.resize(newSize, self.inpaintPanel.downscaleMode())
+            newImage = Image.new('RGB', (image.width, image.height), color = 'white')
+            insertAt = (int(image.width * 0.08), int(image.height * 0.08))
+            newImage.paste(scaledImage, insertAt)
+            self.imagePanel.imageViewer.setImage(newImage)
+
+            # reload zoom mask:
+            self.maskPanel.maskCreator.loadMaskImage('zoomMask.png')
+            
+
         self.inpaintPanel = InpaintingPanel(
                 inpaintAndShowSamples,
                 lambda: self.imagePanel.imageViewer.getImage(),
                 lambda: self.imagePanel.imageViewer.getSelectedSection(),
-                lambda: self.maskPanel.getMask())
+                lambda: self.maskPanel.getMask(),
+                zoomOut)
         self.inpaintPanel.enableScaleToggled.connect(lambda v: self.imagePanel.setScaleEnabled(v))
 
         self.layout = QVBoxLayout()

@@ -56,6 +56,8 @@ class ImageViewer(QtWidgets.QWidget):
 
     def getImage(self):
         """Returns the image currently being edited as a PIL Image object"""
+        if not self.hasImage():
+            return None
         return qImageToImage(self._qimage)
 
     def setImage(self, image):

@@ -71,6 +71,12 @@ class MaskCreator(QtWidgets.QWidget):
             self._maskCanvas.fill(Qt.transparent)
         self.update()
 
+    def loadMaskImage(self, imagePath):
+        maskQImage = QImage(imagePath)
+        self._maskCanvas = QtGui.QPixmap.fromImage(maskQImage)
+        self.resizeEvent(None)
+        self.update()
+
     def loadImage(self, pilImage):
         # Use a canvas that's large enough to look decent even editing scale changes,
         # it'll just get resized to selection size on inpainting anyway.

@@ -3,12 +3,12 @@ from PyQt5.QtCore import Qt, QPoint, QRect, QBuffer, pyqtSignal
 import PyQt5.QtGui as QtGui
 from PyQt5.QtGui import QPainter, QPen
 from PIL import Image, ImageOps
-import io
+import io, os
 
 class InpaintingPanel(QWidget):
     enableScaleToggled = pyqtSignal(bool)
 
-    def __init__(self, doInpaint, getImage, getSelection, getMask):
+    def __init__(self, doInpaint, getImage, getSelection, getMask, doZoom):
         super().__init__()
         assert callable(doInpaint)
         assert callable(getImage)
@@ -88,6 +88,12 @@ class InpaintingPanel(QWidget):
         self.moreOptionsBar.addWidget(self.upscaleModeList, stretch=10)
         self.moreOptionsBar.addWidget(self.downscaleModeLabel, stretch=0)
         self.moreOptionsBar.addWidget(self.downscaleModeList, stretch=10)
+
+        self.zoomButton = QPushButton(); 
+        self.zoomButton.setText("Zoom")
+        self.zoomButton.setToolTip("Save frame, zoom out 15%, set mask to new blank area")
+        self.zoomButton.clicked.connect(doZoom)
+        self.moreOptionsBar.addWidget(self.zoomButton, stretch=5)
         
 
         self.layout = QGridLayout()
