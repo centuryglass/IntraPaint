@@ -1,4 +1,10 @@
-from PyQt5.QtWidgets import QWidget, QDialog, QSpinBox, QLabel, QVBoxLayout, QHBoxLayout, QPushButton
+from PyQt5.QtWidgets import (QWidget,
+        QDialog,
+        QSpinBox,
+        QLabel,
+        QVBoxLayout,
+        QHBoxLayout,
+        QPushButton)
 from PyQt5.QtCore import QSize
 
 class NewImageModal(QDialog):

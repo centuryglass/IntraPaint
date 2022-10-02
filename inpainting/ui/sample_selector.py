@@ -1,48 +1,34 @@
-from PyQt5.QtWidgets import *
+from PyQt5.QtWidgets import QWidget, QLabel, QPushButton
 from PyQt5.QtCore import Qt, QMargins
 import PyQt5.QtGui as QtGui
 from PyQt5.QtGui import QPainter, QPen, QColor, QImage, QPixmap
 from PyQt5.QtCore import Qt, QPoint, QRect, QBuffer, QSize
-from edit_ui.loading_widget import LoadingWidget
-from edit_ui.ui_utils import getScaledPlacement, QEqualMargins, imageToQImage
+from inpainting.ui.loading_widget import LoadingWidget
+from inpainting.ui.layout_utils import getScaledPlacement, QEqualMargins
+from inpainting.image_utils import imageToQImage
 from PIL import Image
 
 class SampleSelector(QWidget):
     """Shows all inpainting samples as they load, allows the user to select one or discard all of them."""
 
-    def __init__(self, batch_size, num_batches, sourceImage, maskImage, selectImage, closeSelector):
-        """
-        batch_size : int
-            Number of image samples that will be generated per batch.
-        num_batches : int
-            Number of image sample batches that will be generated.
-        sourceImage : QImage
-            Image section being edited, to be displayed for comparison purposes.
-        maskImage : QImage
-            Mask marking the edited area, to be displayed for comparison purposes.
-        imageSize: QSize
-            Expected width and height of images, in pixels
-        selectImage : function(Image)
-            Function that will apply a selected sample image to the edited image, then close the SampleSelector.
-        closeSelector : function()
-            Function that will close the SampleSelector without selecting an image.
-        """
+    def __init__(self, config, editedImage, mask, sketch, closeSelector):
         super().__init__()
-        assert isinstance(batch_size, int) and batch_size > 0
-        assert isinstance(num_batches, int) and num_batches > 0
-        assert isinstance(sourceImage, Image.Image)
-        assert isinstance(maskImage, Image.Image)
-        assert callable(selectImage)
-        assert callable(closeSelector)
 
+        sourceImage = editedImage.getSelectionContent()
+        if sketch.hasSketch:
+            sketchImage = sketch.getImage().convert('RGBA')
+            sourceImage = Image.alpha_composite(sourceImage.convert('RGBA'), sketchImage).convert('RGB')
+        maskImage = mask.getImage()
+
+        self._editedImage = editedImage
+        self._closeSelector = closeSelector
         self._sourcePixmap = QPixmap.fromImage(imageToQImage(sourceImage))
         self._maskPixmap = QPixmap.fromImage(imageToQImage(maskImage))
         self._sourceImageBounds = QRect(0, 0, 0, 0)
         self._maskImageBounds = QRect(0, 0, 0, 0)
         
-        self._selectImage = selectImage
-        self._nRows = num_batches
-        self._nColumns = batch_size
+        self._nRows = config.get('batchCount')
+        self._nColumns = config.get('batchSize')
         self._imageSize = QSize(sourceImage.width, sourceImage.height)
         self._options = []
         for row in range(self._nRows):
@@ -146,7 +132,6 @@ class SampleSelector(QWidget):
                     painter.drawText(option['bounds'], Qt.AlignCenter, "Waiting for image...")
 
     def mousePressEvent(self, event):
-        """Select the arean in the image to be edited."""
         if self._isLoading:
             return
         rowNum = 0
@@ -158,7 +143,8 @@ class SampleSelector(QWidget):
                 if option['bounds'].contains(event.pos()):
                     if isinstance(option['image'], Image.Image):
                         print(f"selected {rowNum},{colNum}")
-                        self._selectImage(option['image'])
+                        self._editedImage.setSelectionContent(option['image'])
+                        self._closeSelector()
                         return
                     else:
                         print(f"{rowNum},{colNum} still pending")

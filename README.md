@@ -43,7 +43,7 @@ All scripts support multiple command-line options, and will describe those optio
 ### Running the client:
 ```
 pip install pyqt5 requests pillow
-python IntraPaint_client.py
+python IntraPaint.py
 ```
 
 #### Running the server:
@@ -54,7 +54,7 @@ To run the server, you'll need a CUDA-capable GPU with around 10GB of memory. I'
 3. Start the server using `python IntraPaint_server.py --port 5555`, and the server's local address will be printed in the console output once it finishes starting.
 
 #### Run as a single application:
-Once you've followed the steps for setting up both the client and server, you can run both together using `python IntraPaint_unified.py` In this mode the two components will communicate directly instead of through HTTP requests, so performance is slightly better.
+Once you've followed the steps for setting up both the client and server, you can run both together using `python IntraPaint.py --mode=local` In this mode the two components will communicate directly instead of through HTTP requests, so performance is slightly better.
 
 ## Tips:
 - Larger edit areas lose details due to scaling, best results are at 256x256 or smaller.

@@ -1,43 +1,41 @@
-from PyQt5.QtWidgets import *
+from PyQt5.QtWidgets import (QWidget,
+        QLabel,
+        QSpinBox,
+        QCheckBox,
+        QPushButton,
+        QRadioButton,
+        QColorDialog,
+        QGridLayout,
+        QSpacerItem)
 from PyQt5.QtCore import Qt, QPoint, QRect, QBuffer
 import PyQt5.QtGui as QtGui
 from PyQt5.QtGui import QPainter, QPen
 from PyQt5.QtCore import Qt
 from PIL import Image
-from edit_ui.mask_creator import MaskCreator
+from inpainting.ui.mask_creator import MaskCreator
 
 class MaskPanel(QWidget):
-    def __init__(self, pilImage, getSelection, selectionChangeSignal):
+    def __init__(self, config, maskCanvas, sketchCanvas, editedImage):
         super().__init__()
-        assert pilImage is None or isinstance(pilImage, Image.Image)
-        assert callable(getSelection)
-        assert hasattr(selectionChangeSignal, 'connect') and callable(selectionChangeSignal.connect)
 
-        self.maskCreator = MaskCreator(pilImage)
+        self.maskCreator = MaskCreator(maskCanvas, sketchCanvas, editedImage)
+        self._maskCanvas = maskCanvas
 
-        maskCreator = self.maskCreator
-        def applySelection(pt, size):
-            if size is not None:
-                maskCreator.setSelectionSize(size)
-            selection = getSelection()
-            if selection is not None:
-                maskCreator.loadImage(selection)
-            maskCreator.update()
-        selectionChangeSignal.connect(applySelection)
-
-        self._maskBrushSize = maskCreator.getBrushSize()
-        self._sketchBrushSize = 5
+        self._maskBrushSize = maskCanvas.brushSize()
+        self._sketchBrushSize = sketchCanvas.brushSize()
+        self._editedImage = editedImage
 
         self.brushSizeBox = QSpinBox(self)
         self.brushSizeBox.setToolTip("Brush size")
         self.brushSizeBox.setRange(1, 200)
-        self.brushSizeBox.setValue(maskCreator.getBrushSize())
+        self.brushSizeBox.setValue(self._maskBrushSize)
         def setBrush(newSize):
             if self.maskModeButton.isChecked():
                 self._maskBrushSize = newSize
+                maskCanvas.setBrushSize(newSize)
             else:
                 self._sketchBrushSize = newSize
-            maskCreator.setBrushSize(newSize)
+                sketchCanvas.setBrushSize(newSize)
         self.brushSizeBox.valueChanged.connect(setBrush)
 
         self.eraserCheckbox = QCheckBox(self)
@@ -53,6 +51,12 @@ class MaskPanel(QWidget):
             self.maskCreator.clear()
             self.eraserCheckbox.setChecked(False)
         self.clearMaskButton.clicked.connect(clearMask)
+
+        self.fillMaskButton = QPushButton(self)
+        self.fillMaskButton.setText("fill")
+        def fillMask():
+            self.maskCreator.fill()
+        self.fillMaskButton.clicked.connect(fillMask)
 
         self.maskModeButton = QRadioButton(self)
         self.sketchModeButton = QRadioButton(self)
@@ -78,10 +82,10 @@ class MaskPanel(QWidget):
         self.colorPickerButton.setVisible(False)
 
         self.keepSketchCheckbox = QCheckBox(self)
-        self.keepSketchCheckbox.setText("Save in results")
+        self.keepSketchCheckbox.setText("Apply sketch")
         self.keepSketchCheckbox.setToolTip("Set whether parts of the sketch not covered by the mask should appear in generated images")
-
-        
+        self.keepSketchCheckbox.setChecked(config.get('saveSketchInResult'))
+        self.keepSketchCheckbox.toggled.connect(lambda isChecked: config.set('saveSketchInResult', isChecked))
 
         self.layout = QGridLayout()
         self.borderSize = 4
@@ -94,7 +98,8 @@ class MaskPanel(QWidget):
         self.layout.addWidget(self.maskCreator, 1, 1, 1, 6)
         self.layout.addWidget(QLabel(self, text="Brush size:"), 2, 1, 1, 1)
         self.layout.addWidget(self.brushSizeBox, 2, 2, 1, 1)
-        self.layout.addWidget(self.clearMaskButton, 2, 3, 1, 2)
+        self.layout.addWidget(self.clearMaskButton, 2, 3, 1, 1)
+        self.layout.addWidget(self.fillMaskButton, 2, 4, 1, 1)
         self.layout.addWidget(self.maskModeButton, 3, 1, 1, 1)
         self.layout.addWidget(self.keepSketchCheckbox, 3, 2, 1, 1)
         self.layout.addWidget(self.eraserCheckbox, 3, 3, 1, 1)
@@ -113,23 +118,19 @@ class MaskPanel(QWidget):
                         Qt.RoundJoin))
             painter.drawRect(self.colorPickerButton.geometry())
 
-    def loadImage(self, im):
-        self.maskCreator.loadImage(im)
-
-    def getMask(self):
-        return self.maskCreator.getMask()
 
     def resizeEvent(self, event):
         # Force MaskCreator aspect ratio to match edit sizes, while leaving room for controls:
+        selectionSize = self._editedImage.getSelectionBounds().size()
         creatorWidth = self.maskCreator.width()
         creatorHeight = creatorWidth
-        if self.maskCreator.selectionWidth() > 0:
-            creatorHeight = creatorWidth * self.maskCreator.selectionHeight() // self.maskCreator.selectionWidth()
+        if selectionSize.width() > 0:
+            creatorHeight = creatorWidth * selectionSize.height() // selectionSize.width()
         maxHeight = self.clearMaskButton.y() - self.borderSize
         if creatorHeight > maxHeight:
             creatorHeight = maxHeight
-            if self.maskCreator.selectionHeight() > 0:
-                creatorWidth = creatorHeight * self.maskCreator.selectionWidth() // self.maskCreator.selectionHeight()
+            if self._maskCanvas.size().height() > 0:
+                creatorWidth = creatorHeight * selectionSize.width() // selectionSize.height()
         if creatorHeight != self.maskCreator.height() or creatorWidth != self.maskCreator.width():
             x = (self.width() - self.borderSize - creatorWidth) // 2
             y = self.borderSize + (maxHeight - creatorHeight) // 2
