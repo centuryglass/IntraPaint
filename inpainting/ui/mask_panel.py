@@ -4,6 +4,7 @@ from PyQt5.QtWidgets import (QWidget,
         QCheckBox,
         QPushButton,
         QRadioButton,
+        QButtonGroup,
         QColorDialog,
         QGridLayout,
         QSpacerItem)
@@ -39,18 +40,23 @@ class MaskPanel(QWidget):
                 sketchCanvas.setBrushSize(newSize)
         self.brushSizeBox.valueChanged.connect(setBrush)
 
-        self.eraserCheckbox = QCheckBox(self)
-        self.eraserCheckbox.setText("Use eraser")
-        self.eraserCheckbox.setChecked(False)
+        self.drawToolGroup = QButtonGroup()
+        self.penButton = QRadioButton(self)
+        self.penButton.setText("Pen")
+        self.drawToolGroup.addButton(self.penButton)
+        self.eraserButton = QCheckBox(self)
+        self.eraserButton.setText("Eraser")
+        self.drawToolGroup.addButton(self.eraserButton)
+        self.penButton.toggle()
         def toggleEraser():
-            self.maskCreator.setUseEraser(self.eraserCheckbox.isChecked())
-        self.eraserCheckbox.stateChanged.connect(toggleEraser)
+            self.maskCreator.setUseEraser(self.eraserButton.isChecked())
+        self.eraserButton.toggled.connect(toggleEraser)
 
         self.clearMaskButton = QPushButton(self)
         self.clearMaskButton.setText("clear")
         def clearMask():
             self.maskCreator.clear()
-            self.eraserCheckbox.setChecked(False)
+            self.eraserButton.setChecked(False)
         self.clearMaskButton.clicked.connect(clearMask)
 
         self.fillMaskButton = QPushButton(self)
@@ -110,16 +116,17 @@ class MaskPanel(QWidget):
         self.layout.addItem(makeSpacer(), 3, 0, 1, 1)
         self.layout.addItem(makeSpacer(), 0, 0, 1, 1)
         self.layout.addItem(makeSpacer(), 0, 6, 1, 1)
-        self.layout.addWidget(self.maskCreator, 1, 1, 1, 6)
-        self.layout.addWidget(QLabel(self, text="Brush size:"), 2, 1, 1, 1)
-        self.layout.addWidget(self.brushSizeBox, 2, 2, 1, 1)
-        self.layout.addWidget(self.clearMaskButton, 2, 3, 1, 1)
-        self.layout.addWidget(self.fillMaskButton, 2, 4, 1, 1)
-        self.layout.addWidget(self.maskModeButton, 3, 1, 1, 1)
-        self.layout.addWidget(self.keepSketchCheckbox, 3, 2, 1, 1)
-        self.layout.addWidget(self.eraserCheckbox, 3, 3, 1, 1)
-        self.layout.addWidget(self.sketchModeButton, 4, 1, 1, 1)
-        self.layout.addWidget(self.colorPickerButton, 4, 2, 1, 1)
+        self.layout.addWidget(self.maskCreator, 1, 1)
+        self.layout.addWidget(QLabel(self, text="Brush size:"), 2, 0)
+        self.layout.addWidget(self.brushSizeBox, 2, 1)
+        self.layout.addWidget(self.penButton, 3, 0)
+        self.layout.addWidget(self.eraserButton, 3, 1)
+        self.layout.addWidget(self.clearMaskButton, 4, 0)
+        self.layout.addWidget(self.fillMaskButton, 4, 1)
+        self.layout.addWidget(self.maskModeButton, 5, 0)
+        self.layout.addWidget(self.sketchModeButton, 5, 1)
+        self.layout.addWidget(self.colorPickerButton, 6, 0)
+        self.layout.addWidget(self.keepSketchCheckbox, 6, 1)
         self.layout.setRowMinimumHeight(1, 250)
         self.setLayout(self.layout)
 
@@ -153,7 +160,7 @@ class MaskPanel(QWidget):
         creatorHeight = creatorWidth
         if selectionSize.width() > 0:
             creatorHeight = creatorWidth * selectionSize.height() // selectionSize.width()
-        maxHeight = self.clearMaskButton.y() - self.borderSize
+        maxHeight = self.brushSizeBox.y() - self.borderSize
         if creatorHeight > maxHeight:
             creatorHeight = maxHeight
             if self._maskCanvas.size().height() > 0:

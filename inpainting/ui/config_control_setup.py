@@ -1,4 +1,5 @@
 from PyQt5.QtWidgets import QSpinBox, QDoubleSpinBox, QLineEdit, QCheckBox, QComboBox, QPlainTextEdit
+from PyQt5.QtGui import QTextCursor
 
 """
 Creates UI input components linked to inpainting.data_model.config values.
@@ -33,8 +34,16 @@ def connectedSpinBox(parent, config, key, minKey=None, maxKey=None, stepSizeKey=
 
 def connectedTextEdit(parent, config, key, multiLine=False):
     textEdit = QLineEdit(config.get(key), parent) if not multiLine else QPlainTextEdit(config.get(key), parent)
-    textEdit.textChanged.connect(lambda newValue: config.set(key, newValue))
-    config.connect(textEdit, key, lambda newText: textEdit.setText(newText))
+    if multiLine:
+        textEdit.textChanged.connect(lambda: config.set(key, textEdit.toPlainText()))
+        def setText(newText):
+            if newText != textEdit.toPlainText():
+                textEdit.setPlainText(newText)
+                textEdit.moveCursor(QTextCursor.EndOfLine)
+        config.connect(textEdit, key, setText)
+    else:
+        textEdit.textChanged.connect(lambda newContent: config.set(key, newContent))
+        config.connect(textEdit, key, lambda newText: textEdit.setText(newText))
     return textEdit
 
 def connectedCheckBox(parent, config, key):
