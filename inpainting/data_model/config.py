@@ -16,6 +16,7 @@ class Config(QObject):
         self._values = {}
         self._types = {}
         self._connected = {}
+        self._options = {}
         self._lock = Lock()
 
         # Editing options:
@@ -58,10 +59,39 @@ class Config(QObject):
         self._setDefault('minRetryDelay', 300000) 
         self._setDefault('maxRetryDelay', 60000000)
 
-    def _setDefault(self, key, initialValue):
+        # Settings used only by stable-diffusion:
+        self._setDefault('editMode', 'Inpaint', ['Inpaint', 'Text to Image', 'Image to Image'])
+        self._setDefault('inpaintMasked', 'Inpaint masked', ['Inpaint masked', 'Inpaint not masked'])
+        self._setDefault('maskedContent', 'original', ['fill', 'original', 'latent noise', 'latent nothing'])
+        self._setDefault('stableResizeMode', 'Just resize', ['Just resize', 'Crop and resize', 'Resize and fill'])
+        self._setDefault('samplingSteps', 20)
+        self._setDefault('minSamplingSteps', 1)
+        self._setDefault('maxSamplingSteps', 150)
+        self._setDefault('samplingMethod', 'Euler a', ['Euler a', 'Euler', 'LMS', 'Heun', 'DPM2', 'DPM2 a', 'DDIM'])
+        self._setDefault('maskBlur', 4)
+        self._setDefault('maxMaskBlur', 64)
+        self._setDefault('restoreFaces', False)
+        self._setDefault('tiling', False)
+        self._setDefault('cfgScale', 7.0)
+        self._setDefault('minCfgScale', 0.0)
+        self._setDefault('maxCfgScale', 30.0)
+        self._setDefault('cfgScaleStep', 0.5)
+        self._setDefault('denoisingStrength', 0.75)
+        self._setDefault('minDenoisingStrength', 0.0)
+        self._setDefault('maxDenoisingStrength', 1.0)
+        self._setDefault('denoisingStrengthStep', 0.01)
+        self._setDefault('seed', -1)
+
+        # It's somewhat out of place here, but defining lastSeed as a config value makes it trivial to wire it to a
+        # read-only widget.
+        self._setDefault('lastSeed', "-1")
+
+    def _setDefault(self, key, initialValue, options=None):
         self._values[key] = initialValue
         self._types[key] = type(initialValue)
         self._connected[key] = {}
+        if options is not None:
+            self._options[key] = options
 
     def get(self, key):
         if not key in self._values:
@@ -71,13 +101,33 @@ class Config(QObject):
         self._lock.release()
         return value
 
+    def getOptionIndex(self, key):
+        if not key in self._values:
+            raise Exception(f"Tried to get unknown config value '{key}'")
+        if not key in self._options:
+            raise Exception(f"Config value '{key}' does not have an associated options list")
+        self._lock.acquire()
+        value = self._values[key]
+        index = self._options[key].index(value)
+        self._lock.release()
+        return index
+
+    def getOptions(self, key):
+        if not key in self._values:
+            raise Exception(f"Tried to set unknown config value '{key}'")
+        return self._options[key]
+
+
     def set(self, key, value):
         if not key in self._values:
             raise Exception(f"Tried to set unknown config value '{key}'")
         if type(value) != self._types[key]:
             raise Exception(f"Expected '{key}' value '{value}' to have type '{self._types[key]}', found '{type(value)}'")
+        if key in self._options and not value in self._options[key]:
+            raise Exception(f"'{key}' value '{value}' is not a valid option")
+            raise
         self._lock.acquire()
-        valueChanged = (self._values[key] == value)
+        valueChanged = (self._values[key] != value)
         self._values[key] = value
         self._lock.release()
         if valueChanged:

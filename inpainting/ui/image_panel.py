@@ -51,7 +51,6 @@ class ImagePanel(QWidget):
                 (self.heightBox, "height", minEditSize.height(), maxEditSize.height())]:
             sizeControl.setToolTip(f"Selected area {typeName}")
             sizeControl.setRange(minSize, maxSize)
-            print(f"max {typeName} set to {maxSize}")
             sizeControl.setSingleStep(minSize)
             sizeControl.setValue(maxSize)
 
@@ -101,7 +100,8 @@ class ImagePanel(QWidget):
         self.newImageButton = QPushButton(self)
         self.newImageButton.setText("New Image")
         def newImage():
-            imageModal = NewImageModal()
+            defaultSize = self._config.get('maxEditSize')
+            imageModal = NewImageModal(defaultSize.width(), defaultSize.height())
             imageSize = imageModal.showImageModal()
             if imageSize:
                 if editedImage.hasImage():

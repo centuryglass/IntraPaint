@@ -20,6 +20,7 @@ class MaskPanel(QWidget):
 
         self.maskCreator = MaskCreator(maskCanvas, sketchCanvas, editedImage)
         self._maskCanvas = maskCanvas
+        self._sketchCanvas = sketchCanvas
 
         self._maskBrushSize = maskCanvas.brushSize()
         self._sketchBrushSize = sketchCanvas.brushSize()
@@ -64,13 +65,27 @@ class MaskPanel(QWidget):
         self.sketchModeButton.setText("Draw sketch")
         self.maskModeButton.setToolTip("Draw over the area to be inpainted")
         self.sketchModeButton.setToolTip("Add simple details to help guide inpainting")
-        self.maskModeButton.setChecked(True)
-        def setMaskMode(maskMode):
-            self.maskCreator.setSketchMode(not maskMode)
-            self.colorPickerButton.setVisible(not maskMode)
-            self.brushSizeBox.setValue(self._maskBrushSize if maskMode else self._sketchBrushSize)
-            self.update()
-        self.maskModeButton.toggled.connect(setMaskMode)
+        self.maskModeButton.toggle()
+        self.maskModeButton.toggled.connect(lambda isChecked: self.setUseMaskMode(isChecked))
+
+        # Enable/disable controls as appropriate when sketch or mask mode are enabled or disabled:
+        def handleSketchModeEnabledChange(isEnabled):
+            self.sketchModeButton.setEnabled(isEnabled)
+            if not isEnabled and self._maskCanvas.enabled() and not self.maskModeButton.isChecked():
+                self.maskModeButton.toggle()
+            elif isEnabled and not self._maskCanvas.enabled() and not self.sketchModeButton.isChecked():
+                self.sketchModeButton.toggle()
+            self.setEnabled(isEnabled or self._maskCanvas.enabled())
+        sketchCanvas.onEnabledChange.connect(handleSketchModeEnabledChange)
+
+        def handleMaskModeEnabledChange(isEnabled):
+            self.maskModeButton.setEnabled(isEnabled)
+            if not isEnabled and self._sketchCanvas.enabled() and not self.maskModeButton.isChecked() :
+                self.sketchModeButton.toggle()
+            elif isEnabled and not self.maskModeButton.isChecked():
+                self.maskModeButton.toggle()
+            self.setEnabled(isEnabled or self._sketchCanvas.enabled())
+        maskCanvas.onEnabledChange.connect(handleMaskModeEnabledChange)
 
         self.colorPickerButton = QPushButton(self)
         self.colorPickerButton.setText("Select sketch color")
@@ -107,6 +122,18 @@ class MaskPanel(QWidget):
         self.layout.addWidget(self.colorPickerButton, 4, 2, 1, 1)
         self.layout.setRowMinimumHeight(1, 250)
         self.setLayout(self.layout)
+
+    def setUseMaskMode(self, useMaskMode):
+        if useMaskMode and not self._maskCanvas.enabled():
+            raise Exception("called setUseMaskMode(True) when mask mode is disabled")
+        if not useMaskMode and not self._sketchCanvas.enabled():
+            raise Exception("called setUseMaskMode(False) when sketch mode is disabled")
+        if self.maskModeButton.isChecked() != useMaskMode:
+            self.maskModeButton.toggle()
+        self.maskCreator.setSketchMode(not useMaskMode)
+        self.colorPickerButton.setVisible(not useMaskMode)
+        self.brushSizeBox.setValue(self._maskBrushSize if useMaskMode else self._sketchBrushSize)
+        self.update()
 
     def paintEvent(self, event):
         super().paintEvent(event)

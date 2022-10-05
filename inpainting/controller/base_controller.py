@@ -18,6 +18,7 @@ class BaseInpaintController():
     def __init__(self, args):
         self._app = QApplication(sys.argv)
         self._config = Config()
+        self._adjustConfigDefaults()
         self._config.applyArgs(args)
         self._editedImage = EditedImage(self._config, args.init_image)
 
@@ -52,6 +53,10 @@ class BaseInpaintController():
                 self._nextTimelapseFrame += 1
             editedImage.contentChanged.connect(saveTimelapseImage)
 
+    def _adjustConfigDefaults(self):
+        # no-op, override to adjust config before data initialization
+        return
+
     def startApp(self):
         screen = self._app.primaryScreen()
         size = screen.availableGeometry()
@@ -63,6 +68,9 @@ class BaseInpaintController():
 
     def _inpaint(self):
         raise Exception('BaseInpaintController should not be used directly, use a subclass.')
+
+    def _applyStatusUpdate(self, statusDict):
+        return
 
     def startAndManageInpainting(self):
         if not self._editedImage.hasImage():
@@ -114,11 +122,12 @@ class BaseInpaintController():
             inpaintMask = resizeImage(inpaintMask, inpaintImage.width, inpaintImage.height)
 
 
-        doInpaint = lambda img, mask, save: self._inpaint(img, mask, save)
+        doInpaint = lambda img, mask, save, statusSignal: self._inpaint(img, mask, save, statusSignal)
         config = self._config
         class InpaintThreadWorker(QObject):
             finished = pyqtSignal()
             imageReady = pyqtSignal(Image.Image, int, int)
+            statusSignal = pyqtSignal(dict)
             errorSignal = pyqtSignal(str)
 
             def __init__(self):
@@ -129,7 +138,7 @@ class BaseInpaintController():
                     img = resizeImage(img, unscaledInpaintImage.width, unscaledInpaintImage.height)
                     self.imageReady.emit(img, y, x)
                 try:
-                    doInpaint(inpaintImage, inpaintMask, sendImage)
+                    doInpaint(inpaintImage, inpaintMask, sendImage, self.statusSignal)
                 except Exception as err:
                     self.errorSignal.emit(str(err))
                 self.finished.emit()
@@ -140,9 +149,15 @@ class BaseInpaintController():
         self._window.setIsLoading(True)
 
         def handleError(err):
+            self._window.setIsLoading(False)
             self._window.setSampleSelectorVisible(False)
             showErrorDialog(self._window, "Inpainting failure", err)
         self._worker.errorSignal.connect(handleError)
+
+        def updateStatus(statusDict):
+            self._applyStatusUpdate(statusDict)
+        self._worker.statusSignal.connect(updateStatus)
+
 
         def loadSamplePreview(img, y, x):
             if config.get('removeUnmaskedChanges'):

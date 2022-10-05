@@ -4,10 +4,6 @@ from PyQt5.QtCore import Qt, QObject, QThread, QRect, QPoint, QSize, pyqtSignal
 from inpainting.ui.mask_panel import MaskPanel
 from inpainting.ui.image_panel import ImagePanel
 from inpainting.ui.sample_selector import SampleSelector
-from inpainting.data_model.config import Config
-from inpainting.data_model.edited_image import EditedImage
-from inpainting.data_model.mask_canvas import MaskCanvas
-from inpainting.data_model.sketch_canvas import SketchCanvas
 from inpainting.ui.config_control_setup import *
 from inpainting.ui.modal_utils import showErrorDialog
 import PyQt5.QtGui as QtGui
@@ -75,8 +71,8 @@ class MainWindow(QMainWindow):
 
     def _buildControlLayout(self, controller):
         inpaintPanel = QWidget(self)
-        textPromptBox = connectedLineEdit(inpaintPanel, self._config, 'prompt')
-        negativePromptBox = connectedLineEdit(inpaintPanel, self._config, 'negativePrompt')
+        textPromptBox = connectedTextEdit(inpaintPanel, self._config, 'prompt')
+        negativePromptBox = connectedTextEdit(inpaintPanel, self._config, 'negativePrompt')
 
         batchSizeBox = connectedSpinBox(inpaintPanel, self._config, 'batchSize', maxKey='maxBatchSize')
         batchSizeBox.setRange(1, batchSizeBox.maximum())
@@ -177,9 +173,9 @@ class MainWindow(QMainWindow):
         else:
             self._sampleSelector.loadSampleImage(image, y, x)
 
-    def setIsLoading(self, isLoading):
+    def setIsLoading(self, isLoading, message=None):
         if self._sampleSelector is not None:
-            self._sampleSelector.setIsLoading(isLoading)
+            self._sampleSelector.setIsLoading(isLoading, message)
 
     def paintEvent(self, event):
         super().paintEvent(event)

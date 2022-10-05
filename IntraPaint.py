@@ -3,9 +3,10 @@ from startup.utils import *
 
 # argument parsing:
 parser = buildArgParser(defaultModel='inpaint.pt', includeEditParams=False)
-parser.add_argument('--mode', type = str, required = False, default = 'web',
+parser.add_argument('--mode', type = str, required = False, default = 'stable',
                     help = 'Set where inpainting operations should be completed. \nOptions:\n'
-                    + '"web": A remote server handles inpainting over a network connection.\n'
+                    + '"stable": A remote server handles inpainting over a network connection using stable-diffusion.\n'
+                    + '"web": A remote server handles inpainting over a network connection using GLID-3-XL.\n'
                     + '"local": Handle inpainting on the local machine (requires a GPU with ~10GB VRAM).\n'
                     + '"mock": No actual inpainting performed, for UI testing only')
 parser.add_argument('--init_edit_image', type=str, required = False, default = None,
@@ -27,7 +28,10 @@ args = parser.parse_args()
 
 controller = None
 controllerMode = args.mode
-if controllerMode == 'web':
+if controllerMode == 'stable':
+    from inpainting.controller.stable_diffusion_controller import StableDiffusionController
+    controller = StableDiffusionController(args)
+elif controllerMode == 'web':
     from inpainting.controller.web_client_controller import WebClientController
     controller = WebClientController(args)
 elif controllerMode == 'local':

@@ -49,14 +49,17 @@ class MaskCreator(QtWidgets.QWidget):
 
     def clear(self):
         if self._sketchMode:
-            self._sketchCanvas.clear()
+            if self._sketchCanvas.enabled():
+                self._sketchCanvas.clear()
         else:
-            self._maskCanvas.clear()
+            if self._maskCanvas.enabled():
+                self._maskCanvas.clear()
     
     def fill(self):
         canvas = self._sketchCanvas if self._sketchMode else self._maskCanvas
         color = self._sketchColor if self._sketchMode else Qt.red
-        canvas.fill(color)
+        if canvas.enabled():
+            canvas.fill(color)
 
     def loadImage(self, pilImage):
         selectionSize = self._maskCanvas.size()
@@ -72,10 +75,11 @@ class MaskCreator(QtWidgets.QWidget):
         painter.drawRect(self._imageRect.marginsAdded(QEqualMargins(self._borderSize())))
         if hasattr(self, '_imageSection') and self._imageSection is not None:
             painter.drawImage(self._imageRect, self._imageSection)
-        if self._sketchCanvas.hasSketch:
+        if self._sketchCanvas.hasSketch and self._sketchCanvas.enabled():
             painter.drawPixmap(self._imageRect, self._sketchCanvas.getPixmap())
-        painter.setOpacity(0.6)
-        painter.drawPixmap(self._imageRect, self._maskCanvas.getPixmap())
+        if self._maskCanvas.enabled():
+            painter.setOpacity(0.6)
+            painter.drawPixmap(self._imageRect, self._maskCanvas.getPixmap())
 
     def _widgetToImageCoords(self, point):
         assert isinstance(point, QPoint)

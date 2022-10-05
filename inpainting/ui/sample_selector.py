@@ -51,11 +51,14 @@ class SampleSelector(QWidget):
         self._loadingWidget.hide()
         self.resizeEvent(None)
 
-    def setIsLoading(self, isLoading):
+    def setIsLoading(self, isLoading, message=None):
         """Show or hide the loading indicator"""
         if isLoading:
             self._loadingWidget.show()
-            self._loadingWidget.setMessage("Loading images")
+            if message:
+                self._loadingWidget.setMessage(message)
+            else:
+                self._loadingWidget.setMessage("Loading images")
         else:
             self._loadingWidget.hide()
         self._isLoading = isLoading

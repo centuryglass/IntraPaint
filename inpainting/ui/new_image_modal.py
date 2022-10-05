@@ -8,7 +8,7 @@ from PyQt5.QtWidgets import (QWidget,
 from PyQt5.QtCore import QSize
 
 class NewImageModal(QDialog):
-    def __init__(self):
+    def __init__(self, defaultWidth, defaultHeight):
         super().__init__()
 
         self._create = False
@@ -18,7 +18,7 @@ class NewImageModal(QDialog):
         self._title.setText("Create new image")
 
 
-        def makeLabeledSpinbox(labelText, toolTip):
+        def makeLabeledSpinbox(labelText, toolTip, defaultValue):
             widget = QWidget(self)
             widget.setToolTip(toolTip)
             widget.layout = QHBoxLayout()
@@ -26,14 +26,14 @@ class NewImageModal(QDialog):
             widget.label.setText(labelText)
             widget.spinbox = QSpinBox(widget)
             widget.spinbox.setRange(8, 100000)
-            widget.spinbox.setValue(256)
+            widget.spinbox.setValue(defaultValue)
             widget.layout.addWidget(widget.label, 1)
             widget.layout.addWidget(widget.spinbox, 2)
             widget.setLayout(widget.layout)
             return widget
 
-        self._widthBox = makeLabeledSpinbox("Width:", "New image width in pixels")
-        self._heightBox = makeLabeledSpinbox("Height:", "New image height in pixels")
+        self._widthBox = makeLabeledSpinbox("Width:", "New image width in pixels", defaultWidth)
+        self._heightBox = makeLabeledSpinbox("Height:", "New image height in pixels", defaultHeight)
 
         self._createButton = QPushButton(self)
         self._createButton.setText("Create new image")

@@ -1,4 +1,4 @@
-from PyQt5.QtWidgets import QSpinBox, QDoubleSpinBox, QLineEdit, QCheckBox
+from PyQt5.QtWidgets import QSpinBox, QDoubleSpinBox, QLineEdit, QCheckBox, QComboBox, QPlainTextEdit
 
 """
 Creates UI input components linked to inpainting.data_model.config values.
@@ -10,6 +10,8 @@ Creates UI input components linked to inpainting.data_model.config values.
 def connectedSpinBox(parent, config, key, minKey=None, maxKey=None, stepSizeKey=None):
     initialValue = config.get(key)
     spinBox = QDoubleSpinBox(parent) if type(initialValue) is float else QSpinBox(parent)
+    if (initialValue < spinBox.minimum() or initialValue > spinBox.maximum()):
+        spinBox.setRange(min(spinBox.minimum(), initialValue), max(spinBox.maximum(), initialValue))
     spinBox.setValue(initialValue)
     if stepSizeKey is not None:
         step = config.get(stepSizeKey)
@@ -29,10 +31,11 @@ def connectedSpinBox(parent, config, key, minKey=None, maxKey=None, stepSizeKey=
         config.connect(spinBox, maxKey, lambda newMax: spinBox.setRange(spinBox.minimum(), newMax))
     return spinBox
 
-def connectedLineEdit(parent, config, key):
-    lineEdit = QLineEdit(config.get(key), parent)
-    lineEdit.textChanged.connect(lambda newValue: config.set(key, newValue))
-    return lineEdit
+def connectedTextEdit(parent, config, key, multiLine=False):
+    textEdit = QLineEdit(config.get(key), parent) if not multiLine else QPlainTextEdit(config.get(key), parent)
+    textEdit.textChanged.connect(lambda newValue: config.set(key, newValue))
+    config.connect(textEdit, key, lambda newText: textEdit.setText(newText))
+    return textEdit
 
 def connectedCheckBox(parent, config, key):
     checkBox = QCheckBox(parent)
@@ -40,3 +43,17 @@ def connectedCheckBox(parent, config, key):
     checkBox.stateChanged.connect(lambda isChecked: config.set(key, bool(isChecked)))
     config.connect(checkBox, key, lambda isChecked: checkBox.setChecked(bool(isChecked)))
     return checkBox
+
+def connectedComboBox(parent, config, key):
+    comboBox = QComboBox(parent)
+    options = config.getOptions(key)
+    for option in options:
+        comboBox.addItem(option)
+    defaultValue = config.get(key)
+    comboBox.setCurrentIndex(options.index(defaultValue))
+    def updateConfigValue(index):
+        value = comboBox.itemText(index)
+        config.set(key, value)
+    comboBox.currentIndexChanged.connect(updateConfigValue)
+    config.connect(comboBox, key, lambda newValue: comboBox.setCurrentIndex(options.index(newValue)))
+    return comboBox

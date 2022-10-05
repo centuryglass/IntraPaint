@@ -34,7 +34,7 @@ class LocalDeviceController(BaseInpaintController):
                 ddim = args.ddim)
         print("Loaded models")
 
-    def _inpaint(self, selection, mask, sendImage):
+    def _inpaint(self, selection, mask, sendImage, statusSignal):
         gc.collect()
         if not isinstance(selection, Image.Image):
             raise Exception(f'Expected PIL Image selection, got {selection}')

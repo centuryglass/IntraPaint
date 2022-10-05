@@ -6,6 +6,7 @@ from inpainting.image_utils import imageToQImage, qImageToImage
 
 class BaseCanvas(QObject):
     redrawRequired = pyqtSignal()
+    onEnabledChange = pyqtSignal(bool)
 
     def __init__(self, config, image):
         super().__init__()
@@ -15,6 +16,15 @@ class BaseCanvas(QObject):
             self.setImage(image)
         else:
             self.setImage(config.get('maxEditSize'))
+        self._enabled = True
+
+    def enabled(self):
+        return self._enabled
+
+    def setEnabled(self, isEnabled):
+        if isEnabled != self._enabled:
+            self._enabled = isEnabled
+            self.onEnabledChange.emit(isEnabled)
         
     def brushSize(self):
         return self._brushSize
@@ -53,6 +63,8 @@ class BaseCanvas(QObject):
             self.redrawRequired.emit()
 
     def _draw(self, line, color, compositionMode):
+        if not self.enabled():
+            return
         painter = QPainter(self._pixmap)
         painter.setCompositionMode(compositionMode)
         painter.setPen(QPen(color, self._brushSize, Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin))
@@ -66,6 +78,8 @@ class BaseCanvas(QObject):
         self._draw(line, color, QPainter.CompositionMode.CompositionMode_Clear)
 
     def fill(self, color):
+        if not self.enabled():
+            return
         self._pixmap.fill(color)
         self.redrawRequired.emit()
 
