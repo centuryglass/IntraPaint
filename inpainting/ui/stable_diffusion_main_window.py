@@ -3,7 +3,6 @@ from inpainting.ui.config_control_setup import *
 from inpainting.ui.layout_utils import BorderedWidget
 from inpainting.ui.main_window import MainWindow
 from inpainting.ui.param_slider import ParamSlider
-from inpainting.ui.collapsible_box import CollapsibleBox
 import sys
 
 class StableDiffusionMainWindow(MainWindow):
