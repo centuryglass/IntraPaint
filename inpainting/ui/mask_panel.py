@@ -14,6 +14,7 @@ from PyQt5.QtGui import QPainter, QPen
 from PyQt5.QtCore import Qt
 from PIL import Image
 from inpainting.ui.mask_creator import MaskCreator
+from inpainting.ui.layout_utils import getScaledPlacement
 
 class MaskPanel(QWidget):
     def __init__(self, config, maskCanvas, sketchCanvas, editedImage):
@@ -156,16 +157,7 @@ class MaskPanel(QWidget):
     def resizeEvent(self, event):
         # Force MaskCreator aspect ratio to match edit sizes, while leaving room for controls:
         selectionSize = self._editedImage.getSelectionBounds().size()
-        creatorWidth = self.maskCreator.width()
-        creatorHeight = creatorWidth
-        if selectionSize.width() > 0:
-            creatorHeight = creatorWidth * selectionSize.height() // selectionSize.width()
-        maxHeight = self.brushSizeBox.y() - self.borderSize
-        if creatorHeight > maxHeight:
-            creatorHeight = maxHeight
-            if self._maskCanvas.size().height() > 0:
-                creatorWidth = creatorHeight * selectionSize.width() // selectionSize.height()
-        if creatorHeight != self.maskCreator.height() or creatorWidth != self.maskCreator.width():
-            x = (self.width() - self.borderSize - creatorWidth) // 2
-            y = self.borderSize + (maxHeight - creatorHeight) // 2
-            self.maskCreator.setGeometry(x, y, creatorWidth, creatorHeight)
+        componentBounds = QRect(0, 0, self.width(), self.height())
+        componentBounds.setBottom(self.brushSizeBox.y())
+        maskCreatorBounds = getScaledPlacement(componentBounds, selectionSize, 4)
+        self.maskCreator.setGeometry(maskCreatorBounds)

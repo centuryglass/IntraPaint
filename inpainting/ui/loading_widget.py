@@ -48,7 +48,7 @@ class LoadingWidget(QWidget):
         # Write text:
         painter.setPen(QPen(Qt.white, 4, Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin))
         painter.setBrush(QBrush(Qt.white, Qt.SolidPattern))
-        painter.drawText(self.width() // 2 - 20, self.height() // 2, "Loading...")
+        painter.drawText(QRect(0, 0, self.width(), self.height()), Qt.AlignCenter, self._message)
 
         # Draw animated indicator:
         painter.translate(QPointF(self.width() / 2, self.height() / 2))

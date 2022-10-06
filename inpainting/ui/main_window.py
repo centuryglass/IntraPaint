@@ -177,6 +177,10 @@ class MainWindow(QMainWindow):
         if self._sampleSelector is not None:
             self._sampleSelector.setIsLoading(isLoading, message)
 
+    def setLoadingMessage(self, message):
+        if self._sampleSelector is not None:
+            self._sampleSelector.setLoadingMessage(message)
+
     def paintEvent(self, event):
         super().paintEvent(event)
         if self.centralWidget.currentWidget() is self._mainWidget:

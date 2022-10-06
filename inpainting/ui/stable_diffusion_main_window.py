@@ -3,6 +3,7 @@ from inpainting.ui.config_control_setup import *
 from inpainting.ui.layout_utils import BorderedWidget
 from inpainting.ui.main_window import MainWindow
 from inpainting.ui.param_slider import ParamSlider
+from inpainting.ui.collapsible_box import CollapsibleBox
 import sys
 
 class StableDiffusionMainWindow(MainWindow):
@@ -15,10 +16,12 @@ class StableDiffusionMainWindow(MainWindow):
         controlPanel = BorderedWidget(self)
         controlLayout = QVBoxLayout()
         controlPanel.setLayout(controlLayout)
-        self.layout.addWidget(controlPanel, stretch=100)
+        self.layout.addWidget(controlPanel, stretch=20)
 
+        mainControlBox = BorderedWidget(self)
         mainControls = QHBoxLayout();
-        controlLayout.addLayout(mainControls, stretch=20)
+        mainControlBox.setLayout(mainControls)
+        controlLayout.addWidget(mainControlBox, stretch=20)
 
         # Left side: sliders and other wide inputs:
         wideOptions = BorderedWidget()
@@ -103,14 +106,13 @@ class StableDiffusionMainWindow(MainWindow):
         lastSeedBox = connectedTextEdit(optionList, self._config, 'lastSeed');
         lastSeedBox.setReadOnly(True)
         addOptionLine("Last Seed", lastSeedBox, "Seed used during the last inpainting action.")
-        #mainControls.addWidget(controlPanel, stretch=100)
 
         
         # Put action buttons on the bottom:
         buttonBar = BorderedWidget(controlPanel)
         buttonBarLayout = QHBoxLayout()
         buttonBar.setLayout(buttonBarLayout)
-        controlLayout.addWidget(buttonBar, stretch=25)
+        controlLayout.addWidget(buttonBar, stretch=5)
 
         # interrogateButton:
         interrogateButton = QPushButton();

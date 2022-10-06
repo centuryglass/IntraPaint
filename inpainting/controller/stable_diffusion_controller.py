@@ -3,7 +3,7 @@ from PyQt5.QtWidgets import QInputDialog
 from inpainting.ui.stable_diffusion_main_window import StableDiffusionMainWindow
 from inpainting.controller.base_controller import BaseInpaintController
 from startup.utils import imageToBase64, loadImageFromBase64
-import requests, io, sys, secrets, threading, json
+import requests, io, sys, secrets, threading, json, re
 from threading import Lock
 
 
@@ -67,7 +67,7 @@ class StableDiffusionController(BaseInpaintController):
                     res2 = requests.post(f"{self._server_url}/api/predict/", json=body, timeout=30)
                     return validResponse(res2)
                 else:
-                    return false
+                    return False
             except Exception as err:
                 print(f"error connecting to {self._server_url}: {err}")
                 return False
@@ -84,6 +84,9 @@ class StableDiffusionController(BaseInpaintController):
             #'fn_index': 30,
             #'session_hash': self._session_hash
         }
+        editMode = self._config.get('editMode')
+        uri = f"{self._server_url}/api/" + ('txt2img' if (editMode == 'Text to Image') else 'img2img')
+
         def errorCheck(serverResponse, contextStr):
             if serverResponse.status_code != 200:
                 if serverResponse.content and ('application/json' in serverResponse.headers['content-type']) \
@@ -104,9 +107,9 @@ class StableDiffusionController(BaseInpaintController):
         errors = []
 
         def asyncRequest():
-            res = requests.post(f"{self._server_url}/api/img2img", json=body, timeout=30)
+            res = requests.post(uri, json=body, timeout=30)
             try:
-                errorCheck(res, 'New inpainting request')
+                errorCheck(res, f"New {editMode} request")
                 if len(errors) == 0:
                     resBody = res.json()
                     imageData = resBody['data'][0]
@@ -137,7 +140,10 @@ class StableDiffusionController(BaseInpaintController):
                 }
                 res = requests.post(f'{self._server_url}/api/predict/', json=progressCheckBody, timeout=30)
                 errorCheck(res, 'Progress request')
-                print(f"{res.json()['data'][0]}")
+                progressText = res.json()['data'][0]
+                match = re.search("(?<=\>)\d+%", progressText)
+                if match is not None:
+                    statusSignal.emit({'progress': match.group()})
             except Exception as err:
                 errorCount += 1
                 print(f'Error {errorCount}: {err}')
@@ -173,9 +179,11 @@ class StableDiffusionController(BaseInpaintController):
                 batchIdx += 1
 
     def _applyStatusUpdate(self, statusDict):
-        print(f"status: {statusDict}")
-        #if 'seed' in statusDict:
-        self._config.set('lastSeed', str(statusDict['seed']))
+        print(f"{statusDict}")
+        if 'seed' in statusDict:
+            self._config.set('lastSeed', str(statusDict['seed']))
+        if 'progress' in statusDict:
+            self._window.setLoadingMessage(f"Loading, {statusDict['progress']}:")
 
     def _getRequestData(self, selection, mask):
         editMode = self._config.get('editMode')
@@ -255,4 +263,45 @@ class StableDiffusionController(BaseInpaintController):
                 None, # Y values
                 None, # Draw legend
                 None, # Keep -1 for seeds
+            ]
+        else: #txt2img
+            return [
+                self._config.get('prompt'),
+                self._config.get('negativePrompt'),
+                "None", # prompt_style
+                "None", # prompt_style2
+                self._config.get('samplingSteps'),
+                self._config.get('samplingMethod'),
+                self._config.get('restoreFaces'),
+                self._config.get('tiling'),
+                batchCount,
+                batchSize,
+                self._config.get('cfgScale'),
+                self._config.get('seed'),
+                -1, # variation seed
+                0, # variation strength
+                0, # resize seed from height
+                0, # resize seed from width
+                False, # seed: enable extras
+                selection.height,
+                selection.width,
+                False, # highres fix checkbox
+                False, # scale latent checkbox
+                self._config.get('denoisingStrength'),
+                "None", # selected script
+                # Everything after this is for optional scripts we don't support, but the API still expects.
+                # Actual values shouldn't matter (hopefully) as long as the types are valid
+                False, # 'Put variable parts at start of prompt'
+                False, # 'show textbox' option
+                None, # Prompts textbox
+                "", #?
+                "Seed", # X type
+                "", # X values
+                "Steps", # Y type
+                "", # Y values
+                True, # Draw legend checkbox
+                True, # Keep -1 for seeds
+                None,
+                "",
+                ""
             ]
