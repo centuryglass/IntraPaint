@@ -107,7 +107,7 @@ class StableDiffusionController(BaseInpaintController):
         errors = []
 
         def asyncRequest():
-            res = requests.post(uri, json=body, timeout=30)
+            res = requests.post(uri, json=body)
             try:
                 errorCheck(res, f"New {editMode} request")
                 if len(errors) == 0:
