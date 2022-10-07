@@ -1,4 +1,4 @@
-from PyQt5.QtWidgets import QWidget, QLabel, QHBoxLayout, QVBoxLayout, QPushButton
+from PyQt5.QtWidgets import QWidget, QLabel, QHBoxLayout, QVBoxLayout, QGridLayout, QPushButton
 from inpainting.ui.config_control_setup import *
 from inpainting.ui.layout_utils import BorderedWidget
 from inpainting.ui.main_window import MainWindow
@@ -17,58 +17,68 @@ class StableDiffusionMainWindow(MainWindow):
         controlPanel.setLayout(controlLayout)
         self.layout.addWidget(controlPanel, stretch=20)
 
-        mainControlBox = BorderedWidget(self)
+        mainControlBox = CollapsibleBox("Controls", controlPanel)
         mainControls = QHBoxLayout();
-        mainControlBox.setLayout(mainControls)
+        mainControlBox.setContentLayout(mainControls)
         controlLayout.addWidget(mainControlBox, stretch=20)
 
         # Left side: sliders and other wide inputs:
         wideOptions = BorderedWidget()
         mainControls.addWidget(wideOptions, stretch=50)
-        wideOptionsLayout = QVBoxLayout()
+        wideOptionsLayout = QGridLayout()
+        wideOptionsLayout.setVerticalSpacing(max(2, self.height() // 100))
         wideOptions.setLayout(wideOptionsLayout)
+        # Font size will be used to limit the height of the prompt boxes:
+        textboxHeight = self.font().pixelSize() * 3
+        if textboxHeight < 0: #font uses pt, not px
+            textboxHeight = self.font().pointSize() * 4
+
         # First line: prompt, batch size
-        firstLine = QHBoxLayout()
-        wideOptionsLayout.addLayout(firstLine, stretch = 10)
-        # image prompt:
-        firstLine.addWidget(QLabel("Prompt:"), stretch=1)
+        wideOptionsLayout.setRowStretch(0, 2)
+        wideOptionsLayout.addWidget(QLabel("Prompt:"), 0, 0)
         textPromptBox = connectedTextEdit(controlPanel, self._config, 'prompt', multiLine=True)
-        firstLine.addWidget(textPromptBox, stretch=10)
+        textPromptBox.setMaximumHeight(textboxHeight)
+        wideOptionsLayout.addWidget(textPromptBox, 0, 1)
         # batch size:
-        firstLine.addWidget(QLabel("Batch size:"), stretch=1)
+        wideOptionsLayout.addWidget(QLabel("Batch size:"), 0, 2)
         batchSizeBox = connectedSpinBox(controlPanel, self._config, 'batchSize', maxKey='maxBatchSize')
         batchSizeBox.setRange(1, batchSizeBox.maximum())
         batchSizeBox.setToolTip("Inpainting images generated per batch")
-        firstLine.addWidget(batchSizeBox, stretch=1)
+        wideOptionsLayout.addWidget(batchSizeBox, 0, 3)
+
         # Second line: negative prompt, batch count:
-        secondLine = QHBoxLayout()
-        wideOptionsLayout.addLayout(secondLine, stretch = 10)
-        # negative prompt:
-        secondLine.addWidget(QLabel('Negative:'), stretch=1)
+        wideOptionsLayout.setRowStretch(1, 2)
+        wideOptionsLayout.addWidget(QLabel('Negative:'), 1, 0)
         negativePromptBox = connectedTextEdit(controlPanel, self._config, 'negativePrompt', multiLine=True)
-        secondLine.addWidget(negativePromptBox, stretch=10)
+        negativePromptBox.setMaximumHeight(textboxHeight)
+        wideOptionsLayout.addWidget(negativePromptBox, 1, 1)
         # batch count:
-        secondLine.addWidget(QLabel('Batch count:'), stretch=1)
+        wideOptionsLayout.addWidget(QLabel('Batch count:'), 1, 2)
         batchCountBox = connectedSpinBox(controlPanel, self._config, 'batchCount', maxKey='maxBatchCount')
         batchCountBox.setRange(1, batchCountBox.maximum())
         batchCountBox.setToolTip("Number of inpainting image batches to generate")
-        secondLine.addWidget(batchCountBox, stretch=1)
+        wideOptionsLayout.addWidget(batchCountBox, 1, 3)
+
         # Misc. sliders:
+        wideOptionsLayout.setRowStretch(2, 1)
         sampleStepSlider = ParamSlider(wideOptions, 'Sampling steps:', self._config, 'samplingSteps',
                 'minSamplingSteps', 'maxSamplingSteps')
-        wideOptionsLayout.addWidget(sampleStepSlider, stretch=5) 
+        wideOptionsLayout.addWidget(sampleStepSlider, 2, 0, 1, 4)
+        wideOptionsLayout.setRowStretch(3, 1)
         cfgScaleSlider = ParamSlider(wideOptions, 'CFG scale:', self._config, 'cfgScale', 'minCfgScale', 'maxCfgScale',
                 'cfgScaleStep')
-        wideOptionsLayout.addWidget(cfgScaleSlider, stretch=5)
+        wideOptionsLayout.addWidget(cfgScaleSlider, 3, 0, 1, 4)
+        wideOptionsLayout.setRowStretch(4, 1)
         denoisingSlider = ParamSlider(wideOptions, 'Denoising strength:', self._config, 'denoisingStrength',
                 'minDenoisingStrength', 'maxDenoisingStrength', 'denoisingStrengthStep')
-        wideOptionsLayout.addWidget(denoisingSlider, stretch=5)
+        wideOptionsLayout.addWidget(denoisingSlider, 4, 0, 1, 4)
 
 
         # Right side: box of dropdown/checkbox options:
         optionList = BorderedWidget()
         mainControls.addWidget(optionList, stretch=10)
         optionListLayout = QVBoxLayout()
+        optionListLayout.setSpacing(max(2, self.height() // 100))
         optionList.setLayout(optionListLayout)
         def addOptionLine(labelText, widget, toolTip=None):
             optionLine = QHBoxLayout()

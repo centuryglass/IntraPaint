@@ -11,8 +11,8 @@ class MaskCreator(QtWidgets.QWidget):
     QWidget that shows the selected portion of the edited image, and lets the user draw a mask for inpainting.
     """
 
-    def __init__(self, maskCanvas, sketchCanvas, editedImage):
-        super().__init__()
+    def __init__(self, parent, maskCanvas, sketchCanvas, editedImage):
+        super().__init__(parent)
         self._maskCanvas = maskCanvas
         self._sketchCanvas = sketchCanvas
         self._imageSection = None
