@@ -12,6 +12,15 @@ class WebClientController(BaseInpaintController):
         self._server_url = args.server_url
         self._fast_ngrok_connection = args.fast_ngrok_connection
 
+    def healthCheck(url):
+        try:
+            res = requests.get(url, timeout=30)
+            return res.status_code == 200 and ('application/json' in res.headers['content-type']) \
+                and 'success' in res.json() and res.json()['success'] == True
+        except Exception as err:
+            print(f"error connecting to {url}: {err}")
+            return False
+
     def startApp(self):
         screen = self._app.primaryScreen()
         size = screen.availableGeometry()
@@ -41,7 +50,7 @@ class WebClientController(BaseInpaintController):
             except Exception as err:
                 print(f"error connecting to {self._server_url}: {err}")
                 return False
-        while not healthCheckPasses():
+        while not WebClientController.healthCheck(self._server_url):
             promptForURL('Server connection failed, enter a new URL or click "OK" to retry')
         self._app.exec_()
         sys.exit()
