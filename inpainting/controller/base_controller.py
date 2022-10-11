@@ -201,6 +201,6 @@ class BaseInpaintController():
             self._editedImage.setImage(newImage)
 
             # reload zoom mask:
-            self._maskCanvas.setImage('zoomMask.png')
+            self._maskCanvas.setImage('resources/zoomMask.png')
         except Exception as err:
             showErrorDialog(self._window, "Zoom failed", err)

@@ -78,14 +78,15 @@ class StableDiffusionController(BaseInpaintController):
 
 
     def _inpaint(self, selection, mask, saveImage, statusSignal):
+        editMode = self._config.get('editMode')
         inpaintArgs = self._getRequestData(selection, mask)
         body = {
             'data': inpaintArgs,
-            #'fn_index': 30,
-            #'session_hash': self._session_hash
+            'fn_index': 12 if editMode == 'Text to Image' else 30,
+            'session_hash': self._session_hash
         }
-        editMode = self._config.get('editMode')
-        uri = f"{self._server_url}/api/" + ('txt2img' if (editMode == 'Text to Image') else 'img2img')
+        #uri = f"{self._server_url}/api/" + ('txt2img' if (editMode == 'Text to Image') else 'img2img')
+        uri = f"{self._server_url}/api/predict/"
 
         def errorCheck(serverResponse, contextStr):
             if serverResponse.status_code != 200:
@@ -125,8 +126,6 @@ class StableDiffusionController(BaseInpaintController):
 
         while thread.is_alive():
             sleepTime = min(minRefresh * pow(2, errorCount), maxRefresh)
-            print(f"Checking for response in {sleepTime//1000} ms...")
-            #QThread.usleep(sleepTime)
             thread.join(timeout=sleepTime / 1000000)
             if not thread.is_alive() or len(errors) > 0:
                 break
@@ -135,7 +134,7 @@ class StableDiffusionController(BaseInpaintController):
             try:
                 progressCheckBody = {
                     'data': [],
-                    'fn_index': 19,
+                    'fn_index': 2,
                     'session_hash': self._session_hash
                 }
                 res = requests.post(f'{self._server_url}/api/predict/', json=progressCheckBody, timeout=30)
