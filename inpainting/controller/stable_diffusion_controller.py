@@ -23,6 +23,27 @@ class StableDiffusionController(BaseInpaintController):
             self._sketchCanvas.setEnabled(editMode != 'Text to Image')
         self._config.connect(self._sketchCanvas, 'editMode', updateSketchState)
 
+    def healthCheck(url, session_hash=secrets.token_hex(5)):
+        try:
+            body = {
+                'data': [],
+                'fn_index': 195,
+                'session_hash': session_hash
+            }
+            res = requests.post(f"{url}/api/predict/", json=body, timeout=30)
+            def validResponse(res):
+                return res.status_code == 200 and ('application/json' in res.headers['content-type']) \
+                    and 'data' in res.json() and len(res.json()['data']) > 0
+            if (validResponse(res)):
+                body['fn_index'] = 20
+                res2 = requests.post(f"{url}/api/predict/", json=body, timeout=30)
+                return validResponse(res2)
+            else:
+                return False
+        except Exception as err:
+            print(f"error connecting to {url}: {err}")
+            return False
+
 
     def _adjustConfigDefaults(self):
         # update size limits for stable-diffusion's capabilities:
@@ -51,41 +72,22 @@ class StableDiffusionController(BaseInpaintController):
             promptForURL('Enter server URL:')
 
         # Check connection:
-        def healthCheckPasses():
-            try:
-                body = {
-                    'data': [],
-                    'fn_index': 195,
-                    'session_hash': self._session_hash
-                }
-                res = requests.post(f"{self._server_url}/api/predict/", json=body, timeout=30)
-                def validResponse(res):
-                    return res.status_code == 200 and ('application/json' in res.headers['content-type']) \
-                        and 'data' in res.json() and len(res.json()['data']) > 0
-                if (validResponse(res)):
-                    body['fn_index'] = 20
-                    res2 = requests.post(f"{self._server_url}/api/predict/", json=body, timeout=30)
-                    return validResponse(res2)
-                else:
-                    return False
-            except Exception as err:
-                print(f"error connecting to {self._server_url}: {err}")
-                return False
-        while not healthCheckPasses():
+        while not StableDiffusionController.healthCheck(self._server_url, self._session_hash):
             promptForURL('Server connection failed, enter a new URL or click "OK" to retry')
         self._app.exec_()
         sys.exit()
 
 
     def _inpaint(self, selection, mask, saveImage, statusSignal):
+        editMode = self._config.get('editMode')
         inpaintArgs = self._getRequestData(selection, mask)
         body = {
             'data': inpaintArgs,
-            #'fn_index': 30,
-            #'session_hash': self._session_hash
+            'fn_index': 12 if editMode == 'Text to Image' else 30,
+            'session_hash': self._session_hash
         }
-        editMode = self._config.get('editMode')
-        uri = f"{self._server_url}/api/" + ('txt2img' if (editMode == 'Text to Image') else 'img2img')
+        #uri = f"{self._server_url}/api/" + ('txt2img' if (editMode == 'Text to Image') else 'img2img')
+        uri = f"{self._server_url}/api/predict/"
 
         def errorCheck(serverResponse, contextStr):
             if serverResponse.status_code != 200:
@@ -125,8 +127,6 @@ class StableDiffusionController(BaseInpaintController):
 
         while thread.is_alive():
             sleepTime = min(minRefresh * pow(2, errorCount), maxRefresh)
-            print(f"Checking for response in {sleepTime//1000} ms...")
-            #QThread.usleep(sleepTime)
             thread.join(timeout=sleepTime / 1000000)
             if not thread.is_alive() or len(errors) > 0:
                 break
@@ -135,7 +135,7 @@ class StableDiffusionController(BaseInpaintController):
             try:
                 progressCheckBody = {
                     'data': [],
-                    'fn_index': 19,
+                    'fn_index': 2,
                     'session_hash': self._session_hash
                 }
                 res = requests.post(f'{self._server_url}/api/predict/', json=progressCheckBody, timeout=30)

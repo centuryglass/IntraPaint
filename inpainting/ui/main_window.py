@@ -1,5 +1,5 @@
 from PyQt5.QtWidgets import *
-from PyQt5.QtGui import QPainter, QPen
+from PyQt5.QtGui import QPainter, QPen, QIcon
 from PyQt5.QtCore import Qt, QObject, QThread, QRect, QPoint, QSize, pyqtSignal
 from inpainting.ui.mask_panel import MaskPanel
 from inpainting.ui.image_panel import ImagePanel
@@ -15,6 +15,7 @@ class MainWindow(QMainWindow):
 
     def __init__(self, config, editedImage, mask, sketch, controller):
         super().__init__()
+        self.setWindowIcon(QtGui.QIcon('resources/icon.png'))
         # Initialize UI/editing data model:
         self._config = config
         self._editedImage = editedImage

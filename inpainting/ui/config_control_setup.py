@@ -39,11 +39,13 @@ def connectedTextEdit(parent, config, key, multiLine=False):
         def setText(newText):
             if newText != textEdit.toPlainText():
                 textEdit.setPlainText(newText)
-                textEdit.moveCursor(QTextCursor.EndOfLine)
         config.connect(textEdit, key, setText)
     else:
         textEdit.textChanged.connect(lambda newContent: config.set(key, newContent))
-        config.connect(textEdit, key, lambda newText: textEdit.setText(newText))
+        def setText(newText):
+            if newText != textEdit.text():
+                textEdit.setText(newText)
+        config.connect(textEdit, key, setText)
     return textEdit
 
 def connectedCheckBox(parent, config, key):
