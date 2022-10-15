@@ -1,6 +1,6 @@
 from PyQt5.QtGui import QImage
 from PyQt5.QtCore import QObject, QRect, QPoint, QSize, pyqtSignal
-from PIL import Image
+from PIL import Image, PngImagePlugin
 from inpainting.image_utils import qImageToImage, imageToQImage
 
 class EditedImage(QObject):
@@ -36,7 +36,9 @@ class EditedImage(QObject):
         """Loads a new image to be edited from a file path, QImage, or PIL image."""
         oldSize = None if not self.hasImage() else self.size()
         if isinstance(image, str):
-            self._qimage = QImage(image)
+            image = Image.open(image)
+            self._metadata = image.info
+            self._qimage = imageToQImage(image)
             self._qimage.convertTo(QImage.Format_RGB888)
             if self._qimage.isNull():
                 self._qimage = None
@@ -140,4 +142,8 @@ class EditedImage(QObject):
     def saveImage(self, imagePath):
         if not self.hasImage():
             raise Exception('No image has been loaded')
-        self._qimage.save(imagePath, "PNG")
+        image = qImageToImage(self._qimage)
+        info = PngImagePlugin.PngInfo()
+        for key in self._metadata:
+            info.add_itxt(key, self._metadata[key])
+        image.save(imagePath, 'PNG', pnginfo=info)

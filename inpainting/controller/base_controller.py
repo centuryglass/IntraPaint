@@ -17,6 +17,14 @@ class BaseInpaintController():
     """
     def __init__(self, args):
         self._app = QApplication(sys.argv)
+        screen = self._app.primaryScreen()
+        size = screen.availableGeometry()
+
+        if size.height() < 1000:
+            font = self._app.font()
+            font.setPointSize(6)
+            self._app.setFont(font)
+
         self._config = Config()
         self._adjustConfigDefaults()
         self._config.applyArgs(args)
@@ -58,8 +66,6 @@ class BaseInpaintController():
         return
 
     def startApp(self):
-        screen = self._app.primaryScreen()
-        size = screen.availableGeometry()
         self._window = MainWindow(self._config, self._editedImage, self._maskCanvas, self._sketchCanvas, self)
         self._window.setGeometry(0, 0, size.width(), size.height())
         self._window.show()

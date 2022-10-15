@@ -83,7 +83,7 @@ class StableDiffusionController(BaseInpaintController):
         inpaintArgs = self._getRequestData(selection, mask)
         body = {
             'data': inpaintArgs,
-            'fn_index': 12 if editMode == 'Text to Image' else 30,
+            'fn_index': 12 if editMode == 'Text to Image' else 31,
             'session_hash': self._session_hash
         }
         #uri = f"{self._server_url}/api/" + ('txt2img' if (editMode == 'Text to Image') else 'img2img')
@@ -135,7 +135,7 @@ class StableDiffusionController(BaseInpaintController):
             try:
                 progressCheckBody = {
                     'data': [],
-                    'fn_index': 2,
+                    'fn_index': 20,
                     'session_hash': self._session_hash
                 }
                 res = requests.post(f'{self._server_url}/api/predict/', json=progressCheckBody, timeout=30)
