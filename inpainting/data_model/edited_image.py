@@ -142,8 +142,11 @@ class EditedImage(QObject):
     def saveImage(self, imagePath):
         if not self.hasImage():
             raise Exception('No image has been loaded')
-        image = qImageToImage(self._qimage)
-        info = PngImagePlugin.PngInfo()
-        for key in self._metadata:
-            info.add_itxt(key, self._metadata[key])
-        image.save(imagePath, 'PNG', pnginfo=info)
+        if self._metadata and len(self._metadata) > 0:
+            image = qImageToImage(self._qimage)
+            info = PngImagePlugin.PngInfo()
+            for key in self._metadata:
+                info.add_itxt(key, self._metadata[key])
+            image.save(imagePath, 'PNG', pnginfo=info)
+        else:
+            self._qimage.save(imagePath)
