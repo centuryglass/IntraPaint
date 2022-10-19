@@ -5,6 +5,7 @@ from inpainting.controller.base_controller import BaseInpaintController
 from startup.utils import imageToBase64, loadImageFromBase64
 import requests, io, sys, secrets, threading, json, re
 from threading import Lock
+from PIL import Image
 
 
 base64Prefix = 'data:image/png;base64,'
@@ -27,19 +28,12 @@ class StableDiffusionController(BaseInpaintController):
         try:
             body = {
                 'data': [],
-                'fn_index': 195,
+                'fn_index': 96,
                 'session_hash': session_hash
             }
             res = requests.post(f"{url}/api/predict/", json=body, timeout=30)
-            def validResponse(res):
-                return res.status_code == 200 and ('application/json' in res.headers['content-type']) \
-                    and 'data' in res.json() and len(res.json()['data']) > 0
-            if (validResponse(res)):
-                body['fn_index'] = 20
-                res2 = requests.post(f"{url}/api/predict/", json=body, timeout=30)
-                return validResponse(res2)
-            else:
-                return False
+            return res.status_code == 200 and ('application/json' in res.headers['content-type']) \
+                    and 'data' in res.json()
         except Exception as err:
             print(f"error connecting to {url}: {err}")
             return False
@@ -83,7 +77,7 @@ class StableDiffusionController(BaseInpaintController):
         inpaintArgs = self._getRequestData(selection, mask)
         body = {
             'data': inpaintArgs,
-            'fn_index': 12 if editMode == 'Text to Image' else 31,
+            'fn_index': 12 if editMode == 'Text to Image' else 33,
             'session_hash': self._session_hash
         }
         #uri = f"{self._server_url}/api/" + ('txt2img' if (editMode == 'Text to Image') else 'img2img')
@@ -164,15 +158,29 @@ class StableDiffusionController(BaseInpaintController):
             images.pop(0)
         idxInBatch = 0
         batchIdx = 0
-        for imageStr in images:
-            if imageStr.startswith(base64Prefix):
-                imageStr = imageStr[len(base64Prefix):]
-            try:
-                imageObject = loadImageFromBase64(imageStr)
-                saveImage(imageObject, idxInBatch, batchIdx)
-            except Exception as e:
-                print("IMAGE:" + imageStr)
-                raise e
+        for image in images:
+            if isinstance(image, dict):
+                if not image['is_file'] and image['data'] is not None:
+                    image = image['data']
+                else:
+                    filePath = image['name']
+                    url = f"{self._server_url}/file={filePath}"
+                    res = requests.get(url)
+                    res.raise_for_status()
+                    buffer = io.BytesIO()
+                    buffer.write(res.content)
+                    buffer.seek(0)
+                    imageObject = Image.open(buffer)
+                    saveImage(imageObject, idxInBatch, batchIdx)
+            if isinstance(image, str):
+                if image.startswith(base64Prefix):
+                    image = image[len(base64Prefix):]
+                try:
+                    imageObject = loadImageFromBase64(imageStr)
+                    saveImage(imageObject, idxInBatch, batchIdx)
+                except Exception as e:
+                    print("IMAGE:" + imageStr)
+                    raise e
             idxInBatch += 1
             if idxInBatch >= batchSize:
                 idxInBatch = 0
@@ -232,15 +240,20 @@ class StableDiffusionController(BaseInpaintController):
                 "None", # selected script
                 # Everything after this is for optional scripts we don't support, but the API still expects.
                 # Actual values shouldn't matter (hopefully) as long as the types are valid
+                None, # markdown
+                False,# override sampling method
+                False,# Override prompt checkbox
                 None, # Original prompt
                 None, # Original negative prompt
-                None, # Decode CFG scale
-                None, # Decode steps
-                None, # Randomness
-                None, # Sigma adjustment for finding noise for image
-                None, # Loops
-                None, # Denoising strength change factor
-                None, # "represents null of the Html component" (???)
+                False,# override sampling steps
+                1,    # Decode steps
+                False,# Override denoising strength
+                1, # Decode CFG scale
+                1, # randomness slider
+                1, # sigma slider
+                1, # Loops slider
+                1, # Denoising slider
+                None, # HTML
                 None, # 'Pixels to expand' slider
                 None, # 'Mask blur' slider
                 ['left', 'right', 'up', 'down'], # 'Outpainting direction' choices
@@ -262,6 +275,7 @@ class StableDiffusionController(BaseInpaintController):
                 "Steps", # Y type
                 None, # Y values
                 None, # Draw legend
+                False, # Include separate images
                 None, # Keep -1 for seeds
             ]
         else: #txt2img
@@ -286,8 +300,9 @@ class StableDiffusionController(BaseInpaintController):
                 selection.height,
                 selection.width,
                 False, # highres fix checkbox
-                False, # scale latent checkbox
                 self._config.get('denoisingStrength'),
+                512, # Firstpass width
+                512, # Firstpass height
                 "None", # selected script
                 # Everything after this is for optional scripts we don't support, but the API still expects.
                 # Actual values shouldn't matter (hopefully) as long as the types are valid
