@@ -2,6 +2,7 @@ from PyQt5.QtGui import QImage
 from PyQt5.QtCore import QObject, QRect, QPoint, QSize, pyqtSignal
 from PIL import Image, PngImagePlugin
 from inpainting.image_utils import qImageToImage, imageToQImage
+import re
 
 class EditedImage(QObject):
     contentChanged = pyqtSignal()
@@ -12,6 +13,7 @@ class EditedImage(QObject):
         super().__init__()
         self._config = config
         self._qimage = None
+        self._metadata = None
         self.setSelectionBounds(QRect(QPoint(0, 0), self._config.get('maxEditSize')))
         if initialImage is not None:
             self.setImage(initialImage)
@@ -37,7 +39,37 @@ class EditedImage(QObject):
         oldSize = None if not self.hasImage() else self.size()
         if isinstance(image, str):
             image = Image.open(image)
-            self._metadata = image.info
+            if hasattr(image, 'info') and image.info is not None:
+                self._metadata = image.info
+            else:
+                self._metadata = None
+            if 'parameters' in self._metadata:
+                paramStr = self._metadata['parameters']
+                match = re.match('^(.*\n?.*)\nSteps: (\d+), Sampler: (.*), CFG scale: (.*), Seed: (.+), Size.*', paramStr)
+                if match:
+                    prompt = match.group(1)
+                    negative = ''
+                    steps = int(match.group(2))
+                    sampler = match.group(3)
+                    cfgScale = float(match.group(4))
+                    seed = int(match.group(5))
+                    dividerMatch = re.match('^(.*)\nNegative prompt: (.*)$', prompt)
+                    if dividerMatch:
+                        prompt = dividerMatch.group(1)
+                        negative = dividerMatch.group(2)
+                    print('Detected saved image gen data, applying to UI')
+                    try:
+                        self._config.set('prompt', prompt)
+                        self._config.set('negativePrompt', negative)
+                        self._config.set('samplingSteps', steps)
+                        self._config.set('samplingMethod', sampler)
+                        self._config.set('cfgScale', cfgScale)
+                        print(f"seed: {seed}")
+                        self._config.set('seed', seed)
+                    except Exception as err:
+                        print(f'Failed to load image gen data from metadata: {err}')
+                else:
+                    print(f"Warning: image parameters do not match expected patterns, cannot be used. parameters:{paramStr}")
             self._qimage = imageToQImage(image)
             self._qimage.convertTo(QImage.Format_RGB888)
             if self._qimage.isNull():
@@ -139,10 +171,16 @@ class EditedImage(QObject):
         self.setImage(pilImage)
         self.contentChanged.emit()
 
+    def hasMetadata(self):
+        return bool(self._metadata and len(self._metadata) > 0)
+
+    def getMetadata(self):
+        return self._metadata
+
     def saveImage(self, imagePath):
         if not self.hasImage():
             raise Exception('No image has been loaded')
-        if self._metadata and len(self._metadata) > 0:
+        if self.hasMetadata():
             image = qImageToImage(self._qimage)
             info = PngImagePlugin.PngInfo()
             for key in self._metadata:

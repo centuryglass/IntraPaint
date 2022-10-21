@@ -129,7 +129,7 @@ class StableDiffusionController(BaseInpaintController):
             try:
                 progressCheckBody = {
                     'data': [],
-                    'fn_index': 20,
+                    'fn_index': 3,
                     'session_hash': self._session_hash
                 }
                 res = requests.post(f'{self._server_url}/api/predict/', json=progressCheckBody, timeout=30)

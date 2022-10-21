@@ -67,7 +67,8 @@ class Config(QObject):
         self._setDefault('samplingSteps', 20)
         self._setDefault('minSamplingSteps', 1)
         self._setDefault('maxSamplingSteps', 150)
-        self._setDefault('samplingMethod', 'Euler a', ['Euler a', 'Euler', 'LMS', 'Heun', 'DPM2', 'DPM2 a', 'DDIM'])
+        self._setDefault('samplingMethod', 'Euler a', ['Euler a', 'Euler', 'LMS', 'Heun', 'DPM2', 'DPM2 a',
+                'LMS Karras', 'DPM2 Karras', 'DPM2 a Karras', 'DDIM', 'PLMS'])
         self._setDefault('maskBlur', 4)
         self._setDefault('maxMaskBlur', 64)
         self._setDefault('restoreFaces', False)
