@@ -180,11 +180,14 @@ class EditedImage(QObject):
     def saveImage(self, imagePath):
         if not self.hasImage():
             raise Exception('No image has been loaded')
+        image = qImageToImage(self._qimage)
         if self.hasMetadata():
-            image = qImageToImage(self._qimage)
             info = PngImagePlugin.PngInfo()
             for key in self._metadata:
-                info.add_itxt(key, self._metadata[key])
+                try:
+                    info.add_itxt(key, self._metadata[key])
+                except Exception as err:
+                    print(f"failed to preserve '{key}' in metadata: {err}")
             image.save(imagePath, 'PNG', pnginfo=info)
         else:
-            self._qimage.save(imagePath)
+            image.save(imagePath)
