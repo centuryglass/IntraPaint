@@ -353,9 +353,8 @@ class StableDiffusionController(BaseInpaintController):
             if isinstance(image, str):
                 if image.startswith(BASE_64_PREFIX):
                     image = image[len(BASE_64_PREFIX):]
-                try:
-                    imageObject = loadImageFromBase64(imageStr)
-                    saveImage(imageObject, idxInBatch, batchIdx)
+                imageObject = loadImageFromBase64(imageStr)
+                saveImage(imageObject, idxInBatch, batchIdx)
             idxInBatch += 1
             if idxInBatch >= batchSize:
                 idxInBatch = 0
