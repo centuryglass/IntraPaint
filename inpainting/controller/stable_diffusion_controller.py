@@ -314,7 +314,7 @@ class StableDiffusionController(BaseInpaintController):
                 match = re.search("\d+% ETA: \d+[smh]", progressText)
                 if match is not None:
                     statusSignal.emit({'progress': match.group()})
-                else if progressText != '':
+                elif progressText != '':
                     print(f"Failed to decode progress from '{progressText}'")
             except Exception as err:
                 errorCount += 1
