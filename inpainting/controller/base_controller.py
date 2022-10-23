@@ -6,7 +6,8 @@ from inpainting.data_model.edited_image import EditedImage
 from inpainting.data_model.mask_canvas import MaskCanvas
 from inpainting.data_model.sketch_canvas import SketchCanvas
 from inpainting.ui.main_window import MainWindow
-from inpainting.ui.modal_utils import showErrorDialog
+from inpainting.ui.new_image_modal import NewImageModal
+from inpainting.ui.modal_utils import *
 import os, glob, sys
 
 class BaseInpaintController():
@@ -71,6 +72,52 @@ class BaseInpaintController():
         self._window.show()
         self._app.exec_()
         sys.exit()
+
+    # File IO handling:
+    def newImage(self):
+        defaultSize = self._config.get('maxEditSize')
+        imageModal = NewImageModal(defaultSize.width(), defaultSize.height())
+        imageSize = imageModal.showImageModal()
+        if imageSize and ((not self._editedImage.hasImage()) or \
+                requestConfirmation(self._window, "Create new image?", "This will discard all unsaved changes.")):
+            newImage = Image.new('RGB', (imageSize.width(), imageSize.height()), color = 'white')
+            self._editedImage.setImage(newImage)
+
+    def saveImage(self):
+        if not self._editedImage.hasImage():
+            showErrorDialog(self._window, "Save failed", "Open an image first before trying to save.")
+            return
+        file, fileSelected = openImageFile(self._window, mode='save', selectedFile = self._config.get("lastFilePath"))
+        try:
+            if file and fileSelected:
+                self._editedImage.saveImage(file)
+                self._config.set("lastFilePath", file)
+        except Exception as err:
+            showErrorDialog(self._window, "Save failed", str(err))
+            print(f"Saving image failed: {err}")
+
+    def loadImage(self):
+        file, fileSelected = openImageFile(self._window)
+        if file and fileSelected:
+            try:
+                self._editedImage.setImage(file)
+                self._config.set("lastFilePath", file)
+            except Exception as err:
+                showErrorDialog(self._window, "Open failed", err)
+
+    def reloadImage(self):
+        filePath = self._config.get("lastFilePath")
+        if filePath == "":
+            showErrorDialog(self._window, "Reload failed", f"Enter an image path or click 'Open Image' first.")
+            return
+        if not os.path.isfile(filePath):
+            showErrorDialog(self._window, "Reload failed", f"Image path '{filePath}' is not a valid file.")
+            return
+        if (not self._editedImage.hasImage()) or \
+                requestConfirmation(self._window, "Reload image?", "This will discard all unsaved changes."):
+            self._editedImage.setImage(filePath)
+
+    # Image generation handling:
 
     def _inpaint(self):
         raise Exception('BaseInpaintController should not be used directly, use a subclass.')
@@ -186,6 +233,8 @@ class BaseInpaintController():
         self._worker.finished.connect(self._thread.quit)
         self._worker.finished.connect(self._worker.deleteLater)
         self._thread.start()
+
+    # Misc. other features:
 
     def zoomOut(self):
         try:

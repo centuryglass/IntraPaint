@@ -5,7 +5,7 @@ from inpainting.ui.mask_panel import MaskPanel
 from inpainting.ui.image_panel import ImagePanel
 from inpainting.ui.sample_selector import SampleSelector
 from inpainting.ui.config_control_setup import *
-from inpainting.ui.modal_utils import showErrorDialog
+from inpainting.ui.modal_utils import showErrorDialog, requestConfirmation
 import PyQt5.QtGui as QtGui
 from PIL import Image, ImageFilter
 import sys, os, glob
@@ -31,7 +31,7 @@ class MainWindow(QMainWindow):
 
         # Image/Mask editing layout:
         imageLayout = QHBoxLayout()
-        imagePanel = ImagePanel(self._config, self._editedImage)
+        imagePanel = ImagePanel(self._config, self._editedImage, controller)
         maskPanel = MaskPanel(self._config, self._mask, self._sketch, self._editedImage)
         imageLayout.addWidget(imagePanel, stretch=255)
         imageLayout.addSpacing(30)
@@ -40,6 +40,27 @@ class MainWindow(QMainWindow):
         self.imageLayout = imageLayout
         self.imagePanel = imagePanel
         self.maskPanel = maskPanel
+
+        # Set up menu:
+        self._menu = self.menuBar()
+
+        # File:
+        fileMenu = self._menu.addMenu("File")
+        def addFileAction(name, shortcut, onTrigger):
+            action = QAction(name, self)
+            if shortcut is not None:
+                action.setShortcut(shortcut)
+            action.triggered.connect(onTrigger)
+            fileMenu.addAction(action)
+        addFileAction("New Image", "Ctrl+N", lambda: controller.newImage())
+        addFileAction("Save", "Ctrl+S", lambda: controller.saveImage())
+        addFileAction("Load", "Ctrl+O", lambda: controller.loadImage())
+        addFileAction("Reload", "F5", lambda: controller.reloadImage())
+        def tryQuit():
+            if (not self._editedImage.hasImage()) or requestConfirmation(self, "Quit now?", "All unsaved changes will be lost."):
+                self.close()
+        addFileAction("Quit", "Ctrl+Q", tryQuit)
+
 
         # Build config + control layout (varying based on implementation): 
         self._buildControlLayout(controller)

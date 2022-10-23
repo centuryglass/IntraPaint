@@ -83,9 +83,11 @@ class Config(QObject):
         self._setDefault('denoisingStrengthStep', 0.01)
         self._setDefault('seed', -1)
 
-        # It's somewhat out of place here, but defining lastSeed as a config value makes it trivial to wire it to a
-        # read-only widget.
+        # It's somewhat out of place here, but defining lastSeed and lastFile as config values makes it trivial to
+        # wire them to widgets. TODO: maybe rename config to sharedData, or settings, perhaps? Add a separate config
+        # module that actually reads (and writes?) saved settings in a text file.
         self._setDefault('lastSeed', "-1")
+        self._setDefault('lastFilePath', '')
 
     def _setDefault(self, key, initialValue, options=None):
         self._values[key] = initialValue

@@ -4,8 +4,7 @@ import PyQt5.QtGui as QtGui
 from PyQt5.QtGui import QPainter, QPen
 from PIL import Image
 from inpainting.ui.image_viewer import ImageViewer
-from inpainting.ui.new_image_modal import NewImageModal
-from inpainting.ui.modal_utils import showErrorDialog, openImageFile
+from inpainting.ui.config_control_setup import connectedTextEdit
 import os, sys
 
 class ImagePanel(QWidget):
@@ -13,8 +12,10 @@ class ImagePanel(QWidget):
     Holds the image viewer, provides inputs for selecting an editing area and saving/loading images.
     """
 
-    def __init__(self, config, editedImage):
+    def __init__(self, config, editedImage, controller):
         super().__init__()
+
+        editedImage.sizeChanged.connect(lambda newSize: self.reloadScaleBounds())
         self._editedImage = editedImage
         self._config = config
 
@@ -54,21 +55,21 @@ class ImagePanel(QWidget):
             sizeControl.setSingleStep(minSize)
             sizeControl.setValue(maxSize)
 
-        def setW(value):
+        def setW():
+            value = self.widthBox.value()
             if editedImage.hasImage():
                 selection = editedImage.getSelectionBounds()
-                imageSize = editedImage.size()
                 selection.setWidth(value)
                 editedImage.setSelectionBounds(selection)
-        self.widthBox.valueChanged.connect(setW)
+        self.widthBox.editingFinished.connect(setW)
 
-        def setH(value):
+        def setH():
+            value = self.heightBox.value()
             if editedImage.hasImage():
                 selection = editedImage.getSelectionBounds()
-                imageSize = editedImage.size()
                 selection.setHeight(value)
                 editedImage.setSelectionBounds(selection)
-        self.heightBox.valueChanged.connect(setH)
+        self.heightBox.editingFinished.connect(setH)
 
         # Update coordinate controls automatically when the selection changes:
         def setCoords(bounds):
@@ -81,79 +82,24 @@ class ImagePanel(QWidget):
                 self.yCoordBox.setMaximum(editedImage.height() - bounds.height())
         editedImage.selectionChanged.connect(setCoords)
 
-        self.fileTextBox = QLineEdit("", self)
+        self.fileTextBox = connectedTextEdit(self, config, "lastFilePath") 
 
         # Set image path, load image viewer when a file is selected:
         self.fileSelectButton = QPushButton(self)
         self.fileSelectButton.setText("Select Image")
-        def loadImage():
-            file, fileSelected = openImageFile(self)
-            if file and fileSelected:
-                try:
-                    editedImage.setImage(file)
-                    self.fileTextBox.setText(file)
-                    self.reloadScaleBounds()
-                except Exception as err:
-                    showErrorDialog(self, "Open failed", err)
-        self.fileSelectButton.clicked.connect(loadImage)
+        self.fileSelectButton.clicked.connect(lambda: controller.loadImage())
 
         self.newImageButton = QPushButton(self)
         self.newImageButton.setText("New Image")
-        def newImage():
-            defaultSize = self._config.get('maxEditSize')
-            imageModal = NewImageModal(defaultSize.width(), defaultSize.height())
-            imageSize = imageModal.showImageModal()
-            if imageSize:
-                if editedImage.hasImage():
-                    confirmBox = QMessageBox(self)
-                    confirmBox.setWindowTitle("Create new image?")
-                    confirmBox.setText("This will discard all unsaved changes.")
-                    confirmBox.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
-                    response = confirmBox.exec()
-                    if response == QMessageBox.Cancel:
-                        return
-                newImage = Image.new('RGB', (imageSize.width(), imageSize.height()), color = 'white')
-                editedImage.setImage(newImage)
-                self.reloadScaleBounds()
-        self.newImageButton.clicked.connect(newImage)
+        self.newImageButton.clicked.connect(lambda: controller.newImage())
 
         self.imgReloadButton = QPushButton(self)
         self.imgReloadButton.setText("Reload image")
-        def reloadImage():
-            if self.fileTextBox.text() == "":
-                showErrorDialog(self, "Reload failed", f"Enter an image path or click 'Open Image' first.")
-                return
-            if not os.path.isfile(self.fileTextBox.text()):
-                showErrorDialog(self, "Reload failed", f"Image path '{self.fileTextBox.text()}' is not a valid file.")
-                return
-            if editedImage.hasImage():
-                confirmBox = QMessageBox(self)
-                confirmBox.setWindowTitle("Reload image?")
-                confirmBox.setText("This will overwrite all unsaved changes.")
-                confirmBox.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
-                response = confirmBox.exec()
-                if response == QMessageBox.Cancel:
-                    return
-            editedImage.setImage(self.fileTextBox.text())
-
-        self.imgReloadButton.clicked.connect(reloadImage)
+        self.imgReloadButton.clicked.connect(lambda: controller.reloadImage())
 
         self.saveButton = QPushButton(self)
         self.saveButton.setText("Save Image")
-        def saveImage():
-            if not editedImage.hasImage():
-                showErrorDialog(self, "Save failed", "Open an image first before trying to save.")
-                return
-            file, fileSelected = openImageFile(self, mode='save')
-            try:
-                if file and fileSelected:
-                    editedImage.saveImage(file)
-                    if self.fileTextBox.text() == "":
-                        self.fileTextBox.setText(file)
-            except Exception as err:
-                showErrorDialog(self, "Save failed", str(err))
-                print(f"Saving image failed: {err}")
-        self.saveButton.clicked.connect(saveImage)
+        self.saveButton.clicked.connect(lambda: controller.saveImage())
 
         self.layout = QGridLayout()
         self.borderSize = 4
