@@ -84,23 +84,6 @@ class ImagePanel(QWidget):
 
         self.fileTextBox = connectedTextEdit(self, config, "lastFilePath") 
 
-        # Set image path, load image viewer when a file is selected:
-        self.fileSelectButton = QPushButton(self)
-        self.fileSelectButton.setText("Select Image")
-        self.fileSelectButton.clicked.connect(lambda: controller.loadImage())
-
-        self.newImageButton = QPushButton(self)
-        self.newImageButton.setText("New Image")
-        self.newImageButton.clicked.connect(lambda: controller.newImage())
-
-        self.imgReloadButton = QPushButton(self)
-        self.imgReloadButton.setText("Reload image")
-        self.imgReloadButton.clicked.connect(lambda: controller.reloadImage())
-
-        self.saveButton = QPushButton(self)
-        self.saveButton.setText("Save Image")
-        self.saveButton.clicked.connect(lambda: controller.saveImage())
-
         self.layout = QGridLayout()
         self.borderSize = 4
         def makeSpacer():
@@ -110,8 +93,6 @@ class ImagePanel(QWidget):
         self.layout.addItem(makeSpacer(), 0, 0, 1, 1)
         self.layout.addItem(makeSpacer(), 0, 6, 1, 1)
         self.layout.addWidget(self.imageViewer, 1, 1, 1, 14)
-        self.layout.addWidget(self.fileSelectButton, 2, 1, 1, 1)
-        self.layout.addWidget(self.newImageButton, 2, 2, 1, 1)
         self.layout.addWidget(QLabel(self, text="Image path:"), 2, 3, 1, 1)
         self.layout.addWidget(self.fileTextBox, 2, 4, 1, 1)
 
@@ -125,9 +106,6 @@ class ImagePanel(QWidget):
         self.layout.addWidget(self.widthBox, 2, 10, 1, 1)
         self.layout.addWidget(QLabel(self, text="H:"), 2, 11, 1, 1)
         self.layout.addWidget(self.heightBox, 2, 12, 1, 1)
-
-        self.layout.addWidget(self.imgReloadButton, 2, 13, 1, 1)
-        self.layout.addWidget(self.saveButton, 2, 14, 1, 1)
 
         self.layout.setRowMinimumHeight(1, 250)
         self.layout.setColumnStretch(4, 255)

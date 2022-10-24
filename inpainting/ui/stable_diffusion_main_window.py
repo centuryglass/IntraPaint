@@ -19,6 +19,7 @@ class StableDiffusionMainWindow(MainWindow):
         self.layout.addWidget(controlPanel, stretch=20)
 
         mainControlBox = CollapsibleBox("Controls", controlPanel)
+        mainControlBox.toggled.connect(lambda: self.update())
         mainControls = QHBoxLayout();
         mainControlBox.setContentLayout(mainControls)
         controlLayout.addWidget(mainControlBox, stretch=20)

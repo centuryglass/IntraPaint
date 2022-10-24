@@ -6,6 +6,7 @@ from inpainting.ui.image_panel import ImagePanel
 from inpainting.ui.sample_selector import SampleSelector
 from inpainting.ui.config_control_setup import *
 from inpainting.ui.modal_utils import showErrorDialog, requestConfirmation
+from inpainting.ui.draggable_arrow import DraggableArrow
 import PyQt5.QtGui as QtGui
 from PIL import Image, ImageFilter
 import sys, os, glob
@@ -33,8 +34,18 @@ class MainWindow(QMainWindow):
         imageLayout = QHBoxLayout()
         imagePanel = ImagePanel(self._config, self._editedImage, controller)
         maskPanel = MaskPanel(self._config, self._mask, self._sketch, self._editedImage)
+        divider = DraggableArrow()
+        def scaleWidgets(pos):
+            x = pos.x()
+            imgWeight = int(x / self.width() * 300)
+            maskWeight = 300 - imgWeight
+            self.imageLayout.setStretch(0, imgWeight)
+            self.imageLayout.setStretch(2, maskWeight)
+            self.update()
+        divider.dragged.connect(scaleWidgets)
+
         imageLayout.addWidget(imagePanel, stretch=255)
-        imageLayout.addSpacing(30)
+        imageLayout.addWidget(divider, stretch=5)
         imageLayout.addWidget(maskPanel, stretch=100)
         self.layout.addLayout(imageLayout, stretch=255)
         self.imageLayout = imageLayout
@@ -202,50 +213,3 @@ class MainWindow(QMainWindow):
     def setLoadingMessage(self, message):
         if self._sampleSelector is not None:
             self._sampleSelector.setLoadingMessage(message)
-
-    def paintEvent(self, event):
-        super().paintEvent(event)
-        if self.centralWidget.currentWidget() is self._mainWidget:
-            painter = QPainter(self)
-            color = Qt.green if self._draggingDivider else Qt.black
-            size = 4 if self._draggingDivider else 2
-            painter.setPen(QPen(color, size, Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin))
-            dividerBox = self._dividerCoords()
-            yMid = dividerBox.y() + (dividerBox.height() // 2)
-            midLeft = QPoint(dividerBox.x(), yMid)
-            midRight = QPoint(dividerBox.right(), yMid)
-            arrowWidth = dividerBox.width() // 4
-            # Draw arrows:
-            painter.drawLine(midLeft, midRight)
-            painter.drawLine(midLeft, dividerBox.topLeft() + QPoint(arrowWidth, 0))
-            painter.drawLine(midLeft, dividerBox.bottomLeft() + QPoint(arrowWidth, 0))
-            painter.drawLine(midRight, dividerBox.topRight() - QPoint(arrowWidth, 0))
-            painter.drawLine(midRight, dividerBox.bottomRight() - QPoint(arrowWidth, 0))
-
-    def _dividerCoords(self):
-        imageRight = self.imagePanel.x() + self.imagePanel.width()
-        maskLeft = self.maskPanel.x()
-        width = (maskLeft - imageRight) // 2
-        height = width // 2
-        x = imageRight + (width // 2)
-        y = self.imagePanel.y() + (self.imagePanel.height() // 2) - (height // 2)
-        return QRect(x, y, width, height)
-
-    def mousePressEvent(self, event):
-        if self.centralWidget.currentWidget() is self._mainWidget and self._dividerCoords().contains(event.pos()):
-            self._draggingDivider = True
-            self.update()
-
-    def mouseMoveEvent(self, event):
-        if event.buttons() and self._draggingDivider:
-            x = event.pos().x()
-            imgWeight = int(x / self.width() * 300)
-            maskWeight = 300 - imgWeight
-            self.imageLayout.setStretch(0, imgWeight)
-            self.imageLayout.setStretch(2, maskWeight)
-            self.update()
-
-    def mouseReleaseEvent(self, event):
-        if self._draggingDivider:
-            self._draggingDivider = False
-            self.update()

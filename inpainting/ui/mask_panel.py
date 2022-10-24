@@ -8,9 +8,9 @@ from PyQt5.QtWidgets import (QWidget,
         QColorDialog,
         QGridLayout,
         QSpacerItem)
-from PyQt5.QtCore import Qt, QPoint, QRect, QBuffer
+from PyQt5.QtCore import Qt, QPoint, QRect, QSize, QBuffer
 import PyQt5.QtGui as QtGui
-from PyQt5.QtGui import QPainter, QPen
+from PyQt5.QtGui import QPainter, QPen, QCursor, QPixmap, QBitmap
 from PyQt5.QtCore import Qt
 from PIL import Image
 from inpainting.ui.mask_creator import MaskCreator
@@ -28,10 +28,13 @@ class MaskPanel(QWidget):
         self._sketchBrushSize = sketchCanvas.brushSize()
         self._editedImage = editedImage
 
+        cursorPixmap = QPixmap('./resources/cursor.png').scaled(QSize(self._maskBrushSize, self._maskBrushSize))
+        smallCursorPixmap = QPixmap('./resources/minCursor.png')
+        smallCursor = QCursor(smallCursorPixmap)
+
         self.brushSizeBox = QSpinBox(self)
         self.brushSizeBox.setToolTip("Brush size")
         self.brushSizeBox.setRange(1, 200)
-        self.brushSizeBox.setValue(self._maskBrushSize)
         def setBrush(newSize):
             if self.maskModeButton.isChecked():
                 self._maskBrushSize = newSize
@@ -39,6 +42,12 @@ class MaskPanel(QWidget):
             else:
                 self._sketchBrushSize = newSize
                 sketchCanvas.setBrushSize(newSize)
+            if newSize < 10:
+                self.maskCreator.setCursor(smallCursor)
+            else:
+                cursorSize = max(newSize, 10)
+                newCursor = QCursor(cursorPixmap.scaled(QSize(cursorSize, cursorSize)))
+                self.maskCreator.setCursor(newCursor)
         self.brushSizeBox.valueChanged.connect(setBrush)
 
         self.drawToolGroup = QButtonGroup()
@@ -128,6 +137,8 @@ class MaskPanel(QWidget):
         self.layout.addWidget(self.keepSketchCheckbox, 5, 1)
         self.layout.setRowStretch(0, 255)
         self.setLayout(self.layout)
+
+        self.brushSizeBox.setValue(self._maskBrushSize)
 
     def setUseMaskMode(self, useMaskMode):
         if useMaskMode and not self._maskCanvas.enabled():
