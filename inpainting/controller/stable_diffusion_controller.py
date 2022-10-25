@@ -1,11 +1,12 @@
 from PyQt5.QtCore import QThread, QSize
 from PyQt5.QtWidgets import QInputDialog
-from inpainting.ui.stable_diffusion_main_window import StableDiffusionMainWindow
-from inpainting.controller.base_controller import BaseInpaintController
-from startup.utils import imageToBase64, loadImageFromBase64
-import requests, io, sys, secrets, threading, json, re
 from threading import Lock
 from PIL import Image
+import requests, io, sys, secrets, threading, json, re
+
+from inpainting.ui.window.stable_diffusion_main_window import StableDiffusionMainWindow
+from inpainting.controller.base_controller import BaseInpaintController
+from startup.utils import imageToBase64, loadImageFromBase64
 
 
 BASE_64_PREFIX = 'data:image/png;base64,'

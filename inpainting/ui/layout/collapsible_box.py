@@ -2,11 +2,11 @@
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtWidgets import QStackedWidget, QWidget, QScrollArea
 from PyQt5.QtCore import pyqtSignal
-from inpainting.ui.layout_utils import BorderedWidget
+
+from inpainting.ui.layout.layout_utils import BorderedWidget
 
 
 class CollapsibleBox(BorderedWidget):
-    toggled = pyqtSignal()
 
     def __init__(self, title="", parent=None):
         super(CollapsibleBox, self).__init__(parent)
@@ -37,7 +37,6 @@ class CollapsibleBox(BorderedWidget):
         if height != self.content_area.minimumHeight() or height != self.content_area.maximumHeight():
             self.content_area.setMinimumHeight(height)
             self.content_area.setMaximumHeight(height)
-            self.toggled.emit() # Signal should emit after resize.
 
     def on_pressed(self):
         checked = self.toggle_button.isChecked()
@@ -46,10 +45,6 @@ class CollapsibleBox(BorderedWidget):
         height = self.content_area.layout().totalSizeHint().height() if checked else 0
         self.content_area.setMinimumHeight(height)
         self.content_area.setMaximumHeight(height)
-        self.toggled.emit() # Signal should emit after resize.
-        #self.content_area.setMinimumHeight(self.content_area.layout().totalSizeHint().height() if checked else 0)
-        #self.content_area.setMaximumHeight(self.content_area.layout().totalSizeHint().height() if checked else 0)
-
 
     def setContentLayout(self, layout):
         self.content_area.setLayout(layout)

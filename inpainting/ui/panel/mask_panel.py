@@ -14,7 +14,7 @@ from PyQt5.QtGui import QPainter, QPen, QCursor, QPixmap, QBitmap
 from PyQt5.QtCore import Qt
 from PIL import Image
 from inpainting.ui.mask_creator import MaskCreator
-from inpainting.ui.layout_utils import getScaledPlacement
+from inpainting.ui.layout.layout_utils import getScaledPlacement
 
 class MaskPanel(QWidget):
     def __init__(self, config, maskCanvas, sketchCanvas, editedImage):
@@ -28,27 +28,15 @@ class MaskPanel(QWidget):
         self._sketchBrushSize = sketchCanvas.brushSize()
         self._editedImage = editedImage
 
-        cursorPixmap = QPixmap('./resources/cursor.png').scaled(QSize(self._maskBrushSize, self._maskBrushSize))
+        self._cursorPixmap = QPixmap('./resources/cursor.png')
         smallCursorPixmap = QPixmap('./resources/minCursor.png')
-        smallCursor = QCursor(smallCursorPixmap)
+        self._smallCursor = QCursor(smallCursorPixmap)
+        self._lastCursorSize = None
 
         self.brushSizeBox = QSpinBox(self)
         self.brushSizeBox.setToolTip("Brush size")
         self.brushSizeBox.setRange(1, 200)
-        def setBrush(newSize):
-            if self.maskModeButton.isChecked():
-                self._maskBrushSize = newSize
-                maskCanvas.setBrushSize(newSize)
-            else:
-                self._sketchBrushSize = newSize
-                sketchCanvas.setBrushSize(newSize)
-            if newSize < 10:
-                self.maskCreator.setCursor(smallCursor)
-            else:
-                cursorSize = max(newSize, 10)
-                newCursor = QCursor(cursorPixmap.scaled(QSize(cursorSize, cursorSize)))
-                self.maskCreator.setCursor(newCursor)
-        self.brushSizeBox.valueChanged.connect(setBrush)
+        self.brushSizeBox.valueChanged.connect(lambda: self._updateBrushCursor())
 
         self.drawToolGroup = QButtonGroup()
         self.penButton = QRadioButton(self)
@@ -171,3 +159,18 @@ class MaskPanel(QWidget):
         componentBounds.setBottom(self.brushSizeBox.y())
         maskCreatorBounds = getScaledPlacement(componentBounds, selectionSize, 4)
         self.maskCreator.setGeometry(maskCreatorBounds)
+        self._updateBrushCursor()
+
+    def _updateBrushCursor(self):
+        brushSize = self._maskBrushSize if self.maskModeButton.isChecked() else self._sketchBrushSize
+        canvasWidth = max(self._editedImage.getSelectionBounds().width(), 1)
+        widgetWidth = max(self.maskCreator.width(), 1)
+        scaledSize = max(int(widgetWidth * brushSize / canvasWidth), 9)
+        if scaledSize == self._lastCursorSize:
+            return
+        if scaledSize <= 10:
+            self.maskCreator.setCursor(self._smallCursor)
+        else:
+            newCursor = QCursor(self._cursorPixmap.scaled(QSize(scaledSize, scaledSize)))
+            self.maskCreator.setCursor(newCursor)
+        self._lastCursorSize = scaledSize

@@ -1,15 +1,16 @@
 from PyQt5.QtWidgets import *
 from PyQt5.QtGui import QPainter, QPen, QIcon
 from PyQt5.QtCore import Qt, QObject, QThread, QRect, QPoint, QSize, pyqtSignal
-from inpainting.ui.mask_panel import MaskPanel
-from inpainting.ui.image_panel import ImagePanel
-from inpainting.ui.sample_selector import SampleSelector
-from inpainting.ui.config_control_setup import *
-from inpainting.ui.modal_utils import showErrorDialog, requestConfirmation
-from inpainting.ui.draggable_arrow import DraggableArrow
 import PyQt5.QtGui as QtGui
 from PIL import Image, ImageFilter
 import sys, os, glob
+
+from inpainting.ui.modal.modal_utils import showErrorDialog, requestConfirmation
+from inpainting.ui.panel.mask_panel import MaskPanel
+from inpainting.ui.panel.image_panel import ImagePanel
+from inpainting.ui.sample_selector import SampleSelector
+from inpainting.ui.config_control_setup import *
+from inpainting.ui.layout.draggable_arrow import DraggableArrow
 
 class MainWindow(QMainWindow):
     """Main user interface for GLID-3-XL inpainting."""

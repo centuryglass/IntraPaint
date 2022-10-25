@@ -3,10 +3,11 @@ from PyQt5.QtCore import Qt, QMargins
 import PyQt5.QtGui as QtGui
 from PyQt5.QtGui import QPainter, QPen, QColor, QImage, QPixmap
 from PyQt5.QtCore import Qt, QPoint, QRect, QBuffer, QSize
-from inpainting.ui.loading_widget import LoadingWidget
-from inpainting.ui.layout_utils import getScaledPlacement, QEqualMargins
-from inpainting.image_utils import imageToQImage
 from PIL import Image
+
+from inpainting.ui.layout.layout_utils import getScaledPlacement, QEqualMargins
+from inpainting.ui.loading_widget import LoadingWidget
+from inpainting.image_utils import imageToQImage
 
 class SampleSelector(QWidget):
     """Shows all inpainting samples as they load, allows the user to select one or discard all of them."""

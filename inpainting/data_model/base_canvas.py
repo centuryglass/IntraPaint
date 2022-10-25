@@ -2,6 +2,7 @@ from PyQt5.QtGui import QPainter, QPixmap, QPen, QImage
 import PyQt5.QtGui as QtGui
 from PyQt5.QtCore import Qt, QObject, QRect, QPoint, QSize, pyqtSignal
 from PIL import Image
+
 from inpainting.image_utils import imageToQImage, qImageToImage 
 
 class BaseCanvas(QObject):

@@ -1,7 +1,8 @@
 from PyQt5.QtCore import QThread
 from PyQt5.QtWidgets import QInputDialog
 import requests, io, sys
-from inpainting.ui.main_window import MainWindow
+
+from inpainting.ui.window.main_window import MainWindow
 from inpainting.controller.base_controller import BaseInpaintController
 from startup.utils import imageToBase64, loadImageFromBase64
 

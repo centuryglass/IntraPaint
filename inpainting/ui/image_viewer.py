@@ -4,7 +4,7 @@ from PyQt5.QtCore import Qt, QPoint, QRect, QSize
 import PyQt5.QtGui as QtGui
 from PIL import Image
 from inpainting.image_utils import qImageToImage, imageToQImage
-from inpainting.ui.layout_utils import getScaledPlacement, QEqualMargins
+from inpainting.ui.layout.layout_utils import getScaledPlacement, QEqualMargins
 
 class ImageViewer(QWidget):
     """

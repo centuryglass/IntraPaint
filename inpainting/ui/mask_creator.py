@@ -3,7 +3,7 @@ from PyQt5.QtGui import QPainter, QPen, QImage
 from PyQt5.QtCore import Qt, QPoint, QLine, QSize, QRect, QBuffer
 import PyQt5.QtGui as QtGui
 from PIL import Image
-from inpainting.ui.layout_utils import getScaledPlacement, QEqualMargins
+from inpainting.ui.layout.layout_utils import getScaledPlacement, QEqualMargins
 from inpainting.image_utils import imageToQImage, qImageToImage
 
 class MaskCreator(QtWidgets.QWidget):

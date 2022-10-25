@@ -1,14 +1,16 @@
 from PyQt5.QtWidgets import QApplication
 from PyQt5.QtCore import QObject, QThread, pyqtSignal
 from PIL import Image, ImageFilter
+import os, glob, sys
+
 from inpainting.data_model.config import Config
 from inpainting.data_model.edited_image import EditedImage
 from inpainting.data_model.mask_canvas import MaskCanvas
 from inpainting.data_model.sketch_canvas import SketchCanvas
-from inpainting.ui.main_window import MainWindow
-from inpainting.ui.new_image_modal import NewImageModal
-from inpainting.ui.modal_utils import *
-import os, glob, sys
+
+from inpainting.ui.window.main_window import MainWindow
+from inpainting.ui.modal.new_image_modal import NewImageModal
+from inpainting.ui.modal.modal_utils import *
 
 class BaseInpaintController():
     """

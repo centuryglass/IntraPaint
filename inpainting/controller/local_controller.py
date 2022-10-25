@@ -1,14 +1,13 @@
-import gc
-import os
 from PIL import Image
-import torch
 from torchvision.transforms import functional as TF
 import numpy as np
+import gc, os
 
 from startup.load_models import loadModels
 from startup.create_sample_function import createSampleFunction
 from startup.generate_samples import generateSamples
 from startup.ml_utils import *
+
 from inpainting.controller.base_controller import BaseInpaintController
 
 class LocalDeviceController(BaseInpaintController):
