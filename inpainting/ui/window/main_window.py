@@ -11,6 +11,7 @@ from inpainting.ui.panel.image_panel import ImagePanel
 from inpainting.ui.sample_selector import SampleSelector
 from inpainting.ui.config_control_setup import *
 from inpainting.ui.layout.draggable_arrow import DraggableArrow
+from inpainting.ui.loading_widget import LoadingWidget
 
 class MainWindow(QMainWindow):
     """Main user interface for GLID-3-XL inpainting."""
@@ -25,6 +26,7 @@ class MainWindow(QMainWindow):
         self._sketch = sketch
         self._draggingDivider = False
         self._timelapsePath = None
+        self._sampleSelector = None
 
         # Create components, build layout:
         self.layout = QVBoxLayout()
@@ -80,6 +82,13 @@ class MainWindow(QMainWindow):
         self.centralWidget.addWidget(self._mainWidget)
         self.setCentralWidget(self.centralWidget)
         self.centralWidget.setCurrentWidget(self._mainWidget)
+
+        # Loading widget (for interrogate):
+        self._isLoading = False
+        self._loadingWidget = LoadingWidget()
+        self._loadingWidget.setParent(self)
+        self._loadingWidget.setGeometry(self.frameGeometry())
+        self._loadingWidget.hide()
 
     def _createScaleModeSelector(self, parent, configKey): 
         scaleModeList = QComboBox(parent)
@@ -182,6 +191,7 @@ class MainWindow(QMainWindow):
         layout.addLayout(moreOptionsBar, 3, 1, 1, 4)
         inpaintPanel.setLayout(layout)
         self.layout.addWidget(inpaintPanel, stretch=20)
+        self.resizeEvent(None)
 
     def setSampleSelectorVisible(self, visible):
         isVisible = (self.centralWidget.currentWidget() is not self._mainWidget)
@@ -210,7 +220,25 @@ class MainWindow(QMainWindow):
     def setIsLoading(self, isLoading, message=None):
         if self._sampleSelector is not None:
             self._sampleSelector.setIsLoading(isLoading, message)
+        else:
+            if isLoading:
+                self._loadingWidget.show()
+                if message:
+                    self._loadingWidget.setMessage(message)
+                else:
+                    self._loadingWidget.setMessage("Loading...")
+            else:
+                self._loadingWidget.hide()
+            self._isLoading = isLoading
+            self.update()
 
     def setLoadingMessage(self, message):
         if self._sampleSelector is not None:
             self._sampleSelector.setLoadingMessage(message)
+
+    def resizeEvent(self, event):
+        loadingWidgetSize = int(self.height() / 8)
+        loadingBounds = QRect(self.width() // 2 - loadingWidgetSize // 2, loadingWidgetSize * 3,
+                loadingWidgetSize, loadingWidgetSize)
+        print(f"LBOUNDS: {loadingBounds}")
+        self._loadingWidget.setGeometry(loadingBounds)

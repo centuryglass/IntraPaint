@@ -5,6 +5,7 @@ from PIL import Image
 import requests, io, sys, secrets, threading, json, re
 
 from inpainting.ui.window.stable_diffusion_main_window import StableDiffusionMainWindow
+from inpainting.ui.modal.modal_utils import showErrorDialog
 from inpainting.controller.base_controller import BaseInpaintController
 from startup.utils import imageToBase64, loadImageFromBase64
 
@@ -16,12 +17,12 @@ TXT2IMG_FN_INDEX = 13
 IMG2IMG_FN_INDEX = 33
 PROGRESS_FN_INDEX = 3
 PROGRESS_INIT_FN_INDEX = 4
+INTERROGATE_FN_INDEX = 34
 
 # Not yet supported, add in future versions:
 MODEL_QUERY_FN_INDEX = 0
 MODEL_SWAP_FN_INDEX = 271
 TOKEN_COUNT_FN_INDEX = 19
-INTERROGATE_FN_INDEX = 36
 
 
 
@@ -203,6 +204,39 @@ class StableDiffusionController(BaseInpaintController):
             print(f"error connecting to {url}: {err}")
             return False
 
+    def interrogate(self):
+        if not self._editedImage.hasImage():
+            showErrorDialog(self._window, "Interrogate failed", "Create or load an image first.")
+            return
+        self._window.setIsLoading(True, "Running CLIP interrogate...")
+
+        error = []
+        prompt = []
+        def asyncRequest():
+            try:
+                body = {
+                    'data': [ BASE_64_PREFIX + imageToBase64(self._editedImage.getSelectionContent()) ],
+                    'fn_index': INTERROGATE_FN_INDEX,
+                    'session_hash': self._session_hash
+                }
+                url = f"{self._server_url}/api/predict/"
+
+                res = requests.post(url, json=body)
+                if res.status_code != 200:
+                    raise Exception(res.status_code + ": " + res.text())
+                prompt.append(res.json()['data'][0])
+                print(prompt)
+            except Exception as err:
+                error.append(err)
+        thread = threading.Thread(target=asyncRequest)
+        thread.start()
+        while thread.is_alive():
+            thread.join(1000)
+        self._window.setIsLoading(False)
+        if len(error) > 0:
+            showErrorDialog(self._window, "Interrogate failed", error[0])
+        if len(prompt) > 0:
+            self._config.set('prompt', prompt[0])
 
     def _adjustConfigDefaults(self):
         # update size limits for stable-diffusion's capabilities:

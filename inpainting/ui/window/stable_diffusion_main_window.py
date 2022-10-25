@@ -129,7 +129,7 @@ class StableDiffusionMainWindow(MainWindow):
         interrogateButton = QPushButton();
         interrogateButton.setText("Interrogate")
         interrogateButton.setToolTip("Attempt to generate a prompt that describes the current selection")
-        interrogateButton.clicked.connect(lambda: print('TODO: implement interrogate request in controller'))
+        interrogateButton.clicked.connect(lambda: controller.interrogate())
         buttonBarLayout.addWidget(interrogateButton, stretch=1)
         interrogateButton.resize(interrogateButton.width(), interrogateButton.height() * 2)
         # Start generation button:
