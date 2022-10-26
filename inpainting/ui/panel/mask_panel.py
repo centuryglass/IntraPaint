@@ -36,7 +36,15 @@ class MaskPanel(QWidget):
         self.brushSizeBox = QSpinBox(self)
         self.brushSizeBox.setToolTip("Brush size")
         self.brushSizeBox.setRange(1, 200)
-        self.brushSizeBox.valueChanged.connect(lambda: self._updateBrushCursor())
+        def updateBrushSize(newSize):
+            if self.maskModeButton.isChecked():
+                self._maskBrushSize = newSize
+                maskCanvas.setBrushSize(newSize)
+            else:
+                self._sketchBrushSize = newSize
+                sketchCanvas.setBrushSize(newSize)
+            self._updateBrushCursor()
+        self.brushSizeBox.valueChanged.connect(updateBrushSize)
 
         self.drawToolGroup = QButtonGroup()
         self.penButton = QRadioButton(self)

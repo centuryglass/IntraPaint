@@ -240,5 +240,4 @@ class MainWindow(QMainWindow):
         loadingWidgetSize = int(self.height() / 8)
         loadingBounds = QRect(self.width() // 2 - loadingWidgetSize // 2, loadingWidgetSize * 3,
                 loadingWidgetSize, loadingWidgetSize)
-        print(f"LBOUNDS: {loadingBounds}")
         self._loadingWidget.setGeometry(loadingBounds)

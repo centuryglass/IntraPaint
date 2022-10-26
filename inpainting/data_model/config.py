@@ -51,6 +51,9 @@ class Config(QObject):
         # resulting sample, and re-combine it with the original image. In addition, blur the mask slightly to improve
         # image composite quality.
         self._setDefault('removeUnmaskedChanges', True)
+        # Sets whether to include the original selection as an option in SampleSelector to better evaluate whether
+        # available options are actually an improvement:
+        self._setDefault('addOriginalToSamples', False)
 
         # Optional timelapse path where progress images should be saved:
         self._setDefault('timelapsePath', '')
