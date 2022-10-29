@@ -209,6 +209,7 @@ class MainWindow(QMainWindow):
         else:
             self.centralWidget.setCurrentWidget(self._mainWidget)
             self.centralWidget.removeWidget(self._sampleSelector)
+            del self._sampleSelector
             self._sampleSelector = None
 
     def loadSamplePreview(self, image, y, x):

@@ -346,11 +346,14 @@ class StableDiffusionController(BaseInpaintController):
                 res = requests.post(f'{self._server_url}/api/predict/', json=progressCheckBody, timeout=30)
                 errorCheck(res, 'Progress request')
                 progressText = res.json()['data'][0]
-                match = re.search("\d+% ETA: \d+[smh]", progressText)
-                if match is not None:
-                    statusSignal.emit({'progress': match.group()})
-                elif progressText != '':
-                    print(f"Failed to decode progress from '{progressText}'")
+                if ';width:0.' in progressText:
+                    statusSignal.emit({'progress': '0%'})
+                else:
+                    match = re.search("\d+%( ETA: \d+[s:]\d*)?(?=<)", progressText)
+                    if match is not None:
+                        statusSignal.emit({'progress': match.group()})
+                    elif progressText != '':
+                        print(f"Failed to decode progress from '{progressText}'")
             except Exception as err:
                 errorCount += 1
                 print(f'Error {errorCount}: {err}')

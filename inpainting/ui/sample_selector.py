@@ -4,7 +4,7 @@ import PyQt5.QtGui as QtGui
 from PyQt5.QtGui import QPainter, QPen, QColor, QImage, QPixmap
 from PyQt5.QtCore import Qt, QPoint, QRect, QBuffer, QSize
 from PIL import Image
-import math
+import math, gc
 
 from inpainting.ui.layout.layout_utils import getScaledPlacement, QEqualMargins
 from inpainting.ui.loading_widget import LoadingWidget
@@ -23,7 +23,6 @@ class SampleSelector(QWidget):
         maskImage = mask.getImage()
 
         self._editedImage = editedImage
-        self._closeSelector = closeSelector
         self._sourcePixmap = QPixmap.fromImage(imageToQImage(sourceImage))
         self._maskPixmap = QPixmap.fromImage(imageToQImage(maskImage))
         self._sourceImageBounds = QRect(0, 0, 0, 0)
@@ -65,6 +64,23 @@ class SampleSelector(QWidget):
         self._loadingWidget.setGeometry(self.frameGeometry())
         self._loadingWidget.hide()
         self.resizeEvent(None)
+
+        def freeMemoryAndClose():
+            del self._sourcePixmap
+            self._sourcePixmap = None
+            del self._maskPixmap
+            self._maskPixmap = None
+            for row in self._options:
+                for option in row:
+                    if option["image"] is not None:
+                        del option["image"]
+                        option["image"] = None
+                    if option["pixmap"] is not None:
+                        del option["pixmap"]
+                        option["pixmap"] = None
+            gc.collect()
+            closeSelector()
+        self._closeSelector = freeMemoryAndClose
 
     def toggleZoom(self):
         if self._zoomButton is None:
@@ -197,8 +213,10 @@ class SampleSelector(QWidget):
     def paintEvent(self, event):
         super().paintEvent(event)
         painter = QPainter(self)
-        painter.drawPixmap(self._sourceImageBounds, self._sourcePixmap)
-        painter.drawPixmap(self._maskImageBounds, self._maskPixmap)
+        if self._sourcePixmap is not None:
+            painter.drawPixmap(self._sourceImageBounds, self._sourcePixmap)
+        if self._maskPixmap is not None:
+            painter.drawPixmap(self._maskImageBounds, self._maskPixmap)
         painter.setPen(QPen(Qt.black, 2, Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin))
         def drawImage(option):
             painter.setPen(QPen(Qt.black, 4, Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin))
