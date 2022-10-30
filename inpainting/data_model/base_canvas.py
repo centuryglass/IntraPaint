@@ -1,6 +1,6 @@
 from PyQt5.QtGui import QPainter, QPixmap, QPen, QImage
 import PyQt5.QtGui as QtGui
-from PyQt5.QtCore import Qt, QObject, QRect, QPoint, QSize, pyqtSignal
+from PyQt5.QtCore import Qt, QObject, QRect, QPoint, QLine, QSize, pyqtSignal
 from PIL import Image
 
 from inpainting.image_utils import imageToQImage, qImageToImage 
@@ -63,14 +63,20 @@ class BaseCanvas(QObject):
             self._pixmap = self._pixmap.scaled(size)
             self.redrawRequired.emit()
 
-    def _draw(self, line, color, compositionMode):
+    def _draw(self, pos, color, compositionMode):
         if not self.enabled():
             return
         painter = QPainter(self._pixmap)
         painter.setCompositionMode(compositionMode)
         painter.setPen(QPen(color, self._brushSize, Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin))
-        painter.drawLine(line)
+        if isinstance(pos, QLine):
+            painter.drawLine(pos)
+        else: # Should be QPoint
+            painter.drawPoint(pos)
         self.redrawRequired.emit()
+
+    def drawPoint(self, point, color):
+        self._draw(point, color, QPainter.CompositionMode.CompositionMode_SourceOver)
 
     def drawLine(self, line, color):
         self._draw(line, color, QPainter.CompositionMode.CompositionMode_SourceOver)

@@ -10,6 +10,7 @@ from inpainting.data_model.sketch_canvas import SketchCanvas
 
 from inpainting.ui.window.main_window import MainWindow
 from inpainting.ui.modal.new_image_modal import NewImageModal
+from inpainting.ui.modal.resize_canvas_modal import ResizeCanvasModal
 from inpainting.ui.modal.modal_utils import *
 
 class BaseInpaintController():
@@ -118,6 +119,20 @@ class BaseInpaintController():
         if (not self._editedImage.hasImage()) or \
                 requestConfirmation(self._window, "Reload image?", "This will discard all unsaved changes."):
             self._editedImage.setImage(filePath)
+
+    def resizeCanvas(self):
+        if not self._editedImage.hasImage():
+            showErrorDialog(self._window, "Unable to resize", "Load or create an image first before trying to resize.")
+            return
+        resizeModal = ResizeCanvasModal(self._editedImage.getQImage())
+        newSize, offset = resizeModal.showResizeModal();
+        if newSize is None:
+            return
+        newImage = Image.new('RGB', (newSize.width(), newSize.height()), color = 'white')
+        newImage.paste(self._editedImage.getPilImage(), (offset.x(), offset.y()))
+        self._editedImage.setImage(newImage)
+        if offset.x() > 0 or offset.y() > 0:
+            self._editedImage.setSelectionBounds(self._editedImage.getSelectionBounds().translated(offset))
 
     # Image generation handling:
 

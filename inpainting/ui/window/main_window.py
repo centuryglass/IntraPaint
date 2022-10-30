@@ -10,8 +10,8 @@ from inpainting.ui.panel.mask_panel import MaskPanel
 from inpainting.ui.panel.image_panel import ImagePanel
 from inpainting.ui.sample_selector import SampleSelector
 from inpainting.ui.config_control_setup import *
-from inpainting.ui.layout.draggable_arrow import DraggableArrow
-from inpainting.ui.loading_widget import LoadingWidget
+from inpainting.ui.widget.draggable_arrow import DraggableArrow
+from inpainting.ui.widget.loading_widget import LoadingWidget
 
 class MainWindow(QMainWindow):
     """Main user interface for GLID-3-XL inpainting."""
@@ -58,22 +58,27 @@ class MainWindow(QMainWindow):
         # Set up menu:
         self._menu = self.menuBar()
 
-        # File:
-        fileMenu = self._menu.addMenu("File")
-        def addFileAction(name, shortcut, onTrigger):
+        def addAction(name, shortcut, onTrigger, menu):
             action = QAction(name, self)
             if shortcut is not None:
                 action.setShortcut(shortcut)
             action.triggered.connect(onTrigger)
-            fileMenu.addAction(action)
-        addFileAction("New Image", "Ctrl+N", lambda: controller.newImage())
-        addFileAction("Save", "Ctrl+S", lambda: controller.saveImage())
-        addFileAction("Load", "Ctrl+O", lambda: controller.loadImage())
-        addFileAction("Reload", "F5", lambda: controller.reloadImage())
+            menu.addAction(action)
+
+        # File:
+        fileMenu = self._menu.addMenu("File")
+        addAction("New Image", "Ctrl+N", lambda: controller.newImage(), fileMenu)
+        addAction("Save", "Ctrl+S", lambda: controller.saveImage(), fileMenu)
+        addAction("Load", "Ctrl+O", lambda: controller.loadImage(), fileMenu)
+        addAction("Reload", "F5", lambda: controller.reloadImage(), fileMenu)
         def tryQuit():
             if (not self._editedImage.hasImage()) or requestConfirmation(self, "Quit now?", "All unsaved changes will be lost."):
                 self.close()
-        addFileAction("Quit", "Ctrl+Q", tryQuit)
+        addAction("Quit", "Ctrl+Q", tryQuit, fileMenu)
+
+        # Image:
+        imageMenu = self._menu.addMenu("Image")
+        addAction("Resize Canvas", None, lambda: controller.resizeCanvas(), imageMenu)
 
 
         # Build config + control layout (varying based on implementation): 

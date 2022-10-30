@@ -1,20 +1,12 @@
-from PyQt5.QtWidgets import (QWidget,
-        QLabel,
-        QSpinBox,
-        QCheckBox,
-        QPushButton,
-        QRadioButton,
-        QButtonGroup,
-        QColorDialog,
-        QGridLayout,
-        QSpacerItem)
+from PyQt5.QtWidgets import (QWidget, QLabel, QSpinBox, QCheckBox, QPushButton, QRadioButton, QButtonGroup,
+        QColorDialog, QGridLayout, QSpacerItem)
 from PyQt5.QtCore import Qt, QPoint, QRect, QSize, QBuffer
-import PyQt5.QtGui as QtGui
 from PyQt5.QtGui import QPainter, QPen, QCursor, QPixmap, QBitmap
 from PyQt5.QtCore import Qt
 from PIL import Image
+
 from inpainting.ui.mask_creator import MaskCreator
-from inpainting.ui.layout.layout_utils import getScaledPlacement
+from inpainting.ui.util.get_scaled_placement import getScaledPlacement
 
 class MaskPanel(QWidget):
     def __init__(self, config, maskCanvas, sketchCanvas, editedImage):

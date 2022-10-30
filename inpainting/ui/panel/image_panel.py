@@ -1,11 +1,12 @@
-from PyQt5.QtWidgets import QWidget, QSpinBox, QLineEdit, QPushButton, QLabel, QGridLayout, QSpacerItem, QFileDialog, QMessageBox
+from PyQt5.QtWidgets import (QWidget, QSpinBox, QLineEdit, QPushButton, QLabel, QGridLayout, QSpacerItem,
+        QFileDialog, QMessageBox)
 from PyQt5.QtCore import Qt, QPoint, QSize, QRect, QBuffer
-import PyQt5.QtGui as QtGui
 from PyQt5.QtGui import QPainter, QPen
 from PIL import Image
+import os, sys
+
 from inpainting.ui.image_viewer import ImageViewer
 from inpainting.ui.config_control_setup import connectedTextEdit
-import os, sys
 
 class ImagePanel(QWidget):
     """

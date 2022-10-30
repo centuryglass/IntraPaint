@@ -1,7 +1,7 @@
 from PyQt5.QtWidgets import QWidget
 from PyQt5.QtGui import QPainter, QPen
 from PyQt5.QtCore import Qt, QPoint, QSize, QRect, pyqtSignal
-from inpainting.ui.layout.layout_utils import getScaledPlacement
+from inpainting.ui.util.get_scaled_placement import getScaledPlacement
 
 class DraggableArrow(QWidget):
     dragged = pyqtSignal(QPoint)

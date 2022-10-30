@@ -2,10 +2,10 @@ from PyQt5.QtWidgets import QWidget, QLabel, QHBoxLayout, QVBoxLayout, QGridLayo
 import sys
 
 from inpainting.ui.config_control_setup import *
-from inpainting.ui.layout.layout_utils import BorderedWidget
-from inpainting.ui.layout.collapsible_box import CollapsibleBox
+from inpainting.ui.widget.bordered_widget import BorderedWidget
+from inpainting.ui.widget.collapsible_box import CollapsibleBox
+from inpainting.ui.widget.param_slider import ParamSlider
 from inpainting.ui.window.main_window import MainWindow
-from inpainting.ui.param_slider import ParamSlider
 
 class StableDiffusionMainWindow(MainWindow):
     def __init__(self, config, editedImage, mask, sketch, controller):

@@ -3,7 +3,9 @@ from PyQt5.QtGui import QPainter, QPen, QImage
 from PyQt5.QtCore import Qt, QPoint, QLine, QSize, QRect, QBuffer
 import PyQt5.QtGui as QtGui
 from PIL import Image
-from inpainting.ui.layout.layout_utils import getScaledPlacement, QEqualMargins
+
+from inpainting.ui.util.get_scaled_placement import getScaledPlacement
+from inpainting.ui.util.equal_margins import getEqualMargins
 from inpainting.image_utils import imageToQImage, qImageToImage
 
 class MaskCreator(QtWidgets.QWidget):
@@ -72,7 +74,7 @@ class MaskCreator(QtWidgets.QWidget):
     def paintEvent(self, event):
         painter = QPainter(self)
         painter.setPen(QPen(Qt.black, 4, Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin))
-        painter.drawRect(self._imageRect.marginsAdded(QEqualMargins(self._borderSize())))
+        painter.drawRect(self._imageRect.marginsAdded(getEqualMargins(self._borderSize())))
         if hasattr(self, '_imageSection') and self._imageSection is not None:
             painter.drawImage(self._imageRect, self._imageSection)
         if self._sketchCanvas.hasSketch and self._sketchCanvas.enabled():
@@ -89,8 +91,11 @@ class MaskCreator(QtWidgets.QWidget):
 
     def mousePressEvent(self, event):
         if event.button() == Qt.LeftButton:
+            canvas = self._sketchCanvas if self._sketchMode else self._maskCanvas
+            color = self._sketchColor if self._sketchMode else Qt.red
             self._drawing = True
             self._lastPoint = self._widgetToImageCoords(event.pos())
+            canvas.drawPoint(self._lastPoint, color)
 
     def mouseMoveEvent(self, event):
         if event.buttons() and Qt.LeftButton and self._drawing:

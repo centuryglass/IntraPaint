@@ -6,8 +6,9 @@ from PyQt5.QtCore import Qt, QPoint, QRect, QBuffer, QSize
 from PIL import Image
 import math, gc
 
-from inpainting.ui.layout.layout_utils import getScaledPlacement, QEqualMargins
-from inpainting.ui.loading_widget import LoadingWidget
+from inpainting.ui.util.get_scaled_placement import getScaledPlacement
+from inpainting.ui.util.equal_margins import getEqualMargins
+from inpainting.ui.widget.loading_widget import LoadingWidget
 from inpainting.image_utils import imageToQImage
 
 class SampleSelector(QWidget):
@@ -146,16 +147,16 @@ class SampleSelector(QWidget):
         textArea = QRect(self._maskImageBounds.x() + self._maskImageBounds.width() + 10,
                 statusArea.y(),
                 int(statusArea.width() * 0.8),
-                statusArea.height()).marginsRemoved(QEqualMargins(4))
+                statusArea.height()).marginsRemoved(getEqualMargins(4))
         self._instructions.setGeometry(textArea)
         zoomArea = QRect(textArea.width(), statusArea.y(),
             (statusArea.width() - textArea.width()) // 2,
-            statusArea.height()).marginsRemoved(QEqualMargins(statusArea.height() // 3))
+            statusArea.height()).marginsRemoved(getEqualMargins(statusArea.height() // 3))
         if self._zoomButton is not None:
             self._zoomButton.setGeometry(zoomArea)
         cancelArea = QRect(zoomArea.left() + zoomArea.width(), statusArea.y(),
             (statusArea.width() - zoomArea.right()),
-            statusArea.height()).marginsRemoved(QEqualMargins(statusArea.height() // 3))
+            statusArea.height()).marginsRemoved(getEqualMargins(statusArea.height() // 3))
         self._cancelButton.setGeometry(cancelArea)
 
         
@@ -220,7 +221,7 @@ class SampleSelector(QWidget):
         painter.setPen(QPen(Qt.black, 2, Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin))
         def drawImage(option):
             painter.setPen(QPen(Qt.black, 4, Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin))
-            painter.drawRect(option['bounds'].marginsAdded(QEqualMargins(2)))
+            painter.drawRect(option['bounds'].marginsAdded(getEqualMargins(2)))
             if ('pixmap' in option) and (option['pixmap'] is not None):
                 painter.drawPixmap(option['bounds'], option['pixmap'])
             else:
@@ -245,7 +246,7 @@ class SampleSelector(QWidget):
                 bgBounds = QRect(arrowBounds)
                 bgBounds.setTop(textBounds.top())
                 # Arrow background:
-                painter.fillRect(bgBounds.marginsAdded(QEqualMargins(4)), Qt.white)
+                painter.fillRect(bgBounds.marginsAdded(getEqualMargins(4)), Qt.white)
                 # Arrow:
                 painter.drawLine(pts[0], pts[1])
                 painter.drawLine(pts[1], pts[2])

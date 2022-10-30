@@ -1,11 +1,6 @@
-from PyQt5.QtWidgets import (QWidget,
-        QDialog,
-        QSpinBox,
-        QLabel,
-        QVBoxLayout,
-        QHBoxLayout,
-        QPushButton)
+from PyQt5.QtWidgets import QWidget, QDialog, QSpinBox, QLabel, QVBoxLayout, QHBoxLayout, QPushButton
 from PyQt5.QtCore import QSize
+from inpainting.ui.widget.labeled_spinbox import LabeledSpinbox
 
 class NewImageModal(QDialog):
     def __init__(self, defaultWidth, defaultHeight):
@@ -17,23 +12,10 @@ class NewImageModal(QDialog):
         self._title = QLabel(self)
         self._title.setText("Create new image")
 
-
-        def makeLabeledSpinbox(labelText, toolTip, defaultValue):
-            widget = QWidget(self)
-            widget.setToolTip(toolTip)
-            widget.layout = QHBoxLayout()
-            widget.label = QLabel(widget)
-            widget.label.setText(labelText)
-            widget.spinbox = QSpinBox(widget)
-            widget.spinbox.setRange(8, 100000)
-            widget.spinbox.setValue(defaultValue)
-            widget.layout.addWidget(widget.label, 1)
-            widget.layout.addWidget(widget.spinbox, 2)
-            widget.setLayout(widget.layout)
-            return widget
-
-        self._widthBox = makeLabeledSpinbox("Width:", "New image width in pixels", defaultWidth)
-        self._heightBox = makeLabeledSpinbox("Height:", "New image height in pixels", defaultHeight)
+        minVal = 8
+        maxVal = 20000
+        self._widthBox = LabeledSpinbox(self, "Width:", "New image width in pixels", minVal, defaultWidth, maxVal)
+        self._heightBox = LabeledSpinbox(self, "Height:", "New image height in pixels", minVal, defaultHeight, maxVal)
 
         self._createButton = QPushButton(self)
         self._createButton.setText("Create new image")

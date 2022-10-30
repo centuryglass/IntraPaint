@@ -53,7 +53,7 @@ class Config(QObject):
         self._setDefault('removeUnmaskedChanges', True)
         # Sets whether to include the original selection as an option in SampleSelector to better evaluate whether
         # available options are actually an improvement:
-        self._setDefault('addOriginalToSamples', False)
+        self._setDefault('addOriginalToSamples', True)
 
         # Optional timelapse path where progress images should be saved:
         self._setDefault('timelapsePath', '')

@@ -1,9 +1,9 @@
-# Adapted from https://stackoverflow.com/a/52617714
+# Adapted from https://stackoverflow.com/a/52617714, but without animations, and a few other minor adjustments.
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtWidgets import QStackedWidget, QWidget, QScrollArea
 from PyQt5.QtCore import pyqtSignal
 
-from inpainting.ui.layout.layout_utils import BorderedWidget
+from inpainting.ui.widget.bordered_widget import BorderedWidget
 
 
 class CollapsibleBox(BorderedWidget):

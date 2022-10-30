@@ -3,8 +3,10 @@ from PyQt5.QtGui import QPainter, QPen, QImage
 from PyQt5.QtCore import Qt, QPoint, QRect, QSize
 import PyQt5.QtGui as QtGui
 from PIL import Image
+
 from inpainting.image_utils import qImageToImage, imageToQImage
-from inpainting.ui.layout.layout_utils import getScaledPlacement, QEqualMargins
+from inpainting.ui.util.get_scaled_placement import getScaledPlacement
+from inpainting.ui.util.equal_margins import getEqualMargins
 
 class ImageViewer(QWidget):
     """
@@ -56,7 +58,7 @@ class ImageViewer(QWidget):
         # draw margin:
         margin = self._borderSize // 2
         linePen.setWidth(self._borderSize)
-        painter.drawRect(QRect(QPoint(0, 0), self.size()).marginsRemoved(QEqualMargins(2)))
+        painter.drawRect(QRect(QPoint(0, 0), self.size()).marginsRemoved(getEqualMargins(2)))
 
     def mousePressEvent(self, event):
         """Select the area in in the image to be edited."""
