@@ -7,24 +7,11 @@ import requests, io, sys, secrets, threading, json, re
 from inpainting.ui.window.stable_diffusion_main_window import StableDiffusionMainWindow
 from inpainting.ui.modal.modal_utils import showErrorDialog
 from inpainting.controller.base_controller import BaseInpaintController
+from inpainting.data_model.stable_diffusion_api import *
 from startup.utils import imageToBase64, loadImageFromBase64
 
-
-BASE_64_PREFIX = 'data:image/png;base64,'
-
-HEALTH_FN_INDEX = 170
-TXT2IMG_FN_INDEX = 13
-IMG2IMG_FN_INDEX = 33
-PROGRESS_FN_INDEX = 3
-PROGRESS_INIT_FN_INDEX = 4
-INTERROGATE_FN_INDEX = 34
-
-# Not yet supported, add in future versions:
-MODEL_QUERY_FN_INDEX = 0
-MODEL_SWAP_FN_INDEX = 271
-TOKEN_COUNT_FN_INDEX = 19
-
-
+# TODO: remove once API properly supports interrogate
+INTERROGATE_FN_INDEX = 73
 
 class StableDiffusionController(BaseInpaintController):
     def __init__(self, args):
@@ -40,166 +27,10 @@ class StableDiffusionController(BaseInpaintController):
             self._sketchCanvas.setEnabled(editMode != 'Text to Image')
         self._config.connect(self._sketchCanvas, 'editMode', updateSketchState)
 
-    def _getRequestData(self, selection, mask):
-        editMode = self._config.get('editMode')
-        batchSize = self._config.get('batchSize')
-        batchCount = self._config.get('batchCount')
-        if editMode == "Inpaint" or editMode == "Image to Image":
-            inpainting = (editMode == "Inpaint")
-            return [
-                1 if inpainting else 0, # 0=img2img, 1=inpaint, 2=batch img2img
-                self._config.get('prompt'),
-                self._config.get('negativePrompt'),
-                "None", # prompt_style
-                "None", # prompt_style2
-                None if inpainting else (BASE_64_PREFIX + imageToBase64(selection)),   # init_image
-                {
-                    'image': BASE_64_PREFIX + imageToBase64(selection),
-                    'mask': BASE_64_PREFIX + imageToBase64(mask)
-                } if inpainting else None,
-                None, # init_img_inpaint
-                None, # init_mask_inpaint
-                'Draw mask', # Mask mode
-                self._config.get('samplingSteps'),
-                self._config.get('samplingMethod'),
-                self._config.get('maskBlur'),
-                self._config.get('maskedContent'),
-                self._config.get('restoreFaces'),
-                self._config.get('tiling'),
-                batchCount,
-                batchSize,
-                self._config.get('cfgScale'),
-                self._config.get('denoisingStrength'),
-                self._config.get('seed'),
-                -1, # variation seed
-                0, # variation strength
-                0, # resize seed from height
-                0, # resize seed from width
-                False, # seed: enable extras
-                selection.height,
-                selection.width,
-                self._config.get('stableResizeMode'),
-                False, # Inpaint at full resolution (not relevant with IntraPaint)
-                32, # Inpaint at full resolution padding (also not relevant)
-                self._config.get('inpaintMasked'),
-                "", # img2img_batch_input_dir
-                "", # img2img_batch_output_dir,
-
-                # Clip aesthetic:
-                #"0.0001", # Aesthetic learning weight
-                #0.9, # Aesthetic weight
-                #10, # Aesthetic steps
-                #"None", # Aesthetic image embedding
-                #False, # Slerp interpolation checkbox
-                #"", # Aesthetic text
-                #0.1, # Slerp angle
-                #False, # Aesthetic "is negative text" checkbox
-
-                # Everything after this is for optional scripts we don't support, but the API still expects.
-                # Actual values shouldn't matter (hopefully) as long as the types are valid
-                "None", # selected script
-                None, # markdown
-                False,# override sampling method
-                False,# Override prompt checkbox
-                None, # Original prompt
-                None, # Original negative prompt
-                False,# override sampling steps
-                1,    # Decode steps
-                False,# Override denoising strength
-                1, # Decode CFG scale
-                1, # randomness slider
-                1, # sigma slider
-                1, # Loops slider
-                1, # Denoising slider
-                None, # HTML
-                None, # 'Pixels to expand' slider
-                None, # 'Mask blur' slider
-                ['left', 'right', 'up', 'down'], # 'Outpainting direction' choices
-                None, # Fall-off exponent
-                None, # Color variation
-                None, # Pixels to expand (again)
-                None, # Mask blur (again)
-                "fill", # 'Masked content' selection
-                ['left', 'right', 'up', 'down'], # 'Outpainting direction' choices
-                None, # 'Put variable parts at start of prompt'
-                None, # 'show textbox' option
-                None, # JSON object list (batch files list?)
-                None, # Bulk prompt list
-                None, # "represents null of the Html component" (???)
-                None, # Tile overlap
-                "None", # Upscaler
-                "Seed", # X type
-                None, # X values
-                "Steps", # Y type
-                None, # Y values
-                None, # Draw legend
-                False, # Include separate images
-                None, # Keep -1 for seeds
-            ]
-        else: #txt2img
-            return [
-                self._config.get('prompt'),
-                self._config.get('negativePrompt'),
-                "None", # prompt_style
-                "None", # prompt_style2
-                self._config.get('samplingSteps'),
-                self._config.get('samplingMethod'),
-                self._config.get('restoreFaces'),
-                self._config.get('tiling'),
-                batchCount,
-                batchSize,
-                self._config.get('cfgScale'),
-                self._config.get('seed'),
-                -1, # variation seed
-                0, # variation strength
-                0, # resize seed from height
-                0, # resize seed from width
-                False, # seed: enable extras
-                selection.height,
-                selection.width,
-                False, # highres fix checkbox
-                self._config.get('denoisingStrength'),
-                512, # Firstpass width
-                512, # Firstpass height
-
-                # Clip aesthetic:
-                #"0.0001", # Aesthetic learning weight
-                #0.9, # Aesthetic weight
-                #10, # Aesthetic steps
-                #"None", # Aesthetic image embedding
-                #False, # Slerp interpolation checkbox
-                #"", # Aesthetic text
-                #0.1, # Slerp angle
-                #False, # Aesthetic "is negative text" checkbox
-
-                # Everything after this is for optional scripts we don't support, but the API still expects.
-                # Actual values shouldn't matter as long as the types are valid
-                "None",  # selected script
-                False,   # 'Put variable parts at start of prompt'
-                False,   # 'show textbox' option
-                None,    # Prompt files
-                "",      # Prompt textbox
-                "Seed",  # X type
-                "",      # X values
-                "Steps", # Y type
-                "",      # Y values
-                True,    # Draw legend checkbox
-                True,    # Keep -1 for seeds
-                None,
-                "",
-                ""
-            ]
-
     def healthCheck(url, session_hash=secrets.token_hex(5)):
         try:
-            body = {
-                'data': [],
-                'fn_index': HEALTH_FN_INDEX,
-                'session_hash': session_hash
-            }
-            res = requests.post(f"{url}/api/predict/", json=body, timeout=30)
-            return res.status_code == 200 and ('application/json' in res.headers['content-type']) \
-                    and 'data' in res.json()
+            res = requests.get(f"{url}{API_ENDPOINTS['LOGIN_CHECK']}", timeout=30)
+            return res.status_code == 200
         except Exception as err:
             print(f"error connecting to {url}: {err}")
             return False
@@ -223,9 +54,9 @@ class StableDiffusionController(BaseInpaintController):
 
                 res = requests.post(url, json=body)
                 if res.status_code != 200:
-                    raise Exception(res.status_code + ": " + res.text())
+                    raise Exception(f"{res.status_code} : {res.text}")
                 prompt.append(res.json()['data'][0])
-                print(prompt)
+                print(f"interrogate result: {prompt}")
             except Exception as err:
                 error.append(err)
         thread = threading.Thread(target=asyncRequest)
@@ -273,14 +104,11 @@ class StableDiffusionController(BaseInpaintController):
 
     def _inpaint(self, selection, mask, saveImage, statusSignal):
         editMode = self._config.get('editMode')
-        inpaintArgs = self._getRequestData(selection, mask)
-        body = {
-            'data': inpaintArgs,
-            'fn_index': TXT2IMG_FN_INDEX if editMode == 'Text to Image' else IMG2IMG_FN_INDEX,
-            'session_hash': self._session_hash
-        }
-        #uri = f"{self._server_url}/api/" + ('txt2img' if (editMode == 'Text to Image') else 'img2img')
-        uri = f"{self._server_url}/api/predict/"
+        if editMode != 'Inpaint':
+            mask = None
+        body = getTxt2ImgBody(self._config, selection.width, selection.height) if editMode == 'Text to Image' \
+               else getImg2ImgBody(self._config, selection, mask)
+        uri = self._server_url + API_ENDPOINTS['TXT2IMG' if (editMode == 'Text to Image') else 'IMG2IMG']
 
         def errorCheck(serverResponse, contextStr):
             if serverResponse.status_code != 200:
@@ -288,7 +116,7 @@ class StableDiffusionController(BaseInpaintController):
                         and serverResponse.json() and 'detail' in serverResponse.json():
                     raise Exception(f"{serverResponse.status_code} response to {contextStr}: {serverResponse.json()['detail']}")
                 else:
-                    raise Exception(f"{serverResponse.status_code} response to {contextStr}: unknown error with code {serverResponse.status_code}")
+                    raise Exception(f"{serverResponse.status_code} response to {contextStr}: unknown error, response={serverResponse}")
 
         # POST to server_url, check response
         # If invalid or error response, throw Exception
@@ -301,17 +129,12 @@ class StableDiffusionController(BaseInpaintController):
         images = []
         errors = []
 
-        # Send to progress 
-        initBody = {
-            'data': [],
-            'fn_index': PROGRESS_INIT_FN_INDEX,
-            'session_hash': self._session_hash
-        }
-        init_response = requests.post(uri, json=initBody)
+        # Check progress before starting:
+        init_response = requests.get(self._server_url + API_ENDPOINTS['PROGRESS'])
+        errorCheck(init_response, 'Checking initial image generation progress')
         init_data = init_response.json()
-        if init_data['is_generating'] is True:
+        if init_data['current_image'] is not None:
             raise Exception('Image generation in progress, try again later.')
-
 
         def asyncRequest():
             res = requests.post(uri, json=body)
@@ -319,11 +142,12 @@ class StableDiffusionController(BaseInpaintController):
                 errorCheck(res, f"New {editMode} request")
                 if len(errors) == 0:
                     resBody = res.json()
-                    imageData = resBody['data'][0]
+                    imageData = resBody['images']
                     for item in imageData:
                         images.append(item)
-                    params  = json.loads(resBody['data'][1])
-                    statusSignal.emit(params)
+                        info = json.loads(resBody['info'])
+                        statusSignal.emit(info)
+
             except Exception as err:
                 print(f"request failed: {err}")
                 errors.append(err)
@@ -335,25 +159,22 @@ class StableDiffusionController(BaseInpaintController):
             thread.join(timeout=sleepTime / 1000000)
             if not thread.is_alive() or len(errors) > 0:
                 break
-            # GET server_url/sample, sending previous samples:
             res = None
             try:
-                progressCheckBody = {
-                    'data': [],
-                    'fn_index': PROGRESS_FN_INDEX,
-                    'session_hash': self._session_hash
-                }
-                res = requests.post(f'{self._server_url}/api/predict/', json=progressCheckBody, timeout=30)
-                errorCheck(res, 'Progress request')
-                progressText = res.json()['data'][0]
-                if ';width:0.' in progressText:
-                    statusSignal.emit({'progress': '0%'})
-                else:
-                    match = re.search("\d+%( ETA: \d+[s:]\d*)?(?=<)", progressText)
-                    if match is not None:
-                        statusSignal.emit({'progress': match.group()})
-                    elif progressText != '':
-                        print(f"Failed to decode progress from '{progressText}'")
+                progress_res = requests.get(self._server_url + API_ENDPOINTS['PROGRESS'])
+                errorCheck(progress_res, 'Checking image generation progress')
+                status = progress_res.json()
+                statusText = f"{int(status['progress'] * 100)}%"
+                if 'eta_relative' in status and status['eta_relative'] != 0:
+                    # TODO: eta_relative is not a ms value, perhaps use it with timestamps to estimate actual ETA?
+                    eta_sec = int(status['eta_relative'] / 1000)
+                    minutes = eta_sec // 60
+                    seconds = eta_sec % 60
+                    if minutes > 0:
+                        statusText = f"{statusText} ETA: {minutes}:{seconds}"
+                    else:
+                        statusText = f"{statusText} ETA: {seconds}s"
+                statusSignal.emit({'progress': statusText})
             except Exception as err:
                 errorCount += 1
                 print(f'Error {errorCount}: {err}')
@@ -366,7 +187,6 @@ class StableDiffusionController(BaseInpaintController):
         if len(errors) > 0:
             print('Inpainting failed with error, raising...')
             raise errors[0]
-        print('Inpainting finished without errors.')
         # discard image grid if present:
         batchSize = self._config.get('batchSize')
         batchCount = self._config.get('batchCount')
@@ -391,7 +211,7 @@ class StableDiffusionController(BaseInpaintController):
             if isinstance(image, str):
                 if image.startswith(BASE_64_PREFIX):
                     image = image[len(BASE_64_PREFIX):]
-                imageObject = loadImageFromBase64(imageStr)
+                imageObject = loadImageFromBase64(image)
                 saveImage(imageObject, idxInBatch, batchIdx)
             idxInBatch += 1
             if idxInBatch >= batchSize:
