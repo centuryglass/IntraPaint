@@ -11,6 +11,7 @@ from inpainting.data_model.sketch_canvas import SketchCanvas
 from inpainting.ui.window.main_window import MainWindow
 from inpainting.ui.modal.new_image_modal import NewImageModal
 from inpainting.ui.modal.resize_canvas_modal import ResizeCanvasModal
+from inpainting.ui.modal.image_scale_modal import ImageScaleModal
 from inpainting.ui.modal.modal_utils import *
 
 class BaseInpaintController():
@@ -134,7 +135,52 @@ class BaseInpaintController():
         if offset.x() > 0 or offset.y() > 0:
             self._editedImage.setSelectionBounds(self._editedImage.getSelectionBounds().translated(offset))
 
+    def scaleImage(self):
+        if not self._editedImage.hasImage():
+            showErrorDialog(self._window, "Unable to scale", "Load or create an image first before trying to scale.")
+            return
+        width = self._editedImage.width()
+        height = self._editedImage.height()
+        scaleModal = ImageScaleModal(width, height)
+        newSize = scaleModal.showImageModal()
+        self._scale(newSize)
+
+    def _scale(self, newSize): # Override to allow ML upscalers:
+        width = self._editedImage.width()
+        height = self._editedImage.height()
+        if newSize is None or (newSize.width() == width and newSize.height() == height):
+            return
+        image = self._editedImage.getPilImage()
+        scaleMode = None
+        if (newSize.width() <= width and newSize.height() <= height): #downscaling
+            scaleMode = self._config.get('downscaleMode')
+        else:
+            scaleMode = self._config.get('upscaleMode')
+        scaledImage = image.resize((newSize.width(), newSize.height()), scaleMode)
+        self._editedImage.setImage(scaledImage)
+
+    def _startThread(self, threadWorker, loadingText=None):
+        if self._thread is not None:
+            raise Exception('Tried to start a new async operation while the previous one is still running')
+        self._window.setIsLoading(True, loadingText)
+        self._thread = QThread()
+        self._worker = threadWorker
+        self._worker.moveToThread(self._thread);
+        def clearWorker():
+            self._thread.quit()
+            self._window.setIsLoading(False)
+            self._worker.deleteLater()
+            self._worker = None
+        self._worker.finished.connect(clearWorker)
+        self._thread.started.connect(self._worker.run)
+        def clearOldThread():
+            self._thread.deleteLater()
+            self._thread = None
+        self._thread.finished.connect(clearOldThread)
+        self._thread.start()
+
     # Image generation handling:
+
 
     def _inpaint(self):
         raise Exception('BaseInpaintController should not be used directly, use a subclass.')
@@ -149,8 +195,6 @@ class BaseInpaintController():
         if self._thread is not None:
             showErrorDialog(self._window, "Failed", "Existing inpainting operation not yet finished, wait a little longer.")
             return
-        self._thread = QThread()
-
         upscaleMode = self._config.get('upscaleMode')
         downscaleMode = self._config.get('downscaleMode')
         def resizeImage(pilImage, width, height):
@@ -173,10 +217,10 @@ class BaseInpaintController():
             inpaintImage = Image.alpha_composite(inpaintImage, sketchImage).convert('RGB')
         keepSketch = self._sketchCanvas.hasSketch and self._config.get('saveSketchInResult')
 
-        # If scaling is enabled, scale selection as close to 256x256 as possible while attempting to minimize
+        # If scaling is enabled, scale selection as close to default as possible while attempting to minimize
         # aspect ratio changes. Keep the unscaled version so it can be used for compositing if "keep sketch"
         # is checked.
-        unscaledInpaintImage = inpaintImage
+        unscaledInpaintImage = inpaintImage.copy()
 
         if self._config.get('scaleSelectionBeforeInpainting'):
             maxEditSize = self._config.get('maxEditSize')
@@ -191,46 +235,38 @@ class BaseInpaintController():
         else:
             inpaintMask = resizeImage(inpaintMask, inpaintImage.width, inpaintImage.height)
 
-
         doInpaint = lambda img, mask, save, statusSignal: self._inpaint(img, mask, save, statusSignal)
         config = self._config
         class InpaintThreadWorker(QObject):
             finished = pyqtSignal()
             imageReady = pyqtSignal(Image.Image, int, int)
             statusSignal = pyqtSignal(dict)
-            errorSignal = pyqtSignal(str)
+            errorSignal = pyqtSignal(Exception)
 
             def __init__(self):
                 super().__init__()
 
             def run(self):
                 def sendImage(img, y, x):
-                    img = resizeImage(img, unscaledInpaintImage.width, unscaledInpaintImage.height)
                     self.imageReady.emit(img, y, x)
                 try:
                     doInpaint(inpaintImage, inpaintMask, sendImage, self.statusSignal)
                 except Exception as err:
-                    self.errorSignal.emit(str(err))
+                    self.errorSignal.emit(err)
                 self.finished.emit()
-        self._worker = InpaintThreadWorker()
-        self._worker.moveToThread(self._thread)
-
-        self._window.setSampleSelectorVisible(True)
-        self._window.setIsLoading(True)
+        worker = InpaintThreadWorker()
 
         def handleError(err):
-            self._window.setIsLoading(False)
             self._window.setSampleSelectorVisible(False)
             showErrorDialog(self._window, "Inpainting failure", err)
-        self._worker.errorSignal.connect(handleError)
+        worker.errorSignal.connect(handleError)
 
         def updateStatus(statusDict):
             self._applyStatusUpdate(statusDict)
-        self._worker.statusSignal.connect(updateStatus)
-
+        worker.statusSignal.connect(updateStatus)
 
         def loadSamplePreview(img, y, x):
-            if config.get('removeUnmaskedChanges'):
+            if config.get('removeUnmaskedChanges') or img.width != selection.width or img.height != selection.height:
                 #if keepSketch:
                 #    img = Image.alpha_composite(img.convert('RGBA'), sketchImage)
                 maskAlpha = inpaintMask.convert('L').point( lambda p: 255 if p < 1 else 0 ).filter(ImageFilter.GaussianBlur())
@@ -238,18 +274,9 @@ class BaseInpaintController():
                 maskAlpha = resizeImage(maskAlpha, selection.width, selection.height)
                 img = Image.composite(unscaledInpaintImage if keepSketch else selection, img, maskAlpha)
             self._window.loadSamplePreview(img, y, x)
-        self._worker.imageReady.connect(loadSamplePreview)
-
-        self._worker.finished.connect(lambda: self._window.setIsLoading(False))
-        self._thread.started.connect(self._worker.run)
-        self._thread.finished.connect(self._thread.deleteLater)
-
-        def clearOldThread():
-            self._thread = None
-        self._thread.finished.connect(clearOldThread)
-        self._worker.finished.connect(self._thread.quit)
-        self._worker.finished.connect(self._worker.deleteLater)
-        self._thread.start()
+        worker.imageReady.connect(loadSamplePreview)
+        self._window.setSampleSelectorVisible(True)
+        self._startThread(worker)
 
     # Misc. other features:
 

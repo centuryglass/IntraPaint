@@ -1,4 +1,4 @@
-from PyQt5.QtCore import QThread, QSize
+from PyQt5.QtCore import QThread, QSize, QObject, pyqtSignal
 from PyQt5.QtWidgets import QInputDialog
 from threading import Lock
 from PIL import Image
@@ -6,6 +6,7 @@ import requests, io, sys, secrets, threading, json, re
 
 from inpainting.ui.window.stable_diffusion_main_window import StableDiffusionMainWindow
 from inpainting.ui.modal.modal_utils import showErrorDialog
+from inpainting.ui.modal.image_scale_modal import ImageScaleModal
 from inpainting.controller.base_controller import BaseInpaintController
 from inpainting.data_model.stable_diffusion_api import *
 from startup.utils import imageToBase64, loadImageFromBase64
@@ -39,41 +40,52 @@ class StableDiffusionController(BaseInpaintController):
         if not self._editedImage.hasImage():
             showErrorDialog(self._window, "Interrogate failed", "Create or load an image first.")
             return
-        self._window.setIsLoading(True, "Running CLIP interrogate...")
+        if self._thread is not None:
+            showErrorDialog(self._window, "Interrogate failed", "Existing operation currently in progress")
+            return
 
-        error = []
-        prompt = []
-        def asyncRequest():
-            try:
-                body = {
-                    'data': [ BASE_64_PREFIX + imageToBase64(self._editedImage.getSelectionContent()) ],
-                    'fn_index': INTERROGATE_FN_INDEX,
-                    'session_hash': self._session_hash
-                }
-                url = f"{self._server_url}/api/predict/"
+        controller = self
+        class InterrogateWorker(QObject):
+            finished = pyqtSignal()
+            promptReady = pyqtSignal(str)
+            errorSignal = pyqtSignal(Exception)
 
-                res = requests.post(url, json=body)
-                if res.status_code != 200:
-                    raise Exception(f"{res.status_code} : {res.text}")
-                prompt.append(res.json()['data'][0])
-                print(f"interrogate result: {prompt}")
-            except Exception as err:
-                error.append(err)
-        thread = threading.Thread(target=asyncRequest)
-        thread.start()
-        while thread.is_alive():
-            thread.join(1000)
-        self._window.setIsLoading(False)
-        if len(error) > 0:
-            showErrorDialog(self._window, "Interrogate failed", error[0])
-        if len(prompt) > 0:
-            self._config.set('prompt', prompt[0])
+            def __init__(self):
+                super().__init__()
+
+            def run(self):
+                try:
+                    body = {
+                        'data': [ imageToBase64(controller._editedImage.getSelectionContent(), includePrefix=True) ],
+                        'fn_index': INTERROGATE_FN_INDEX,
+                        'session_hash': controller._session_hash
+                    }
+                    url = f"{controller._server_url}/api/predict/"
+                    res = requests.post(url, json=body)
+                    if res.status_code != 200:
+                        raise Exception(f"{res.status_code} : {res.text}")
+                    self.promptReady.emit(res.json()['data'][0])
+                except Exception as err:
+                    print (f"err:{err}")
+                    self.errorSignal.emit(err)
+                self.finished.emit()
+        
+        worker = InterrogateWorker()
+        def setPrompt(promptText):
+            self._config.set('prompt', promptText)
+        worker.promptReady.connect(setPrompt)
+        def handleError(err):
+            self._window.setIsLoading(False)
+            showErrorDialog(self._window, "Interrogate failure", err)
+        worker.errorSignal.connect(handleError)
+        self._startThread(worker, loadingText="Running CLIP interrogate")
 
     def _adjustConfigDefaults(self):
         # update size limits for stable-diffusion's capabilities:
         self._config.set('maxEditSize', QSize(512, 512))
         # stable-diffusion backend will handle this for us:
         self._config.set('removeUnmaskedChanges', False)
+        self._config.set('saveSketchInResult', True)
 
     def startApp(self):
         screen = self._app.primaryScreen()
@@ -101,6 +113,44 @@ class StableDiffusionController(BaseInpaintController):
         self._app.exec_()
         sys.exit()
 
+
+    def _scale(self, newSize):
+        width = self._editedImage.width()
+        height = self._editedImage.height()
+        # If downscaling, use base implementation:
+        if (newSize.width() <= width and newSize.height() <= height):
+            super()._scale(newSize)
+            return;
+        # If upscaling, use stable-diffusion-webui upscale api:
+        controller = self
+        class UpscaleWorker(QObject):
+            finished = pyqtSignal()
+            imageReady = pyqtSignal(Image.Image)
+            statusSignal = pyqtSignal(dict)
+            errorSignal = pyqtSignal(Exception)
+
+            def __init__(self):
+                super().__init__()
+
+            def run(self):
+                try:
+                    body = getUpscaleBody(controller._editedImage.getPilImage(), newSize.width(), newSize.height())
+                    url = f"{controller._server_url}{API_ENDPOINTS['EXTRAS']}"
+                    res = requests.post(url, json=body)
+                    if res.status_code != 200:
+                        raise Exception(f"{res.status_code} : {res.text}")
+                    self.imageReady.emit(loadImageFromBase64(res.json()['image']))
+                except Exception as err:
+                    self.errorSignal.emit(err)
+                self.finished.emit()
+        worker = UpscaleWorker()
+        def handleError(err):
+            showErrorDialog(self._window, "Upscale failure", err)
+        worker.errorSignal.connect(handleError)
+        def applyUpscaled(img):
+            self._editedImage.setImage(img)
+        worker.imageReady.connect(applyUpscaled)
+        self._startThread(worker)
 
     def _inpaint(self, selection, mask, saveImage, statusSignal):
         editMode = self._config.get('editMode')
@@ -209,8 +259,6 @@ class StableDiffusionController(BaseInpaintController):
                     imageObject = Image.open(buffer)
                     saveImage(imageObject, idxInBatch, batchIdx)
             if isinstance(image, str):
-                if image.startswith(BASE_64_PREFIX):
-                    image = image[len(BASE_64_PREFIX):]
                 imageObject = loadImageFromBase64(image)
                 saveImage(imageObject, idxInBatch, batchIdx)
             idxInBatch += 1

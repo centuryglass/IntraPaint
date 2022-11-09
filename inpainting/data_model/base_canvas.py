@@ -81,6 +81,9 @@ class BaseCanvas(QObject):
     def drawLine(self, line, color):
         self._draw(line, color, QPainter.CompositionMode.CompositionMode_SourceOver)
 
+    def erasePoint(self, point, color):
+        self._draw(point, color, QPainter.CompositionMode.CompositionMode_Clear)
+
     def eraseLine(self, line, color):
         self._draw(line, color, QPainter.CompositionMode.CompositionMode_Clear)
 

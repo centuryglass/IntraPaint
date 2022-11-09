@@ -50,6 +50,7 @@ class Config(QObject):
         # and create annoying lines in larger images. To fix this, enable this option to apply the mask to the
         # resulting sample, and re-combine it with the original image. In addition, blur the mask slightly to improve
         # image composite quality.
+        # NOTE: Regardless of this setting's value, this will always be done if the selection is being scaled.
         self._setDefault('removeUnmaskedChanges', True)
         # Sets whether to include the original selection as an option in SampleSelector to better evaluate whether
         # available options are actually an improvement:

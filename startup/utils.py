@@ -16,14 +16,21 @@ def fetch(url_or_path):
         return fd
     return open(url_or_path, 'rb')
 
-def imageToBase64(pilImage):
+BASE_64_PREFIX = 'data:image/png;base64,'
+
+def imageToBase64(pilImage, includePrefix=False):
     """Convert a PIL image to a base64 string."""
     buffer = io.BytesIO()
     pilImage.save(buffer, format='PNG')
-    return str(base64.b64encode(buffer.getvalue()), 'utf-8')
+    imageStr = str(base64.b64encode(buffer.getvalue()), 'utf-8')
+    if includePrefix:
+        imageStr = BASE_64_PREFIX + imageStr
+    return imageStr
 
 def loadImageFromBase64(imageStr):
     """Initialize a PIL image object from base64-encoded string data."""
+    if imageStr.startswith(BASE_64_PREFIX):
+        imageStr = imageStr[len(BASE_64_PREFIX):]
     return Image.open(io.BytesIO(base64.b64decode(imageStr)))
 
 def buildArgParser(defaultModel='inpaint.pt', includeEditParams=True, includeGenParams=True):

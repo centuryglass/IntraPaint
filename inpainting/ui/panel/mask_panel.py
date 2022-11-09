@@ -37,6 +37,7 @@ class MaskPanel(QWidget):
                 sketchCanvas.setBrushSize(newSize)
             self._updateBrushCursor()
         self.brushSizeBox.valueChanged.connect(updateBrushSize)
+        editedImage.selectionChanged.connect(lambda: self.resizeEvent(None))
 
         self.drawToolGroup = QButtonGroup()
         self.penButton = QRadioButton(self)

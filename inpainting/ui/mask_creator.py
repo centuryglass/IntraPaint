@@ -95,7 +95,10 @@ class MaskCreator(QtWidgets.QWidget):
             color = self._sketchColor if self._sketchMode else Qt.red
             self._drawing = True
             self._lastPoint = self._widgetToImageCoords(event.pos())
-            canvas.drawPoint(self._lastPoint, color)
+            if self._useEraser:
+                canvas.erasePoint(self._lastPoint, color)
+            else:
+                canvas.drawPoint(self._lastPoint, color)
 
     def mouseMoveEvent(self, event):
         if event.buttons() and Qt.LeftButton and self._drawing:

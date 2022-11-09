@@ -17,6 +17,9 @@ class SampleSelector(QWidget):
     def __init__(self, config, editedImage, mask, sketch, closeSelector):
         super().__init__()
 
+        self._config = config
+        self._sketch = sketch
+
         sourceImage = editedImage.getSelectionContent()
         if sketch.hasSketch:
             sketchImage = sketch.getImage().convert('RGBA')
@@ -312,7 +315,14 @@ class SampleSelector(QWidget):
                 return
             if self._includeOriginal and self._sourceOptionBounds is not None:
                 if self._sourceOptionBounds.contains(event.pos()):
-                    # Original chosen, no need to change anything:
+                    # Original chosen: write in sketch content if enabled, otherwise do nothing:
+                    if self._config.get('saveSketchInResult') and self._sketch.hasSketch:
+                        sourceSelection = self._editedImage.getSelectionContent()
+                        sketchImage = self._sketch.getImage().resize((sourceSelection.width, sourceSelection.height),
+                                self._config.get('downscaleMode')).convert('RGBA')
+                        sourceSelection = Image.alpha_composite(sourceSelection.convert('RGBA'), sketchImage).convert('RGB')
+                        self._editedImage.setSelectionContent(sourceSelection)
+                        self._sketch.clear()
                     self._closeSelector()
             rowNum = 0
             colNum = 0
@@ -321,5 +331,7 @@ class SampleSelector(QWidget):
                 for option in row:
                     colNum += 1
                     if option['bounds'].contains(event.pos()):
+                        if self._config.get('saveSketchInResult') and self._sketch.hasSketch:
+                            self._sketch.clear()
                         setImage(option)
                         return

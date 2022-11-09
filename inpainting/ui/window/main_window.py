@@ -78,7 +78,8 @@ class MainWindow(QMainWindow):
 
         # Image:
         imageMenu = self._menu.addMenu("Image")
-        addAction("Resize Canvas", None, lambda: controller.resizeCanvas(), imageMenu)
+        addAction("Resize canvas", None, lambda: controller.resizeCanvas(), imageMenu)
+        addAction("Scale image", None, lambda: controller.scaleImage(), imageMenu)
 
 
         # Build config + control layout (varying based on implementation): 
@@ -247,3 +248,7 @@ class MainWindow(QMainWindow):
         loadingBounds = QRect(self.width() // 2 - loadingWidgetSize // 2, loadingWidgetSize * 3,
                 loadingWidgetSize, loadingWidgetSize)
         self._loadingWidget.setGeometry(loadingBounds)
+
+    def mousePressEvent(self, event):
+        if not self._isLoading:
+            super().mousePressEvent(event)

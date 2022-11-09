@@ -1,6 +1,5 @@
 from startup.utils import imageToBase64, loadImageFromBase64
 
-BASE_64_PREFIX = 'data:image/png;base64,'
 API_ENDPOINT_BASE = '/sdapi/v1'
 API_ENDPOINTS = {
     'LOGIN_CHECK': '/login_check',
@@ -30,13 +29,22 @@ def getTxt2ImgBody(config, width, height):
 
 def getImg2ImgBody(config, image, mask=None):
     body = getTxt2ImgBody(config, image.width, image.height)
-    body['init_images'] = [ BASE_64_PREFIX + imageToBase64(image) ]
+    body['init_images'] = [ imageToBase64(image, includePrefix=True) ]
     body['denoising_strength'] = config.get('denoisingStrength')
     if mask is not None:
         mask = mask.convert('L').point(lambda p: 0 if p < 1 else 255).convert('RGB')
-        body['mask'] = BASE_64_PREFIX + imageToBase64(mask)
+        body['mask'] = imageToBase64(mask, includePrefix=True)
         body['mask_blur'] = config.get('maskBlur')
         body['inpainting_fill'] = config.getOptionIndex('maskedContent')
         body['inpainting_mask_invert'] = config.getOptionIndex('inpaintMasked')
         body['inpaint_full_res'] = False
     return body
+
+def getUpscaleBody(image, width, height):
+    return {
+        'resize_mode': 1,
+        'upscaling_resize_w': width,
+        'upscaling_resize_h': height,
+        'upscaler_1': 'SwinIR_4x',
+        'image': imageToBase64(image, includePrefix=True)
+    }
