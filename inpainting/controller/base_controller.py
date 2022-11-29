@@ -143,7 +143,8 @@ class BaseInpaintController():
         height = self._editedImage.height()
         scaleModal = ImageScaleModal(width, height)
         newSize = scaleModal.showImageModal()
-        self._scale(newSize)
+        if newSize is not None:
+            self._scale(newSize)
 
     def _scale(self, newSize): # Override to allow ML upscalers:
         width = self._editedImage.width()

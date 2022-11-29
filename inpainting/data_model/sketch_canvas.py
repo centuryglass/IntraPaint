@@ -10,8 +10,12 @@ class SketchCanvas(BaseCanvas):
         super().setImage(initData)
         self.hasSketch = initData is not None and not isinstance(initData, QSize)
 
-    def drawLine(self, line, color):
-        super().drawLine(line, color)
+    def drawLine(self, line, color, sizeMultiplier=None):
+        super().drawLine(line, color, sizeMultiplier)
+        self.hasSketch = True
+
+    def drawPoint(self, line, color, sizeMultiplier=None):
+        super().drawPoint(line, color, sizeMultiplier)
         self.hasSketch = True
 
     def clear(self):

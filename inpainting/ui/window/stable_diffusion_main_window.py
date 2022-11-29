@@ -111,7 +111,7 @@ class StableDiffusionMainWindow(MainWindow):
         checkboxLine.addWidget(tilingCheckBox)
 
         seedInput = connectedSpinBox(optionList, self._config, 'seed')
-        seedInput.setRange(-1, 2147483647)
+        seedInput.setRange(-1, 99999999999999999999)
         addOptionLine("Seed:", seedInput, "Controls image generation, use -1 to use a random value each time.")
 
         lastSeedBox = connectedTextEdit(optionList, self._config, 'lastSeed');

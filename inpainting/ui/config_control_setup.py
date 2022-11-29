@@ -1,5 +1,6 @@
 from PyQt5.QtWidgets import QSpinBox, QDoubleSpinBox, QLineEdit, QCheckBox, QComboBox, QPlainTextEdit
 from PyQt5.QtGui import QTextCursor
+from inpainting.ui.widget.big_int_spinbox import BigIntSpinbox
 
 """
 Creates UI input components linked to inpainting.data_model.config values.
@@ -10,7 +11,7 @@ Creates UI input components linked to inpainting.data_model.config values.
 
 def connectedSpinBox(parent, config, key, minKey=None, maxKey=None, stepSizeKey=None):
     initialValue = config.get(key)
-    spinBox = QDoubleSpinBox(parent) if type(initialValue) is float else QSpinBox(parent)
+    spinBox = QDoubleSpinBox(parent) if type(initialValue) is float else BigIntSpinbox(parent)
     if (initialValue < spinBox.minimum() or initialValue > spinBox.maximum()):
         spinBox.setRange(min(spinBox.minimum(), initialValue), max(spinBox.maximum(), initialValue))
     spinBox.setValue(initialValue)
@@ -22,7 +23,11 @@ def connectedSpinBox(parent, config, key, minKey=None, maxKey=None, stepSizeKey=
         if spinBox.value() != newValue:
             spinBox.setValue(newValue)
     config.connect(spinBox, key, lambda newValue: spinBox.setValue(newValue))
-    spinBox.valueChanged.connect(lambda newValue: config.set(key, newValue))
+    def applyChangeToConfig(newValue):
+        numValue = int(newValue) if type(initialValue) is int else float(newValue)
+        if config.get(key) != numValue:
+            config.set(key, numValue)
+    spinBox.valueChanged.connect(applyChangeToConfig)
     if maxKey is not None:
         minVal = 0 if minKey is None else config.get(minKey)
         maxVal = config.get(maxKey)
@@ -48,11 +53,15 @@ def connectedTextEdit(parent, config, key, multiLine=False):
         config.connect(textEdit, key, setText)
     return textEdit
 
-def connectedCheckBox(parent, config, key):
+def connectedCheckBox(parent, config, key, text=None, tooltip=None):
     checkBox = QCheckBox(parent)
     checkBox.setChecked(config.get(key))
     checkBox.stateChanged.connect(lambda isChecked: config.set(key, bool(isChecked)))
     config.connect(checkBox, key, lambda isChecked: checkBox.setChecked(bool(isChecked)))
+    if text is not None:
+        checkBox.setText(text)
+    if tooltip is not None:
+        checkBox.setToolTip(tooltip)
     return checkBox
 
 def connectedComboBox(parent, config, key):

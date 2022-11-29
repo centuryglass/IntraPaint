@@ -43,7 +43,7 @@ class Config(QObject):
         self._setDefault('skipSteps', 0)
         self._setDefault('maxSkipSteps', 27)
         self._setDefault('upscaleMode', Image.LANCZOS)
-        self._setDefault('downscaleMode', Image.HAMMING)
+        self._setDefault('downscaleMode', Image.LANCZOS)
         # Set whether areas in the sketch layer outside of the mask should be included in inpainting results.
         self._setDefault('saveSketchChanges', False)
         # Inpainting can create subtle changes outside the mask area, which can gradually impact image quality
@@ -92,6 +92,12 @@ class Config(QObject):
         # module that actually reads (and writes?) saved settings in a text file.
         self._setDefault('lastSeed', "-1")
         self._setDefault('lastFilePath', '')
+
+        # Pen tablet functionality
+        # Should pen pressure affect sketch/mask size?
+        self._setDefault('pressureSize', True)
+        # Should pen pressure affect mask opacity?
+        self._setDefault('pressureOpacity', False)
 
     def _setDefault(self, key, initialValue, options=None):
         self._values[key] = initialValue

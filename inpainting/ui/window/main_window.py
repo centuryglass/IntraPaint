@@ -80,6 +80,14 @@ class MainWindow(QMainWindow):
         imageMenu = self._menu.addMenu("Image")
         addAction("Resize canvas", None, lambda: controller.resizeCanvas(), imageMenu)
         addAction("Scale image", None, lambda: controller.scaleImage(), imageMenu)
+        def updateMetadata():
+            self._editedImage.updateMetadata()
+            messageBox = QMessageBox(self)
+            messageBox.setWindowTitle("Metadata updated")
+            messageBox.setText("On save, current image generation paremeters will be stored within the image")
+            messageBox.setStandardButtons(QMessageBox.Ok)
+            messageBox.exec()
+        addAction("Update image metadata", None, updateMetadata, imageMenu)
 
 
         # Build config + control layout (varying based on implementation): 

@@ -2,17 +2,20 @@ from PyQt5.QtWidgets import (QWidget, QLabel, QSpinBox, QCheckBox, QPushButton, 
         QColorDialog, QGridLayout, QSpacerItem)
 from PyQt5.QtCore import Qt, QPoint, QRect, QSize, QBuffer
 from PyQt5.QtGui import QPainter, QPen, QCursor, QPixmap, QBitmap
-from PyQt5.QtCore import Qt
 from PIL import Image
 
 from inpainting.ui.mask_creator import MaskCreator
 from inpainting.ui.util.get_scaled_placement import getScaledPlacement
+from inpainting.ui.config_control_setup import connectedCheckBox
 
 class MaskPanel(QWidget):
     def __init__(self, config, maskCanvas, sketchCanvas, editedImage):
         super().__init__()
 
-        self.maskCreator = MaskCreator(self, maskCanvas, sketchCanvas, editedImage)
+        def setSketchColor(newColor):
+            self.maskCreator.setSketchColor(newColor)
+            self.update()
+        self.maskCreator = MaskCreator(self, maskCanvas, sketchCanvas, editedImage, setSketchColor)
         self._maskCanvas = maskCanvas
         self._sketchCanvas = sketchCanvas
 
@@ -23,7 +26,11 @@ class MaskPanel(QWidget):
         self._cursorPixmap = QPixmap('./resources/cursor.png')
         smallCursorPixmap = QPixmap('./resources/minCursor.png')
         self._smallCursor = QCursor(smallCursorPixmap)
+        eyedropperIcon = QPixmap('./resources/eyedropper.png')
+        self._eyedropperCursor = QCursor(eyedropperIcon, hotX=0, hotY=eyedropperIcon.height())
+        self._eyedropperMode = False
         self._lastCursorSize = None
+        self._config = config
 
         self.brushSizeBox = QSpinBox(self)
         self.brushSizeBox.setToolTip("Brush size")
@@ -96,18 +103,11 @@ class MaskPanel(QWidget):
 
         self.colorPickerButton = QPushButton(self)
         self.colorPickerButton.setText("Select sketch color")
-        def getColor():
-            color = QColorDialog.getColor()
-            self.maskCreator.setSketchColor(color)
-            self.update()
-        self.colorPickerButton.clicked.connect(getColor)
+        self.colorPickerButton.clicked.connect(lambda: setSketchColor(QColorDialog.getColor()))
         self.colorPickerButton.setVisible(False)
 
-        self.keepSketchCheckbox = QCheckBox(self)
-        self.keepSketchCheckbox.setText("Apply sketch")
-        self.keepSketchCheckbox.setToolTip("Set whether parts of the sketch not covered by the mask should appear in generated images")
-        self.keepSketchCheckbox.setChecked(config.get('saveSketchInResult'))
-        self.keepSketchCheckbox.toggled.connect(lambda isChecked: config.set('saveSketchInResult', isChecked))
+        self.keepSketchCheckbox = connectedCheckBox(self, config, 'saveSketchInResult', "Apply sketch", 
+                "Set whether parts of the sketch not covered by the mask should appear in generated images")
 
         self.layout = QGridLayout()
         self.borderSize = 4
@@ -128,6 +128,24 @@ class MaskPanel(QWidget):
         self.setLayout(self.layout)
 
         self.brushSizeBox.setValue(self._maskBrushSize)
+
+    def tabletEvent(self, tabletEvent):
+        """Enable tablet controls on first tablet event"""
+        if not hasattr(self, 'pressureSizeCheckbox'):
+            config = self._config
+            self.pressureSizeCheckbox = connectedCheckBox(self, config, 'pressureSize', 'pressure=size',
+                    'Tablet pen pressure affects line width')
+            config.connect(self, 'pressureSize', lambda enabled: self.maskCreator.setPressureSizeMode(enabled))
+            self.maskCreator.setPressureSizeMode(config.get('pressureSize'))
+
+            self.pressureOpacityCheckbox = connectedCheckBox(self, config, 'pressureOpacity', 'pressure=opacity',
+                    'Tablet pen pressure affects color opacity (sketch mode only)')
+            config.connect(self, 'pressureOpacity', lambda enabled: self.maskCreator.setPressureOpacityMode(enabled))
+            self.maskCreator.setPressureOpacityMode(config.get('pressureOpacity'))
+            
+            self.layout.addWidget(self.pressureSizeCheckbox, 5, 2)
+            self.layout.addWidget(self.pressureOpacityCheckbox, 5, 3)
+            self.update()
 
     def setUseMaskMode(self, useMaskMode):
         if useMaskMode and not self._maskCanvas.enabled():
@@ -161,6 +179,24 @@ class MaskPanel(QWidget):
         maskCreatorBounds = getScaledPlacement(componentBounds, selectionSize, 4)
         self.maskCreator.setGeometry(maskCreatorBounds)
         self._updateBrushCursor()
+
+    def keyPressEvent(self, event):
+        if event.key() == Qt.Key_Control and not self.maskModeButton.isChecked():
+            self._eyedropperMode = True
+            self.maskCreator.setEyedropperMode(True)
+            self.maskCreator.setLineMode(False)
+            self.maskCreator.setCursor(self._eyedropperCursor)
+        elif event.key() == Qt.Key_Shift:
+            self.maskCreator.setLineMode(True)
+
+    def keyReleaseEvent(self, event):
+        if event.key() == Qt.Key_Control and self._eyedropperMode:
+            self._eyedropperMode = False
+            self.maskCreator.setEyedropperMode(False)
+            self._lastCursorSize = None
+            self._updateBrushCursor()
+        elif event.key() == Qt.Key_Shift:
+            self.maskCreator.setLineMode(False)
 
     def _updateBrushCursor(self):
         brushSize = self._maskBrushSize if self.maskModeButton.isChecked() else self._sketchBrushSize

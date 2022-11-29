@@ -56,6 +56,13 @@ class BaseCanvas(QObject):
     def getImage(self):
         return qImageToImage(self._pixmap.toImage())
 
+    def getColorAtPoint(self, point):
+        if self._pixmap is None:
+            return
+        qimage = self._pixmap.toImage()
+        if qimage.rect().contains(point):
+            return qimage.pixelColor(point)
+
     def resize(self, size):
         if not isinstance(size, QSize):
             raise Exception(f"Invalid resize param {size}")
@@ -63,29 +70,29 @@ class BaseCanvas(QObject):
             self._pixmap = self._pixmap.scaled(size)
             self.redrawRequired.emit()
 
-    def _draw(self, pos, color, compositionMode):
+    def _draw(self, pos, color, compositionMode, sizeMultiplier=1.0):
         if not self.enabled():
             return
         painter = QPainter(self._pixmap)
         painter.setCompositionMode(compositionMode)
-        painter.setPen(QPen(color, self._brushSize, Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin))
+        painter.setPen(QPen(color, int(self._brushSize * sizeMultiplier), Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin))
         if isinstance(pos, QLine):
             painter.drawLine(pos)
         else: # Should be QPoint
             painter.drawPoint(pos)
         self.redrawRequired.emit()
 
-    def drawPoint(self, point, color):
-        self._draw(point, color, QPainter.CompositionMode.CompositionMode_SourceOver)
+    def drawPoint(self, point, color, sizeMultiplier = 1.0):
+        self._draw(point, color, QPainter.CompositionMode.CompositionMode_SourceOver, sizeMultiplier)
 
-    def drawLine(self, line, color):
-        self._draw(line, color, QPainter.CompositionMode.CompositionMode_SourceOver)
+    def drawLine(self, line, color, sizeMultiplier = 1.0):
+        self._draw(line, color, QPainter.CompositionMode.CompositionMode_SourceOver, sizeMultiplier)
 
-    def erasePoint(self, point, color):
-        self._draw(point, color, QPainter.CompositionMode.CompositionMode_Clear)
+    def erasePoint(self, point, color, sizeMultiplier = 1.0):
+        self._draw(point, color, QPainter.CompositionMode.CompositionMode_Clear, sizeMultiplier)
 
-    def eraseLine(self, line, color):
-        self._draw(line, color, QPainter.CompositionMode.CompositionMode_Clear)
+    def eraseLine(self, line, color, sizeMultiplier = 1.0):
+        self._draw(line, color, QPainter.CompositionMode.CompositionMode_Clear, sizeMultiplier)
 
     def fill(self, color):
         if not self.enabled():

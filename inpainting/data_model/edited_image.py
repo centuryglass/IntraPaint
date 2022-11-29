@@ -34,6 +34,20 @@ class EditedImage(QObject):
             raise Exception('No image has been loaded')
         return qImageToImage(self._qimage)
 
+    def updateMetadata(self):
+        if not self.hasImage():
+            return
+        prompt = self._config.get('prompt')
+        negative = self._config.get('negativePrompt')
+        steps = self._config.get('samplingSteps')
+        sampler = self._config.get('samplingMethod')
+        cfgScale = self._config.get('cfgScale')
+        seed = self._config.get('seed')
+        params = f"{prompt}\nNegative prompt: {negative}\nSteps: {steps}, Sampler: {sampler}, CFG scale: {cfgScale}, Seed: {seed}, Size: 512x512"
+        if self._metadata is None:
+            self._metadata = {}
+        self._metadata['parameters'] = params
+
     def setImage(self, image):
         """Loads a new image to be edited from a file path, QImage, or PIL image."""
         oldSize = None if not self.hasImage() else self.size()
@@ -64,7 +78,6 @@ class EditedImage(QObject):
                         self._config.set('samplingSteps', steps)
                         self._config.set('samplingMethod', sampler)
                         self._config.set('cfgScale', cfgScale)
-                        print(f"seed: {seed}")
                         self._config.set('seed', seed)
                     except Exception as err:
                         print(f'Failed to load image gen data from metadata: {err}')
