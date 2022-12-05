@@ -71,6 +71,8 @@ class BaseInpaintController():
         return
 
     def startApp(self):
+        screen = self._app.primaryScreen()
+        size = screen.availableGeometry()
         self._window = MainWindow(self._config, self._editedImage, self._maskCanvas, self._sketchCanvas, self)
         self._window.setGeometry(0, 0, size.width(), size.height())
         self._window.show()

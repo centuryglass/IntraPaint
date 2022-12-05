@@ -252,10 +252,11 @@ class MainWindow(QMainWindow):
             self._sampleSelector.setLoadingMessage(message)
 
     def resizeEvent(self, event):
-        loadingWidgetSize = int(self.height() / 8)
-        loadingBounds = QRect(self.width() // 2 - loadingWidgetSize // 2, loadingWidgetSize * 3,
-                loadingWidgetSize, loadingWidgetSize)
-        self._loadingWidget.setGeometry(loadingBounds)
+        if hasattr(self, '_loadingWidget'):
+            loadingWidgetSize = int(self.height() / 8)
+            loadingBounds = QRect(self.width() // 2 - loadingWidgetSize // 2, loadingWidgetSize * 3,
+                    loadingWidgetSize, loadingWidgetSize)
+            self._loadingWidget.setGeometry(loadingBounds)
 
     def mousePressEvent(self, event):
         if not self._isLoading:
