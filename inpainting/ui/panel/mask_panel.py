@@ -1,12 +1,14 @@
 from PyQt5.QtWidgets import (QWidget, QLabel, QSpinBox, QCheckBox, QPushButton, QRadioButton, QButtonGroup,
         QColorDialog, QGridLayout, QSpacerItem)
 from PyQt5.QtCore import Qt, QPoint, QRect, QSize, QBuffer
-from PyQt5.QtGui import QPainter, QPen, QCursor, QPixmap, QBitmap
+from PyQt5.QtGui import QPainter, QPen, QCursor, QPixmap, QBitmap, QIcon
 from PIL import Image
 
 from inpainting.ui.mask_creator import MaskCreator
 from inpainting.ui.util.get_scaled_placement import getScaledPlacement
 from inpainting.ui.config_control_setup import connectedCheckBox
+from inpainting.ui.util.equal_margins import getEqualMargins
+import os, sys
 
 class MaskPanel(QWidget):
     def __init__(self, config, maskCanvas, sketchCanvas, editedImage):
@@ -16,6 +18,7 @@ class MaskPanel(QWidget):
             self.maskCreator.setSketchColor(newColor)
             self.update()
         self.maskCreator = MaskCreator(self, maskCanvas, sketchCanvas, editedImage, setSketchColor)
+        self.maskCreator.setMinimumSize(QSize(256, 256))
         self._maskCanvas = maskCanvas
         self._sketchCanvas = sketchCanvas
 
@@ -49,9 +52,12 @@ class MaskPanel(QWidget):
         self.drawToolGroup = QButtonGroup()
         self.penButton = QRadioButton(self)
         self.penButton.setText("Pen")
+        self.penButton.setIcon(QIcon(QPixmap('./resources/pen.png')))
         self.drawToolGroup.addButton(self.penButton)
+
         self.eraserButton = QCheckBox(self)
         self.eraserButton.setText("Eraser")
+        self.eraserButton.setIcon(QIcon(QPixmap('./resources/eraser.png')))
         self.drawToolGroup.addButton(self.eraserButton)
         self.penButton.toggle()
         def toggleEraser():
@@ -60,6 +66,7 @@ class MaskPanel(QWidget):
 
         self.clearMaskButton = QPushButton(self)
         self.clearMaskButton.setText("clear")
+        self.clearMaskButton.setIcon(QIcon(QPixmap('./resources/clear.png')))
         def clearMask():
             self.maskCreator.clear()
             self.eraserButton.setChecked(False)
@@ -67,14 +74,17 @@ class MaskPanel(QWidget):
 
         self.fillMaskButton = QPushButton(self)
         self.fillMaskButton.setText("fill")
+        self.fillMaskButton.setIcon(QIcon(QPixmap('./resources/fill.png')))
         def fillMask():
             self.maskCreator.fill()
         self.fillMaskButton.clicked.connect(fillMask)
 
         self.maskModeButton = QRadioButton(self)
         self.sketchModeButton = QRadioButton(self)
-        self.maskModeButton.setText("Draw mask")
-        self.sketchModeButton.setText("Draw sketch")
+        self.maskModeButton.setText("Mask")
+        self.maskModeButton.setIcon(QIcon(QPixmap('./resources/mask.png')))
+        self.sketchModeButton.setText("Sketch")
+        self.sketchModeButton.setIcon(QIcon(QPixmap('./resources/sketch.png')))
         self.maskModeButton.setToolTip("Draw over the area to be inpainted")
         self.sketchModeButton.setToolTip("Add simple details to help guide inpainting")
         self.maskModeButton.toggle()
@@ -111,41 +121,128 @@ class MaskPanel(QWidget):
 
         self.layout = QGridLayout()
         self.borderSize = 4
-        def makeSpacer():
-            return QSpacerItem(self.borderSize, self.borderSize)
-        self.layout.addItem(QSpacerItem(self.borderSize, self.borderSize), 0, 0)
-        self.layout.addWidget(QLabel(self, text="Brush size:"), 1, 0)
-        self.layout.addWidget(self.brushSizeBox, 1, 1)
-        self.layout.addWidget(self.penButton, 2, 0)
-        self.layout.addWidget(self.eraserButton, 2, 1)
-        self.layout.addWidget(self.clearMaskButton, 3, 0)
-        self.layout.addWidget(self.fillMaskButton, 3, 1)
-        self.layout.addWidget(self.maskModeButton, 4, 0)
-        self.layout.addWidget(self.sketchModeButton, 4, 1)
-        self.layout.addWidget(self.colorPickerButton, 5, 0)
-        self.layout.addWidget(self.keepSketchCheckbox, 5, 1)
-        self.layout.setRowStretch(0, 255)
+        self.brushLabel = QLabel(self, text="Brush size:")
+        self.layout.setContentsMargins(getEqualMargins(self.borderSize))
+        self.maskCreator.setContentsMargins(getEqualMargins(0))
         self.setLayout(self.layout)
+        self._layoutType = ""
+        self._setupCorrectLayout()
 
         self.brushSizeBox.setValue(self._maskBrushSize)
+
+    def _clearControlLayout(self):
+        widgets = [ 
+            self.maskCreator,
+            self.brushLabel,
+            self.brushSizeBox,
+            self.penButton,
+            self.eraserButton,
+            self.clearMaskButton,
+            self.fillMaskButton,
+            self.maskModeButton,
+            self.sketchModeButton,
+            self.colorPickerButton,
+            self.keepSketchCheckbox
+        ]
+        if hasattr(self, 'pressureSizeCheckbox'):
+            widgets.append(self.pressureSizeCheckbox)
+            widgets.append(self.pressureOpacityCheckbox)
+        for widget in widgets:
+            if self.layout.indexOf(widget) != -1:
+                self.layout.removeWidget(widget)
+
+
+    def _setupWideLayout(self):
+        self._clearControlLayout()
+        row = 0
+        self.layout.addWidget(self.penButton, 1, 1, 1, 12)
+        self.layout.addWidget(self.eraserButton, 2, 1, 1, 2)
+        self.layout.addWidget(self.maskModeButton, 3, 1, 1, 2)
+        self.layout.addWidget(self.sketchModeButton, 4, 1, 1, 2)
+        row = 5
+        if hasattr(self, 'pressureSizeCheckbox'):
+            self.layout.addWidget(self.pressureSizeCheckbox, 5, 1, 1, 2)
+            self.layout.addWidget(self.pressureOpacityCheckbox, 6, 1, 1, 2)
+            row = 7
+        self.layout.addWidget(self.brushLabel, row, 1)
+        self.layout.addWidget(self.brushSizeBox, row, 2)
+        row += 1
+        self.layout.addWidget(self.keepSketchCheckbox, row, 1)
+        self.layout.addWidget(self.colorPickerButton, row, 2)
+        row += 1
+        self.layout.addWidget(self.fillMaskButton, row, 1)
+        self.layout.addWidget(self.clearMaskButton, row, 2, 1, 2)
+        self.layout.addWidget(self.maskCreator, 0, 0, self.layout.rowCount(), 1)
+        self.layout.setColumnStretch(0, 255)
+        for i in range(self.layout.rowCount()):
+            self.layout.setRowStretch(i, 10)
+        self.layout.setVerticalSpacing(3 * self.borderSize)
+        self.layout.setHorizontalSpacing(self.borderSize)
+        self._layoutType = "WIDE"
+
+    def _setupTallLayout(self):
+        self._clearControlLayout()
+        self.layout.addWidget(self.penButton, 1, 1)
+        self.layout.addWidget(self.eraserButton, 2, 1)
+        self.layout.addWidget(self.maskModeButton, 1, 2)
+        self.layout.addWidget(self.sketchModeButton, 2, 2)
+        for i in range(1, 4):
+            self.layout.setColumnStretch(i, 10)
+        brushSizeRow=3
+        if hasattr(self, 'pressureSizeCheckbox'):
+            self.layout.addWidget(self.pressureSizeCheckbox, 1, 3)
+            self.layout.addWidget(self.pressureOpacityCheckbox, 2, 3)
+        else:
+            self.layout.setColumnStretch(3, 0)
+        self.layout.addWidget(self.brushLabel, 4, 1)
+        self.layout.addWidget(self.brushSizeBox, 4, 2, 1, 2)
+        self.layout.addWidget(self.keepSketchCheckbox, 5, 1)
+        self.layout.addWidget(self.colorPickerButton, 5, 2, 1, 2)
+        self.layout.addWidget(self.clearMaskButton, 6, 1)
+        self.layout.addWidget(self.fillMaskButton, 6, 2)
+        self.layout.setRowStretch(0, 255)
+        self.layout.setColumnStretch(0, 0)
+        self.layout.addWidget(self.maskCreator, 0, 1, 1, self.layout.columnCount() - 1)
+        for i in range(7, self.layout.rowCount()):
+            self.layout.setRowStretch(i, 0)
+        self.layout.setVerticalSpacing(self.borderSize)
+        self.layout.setHorizontalSpacing(self.borderSize)
+        self._layoutType = "TALL"
+
+    def _setupCorrectLayout(self):
+        minControlWidth = self.penButton.minimumSizeHint().width() + self.maskModeButton.minimumSizeHint().width()
+        if hasattr(self, 'pressureSizeCheckbox'):
+            minControlWidth = minControlWidth + self.pressureSizeCheckbox.minimumWidth()
+        canvasWidgetWidth = self.maskCreator.getImageDisplaySize().width()
+        if self._editedImage.hasImage():
+            canvasWidgetWidth = max(canvasWidgetWidth, self._editedImage.getSelectionBounds().width())
+        else:
+            canvasWidgetWidth = max(canvasWidgetWidth, 512)
+        if (canvasWidgetWidth + minControlWidth + self.borderSize) < self.width():
+            if self._layoutType != "WIDE":
+                self._setupWideLayout()
+        else:
+            if self._layoutType != "TALL":
+                self._setupTallLayout()
+        self._updateBrushCursor()
 
     def tabletEvent(self, tabletEvent):
         """Enable tablet controls on first tablet event"""
         if not hasattr(self, 'pressureSizeCheckbox'):
             config = self._config
-            self.pressureSizeCheckbox = connectedCheckBox(self, config, 'pressureSize', 'pressure=size',
+            self.pressureSizeCheckbox = connectedCheckBox(self, config, 'pressureSize', 'size',
                     'Tablet pen pressure affects line width')
+            self.pressureSizeCheckbox.setIcon(QIcon(QPixmap('./resources/pressureSize.png')))
             config.connect(self, 'pressureSize', lambda enabled: self.maskCreator.setPressureSizeMode(enabled))
             self.maskCreator.setPressureSizeMode(config.get('pressureSize'))
 
-            self.pressureOpacityCheckbox = connectedCheckBox(self, config, 'pressureOpacity', 'pressure=opacity',
+            self.pressureOpacityCheckbox = connectedCheckBox(self, config, 'pressureOpacity', 'opacity',
                     'Tablet pen pressure affects color opacity (sketch mode only)')
             config.connect(self, 'pressureOpacity', lambda enabled: self.maskCreator.setPressureOpacityMode(enabled))
+            self.pressureOpacityCheckbox.setIcon(QIcon(QPixmap('./resources/pressureOpacity.png')))
             self.maskCreator.setPressureOpacityMode(config.get('pressureOpacity'))
-            
-            self.layout.addWidget(self.pressureSizeCheckbox, 5, 2)
-            self.layout.addWidget(self.pressureOpacityCheckbox, 5, 3)
-            self.update()
+            self._layoutType = ""
+            self._setupCorrectLayout()
 
     def setUseMaskMode(self, useMaskMode):
         if useMaskMode and not self._maskCanvas.enabled():
@@ -170,14 +267,8 @@ class MaskPanel(QWidget):
                         Qt.RoundJoin))
             painter.drawRect(self.colorPickerButton.geometry())
 
-
     def resizeEvent(self, event):
-        # Force MaskCreator aspect ratio to match edit sizes, while leaving room for controls:
-        selectionSize = self._editedImage.getSelectionBounds().size()
-        componentBounds = QRect(0, 0, self.width(), self.height())
-        componentBounds.setBottom(self.brushSizeBox.y())
-        maskCreatorBounds = getScaledPlacement(componentBounds, selectionSize, 4)
-        self.maskCreator.setGeometry(maskCreatorBounds)
+        self._setupCorrectLayout()
         self._updateBrushCursor()
 
     def keyPressEvent(self, event):
@@ -201,7 +292,7 @@ class MaskPanel(QWidget):
     def _updateBrushCursor(self):
         brushSize = self._maskBrushSize if self.maskModeButton.isChecked() else self._sketchBrushSize
         canvasWidth = max(self._editedImage.getSelectionBounds().width(), 1)
-        widgetWidth = max(self.maskCreator.width(), 1)
+        widgetWidth = max(self.maskCreator.getImageDisplaySize().width(), 1)
         scaledSize = max(int(widgetWidth * brushSize / canvasWidth), 9)
         if scaledSize == self._lastCursorSize:
             return

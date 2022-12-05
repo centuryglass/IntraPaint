@@ -1,4 +1,4 @@
-from PyQt5.QtGui import QPainter, QPixmap, QPen, QImage
+from PyQt5.QtGui import QPainter, QPixmap, QPen, QImage, QColor
 import PyQt5.QtGui as QtGui
 from PyQt5.QtCore import Qt, QObject, QRect, QPoint, QLine, QSize, pyqtSignal
 from PIL import Image
@@ -58,7 +58,7 @@ class BaseCanvas(QObject):
 
     def getColorAtPoint(self, point):
         if self._pixmap is None:
-            return
+            return QColor(0, 0, 0, 0)
         qimage = self._pixmap.toImage()
         if qimage.rect().contains(point):
             return qimage.pixelColor(point)

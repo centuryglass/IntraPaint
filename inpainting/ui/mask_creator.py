@@ -98,6 +98,7 @@ class MaskCreator(QtWidgets.QWidget):
     def paintEvent(self, event):
         painter = QPainter(self)
         painter.setPen(QPen(Qt.black, 4, Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin))
+        #painter.drawRect(QRect(0, 0, self.width(), self.height()))
         painter.drawRect(self._imageRect.marginsAdded(getEqualMargins(self._borderSize())))
         if hasattr(self, '_imageSection') and self._imageSection is not None:
             painter.drawImage(self._imageRect, self._imageSection)
@@ -194,6 +195,9 @@ class MaskCreator(QtWidgets.QWidget):
         else:
             self._imageRect = getScaledPlacement(QRect(QPoint(0, 0), self.size()), self._maskCanvas.size(),
                     self._borderSize())
+
+    def getImageDisplaySize(self):
+        return QSize(self._imageRect.width(), self._imageRect.height())
 
     def _borderSize(self):
         return (min(self.width(), self.height()) // 40) + 1
