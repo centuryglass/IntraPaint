@@ -20,6 +20,7 @@ class MainWindow(QMainWindow):
         super().__init__()
         self.setWindowIcon(QtGui.QIcon('resources/icon.png'))
         # Initialize UI/editing data model:
+        self._controller = controller
         self._config = config
         self._editedImage = editedImage
         self._mask = mask
@@ -55,6 +56,7 @@ class MainWindow(QMainWindow):
         self.imagePanel = imagePanel
         self.maskPanel = maskPanel
 
+
         # Set up menu:
         self._menu = self.menuBar()
 
@@ -78,8 +80,8 @@ class MainWindow(QMainWindow):
 
         # Image:
         imageMenu = self._menu.addMenu("Image")
-        addAction("Resize canvas", None, lambda: controller.resizeCanvas(), imageMenu)
-        addAction("Scale image", None, lambda: controller.scaleImage(), imageMenu)
+        addAction("Resize canvas", "F2", lambda: controller.resizeCanvas(), imageMenu)
+        addAction("Scale image", "F3", lambda: controller.scaleImage(), imageMenu)
         def updateMetadata():
             self._editedImage.updateMetadata()
             messageBox = QMessageBox(self)
@@ -88,6 +90,20 @@ class MainWindow(QMainWindow):
             messageBox.setStandardButtons(QMessageBox.Ok)
             messageBox.exec()
         addAction("Update image metadata", None, updateMetadata, imageMenu)
+
+        # Tools:
+        toolMenu = self._menu.addMenu("Tools")
+        addAction("Toggle mask/sketch editing mode", "F6", lambda: maskPanel.setUseMaskMode(not maskPanel.maskModeButton.isChecked()), toolMenu)
+        addAction("Toggle pen/eraser tool", "F7", lambda: maskPanel.swapDrawTool(), toolMenu)
+        def clearBoth():
+            mask.clear()
+            sketch.clear()
+        addAction("Clear mask and sketch", "F8", clearBoth, toolMenu)
+        def brushSizeChange(offset):
+            size = maskPanel.getBrushSize()
+            maskPanel.setBrushSize(size + offset)
+        addAction("Increase brush size", "Ctrl+]", lambda: brushSizeChange(1), toolMenu)
+        addAction("Decrease brush size", "Ctrl+[", lambda: brushSizeChange(-1), toolMenu)
 
 
         # Build config + control layout (varying based on implementation): 
@@ -217,7 +233,8 @@ class MainWindow(QMainWindow):
                     self._editedImage,
                     self._mask,
                     self._sketch,
-                    lambda: self.setSampleSelectorVisible(False))
+                    lambda: self.setSampleSelectorVisible(False),
+                    lambda img: self._controller.selectAndApplySample(img))
             self.centralWidget.addWidget(self._sampleSelector)
             self.centralWidget.setCurrentWidget(self._sampleSelector)
         else:

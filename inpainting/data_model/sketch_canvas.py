@@ -19,9 +19,8 @@ class SketchCanvas(BaseCanvas):
         self.hasSketch = True
 
     def clear(self):
-        if self.hasSketch:
-            super().clear()
-            self.hasSketch = False
+        super().clear()
+        self.hasSketch = False
 
     def fill(self, color):
         super().fill(color)

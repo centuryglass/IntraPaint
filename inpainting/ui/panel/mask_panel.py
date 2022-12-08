@@ -249,8 +249,10 @@ class MaskPanel(QWidget):
             raise Exception("called setUseMaskMode(True) when mask mode is disabled")
         if not useMaskMode and not self._sketchCanvas.enabled():
             raise Exception("called setUseMaskMode(False) when sketch mode is disabled")
-        if self.maskModeButton.isChecked() != useMaskMode:
-            self.maskModeButton.toggle()
+        if useMaskMode:
+            self.maskModeButton.setChecked(True)
+        else:
+            self.sketchModeButton.setChecked(True)
         self.maskCreator.setSketchMode(not useMaskMode)
         self.colorPickerButton.setVisible(not useMaskMode)
         self.brushSizeBox.setValue(self._maskBrushSize if useMaskMode else self._sketchBrushSize)
@@ -289,8 +291,26 @@ class MaskPanel(QWidget):
         elif event.key() == Qt.Key_Shift:
             self.maskCreator.setLineMode(False)
 
+    def getBrushSize(self):
+        return self._maskBrushSize if self.maskModeButton.isChecked() else self._sketchBrushSize
+
+    def setBrushSize(self, newSize):
+        self.brushSizeBox.setValue(newSize)
+
+    def selectPenTool(self):
+        self.penButton.setChecked(True)
+
+    def selectEraserTool(self):
+        self.eraserButton.setChecked(True)
+
+    def swapDrawTool(self):
+        if self.penButton.isChecked():
+            self.eraserButton.setChecked(True)
+        else:
+            self.penButton.setChecked(True)
+
     def _updateBrushCursor(self):
-        brushSize = self._maskBrushSize if self.maskModeButton.isChecked() else self._sketchBrushSize
+        brushSize = self.getBrushSize()
         canvasWidth = max(self._editedImage.getSelectionBounds().width(), 1)
         widgetWidth = max(self.maskCreator.getImageDisplaySize().width(), 1)
         scaledSize = max(int(widgetWidth * brushSize / canvasWidth), 9)

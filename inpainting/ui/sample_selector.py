@@ -13,11 +13,12 @@ from inpainting.image_utils import imageToQImage
 class SampleSelector(QWidget):
     """Shows all inpainting samples as they load, allows the user to select one or discard all of them."""
 
-    def __init__(self, config, editedImage, mask, sketch, closeSelector):
+    def __init__(self, config, editedImage, mask, sketch, closeSelector, makeSelection):
         super().__init__()
 
         self._config = config
         self._sketch = sketch
+        self._makeSelection = makeSelection
         self.installEventFilter(self)
 
         sourceImage = editedImage.getSelectionContent()
@@ -270,6 +271,15 @@ class SampleSelector(QWidget):
             drawArrow(self._rightArrowBounds,
                     [rightMid, self._rightArrowBounds.topLeft(), self._rightArrowBounds.bottomLeft()],
                     str(nextIdx + 1))
+
+            # write current index centered over the image:
+            indexDim = self._rightArrowBounds.width()
+            indexLeft = int(self._zoomImageBounds.x() + (self._zoomImageBounds.width() / 2) + (indexDim / 2))
+            indexTop = int(self._zoomImageBounds.y() - indexDim - 8)
+            indexBounds = QRect(indexLeft, indexTop, indexDim, indexDim)
+            painter.fillRect(indexBounds, Qt.white)
+            painter.drawText(indexBounds, Qt.AlignCenter, str(self._zoomIndex + 1))
+            
         else:
             for row in self._options:
                 for option in row:
@@ -333,14 +343,6 @@ class SampleSelector(QWidget):
 
 
     def mousePressEvent(self, event):
-        def setImage(option):
-            if isinstance(option['image'], Image.Image):
-                self._editedImage.setSelectionContent(option['image'])
-                self._closeSelector()
-                return True
-            else:
-                print("image still pending")
-            return
         if self._zoomMode:
             maxIdx = (self._batchSize * self._batchCount) - (0 if self._includeOriginal else 1)
             # Check for arrow clicks:
@@ -354,35 +356,31 @@ class SampleSelector(QWidget):
                 return
             if self._zoomImageBounds.contains(event.pos()):
                 if self._includeOriginal and self._zoomIndex == maxIdx:
-                    # Original chosen, no need to change anything:
+                    # Original chosen, no need to change anything besides applying sketch:
+                    self._makeSelection(None)
                     self._closeSelector()
                 else:
                     col = self._zoomIndex % self._batchSize
                     row = self._zoomIndex // self._batchSize
                     option = self._options[row][col]
-                    setImage(option)
+                    if isinstance(option['image'], Image.Image):
+                        self._makeSelection(option['image'])
+                        self._closeSelector()
         else:
             if self._isLoading:
                 return
             if self._includeOriginal and self._sourceOptionBounds is not None:
-                if self._sourceOptionBounds.contains(event.pos()):
-                    # Original chosen: write in sketch content if enabled, otherwise do nothing:
-                    if self._config.get('saveSketchInResult') and self._sketch.hasSketch:
-                        sourceSelection = self._editedImage.getSelectionContent()
-                        sketchImage = self._sketch.getImage().resize((sourceSelection.width, sourceSelection.height),
-                                self._config.get('downscaleMode')).convert('RGBA')
-                        sourceSelection = Image.alpha_composite(sourceSelection.convert('RGBA'), sketchImage).convert('RGB')
-                        self._editedImage.setSelectionContent(sourceSelection)
-                        self._sketch.clear()
+                if self._sourceOptionBounds.contains(event.pos()): # Original image chosen
+                    self._makeSelection(None)
                     self._closeSelector()
+                    return
             rowNum = 0
             colNum = 0
             for row in self._options:
                 rowNum += 1
                 for option in row:
                     colNum += 1
-                    if option['bounds'].contains(event.pos()):
-                        if self._config.get('saveSketchInResult') and self._sketch.hasSketch:
-                            self._sketch.clear()
-                        setImage(option)
+                    if option['bounds'].contains(event.pos()) and isinstance(option['image'], Image.Image):
+                        self._makeSelection(option['image'])
+                        self._closeSelector()
                         return

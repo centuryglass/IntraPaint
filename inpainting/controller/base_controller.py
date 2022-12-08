@@ -281,6 +281,17 @@ class BaseInpaintController():
         self._window.setSampleSelectorVisible(True)
         self._startThread(worker)
 
+    def selectAndApplySample(self, sampleImage):
+        if self._config.get('saveSketchInResult'):
+            sourceSelection = self._editedImage.getSelectionContent()
+            sketchImage = self._sketchCanvas.getImage().resize((sourceSelection.width, sourceSelection.height),
+                    self._config.get('downscaleMode')).convert('RGBA')
+            sourceSelection = Image.alpha_composite(sourceSelection.convert('RGBA'), sketchImage).convert('RGB')
+            self._editedImage.setSelectionContent(sourceSelection)
+            self._sketchCanvas.clear()
+        if sampleImage is not None and isinstance(sampleImage, Image.Image):
+            self._editedImage.setSelectionContent(sampleImage)
+
     # Misc. other features:
 
     def zoomOut(self):
