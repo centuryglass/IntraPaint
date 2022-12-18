@@ -343,7 +343,7 @@ class SampleSelector(QWidget):
 
 
     def mousePressEvent(self, event):
-        if event.button() == Qt.LeftButton:
+        if event.button() != Qt.LeftButton:
             return
         if self._zoomMode:
             maxIdx = (self._batchSize * self._batchCount) - (0 if self._includeOriginal else 1)
