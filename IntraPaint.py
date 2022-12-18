@@ -31,8 +31,8 @@ controller = None
 controllerMode = args.mode
 
 if controllerMode == 'auto':
-    from inpainting.controller.stable_diffusion_controller import StableDiffusionController
-    from inpainting.controller.web_client_controller import WebClientController
+    from controller.stable_diffusion_controller import StableDiffusionController
+    from controller.web_client_controller import WebClientController
     if args.server_url != '':
         if StableDiffusionController.healthCheck(args.server_url):
             controllerMode = 'stable'
@@ -64,16 +64,16 @@ if controllerMode == 'auto':
                 controllerMode = 'web'
 
 if controllerMode == 'stable':
-    from inpainting.controller.stable_diffusion_controller import StableDiffusionController
+    from controller.stable_diffusion_controller import StableDiffusionController
     controller = StableDiffusionController(args)
 elif controllerMode == 'web':
-    from inpainting.controller.web_client_controller import WebClientController
+    from controller.web_client_controller import WebClientController
     controller = WebClientController(args)
 elif controllerMode == 'local':
-    from inpainting.controller.local_controller import LocalDeviceController
+    from controller.local_controller import LocalDeviceController
     controller = LocalDeviceController(args)
 elif controllerMode == 'mock':
-    from inpainting.controller.mock_controller import MockController
+    from controller.mock_controller import MockController
     controller = MockController(args)
 else:
     raise Exception(f'Exiting: invalid mode "{controllerMode}"')
