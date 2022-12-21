@@ -8,7 +8,9 @@ API_ENDPOINTS = {
     'IMG2IMG': f'{API_ENDPOINT_BASE}/img2img',
     'EXTRAS': f'{API_ENDPOINT_BASE}/extra-single-image',
     'PROGRESS': f'{API_ENDPOINT_BASE}/progress',
-    'STYLES': f'{API_ENDPOINT_BASE}/prompt-styles'
+    'STYLES': f'{API_ENDPOINT_BASE}/prompt-styles',
+    'INTERROGATE': f'{API_ENDPOINT_BASE}/interrogate',
+    'OPTIONS': f'{API_ENDPOINT_BASE}/options',
 }
 
 def getTxt2ImgBody(config, width, height):
@@ -40,6 +42,12 @@ def getImg2ImgBody(config, image, mask=None):
         body['inpainting_mask_invert'] = config.getOptionIndex('inpaintMasked')
         body['inpaint_full_res'] = False
     return body
+
+def getInterrogateBody(config, image):
+    return {
+        'model': config.get('interrogateModel'),
+        'image': imageToBase64(image, includePrefix=True)
+    }
 
 def getUpscaleBody(image, width, height):
     return {

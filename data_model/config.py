@@ -68,6 +68,7 @@ class Config(QObject):
         self._setDefault('inpaintMasked', 'Inpaint masked', ['Inpaint masked', 'Inpaint not masked'])
         self._setDefault('maskedContent', 'original', ['fill', 'original', 'latent noise', 'latent nothing'])
         self._setDefault('stableResizeMode', 'Just resize', ['Just resize', 'Crop and resize', 'Resize and fill'])
+        self._setDefault("interrogateModel", "clip")
         self._setDefault('samplingSteps', 30)
         self._setDefault('minSamplingSteps', 1)
         self._setDefault('maxSamplingSteps', 150)

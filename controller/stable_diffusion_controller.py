@@ -11,13 +11,10 @@ from controller.base_controller import BaseInpaintController
 from data_model.stable_diffusion_api import *
 from startup.utils import imageToBase64, loadImageFromBase64
 
-# TODO: remove once API properly supports interrogate
-INTERROGATE_FN_INDEX = 73
-
 class StableDiffusionController(BaseInpaintController):
     def __init__(self, args):
-        super().__init__(args)
         self._server_url = args.server_url
+        super().__init__(args)
         self._session_hash = secrets.token_hex(5)
         # Since stable-diffusion supports alternate generation modes, configure sketch/mask to only be available
         # when using appropriate modes:
@@ -39,6 +36,8 @@ class StableDiffusionController(BaseInpaintController):
         except Exception as err:
             print(f"error connecting to {url}: {err}")
             return False
+
+        # 
 
     def healthCheck(url, session_hash=secrets.token_hex(5)):
         try:
@@ -67,16 +66,12 @@ class StableDiffusionController(BaseInpaintController):
 
             def run(self):
                 try:
-                    body = {
-                        'data': [ imageToBase64(controller._editedImage.getSelectionContent(), includePrefix=True) ],
-                        'fn_index': INTERROGATE_FN_INDEX,
-                        'session_hash': controller._session_hash
-                    }
-                    url = f"{controller._server_url}/api/predict/"
+                    body = getInterrogateBody(controller._config, controller._editedImage.getSelectionContent())
+                    url = f"{controller._server_url}{API_ENDPOINTS['INTERROGATE']}"
                     res = requests.post(url, json=body)
                     if res.status_code != 200:
                         raise Exception(f"{res.status_code} : {res.text}")
-                    self.promptReady.emit(res.json()['data'][0])
+                    self.promptReady.emit(res.json()['caption'])
                 except Exception as err:
                     print (f"err:{err}")
                     self.errorSignal.emit(err)
@@ -94,9 +89,25 @@ class StableDiffusionController(BaseInpaintController):
 
     def _adjustConfigDefaults(self):
         # update size limits for stable-diffusion's capabilities:
-        self._config.set('maxEditSize', QSize(512, 512))
-        # stable-diffusion backend will handle this for us:
-        self._config.set('removeUnmaskedChanges', False)
+        # On launch, check selected model to see if it is a 2.0 variant trained at 768x768:
+        try:
+            url = f"{self._server_url}{API_ENDPOINTS['OPTIONS']}"
+            res = requests.get(url)
+            if res.status_code != 200:
+                raise Exception(f"Request failed with code {res.status_code}")
+            resBody = res.json()
+            modelKey = "sd_model_checkpoint"
+            if not modelKey in resBody:
+                raise Exception(f"Response did not contain {modelKey}")
+            if "768" in resBody[modelKey]:
+                print(f"model {resBody[modelKey]} name contains 768, setting edit size=768x768")
+                self._config.set('maxEditSize', QSize(768, 768))
+            else:
+                print(f"model {resBody[modelKey]} name doesn't include 768, assuming edit size=512x512")
+                self._config.set('maxEditSize', QSize(512, 512))
+        except Exception as err:
+            print(f"Checking model failed: {err}")
+            self._config.set('maxEditSize', QSize(512, 512))
         self._config.set('saveSketchInResult', True)
 
     def startApp(self):

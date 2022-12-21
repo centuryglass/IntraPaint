@@ -56,6 +56,16 @@ class ImagePanel(QWidget):
             sizeControl.setSingleStep(minSize)
             sizeControl.setValue(maxSize)
 
+        # If max size changes, update ranges:
+        def updateMax(newMax):
+            minEditSize = config.get('minEditSize')
+            self.widthBox.setRange(minEditSize.width(), newMax.width())
+            self.heightBox.setRange(minEditSize.height(), newMax.height())
+            self.widthBox.setValue(newMax.width())
+            self.heightBox.setValue(newMax.height())
+        config.connect(self, "maxEditSize", updateMax)
+
+
         def setW():
             value = self.widthBox.value()
             if editedImage.hasImage():
