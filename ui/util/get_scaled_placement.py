@@ -19,7 +19,7 @@ def getScaledPlacement(containerRect, innerSize, marginWidth=0):
         Amount that the inner rectangle's width and height should be scaled.
     """
     containerSize = containerRect.size() - QSize(marginWidth * 2, marginWidth * 2)
-    scale = min(containerSize.width()/innerSize.width(), containerSize.height()/innerSize.height())
+    scale = min(containerSize.width()/max(innerSize.width(), 1), containerSize.height()/max(innerSize.height(), 1))
     x = containerRect.x() + marginWidth
     y = containerRect.y() + marginWidth
     if (innerSize.width() * scale) < containerSize.width():

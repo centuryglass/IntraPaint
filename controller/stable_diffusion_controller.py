@@ -7,6 +7,7 @@ import requests, io, sys, secrets, threading, json, re
 from ui.window.stable_diffusion_main_window import StableDiffusionMainWindow
 from ui.modal.modal_utils import showErrorDialog
 from ui.modal.image_scale_modal import ImageScaleModal
+from ui.modal.login_modal import LoginModal
 from controller.base_controller import BaseInpaintController
 from data_model.stable_diffusion_api import *
 from startup.utils import imageToBase64, loadImageFromBase64
@@ -42,7 +43,9 @@ class StableDiffusionController(BaseInpaintController):
     def healthCheck(url, session_hash=secrets.token_hex(5)):
         try:
             res = requests.get(f"{url}{API_ENDPOINTS['LOGIN_CHECK']}", timeout=30)
-            return res.status_code == 200
+            if res.status_code == 200 or (res.status_code == 401 and res.json()['detail'] == 'Not authenticated'):
+                return True
+            raise Exception(f"{res.status_code} : {res.text}")
         except Exception as err:
             print(f"error connecting to {url}: {err}")
             return False
@@ -133,6 +136,12 @@ class StableDiffusionController(BaseInpaintController):
         # Check connection:
         while not StableDiffusionController.healthCheck(self._server_url, self._session_hash):
             promptForURL('Server connection failed, enter a new URL or click "OK" to retry')
+
+        # Check for required auth:
+        auth_res = requests.get(f"{self._server_url}{API_ENDPOINTS['LOGIN_CHECK']}", timeout=30)
+        if auth_res.status_code == 401 and auth_res.json()['detail'] == 'Not authenticated':
+            loginModal = LoginModal(self._server_url)
+            loginModal.showLoginModal()
         self._app.exec_()
         sys.exit()
 

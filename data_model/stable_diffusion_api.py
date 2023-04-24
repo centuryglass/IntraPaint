@@ -3,6 +3,7 @@ from startup.utils import imageToBase64, loadImageFromBase64
 API_ENDPOINT_BASE = '/sdapi/v1'
 API_ENDPOINTS = {
     'LOGIN_CHECK': '/login_check',
+    'LOGIN': '/login',
     'CONFIG': '/config',
     'TXT2IMG': f'{API_ENDPOINT_BASE}/txt2img',
     'IMG2IMG': f'{API_ENDPOINT_BASE}/img2img',

@@ -26,6 +26,7 @@ class Config(QObject):
         self._setDefault('initialSketchBrushSize', 4)
         self._setDefault('scaleSelectionBeforeInpainting', True)
         self._setDefault('saveSketchInResult', False)
+        self._setDefault('maxUndo', 10)
 
         # Inpainting guidance options:
         self._setDefault('prompt', '')
