@@ -1,4 +1,4 @@
-from PyQt5.QtGui import QImage
+from PyQt5.QtGui import QImage, QPainter
 from PyQt5.QtCore import QObject, QRect, QPoint, QSize, pyqtSignal
 from PIL import Image, PngImagePlugin
 from ui.image_utils import qImageToImage, imageToQImage
@@ -179,9 +179,10 @@ class EditedImage(QObject):
         """Gets a copy of the image, cropped to the current selection area."""
         if not self.hasImage():
             raise Exception('No image has been loaded')
-        pilImage = self.getPilImage()
-        pilImage.paste(imageData, (self._selection.x(), self._selection.y()))
-        self.setImage(pilImage)
+        painter = QPainter(self._qimage)
+        newContent = imageToQImage(imageData)
+        painter.drawImage(self._selection, newContent)
+        self.selectionChanged.emit(self.getSelectionBounds())
         self.contentChanged.emit()
 
     def hasMetadata(self):
