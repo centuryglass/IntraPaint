@@ -6,3 +6,4 @@ output_npy
 *.pt
 guided_diffusion.egg-info
 condaStart
+config.json

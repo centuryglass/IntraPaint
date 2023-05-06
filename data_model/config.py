@@ -1,6 +1,9 @@
-from PyQt5.QtCore import QObject, QSize
+<F2>from PyQt5.QtCore import QObject, QSize
 from PIL import Image
 from threading import Lock
+import json
+from io import StringIO
+import os.path
 
 class Config(QObject):
     """
@@ -17,6 +20,7 @@ class Config(QObject):
         self._types = {}
         self._connected = {}
         self._options = {}
+        self._jsonPath = 'config.json'
         self._lock = Lock()
 
         # Editing options:
@@ -100,6 +104,13 @@ class Config(QObject):
         self._setDefault('pressureSize', True)
         # Should pen pressure affect mask opacity?
         self._setDefault('pressureOpacity', False)
+        if os.path.isfile(self._jsonPath):
+            self._readFromJson()
+            self.set('lastSeed', self.get('seed'))
+            self.set('seed', -1)
+        else:
+            self._writeToJson()
+
 
     def _setDefault(self, key, initialValue, options=None):
         self._values[key] = initialValue
@@ -107,6 +118,29 @@ class Config(QObject):
         self._connected[key] = {}
         if options is not None:
             self._options[key] = options
+
+    def _writeToJson(self): 
+        convertedDict = {}
+        for key, value in self._values.items():
+            if isinstance(value, QSize):
+                value = f"{value.width()},{value.height()}"
+            convertedDict[key] = value
+        with open(self._jsonPath, 'w', encoding='utf-8') as file:
+            json.dump(convertedDict, file, ensure_ascii=False, indent=4)
+
+    def _readFromJson(self):
+        try:
+            with open(self._jsonPath) as file:
+                json_data = json.load(file)
+                for key, value in json_data.items():
+                    try:
+                        if self._types[key] == QSize:
+                            value = QSize(*(value,split(",")))
+                        self.set(key, value)
+                    except Exception as err:
+                        print(f"Failed to set {key}={value}: {err}")
+        except Exception as err:
+            print(f"Reading JSON config failed: {err}")
 
     def get(self, key):
         if not key in self._values:
@@ -140,12 +174,12 @@ class Config(QObject):
             raise Exception(f"Expected '{key}' value '{value}' to have type '{self._types[key]}', found '{type(value)}'")
         if key in self._options and not value in self._options[key]:
             raise Exception(f"'{key}' value '{value}' is not a valid option")
-            raise
         self._lock.acquire()
         valueChanged = (self._values[key] != value)
         self._values[key] = value
         self._lock.release()
         if valueChanged:
+            self._writeToJson()
             for callback in self._connected[key].values():
                 callback(value)
                 if (self.get(key) != value):
