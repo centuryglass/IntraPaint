@@ -269,9 +269,7 @@ class BaseInpaintController():
         worker.statusSignal.connect(updateStatus)
 
         def loadSamplePreview(img, y, x):
-            if config.get('removeUnmaskedChanges') or img.width != selection.width or img.height != selection.height:
-                #if keepSketch:
-                #    img = Image.alpha_composite(img.convert('RGBA'), sketchImage)
+            if ((config.get('editMode') == 'Inpaint')) and (config.get('removeUnmaskedChanges') or img.width != selection.width or img.height != selection.height):
                 maskAlpha = inpaintMask.convert('L').point( lambda p: 255 if p < 1 else 0 ).filter(ImageFilter.GaussianBlur())
                 img = resizeImage(img, selection.width, selection.height)
                 maskAlpha = resizeImage(maskAlpha, selection.width, selection.height)

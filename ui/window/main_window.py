@@ -12,6 +12,7 @@ from ui.sample_selector import SampleSelector
 from ui.config_control_setup import *
 from ui.widget.draggable_arrow import DraggableArrow
 from ui.widget.loading_widget import LoadingWidget
+from data_model.filled_canvas import FilledMaskCanvas
 
 class MainWindow(QMainWindow):
     """Main user interface for GLID-3-XL inpainting."""
@@ -228,10 +229,11 @@ class MainWindow(QMainWindow):
         if (visible == isVisible):
             return
         if visible:
+            mask = self._mask if (self._config.get('editMode') == 'Inpaint') else FilledMaskCanvas(self._config)
             self._sampleSelector = SampleSelector(
                     self._config,
                     self._editedImage,
-                    self._mask,
+                    mask,
                     self._sketch,
                     lambda: self.setSampleSelectorVisible(False),
                     lambda img: self._controller.selectAndApplySample(img))

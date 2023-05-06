@@ -312,15 +312,15 @@ class SampleSelector(QWidget):
             zoomIndex = int(event.text()) - 1
         # Allow both gaming-style (WASD) and Vim-style (hjkl) navigation:
         elif self._zoomMode:
-            if event.text() == 'h' or event.text() == 'a':
+            if event.text().lower() == 'h' or event.text().lower() == 'a':
                 self._zoomPrev()
                 return
-            elif event.text() == 'l' or event.text() == 'd':
+            elif event.text().lower() == 'l' or event.text().lower() == 'd':
                 self._zoomNext()
                 return
-            elif event.text() == 'k' or event.text() == 'w':
+            elif event.text().lower() == 'k' or event.text().lower() == 'w':
                 toggleZoom = True
-        elif event.text() == 'j' or event.text() == 's':
+        elif event.text().lower() == 'j' or event.text().lower() == 's':
                 toggleZoom = True # Zoom in on "down"
         if toggleZoom:
             self.toggleZoom(zoomIndex)
