@@ -106,7 +106,7 @@ class Config(QObject):
         self._setDefault('pressureOpacity', False)
         if os.path.isfile(self._jsonPath):
             self._readFromJson()
-            self.set('lastSeed', self.get('seed'))
+            self.set('lastSeed', f"{self.get('seed')}")
             self.set('seed', -1)
         else:
             self._writeToJson()
