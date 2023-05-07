@@ -9,8 +9,25 @@ from ui.modal.modal_utils import showErrorDialog
 from ui.modal.image_scale_modal import ImageScaleModal
 from ui.modal.login_modal import LoginModal
 from controller.base_controller import BaseInpaintController
-from data_model.stable_diffusion_api import *
 from startup.utils import imageToBase64, loadImageFromBase64
+
+from sd_api.config import ConfigGet
+from sd_api.embeddings import EmbeddingsGet
+from sd_api.extras import ExtrasPost
+from sd_api.hypernets import HypernetsGet
+from sd_api.img2img import Img2ImgPost
+from sd_api.interrogate import InterrogatePost
+from sd_api.interrupt import InterruptPost
+from sd_api.login_check import LoginCheckGet
+from sd_api.memory import MemoryGet
+from sd_api.models import ModelsGet
+from sd_api.options import OptionsGet, OptionsPost
+from sd_api.progress import ProgressGet
+from sd_api.refresh_ckpt import RefreshCheckpointsPost
+from sd_api.samplers import SamplersGet
+from sd_api.styles import StylesGet
+from sd_api.txt2img import Txt2ImgPost
+
 
 class StableDiffusionController(BaseInpaintController):
     def __init__(self, args):
@@ -28,21 +45,33 @@ class StableDiffusionController(BaseInpaintController):
         # Load styles on init:
         self._styles = {}
         try:
-            res = requests.get(f"{self._server_url}{API_ENDPOINTS['STYLES']}", timeout=30)
+            styleEndpoint = StylesGet(self._server_url)
+            res = styleEndpoint.send(timeout=30)
             if res.status_code == 200:
                 styleList = res.json()
                 for style in styleList:
                     self._styles[style['name']] = { 'prompt': style['prompt'], 'negative_prompt': style['negative_prompt'] }
                 print(f"Loaded {len(self._styles)} styles (Invoke with <STYLE_NAME>)")
+            else:
+                print(f"Failed to load styles, code={res.status_code}")
+            samplerEndpoint = SamplersGet(self._server_url)
+            res = samplerEndpoint.send(timeout=30)
+            if res.status_code == 200:
+                samplerList = res.json()
+                samplerOptions = []
+                for sampler in samplerList:
+                    samplerOptions.append(sampler['name'])
+                print(f"Loaded {len(samplerOptions)} SD sampler options")
+                self._config.updateOptions('samplingMethod', samplerOptions)
+            else:
+                print(f"Failed to load samplers, code={res.status_code}")
         except Exception as err:
-            print(f"error connecting to {url}: {err}")
-            return False
-
-        # 
+            print(f"error connecting to {self._server_url}: {err}")
 
     def healthCheck(url, session_hash=secrets.token_hex(5)):
         try:
-            res = requests.get(f"{url}{API_ENDPOINTS['LOGIN_CHECK']}", timeout=30)
+            loginCheckEndpoint = LoginCheckGet(url)
+            res = loginCheckEndpoint.send(timeout=30)
             if res.status_code == 200 or (res.status_code == 401 and res.json()['detail'] == 'Not authenticated'):
                 return True
             raise Exception(f"{res.status_code} : {res.text}")
@@ -69,9 +98,8 @@ class StableDiffusionController(BaseInpaintController):
 
             def run(self):
                 try:
-                    body = getInterrogateBody(controller._config, controller._editedImage.getSelectionContent())
-                    url = f"{controller._server_url}{API_ENDPOINTS['INTERROGATE']}"
-                    res = requests.post(url, json=body)
+                    interrogateEndpoint = InterrogatePost(controller._server_url)
+                    res = interrogateEndpoint.send(controller._config, controller._editedImage.getSelectionContent())
                     if res.status_code != 200:
                         raise Exception(f"{res.status_code} : {res.text}")
                     self.promptReady.emit(res.json()['caption'])
@@ -94,8 +122,8 @@ class StableDiffusionController(BaseInpaintController):
         # update size limits for stable-diffusion's capabilities:
         # On launch, check selected model to see if it is a 2.0 variant trained at 768x768:
         try:
-            url = f"{self._server_url}{API_ENDPOINTS['OPTIONS']}"
-            res = requests.get(url)
+            optionsEndpoint = OptionsGet(self._server_url)
+            res = optionsEndpoint.send()
             if res.status_code != 200:
                 raise Exception(f"Request failed with code {res.status_code}")
             resBody = res.json()
@@ -138,7 +166,8 @@ class StableDiffusionController(BaseInpaintController):
             promptForURL('Server connection failed, enter a new URL or click "OK" to retry')
 
         # Check for required auth:
-        auth_res = requests.get(f"{self._server_url}{API_ENDPOINTS['LOGIN_CHECK']}", timeout=30)
+        loginCheckEndpoint = LoginCheckGet(self._server_url)
+        auth_res = loginCheckEndpoint.send(timeout=30)
         if auth_res.status_code == 401 and auth_res.json()['detail'] == 'Not authenticated':
             loginModal = LoginModal(self._server_url)
             loginModal.showLoginModal()
@@ -166,9 +195,8 @@ class StableDiffusionController(BaseInpaintController):
 
             def run(self):
                 try:
-                    body = getUpscaleBody(controller._editedImage.getPilImage(), newSize.width(), newSize.height())
-                    url = f"{controller._server_url}{API_ENDPOINTS['EXTRAS']}"
-                    res = requests.post(url, json=body)
+                    upscaleEndpoint = ExtrasPost(controller._server_url)
+                    res = upscaleEndpoint.send(controller._editedImage.getPilImage(), newSize.width(), newSize.height())
                     if res.status_code != 200:
                         raise Exception(f"{res.status_code} : {res.text}")
                     self.imageReady.emit(loadImageFromBase64(res.json()['image']))
@@ -188,24 +216,10 @@ class StableDiffusionController(BaseInpaintController):
         editMode = self._config.get('editMode')
         if editMode != 'Inpaint':
             mask = None
-        body = getTxt2ImgBody(self._config, selection.width, selection.height) if editMode == 'Text to Image' \
-               else getImg2ImgBody(self._config, selection, mask)
-        uri = self._server_url + API_ENDPOINTS['TXT2IMG' if (editMode == 'Text to Image') else 'IMG2IMG']
-
-        # Check prompt/negative for styles:
-        def styleSub(promptTypeKey):
-            prompt = body[promptTypeKey]
-            matches = re.findall(r"<.+>", prompt)
-            for style in matches:
-                style = style[1:-1] # Remove <>
-                if style in self._styles:
-                    print(f"Applying style {style}")
-                    prompt = prompt.replace(style, self._styles[style][promptTypeKey])
-                else:
-                    print(f"Style '{style}' not found")
-            body[promptTypeKey] = prompt
-        styleSub('prompt')
-        styleSub('negative_prompt')
+        imageEndpoint = Txt2ImgPost(self._server_url) if editMode == 'Text to Image' \
+               else Img2ImgPost(self._server_url)
+        postArgs = [self._config, selection.width, selection.height] if editMode == 'Text to Image' \
+                   else [self._config, selection, mask]
 
         def errorCheck(serverResponse, contextStr):
             if serverResponse.status_code != 200:
@@ -227,14 +241,15 @@ class StableDiffusionController(BaseInpaintController):
         errors = []
 
         # Check progress before starting:
-        init_response = requests.get(self._server_url + API_ENDPOINTS['PROGRESS'])
+        progressEndpoint = ProgressGet(self._server_url)
+        init_response = progressEndpoint.send()
         errorCheck(init_response, 'Checking initial image generation progress')
         init_data = init_response.json()
         if init_data['current_image'] is not None:
             raise Exception('Image generation in progress, try again later.')
 
         def asyncRequest():
-            res = requests.post(uri, json=body)
+            res = imageEndpoint.send(*postArgs)
             try:
                 errorCheck(res, f"New {editMode} request")
                 if len(errors) == 0:
@@ -258,7 +273,7 @@ class StableDiffusionController(BaseInpaintController):
                 break
             res = None
             try:
-                progress_res = requests.get(self._server_url + API_ENDPOINTS['PROGRESS'])
+                progress_res = progressEndpoint.send()
                 errorCheck(progress_res, 'Checking image generation progress')
                 status = progress_res.json()
                 statusText = f"{int(status['progress'] * 100)}%"

@@ -1,7 +1,7 @@
 from PyQt5.QtWidgets import QWidget, QDialog, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QPushButton
 from PyQt5.QtCore import QSize
 from data_model.stable_diffusion_api import *
-import requests, json
+from sd_api.login import LoginPost
 
 class LoginModal(QDialog):
     def __init__(self, server_url):
@@ -36,12 +36,8 @@ class LoginModal(QDialog):
         self._buttonRow.addWidget(self._loginButton)
         self._layout.addLayout(self._buttonRow)
         def onLogin():
-            body = {
-                'username': self._nameInput.text(),
-                'password': self._passInput.text()
-            }
-            url = f"{server_url}{API_ENDPOINTS['LOGIN']}"
-            self._res = requests.post(url, json=body)
+            loginEndpoint = LoginPost(server_url)
+            self._res = loginEndpoint.send(self._nameInput.text(), self._passInput.text())
             self.hide()
         self._loginButton.clicked.connect(onLogin)
 

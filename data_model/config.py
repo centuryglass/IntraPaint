@@ -69,7 +69,7 @@ class Config(QObject):
         self._setDefault('maxRetryDelay', 60000000)
 
         # Keys stored temporarily in config that shouldn't be saved to JSON:
-        self._setDefault('unsavedKeys', ['prompt','negativePrompt','timelapsePath','seed'])
+        self._setDefault('unsavedKeys', ['prompt','negativePrompt','timelapsePath','lastFilePath','seed','maxEditSize'])
 
         # Settings used only by stable-diffusion:
         self._setDefault('editMode', 'Inpaint', ['Inpaint', 'Text to Image', 'Image to Image'])
@@ -141,7 +141,7 @@ class Config(QObject):
                 for key, value in json_data.items():
                     try:
                         if self._types[key] == QSize:
-                            value = QSize(*(value.split("")))
+                            value = QSize(*map(lambda n: int(n), value.split("x")))
                         elif self._types[key] == list:
                             value = value.split(",")
                         self.set(key, value)
@@ -174,6 +174,16 @@ class Config(QObject):
             raise Exception(f"Tried to set unknown config value '{key}'")
         return self._options[key]
 
+    def updateOptions(self, key, optionsList):
+        if not key in self._values:
+            raise Exception(f"Tried to get unknown config value '{key}'")
+        if not key in self._options:
+            raise Exception(f"Config value '{key}' does not have an associated options list")
+        if not isinstance(optionsList, list) or len(optionsList) == 0:
+            raise Exception(f"Provided invalid options for config value '{key}'")
+        self._options[key] = optionsList
+        if not self._values in optionsList:
+            self.set(key, optionsList[0])
 
     def set(self, key, value):
         if not key in self._values:
