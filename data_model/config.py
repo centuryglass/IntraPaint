@@ -1,4 +1,4 @@
-<F2>from PyQt5.QtCore import QObject, QSize
+from PyQt5.QtCore import QObject, QSize
 from PIL import Image
 from threading import Lock
 import json
