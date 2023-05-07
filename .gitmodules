@@ -1,0 +1,3 @@
+[submodule "pyspacenav"]
+	path = pyspacenav
+	url = https://github.com/mastersign/pyspacenav

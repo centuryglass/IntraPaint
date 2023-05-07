@@ -68,6 +68,9 @@ class Config(QObject):
         self._setDefault('minRetryDelay', 300000) 
         self._setDefault('maxRetryDelay', 60000000)
 
+        # Keys stored temporarily in config that shouldn't be saved to JSON:
+        self._setDefault('unsavedKeys', ['prompt','negativePrompt','timelapsePath','seed'])
+
         # Settings used only by stable-diffusion:
         self._setDefault('editMode', 'Inpaint', ['Inpaint', 'Text to Image', 'Image to Image'])
         self._setDefault('inpaintMasked', 'Inpaint masked', ['Inpaint masked', 'Inpaint not masked'])
@@ -106,8 +109,6 @@ class Config(QObject):
         self._setDefault('pressureOpacity', False)
         if os.path.isfile(self._jsonPath):
             self._readFromJson()
-            self.set('lastSeed', self.get('seed'))
-            self.set('seed', -1)
         else:
             self._writeToJson()
 
@@ -121,9 +122,14 @@ class Config(QObject):
 
     def _writeToJson(self): 
         convertedDict = {}
+        keysToSkip = self.get('unsavedKeys')
         for key, value in self._values.items():
+            if key in keysToSkip:
+                continue
             if isinstance(value, QSize):
-                value = f"{value.width()},{value.height()}"
+                value = f"{value.width()}x{value.height()}"
+            elif isinstance(value, list):
+                value = ','.join(value)
             convertedDict[key] = value
         with open(self._jsonPath, 'w', encoding='utf-8') as file:
             json.dump(convertedDict, file, ensure_ascii=False, indent=4)
@@ -135,7 +141,9 @@ class Config(QObject):
                 for key, value in json_data.items():
                     try:
                         if self._types[key] == QSize:
-                            value = QSize(*(value,split(",")))
+                            value = QSize(*(value.split("")))
+                        elif self._types[key] == list:
+                            value = value.split(",")
                         self.set(key, value)
                     except Exception as err:
                         print(f"Failed to set {key}={value}: {err}")
