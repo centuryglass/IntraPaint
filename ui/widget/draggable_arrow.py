@@ -10,6 +10,17 @@ class DraggableArrow(QWidget):
         super().__init__()
         self._dragging = False
         self.resizeEvent(None)
+        self._mode = 'horizontal'
+
+    def setHorizontalMode(self):
+        if self._mode != 'horizontal':
+            self._mode = 'horizontal'
+            self.update()
+
+    def setVerticalMode(self):
+        if self._mode != 'vertical':
+            self._mode = 'vertical'
+            self.update()
 
     def resizeEvent(self, event):
         minSize = min(self.width(), self.height())
@@ -21,16 +32,28 @@ class DraggableArrow(QWidget):
         size = 4 if self._dragging else 2
         painter.setPen(QPen(color, size, Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin))
         centerBox = self._centerBox
-        yMid = centerBox.y() + (centerBox.height() // 2)
-        midLeft = QPoint(centerBox.x(), yMid)
-        midRight = QPoint(centerBox.right(), yMid)
-        arrowWidth = centerBox.width() // 4
-        # Draw arrows:
-        painter.drawLine(midLeft, midRight)
-        painter.drawLine(midLeft, centerBox.topLeft() + QPoint(arrowWidth, 0))
-        painter.drawLine(midLeft, centerBox.bottomLeft() + QPoint(arrowWidth, 0))
-        painter.drawLine(midRight, centerBox.topRight() - QPoint(arrowWidth, 0))
-        painter.drawLine(midRight, centerBox.bottomRight() - QPoint(arrowWidth, 0))
+        if self._mode == 'horizontal':
+            yMid = centerBox.y() + (centerBox.height() // 2)
+            midLeft = QPoint(centerBox.x(), yMid)
+            midRight = QPoint(centerBox.right(), yMid)
+            arrowWidth = centerBox.width() // 4
+            # Draw arrows:
+            painter.drawLine(midLeft, midRight)
+            painter.drawLine(midLeft, centerBox.topLeft() + QPoint(arrowWidth, 0))
+            painter.drawLine(midLeft, centerBox.bottomLeft() + QPoint(arrowWidth, 0))
+            painter.drawLine(midRight, centerBox.topRight() - QPoint(arrowWidth, 0))
+            painter.drawLine(midRight, centerBox.bottomRight() - QPoint(arrowWidth, 0))
+        else:
+            xMid = centerBox.x() + (centerBox.width() // 2)
+            midTop = QPoint(xMid, centerBox.y())
+            midBottom = QPoint(xMid, centerBox.bottom())
+            arrowSize = centerBox.height() // 4
+            # Draw arrows:
+            painter.drawLine(midTop, midBottom)
+            painter.drawLine(midTop, midTop + QPoint(arrowSize, arrowSize))
+            painter.drawLine(midTop, midTop + QPoint(-arrowSize, arrowSize))
+            painter.drawLine(midBottom, midBottom + QPoint(arrowSize, -arrowSize))
+            painter.drawLine(midBottom, midBottom + QPoint(-arrowSize, -arrowSize))
 
     def mousePressEvent(self, event):
         self._dragging = True

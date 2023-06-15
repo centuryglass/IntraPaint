@@ -141,7 +141,7 @@ class SampleSelector(QWidget):
         statusArea = QRect(0, 0, self.width(), self.height() // 8)
         self._sourceImageBounds = getScaledPlacement(statusArea, self._imageSize, 5)
         self._sourceImageBounds.moveLeft(statusArea.x() + 10)
-        self._maskImageBounds = QRect(self._sourceImageBounds.x() + self._sourceImageBounds.width() + 5,
+        self._maskImageBounds = QRect(self._sourceImageBounds.right() + 5,
                 self._sourceImageBounds.y(),
                 self._sourceImageBounds.width(),
                 self._sourceImageBounds.height())
@@ -151,20 +151,29 @@ class SampleSelector(QWidget):
                 loadingWidgetSize, loadingWidgetSize)
         self._loadingWidget.setGeometry(loadingBounds)
 
-        textArea = QRect(self._maskImageBounds.x() + self._maskImageBounds.width() + 10,
+        textArea = QRect(self._maskImageBounds.right(),
                 statusArea.y(),
-                int(statusArea.width() * 0.8),
+                int((statusArea.width() - self._maskImageBounds.right()) * 0.8),
                 statusArea.height()).marginsRemoved(getEqualMargins(4))
         self._instructions.setGeometry(textArea)
-        zoomArea = QRect(textArea.width(), statusArea.y(),
-            (statusArea.width() - textArea.width()) // 2,
-            statusArea.height()).marginsRemoved(getEqualMargins(statusArea.height() // 3))
+        zoomArea = QRect(textArea.right(), statusArea.y(),
+            (statusArea.width() - textArea.right()) // 2,
+            statusArea.height()).marginsRemoved(getEqualMargins(10))
+        if zoomArea.height() > zoomArea.width():
+            zoomArea.setHeight(max(zoomArea.width(), statusArea.height() // 3))
+            zoomArea.setY(statusArea.y() + (statusArea.height() // 4) - (zoomArea.height() // 2))
+            cancelArea = QRect(zoomArea.left(),
+                    statusArea.bottom() - (statusArea.height() // 4) - (zoomArea.height() // 2),
+                    zoomArea.width(),
+                    zoomArea.height())
+            self._cancelButton.setGeometry(cancelArea)
+        else:
+            cancelArea = QRect(zoomArea.left() + zoomArea.width(), statusArea.y(),
+                (statusArea.width() - zoomArea.right()),
+                statusArea.height()).marginsRemoved(getEqualMargins(10))
+            self._cancelButton.setGeometry(cancelArea)
         if self._zoomButton is not None:
             self._zoomButton.setGeometry(zoomArea)
-        cancelArea = QRect(zoomArea.left() + zoomArea.width(), statusArea.y(),
-            (statusArea.width() - zoomArea.right()),
-            statusArea.height()).marginsRemoved(getEqualMargins(statusArea.height() // 3))
-        self._cancelButton.setGeometry(cancelArea)
 
         
         optionCount = self._optionCount()

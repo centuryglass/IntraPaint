@@ -14,6 +14,13 @@ from ui.modal.resize_canvas_modal import ResizeCanvasModal
 from ui.modal.image_scale_modal import ImageScaleModal
 from ui.modal.modal_utils import *
 
+# Optional spacenav support:
+try:
+    import spacenav, atexit
+except ImportError:
+    print('spaceMouse support not installed.')
+    spacenav = None
+
 class BaseInpaintController():
     """
     Shared base class for managing impainting. 
@@ -34,6 +41,74 @@ class BaseInpaintController():
         self._adjustConfigDefaults()
         self._config.applyArgs(args)
         self._editedImage = EditedImage(self._config, args.init_image)
+        self._window = None
+
+        if spacenav is not None:
+            print("Configuring optional space mouse support for panning:")
+            spacenavThreadData = {
+                'readEvents': True,
+                'pending': False,
+                'x': 0,
+                'y': 0
+            }
+
+            def stopLoop():
+                spacenavThreadData['readEvents'] = False
+            atexit.register(stopLoop)
+
+            class SpacenavThreadWorker(QObject):
+                navEventSignal = pyqtSignal(int, int)
+                def __init__(self):
+                    super().__init__()
+
+                def run(self):
+                    print("Loading optional space mouse support for panning:")
+                    try:
+                        spacenav.open()
+                        atexit.register(spacenav.close)
+                    except spacenav.ConnectionError:
+                        print("spacenav connection failed, space mouse will not be used.")
+                        return
+                    print("spacenav connection started.")
+                    while spacenavThreadData['readEvents']:
+                        if spacenavThreadData['pending']:
+                            QThread.currentThread().usleep(100)
+                        #    continue
+                        event = spacenav.poll()
+                        if event is None or not hasattr(event, 'x') or not hasattr(event, 'z'):
+                            #if event is None:
+                            #    spacenavThreadData['x'] = 0
+                            #    spacenavThreadData['y'] = 0
+                            QThread.currentThread().usleep(100)
+                            continue
+                        spacenavThreadData['x'] += event.x
+                        spacenavThreadData['y'] += event.z
+                        if (abs(spacenavThreadData['x']) > 1000 or abs(spacenavThreadData['y']) > 1000):
+                            x = -spacenavThreadData['x'] // 200
+                            y = spacenavThreadData['y'] // 200
+                            print(f"scroll x={x} y={y}")
+                            spacenavThreadData['x'] = 0
+                            spacenavThreadData['y'] = 0
+                            spacenavThreadData['pending'] = True
+                            self.navEventSignal.emit(x, y)
+                        QThread.currentThread().usleep(100)
+                        QThread.currentThread().yieldCurrentThread()
+
+            navWorker = SpacenavThreadWorker()
+            def handleNavEvent(xOffset, yOffset):
+                spacenavThreadData['pending'] = False
+                if self._window is None or not self._editedImage.hasImage() or self._window.isSampleSelectorVisible():
+                    return
+                selection = self._editedImage.getSelectionBounds();
+                selection.moveTo(selection.x() - xOffset, selection.y() - yOffset)
+                self._editedImage.setSelectionBounds(selection)
+                self._window.repaint()
+            navWorker.navEventSignal.connect(handleNavEvent)
+            self._navThread = QThread()
+            navWorker.moveToThread(self._navThread)
+            self._navThread.started.connect(navWorker.run)
+            self._navThread.start()
+
 
         initialSelectionSize = self._editedImage.getSelectionBounds().size()
         self._maskCanvas = MaskCanvas(self._config, initialSelectionSize)
@@ -220,7 +295,7 @@ class BaseInpaintController():
             inpaintImage = Image.alpha_composite(inpaintImage, sketchImage).convert('RGB')
         keepSketch = self._sketchCanvas.hasSketch and self._config.get('saveSketchInResult')
 
-        # If scaling is enabled, scale selection as close to default as possible while attempting to minimize
+        # If scaling is enabled, scale selection as ve to default as possible while attempting to minimize
         # aspect ratio changes. Keep the unscaled version so it can be used for compositing if "keep sketch"
         # is checked.
         unscaledInpaintImage = inpaintImage.copy()

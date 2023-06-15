@@ -29,6 +29,7 @@ class MainWindow(QMainWindow):
         self._draggingDivider = False
         self._timelapsePath = None
         self._sampleSelector = None
+        self._layoutMode = 'horizontal'
 
         # Create components, build layout:
         self.layout = QVBoxLayout()
@@ -36,26 +37,15 @@ class MainWindow(QMainWindow):
         self._mainWidget.setLayout(self.layout)
 
         # Image/Mask editing layout:
-        imageLayout = QHBoxLayout()
         imagePanel = ImagePanel(self._config, self._editedImage, controller)
         maskPanel = MaskPanel(self._config, self._mask, self._sketch, self._editedImage)
         divider = DraggableArrow()
-        def scaleWidgets(pos):
-            x = pos.x()
-            imgWeight = int(x / self.width() * 300)
-            maskWeight = 300 - imgWeight
-            self.imageLayout.setStretch(0, imgWeight)
-            self.imageLayout.setStretch(2, maskWeight)
-            self.update()
-        divider.dragged.connect(scaleWidgets)
-
-        imageLayout.addWidget(imagePanel, stretch=255)
-        imageLayout.addWidget(divider, stretch=5)
-        imageLayout.addWidget(maskPanel, stretch=100)
-        self.layout.addLayout(imageLayout, stretch=255)
-        self.imageLayout = imageLayout
+        self._scaleHandler = None
+        self.imageLayout = None
         self.imagePanel = imagePanel
         self.maskPanel = maskPanel
+        self.divider = divider
+        self._setupCorrectLayout()
 
 
         # Set up menu:
@@ -120,6 +110,67 @@ class MainWindow(QMainWindow):
         self._loadingWidget.setParent(self)
         self._loadingWidget.setGeometry(self.frameGeometry())
         self._loadingWidget.hide()
+
+    def _clearEditingLayout(self):
+        if self.imageLayout is not None:
+            for widget in [self.imagePanel, self.divider, self.maskPanel]:
+                self.imageLayout.removeWidget(widget)
+            self.layout.removeItem(self.imageLayout)
+            self.imageLayout = None
+            if self._scaleHandler is not None:
+                self.divider.dragged.disconnect(self._scaleHandler)
+                self._scaleHandler = None
+
+    def _setupWideLayout(self):
+        if self.imageLayout is not None:
+            self._clearEditingLayout()
+        imageLayout = QHBoxLayout()
+        self.divider.setHorizontalMode()
+        self.imageLayout = imageLayout
+        def scaleWidgets(pos):
+            x = pos.x()
+            imgWeight = int(x / self.width() * 300)
+            maskWeight = 300 - imgWeight
+            self.imageLayout.setStretch(0, imgWeight)
+            self.imageLayout.setStretch(2, maskWeight)
+            self.update()
+        self._scaleHandler = scaleWidgets
+        self.divider.dragged.connect(self._scaleHandler)
+
+        imageLayout.addWidget(self.imagePanel, stretch=255)
+        imageLayout.addWidget(self.divider, stretch=5)
+        imageLayout.addWidget(self.maskPanel, stretch=100)
+        self.layout.insertLayout(0, imageLayout, stretch=255)
+
+    def _setupTallLayout(self):
+        if self.imageLayout is not None:
+            self._clearEditingLayout()
+        imageLayout = QVBoxLayout()
+        self.imageLayout = imageLayout
+        self.divider.setVerticalMode()
+        def scaleWidgets(pos):
+            y = pos.y()
+            imgWeight = int(y / self.height() * 300)
+            maskWeight = 300 - imgWeight
+            self.imageLayout.setStretch(0, imgWeight)
+            self.imageLayout.setStretch(2, maskWeight)
+            self.update()
+        self._scaleHandler = scaleWidgets
+        self.divider.dragged.connect(self._scaleHandler)
+
+        imageLayout.addWidget(self.imagePanel, stretch=255)
+        imageLayout.addWidget(self.divider, stretch=5)
+        imageLayout.addWidget(self.maskPanel, stretch=100)
+        self.layout.insertLayout(0, imageLayout, stretch=255)
+        self.imageLayout = imageLayout
+        self.update()
+
+    def _setupCorrectLayout(self):
+        if self.height() > (self.width() * 1.2):
+            if isinstance(self.imageLayout, QHBoxLayout) or self.imageLayout is None:
+                self._setupTallLayout()
+        elif isinstance(self.imageLayout, QVBoxLayout) or self.imageLayout is None: 
+                self._setupWideLayout()
 
     def _createScaleModeSelector(self, parent, configKey): 
         scaleModeList = QComboBox(parent)
@@ -224,8 +275,11 @@ class MainWindow(QMainWindow):
         self.layout.addWidget(inpaintPanel, stretch=20)
         self.resizeEvent(None)
 
+    def isSampleSelectorVisible(self):
+        return self.centralWidget.currentWidget() is not self._mainWidget
+
     def setSampleSelectorVisible(self, visible):
-        isVisible = (self.centralWidget.currentWidget() is not self._mainWidget)
+        isVisible = self.isSampleSelectorVisible()
         if (visible == isVisible):
             return
         if visible:
@@ -271,6 +325,7 @@ class MainWindow(QMainWindow):
             self._sampleSelector.setLoadingMessage(message)
 
     def resizeEvent(self, event):
+        self._setupCorrectLayout()
         if hasattr(self, '_loadingWidget'):
             loadingWidgetSize = int(self.height() / 8)
             loadingBounds = QRect(self.width() // 2 - loadingWidgetSize // 2, loadingWidgetSize * 3,
