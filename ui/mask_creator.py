@@ -49,9 +49,11 @@ class MaskCreator(QtWidgets.QWidget):
 
     def setPressureOpacityMode(self, usePressureOpacity):
         self._pressureOpacity = usePressureOpacity
+        if not usePressureOpacity and self._sketchCanvas.hasSketch:
+            self._sketchCanvas.applyShading()
 
     def _getSketchOpacity(self):
-        return 1.0 if not self._pressureOpacity else (max(0.0, self._pen_pressure - 0.5) * 2)
+        return 1.0 if not self._pressureOpacity else min(1, self._pen_pressure * 1.25)
 
     def setSketchMode(self, sketchMode):
         self._sketchMode = sketchMode
@@ -104,6 +106,8 @@ class MaskCreator(QtWidgets.QWidget):
             painter.drawImage(self._imageRect, self._imageSection)
         if self._sketchCanvas.hasSketch and self._sketchCanvas.enabled():
             painter.drawPixmap(self._imageRect, self._sketchCanvas.getPixmap())
+            if self._sketchCanvas.shading:
+                painter.drawPixmap(self._imageRect, self._sketchCanvas._transparencyCanvas.getPixmap())
         if self._maskCanvas.enabled():
             painter.setOpacity(0.6)
             painter.drawPixmap(self._imageRect, self._maskCanvas.getPixmap())
@@ -138,7 +142,7 @@ class MaskCreator(QtWidgets.QWidget):
                     self._eyedropperCallback(color)
             else:
                 canvas = self._sketchCanvas if self._sketchMode else self._maskCanvas
-                color = self._sketchColor if self._sketchMode else Qt.red
+                color = QColor(self._sketchColor if self._sketchMode else Qt.red)
                 if self._sketchMode and self._pressureOpacity:
                     color.setAlphaF(self._getSketchOpacity())
                 sizeMultiplier = self._pen_pressure if self._pressureSize else 1.0
@@ -158,12 +162,14 @@ class MaskCreator(QtWidgets.QWidget):
                     if self._useEraser or self._tabletEraser:
                         canvas.erasePoint(self._lastPoint, color, sizeMultiplier)
                     else:
+                        if self._sketchMode and self._pressureOpacity:
+                            canvas.startShading()
                         canvas.drawPoint(self._lastPoint, color, sizeMultiplier)
 
     def mouseMoveEvent(self, event):
         if event.buttons() and Qt.LeftButton and self._drawing and not self._eyedropperMode:
             canvas = self._sketchCanvas if self._sketchMode else self._maskCanvas
-            color = self._sketchColor if self._sketchMode else Qt.red
+            color = QColor(self._sketchColor if self._sketchMode else Qt.red)
             if self._sketchMode and self._pressureOpacity:
                 color.setAlphaF(self._getSketchOpacity())
             sizeMultiplier = self._pen_pressure if self._pressureSize else 1.0
@@ -188,6 +194,8 @@ class MaskCreator(QtWidgets.QWidget):
     def mouseReleaseEvent(self, event):
         if event.button == Qt.LeftButton and self._drawing:
             self._drawing = False
+        if self._sketchCanvas.shading:
+            self._sketchCanvas.applyShading()
 
     def resizeEvent(self, event):
         if self._maskCanvas.size() == QSize(0, 0):

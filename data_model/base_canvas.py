@@ -38,7 +38,7 @@ class BaseCanvas(QObject):
             self._pixmap = QPixmap(initData)
             self._pixmap.fill(Qt.transparent)
         elif isinstance(initData, str): # Load from image path:
-            self._pixmap = QPixmap(initData, "RGB")
+            self._pixmap = QPixmap(initData, "RGBA")
         elif isinstance(initData, Image.Image):
             self._pixmap = QPixmap.fromImage(imageToQImage(initData))
         elif isinstance(initData, QImage):
@@ -49,6 +49,12 @@ class BaseCanvas(QObject):
 
     def size(self):
         return self._pixmap.size()
+    
+    def width(self):
+        return self._pixmap.width()
+
+    def height(self):
+        return self._pixmap.height()
     
     def getPixmap(self):
         return self._pixmap
