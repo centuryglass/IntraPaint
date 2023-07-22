@@ -57,7 +57,7 @@ class WebClientController(BaseInpaintController):
         sys.exit()
 
 
-    def _inpaint(self, selection, mask, saveImage):
+    def _inpaint(self, selection, mask, saveImage, statusSignal):
         batchSize = self._config.get('batchSize')
         batchCount = self._config.get('batchCount')
         body = {
