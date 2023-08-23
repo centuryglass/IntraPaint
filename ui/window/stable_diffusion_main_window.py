@@ -1,4 +1,5 @@
 from PyQt5.QtWidgets import QWidget, QLabel, QHBoxLayout, QVBoxLayout, QGridLayout, QPushButton
+from PyQt5.QtCore import QSize
 import sys
 
 from ui.config_control_setup import *
@@ -35,7 +36,7 @@ class StableDiffusionMainWindow(MainWindow):
         if textboxHeight < 0: #font uses pt, not px
             textboxHeight = self.font().pointSize() * 4
 
-        # First line: prompt, batch size
+        # First line: prompt, batch size, width
         wideOptionsLayout.setRowStretch(0, 2)
         wideOptionsLayout.addWidget(QLabel("Prompt:"), 0, 0)
         textPromptBox = connectedTextEdit(controlPanel, self._config, 'prompt', multiLine=True)
@@ -47,8 +48,21 @@ class StableDiffusionMainWindow(MainWindow):
         batchSizeBox.setRange(1, batchSizeBox.maximum())
         batchSizeBox.setToolTip("Inpainting images generated per batch")
         wideOptionsLayout.addWidget(batchSizeBox, 0, 3)
+        # width: 
+        wideOptionsLayout.addWidget(QLabel("W:"), 0, 4)
+        widthBox = QSpinBox(self)
+        widthBox.setRange(1, 4096)
+        widthBox.setValue(self._config.get('maxEditSize').width())
+        widthBox.setToolTip('Resize selection content to this width before inpainting')
+        config = self._config
+        def setW(value):
+            size = config.get('maxEditSize')
+            config.set('maxEditSize', QSize(value, size.height()))
+        widthBox.valueChanged.connect(setW)
+        wideOptionsLayout.addWidget(widthBox, 0, 5)
 
-        # Second line: negative prompt, batch count:
+
+        # Second line: negative prompt, batch count, height:
         wideOptionsLayout.setRowStretch(1, 2)
         wideOptionsLayout.addWidget(QLabel('Negative:'), 1, 0)
         negativePromptBox = connectedTextEdit(controlPanel, self._config, 'negativePrompt', multiLine=True)
@@ -60,20 +74,32 @@ class StableDiffusionMainWindow(MainWindow):
         batchCountBox.setRange(1, batchCountBox.maximum())
         batchCountBox.setToolTip("Number of inpainting image batches to generate")
         wideOptionsLayout.addWidget(batchCountBox, 1, 3)
+        # Height: 
+        wideOptionsLayout.addWidget(QLabel("H:"), 1, 4)
+        heightBox = QSpinBox(self)
+        heightBox.setRange(1, 4096)
+        heightBox.setValue(self._config.get('maxEditSize').height())
+        heightBox.setToolTip('Resize selection content to this height before inpainting')
+        config = self._config
+        def setH(value):
+            size = config.get('maxEditSize')
+            config.set('maxEditSize', QSize(size.width(), value))
+        heightBox.valueChanged.connect(setH)
+        wideOptionsLayout.addWidget(heightBox, 1, 5)
 
         # Misc. sliders:
         wideOptionsLayout.setRowStretch(2, 1)
         sampleStepSlider = ParamSlider(wideOptions, 'Sampling steps:', self._config, 'samplingSteps',
                 'minSamplingSteps', 'maxSamplingSteps')
-        wideOptionsLayout.addWidget(sampleStepSlider, 2, 0, 1, 4)
+        wideOptionsLayout.addWidget(sampleStepSlider, 2, 0, 1, 6)
         wideOptionsLayout.setRowStretch(3, 1)
         cfgScaleSlider = ParamSlider(wideOptions, 'CFG scale:', self._config, 'cfgScale', 'minCfgScale', 'maxCfgScale',
                 'cfgScaleStep')
-        wideOptionsLayout.addWidget(cfgScaleSlider, 3, 0, 1, 4)
+        wideOptionsLayout.addWidget(cfgScaleSlider, 3, 0, 1, 6)
         wideOptionsLayout.setRowStretch(4, 1)
         denoisingSlider = ParamSlider(wideOptions, 'Denoising strength:', self._config, 'denoisingStrength',
                 'minDenoisingStrength', 'maxDenoisingStrength', 'denoisingStrengthStep')
-        wideOptionsLayout.addWidget(denoisingSlider, 4, 0, 1, 4)
+        wideOptionsLayout.addWidget(denoisingSlider, 4, 0, 1, 6)
 
 
         # Right side: box of dropdown/checkbox options:
