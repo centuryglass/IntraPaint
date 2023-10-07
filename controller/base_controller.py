@@ -218,7 +218,7 @@ class BaseInpaintController():
             return
         width = self._editedImage.width()
         height = self._editedImage.height()
-        scaleModal = ImageScaleModal(width, height)
+        scaleModal = ImageScaleModal(width, height, self._config)
         newSize = scaleModal.showImageModal()
         if newSize is not None:
             self._scale(newSize)

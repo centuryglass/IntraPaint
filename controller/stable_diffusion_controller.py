@@ -21,12 +21,15 @@ from sd_api.interrupt import InterruptPost
 from sd_api.login_check import LoginCheckGet
 from sd_api.memory import MemoryGet
 from sd_api.models import ModelsGet
+from sd_api.upscalers import UpscalersGet
 from sd_api.options import OptionsGet, OptionsPost
 from sd_api.progress import ProgressGet
 from sd_api.refresh_ckpt import RefreshCheckpointsPost
 from sd_api.samplers import SamplersGet
 from sd_api.styles import StylesGet
 from sd_api.txt2img import Txt2ImgPost
+from sd_api.controlnet_upscale import ControlnetUpscalePost
+from sd_api.controlnet_version import ControlnetVersionGet
 
 
 class StableDiffusionController(BaseInpaintController):
@@ -42,31 +45,40 @@ class StableDiffusionController(BaseInpaintController):
         def updateSketchState(editMode):
             self._sketchCanvas.setEnabled(editMode != 'Text to Image')
         self._config.connect(self._sketchCanvas, 'editMode', updateSketchState)
-        # Load styles on init:
-        self._styles = {}
+        # Load various data on init:
+        # Check for controlnet:
+        controlnetCheckEndpoint = ControlnetVersionGet(self._server_url)
         try:
-            styleEndpoint = StylesGet(self._server_url)
-            res = styleEndpoint.send(timeout=30)
+            res = controlnetCheckEndpoint.send(timeout=30)
             if res.status_code == 200:
-                styleList = res.json()
-                for style in styleList:
-                    self._styles[style['name']] = { 'prompt': style['prompt'], 'negative_prompt': style['negative_prompt'] }
-                print(f"Loaded {len(self._styles)} styles (Invoke with <STYLE_NAME>)")
+                self._config.set('controlnetVersion', float(res.json()['version']))
             else:
-                print(f"Failed to load styles, code={res.status_code}")
-            samplerEndpoint = SamplersGet(self._server_url)
-            res = samplerEndpoint.send(timeout=30)
-            if res.status_code == 200:
-                samplerList = res.json()
-                samplerOptions = []
-                for sampler in samplerList:
-                    samplerOptions.append(sampler['name'])
-                print(f"Loaded {len(samplerOptions)} SD sampler options")
-                self._config.updateOptions('samplingMethod', samplerOptions)
-            else:
-                print(f"Failed to load samplers, code={res.status_code}")
+                print(f"Failed to find controlnet, code={res.status_code}")
+                self._config.set('controlnetVersion', -1.0)
         except Exception as err:
-            print(f"error connecting to {self._server_url}: {err}")
+            print(f"Loading controlnet config failed: {err}")
+            self._config.set('controlnetVersion', -1.0)
+
+        optionLoadingParams = [
+            [StylesGet, 'styles', lambda s: json.dumps(s)],
+            [SamplersGet, 'samplingMethod', lambda s: s['name']],
+            [UpscalersGet, 'upscaleMethod', lambda u: u['name']]
+        ]
+        if self._config.get('controlnetVersion') > 0:
+            print('TODO: add controlnet items to optionLoadingParams')
+
+        # load various option lists:
+        for endpointClass, configKey, mapFn in optionLoadingParams:
+            try:
+                endpoint = endpointClass(self._server_url)
+                res = endpoint.send(timeout=30)
+                if res.status_code == 200:
+                    resList = list(map(mapFn, res.json()))
+                    self._config.updateOptions(configKey, resList)
+                else:
+                    print(f"Failed to load {configKey}, code={res.status_code}")
+            except Exception as err:
+                print(f"error loading {configKey} from {self._server_url}: {err}")
 
     def healthCheck(url, session_hash=secrets.token_hex(5)):
         try:
@@ -194,12 +206,27 @@ class StableDiffusionController(BaseInpaintController):
                 super().__init__()
 
             def run(self):
-                try:
+                upscaleMethod = controller._config.get('upscaleMethod')
+                upscaleEndpoint = None
+                if controller._config.get('controlnetUpscaling'):
+                    upscaleEndpoint = ControlnetUpscalePost(controller._server_url)
+                    upscaleArgs = [controller._config, controller._editedImage.getPilImage(), newSize.width(), newSize.height()]
+                else:
                     upscaleEndpoint = ExtrasPost(controller._server_url)
-                    res = upscaleEndpoint.send(controller._editedImage.getPilImage(), newSize.width(), newSize.height())
+                    upscaleArgs = [controller._editedImage.getPilImage(), newSize.width(), newSize.height(), upscaleMethod]
+                try:
+                    res = upscaleEndpoint.send(*upscaleArgs)
                     if res.status_code != 200:
                         raise Exception(f"{res.status_code} : {res.text}")
-                    self.imageReady.emit(loadImageFromBase64(res.json()['image']))
+                    res_json = res.json()
+                    if 'image' in res_json:
+                        self.imageReady.emit(loadImageFromBase64(res.json()['image']))
+                    elif 'images' in res_json:
+                        images = controller._getImageData(res_json['images'])
+                        print(f"got scaled: {images}")
+                        self.imageReady.emit(images[-1])
+                    else:
+                        raise Exception(f"Unexpected response format: {res_json}")
                 except Exception as err:
                     self.errorSignal.emit(err)
                 self.finished.emit()
@@ -306,6 +333,16 @@ class StableDiffusionController(BaseInpaintController):
             images.pop(0)
         idxInBatch = 0
         batchIdx = 0
+        images = self._getImageData(images)
+        for image in images:
+            saveImage(image, idxInBatch, batchIdx)
+            idxInBatch += 1
+            if idxInBatch >= batchSize:
+                idxInBatch = 0
+                batchIdx += 1
+
+    def _getImageData(self, images):
+        imageData = []
         for image in images:
             if isinstance(image, dict):
                 if not image['is_file'] and image['data'] is not None:
@@ -318,15 +355,10 @@ class StableDiffusionController(BaseInpaintController):
                     buffer = io.BytesIO()
                     buffer.write(res.content)
                     buffer.seek(0)
-                    imageObject = Image.open(buffer)
-                    saveImage(imageObject, idxInBatch, batchIdx)
+                    imageData.append(Image.open(buffer))
             if isinstance(image, str):
-                imageObject = loadImageFromBase64(image)
-                saveImage(imageObject, idxInBatch, batchIdx)
-            idxInBatch += 1
-            if idxInBatch >= batchSize:
-                idxInBatch = 0
-                batchIdx += 1
+                imageData.append(loadImageFromBase64(image))
+        return imageData
 
     def _applyStatusUpdate(self, statusDict):
         if 'seed' in statusDict:

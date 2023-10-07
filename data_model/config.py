@@ -10,7 +10,6 @@ class Config(QObject):
     A shared resource to set inpainting configuration and to provide default values.
     Current limitations, which may or may not be addressed eventually:
     - Expected values and defaults are hard-coded
-    - Changes are not saved to disk
     - Data is not 100% guaranteed to be threadsafe, thread locking is used on get/set
       but there's no special handling to prevent deadlocks or protection for connected objects.
     """
@@ -22,6 +21,7 @@ class Config(QObject):
         self._options = {}
         self._jsonPath = 'config.json'
         self._lock = Lock()
+
 
         # Editing options:
         self._setDefault('maxEditSize', QSize(256, 256))
@@ -68,8 +68,6 @@ class Config(QObject):
         self._setDefault('minRetryDelay', 300000) 
         self._setDefault('maxRetryDelay', 60000000)
 
-        # Keys stored temporarily in config that shouldn't be saved to JSON:
-        self._setDefault('unsavedKeys', ['prompt','negativePrompt','timelapsePath','lastFilePath','seed','maxEditSize'])
 
         # Settings used only by stable-diffusion:
         self._setDefault('editMode', 'Inpaint', ['Inpaint', 'Text to Image', 'Image to Image'])
@@ -82,6 +80,8 @@ class Config(QObject):
         self._setDefault('maxSamplingSteps', 150)
         self._setDefault('samplingMethod', 'Euler a', ['Euler a', 'Euler', 'LMS', 'Heun', 'DPM2', 'DPM2 a',
                 'LMS Karras', 'DPM2 Karras', 'DPM2 a Karras', 'DDIM', 'PLMS'])
+        self._setDefault('upscaleMethod', 'None', ['None'])
+        self._setDefault('styles', 'none', ['none'])
         self._setDefault('maskBlur', 4)
         self._setDefault('maxMaskBlur', 64)
         self._setDefault('restoreFaces', False)
@@ -96,6 +96,14 @@ class Config(QObject):
         self._setDefault('denoisingStrengthStep', 0.01)
         self._setDefault('seed', -1)
 
+        # Controlnet plugin options:
+        self._setDefault('controlnetVersion', -1.0)
+        self._setDefault('controlnetUpscaling', False)
+        self._setDefault('controlnetDownsampleRate', 1.0)
+        self._setDefault('controlnetDownsampleMin', 1.0)
+        self._setDefault('controlnetDownsampleMax', 4.0)
+        self._setDefault('controlnetDownsampleSteps', 0.1)
+
         # It's somewhat out of place here, but defining lastSeed and lastFile as config values makes it trivial to
         # wire them to widgets. TODO: maybe rename config to sharedData, or settings, perhaps? Add a separate config
         # module that actually reads (and writes?) saved settings in a text file.
@@ -107,6 +115,20 @@ class Config(QObject):
         self._setDefault('pressureSize', True)
         # Should pen pressure affect mask opacity?
         self._setDefault('pressureOpacity', False)
+
+        # List all keys stored temporarily in config that shouldn't be saved to JSON:
+        self._setDefault('unsavedKeys', [
+                'prompt',
+                'negativePrompt',
+                'timelapsePath',
+                'lastFilePath',
+                'seed',
+                'maxEditSize',
+                'unsavedKeys',
+                'styles',
+                'controlnetVersion'
+        ])
+
         if os.path.isfile(self._jsonPath):
             self._readFromJson()
         else:
@@ -144,7 +166,7 @@ class Config(QObject):
                             value = QSize(*map(lambda n: int(n), value.split("x")))
                         elif self._types[key] == list:
                             value = value.split(",")
-                        self.set(key, value)
+                        self.set(key, value, addMissingOptions=True)
                     except Exception as err:
                         print(f"Failed to set {key}={value}: {err}")
         except Exception as err:
@@ -182,24 +204,37 @@ class Config(QObject):
         if not isinstance(optionsList, list) or len(optionsList) == 0:
             raise Exception(f"Provided invalid options for config value '{key}'")
         self._options[key] = optionsList
-        if not self._values in optionsList:
-            self.set(key, optionsList[0])
+        if not self._values[key] in optionsList:
+            self.set(key, optionsList[0], False)
 
-    def set(self, key, value):
+    def addOption(self, key, option):
+        if not key in self._values:
+            raise Exception(f"Tried to get unknown config value '{key}'")
+        if not key in self._options:
+            raise Exception(f"Config value '{key}' does not have an associated options list")
+        self._options[key].append(option)
+
+    def set(self, key, value, saveChange=True, addMissingOptions=False):
         if not key in self._values:
             raise Exception(f"Tried to set unknown config value '{key}'")
         if type(value) != self._types[key]:
             raise Exception(f"Expected '{key}' value '{value}' to have type '{self._types[key]}', found '{type(value)}'")
         if key in self._options and not value in self._options[key]:
-            raise Exception(f"'{key}' value '{value}' is not a valid option")
+            if addMissingOptions:
+                self.addOption(key, value)
+            else:
+                raise Exception(f"'{key}' value '{value}' is not a valid option in {json.dumps(self._options[key])}")
         self._lock.acquire()
         valueChanged = (self._values[key] != value)
         self._values[key] = value
         self._lock.release()
-        if valueChanged:
+        if valueChanged and saveChange:
             self._writeToJson()
             for callback in self._connected[key].values():
-                callback(value)
+                try:
+                    callback(value)
+                except Exception as err:
+                    print(f"Update triggered by {key} change failed: {err}")
                 if (self.get(key) != value):
                     break
 

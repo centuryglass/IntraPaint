@@ -21,7 +21,8 @@ class Img2ImgPost(Endpoint):
             'tiling': config.get('tiling'),
             'negative_prompt': config.get('negativePrompt'),
             'override_settings': {},
-            'sampler_index': config.get('samplingMethod')
+            'sampler_index': config.get('samplingMethod'),
+            'alwayson_scripts': {}
         }
         if mask is not None:
             mask = mask.convert('L').point(lambda p: 0 if p < 1 else 255).convert('RGB')

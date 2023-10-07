@@ -1,4 +1,4 @@
-from PyQt5.QtWidgets import QSpinBox, QDoubleSpinBox, QLineEdit, QCheckBox, QComboBox, QPlainTextEdit
+from PyQt5.QtWidgets import QSpinBox, QDoubleSpinBox, QLineEdit, QCheckBox, QComboBox, QPlainTextEdit, QHBoxLayout, QLabel
 from PyQt5.QtGui import QTextCursor
 from ui.widget.big_int_spinbox import BigIntSpinbox
 
@@ -64,7 +64,7 @@ def connectedCheckBox(parent, config, key, text=None, tooltip=None):
         checkBox.setToolTip(tooltip)
     return checkBox
 
-def connectedComboBox(parent, config, key):
+def connectedComboBox(parent, config, key, text=None):
     comboBox = QComboBox(parent)
     options = config.getOptions(key)
     for option in options:
@@ -76,4 +76,11 @@ def connectedComboBox(parent, config, key):
         config.set(key, value)
     comboBox.currentIndexChanged.connect(updateConfigValue)
     config.connect(comboBox, key, lambda newValue: comboBox.setCurrentIndex(options.index(newValue)))
-    return comboBox
+    if text is not None:
+        label = QLabel(text)
+        layout = QHBoxLayout()
+        layout.addWidget(label)
+        layout.addWidget(comboBox)
+        return comboBox, layout
+    else:
+        return comboBox

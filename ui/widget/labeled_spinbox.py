@@ -1,4 +1,5 @@
-from PyQt5.QtWidgets import QWidget, QDialog, QSpinBox, QLabel, QHBoxLayout
+from PyQt5.QtWidgets import QWidget, QDialog, QDoubleSpinBox, QLabel, QHBoxLayout
+from ui.widget.big_int_spinbox import BigIntSpinbox
 
 class LabeledSpinbox(QWidget):
 
@@ -8,7 +9,7 @@ class LabeledSpinbox(QWidget):
         self.layout = QHBoxLayout()
         self.label = QLabel(self)
         self.label.setText(labelText)
-        self.spinbox = QSpinBox(self)
+        self.spinbox = QDoubleSpinBox(self) if type(defaultVal) is float else BigIntSpinbox(self)
         self.spinbox.setRange(minVal, maxVal)
         self.spinbox.setValue(defaultVal)
         self.layout.addWidget(self.label, 1)
