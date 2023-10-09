@@ -30,16 +30,20 @@ class ImageScaleModal(QDialog):
 
         # Synchronize scale boxes with pixel size boxes
         def setScaleOnPxChange(pixelSize, baseValue, scaleBox):
-            scale = round(int(pixelSize) / baseValue, 2)
-            print(f"{pixelSize} / {baseValue} = {scale}")
-            if scaleBox.spinbox.value() != scale:
-                scaleBox.spinbox.setValue(scale)
+            currentScale = scaleBox.spinbox.value()
+            newScale = round(int(pixelSize) / baseValue, 2)
+            if int(baseValue * float(currentScale)) != pixelSize:
+                scaleBox.spinbox.setValue(newScale)
+            elif currentScale != newScale:
+                print(f"ignoring rounding error, {currentScale} vs {newScale}")
 
         def setPxOnScaleChange(scale, baseValue, pxBox):
-            pixelSize = int(baseValue * float(scale))
-            print(f"{baseValue} * {scale} = {pixelSize}")
-            if pxBox.spinbox.value() != pixelSize:
-                pxBox.spinbox.setValue(pixelSize)
+            currentPixelSize = pxBox.spinbox.value()
+            newPixelSize = int(baseValue * float(scale))
+            if round(int(currentPixelSize) / baseValue, 2) != scale:
+                pxBox.spinbox.setValue(newPixelSize)
+            elif currentPixelSize != newPixelSize:
+                print(f"ignoring rounding error, {currentPixelSize} vs {newPixelSize}")
 
         self._widthBox.spinbox.valueChanged.connect(lambda px: setScaleOnPxChange(px, defaultWidth, self._xMultBox))
         self._xMultBox.spinbox.valueChanged.connect(lambda px: setPxOnScaleChange(px, defaultWidth, self._widthBox))

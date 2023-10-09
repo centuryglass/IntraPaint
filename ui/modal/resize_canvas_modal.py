@@ -69,7 +69,7 @@ class ResizeCanvasModal(QDialog):
         self._preview = PreviewWidget(self)
 
         def onDimChange(oldValue, newValue, labeledOffsetBox):
-            labeledOffsetBox.spinbox.setRange(-oldValue, oldValue + newValue)
+            labeledOffsetBox.spinbox.setRange(int(-oldValue), int(oldValue) + int(newValue))
             self._preview.resizeEvent(None)
 
         self._widthBox.spinbox.valueChanged.connect(lambda w: onDimChange(currentWidth, w, self._xOffsetBox))

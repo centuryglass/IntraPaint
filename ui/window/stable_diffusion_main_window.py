@@ -136,6 +136,11 @@ class StableDiffusionMainWindow(MainWindow):
         tilingCheckBox = connectedCheckBox(optionList, self._config, 'tiling')
         checkboxLine.addWidget(tilingCheckBox)
 
+        if self._config.get('controlnetVersion') > 0:
+            checkboxLine.addWidget(QLabel('CN Inpaint:'))
+            cnInpaintCheckBox = connectedCheckBox(optionList, self._config, 'controlnetInpainting')
+            checkboxLine.addWidget(cnInpaintCheckBox)
+
         seedInput = connectedSpinBox(optionList, self._config, 'seed')
         seedInput.setRange(-1, 99999999999999999999)
         addOptionLine("Seed:", seedInput, "Controls image generation, use -1 to use a random value each time.")

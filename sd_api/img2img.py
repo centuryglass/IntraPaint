@@ -31,4 +31,14 @@ class Img2ImgPost(Endpoint):
             body['inpainting_fill'] = config.getOptionIndex('maskedContent')
             body['inpainting_mask_invert'] = config.getOptionIndex('inpaintMasked')
             body['inpaint_full_res'] = False
+        if config.get('controlnetInpainting'):
+            body['alwayson_scripts']['controlNet'] = {
+                "args": [
+                    {
+                        "module": "inpaint_global_harmonious",
+                        "model": "control_v11p_sd15_inpaint [ebff9138]",
+                        "threshold_a": config.get('controlnetDownsampleRate')
+                    }
+                ]
+            }
         return body

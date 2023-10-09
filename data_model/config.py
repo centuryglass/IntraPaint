@@ -103,6 +103,7 @@ class Config(QObject):
         self._setDefault('controlnetDownsampleMin', 1.0)
         self._setDefault('controlnetDownsampleMax', 4.0)
         self._setDefault('controlnetDownsampleSteps', 0.1)
+        self._setDefault('controlnetInpainting', False)
 
         # It's somewhat out of place here, but defining lastSeed and lastFile as config values makes it trivial to
         # wire them to widgets. TODO: maybe rename config to sharedData, or settings, perhaps? Add a separate config
