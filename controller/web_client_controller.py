@@ -22,7 +22,7 @@ class WebClientController(BaseInpaintController):
             print(f"error connecting to {url}: {err}")
             return False
 
-    def startApp(self):
+    def windowInit(self):
         screen = self._app.primaryScreen()
         size = screen.availableGeometry()
         self._window = MainWindow(self._config, self._editedImage, self._maskCanvas, self._sketchCanvas, self)
@@ -53,8 +53,6 @@ class WebClientController(BaseInpaintController):
                 return False
         while not WebClientController.healthCheck(self._server_url):
             promptForURL('Server connection failed, enter a new URL or click "OK" to retry')
-        self._app.exec_()
-        sys.exit()
 
 
     def _inpaint(self, selection, mask, saveImage, statusSignal):

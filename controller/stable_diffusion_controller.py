@@ -153,7 +153,7 @@ class StableDiffusionController(BaseInpaintController):
             self._config.set('maxEditSize', QSize(512, 512))
         self._config.set('saveSketchInResult', True)
 
-    def startApp(self):
+    def windowInit(self):
         screen = self._app.primaryScreen()
         size = screen.availableGeometry()
         self._window = StableDiffusionMainWindow(self._config, self._editedImage, self._maskCanvas, self._sketchCanvas, self)
@@ -183,8 +183,6 @@ class StableDiffusionController(BaseInpaintController):
         if auth_res.status_code == 401 and auth_res.json()['detail'] == 'Not authenticated':
             loginModal = LoginModal(self._server_url)
             loginModal.showLoginModal()
-        self._app.exec_()
-        sys.exit()
 
 
     def _scale(self, newSize):

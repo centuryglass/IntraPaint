@@ -95,6 +95,8 @@ class Config(QObject):
         self._setDefault('maxDenoisingStrength', 1.0)
         self._setDefault('denoisingStrengthStep', 0.01)
         self._setDefault('seed', -1)
+        self._setDefault('inpaintFullRes', False)
+        self._setDefault('inpaintFullResPadding', 32)
 
         # Controlnet plugin options:
         self._setDefault('controlnetVersion', -1.0)

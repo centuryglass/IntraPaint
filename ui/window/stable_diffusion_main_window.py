@@ -136,10 +136,15 @@ class StableDiffusionMainWindow(MainWindow):
         tilingCheckBox = connectedCheckBox(optionList, self._config, 'tiling')
         checkboxLine.addWidget(tilingCheckBox)
 
+        inpaintLine = QHBoxLayout()
+        optionListLayout.addLayout(inpaintLine)
+        inpaintLine.addWidget(QLabel('Inpaint Masked Only:'))
+        inpaintCheckBox = connectedCheckBox(optionList, self._config, 'inpaintFullRes')
+        inpaintLine.addWidget(inpaintCheckBox)
         if self._config.get('controlnetVersion') > 0:
-            checkboxLine.addWidget(QLabel('CN Inpaint:'))
+            inpaintLine.addWidget(QLabel('CN Inpaint:'))
             cnInpaintCheckBox = connectedCheckBox(optionList, self._config, 'controlnetInpainting')
-            checkboxLine.addWidget(cnInpaintCheckBox)
+            inpaintLine.addWidget(cnInpaintCheckBox)
 
         seedInput = connectedSpinBox(optionList, self._config, 'seed')
         seedInput.setRange(-1, 99999999999999999999)

@@ -30,7 +30,8 @@ class Img2ImgPost(Endpoint):
             body['mask_blur'] = config.get('maskBlur')
             body['inpainting_fill'] = config.getOptionIndex('maskedContent')
             body['inpainting_mask_invert'] = config.getOptionIndex('inpaintMasked')
-            body['inpaint_full_res'] = False
+            body['inpaint_full_res'] = config.get('inpaintFullRes')
+            body['inpaint_full_res_padding'] = config.get('inpaintFullResPadding')
         if config.get('controlnetInpainting'):
             body['alwayson_scripts']['controlNet'] = {
                 "args": [
