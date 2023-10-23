@@ -115,36 +115,54 @@ class StableDiffusionMainWindow(MainWindow):
             if toolTip is not None:
                 widget.setToolTip(toolTip)
             optionLine.addWidget(widget, stretch=2)
+            return optionLine
 
         def addComboBoxLine(labelText, configKey, inpaintingOnly, toolTip=None):
             comboBox = connectedComboBox(optionList, self._config, configKey)
             if inpaintingOnly:
                 self._config.connect(comboBox, 'editMode', lambda newMode: comboBox.setEnabled(newMode == 'Inpaint'))
-            addOptionLine(labelText, comboBox, toolTip)
+            return addOptionLine(labelText, comboBox, toolTip)
 
         addComboBoxLine('Editing mode:', 'editMode', False)
         addComboBoxLine('Mask mode:', 'inpaintMasked', True)
         addComboBoxLine('Masked content:', 'maskedContent', True)
         addComboBoxLine('Sampling method:', 'samplingMethod', False)
+        paddingLineIndex = len(optionListLayout.children())
+        paddingLine = QHBoxLayout()
+        paddingLabel = QLabel('Inpaint padding:')
+        paddingLine.addWidget(paddingLabel, stretch = 1)
+        paddingBox = connectedSpinBox(self, self._config, 'inpaintFullResPadding', 'inpaintFullResPaddingMax')
+        paddingBox.setMinimum(0)
+        paddingLine.addWidget(paddingBox, stretch = 2)
+        optionListLayout.insertLayout(paddingLineIndex, paddingLine)
+        def paddingLayoutUpdate(inpaintFullRes):
+            paddingLabel.setVisible(inpaintFullRes)
+            paddingBox.setVisible(inpaintFullRes)
+        paddingLayoutUpdate(self._config.get('inpaintFullRes'))
+        self._config.connect(self, 'inpaintFullRes', lambda isSet: paddingLayoutUpdate(isSet))
+        self._config.connect(self, 'editMode', lambda mode: paddingLayoutUpdate(mode == 'Inpaint'))
+
 
         checkboxLine = QHBoxLayout()
         optionListLayout.addLayout(checkboxLine)
-        checkboxLine.addWidget(QLabel('Restore faces:'))
+        checkboxLine.addWidget(QLabel('Restore faces:'), stretch=4)
         faceCheckBox = connectedCheckBox(optionList, self._config, 'restoreFaces')
-        checkboxLine.addWidget(faceCheckBox)
-        checkboxLine.addWidget(QLabel('Tiling:'))
+        checkboxLine.addWidget(faceCheckBox, stretch=1)
+        checkboxLine.addWidget(QLabel('Tiling:'), stretch=4)
         tilingCheckBox = connectedCheckBox(optionList, self._config, 'tiling')
-        checkboxLine.addWidget(tilingCheckBox)
+        checkboxLine.addWidget(tilingCheckBox, stretch=1)
 
         inpaintLine = QHBoxLayout()
         optionListLayout.addLayout(inpaintLine)
-        inpaintLine.addWidget(QLabel('Inpaint Masked Only:'))
+        inpaintLine.addWidget(QLabel('Inpaint Masked Only:'), stretch = 4)
         inpaintCheckBox = connectedCheckBox(optionList, self._config, 'inpaintFullRes')
-        inpaintLine.addWidget(inpaintCheckBox)
+        inpaintLine.addWidget(inpaintCheckBox, stretch = 1)
         if self._config.get('controlnetVersion') > 0:
-            inpaintLine.addWidget(QLabel('CN Inpaint:'))
+            inpaintLine.addWidget(QLabel('CN Inpaint:'), stretch = 4)
             cnInpaintCheckBox = connectedCheckBox(optionList, self._config, 'controlnetInpainting')
-            inpaintLine.addWidget(cnInpaintCheckBox)
+            inpaintLine.addWidget(cnInpaintCheckBox, stretch = 1)
+        else:
+            inpaintLine.addSpacing(5)
 
         seedInput = connectedSpinBox(optionList, self._config, 'seed')
         seedInput.setRange(-1, 99999999999999999999)

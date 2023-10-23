@@ -288,7 +288,10 @@ class BaseInpaintController():
 
         def loadSamplePreview(img, y, x):
             if ((config.get('editMode') == 'Inpaint')) and (config.get('removeUnmaskedChanges') or img.width != selection.width or img.height != selection.height):
-                maskAlpha = inpaintMask.convert('L').point( lambda p: 255 if p < 1 else 0 ).filter(ImageFilter.GaussianBlur())
+                pointFn = lambda p: 255 if p < 1 else 0
+                if config.get('inpaintMasked') == 'Inpaint not masked':
+                    pointFn = lambda p: 0 if p < 1 else 255
+                maskAlpha = inpaintMask.convert('L').point(pointFn).filter(ImageFilter.GaussianBlur())
                 img = resizeImage(img, selection.width, selection.height)
                 maskAlpha = resizeImage(maskAlpha, selection.width, selection.height)
                 img = Image.composite(unscaledInpaintImage if keepSketch else selection, img, maskAlpha)

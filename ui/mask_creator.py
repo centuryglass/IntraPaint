@@ -111,6 +111,20 @@ class MaskCreator(QtWidgets.QWidget):
         if self._maskCanvas.enabled():
             painter.setOpacity(0.6)
             painter.drawPixmap(self._imageRect, self._maskCanvas.getPixmap())
+            maskedRect = self._maskCanvas.getMaskedArea()
+            if maskedRect is not None:
+                scale = self._imageRect.width() / self._maskCanvas.width()
+                drawnRect = QRect(self._imageRect.x() + int(maskedRect.x() * scale),
+                        self._imageRect.y() + int(maskedRect.y() * scale),
+                        int(maskedRect.width() * scale),
+                        int(maskedRect.height() * scale))
+                painter.setPen(QPen(Qt.black, 2, Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin))
+                painter.drawRect(drawnRect)
+                painter.drawRect(drawnRect.marginsAdded(getEqualMargins(4)))
+                painter.setPen(QPen(Qt.white, 2, Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin))
+                painter.drawRect(drawnRect.marginsAdded(getEqualMargins(2)))
+
+
 
     def _widgetToImageCoords(self, point):
         assert isinstance(point, QPoint)

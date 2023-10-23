@@ -1,6 +1,6 @@
 # Supports panning via spacemouse, if applicable
 try:
-    import spacenav, atexit, time
+    import spacenav, atexit, time, math
 except ImportError:
     print('spaceMouse support not installed.')
     spacenav = None
@@ -23,6 +23,7 @@ class SpacenavManager():
             'h_image': 0,
             'w_sel': 0,
             'h_sel': 0,
+            'speed': 1,
             'lock': Lock()
         }
         self._thread = None
@@ -66,12 +67,19 @@ class SpacenavManager():
                 print("spacenav connection started.")
 
                 def sendNavSignal():
+                    # Once the xy offset of sequential spacenav events adds up to this value, the selection window will
+                    # reach max scrolling speed:
+                    MAX_SPEED_AT_OFFSET = 9000
+                    # Controls how quickly the selection will move across the entire image at max speed:
+                    # Values must >= 0.  The higher the value, the slower the max speed will be.
+                    MAX_SPEED_CONTROL = 1
                     x = 0
                     y = 0
                     w_image = 0
                     h_image = 0
                     w_sel = 0
                     h_sel = 0
+                    speed = 0
                     with manager._threadData['lock']:
                         if manager._threadData['pending']:
                             return
@@ -83,20 +91,19 @@ class SpacenavManager():
                         h_image = manager._threadData['h_image']
                         w_sel = manager._threadData['w_sel']
                         h_sel = manager._threadData['h_sel']
+                        offset = math.sqrt(x * x + y * y)
+                        speed = min(manager._threadData['speed'] + offset, MAX_SPEED_AT_OFFSET)
+                        manager._threadData['speed'] = speed
 
-                    # Offset will be approx. 9000 if the space mouse is held all the way down in one direction for one
-                    # second. Calculate offset in pixels so that scrolling across the largest image dimension takes
-                    # roughly three seconds.
                     maxScroll = max(w_image - w_sel, h_image - h_sel)
-                    # xSum/9000 = xPx/maxScroll
-                    xPx = x * maxScroll/27000
-                    yPx = -y * maxScroll/27000 
+                    scalar = maxScroll / math.pow(((MAX_SPEED_AT_OFFSET + 1) * (MAX_SPEED_CONTROL + .1)) - speed, 2)
+                    xPx = x * x * scalar * (-1 if x < 0 else 1)
+                    yPx = y * y * scalar * (1 if y < 0 else -1)
                     if abs(xPx) > 1 or abs(yPx) > 1:
                         with manager._threadData['lock']:
                             manager._threadData['pending'] = True
                             manager._threadData['x'] = 0
                             manager._threadData['y'] = 0
-                        print(f"x={xPx}, y={yPx}")
                         self.navEventSignal.emit(int(xPx), int(yPx))
 
                 start = 0
@@ -104,13 +111,14 @@ class SpacenavManager():
                 while manager._threadData['readEvents']:
                     event = spacenav.poll()
                     now = time.monotonic_ns()
-                    # Reset accumulated change if last event was more than 0.1 second ago:
-                    if ((now - last) / 100000000) > 1:
+                    # Reset accumulated change if last event was more than 0.2 second ago:
+                    if ((now - last) / 50000000) > 1:
                         start = now
                         sendNavSignal()
                         with manager._threadData['lock']:
                             manager._threadData['x'] = 0
                             manager._threadData['y'] = 0
+                            manager._threadData['speed'] = 1
                     if event is None or not hasattr(event, 'x') or not hasattr(event, 'z'):
                         QThread.currentThread().usleep(100)
                         continue

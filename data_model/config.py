@@ -97,6 +97,7 @@ class Config(QObject):
         self._setDefault('seed', -1)
         self._setDefault('inpaintFullRes', False)
         self._setDefault('inpaintFullResPadding', 32)
+        self._setDefault('inpaintFullResPaddingMax', 1024)
 
         # Controlnet plugin options:
         self._setDefault('controlnetVersion', -1.0)

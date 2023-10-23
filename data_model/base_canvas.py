@@ -13,6 +13,7 @@ class BaseCanvas(QObject):
         super().__init__()
         self._config = config
         self._brushSize = 1
+        self._image = None
         if image is not None:
             self.setImage(image)
         else:
@@ -59,15 +60,19 @@ class BaseCanvas(QObject):
     def getPixmap(self):
         return self._pixmap
 
+    def getQImage(self):
+        if self._image is None:
+            self._image = self._pixmap.toImage()
+        return self._image
+
     def getImage(self):
-        return qImageToImage(self._pixmap.toImage())
+        return qImageToImage(self.getQImage())
 
     def getColorAtPoint(self, point):
         if self._pixmap is None:
             return QColor(0, 0, 0, 0)
-        qimage = self._pixmap.toImage()
-        if qimage.rect().contains(point):
-            return qimage.pixelColor(point)
+        if self.getImage().rect().contains(point):
+            return self.getImage().pixelColor(point)
         return QColor(0, 0, 0, 0)
 
     def resize(self, size):
@@ -75,7 +80,7 @@ class BaseCanvas(QObject):
             raise Exception(f"Invalid resize param {size}")
         if size != self._pixmap.size():
             self._pixmap = self._pixmap.scaled(size)
-            self.redrawRequired.emit()
+            self._handleChanges()
 
     def _draw(self, pos, color, compositionMode, sizeMultiplier=1.0):
         if not self.enabled():
@@ -87,7 +92,7 @@ class BaseCanvas(QObject):
             painter.drawLine(pos)
         else: # Should be QPoint
             painter.drawPoint(pos)
-        self.redrawRequired.emit()
+        self._handleChanges()
 
     def drawPoint(self, point, color, sizeMultiplier = 1.0):
         self._draw(point, color, QPainter.CompositionMode.CompositionMode_SourceOver, sizeMultiplier)
@@ -105,8 +110,12 @@ class BaseCanvas(QObject):
         if not self.enabled():
             return
         self._pixmap.fill(color)
-        self.redrawRequired.emit()
+        self._handleChanges()
 
     def clear(self):
         self.fill(Qt.transparent)
+
+    def _handleChanges(self):
+        self._image = None
+        self.redrawRequired.emit()
 
