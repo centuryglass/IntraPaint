@@ -71,8 +71,8 @@ class BaseCanvas(QObject):
     def getColorAtPoint(self, point):
         if self._pixmap is None:
             return QColor(0, 0, 0, 0)
-        if self.getImage().rect().contains(point):
-            return self.getImage().pixelColor(point)
+        if self.getQImage().rect().contains(point):
+            return self.geQtImage().pixelColor(point)
         return QColor(0, 0, 0, 0)
 
     def resize(self, size):
