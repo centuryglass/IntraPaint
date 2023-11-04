@@ -24,12 +24,12 @@ class Config(QObject):
 
 
         # Editing options:
-        self._setDefault('maxEditSize', QSize(256, 256))
+        self._setDefault('maxEditSize', QSize(1024, 1024))
         self._setDefault('minEditSize', QSize(8, 8))
+        self._setDefault('editSize', QSize(512, 512))
         self._setDefault('initialMaskBrushSize', 40)
         self._setDefault('initialSketchBrushSize', 4)
-        self._setDefault('scaleSelectionBeforeInpainting', True)
-        self._setDefault('saveSketchInResult', False)
+        self._setDefault('saveSketchInResult', True)
         self._setDefault('maxUndo', 10)
 
         # Inpainting guidance options:
@@ -43,8 +43,8 @@ class Config(QObject):
         # Inpainting behavior options:
         self._setDefault('batchSize', 3)
         self._setDefault('batchCount', 3)
-        self._setDefault('maxBatchSize', 9)
-        self._setDefault('maxBatchCount', 9)
+        self._setDefault('maxBatchSize', 30)
+        self._setDefault('maxBatchCount', 99)
         self._setDefault('skipSteps', 0)
         self._setDefault('maxSkipSteps', 27)
         self._setDefault('upscaleMode', Image.LANCZOS)

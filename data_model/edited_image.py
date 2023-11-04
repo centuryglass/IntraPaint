@@ -14,7 +14,7 @@ class EditedImage(QObject):
         self._config = config
         self._qimage = None
         self._metadata = None
-        self.setSelectionBounds(QRect(QPoint(0, 0), self._config.get('maxEditSize')))
+        self.setSelectionBounds(QRect(QPoint(0, 0), self._config.get('editSize')))
         if initialImage is not None:
             self.setImage(initialImage)
 
@@ -117,14 +117,7 @@ class EditedImage(QObject):
 
     def getMaxSelectionSize(self):
         maxSize = self._config.get('maxEditSize')
-        # If scaling is enabled, size boxes shouldn't be constrained by max edit size:
-        if self._config.get('scaleSelectionBeforeInpainting'):
-            maxSize = self.size()
-        # If not scaling, make sure maxSize is a multiple of 64:
-        else:
-            maxSize = QSize(min(maxSize.width(), self.width() - (self.width() % 64)),
-                    min(maxSize.height(), self.height() - (self.height() % 64)))
-        return maxSize
+        return QSize(min(maxSize.width(), self.width()), min(maxSize.height(), self.height()))
 
     def getSelectionBounds(self):
         return QRect(self._selection.topLeft(), self._selection.size())

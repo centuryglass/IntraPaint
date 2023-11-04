@@ -1,6 +1,6 @@
 from PyQt5.QtWidgets import (QWidget, QLabel, QSpinBox, QCheckBox, QPushButton, QRadioButton, QButtonGroup,
         QColorDialog, QGridLayout, QSpacerItem)
-from PyQt5.QtCore import Qt, QPoint, QRect, QSize, QBuffer
+from PyQt5.QtCore import Qt, QPoint, QRect, QSize, QBuffer, QEvent
 from PyQt5.QtGui import QPainter, QPen, QCursor, QPixmap, QBitmap, QIcon
 from PIL import Image
 
@@ -273,23 +273,24 @@ class MaskPanel(QWidget):
         self._setupCorrectLayout()
         self._updateBrushCursor()
 
-    def keyPressEvent(self, event):
-        if event.key() == Qt.Key_Control and not self.maskModeButton.isChecked():
-            self._eyedropperMode = True
-            self.maskCreator.setEyedropperMode(True)
-            self.maskCreator.setLineMode(False)
-            self.maskCreator.setCursor(self._eyedropperCursor)
-        elif event.key() == Qt.Key_Shift:
-            self.maskCreator.setLineMode(True)
-
-    def keyReleaseEvent(self, event):
-        if event.key() == Qt.Key_Control and self._eyedropperMode:
-            self._eyedropperMode = False
-            self.maskCreator.setEyedropperMode(False)
-            self._lastCursorSize = None
-            self._updateBrushCursor()
-        elif event.key() == Qt.Key_Shift:
-            self.maskCreator.setLineMode(False)
+    def eventFilter(self, source, event):
+        if event.type() == QEvent.KeyPress:
+            if event.key() == Qt.Key_Control and not self.maskModeButton.isChecked():
+                self._eyedropperMode = True
+                self.maskCreator.setEyedropperMode(True)
+                self.maskCreator.setLineMode(False)
+                self.maskCreator.setCursor(self._eyedropperCursor)
+            elif event.key() == Qt.Key_Shift:
+                self.maskCreator.setLineMode(True)
+        elif event.type() == QEvent.KeyRelease:
+            if event.key() == Qt.Key_Control and self._eyedropperMode:
+                self._eyedropperMode = False
+                self.maskCreator.setEyedropperMode(False)
+                self._lastCursorSize = None
+                self._updateBrushCursor()
+            elif event.key() == Qt.Key_Shift:
+                self.maskCreator.setLineMode(False)
+        return False
 
     def getBrushSize(self):
         return self._maskBrushSize if self.maskModeButton.isChecked() else self._sketchBrushSize

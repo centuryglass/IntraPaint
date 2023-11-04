@@ -46,25 +46,16 @@ class ImagePanel(QWidget):
         # Selection size controls:
         self.widthBox = QSpinBox(self)
         self.heightBox = QSpinBox(self)
+        editSize = config.get('editSize')
         minEditSize = config.get('minEditSize')
         maxEditSize = config.get('maxEditSize')
-        for sizeControl, typeName, minSize, maxSize in [
-                (self.widthBox, "width", minEditSize.width(), maxEditSize.width()),
-                (self.heightBox, "height", minEditSize.height(), maxEditSize.height())]:
+        for sizeControl, typeName, minSize, maxSize, size in [
+                (self.widthBox, "width", minEditSize.width(), maxEditSize.width(), editSize.width()),
+                (self.heightBox, "height", minEditSize.height(), maxEditSize.height(), editSize.height())]:
             sizeControl.setToolTip(f"Selected area {typeName}")
             sizeControl.setRange(minSize, maxSize)
             sizeControl.setSingleStep(minSize)
-            sizeControl.setValue(maxSize)
-
-        # If max size changes, update ranges:
-        def updateMax(newMax):
-            minEditSize = config.get('minEditSize')
-            self.widthBox.setRange(minEditSize.width(), newMax.width())
-            self.heightBox.setRange(minEditSize.height(), newMax.height())
-            self.widthBox.setValue(newMax.width())
-            self.heightBox.setValue(newMax.height())
-        config.connect(self, "maxEditSize", updateMax)
-
+            sizeControl.setValue(size)
 
         def setW():
             value = self.widthBox.value()
@@ -123,7 +114,6 @@ class ImagePanel(QWidget):
         self.setLayout(self.layout)
 
     def reloadScaleBounds(self):
-        scaleEnabled = self._config.get('scaleSelectionBeforeInpainting')
         maxEditSize = self._editedImage.getMaxSelectionSize()
         if not self._editedImage.hasImage():
             self.widthBox.setMaximum(maxEditSize.width())
@@ -134,9 +124,6 @@ class ImagePanel(QWidget):
                     (self.widthBox, imageSize.width(), maxEditSize.width()),
                     (self.heightBox, imageSize.height(), maxEditSize.height())]:
                 spinBox.setMaximum(maxEditDim)
-                spinBox.setSingleStep(8 if scaleEnabled else 64)
-                if (spinBox.value() % 64) != 0 and (spinBox.value() > 64):
-                    spinBox.setValue(spinBox.value() - (spinBox.value() % 64))
             selectionSize = self._editedImage.getSelectionBounds().size()
             self.xCoordBox.setMaximum(imageSize.width() - selectionSize.width())
             self.yCoordBox.setMaximum(imageSize.height() - selectionSize.height())

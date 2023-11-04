@@ -52,12 +52,12 @@ class StableDiffusionMainWindow(MainWindow):
         wideOptionsLayout.addWidget(QLabel("W:"), 0, 4)
         widthBox = QSpinBox(self)
         widthBox.setRange(1, 4096)
-        widthBox.setValue(self._config.get('maxEditSize').width())
+        widthBox.setValue(self._config.get('editSize').width())
         widthBox.setToolTip('Resize selection content to this width before inpainting')
         config = self._config
         def setW(value):
-            size = config.get('maxEditSize')
-            config.set('maxEditSize', QSize(value, size.height()))
+            size = config.get('editSize')
+            config.set('editSize', QSize(value, size.height()))
         widthBox.valueChanged.connect(setW)
         wideOptionsLayout.addWidget(widthBox, 0, 5)
 
@@ -78,12 +78,12 @@ class StableDiffusionMainWindow(MainWindow):
         wideOptionsLayout.addWidget(QLabel("H:"), 1, 4)
         heightBox = QSpinBox(self)
         heightBox.setRange(1, 4096)
-        heightBox.setValue(self._config.get('maxEditSize').height())
+        heightBox.setValue(self._config.get('editSize').height())
         heightBox.setToolTip('Resize selection content to this height before inpainting')
         config = self._config
         def setH(value):
-            size = config.get('maxEditSize')
-            config.set('maxEditSize', QSize(size.width(), value))
+            size = config.get('editSize')
+            config.set('editSize', QSize(size.width(), value))
         heightBox.valueChanged.connect(setH)
         wideOptionsLayout.addWidget(heightBox, 1, 5)
 

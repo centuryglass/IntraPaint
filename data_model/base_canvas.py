@@ -17,7 +17,7 @@ class BaseCanvas(QObject):
         if image is not None:
             self.setImage(image)
         else:
-            self.setImage(config.get('maxEditSize'))
+            self.setImage(config.get('editSize'))
         self._enabled = True
 
     def enabled(self):

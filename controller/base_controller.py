@@ -99,7 +99,7 @@ class BaseInpaintController():
 
     # File IO handling:
     def newImage(self):
-        defaultSize = self._config.get('maxEditSize')
+        defaultSize = self._config.get('editSize')
         imageModal = NewImageModal(defaultSize.width(), defaultSize.height())
         imageSize = imageModal.showImageModal()
         if imageSize and ((not self._editedImage.hasImage()) or \
@@ -238,23 +238,16 @@ class BaseInpaintController():
             inpaintImage = Image.alpha_composite(inpaintImage, sketchImage).convert('RGB')
         keepSketch = self._sketchCanvas.hasSketch and self._config.get('saveSketchInResult')
 
-        # If scaling is enabled, scale selection as ve to default as possible while attempting to minimize
-        # aspect ratio changes. Keep the unscaled version so it can be used for compositing if "keep sketch"
-        # is checked.
+        # If necessary, scale image and mask to match the edit size. Keep the unscaled version so it can be used for
+        # compositing if "keep sketch" is checked.
         unscaledInpaintImage = inpaintImage.copy()
 
-        if self._config.get('scaleSelectionBeforeInpainting'):
-            maxEditSize = self._config.get('maxEditSize')
-            largestDim = max(inpaintImage.width, inpaintImage.height)
-            scale = maxEditSize.width() / largestDim
-            width = int(inpaintImage.width * scale + 1)
-            width = max(64, width - (width % 64))
-            height = int(inpaintImage.height * scale + 1)
-            height = max(64, height - (height % 64))
-            inpaintImage = resizeImage(inpaintImage, width, height)
-            inpaintMask = resizeImage(inpaintMask, width, height)
-        else:
-            inpaintMask = resizeImage(inpaintMask, inpaintImage.width, inpaintImage.height)
+        
+        editSize = self._config.get('editSize')
+        if inpaintImage.width != editSize.width() or inpaintImage.height != editSize.height():
+            inpaintImage = resizeImage(inpaintImage, editSize.width(), editSize.height())
+        if inpaintMask.width != editSize.width() or inpaintMask.height != editSize.height():
+            inpaintMask = resizeImage(inpaintMask, editSize.width(), editSize.height())
 
         doInpaint = lambda img, mask, save, statusSignal: self._inpaint(img, mask, save, statusSignal)
         config = self._config

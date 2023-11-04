@@ -28,8 +28,8 @@ class ControlnetUpscalePost(Img2ImgPost):
             body['script_name'] = 'ultimate sd upscale'
             body['script_args'] = [
                 None, # not used
-                config.get('maxEditSize').width(), #tile width
-                config.get('maxEditSize').height(), #tile height
+                config.get('editSize').width(), #tile width
+                config.get('editSize').height(), #tile height
                 8, # mask_blur
                 32, # padding
                 64, # seams_fix_width

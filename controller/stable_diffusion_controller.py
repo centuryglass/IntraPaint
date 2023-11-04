@@ -130,29 +130,6 @@ class StableDiffusionController(BaseInpaintController):
         worker.errorSignal.connect(handleError)
         self._startThread(worker, loadingText="Running CLIP interrogate")
 
-    def _adjustConfigDefaults(self):
-        # update size limits for stable-diffusion's capabilities:
-        # On launch, check selected model to see if it is a 2.0 variant trained at 768x768:
-        try:
-            optionsEndpoint = OptionsGet(self._server_url)
-            res = optionsEndpoint.send()
-            if res.status_code != 200:
-                raise Exception(f"Request failed with code {res.status_code}")
-            resBody = res.json()
-            modelKey = "sd_model_checkpoint"
-            if not modelKey in resBody:
-                raise Exception(f"Response did not contain {modelKey}")
-            if "768" in resBody[modelKey]:
-                print(f"model {resBody[modelKey]} name contains 768, setting edit size=768x768")
-                self._config.set('maxEditSize', QSize(768, 768))
-            else:
-                print(f"model {resBody[modelKey]} name doesn't include 768, assuming edit size=512x512")
-                self._config.set('maxEditSize', QSize(512, 512))
-        except Exception as err:
-            print(f"Checking model failed: {err}")
-            self._config.set('maxEditSize', QSize(512, 512))
-        self._config.set('saveSketchInResult', True)
-
     def windowInit(self):
         screen = self._app.primaryScreen()
         size = screen.availableGeometry()

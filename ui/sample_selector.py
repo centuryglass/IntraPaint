@@ -19,7 +19,6 @@ class SampleSelector(QWidget):
         self._config = config
         self._sketch = sketch
         self._makeSelection = makeSelection
-        self.installEventFilter(self)
 
         sourceImage = editedImage.getSelectionContent()
         if sketch.hasSketch:
@@ -312,33 +311,6 @@ class SampleSelector(QWidget):
             self.resizeEvent(None)
             self.update()
     
-    def keyPressEvent(self, event):
-        toggleZoom = False
-        zoomIndex = -1
-        if event.text().isdigit() and (int(event.text()) - 1) < self._optionCount():
-            if (not self._zoomMode) or (int(event.text()) - 1) == self._zoomIndex:
-                toggleZoom = True
-            zoomIndex = int(event.text()) - 1
-        # Allow both gaming-style (WASD) and Vim-style (hjkl) navigation:
-        elif self._zoomMode:
-            if event.text().lower() == 'h' or event.text().lower() == 'a':
-                self._zoomPrev()
-                return
-            elif event.text().lower() == 'l' or event.text().lower() == 'd':
-                self._zoomNext()
-                return
-            elif event.text().lower() == 'k' or event.text().lower() == 'w':
-                toggleZoom = True
-        elif event.text().lower() == 'j' or event.text().lower() == 's':
-                toggleZoom = True # Zoom in on "down"
-        if toggleZoom:
-            self.toggleZoom(zoomIndex)
-        elif self._zoomMode and zoomIndex >= 0:
-            self._zoomIndex = zoomIndex
-            self.resizeEvent(None)
-            self.update()
-        
-        
     def eventFilter(self, source, event):
         """Intercept mouse wheel events, use for scrolling in zoom mode:"""
         if event.type() == QEvent.Wheel:
@@ -347,6 +319,51 @@ class SampleSelector(QWidget):
             elif event.angleDelta().y() < 0:
                 self._zoomPrev()
             return True
+
+        # Keyboard event handling:
+        elif event.type() == QEvent.KeyPress:
+            toggleZoom = False
+            zoomIndex = -1
+            if event.key() == Qt.Key_Escape:
+                if self._zoomMode:
+                    toggleZoom = True
+                else:
+                    self._makeSelection(None)
+                    self._closeSelector()
+                    return True
+            elif (event.key() == Qt.Key_Return or event.key() == Qt.Key_Enter) and self._zoomMode:
+                col = self._zoomIndex % self._batchSize
+                row = self._zoomIndex // self._batchSize
+                option = self._options[row][col]
+                if isinstance(option['image'], Image.Image):
+                    self._makeSelection(option['image'])
+                    self._closeSelector()
+                return True
+            elif event.text().isdigit() and (int(event.text()) - 1) < self._optionCount():
+                if (not self._zoomMode) or (int(event.text()) - 1) == self._zoomIndex:
+                    toggleZoom = True
+                zoomIndex = int(event.text()) - 1
+            # Allow both gaming-style (WASD) and Vim-style (hjkl) navigation:
+            elif self._zoomMode:
+                if event.text().lower() == 'h' or event.text().lower() == 'a':
+                    self._zoomPrev()
+                    return True
+                elif event.text().lower() == 'l' or event.text().lower() == 'd':
+                    self._zoomNext()
+                    return True
+                elif event.text().lower() == 'k' or event.text().lower() == 'w':
+                    toggleZoom = True
+            elif event.text().lower() == 'j' or event.text().lower() == 's':
+                    toggleZoom = True # Zoom in on "down"
+            if toggleZoom:
+                self.toggleZoom(zoomIndex)
+                return True
+            elif self._zoomMode and zoomIndex >= 0:
+                self._zoomIndex = zoomIndex
+                self.resizeEvent(None)
+                self.update()
+                return True
+            return False
         else:
             return super().eventFilter(source, event)
 

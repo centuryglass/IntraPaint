@@ -39,6 +39,7 @@ class MainWindow(QMainWindow):
         # Image/Mask editing layout:
         imagePanel = ImagePanel(self._config, self._editedImage, controller)
         maskPanel = MaskPanel(self._config, self._mask, self._sketch, self._editedImage)
+        self.installEventFilter(maskPanel)
         divider = DraggableArrow()
         self._scaleHandler = None
         self.imageLayout = None
@@ -73,6 +74,7 @@ class MainWindow(QMainWindow):
         imageMenu = self._menu.addMenu("Image")
         addAction("Resize canvas", "F2", lambda: controller.resizeCanvas(), imageMenu)
         addAction("Scale image", "F3", lambda: controller.scaleImage(), imageMenu)
+        addAction("Generate", "F4", lambda: controller.startAndManageInpainting(), imageMenu)
         def updateMetadata():
             self._editedImage.updateMetadata()
             messageBox = QMessageBox(self)
@@ -190,8 +192,6 @@ class MainWindow(QMainWindow):
             if mode:
                 self._config.set(configKey, mode)
         scaleModeList.currentIndexChanged.connect(setScaleMode)
-        self._config.connect(parent, 'scaleSelectionBeforeInpainting',
-                lambda useScaling: scaleModeList.setEnabled(useScaling))
         return scaleModeList
 
     def _buildControlLayout(self, controller):
@@ -293,7 +293,9 @@ class MainWindow(QMainWindow):
                     lambda img: self._controller.selectAndApplySample(img))
             self.centralWidget.addWidget(self._sampleSelector)
             self.centralWidget.setCurrentWidget(self._sampleSelector)
+            self.installEventFilter(self._sampleSelector)
         else:
+            self.removeEventFilter(self._sampleSelector)
             self.centralWidget.setCurrentWidget(self._mainWidget)
             self.centralWidget.removeWidget(self._sampleSelector)
             del self._sampleSelector
