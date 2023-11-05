@@ -36,6 +36,8 @@ class StableDiffusionController(BaseInpaintController):
     def __init__(self, args):
         self._server_url = args.server_url
         super().__init__(args)
+        self._session = requests.Session()
+        self._auth = None
         self._session_hash = secrets.token_hex(5)
         # Since stable-diffusion supports alternate generation modes, configure sketch/mask to only be available
         # when using appropriate modes:
@@ -45,45 +47,11 @@ class StableDiffusionController(BaseInpaintController):
         def updateSketchState(editMode):
             self._sketchCanvas.setEnabled(editMode != 'Text to Image')
         self._config.connect(self._sketchCanvas, 'editMode', updateSketchState)
-        # Load various data on init:
-        # Check for controlnet:
-        controlnetCheckEndpoint = ControlnetVersionGet(self._server_url)
-        try:
-            res = controlnetCheckEndpoint.send(timeout=30)
-            if res.status_code == 200:
-                self._config.set('controlnetVersion', float(res.json()['version']))
-            else:
-                print(f"Failed to find controlnet, code={res.status_code}")
-                self._config.set('controlnetVersion', -1.0)
-        except Exception as err:
-            print(f"Loading controlnet config failed: {err}")
-            self._config.set('controlnetVersion', -1.0)
-
-        optionLoadingParams = [
-            [StylesGet, 'styles', lambda s: json.dumps(s)],
-            [SamplersGet, 'samplingMethod', lambda s: s['name']],
-            [UpscalersGet, 'upscaleMethod', lambda u: u['name']]
-        ]
-        if self._config.get('controlnetVersion') > 0:
-            print('TODO: add controlnet items to optionLoadingParams')
-
-        # load various option lists:
-        for endpointClass, configKey, mapFn in optionLoadingParams:
-            try:
-                endpoint = endpointClass(self._server_url)
-                res = endpoint.send(timeout=30)
-                if res.status_code == 200:
-                    resList = list(map(mapFn, res.json()))
-                    self._config.updateOptions(configKey, resList)
-                else:
-                    print(f"Failed to load {configKey}, code={res.status_code}")
-            except Exception as err:
-                print(f"error loading {configKey} from {self._server_url}: {err}")
 
     def healthCheck(url, session_hash=secrets.token_hex(5)):
         try:
             loginCheckEndpoint = LoginCheckGet(url)
-            res = loginCheckEndpoint.send(timeout=30)
+            res = loginCheckEndpoint.send(None, timeout=30)
             if res.status_code == 200 or (res.status_code == 401 and res.json()['detail'] == 'Not authenticated'):
                 return True
             raise Exception(f"{res.status_code} : {res.text}")
@@ -111,7 +79,9 @@ class StableDiffusionController(BaseInpaintController):
             def run(self):
                 try:
                     interrogateEndpoint = InterrogatePost(controller._server_url)
-                    res = interrogateEndpoint.send(controller._config, controller._editedImage.getSelectionContent())
+                    res = interrogateEndpoint.send(controller._session,
+                            controller._config,
+                            controller._editedImage.getSelectionContent())
                     if res.status_code != 200:
                         raise Exception(f"{res.status_code} : {res.text}")
                     self.promptReady.emit(res.json()['caption'])
@@ -154,12 +124,38 @@ class StableDiffusionController(BaseInpaintController):
         while not StableDiffusionController.healthCheck(self._server_url, self._session_hash):
             promptForURL('Server connection failed, enter a new URL or click "OK" to retry')
 
-        # Check for required auth:
-        loginCheckEndpoint = LoginCheckGet(self._server_url)
-        auth_res = loginCheckEndpoint.send(timeout=30)
-        if auth_res.status_code == 401 and auth_res.json()['detail'] == 'Not authenticated':
-            loginModal = LoginModal(self._server_url)
-            loginModal.showLoginModal()
+        controlnetCheckEndpoint = ControlnetVersionGet(self._server_url)
+        try:
+            res = controlnetCheckEndpoint.send(self._session, timeout=30)
+            if res.status_code == 200:
+                self._config.set('controlnetVersion', float(res.json()['version']))
+            else:
+                print(f"Failed to find controlnet, code={res.status_code}")
+                self._config.set('controlnetVersion', -1.0)
+        except Exception as err:
+            print(f"Loading controlnet config failed: {err}")
+            self._config.set('controlnetVersion', -1.0)
+
+        optionLoadingParams = [
+            [StylesGet, 'styles', lambda s: json.dumps(s)],
+            [SamplersGet, 'samplingMethod', lambda s: s['name']],
+            [UpscalersGet, 'upscaleMethod', lambda u: u['name']]
+        ]
+        if self._config.get('controlnetVersion') > 0:
+            print('TODO: add controlnet items to optionLoadingParams')
+
+        # load various option lists:
+        for endpointClass, configKey, mapFn in optionLoadingParams:
+            try:
+                endpoint = endpointClass(self._server_url)
+                res = endpoint.send(self._session, timeout=30)
+                if res.status_code == 200:
+                    resList = list(map(mapFn, res.json()))
+                    self._config.updateOptions(configKey, resList)
+                else:
+                    print(f"Failed to load {configKey}, code={res.status_code}")
+            except Exception as err:
+                print(f"error loading {configKey} from {self._server_url}: {err}")
 
 
     def _scale(self, newSize):
@@ -190,7 +186,7 @@ class StableDiffusionController(BaseInpaintController):
                     upscaleEndpoint = ExtrasPost(controller._server_url)
                     upscaleArgs = [controller._editedImage.getPilImage(), newSize.width(), newSize.height(), upscaleMethod]
                 try:
-                    res = upscaleEndpoint.send(*upscaleArgs)
+                    res = upscaleEndpoint.send(controller._session, *upscaleArgs)
                     if res.status_code != 200:
                         raise Exception(f"{res.status_code} : {res.text}")
                     res_json = res.json()
@@ -244,14 +240,14 @@ class StableDiffusionController(BaseInpaintController):
 
         # Check progress before starting:
         progressEndpoint = ProgressGet(self._server_url)
-        init_response = progressEndpoint.send()
+        init_response = progressEndpoint.send(self._session)
         errorCheck(init_response, 'Checking initial image generation progress')
         init_data = init_response.json()
         if init_data['current_image'] is not None:
             raise Exception('Image generation in progress, try again later.')
 
         def asyncRequest():
-            res = imageEndpoint.send(*postArgs)
+            res = imageEndpoint.send(self._session, *postArgs)
             try:
                 errorCheck(res, f"New {editMode} request")
                 if len(errors) == 0:
@@ -275,7 +271,7 @@ class StableDiffusionController(BaseInpaintController):
                 break
             res = None
             try:
-                progress_res = progressEndpoint.send()
+                progress_res = progressEndpoint.send(self._session)
                 errorCheck(progress_res, 'Checking image generation progress')
                 status = progress_res.json()
                 statusText = f"{int(status['progress'] * 100)}%"

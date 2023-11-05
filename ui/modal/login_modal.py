@@ -1,9 +1,10 @@
 from PyQt5.QtWidgets import QWidget, QDialog, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QPushButton
 from PyQt5.QtCore import QSize
 from sd_api.login import LoginPost
+import base64
 
 class LoginModal(QDialog):
-    def __init__(self, server_url):
+    def __init__(self, server_url, session):
         super().__init__()
 
         self.setModal(True)
@@ -26,6 +27,9 @@ class LoginModal(QDialog):
         self._passRow.addWidget(self._passInput)
         self._layout.addLayout(self._passRow)
 
+        self._status = QLabel(self)
+        self._layout.addWidget(self._status)
+
         self._buttonRow = QHBoxLayout()
         self._cancelButton = QPushButton(self)
         self._cancelButton.setText("Cancel")
@@ -35,9 +39,25 @@ class LoginModal(QDialog):
         self._buttonRow.addWidget(self._loginButton)
         self._layout.addLayout(self._buttonRow)
         def onLogin():
+            if self._nameInput.text() == '' or self._passInput.text() == '':
+                self._status.setText('Username and password cannot be empty')
+                return
             loginEndpoint = LoginPost(server_url)
-            self._res = loginEndpoint.send(self._nameInput.text(), self._passInput.text())
-            self.hide()
+            params = {
+                'username': self._nameInput.text(),
+                'password': self._passInput.text()
+            }
+            self._res = loginEndpoint.send(session, self._nameInput.text(), self._passInput.text())
+            if self._res.status_code == 200:
+                session.auth = (self._nameInput.text(), self._passInput.text())
+                self.hide()
+            else:
+                self._passInput.setText('')
+                try:
+                    self._status.setText(self._res.json()['detail'])
+                except:
+                    self._status.setText('Unknown error, try again')
+                
         self._loginButton.clicked.connect(onLogin)
 
         def onCancel():
@@ -49,5 +69,3 @@ class LoginModal(QDialog):
 
     def showLoginModal(self):
         self.exec_()
-        if self._res:
-            print(f"{self._res.status_code} : {self._res.text}")
