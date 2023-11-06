@@ -103,9 +103,6 @@ class StableDiffusionController(BaseInpaintController):
     def windowInit(self):
         screen = self._app.primaryScreen()
         size = screen.availableGeometry()
-        self._window = StableDiffusionMainWindow(self._config, self._editedImage, self._maskCanvas, self._sketchCanvas, self)
-        self._window.setGeometry(0, 0, size.width(), size.height())
-        self._window.show()
 
         # Make sure a valid connection exists:
         def promptForURL(promptText):
@@ -156,6 +153,10 @@ class StableDiffusionController(BaseInpaintController):
                     print(f"Failed to load {configKey}, code={res.status_code}")
             except Exception as err:
                 print(f"error loading {configKey} from {self._server_url}: {err}")
+        # Handle final window init now that data is loaded from the API:
+        self._window = StableDiffusionMainWindow(self._config, self._editedImage, self._maskCanvas, self._sketchCanvas, self)
+        self._window.setGeometry(0, 0, size.width(), size.height())
+        self._window.show()
 
 
     def _scale(self, newSize):
@@ -298,19 +299,11 @@ class StableDiffusionController(BaseInpaintController):
             print('Inpainting failed with error, raising...')
             raise errors[0]
         # discard image grid if present:
-        batchSize = self._config.get('batchSize')
-        batchCount = self._config.get('batchCount')
-        if len(images) > (batchSize * batchCount):
-            images.pop(0)
-        idxInBatch = 0
-        batchIdx = 0
+        idx = 0
         images = self._getImageData(images)
         for image in images:
-            saveImage(image, idxInBatch, batchIdx)
-            idxInBatch += 1
-            if idxInBatch >= batchSize:
-                idxInBatch = 0
-                batchIdx += 1
+            saveImage(image, idx)
+            idx += 1
 
     def _getImageData(self, images):
         imageData = []

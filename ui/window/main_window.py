@@ -301,11 +301,11 @@ class MainWindow(QMainWindow):
             del self._sampleSelector
             self._sampleSelector = None
 
-    def loadSamplePreview(self, image, y, x):
+    def loadSamplePreview(self, image, idx):
         if self._sampleSelector is None:
-            print(f"Tried to load sample y={y} x={x} after sampleSelector was closed")
+            print(f"Tried to load sample {idx} after sampleSelector was closed")
         else:
-            self._sampleSelector.loadSampleImage(image, y, x)
+            self._sampleSelector.loadSampleImage(image, idx)
 
     def setIsLoading(self, isLoading, message=None):
         if self._sampleSelector is not None:

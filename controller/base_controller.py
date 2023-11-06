@@ -253,7 +253,7 @@ class BaseInpaintController():
         config = self._config
         class InpaintThreadWorker(QObject):
             finished = pyqtSignal()
-            imageReady = pyqtSignal(Image.Image, int, int)
+            imageReady = pyqtSignal(Image.Image, int)
             statusSignal = pyqtSignal(dict)
             errorSignal = pyqtSignal(Exception)
 
@@ -261,8 +261,8 @@ class BaseInpaintController():
                 super().__init__()
 
             def run(self):
-                def sendImage(img, y, x):
-                    self.imageReady.emit(img, y, x)
+                def sendImage(img, idx):
+                    self.imageReady.emit(img, idx)
                 try:
                     doInpaint(inpaintImage, inpaintMask, sendImage, self.statusSignal)
                 except Exception as err:
@@ -279,7 +279,7 @@ class BaseInpaintController():
             self._applyStatusUpdate(statusDict)
         worker.statusSignal.connect(updateStatus)
 
-        def loadSamplePreview(img, y, x):
+        def loadSamplePreview(img, idx):
             if ((config.get('editMode') == 'Inpaint')) and (config.get('removeUnmaskedChanges') or img.width != selection.width or img.height != selection.height):
                 pointFn = lambda p: 255 if p < 1 else 0
                 if config.get('inpaintMasked') == 'Inpaint not masked':
@@ -288,7 +288,7 @@ class BaseInpaintController():
                 img = resizeImage(img, selection.width, selection.height)
                 maskAlpha = resizeImage(maskAlpha, selection.width, selection.height)
                 img = Image.composite(unscaledInpaintImage if keepSketch else selection, img, maskAlpha)
-            self._window.loadSamplePreview(img, y, x)
+            self._window.loadSamplePreview(img, idx)
         worker.imageReady.connect(loadSamplePreview)
         self._window.setSampleSelectorVisible(True)
         self._startThread(worker)

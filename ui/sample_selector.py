@@ -35,22 +35,18 @@ class SampleSelector(QWidget):
         self._sourceOptionBounds = None
         self._zoomImageBounds = None
         
-        self._batchCount = config.get('batchCount')
-        self._batchSize = config.get('batchSize')
+        self._expectedCount = config.get('batchCount') * config.get('batchSize')
         self._imageSize = QSize(sourceImage.width, sourceImage.height)
         self._zoomMode = False
         self._zoomIndex = 0
         self._options = []
-        for row in range(self._batchCount):
-            columns = []
-            for col in range(self._batchSize):
-                columns.append({"image": None, "pixmap": None, "bounds": None})
-            self._options.append(columns)
+        for idx in range(self._expectedCount):
+            self._options.append({"image": None, "pixmap": None, "bounds": None})
 
         self._instructions = QLabel(self, text="Click a sample to apply it to the source image, or click 'cancel' to"
                 + " discard all samples.")
         self._instructions.show()
-        if ((self._batchCount * self._batchSize) > 1) or self._includeOriginal:
+        if ((self._expectedCount) > 1) or self._includeOriginal:
             self._zoomButton = QPushButton(self)
             self._zoomButton.setText("Zoom in")
             self._zoomButton.clicked.connect(lambda: self.toggleZoom())
@@ -74,14 +70,13 @@ class SampleSelector(QWidget):
             self._sourcePixmap = None
             del self._maskPixmap
             self._maskPixmap = None
-            for row in self._options:
-                for option in row:
-                    if option["image"] is not None:
-                        del option["image"]
-                        option["image"] = None
-                    if option["pixmap"] is not None:
-                        del option["pixmap"]
-                        option["pixmap"] = None
+            for option in self._options:
+                if option["image"] is not None:
+                    del option["image"]
+                    option["image"] = None
+                if option["pixmap"] is not None:
+                    del option["pixmap"]
+                    option["pixmap"] = None
             gc.collect()
             closeSelector()
         self._closeSelector = freeMemoryAndClose
@@ -118,7 +113,7 @@ class SampleSelector(QWidget):
     def setLoadingMessage(self, message):
         self._loadingWidget.setMessage(message)
 
-    def loadSampleImage(self, imageSample, idx, batch):
+    def loadSampleImage(self, imageSample, idx):
         """
         Loads an inpainting sample image into the appropriate SampleWidget.
         Parameters:
@@ -126,14 +121,16 @@ class SampleSelector(QWidget):
         imageSample : Image
             Newly generated inpainting image sample.
         idx : int
-            Index of the image sample within its batch.
-        batch : int
-            Batch index of the image sample.
+            Index of the image sample
         """
         pixmap = QPixmap.fromImage(imageToQImage(imageSample))
         assert pixmap is not None
-        self._options[batch][idx]["pixmap"] = pixmap
-        self._options[batch][idx]["image"] = imageSample
+        if idx >= len(self._options):
+            self._options.append({"image": imageSample, "pixmap": pixmap})
+            self.resizeEvent(None)
+        else:
+            self._options[idx]["pixmap"] = pixmap
+            self._options[idx]["image"] = imageSample
         self.update()
 
     def resizeEvent(self, event):
@@ -212,17 +209,15 @@ class SampleSelector(QWidget):
             rowSize = optionArea.height() // nRows
             columnSize = optionArea.width() // nColumns
             for idx in range(optionCount):
-                batchIdx = idx // self._batchSize
-                idxInBatch = idx % self._batchSize
                 row = idx // nColumns
                 col = idx % nColumns
                 x = columnSize * col
                 y = optionArea.y() + rowSize * row
                 containerRect = QRect(x, y, columnSize, rowSize)
-                if idx >= self._batchCount * self._batchSize:
+                if idx >= len(self._options):
                     self._sourceOptionBounds = getScaledPlacement(containerRect, self._imageSize, 10)
                 else:
-                    self._options[batchIdx][idxInBatch]["bounds"] = getScaledPlacement(containerRect, self._imageSize, 10)
+                    self._options[idx]["bounds"] = getScaledPlacement(containerRect, self._imageSize, 10)
 
     def paintEvent(self, event):
         super().paintEvent(event)
@@ -243,12 +238,10 @@ class SampleSelector(QWidget):
                 painter.drawText(option['bounds'], Qt.AlignCenter, "Waiting for image...")
         if self._zoomMode:
             pixmap = None
-            if self._zoomIndex >= self._batchCount * self._batchSize:
+            if self._zoomIndex >= len(self._options):
                 pixmap = self._sourcePixmap
             else:
-                idxInBatch = self._zoomIndex % self._batchSize
-                batchIdx = self._zoomIndex // self._batchSize
-                pixmap = self._options[batchIdx][idxInBatch]['pixmap']
+                pixmap = self._options[self._zoomIndex]['pixmap']
             drawImage({ 'bounds': self._zoomImageBounds, 'pixmap': pixmap })
 
             # draw arrows:
@@ -289,15 +282,14 @@ class SampleSelector(QWidget):
             painter.drawText(indexBounds, Qt.AlignCenter, str(self._zoomIndex + 1))
             
         else:
-            for row in self._options:
-                for option in row:
-                    drawImage(option)
+            for option in self._options:
+                drawImage(option)
             if self._sourceOptionBounds is not None:
                 option = { 'bounds': self._sourceOptionBounds, 'pixmap': self._sourcePixmap }
                 drawImage(option)
 
     def _optionCount(self):
-        return (self._batchSize * self._batchCount) + (1 if self._includeOriginal else 0)
+        return max(len(self._options), self._expectedCount)  + (1 if self._includeOriginal else 0)
 
     def _zoomPrev(self):
         if self._zoomMode:
@@ -332,12 +324,15 @@ class SampleSelector(QWidget):
                     self._closeSelector()
                     return True
             elif (event.key() == Qt.Key_Return or event.key() == Qt.Key_Enter) and self._zoomMode:
-                col = self._zoomIndex % self._batchSize
-                row = self._zoomIndex // self._batchSize
-                option = self._options[row][col]
-                if isinstance(option['image'], Image.Image):
-                    self._makeSelection(option['image'])
+                if self._zoomIndex >= len(self._options):
+                    # Original selected, just close selector
+                    self._makeSelection(None)
                     self._closeSelector()
+                else:
+                    option = self._options[self._zoomIndex]
+                    if isinstance(option['image'], Image.Image):
+                        self._makeSelection(option['image'])
+                        self._closeSelector()
                 return True
             elif event.text().isdigit() and (int(event.text()) - 1) < self._optionCount():
                 if (not self._zoomMode) or (int(event.text()) - 1) == self._zoomIndex:
@@ -372,7 +367,7 @@ class SampleSelector(QWidget):
         if event.button() != Qt.LeftButton:
             return
         if self._zoomMode:
-            maxIdx = (self._batchSize * self._batchCount) - (0 if self._includeOriginal else 1)
+            maxIdx = max(len(self._options), self._expectedCount) - (0 if self._includeOriginal else 1)
             # Check for arrow clicks:
             if self._leftArrowBounds.contains(event.pos()):
                 self._zoomPrev()
@@ -388,9 +383,7 @@ class SampleSelector(QWidget):
                     self._makeSelection(None)
                     self._closeSelector()
                 else:
-                    col = self._zoomIndex % self._batchSize
-                    row = self._zoomIndex // self._batchSize
-                    option = self._options[row][col]
+                    option = self._options[self._zoomIndex]
                     if isinstance(option['image'], Image.Image):
                         self._makeSelection(option['image'])
                         self._closeSelector()
@@ -402,13 +395,8 @@ class SampleSelector(QWidget):
                     self._makeSelection(None)
                     self._closeSelector()
                     return
-            rowNum = 0
-            colNum = 0
-            for row in self._options:
-                rowNum += 1
-                for option in row:
-                    colNum += 1
-                    if option['bounds'].contains(event.pos()) and isinstance(option['image'], Image.Image):
-                        self._makeSelection(option['image'])
-                        self._closeSelector()
-                        return
+            for option in self._options:
+                if option['bounds'].contains(event.pos()) and isinstance(option['image'], Image.Image):
+                    self._makeSelection(option['image'])
+                    self._closeSelector()
+                    return
