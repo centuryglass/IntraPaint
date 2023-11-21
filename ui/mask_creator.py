@@ -148,7 +148,8 @@ class MaskCreator(QtWidgets.QWidget):
         return combined
 
     def mousePressEvent(self, event):
-        if event.button() == Qt.LeftButton:
+        if event.button() == Qt.LeftButton or event.button() == Qt.RightButton:
+            sizeOverride = 1 if event.button() == Qt.RightButton else None
             if self._eyedropperMode:
                 point = self._widgetToImageCoords(event.pos())
                 color = self.getColorAtPoint(point)
@@ -167,21 +168,22 @@ class MaskCreator(QtWidgets.QWidget):
                     # Prevent issues with lines not drawing by setting a minimum multiplier for lineMode only:
                     sizeMultiplier = max(sizeMultiplier, 0.5)
                     if self._useEraser:
-                        canvas.eraseLine(line, color, sizeMultiplier)
+                        canvas.eraseLine(line, color, sizeMultiplier, sizeOverride)
                     else:
-                        canvas.drawLine(line, color, sizeMultiplier)
+                        canvas.drawLine(line, color, sizeMultiplier, sizeOverride)
                 else:
                     self._drawing = True
                     self._lastPoint = self._widgetToImageCoords(event.pos())
                     if self._useEraser or self._tabletEraser:
-                        canvas.erasePoint(self._lastPoint, color, sizeMultiplier)
+                        canvas.erasePoint(self._lastPoint, color, sizeMultiplier, sizeOverride)
                     else:
                         if self._sketchMode and self._pressureOpacity:
                             canvas.startShading()
-                        canvas.drawPoint(self._lastPoint, color, sizeMultiplier)
+                        canvas.drawPoint(self._lastPoint, color, sizeMultiplier, sizeOverride)
 
     def mouseMoveEvent(self, event):
-        if event.buttons() and Qt.LeftButton and self._drawing and not self._eyedropperMode:
+        if (Qt.LeftButton == event.buttons() or Qt.RightButton == event.buttons()) and self._drawing and not self._eyedropperMode:
+            sizeOverride = 1 if Qt.RightButton == event.buttons() else None
             canvas = self._sketchCanvas if self._sketchMode else self._maskCanvas
             color = QColor(self._sketchColor if self._sketchMode else Qt.red)
             if self._sketchMode and self._pressureOpacity:
@@ -191,9 +193,9 @@ class MaskCreator(QtWidgets.QWidget):
             line = QLine(self._lastPoint, newLastPoint)
             self._lastPoint = newLastPoint
             if self._useEraser or self._tabletEraser:
-                canvas.eraseLine(line, color, sizeMultiplier)
+                canvas.eraseLine(line, color, sizeMultiplier, sizeOverride)
             else:
-                canvas.drawLine(line, color, sizeMultiplier)
+                canvas.drawLine(line, color, sizeMultiplier, sizeOverride)
 
     def tabletEvent(self, tabletEvent):
         if tabletEvent.type() == QEvent.TabletRelease:

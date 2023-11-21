@@ -19,18 +19,18 @@ class SketchCanvas(BaseCanvas):
         super().setImage(initData)
         self.hasSketch = initData is not None and not isinstance(initData, QSize)
 
-    def drawLine(self, line, color, sizeMultiplier=None):
+    def drawLine(self, line, color, sizeMultiplier=None, sizeOverride=None):
         if self.shading:
-            self._transparencyCanvas.drawLine(line, color, sizeMultiplier)
+            self._transparencyCanvas.drawLine(line, color, sizeMultiplier, sizeOverride)
         else:
-            super().drawLine(line, color, sizeMultiplier)
+            super().drawLine(line, color, sizeMultiplier, sizeOverride)
         self.hasSketch = True
 
-    def drawPoint(self, point, color, sizeMultiplier=None):
+    def drawPoint(self, point, color, sizeMultiplier=None, sizeOverride=None):
         if self.shading:
-            self._transparencyCanvas.drawPoint(point, color, sizeMultiplier)
+            self._transparencyCanvas.drawPoint(point, color, sizeMultiplier, sizeOverride)
         else:
-            super().drawPoint(point, color, sizeMultiplier)
+            super().drawPoint(point, color, sizeMultiplier, sizeOverride)
         self.hasSketch = True
 
     def startShading(self):
