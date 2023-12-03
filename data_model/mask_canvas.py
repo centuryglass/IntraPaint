@@ -1,22 +1,78 @@
 from ui.image_utils import qImageToImage
 from data_model.base_canvas import BaseCanvas
-from PyQt5.QtCore import QRect, QPoint
+from PyQt5.QtCore import Qt, QRect, QPoint, QSize
+from PyQt5.QtGui import QPixmap, QPainter, QImage, QColor
 
 class MaskCanvas(BaseCanvas):
     def __init__(self, config, image):
         super().__init__(config, image)
         self.setBrushSize(self._config.get('initialMaskBrushSize'))
         self._maskRect = None
+        self._outline = None
         config.connect(self, 'inpaintFullRes', lambda b: self._handleChanges())
         config.connect(self, 'inpaintFullResPadding', lambda x: self._handleChanges())
+        self.ditherMask = QPixmap(QSize(512, 512))
+        ditherStamp = QPixmap(QSize(8, 8))
+        painter = QPainter(ditherStamp)
+        painter.fillRect(0, 0, 8, 8, Qt.white)
+        painter.fillRect(0, 0, 4, 4, Qt.black)
+        painter.fillRect(4, 4, 4, 4, Qt.black)
+        painter = QPainter(self.ditherMask)
+        painter.drawTiledPixmap(0, 0, 512, 512, ditherStamp)
 
     def getInpaintingMask(self):
         image = self.getImage()
         image = image.convert('L').point( lambda p: 255 if p < 1 else 0 )
         return image
 
-    def getMaskedArea(self):
-        if not self._config.get('inpaintFullRes'):
+    def getOutline(self):
+        if self._outline is not None:
+            return self._outline
+        image = self.getQImage()
+        outline = QImage(image.width(), image.height(), QImage.Format_ARGB32)
+        outline.fill(QColor(255, 255, 255, 0))
+        pxValue = QColor(0, 0, 0, 255).rgba()
+        maskedArea = self.getMaskedArea(True)
+        if maskedArea is not None:
+            y = maskedArea.y()
+            line = image.constScanLine(y).asarray(image.bytesPerLine())
+            lastLine = image.constScanLine(y - 1).asarray(image.bytesPerLine()) if y > 0 else None
+            nextLine = image.constScanLine(y + 1).asarray(image.bytesPerLine()) if y < (image.height() - 2) else None
+            pxSize = image.bytesPerLine() // image.width()
+            xMin = int((maskedArea.x() * pxSize) + 3)
+            xMax = int(maskedArea.right() * pxSize)
+            for y in range(maskedArea.y(), maskedArea.bottom()):
+                out = outline.scanLine(y).asarray(outline.bytesPerLine())
+                if (y != maskedArea.y()):
+                    lastLine = line
+                    line = nextLine
+                    nextLine = image.constScanLine(y + 1).asarray(image.bytesPerLine()) if y < (image.height() - 2) else None
+                for x in range (xMin, xMax, pxSize):
+                    isEdge = False
+                    lastVal = None
+                    for ln in [line, lastLine, nextLine]:
+                        if isEdge or ln is None:
+                            break
+                        for i in [x - pxSize, x, x + pxSize]:
+                            if isEdge or i < 0 or i >= len(line):
+                                break
+                            pt = ln[i]
+                            if lastVal is not None and pt != lastVal:
+                                isEdge = True
+                            lastVal = pt
+                    if isEdge:
+                        for i in range(x, x + pxSize):
+                            out[i] = 255
+
+        painter = QPainter(outline)
+        painter.setCompositionMode(QPainter.CompositionMode_SourceIn)
+        painter.drawPixmap(0, 0, self.ditherMask)
+        self._outline = outline
+        return outline
+
+
+    def getMaskedArea(self, ignoreConfig = False):
+        if (not ignoreConfig) and (not self._config.get('inpaintFullRes')):
             return
         if self._maskRect is not None:
             return self._maskRect
@@ -58,6 +114,18 @@ class MaskCanvas(BaseCanvas):
         return self._maskRect
 
     def _handleChanges(self):
+        width = self.ditherMask.width()
+        height = self.ditherMask.height()
+        while width < self.width():
+            width += self.width()
+        while height < self.height():
+            height += self.height()
+        if width != self.ditherMask.width() or height != self.ditherMask.height():
+            newDitherMask = QPixmap(QSize(width, height))
+            painter = QPainter(newDitherMask)
+            painter.drawTiledPixmap(0, 0, width, height, self.ditherMask)
+            self.ditherMask = newDitherMask
         self._maskRect = None
+        self._outline = None
         super()._handleChanges()
 

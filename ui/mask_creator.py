@@ -109,9 +109,17 @@ class MaskCreator(QtWidgets.QWidget):
             if self._sketchCanvas.shading:
                 painter.drawPixmap(self._imageRect, self._sketchCanvas._transparencyCanvas.getPixmap())
         if self._maskCanvas.enabled():
-            painter.setOpacity(0.6)
-            painter.drawPixmap(self._imageRect, self._maskCanvas.getPixmap())
             maskedRect = self._maskCanvas.getMaskedArea()
+            maskOpacity = 0.5
+            if self._sketchMode:
+                maskOpacity -= 0.3 if self._drawing else 0.1
+            else:
+                maskOpacity += 0.3 if self._drawing else 0.1
+            painter.setOpacity(maskOpacity)
+            painter.drawPixmap(self._imageRect, self._maskCanvas.getPixmap())
+            if self._sketchMode or not self._drawing:
+                painter.setOpacity(0.8)
+                painter.drawImage(self._imageRect, self._maskCanvas.getOutline())
             if maskedRect is not None:
                 scale = self._imageRect.width() / self._maskCanvas.width()
                 drawnRect = QRect(self._imageRect.x() + int(maskedRect.x() * scale),
@@ -208,10 +216,11 @@ class MaskCreator(QtWidgets.QWidget):
             self._pen_pressure = tabletEvent.pressure()
 
     def mouseReleaseEvent(self, event):
-        if event.button == Qt.LeftButton and self._drawing:
+        if event.button() == Qt.LeftButton and self._drawing:
             self._drawing = False
         if self._sketchCanvas.shading:
             self._sketchCanvas.applyShading()
+        self.update()
 
     def resizeEvent(self, event):
         if self._maskCanvas.size() == QSize(0, 0):
