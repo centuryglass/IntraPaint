@@ -6,6 +6,7 @@ from PIL import Image, ImageFilter
 import sys, os, glob
 
 from ui.modal.modal_utils import showErrorDialog, requestConfirmation
+from ui.modal.settings_modal import SettingsModal
 from ui.panel.mask_panel import MaskPanel
 from ui.panel.image_panel import ImagePanel
 from ui.sample_selector import SampleSelector
@@ -20,6 +21,7 @@ class MainWindow(QMainWindow):
     def __init__(self, config, editedImage, mask, sketch, controller):
         super().__init__()
         self.setWindowIcon(QtGui.QIcon('resources/icon.png'))
+
         # Initialize UI/editing data model:
         self._controller = controller
         self._config = config
@@ -35,6 +37,17 @@ class MainWindow(QMainWindow):
         self.layout = QVBoxLayout()
         self._mainWidget = QWidget(self);
         self._mainWidget.setLayout(self.layout)
+        self.centralWidget = QStackedWidget(self);
+        self.centralWidget.addWidget(self._mainWidget)
+        self.setCentralWidget(self.centralWidget)
+        self.centralWidget.setCurrentWidget(self._mainWidget)
+
+        # Loading widget (for interrogate):
+        self._isLoading = False
+        self._loadingWidget = LoadingWidget()
+        self._loadingWidget.setParent(self)
+        self._loadingWidget.setGeometry(self.frameGeometry())
+        self._loadingWidget.hide()
 
         # Image/Mask editing layout:
         imagePanel = ImagePanel(self._config, self._editedImage, controller)
@@ -61,10 +74,13 @@ class MainWindow(QMainWindow):
 
         # File:
         fileMenu = self._menu.addMenu("File")
-        addAction("New Image", "Ctrl+N", lambda: controller.newImage(), fileMenu)
+        def ifNotSelecting(fn):
+            if not self.isSampleSelectorVisible():
+                fn()
+        addAction("New Image", "Ctrl+N", lambda: ifNotSelecting(lambda: controller.newImage()), fileMenu)
         addAction("Save", "Ctrl+S", lambda: controller.saveImage(), fileMenu)
-        addAction("Load", "Ctrl+O", lambda: controller.loadImage(), fileMenu)
-        addAction("Reload", "F5", lambda: controller.reloadImage(), fileMenu)
+        addAction("Load", "Ctrl+O", lambda: ifNotSelecting(lambda: controller.loadImage()), fileMenu)
+        addAction("Reload", "F5", lambda: ifNotSelecting(lambda: controller.reloadImage()), fileMenu)
         def tryQuit():
             if (not self._editedImage.hasImage()) or requestConfirmation(self, "Quit now?", "All unsaved changes will be lost."):
                 self.close()
@@ -72,9 +88,9 @@ class MainWindow(QMainWindow):
 
         # Image:
         imageMenu = self._menu.addMenu("Image")
-        addAction("Resize canvas", "F2", lambda: controller.resizeCanvas(), imageMenu)
-        addAction("Scale image", "F3", lambda: controller.scaleImage(), imageMenu)
-        addAction("Generate", "F4", lambda: controller.startAndManageInpainting(), imageMenu)
+        addAction("Resize canvas", "F2", lambda: ifNotSelecting(lambda: controller.resizeCanvas()), imageMenu)
+        addAction("Scale image", "F3", lambda: ifNotSelecting(lambda: controller.scaleImage()), imageMenu)
+        addAction("Generate", "F4", lambda: ifNotSelecting(lambda: controller.startAndManageInpainting()), imageMenu)
         def updateMetadata():
             self._editedImage.updateMetadata()
             messageBox = QMessageBox(self)
@@ -86,32 +102,31 @@ class MainWindow(QMainWindow):
 
         # Tools:
         toolMenu = self._menu.addMenu("Tools")
-        addAction("Toggle mask/sketch editing mode", "F6", lambda: maskPanel.setUseMaskMode(not maskPanel.maskModeButton.isChecked()), toolMenu)
-        addAction("Toggle pen/eraser tool", "F7", lambda: maskPanel.swapDrawTool(), toolMenu)
+        def maskModeToggle():
+            maskPanel.setUseMaskMode(not maskPanel.maskModeButton.isChecked())
+        addAction("Toggle mask/sketch editing mode", "F6", lambda: ifNotSelecting(maskModeToggle), toolMenu)
+        def maskToolToggle():
+            maskPanel.swapDrawTool()
+        addAction("Toggle pen/eraser tool", "F7", lambda: ifNotSelecting(maskToolToggle), toolMenu)
         def clearBoth():
             mask.clear()
             sketch.clear()
-        addAction("Clear mask and sketch", "F8", clearBoth, toolMenu)
+        addAction("Clear mask and sketch", "F8", lambda: ifNotSelecting(clearBoth), toolMenu)
         def brushSizeChange(offset):
             size = maskPanel.getBrushSize()
             maskPanel.setBrushSize(size + offset)
-        addAction("Increase brush size", "Ctrl+]", lambda: brushSizeChange(1), toolMenu)
-        addAction("Decrease brush size", "Ctrl+[", lambda: brushSizeChange(-1), toolMenu)
-
-
+        addAction("Increase brush size", "Ctrl+]", lambda: ifNotSelecting(lambda: brushSizeChange(1)), toolMenu)
+        addAction("Decrease brush size", "Ctrl+[", lambda: ifNotSelecting(lambda: brushSizeChange(-1)), toolMenu)
+        def showSettings():
+            settings = SettingsModal(self)
+            settings.addTextSetting("text_test", "Main", "init", "Text Input Test")
+            settings.changesSaved.connect(lambda changes: print(f"changed: {changes}"))
+            settings.showModal()
+        addAction("Settings", "F9", lambda: ifNotSelecting(showSettings), toolMenu)
         # Build config + control layout (varying based on implementation): 
         self._buildControlLayout(controller)
-        self.centralWidget = QStackedWidget(self);
-        self.centralWidget.addWidget(self._mainWidget)
-        self.setCentralWidget(self.centralWidget)
-        self.centralWidget.setCurrentWidget(self._mainWidget)
 
-        # Loading widget (for interrogate):
-        self._isLoading = False
-        self._loadingWidget = LoadingWidget()
-        self._loadingWidget.setParent(self)
-        self._loadingWidget.setGeometry(self.frameGeometry())
-        self._loadingWidget.hide()
+
 
     def _clearEditingLayout(self):
         if self.imageLayout is not None:
