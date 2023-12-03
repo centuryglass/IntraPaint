@@ -24,7 +24,7 @@ class Config(QObject):
 
 
         # Editing options:
-        self._setDefault('maxEditSize', QSize(1024, 1024))
+        self._setDefault('maxEditSize', QSize(10240, 10240))
         self._setDefault('minEditSize', QSize(8, 8))
         self._setDefault('editSize', QSize(512, 512))
         self._setDefault('initialMaskBrushSize', 40)
