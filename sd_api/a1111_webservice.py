@@ -190,6 +190,12 @@ class A1111Webservice(WebService):
         resBody = self._get('/sdapi/v1/prompt-styles').json()
         return list(map(lambda s: json.dumps(s), resBody))
 
+    def getScripts(self):
+        return self._get('/sdapi/v1/scripts').json()
+
+    def getScriptInfo(self):
+        return self._get('/sdapi/v1/script-info').json()
+
     def _getNameList(self, endpoint):
         resBody = self._get(endpoint, timeout=30).json()
         return list(map(lambda obj: obj['name'], resBody))
@@ -229,3 +235,9 @@ class A1111Webservice(WebService):
 
     def getLoras(self):
         return self._get('/sdapi/v1/loras', timeout=30).json()
+
+    def getScripts(self):
+        return self._get('/sdapi/v1/scripts', timeout=30).json()
+
+    def getScriptInfo(self):
+        return self._get('/sdapi/v1/script-info', timeout=30).json()

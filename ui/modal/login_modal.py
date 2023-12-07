@@ -1,6 +1,5 @@
 from PyQt5.QtWidgets import QWidget, QDialog, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QPushButton
 from PyQt5.QtCore import QSize
-from sd_api.login import LoginPost
 import base64
 
 class LoginModal(QDialog):

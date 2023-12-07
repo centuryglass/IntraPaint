@@ -36,6 +36,52 @@ class StableDiffusionController(BaseInpaintController):
             self._sketchCanvas.setEnabled(editMode != 'Text to Image')
         self._config.connect(self._sketchCanvas, 'editMode', updateSketchState)
 
+    def initSettings(self, settingsModal):
+        settings = self._webservice.getConfig()
+        # Model settings:
+        models = list(map(lambda m: m['title'], self._webservice.getModels()))
+        settingsModal.addComboBoxSetting('sd_model_checkpoint',
+                'Models',
+                settings['sd_model_checkpoint'],
+                models,
+                'Stable-Diffusion Model')
+        # TODO:
+        # Only keep one model on device
+        # Max checkpoints loaded
+        # SD VAE ("Automatic", "None", ...)
+        # VAE to cache
+        # SD Unet
+        # Clip skip
+
+
+        # Upscaling:
+        settingsModal.addSpinBoxSetting('ESRGAN_tile',
+                'Upscalers',
+                settings['ESRGAN_tile'],
+                8, 9999, "ESRGAN tile size")
+        settingsModal.addSpinBoxSetting('ESRGAN_tile_overlap',
+                'Upscalers', settings['ESRGAN_tile_overlap'],
+                8,
+                9999,
+                "ESRGAN tile overlap")
+        # TODO:
+        # LSDR processing
+        # LSDR cache
+        # SCUNET tile size
+        # SCUNET tile overlap
+        # SwinIR tile size
+        # SwinIR tile overlap
+        return True
+
+    def refreshSettings(self, settingsModal):
+        settings = self._webservice.getConfig()
+        settingsModal.updateSettings(settings)
+
+    def updateSettings(self, changedSettings):
+        for key in changedSettings:
+            print(f"Setting {key} to {changedSettings[key]}")
+        self._webservice.setConfig(changedSettings)
+
     def healthCheck(url=None, webservice=None):
         try:
             res = None
@@ -128,6 +174,9 @@ class StableDiffusionController(BaseInpaintController):
                 self._config.updateOptions(configKey, loadingFn())
             except Exception as err:
                 print(f"error loading {configKey} from {self._server_url}: {err}")
+
+        # initialize remote options modal:
+        
         # Handle final window init now that data is loaded from the API:
         self._window = StableDiffusionMainWindow(self._config, self._editedImage, self._maskCanvas, self._sketchCanvas, self)
         self._window.setGeometry(0, 0, size.width(), size.height())

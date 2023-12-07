@@ -129,8 +129,6 @@ class MainWindow(QMainWindow):
         # Build config + control layout (varying based on implementation): 
         self._buildControlLayout(controller)
 
-
-
     def _clearEditingLayout(self):
         if self.imageLayout is not None:
             for widget in [self.imagePanel, self.divider, self.maskPanel]:

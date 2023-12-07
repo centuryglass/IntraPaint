@@ -16,6 +16,7 @@ class SettingsModal(QDialog):
 
         self._panels = {}
         self._panelLayouts = {}
+        self._inputs = {}
         self._changes = {}
         self._panelLayout = QVBoxLayout()
 
@@ -71,6 +72,25 @@ class SettingsModal(QDialog):
     def _addSetting(self, settingName, panelName, widget, labelText):
         self._addPanelIfMissing(panelName)
         self._panelLayouts[panelName].addWidget(self._getLabeledWrapper(widget, labelText, panelName))
+        self._inputs[settingName] = widget
+
+    def updateSettings(self, settings):
+        for key in settings:
+            if key not in self._inputs:
+                continue
+            widget = self._inputs[key]
+            if isinstance(widget, QLineEdit):
+                widget.setText(settings[key])
+            elif isinstance(widget, QComboBox):
+                widget.setCurrentIndex(widget.findText(settings[key]))
+            elif isinstance(widget, QDoubleSpinBox):
+                widget.setValue(float(settings[key]))
+            elif isinstance(widget, BigIntSpinBox):
+                widget.setValue(int(settings[key]))
+            elif isinstance(widget, QCheckBox):
+                widget.setChecked(settings[key])
+            if key in self._changes:
+                del self._changes[key]
 
     def addTextSetting(self, settingName, panelName, initialValue, labelText):
         textBox = QLineEdit()
@@ -89,6 +109,7 @@ class SettingsModal(QDialog):
             print(f"Set value {selectedIndex} for {settingName}")
             self._addChange(settingName, options[selectedIndex])
         comboBox.setCurrentIndex(options.index(initialValue))
+        comboBox.currentIndexChanged.connect(updateValue)
         self._addSetting(settingName, panelName, comboBox, labelText)
 
     def addSpinBoxSetting(self, settingName, panelName, initialValue, minValue, maxValue, labelText):
