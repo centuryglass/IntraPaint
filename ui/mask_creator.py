@@ -216,7 +216,7 @@ class MaskCreator(QtWidgets.QWidget):
             self._pen_pressure = tabletEvent.pressure()
 
     def mouseReleaseEvent(self, event):
-        if event.button() == Qt.LeftButton and self._drawing:
+        if (event.button() == Qt.LeftButton or event.button() == Qt.RightButton) and self._drawing:
             self._drawing = False
         if self._sketchCanvas.shading:
             self._sketchCanvas.applyShading()

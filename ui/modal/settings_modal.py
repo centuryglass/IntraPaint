@@ -2,6 +2,7 @@ from PyQt5.QtWidgets import *
 from PyQt5.QtCore import pyqtSignal
 from ui.widget.bordered_widget import BorderedWidget
 from ui.widget.collapsible_box import CollapsibleBox
+from ui.widget.big_int_spinbox import BigIntSpinbox
 
 
 class SettingsModal(QDialog):
@@ -18,31 +19,31 @@ class SettingsModal(QDialog):
         self._changes = {}
         self._panelLayout = QVBoxLayout()
 
-        self._layout = QVBoxLayout()
-        self.setLayout(self._layout)
+        layout = QVBoxLayout()
+        self.setLayout(layout)
 
-        self._panelWidget = BorderedWidget(self)
-        self._panelWidget.setLayout(self._panelLayout)
-        self._layout.addWidget(self._panelWidget, stretch=20)
+        panelWidget = BorderedWidget(self)
+        panelWidget.setLayout(self._panelLayout)
+        layout.addWidget(panelWidget, stretch=20)
 
-        self._bottomPanel = BorderedWidget(self) 
-        self._bottomPanelLayout = QHBoxLayout()
-        self._bottomPanel.setLayout(self._bottomPanelLayout)
-        self._bottomPanelLayout.addSpacing(300)
+        bottomPanel = BorderedWidget(self) 
+        bottomPanelLayout = QHBoxLayout()
+        bottomPanel.setLayout(bottomPanelLayout)
+        bottomPanelLayout.addSpacing(300)
 
-        self._cancelButton = QPushButton()
-        self._cancelButton.setText("Cancel")
-        self._cancelButton.clicked.connect(lambda: self.hide())
-        self._bottomPanelLayout.addWidget(self._cancelButton, stretch=1)
+        cancelButton = QPushButton()
+        cancelButton.setText("Cancel")
+        cancelButton.clicked.connect(lambda: self.hide())
+        bottomPanelLayout.addWidget(cancelButton, stretch=1)
 
-        self._saveButton = QPushButton()
-        self._saveButton.setText("Save")
+        saveButton = QPushButton()
+        saveButton.setText("Save")
         def onSave():
             self.changesSaved.emit(self._changes)
             self.hide()
-        self._saveButton.clicked.connect(lambda: onSave())
-        self._bottomPanelLayout.addWidget(self._saveButton, stretch=1)
-        self._layout.addWidget(self._bottomPanel, stretch=1)
+        saveButton.clicked.connect(lambda: onSave())
+        bottomPanelLayout.addWidget(saveButton, stretch=1)
+        layout.addWidget(bottomPanel, stretch=1)
 
     def showModal(self):
         self.exec_()
@@ -52,7 +53,7 @@ class SettingsModal(QDialog):
 
     def _addPanelIfMissing(self, panelName):
         if panelName not in self._panels:
-            panel = CollapsibleBox(title=panelName, parent=self._panelWidget)
+            panel = CollapsibleBox(title=panelName)
             panelLayout = QVBoxLayout()
             panel.setContentLayout(panelLayout)
             self._panels[panelName] = panel
@@ -67,10 +68,39 @@ class SettingsModal(QDialog):
         settingContainer.setLayout(settingLayout)
         return settingContainer
 
-    def addTextSetting(self, settingName, panelName, initialValue, labelText):
+    def _addSetting(self, settingName, panelName, widget, labelText):
         self._addPanelIfMissing(panelName)
-        textBox = QPlainTextEdit(self._panels[panelName])
-        textBox.setPlainText(initialValue)
-        textBox.textChanged.connect(lambda: self._addChange(settingName, textBox.toPlainText()))
-        self._panelLayouts[panelName].addWidget(self._getLabeledWrapper(textBox, labelText, panelName))
+        self._panelLayouts[panelName].addWidget(self._getLabeledWrapper(widget, labelText, panelName))
+
+    def addTextSetting(self, settingName, panelName, initialValue, labelText):
+        textBox = QLineEdit()
+        textBox.setText(initialValue)
+        textBox.textChanged.connect(lambda: self._addChange(settingName, textBox.text()))
+        self._addSetting(settingName, panelName, textBox, labelText)
+
+    def addComboBoxSetting(self, settingName, panelName, initialValue, options, labelText):
+        comboBox = QComboBox()
+        for option in options:
+            if isinstance(option, dict):
+                comboBox.addItem(option['text'])
+            else:
+                comboBox.addItem(option)
+        def updateValue(selectedIndex):
+            print(f"Set value {selectedIndex} for {settingName}")
+            self._addChange(settingName, options[selectedIndex])
+        comboBox.setCurrentIndex(options.index(initialValue))
+        self._addSetting(settingName, panelName, comboBox, labelText)
+
+    def addSpinBoxSetting(self, settingName, panelName, initialValue, minValue, maxValue, labelText):
+        spinBox = QDoubleSpinBox() if type(initialValue) is float else BigIntSpinbox()
+        spinBox.setRange(minValue, maxValue)
+        spinBox.setValue(initialValue)
+        spinBox.valueChanged.connect(lambda newValue: self._addChange(settingName, newValue))
+        self._addSetting(settingName, panelName, spinBox, labelText)
+
         
+    def addCheckBoxSetting(self, settingName, panelName, initialValue, labelText):
+        checkBox = QCheckBox()
+        checkBox.setChecked(initialValue)
+        checkBox.stateChanged.connect(lambda isChecked: self._addChange(settingName, bool(isChecked)))
+        self._addSetting(settingName, panelName, checkBox, labelText)

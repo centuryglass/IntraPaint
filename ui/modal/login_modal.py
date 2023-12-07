@@ -4,8 +4,10 @@ from sd_api.login import LoginPost
 import base64
 
 class LoginModal(QDialog):
-    def __init__(self, server_url, session):
+    def __init__(self, tryLogin):
         super().__init__()
+        self.user=None
+        self.pw=None
 
         self.setModal(True)
 
@@ -42,14 +44,15 @@ class LoginModal(QDialog):
             if self._nameInput.text() == '' or self._passInput.text() == '':
                 self._status.setText('Username and password cannot be empty')
                 return
-            loginEndpoint = LoginPost(server_url)
+
             params = {
                 'username': self._nameInput.text(),
                 'password': self._passInput.text()
             }
-            self._res = loginEndpoint.send(session, self._nameInput.text(), self._passInput.text())
+            self._res = tryLogin(self._nameInput.text(), self._passInput.text())
             if self._res.status_code == 200:
-                session.auth = (self._nameInput.text(), self._passInput.text())
+                self.user = self._nameInput.text()
+                self.pw = self._passInput.text()
                 self.hide()
             else:
                 self._passInput.setText('')
@@ -67,5 +70,13 @@ class LoginModal(QDialog):
         self._cancelButton.clicked.connect(onCancel)
         self.setLayout(self._layout)
 
+    def clearPassword(self):
+        self._passInput.setText('')
+
+    def setStatus(self, status):
+        self._status.setText(status)
+
     def showLoginModal(self):
         self.exec_()
+        if self._res.status_code == 200:
+            return (self.user, self.pw)

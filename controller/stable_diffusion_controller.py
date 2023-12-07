@@ -2,7 +2,7 @@ from PyQt5.QtCore import QThread, QSize, QObject, pyqtSignal
 from PyQt5.QtWidgets import QInputDialog
 from threading import Lock
 from PIL import Image
-import requests, io, sys, secrets, threading, json, re
+import requests, io, sys, secrets, threading, json, re, os
 
 from ui.window.stable_diffusion_main_window import StableDiffusionMainWindow
 from ui.modal.modal_utils import showErrorDialog
@@ -10,35 +10,23 @@ from ui.modal.image_scale_modal import ImageScaleModal
 from ui.modal.login_modal import LoginModal
 from controller.base_controller import BaseInpaintController
 from startup.utils import imageToBase64, loadImageFromBase64
-
-from sd_api.config import ConfigGet
-from sd_api.embeddings import EmbeddingsGet
-from sd_api.extras import ExtrasPost
-from sd_api.hypernets import HypernetsGet
-from sd_api.img2img import Img2ImgPost
-from sd_api.interrogate import InterrogatePost
-from sd_api.interrupt import InterruptPost
-from sd_api.login_check import LoginCheckGet
-from sd_api.memory import MemoryGet
-from sd_api.models import ModelsGet
-from sd_api.upscalers import UpscalersGet
-from sd_api.options import OptionsGet, OptionsPost
-from sd_api.progress import ProgressGet
-from sd_api.refresh_ckpt import RefreshCheckpointsPost
-from sd_api.samplers import SamplersGet
-from sd_api.styles import StylesGet
-from sd_api.txt2img import Txt2ImgPost
-from sd_api.controlnet_upscale import ControlnetUpscalePost
-from sd_api.controlnet_version import ControlnetVersionGet
+from sd_api.a1111_webservice import A1111Webservice
 
 
 class StableDiffusionController(BaseInpaintController):
     def __init__(self, args):
         self._server_url = args.server_url
         super().__init__(args)
-        self._session = requests.Session()
-        self._auth = None
-        self._session_hash = secrets.token_hex(5)
+        self._webservice = A1111Webservice(args.server_url)
+        self._session = self._webservice._session
+
+        # Login automatically if username/password are defined as env variables.
+        # Obviously this isn't terribly secure, but A1111 auth security is already pretty minimal and I'm just using
+        # this for testing.
+        if os.environ['SD_UNAME'] and os.environ['SD_PASS']:
+            self._webservice._login(os.environ['SD_UNAME'], os.environ['SD_PASS'])
+            self._webservice._setAuth((os.environ['SD_UNAME'], os.environ['SD_PASS']))
+
         # Since stable-diffusion supports alternate generation modes, configure sketch/mask to only be available
         # when using appropriate modes:
         def updateMaskState(editMode):
@@ -48,15 +36,18 @@ class StableDiffusionController(BaseInpaintController):
             self._sketchCanvas.setEnabled(editMode != 'Text to Image')
         self._config.connect(self._sketchCanvas, 'editMode', updateSketchState)
 
-    def healthCheck(url, session_hash=secrets.token_hex(5)):
+    def healthCheck(url=None, webservice=None):
         try:
-            loginCheckEndpoint = LoginCheckGet(url)
-            res = loginCheckEndpoint.send(None, timeout=30)
+            res = None
+            if webservice is None:
+                res = requests.get(url)
+            else:
+                res = webservice.loginCheck()
             if res.status_code == 200 or (res.status_code == 401 and res.json()['detail'] == 'Not authenticated'):
                 return True
             raise Exception(f"{res.status_code} : {res.text}")
         except Exception as err:
-            print(f"error connecting to {url}: {err}")
+            print(f"error checking login: {err}")
             return False
 
     def interrogate(self):
@@ -78,13 +69,9 @@ class StableDiffusionController(BaseInpaintController):
 
             def run(self):
                 try:
-                    interrogateEndpoint = InterrogatePost(controller._server_url)
-                    res = interrogateEndpoint.send(controller._session,
-                            controller._config,
-                            controller._editedImage.getSelectionContent())
-                    if res.status_code != 200:
-                        raise Exception(f"{res.status_code} : {res.text}")
-                    self.promptReady.emit(res.json()['caption'])
+                    image = controller._editedImage.getSelectionContent()
+                    config = controller._config
+                    self.promptReady.emit(controller._webservice.interrogate(config, image))
                 except Exception as err:
                     print (f"err:{err}")
                     self.errorSignal.emit(err)
@@ -118,39 +105,27 @@ class StableDiffusionController(BaseInpaintController):
             promptForURL('Enter server URL:')
 
         # Check connection:
-        while not StableDiffusionController.healthCheck(self._server_url, self._session_hash):
+        while not StableDiffusionController.healthCheck(webservice=self._webservice):
             promptForURL('Server connection failed, enter a new URL or click "OK" to retry')
 
-        controlnetCheckEndpoint = ControlnetVersionGet(self._server_url)
         try:
-            res = controlnetCheckEndpoint.send(self._session, timeout=30)
-            if res.status_code == 200:
-                self._config.set('controlnetVersion', float(res.json()['version']))
-            else:
-                print(f"Failed to find controlnet, code={res.status_code}")
-                self._config.set('controlnetVersion', -1.0)
+            self._config.set('controlnetVersion', float(self._webservice.getControlnetVersion()))
         except Exception as err:
             print(f"Loading controlnet config failed: {err}")
             self._config.set('controlnetVersion', -1.0)
 
         optionLoadingParams = [
-            [StylesGet, 'styles', lambda s: json.dumps(s)],
-            [SamplersGet, 'samplingMethod', lambda s: s['name']],
-            [UpscalersGet, 'upscaleMethod', lambda u: u['name']]
+            ['styles', lambda: self._webservice.getStyles()],
+            ['samplingMethod', lambda: self._webservice.getSamplers()],
+            ['upscaleMethod', lambda: self._webservice.getUpscalers()]
         ]
         if self._config.get('controlnetVersion') > 0:
             print('TODO: add controlnet items to optionLoadingParams')
 
         # load various option lists:
-        for endpointClass, configKey, mapFn in optionLoadingParams:
+        for configKey, loadingFn in optionLoadingParams:
             try:
-                endpoint = endpointClass(self._server_url)
-                res = endpoint.send(self._session, timeout=30)
-                if res.status_code == 200:
-                    resList = list(map(mapFn, res.json()))
-                    self._config.updateOptions(configKey, resList)
-                else:
-                    print(f"Failed to load {configKey}, code={res.status_code}")
+                self._config.updateOptions(configKey, loadingFn())
             except Exception as err:
                 print(f"error loading {configKey} from {self._server_url}: {err}")
         # Handle final window init now that data is loaded from the API:
@@ -178,27 +153,14 @@ class StableDiffusionController(BaseInpaintController):
                 super().__init__()
 
             def run(self):
-                upscaleMethod = controller._config.get('upscaleMethod')
-                upscaleEndpoint = None
-                if controller._config.get('controlnetUpscaling'):
-                    upscaleEndpoint = ControlnetUpscalePost(controller._server_url)
-                    upscaleArgs = [controller._config, controller._editedImage.getPilImage(), newSize.width(), newSize.height()]
-                else:
-                    upscaleEndpoint = ExtrasPost(controller._server_url)
-                    upscaleArgs = [controller._editedImage.getPilImage(), newSize.width(), newSize.height(), upscaleMethod]
-                try:
-                    res = upscaleEndpoint.send(controller._session, *upscaleArgs)
-                    if res.status_code != 200:
-                        raise Exception(f"{res.status_code} : {res.text}")
-                    res_json = res.json()
-                    if 'image' in res_json:
-                        self.imageReady.emit(loadImageFromBase64(res.json()['image']))
-                    elif 'images' in res_json:
-                        images = controller._getImageData(res_json['images'])
-                        print(f"got scaled: {images}")
-                        self.imageReady.emit(images[-1])
-                    else:
-                        raise Exception(f"Unexpected response format: {res_json}")
+                try: 
+                    images, info = controller._webservice.upscale(controller._editedImage.getPilImage(),
+                            newSize.width(),
+                            newSize.height(),
+                            controller._config)
+                    if info is not None:
+                        print(f"Upscaling result info: {info}")
+                    self.imageReady.emit(images[-1])
                 except Exception as err:
                     self.errorSignal.emit(err)
                 self.finished.emit()
@@ -215,18 +177,26 @@ class StableDiffusionController(BaseInpaintController):
         editMode = self._config.get('editMode')
         if editMode != 'Inpaint':
             mask = None
-        imageEndpoint = Txt2ImgPost(self._server_url) if editMode == 'Text to Image' \
-               else Img2ImgPost(self._server_url)
-        postArgs = [self._config, selection.width, selection.height] if editMode == 'Text to Image' \
-                   else [self._config, selection, mask]
 
-        def errorCheck(serverResponse, contextStr):
-            if serverResponse.status_code != 200:
-                if serverResponse.content and ('application/json' in serverResponse.headers['content-type']) \
-                        and serverResponse.json() and 'detail' in serverResponse.json():
-                    raise Exception(f"{serverResponse.status_code} response to {contextStr}: {serverResponse.json()['detail']}")
-                else:
-                    raise Exception(f"{serverResponse.status_code} response to {contextStr}: unknown error, response={serverResponse}")
+        generateImages = None
+        if editMode == 'Text to Image':
+            generateImages = lambda: self._webservice.txt2img(self._config, selection.width, selection.height)
+        else:
+            scripts = None
+            if self._config.get('controlnetInpainting'):
+                scripts= {
+                    'controlNet': {
+                        "args": [
+                            {
+                                "module": "inpaint_global_harmonious",
+                                "model": "control_v11p_sd15_inpaint [ebff9138]",
+                                "threshold_a": self._config.get('controlnetDownsampleRate')
+                            }
+                        ]
+                    }
+                }
+            generateImages = lambda: self._webservice.img2img(selection, self._config, mask=mask, scripts=scripts)
+
 
         # POST to server_url, check response
         # If invalid or error response, throw Exception
@@ -240,25 +210,15 @@ class StableDiffusionController(BaseInpaintController):
         errors = []
 
         # Check progress before starting:
-        progressEndpoint = ProgressGet(self._server_url)
-        init_response = progressEndpoint.send(self._session)
-        errorCheck(init_response, 'Checking initial image generation progress')
-        init_data = init_response.json()
+        init_data = self._webservice.progressCheck()
         if init_data['current_image'] is not None:
             raise Exception('Image generation in progress, try again later.')
 
         def asyncRequest():
-            res = imageEndpoint.send(self._session, *postArgs)
             try:
-                errorCheck(res, f"New {editMode} request")
-                if len(errors) == 0:
-                    resBody = res.json()
-                    imageData = resBody['images']
-                    for item in imageData:
-                        images.append(item)
-                        info = json.loads(resBody['info'])
-                        statusSignal.emit(info)
-
+                imageData, info = generateImages()
+                for image in imageData:
+                    images.append(image)
             except Exception as err:
                 print(f"request failed: {err}")
                 errors.append(err)
@@ -272,9 +232,7 @@ class StableDiffusionController(BaseInpaintController):
                 break
             res = None
             try:
-                progress_res = progressEndpoint.send(self._session)
-                errorCheck(progress_res, 'Checking image generation progress')
-                status = progress_res.json()
+                status = self._webservice.progressCheck()
                 statusText = f"{int(status['progress'] * 100)}%"
                 if 'eta_relative' in status and status['eta_relative'] != 0:
                     # TODO: eta_relative is not a ms value, perhaps use it with timestamps to estimate actual ETA?
@@ -298,31 +256,10 @@ class StableDiffusionController(BaseInpaintController):
         if len(errors) > 0:
             print('Inpainting failed with error, raising...')
             raise errors[0]
-        # discard image grid if present:
         idx = 0
-        images = self._getImageData(images)
         for image in images:
             saveImage(image, idx)
             idx += 1
-
-    def _getImageData(self, images):
-        imageData = []
-        for image in images:
-            if isinstance(image, dict):
-                if not image['is_file'] and image['data'] is not None:
-                    image = image['data']
-                else:
-                    filePath = image['name']
-                    url = f"{self._server_url}/file={filePath}"
-                    res = requests.get(url)
-                    res.raise_for_status()
-                    buffer = io.BytesIO()
-                    buffer.write(res.content)
-                    buffer.seek(0)
-                    imageData.append(Image.open(buffer))
-            if isinstance(image, str):
-                imageData.append(loadImageFromBase64(image))
-        return imageData
 
     def _applyStatusUpdate(self, statusDict):
         if 'seed' in statusDict:

@@ -80,6 +80,16 @@ class BaseInpaintController():
         # no-op, override to adjust config before data initialization
         return
 
+    def initSettings(self, settingsModal):
+        """ Returns false if disabled, true if settings were initialized"""
+        return False
+
+    def refreshSettings(self, settingsModal):
+        raise Exception('refreshSettings not implemented!')
+
+    def updateSettings(self, changedSettings):
+        raise Exception('refreshSettings not implemented!')
+
     def windowInit(self):
         screen = self._app.primaryScreen()
         size = screen.availableGeometry()

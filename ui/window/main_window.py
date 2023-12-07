@@ -117,12 +117,15 @@ class MainWindow(QMainWindow):
             maskPanel.setBrushSize(size + offset)
         addAction("Increase brush size", "Ctrl+]", lambda: ifNotSelecting(lambda: brushSizeChange(1)), toolMenu)
         addAction("Decrease brush size", "Ctrl+[", lambda: ifNotSelecting(lambda: brushSizeChange(-1)), toolMenu)
-        def showSettings():
-            settings = SettingsModal(self)
-            settings.addTextSetting("text_test", "Main", "init", "Text Input Test")
-            settings.changesSaved.connect(lambda changes: print(f"changed: {changes}"))
-            settings.showModal()
-        addAction("Settings", "F9", lambda: ifNotSelecting(showSettings), toolMenu)
+
+        self._settings = SettingsModal(self)
+        if (controller.initSettings(self._settings)):
+            self._settings.changesSaved.connect(lambda changes: controller.updateSettings(changes))
+            def showSettings():
+                controller.refreshSettings(self._settings)
+                self._settings.showModal()
+            addAction("Settings", "F9", lambda: ifNotSelecting(showSettings), toolMenu)
+
         # Build config + control layout (varying based on implementation): 
         self._buildControlLayout(controller)
 
