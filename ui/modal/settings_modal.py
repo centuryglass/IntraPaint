@@ -48,6 +48,11 @@ class SettingsModal(QDialog):
 
     def showModal(self):
         self.exec_()
+
+    def setTooltip(self, settingName, tooltip):
+        if settingName not in self._inputs:
+            raise Exception(f"{settingName} not defined")
+        self._inputs[settingName].setToolTip(tooltip)
         
     def _addChange(self, setting, newValue):
         self._changes[setting] = newValue
@@ -85,7 +90,7 @@ class SettingsModal(QDialog):
                 widget.setCurrentIndex(widget.findText(settings[key]))
             elif isinstance(widget, QDoubleSpinBox):
                 widget.setValue(float(settings[key]))
-            elif isinstance(widget, BigIntSpinBox):
+            elif isinstance(widget, BigIntSpinbox):
                 widget.setValue(int(settings[key]))
             elif isinstance(widget, QCheckBox):
                 widget.setChecked(settings[key])

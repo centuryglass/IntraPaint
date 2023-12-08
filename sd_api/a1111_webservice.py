@@ -228,7 +228,7 @@ class A1111Webservice(WebService):
         return self._get('/controlnet/module_list', timeout=30).json()
 
     def getControlnetControlTypes(self):
-        return self._get('/controlnet/control_types', timeout=30).json()
+        return self._get('/controlnet/control_types', timeout=30).json()['control_types']
 
     def getControlnetSettings(self):
         return self._get('/controlnet/settings', timeout=30).json()

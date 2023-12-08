@@ -3,7 +3,7 @@ from PyQt5.QtGui import QPainter, QPen, QIcon
 from PyQt5.QtCore import Qt, QObject, QThread, QRect, QPoint, QSize, pyqtSignal
 import PyQt5.QtGui as QtGui
 from PIL import Image, ImageFilter
-import sys, os, glob
+import sys, os, glob, math
 
 from ui.modal.modal_utils import showErrorDialog, requestConfirmation
 from ui.modal.settings_modal import SettingsModal
@@ -123,6 +123,12 @@ class MainWindow(QMainWindow):
             self._settings.changesSaved.connect(lambda changes: controller.updateSettings(changes))
             def showSettings():
                 controller.refreshSettings(self._settings)
+                frame = self.frameGeometry()
+                frame.setX(frame.x() + (frame.width() // 8))
+                frame.setY(frame.y() + (frame.height() // 8))
+                frame.setWidth(math.floor(self.width() * 0.75))
+                frame.setHeight(math.floor(self.height() * 0.75))
+                self._settings.setGeometry(frame)
                 self._settings.showModal()
             addAction("Settings", "F9", lambda: ifNotSelecting(showSettings), toolMenu)
 

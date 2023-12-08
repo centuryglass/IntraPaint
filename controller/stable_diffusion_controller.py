@@ -23,7 +23,7 @@ class StableDiffusionController(BaseInpaintController):
         # Login automatically if username/password are defined as env variables.
         # Obviously this isn't terribly secure, but A1111 auth security is already pretty minimal and I'm just using
         # this for testing.
-        if os.environ['SD_UNAME'] and os.environ['SD_PASS']:
+        if 'SD_UNAME' in os.environ and 'SD_PASS' in os.environ:
             self._webservice._login(os.environ['SD_UNAME'], os.environ['SD_PASS'])
             self._webservice._setAuth((os.environ['SD_UNAME'], os.environ['SD_PASS']))
 
@@ -37,40 +37,65 @@ class StableDiffusionController(BaseInpaintController):
         self._config.connect(self._sketchCanvas, 'editMode', updateSketchState)
 
     def initSettings(self, settingsModal):
+        if not isinstance(self._webservice, A1111Webservice):
+            print('Disabling remote settings: only supported with the A1111 API')
+            return False
         settings = self._webservice.getConfig()
+
         # Model settings:
         models = list(map(lambda m: m['title'], self._webservice.getModels()))
         settingsModal.addComboBoxSetting('sd_model_checkpoint',
                 'Models',
                 settings['sd_model_checkpoint'],
                 models,
-                'Stable-Diffusion Model')
-        # TODO:
-        # Only keep one model on device
-        # Max checkpoints loaded
-        # SD VAE ("Automatic", "None", ...)
-        # VAE to cache
-        # SD Unet
-        # Clip skip
-
+                'Stable-Diffusion Model:')
+        settingsModal.addCheckBoxSetting('sd_checkpoints_keep_in_cpu',
+                'Models',
+                int(settings['sd_checkpoints_keep_in_cpu']),
+                'Only keep one model on GPU/TPU')
+        settingsModal.setTooltip('sd_checkpoints_keep_in_cpu',
+                'If selected, checkpoints after the first are cached in RAM instead.')
+        settingsModal.addSpinBoxSetting('sd_checkpoints_limit',
+                'Models',
+                int(settings['sd_checkpoints_limit']),
+                1,
+                10,
+                'Max checkpoints loaded:')
+        vaeOptions = list(map(lambda v: v['model_name'], self._webservice.getVAE()))
+        vaeOptions.insert(0, "Automatic")
+        vaeOptions.insert(0, "None")
+        settingsModal.addComboBoxSetting('sd_vae',
+                'Models',
+                settings['sd_vae'],
+                vaeOptions,
+                'Stable-Diffusion VAE:')
+        settingsModal.setTooltip('sd_vae',
+                "Automatic: use VAE with same name as model\nNone: use embedded VAE\n" \
+                + re.sub(r'<.*?>', '', settings['sd_vae_explanation']))
+        settingsModal.addSpinBoxSetting('sd_vae_checkpoint_cache',
+                'Models',
+                int(settings['sd_vae_checkpoint_cache']),
+                1,
+                10,
+                'VAE models cached:')
+        settingsModal.addSpinBoxSetting('CLIP_stop_at_last_layers',
+                'Models',
+                int(settings['CLIP_stop_at_last_layers']),
+                1,
+                50,
+                'CLIP skip:')
 
         # Upscaling:
         settingsModal.addSpinBoxSetting('ESRGAN_tile',
                 'Upscalers',
-                settings['ESRGAN_tile'],
+                int(settings['ESRGAN_tile']),
                 8, 9999, "ESRGAN tile size")
         settingsModal.addSpinBoxSetting('ESRGAN_tile_overlap',
-                'Upscalers', settings['ESRGAN_tile_overlap'],
+                'Upscalers',
+                int(settings['ESRGAN_tile_overlap']),
                 8,
                 9999,
                 "ESRGAN tile overlap")
-        # TODO:
-        # LSDR processing
-        # LSDR cache
-        # SCUNET tile size
-        # SCUNET tile overlap
-        # SwinIR tile size
-        # SwinIR tile overlap
         return True
 
     def refreshSettings(self, settingsModal):
