@@ -1,7 +1,7 @@
 from PyQt5.QtWidgets import *
 from ui.widget.collapsible_box import CollapsibleBox
 
-class ControlnetPanel(CollapsibleBox)
+class ControlnetPanel(CollapsibleBox):
 
     def __init__(self, config, controlTypes, moduleDetail, title = "ControlNet"):
         super().__init__(title=title)
@@ -35,7 +35,16 @@ class ControlnetPanel(CollapsibleBox)
         layout.addWidget(optionsBox)
         optionList = {}
 
-        #TODO: define writeStateToConfig:
+        def writeStateToConfig():
+            if not enabledCheck.isChecked():
+                config.set('controlnetArgs', {})
+                return
+            controlnet = {
+                'module':  moduleBox.currentText(),
+                'model': modelBox.currentText()
+            }
+            #
+
 
         # Setup "Enabled" control:
         def setEnabled(isChecked):
@@ -66,6 +75,7 @@ class ControlnetPanel(CollapsibleBox)
                 modelBox.setCurrentIndex(modelBox.findText(defaultModel))
         loadControlType('All')
         controlTypeBox.currentIndexChanged.connect(lambda: loadControlType(controlTypeBox.currentText()))
+
 
 
         #TODO: on model change, writeStateToConfig

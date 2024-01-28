@@ -132,6 +132,34 @@ class MainWindow(QMainWindow):
                 self._settings.showModal()
             addAction("Settings", "F9", lambda: ifNotSelecting(showSettings), toolMenu)
 
+        # TODO: the following are specific to the A1111 stable-diffusion api and should move to 
+        #       stable_diffusion_main_window.py:
+        if hasattr(controller, '_webservice') and 'LCM' in config.getOptions('samplingMethod'):
+            try:
+                loras = [l['name'] for l in controller._webservice.getLoras()]
+                if 'lcm-lora-sdv1-5' in loras:
+                    def setLcmMode():
+                        loraKey= '<lora:lcm-lora-sdv1-5:1>'
+                        prompt = config.get("prompt")
+                        if loraKey not in prompt:
+                            config.set("prompt", f"{prompt} {loraKey}")
+                        config.set('cfgScale', 1.5)
+                        config.set('samplingSteps', 8)
+                        config.set('samplingMethod', 'LCM')
+                        config.set('seed', -1)
+                        if config.get('batchSize') < 5:
+                            config.set('batchSize', 5)
+                        if self._editedImage.hasImage():
+                            imageSize = self._editedImage.size()
+                            if imageSize.width() < 1200 and imageSize.height() < 1200:
+                                config.set('editSize', imageSize)
+                            else:
+                                size = QSize(min(imageSize.width(), 1024), min(imageSize.height(), 1024))
+                                config.set('editSize', size)
+                    addAction("LCM Mode", "F10", setLcmMode, toolMenu)
+            except:
+                print('Failed to check loras for lcm lora')
+
         # Build config + control layout (varying based on implementation): 
         self._buildControlLayout(controller)
 
@@ -215,6 +243,7 @@ class MainWindow(QMainWindow):
                 self._config.set(configKey, mode)
         scaleModeList.currentIndexChanged.connect(setScaleMode)
         return scaleModeList
+
 
     def _buildControlLayout(self, controller):
         inpaintPanel = QWidget(self)

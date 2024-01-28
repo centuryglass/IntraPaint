@@ -32,16 +32,27 @@ class BaseInpaintController():
     def __init__(self, args):
         self._app = QApplication(sys.argv)
         screen = self._app.primaryScreen()
+        def screenSize(screen):
+            if screen is None:
+                return 0
+            return screen.availableGeometry().width() * screen.availableGeometry().height()
+        for s in self._app.screens():
+            if screenSize(s) > screenSize(screen):
+                screen = s
         size = screen.availableGeometry()
 
+        self._config = Config()
+        self._adjustConfigDefaults()
+        self._config.applyArgs(args)
+
+        font = self._app.font()
+        font.setPointSize(self._config.get('fontPointSize'))
+        self._app.setFont(font)
         if size.height() < 1000:
             font = self._app.font()
             font.setPointSize(6)
             self._app.setFont(font)
 
-        self._config = Config()
-        self._adjustConfigDefaults()
-        self._config.applyArgs(args)
         self._editedImage = EditedImage(self._config, args.init_image)
         self._window = None
 
@@ -92,6 +103,13 @@ class BaseInpaintController():
 
     def windowInit(self):
         screen = self._app.primaryScreen()
+        def screenSize(screen):
+            if screen is None:
+                return 0
+            return screen.availableGeometry().width() * screen.availableGeometry().height()
+        for s in self._app.screens():
+            if screenSize(s) > screenSize(screen):
+                screen = s
         size = screen.availableGeometry()
         self._window = MainWindow(self._config, self._editedImage, self._maskCanvas, self._sketchCanvas, self)
         self._window.setGeometry(0, 0, size.width(), size.height())

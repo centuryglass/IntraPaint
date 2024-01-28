@@ -22,6 +22,7 @@ class Config(QObject):
         self._jsonPath = 'config.json'
         self._lock = Lock()
 
+        self._setDefault('fontPointSize', 10)
 
         # Editing options:
         self._setDefault('maxEditSize', QSize(10240, 10240))
@@ -107,6 +108,7 @@ class Config(QObject):
         self._setDefault('controlnetDownsampleMax', 4.0)
         self._setDefault('controlnetDownsampleSteps', 0.1)
         self._setDefault('controlnetInpainting', False)
+        self._setDefault('controlnetArgs', {})
 
         # It's somewhat out of place here, but defining lastSeed and lastFile as config values makes it trivial to
         # wire them to widgets. TODO: maybe rename config to sharedData, or settings, perhaps? Add a separate config
@@ -130,7 +132,8 @@ class Config(QObject):
                 'maxEditSize',
                 'unsavedKeys',
                 'styles',
-                'controlnetVersion'
+                'controlnetVersion',
+                'controlnetArgs'
         ])
 
         if os.path.isfile(self._jsonPath):

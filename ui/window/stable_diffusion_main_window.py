@@ -29,12 +29,12 @@ class StableDiffusionMainWindow(MainWindow):
         wideOptions = BorderedWidget()
         mainControls.addWidget(wideOptions, stretch=50)
         wideOptionsLayout = QGridLayout()
-        wideOptionsLayout.setVerticalSpacing(max(2, self.height() // 100))
+        wideOptionsLayout.setVerticalSpacing(max(2, self.height() // 200))
         wideOptions.setLayout(wideOptionsLayout)
         # Font size will be used to limit the height of the prompt boxes:
-        textboxHeight = self.font().pixelSize() * 3
+        textboxHeight = self.font().pixelSize() * 4
         if textboxHeight < 0: #font uses pt, not px
-            textboxHeight = self.font().pointSize() * 4
+            textboxHeight = self.font().pointSize() * 6
 
         # First line: prompt, batch size, width
         wideOptionsLayout.setRowStretch(0, 2)
@@ -106,7 +106,7 @@ class StableDiffusionMainWindow(MainWindow):
         optionList = BorderedWidget()
         mainControls.addWidget(optionList, stretch=10)
         optionListLayout = QVBoxLayout()
-        optionListLayout.setSpacing(max(2, self.height() // 100))
+        optionListLayout.setSpacing(max(2, self.height() // 200))
         optionList.setLayout(optionListLayout)
         def addOptionLine(labelText, widget, toolTip=None):
             optionLine = QHBoxLayout()
@@ -124,7 +124,7 @@ class StableDiffusionMainWindow(MainWindow):
             return addOptionLine(labelText, comboBox, toolTip)
 
         addComboBoxLine('Editing mode:', 'editMode', False)
-        addComboBoxLine('Mask mode:', 'inpaintMasked', True)
+        #addComboBoxLine('Mask mode:', 'inpaintMasked', True)
         addComboBoxLine('Masked content:', 'maskedContent', True)
         addComboBoxLine('Sampling method:', 'samplingMethod', False)
         paddingLineIndex = len(optionListLayout.children())
@@ -143,14 +143,14 @@ class StableDiffusionMainWindow(MainWindow):
         self._config.connect(self, 'editMode', lambda mode: paddingLayoutUpdate(mode == 'Inpaint'))
 
 
-        checkboxLine = QHBoxLayout()
-        optionListLayout.addLayout(checkboxLine)
-        checkboxLine.addWidget(QLabel('Restore faces:'), stretch=4)
-        faceCheckBox = connectedCheckBox(optionList, self._config, 'restoreFaces')
-        checkboxLine.addWidget(faceCheckBox, stretch=1)
-        checkboxLine.addWidget(QLabel('Tiling:'), stretch=4)
-        tilingCheckBox = connectedCheckBox(optionList, self._config, 'tiling')
-        checkboxLine.addWidget(tilingCheckBox, stretch=1)
+        #checkboxLine = QHBoxLayout()
+        #optionListLayout.addLayout(checkboxLine)
+        #checkboxLine.addWidget(QLabel('Restore faces:'), stretch=4)
+        #faceCheckBox = connectedCheckBox(optionList, self._config, 'restoreFaces')
+        #checkboxLine.addWidget(faceCheckBox, stretch=1)
+        #checkboxLine.addWidget(QLabel('Tiling:'), stretch=4)
+        #tilingCheckBox = connectedCheckBox(optionList, self._config, 'tiling')
+        #checkboxLine.addWidget(tilingCheckBox, stretch=1)
 
         inpaintLine = QHBoxLayout()
         optionListLayout.addLayout(inpaintLine)

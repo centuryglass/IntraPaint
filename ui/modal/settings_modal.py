@@ -3,6 +3,7 @@ from PyQt5.QtCore import pyqtSignal
 from ui.widget.bordered_widget import BorderedWidget
 from ui.widget.collapsible_box import CollapsibleBox
 from ui.widget.big_int_spinbox import BigIntSpinbox
+from ui.widget.label_wrapper import LabelWrapper
 
 
 class SettingsModal(QDialog):
@@ -66,17 +67,9 @@ class SettingsModal(QDialog):
             self._panelLayouts[panelName] = panelLayout
             self._panelLayout.addWidget(panel)
 
-    def _getLabeledWrapper(self, settingWidget, labelText, panelName):
-        settingContainer = QWidget(self._panels[panelName])
-        settingLayout = QHBoxLayout()
-        settingLayout.addWidget(QLabel(labelText))
-        settingLayout.addWidget(settingWidget)
-        settingContainer.setLayout(settingLayout)
-        return settingContainer
-
     def _addSetting(self, settingName, panelName, widget, labelText):
         self._addPanelIfMissing(panelName)
-        self._panelLayouts[panelName].addWidget(self._getLabeledWrapper(widget, labelText, panelName))
+        self._panelLayouts[panelName].addWidget(LabelWrapper(widget, labelText))
         self._inputs[settingName] = widget
 
     def updateSettings(self, settings):

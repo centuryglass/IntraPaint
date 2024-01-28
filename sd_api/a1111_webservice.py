@@ -67,6 +67,16 @@ class A1111Webservice(WebService):
         return self._handleImageResponse(res)
 
     def txt2img(self, config, width, height, scripts=None):
+        #scripts = {
+        #    'cfg rescale extension': {
+        #        'args': [
+        #            0.7,  #CFG Rescale
+        #            True, #Auto color fix
+        #            1.0,  #Fix strength
+        #            False #Keep original
+        #        ]
+        #    }
+        #}
         body = self._getBaseDiffusionBody(config, scripts)
         body['width'] = width
         body['height'] = height

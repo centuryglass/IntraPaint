@@ -296,12 +296,16 @@ class SampleSelector(QWidget):
             self._zoomIndex = (self._optionCount() - 1) if self._zoomIndex <= 0 else (self._zoomIndex - 1)
             self.resizeEvent(None)
             self.update()
+        else:
+            self.toggleZoom(self._optionCount() - 1)
 
     def _zoomNext(self):
         if self._zoomMode:
             self._zoomIndex = 0 if self._zoomIndex >= (self._optionCount() - 1) else (self._zoomIndex + 1)
             self.resizeEvent(None)
             self.update()
+        else:
+            self.toggleZoom(0)
     
     def eventFilter(self, source, event):
         """Intercept mouse wheel events, use for scrolling in zoom mode:"""
