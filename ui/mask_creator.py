@@ -8,6 +8,7 @@ from ui.util.get_scaled_placement import getScaledPlacement
 from ui.util.equal_margins import getEqualMargins
 from ui.image_utils import imageToQImage, qImageToImage
 
+
 class MaskCreator(QtWidgets.QWidget):
     """
     QWidget that shows the selected portion of the edited image, and lets the user draw a mask for inpainting.
@@ -119,7 +120,7 @@ class MaskCreator(QtWidgets.QWidget):
             painter.drawPixmap(self._imageRect, self._maskCanvas.getPixmap())
             if self._sketchMode or not self._drawing:
                 painter.setOpacity(0.8)
-                painter.drawImage(self._imageRect, self._maskCanvas.getOutline())
+                painter.drawPixmap(self._imageRect, self._maskCanvas.getOutline())
             if maskedRect is not None:
                 scale = self._imageRect.width() / self._maskCanvas.width()
                 drawnRect = QRect(self._imageRect.x() + int(maskedRect.x() * scale),

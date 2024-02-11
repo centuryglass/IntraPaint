@@ -2,6 +2,8 @@ from ui.image_utils import qImageToImage
 from data_model.base_canvas import BaseCanvas
 from PyQt5.QtCore import Qt, QRect, QPoint, QSize
 from PyQt5.QtGui import QPixmap, QPainter, QImage, QColor
+import numpy as np
+import cv2
 
 class MaskCanvas(BaseCanvas):
     def __init__(self, config, image):
@@ -19,6 +21,7 @@ class MaskCanvas(BaseCanvas):
         painter.fillRect(4, 4, 4, 4, Qt.black)
         painter = QPainter(self.ditherMask)
         painter.drawTiledPixmap(0, 0, 512, 512, ditherStamp)
+        self.profiler = cProfile.Profile()
 
     def getInpaintingMask(self):
         image = self.getImage()
@@ -29,46 +32,22 @@ class MaskCanvas(BaseCanvas):
         if self._outline is not None:
             return self._outline
         image = self.getQImage()
-        outline = QImage(image.width(), image.height(), QImage.Format_ARGB32)
-        outline.fill(QColor(255, 255, 255, 0))
-        pxValue = QColor(0, 0, 0, 255).rgba()
-        maskedArea = self.getMaskedArea(True)
-        if maskedArea is not None:
-            y = maskedArea.y()
-            line = image.constScanLine(y).asarray(image.bytesPerLine())
-            lastLine = image.constScanLine(y - 1).asarray(image.bytesPerLine()) if y > 0 else None
-            nextLine = image.constScanLine(y + 1).asarray(image.bytesPerLine()) if y < (image.height() - 2) else None
-            pxSize = image.bytesPerLine() // image.width()
-            xMin = int((maskedArea.x() * pxSize) + 3)
-            xMax = int(maskedArea.right() * pxSize)
-            for y in range(maskedArea.y(), maskedArea.bottom()):
-                out = outline.scanLine(y).asarray(outline.bytesPerLine())
-                if (y != maskedArea.y()):
-                    lastLine = line
-                    line = nextLine
-                    nextLine = image.constScanLine(y + 1).asarray(image.bytesPerLine()) if y < (image.height() - 2) else None
-                for x in range (xMin, xMax, pxSize):
-                    isEdge = False
-                    lastVal = None
-                    for ln in [line, lastLine, nextLine]:
-                        if isEdge or ln is None:
-                            break
-                        for i in [x - pxSize, x, x + pxSize]:
-                            if isEdge or i < 0 or i >= len(line):
-                                break
-                            pt = ln[i]
-                            if lastVal is not None and pt != lastVal:
-                                isEdge = True
-                            lastVal = pt
-                    if isEdge:
-                        for i in range(x, x + pxSize):
-                            out[i] = 255
-
+        thickness = max(2, image.width() // 200, image.height() // 200)
+        thickness = min(thickness, 5)
+        buffer = image.bits().asstring(image.byteCount())
+        arr = np.frombuffer(buffer, dtype=np.uint8).reshape((image.height(), image.width(), 4))
+        gray = cv2.cvtColor(arr, cv2.COLOR_BGR2GRAY)
+        edges= cv2.Canny(gray, 50, 150)
+        edges = 255 - cv2.dilate(edges, np.ones((thickness, thickness), np.uint8), iterations=1)
+        edges_A = np.zeros((edges.shape[0], edges.shape[1], 4), dtype=np.uint8)
+        edges_A[:, :, 3] = 255 - edges
+        outline = QImage(edges_A.data, edges_A.shape[1], edges_A.shape[0], edges_A.strides[0], QImage.Format_RGBA8888)
         painter = QPainter(outline)
         painter.setCompositionMode(QPainter.CompositionMode_SourceIn)
         painter.drawPixmap(0, 0, self.ditherMask)
-        self._outline = outline
-        return outline
+        painter.end()
+        self._outline = QPixmap.fromImage(outline)
+        return self._outline
 
 
     def getMaskedArea(self, ignoreConfig = False):

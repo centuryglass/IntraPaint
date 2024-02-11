@@ -1,0 +1,5 @@
+opencv-python-headless
+numpy
+pyqt5
+pillow
+requests
