@@ -21,7 +21,6 @@ class MaskCanvas(BaseCanvas):
         painter.fillRect(4, 4, 4, 4, Qt.black)
         painter = QPainter(self.ditherMask)
         painter.drawTiledPixmap(0, 0, 512, 512, ditherStamp)
-        self.profiler = cProfile.Profile()
 
     def getInpaintingMask(self):
         image = self.getImage()
