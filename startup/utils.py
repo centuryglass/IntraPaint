@@ -20,6 +20,8 @@ BASE_64_PREFIX = 'data:image/png;base64,'
 
 def imageToBase64(pilImage, includePrefix=False):
     """Convert a PIL image to a base64 string."""
+    if isinstance(pilImage, str):
+        pilImage = Image.open(pilImage)
     buffer = io.BytesIO()
     pilImage.save(buffer, format='PNG')
     imageStr = str(base64.b64encode(buffer.getvalue()), 'utf-8')

@@ -1,7 +1,8 @@
 from PyQt5.QtWidgets import QApplication
-from PyQt5.QtCore import QObject, QThread, pyqtSignal
+from PyQt5.QtCore import Qt, QObject, QThread, QSize, pyqtSignal
+from PyQt5.QtGui import QPainter, QPen, QPixmap
 from PIL import Image, ImageFilter
-import os, glob, sys
+import os, glob, sys, tempfile
 
 from data_model.config import Config
 from data_model.edited_image import EditedImage
@@ -13,6 +14,7 @@ from ui.modal.new_image_modal import NewImageModal
 from ui.modal.resize_canvas_modal import ResizeCanvasModal
 from ui.modal.image_scale_modal import ImageScaleModal
 from ui.modal.modal_utils import *
+from ui.util.contrast_color import contrastColor
 
 from controller.spacenav import SpacenavManager
 
@@ -110,10 +112,43 @@ class BaseInpaintController():
         for s in self._app.screens():
             if screenSize(s) > screenSize(screen):
                 screen = s
+
+
         size = screen.availableGeometry()
         self._window = MainWindow(self._config, self._editedImage, self._maskCanvas, self._sketchCanvas, self)
         self._window.setGeometry(0, 0, size.width(), size.height())
+        self.fixStyles()
         self._window.show()
+
+    def fixStyles(self):
+        # Fix barely visible checkboxes:
+        uncheckedPath = tempfile.NamedTemporaryFile(suffix='.png').name
+        checkedPath = tempfile.NamedTemporaryFile(suffix='.png').name
+        checkImage = QPixmap(QSize(20, 20))
+        checkImage.fill(Qt.transparent)
+        painter = QPainter(checkImage)
+        painter.setPen(QPen(contrastColor(self._window), 2, Qt.SolidLine, Qt.SquareCap, Qt.RoundJoin))
+        painter.drawRect(5, 5, 13, 13)
+        checkImage.save(uncheckedPath)
+        painter.fillRect(8, 8, 8, 8, contrastColor(self._window))
+        painter.end()
+        checkImage.save(checkedPath)
+        self._app.setStyleSheet("QCheckBox::indicator"
+                "{"
+                f"background-image: url({uncheckedPath});"
+                "width: 20px;"
+                "height: 20px;"
+                "background-repeat: no-repeat;"
+                "background-position: center;"
+                "}"
+                "QCheckBox::indicator:checked"
+                "{"
+                f"background-image: url({checkedPath});"
+                "width: 20px;"
+                "height: 20px;"
+                "background-repeat: no-repeat;"
+                "background-position: center;"
+                "}")
 
     def startApp(self):
         self.windowInit()

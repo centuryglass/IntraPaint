@@ -6,6 +6,7 @@ from PIL import Image
 
 from ui.util.get_scaled_placement import getScaledPlacement
 from ui.util.equal_margins import getEqualMargins
+from ui.util.contrast_color import contrastColor
 from ui.image_utils import imageToQImage, qImageToImage
 
 
@@ -100,7 +101,7 @@ class MaskCreator(QtWidgets.QWidget):
 
     def paintEvent(self, event):
         painter = QPainter(self)
-        painter.setPen(QPen(Qt.black, 4, Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin))
+        painter.setPen(QPen(contrastColor(self), 4, Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin))
         #painter.drawRect(QRect(0, 0, self.width(), self.height()))
         painter.drawRect(self._imageRect.marginsAdded(getEqualMargins(self._borderSize())))
         if hasattr(self, '_imageSection') and self._imageSection is not None:

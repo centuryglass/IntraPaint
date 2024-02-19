@@ -205,6 +205,7 @@ class StableDiffusionController(BaseInpaintController):
         # Handle final window init now that data is loaded from the API:
         self._window = StableDiffusionMainWindow(self._config, self._editedImage, self._maskCanvas, self._sketchCanvas, self)
         self._window.setGeometry(0, 0, size.width(), size.height())
+        self.fixStyles()
         self._window.show()
 
 
@@ -254,21 +255,9 @@ class StableDiffusionController(BaseInpaintController):
 
         generateImages = None
         if editMode == 'Text to Image':
-            generateImages = lambda: self._webservice.txt2img(self._config, selection.width, selection.height)
+            generateImages = lambda: self._webservice.txt2img(self._config, selection.width, selection.height, image=selection)
         else:
             scripts = None
-            if self._config.get('controlnetInpainting'):
-                scripts= {
-                    'controlNet': {
-                        "args": [
-                            {
-                                "module": "inpaint_global_harmonious",
-                                "model": "control_v11p_sd15_inpaint [ebff9138]",
-                                "threshold_a": self._config.get('controlnetDownsampleRate')
-                            }
-                        ]
-                    }
-                }
             generateImages = lambda: self._webservice.img2img(selection, self._config, mask=mask, scripts=scripts)
 
 

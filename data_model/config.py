@@ -8,10 +8,6 @@ import os.path
 class Config(QObject):
     """
     A shared resource to set inpainting configuration and to provide default values.
-    Current limitations, which may or may not be addressed eventually:
-    - Expected values and defaults are hard-coded
-    - Data is not 100% guaranteed to be threadsafe, thread locking is used on get/set
-      but there's no special handling to prevent deadlocks or protection for connected objects.
     """
 
     def __init__(self):
@@ -111,8 +107,7 @@ class Config(QObject):
         self._setDefault('controlnetArgs', {})
 
         # It's somewhat out of place here, but defining lastSeed and lastFile as config values makes it trivial to
-        # wire them to widgets. TODO: maybe rename config to sharedData, or settings, perhaps? Add a separate config
-        # module that actually reads (and writes?) saved settings in a text file.
+        # wire them to widgets.
         self._setDefault('lastSeed', "-1")
         self._setDefault('lastFilePath', '')
 
@@ -132,8 +127,7 @@ class Config(QObject):
                 'maxEditSize',
                 'unsavedKeys',
                 'styles',
-                'controlnetVersion',
-                'controlnetArgs'
+                'controlnetVersion'
         ])
 
         if os.path.isfile(self._jsonPath):
@@ -152,6 +146,7 @@ class Config(QObject):
     def _writeToJson(self): 
         convertedDict = {}
         keysToSkip = self.get('unsavedKeys')
+        self._lock.acquire()
         for key, value in self._values.items():
             if key in keysToSkip:
                 continue
@@ -162,6 +157,7 @@ class Config(QObject):
             convertedDict[key] = value
         with open(self._jsonPath, 'w', encoding='utf-8') as file:
             json.dump(convertedDict, file, ensure_ascii=False, indent=4)
+        self._lock.release()
 
     def _readFromJson(self):
         try:

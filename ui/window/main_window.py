@@ -1,5 +1,5 @@
 from PyQt5.QtWidgets import *
-from PyQt5.QtGui import QPainter, QPen, QIcon
+from PyQt5.QtGui import QPainter, QPen, QIcon, QPixmap
 from PyQt5.QtCore import Qt, QObject, QThread, QRect, QPoint, QSize, pyqtSignal
 import PyQt5.QtGui as QtGui
 from PIL import Image, ImageFilter
@@ -13,6 +13,7 @@ from ui.sample_selector import SampleSelector
 from ui.config_control_setup import *
 from ui.widget.draggable_arrow import DraggableArrow
 from ui.widget.loading_widget import LoadingWidget
+from ui.util.contrast_color import contrastColor
 from data_model.filled_canvas import FilledMaskCanvas
 
 class MainWindow(QMainWindow):

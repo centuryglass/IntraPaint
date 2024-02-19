@@ -7,6 +7,7 @@ import os, sys
 
 from ui.image_viewer import ImageViewer
 from ui.config_control_setup import connectedTextEdit
+from ui.util.contrast_color import contrastColor
 
 class ImagePanel(QWidget):
     """
@@ -110,7 +111,7 @@ class ImagePanel(QWidget):
         self.layout.addWidget(self.heightBox, 2, 12, 1, 1)
 
         self.layout.setRowMinimumHeight(1, 250)
-        self.layout.setColumnStretch(4, 255)
+        self.layout.setColumnStretch(4, 225)
         self.setLayout(self.layout)
 
     def reloadScaleBounds(self):
@@ -130,6 +131,6 @@ class ImagePanel(QWidget):
 
     def paintEvent(self, event):
         painter = QPainter(self)
-        painter.setPen(QPen(Qt.black, self.borderSize/2, Qt.SolidLine,
+        painter.setPen(QPen(contrastColor(self), self.borderSize/2, Qt.SolidLine,
                     Qt.RoundCap, Qt.RoundJoin))
         painter.drawRect(1, 1, self.width() - 2, self.height() - 2)

@@ -7,6 +7,7 @@ from ui.widget.bordered_widget import BorderedWidget
 from ui.widget.collapsible_box import CollapsibleBox
 from ui.widget.param_slider import ParamSlider
 from ui.window.main_window import MainWindow
+from ui.panel.controlnet_panel import ControlnetPanel
 
 class StableDiffusionMainWindow(MainWindow):
     def __init__(self, config, editedImage, mask, sketch, controller):
@@ -20,10 +21,12 @@ class StableDiffusionMainWindow(MainWindow):
         controlPanel.setLayout(controlLayout)
         self.layout.addWidget(controlPanel, stretch=20)
 
-        mainControlBox = CollapsibleBox("Controls", controlPanel)
+        mainControlBox = CollapsibleBox("Controls", controlPanel, maxHeightFraction=0.4, maxHeightPx=400)
         mainControls = QHBoxLayout();
         mainControlBox.setContentLayout(mainControls)
         controlLayout.addWidget(mainControlBox, stretch=20)
+
+
 
         # Left side: sliders and other wide inputs:
         wideOptions = BorderedWidget()
@@ -101,6 +104,12 @@ class StableDiffusionMainWindow(MainWindow):
                 'minDenoisingStrength', 'maxDenoisingStrength', 'denoisingStrengthStep')
         wideOptionsLayout.addWidget(denoisingSlider, 4, 0, 1, 6)
 
+        # ControlNet panel, if controlnet is installed:
+        if self._config.get('controlnetVersion') > 0:
+            controlnetPanel = ControlnetPanel(self._config,
+                    controller._webservice.getControlnetControlTypes(),
+                    controller._webservice.getControlnetModules())
+            controlLayout.addWidget(controlnetPanel, stretch=20)
 
         # Right side: box of dropdown/checkbox options:
         optionList = BorderedWidget()

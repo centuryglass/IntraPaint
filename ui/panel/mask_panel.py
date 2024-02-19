@@ -8,6 +8,7 @@ from ui.mask_creator import MaskCreator
 from ui.util.get_scaled_placement import getScaledPlacement
 from ui.config_control_setup import connectedCheckBox
 from ui.util.equal_margins import getEqualMargins
+from ui.util.contrast_color import contrastColor
 import os, sys
 
 class MaskPanel(QWidget):
@@ -262,7 +263,7 @@ class MaskPanel(QWidget):
     def paintEvent(self, event):
         super().paintEvent(event)
         painter = QPainter(self)
-        painter.setPen(QPen(Qt.black, self.borderSize//2, Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin))
+        painter.setPen(QPen(contrastColor(self), self.borderSize//2, Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin))
         painter.drawRect(1, 1, self.width() - 2, self.height() - 2)
         if not self.colorPickerButton.isHidden():
             painter.setPen(QPen(self.maskCreator.getSketchColor(), self.borderSize//2, Qt.SolidLine, Qt.RoundCap,

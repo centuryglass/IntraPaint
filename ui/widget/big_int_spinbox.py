@@ -10,6 +10,7 @@ class BigIntSpinbox(QAbstractSpinBox):
 
     def __init__(self, parent=None):
         super(BigIntSpinbox, self).__init__(parent)
+        self.setMinimumWidth(40)
 
         self._singleStep = 1
         self._minimum = -18446744073709551616

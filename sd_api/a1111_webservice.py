@@ -1,6 +1,6 @@
 from sd_api.webservice import WebService
 from startup.utils import imageToBase64, loadImageFromBase64
-import json, requests
+import json, requests, os
 
 class A1111Webservice(WebService):
     def __init__(self, url):
@@ -48,7 +48,7 @@ class A1111Webservice(WebService):
 
     # Image manipulation:
     def img2img(self, image, config, mask=None, width=None, height=None, overrides=None, scripts=None):
-        body = self._getBaseDiffusionBody(config, scripts)
+        body = self._getBaseDiffusionBody(config, image, scripts)
         body['init_images'] = [ imageToBase64(image, includePrefix=True) ]
         body['denoising_strength'] = config.get('denoisingStrength')
         body['width'] = image.width if width is None else width
@@ -66,7 +66,7 @@ class A1111Webservice(WebService):
         res = self._post('/sdapi/v1/img2img', body)
         return self._handleImageResponse(res)
 
-    def txt2img(self, config, width, height, scripts=None):
+    def txt2img(self, config, width, height, scripts=None, image=None):
         #scripts = {
         #    'cfg rescale extension': {
         #        'args': [
@@ -77,7 +77,7 @@ class A1111Webservice(WebService):
         #        ]
         #    }
         #}
-        body = self._getBaseDiffusionBody(config, scripts)
+        body = self._getBaseDiffusionBody(config, image, scripts)
         body['width'] = width
         body['height'] = height
         res = self._post('/sdapi/v1/txt2img', body)
@@ -147,7 +147,7 @@ class A1111Webservice(WebService):
         res = self._post('/sdapi/v1/interrupt')
         return res.json()
 
-    def _getBaseDiffusionBody(self, config, scripts = None):
+    def _getBaseDiffusionBody(self, config, image = None, scripts = None):
         body = {
             'prompt': config.get('prompt'),
             'seed': config.get('seed'),
@@ -162,6 +162,24 @@ class A1111Webservice(WebService):
             'sampler_index': config.get('samplingMethod'),
             'alwayson_scripts': {}
         }
+        controlnet = dict(config.get("controlnetArgs"))
+        if len(controlnet) > 0:
+            if 'image' in controlnet:
+                if controlnet['image'] == 'SELECTION' and image is not None:
+                    controlnet['image'] = imageToBase64(image, includePrefix=True)
+                elif os.path.exists(controlnet['image']):
+                    try: 
+                        controlnet['image'] = imageToBase64(controlnet['image'], includePrefix=True)
+                    except Exception as err:
+                        print(f"Error loading controlnet image {controlnet['image']}: {err}")            
+                        del controlnet['image']
+                else:
+                    del controlnet['image']
+            if scripts is None:
+                scripts = {}
+            if 'controlNet' not in scripts:
+                scripts['controlNet'] = { 'args': [] }
+            scripts['controlNet']['args'].append(controlnet)
         if scripts is not None:
             body['alwayson_scripts'] = scripts
         return body

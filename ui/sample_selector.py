@@ -7,6 +7,7 @@ import math, gc
 
 from ui.util.get_scaled_placement import getScaledPlacement
 from ui.util.equal_margins import getEqualMargins
+from ui.util.contrast_color import contrastColor
 from ui.widget.loading_widget import LoadingWidget
 from ui.image_utils import imageToQImage
 
@@ -221,20 +222,21 @@ class SampleSelector(QWidget):
 
     def paintEvent(self, event):
         super().paintEvent(event)
+        lineColor = contrastColor(self)
         painter = QPainter(self)
         if self._sourcePixmap is not None:
             painter.drawPixmap(self._sourceImageBounds, self._sourcePixmap)
         if self._maskPixmap is not None:
             painter.drawPixmap(self._maskImageBounds, self._maskPixmap)
-        painter.setPen(QPen(Qt.black, 2, Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin))
+        painter.setPen(QPen(lineColor, 2, Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin))
         def drawImage(option):
-            painter.setPen(QPen(Qt.black, 4, Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin))
+            painter.setPen(QPen(lineColor, 4, Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin))
             painter.drawRect(option['bounds'].marginsAdded(getEqualMargins(2)))
             if ('pixmap' in option) and (option['pixmap'] is not None):
                 painter.drawPixmap(option['bounds'], option['pixmap'])
             else:
                 painter.fillRect(option['bounds'], Qt.black)
-                painter.setPen(QPen(Qt.white, 4, Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin))
+                painter.setPen(QPen(lineColor, 4, Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin))
                 painter.drawText(option['bounds'], Qt.AlignCenter, "Waiting for image...")
         if self._zoomMode:
             pixmap = None
