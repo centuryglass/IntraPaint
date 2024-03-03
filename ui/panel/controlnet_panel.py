@@ -9,7 +9,7 @@ import pprint
 class ControlnetPanel(CollapsibleBox):
 
     def __init__(self, config, controlTypes, moduleDetail, title = "ControlNet"):
-        super().__init__(title=title, startClosed=(len(config.get('controlnetArgs')) == 0), maxHeightFraction=0.3, maxHeightPx=300)
+        super().__init__(title=title, startClosed=(len(config.get('controlnetArgs')) == 0), maxSizeFraction=0.3, maxSizePx=300)
 
         initialControlState = config.get('controlnetArgs')
 
@@ -69,7 +69,7 @@ class ControlnetPanel(CollapsibleBox):
 
 
         # Dynamic options section:
-        optionsBox = CollapsibleBox("Options", maxHeightFraction=0.2, maxHeightPx=200)
+        optionsBox = CollapsibleBox("Options", maxSizeFraction=0.2, maxSizePx=200)
         optionsLayout = QVBoxLayout()
         optionsBox.setContentLayout(optionsLayout)
         layout.addWidget(optionsBox)
@@ -306,6 +306,7 @@ class ControlnetPanel(CollapsibleBox):
             writeStateToConfig()
         setEnabled(len(initialControlState) > 0)
         enabledCheck.stateChanged.connect(setEnabled) 
+        self.showButtonBar(True)
 
 
 

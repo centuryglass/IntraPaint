@@ -1,4 +1,4 @@
-from PyQt5.QtWidgets import QWidget
+from PyQt5.QtWidgets import QWidget, QSizePolicy
 from PyQt5.QtGui import QPainter, QPen, QImage
 from PyQt5.QtCore import Qt, QPoint, QRect, QSize
 import PyQt5.QtGui as QtGui
@@ -20,7 +20,7 @@ class ImageViewer(QWidget):
         editedImage.sizeChanged.connect(lambda: self.resizeEvent(None))
         editedImage.selectionChanged.connect(lambda: self.update())
         editedImage.contentChanged.connect(lambda: self.update())
-
+        self.setSizePolicy(QSizePolicy(QSizePolicy.Ignored, QSizePolicy.Ignored))
 
     def resizeEvent(self, event):
         if self._editedImage.hasImage():

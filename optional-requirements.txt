@@ -1,0 +1,3 @@
+qt-material
+qdarktheme
+spacenav

@@ -33,6 +33,7 @@ class MainWindow(QMainWindow):
         self._timelapsePath = None
         self._sampleSelector = None
         self._layoutMode = 'horizontal'
+        self._slidersEnabled = True
 
         # Create components, build layout:
         self.layout = QVBoxLayout()
@@ -53,6 +54,8 @@ class MainWindow(QMainWindow):
         # Image/Mask editing layout:
         imagePanel = ImagePanel(self._config, self._editedImage, controller)
         maskPanel = MaskPanel(self._config, self._mask, self._sketch, self._editedImage)
+
+
         self.installEventFilter(maskPanel)
         divider = DraggableArrow()
         self._scaleHandler = None
@@ -62,6 +65,16 @@ class MainWindow(QMainWindow):
         self.divider = divider
         self._setupCorrectLayout()
 
+        def onImageToggle(imageShowing):
+            if imageShowing:
+                self.imageLayout.setStretch(0, 255)
+                self.imageLayout.setStretch(2, 100)
+            else:
+                self.imageLayout.setStretch(0, 1)
+                self.imageLayout.setStretch(2, 255)
+            divider.setHidden(not imageShowing)
+            self.update()
+        imagePanel.imageToggled().connect(onImageToggle)
 
         # Set up menu:
         self._menu = self.menuBar()
@@ -164,6 +177,9 @@ class MainWindow(QMainWindow):
         # Build config + control layout (varying based on implementation): 
         self._buildControlLayout(controller)
 
+    def shouldUseWideLayout(self):
+        return self.height() <= (self.width() * 1.2)
+
     def _clearEditingLayout(self):
         if self.imageLayout is not None:
             for widget in [self.imagePanel, self.divider, self.maskPanel]:
@@ -173,6 +189,13 @@ class MainWindow(QMainWindow):
             if self._scaleHandler is not None:
                 self.divider.dragged.disconnect(self._scaleHandler)
                 self._scaleHandler = None
+
+    def setImageSlidersEnabled(self, slidersEnabled):
+        self._slidersEnabled = slidersEnabled
+        if not slidersEnabled and self.imagePanel.slidersShowing():
+            self.imagePanel.showSliders(False)
+        elif slidersEnabled and not self.imagePanel.slidersShowing() and self.shouldUseWideLayout():
+            self.imagePanel.showSliders(True)
 
     def _setupWideLayout(self):
         if self.imageLayout is not None:
@@ -194,6 +217,8 @@ class MainWindow(QMainWindow):
         imageLayout.addWidget(self.divider, stretch=5)
         imageLayout.addWidget(self.maskPanel, stretch=100)
         self.layout.insertLayout(0, imageLayout, stretch=255)
+        self.imagePanel.showSliders(True and self._slidersEnabled)
+        self.update()
 
     def _setupTallLayout(self):
         if self.imageLayout is not None:
@@ -216,14 +241,17 @@ class MainWindow(QMainWindow):
         imageLayout.addWidget(self.maskPanel, stretch=100)
         self.layout.insertLayout(0, imageLayout, stretch=255)
         self.imageLayout = imageLayout
+        self.imagePanel.showSliders(False)
         self.update()
 
+
+
     def _setupCorrectLayout(self):
-        if self.height() > (self.width() * 1.2):
-            if isinstance(self.imageLayout, QHBoxLayout) or self.imageLayout is None:
-                self._setupTallLayout()
-        elif isinstance(self.imageLayout, QVBoxLayout) or self.imageLayout is None: 
+        if self.shouldUseWideLayout():
+            if isinstance(self.imageLayout, QVBoxLayout) or self.imageLayout is None: 
                 self._setupWideLayout()
+        elif isinstance(self.imageLayout, QHBoxLayout) or self.imageLayout is None:
+                self._setupTallLayout()
 
     def _createScaleModeSelector(self, parent, configKey): 
         scaleModeList = QComboBox(parent)

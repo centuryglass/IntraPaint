@@ -1,9 +1,9 @@
 from PyQt5.QtCore import QObject, QSize
 from PIL import Image
 from threading import Lock
-import json
+import sys, json, os.path, importlib.util
 from io import StringIO
-import os.path
+from PyQt5.QtWidgets import QStyleFactory
 
 class Config(QObject):
     """
@@ -18,7 +18,16 @@ class Config(QObject):
         self._jsonPath = 'config.json'
         self._lock = Lock()
 
+        # UI options:
+        self._setDefault('style', 'Fusion', QStyleFactory.keys())
         self._setDefault('fontPointSize', 10)
+        themeOptions = ['None']
+        if self._moduleInstalled('qdarktheme'):
+            themeOptions += [ 'qdarktheme_dark', 'qdarktheme_light', 'qdarktheme_auto' ]
+        if self._moduleInstalled('qt_material'):
+            from qt_material import list_themes
+            themeOptions += [ f"qt_material_{theme}" for theme in list_themes() ]
+        self._setDefault('theme', 'None', themeOptions)
 
         # Editing options:
         self._setDefault('maxEditSize', QSize(10240, 10240))
@@ -105,6 +114,7 @@ class Config(QObject):
         self._setDefault('controlnetDownsampleSteps', 0.1)
         self._setDefault('controlnetInpainting', False)
         self._setDefault('controlnetArgs', {})
+
 
         # It's somewhat out of place here, but defining lastSeed and lastFile as config values makes it trivial to
         # wire them to widgets.
@@ -240,6 +250,11 @@ class Config(QObject):
                     print(f"Update triggered by {key} change failed: {err}")
                 if (self.get(key) != value):
                     break
+
+    def _moduleInstalled(self, name):
+        if name in sys.modules:
+            return true
+        return bool((spec := importlib.util.find_spec(name)) is not None)
 
     def connect(self, connectedObject, key, onChangeFn):
         if not key in self._values:

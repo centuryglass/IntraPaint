@@ -2,6 +2,7 @@ from PyQt5.QtWidgets import QWidget
 from PyQt5.QtGui import QPainter, QPen
 from PyQt5.QtCore import Qt, QPoint, QSize, QRect, pyqtSignal
 from ui.util.get_scaled_placement import getScaledPlacement
+from ui.util.contrast_color import contrastColor
 
 class DraggableArrow(QWidget):
     dragged = pyqtSignal(QPoint)
@@ -11,6 +12,7 @@ class DraggableArrow(QWidget):
         self._dragging = False
         self.resizeEvent(None)
         self._mode = 'horizontal'
+        self._hidden = False
 
     def setHorizontalMode(self):
         if self._mode != 'horizontal':
@@ -22,13 +24,21 @@ class DraggableArrow(QWidget):
             self._mode = 'vertical'
             self.update()
 
+    def setHidden(self, hidden):
+        if self._hidden != hidden:
+            self._hidden = hidden
+            self.update()
+
+
     def resizeEvent(self, event):
         minSize = min(self.width(), self.height())
         self._centerBox = getScaledPlacement(QRect(0, 0, self.width(), self.height()), QSize(minSize, minSize // 2))
 
     def paintEvent(self, event):
+        if self._hidden:
+            return
         painter = QPainter(self)
-        color = Qt.green if self._dragging else Qt.black
+        color = Qt.green if self._dragging else contrastColor(self)
         size = 4 if self._dragging else 2
         painter.setPen(QPen(color, size, Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin))
         centerBox = self._centerBox
@@ -56,6 +66,8 @@ class DraggableArrow(QWidget):
             painter.drawLine(midBottom, midBottom + QPoint(-arrowSize, -arrowSize))
 
     def mousePressEvent(self, event):
+        if self._hidden:
+            return
         self._dragging = True
         self.update()
 

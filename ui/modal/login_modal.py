@@ -32,12 +32,12 @@ class LoginModal(QDialog):
         self._layout.addWidget(self._status)
 
         self._buttonRow = QHBoxLayout()
-        self._cancelButton = QPushButton(self)
-        self._cancelButton.setText("Cancel")
-        self._buttonRow.addWidget(self._cancelButton)
         self._loginButton = QPushButton(self)
         self._loginButton.setText("Log In")
         self._buttonRow.addWidget(self._loginButton)
+        self._cancelButton = QPushButton(self)
+        self._cancelButton.setText("Cancel")
+        self._buttonRow.addWidget(self._cancelButton)
         self._layout.addLayout(self._buttonRow)
         def onLogin():
             if self._nameInput.text() == '' or self._passInput.text() == '':

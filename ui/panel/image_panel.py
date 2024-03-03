@@ -1,5 +1,5 @@
 from PyQt5.QtWidgets import (QWidget, QSpinBox, QLineEdit, QPushButton, QLabel, QGridLayout, QSpacerItem,
-        QFileDialog, QMessageBox)
+        QFileDialog, QMessageBox, QVBoxLayout, QHBoxLayout)
 from PyQt5.QtCore import Qt, QPoint, QSize, QRect, QBuffer
 from PyQt5.QtGui import QPainter, QPen
 from PIL import Image
@@ -8,6 +8,8 @@ import os, sys
 from ui.image_viewer import ImageViewer
 from ui.config_control_setup import connectedTextEdit
 from ui.util.contrast_color import contrastColor
+from ui.widget.param_slider import ParamSlider
+from ui.widget.collapsible_box import CollapsibleBox
 
 class ImagePanel(QWidget):
     """
@@ -20,23 +22,51 @@ class ImagePanel(QWidget):
         editedImage.sizeChanged.connect(lambda newSize: self.reloadScaleBounds())
         self._editedImage = editedImage
         self._config = config
+        self._showSliders = None
+        self._minimized = False
+        self.borderSize = 4
+
+        self.layout = QHBoxLayout()
+        self.setLayout(self.layout)
+
+        self.imageBox = CollapsibleBox("Full Image",
+                parent=self,
+                scrolling=False,
+                orientation=Qt.Orientation.Horizontal)
+        self.imageBoxLayout = QVBoxLayout()
+        self.imageBox.setContentLayout(self.imageBoxLayout)
+        self.layout.addWidget(self.imageBox, stretch=255)
+
 
         self.imageViewer = ImageViewer(editedImage)
         imageViewer = self.imageViewer
+        self.imageBoxLayout.addWidget(self.imageViewer, stretch=255)
+
+        controlBarLayout = QHBoxLayout()
+        self.imageBoxLayout.addLayout(controlBarLayout)
+
+        controlBarLayout.addWidget(QLabel(self, text="Image Path:"))
+        self.fileTextBox = connectedTextEdit(self, config, "lastFilePath") 
+        controlBarLayout.addWidget(self.fileTextBox, stretch=255)
 
         # wire x/y coordinate boxes to set selection coordinates:
+        controlBarLayout.addWidget(QLabel(self, text="X:"))
         self.xCoordBox = QSpinBox(self)
-        self.yCoordBox = QSpinBox(self)
+        controlBarLayout.addWidget(self.xCoordBox)
         self.xCoordBox.setRange(0, 0)
-        self.yCoordBox.setRange(0, 0)
         self.xCoordBox.setToolTip("Selected X coordinate")
-        self.yCoordBox.setToolTip("Selected Y coordinate")
         def setX(value):
             if editedImage.hasImage():
                 lastSelected = editedImage.getSelectionBounds()
                 lastSelected.moveLeft(min(value, editedImage.width() - lastSelected.width()))
                 editedImage.setSelectionBounds(lastSelected)
         self.xCoordBox.valueChanged.connect(setX)
+
+        controlBarLayout.addWidget(QLabel(self, text="Y:"))
+        self.yCoordBox = QSpinBox(self)
+        controlBarLayout.addWidget(self.yCoordBox)
+        self.yCoordBox.setRange(0, 0)
+        self.yCoordBox.setToolTip("Selected Y coordinate")
         def setY(value):
             if editedImage.hasImage():
                 lastSelected = editedImage.getSelectionBounds()
@@ -45,8 +75,14 @@ class ImagePanel(QWidget):
         self.yCoordBox.valueChanged.connect(setY)
 
         # Selection size controls:
+        controlBarLayout.addWidget(QLabel(self, text="W:"))
         self.widthBox = QSpinBox(self)
+        controlBarLayout.addWidget(self.widthBox)
+
+        controlBarLayout.addWidget(QLabel(self, text="H:"))
         self.heightBox = QSpinBox(self)
+        controlBarLayout.addWidget(self.heightBox)
+
         editSize = config.get('editSize')
         minEditSize = config.get('minEditSize')
         maxEditSize = config.get('maxEditSize')
@@ -85,34 +121,64 @@ class ImagePanel(QWidget):
                 self.yCoordBox.setMaximum(editedImage.height() - bounds.height())
         editedImage.selectionChanged.connect(setCoords)
 
-        self.fileTextBox = connectedTextEdit(self, config, "lastFilePath") 
 
-        self.layout = QGridLayout()
-        self.borderSize = 4
-        def makeSpacer():
-            return QSpacerItem(self.borderSize, self.borderSize)
-        self.layout.addItem(makeSpacer(), 0, 0, 1, 1)
-        self.layout.addItem(makeSpacer(), 3, 0, 1, 1)
-        self.layout.addItem(makeSpacer(), 0, 0, 1, 1)
-        self.layout.addItem(makeSpacer(), 0, 6, 1, 1)
-        self.layout.addWidget(self.imageViewer, 1, 1, 1, 14)
-        self.layout.addWidget(QLabel(self, text="Image path:"), 2, 3, 1, 1)
-        self.layout.addWidget(self.fileTextBox, 2, 4, 1, 1)
-
-
-        self.layout.addWidget(QLabel(self, text="X:"), 2, 5, 1, 1)
-        self.layout.addWidget(self.xCoordBox, 2, 6, 1, 1)
-        self.layout.addWidget(QLabel(self, text="Y:"), 2, 7, 1, 1)
-        self.layout.addWidget(self.yCoordBox, 2, 8, 1, 1)
-
-        self.layout.addWidget(QLabel(self, text="W:"), 2, 9, 1, 1)
-        self.layout.addWidget(self.widthBox, 2, 10, 1, 1)
-        self.layout.addWidget(QLabel(self, text="H:"), 2, 11, 1, 1)
-        self.layout.addWidget(self.heightBox, 2, 12, 1, 1)
-
-        self.layout.setRowMinimumHeight(1, 250)
-        self.layout.setColumnStretch(4, 225)
+        # Add control sliders:
+        self.stepSlider = ParamSlider(self,
+                'Sampling steps:',
+                self._config,
+                'samplingSteps',
+                'minSamplingSteps',
+                'maxSamplingSteps',
+                orientation=Qt.Orientation.Vertical,
+                verticalTextPt=int(config.get("fontPointSize") * 1.3))
+        self.cfgSlider = ParamSlider(
+                self,
+                "CFG scale:",
+                config,
+                'cfgScale',
+                'minCfgScale',
+                'maxCfgScale',
+                'cfgScaleStep',
+                orientation=Qt.Orientation.Vertical,
+                verticalTextPt=int(config.get("fontPointSize") * 1.3))
+        self.denoiseSlider = ParamSlider(self,
+                'Denoising strength:',
+                self._config,
+                'denoisingStrength',
+                'minDenoisingStrength',
+                'maxDenoisingStrength',
+                'denoisingStrengthStep',
+                orientation=Qt.Orientation.Vertical,
+                verticalTextPt=int(config.get("fontPointSize") * 1.3))
+        self.layout.insertWidget(0, self.stepSlider)
+        self.layout.insertWidget(1, self.cfgSlider)
+        self.layout.insertWidget(2, self.denoiseSlider)
         self.setLayout(self.layout)
+        self.showSliders(False)
+    
+    def imageToggled(self):
+            return self.imageBox.toggled()
+
+    def slidersShowing(self):
+        return self._showSliders
+
+    def showSliders(self, showSliders):
+        if showSliders == self._showSliders:
+            return
+        self._showSliders = showSliders
+        if showSliders:
+            for i in range(3):
+                self.layout.setStretch(i, 1)
+            for slider in [self.stepSlider, self.cfgSlider, self.denoiseSlider]:
+                slider.setEnabled(True)
+                slider.setMaximumWidth(50)
+        else:
+            for i in range(3):
+                self.layout.setStretch(i, 0)
+            for slider in [self.stepSlider, self.cfgSlider, self.denoiseSlider]:
+                slider.setEnabled(False)
+                slider.setMaximumWidth(0)
+        self.imageBox.showButtonBar(showSliders)
 
     def reloadScaleBounds(self):
         maxEditSize = self._editedImage.getMaxSelectionSize()

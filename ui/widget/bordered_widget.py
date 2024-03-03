@@ -12,7 +12,7 @@ class BorderedWidget(QWidget):
     def paintEvent(self, event):
         super().paintEvent(event)
         painter = QPainter(self)
-        painter.setPen(QPen(contrastColor(self), 2, Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin))
+        painter.setPen(QPen(contrastColor(self), 1, Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin))
         widgetSize = self.size()
         painter.drawLine(QPoint(1, 1), QPoint(0, widgetSize.height() - 1))
         painter.drawLine(QPoint(1, 1), QPoint(widgetSize.width() - 1, 0))

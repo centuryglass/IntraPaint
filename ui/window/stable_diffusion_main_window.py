@@ -21,7 +21,14 @@ class StableDiffusionMainWindow(MainWindow):
         controlPanel.setLayout(controlLayout)
         self.layout.addWidget(controlPanel, stretch=20)
 
-        mainControlBox = CollapsibleBox("Controls", controlPanel, maxHeightFraction=0.4, maxHeightPx=400)
+
+        mainControlBox = CollapsibleBox(
+                "Controls",
+                controlPanel,
+                maxSizeFraction=0.4,
+                maxSizePx=400,
+                startClosed=self.shouldUseWideLayout())
+        mainControlBox.toggled().connect(lambda isExpanded: self.setImageSlidersEnabled(not isExpanded))
         mainControls = QHBoxLayout();
         mainControlBox.setContentLayout(mainControls)
         controlLayout.addWidget(mainControlBox, stretch=20)
@@ -152,14 +159,14 @@ class StableDiffusionMainWindow(MainWindow):
         self._config.connect(self, 'editMode', lambda mode: paddingLayoutUpdate(mode == 'Inpaint'))
 
 
-        #checkboxLine = QHBoxLayout()
-        #optionListLayout.addLayout(checkboxLine)
-        #checkboxLine.addWidget(QLabel('Restore faces:'), stretch=4)
-        #faceCheckBox = connectedCheckBox(optionList, self._config, 'restoreFaces')
-        #checkboxLine.addWidget(faceCheckBox, stretch=1)
-        #checkboxLine.addWidget(QLabel('Tiling:'), stretch=4)
-        #tilingCheckBox = connectedCheckBox(optionList, self._config, 'tiling')
-        #checkboxLine.addWidget(tilingCheckBox, stretch=1)
+        checkboxLine = QHBoxLayout()
+        optionListLayout.addLayout(checkboxLine)
+        checkboxLine.addWidget(QLabel('Restore faces:'), stretch=4)
+        faceCheckBox = connectedCheckBox(optionList, self._config, 'restoreFaces')
+        checkboxLine.addWidget(faceCheckBox, stretch=1)
+        checkboxLine.addWidget(QLabel('Tiling:'), stretch=4)
+        tilingCheckBox = connectedCheckBox(optionList, self._config, 'tiling')
+        checkboxLine.addWidget(tilingCheckBox, stretch=1)
 
         inpaintLine = QHBoxLayout()
         optionListLayout.addLayout(inpaintLine)
