@@ -46,7 +46,12 @@ class CollapsibleBox(BorderedWidget):
             buttonBarLayout = QVBoxLayout()
             buttonBarLayout.addWidget(self.toggle_button, alignment=Qt.AlignTop)
             buttonBarLayout.addWidget(self.toggleLabel, alignment=Qt.AlignTop)
+            buttonBarLayout.addStretch(255)
+            buttonBarLayout.setContentsMargins(0,0,0,0)
             buttonBar.setLayout(buttonBarLayout)
+            minWidth = self.toggleLabel.imageSize().width() + 2
+            for widget in [buttonBar, self.toggleLabel, self.toggle_button]:
+                widget.setMinimumWidth(minWidth)
             layout.addWidget(buttonBar)
         self.toggle_button.setArrowType(QtCore.Qt.DownArrow if self._isVertical else QtCore.Qt.RightArrow)
         self.toggle_button.toggled.connect(lambda: self.on_pressed())
@@ -76,7 +81,9 @@ class CollapsibleBox(BorderedWidget):
             buttonBar.setMaximumHeight(self.height() if showBar else 0)
         else:
             buttonBar.setMaximumWidth(self.width() if showBar else 0)
-            buttonBar.setMinimumWidth(self.toggleLabel.imageSize().width() if showBar else 0)
+            minWidth = (self.toggleLabel.imageSize().width() + 2) if showBar else 0
+            for widget in [buttonBar, self.toggleLabel, self.toggle_button]:
+                widget.setMinimumWidth(minWidth)
         if not showBar:
             self.setExpanded(True)
 
