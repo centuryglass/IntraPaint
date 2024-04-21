@@ -23,12 +23,12 @@ class VerticalLabel(QLabel):
             return
         self._text = text
         textBounds = QFontMetrics(self._font).boundingRect(text)
-        imageSize = QSize(textBounds.height(), textBounds.width())
+        imageSize = QSize(int(textBounds.height() * 1.5), textBounds.width())
         if self._image is None or imageSize != self._image.size():
             self._image = QPixmap(imageSize)
         self._image.fill(self._bgColor)
         path = QPainterPath()
-        path.addText(QPointF(0, 0), self._font, text)
+        path.addText(QPointF(0, -(textBounds.height() * 0.3)), self._font, text)
         rotation = QTransform()
         rotation.rotate(90)
         path = rotation.map(path)
