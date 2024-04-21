@@ -89,28 +89,8 @@ class MaskPanel(QWidget):
         self.maskModeButton.setToolTip("Draw over the area to be inpainted")
         self.sketchModeButton.setToolTip("Add simple details to help guide inpainting")
         self.maskModeButton.toggle()
-        self.maskModeButton.toggled.connect(lambda isChecked: self.setUseMaskMode(isChecked))
+        self.maskModeButton.toggled.connect(lambda isChecked: self.setSketchMode(isChecked))
 
-        # Enable/disable controls as appropriate when sketch or mask mode are enabled or disabled:
-        def handleSketchModeEnabledChange(isEnabled):
-            self.sketchModeButton.setEnabled(isEnabled)
-            if not isEnabled and self._maskCanvas.enabled() and not self.maskModeButton.isChecked():
-                self.maskModeButton.toggle()
-            elif isEnabled and not self._maskCanvas.enabled() and not self.sketchModeButton.isChecked():
-                self.sketchModeButton.toggle()
-            self.setEnabled(isEnabled or self._maskCanvas.enabled())
-            self.resizeEvent(None)
-        sketchCanvas.onEnabledChange.connect(handleSketchModeEnabledChange)
-
-        def handleMaskModeEnabledChange(isEnabled):
-            self.maskModeButton.setEnabled(isEnabled)
-            if not isEnabled and self._sketchCanvas.enabled() and not self.maskModeButton.isChecked() :
-                self.sketchModeButton.toggle()
-            elif isEnabled and not self.maskModeButton.isChecked():
-                self.maskModeButton.toggle()
-            self.setEnabled(isEnabled or self._sketchCanvas.enabled())
-            self.resizeEvent(None)
-        maskCanvas.onEnabledChange.connect(handleMaskModeEnabledChange)
 
         self.colorPickerButton = QPushButton(self)
         self.colorPickerButton.setText("Select sketch color")
@@ -130,6 +110,30 @@ class MaskPanel(QWidget):
         self._setupCorrectLayout()
 
         self.brushSizeBox.setValue(self._maskBrushSize)
+
+        # Enable/disable controls as appropriate when sketch or mask mode are enabled or disabled:
+        def handleSketchModeEnabledChange(isEnabled):
+            self.sketchModeButton.setEnabled(isEnabled)
+            if not isEnabled and self._maskCanvas.enabled() and not self.maskModeButton.isChecked():
+                self.maskModeButton.toggle()
+            elif isEnabled and not self._maskCanvas.enabled() and not self.sketchModeButton.isChecked():
+                self.sketchModeButton.toggle()
+            self.setEnabled(isEnabled or self._maskCanvas.enabled())
+            self.resizeEvent(None)
+        sketchCanvas.enabledStateChanged.connect(handleSketchModeEnabledChange)
+        handleSketchModeEnabledChange(self._sketchCanvas.enabled())
+
+        def handleMaskModeEnabledChange(isEnabled):
+            self.maskModeButton.setEnabled(isEnabled)
+            if not isEnabled and self._sketchCanvas.enabled() and not self.sketchModeButton.isChecked() :
+                self.sketchModeButton.toggle()
+            elif isEnabled and not self.maskModeButton.isChecked():
+                self.maskModeButton.toggle()
+            self.setEnabled(isEnabled or self._sketchCanvas.enabled())
+            self.resizeEvent(None)
+        maskCanvas.enabledStateChanged.connect(handleMaskModeEnabledChange)
+        handleMaskModeEnabledChange(self._maskCanvas.enabled())
+
 
     def _clearControlLayout(self):
         widgets = [ 
@@ -245,7 +249,7 @@ class MaskPanel(QWidget):
             self._layoutType = ""
             self._setupCorrectLayout()
 
-    def setUseMaskMode(self, useMaskMode):
+    def setSketchMode(self, useMaskMode):
         if useMaskMode and not self._maskCanvas.enabled():
             raise Exception("called setUseMaskMode(True) when mask mode is disabled")
         if not useMaskMode and not self._sketchCanvas.enabled():
@@ -313,14 +317,14 @@ class MaskPanel(QWidget):
 
     def _updateBrushCursor(self):
         brushSize = self.getBrushSize()
-        canvasWidth = max(self._editedImage.getSelectionBounds().width(), 1)
-        widgetWidth = max(self.maskCreator.getImageDisplaySize().width(), 1)
-        scaledSize = max(int(widgetWidth * brushSize / canvasWidth), 9)
+        scale = max(self.maskCreator.getImageDisplaySize().width(), 1) / max(self._maskCanvas.width(), 1)
+        scaledSize = max(int(brushSize * scale), 9)
         if scaledSize == self._lastCursorSize:
             return
         if scaledSize <= 10:
             self.maskCreator.setCursor(self._smallCursor)
         else:
-            newCursor = QCursor(self._cursorPixmap.scaled(QSize(scaledSize, scaledSize)))
+            offset = scaledSize // 2 + max(scaledSize // 16, 2)
+            newCursor = QCursor(self._cursorPixmap.scaled(QSize(scaledSize + 10, scaledSize + 10)), offset, offset)
             self.maskCreator.setCursor(newCursor)
         self._lastCursorSize = scaledSize

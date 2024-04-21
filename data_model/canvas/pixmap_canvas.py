@@ -1,76 +1,54 @@
 from PyQt5.QtGui import QPainter, QPixmap, QPen, QImage, QColor
 import PyQt5.QtGui as QtGui
-from PyQt5.QtCore import Qt, QObject, QRect, QPoint, QLine, QSize, pyqtSignal
+from PyQt5.QtCore import Qt, QRect, QPoint, QLine, QSize, pyqtSignal
+from PyQt5.QtWidgets import QGraphicsPixmapItem
 from PIL import Image
+from data_model.canvas.canvas import Canvas
 
 from ui.image_utils import imageToQImage, qImageToImage 
 
-class BaseCanvas(QObject):
-    redrawRequired = pyqtSignal()
-    onEnabledChange = pyqtSignal(bool)
-
+class PixmapCanvas(Canvas, QGraphicsPixmapItem):
     def __init__(self, config, image):
-        super().__init__()
+        super(PixmapCanvas, self).__init__(config, image)
         self._config = config
         self._brushSize = 1
-        self._image = None
-        if image is not None:
-            self.setImage(image)
-        else:
-            self.setImage(config.get('editSize'))
-        self._enabled = True
+        self._drawing = False
 
-    def enabled(self):
-        return self._enabled
-
-    def setEnabled(self, isEnabled):
-        if isEnabled != self._enabled:
-            self._enabled = isEnabled
-            self.onEnabledChange.emit(isEnabled)
-        
-    def brushSize(self):
-        return self._brushSize
-
-    def setBrushSize(self, newSize):
-        self._brushSize = newSize
+    def addToScene(self, scene):
+        scene.addItem(self)
 
     def setImage(self, initData):
         if isinstance(initData, QSize): # Blank initial image:
-            self._pixmap = QPixmap(initData)
-            self._pixmap.fill(Qt.transparent)
+            pixmap = QPixmap(initData)
+            pixmap.fill(Qt.transparent)
+            self.setPixmap(pixmap)
         elif isinstance(initData, str): # Load from image path:
-            self._pixmap = QPixmap(initData, "RGBA")
+            self.setPixmap(QPixmap(initData, "RGBA"))
         elif isinstance(initData, Image.Image):
-            self._pixmap = QPixmap.fromImage(imageToQImage(initData))
+            self.setPixmap(QPixmap.fromImage(imageToQImage(initData)))
         elif isinstance(initData, QImage):
-            self._pixmap = QPixmap.fromImage(initData)
+            self.setPixmap(QPixmap.fromImage(initData))
         else:
             raise Exception(f"Invalid image param {initData}")
-        self.redrawRequired.emit()
 
     def size(self):
-        return self._pixmap.size()
-    
+        return self.pixmap().size()
+
     def width(self):
-        return self._pixmap.width()
+        return self.pixmap().width()
 
     def height(self):
-        return self._pixmap.height()
-    
-    def getPixmap(self):
-        return self._pixmap
+        return self.pixmap().height()
 
     def getQImage(self):
         if self._image is None:
-            self._image = self._pixmap.toImage()
+            self._image = self.pixmap().toImage()
         return self._image
 
     def getImage(self):
         return qImageToImage(self.getQImage())
 
     def getColorAtPoint(self, point):
-        if self._pixmap is None:
-            return QColor(0, 0, 0, 0)
         if self.getQImage().rect().contains(point):
             return self.getQImage().pixelColor(point)
         return QColor(0, 0, 0, 0)
@@ -78,14 +56,21 @@ class BaseCanvas(QObject):
     def resize(self, size):
         if not isinstance(size, QSize):
             raise Exception(f"Invalid resize param {size}")
-        if size != self._pixmap.size():
-            self._pixmap = self._pixmap.scaled(size)
+        if size != self.size():
+            self.setPixmap(self.pixmap().scaled(size))
             self._handleChanges()
 
-    def _draw(self, pos, color, compositionMode, sizeMultiplier=1.0, sizeOverride = None):
-        if not self.enabled():
-            return
-        painter = QPainter(self._pixmap)
+    def startStroke(self):
+        if self._drawing:
+            self.endStroke()
+        self._drawing = True
+
+    def endStroke(self):
+        if self._drawing:
+            self._drawing = False
+
+    def _baseDraw(self, pixmap, pos, color, compositionMode, sizeMultiplier=1.0, sizeOverride = None):
+        painter = QPainter(pixmap)
         painter.setCompositionMode(compositionMode)
         size = int(self._brushSize * sizeMultiplier) if sizeOverride is None else int(sizeOverride)
         painter.setPen(QPen(color, size, Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin))
@@ -93,30 +78,54 @@ class BaseCanvas(QObject):
             painter.drawLine(pos)
         else: # Should be QPoint
             painter.drawPoint(pos)
+        painter.end()
+
+    def _draw(self, pos, color, compositionMode, sizeMultiplier=1.0, sizeOverride = None):
+        if not self.enabled():
+            return
+        pixmap = QPixmap(self.size())
+        pixmap.swap(self.pixmap())
+        self._baseDraw(pixmap, pos, color, compositionMode, sizeMultiplier, sizeOverride)
+        self.setPixmap(pixmap)
         self._handleChanges()
 
     def drawPoint(self, point, color, sizeMultiplier = 1.0, sizeOverride = None):
+        if not self._drawing:
+            self.startStroke()
         self._draw(point, color, QPainter.CompositionMode.CompositionMode_SourceOver, sizeMultiplier, sizeOverride)
 
     def drawLine(self, line, color, sizeMultiplier = 1.0, sizeOverride = None):
+        if not self._drawing:
+            self.startStroke()
         self._draw(line, color, QPainter.CompositionMode.CompositionMode_SourceOver, sizeMultiplier, sizeOverride)
 
     def erasePoint(self, point, color, sizeMultiplier = 1.0, sizeOverride = None):
+        if not self._drawing:
+            self.startStroke()
         self._draw(point, color, QPainter.CompositionMode.CompositionMode_Clear, sizeMultiplier, sizeOverride)
 
     def eraseLine(self, line, color, sizeMultiplier = 1.0, sizeOverride = None):
+        if not self._drawing:
+            self.startStroke()
         self._draw(line, color, QPainter.CompositionMode.CompositionMode_Clear, sizeMultiplier, sizeOverride)
 
     def fill(self, color):
         if not self.enabled():
+            print("not enabled for fill")
             return
-        self._pixmap.fill(color)
+        if self._drawing:
+            self.endStroke()
+        pixmap = QPixmap(self.size())
+        pixmap.swap(self.pixmap())
+        pixmap.fill(color)
+        self.setPixmap(pixmap)
         self._handleChanges()
 
     def clear(self):
+        if self._drawing:
+            self.endStroke()
         self.fill(Qt.transparent)
 
     def _handleChanges(self):
         self._image = None
-        self.redrawRequired.emit()
 

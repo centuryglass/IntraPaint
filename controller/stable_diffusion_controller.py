@@ -35,6 +35,9 @@ class StableDiffusionController(BaseInpaintController):
         def updateSketchState(editMode):
             self._sketchCanvas.setEnabled(editMode != 'Text to Image')
         self._config.connect(self._sketchCanvas, 'editMode', updateSketchState)
+        editMode = self._config.get('editMode')
+        updateMaskState(editMode)
+        updateSketchState(editMode)
 
     def initSettings(self, settingsModal):
         if not isinstance(self._webservice, A1111Webservice):

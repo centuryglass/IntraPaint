@@ -6,8 +6,8 @@ import os, glob, sys, tempfile
 
 from data_model.config import Config
 from data_model.edited_image import EditedImage
-from data_model.mask_canvas import MaskCanvas
-from data_model.sketch_canvas import SketchCanvas
+from data_model.canvas.mask_canvas import MaskCanvas
+from data_model.canvas.sketch_canvas import SketchCanvas
 
 from ui.window.main_window import MainWindow
 from ui.modal.new_image_modal import NewImageModal
@@ -54,7 +54,15 @@ class BaseInpaintController():
 
         initialSelectionSize = self._editedImage.getSelectionBounds().size()
         self._maskCanvas = MaskCanvas(self._config, initialSelectionSize)
+
         self._sketchCanvas = SketchCanvas(self._config, initialSelectionSize)
+        #try:
+        #    from data_model.canvas.brushlib_canvas import BrushlibCanvas
+        #    self._sketchCanvas = BrushlibCanvas(self._config, initialSelectionSize)
+        #except ImportError as err: # fallback to old implementation:
+        #    print(f"Brushlib import failed: {err}")
+        #    self._sketchCanvas = SketchCanvas(self._config, initialSelectionSize)
+
         # Connect mask/sketch size to image selection size:
         def resizeCanvases(selectionBounds):
             size = selectionBounds.size()
@@ -117,20 +125,23 @@ class BaseInpaintController():
         self._window.show()
 
     def fixStyles(self):
-        self._app.setStyle(self._config.get('style'))
-        theme = self._config.get('theme')
-        if theme.startswith('qdarktheme_'):
-            import qdarktheme
-            if theme.endswith('_light'):
-                qdarktheme.setup_theme("light")
-            elif theme.endswith('_auto'):
-                qdarktheme.setup_theme("auto")
-            else:
-                qdarktheme.setup_theme()
-        elif theme.startswith('qt_material_'):
-            from qt_material import apply_stylesheet
-            xmlFile = theme[len('qt_material_'):]
-            apply_stylesheet(self._app, theme=xmlFile)
+        try:
+            self._app.setStyle(self._config.get('style'))
+            theme = self._config.get('theme')
+            if theme.startswith('qdarktheme_'):
+                import qdarktheme
+                if theme.endswith('_light'):
+                    qdarktheme.setup_theme("light")
+                elif theme.endswith('_auto'):
+                    qdarktheme.setup_theme("auto")
+                else:
+                    qdarktheme.setup_theme()
+            elif theme.startswith('qt_material_'):
+                from qt_material import apply_stylesheet
+                xmlFile = theme[len('qt_material_'):]
+                apply_stylesheet(self._app, theme=xmlFile)
+        except ModuleNotFoundError:
+            print('Failed to load theme ' + self._config.get('style'))
         font = self._app.font()
         font.setPointSize(self._config.get('fontPointSize'))
         self._app.setFont(font)

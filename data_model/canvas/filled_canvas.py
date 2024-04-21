@@ -1,5 +1,5 @@
 
-from data_model.mask_canvas import MaskCanvas
+from data_model.canvas.mask_canvas import MaskCanvas
 from PyQt5.QtCore import Qt
 
 class FilledMaskCanvas(MaskCanvas):

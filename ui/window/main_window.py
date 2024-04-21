@@ -14,7 +14,7 @@ from ui.config_control_setup import *
 from ui.widget.draggable_arrow import DraggableArrow
 from ui.widget.loading_widget import LoadingWidget
 from ui.util.contrast_color import contrastColor
-from data_model.filled_canvas import FilledMaskCanvas
+from data_model.canvas.filled_canvas import FilledMaskCanvas
 
 class MainWindow(QMainWindow):
     """Main user interface for GLID-3-XL inpainting."""
@@ -116,9 +116,9 @@ class MainWindow(QMainWindow):
 
         # Tools:
         toolMenu = self._menu.addMenu("Tools")
-        def maskModeToggle():
-            maskPanel.setUseMaskMode(not maskPanel.maskModeButton.isChecked())
-        addAction("Toggle mask/sketch editing mode", "F6", lambda: ifNotSelecting(maskModeToggle), toolMenu)
+        def sketchModeToggle():
+            maskPanel.setSketchMode(not maskPanel.maskModeButton.isChecked())
+        addAction("Toggle mask/sketch editing mode", "F6", lambda: ifNotSelecting(sketchModeToggle), toolMenu)
         def maskToolToggle():
             maskPanel.swapDrawTool()
         addAction("Toggle pen/eraser tool", "F7", lambda: ifNotSelecting(maskToolToggle), toolMenu)
