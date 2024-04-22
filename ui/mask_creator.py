@@ -1,4 +1,4 @@
-from PyQt5.QtGui import QPainter, QPen, QImage, QPixmap, QColor, QTabletEvent
+from PyQt5.QtGui import QPainter, QPen, QImage, QPixmap, QColor, QTabletEvent, QTransform
 from PyQt5.QtCore import Qt, QPoint, QLine, QSize, QRect, QRectF, QBuffer, QEvent, QMarginsF
 from PyQt5.QtWidgets import QGraphicsView, QGraphicsScene, QGraphicsPixmapItem, QGraphicsRectItem
 import PyQt5.QtGui as QtGui
@@ -116,8 +116,11 @@ class MaskCreator(QGraphicsView):
 
     def loadImage(self, pilImage):
         selectionSize = self._maskCanvas.size()
-        self._imageRect = getScaledPlacement(QRect(QPoint(0, 0), self.size()), selectionSize,
-                self._borderSize())
+        selectionRectF = QRectF(0.0, 0.0, float(selectionSize.width()), float(selectionSize.height()))
+        margins = QMarginsF(5, 5, 5, 5)
+        borderRect = selectionRectF.marginsAdded(margins)
+        self._borderRect.setRect(borderRect)
+        self._scene.setSceneRect(selectionRectF)
         self._imageSection = imageToQImage(pilImage)
         self._imagePixmap.setPixmap(QPixmap.fromImage(self._imageSection))
         self.resizeEvent(None)
@@ -210,6 +213,8 @@ class MaskCreator(QGraphicsView):
     def mouseReleaseEvent(self, event):
         if (event.button() == Qt.LeftButton or event.button() == Qt.RightButton) and self._drawing:
             self._drawing = False
+            self._pen_pressure = 1.0
+            self._tabletEraser = False
             canvas = self._sketchCanvas if self._sketchMode else self._maskCanvas
             canvas.endStroke()
             self._maskCanvas.setOpacity(0.6 if canvas == self._maskCanvas else 0.4)
@@ -219,16 +224,11 @@ class MaskCreator(QGraphicsView):
         borderSize = self._borderSize()
         self._imageRect = getScaledPlacement(QRect(QPoint(0, 0), self.size()), self._imagePixmap.pixmap().size(),
                 borderSize)
-        rectF = QRectF(float(self._imageRect.x()), float(self._imageRect.y()), float(self._imageRect.width()), float(self._imageRect.height()))
-        scale = rectF.width() / self._imagePixmap.pixmap().width()
-        self._scene.setSceneRect(rectF)
-        for g_item in [self._imagePixmap, self._maskCanvas, self._sketchCanvas]:
-            g_item.setScale(scale)
-            g_item.setX(rectF.x())
-            g_item.setY(rectF.y())
-        margins = QMarginsF(5, 5, 5, 5)
-        borderRect = rectF.marginsAdded(margins)
-        self._borderRect.setRect(borderRect)
+        scale = self._imageRect.width() / self._maskCanvas.width()
+        transformation = QTransform()
+        transformation.scale(scale, scale)
+        transformation.translate(float(self._imageRect.x()), float(self._imageRect.y()))
+        self.setTransform(transformation)
 
     def getImageDisplaySize(self):
         return QSize(self._imageRect.width(), self._imageRect.height())

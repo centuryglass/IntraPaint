@@ -12,6 +12,7 @@ class MaskCanvas(PixmapCanvas):
         super().__init__(config, image)
         self.setBrushSize(self._config.get('initialMaskBrushSize'))
         self._outline = None
+        self._drawing = False
         self._bounding_box = None
         config.connect(self, 'inpaintFullRes', lambda b: self._handleChanges())
         config.connect(self, 'inpaintFullResPadding', lambda x: self._handleChanges())
@@ -44,11 +45,17 @@ class MaskCanvas(PixmapCanvas):
         image = image.convert('L').point( lambda p: 255 if p < 1 else 0 )
         return image
 
+    def startStroke(self):
+        super().startStroke()
+        self._setEmptyOutline()
+
     def endStroke(self):
         super().endStroke()
         self._drawOutline()
 
     def _drawOutline(self):
+        if self._drawing:
+            return
         image = self.getQImage()
 
         # find edges:
@@ -80,13 +87,14 @@ class MaskCanvas(PixmapCanvas):
         painter.setCompositionMode(QPainter.CompositionMode_SourceIn)
         painter.drawPixmap(0, 0, self.ditherMask)
 
-        maskedArea = self.getMaskedArea()
-        if maskedArea is not None:
-            painter.setCompositionMode(QPainter.CompositionMode_SourceOver)
-            color = contrastColor(self.scene().views()[0])
-            pen = QPen(color, 2, Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin)
-            painter.setPen(pen)
-            painter.drawRect(maskedArea)
+        if self._config.get('inpaintFullRes'):
+            maskedArea = self.getMaskedArea()
+            if maskedArea is not None:
+                painter.setCompositionMode(QPainter.CompositionMode_SourceOver)
+                color = contrastColor(self.scene().views()[0])
+                pen = QPen(color, 2, Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin)
+                painter.setPen(pen)
+                painter.drawRect(maskedArea)
         painter.end()
         self._outline.setPixmap(QPixmap.fromImage(outline))
 
@@ -153,10 +161,7 @@ class MaskCanvas(PixmapCanvas):
             painter = QPainter(newDitherMask)
             painter.drawTiledPixmap(0, 0, width, height, self.ditherMask)
             self.ditherMask = newDitherMask
-        if self._config.get('inpaintFullRes'):
-            self._drawOutline()
-        else:
-            self._setEmptyOutline()
+        self._drawOutline()
         super()._handleChanges()
 
     def resize(self, size):
@@ -166,18 +171,6 @@ class MaskCanvas(PixmapCanvas):
     def clear(self):
         super().clear()
         self._setEmptyOutline()
-
-    def setScale(self, scale):
-        super().setScale(scale)
-        self._outline.setScale(scale)
-
-    def setX(self, x):
-        super().setX(x)
-        self._outline.setX(x)
-
-    def setY(self, y):
-        super().setY(y)
-        self._outline.setY(y)
 
     def setVisible(self, visible):
         super().setVisible(visible)

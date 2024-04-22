@@ -132,6 +132,18 @@ class MainWindow(QMainWindow):
         addAction("Increase brush size", "Ctrl+]", lambda: ifNotSelecting(lambda: brushSizeChange(1)), toolMenu)
         addAction("Decrease brush size", "Ctrl+[", lambda: ifNotSelecting(lambda: brushSizeChange(-1)), toolMenu)
 
+        try:
+            from data_model.canvas.brushlib import Brushlib
+            def loadBrush():
+                isPyinstallerBundle = getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS')
+                options = QFileDialog.Option.DontUseNativeDialog if isPyinstallerBundle else None
+                file, fileSelected = QFileDialog.getOpenFileName(self, 'Open Brush File', options)
+                if fileSelected:
+                    Brushlib.loadBrush(file)
+            addAction("Load MyPaint Brush (.myb)", None, loadBrush, toolMenu)
+        except ImportError:
+            print("Skipping brush selection init, brushlib not loaded")
+
         self._settings = SettingsModal(self)
         if (controller.initSettings(self._settings)):
             self._settings.changesSaved.connect(lambda changes: controller.updateSettings(changes))

@@ -113,19 +113,3 @@ class BrushlibCanvas(Canvas):
 
     def clear(self):
         Brushlib.clearSurface()
-
-    def setScale(self, value):
-        if self._scene is None:
-            return
-        self._scale = value
-        self.resize(self.size())
-
-    def setX(self, value):
-        if self._scene is None:
-            return
-        Brushlib.setX(self._scene, value)
-
-    def setY(self, value):
-        if self._scene is None:
-            return
-        Brushlib.setY(self._scene, value)

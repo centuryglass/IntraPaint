@@ -55,13 +55,13 @@ class BaseInpaintController():
         initialSelectionSize = self._editedImage.getSelectionBounds().size()
         self._maskCanvas = MaskCanvas(self._config, initialSelectionSize)
 
-        self._sketchCanvas = SketchCanvas(self._config, initialSelectionSize)
-        #try:
-        #    from data_model.canvas.brushlib_canvas import BrushlibCanvas
-        #    self._sketchCanvas = BrushlibCanvas(self._config, initialSelectionSize)
-        #except ImportError as err: # fallback to old implementation:
-        #    print(f"Brushlib import failed: {err}")
-        #    self._sketchCanvas = SketchCanvas(self._config, initialSelectionSize)
+        #self._sketchCanvas = SketchCanvas(self._config, initialSelectionSize)
+        try:
+            from data_model.canvas.brushlib_canvas import BrushlibCanvas
+            self._sketchCanvas = BrushlibCanvas(self._config, initialSelectionSize)
+        except ImportError as err: # fallback to old implementation:
+            print(f"Brushlib import failed: {err}")
+            self._sketchCanvas = SketchCanvas(self._config, initialSelectionSize)
 
         # Connect mask/sketch size to image selection size:
         def resizeCanvases(selectionBounds):

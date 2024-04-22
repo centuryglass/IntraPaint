@@ -88,18 +88,6 @@ class SketchCanvas(PixmapCanvas):
         super().fill(color)
         self.hasSketch = True
 
-    def setScale(self, scale):
-        super().setScale(scale)
-        self._shadingPixmap.setScale(scale)
-
-    def setX(self, x):
-        super().setX(x)
-        self._shadingPixmap.setX(x)
-
-    def setY(self, y):
-        super().setY(y)
-        self._shadingPixmap.setY(y)
-
     def setVisible(self, visible):
         super().setVisible(visible)
         self._shadingPixmap.setVisible(visible)

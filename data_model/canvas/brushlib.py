@@ -9,35 +9,6 @@ from PyQt5.QtCore import QByteArray
 
 class Brushlib():
     _addedToScene = False
-    _scale = 1.0
-    _x = 0.0
-    _y = 0.0
-
-    def setScale(scene, scale):
-        if scale != Brushlib._scale:
-            lastScale = Brushlib._scale
-            Brushlib._scale = scale
-            for item in scene.items():
-                if isinstance(item, MPTile):
-                    item.setScale(scale)
-                    item.setX(item.x() * scale)
-                    item.setY(item.y() * scale)
-
-    def setX(scene, x):
-        if x != Brushlib._x:
-            offset = Brushlib._scale * (x - Brushlib._x)
-            Brushlib._x = x
-            for item in scene.items():
-                if isinstance(item, MPTile):
-                    item.setX(item.x() + offset)
-
-    def setY(scene, y):
-        if y != Brushlib._y:
-            offset = y - Brushlib._y
-            Brushlib._y = y
-            for item in scene.items():
-                if isinstance(item, MPTile):
-                    item.setY(item.y() + offset)
 
     def addToScene(scene):
         if Brushlib._addedToScene:
@@ -50,10 +21,6 @@ class Brushlib():
 
         def onNewTile(surface, tile):
             tile.setZValue(zValue)
-            #tile.setScale(Brushlib._scale)
-            #tile.setX((Brushlib._x + tile.x()) * Brushlib._scale)
-            #tile.setY((Brushlib._y + tile.y()) * Brushlib._scale)
-            #print(f"tile {len(scene.items())}: x= {tile.x()}, y={tile.y()}, scale={tile.scale()}")
             scene.addItem(tile)
         MPHandler.handler().newTile.connect(onNewTile)
 
