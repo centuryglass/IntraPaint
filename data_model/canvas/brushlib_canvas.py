@@ -15,6 +15,7 @@ class BrushlibCanvas(Canvas):
         self._drawing = False
         self._scene = None
         self._scale = 1.0
+        self.hasSketch = False
 
     def setBrushSize(self, newSize):
         super().setBrushSize(newSize)
@@ -73,6 +74,7 @@ class BrushlibCanvas(Canvas):
         self._drawing = False
 
     def _draw(self, pos, color, sizeMultiplier = 1.0, sizeOverride = None):
+        self.hasSketch = True
         Brushlib.setBrushColor(color)
         if not self._drawing:
             self.startStroke()
@@ -104,6 +106,7 @@ class BrushlibCanvas(Canvas):
         self._draw(line, color, sizeMultiplier, sizeOverride)
 
     def fill(self, color):
+        self.hasSketch = True
         size = self.size()
         image = QImage(size, QImage.Format_ARGB32)
         painter = QPainter(image)
@@ -112,4 +115,5 @@ class BrushlibCanvas(Canvas):
         Brushlib.loadImage(image)
 
     def clear(self):
+        self.hasSketch = False
         Brushlib.clearSurface()

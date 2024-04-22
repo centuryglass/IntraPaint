@@ -139,7 +139,7 @@ class MaskCreator(QGraphicsView):
     def getColorAtPoint(self, point):
         sketchColor = QColor(0, 0, 0, 0)
         imageColor = QColor(0, 0, 0, 0)
-        if not hasattr(self._sketchCanvas, "hasSketch") or self._sketchCanvas.hasSketch:
+        if self._sketchCanvas.hasSketch:
             sketchColor = self._sketchCanvas.getColorAtPoint(point)
         imageColor = self._imageSection.pixelColor(point)
         def getComponent(sketchComp, imageComp):
