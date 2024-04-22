@@ -44,9 +44,14 @@ class MaskCreator(QGraphicsView):
         self._scene = QGraphicsScene()
         self.setScene(self._scene)
 
+        selectionSize = self._maskCanvas.size()
+        selectionRectF = QRectF(0.0, 0.0, float(selectionSize.width()), float(selectionSize.height()))
+        margins = QMarginsF(5, 5, 5, 5)
+        borderRect = selectionRectF.marginsAdded(margins)
         self._borderRect = QGraphicsRectItem()
-        self._borderRect.setRect(0.0, 0.0, float(self._maskCanvas.width()), float(self._maskCanvas.height()))
+        self._borderRect.setRect(borderRect)
         self._borderRect.setPen(QPen(contrastColor(self), 4, Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin))
+        self._scene.setSceneRect(selectionRectF)
         self._scene.addItem(self._borderRect)
 
         self._imagePixmap = QGraphicsPixmapItem()

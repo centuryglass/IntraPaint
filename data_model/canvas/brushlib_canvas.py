@@ -3,6 +3,7 @@ import PyQt5.QtGui as QtGui
 from PyQt5.QtCore import Qt, QObject, QRect, QPoint, QLine, QSize, pyqtSignal
 from PyQt5.QtWidgets import QGraphicsPixmapItem
 from PIL import Image
+import math
 
 from data_model.canvas.brushlib import Brushlib
 from data_model.canvas.canvas import Canvas
@@ -20,8 +21,8 @@ class BrushlibCanvas(Canvas):
     def setBrushSize(self, newSize):
         super().setBrushSize(newSize)
         # TODO:
-        # newSize_log_radius = ???
-        # Brushlib.set_radius(newSize_log_radius
+        newSize_log_radius = math.log(newSize / 2)
+        Brushlib.set_radius(newSize_log_radius)
 
     def addToScene(self, scene):
         self._scene = scene
@@ -86,23 +87,19 @@ class BrushlibCanvas(Canvas):
             Brushlib.strokeTo(float(pos.x()), float(pos.y()), sizeMultiplier, 0.0, 0.0)
 
     def drawPoint(self, point, color, sizeMultiplier = 1.0, sizeOverride = None):
-        if Brushlib.eraser() != 0.0:
-            Brushlib.set_eraser(0.0)
+        Brushlib.set_eraser(0.0)
         self._draw(point, color, sizeMultiplier, sizeOverride)
 
     def drawLine(self, line, color, sizeMultiplier = 1.0, sizeOverride = None):
-        if Brushlib.eraser() != 0.0:
-            Brushlib.set_eraser(0.0)
+        Brushlib.set_eraser(0.0)
         self._draw(line, color, sizeMultiplier, sizeOverride)
 
     def erasePoint(self, point, color, sizeMultiplier = 1.0, sizeOverride = None):
-        if Brushlib.eraser() != 1.0:
-            Brushlib.set_eraser(1.0)
+        Brushlib.set_eraser(1.0)
         self._draw(point, color, sizeMultiplier, sizeOverride)
 
     def eraseLine(self, line, color, sizeMultiplier = 1.0, sizeOverride = None):
-        if Brushlib.eraser() != 1.0:
-            Brushlib.set_eraser(1.0)
+        Brushlib.set_eraser(1.0)
         self._draw(line, color, sizeMultiplier, sizeOverride)
 
     def fill(self, color):
