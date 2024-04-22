@@ -38,6 +38,9 @@ class MaskCreator(QGraphicsView):
         self.setAlignment(Qt.AlignCenter)
         self.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.setCacheMode(QGraphicsView.CacheBackground)
+        self.setTransformationAnchor(QGraphicsView.NoAnchor)
+        self.setViewportUpdateMode(QGraphicsView.FullViewportUpdate)
         self._scene = QGraphicsScene()
         self.setScene(self._scene)
 
@@ -136,7 +139,7 @@ class MaskCreator(QGraphicsView):
     def getColorAtPoint(self, point):
         sketchColor = QColor(0, 0, 0, 0)
         imageColor = QColor(0, 0, 0, 0)
-        if self._sketchCanvas.hasSketch:
+        if not hasattr(self._sketchCanvas, "hasSketch") or self._sketchCanvas.hasSketch:
             sketchColor = self._sketchCanvas.getColorAtPoint(point)
         imageColor = self._imageSection.pixelColor(point)
         def getComponent(sketchComp, imageComp):

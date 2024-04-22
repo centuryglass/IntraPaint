@@ -20,7 +20,7 @@ class Brushlib():
             zValue = max(zValue, item.zValue())
 
         def onNewTile(surface, tile):
-            tile.setZValue(zValue)
+            #tile.setZValue(zValue)
             scene.addItem(tile)
         MPHandler.handler().newTile.connect(onNewTile)
 
@@ -47,7 +47,7 @@ class Brushlib():
         MPHandler.handler().loadImage(image)
 
     def renderImage():
-        return MPHandler.handler().renderImage(image)
+        return MPHandler.handler().renderImage()
 
     def clearSurface():
         MPHandler.handler().clearSurface()
