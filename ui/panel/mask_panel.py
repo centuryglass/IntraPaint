@@ -315,6 +315,12 @@ class MaskPanel(QWidget):
         else:
             self.penButton.setChecked(True)
 
+    def undo(self):
+        self.maskCreator.undo()
+
+    def redo(self):
+        self.maskCreator.redo()
+
     def _updateBrushCursor(self):
         brushSize = self.getBrushSize()
         scale = max(self.maskCreator.getImageDisplaySize().width(), 1) / max(self._maskCanvas.width(), 1)

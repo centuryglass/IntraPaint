@@ -3,6 +3,7 @@ import PyQt5.QtGui as QtGui
 from PyQt5.QtCore import Qt, QObject, QRect, QPoint, QLine, QSize, pyqtSignal
 from PyQt5.QtWidgets import QGraphicsPixmapItem
 from PIL import Image
+from datetime import datetime
 
 from ui.image_utils import imageToQImage, qImageToImage 
 
@@ -17,11 +18,41 @@ class Canvas():
         self._image = None
         self._signalWrapper = _SignalWrapper()
         self.enabledStateChanged = self._signalWrapper.enabledStateChanged
+        self._undoStack = []
+        self._redoStack = []
         if image is not None:
             self.setImage(image)
         else:
             self.setImage(config.get('editSize'))
         self._enabled = True
+
+    def _saveUndoState(self, clearRedoStack=True):
+        image = self.getQImage().copy()
+        self._undoStack.append(image)
+        maxUndoCount = self._config.get('maxUndo')
+        if len(self._undoStack) > maxUndoCount:
+            self._undoStack = self._undoStack[-maxUndoCount:]
+        if clearRedoStack:
+            self._redoStack.clear()
+
+    def undo(self):
+        if len(self._undoStack) == 0:
+            return
+        image = self.getQImage().copy()
+        self._redoStack.append(image)
+        newImage = self._undoStack.pop()
+        if newImage.size() != self.size():
+            newImage = newImage.scaled(self.size())
+        self.setImage(newImage)
+
+    def redo(self):
+        if len(self._redoStack) == 0:
+            return
+        self._saveUndoState(False)
+        image = self._redoStack.pop()
+        if image.size() != self.size():
+            image = image.scaled(self.size())
+        self.setImage(image)
 
 
     def enabled(self):
@@ -42,7 +73,7 @@ class Canvas():
     def addToScene(self, scene):
         raise Exception("Canvas.addToScene not implemented")
 
-    def setImage(self, initData):
+    def setImage(self, imageData):
         raise Exception("Canvas.setImage() not implemented")
     
     def size(self):
@@ -69,7 +100,7 @@ class Canvas():
         raise Exception("Canvas.resize() not implemented")
 
     def startStroke(self):
-        raise Exception("Canvas.startStroke() not implemented")
+        self._saveUndoState()
 
     def endStroke(self):
         raise Exception("Canvas.endStroke() not implemented")
@@ -87,7 +118,7 @@ class Canvas():
         raise Exception("Canvas.eraseLine() not implemented")
 
     def fill(self, color):
-        raise Exception("Canvas.fill() not implemented")
+        self._saveUndoState()
 
     def clear(self):
-        raise Exception("Canvas.clear() not implemented")
+        self._saveUndoState()

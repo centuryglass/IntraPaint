@@ -7,6 +7,7 @@ import math
 
 from data_model.canvas.brushlib import Brushlib
 from data_model.canvas.canvas import Canvas
+from ui.image_utils import imageToQImage, qImageToImage 
 
 class BrushlibCanvas(Canvas):
     def __init__(self, config, image):
@@ -28,25 +29,30 @@ class BrushlibCanvas(Canvas):
         self._scene = scene
         Brushlib.addToScene(scene)
 
-    def setImage(self, initData):
-        if isinstance(initData, QSize):
-            Brushlib.setSurfaceSize(initData)
-        elif isinstance(initData, str):
-            image = QImage(initData)
-            Brushlib.setSurfaceSize(image.size())
+    def setImage(self, imageData):
+        Brushlib.clearSurface()
+        if isinstance(imageData, QSize):
+            if self.size() != imageData:
+                Brushlib.setSurfaceSize(imageData)
+        elif isinstance(imageData, str):
+            image = QImage(imageData)
+            if self.size() != image.size():
+                Brushlib.setSurfaceSize(image.size())
             Brushlib.loadImage(image)
-        elif isinstance(initData, Image.Image):
-            image = imageToQImage(initData)
-            Brushlib.setSurfaceSize(image.size())
+        elif isinstance(imageData, Image.Image):
+            image = imageToQImage(imageData)
+            if self.size() != image.size():
+                Brushlib.setSurfaceSize(image.size())
             Brushlib.loadImage(image)
-        elif isinstance(initData, QImage):
-            Brushlib.setSurfaceSize(initData.size())
-            Brushlib.loadImage(initData)
+        elif isinstance(imageData, QImage):
+            if self.size() != imageData.size():
+                Brushlib.setSurfaceSize(imageData.size())
+            Brushlib.loadImage(imageData)
         else:
-            raise Exception(f"Invalid image param {initData}")
+            raise Exception(f"Invalid image param {imageData}")
     
     def size(self):
-        return self._size
+        return Brushlib.surfaceSize()
 
     def width(self):
         return self._size.width()
@@ -67,6 +73,7 @@ class BrushlibCanvas(Canvas):
             Brushlib.setSurfaceSize(size)
 
     def startStroke(self):
+        super().startStroke()
         Brushlib.startStroke()
         self._drawing = True
 
@@ -103,6 +110,7 @@ class BrushlibCanvas(Canvas):
         self._draw(line, color, sizeMultiplier, sizeOverride)
 
     def fill(self, color):
+        super().fill(color)
         self.hasSketch = True
         size = self.size()
         image = QImage(size, QImage.Format_ARGB32)
@@ -112,5 +120,6 @@ class BrushlibCanvas(Canvas):
         Brushlib.loadImage(image)
 
     def clear(self):
+        super().clear()
         self.hasSketch = False
         Brushlib.clearSurface()

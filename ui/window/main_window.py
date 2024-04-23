@@ -100,11 +100,17 @@ class MainWindow(QMainWindow):
                 self.close()
         addAction("Quit", "Ctrl+Q", tryQuit, fileMenu)
 
+        # Edit:
+        editMenu = self._menu.addMenu("Edit")
+        addAction("Undo", "Ctrl+Z", lambda: ifNotSelecting(lambda: self.maskPanel.undo()), editMenu)
+        addAction("Redo", "Ctrl+Shift+Z", lambda: ifNotSelecting(lambda: self.maskPanel.redo()), editMenu)
+        addAction("Generate", "F4", lambda: ifNotSelecting(lambda: controller.startAndManageInpainting()), editMenu)
+
+
         # Image:
         imageMenu = self._menu.addMenu("Image")
         addAction("Resize canvas", "F2", lambda: ifNotSelecting(lambda: controller.resizeCanvas()), imageMenu)
         addAction("Scale image", "F3", lambda: ifNotSelecting(lambda: controller.scaleImage()), imageMenu)
-        addAction("Generate", "F4", lambda: ifNotSelecting(lambda: controller.startAndManageInpainting()), imageMenu)
         def updateMetadata():
             self._editedImage.updateMetadata()
             messageBox = QMessageBox(self)

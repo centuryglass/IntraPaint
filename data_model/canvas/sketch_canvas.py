@@ -13,6 +13,7 @@ class SketchCanvas(PixmapCanvas):
 
     def addToScene(self, scene):
         super().addToScene(scene)
+        self._shadingPixmap.setZValue(self.zValue())
         scene.addItem(self._shadingPixmap)
 
     def setImage(self, initData):

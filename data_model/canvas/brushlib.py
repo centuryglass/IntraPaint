@@ -8,16 +8,16 @@ from PyQt5.QtCore import QByteArray
 
 
 class Brushlib():
-    _addedToScene = False
+    _scene = None
 
     def addToScene(scene):
-        if Brushlib._addedToScene:
+        if Brushlib._scene is not None:
             raise Exception("Brushlib can only be added to a scene once (for now)")
         Brushlib.loadBrush("./resources/brush.myb")
-        Brushlib._addedToScene = True
+        Brushlib._scene = scene
         zValue = 0
         for item in scene.items():
-            zValue = max(zValue, item.zValue())
+            zValue = max(zValue, item.zValue() + 1)
 
         def onNewTile(surface, tile):
             tile.setZValue(zValue)
@@ -44,6 +44,7 @@ class Brushlib():
         MPHandler.handler().setBrushColor(color)
 
     def loadImage(image):
+        Brushlib.setSurfaceSize(Brushlib.surfaceSize())
         MPHandler.handler().loadImage(image)
 
     def renderImage():

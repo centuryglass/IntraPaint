@@ -15,21 +15,27 @@ class PixmapCanvas(Canvas, QGraphicsPixmapItem):
         self._drawing = False
 
     def addToScene(self, scene):
+        zValue = 0
+        for item in scene.items():
+            zValue = max(zValue, item.zValue() + 1)
+        self.setZValue(zValue)
         scene.addItem(self)
 
-    def setImage(self, initData):
-        if isinstance(initData, QSize): # Blank initial image:
-            pixmap = QPixmap(initData)
+    def setImage(self, imageData):
+        self._image = None
+        if isinstance(imageData, QSize): # Blank initial image:
+            pixmap = QPixmap(imageData)
             pixmap.fill(Qt.transparent)
             self.setPixmap(pixmap)
-        elif isinstance(initData, str): # Load from image path:
-            self.setPixmap(QPixmap(initData, "RGBA"))
-        elif isinstance(initData, Image.Image):
-            self.setPixmap(QPixmap.fromImage(imageToQImage(initData)))
-        elif isinstance(initData, QImage):
-            self.setPixmap(QPixmap.fromImage(initData))
+        elif isinstance(imageData, str): # Load from image path:
+            self.setPixmap(QPixmap(imageData, "RGBA"))
+        elif isinstance(imageData, Image.Image):
+            self.setPixmap(QPixmap.fromImage(imageToQImage(imageData)))
+        elif isinstance(imageData, QImage):
+            self._image = imageData
+            self.setPixmap(QPixmap.fromImage(imageData))
         else:
-            raise Exception(f"Invalid image param {initData}")
+            raise Exception(f"Invalid image param {imageData}")
 
     def size(self):
         return self.pixmap().size()
@@ -61,6 +67,7 @@ class PixmapCanvas(Canvas, QGraphicsPixmapItem):
             self._handleChanges()
 
     def startStroke(self):
+        super().startStroke()
         if self._drawing:
             self.endStroke()
         self._drawing = True
@@ -110,6 +117,7 @@ class PixmapCanvas(Canvas, QGraphicsPixmapItem):
         self._draw(line, color, QPainter.CompositionMode.CompositionMode_Clear, sizeMultiplier, sizeOverride)
 
     def fill(self, color):
+        super().fill(color)
         if not self.enabled():
             print("not enabled for fill")
             return
@@ -122,6 +130,7 @@ class PixmapCanvas(Canvas, QGraphicsPixmapItem):
         self._handleChanges()
 
     def clear(self):
+        super().clear()
         if self._drawing:
             self.endStroke()
         self.fill(Qt.transparent)

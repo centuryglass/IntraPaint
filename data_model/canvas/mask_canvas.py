@@ -32,6 +32,7 @@ class MaskCanvas(PixmapCanvas):
 
     def addToScene(self, scene):
         super().addToScene(scene)
+        self._outline.setZValue(self.zValue())
         scene.addItem(self._outline)
     
     def _setEmptyOutline(self):
@@ -53,8 +54,13 @@ class MaskCanvas(PixmapCanvas):
         super().endStroke()
         self._drawOutline()
 
+    def setImage(self, image):
+        super().setImage(image)
+        self._drawOutline()
+        self.update()
+
     def _drawOutline(self):
-        if self._drawing:
+        if not hasattr(self, '_drawing') or self._drawing:
             return
         image = self.getQImage()
 

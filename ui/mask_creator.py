@@ -54,9 +54,7 @@ class MaskCreator(QGraphicsView):
         self._scene.setSceneRect(selectionRectF)
         self._scene.addItem(self._borderRect)
 
-        self._imagePixmap = QGraphicsPixmapItem()
-        self._setEmptyImageSection()
-        self._scene.addItem(self._imagePixmap)
+        self._imagePixmap = None
         sketchCanvas.addToScene(self._scene)
         maskCanvas.addToScene(self._scene)
         self.resizeEvent(None)
@@ -66,17 +64,12 @@ class MaskCreator(QGraphicsView):
                 image = editedImage.getSelectionContent()
                 self.loadImage(image)
             else:
-                self._setEmptyImageSection()
+                self._imagePixmap = None
                 self.resizeEvent(None)
                 self.update()
         editedImage.selectionChanged.connect(updateImage)
         updateImage()
 
-    def _setEmptyImageSection(self):
-        blank = QPixmap(self._maskCanvas.size())
-        blank.fill(Qt.transparent)
-        self._imageSection = blank.toImage()
-        self._imagePixmap.setPixmap(blank)
 
     def setPressureSizeMode(self, usePressureSize):
         self._pressureSize = usePressureSize
@@ -115,7 +108,17 @@ class MaskCreator(QGraphicsView):
         else:
             if self._maskCanvas.enabled():
                 self._maskCanvas.clear()
-    
+
+    def undo(self):
+        canvas = self._sketchCanvas if self._sketchMode else self._maskCanvas
+        if canvas.enabled():
+            canvas.undo()
+
+    def redo(self):
+        canvas = self._sketchCanvas if self._sketchMode else self._maskCanvas
+        if canvas.enabled():
+            canvas.redo()
+
     def fill(self):
         canvas = self._sketchCanvas if self._sketchMode else self._maskCanvas
         color = self._sketchColor if self._sketchMode else Qt.red
@@ -130,7 +133,7 @@ class MaskCreator(QGraphicsView):
         self._borderRect.setRect(borderRect)
         self._scene.setSceneRect(selectionRectF)
         self._imageSection = imageToQImage(pilImage)
-        self._imagePixmap.setPixmap(QPixmap.fromImage(self._imageSection))
+        self._imagePixmap = QPixmap.fromImage(self._imageSection)
         self.resizeEvent(None)
         self.update()
 
@@ -228,9 +231,13 @@ class MaskCreator(QGraphicsView):
             self._maskCanvas.setOpacity(0.6 if canvas == self._maskCanvas else 0.4)
         self.update()
 
+    def drawBackground(self, painter, rect):
+        if self._imagePixmap is not None:
+            painter.drawPixmap(rect, self._imagePixmap)
+
     def resizeEvent(self, event):
         borderSize = self._borderSize()
-        self._imageRect = getScaledPlacement(QRect(QPoint(0, 0), self.size()), self._imagePixmap.pixmap().size(),
+        self._imageRect = getScaledPlacement(QRect(QPoint(0, 0), self.size()), self._maskCanvas.size(),
                 borderSize)
         scale = self._imageRect.width() / self._maskCanvas.width()
         transformation = QTransform()
