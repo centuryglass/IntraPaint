@@ -135,6 +135,7 @@ class MaskCreator(QGraphicsView):
         self._imageSection = imageToQImage(pilImage)
         self._imagePixmap = QPixmap.fromImage(self._imageSection)
         self.resizeEvent(None)
+        self.resetCachedContent()
         self.update()
 
     def _widgetToImageCoords(self, point):

@@ -17,7 +17,7 @@ class Brushlib():
         Brushlib._scene = scene
         zValue = 0
         for item in scene.items():
-            zValue = max(zValue, item.zValue() + 1)
+            zValue = max(zValue, item.zValue())
 
         def onNewTile(surface, tile):
             tile.setZValue(zValue)
