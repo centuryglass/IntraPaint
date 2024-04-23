@@ -330,7 +330,6 @@ class MaskPanel(QWidget):
         if scaledSize <= 10:
             self.maskCreator.setCursor(self._smallCursor)
         else:
-            offset = scaledSize // 2 + max(scaledSize // 16, 2)
-            newCursor = QCursor(self._cursorPixmap.scaled(QSize(scaledSize + 10, scaledSize + 10)), offset, offset)
+            newCursor = QCursor(self._cursorPixmap.scaled(QSize(scaledSize, scaledSize)))
             self.maskCreator.setCursor(newCursor)
         self._lastCursorSize = scaledSize

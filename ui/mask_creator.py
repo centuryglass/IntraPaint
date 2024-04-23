@@ -139,9 +139,8 @@ class MaskCreator(QGraphicsView):
 
     def _widgetToImageCoords(self, point):
         assert isinstance(point, QPoint)
-        scale = max(self.getImageDisplaySize().width(), 1) / max(self._maskCanvas.size().width(), 1)
-        return QPoint(int((point.x() - self._imageRect.x()) / scale),
-                 int((point.y() - self._imageRect.y()) / scale))
+        pointF = self.mapToScene(point)
+        return QPoint(int(pointF.x()), int(pointF.y()))
 
 
     def getColorAtPoint(self, point):
@@ -233,7 +232,10 @@ class MaskCreator(QGraphicsView):
 
     def drawBackground(self, painter, rect):
         if self._imagePixmap is not None:
-            painter.drawPixmap(rect, self._imagePixmap)
+            sX = self._imageRect.width() / self.size().width()
+            sY = self._imageRect.height() / self.size().height()
+            imageRect = QRect(0, 0, int(rect.width() * sX), int(rect.height() * sY))
+            painter.drawPixmap(imageRect, self._imagePixmap)
 
     def resizeEvent(self, event):
         borderSize = self._borderSize()
