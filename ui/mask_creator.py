@@ -1,5 +1,5 @@
 from PyQt5.QtGui import QPainter, QPen, QImage, QPixmap, QColor, QTabletEvent, QTransform
-from PyQt5.QtCore import Qt, QPoint, QLine, QSize, QRect, QRectF, QBuffer, QEvent, QMarginsF
+from PyQt5.QtCore import Qt, QPoint, QLine, QSize, QRect, QRectF, QBuffer, QEvent, QMargins
 from PyQt5.QtWidgets import QGraphicsView, QGraphicsScene, QGraphicsPixmapItem, QGraphicsRectItem
 import PyQt5.QtGui as QtGui
 from PIL import Image
@@ -14,8 +14,9 @@ class MaskCreator(QGraphicsView):
     QWidget that shows the selected portion of the edited image, and lets the user draw a mask for inpainting.
     """
 
-    def __init__(self, parent, maskCanvas, sketchCanvas, editedImage, eyedropperCallback=None):
+    def __init__(self, parent, maskCanvas, sketchCanvas, editedImage, config, eyedropperCallback=None):
         super().__init__(parent)
+        self._config = config
         self._maskCanvas = maskCanvas
         self._sketchCanvas = sketchCanvas
         self._drawing = False
@@ -26,7 +27,7 @@ class MaskCreator(QGraphicsView):
         self._lineMode=False
         self._eyedropperCallback=eyedropperCallback
         self._sketchColor = QColor(0, 0, 0)
-        self._pen_pressure = 1.0
+        self._pen_pressure = None
         self._pressureSize = False
         self._pressureOpacity = False
         self._tabletEraser = False
@@ -46,18 +47,13 @@ class MaskCreator(QGraphicsView):
 
         selectionSize = self._maskCanvas.size()
         selectionRectF = QRectF(0.0, 0.0, float(selectionSize.width()), float(selectionSize.height()))
-        margins = QMarginsF(5, 5, 5, 5)
-        borderRect = selectionRectF.marginsAdded(margins)
-        self._borderRect = QGraphicsRectItem()
-        self._borderRect.setRect(borderRect)
-        self._borderRect.setPen(QPen(contrastColor(self), 4, Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin))
         self._scene.setSceneRect(selectionRectF)
-        self._scene.addItem(self._borderRect)
 
         self._imagePixmap = None
         sketchCanvas.addToScene(self._scene)
         maskCanvas.addToScene(self._scene)
         self.resizeEvent(None)
+        self._setDefaultBrushForMode()
 
         def updateImage():
             if editedImage.hasImage():
@@ -70,15 +66,29 @@ class MaskCreator(QGraphicsView):
         editedImage.selectionChanged.connect(updateImage)
         updateImage()
 
+    def _setDefaultBrushForMode(self):
+        if hasattr(self._sketchCanvas, 'setBrush'):
+            brushPath = "./resources/brushes"
+            if self._pressureSize and self._pressureOpacity:
+               self._sketchCanvas.setBrush(self._config.get('brush_pressure_both'))
+            elif self._pressureSize:
+               self._sketchCanvas.setBrush(self._config.get('brush_pressure_size'))
+            elif self._pressureOpacity:
+               self._sketchCanvas.setBrush(self._config.get('brush_pressure_opacity'))
+            else:
+               self._sketchCanvas.setBrush(self._config.get('brush_default'))
 
     def setPressureSizeMode(self, usePressureSize):
         self._pressureSize = usePressureSize
+        self._setDefaultBrushForMode()
+
 
     def setPressureOpacityMode(self, usePressureOpacity):
         self._pressureOpacity = usePressureOpacity
+        self._setDefaultBrushForMode()
 
     def _getSketchOpacity(self):
-        return 1.0 if not self._pressureOpacity else min(1, self._pen_pressure * 1.25)
+        return 1.0 if (not self._pressureOpacity or self._pen_pressure is None) else min(1, self._pen_pressure * 1.25)
 
     def setSketchMode(self, sketchMode):
         self._sketchMode = sketchMode
@@ -128,9 +138,6 @@ class MaskCreator(QGraphicsView):
     def loadImage(self, pilImage):
         selectionSize = self._maskCanvas.size()
         selectionRectF = QRectF(0.0, 0.0, float(selectionSize.width()), float(selectionSize.height()))
-        margins = QMarginsF(5, 5, 5, 5)
-        borderRect = selectionRectF.marginsAdded(margins)
-        self._borderRect.setRect(borderRect)
         self._scene.setSceneRect(selectionRectF)
         self._imageSection = imageToQImage(pilImage)
         self._imagePixmap = QPixmap.fromImage(self._imageSection)
@@ -171,7 +178,7 @@ class MaskCreator(QGraphicsView):
                 color = QColor(self._sketchColor if self._sketchMode else Qt.red)
                 if self._sketchMode and self._pressureOpacity:
                     color.setAlphaF(self._getSketchOpacity())
-                sizeMultiplier = self._pen_pressure if self._pressureSize else 1.0
+                sizeMultiplier = self._pen_pressure if (self._pressureSize and self._pen_pressure is not None) else None
                 if self._lineMode:
                     canvas.startStroke()
                     newPoint = self._widgetToImageCoords(event.pos())
@@ -202,7 +209,7 @@ class MaskCreator(QGraphicsView):
             color = QColor(self._sketchColor if self._sketchMode else Qt.red)
             if self._sketchMode and self._pressureOpacity:
                 color.setAlphaF(self._getSketchOpacity())
-            sizeMultiplier = self._pen_pressure if self._pressureSize else 1.0
+            sizeMultiplier = self._pen_pressure if (self._pressureSize and self._pen_pressure is not None) else 1.0
             newLastPoint = self._widgetToImageCoords(event.pos())
             line = QLine(self._lastPoint, newLastPoint)
             self._lastPoint = newLastPoint
@@ -213,7 +220,7 @@ class MaskCreator(QGraphicsView):
 
     def tabletEvent(self, tabletEvent):
         if tabletEvent.type() == QEvent.TabletRelease:
-            self._pen_pressure = 1.0
+            self._pen_pressure = None
             self._tabletEraser = False
         elif tabletEvent.type() == QEvent.TabletPress:
             self._tabletEraser = (tabletEvent.pointerType() == QTabletEvent.PointerType.Eraser)
@@ -224,27 +231,64 @@ class MaskCreator(QGraphicsView):
     def mouseReleaseEvent(self, event):
         if (event.button() == Qt.LeftButton or event.button() == Qt.RightButton) and self._drawing:
             self._drawing = False
-            self._pen_pressure = 1.0
+            self._pen_pressure = None
             self._tabletEraser = False
             canvas = self._sketchCanvas if self._sketchMode else self._maskCanvas
             canvas.endStroke()
             self._maskCanvas.setOpacity(0.6 if canvas == self._maskCanvas else 0.4)
         self.update()
 
+
     def drawBackground(self, painter, rect):
+        sX = self._imageRect.width() / self.size().width()
+        sY = self._imageRect.height() / self.size().height()
+        imageRect = QRectF(0, 0, rect.width() * sX, rect.height() * sY).toAlignedRect()
         if self._imagePixmap is not None:
-            sX = self._imageRect.width() / self.size().width()
-            sY = self._imageRect.height() / self.size().height()
-            imageRect = QRect(0, 0, int(rect.width() * sX), int(rect.height() * sY))
             painter.drawPixmap(imageRect, self._imagePixmap)
+        margins = QMargins(5, 5, 5, 5)
+        borderRect = imageRect.marginsAdded(margins)
+        painter.setPen(QPen(contrastColor(self), 4, Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin))
+        painter.drawRect(borderRect)
+
+    def drawForeground(self, painter, rect):
+        sX = self._imageRect.width() / self.size().width()
+        sY = self._imageRect.height() / self.size().height()
+        imageRect = QRectF(0, 0, rect.width() * sX, rect.height() * sY).toAlignedRect()
+        margins = QMargins(5, 5, 5, 5)
+        borderRect = imageRect.marginsAdded(margins)
+
+        # QGraphicsView fails to clip content sometimes, so fill everything outside of the scene with the
+        # background color, then draw the border:
+        fillColor = self.palette().color(self.backgroundRole())
+        borderLeft = int(borderRect.x())
+        borderRight = borderLeft + int(borderRect.width())
+        borderTop = int(borderRect.y())
+        borderBottom = borderTop + int(borderRect.height())
+
+        maxsize = 200000000 # Larger than the viewport can ever possibly be, small enough to avoid overflow issues
+        painter.fillRect(borderLeft, -(maxsize // 2), -maxsize, maxsize, fillColor)
+        painter.fillRect(borderRight, -(maxsize // 2), maxsize, maxsize, fillColor)
+        painter.fillRect(-(maxsize // 2), borderTop, maxsize, -maxsize, fillColor)
+        painter.fillRect(-(maxsize // 2), borderBottom, maxsize, maxsize, fillColor)
+
+        painter.setPen(QPen(contrastColor(self), 4, Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin))
+        painter.drawRect(borderRect)
+        super().drawForeground(painter, rect)
+
 
     def resizeEvent(self, event):
+        selectionSize = self._maskCanvas.size()
+        selectionRectF = QRectF(0.0, 0.0, float(selectionSize.width()), float(selectionSize.height()))
+        if selectionRectF != self._scene.sceneRect():
+            self._scene.setSceneRect(selectionRectF)
+
         borderSize = self._borderSize()
         self._imageRect = getScaledPlacement(QRect(QPoint(0, 0), self.size()), self._maskCanvas.size(),
                 borderSize)
-        scale = self._imageRect.width() / self._maskCanvas.width()
+        scaleX = self._imageRect.width() / self._maskCanvas.width()
+        scaleY = self._imageRect.height() / self._maskCanvas.height()
         transformation = QTransform()
-        transformation.scale(scale, scale)
+        transformation.scale(scaleX, scaleY)
         transformation.translate(float(self._imageRect.x()), float(self._imageRect.y()))
         self.setTransform(transformation)
 

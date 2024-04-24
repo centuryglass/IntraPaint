@@ -13,7 +13,6 @@ class Brushlib():
     def addToScene(scene):
         if Brushlib._scene is not None:
             raise Exception("Brushlib can only be added to a scene once (for now)")
-        Brushlib.loadBrush("./resources/brush.myb")
         Brushlib._scene = scene
         zValue = 0
         for item in scene.items():
@@ -59,7 +58,7 @@ class Brushlib():
     def endStroke():
         MPHandler.handler().endStroke()
 
-    def strokeTo(x, y):
+    def basicStrokeTo(x, y):
         MPHandler.handler().strokeTo(x, y)
 
     def strokeTo(x, y, pressure, xtilt, ytilt):

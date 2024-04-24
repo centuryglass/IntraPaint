@@ -18,7 +18,7 @@ class MaskPanel(QWidget):
         def setSketchColor(newColor):
             self.maskCreator.setSketchColor(newColor)
             self.update()
-        self.maskCreator = MaskCreator(self, maskCanvas, sketchCanvas, editedImage, setSketchColor)
+        self.maskCreator = MaskCreator(self, maskCanvas, sketchCanvas, editedImage, config, setSketchColor)
         self.maskCreator.setMinimumSize(QSize(256, 256))
         self._maskCanvas = maskCanvas
         self._sketchCanvas = sketchCanvas

@@ -74,6 +74,12 @@ class Config(QObject):
         self._setDefault('minRetryDelay', 300000) 
         self._setDefault('maxRetryDelay', 60000000)
 
+        # Default mypaint brushes:
+        self._setDefault('brush_default', './resources/brushes/experimental/1pixel.myb')
+        self._setDefault('brush_pressure_size', './resources/brushes/experimental/pixel_hardink.myb')
+        self._setDefault('brush_pressure_opacity', './resources/brushes/deevad/watercolor_glazing.myb')
+        self._setDefault('brush_pressure_both', './resources/brushes/tanda/acrylic-04-with-water.myb')
+
 
         # Settings used only by stable-diffusion:
         self._setDefault('editMode', 'Inpaint', ['Inpaint', 'Text to Image', 'Image to Image'])

@@ -18,6 +18,11 @@ class BrushlibCanvas(Canvas):
         self._scene = None
         self._scale = 1.0
         self.hasSketch = False
+        Brushlib.loadBrush(config.get('brush_default'))
+
+    def setBrush(self, brushPath):
+        Brushlib.loadBrush(brushPath)
+        self.setBrushSize(self.brushSize())
 
     def setBrushSize(self, newSize):
         super().setBrushSize(newSize)
@@ -70,7 +75,8 @@ class BrushlibCanvas(Canvas):
         self._size = size
         size = QSize(int(size.width() * self._scale), int(size.height() * self._scale))
         if size != Brushlib.surfaceSize():
-            Brushlib.setSurfaceSize(size)
+            image = self.getQImage().scaled(size)
+            self.setImage(image)
 
     def startStroke(self):
         super().startStroke()
@@ -81,31 +87,40 @@ class BrushlibCanvas(Canvas):
         Brushlib.endStroke()
         self._drawing = False
 
-    def _draw(self, pos, color, sizeMultiplier = 1.0, sizeOverride = None):
+    def _draw(self, pos, color, sizeMultiplier, sizeOverride = None):
         self.hasSketch = True
         Brushlib.setBrushColor(color)
         if not self._drawing:
             self.startStroke()
             if isinstance(pos, QLine):
-                Brushlib.strokeTo(float(pos.x1()), float(pos.y1()), sizeMultiplier, 0.0, 0.0)
+                if sizeMultiplier is None:
+                    Brushlib.basicStrokeTo(float(pos.x1()), float(pos.y1()))
+                else:
+                    Brushlib.strokeTo(float(pos.x1()), float(pos.y1()), sizeMultiplier, 0.0, 0.0)
         if isinstance(pos, QLine):
-            Brushlib.strokeTo(float(pos.x2()), float(pos.y2()), sizeMultiplier, 0.0, 0.0)
+                if sizeMultiplier is None:
+                    Brushlib.basicStrokeTo(float(pos.x2()), float(pos.y2()))
+                else:
+                    Brushlib.strokeTo(float(pos.x2()), float(pos.y2()), sizeMultiplier, 0.0, 0.0)
         else: #QPoint
-            Brushlib.strokeTo(float(pos.x()), float(pos.y()), sizeMultiplier, 0.0, 0.0)
+            if sizeMultiplier is None:
+                Brushlib.basicStrokeTo(float(pos.x()), float(pos.y()))
+            else:
+                Brushlib.strokeTo(float(pos.x()), float(pos.y()), sizeMultiplier, 0.0, 0.0)
 
-    def drawPoint(self, point, color, sizeMultiplier = 1.0, sizeOverride = None):
+    def drawPoint(self, point, color, sizeMultiplier, sizeOverride = None):
         Brushlib.set_eraser(0.0)
         self._draw(point, color, sizeMultiplier, sizeOverride)
 
-    def drawLine(self, line, color, sizeMultiplier = 1.0, sizeOverride = None):
+    def drawLine(self, line, color, sizeMultiplier, sizeOverride = None):
         Brushlib.set_eraser(0.0)
         self._draw(line, color, sizeMultiplier, sizeOverride)
 
-    def erasePoint(self, point, color, sizeMultiplier = 1.0, sizeOverride = None):
+    def erasePoint(self, point, color, sizeMultiplier, sizeOverride = None):
         Brushlib.set_eraser(1.0)
         self._draw(point, color, sizeMultiplier, sizeOverride)
 
-    def eraseLine(self, line, color, sizeMultiplier = 1.0, sizeOverride = None):
+    def eraseLine(self, line, color, sizeMultiplier, sizeOverride = None):
         Brushlib.set_eraser(1.0)
         self._draw(line, color, sizeMultiplier, sizeOverride)
 

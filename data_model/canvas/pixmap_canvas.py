@@ -88,6 +88,8 @@ class PixmapCanvas(Canvas, QGraphicsPixmapItem):
         painter.end()
 
     def _draw(self, pos, color, compositionMode, sizeMultiplier=1.0, sizeOverride = None):
+        if sizeMultiplier is None:
+            sizeMultiplier=1.0
         if not self.enabled():
             return
         pixmap = QPixmap(self.size())

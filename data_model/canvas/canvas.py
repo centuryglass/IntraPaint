@@ -105,16 +105,16 @@ class Canvas():
     def endStroke(self):
         raise Exception("Canvas.endStroke() not implemented")
 
-    def drawPoint(self, point, color, sizeMultiplier = 1.0, sizeOverride = None):
+    def drawPoint(self, point, color, sizeMultiplier, sizeOverride = None):
         raise Exception("Canvas.drawPoint() not implemented")
 
-    def drawLine(self, line, color, sizeMultiplier = 1.0, sizeOverride = None):
+    def drawLine(self, line, color, sizeMultiplier, sizeOverride = None):
         raise Exception("Canvas.drawLine() not implemented")
 
-    def erasePoint(self, point, color, sizeMultiplier = 1.0, sizeOverride = None):
+    def erasePoint(self, point, color, sizeMultiplier, sizeOverride = None):
         raise Exception("Canvas.erasePoint() not implemented")
 
-    def eraseLine(self, line, color, sizeMultiplier = 1.0, sizeOverride = None):
+    def eraseLine(self, line, color, sizeMultiplier, sizeOverride = None):
         raise Exception("Canvas.eraseLine() not implemented")
 
     def fill(self, color):
