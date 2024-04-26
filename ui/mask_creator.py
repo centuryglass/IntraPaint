@@ -291,6 +291,9 @@ class MaskCreator(QGraphicsView):
         transformation.scale(scaleX, scaleY)
         transformation.translate(float(self._imageRect.x()), float(self._imageRect.y()))
         self.setTransform(transformation)
+        # TODO: find a good way to do this within MaskPanel directly:
+        if self.parent() and hasattr(self.parent(), '_updateBrushCursor'):
+            self.parent()._updateBrushCursor()
 
     def getImageDisplaySize(self):
         return QSize(self._imageRect.width(), self._imageRect.height())

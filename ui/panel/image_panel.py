@@ -10,6 +10,7 @@ from ui.config_control_setup import connectedTextEdit
 from ui.util.contrast_color import contrastColor
 from ui.widget.param_slider import ParamSlider
 from ui.widget.collapsible_box import CollapsibleBox
+from ui.widget.dual_toggle import DualToggle
 
 class ImagePanel(QWidget):
     """
@@ -153,6 +154,7 @@ class ImagePanel(QWidget):
         self.layout.insertWidget(0, self.stepSlider)
         self.layout.insertWidget(1, self.cfgSlider)
         self.layout.insertWidget(2, self.denoiseSlider)
+
         self.setLayout(self.layout)
         self.showSliders(False)
     
@@ -171,7 +173,7 @@ class ImagePanel(QWidget):
                 self.layout.setStretch(i, 1)
             for slider in [self.stepSlider, self.cfgSlider, self.denoiseSlider]:
                 slider.setEnabled(True)
-                slider.setMaximumWidth(50)
+                slider.setMaximumWidth(100)
         else:
             for i in range(3):
                 self.layout.setStretch(i, 0)

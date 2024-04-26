@@ -10,7 +10,8 @@ import cv2
 class MaskCanvas(PixmapCanvas):
     def __init__(self, config, image):
         super().__init__(config, image)
-        self.setBrushSize(self._config.get('initialMaskBrushSize'))
+        config.connect(self, 'maskBrushSize', lambda size: self.setBrushSize(size))
+        self.setBrushSize(config.get('maskBrushSize'))
         self._outline = None
         self._drawing = False
         self._bounding_box = None

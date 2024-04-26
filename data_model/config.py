@@ -33,8 +33,10 @@ class Config(QObject):
         self._setDefault('maxEditSize', QSize(10240, 10240))
         self._setDefault('minEditSize', QSize(8, 8))
         self._setDefault('editSize', QSize(512, 512))
-        self._setDefault('initialMaskBrushSize', 40)
-        self._setDefault('initialSketchBrushSize', 4)
+        self._setDefault('maskBrushSize', 40)
+        self._setDefault('sketchBrushSize', 4)
+        self._setDefault('minBrushSize', 1)
+        self._setDefault('maxBrushSize', 999)
         self._setDefault('saveSketchInResult', True)
         self._setDefault('maxUndo', 10)
 

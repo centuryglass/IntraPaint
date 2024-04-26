@@ -40,7 +40,7 @@ class BigIntSpinbox(QAbstractSpinBox):
         if self._valueInRange(value):
             self.lineEdit.setText(str(value))
         else:
-            print(f"WARNING: {value} not in range for BigIntSpinbox!")
+            pass
 
     def stepBy(self, steps):
         self.setValue(self.value() + steps*self.singleStep())

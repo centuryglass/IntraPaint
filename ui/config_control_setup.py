@@ -1,5 +1,5 @@
 from PyQt5.QtWidgets import QSpinBox, QDoubleSpinBox, QLineEdit, QCheckBox, QComboBox, QPlainTextEdit, QHBoxLayout, QLabel
-from PyQt5.QtGui import QTextCursor
+from PyQt5.QtGui import QTextCursor, QFont, QFontMetrics
 from ui.widget.big_int_spinbox import BigIntSpinbox
 
 """
@@ -14,6 +14,7 @@ def connectedSpinBox(parent, config, key, minKey=None, maxKey=None, stepSizeKey=
     spinBox = QDoubleSpinBox(parent) if type(initialValue) is float else BigIntSpinbox(parent)
     if (initialValue < spinBox.minimum() or initialValue > spinBox.maximum()):
         spinBox.setRange(min(spinBox.minimum(), initialValue), max(spinBox.maximum(), initialValue))
+    minWidth = spinBox.sizeHint().width()
     spinBox.setValue(initialValue)
     if stepSizeKey is not None:
         step = config.get(stepSizeKey)
@@ -35,6 +36,14 @@ def connectedSpinBox(parent, config, key, minKey=None, maxKey=None, stepSizeKey=
         if minKey is not None:
             config.connect(spinBox, minKey, lambda newMin: spinBox.setRange(newMin, spinBox.maximum())) 
         config.connect(spinBox, maxKey, lambda newMax: spinBox.setRange(spinBox.minimum(), newMax))
+    font = QFont()
+    font.setPointSize(config.get("fontPointSize"))
+    longestStr = str(initialValue if maxKey is None else config.get(maxKey))
+    if type(initialValue) is float and "." not in longestStr:
+        longestStr += ".00"
+    minSize = QFontMetrics(font).boundingRect(longestStr).size()
+    minSize.setWidth(minSize.width() + minWidth)
+    spinBox.setMinimumSize(minSize)
     return spinBox
 
 def connectedTextEdit(parent, config, key, multiLine=False):

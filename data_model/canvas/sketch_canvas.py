@@ -6,7 +6,8 @@ from data_model.canvas.pixmap_canvas import PixmapCanvas
 class SketchCanvas(PixmapCanvas):
     def __init__(self, config, initData):
         super().__init__(config, initData)
-        self.setBrushSize(self._config.get('initialSketchBrushSize'))
+        config.connect(self, 'sketchBrushSize', lambda size: self.setBrushSize(size))
+        self.setBrushSize(config.get('sketchBrushSize'))
         self.shading = False
         self._shadingPixmap = QGraphicsPixmapItem()
         self._setEmptyShadingPixmap()

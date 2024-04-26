@@ -5,7 +5,7 @@ from PyQt5.QtWidgets import QStackedWidget, QWidget, QScrollArea, QToolButton, Q
 from PyQt5.QtCore import QSize, pyqtSignal
 
 from ui.widget.bordered_widget import BorderedWidget
-from ui.widget.vertical_label import VerticalLabel
+from ui.widget.label import Label
 
 
 class CollapsibleBox(BorderedWidget):
@@ -37,7 +37,7 @@ class CollapsibleBox(BorderedWidget):
             )
             layout.addWidget(self.toggle_button)
         else:
-            self.toggleLabel = VerticalLabel(title)
+            self.toggleLabel = Label(title)
             self.toggleLabel.setAlignment(Qt.AlignTop)
             self.toggle_button.setToolButtonStyle(
                 QtCore.Qt.ToolButtonIconOnly

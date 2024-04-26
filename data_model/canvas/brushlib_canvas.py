@@ -12,6 +12,8 @@ from ui.image_utils import imageToQImage, qImageToImage
 class BrushlibCanvas(Canvas):
     def __init__(self, config, image):
         super().__init__(config, image)
+        config.connect(self, 'sketchBrushSize', lambda size: self.setBrushSize(size))
+        self.setBrushSize(config.get('sketchBrushSize'))
         self._size = config.get('editSize')
         Brushlib.setSurfaceSize(config.get('editSize'))
         self._drawing = False
