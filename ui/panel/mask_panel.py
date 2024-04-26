@@ -265,6 +265,12 @@ class MaskPanel(QWidget):
         self.resizeEvent(None)
         self.update()
 
+    def getBrushSize(self):
+        return self._config.get("maskBrushSize" if self._drawMode == DRAW_MODES.MASK else "sketchBrushSize")
+
+    def setBrushSize(self, size):
+        self._config.set("maskBrushSize" if self._drawMode == DRAW_MODES.MASK else "sketchBrushSize", size)
+
     def paintEvent(self, event):
         super().paintEvent(event)
         painter = QPainter(self)

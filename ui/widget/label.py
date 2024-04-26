@@ -77,7 +77,7 @@ class Label(QLabel):
         self._mergeTextAndIcon()
 
     def _drawTextPixmaps(self):
-        drawnText = "   " if self._text is None else (self._text + "   ")
+        drawnText = "     " if self._text is None else (self._text + "     ")
         textBounds = QFontMetrics(self._font).boundingRect(drawnText)
         w = int(textBounds.height() * 1.3) if self._orientation == Qt.Orientation.Vertical else textBounds.width()
         h = textBounds.width() if self._orientation == Qt.Orientation.Vertical else int(textBounds.height() * 1.3)
@@ -104,7 +104,6 @@ class Label(QLabel):
 
     def _mergeTextAndIcon(self):
         if self._icon is not None:
-            
             scaledIcon = self._icon.scaledToWidth(self._image.width()) if self._orientation == Qt.Orientation.Vertical\
                     else self._icon.scaledToHeight(self._image.height())
             iconPadding = (self._image.width() if self._orientation == Qt.Orientation.Vertical \
