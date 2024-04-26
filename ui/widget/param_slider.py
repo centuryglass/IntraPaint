@@ -50,6 +50,7 @@ class ParamSlider(QWidget):
                 self._stepBox.valueChanged.disconnect()
             except TypeError:
                 pass
+        lastKey = self._key
         self._key = key
         initialVal = self._config.get(key)
         self._floatMode = (type(initialVal) is float)
@@ -73,6 +74,7 @@ class ParamSlider(QWidget):
         self._config.connect(self, key, onConfigChange)
         if self._stepBox is not None:
             stepBox = self._stepBox
+            self._config.disconnect(stepBox, lastKey)
             stepBox.setParent(None)
             self._stepBox = None
             stepBox.deleteLater()

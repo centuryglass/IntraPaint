@@ -85,10 +85,12 @@ class SketchCanvas(PixmapCanvas):
         super().clear()
         self._setEmptyShadingPixmap()
         self.hasSketch = False
+        self.update()
 
     def fill(self, color):
         super().fill(color)
         self.hasSketch = True
+        self.update()
 
     def setVisible(self, visible):
         super().setVisible(visible)

@@ -140,3 +140,4 @@ class BrushlibCanvas(Canvas):
         super().clear()
         self.hasSketch = False
         Brushlib.clearSurface()
+

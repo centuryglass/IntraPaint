@@ -68,6 +68,7 @@ class MaskPanel(QWidget):
 
         self.toolToggle = DualToggle(self, TOOL_MODES.PEN, TOOL_MODES.ERASER, config)
         self.toolToggle.setIcons('./resources/pen.png', 'resources/eraser.png')
+        self.toolToggle.setSelected(TOOL_MODES.PEN)
         def setDrawingTool(selection):
             self.maskCreator.setUseEraser(selection == TOOL_MODES.ERASER)
         self.toolToggle.valueChanged.connect(setDrawingTool)
@@ -101,7 +102,7 @@ class MaskPanel(QWidget):
 
 
         self.layout = QGridLayout()
-        self.borderSize = 4
+        self.borderSize = 2
         self.layout.setContentsMargins(getEqualMargins(self.borderSize))
         self.maskCreator.setContentsMargins(getEqualMargins(0))
         self.setLayout(self.layout)
@@ -153,9 +154,13 @@ class MaskPanel(QWidget):
         for widget in widgets:
             if self.layout.indexOf(widget) != -1:
                 self.layout.removeWidget(widget)
+        for i in range(self.layout.rowCount()):
+            self.layout.setRowStretch(i, 10)
+        for i in range(self.layout.columnCount()):
+            self.layout.setColumnStretch(i, 10)
 
 
-    def _setupWideLayout(self):
+    def _setupVerticalLayout(self):
         self._clearControlLayout()
         self.toolToggle.setOrientation(Qt.Orientation.Vertical)
         self.maskSketchToggle.setOrientation(Qt.Orientation.Vertical)
@@ -176,55 +181,53 @@ class MaskPanel(QWidget):
         self.layout.addWidget(self.maskCreator, 0, 0, self.layout.rowCount(), 1)
         row += 1
         self.layout.setColumnStretch(0, 255)
-        for i in range(row):
-            self.layout.setRowStretch(i, 10)
         for i in range(row, self.layout.rowCount()):
             self.layout.setRowStretch(i, 0)
         self.layout.setVerticalSpacing(self.borderSize * 3)
         self.layout.setHorizontalSpacing(self.borderSize * 3)
-        self.layout.setRowStretch(0, 10 if self.colorPickerButton.isVisible() else 0)
-        self._layoutType = "WIDE"
+        self.layout.setRowStretch(0, 40 if self.colorPickerButton.isVisible() else 0)
+        self._layoutType = Qt.Orientation.Vertical
 
-    def _setupTallLayout(self):
+    def _setupHorizontalLayout(self):
         self._clearControlLayout()
         self.toolToggle.setOrientation(Qt.Orientation.Horizontal)
         self.maskSketchToggle.setOrientation(Qt.Orientation.Horizontal)
         self.brushSizeSlider.setOrientation(Qt.Orientation.Horizontal)
-        self.layout.addWidget(self.toolToggle, 1, 1)
-        self.layout.addWidget(self.maskSketchToggle, 1, 2)
-        self.layout.addWidget(self.colorPickerButton, 2, 1, 1, 2)
-        for i in range(1, 3):
-            self.layout.setColumnStretch(i, 10)
+        self.layout.addWidget(self.toolToggle, 1, 2)
+        self.layout.addWidget(self.maskSketchToggle, 1, 3)
+        self.layout.addWidget(self.colorPickerButton, 2, 2, 1, 2)
         if hasattr(self, 'pressureSizeCheckbox'):
-            self.layout.addWidget(self.pressureSizeCheckbox, 3, 1)
-            self.layout.addWidget(self.pressureOpacityCheckbox, 3, 2)
+            self.layout.addWidget(self.pressureSizeCheckbox, 3, 2)
+            self.layout.addWidget(self.pressureOpacityCheckbox, 3, 3)
         else:
             self.layout.setRowStretch(3, 0)
-        self.layout.addWidget(self.brushSizeSlider, 4, 1, 1, 2)
-        self.layout.addWidget(self.clearMaskButton, 5, 1)
-        self.layout.addWidget(self.fillMaskButton, 5, 2)
+        self.layout.addWidget(self.brushSizeSlider, 4, 2, 1, 2)
+        self.layout.addWidget(self.clearMaskButton, 5, 2)
+        self.layout.addWidget(self.fillMaskButton, 5, 3)
         self.layout.setRowStretch(0, 255)
         self.layout.setColumnStretch(0, 0)
+        self.layout.setColumnStretch(1, 1)
+        self.layout.setColumnStretch(4, 1)
         self.layout.addWidget(self.maskCreator, 0, 1, 1, self.layout.columnCount() - 1)
-        for i in range(1, 7):
-            self.layout.setRowStretch(i, 10)
         for i in range(7, self.layout.rowCount()):
             self.layout.setRowStretch(i, 0)
+        for i in range(6, self.layout.columnCount()):
+            self.layout.setColumnStretch(i, 0)
         self.layout.setVerticalSpacing(3 * self.borderSize)
         self.layout.setHorizontalSpacing(self.borderSize)
         self.layout.setRowStretch(2, 10 if self.colorPickerButton.isVisible() else 0)
-        self._layoutType = "TALL"
+        self._layoutType = Qt.Orientation.Horizontal
 
     def _setupCorrectLayout(self):
         widgetAspectRatio = self.width() / self.height()
         editSize = self._config.get("editSize")
         editAspectRatio = editSize.width() / editSize.height()
         if widgetAspectRatio > editAspectRatio:
-            if self._layoutType != "WIDE":
-                self._setupWideLayout()
+            if self._layoutType != Qt.Orientation.Vertical:
+                self._setupVerticalLayout()
         else:
-            if self._layoutType != "TALL":
-                self._setupTallLayout()
+            if self._layoutType != Qt.Orientation.Horizontal:
+                self._setupHorizontalLayout()
         self.update()
         self._updateBrushCursor()
 
@@ -259,11 +262,19 @@ class MaskPanel(QWidget):
         self.maskSketchToggle.setSelected(mode)
         self.maskCreator.setSketchMode(mode == DRAW_MODES.SKETCH)
         self.colorPickerButton.setVisible(mode == DRAW_MODES.SKETCH)
-        self.layout.setRowStretch(4 if self._layoutType == "TALL" else 2, 10 if self.colorPickerButton.isVisible() else 0)
+        colorRow = 4 if self._layoutType == Qt.Orientation.Horizontal else 2
+        colorStretch = 0
+        if mode == DRAW_MODES.SKETCH:
+            colorStretch = 10 if self._layoutType == Qt.Orientation.Horizontal else 40
+        self.layout.setRowStretch(colorRow, colorStretch)
         self.brushSizeSlider.connectKey("maskBrushSize" if mode == DRAW_MODES.MASK else "sketchBrushSize",
                 "minBrushSize", "maxBrushSize", None)
         self.resizeEvent(None)
         self.update()
+
+    def toggleDrawMode(self):
+        if self._drawMode is not None:
+            self.setDrawMode(DRAW_MODES.MASK if self._drawMode == DRAW_MODES.SKETCH else DRAW_MODES.SKETCH)
 
     def getBrushSize(self):
         return self._config.get("maskBrushSize" if self._drawMode == DRAW_MODES.MASK else "sketchBrushSize")
@@ -308,7 +319,7 @@ class MaskPanel(QWidget):
         self.toolToggle.setSelected(TOOL_MODES.PEN)
 
     def selectEraserTool(self):
-        self.toolToggle.setSelected(TOOL_MODES.BRUSH)
+        self.toolToggle.setSelected(TOOL_MODES.ERASER)
 
     def swapDrawTool(self):
         self.toolToggle.toggle()

@@ -118,22 +118,26 @@ class MaskCreator(QGraphicsView):
         else:
             if self._maskCanvas.enabled():
                 self._maskCanvas.clear()
+        self.update()
 
     def undo(self):
         canvas = self._sketchCanvas if self._sketchMode else self._maskCanvas
         if canvas.enabled():
             canvas.undo()
+        self.update()
 
     def redo(self):
         canvas = self._sketchCanvas if self._sketchMode else self._maskCanvas
         if canvas.enabled():
             canvas.redo()
+        self.update()
 
     def fill(self):
         canvas = self._sketchCanvas if self._sketchMode else self._maskCanvas
         color = self._sketchColor if self._sketchMode else Qt.red
         if canvas.enabled():
             canvas.fill(color)
+        self.update()
 
     def loadImage(self, pilImage):
         selectionSize = self._maskCanvas.size()
@@ -201,6 +205,7 @@ class MaskCreator(QGraphicsView):
                         canvas.erasePoint(self._lastPoint, color, sizeMultiplier, sizeOverride)
                     else:
                         canvas.drawPoint(self._lastPoint, color, sizeMultiplier, sizeOverride)
+                self.update()
 
     def mouseMoveEvent(self, event):
         if (Qt.LeftButton == event.buttons() or Qt.RightButton == event.buttons()) and self._drawing and not self._eyedropperMode:
@@ -217,6 +222,7 @@ class MaskCreator(QGraphicsView):
                 canvas.eraseLine(line, color, sizeMultiplier, sizeOverride)
             else:
                 canvas.drawLine(line, color, sizeMultiplier, sizeOverride)
+            self.update()
 
     def tabletEvent(self, tabletEvent):
         if tabletEvent.type() == QEvent.TabletRelease:
@@ -294,6 +300,7 @@ class MaskCreator(QGraphicsView):
         # TODO: find a good way to do this within MaskPanel directly:
         if self.parent() and hasattr(self.parent(), '_updateBrushCursor'):
             self.parent()._updateBrushCursor()
+        self.update()
 
     def getImageDisplaySize(self):
         return QSize(self._imageRect.width(), self._imageRect.height())

@@ -175,9 +175,15 @@ class MaskCanvas(PixmapCanvas):
         super().resize(size)
         self._outline.setPixmap(self._outline.pixmap().scaled(size))
 
+    def fill(self, color):
+        super().fill(color)
+        self._drawOutline()
+        self.update()
+
     def clear(self):
         super().clear()
         self._setEmptyOutline()
+        self.update()
 
     def setVisible(self, visible):
         super().setVisible(visible)

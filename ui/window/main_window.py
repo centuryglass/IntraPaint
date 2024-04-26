@@ -123,7 +123,10 @@ class MainWindow(QMainWindow):
         # Tools:
         toolMenu = self._menu.addMenu("Tools")
         def sketchModeToggle():
-            maskPanel.setSketchMode(not maskPanel.maskModeButton.isChecked())
+            try: 
+                maskPanel.toggleDrawMode()
+            except Exception:
+                pass # Other mode is disabled, just do nothing
         addAction("Toggle mask/sketch editing mode", "F6", lambda: ifNotSelecting(sketchModeToggle), toolMenu)
         def maskToolToggle():
             maskPanel.swapDrawTool()
@@ -131,6 +134,7 @@ class MainWindow(QMainWindow):
         def clearBoth():
             mask.clear()
             sketch.clear()
+            maskPanel.update()
         addAction("Clear mask and sketch", "F8", lambda: ifNotSelecting(clearBoth), toolMenu)
         def brushSizeChange(offset):
             size = maskPanel.getBrushSize()

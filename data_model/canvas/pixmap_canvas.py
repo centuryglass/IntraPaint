@@ -130,6 +130,7 @@ class PixmapCanvas(Canvas, QGraphicsPixmapItem):
         pixmap.fill(color)
         self.setPixmap(pixmap)
         self._handleChanges()
+        self.update()
 
     def clear(self):
         super().clear()
