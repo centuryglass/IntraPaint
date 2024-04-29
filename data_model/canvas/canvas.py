@@ -35,6 +35,12 @@ class Canvas():
         if clearRedoStack:
             self._redoStack.clear()
 
+    def undoCount(self):
+        return len(self._undoStack)
+
+    def redoCount(self):
+        return len(self._undoStack)
+
     def undo(self):
         if len(self._undoStack) == 0:
             return

@@ -31,8 +31,8 @@ class MaskCanvas(PixmapCanvas):
         self._setEmptyOutline()
         self.setOpacity(0.5)
 
-    def addToScene(self, scene):
-        super().addToScene(scene)
+    def addToScene(self, scene, zValue=None):
+        super().addToScene(scene, zValue)
         self._outline.setZValue(self.zValue())
         scene.addItem(self._outline)
     

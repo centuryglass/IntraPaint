@@ -9,14 +9,16 @@ from PyQt5.QtCore import QByteArray
 
 class Brushlib():
     _scene = None
+    _brushpath = None
 
-    def addToScene(scene):
+    def addToScene(scene, zValue=None):
         if Brushlib._scene is not None:
             raise Exception("Brushlib can only be added to a scene once (for now)")
         Brushlib._scene = scene
-        zValue = 0
-        for item in scene.items():
-            zValue = max(zValue, item.zValue())
+        if zValue is None:
+            zValue = 0
+            for item in scene.items():
+                zValue = max(zValue, item.zValue() + 1)
 
         def onNewTile(surface, tile):
             tile.setZValue(zValue)
@@ -33,11 +35,18 @@ class Brushlib():
     def surfaceSize():
         return MPHandler.handler().surfaceSize()
 
-    def loadBrush(brushpath):
+    def loadBrush(brushpath, preserveSize=True):
+        size = Brushlib.radius()
         with open(brushpath, 'rb') as file:
             data = file.read()
             qbytes = QByteArray(data)
             MPHandler.handler().loadBrush(qbytes)
+        if preserveSize:
+            Brushlib.set_radius(size)
+        Brushlib._brushpath = brushpath
+
+    def getActiveBrush():
+        return Brushlib._brushpath
 
     def setBrushColor(color):
         MPHandler.handler().setBrushColor(color)

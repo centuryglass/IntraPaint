@@ -41,6 +41,10 @@ class MaskPanel(QWidget):
 
         def setSketchColor(newColor):
             self.maskCreator.setSketchColor(newColor)
+            if hasattr(self, 'colorPickerButton'):
+                icon = QPixmap(QSize(64, 64))
+                icon.fill(newColor)
+                self.colorPickerButton.setIcon(QIcon(icon))
             self.update()
         self.maskCreator = MaskCreator(self, maskCanvas, sketchCanvas, editedImage, config, setSketchColor)
         self.maskCreator.setMinimumSize(QSize(256, 256))
@@ -98,12 +102,31 @@ class MaskPanel(QWidget):
         self.colorPickerButton.setText("Color")
         self.colorPickerButton.setToolTip("Select sketch brush color")
         self.colorPickerButton.clicked.connect(lambda: setSketchColor(QColorDialog.getColor()))
+        setSketchColor(self.maskCreator.getSketchColor())
         self.colorPickerButton.setVisible(False)
+
+        try:
+            from data_model.canvas.brushlib import Brushlib
+            from ui.widget.brush_picker import BrushPicker
+            self.brushPickerButton = QPushButton(self)
+            self._brushPicker = None
+            self.brushPickerButton.setText("Brush")
+            self.brushPickerButton.setToolTip("Select sketch brush type")
+            self.brushPickerButton.setIcon(QIcon(QPixmap('./resources/brush.png')))
+            def openBrushPicker():
+                if self._brushPicker is None:
+                    self._brushPicker = BrushPicker()
+                self._brushPicker.show()
+            self.openBrushPicker = openBrushPicker
+            self.brushPickerButton.clicked.connect(openBrushPicker)
+            self.brushPickerButton.setVisible(False)
+        except ImportError as err:
+            print(f"Skipping brush selection init, brushlib loading failed: {err}")
+
 
 
         self.layout = QGridLayout()
         self.borderSize = 2
-        self.layout.setContentsMargins(getEqualMargins(self.borderSize))
         self.maskCreator.setContentsMargins(getEqualMargins(0))
         self.setLayout(self.layout)
         self._layoutType = ""
@@ -151,6 +174,8 @@ class MaskPanel(QWidget):
         if hasattr(self, 'pressureSizeCheckbox'):
             widgets.append(self.pressureSizeCheckbox)
             widgets.append(self.pressureOpacityCheckbox)
+        if hasattr(self, 'brushPickerButton'):
+            widgets.append(self.brushPickerButton)
         for widget in widgets:
             if self.layout.indexOf(widget) != -1:
                 self.layout.removeWidget(widget)
@@ -165,27 +190,37 @@ class MaskPanel(QWidget):
         self.toolToggle.setOrientation(Qt.Orientation.Vertical)
         self.maskSketchToggle.setOrientation(Qt.Orientation.Vertical)
         self.brushSizeSlider.setOrientation(Qt.Orientation.Vertical)
+        borderSize = self.brushSizeSlider.sizeHint().width() // 3
         self.layout.addWidget(self.colorPickerButton, 0, 1, 1, 2)
-        self.layout.addWidget(self.maskSketchToggle, 1, 1, 2, 1)
-        self.layout.addWidget(self.toolToggle, 3, 1, 2, 1)
-        self.layout.addWidget(self.brushSizeSlider, 1, 2, 4, 1)
-        row = 5
+        if hasattr(self, 'brushPickerButton'):
+            self.layout.addWidget(self.brushPickerButton, 1, 1, 1, 2)
+        else:
+            self.layout.setRowStretch(1, 0)
+        if not self.colorPickerButton.isVisible():
+            self.layout.setRowStretch(0, 0)
+            self.layout.setRowStretch(1, 0)
+
+        self.layout.addWidget(self.maskSketchToggle, 2, 1, 2, 1)
+        self.layout.addWidget(self.toolToggle, 4, 1, 2, 1)
+        self.layout.addWidget(self.brushSizeSlider, 2, 2, 4, 1)
         if hasattr(self, 'pressureSizeCheckbox'):
-            self.layout.addWidget(self.pressureSizeCheckbox, row, 1, 1, 2)
-            row += 1
-            self.layout.addWidget(self.pressureOpacityCheckbox, row, 1, 1, 2)
-            row += 1
-        self.layout.addWidget(self.fillMaskButton, row, 1, 1, 2)
-        row += 1
-        self.layout.addWidget(self.clearMaskButton, row, 1, 1, 2)
+            self.layout.addWidget(self.pressureSizeCheckbox, 6, 1, 1, 2)
+            if self.pressureOpacityCheckbox.isVisible():
+                self.layout.addWidget(self.pressureOpacityCheckbox, 7, 1, 1, 2)
+            else:
+                self.layout.setRowStretch(7, 0)
+        else:
+            self.layout.setRowStretch(6, 0)
+            self.layout.setRowStretch(7, 0)
+        self.layout.addWidget(self.fillMaskButton, 8, 1, 1, 2)
+        self.layout.addWidget(self.clearMaskButton, 9, 1, 1, 2)
         self.layout.addWidget(self.maskCreator, 0, 0, self.layout.rowCount(), 1)
-        row += 1
         self.layout.setColumnStretch(0, 255)
-        for i in range(row, self.layout.rowCount()):
-            self.layout.setRowStretch(i, 0)
-        self.layout.setVerticalSpacing(self.borderSize * 3)
-        self.layout.setHorizontalSpacing(self.borderSize * 3)
-        self.layout.setRowStretch(0, 40 if self.colorPickerButton.isVisible() else 0)
+
+        borderSize = self.brushSizeSlider.sizeHint().width() // 3
+        self.layout.setVerticalSpacing(borderSize)
+        self.layout.setHorizontalSpacing(borderSize)
+        self.layout.setContentsMargins(getEqualMargins(borderSize))
         self._layoutType = Qt.Orientation.Vertical
 
     def _setupHorizontalLayout(self):
@@ -195,10 +230,19 @@ class MaskPanel(QWidget):
         self.brushSizeSlider.setOrientation(Qt.Orientation.Horizontal)
         self.layout.addWidget(self.toolToggle, 1, 2)
         self.layout.addWidget(self.maskSketchToggle, 1, 3)
-        self.layout.addWidget(self.colorPickerButton, 2, 2, 1, 2)
+        if hasattr(self, 'brushPickerButton'):
+            self.layout.addWidget(self.colorPickerButton, 2, 2)
+            self.layout.addWidget(self.brushPickerButton, 2, 3)
+        else:
+            self.layout.addWidget(self.colorPickerButton, 2, 2, 1, 2)
+        if not self.colorPickerButton.isVisible():
+            self.layout.setRowStretch(2, 0)
         if hasattr(self, 'pressureSizeCheckbox'):
-            self.layout.addWidget(self.pressureSizeCheckbox, 3, 2)
-            self.layout.addWidget(self.pressureOpacityCheckbox, 3, 3)
+            if self.pressureOpacityCheckbox.isVisible():
+                self.layout.addWidget(self.pressureSizeCheckbox, 3, 2)
+                self.layout.addWidget(self.pressureOpacityCheckbox, 3, 3)
+            else:
+                self.layout.addWidget(self.pressureSizeCheckbox, 3, 2, 1, 2)
         else:
             self.layout.setRowStretch(3, 0)
         self.layout.addWidget(self.brushSizeSlider, 4, 2, 1, 2)
@@ -213,9 +257,11 @@ class MaskPanel(QWidget):
             self.layout.setRowStretch(i, 0)
         for i in range(6, self.layout.columnCount()):
             self.layout.setColumnStretch(i, 0)
-        self.layout.setVerticalSpacing(3 * self.borderSize)
-        self.layout.setHorizontalSpacing(self.borderSize)
-        self.layout.setRowStretch(2, 10 if self.colorPickerButton.isVisible() else 0)
+
+        borderSize = self.brushSizeSlider.sizeHint().height() // 3
+        self.layout.setVerticalSpacing(borderSize)
+        self.layout.setHorizontalSpacing(borderSize)
+        self.layout.setContentsMargins(getEqualMargins(self.borderSize))
         self._layoutType = Qt.Orientation.Horizontal
 
     def _setupCorrectLayout(self):
@@ -230,6 +276,7 @@ class MaskPanel(QWidget):
                 self._setupHorizontalLayout()
         self.update()
         self._updateBrushCursor()
+
 
     def tabletEvent(self, tabletEvent):
         """Enable tablet controls on first tablet event"""
@@ -246,7 +293,7 @@ class MaskPanel(QWidget):
             config.connect(self, 'pressureOpacity', lambda enabled: self.maskCreator.setPressureOpacityMode(enabled))
             self.pressureOpacityCheckbox.setIcon(QIcon(QPixmap('./resources/pressureOpacity.png')))
             self.maskCreator.setPressureOpacityMode(config.get('pressureOpacity'))
-            self._layoutType = ""
+            self._layoutType = None
             self._setupCorrectLayout()
 
     def setDrawMode(self, mode):
@@ -262,13 +309,14 @@ class MaskPanel(QWidget):
         self.maskSketchToggle.setSelected(mode)
         self.maskCreator.setSketchMode(mode == DRAW_MODES.SKETCH)
         self.colorPickerButton.setVisible(mode == DRAW_MODES.SKETCH)
-        colorRow = 4 if self._layoutType == Qt.Orientation.Horizontal else 2
-        colorStretch = 0
-        if mode == DRAW_MODES.SKETCH:
-            colorStretch = 10 if self._layoutType == Qt.Orientation.Horizontal else 40
-        self.layout.setRowStretch(colorRow, colorStretch)
+        if hasattr(self, 'brushPickerButton'):
+            self.brushPickerButton.setVisible(mode == DRAW_MODES.SKETCH)
+            if hasattr(self, 'pressureOpacityCheckbox'):
+                self.pressureSizeCheckbox.setVisible(mode == DRAW_MODES.MASK)
+                self.pressureOpacityCheckbox.setVisible(False)
         self.brushSizeSlider.connectKey("maskBrushSize" if mode == DRAW_MODES.MASK else "sketchBrushSize",
                 "minBrushSize", "maxBrushSize", None)
+        self._layoutType = None
         self.resizeEvent(None)
         self.update()
 

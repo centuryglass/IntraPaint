@@ -20,6 +20,7 @@ class BrushlibCanvas(Canvas):
         self._scene = None
         self._scale = 1.0
         self.hasSketch = False
+        self._savedBrushSize = None
         Brushlib.loadBrush(config.get('brush_default'))
 
     def setBrush(self, brushPath):
@@ -32,9 +33,9 @@ class BrushlibCanvas(Canvas):
         newSize_log_radius = math.log(newSize / 2)
         Brushlib.set_radius(newSize_log_radius)
 
-    def addToScene(self, scene):
+    def addToScene(self, scene, zValue=None):
         self._scene = scene
-        Brushlib.addToScene(scene)
+        Brushlib.addToScene(scene, zValue)
 
     def setImage(self, imageData):
         Brushlib.clearSurface()
@@ -88,8 +89,15 @@ class BrushlibCanvas(Canvas):
     def endStroke(self):
         Brushlib.endStroke()
         self._drawing = False
+        if self._savedBrushSize is not None:
+            self.setBrushSize(self._savedBrushSize)
+            self._savedBrushSize = None
 
     def _draw(self, pos, color, sizeMultiplier, sizeOverride = None):
+        if sizeOverride is not None:
+            if self._savedBrushSize is None:
+                self._savedBrushSize = self.brushSize()
+            self.setBrushSize(sizeOverride)
         self.hasSketch = True
         Brushlib.setBrushColor(color)
         if not self._drawing:

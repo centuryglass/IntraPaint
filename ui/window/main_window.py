@@ -34,6 +34,7 @@ class MainWindow(QMainWindow):
         self._sampleSelector = None
         self._layoutMode = 'horizontal'
         self._slidersEnabled = True
+        self._brushpicker = None
 
         # Create components, build layout:
         self.layout = QVBoxLayout()
@@ -144,6 +145,12 @@ class MainWindow(QMainWindow):
 
         try:
             from data_model.canvas.brushlib import Brushlib
+            from ui.widget.brush_picker import BrushPicker
+            def openBrush():
+                if self._brushpicker is None:
+                    self._brushpicker = BrushPicker()
+                self._brushpicker.show()
+            addAction("Open brush menu", None, openBrush, toolMenu)
             def loadBrush():
                 isPyinstallerBundle = getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS')
                 options = QFileDialog.Option.DontUseNativeDialog if isPyinstallerBundle else None
@@ -151,8 +158,8 @@ class MainWindow(QMainWindow):
                 if fileSelected:
                     Brushlib.loadBrush(file)
             addAction("Load MyPaint Brush (.myb)", None, loadBrush, toolMenu)
-        except ImportError:
-            print("Skipping brush selection init, brushlib not loaded")
+        except ImportError as err:
+            print(f"Skipping brush selection init, brushlib loading failed: {err}")
 
         self._settings = SettingsModal(self)
         if (controller.initSettings(self._settings)):

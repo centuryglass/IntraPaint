@@ -19,6 +19,7 @@ class MaskCreator(QGraphicsView):
         self._config = config
         self._maskCanvas = maskCanvas
         self._sketchCanvas = sketchCanvas
+        self._editedImage = editedImage
         self._drawing = False
         self._lastPoint = QPoint()
         self._useEraser=False
@@ -50,10 +51,9 @@ class MaskCreator(QGraphicsView):
         self._scene.setSceneRect(selectionRectF)
 
         self._imagePixmap = None
-        sketchCanvas.addToScene(self._scene)
-        maskCanvas.addToScene(self._scene)
+        sketchCanvas.addToScene(self._scene, 0)
+        maskCanvas.addToScene(self._scene, 1)
         self.resizeEvent(None)
-        self._setDefaultBrushForMode()
 
         def updateImage():
             if editedImage.hasImage():
@@ -66,26 +66,11 @@ class MaskCreator(QGraphicsView):
         editedImage.selectionChanged.connect(updateImage)
         updateImage()
 
-    def _setDefaultBrushForMode(self):
-        if hasattr(self._sketchCanvas, 'setBrush'):
-            brushPath = "./resources/brushes"
-            if self._pressureSize and self._pressureOpacity:
-               self._sketchCanvas.setBrush(self._config.get('brush_pressure_both'))
-            elif self._pressureSize:
-               self._sketchCanvas.setBrush(self._config.get('brush_pressure_size'))
-            elif self._pressureOpacity:
-               self._sketchCanvas.setBrush(self._config.get('brush_pressure_opacity'))
-            else:
-               self._sketchCanvas.setBrush(self._config.get('brush_default'))
-
     def setPressureSizeMode(self, usePressureSize):
         self._pressureSize = usePressureSize
-        self._setDefaultBrushForMode()
-
 
     def setPressureOpacityMode(self, usePressureOpacity):
         self._pressureOpacity = usePressureOpacity
-        self._setDefaultBrushForMode()
 
     def _getSketchOpacity(self):
         return 1.0 if (not self._pressureOpacity or self._pen_pressure is None) else min(1, self._pen_pressure * 1.25)
@@ -170,6 +155,8 @@ class MaskCreator(QGraphicsView):
         return combined
 
     def mousePressEvent(self, event):
+        if not self._editedImage.hasImage():
+            return
         if event.button() == Qt.LeftButton or event.button() == Qt.RightButton:
             sizeOverride = 1 if event.button() == Qt.RightButton else None
             if self._eyedropperMode:
@@ -184,12 +171,13 @@ class MaskCreator(QGraphicsView):
                     color.setAlphaF(self._getSketchOpacity())
                 sizeMultiplier = self._pen_pressure if (self._pressureSize and self._pen_pressure is not None) else None
                 if self._lineMode:
-                    canvas.startStroke()
+                    #canvas.startStroke()
                     newPoint = self._widgetToImageCoords(event.pos())
                     line = QLine(self._lastPoint, newPoint)
                     self._lastPoint = newPoint
                     # Prevent issues with lines not drawing by setting a minimum multiplier for lineMode only:
-                    sizeMultiplier = max(sizeMultiplier, 0.5)
+                    if sizeMultiplier is not None:
+                        sizeMultiplier = max(sizeMultiplier, 0.5)
                     if self._useEraser:
                         canvas.eraseLine(line, color, sizeMultiplier, sizeOverride)
                     else:
@@ -240,6 +228,14 @@ class MaskCreator(QGraphicsView):
             self._pen_pressure = None
             self._tabletEraser = False
             canvas = self._sketchCanvas if self._sketchMode else self._maskCanvas
+            self._lastPoint = self._widgetToImageCoords(event.pos())
+            color = QColor(self._sketchColor if self._sketchMode else Qt.red)
+            sizeMultiplier = self._pen_pressure if (self._pressureSize and self._pen_pressure is not None) else None
+            sizeOverride = 1 if event.button() == Qt.RightButton else None
+            if self._useEraser or self._tabletEraser:
+                canvas.erasePoint(self._lastPoint, color, sizeMultiplier, sizeOverride)
+            else:
+                canvas.drawPoint(self._lastPoint, color, sizeMultiplier, sizeOverride)
             canvas.endStroke()
             self._maskCanvas.setOpacity(0.6 if canvas == self._maskCanvas else 0.4)
         self.update()

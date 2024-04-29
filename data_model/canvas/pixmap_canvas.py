@@ -14,10 +14,11 @@ class PixmapCanvas(Canvas, QGraphicsPixmapItem):
         self._brushSize = 1
         self._drawing = False
 
-    def addToScene(self, scene):
-        zValue = 0
-        for item in scene.items():
-            zValue = max(zValue, item.zValue() + 1)
+    def addToScene(self, scene, zValue = None):
+        if zValue is None:
+            zValue = 0
+            for item in scene.items():
+                zValue = max(zValue, item.zValue() + 1, self.zValue())
         self.setZValue(zValue)
         scene.addItem(self)
 

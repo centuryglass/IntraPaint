@@ -12,8 +12,8 @@ class SketchCanvas(PixmapCanvas):
         self._shadingPixmap = QGraphicsPixmapItem()
         self._setEmptyShadingPixmap()
 
-    def addToScene(self, scene):
-        super().addToScene(scene)
+    def addToScene(self, scene, zValue = None):
+        super().addToScene(scene, zValue)
         self._shadingPixmap.setZValue(self.zValue())
         scene.addItem(self._shadingPixmap)
 
