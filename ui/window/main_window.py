@@ -34,7 +34,6 @@ class MainWindow(QMainWindow):
         self._sampleSelector = None
         self._layoutMode = 'horizontal'
         self._slidersEnabled = True
-        self._brushpicker = None
 
         # Create components, build layout:
         self.layout = QVBoxLayout()
@@ -143,23 +142,20 @@ class MainWindow(QMainWindow):
         addAction("Increase brush size", "Ctrl+]", lambda: ifNotSelecting(lambda: brushSizeChange(1)), toolMenu)
         addAction("Decrease brush size", "Ctrl+[", lambda: ifNotSelecting(lambda: brushSizeChange(-1)), toolMenu)
 
-        try:
-            from data_model.canvas.brushlib import Brushlib
-            from ui.widget.brush_picker import BrushPicker
-            def openBrush():
-                if self._brushpicker is None:
-                    self._brushpicker = BrushPicker()
-                self._brushpicker.show()
-            addAction("Open brush menu", None, openBrush, toolMenu)
-            def loadBrush():
-                isPyinstallerBundle = getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS')
-                options = QFileDialog.Option.DontUseNativeDialog if isPyinstallerBundle else None
-                file, fileSelected = QFileDialog.getOpenFileName(self, 'Open Brush File', options)
-                if fileSelected:
-                    Brushlib.loadBrush(file)
-            addAction("Load MyPaint Brush (.myb)", None, loadBrush, toolMenu)
-        except ImportError as err:
-            print(f"Skipping brush selection init, brushlib loading failed: {err}")
+        if hasattr(maskPanel, 'openBrushPicker'):
+            try:
+                from data_model.canvas.brushlib import Brushlib
+                from ui.widget.brush_picker import BrushPicker
+                addAction("Open brush menu", None, lambda: maskPanel.openBrushPicker(), toolMenu)
+                def loadBrush():
+                    isPyinstallerBundle = getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS')
+                    options = QFileDialog.Option.DontUseNativeDialog if isPyinstallerBundle else None
+                    file, fileSelected = QFileDialog.getOpenFileName(self, 'Open Brush File', options)
+                    if fileSelected:
+                        Brushlib.loadBrush(file)
+                addAction("Load MyPaint Brush (.myb)", None, loadBrush, toolMenu)
+            except ImportError as err:
+                print(f"Skipping brush selection init, brushlib loading failed: {err}")
 
         self._settings = SettingsModal(self)
         if (controller.initSettings(self._settings)):

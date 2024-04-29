@@ -117,6 +117,7 @@ class MaskPanel(QWidget):
                 if self._brushPicker is None:
                     self._brushPicker = BrushPicker()
                 self._brushPicker.show()
+                self._brushPicker.raise_()
             self.openBrushPicker = openBrushPicker
             self.brushPickerButton.clicked.connect(openBrushPicker)
             self.brushPickerButton.setVisible(False)
