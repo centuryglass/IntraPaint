@@ -51,9 +51,10 @@ class BrushPicker(QTabWidget):
             categoryDir = os.path.join(brushDir, category)
             if not os.path.isdir(categoryDir):
                 continue
-            #categoryTab = QScrollArea(self)
-            categoryContent = QWidget(self)
-            #categoryTab.setWidget(categoryContent)
+            categoryTab = QScrollArea(self)
+            categoryTab.setWidgetResizable(True)
+            categoryContent = QWidget(categoryTab)
+            categoryTab.setWidget(categoryContent)
             categoryLayout = QGridLayout()
             categoryContent.setLayout(categoryLayout)
             x=0
@@ -71,5 +72,5 @@ class BrushPicker(QTabWidget):
                 if x >= width:
                     y += 1
                     x = 0
-            self.addTab(categoryContent, category)
+            self.addTab(categoryTab, category)
 
