@@ -50,7 +50,7 @@ if controllerMode == 'auto':
             args.server_url = defaultGlidUrl
             controllerMode = 'web'
         else:
-            minVRAM = 10000000000 # This is just a rough estimate.
+            minVRAM = 8000000000 # This is just a rough estimate.
             try:
                 import torch
                 from startup.ml_utils import getDevice

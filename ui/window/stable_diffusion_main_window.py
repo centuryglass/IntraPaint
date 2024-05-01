@@ -1,5 +1,5 @@
-from PyQt5.QtWidgets import QWidget, QLabel, QHBoxLayout, QVBoxLayout, QGridLayout, QPushButton
-from PyQt5.QtCore import QSize
+from PyQt5.QtWidgets import QWidget, QLabel, QHBoxLayout, QVBoxLayout, QGridLayout, QPushButton, QSizePolicy
+from PyQt5.QtCore import Qt, QSize
 import sys
 
 from ui.config_control_setup import *
@@ -9,26 +9,34 @@ from ui.widget.param_slider import ParamSlider
 from ui.window.main_window import MainWindow
 from ui.panel.controlnet_panel import ControlnetPanel
 
+OPEN_PANEL_STRETCH = 80
+
 class StableDiffusionMainWindow(MainWindow):
     def __init__(self, config, editedImage, mask, sketch, controller):
         super().__init__(config, editedImage, mask, sketch, controller)
         # Decrease imageLayout stretch to make room for additional controls:
-        self.layout.setStretch(0, 180)
+        self.layout().setStretch(0, 180)
 
     def _buildControlLayout(self, controller):
         controlPanel = BorderedWidget(self)
+        controlPanel.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Maximum)
         controlLayout = QVBoxLayout()
         controlPanel.setLayout(controlLayout)
-        self.layout.addWidget(controlPanel, stretch=20)
-
+        self.layout().addWidget(controlPanel, stretch=10)
 
         mainControlBox = CollapsibleBox(
                 "Controls",
                 controlPanel,
-                maxSizeFraction=0.4,
-                maxSizePx=400,
                 startClosed=self.shouldUseWideLayout())
-        mainControlBox.toggled().connect(lambda isExpanded: self.setImageSlidersEnabled(not isExpanded))
+        mainControlBox.setExpandedSizePolicy(QSizePolicy.Maximum)
+        if mainControlBox.isExpanded():
+            self.layout().setStretch(1, self.layout().stretch(1) + OPEN_PANEL_STRETCH)
+        def onMainControlsExpanded(isExpanded):
+            self.setImageSlidersEnabled(not isExpanded)
+            stretch = self.layout().stretch(1) + (OPEN_PANEL_STRETCH if isExpanded else -OPEN_PANEL_STRETCH)
+            stretch = max(stretch, 10)
+            self.layout().setStretch(1, stretch)
+        mainControlBox.toggled().connect(onMainControlsExpanded)
         mainControls = QHBoxLayout();
         mainControlBox.setContentLayout(mainControls)
         controlLayout.addWidget(mainControlBox, stretch=20)
@@ -116,6 +124,14 @@ class StableDiffusionMainWindow(MainWindow):
             controlnetPanel = ControlnetPanel(self._config,
                     controller._webservice.getControlnetControlTypes(),
                     controller._webservice.getControlnetModules())
+            controlnetPanel.setExpandedSizePolicy(QSizePolicy.Maximum)
+            if controlnetPanel.isExpanded():
+                self.layout().setStretch(1, self.layout().stretch(1) + OPEN_PANEL_STRETCH)
+            def onControlnetExpanded(isExpanded):
+                stretch = self.layout().stretch(1) + (OPEN_PANEL_STRETCH if isExpanded else -OPEN_PANEL_STRETCH)
+                stretch = max(stretch, 1)
+                self.layout().setStretch(1, stretch)
+            controlnetPanel.toggled().connect(onControlnetExpanded)
             controlLayout.addWidget(controlnetPanel, stretch=20)
 
         # Right side: box of dropdown/checkbox options:
@@ -140,7 +156,6 @@ class StableDiffusionMainWindow(MainWindow):
             return addOptionLine(labelText, comboBox, toolTip)
 
         addComboBoxLine('Editing mode:', 'editMode', False)
-        #addComboBoxLine('Mask mode:', 'inpaintMasked', True)
         addComboBoxLine('Masked content:', 'maskedContent', True)
         addComboBoxLine('Sampling method:', 'samplingMethod', False)
         paddingLineIndex = len(optionListLayout.children())
@@ -193,6 +208,7 @@ class StableDiffusionMainWindow(MainWindow):
         buttonBar = BorderedWidget(controlPanel)
         buttonBarLayout = QHBoxLayout()
         buttonBar.setLayout(buttonBarLayout)
+        buttonBar.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Maximum)
         controlLayout.addWidget(buttonBar, stretch=5)
 
         # interrogateButton:
@@ -209,6 +225,34 @@ class StableDiffusionMainWindow(MainWindow):
         buttonBarLayout.addWidget(startButton, stretch=2)
         startButton.resize(startButton.width(), startButton.height() * 2)
 
-
-
-
+        # Add image panel sliders:
+        self.stepSlider = ParamSlider(self,
+                'Sampling steps:',
+                self._config,
+                'samplingSteps',
+                'minSamplingSteps',
+                'maxSamplingSteps',
+                orientation=Qt.Orientation.Vertical,
+                verticalTextPt=int(self._config.get("fontPointSize") * 1.3))
+        self.cfgSlider = ParamSlider(
+                self,
+                "CFG scale:",
+                config,
+                'cfgScale',
+                'minCfgScale',
+                'maxCfgScale',
+                'cfgScaleStep',
+                orientation=Qt.Orientation.Vertical,
+                verticalTextPt=int(self._config.get("fontPointSize") * 1.3))
+        self.denoiseSlider = ParamSlider(self,
+                'Denoising strength:',
+                self._config,
+                'denoisingStrength',
+                'minDenoisingStrength',
+                'maxDenoisingStrength',
+                'denoisingStrengthStep',
+                orientation=Qt.Orientation.Vertical,
+                verticalTextPt=int(self._config.get("fontPointSize") * 1.3))
+        self.imagePanel.addSlider(self.stepSlider)
+        self.imagePanel.addSlider(self.cfgSlider)
+        self.imagePanel.addSlider(self.denoiseSlider)

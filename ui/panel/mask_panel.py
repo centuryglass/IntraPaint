@@ -206,9 +206,10 @@ class MaskPanel(QWidget):
         self.layout.addWidget(self.brushSizeSlider, 2, 2, 4, 1)
         if hasattr(self, 'pressureSizeCheckbox'):
             self.layout.addWidget(self.pressureSizeCheckbox, 6, 1, 1, 2)
-            if self.pressureOpacityCheckbox.isVisible():
-                self.layout.addWidget(self.pressureOpacityCheckbox, 7, 1, 1, 2)
-            else:
+            self.layout.addWidget(self.pressureOpacityCheckbox, 7, 1, 1, 2)
+            if not self.pressureSizeCheckbox.isVisible():
+                self.layout.setRowStretch(6, 0)
+            if not self.pressureOpacityCheckbox.isVisible():
                 self.layout.setRowStretch(7, 0)
         else:
             self.layout.setRowStretch(6, 0)
@@ -218,7 +219,7 @@ class MaskPanel(QWidget):
         self.layout.addWidget(self.maskCreator, 0, 0, self.layout.rowCount(), 1)
         self.layout.setColumnStretch(0, 255)
 
-        borderSize = self.brushSizeSlider.sizeHint().width() // 3
+        borderSize = self.brushSizeSlider.sizeHint().width() // 4
         self.layout.setVerticalSpacing(borderSize)
         self.layout.setHorizontalSpacing(borderSize)
         self.layout.setContentsMargins(getEqualMargins(borderSize))
@@ -242,6 +243,8 @@ class MaskPanel(QWidget):
             if self.pressureOpacityCheckbox.isVisible():
                 self.layout.addWidget(self.pressureSizeCheckbox, 3, 2)
                 self.layout.addWidget(self.pressureOpacityCheckbox, 3, 3)
+                if not self.pressureSizeCheckbox.isVisible():
+                    self.layout.setRowStretch(3, 0)
             else:
                 self.layout.addWidget(self.pressureSizeCheckbox, 3, 2, 1, 2)
         else:
@@ -269,14 +272,15 @@ class MaskPanel(QWidget):
         widgetAspectRatio = self.width() / self.height()
         editSize = self._config.get("editSize")
         editAspectRatio = editSize.width() / editSize.height()
-        if widgetAspectRatio > editAspectRatio:
-            if self._layoutType != Qt.Orientation.Vertical:
-                self._setupVerticalLayout()
-        else:
-            if self._layoutType != Qt.Orientation.Horizontal:
-                self._setupHorizontalLayout()
-        self.update()
-        self._updateBrushCursor()
+        if self._layoutType is None or abs(widgetAspectRatio - editAspectRatio) > 0.2:
+            if widgetAspectRatio > editAspectRatio:
+                if self._layoutType != Qt.Orientation.Vertical:
+                    self._setupVerticalLayout()
+            else:
+                if self._layoutType != Qt.Orientation.Horizontal:
+                    self._setupHorizontalLayout()
+            self.update()
+            self._updateBrushCursor()
 
 
     def tabletEvent(self, tabletEvent):
@@ -294,11 +298,11 @@ class MaskPanel(QWidget):
             config.connect(self, 'pressureOpacity', lambda enabled: self.maskCreator.setPressureOpacityMode(enabled))
             self.pressureOpacityCheckbox.setIcon(QIcon(QPixmap('./resources/pressureOpacity.png')))
             self.maskCreator.setPressureOpacityMode(config.get('pressureOpacity'))
-            self._layoutType = None
-            self._setupCorrectLayout()
+            # Re-apply visibility and layout based on current mode:
+            self.setDrawMode(self._drawMode, False)
 
-    def setDrawMode(self, mode):
-        if mode == self._drawMode:
+    def setDrawMode(self, mode, ignoreIfUnchanged=True):
+        if mode == self._drawMode and ignoreIfUnchanged:
             return
         if not DRAW_MODES.isValid(mode):
             raise Exception(f"tried to set invalid drawing mode {mode}")
@@ -315,6 +319,10 @@ class MaskPanel(QWidget):
             if hasattr(self, 'pressureOpacityCheckbox'):
                 self.pressureSizeCheckbox.setVisible(mode == DRAW_MODES.MASK)
                 self.pressureOpacityCheckbox.setVisible(False)
+        elif hasattr(self, 'pressureSizeCheckbox'):
+            self.pressureSizeCheckbox.setVisible(True)
+            self.pressureOpacityCheckbox.setVisible(mode == DRAW_MODES.SKETCH)
+
         self.brushSizeSlider.connectKey("maskBrushSize" if mode == DRAW_MODES.MASK else "sketchBrushSize",
                 "minBrushSize", "maxBrushSize", None)
         self._layoutType = None

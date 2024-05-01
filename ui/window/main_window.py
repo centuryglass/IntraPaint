@@ -36,9 +36,11 @@ class MainWindow(QMainWindow):
         self._slidersEnabled = True
 
         # Create components, build layout:
-        self.layout = QVBoxLayout()
-        self._mainWidget = QWidget(self);
-        self._mainWidget.setLayout(self.layout)
+        self._layout = QVBoxLayout()
+        self._mainPageWidget = QWidget(self);
+        self._mainPageWidget.setLayout(self._layout)
+        self._mainTabWidget = None
+        self._mainWidget = self._mainPageWidget
         self.centralWidget = QStackedWidget(self);
         self.centralWidget.addWidget(self._mainWidget)
         self.setCentralWidget(self.centralWidget)
@@ -172,7 +174,7 @@ class MainWindow(QMainWindow):
             addAction("Settings", "F9", lambda: ifNotSelecting(showSettings), toolMenu)
 
         # TODO: the following are specific to the A1111 stable-diffusion api and should move to 
-        #       stable_diffusion_main_window.py:
+        #       stable_diffusion_controller:
         if hasattr(controller, '_webservice') and 'LCM' in config.getOptions('samplingMethod'):
             try:
                 loras = [l['name'] for l in controller._webservice.getLoras()]
@@ -205,11 +207,42 @@ class MainWindow(QMainWindow):
     def shouldUseWideLayout(self):
         return self.height() <= (self.width() * 1.2)
 
+    def shouldUseTabbedLayout(self):
+        display = QApplication.instance().screenAt(self.pos())
+        if display is None:
+            display = QApplication.primaryScreen()
+        mainDisplaySize = display.size()
+        requiredHeight = 0
+
+        # Calculate max heights, taking into account possible expanded panels:
+        def getRequiredHeight(item):
+            height = 0
+            if hasattr(item, 'expandedSize'):
+                height = max(height, item.expandedSize().height())
+            if hasattr(item, 'sizeHint'):
+                height = max(height, item.sizeHint().height())
+            innerHeight = 0
+            if item.layout() is not None and isinstance(item.layout(), QVBoxLayout):
+                for innerItem in (item.layout().itemAt(i) for i in range(item.layout().count())):
+                    innerHeight += getRequiredHeight(innerItem)
+                print(f"innerHeight: {innerHeight}")
+                height = max(height, innerHeight)
+            return height
+
+        for item in (self.layout().itemAt(i) for i in range(self.layout().count())):
+            requiredHeight += getRequiredHeight(item)
+        if requiredHeight == 0 and self._mainTabWidget is not None:
+            for item in (self._mainTabWidget.widget(i) for i in range(self._mainTabWidget.count())):
+                requiredHeight += getRequiredHeight(item)
+        print(f"shouldUseTabbedLayout: required={requiredHeight}, max={mainDisplaySize}")
+        return requiredHeight > (mainDisplaySize.height() * 0.9)
+
+
     def _clearEditingLayout(self):
         if self.imageLayout is not None:
             for widget in [self.imagePanel, self.divider, self.maskPanel]:
                 self.imageLayout.removeWidget(widget)
-            self.layout.removeItem(self.imageLayout)
+            self.layout().removeItem(self.imageLayout)
             self.imageLayout = None
             if self._scaleHandler is not None:
                 self.divider.dragged.disconnect(self._scaleHandler)
@@ -241,8 +274,9 @@ class MainWindow(QMainWindow):
         imageLayout.addWidget(self.imagePanel, stretch=255)
         imageLayout.addWidget(self.divider, stretch=5)
         imageLayout.addWidget(self.maskPanel, stretch=100)
-        self.layout.insertLayout(0, imageLayout, stretch=255)
+        self._layout.insertLayout(0, imageLayout, stretch=255)
         self.imagePanel.showSliders(True and self._slidersEnabled)
+        self.imagePanel.setOrientation(Qt.Orientation.Horizontal)
         self.update()
 
     def _setupTallLayout(self):
@@ -264,10 +298,13 @@ class MainWindow(QMainWindow):
         imageLayout.addWidget(self.imagePanel, stretch=255)
         imageLayout.addWidget(self.divider, stretch=5)
         imageLayout.addWidget(self.maskPanel, stretch=100)
-        self.layout.insertLayout(0, imageLayout, stretch=255)
+        self.layout().insertLayout(0, imageLayout, stretch=255)
         self.imageLayout = imageLayout
         self.imagePanel.showSliders(False)
+        self.imagePanel.setOrientation(Qt.Orientation.Vertical)
         self.update()
+
+    #def _setupTabbedLayout(self):
 
 
 
@@ -328,7 +365,7 @@ class MainWindow(QMainWindow):
         skipStepsBox.setToolTip("Sets how many diffusion steps to skip. Higher values generate faster and produce "
                 + "simpler images.")
 
-        enableScaleCheckbox = connectedCheckBox(inpaintPanel, self._config, 'scaleSelectionBeforeInpainting')
+        enableScaleCheckbox = connectedCheckBox(inpaintPanel, self._config, 'inpaintFullRes')
         enableScaleCheckbox.setText("Scale edited areas")
         enableScaleCheckbox.setToolTip("Enabling scaling allows for larger sample areas and better results at small "
                 + "scales, but increases the time required to generate images for small areas.")
@@ -377,11 +414,11 @@ class MainWindow(QMainWindow):
 
         layout.addLayout(moreOptionsBar, 3, 1, 1, 4)
         inpaintPanel.setLayout(layout)
-        self.layout.addWidget(inpaintPanel, stretch=20)
+        self.layout().addWidget(inpaintPanel, stretch=20)
         self.resizeEvent(None)
 
     def isSampleSelectorVisible(self):
-        return self.centralWidget.currentWidget() is not self._mainWidget
+        return hasattr(self, '_sampleSelector') and self.centralWidget.currentWidget() == self._sampleSelector
 
     def setSampleSelectorVisible(self, visible):
         isVisible = self.isSampleSelectorVisible()
@@ -412,6 +449,9 @@ class MainWindow(QMainWindow):
         else:
             self._sampleSelector.loadSampleImage(image, idx)
 
+    def layout(self):
+        return self._layout
+
     def setIsLoading(self, isLoading, message=None):
         if self._sampleSelector is not None:
             self._sampleSelector.setIsLoading(isLoading, message)
@@ -432,6 +472,7 @@ class MainWindow(QMainWindow):
             self._sampleSelector.setLoadingMessage(message)
 
     def resizeEvent(self, event):
+        self.shouldUseTabbedLayout()
         self._setupCorrectLayout()
         if hasattr(self, '_loadingWidget'):
             loadingWidgetSize = int(self.height() / 8)

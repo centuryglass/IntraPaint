@@ -1,5 +1,5 @@
 from PyQt5.QtWidgets import (QWidget, QSpinBox, QLineEdit, QPushButton, QLabel, QGridLayout, QSpacerItem,
-        QFileDialog, QMessageBox, QVBoxLayout, QHBoxLayout)
+        QFileDialog, QMessageBox, QVBoxLayout, QHBoxLayout, QSlider, QSizePolicy)
 from PyQt5.QtCore import Qt, QPoint, QSize, QRect, QBuffer
 from PyQt5.QtGui import QPainter, QPen
 from PIL import Image
@@ -24,19 +24,21 @@ class ImagePanel(QWidget):
         self._editedImage = editedImage
         self._config = config
         self._showSliders = None
+        self._sliderCount = 0
         self._minimized = False
         self.borderSize = 4
 
-        self.layout = QHBoxLayout()
-        self.setLayout(self.layout)
+        self._layout = QHBoxLayout()
+        self.setLayout(self._layout)
 
         self.imageBox = CollapsibleBox("Full Image",
                 parent=self,
                 scrolling=False,
                 orientation=Qt.Orientation.Horizontal)
+        self.imageBox.setExpandedSizePolicy(QSizePolicy.Ignored)
         self.imageBoxLayout = QVBoxLayout()
         self.imageBox.setContentLayout(self.imageBoxLayout)
-        self.layout.addWidget(self.imageBox, stretch=255)
+        self._layout.addWidget(self.imageBox, stretch=255)
 
 
         self.imageViewer = ImageViewer(editedImage)
@@ -121,66 +123,51 @@ class ImagePanel(QWidget):
                 self.xCoordBox.setMaximum(editedImage.width() - bounds.width())
                 self.yCoordBox.setMaximum(editedImage.height() - bounds.height())
         editedImage.selectionChanged.connect(setCoords)
-
-
-        # Add control sliders:
-        self.stepSlider = ParamSlider(self,
-                'Sampling steps:',
-                self._config,
-                'samplingSteps',
-                'minSamplingSteps',
-                'maxSamplingSteps',
-                orientation=Qt.Orientation.Vertical,
-                verticalTextPt=int(config.get("fontPointSize") * 1.3))
-        self.cfgSlider = ParamSlider(
-                self,
-                "CFG scale:",
-                config,
-                'cfgScale',
-                'minCfgScale',
-                'maxCfgScale',
-                'cfgScaleStep',
-                orientation=Qt.Orientation.Vertical,
-                verticalTextPt=int(config.get("fontPointSize") * 1.3))
-        self.denoiseSlider = ParamSlider(self,
-                'Denoising strength:',
-                self._config,
-                'denoisingStrength',
-                'minDenoisingStrength',
-                'maxDenoisingStrength',
-                'denoisingStrengthStep',
-                orientation=Qt.Orientation.Vertical,
-                verticalTextPt=int(config.get("fontPointSize") * 1.3))
-        self.layout.insertWidget(0, self.stepSlider)
-        self.layout.insertWidget(1, self.cfgSlider)
-        self.layout.insertWidget(2, self.denoiseSlider)
-
-        self.setLayout(self.layout)
+        self.setLayout(self._layout)
+        self.setSizePolicy(QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding))
         self.showSliders(False)
     
     def imageToggled(self):
             return self.imageBox.toggled()
 
+    def setOrientation(self, orientation):
+        if self.imageBox is not None:
+            self._layout.removeWidget(self.imageBox)
+            self.imageBox.setParent(None)
+            self.imageBox = None
+        self.imageBox = CollapsibleBox("Full Image",
+                parent=self,
+                scrolling=False,
+                orientation=orientation)
+        self.imageBox.setContentLayout(self.imageBoxLayout)
+        self._layout.insertWidget(self._sliderCount, self.imageBox)
+
+    def addSlider(self, slider):
+        assert(isinstance(slider, ParamSlider) or isinstance(slider, QSlider))
+        self._layout.insertWidget(self._sliderCount, slider, stretch=1)
+        self._sliderCount += 1
+        self.showSliders(self._showSliders)
+
     def slidersShowing(self):
         return self._showSliders
 
     def showSliders(self, showSliders):
-        if showSliders == self._showSliders:
-            return
         self._showSliders = showSliders
         if showSliders:
-            for i in range(3):
-                self.layout.setStretch(i, 1)
-            for slider in [self.stepSlider, self.cfgSlider, self.denoiseSlider]:
+            for i in range(self._sliderCount):
+                self._layout.setStretch(i, 1)
+            for slider in (self._layout.itemAt(i).widget() for i in range(self._sliderCount)):
+                slider.setVisible(True)
                 slider.setEnabled(True)
-                slider.setMaximumWidth(100)
+                slider.setMaximumWidth(slider.sizeHint().width())
         else:
-            for i in range(3):
-                self.layout.setStretch(i, 0)
-            for slider in [self.stepSlider, self.cfgSlider, self.denoiseSlider]:
+            for i in range(self._sliderCount):
+                self._layout.setStretch(i, 0)
+            for slider in (self._layout.itemAt(i).widget() for i in range(self._sliderCount)):
                 slider.setEnabled(False)
+                slider.setVisible(False)
                 slider.setMaximumWidth(0)
-        self.imageBox.showButtonBar(showSliders)
+        self.imageBox.showButtonBar(True)
 
     def reloadScaleBounds(self):
         maxEditSize = self._editedImage.getMaxSelectionSize()

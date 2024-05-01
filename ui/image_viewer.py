@@ -20,9 +20,10 @@ class ImageViewer(QWidget):
         editedImage.sizeChanged.connect(lambda: self.resizeEvent(None))
         editedImage.selectionChanged.connect(lambda: self.update())
         editedImage.contentChanged.connect(lambda: self.update())
-        self.setSizePolicy(QSizePolicy(QSizePolicy.Ignored, QSizePolicy.Ignored))
+        self.setSizePolicy(QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding))
 
     def resizeEvent(self, event):
+        print(f"viewerSize: {self.size()}")
         if self._editedImage.hasImage():
             self._imageRect = getScaledPlacement(QRect(QPoint(0, 0), self.size()), self._editedImage.size(), self._borderSize)
         else:
@@ -59,6 +60,11 @@ class ImageViewer(QWidget):
         margin = self._borderSize // 2
         linePen.setWidth(self._borderSize)
         painter.drawRect(QRect(QPoint(0, 0), self.size()).marginsRemoved(getEqualMargins(2)))
+
+    def sizeHint(self):
+        if self._editedImage.hasImage():
+            return self._editedImage.size()
+        return QSize(512, 512)
 
     def mousePressEvent(self, event):
         """Select the area in in the image to be edited."""

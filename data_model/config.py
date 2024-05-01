@@ -36,7 +36,7 @@ class Config(QObject):
         self._setDefault('maskBrushSize', 40)
         self._setDefault('sketchBrushSize', 4)
         self._setDefault('minBrushSize', 1)
-        self._setDefault('maxBrushSize', 999)
+        self._setDefault('maxBrushSize', 300)
         self._setDefault('saveSketchInResult', True)
         self._setDefault('maxUndo', 10)
 

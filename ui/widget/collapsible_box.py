@@ -1,7 +1,7 @@
 # Adapted from https://stackoverflow.com/a/52617714, but without animations, and a few other minor adjustments.
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QStackedWidget, QWidget, QScrollArea, QToolButton, QHBoxLayout, QVBoxLayout
+from PyQt5.QtWidgets import QStackedWidget, QWidget, QScrollArea, QToolButton, QHBoxLayout, QVBoxLayout, QSizePolicy
 from PyQt5.QtCore import QSize, pyqtSignal
 
 from ui.widget.bordered_widget import BorderedWidget
@@ -14,15 +14,13 @@ class CollapsibleBox(BorderedWidget):
             title="",
             parent=None,
             startClosed=False,
-            maxSizeFraction=1,
-            maxSizePx=None,
             scrolling=True,
             orientation=Qt.Orientation.Vertical):
         super(CollapsibleBox, self).__init__(parent)
         self._widgetsize_max = self.maximumWidth()
         self._isVertical = (orientation == Qt.Orientation.Vertical)
+        self._expandedSizePolicy = QSizePolicy.Preferred
         layout = QVBoxLayout(self) if self._isVertical else QHBoxLayout(self)
-        self._outerLayout = layout
         layout.setSpacing(0)
         layout.setContentsMargins(0, 0, 0, 0)
 
@@ -35,7 +33,8 @@ class CollapsibleBox(BorderedWidget):
             self.toggle_button.setToolButtonStyle(
                 QtCore.Qt.ToolButtonTextBesideIcon
             )
-            layout.addWidget(self.toggle_button)
+            layout.addWidget(self.toggle_button, stretch=1)
+            self.toggle_button.setSizePolicy(QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Expanding))
         else:
             self.toggleLabel = Label(title)
             self.toggleLabel.setAlignment(Qt.AlignTop)
@@ -49,10 +48,11 @@ class CollapsibleBox(BorderedWidget):
             buttonBarLayout.addStretch(255)
             buttonBarLayout.setContentsMargins(0,0,0,0)
             buttonBar.setLayout(buttonBarLayout)
+            buttonBar.setSizePolicy(QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed))
             minWidth = self.toggleLabel.imageSize().width() + 2
             for widget in [buttonBar, self.toggleLabel, self.toggle_button]:
                 widget.setMinimumWidth(minWidth)
-            layout.addWidget(buttonBar)
+            layout.addWidget(buttonBar, stretch=1)
         self.toggle_button.setArrowType(QtCore.Qt.DownArrow if self._isVertical else QtCore.Qt.RightArrow)
         self.toggle_button.toggled.connect(lambda: self.on_pressed())
 
@@ -64,19 +64,33 @@ class CollapsibleBox(BorderedWidget):
         else:
             self.scroll_area = QWidget()
             self.content = self.scroll_area
+        self.scroll_area.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        if self._isVertical:
+            self.setSizePolicy(QSizePolicy.Expanding, self._expandedSizePolicy)
+        else:
+            self.setSizePolicy(self._expandedSizePolicy, QSizePolicy.Expanding)
         
         layout.addWidget(self.scroll_area, stretch=255)
         self._startClosed = startClosed
-        self._maxSizeFraction = maxSizeFraction
-        self._maxSizePx = maxSizePx
+
+    def setExpandedSizePolicy(self, policy):
+        if policy == self._expandedSizePolicy:
+            return
+        self._expandedSizePolicy = policy
+        if self.isExpanded():
+            if self._isVertical:
+                self.setSizePolicy(QSizePolicy.Expanding, self._expandedSizePolicy)
+            else:
+                self.setSizePolicy(self._expandedSizePolicy, QSizePolicy.Expanding)
 
     def toggled(self):
         return self.toggle_button.toggled
 
     def showButtonBar(self, showBar):
-        self._outerLayout.setStretch(1, 1 if showBar else 0)
-        buttonBar = self._outerLayout.itemAt(0).widget()
+        self.layout().setStretch(0, 1 if showBar else 0)
+        buttonBar = self.layout().itemAt(0).widget()
         buttonBar.setEnabled(showBar)
+        buttonBar.setVisible(showBar)
         if self._isVertical:
             buttonBar.setMaximumHeight(self.height() if showBar else 0)
         else:
@@ -87,85 +101,34 @@ class CollapsibleBox(BorderedWidget):
         if not showBar:
             self.setExpanded(True)
 
-    def _refreshScrollSize(self, contentSize):
-        if self.scroll_area == self.content:
-            return
-        window = self
-        while window.parentWidget():
-            window = window.parentWidget()
-        maxSize = int((window.height() if self._isVertical else window.width()) * self._maxSizeFraction)
-        if self._maxSizePx is not None:
-            maxSize = min(maxSize, self._maxSizePx)
-        if self._isVertical:
-            self.scroll_area.setMinimumHeight(min(maxSize, contentSize))
-            self.scroll_area.setMaximumHeight(min(maxSize, contentSize))
-        else:
-            self.scroll_area.setMinimumWidth(min(maxSize, contentSize))
-            self.scroll_area.setMaximumWidth(self._widgetsize_max)  #min(maxSize, contentSize + 5))
-
-    def refreshLayout(self):
-        if self.content.layout() is not None:
+    def sizeHint(self):
+        size = super().sizeHint()
+        if not self.toggle_button.isChecked():
             if self._isVertical:
-                height = 0
-                layout = self.content.layout()
-                if self.toggle_button.isChecked():
-                    for i in range(layout.count()):
-                        item = layout.itemAt(i)
-                        if item.widget():
-                            height += item.widget().height()
-                        elif item.layout():
-                            height += item.layout().totalSizeHint().height()
-                self.content.setMinimumHeight(height)
-                self.content.setMaximumHeight(height)
-                self._refreshScrollSize(height)
+                size.setWidth(self.toggle_button.sizeHint().width())
             else:
-                width = 0
-                layout = self.content.layout()
-                if self.toggle_button.isChecked():
-                    for i in range(layout.count()):
-                        item = layout.itemAt(i)
-                        if item.widget():
-                            width = max(width, item.widget().width())
-                        elif item.layout():
-                            width = max(width, item.layout().totalSizeHint().width())
-                window = self
-                while window.parentWidget():
-                    window = window.parentWidget()
-                self.content.setMinimumWidth(window.width())
-                self.content.setMaximumWidth(self._widgetsize_max)
-                self._refreshScrollSize(width)
-
-    def resizeEvent(self, event):
-        super().resizeEvent(event)
-        checked = self.toggle_button.isChecked()
-        if self._isVertical:
-            height = self.content.layout().totalSizeHint().height() if checked else 0
-            if height != self.content.minimumHeight() or height != self.content.maximumHeight():
-                self.content.setMinimumHeight(height)
-                self.content.setMaximumHeight(height)
-                self._refreshScrollSize(height)
-        #else:
-        #    self.refreshLayout()
-        #    width = self.content.layout().totalSizeHint().width() if checked else 0
-        #    if width != self.content.minimumWidth() or width != self.content.maximumWidth():
-        #        self.content.setMinimumWidth(width)
-        #        self.content.setMaximumWidth(width)
-        #        self._refreshScrollSize(width)
+                size.setHeight(self.toggle_button.sizeHint().height())
+        return size
 
     def on_pressed(self):
         checked = self.toggle_button.isChecked()
         self.toggle_button.setArrowType(
             QtCore.Qt.DownArrow if (checked == self._isVertical) else QtCore.Qt.RightArrow)
-        if self._isVertical:
-            height = self.content.layout().totalSizeHint().height() if checked else 0
-            self.content.setMinimumHeight(height)
-            self.content.setMaximumHeight(height)
-            self._refreshScrollSize(height)
+        if checked:
+            self.layout().addWidget(self.scroll_area, stretch=255)
+            self.scroll_area.setVisible(True)
+            if self._isVertical:
+                self.setSizePolicy(QSizePolicy.Expanding, self._expandedSizePolicy)
+            else:
+                self.setSizePolicy(self._expandedSizePolicy, QSizePolicy.Expanding)
         else:
-            width = self.content.layout().totalSizeHint().width() if checked else 0
-            self.content.setMinimumWidth(width)
-            self.content.setMaximumWidth(width if width==0 else self._widgetsize_max)
-            self._refreshScrollSize(width)
+            self.layout().removeWidget(self.scroll_area)
+            self.scroll_area.setVisible(False)
+            if self._isVertical:
+                self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Maximum)
+            else:
+                self.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Expanding)
+        self.update()
 
     def isExpanded(self):
         return self.toggle_button.isChecked()

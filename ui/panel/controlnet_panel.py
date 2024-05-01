@@ -9,9 +9,10 @@ import pprint
 class ControlnetPanel(CollapsibleBox):
 
     def __init__(self, config, controlTypes, moduleDetail, title = "ControlNet"):
-        super().__init__(title=title, startClosed=(len(config.get('controlnetArgs')) == 0), maxSizeFraction=0.3, maxSizePx=300)
+        super().__init__(title=title, scrolling=False, startClosed=(len(config.get('controlnetArgs')) == 0))
 
         initialControlState = config.get('controlnetArgs')
+        self._config = config
 
         # Build layout:
         layout = QVBoxLayout()
@@ -69,12 +70,12 @@ class ControlnetPanel(CollapsibleBox):
 
 
         # Dynamic options section:
-        optionsBox = CollapsibleBox("Options", maxSizeFraction=0.2, maxSizePx=200)
+        optionsBox = CollapsibleBox("Options", startClosed=True)
+        optionsBox.setExpandedSizePolicy(QSizePolicy.Maximum)
         optionsLayout = QVBoxLayout()
         optionsBox.setContentLayout(optionsLayout)
         layout.addWidget(optionsBox)
         self.moduleOptions = {}
-        optionsBox.setEnabled(not useSelection)
 
 
         # Update controlNet selection in config:
@@ -209,6 +210,7 @@ class ControlnetPanel(CollapsibleBox):
                         step = int(step)
 
                     # Mini implementation of the Config interface so we can reuse ParamSlider:
+                    fullConfig = self._config
                     panel = self
                     class Config():
                         def __init__(self):
@@ -220,6 +222,8 @@ class ControlnetPanel(CollapsibleBox):
                             }
                             self.data[key] = value
                         def get(self, key):
+                            if key not in self.data:
+                                return fullConfig.get(key)
                             return self.data[key]
 
                         def connect(self, toConnect, key, onChange):
@@ -231,8 +235,9 @@ class ControlnetPanel(CollapsibleBox):
                             if newValue != panel.moduleOptions[keyName]:
                                 panel.moduleOptions[keyName] = newValue
                                 self.data[keyName] = newValue
-                                for callback in self._connected[keyName].values():
-                                    callback(newValue)
+                                if keyName in self._connected:
+                                    for callback in self._connected[keyName].values():
+                                        callback(newValue)
                                 try:
                                     writeStateToConfig()
                                 except RecursionError:
@@ -249,8 +254,11 @@ class ControlnetPanel(CollapsibleBox):
                     sliderRow.addWidget(slider)
                 if sliderRow.count() > 0:
                     optionsLayout.addLayout(sliderRow)
-            optionsBox.refreshLayout()
-            self.refreshLayout()
+            if optionsLayout.count() > 0:
+                optionsBox.setEnabled(True)
+            else:
+                optionsBox.setExpanded(False)
+                optionsBox.setEnabled(False)
             writeStateToConfig()
         moduleChangeHandler = lambda: handleModuleChange(moduleBox.currentText())
         moduleBox.currentIndexChanged.connect(moduleChangeHandler)
@@ -301,8 +309,9 @@ class ControlnetPanel(CollapsibleBox):
         def setEnabled(isChecked):
             if enabledCheck.isChecked() != isChecked:
                 enabledCheck.setChecked(isChecked)
-            for widget in [controlTypeBox, moduleBox, modelBox, optionsBox]:
+            for widget in [controlTypeBox, moduleBox, modelBox]:
                 widget.setEnabled(isChecked)
+            optionsBox.setEnabled(isChecked and optionsLayout.count() > 0)
             writeStateToConfig()
         setEnabled(len(initialControlState) > 0)
         enabledCheck.stateChanged.connect(setEnabled) 

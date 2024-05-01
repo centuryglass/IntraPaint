@@ -77,7 +77,7 @@ class LocalDeviceController(BaseInpaintController):
                     sample,
                     batch_size,
                     self._ldm,
-                    lambda k, img: sendImage(img, k, i))
+                    lambda k, img: sendImage(img, (i * batch_size) + k))
         generateSamples(
                 self._device,
                 self._ldm,
