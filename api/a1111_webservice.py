@@ -1,4 +1,4 @@
-from sd_api.webservice import WebService
+from api.webservice import WebService
 from startup.utils import imageToBase64, loadImageFromBase64
 import json, requests, os
 

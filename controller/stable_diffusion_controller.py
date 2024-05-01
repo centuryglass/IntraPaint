@@ -8,9 +8,10 @@ from ui.window.stable_diffusion_main_window import StableDiffusionMainWindow
 from ui.modal.modal_utils import showErrorDialog
 from ui.modal.image_scale_modal import ImageScaleModal
 from ui.modal.login_modal import LoginModal
+from ui.util.screen_size import screenSize
 from controller.base_controller import BaseInpaintController
 from startup.utils import imageToBase64, loadImageFromBase64
-from sd_api.a1111_webservice import A1111Webservice
+from api.a1111_webservice import A1111Webservice
 
 
 class StableDiffusionController(BaseInpaintController):
@@ -162,9 +163,6 @@ class StableDiffusionController(BaseInpaintController):
         self._startThread(worker, loadingText="Running CLIP interrogate")
 
     def windowInit(self):
-        screen = self._app.primaryScreen()
-        size = screen.availableGeometry()
-
         # Make sure a valid connection exists:
         def promptForURL(promptText):
             newUrl, urlEntered = QInputDialog.getText(self._window, 'Inpainting UI', promptText)
@@ -207,6 +205,7 @@ class StableDiffusionController(BaseInpaintController):
         
         # Handle final window init now that data is loaded from the API:
         self._window = StableDiffusionMainWindow(self._config, self._editedImage, self._maskCanvas, self._sketchCanvas, self)
+        size = screenSize(self._window)
         self._window.setGeometry(0, 0, size.width(), size.height())
         self.fixStyles()
         self._window.show()

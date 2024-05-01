@@ -1,6 +1,6 @@
 from PyQt5.QtWidgets import (QWidget, QSpinBox, QLineEdit, QPushButton, QLabel, QGridLayout, QSpacerItem,
         QFileDialog, QMessageBox, QVBoxLayout, QHBoxLayout, QSlider, QSizePolicy)
-from PyQt5.QtCore import Qt, QPoint, QSize, QRect, QBuffer
+from PyQt5.QtCore import Qt, QPoint, QSize, QRect, QBuffer, pyqtSignal
 from PyQt5.QtGui import QPainter, QPen
 from PIL import Image
 import os, sys
@@ -16,6 +16,8 @@ class ImagePanel(QWidget):
     """
     Holds the image viewer, provides inputs for selecting an editing area and saving/loading images.
     """
+    imageToggled = pyqtSignal(bool)
+
 
     def __init__(self, config, editedImage, controller):
         super().__init__()
@@ -35,6 +37,7 @@ class ImagePanel(QWidget):
                 parent=self,
                 scrolling=False,
                 orientation=Qt.Orientation.Horizontal)
+        self.imageBox.toggled().connect(lambda t: self.imageToggled.emit(t))
         self.imageBox.setExpandedSizePolicy(QSizePolicy.Ignored)
         self.imageBoxLayout = QVBoxLayout()
         self.imageBox.setContentLayout(self.imageBoxLayout)
@@ -126,9 +129,6 @@ class ImagePanel(QWidget):
         self.setLayout(self._layout)
         self.setSizePolicy(QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding))
         self.showSliders(False)
-    
-    def imageToggled(self):
-            return self.imageBox.toggled()
 
     def setOrientation(self, orientation):
         if self.imageBox is not None:
@@ -139,6 +139,7 @@ class ImagePanel(QWidget):
                 parent=self,
                 scrolling=False,
                 orientation=orientation)
+        self.imageBox.toggled().connect(lambda t: self.imageToggled.emit(t))
         self.imageBox.setContentLayout(self.imageBoxLayout)
         self._layout.insertWidget(self._sliderCount, self.imageBox)
 

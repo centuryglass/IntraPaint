@@ -15,6 +15,7 @@ from ui.modal.resize_canvas_modal import ResizeCanvasModal
 from ui.modal.image_scale_modal import ImageScaleModal
 from ui.modal.modal_utils import *
 from ui.util.contrast_color import contrastColor
+from ui.util.screen_size import screenSize
 
 
 from controller.spacenav import SpacenavManager
@@ -106,18 +107,8 @@ class BaseInpaintController():
         raise Exception('refreshSettings not implemented!')
 
     def windowInit(self):
-        screen = self._app.primaryScreen()
-        def screenSize(screen):
-            if screen is None:
-                return 0
-            return screen.availableGeometry().width() * screen.availableGeometry().height()
-        for s in self._app.screens():
-            if screenSize(s) > screenSize(screen):
-                screen = s
-
-
-        size = screen.availableGeometry()
         self._window = MainWindow(self._config, self._editedImage, self._maskCanvas, self._sketchCanvas, self)
+        size = screenSize(self._window)
         self._window.setGeometry(0, 0, size.width(), size.height())
         self._window.setMaximumHeight(size.height())
         self._window.setMaximumWidth(size.width())

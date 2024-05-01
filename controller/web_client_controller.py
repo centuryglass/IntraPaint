@@ -5,6 +5,7 @@ import requests, io, sys
 from ui.window.main_window import MainWindow
 from controller.base_controller import BaseInpaintController
 from startup.utils import imageToBase64, loadImageFromBase64
+from ui.util.screen_size import screenSize
 
 
 class WebClientController(BaseInpaintController):
@@ -23,9 +24,8 @@ class WebClientController(BaseInpaintController):
             return False
 
     def windowInit(self):
-        screen = self._app.primaryScreen()
-        size = screen.availableGeometry()
         self._window = MainWindow(self._config, self._editedImage, self._maskCanvas, self._sketchCanvas, self)
+        size = screenSize(self._window)
         self._window.setGeometry(0, 0, size.width(), size.height())
         self._window.show()
 

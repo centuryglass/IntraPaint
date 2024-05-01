@@ -1,13 +1,18 @@
-# Runs the inpainting UI and image generation together
-from startup.utils import *
+"""
+ Runs the main IntraPaint inpainting UI.
+ Assuming you're running the A1111 stable-diffusion API on the same machine with default settings, running
+ `python IntraPaint.py` should be all you need. For more information on options, run `python IntraPaint.py --help`
+"""
+
+from startup.utils import buildArgParser
 
 # argument parsing:
 parser = buildArgParser(defaultModel='inpaint.pt', includeEditParams=False)
 parser.add_argument('--mode', type = str, required = False, default = 'auto',
                     help = 'Set where inpainting operations should be completed. \nOptions:\n'
                     + '"auto": Attempt to guess at the most appropriate editing mode.\n'
-                    + '"stable": A remote server handles inpainting over a network connection using stable-diffusion.\n'
-                    + '"web": A remote server handles inpainting over a network connection using GLID-3-XL.\n'
+                    + '"stable": A remote server handles inpainting over a network using stable-diffusion.\n'
+                    + '"web": A remote server handles inpainting over a network using GLID-3-XL.\n'
                     + '"local": Handle inpainting on the local machine (requires a GPU with ~10GB VRAM).\n'
                     + '"mock": No actual inpainting performed, for UI testing only')
 parser.add_argument('--init_edit_image', type=str, required = False, default = None,
@@ -28,53 +33,53 @@ parser.add_argument('--fast_ngrok_connection', type = str, required = False, def
 args = parser.parse_args()
 
 controller = None
-controllerMode = args.mode
+controller_mode = args.mode
 
-if controllerMode == 'auto':
+if controller_mode == 'auto':
     from controller.stable_diffusion_controller import StableDiffusionController
     from controller.web_client_controller import WebClientController
     if args.server_url != '':
         if StableDiffusionController.healthCheck(args.server_url):
-            controllerMode = 'stable'
+            controller_mode = 'stable'
         elif WebClientController.healthCheck(args.server_url):
-            controllerMode = 'web'
+            controller_mode = 'web'
         else:
             print(f'Unable to identify server type for {args.server_url}, checking default localhost ports...')
-    if controllerMode == 'auto':
-        defaultSdUrl = 'http://localhost:7860'
-        defaultGlidUrl = 'http://localhost:5555'
-        if StableDiffusionController.healthCheck(defaultSdUrl):
-            args.server_url = defaultSdUrl
-            controllerMode = 'stable'
-        elif WebClientController.healthCheck(defaultGlidUrl):
-            args.server_url = defaultGlidUrl
-            controllerMode = 'web'
+    if controller_mode == 'auto':
+        DEFAULT_SD_URL = 'http://localhost:7860'
+        DEFAULT_GLID_URL = 'http://localhost:5555'
+        if StableDiffusionController.healthCheck(DEFAULT_SD_URL):
+            args.server_url = DEFAULT_SD_URL
+            controller_mode = 'stable'
+        elif WebClientController.healthCheck(DEFAULT_GLID_URL):
+            args.server_url = DEFAULT_GLID_URL
+            controller_mode = 'web'
         else:
-            minVRAM = 8000000000 # This is just a rough estimate.
+            MIN_VRAM = 8000000000 # This is just a rough estimate.
             try:
                 import torch
                 from startup.ml_utils import getDevice
                 device = getDevice()
-                (memFree, memTotal) = torch.cuda.mem_get_info(device)
-                if memFree < minVRAM:
-                    raise Exception(f"Not enough VRAM to run local, expected at least {minVRAM}, found {memFree} of {memTotal}")
-                controllerMode = 'local'
-            except Exception as err:
+                (mem_free, memTotal) = torch.cuda.mem_get_info(device)
+                if mem_free < MIN_VRAM:
+                    raise RuntimeError(f"Not enough VRAM to run local, expected at least {MIN_VRAM}, found {mem_free} of {memTotal}")
+                controller_mode = 'local'
+            except RuntimeError as err:
                 print(f"Failed to start in local mode, defaulting to web. Exception: {err}")
-                controllerMode = 'web'
+                controller_mode = 'web'
 
-if controllerMode == 'stable':
+if controller_mode == 'stable':
     from controller.stable_diffusion_controller import StableDiffusionController
     controller = StableDiffusionController(args)
-elif controllerMode == 'web':
+elif controller_mode == 'web':
     from controller.web_client_controller import WebClientController
     controller = WebClientController(args)
-elif controllerMode == 'local':
+elif controller_mode == 'local':
     from controller.local_controller import LocalDeviceController
     controller = LocalDeviceController(args)
-elif controllerMode == 'mock':
+elif controller_mode == 'mock':
     from controller.mock_controller import MockController
     controller = MockController(args)
 else:
-    raise Exception(f'Exiting: invalid mode "{controllerMode}"')
+    raise RuntimeError(f'Exiting: invalid mode "{controller_mode}"')
 controller.startApp()

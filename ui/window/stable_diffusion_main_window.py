@@ -253,6 +253,6 @@ class StableDiffusionMainWindow(MainWindow):
                 'denoisingStrengthStep',
                 orientation=Qt.Orientation.Vertical,
                 verticalTextPt=int(self._config.get("fontPointSize") * 1.3))
-        self.imagePanel.addSlider(self.stepSlider)
-        self.imagePanel.addSlider(self.cfgSlider)
-        self.imagePanel.addSlider(self.denoiseSlider)
+        self._imagePanel.addSlider(self.stepSlider)
+        self._imagePanel.addSlider(self.cfgSlider)
+        self._imagePanel.addSlider(self.denoiseSlider)

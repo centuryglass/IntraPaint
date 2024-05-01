@@ -14,10 +14,11 @@ from ui.config_control_setup import *
 from ui.widget.draggable_arrow import DraggableArrow
 from ui.widget.loading_widget import LoadingWidget
 from ui.util.contrast_color import contrastColor
+from ui.util.screen_size import screenSize
 from data_model.canvas.filled_canvas import FilledMaskCanvas
 
 class MainWindow(QMainWindow):
-    """Main user interface for GLID-3-XL inpainting."""
+    """Main user interface for inpainting."""
 
     def __init__(self, config, editedImage, mask, sketch, controller):
         super().__init__()
@@ -41,10 +42,10 @@ class MainWindow(QMainWindow):
         self._mainPageWidget.setLayout(self._layout)
         self._mainTabWidget = None
         self._mainWidget = self._mainPageWidget
-        self.centralWidget = QStackedWidget(self);
-        self.centralWidget.addWidget(self._mainWidget)
-        self.setCentralWidget(self.centralWidget)
-        self.centralWidget.setCurrentWidget(self._mainWidget)
+        self._centralWidget = QStackedWidget(self);
+        self._centralWidget.addWidget(self._mainWidget)
+        self.setCentralWidget(self._centralWidget)
+        self._centralWidget.setCurrentWidget(self._mainWidget)
 
         # Loading widget (for interrogate):
         self._isLoading = False
@@ -59,24 +60,13 @@ class MainWindow(QMainWindow):
 
 
         self.installEventFilter(maskPanel)
-        divider = DraggableArrow()
+        self._divider = DraggableArrow()
         self._scaleHandler = None
-        self.imageLayout = None
-        self.imagePanel = imagePanel
-        self.maskPanel = maskPanel
-        self.divider = divider
+        self._imageLayout = None
+        self._imagePanel = imagePanel
+        self._maskPanel = maskPanel
         self._setupCorrectLayout()
-
-        def onImageToggle(imageShowing):
-            if imageShowing:
-                self.imageLayout.setStretch(0, 255)
-                self.imageLayout.setStretch(2, 100)
-            else:
-                self.imageLayout.setStretch(0, 1)
-                self.imageLayout.setStretch(2, 255)
-            divider.setHidden(not imageShowing)
-            self.update()
-        imagePanel.imageToggled().connect(onImageToggle)
+        imagePanel.imageToggled.connect(lambda s: self._onImagePanelToggle(s))
 
         # Set up menu:
         self._menu = self.menuBar()
@@ -104,8 +94,8 @@ class MainWindow(QMainWindow):
 
         # Edit:
         editMenu = self._menu.addMenu("Edit")
-        addAction("Undo", "Ctrl+Z", lambda: ifNotSelecting(lambda: self.maskPanel.undo()), editMenu)
-        addAction("Redo", "Ctrl+Shift+Z", lambda: ifNotSelecting(lambda: self.maskPanel.redo()), editMenu)
+        addAction("Undo", "Ctrl+Z", lambda: ifNotSelecting(lambda: self._maskPanel.undo()), editMenu)
+        addAction("Redo", "Ctrl+Shift+Z", lambda: ifNotSelecting(lambda: self._maskPanel.redo()), editMenu)
         addAction("Generate", "F4", lambda: ifNotSelecting(lambda: controller.startAndManageInpainting()), editMenu)
 
 
@@ -208,10 +198,7 @@ class MainWindow(QMainWindow):
         return self.height() <= (self.width() * 1.2)
 
     def shouldUseTabbedLayout(self):
-        display = QApplication.instance().screenAt(self.pos())
-        if display is None:
-            display = QApplication.primaryScreen()
-        mainDisplaySize = display.size()
+        mainDisplaySize = screenSize(self)
         requiredHeight = 0
 
         # Calculate max heights, taking into account possible expanded panels:
@@ -225,7 +212,6 @@ class MainWindow(QMainWindow):
             if item.layout() is not None and isinstance(item.layout(), QVBoxLayout):
                 for innerItem in (item.layout().itemAt(i) for i in range(item.layout().count())):
                     innerHeight += getRequiredHeight(innerItem)
-                print(f"innerHeight: {innerHeight}")
                 height = max(height, innerHeight)
             return height
 
@@ -234,74 +220,73 @@ class MainWindow(QMainWindow):
         if requiredHeight == 0 and self._mainTabWidget is not None:
             for item in (self._mainTabWidget.widget(i) for i in range(self._mainTabWidget.count())):
                 requiredHeight += getRequiredHeight(item)
-        print(f"shouldUseTabbedLayout: required={requiredHeight}, max={mainDisplaySize}")
         return requiredHeight > (mainDisplaySize.height() * 0.9)
 
 
     def _clearEditingLayout(self):
-        if self.imageLayout is not None:
-            for widget in [self.imagePanel, self.divider, self.maskPanel]:
-                self.imageLayout.removeWidget(widget)
-            self.layout().removeItem(self.imageLayout)
-            self.imageLayout = None
+        if self._imageLayout is not None:
+            for widget in [self._imagePanel, self._divider, self._maskPanel]:
+                self._imageLayout.removeWidget(widget)
+            self.layout().removeItem(self._imageLayout)
+            self._imageLayout = None
             if self._scaleHandler is not None:
-                self.divider.dragged.disconnect(self._scaleHandler)
+                self._divider.dragged.disconnect(self._scaleHandler)
                 self._scaleHandler = None
 
     def setImageSlidersEnabled(self, slidersEnabled):
         self._slidersEnabled = slidersEnabled
-        if not slidersEnabled and self.imagePanel.slidersShowing():
-            self.imagePanel.showSliders(False)
-        elif slidersEnabled and not self.imagePanel.slidersShowing() and self.shouldUseWideLayout():
-            self.imagePanel.showSliders(True)
+        if not slidersEnabled and self._imagePanel.slidersShowing():
+            self._imagePanel.showSliders(False)
+        elif slidersEnabled and not self._imagePanel.slidersShowing() and self.shouldUseWideLayout():
+            self._imagePanel.showSliders(True)
 
     def _setupWideLayout(self):
-        if self.imageLayout is not None:
+        if self._imageLayout is not None:
             self._clearEditingLayout()
         imageLayout = QHBoxLayout()
-        self.divider.setHorizontalMode()
-        self.imageLayout = imageLayout
+        self._divider.setHorizontalMode()
+        self._imageLayout = imageLayout
         def scaleWidgets(pos):
             x = pos.x()
             imgWeight = int(x / self.width() * 300)
             maskWeight = 300 - imgWeight
-            self.imageLayout.setStretch(0, imgWeight)
-            self.imageLayout.setStretch(2, maskWeight)
+            self._imageLayout.setStretch(0, imgWeight)
+            self._imageLayout.setStretch(2, maskWeight)
             self.update()
         self._scaleHandler = scaleWidgets
-        self.divider.dragged.connect(self._scaleHandler)
+        self._divider.dragged.connect(self._scaleHandler)
 
-        imageLayout.addWidget(self.imagePanel, stretch=255)
-        imageLayout.addWidget(self.divider, stretch=5)
-        imageLayout.addWidget(self.maskPanel, stretch=100)
+        imageLayout.addWidget(self._imagePanel, stretch=255)
+        imageLayout.addWidget(self._divider, stretch=5)
+        imageLayout.addWidget(self._maskPanel, stretch=100)
         self._layout.insertLayout(0, imageLayout, stretch=255)
-        self.imagePanel.showSliders(True and self._slidersEnabled)
-        self.imagePanel.setOrientation(Qt.Orientation.Horizontal)
+        self._imagePanel.showSliders(True and self._slidersEnabled)
+        self._imagePanel.setOrientation(Qt.Orientation.Horizontal)
         self.update()
 
     def _setupTallLayout(self):
-        if self.imageLayout is not None:
+        if self._imageLayout is not None:
             self._clearEditingLayout()
         imageLayout = QVBoxLayout()
-        self.imageLayout = imageLayout
-        self.divider.setVerticalMode()
+        self._imageLayout = imageLayout
+        self._divider.setVerticalMode()
         def scaleWidgets(pos):
             y = pos.y()
             imgWeight = int(y / self.height() * 300)
             maskWeight = 300 - imgWeight
-            self.imageLayout.setStretch(0, imgWeight)
-            self.imageLayout.setStretch(2, maskWeight)
+            self._imageLayout.setStretch(0, imgWeight)
+            self._imageLayout.setStretch(2, maskWeight)
             self.update()
         self._scaleHandler = scaleWidgets
-        self.divider.dragged.connect(self._scaleHandler)
+        self._divider.dragged.connect(self._scaleHandler)
 
-        imageLayout.addWidget(self.imagePanel, stretch=255)
-        imageLayout.addWidget(self.divider, stretch=5)
-        imageLayout.addWidget(self.maskPanel, stretch=100)
+        imageLayout.addWidget(self._imagePanel, stretch=255)
+        imageLayout.addWidget(self._divider, stretch=5)
+        imageLayout.addWidget(self._maskPanel, stretch=100)
         self.layout().insertLayout(0, imageLayout, stretch=255)
-        self.imageLayout = imageLayout
-        self.imagePanel.showSliders(False)
-        self.imagePanel.setOrientation(Qt.Orientation.Vertical)
+        self._imageLayout = imageLayout
+        self._imagePanel.showSliders(False)
+        self._imagePanel.setOrientation(Qt.Orientation.Vertical)
         self.update()
 
     #def _setupTabbedLayout(self):
@@ -310,9 +295,9 @@ class MainWindow(QMainWindow):
 
     def _setupCorrectLayout(self):
         if self.shouldUseWideLayout():
-            if isinstance(self.imageLayout, QVBoxLayout) or self.imageLayout is None: 
+            if isinstance(self._imageLayout, QVBoxLayout) or self._imageLayout is None: 
                 self._setupWideLayout()
-        elif isinstance(self.imageLayout, QHBoxLayout) or self.imageLayout is None:
+        elif isinstance(self._imageLayout, QHBoxLayout) or self._imageLayout is None:
                 self._setupTallLayout()
 
     def _createScaleModeSelector(self, parent, configKey): 
@@ -371,7 +356,7 @@ class MainWindow(QMainWindow):
                 + "scales, but increases the time required to generate images for small areas.")
         def updateScale():
             if self._editedImage.hasImage():
-                self.imagePanel.reloadScaleBounds()
+                self._imagePanel.reloadScaleBounds()
         enableScaleCheckbox.stateChanged.connect(updateScale)
 
         upscaleModeLabel = QLabel(inpaintPanel)
@@ -418,7 +403,7 @@ class MainWindow(QMainWindow):
         self.resizeEvent(None)
 
     def isSampleSelectorVisible(self):
-        return hasattr(self, '_sampleSelector') and self.centralWidget.currentWidget() == self._sampleSelector
+        return hasattr(self, '_sampleSelector') and self._centralWidget.currentWidget() == self._sampleSelector
 
     def setSampleSelectorVisible(self, visible):
         isVisible = self.isSampleSelectorVisible()
@@ -433,13 +418,13 @@ class MainWindow(QMainWindow):
                     self._sketch,
                     lambda: self.setSampleSelectorVisible(False),
                     lambda img: self._controller.selectAndApplySample(img))
-            self.centralWidget.addWidget(self._sampleSelector)
-            self.centralWidget.setCurrentWidget(self._sampleSelector)
+            self._centralWidget.addWidget(self._sampleSelector)
+            self._centralWidget.setCurrentWidget(self._sampleSelector)
             self.installEventFilter(self._sampleSelector)
         else:
             self.removeEventFilter(self._sampleSelector)
-            self.centralWidget.setCurrentWidget(self._mainWidget)
-            self.centralWidget.removeWidget(self._sampleSelector)
+            self._centralWidget.setCurrentWidget(self._mainWidget)
+            self._centralWidget.removeWidget(self._sampleSelector)
             del self._sampleSelector
             self._sampleSelector = None
 
@@ -483,3 +468,13 @@ class MainWindow(QMainWindow):
     def mousePressEvent(self, event):
         if not self._isLoading:
             super().mousePressEvent(event)
+
+    def _onImagePanelToggle(self, imageShowing):
+        if imageShowing:
+            self._imageLayout.setStretch(0, 255)
+            self._imageLayout.setStretch(2, 100)
+        else:
+            self._imageLayout.setStretch(0, 1)
+            self._imageLayout.setStretch(2, 255)
+        self._divider.setHidden(not imageShowing)
+        self.update()
