@@ -1,4 +1,6 @@
-# Miscellaneous utility functions needed in many places
+"""
+Miscellaneous utility functions needed in many places
+"""
 from PIL import Image
 import argparse
 import base64
@@ -18,27 +20,29 @@ def fetch(url_or_path):
 
 BASE_64_PREFIX = 'data:image/png;base64,'
 
-def imageToBase64(pilImage, includePrefix=False):
+
+def image_to_base64(pil_image, include_prefix=False):
     """Convert a PIL image to a base64 string."""
-    if isinstance(pilImage, str):
-        pilImage = Image.open(pilImage)
+    if isinstance(pil_image, str):
+        pil_image = Image.open(pil_image)
     buffer = io.BytesIO()
-    pilImage.save(buffer, format='PNG')
+    pil_image.save(buffer, format='PNG')
     imageStr = str(base64.b64encode(buffer.getvalue()), 'utf-8')
-    if includePrefix:
+    if include_prefix:
         imageStr = BASE_64_PREFIX + imageStr
     return imageStr
 
-def loadImageFromBase64(imageStr):
-    """Initialize a PIL image object from base64-encoded string data."""
-    if imageStr.startswith(BASE_64_PREFIX):
-        imageStr = imageStr[len(BASE_64_PREFIX):]
-    return Image.open(io.BytesIO(base64.b64decode(imageStr)))
 
-def buildArgParser(defaultModel='inpaint.pt', includeEditParams=True, includeGenParams=True):
+def load_image_from_base64(image_str):
+    """Initialize a PIL image object from base64-encoded string data."""
+    if image_str.startswith(BASE_64_PREFIX):
+        image_str = image_str[len(BASE_64_PREFIX):]
+    return Image.open(io.BytesIO(base64.b64decode(image_str)))
+
+def build_arg_parser(default_model='inpaint.pt', include_edit_params=True, include_gen_params=True):
     """Create a command-line argument parser that includes options shared between several scripts"""
     parser = argparse.ArgumentParser()
-    parser.add_argument('--model_path', type=str, default = defaultModel,
+    parser.add_argument('--model_path', type=str, default = default_model,
                    help='path to the diffusion model')
     parser.add_argument('--kl_path', type=str, default = 'kl-f8.pt',
                        help='path to the LDM first stage model')
@@ -74,10 +78,10 @@ def buildArgParser(defaultModel='inpaint.pt', includeEditParams=True, includeGen
 
     parser.add_argument('--steps', type = int, default = 0, required = False,
                         help='number of diffusion steps')
-    if includeGenParams:
+    if include_gen_params:
         parser.add_argument('--init_image', type=str, required = False, default = None,
                            help='init image to use')
-    if includeEditParams: 
+    if include_edit_params: 
         parser.add_argument('--edit', type = str, required = True,
                             help='path to the image you want to edit (either an image file or .npy containing a numpy array of the image embeddings)')
 

@@ -1,3 +1,7 @@
+"""
+Runs a simple HTTP server that provides access to GLID3-XL image editing operations.
+"""
+
 from flask import Flask, request, jsonify, make_response, abort, current_app, send_file
 from flask_cors import CORS, cross_origin
 from PIL import Image
@@ -7,9 +11,9 @@ from torchvision.transforms import functional as TF
 import numpy as np
 from startup.utils import *
 from startup.ml_utils import *
-from startup.load_models import loadModels
-from startup.create_sample_function import createSampleFunction
-from startup.generate_samples import generateSamples
+from startup.load_models import load_models
+from startup.create_sample_function import create_sample_function
+from startup.generate_samples import generate_samples
 import io
 import base64
 from datetime import datetime
@@ -61,19 +65,19 @@ def startServer(device, model_params, model, diffusion, ldm_model, bert_model, c
         edit = None
         mask = None
         try:
-            edit = loadImageFromBase64(json["edit"])
+            edit = load_image_from_base64(json["edit"])
         except Exception as err:
             print(f"loading edit image failed, {err}")
             abort(make_response({"error": f"loading edit image failed, {err}"}, 400))
         try:
-            mask = loadImageFromBase64(json["mask"])
+            mask = load_image_from_base64(json["mask"])
         except Exception as err:
             print(f"loading mask image failed, {err}")
             abort(make_response({"error": f"loading mask image failed, {err}"}, 400))
 
         sample_fn = None
         try:
-            sample_fn, clip_score_fn = createSampleFunction(
+            sample_fn, clip_score_fn = create_sample_function(
                     device,
                     model,
                     model_params,
@@ -102,15 +106,15 @@ def startServer(device, model_params, model, diffusion, ldm_model, bert_model, c
                 try:
                     def addImageToResponse(k, image):
                         name = f'{i * batch_size + k:05}'
-                        current_app.samples[name] = { "image": imageToBase64(image), "timestamp": timestamp }
-                    foreachImageInSample(sample, batch_size, ldm_model, addImageToResponse)
+                        current_app.samples[name] = { "image": image_to_base64(image), "timestamp": timestamp }
+                    foreach_image_in_sample(sample, batch_size, ldm_model, addImageToResponse)
                 except Exception as err:
                     current_app.lastError = f"sample save error: {err}"
                     print(current_app.lastError)
 
         def run_thread():
             with context:
-                generateSamples(device,
+                generate_samples(device,
                         ldm_model,
                         diffusion,
                         sample_fn,

@@ -1,3 +1,7 @@
+"""
+Popup modal providing a dynamic settings interface, to be populated by the controller. Currently only used with
+stable_diffusion_controller.
+"""
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import pyqtSignal
 from ui.widget.bordered_widget import BorderedWidget
@@ -9,70 +13,70 @@ from ui.widget.label_wrapper import LabelWrapper
 class SettingsModal(QDialog):
     """Manage remote settings."""
 
-    changesSaved = pyqtSignal(dict)
+    changes_saved = pyqtSignal(dict)
 
     def __init__(self, parent):
         super().__init__(parent)
         self.setModal(True)
 
         self._panels = {}
-        self._panelLayouts = {}
+        self._panel_layouts = {}
         self._inputs = {}
         self._changes = {}
-        self._panelLayout = QVBoxLayout()
+        self._panel_layout = QVBoxLayout()
 
         layout = QVBoxLayout()
         self.setLayout(layout)
 
-        panelWidget = BorderedWidget(self)
-        panelWidget.setLayout(self._panelLayout)
-        layout.addWidget(panelWidget, stretch=20)
+        panel_widget = BorderedWidget(self)
+        panel_widget.setLayout(self._panel_layout)
+        layout.addWidget(panel_widget, stretch=20)
 
-        bottomPanel = BorderedWidget(self) 
-        bottomPanelLayout = QHBoxLayout()
-        bottomPanel.setLayout(bottomPanelLayout)
-        bottomPanelLayout.addSpacing(300)
+        bottom_panel = BorderedWidget(self) 
+        bottom_panel_layout = QHBoxLayout()
+        bottom_panel.setLayout(bottom_panel_layout)
+        bottom_panel_layout.addSpacing(300)
 
-        cancelButton = QPushButton()
-        cancelButton.setText("Cancel")
-        cancelButton.clicked.connect(lambda: self.hide())
-        bottomPanelLayout.addWidget(cancelButton, stretch=1)
+        cancel_button = QPushButton()
+        cancel_button.setText("Cancel")
+        cancel_button.clicked.connect(lambda: self.hide())
+        bottom_panel_layout.addWidget(cancel_button, stretch=1)
 
-        saveButton = QPushButton()
-        saveButton.setText("Save")
-        def onSave():
-            self.changesSaved.emit(self._changes)
+        save_button = QPushButton()
+        save_button.setText("Save")
+        def on_save():
+            self.changes_saved.emit(self._changes)
             self.hide()
-        saveButton.clicked.connect(lambda: onSave())
-        bottomPanelLayout.addWidget(saveButton, stretch=1)
-        layout.addWidget(bottomPanel, stretch=1)
+        save_button.clicked.connect(lambda: on_save())
+        bottom_panel_layout.addWidget(save_button, stretch=1)
+        layout.addWidget(bottom_panel, stretch=1)
 
-    def showModal(self):
+    def show_modal(self):
         self.exec_()
 
-    def setTooltip(self, settingName, tooltip):
-        if settingName not in self._inputs:
-            raise Exception(f"{settingName} not defined")
-        self._inputs[settingName].setToolTip(tooltip)
+    def set_tooltip(self, setting_name, tooltip):
+        if setting_name not in self._inputs:
+            raise Exception(f"{setting_name} not defined")
+        self._inputs[setting_name].setToolTip(tooltip)
         
-    def _addChange(self, setting, newValue):
-        self._changes[setting] = newValue
+    def _add_change(self, setting, new_value):
+        self._changes[setting] = new_value
 
-    def _addPanelIfMissing(self, panelName):
-        if panelName not in self._panels:
-            panel = CollapsibleBox(title=panelName)
-            panelLayout = QVBoxLayout()
-            panel.setContentLayout(panelLayout)
-            self._panels[panelName] = panel
-            self._panelLayouts[panelName] = panelLayout
-            self._panelLayout.addWidget(panel)
+    def _add_panel_if_missing(self, panel_name):
+        if panel_name not in self._panels:
+            panel = CollapsibleBox(title=panel_name)
+            panel_layout = QVBoxLayout()
+            panel.set_content_layout(panel_layout)
+            self._panels[panel_name] = panel
+            self._panel_layouts[panel_name] = panel_layout
+            self._panel_layout.addWidget(panel)
 
-    def _addSetting(self, settingName, panelName, widget, labelText):
-        self._addPanelIfMissing(panelName)
-        self._panelLayouts[panelName].addWidget(LabelWrapper(widget, labelText))
-        self._inputs[settingName] = widget
+    def _add_setting(self, setting_name, panel_name, widget, label_text):
+        self._add_panel_if_missing(panel_name)
+        self._panel_layouts[panel_name].addWidget(LabelWrapper(widget, label_text))
+        self._inputs[setting_name] = widget
 
-    def updateSettings(self, settings):
+    def update_settings(self, settings):
         for key in settings:
             if key not in self._inputs:
                 continue
@@ -90,36 +94,36 @@ class SettingsModal(QDialog):
             if key in self._changes:
                 del self._changes[key]
 
-    def addTextSetting(self, settingName, panelName, initialValue, labelText):
-        textBox = QLineEdit()
-        textBox.setText(initialValue)
-        textBox.textChanged.connect(lambda: self._addChange(settingName, textBox.text()))
-        self._addSetting(settingName, panelName, textBox, labelText)
+    def add_text_setting(self, setting_name, panel_name, initial_value, label_text):
+        textbox = QLineEdit()
+        textbox.setText(initial_value)
+        textbox.textChanged.connect(lambda: self._add_change(setting_name, textbox.text()))
+        self._add_setting(setting_name, panel_name, textbox, label_text)
 
-    def addComboBoxSetting(self, settingName, panelName, initialValue, options, labelText):
-        comboBox = QComboBox()
+    def add_combobox_setting(self, setting_name, panel_name, initial_value, options, label_text):
+        combobox = QComboBox()
         for option in options:
             if isinstance(option, dict):
-                comboBox.addItem(option['text'])
+                combobox.addItem(option['text'])
             else:
-                comboBox.addItem(option)
-        def updateValue(selectedIndex):
-            print(f"Set value {selectedIndex} for {settingName}")
-            self._addChange(settingName, options[selectedIndex])
-        comboBox.setCurrentIndex(options.index(initialValue))
-        comboBox.currentIndexChanged.connect(updateValue)
-        self._addSetting(settingName, panelName, comboBox, labelText)
+                combobox.addItem(option)
+        def update_value(selected_index):
+            print(f"Set value {selected_index} for {setting_name}")
+            self._add_change(setting_name, options[selected_index])
+        combobox.setCurrentIndex(options.index(initial_value))
+        combobox.currentIndexChanged.connect(update_value)
+        self._add_setting(setting_name, panel_name, combobox, label_text)
 
-    def addSpinBoxSetting(self, settingName, panelName, initialValue, minValue, maxValue, labelText):
-        spinBox = QDoubleSpinBox() if type(initialValue) is float else BigIntSpinbox()
-        spinBox.setRange(minValue, maxValue)
-        spinBox.setValue(initialValue)
-        spinBox.valueChanged.connect(lambda newValue: self._addChange(settingName, newValue))
-        self._addSetting(settingName, panelName, spinBox, labelText)
+    def add_spinbox_setting(self, setting_name, panel_name, initial_value, min_value, max_value, label_text):
+        spinbox = QDoubleSpinBox() if type(initial_value) is float else BigIntSpinbox()
+        spinbox.setRange(min_value, max_value)
+        spinbox.setValue(initial_value)
+        spinbox.valueChanged.connect(lambda newValue: self._add_change(setting_name, newValue))
+        self._add_setting(setting_name, panel_name, spinbox, label_text)
 
         
-    def addCheckBoxSetting(self, settingName, panelName, initialValue, labelText):
-        checkBox = QCheckBox()
-        checkBox.setChecked(initialValue)
-        checkBox.stateChanged.connect(lambda isChecked: self._addChange(settingName, bool(isChecked)))
-        self._addSetting(settingName, panelName, checkBox, labelText)
+    def add_checkbox_setting(self, setting_name, panel_name, initial_value, label_text):
+        checkbox = QCheckBox()
+        checkbox.setChecked(initial_value)
+        checkbox.stateChanged.connect(lambda isChecked: self._add_change(setting_name, bool(isChecked)))
+        self._add_setting(setting_name, panel_name, checkbox, label_text)

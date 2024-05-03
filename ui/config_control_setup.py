@@ -1,95 +1,106 @@
-from PyQt5.QtWidgets import QSpinBox, QDoubleSpinBox, QLineEdit, QCheckBox, QComboBox, QPlainTextEdit, QHBoxLayout, QLabel
-from PyQt5.QtGui import QTextCursor, QFont, QFontMetrics
-from ui.widget.big_int_spinbox import BigIntSpinbox
-
 """
-Creates UI input components linked to inpainting.data_model.config values.
+Creates UI input components linked to data_model.config values.
 - Initial component values are read from config.
 - Changes to the component update the corresponding config value.
 - Changes to the config value are applied to the input (if necessary).
 """
 
-def connectedSpinBox(parent, config, key, minKey=None, maxKey=None, stepSizeKey=None):
-    initialValue = config.get(key)
-    spinBox = QDoubleSpinBox(parent) if type(initialValue) is float else BigIntSpinbox(parent)
-    if (initialValue < spinBox.minimum() or initialValue > spinBox.maximum()):
-        spinBox.setRange(min(spinBox.minimum(), initialValue), max(spinBox.maximum(), initialValue))
-    minWidth = spinBox.sizeHint().width()
-    spinBox.setValue(initialValue)
-    if stepSizeKey is not None:
-        step = config.get(stepSizeKey)
-        spinBox.setSingleStep(step)
-        config.connect(spinBox, stepSizeKey, lambda newVal: spinBox.setSingleStep(newVal))
-    def applyChangeToSpinbox(newValue):
-        if spinBox.value() != newValue:
-            spinBox.setValue(newValue)
-    config.connect(spinBox, key, lambda newValue: spinBox.setValue(newValue))
-    def applyChangeToConfig(newValue):
-        numValue = int(newValue) if type(initialValue) is int else float(newValue)
-        if config.get(key) != numValue:
-            config.set(key, numValue)
-    spinBox.valueChanged.connect(applyChangeToConfig)
-    if maxKey is not None:
-        minVal = 0 if minKey is None else config.get(minKey)
-        maxVal = config.get(maxKey)
-        spinBox.setRange(minVal, maxVal)
-        if minKey is not None:
-            config.connect(spinBox, minKey, lambda newMin: spinBox.setRange(newMin, spinBox.maximum())) 
-        config.connect(spinBox, maxKey, lambda newMax: spinBox.setRange(spinBox.minimum(), newMax))
+from PyQt5.QtWidgets import QSpinBox, QDoubleSpinBox, QLineEdit, QCheckBox, QComboBox, QPlainTextEdit, QHBoxLayout, QLabel
+from PyQt5.QtGui import QTextCursor, QFont, QFontMetrics
+from ui.widget.big_int_spinbox import BigIntSpinbox
+
+
+def connected_spinbox(parent, config, key, min_key=None, max_key=None, step_size_key=None, inner_key=None):
+    initial_value = config.get(key, inner_key)
+    spinbox = QDoubleSpinBox(parent) if type(initial_value) is float else BigIntSpinbox(parent)
+    if (initial_value < spinbox.minimum() or initial_value > spinbox.maximum()):
+        spinbox.setRange(min(spinbox.minimum(), initial_value), max(spinbox.maximum(), initial_value))
+    min_width = spinbox.sizeHint().width()
+    spinbox.setValue(initial_value)
+    if isinstance(step_size_key, str):
+        step = config.get(step_size_key)
+        spinbox.setSingleStep(step)
+        config.connect(spinbox, step_size_key, lambda newVal: spinbox.setSingleStep(newVal), inner_key)
+    elif step_size_key is not None:
+        spinbox.setSingleStep(step_size_key)
+    def apply_change_to_spinbox(new_value):
+        if spinbox.value() != new_value:
+            spinbox.setValue(new_value if new_value is not None else 0)
+    config.connect(spinbox, key, apply_change_to_spinbox, inner_key=inner_key)
+    def apply_change_to_config(newValue):
+        num_value = int(newValue) if type(initial_value) is int else float(newValue)
+        if config.get(key, inner_key) != num_value:
+            config.set(key, num_value, inner_key=inner_key)
+    spinbox.valueChanged.connect(apply_change_to_config)
+
+    if max_key is not None:
+        min_val = 0 if min_key is None else config.get(min_key) if isinstance(min_key, str) else min_key
+        max_val = config.get(max_key) if isinstance(max_key, str) else max_key
+        spinbox.setRange(min_val, max_val)
+        if isinstance(min_key, str):
+            config.connect(spinbox, min_key, lambda newMin: spinbox.setRange(newMin, spinbox.maximum())) 
+        if isinstance(max_key, str):
+            config.connect(spinbox, max_key, lambda newMax: spinbox.setRange(spinbox.minimum(), newMax))
+
     font = QFont()
     font.setPointSize(config.get("fontPointSize"))
-    longestStr = str(initialValue if maxKey is None else config.get(maxKey))
-    if type(initialValue) is float and "." not in longestStr:
-        longestStr += ".00"
-    minSize = QFontMetrics(font).boundingRect(longestStr).size()
-    minSize.setWidth(minSize.width() + minWidth)
-    spinBox.setMinimumSize(minSize)
-    return spinBox
+    longest_str = str(initial_value)
+    if max_key is not None:
+        longest_str = str(config.get(max_key) if isinstance(max_key, str) else max_key)
+    if type(initial_value) is float and "." not in longest_str:
+        longest_str += ".00"
+    min_size = QFontMetrics(font).boundingRect(longest_str).size()
+    min_size.setWidth(min_size.width() + min_width)
+    spinbox.setMinimumSize(min_size)
+    return spinbox
 
-def connectedTextEdit(parent, config, key, multiLine=False):
-    textEdit = QLineEdit(config.get(key), parent) if not multiLine else QPlainTextEdit(config.get(key), parent)
-    if multiLine:
-        textEdit.textChanged.connect(lambda: config.set(key, textEdit.toPlainText()))
+
+def connected_textedit(parent, config, key, multi_line=False, inner_key=None):
+    textedit = QLineEdit(config.get(key), parent) if not multi_line else QPlainTextEdit(config.get(key), parent)
+    if multi_line:
+        textedit.textChanged.connect(lambda: config.set(key, textedit.toPlainText(), inner_key=inner_key))
         def setText(newText):
-            if newText != textEdit.toPlainText():
-                textEdit.setPlainText(newText)
-        config.connect(textEdit, key, setText)
+            if newText != textedit.toPlainText():
+                textedit.setPlainText(newText if newText is not None else "")
+        config.connect(textedit, key, setText, inner_key=inner_key)
     else:
-        textEdit.textChanged.connect(lambda newContent: config.set(key, newContent))
+        textedit.textChanged.connect(lambda newContent: config.set(key, newContent, inner_key=inner_key))
         def setText(newText):
-            if newText != textEdit.text():
-                textEdit.setText(newText)
-        config.connect(textEdit, key, setText)
-    return textEdit
+            if newText != textedit.text():
+                textedit.setText(newText if newText is not None else "")
+        config.connect(textedit, key, setText, inner_key=inner_key)
+    return textedit
 
-def connectedCheckBox(parent, config, key, text=None, tooltip=None):
-    checkBox = QCheckBox(parent)
-    checkBox.setChecked(config.get(key))
-    checkBox.stateChanged.connect(lambda isChecked: config.set(key, bool(isChecked)))
-    config.connect(checkBox, key, lambda isChecked: checkBox.setChecked(bool(isChecked)))
+
+def connected_checkbox(parent, config, key, text=None, tooltip=None, inner_key=None):
+    checkbox = QCheckBox(parent)
+    checkbox.setChecked(bool(config.get(key, inner_key)))
+    checkbox.stateChanged.connect(lambda isChecked: config.set(key, bool(isChecked), inner_key=inner_key))
+    config.connect(checkbox, key, lambda isChecked: checkbox.setChecked(bool(isChecked)), inner_key=inner_key)
     if text is not None:
-        checkBox.setText(text)
+        checkbox.setText(text)
     if tooltip is not None:
-        checkBox.setToolTip(tooltip)
-    return checkBox
+        checkbox.setToolTip(tooltip)
+    return checkbox
 
-def connectedComboBox(parent, config, key, text=None):
-    comboBox = QComboBox(parent)
-    options = config.getOptions(key)
+
+def connected_combobox(parent, config, key, text=None):
+    combobox = QComboBox(parent)
+    options = config.get_options(key)
     for option in options:
-        comboBox.addItem(option)
-    defaultValue = config.get(key)
-    comboBox.setCurrentIndex(options.index(defaultValue))
+        combobox.addItem(option)
+    default_value = config.get(key)
+    combobox.setCurrentIndex(options.index(default_value))
     def updateConfigValue(index):
-        value = comboBox.itemText(index)
+        value = combobox.itemText(index)
         config.set(key, value)
-    comboBox.currentIndexChanged.connect(updateConfigValue)
-    config.connect(comboBox, key, lambda newValue: comboBox.setCurrentIndex(options.index(newValue)))
+    combobox.currentIndexChanged.connect(updateConfigValue)
+    config.connect(combobox, key, lambda newValue: combobox.setCurrentIndex(options.index(newValue)))
     if text is not None:
         label = QLabel(text)
         layout = QHBoxLayout()
         layout.addWidget(label)
-        layout.addWidget(comboBox)
-        return comboBox, layout
+        layout.addWidget(combobox)
+        return combobox, layout
     else:
-        return comboBox
+        return combobox

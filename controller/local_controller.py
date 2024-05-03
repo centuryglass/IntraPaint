@@ -1,11 +1,14 @@
+"""
+Provides image editing functionality through a local instance of GLID3-XL.
+"""
 from PIL import Image
 from torchvision.transforms import functional as TF
 import numpy as np
 import gc, os
 
-from startup.load_models import loadModels
-from startup.create_sample_function import createSampleFunction
-from startup.generate_samples import generateSamples
+from startup.load_models import load_models
+from startup.create_sample_function import create_sample_function
+from startup.generate_samples import generate_samples
 from startup.ml_utils import *
 
 from controller.base_controller import BaseInpaintController
@@ -13,7 +16,7 @@ from controller.base_controller import BaseInpaintController
 class LocalDeviceController(BaseInpaintController):
     def __init__(self, args):
         super().__init__(args)
-        self._device = getDevice(args.cpu)
+        self._device = get_device(args.cpu)
         print('Using device:', self._device)
         if args.seed >= 0:
             torch.manual_seed(args.seed)
@@ -21,7 +24,8 @@ class LocalDeviceController(BaseInpaintController):
         self._ddim = args.ddim
         self._ddpm = args.ddpm
 
-        self._model_params, self._model, self._diffusion, self._ldm, self._bert, self._clip_model, self._clip_preprocess, self._normalize = loadModels(
+        self._model_params, self._model, self._diffusion, self._ldm, self._bert, self._clip_model, \
+            self._clip_preprocess, self._normalize = load_models(
                 self._device,
                 model_path=args.model_path,
                 bert_path=args.bert_path,
@@ -33,7 +37,7 @@ class LocalDeviceController(BaseInpaintController):
                 ddim = args.ddim)
         print("Loaded models")
 
-    def _inpaint(self, selection, mask, sendImage, statusSignal):
+    def _inpaint(self, selection, mask, send_image, status_signal):
         gc.collect()
         if not isinstance(selection, Image.Image):
             raise Exception(f'Expected PIL Image selection, got {selection}')
@@ -46,7 +50,7 @@ class LocalDeviceController(BaseInpaintController):
 
         batch_size = self._config.get('batchSize')
         batch_count = self._config.get('batchCount')
-        sample_fn, clip_score_fn = createSampleFunction(
+        sample_fn, clip_score_fn = create_sample_function(
                 self._device,
                 self._model,
                 self._model_params,
@@ -73,12 +77,12 @@ class LocalDeviceController(BaseInpaintController):
                 ddpm=self._ddpm,
                 ddim=self._ddim)
         def save_sample(i, sample, clip_score=False):
-            foreachImageInSample(
+            foreach_image_in_sample(
                     sample,
                     batch_size,
                     self._ldm,
-                    lambda k, img: sendImage(img, (i * batch_size) + k))
-        generateSamples(
+                    lambda k, img: send_image(img, (i * batch_size) + k))
+        generate_samples(
                 self._device,
                 self._ldm,
                 self._diffusion,

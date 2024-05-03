@@ -1,128 +1,147 @@
+"""
+Provides an extended QSlider widget with integrated data_model/config connection.
+"""
 from PyQt5.QtWidgets import QWidget, QSlider, QLabel, QSizePolicy
 from PyQt5.QtCore import Qt, QSize
 from PyQt5.QtGui import QFont, QFontMetrics
-from ui.config_control_setup import connectedSpinBox
+from ui.config_control_setup import connected_spinbox
 from ui.widget.label import Label
 
 class ParamSlider(QWidget):
     def __init__(self,
             parent,
-            labelText,
+            label_text,
             config,
             key,
-            minKey,
-            maxKey,
-            stepKey=None,
+            min_key,
+            max_key,
+            step_key=None,
+            inner_key=None,
             orientation=Qt.Orientation.Horizontal,
-            verticalTextPt=None):
+            vertical_text_pt=None):
         super().__init__(parent)
-        isVertical = (orientation == Qt.Orientation.Vertical)
+        is_vertical = (orientation == Qt.Orientation.Vertical)
 
         self._key = None
-        self._floatMode = None
+        self._inner_key = None
+        self._float_mode = None
         self._orientation = None
         self._config = config
 
-        self._label = Label(labelText, config, self, size=verticalTextPt, orientation=orientation)
-        self._hSlider = QSlider(Qt.Orientation.Horizontal, self)
-        self._vSlider = QSlider(Qt.Orientation.Vertical, self)
+        self._label = Label(label_text, config, self, size=vertical_text_pt, orientation=orientation)
+        self._horizontal_slider = QSlider(Qt.Orientation.Horizontal, self)
+        self._vertical_slider = QSlider(Qt.Orientation.Vertical, self)
 
-        self._hSlider.setTickPosition(QSlider.TickPosition.TicksAbove)
-        self._vSlider.setTickPosition(QSlider.TickPosition.TicksRight)
-        self._hSlider.valueChanged.connect(lambda newValue: self._onSliderChange(newValue))
-        self._vSlider.valueChanged.connect(lambda newValue: self._onSliderChange(newValue))
+        self._horizontal_slider.setTickPosition(QSlider.TickPosition.TicksAbove)
+        self._vertical_slider.setTickPosition(QSlider.TickPosition.TicksRight)
+        self._horizontal_slider.valueChanged.connect(lambda newValue: self._on_slider_change(newValue))
+        self._vertical_slider.valueChanged.connect(lambda newValue: self._on_slider_change(newValue))
 
         font = QFont()
         font.setPointSize(config.get("fontPointSize"))
         self._spinboxMeasurements = QFontMetrics(font).boundingRect("9999").size() * 1.5
         
-        numberText = str(config.get(key))
-        self._stepBox = None
-        self.connectKey(key, minKey, maxKey, stepKey)
-        self.setOrientation(orientation)
+        number_text = str(config.get(key, inner_key=inner_key))
+        self._stepbox = None
+        if key is not None:
+            self.connect_key(key, min_key, max_key, step_key, inner_key)
+        self.set_orientation(orientation)
 
-    def connectKey(self, key, minKey, maxKey, stepKey):
-        if self._key == key:
-            return
+    def disconnect_config(self):
         if self._key is not None:
-            self._config.disconnect(self, self._key)
             try:
-                self._stepBox.valueChanged.disconnect()
-            except TypeError:
-                pass
-        lastKey = self._key
-        self._key = key
-        initialVal = self._config.get(key)
-        self._floatMode = (type(initialVal) is float)
-        minVal = self._config.get(minKey)
-        maxVal = self._config.get(maxKey)
-        fullRange = maxVal - minVal
-        tickInterval = 1 if (fullRange < 20) else (5 if fullRange < 50 else 10)
-        if self._floatMode:
-            tickInterval *= 100
-        step = 1 if stepKey is None else self._config.get(stepKey)
+                self._config.disconnect(self, self._key)
+            except KeyError as err:
+                    print(f"Disconnecting slider from {self._key} failed: {err}")
+            if self._stepbox is not None:
+                stepbox = self._stepbox
+                try:
+                    self._config.disconnect(stepbox, self._key)
+                except KeyError as err:
+                    print(f"Disconnecting stepbox from {self._key} failed: {err}")
+                stepbox.valueChanged.disconnect()
+                stepbox.setParent(None)
+                stepbox.deleteLater()
+            self._key = None
+            self._inner_key = None
 
-        for slider in (self._hSlider, self._vSlider):
-            slider.setMinimum(int(minVal * 100) if self._floatMode else minVal)
-            slider.setMaximum(int(maxVal * 100) if self._floatMode else maxVal)
-            slider.setSingleStep(int(step * 100) if self._floatMode else step)
-            slider.setValue(int(initialVal * 100) if self._floatMode else initialVal)
-            slider.setTickInterval(tickInterval)
-        def onConfigChange(newValue):
-            self._hSlider.setValue((int(newValue * 100)) if self._floatMode else newValue)
-            self._vSlider.setValue((int(newValue * 100)) if self._floatMode else newValue)
-        self._config.connect(self, key, onConfigChange)
-        if self._stepBox is not None:
-            stepBox = self._stepBox
-            self._config.disconnect(stepBox, lastKey)
-            stepBox.setParent(None)
-            self._stepBox = None
-            stepBox.deleteLater()
-        self._stepBox = connectedSpinBox(self, self._config, key, minKey, maxKey, stepKey)
+    def connect_key(self, key, min_key, max_key, step_key, inner_key=None):
+        if self._key == key and self._inner_key == key:
+            return
+        self.disconnect_config()
+        self._key = key
+        self._inner_key = inner_key
+        initial_value = self._config.get(key, inner_key)
+        self._float_mode = (type(initial_value) is float)
+        min_val = self._config.get(min_key) if isinstance(min_key, str) else min_key
+        max_val = self._config.get(max_key) if isinstance(max_key, str) else max_key
+        
+        full_range = max_val - min_val
+        tick_interval = 1 if (full_range < 20) else (5 if full_range < 50 else 10)
+        if self._float_mode:
+            tick_interval *= 100
+        step = 1 if step_key is None else self._config.get(step_key) if isinstance(step_key, str) else step_key
+        for slider in (self._horizontal_slider, self._vertical_slider):
+            slider.setMinimum(int(min_val * 100) if self._float_mode else min_val)
+            slider.setMaximum(int(max_val * 100) if self._float_mode else max_val)
+            slider.setSingleStep(int(step * 100) if self._float_mode else step)
+            slider.setValue(int(initial_value * 100) if self._float_mode else initial_value)
+            slider.setTickInterval(tick_interval)
+        def onConfigChange(new_value):
+            if new_value is None:
+                return
+            value = int(new_value * 100) if self._float_mode else new_value
+            if value != self._horizontal_slider.value():
+                self._horizontal_slider.setValue(value)
+            if value != self._vertical_slider.value():
+                self._vertical_slider.setValue(value)
+        self._config.connect(self, key, onConfigChange, inner_key)
+        self._stepbox = connected_spinbox(self, self._config, key, min_key, max_key, step_key, inner_key)
         self.resizeEvent(None)
-        self._stepBox.show()
+        self._stepbox.show()
 
     def sizeHint(self):
         if self._orientation == Qt.Orientation.Vertical:
-            return QSize(max(self._vSlider.sizeHint().width(), self._label.sizeHint().width(), self._spinboxMeasurements.width()),\
-                    self._vSlider.sizeHint().height() + self._label.sizeHint().height() + self._spinboxMeasurements.height())
+            return QSize(max(self._vertical_slider.sizeHint().width(), self._label.sizeHint().width(), self._spinboxMeasurements.width()),\
+                    self._vertical_slider.sizeHint().height() + self._label.sizeHint().height() + self._spinboxMeasurements.height())
         else: #horizontal
-            return QSize(self._hSlider.sizeHint().width() + self._label.sizeHint().width() + self._spinboxMeasurements.width(), \
-                    max(self._hSlider.sizeHint().height(), self._label.sizeHint().height(), self._spinboxMeasurements.height()))
+            return QSize(self._horizontal_slider.sizeHint().width() + self._label.sizeHint().width() + self._spinboxMeasurements.width(), \
+                    max(self._horizontal_slider.sizeHint().height(), self._label.sizeHint().height(), self._spinboxMeasurements.height()))
             
     def resizeEvent(self, event):
-        if self._stepBox is None:
+        if self._stepbox is None:
            return
         if self._orientation == Qt.Orientation.Vertical:
-            labelHeight = self._label.sizeHint().height()
-            numberHeight = self._stepBox.sizeHint().height()
-            self._label.setGeometry(0, 0, self.width(), labelHeight)
-            self._stepBox.setGeometry(0, self.height() - numberHeight, self.width(), numberHeight)
-            self._vSlider.setGeometry(0, labelHeight, self.width(), self.height() - labelHeight - numberHeight - 5)
+            label_height = self._label.sizeHint().height()
+            number_height = self._stepbox.sizeHint().height()
+            self._label.setGeometry(0, 0, self.width(), label_height)
+            self._stepbox.setGeometry(0, self.height() - number_height, self.width(), number_height)
+            self._vertical_slider.setGeometry(0, label_height, self.width(), self.height() - label_height - number_height - 5)
         else: #horizontal
-            labelWidth = self._label.sizeHint().width()
-            numberWidth = self._spinboxMeasurements.width()
-            self._label.setGeometry(0, 0, labelWidth, self.height())
-            self._stepBox.setGeometry(self.width() - numberWidth, 0, numberWidth, self.height())
-            self._hSlider.setGeometry(labelWidth, 0, self.width() - labelWidth - numberWidth - 5, self.height())
+            label_width = self._label.sizeHint().width()
+            number_width = self._spinboxMeasurements.width()
+            self._label.setGeometry(0, 0, label_width, self.height())
+            self._stepbox.setGeometry(self.width() - number_width, 0, number_width, self.height())
+            self._horizontal_slider.setGeometry(label_width, 0, self.width() - label_width - number_width - 5, self.height())
 
-    def setOrientation(self, orientation):
+    def set_orientation(self, orientation):
         if self._orientation == orientation:
             return
         self._orientation = orientation
         if self._orientation == Qt.Orientation.Vertical:
-            self._hSlider.setVisible(False)
-            self._vSlider.setVisible(True)
+            self._horizontal_slider.setVisible(False)
+            self._vertical_slider.setVisible(True)
             self.setSizePolicy(QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Ignored))
         else: #horizontal
-            self._hSlider.setVisible(True)
-            self._vSlider.setVisible(False)
+            self._horizontal_slider.setVisible(True)
+            self._vertical_slider.setVisible(False)
             self.setSizePolicy(QSizePolicy(QSizePolicy.Ignored, QSizePolicy.Fixed))
-        self._label.setOrientation(orientation)
+        self._label.set_orientation(orientation)
         self.update()
 
-    def _onSliderChange(self, newValue):
+    def _on_slider_change(self, new_value):
         if self._key is None:
             return
-        self._config.set(self._key, (float(newValue) / 100) if self._floatMode else newValue)
+        self._config.set(self._key, (float(new_value) / 100) if self._float_mode else new_value,
+                inner_key=self._inner_key)
         self.resizeEvent(None)

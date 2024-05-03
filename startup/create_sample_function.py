@@ -1,3 +1,7 @@
+"""
+Provides functions used to start up a local GLID3-XL instance.
+"""
+
 import torch
 import clip
 import numpy as np
@@ -9,7 +13,7 @@ from encoders.modules import MakeCutouts
 from startup.utils import fetch
 import sys
 
-def createSampleFunction(
+def create_sample_function(
         device,
         model,
         model_params, 

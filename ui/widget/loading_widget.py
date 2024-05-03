@@ -1,3 +1,6 @@
+"""
+Animated widget used to indicate a loading state.
+"""
 from PyQt5.QtWidgets import QWidget
 from PyQt5.QtGui import QPainter, QPen, QBrush, QColor
 from PyQt5.QtCore import Qt, QMargins, QRect, QPointF, pyqtProperty, QPropertyAnimation
@@ -14,7 +17,7 @@ class LoadingWidget(QWidget):
         self._anim.setEndValue(359)
         self._anim.setDuration(2000)
 
-    def setMessage(self, message):
+    def set_message(self, message):
         self._message = message
         self.update()
 
@@ -34,16 +37,16 @@ class LoadingWidget(QWidget):
 
     def paintEvent(self, event):
         painter = QPainter(self)
-        ellipseDim = int(min(self.width(), self.height()) * 0.8)
-        paintBounds = QRect((self.width() // 2) - (ellipseDim // 2),
-                (self.height() // 2 - ellipseDim // 2),
-                ellipseDim,
-                ellipseDim)
+        ellipse_dim = int(min(self.width(), self.height()) * 0.8)
+        paint_bounds = QRect((self.width() // 2) - (ellipse_dim // 2),
+                (self.height() // 2 - ellipse_dim // 2),
+                ellipse_dim,
+                ellipse_dim)
 
         # draw background circle:
         painter.setPen(QPen(Qt.black, 4, Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin))
         painter.setBrush(QBrush(QColor(0, 0, 0, 200), Qt.SolidPattern))
-        painter.drawEllipse(paintBounds)
+        painter.drawEllipse(paint_bounds)
 
         # Write text:
         painter.setPen(QPen(Qt.white, 4, Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin))
@@ -53,5 +56,5 @@ class LoadingWidget(QWidget):
         # Draw animated indicator:
         painter.translate(QPointF(self.width() / 2, self.height() / 2))
         painter.rotate(self._rotation)
-        painter.drawEllipse(QRect(0, int(-ellipseDim / 2 + ellipseDim * 0.05),
+        painter.drawEllipse(QRect(0, int(-ellipse_dim / 2 + ellipse_dim * 0.05),
                     self.width() // 20, self.height() // 40))

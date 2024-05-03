@@ -1,13 +1,13 @@
 """
- Runs the main IntraPaint inpainting UI.
- Assuming you're running the A1111 stable-diffusion API on the same machine with default settings, running
- `python IntraPaint.py` should be all you need. For more information on options, run `python IntraPaint.py --help`
+Runs the main IntraPaint inpainting UI.
+Assuming you're running the A1111 stable-diffusion API on the same machine with default settings, running
+`python IntraPaint.py` should be all you need. For more information on options, run `python IntraPaint.py --help`
 """
 
-from startup.utils import buildArgParser
+from startup.utils import build_arg_parser
 
 # argument parsing:
-parser = buildArgParser(defaultModel='inpaint.pt', includeEditParams=False)
+parser = build_arg_parser(default_model='inpaint.pt', include_edit_params=False)
 parser.add_argument('--mode', type = str, required = False, default = 'auto',
                     help = 'Set where inpainting operations should be completed. \nOptions:\n'
                     + '"auto": Attempt to guess at the most appropriate editing mode.\n'
@@ -39,27 +39,27 @@ if controller_mode == 'auto':
     from controller.stable_diffusion_controller import StableDiffusionController
     from controller.web_client_controller import WebClientController
     if args.server_url != '':
-        if StableDiffusionController.healthCheck(args.server_url):
+        if StableDiffusionController.health_check(args.server_url):
             controller_mode = 'stable'
-        elif WebClientController.healthCheck(args.server_url):
+        elif WebClientController.health_check(args.server_url):
             controller_mode = 'web'
         else:
             print(f'Unable to identify server type for {args.server_url}, checking default localhost ports...')
     if controller_mode == 'auto':
         DEFAULT_SD_URL = 'http://localhost:7860'
         DEFAULT_GLID_URL = 'http://localhost:5555'
-        if StableDiffusionController.healthCheck(DEFAULT_SD_URL):
+        if StableDiffusionController.health_check(DEFAULT_SD_URL):
             args.server_url = DEFAULT_SD_URL
             controller_mode = 'stable'
-        elif WebClientController.healthCheck(DEFAULT_GLID_URL):
+        elif WebClientController.health_check(DEFAULT_GLID_URL):
             args.server_url = DEFAULT_GLID_URL
             controller_mode = 'web'
         else:
             MIN_VRAM = 8000000000 # This is just a rough estimate.
             try:
                 import torch
-                from startup.ml_utils import getDevice
-                device = getDevice()
+                from startup.ml_utils import get_device
+                device = get_device()
                 (mem_free, memTotal) = torch.cuda.mem_get_info(device)
                 if mem_free < MIN_VRAM:
                     raise RuntimeError(f"Not enough VRAM to run local, expected at least {MIN_VRAM}, found {mem_free} of {memTotal}")
@@ -82,4 +82,4 @@ elif controller_mode == 'mock':
     controller = MockController(args)
 else:
     raise RuntimeError(f'Exiting: invalid mode "{controller_mode}"')
-controller.startApp()
+controller.start_app()

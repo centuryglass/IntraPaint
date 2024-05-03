@@ -1,3 +1,6 @@
+"""
+An extended QLabel implementation that supports vertical text.
+"""
 from PyQt5.QtGui import QPainter, QPixmap, QPainterPath, QTransform, QFontMetrics, QFont, QPalette
 from PyQt5.QtCore import Qt, QSize, QPointF
 from PyQt5.QtWidgets import QLabel, QSizePolicy
@@ -9,7 +12,7 @@ class Label(QLabel):
             config=None,
             parent=None,
             size=None,
-            bgColor=Qt.transparent,
+            bg_color=Qt.transparent,
             orientation=Qt.Orientation.Vertical):
         super().__init__(parent)
         self._config = config
@@ -22,22 +25,22 @@ class Label(QLabel):
         self._orientation = None
         self._text = None
         self.setAutoFillBackground(True)
-        self._bgColor = bgColor if bgColor is not None else self.palette().color(self.backgroundRole())
-        self._fgColor = self.palette().color(self.foregroundRole())
-        bgColorName = bgColor if not hasattr(bgColor, 'name') else bgColor.name()
-        fgColorName = self._fgColor if not hasattr(self._fgColor, 'name') else self._fgColor.name()
-        self._baseStyle = f"QLabel {{ background-color : {bgColorName}; color : {fgColorName}; }}"
-        self._invertedStyle = f"QLabel {{ background-color : {fgColorName}; color : {bgColorName}; }}"
-        self.setStyleSheet(self._baseStyle)
+        self._bg_color = bg_color if bg_color is not None else self.palette().color(self.backgroundRole())
+        self._fg_color = self.palette().color(self.foregroundRole())
+        bg_color_name = bg_color if not hasattr(bg_color, 'name') else bg_color.name()
+        fg_color_name = self._fg_color if not hasattr(self._fg_color, 'name') else self._fg_color.name()
+        self._base_style = f"QLabel {{ background-color : {bg_color_name}; color : {fg_color_name}; }}"
+        self._inverted_style = f"QLabel {{ background-color : {fg_color_name}; color : {bg_color_name}; }}"
+        self.setStyleSheet(self._base_style)
         if size is not None:
             self._font.setPointSize(size)
         elif config is not None:
-            fontSize = config.get("fontPointSize")
-            self._font.setPointSize(fontSize)
-        self.setOrientation(orientation)
+            font_size = config.get("fontPointSize")
+            self._font.setPointSize(font_size)
+        self.set_orientation(orientation)
         self.setText(text)
    
-    def setOrientation(self, orientation):
+    def set_orientation(self, orientation):
         if self._orientation == orientation:
             return
         self._orientation = orientation
@@ -46,15 +49,15 @@ class Label(QLabel):
         else:
             self.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
         if self._text is not None and self._image is not None:
-            self._image, self._image_inverted = self._drawTextPixmaps()
-            self._mergeTextAndIcon()
+            self._image, self._image_inverted = self._draw_text_pixmaps()
+            self._merge_text_and_icon()
 
-    def setInverted(self, invertColors):
-        if invertColors == self._inverted:
+    def set_inverted(self, invert_colors):
+        if invert_colors == self._inverted:
             return
-        self.setStyleSheet(self._invertedStyle if invertColors else self._baseStyle)
-        self._inverted = invertColors
-        self.setPixmap(self._image_inverted if invertColors else self._image)
+        self.setStyleSheet(self._inverted_style if invert_colors else self._base_style)
+        self._inverted = invert_colors
+        self.setPixmap(self._image_inverted if invert_colors else self._image)
         self.update()
     
     def sizeHint(self):
@@ -65,66 +68,66 @@ class Label(QLabel):
             return
         self._text = text
 
-        self._image, self._image_inverted = self._drawTextPixmaps()
-        self._mergeTextAndIcon()
+        self._image, self._image_inverted = self._draw_text_pixmaps()
+        self._merge_text_and_icon()
 
     def setIcon(self, icon):
         if self._icon is not None:
-            self._image, self._image_inverted = self._drawTextPixmaps()
+            self._image, self._image_inverted = self._draw_text_pixmaps()
         if isinstance(icon, str):
             icon = QPixmap(icon)
         self._icon = icon
-        self._mergeTextAndIcon()
+        self._merge_text_and_icon()
 
-    def _drawTextPixmaps(self):
-        drawnText = "     " if self._text is None else (self._text + "     ")
-        textBounds = QFontMetrics(self._font).boundingRect(drawnText)
-        w = int(textBounds.height() * 1.3) if self._orientation == Qt.Orientation.Vertical else textBounds.width()
-        h = textBounds.width() if self._orientation == Qt.Orientation.Vertical else int(textBounds.height() * 1.3)
-        imageSize = QSize(w, h)
+    def _draw_text_pixmaps(self):
+        drawn_text = "     " if self._text is None else (self._text + "     ")
+        text_bounds = QFontMetrics(self._font).boundingRect(drawn_text)
+        w = int(text_bounds.height() * 1.3) if self._orientation == Qt.Orientation.Vertical else text_bounds.width()
+        h = text_bounds.width() if self._orientation == Qt.Orientation.Vertical else int(text_bounds.height() * 1.3)
+        image_size = QSize(w, h)
 
         path = QPainterPath()
-        textPt = QPointF(0, -(textBounds.height() * 0.3)) if self._orientation == Qt.Orientation.Vertical \
-                else QPointF(0, textBounds.height())
-        path.addText(textPt, self._font, drawnText)
+        text_pt = QPointF(0, -(text_bounds.height() * 0.3)) if self._orientation == Qt.Orientation.Vertical \
+                else QPointF(0, text_bounds.height())
+        path.addText(text_pt, self._font, drawn_text)
         if self._orientation == Qt.Orientation.Vertical:
             rotation = QTransform()
             rotation.rotate(90)
             path = rotation.map(path)
 
         def draw(bg, fg):
-            image = QPixmap(imageSize)
+            image = QPixmap(image_size)
             image.fill(bg)
             painter = QPainter(image)
             painter.fillPath(path, fg)
             painter.end()
             return image
-        image, inverted = (draw(bg, fg) for (bg, fg) in ((self._bgColor, self._fgColor), (self._fgColor, self._bgColor)))
+        image, inverted = (draw(bg, fg) for (bg, fg) in ((self._bg_color, self._fg_color), (self._fg_color, self._bg_color)))
         return image, inverted
 
-    def _mergeTextAndIcon(self):
+    def _merge_text_and_icon(self):
         if self._icon is not None:
-            scaledIcon = self._icon.scaledToWidth(self._image.width()) if self._orientation == Qt.Orientation.Vertical\
+            scaled_icon = self._icon.scaledToWidth(self._image.width()) if self._orientation == Qt.Orientation.Vertical\
                     else self._icon.scaledToHeight(self._image.height())
-            iconPadding = (self._image.width() if self._orientation == Qt.Orientation.Vertical \
+            icon_padding = (self._image.width() if self._orientation == Qt.Orientation.Vertical \
                     else self._image.height()) // 3
-            newSize = QSize(self._image.width(), self._image.height())
+            new_size = QSize(self._image.width(), self._image.height())
             if self._orientation == Qt.Orientation.Vertical:
-                newSize.setHeight(newSize.height() + iconPadding + scaledIcon.height())
+                new_size.setHeight(new_size.height() + icon_padding + scaled_icon.height())
             else: 
-                newSize.setWidth(newSize.width() + iconPadding + scaledIcon.width())
+                new_size.setWidth(new_size.width() + icon_padding + scaled_icon.width())
 
-            def draw(textImage):
-                mergedImage = QPixmap(newSize)
-                mergedImage.fill(self._bgColor if textImage == self._image else self._fgColor)
-                painter = QPainter(mergedImage)
+            def draw(text_image):
+                merged_image = QPixmap(new_size)
+                merged_image.fill(self._bg_color if text_image == self._image else self._fg_color)
+                painter = QPainter(merged_image)
                 painter.drawPixmap(0, 0, self._icon)
                 if self._orientation == Qt.Orientation.Vertical:
-                    painter.drawPixmap(0, self._icon.height() + iconPadding, textImage)
+                    painter.drawPixmap(0, self._icon.height() + icon_padding, text_image)
                 else: 
-                    painter.drawPixmap(self._icon.width() + iconPadding, 0, textImage)
+                    painter.drawPixmap(self._icon.width() + icon_padding, 0, text_image)
                 painter.end()
-                return mergedImage
+                return merged_image
             self._image, self._image_inverted = (draw(img) for img in (self._image, self._image_inverted))
         if self._orientation == Qt.Orientation.Vertical:
             self.setSizePolicy(QSizePolicy(QSizePolicy.Fixed, QSizePolicy.MinimumExpanding))
@@ -133,5 +136,5 @@ class Label(QLabel):
         self.setPixmap(self._image_inverted if self._inverted else self._image)
         self.update()
 
-    def imageSize(self):
+    def image_size(self):
         return self._image.size()

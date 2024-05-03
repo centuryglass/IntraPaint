@@ -1,3 +1,6 @@
+"""
+Convenience function for adding labels to the left of arbitrary widgets.
+"""
 from PyQt5.QtWidgets import QWidget, QLabel, QHBoxLayout
 
 class LabelWrapper(QWidget):

@@ -1,4 +1,7 @@
-# Adapted from https://stackoverflow.com/a/52617714, but without animations, and a few other minor adjustments.
+"""
+A container widget that can be expanded or collapsed.
+Originally adapted from https://stackoverflow.com/a/52617714
+"""
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QStackedWidget, QWidget, QScrollArea, QToolButton, QHBoxLayout, QVBoxLayout, QSizePolicy
@@ -13,48 +16,48 @@ class CollapsibleBox(BorderedWidget):
     def __init__(self,
             title="",
             parent=None,
-            startClosed=False,
+            start_closed=False,
             scrolling=True,
             orientation=Qt.Orientation.Vertical):
         super(CollapsibleBox, self).__init__(parent)
         self._widgetsize_max = self.maximumWidth()
-        self._isVertical = (orientation == Qt.Orientation.Vertical)
-        self._expandedSizePolicy = QSizePolicy.Preferred
-        layout = QVBoxLayout(self) if self._isVertical else QHBoxLayout(self)
+        self._is_vertical = (orientation == Qt.Orientation.Vertical)
+        self._expanded_size_policy = QSizePolicy.Preferred
+        layout = QVBoxLayout(self) if self._is_vertical else QHBoxLayout(self)
         layout.setSpacing(0)
         layout.setContentsMargins(0, 0, 0, 0)
 
 
-        self.toggle_button = QToolButton(
-            text=title, checkable=True, checked=not startClosed
+        self._toggle_button = QToolButton(
+            text=title, checkable=True, checked=not start_closed
         )
-        self.toggle_button.setStyleSheet("QToolButton { border: none; }")
-        if self._isVertical:
-            self.toggle_button.setToolButtonStyle(
+        self._toggle_button.setStyleSheet("QToolButton { border: none; }")
+        if self._is_vertical:
+            self._toggle_button.setToolButtonStyle(
                 QtCore.Qt.ToolButtonTextBesideIcon
             )
-            layout.addWidget(self.toggle_button, stretch=1)
-            self.toggle_button.setSizePolicy(QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Expanding))
+            layout.addWidget(self._toggle_button, stretch=1)
+            self._toggle_button.setSizePolicy(QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Expanding))
         else:
-            self.toggleLabel = Label(title)
-            self.toggleLabel.setAlignment(Qt.AlignTop)
-            self.toggle_button.setToolButtonStyle(
+            self._toggle_label = Label(title)
+            self._toggle_label.setAlignment(Qt.AlignTop)
+            self._toggle_button.setToolButtonStyle(
                 QtCore.Qt.ToolButtonIconOnly
             )
-            buttonBar = QWidget()
-            buttonBarLayout = QVBoxLayout()
-            buttonBarLayout.addWidget(self.toggle_button, alignment=Qt.AlignTop)
-            buttonBarLayout.addWidget(self.toggleLabel, alignment=Qt.AlignTop)
-            buttonBarLayout.addStretch(255)
-            buttonBarLayout.setContentsMargins(0,0,0,0)
-            buttonBar.setLayout(buttonBarLayout)
-            buttonBar.setSizePolicy(QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed))
-            minWidth = self.toggleLabel.imageSize().width() + 2
-            for widget in [buttonBar, self.toggleLabel, self.toggle_button]:
-                widget.setMinimumWidth(minWidth)
-            layout.addWidget(buttonBar, stretch=1)
-        self.toggle_button.setArrowType(QtCore.Qt.DownArrow if self._isVertical else QtCore.Qt.RightArrow)
-        self.toggle_button.toggled.connect(lambda: self.on_pressed())
+            button_bar = QWidget()
+            button_bar_layout = QVBoxLayout()
+            button_bar_layout.addWidget(self._toggle_button, alignment=Qt.AlignTop)
+            button_bar_layout.addWidget(self._toggle_label, alignment=Qt.AlignTop)
+            button_bar_layout.addStretch(255)
+            button_bar_layout.setContentsMargins(0,0,0,0)
+            button_bar.setLayout(button_bar_layout)
+            button_bar.setSizePolicy(QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed))
+            min_width = self._toggle_label.image_size().width() + 2
+            for widget in [button_bar, self._toggle_label, self._toggle_button]:
+                widget.setMinimumWidth(min_width)
+            layout.addWidget(button_bar, stretch=1)
+        self._toggle_button.setArrowType(QtCore.Qt.DownArrow if self._is_vertical else QtCore.Qt.RightArrow)
+        self._toggle_button.toggled.connect(lambda: self.on_pressed())
 
         if scrolling:
             self.scroll_area = QScrollArea()
@@ -65,79 +68,79 @@ class CollapsibleBox(BorderedWidget):
             self.scroll_area = QWidget()
             self.content = self.scroll_area
         self.scroll_area.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-        if self._isVertical:
-            self.setSizePolicy(QSizePolicy.Expanding, self._expandedSizePolicy)
+        if self._is_vertical:
+            self.setSizePolicy(QSizePolicy.Expanding, self._expanded_size_policy)
         else:
-            self.setSizePolicy(self._expandedSizePolicy, QSizePolicy.Expanding)
+            self.setSizePolicy(self._expanded_size_policy, QSizePolicy.Expanding)
         
         layout.addWidget(self.scroll_area, stretch=255)
-        self._startClosed = startClosed
+        self._startClosed = start_closed
 
-    def setExpandedSizePolicy(self, policy):
-        if policy == self._expandedSizePolicy:
+    def set_expanded_size_policy(self, policy):
+        if policy == self._expanded_size_policy:
             return
-        self._expandedSizePolicy = policy
-        if self.isExpanded():
-            if self._isVertical:
-                self.setSizePolicy(QSizePolicy.Expanding, self._expandedSizePolicy)
+        self._expanded_size_policy = policy
+        if self.is_expanded():
+            if self._is_vertical:
+                self.setSizePolicy(QSizePolicy.Expanding, self._expanded_size_policy)
             else:
-                self.setSizePolicy(self._expandedSizePolicy, QSizePolicy.Expanding)
+                self.setSizePolicy(self._expanded_size_policy, QSizePolicy.Expanding)
 
     def toggled(self):
-        return self.toggle_button.toggled
+        return self._toggle_button.toggled
 
-    def showButtonBar(self, showBar):
+    def show_button_bar(self, showBar):
         self.layout().setStretch(0, 1 if showBar else 0)
-        buttonBar = self.layout().itemAt(0).widget()
-        buttonBar.setEnabled(showBar)
-        buttonBar.setVisible(showBar)
-        if self._isVertical:
-            buttonBar.setMaximumHeight(self.height() if showBar else 0)
+        button_bar = self.layout().itemAt(0).widget()
+        button_bar.setEnabled(showBar)
+        button_bar.setVisible(showBar)
+        if self._is_vertical:
+            button_bar.setMaximumHeight(self.height() if showBar else 0)
         else:
-            buttonBar.setMaximumWidth(self.width() if showBar else 0)
-            minWidth = (self.toggleLabel.imageSize().width() + 2) if showBar else 0
-            for widget in [buttonBar, self.toggleLabel, self.toggle_button]:
+            button_bar.setMaximumWidth(self.width() if showBar else 0)
+            minWidth = (self._toggle_label.image_size().width() + 2) if showBar else 0
+            for widget in [button_bar, self._toggle_label, self._toggle_button]:
                 widget.setMinimumWidth(minWidth)
         if not showBar:
-            self.setExpanded(True)
+            self.set_expanded(True)
 
     def sizeHint(self):
         size = super().sizeHint()
-        if not self.toggle_button.isChecked():
-            if self._isVertical:
-                size.setWidth(self.toggle_button.sizeHint().width())
+        if not self._toggle_button.isChecked():
+            if self._is_vertical:
+                size.setWidth(self._toggle_button.sizeHint().width())
             else:
-                size.setHeight(self.toggle_button.sizeHint().height())
+                size.setHeight(self._toggle_button.sizeHint().height())
         return size
 
     def on_pressed(self):
-        checked = self.toggle_button.isChecked()
-        self.toggle_button.setArrowType(
-            QtCore.Qt.DownArrow if (checked == self._isVertical) else QtCore.Qt.RightArrow)
+        checked = self._toggle_button.isChecked()
+        self._toggle_button.setArrowType(
+            QtCore.Qt.DownArrow if (checked == self._is_vertical) else QtCore.Qt.RightArrow)
         if checked:
             self.layout().addWidget(self.scroll_area, stretch=255)
             self.scroll_area.setVisible(True)
-            if self._isVertical:
-                self.setSizePolicy(QSizePolicy.Expanding, self._expandedSizePolicy)
+            if self._is_vertical:
+                self.setSizePolicy(QSizePolicy.Expanding, self._expanded_size_policy)
             else:
-                self.setSizePolicy(self._expandedSizePolicy, QSizePolicy.Expanding)
+                self.setSizePolicy(self._expanded_size_policy, QSizePolicy.Expanding)
         else:
             self.layout().removeWidget(self.scroll_area)
             self.scroll_area.setVisible(False)
-            if self._isVertical:
+            if self._is_vertical:
                 self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Maximum)
             else:
                 self.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Expanding)
         self.update()
 
-    def isExpanded(self):
-        return self.toggle_button.isChecked()
+    def is_expanded(self):
+        return self._toggle_button.isChecked()
 
-    def setExpanded(self, isExpanded):
-        if isExpanded != self.toggle_button.isChecked():
-            self.toggle_button.setChecked(isExpanded)
+    def set_expanded(self, expanded):
+        if expanded != self._toggle_button.isChecked():
+            self._toggle_button.setChecked(expanded)
 
-    def setContentLayout(self, layout):
+    def set_content_layout(self, layout):
         self.content.setLayout(layout)
         if self._startClosed:
             self.on_pressed()

@@ -1,41 +1,51 @@
-#TODO: It would probably be better to find a way to embed this interface directly in the brushlib library
-#TODO: Singleton design inherited from qtMypaint means that only one surface can exist. Either fix the C++ QT
-#      interface, or implement a system to dynamically load and unload content.
-import os, sys
-from threading import Lock
-from brushlib import MPHandler, MPTile
+"""
+A interface for the brushlib/libmypaint library.
+
+This is based on the C++ Qt libmypaint implementation found here: https://github.com/ethiccinema/qtmypaint
+I added sip4 bindings to that library, and used that to create the brushlib.so.
+
+TODO
+----
+- brushlib.so is compiled for x86_64 Linux machines only. Build binaries for other operating systems and
+  architectures.
+- It would be better if this interface could be directly embedded within the wrapped brushlib library.
+- Clean up the sip bindings and build scripts, push changes to my qtmypaint fork, and link that fork here.
+- The singleton design inherited from qtmypaint means that only one surface can exist. IntraPaint doesn't really ever
+  need more than that, but it would be a nice feature to add for other uses.
+"""
 from PyQt5.QtCore import QByteArray
+from brushlib import MPHandler
 
 
 class Brushlib():
     _scene = None
     _brushpath = None
 
-    def addToScene(scene, zValue=None):
+    def add_to_scene(scene, z_value=None):
         if Brushlib._scene is not None:
             raise Exception("Brushlib can only be added to a scene once (for now)")
         Brushlib._scene = scene
-        if zValue is None:
-            zValue = 0
+        if z_value is None:
+            z_value = 0
             for item in scene.items():
-                zValue = max(zValue, item.zValue() + 1)
+                z_value = max(z_value, item.zValue() + 1)
 
-        def onNewTile(surface, tile):
-            tile.setZValue(zValue)
+        def on_new_tile(surface, tile):
+            tile.setZValue(z_value)
             scene.addItem(tile)
-        MPHandler.handler().newTile.connect(onNewTile)
+        MPHandler.handler().newTile.connect(on_new_tile)
 
-        def onUpdateTile(surface, tile):
+        def on_update_tile(surface, tile):
             tile.update()
-        MPHandler.handler().newTile.connect(onUpdateTile)
+        MPHandler.handler().newTile.connect(on_update_tile)
 
-    def setSurfaceSize(size):
+    def set_surface_size(size):
         MPHandler.handler().setSurfaceSize(size)
 
-    def surfaceSize():
+    def surface_size():
         return MPHandler.handler().surfaceSize()
 
-    def loadBrush(brushpath, preserveSize=True):
+    def load_brush(brushpath, preserveSize=True):
         size = Brushlib.radius()
         with open(brushpath, 'rb') as file:
             data = file.read()
@@ -45,32 +55,32 @@ class Brushlib():
             Brushlib.set_radius(size)
         Brushlib._brushpath = brushpath
 
-    def getActiveBrush():
+    def get_active_brush():
         return Brushlib._brushpath
 
-    def setBrushColor(color):
+    def set_brush_color(color):
         MPHandler.handler().setBrushColor(color)
 
-    def loadImage(image):
-        Brushlib.setSurfaceSize(Brushlib.surfaceSize())
+    def load_image(image):
+        Brushlib.set_surface_size(Brushlib.surface_size())
         MPHandler.handler().loadImage(image)
 
-    def renderImage():
+    def render_image():
         return MPHandler.handler().renderImage()
 
-    def clearSurface():
+    def clear_surface():
         MPHandler.handler().clearSurface()
 
-    def startStroke():
+    def start_stroke():
         MPHandler.handler().startStroke()
 
-    def endStroke():
+    def end_stroke():
         MPHandler.handler().endStroke()
 
-    def basicStrokeTo(x, y):
+    def basic_stroke_to(x, y):
         MPHandler.handler().strokeTo(x, y)
 
-    def strokeTo(x, y, pressure, xtilt, ytilt):
+    def stroke_to(x, y, pressure, xtilt, ytilt):
         MPHandler.handler().strokeTo(x, y, pressure, xtilt, ytilt)
 
     # Brush setting functions, descriptions copied from libmypaint brushsettings-gen.h
@@ -78,19 +88,19 @@ class Brushlib():
     # TODO: Use proper docstrings
 
 
-    def _getBrushValue(setting):
+    def _get_brush_value(setting):
         return MPHandler.handler().getBrushValue(setting)
 
-    def _setBrushValue(setting, value):
+    def _set_brush_value(setting, value):
         MPHandler.handler().setBrushValue(setting, value)
 
 
     # 0: Opacity: 0 means brush is transparent, 1 fully visible
     def opacity():
-        return Brushlib._getBrushValue(0)
+        return Brushlib._get_brush_value(0)
 
     def set_opacity(value):
-        Brushlib._setBrushValue(0, value)
+        Brushlib._set_brush_value(0, value)
 
     # 1: Opacity multiply: 0.0 - 2.0, default 1.0
     #     This gets multiplied with opaque. You should only change the
@@ -99,10 +109,10 @@ class Brushlib():
     #    there is zero pressure. This is just a convention, the behaviour is
     #    identical to 'opaque'.
     def opacity_multiply():
-        return Brushlib._getBrushValue(1)
+        return Brushlib._get_brush_value(1)
 
     def set_opacity_multiply(value):
-        Brushlib._setBrushValue(1, value)
+        Brushlib._set_brush_value(1, value)
 
 
     # 2: Opacity linearize: 0.0 - 2.0, default 0.9
@@ -116,29 +126,29 @@ class Brushlib():
     #         each pixel gets (dabs_per_radius*2) brushdabs on average during
     #         a stroke
     def opacity_linearize():
-        return Brushlib._getBrushValue(2)
+        return Brushlib._get_brush_value(2)
 
     def set_opacity_linearize(value):
-        Brushlib._setBrushValue(2, value)
+        Brushlib._set_brush_value(2, value)
 
     # 3: Radius: -2.0 - 6.0, default 2.0
     #    Basic brush radius (logarithmic)
     #     0.7 means 2 pixels
     #     3.0 means 20 pixels
     def radius():
-        return Brushlib._getBrushValue(3)
+        return Brushlib._get_brush_value(3)
 
     def set_radius(value):
-        Brushlib._setBrushValue(3, value)
+        Brushlib._set_brush_value(3, value)
 
     # 4: Hardness:  0.0 - 1.0, default 0.8
     #     Hard brush-circle borders (setting to zero will draw nothing). To
     #     reach the maximum hardness, you need to disable Pixel feather.
     def hardness():
-        return Brushlib._getBrushValue(4)
+        return Brushlib._get_brush_value(4)
 
     def set_hardness(value):
-        Brushlib._setBrushValue(4, value)
+        Brushlib._set_brush_value(4, value)
 
     # 5: Pixel feather: 0.0 - 5.0, default 1.0
     #     This setting decreases the hardness when necessary to prevent a
@@ -147,36 +157,36 @@ class Brushlib():
     #    1.0: blur one pixel (good value)
     #    5.0: notable blur, thin strokes will disappear
     def pixel_feather():
-        return Brushlib._getBrushValue(5)
+        return Brushlib._get_brush_value(5)
 
     def set_pixel_feather(value):
-        Brushlib._setBrushValue(5, value)
+        Brushlib._set_brush_value(5, value)
 
     # 6: Dabs per basic radius: 0.0 - 6.0, default 0.0
     #     How many dabs to draw while the pointer moves a distance of one
     #    brush radius (more precise: the base value of the radius)
     def dabs_per_basic_radius():
-        return Brushlib._getBrushValue(6)
+        return Brushlib._get_brush_value(6)
 
     def set_dabs_per_basic_radius(value):
-        Brushlib._setBrushValue(6, value)
+        Brushlib._set_brush_value(6, value)
 
     # 7: Dabs per actual radius: 0.0 - 6.0, default 2.0
     #    Same as above, but the radius actually drawn is used, which can
-    #    change dynamically. 
+    #    change dynamically.
     def dabs_per_actual_radius():
-        return Brushlib._getBrushValue(7)
+        return Brushlib._get_brush_value(7)
 
     def set_dabs_per_actual_radius(value):
-        Brushlib._setBrushValue(7, value)
+        Brushlib._set_brush_value(7, value)
 
     # 8: Dabs per second: 0.0 - 80.0, default 0.0
     #    Dabs to draw each second, no matter how far the pointer moves
     def dabs_per_second():
-        return Brushlib._getBrushValue(8)
+        return Brushlib._get_brush_value(8)
 
     def set_dabs_per_second(value):
-        Brushlib._setBrushValue(8, value)
+        Brushlib._set_brush_value(8, value)
 
     # 9: Radius by random: 0.0 - 1.5, default 0.0
     #     Alter the radius randomly each dab. You can also do this with the
@@ -186,27 +196,27 @@ class Brushlib():
     #       more transparent
     #    2) it will not change the actual radius seen by dabs_per_actual_radius
     def radius_by_random():
-        return Brushlib._getBrushValue(9)
+        return Brushlib._get_brush_value(9)
 
     def set_radius_by_random(value):
-        Brushlib._setBrushValue(9, value)
+        Brushlib._set_brush_value(9, value)
 
     # 10: Fine speed filter: 0.0 - 0.2, default 0.04
     #      How slow the input fine speed is following the real speed. 0.0
     #      change immediately as your speed changes (not recommended)
     def fine_speed_filter():
-        return Brushlib._getBrushValue(10)
+        return Brushlib._get_brush_value(10)
 
     def set_fine_speed_filter(value):
-        Brushlib._setBrushValue(10, value)
+        Brushlib._set_brush_value(10, value)
 
     # 11: Gross speed filter:  0.0 - 3.0, default 0.8
     #     Same as 'fine speed filter', but note that the range is different
     def gross_speed_filter():
-        return Brushlib._getBrushValue(11)
+        return Brushlib._get_brush_value(11)
 
     def set_gross_speed_filter(value):
-        Brushlib._setBrushValue(11, value)
+        Brushlib._set_brush_value(11, value)
 
     # 12: Fine speed gamma: -8.0 - 8.0, default 4.0
     #      This changes the reaction of the 'fine speed' input to extreme
@@ -216,25 +226,25 @@ class Brushlib():
     #      8.0: very fast speed increases 'fine speed' a lot
     #     For very slow speed the opposite happens.
     def fine_speed_gamma():
-        return Brushlib._getBrushValue(12)
+        return Brushlib._get_brush_value(12)
 
     def set_fine_speed_gamma(value):
-        Brushlib._setBrushValue(12, value)
+        Brushlib._set_brush_value(12, value)
 
     # 13: Gross speed gamma: -8.0 - 8.0, default 4.0
     #     Same as 'fine speed gamma' for gross speed.
     def gross_speed_gamma():
-        return Brushlib._getBrushValue(13)
+        return Brushlib._get_brush_value(13)
 
     def set_gross_speed_gamma(value):
-        Brushlib._setBrushValue(13, value)
+        Brushlib._set_brush_value(13, value)
 
-    # 14: Offset by random: 
+    # 14: Offset by random:
     def offset_by_random():
-        return Brushlib._getBrushValue(14)
+        return Brushlib._get_brush_value(14)
 
     def set_offset_by_random(value):
-        Brushlib._setBrushValue(14, value)
+        Brushlib._set_brush_value(14, value)
 
     # 15: Offset by speed: -3.0 - 3.0, default 0.0
     #      Change position depending on pointer speed
@@ -242,68 +252,68 @@ class Brushlib():
     #     > 0 draw where the pointer moves to
     #     < 0 draw where the pointer comes from
     def offset_by_speed():
-        return Brushlib._getBrushValue(15)
+        return Brushlib._get_brush_value(15)
 
     def set_offset_by_speed(value):
-        Brushlib._setBrushValue(15, value)
+        Brushlib._set_brush_value(15, value)
 
     # 15: Offset by speed filter: 0.0 - 10.0, default 0.0
     #      Slowdown pointer tracking speed. 0 disables it, higher values remove
     #      more jitter in cursor movements.
     #     Useful for drawing smooth, comic-like outlines.
     def offset_by_speed_filter():
-        return Brushlib._getBrushValue(16)
+        return Brushlib._get_brush_value(16)
 
     def set_offset_by_speed_filter(value):
-        Brushlib._setBrushValue(16, value)
-    
+        Brushlib._set_brush_value(16, value)
+
     # 17. Slow Tracking:
     def slow_tracking():
-        return Brushlib._getBrushValue(17)
+        return Brushlib._get_brush_value(17)
 
     def set_slow_tracking(value):
-        Brushlib._setBrushValue(17, value)
+        Brushlib._set_brush_value(17, value)
 
     # 18: Slow tracking per dab: 0.0 - 10.0, default 0.0
     #      Similar as above but at brushdab level (ignoring how much time has
     #     past, if brushdabs do not depend on time)
     def slow_tracking_per_dab():
-        return Brushlib._getBrushValue(18)
+        return Brushlib._get_brush_value(18)
 
     def set_slow_tracking_per_dab(value):
-        Brushlib._setBrushValue(18, value)
+        Brushlib._set_brush_value(18, value)
 
     # 19: Tracking noise: 0.0 - 12.0, default 0.0
     #      Add randomness to the mouse pointer; this usually generates many
     #     small lines in random directions; maybe try this together with
     #     'slow tracking'
     def tracking_noise():
-        return Brushlib._getBrushValue(19)
+        return Brushlib._get_brush_value(19)
 
     def set_tracking_noise(value):
-        Brushlib._setBrushValue(19, value)
+        Brushlib._set_brush_value(19, value)
 
     # 20: Color hue: 0.0 - 1.0, default 0.0
     def color_hue():
-        return Brushlib._getBrushValue(20)
+        return Brushlib._get_brush_value(20)
 
     def set_color_hue(value):
-        Brushlib._setBrushValue(20, value)
+        Brushlib._set_brush_value(20, value)
 
     # 21: Color saturation: -0.5 - 1.5, default 0.0
     def color_saturation():
-        return Brushlib._getBrushValue(21)
+        return Brushlib._get_brush_value(21)
 
     def set_color_saturation(value):
-        Brushlib._setBrushValue(21, value)
+        Brushlib._set_brush_value(21, value)
 
     # 22: Color value: -0.5 - 1.5, default 0.0
     #     (brightness, intensity)
     def color_value():
-        return Brushlib._getBrushValue(22)
+        return Brushlib._get_brush_value(22)
 
     def set_color_value(value):
-        Brushlib._setBrushValue(22, value)
+        Brushlib._set_brush_value(22, value)
 
     # 23. Save color: 0.0 - 1.0, default 0.0
     #      When selecting a brush, the color can be restored to the color that
@@ -312,10 +322,10 @@ class Brushlib():
     #     0.5: change active color towards brush color
     #     1.0: set the active color to the brush color when selected
     def save_color():
-        return Brushlib._getBrushValue(23)
+        return Brushlib._get_brush_value(23)
 
     def set_save_color(value):
-        Brushlib._setBrushValue(23, value)
+        Brushlib._set_brush_value(23, value)
 
     # 24. Change color hue: -2.0 - 2.0, default 0.0
     #       Change color hue.
@@ -323,10 +333,10 @@ class Brushlib():
     #      0.0: disable
     #      0.5: counterclockwise hue shift by 180 degrees
     def change_color_hue():
-        return Brushlib._getBrushValue(24)
+        return Brushlib._get_brush_value(24)
 
     def set_change_color_hue(value):
-        Brushlib._setBrushValue(24, value)
+        Brushlib._set_brush_value(24, value)
 
     # 25. Change color lightness (HSL): -2.0 - 2.0, default 0.0
     #       Change the color lightness (luminance) using the HSL color model.
@@ -334,10 +344,10 @@ class Brushlib():
     #       0.0: disable
     #       1.0: whiter
     def change_color_lightness_hsl():
-        return Brushlib._getBrushValue(25)
+        return Brushlib._get_brush_value(25)
 
     def set_change_color_lightness_hsl(value):
-        Brushlib._setBrushValue(25, value)
+        Brushlib._set_brush_value(25, value)
 
 
     # 26. Change color satur. (HSL): -2.0 - 2.0, default 0.0
@@ -346,10 +356,10 @@ class Brushlib():
     #      0.0: disable
     #      1.0: more saturated
     def change_color_satur_hsl():
-        return Brushlib._getBrushValue(26)
+        return Brushlib._get_brush_value(26)
 
     def set_change_color_satur_hsl(value):
-        Brushlib._setBrushValue(26, value)
+        Brushlib._set_brush_value(26, value)
 
     # 27. Change color value (HSV): -2.0 - 2.0, default 0.0
     #      Change the color value (brightness, intensity) using the HSV color
@@ -358,10 +368,10 @@ class Brushlib():
     #     0.0: disable
     #     1.0: brighter
     def change_color_value_hsv():
-        return Brushlib._getBrushValue(27)
+        return Brushlib._get_brush_value(27)
 
     def set_change_color_value_hsv(value):
-        Brushlib._setBrushValue(27, value)
+        Brushlib._set_brush_value(27, value)
 
     # 28. Change color satur. (HSV): -2.0 - 2.0, default 0.0
     #     Change the color saturation using the HSV color model. HSV changes
@@ -370,10 +380,10 @@ class Brushlib():
     #     0.0: disable
     #     1.0: more saturated
     def change_color_satur_hsv():
-        return Brushlib._getBrushValue(28)
+        return Brushlib._get_brush_value(28)
 
     def set_change_color_satur_hsv(value):
-        Brushlib._setBrushValue(28, value)
+        Brushlib._set_brush_value(28, value)
 
     # 29. Smudge: 0.0 - 1.0, default 0.0
     #      Paint with the smudge color instead of the brush color. The smudge
@@ -383,10 +393,10 @@ class Brushlib():
     #     0.5: mix the smudge color with the brush color
     #     1.0: use only the smudge color
     def smudge():
-        return Brushlib._getBrushValue(29)
+        return Brushlib._get_brush_value(29)
 
     def set_smudge(value):
-        Brushlib._setBrushValue(29, value)
+        Brushlib._set_brush_value(29, value)
 
     # 30. Smudge length: 0.0 - 1.0, default 0.5
     #     This controls how fast the smudge color becomes the color you are
@@ -396,10 +406,10 @@ class Brushlib():
     #    0.5: change the smudge color steadily towards the canvas color
     #    1.0: never change the smudge color
     def smudge_length():
-        return Brushlib._getBrushValue(30)
+        return Brushlib._get_brush_value(30)
 
     def set_smudge_length(value):
-        Brushlib._setBrushValue(30, value)
+        Brushlib._set_brush_value(30, value)
 
     # 31. Smudge radius: -1.6 - 1.6, default 0.0
     #      This modifies the radius of the circle where color is picked up for
@@ -409,10 +419,10 @@ class Brushlib():
     #    +0.7: twice the brush radius
     #    +1.6: five times the brush radius (slow performance)
     def smudge_radius():
-        return Brushlib._getBrushValue(31)
+        return Brushlib._get_brush_value(31)
 
     def set_smudge_radius(value):
-        Brushlib._setBrushValue(31, value)
+        Brushlib._set_brush_value(31, value)
 
     # 32. Eraser: 0.0 - 1.0, default 0.0
     #      how much this tool behaves like an eraser
@@ -420,30 +430,30 @@ class Brushlib():
     #     1.0: standard eraser
     #     0.5: pixels go towards 50% transparency
     def eraser():
-        return Brushlib._getBrushValue(32)
+        return Brushlib._get_brush_value(32)
 
     def set_eraser(value):
-        Brushlib._setBrushValue(32, value)
+        Brushlib._set_brush_value(32, value)
 
     # 33. Stroke threshold: 0.0 - 0.5, default 0.0
     #      How much pressure is needed to start a stroke. This affects the
     #     stroke input only. Mypaint does not need a
     #     minimal pressure to start drawing.
     def stroke_threshold():
-        return Brushlib._getBrushValue(33)
+        return Brushlib._get_brush_value(33)
 
     def set_stroke_threshold(value):
-        Brushlib._setBrushValue(33, value)
+        Brushlib._set_brush_value(33, value)
 
     # 34. Stroke duration: -1.0 - 7.0, default 4.0
     #      How far you have to move until the stroke input reaches 1.0. This
     #     value is logarithmic (negative values will
     #     not inverse the process).
     def stroke_duration():
-        return Brushlib._getBrushValue(34)
+        return Brushlib._get_brush_value(34)
 
     def set_stroke_duration(value):
-        Brushlib._setBrushValue(34, value)
+        Brushlib._set_brush_value(34, value)
 
     # 35. Stroke hold time: 0.0 - 10.0, default 0.0
     #      This defines how long the stroke input stays at 1.0. After that it
@@ -452,10 +462,10 @@ class Brushlib():
     #     2.0 means twice as long as it takes to go from 0.0 to 1.0
     #     9.9 and bigger stands for infinite
     def stroke_hold_time():
-        return Brushlib._getBrushValue(35)
+        return Brushlib._get_brush_value(35)
 
     def set_stroke_hold_time(value):
-        Brushlib._setBrushValue(35, value)
+        Brushlib._set_brush_value(35, value)
 
     # 36. Custom input: -5.0 - 5.0, default 0.0
     #     Set the custom input to this value. If it is slowed down, move it
@@ -466,10 +476,10 @@ class Brushlib():
     #    need it. If you make it change 'by random' you can generate a slow
     #    (smooth) random input.
     def custom_input():
-        return Brushlib._getBrushValue(36)
+        return Brushlib._get_brush_value(36)
 
     def set_custom_input(value):
-        Brushlib._setBrushValue(36, value)
+        Brushlib._set_brush_value(36, value)
 
     # 37. Custom input filter: 0.0 - 10.0, default 0.0
     #      How slow the custom input actually follows the desired value (the
@@ -477,19 +487,19 @@ class Brushlib():
     #     has past, if brushdabs do not depend on time).
     #     0.0: no slowdown (changes apply instantly)
     def custom_input_filter():
-        return Brushlib._getBrushValue(37)
+        return Brushlib._get_brush_value(37)
 
     def set_custom_input_filter(value):
-        Brushlib._setBrushValue(37, value)
+        Brushlib._set_brush_value(37, value)
 
     # 38. Elliptical dab: ratio: 1.0 - 10.0, default 1.0
     #      Aspect ratio of the dabs; must be >= 1.0, where 1.0 means a
     #     perfectly round dab.
     def elliptical_dab_ratio():
-        return Brushlib._getBrushValue(38)
+        return Brushlib._get_brush_value(38)
 
     def set_elliptical_dab_ratio(value):
-        Brushlib._setBrushValue(38, value)
+        Brushlib._set_brush_value(38, value)
 
     # 39. Elliptical dab: angle: 0.0 - 180.0, default 90.0
     #      Angle by which elliptical dabs are tilted
@@ -497,19 +507,19 @@ class Brushlib():
     #     45.0: 45 degrees, turned clockwise
     #     180.0: horizontal again
     def elliptical_dab_angle():
-        return Brushlib._getBrushValue(39)
+        return Brushlib._get_brush_value(39)
 
     def set_elliptical_dab_angle(value):
-        Brushlib._setBrushValue(39, value)
+        Brushlib._set_brush_value(39, value)
 
     # 40. Direction filter: 0.0 - 10.0, default 2.0
     #     A low value will make the direction input adapt more quickly, a high
     #    value will make it smoother
     def direction_filter():
-        return Brushlib._getBrushValue(40)
+        return Brushlib._get_brush_value(40)
 
     def set_direction_filter(value):
-        Brushlib._setBrushValue(40, value)
+        Brushlib._set_brush_value(40, value)
 
     # 41. Lock alpha: 0.0 - 1.0, default 0.0
     #      Do not modify the alpha channel of the layer (paint only where there
@@ -518,34 +528,34 @@ class Brushlib():
     #     0.5: half of the paint gets applied normally
     #     1.0: alpha channel fully locked
     def lock_alpha():
-        return Brushlib._getBrushValue(41)
+        return Brushlib._get_brush_value(41)
 
     def set_lock_alpha(value):
-        Brushlib._setBrushValue(41, value)
+        Brushlib._set_brush_value(41, value)
 
     # 42. Colorize: 0.0 - 1.0, default 0.0
     #      Colorize the target layer, setting its hue and saturation from the
     #     active brush colour while retaining its value and alpha.
     def colorize():
-        return Brushlib._getBrushValue(42)
+        return Brushlib._get_brush_value(42)
 
     def set_colorize(value):
-        Brushlib._setBrushValue(42, value)
+        Brushlib._set_brush_value(42, value)
 
     # 43. Snap to pixel: 0.0 - 1.0, default 0.0
     #     Snap brush dab's center and it's radius to pixels. Set this to 1.0
     #     for a thin pixel brush.
     def snap_to_pixel():
-        return Brushlib._getBrushValue(43)
+        return Brushlib._get_brush_value(43)
 
     def set_snap_to_pixel(value):
-        Brushlib._setBrushValue(43, value)
+        Brushlib._set_brush_value(43, value)
 
     # 44. Pressure gain: -1.8 - 1.8, default 0.0
     #      This changes how hard you have to press. It multiplies tablet
     #     pressure by a constant factor.
     def pressure_gain():
-        return Brushlib._getBrushValue(44)
+        return Brushlib._get_brush_value(44)
 
     def set_pressure_gain(value):
-        Brushlib._setBrushValue(44, value)
+        Brushlib._set_brush_value(44, value)

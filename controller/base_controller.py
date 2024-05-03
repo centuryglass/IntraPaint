@@ -1,3 +1,8 @@
+"""
+BaseController coordinates primary application functionality across all operation modes. Each image generation and
+editing method supported by IntraPaint should have its own BaseController subclass.
+"""
+
 from PyQt5.QtWidgets import QApplication, QStyleFactory
 from PyQt5.QtCore import Qt, QObject, QThread, QSize, pyqtSignal
 from PyQt5.QtGui import QPainter, QPen, QPixmap
@@ -14,8 +19,8 @@ from ui.modal.new_image_modal import NewImageModal
 from ui.modal.resize_canvas_modal import ResizeCanvasModal
 from ui.modal.image_scale_modal import ImageScaleModal
 from ui.modal.modal_utils import *
-from ui.util.contrast_color import contrastColor
-from ui.util.screen_size import screenSize
+from ui.util.contrast_color import contrast_color
+from ui.util.screen_size import screen_size
 
 
 from controller.spacenav import SpacenavManager
@@ -23,8 +28,8 @@ from controller.spacenav import SpacenavManager
 # Optional spacenav support:
 try:
     import spacenav, atexit
-except ImportError:
-    print('spaceMouse support not installed.')
+except ImportError as err:
+    print(f'spaceMouse support not enabled: {err}')
     spacenav = None
 
 class BaseInpaintController():
@@ -36,86 +41,66 @@ class BaseInpaintController():
     def __init__(self, args):
         self._app = QApplication(sys.argv)
         screen = self._app.primaryScreen()
-        def screenSize(screen):
+        def screen_area(screen):
             if screen is None:
                 return 0
             return screen.availableGeometry().width() * screen.availableGeometry().height()
         for s in self._app.screens():
-            if screenSize(s) > screenSize(screen):
+            if screen_area(s) > screen_area(screen):
                 screen = s
         size = screen.availableGeometry()
 
         self._config = Config()
-        self._adjustConfigDefaults()
-        self._config.applyArgs(args)
+        self._adjust_config_defaults()
+        self._config.apply_args(args)
 
-
-        self._editedImage = EditedImage(self._config, args.init_image)
+        self._edited_image = EditedImage(self._config, args.init_image)
         self._window = None
 
-        initialSelectionSize = self._editedImage.getSelectionBounds().size()
-        self._maskCanvas = MaskCanvas(self._config, initialSelectionSize)
+        initial_selection_size = self._edited_image.get_selection_bounds().size()
+        self._mask_canvas = MaskCanvas(self._config, initial_selection_size)
 
-        #self._sketchCanvas = SketchCanvas(self._config, initialSelectionSize)
+        #self._sketch_canvas = SketchCanvas(self._config, initial_selection_size)
         try:
             from data_model.canvas.brushlib_canvas import BrushlibCanvas
-            self._sketchCanvas = BrushlibCanvas(self._config, initialSelectionSize)
+            self._sketch_canvas = BrushlibCanvas(self._config, initial_selection_size)
         except ImportError as err: # fallback to old implementation:
             print(f"Brushlib import failed: {err}")
-            self._sketchCanvas = SketchCanvas(self._config, initialSelectionSize)
+            self._sketch_canvas = SketchCanvas(self._config, initial_selection_size)
 
         # Connect mask/sketch size to image selection size:
-        def resizeCanvases(selectionBounds):
-            size = selectionBounds.size()
-            self._maskCanvas.resize(size)
-            self._sketchCanvas.resize(size)
-        self._editedImage.selectionChanged.connect(resizeCanvases)
+        def resize_canvases(selection_bounds):
+            size = selection_bounds.size()
+            self._mask_canvas.resize(size)
+            self._sketch_canvas.resize(size)
+        self._edited_image.selection_changed.connect(resize_canvases)
 
         self._thread = None
 
-        # Set up timelapse image saving if it is configured:
-        timelapsePath = self._config.get('timelapsePath')
-        if timelapsePath != '':
-            # Make sure path exists, find first unused image index:
-            if not os.path.exists(timelapsePath):
-                os.mkdir(timelapsePath)
-            elif os.path.isfile(timelapsePath):
-                print("timelapsePath: expected directory path, got file: " + timelapsePath)
-            self._nextTimelapseFrame = 0
-            for name in glob.glob(f"{timelapsePath}/*.png"):
-                n=int(os.path.splitext(ntpath.basename(name))[0])
-                if n > self._lastTimelapseFrame:
-                    self._nextTimelapseFrame = n + 1
-            def saveTimelapseImage():
-                filename = os.path.join(self._timelapsePath, f"{self._nextTimelapseFrame:05}.png")
-                self._editedImage.saveImage(filename)
-                self._nextTimelapseFrame += 1
-            editedImage.contentChanged.connect(saveTimelapseImage)
-
-    def _adjustConfigDefaults(self):
+    def _adjust_config_defaults(self):
         # no-op, override to adjust config before data initialization
         return
 
-    def initSettings(self, settingsModal):
+    def init_settings(self, settings_modal):
         """ Returns false if disabled, true if settings were initialized"""
         return False
 
-    def refreshSettings(self, settingsModal):
-        raise Exception('refreshSettings not implemented!')
+    def refresh_settings(self, settings_modal):
+        raise Exception('refresh_settings not implemented!')
 
-    def updateSettings(self, changedSettings):
-        raise Exception('refreshSettings not implemented!')
+    def update_settings(self, changed_settings):
+        raise Exception('update_settings not implemented!')
 
-    def windowInit(self):
-        self._window = MainWindow(self._config, self._editedImage, self._maskCanvas, self._sketchCanvas, self)
-        size = screenSize(self._window)
+    def window_init(self):
+        self._window = MainWindow(self._config, self._edited_image, self._mask_canvas, self._sketch_canvas, self)
+        size = screen_size(self._window)
         self._window.setGeometry(0, 0, size.width(), size.height())
         self._window.setMaximumHeight(size.height())
         self._window.setMaximumWidth(size.width())
-        self.fixStyles()
+        self.fix_styles()
         self._window.show()
 
-    def fixStyles(self):
+    def fix_styles(self):
         try:
             self._app.setStyle(self._config.get('style'))
             theme = self._config.get('theme')
@@ -138,117 +123,120 @@ class BaseInpaintController():
         self._app.setFont(font)
 
 
-    def startApp(self):
-        self.windowInit()
+    def start_app(self):
+        self.window_init()
 
         # Configure support for spacemouse panning, if relevant:
-        self.navManager = SpacenavManager(self._window, self._editedImage)
-        self.navManager.startThread()
+        self._nav_manager = SpacenavManager(self._window, self._edited_image)
+        self._nav_manager.start_thread()
 
         self._app.exec_()
         sys.exit()
 
-    # File IO handling:
-    def newImage(self):
-        defaultSize = self._config.get('editSize')
-        imageModal = NewImageModal(defaultSize.width(), defaultSize.height())
-        imageSize = imageModal.showImageModal()
-        if imageSize and ((not self._editedImage.hasImage()) or \
-                requestConfirmation(self._window, "Create new image?", "This will discard all unsaved changes.")):
-            newImage = Image.new('RGB', (imageSize.width(), imageSize.height()), color = 'white')
-            self._editedImage.setImage(newImage)
 
-    def saveImage(self):
-        if not self._editedImage.hasImage():
-            showErrorDialog(self._window, "Save failed", "Open an image first before trying to save.")
+    # File IO handling:
+    def new_image(self):
+        default_size = self._config.get('editSize')
+        image_modal = NewImageModal(default_size.width(), default_size.height())
+        image_size = image_modal.show_image_modal()
+        if image_size and ((not self._edited_image.has_image()) or \
+                request_confirmation(self._window, "Create new image?", "This will discard all unsaved changes.")):
+            new_image = Image.new('RGB', (image_size.width(), image_size.height()), color = 'white')
+            self._edited_image.set_image(new_image)
+
+
+    def save_image(self):
+        if not self._edited_image.has_image():
+            show_error_dialog(self._window, "Save failed", "Open an image first before trying to save.")
             return
-        file, fileSelected = openImageFile(self._window, mode='save', selectedFile = self._config.get("lastFilePath"))
+        file, file_selected = open_image_file(self._window, mode='save', selected_file = self._config.get("lastFilePath"))
         try:
-            if file and fileSelected:
-                self._editedImage.saveImage(file)
+            if file and file_selected:
+                self._edited_image.save_image(file)
                 self._config.set("lastFilePath", file)
         except Exception as err:
-            showErrorDialog(self._window, "Save failed", str(err))
+            show_error_dialog(self._window, "Save failed", str(err))
             print(f"Saving image failed: {err}")
+            raise err
 
-    def loadImage(self):
-        file, fileSelected = openImageFile(self._window)
-        if file and fileSelected:
+    def load_image(self):
+        file, file_selected = open_image_file(self._window)
+        if file and file_selected:
             try:
-                self._editedImage.setImage(file)
+                self._edited_image.set_image(file)
                 self._config.set("lastFilePath", file)
             except Exception as err:
-                showErrorDialog(self._window, "Open failed", err)
+                show_error_dialog(self._window, "Open failed", err)
 
-    def reloadImage(self):
+    def reload_image(self):
         filePath = self._config.get("lastFilePath")
         if filePath == "":
-            showErrorDialog(self._window, "Reload failed", f"Enter an image path or click 'Open Image' first.")
+            show_error_dialog(self._window, "Reload failed", f"Enter an image path or click 'Open Image' first.")
             return
         if not os.path.isfile(filePath):
-            showErrorDialog(self._window, "Reload failed", f"Image path '{filePath}' is not a valid file.")
+            show_error_dialog(self._window, "Reload failed", f"Image path '{filePath}' is not a valid file.")
             return
-        if (not self._editedImage.hasImage()) or \
-                requestConfirmation(self._window, "Reload image?", "This will discard all unsaved changes."):
-            self._editedImage.setImage(filePath)
+        if (not self._edited_image.has_image()) or \
+                request_confirmation(self._window, "Reload image?", "This will discard all unsaved changes."):
+            self._edited_image.set_image(filePath)
 
-    def resizeCanvas(self):
-        if not self._editedImage.hasImage():
-            showErrorDialog(self._window, "Unable to resize", "Load or create an image first before trying to resize.")
+    def resize_canvas(self):
+        if not self._edited_image.has_image():
+            show_error_dialog(self._window, "Unable to resize", "Load or create an image first before trying to resize.")
             return
-        resizeModal = ResizeCanvasModal(self._editedImage.getQImage())
-        newSize, offset = resizeModal.showResizeModal();
-        if newSize is None:
+        resize_modal = ResizeCanvasModal(self._edited_image.get_qimage())
+        new_size, offset = resize_modal.showResizeModal();
+        if new_size is None:
             return
-        newImage = Image.new('RGB', (newSize.width(), newSize.height()), color = 'white')
-        newImage.paste(self._editedImage.getPilImage(), (offset.x(), offset.y()))
-        self._editedImage.setImage(newImage)
+        new_image = Image.new('RGB', (new_size.width(), new_size.height()), color = 'white')
+        new_image.paste(self._edited_image.get_pil_image(), (offset.x(), offset.y()))
+        self._edited_image.set_image(new_image)
         if offset.x() > 0 or offset.y() > 0:
-            self._editedImage.setSelectionBounds(self._editedImage.getSelectionBounds().translated(offset))
+            self._edited_image.set_selection_bounds(self._edited_image.get_selection_bounds().translated(offset))
 
-    def scaleImage(self):
-        if not self._editedImage.hasImage():
-            showErrorDialog(self._window, "Unable to scale", "Load or create an image first before trying to scale.")
+    def scale_image(self):
+        if not self._edited_image.has_image():
+            show_error_dialog(self._window, "Unable to scale", "Load or create an image first before trying to scale.")
             return
-        width = self._editedImage.width()
-        height = self._editedImage.height()
-        scaleModal = ImageScaleModal(width, height, self._config)
-        newSize = scaleModal.showImageModal()
+        width = self._edited_image.width()
+        height = self._edited_image.height()
+        scale_modal = ImageScaleModal(width, height, self._config)
+        newSize = scale_modal.show_image_modal()
         if newSize is not None:
             self._scale(newSize)
 
-    def _scale(self, newSize): # Override to allow ML upscalers:
-        width = self._editedImage.width()
-        height = self._editedImage.height()
-        if newSize is None or (newSize.width() == width and newSize.height() == height):
+    def _scale(self, new_size): # Override to allow ML upscalers:
+        width = self._edited_image.width()
+        height = self._edited_image.height()
+        if new_size is None or (new_size.width() == width and new_size.height() == height):
             return
-        image = self._editedImage.getPilImage()
-        scaleMode = None
-        if (newSize.width() <= width and newSize.height() <= height): #downscaling
-            scaleMode = self._config.get('downscaleMode')
+        image = self._edited_image.get_pil_image()
+        scale_mode = None
+        if (new_size.width() <= width and new_size.height() <= height): #downscaling
+            scale_mode = self._config.get('downscaleMode')
         else:
-            scaleMode = self._config.get('upscaleMode')
-        scaledImage = image.resize((newSize.width(), newSize.height()), scaleMode)
-        self._editedImage.setImage(scaledImage)
+            scale_mode = self._config.get('upscaleMode')
+        scaledImage = image.resize((new_size.width(), new_size.height()), scale_mode)
+        self._edited_image.set_image(scaledImage)
 
-    def _startThread(self, threadWorker, loadingText=None):
+    def _start_thread(self, threadWorker, loadingText=None):
         if self._thread is not None:
             raise Exception('Tried to start a new async operation while the previous one is still running')
-        self._window.setIsLoading(True, loadingText)
+        self._window.set_is_loading(True, loadingText)
         self._thread = QThread()
         self._worker = threadWorker
         self._worker.moveToThread(self._thread);
-        def clearWorker():
+        def clear_worker():
             self._thread.quit()
-            self._window.setIsLoading(False)
+            self._window.set_is_loading(False)
             self._worker.deleteLater()
             self._worker = None
-        self._worker.finished.connect(clearWorker)
+        self._worker.finished.connect(clear_worker)
         self._thread.started.connect(self._worker.run)
-        def clearOldThread():
+        def clear_old_thread():
             self._thread.deleteLater()
             self._thread = None
-        self._thread.finished.connect(clearOldThread)
+        self._thread.finished.connect(clear_old_thread)
         self._thread.start()
 
     # Image generation handling:
@@ -257,126 +245,99 @@ class BaseInpaintController():
     def _inpaint(self):
         raise Exception('BaseInpaintController should not be used directly, use a subclass.')
 
-    def _applyStatusUpdate(self, statusDict):
+    def _apply_status_update(self, statusDict):
         return
 
-    def startAndManageInpainting(self):
-        if not self._editedImage.hasImage():
-            showErrorDialog(self._window, "Failed", "Load an image for editing before trying to start inpainting.")
+    def start_and_manage_inpainting(self):
+        if not self._edited_image.has_image():
+            show_error_dialog(self._window, "Failed", "Load an image for editing before trying to start inpainting.")
             return
         if self._thread is not None:
-            showErrorDialog(self._window, "Failed", "Existing inpainting operation not yet finished, wait a little longer.")
+            show_error_dialog(self._window, "Failed", "Existing inpainting operation not yet finished, wait a little longer.")
             return
-        upscaleMode = self._config.get('upscaleMode')
-        downscaleMode = self._config.get('downscaleMode')
-        def resizeImage(pilImage, width, height):
+        upscale_mode = self._config.get('upscaleMode')
+        downscale_mode = self._config.get('downscaleMode')
+        def resize_image(pilImage, width, height):
             """Resize a PIL image using the appropriate scaling mode:"""
             if width == pilImage.width and height == pilImage.height:
                 return pilImage
             if width > pilImage.width or height > pilImage.height:
-                return pilImage.resize((width, height), upscaleMode)
-            return pilImage.resize((width, height), downscaleMode)
+                return pilImage.resize((width, height), upscale_mode)
+            return pilImage.resize((width, height), downscale_mode)
 
-        selection = self._editedImage.getSelectionContent()
+        selection = self._edited_image.get_selection_content()
 
         # If sketch mode was used, write the sketch onto the image selection:
-        inpaintImage = selection.copy()
-        inpaintMask = self._maskCanvas.getImage()
-        sketchImage = self._sketchCanvas.getImage()
-        sketchImage = resizeImage(sketchImage, inpaintImage.width, inpaintImage.height).convert('RGBA')
-        if self._sketchCanvas.hasSketch: 
-            inpaintImage = inpaintImage.convert('RGBA')
-            inpaintImage = Image.alpha_composite(inpaintImage, sketchImage).convert('RGB')
-        keepSketch = self._sketchCanvas.hasSketch and self._config.get('saveSketchInResult')
+        inpaint_image = selection.copy()
+        inpaint_mask = self._mask_canvas.get_pil_image()
+        sketch_image = self._sketch_canvas.get_pil_image()
+        sketch_image = resize_image(sketch_image, inpaint_image.width, inpaint_image.height).convert('RGBA')
+        if self._sketch_canvas._has_sketch: 
+            inpaint_image = inpaint_image.convert('RGBA')
+            inpaint_image = Image.alpha_composite(inpaint_image, sketch_image).convert('RGB')
+        keep_sketch = self._sketch_canvas._has_sketch and self._config.get('saveSketchInResult')
 
         # If necessary, scale image and mask to match the edit size. Keep the unscaled version so it can be used for
         # compositing if "keep sketch" is checked.
-        unscaledInpaintImage = inpaintImage.copy()
-
+        unscaled_inpaint_image = inpaint_image.copy()
         
-        editSize = self._config.get('editSize')
-        if inpaintImage.width != editSize.width() or inpaintImage.height != editSize.height():
-            inpaintImage = resizeImage(inpaintImage, editSize.width(), editSize.height())
-        if inpaintMask.width != editSize.width() or inpaintMask.height != editSize.height():
-            inpaintMask = resizeImage(inpaintMask, editSize.width(), editSize.height())
+        edit_size = self._config.get('editSize')
+        if inpaint_image.width != edit_size.width() or inpaint_image.height != edit_size.height():
+            inpaint_image = resize_image(inpaint_image, edit_size.width(), edit_size.height())
+        if inpaint_mask.width != edit_size.width() or inpaint_mask.height != edit_size.height():
+            inpaint_mask = resize_image(inpaint_mask, edit_size.width(), edit_size.height())
 
-        doInpaint = lambda img, mask, save, statusSignal: self._inpaint(img, mask, save, statusSignal)
+        do_inpaint = lambda img, mask, save, statusSignal: self._inpaint(img, mask, save, statusSignal)
         config = self._config
         class InpaintThreadWorker(QObject):
             finished = pyqtSignal()
-            imageReady = pyqtSignal(Image.Image, int)
-            statusSignal = pyqtSignal(dict)
-            errorSignal = pyqtSignal(Exception)
+            image_ready = pyqtSignal(Image.Image, int)
+            status_signal = pyqtSignal(dict)
+            error_signal = pyqtSignal(Exception)
 
             def __init__(self):
                 super().__init__()
 
             def run(self):
-                def sendImage(img, idx):
-                    self.imageReady.emit(img, idx)
+                def send_image(img, idx):
+                    self.image_ready.emit(img, idx)
                 try:
-                    doInpaint(inpaintImage, inpaintMask, sendImage, self.statusSignal)
+                    do_inpaint(inpaint_image, inpaint_mask, send_image, self.status_signal)
                 except Exception as err:
-                    self.errorSignal.emit(err)
+                    self.error_signal.emit(err)
                 self.finished.emit()
         worker = InpaintThreadWorker()
 
-        def handleError(err):
-            self._window.setSampleSelectorVisible(False)
-            showErrorDialog(self._window, "Inpainting failure", err)
-        worker.errorSignal.connect(handleError)
+        def handle_error(err):
+            self._window.set_sample_selector_visible(False)
+            show_error_dialog(self._window, "Inpainting failure", err)
+        worker.error_signal.connect(handle_error)
 
-        def updateStatus(statusDict):
-            self._applyStatusUpdate(statusDict)
-        worker.statusSignal.connect(updateStatus)
+        def update_status(status_dict):
+            self._apply_status_update(status_dict)
+        worker.status_signal.connect(update_status)
 
-        def loadSamplePreview(img, idx):
+        def load_sample_preview(img, idx):
             if ((config.get('editMode') == 'Inpaint')) and (config.get('removeUnmaskedChanges') or img.width != selection.width or img.height != selection.height):
-                pointFn = lambda p: 255 if p < 1 else 0
+                point_fn = lambda p: 255 if p < 1 else 0
                 if config.get('inpaintMasked') == 'Inpaint not masked':
-                    pointFn = lambda p: 0 if p < 1 else 255
-                maskAlpha = inpaintMask.convert('L').point(pointFn).filter(ImageFilter.GaussianBlur())
-                img = resizeImage(img, selection.width, selection.height)
-                maskAlpha = resizeImage(maskAlpha, selection.width, selection.height)
-                img = Image.composite(unscaledInpaintImage if keepSketch else selection, img, maskAlpha)
-            self._window.loadSamplePreview(img, idx)
-        worker.imageReady.connect(loadSamplePreview)
-        self._window.setSampleSelectorVisible(True)
-        self._startThread(worker)
+                    point_fn = lambda p: 0 if p < 1 else 255
+                mask_alpha = inpaint_mask.convert('L').point(point_fn).filter(ImageFilter.GaussianBlur())
+                img = resize_image(img, selection.width, selection.height)
+                mask_alpha = resize_image(mask_alpha, selection.width, selection.height)
+                img = Image.composite(unscaled_inpaint_image if keep_sketch else selection, img, mask_alpha)
+            self._window.load_sample_preview(img, idx)
+        worker.image_ready.connect(load_sample_preview)
+        self._window.set_sample_selector_visible(True)
+        self._start_thread(worker)
 
-    def selectAndApplySample(self, sampleImage):
+    def select_and_apply_sample(self, sample_image):
         if self._config.get('saveSketchInResult'):
-            sourceSelection = self._editedImage.getSelectionContent()
-            sketchImage = self._sketchCanvas.getImage().resize((sourceSelection.width, sourceSelection.height),
+            source_selection = self._edited_image.get_selection_content()
+            sketch_image = self._sketch_canvas.get_pil_image().resize((source_selection.width, source_selection.height),
                     self._config.get('downscaleMode')).convert('RGBA')
-            sourceSelection = Image.alpha_composite(sourceSelection.convert('RGBA'), sketchImage).convert('RGB')
-            self._editedImage.setSelectionContent(sourceSelection)
-            self._sketchCanvas.clear()
-        if sampleImage is not None and isinstance(sampleImage, Image.Image):
-            self._editedImage.setSelectionContent(sampleImage)
-
-    # Misc. other features:
-
-    def zoomOut(self):
-        try:
-            image = self._editedImage.getPilImage()
-            # Find next unused number in ./zoom/xxxxx.png:
-            zoomCount = 0
-            while os.path.exists(f"zoom/{zoomCount:05}.png"):
-                zoomCount += 1
-            # Save current image, update zoom count:
-            image.save(f"zoom/{zoomCount:05}.png")
-            zoomCount += 1
-
-            # scale image content to 86%, paste it centered into the image:
-            newSize = (int(image.width * 0.86), int(image.height * 0.86))
-            scaledImage = image.resize(newSize, self._config.get('downscaleMode'))
-            newImage = Image.new('RGB', (image.width, image.height), color = 'white')
-            insertAt = (int(image.width * 0.08), int(image.height * 0.08))
-            newImage.paste(scaledImage, insertAt)
-            self._editedImage.setImage(newImage)
-
-            # reload zoom mask:
-            self._maskCanvas.setImage('resources/zoomMask.png')
-        except Exception as err:
-            showErrorDialog(self._window, "Zoom failed", err)
+            source_selection = Image.alpha_composite(source_selection.convert('RGBA'), sketch_image).convert('RGB')
+            self._edited_image.set_selection_content(source_selection)
+            self._sketch_canvas.clear()
+        if sample_image is not None and isinstance(sample_image, Image.Image):
+            self._edited_image.set_selection_content(sample_image)

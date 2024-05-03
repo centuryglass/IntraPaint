@@ -1,9 +1,12 @@
+"""
+Popup modal window used for creating a new image at an arbitrary size.
+"""
 from PyQt5.QtWidgets import QWidget, QDialog, QSpinBox, QLabel, QVBoxLayout, QHBoxLayout, QPushButton
 from PyQt5.QtCore import QSize
 from ui.widget.labeled_spinbox import LabeledSpinbox
 
 class NewImageModal(QDialog):
-    def __init__(self, defaultWidth, defaultHeight):
+    def __init__(self, default_width, default_height):
         super().__init__()
 
         self._create = False
@@ -12,32 +15,32 @@ class NewImageModal(QDialog):
         self._title = QLabel(self)
         self._title.setText("Create new image")
 
-        minVal = 8
-        maxVal = 20000
-        self._widthBox = LabeledSpinbox(self, "Width:", "New image width in pixels", minVal, defaultWidth, maxVal)
-        self._heightBox = LabeledSpinbox(self, "Height:", "New image height in pixels", minVal, defaultHeight, maxVal)
+        min_val = 8
+        max_val = 20000
+        self._widthbox = LabeledSpinbox(self, "Width:", "New image width in pixels", min_val, default_width, max_val)
+        self._heightbox = LabeledSpinbox(self, "Height:", "New image height in pixels", min_val, default_height, max_val)
 
-        self._createButton = QPushButton(self)
-        self._createButton.setText("Create new image")
+        self._create_button = QPushButton(self)
+        self._create_button.setText("Create new image")
         def onCreate():
             self._create = True
             self.hide()
-        self._createButton.clicked.connect(onCreate)
+        self._create_button.clicked.connect(onCreate)
 
-        self._cancelButton = QPushButton(self)
-        self._cancelButton.setText("Cancel")
+        self._cancel_button = QPushButton(self)
+        self._cancel_button.setText("Cancel")
         def onCancel():
             self._create = False
             self.hide()
-        self._cancelButton.clicked.connect(onCancel)
+        self._cancel_button.clicked.connect(onCancel)
         
         self._layout = QVBoxLayout()
-        for widget in [self._title, self._widthBox, self._heightBox, self._createButton, self._cancelButton]:
+        for widget in [self._title, self._widthbox, self._heightbox, self._create_button, self._cancel_button]:
             self._layout.addWidget(widget)
 
         self.setLayout(self._layout)
 
-    def showImageModal(self):
+    def show_image_modal(self):
         self.exec_()
         if self._create:
-            return QSize(self._widthBox.spinbox.value(), self._heightBox.spinbox.value())
+            return QSize(self._widthbox.spinbox.value(), self._heightbox.spinbox.value())

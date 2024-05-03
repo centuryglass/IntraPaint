@@ -1,8 +1,11 @@
+"""
+Finds appropriate contrast colors based on either QWidget palletes or calculated QColor luminances.
+"""
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QWidget
 from PyQt5.QtGui import QColor
 
-def contrastColor(source): 
+def contrast_color(source): 
     if isinstance(source, QWidget):
         return source.palette().color(source.foregroundRole())
     if isinstance(source, QColor):
@@ -14,4 +17,4 @@ def contrastColor(source):
         b = adjustComponent(source.blue() / 255)
         relative_luminance = (0.2126 * r) + (0.7152 * g) + (0.0722 * b)
         return Qt.black if relative_luminance < 0.179 else Qt.white
-    raise Exception(f"Invalid contrastColor parameter {source}")
+    raise Exception(f"Invalid contrast_color parameter {source}")

@@ -1,3 +1,6 @@
+"""
+A MainWindow implementation providing controls specific to stable-diffusion inpainting.
+"""
 from PyQt5.QtWidgets import QWidget, QLabel, QHBoxLayout, QVBoxLayout, QGridLayout, QPushButton, QSizePolicy
 from PyQt5.QtCore import Qt, QSize
 import sys
@@ -17,224 +20,224 @@ class StableDiffusionMainWindow(MainWindow):
         # Decrease imageLayout stretch to make room for additional controls:
         self.layout().setStretch(0, 180)
 
-    def _buildControlLayout(self, controller):
-        controlPanel = BorderedWidget(self)
-        controlPanel.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Maximum)
-        controlLayout = QVBoxLayout()
-        controlPanel.setLayout(controlLayout)
-        self.layout().addWidget(controlPanel, stretch=10)
+    def _build_control_layout(self, controller):
+        control_panel = BorderedWidget(self)
+        control_panel.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Maximum)
+        control_layout = QVBoxLayout()
+        control_panel.setLayout(control_layout)
+        self.layout().addWidget(control_panel, stretch=10)
 
-        mainControlBox = CollapsibleBox(
+        main_control_box = CollapsibleBox(
                 "Controls",
-                controlPanel,
-                startClosed=self.shouldUseWideLayout())
-        mainControlBox.setExpandedSizePolicy(QSizePolicy.Maximum)
-        if mainControlBox.isExpanded():
+                control_panel,
+                start_closed=self.should_use_wide_layout())
+        main_control_box.set_expanded_size_policy(QSizePolicy.Maximum)
+        if main_control_box.is_expanded():
             self.layout().setStretch(1, self.layout().stretch(1) + OPEN_PANEL_STRETCH)
-        def onMainControlsExpanded(isExpanded):
-            self.setImageSlidersEnabled(not isExpanded)
+        def on_main_controls_expanded(isExpanded):
+            self.set_image_sliders_enabled(not isExpanded)
             stretch = self.layout().stretch(1) + (OPEN_PANEL_STRETCH if isExpanded else -OPEN_PANEL_STRETCH)
             stretch = max(stretch, 10)
             self.layout().setStretch(1, stretch)
-        mainControlBox.toggled().connect(onMainControlsExpanded)
-        mainControls = QHBoxLayout();
-        mainControlBox.setContentLayout(mainControls)
-        controlLayout.addWidget(mainControlBox, stretch=20)
+        main_control_box.toggled().connect(on_main_controls_expanded)
+        main_controls = QHBoxLayout();
+        main_control_box.set_content_layout(main_controls)
+        control_layout.addWidget(main_control_box, stretch=20)
 
 
 
         # Left side: sliders and other wide inputs:
-        wideOptions = BorderedWidget()
-        mainControls.addWidget(wideOptions, stretch=50)
-        wideOptionsLayout = QGridLayout()
-        wideOptionsLayout.setVerticalSpacing(max(2, self.height() // 200))
-        wideOptions.setLayout(wideOptionsLayout)
+        wide_options = BorderedWidget()
+        main_controls.addWidget(wide_options, stretch=50)
+        wide_options_layout = QGridLayout()
+        wide_options_layout.setVerticalSpacing(max(2, self.height() // 200))
+        wide_options.setLayout(wide_options_layout)
         # Font size will be used to limit the height of the prompt boxes:
-        textboxHeight = self.font().pixelSize() * 4
-        if textboxHeight < 0: #font uses pt, not px
-            textboxHeight = self.font().pointSize() * 6
+        textbox_height = self.font().pixelSize() * 4
+        if textbox_height < 0: #font uses pt, not px
+            textbox_height = self.font().pointSize() * 6
 
         # First line: prompt, batch size, width
-        wideOptionsLayout.setRowStretch(0, 2)
-        wideOptionsLayout.addWidget(QLabel("Prompt:"), 0, 0)
-        textPromptBox = connectedTextEdit(controlPanel, self._config, 'prompt', multiLine=True)
-        textPromptBox.setMaximumHeight(textboxHeight)
-        wideOptionsLayout.addWidget(textPromptBox, 0, 1)
+        wide_options_layout.setRowStretch(0, 2)
+        wide_options_layout.addWidget(QLabel("Prompt:"), 0, 0)
+        prompt_textbox = connected_textedit(control_panel, self._config, 'prompt', multi_line=True)
+        prompt_textbox.setMaximumHeight(textbox_height)
+        wide_options_layout.addWidget(prompt_textbox, 0, 1)
         # batch size:
-        wideOptionsLayout.addWidget(QLabel("Batch size:"), 0, 2)
-        batchSizeBox = connectedSpinBox(controlPanel, self._config, 'batchSize', maxKey='maxBatchSize')
-        batchSizeBox.setRange(1, batchSizeBox.maximum())
-        batchSizeBox.setToolTip("Inpainting images generated per batch")
-        wideOptionsLayout.addWidget(batchSizeBox, 0, 3)
+        wide_options_layout.addWidget(QLabel("Batch size:"), 0, 2)
+        batch_size_spinbox = connected_spinbox(control_panel, self._config, 'batchSize', max_key='maxBatchSize')
+        batch_size_spinbox.setRange(1, batch_size_spinbox.maximum())
+        batch_size_spinbox.setToolTip("Inpainting images generated per batch")
+        wide_options_layout.addWidget(batch_size_spinbox, 0, 3)
         # width: 
-        wideOptionsLayout.addWidget(QLabel("W:"), 0, 4)
-        widthBox = QSpinBox(self)
-        widthBox.setRange(1, 4096)
-        widthBox.setValue(self._config.get('editSize').width())
-        widthBox.setToolTip('Resize selection content to this width before inpainting')
+        wide_options_layout.addWidget(QLabel("W:"), 0, 4)
+        width_spinbox = QSpinBox(self)
+        width_spinbox.setRange(1, 4096)
+        width_spinbox.setValue(self._config.get('editSize').width())
+        width_spinbox.setToolTip('Resize selection content to this width before inpainting')
         config = self._config
-        def setW(value):
+        def set_w(value):
             size = config.get('editSize')
             config.set('editSize', QSize(value, size.height()))
-        widthBox.valueChanged.connect(setW)
-        wideOptionsLayout.addWidget(widthBox, 0, 5)
+        width_spinbox.valueChanged.connect(set_w)
+        wide_options_layout.addWidget(width_spinbox, 0, 5)
 
 
         # Second line: negative prompt, batch count, height:
-        wideOptionsLayout.setRowStretch(1, 2)
-        wideOptionsLayout.addWidget(QLabel('Negative:'), 1, 0)
-        negativePromptBox = connectedTextEdit(controlPanel, self._config, 'negativePrompt', multiLine=True)
-        negativePromptBox.setMaximumHeight(textboxHeight)
-        wideOptionsLayout.addWidget(negativePromptBox, 1, 1)
+        wide_options_layout.setRowStretch(1, 2)
+        wide_options_layout.addWidget(QLabel('Negative:'), 1, 0)
+        negative_prompt_textbox = connected_textedit(control_panel, self._config, 'negativePrompt', multi_line=True)
+        negative_prompt_textbox.setMaximumHeight(textbox_height)
+        wide_options_layout.addWidget(negative_prompt_textbox, 1, 1)
         # batch count:
-        wideOptionsLayout.addWidget(QLabel('Batch count:'), 1, 2)
-        batchCountBox = connectedSpinBox(controlPanel, self._config, 'batchCount', maxKey='maxBatchCount')
-        batchCountBox.setRange(1, batchCountBox.maximum())
-        batchCountBox.setToolTip("Number of inpainting image batches to generate")
-        wideOptionsLayout.addWidget(batchCountBox, 1, 3)
+        wide_options_layout.addWidget(QLabel('Batch count:'), 1, 2)
+        batch_count_spinbox = connected_spinbox(control_panel, self._config, 'batchCount', max_key='maxBatchCount')
+        batch_count_spinbox.setRange(1, batch_count_spinbox.maximum())
+        batch_count_spinbox.setToolTip("Number of inpainting image batches to generate")
+        wide_options_layout.addWidget(batch_count_spinbox, 1, 3)
         # Height: 
-        wideOptionsLayout.addWidget(QLabel("H:"), 1, 4)
-        heightBox = QSpinBox(self)
-        heightBox.setRange(1, 4096)
-        heightBox.setValue(self._config.get('editSize').height())
-        heightBox.setToolTip('Resize selection content to this height before inpainting')
+        wide_options_layout.addWidget(QLabel("H:"), 1, 4)
+        height_spinbox = QSpinBox(self)
+        height_spinbox.setRange(1, 4096)
+        height_spinbox.setValue(self._config.get('editSize').height())
+        height_spinbox.setToolTip('Resize selection content to this height before inpainting')
         config = self._config
-        def setH(value):
+        def set_h(value):
             size = config.get('editSize')
             config.set('editSize', QSize(size.width(), value))
-        heightBox.valueChanged.connect(setH)
-        wideOptionsLayout.addWidget(heightBox, 1, 5)
+        height_spinbox.valueChanged.connect(set_h)
+        wide_options_layout.addWidget(height_spinbox, 1, 5)
 
         # Misc. sliders:
-        wideOptionsLayout.setRowStretch(2, 1)
-        sampleStepSlider = ParamSlider(wideOptions, 'Sampling steps:', self._config, 'samplingSteps',
+        wide_options_layout.setRowStretch(2, 1)
+        sample_step_slider = ParamSlider(wide_options, 'Sampling steps:', self._config, 'samplingSteps',
                 'minSamplingSteps', 'maxSamplingSteps')
-        wideOptionsLayout.addWidget(sampleStepSlider, 2, 0, 1, 6)
-        wideOptionsLayout.setRowStretch(3, 1)
-        cfgScaleSlider = ParamSlider(wideOptions, 'CFG scale:', self._config, 'cfgScale', 'minCfgScale', 'maxCfgScale',
+        wide_options_layout.addWidget(sample_step_slider, 2, 0, 1, 6)
+        wide_options_layout.setRowStretch(3, 1)
+        cfg_scale_slider = ParamSlider(wide_options, 'CFG scale:', self._config, 'cfgScale', 'minCfgScale', 'maxCfgScale',
                 'cfgScaleStep')
-        wideOptionsLayout.addWidget(cfgScaleSlider, 3, 0, 1, 6)
-        wideOptionsLayout.setRowStretch(4, 1)
-        denoisingSlider = ParamSlider(wideOptions, 'Denoising strength:', self._config, 'denoisingStrength',
+        wide_options_layout.addWidget(cfg_scale_slider, 3, 0, 1, 6)
+        wide_options_layout.setRowStretch(4, 1)
+        denoising_slider = ParamSlider(wide_options, 'Denoising strength:', self._config, 'denoisingStrength',
                 'minDenoisingStrength', 'maxDenoisingStrength', 'denoisingStrengthStep')
-        wideOptionsLayout.addWidget(denoisingSlider, 4, 0, 1, 6)
+        wide_options_layout.addWidget(denoising_slider, 4, 0, 1, 6)
 
         # ControlNet panel, if controlnet is installed:
         if self._config.get('controlnetVersion') > 0:
-            controlnetPanel = ControlnetPanel(self._config,
-                    controller._webservice.getControlnetControlTypes(),
-                    controller._webservice.getControlnetModules())
-            controlnetPanel.setExpandedSizePolicy(QSizePolicy.Maximum)
-            if controlnetPanel.isExpanded():
+            controlnet_panel = ControlnetPanel(self._config,
+                    controller._webservice.get_controlnet_control_types(),
+                    controller._webservice.get_controlnet_modules())
+            controlnet_panel.set_expanded_size_policy(QSizePolicy.Maximum)
+            if controlnet_panel.is_expanded():
                 self.layout().setStretch(1, self.layout().stretch(1) + OPEN_PANEL_STRETCH)
-            def onControlnetExpanded(isExpanded):
-                stretch = self.layout().stretch(1) + (OPEN_PANEL_STRETCH if isExpanded else -OPEN_PANEL_STRETCH)
+            def on_controlnet_expanded(expanded):
+                stretch = self.layout().stretch(1) + (OPEN_PANEL_STRETCH if expanded else -OPEN_PANEL_STRETCH)
                 stretch = max(stretch, 1)
                 self.layout().setStretch(1, stretch)
-            controlnetPanel.toggled().connect(onControlnetExpanded)
-            controlLayout.addWidget(controlnetPanel, stretch=20)
+            controlnet_panel.toggled().connect(on_controlnet_expanded)
+            control_layout.addWidget(controlnet_panel, stretch=20)
 
         # Right side: box of dropdown/checkbox options:
-        optionList = BorderedWidget()
-        mainControls.addWidget(optionList, stretch=10)
-        optionListLayout = QVBoxLayout()
-        optionListLayout.setSpacing(max(2, self.height() // 200))
-        optionList.setLayout(optionListLayout)
-        def addOptionLine(labelText, widget, toolTip=None):
-            optionLine = QHBoxLayout()
-            optionListLayout.addLayout(optionLine)
-            optionLine.addWidget(QLabel(labelText), stretch=1)
-            if toolTip is not None:
-                widget.setToolTip(toolTip)
-            optionLine.addWidget(widget, stretch=2)
-            return optionLine
+        option_list = BorderedWidget()
+        main_controls.addWidget(option_list, stretch=10)
+        option_list_layout = QVBoxLayout()
+        option_list_layout.setSpacing(max(2, self.height() // 200))
+        option_list.setLayout(option_list_layout)
+        def add_option_line(label_text, widget, tooltip=None):
+            option_line = QHBoxLayout()
+            option_list_layout.addLayout(option_line)
+            option_line.addWidget(QLabel(label_text), stretch=1)
+            if tooltip is not None:
+                widget.setToolTip(tooltip)
+            option_line.addWidget(widget, stretch=2)
+            return option_line
 
-        def addComboBoxLine(labelText, configKey, inpaintingOnly, toolTip=None):
-            comboBox = connectedComboBox(optionList, self._config, configKey)
-            if inpaintingOnly:
-                self._config.connect(comboBox, 'editMode', lambda newMode: comboBox.setEnabled(newMode == 'Inpaint'))
-            return addOptionLine(labelText, comboBox, toolTip)
+        def add_combo_box(label_text, config_key, inpainting_only, tooltip=None):
+            combobox = connected_combobox(option_list, self._config, config_key)
+            if inpainting_only:
+                self._config.connect(combobox, 'editMode', lambda newMode: combobox.setEnabled(newMode == 'Inpaint'))
+            return add_option_line(label_text, combobox, tooltip)
 
-        addComboBoxLine('Editing mode:', 'editMode', False)
-        addComboBoxLine('Masked content:', 'maskedContent', True)
-        addComboBoxLine('Sampling method:', 'samplingMethod', False)
-        paddingLineIndex = len(optionListLayout.children())
-        paddingLine = QHBoxLayout()
-        paddingLabel = QLabel('Inpaint padding:')
-        paddingLine.addWidget(paddingLabel, stretch = 1)
-        paddingBox = connectedSpinBox(self, self._config, 'inpaintFullResPadding', 'inpaintFullResPaddingMax')
-        paddingBox.setMinimum(0)
-        paddingLine.addWidget(paddingBox, stretch = 2)
-        optionListLayout.insertLayout(paddingLineIndex, paddingLine)
-        def paddingLayoutUpdate(inpaintFullRes):
-            paddingLabel.setVisible(inpaintFullRes)
-            paddingBox.setVisible(inpaintFullRes)
-        paddingLayoutUpdate(self._config.get('inpaintFullRes'))
-        self._config.connect(self, 'inpaintFullRes', lambda isSet: paddingLayoutUpdate(isSet))
-        self._config.connect(self, 'editMode', lambda mode: paddingLayoutUpdate(mode == 'Inpaint'))
+        add_combo_box('Editing mode:', 'editMode', False)
+        add_combo_box('Masked content:', 'maskedContent', True)
+        add_combo_box('Sampling method:', 'samplingMethod', False)
+        padding_line_index = len(option_list_layout.children())
+        padding_line = QHBoxLayout()
+        padding_label = QLabel('Inpaint padding:')
+        padding_line.addWidget(padding_label, stretch = 1)
+        padding_spinbox = connected_spinbox(self, self._config, 'inpaintFullResPadding', 'inpaintFullResPaddingMax')
+        padding_spinbox.setMinimum(0)
+        padding_line.addWidget(padding_spinbox, stretch = 2)
+        option_list_layout.insertLayout(padding_line_index, padding_line)
+        def padding_layout_update(inpaintFullRes):
+            padding_label.setVisible(inpaintFullRes)
+            padding_spinbox.setVisible(inpaintFullRes)
+        padding_layout_update(self._config.get('inpaintFullRes'))
+        self._config.connect(self, 'inpaintFullRes', lambda isSet: padding_layout_update(isSet))
+        self._config.connect(self, 'editMode', lambda mode: padding_layout_update(mode == 'Inpaint'))
 
 
-        checkboxLine = QHBoxLayout()
-        optionListLayout.addLayout(checkboxLine)
-        checkboxLine.addWidget(QLabel('Restore faces:'), stretch=4)
-        faceCheckBox = connectedCheckBox(optionList, self._config, 'restoreFaces')
-        checkboxLine.addWidget(faceCheckBox, stretch=1)
-        checkboxLine.addWidget(QLabel('Tiling:'), stretch=4)
-        tilingCheckBox = connectedCheckBox(optionList, self._config, 'tiling')
-        checkboxLine.addWidget(tilingCheckBox, stretch=1)
+        checkbox_line = QHBoxLayout()
+        option_list_layout.addLayout(checkbox_line)
+        checkbox_line.addWidget(QLabel('Restore faces:'), stretch=4)
+        face_checkbox = connected_checkbox(option_list, self._config, 'restoreFaces')
+        checkbox_line.addWidget(face_checkbox, stretch=1)
+        checkbox_line.addWidget(QLabel('Tiling:'), stretch=4)
+        tiling_checkbox = connected_checkbox(option_list, self._config, 'tiling')
+        checkbox_line.addWidget(tiling_checkbox, stretch=1)
 
-        inpaintLine = QHBoxLayout()
-        optionListLayout.addLayout(inpaintLine)
-        inpaintLine.addWidget(QLabel('Inpaint Masked Only:'), stretch = 4)
-        inpaintCheckBox = connectedCheckBox(optionList, self._config, 'inpaintFullRes')
-        inpaintLine.addWidget(inpaintCheckBox, stretch = 1)
+        inpaint_line = QHBoxLayout()
+        option_list_layout.addLayout(inpaint_line)
+        inpaint_line.addWidget(QLabel('Inpaint Masked Only:'), stretch = 4)
+        inpaint_checkbox = connected_checkbox(option_list, self._config, 'inpaintFullRes')
+        inpaint_line.addWidget(inpaint_checkbox, stretch = 1)
         if self._config.get('controlnetVersion') > 0:
-            inpaintLine.addWidget(QLabel('CN Inpaint:'), stretch = 4)
-            cnInpaintCheckBox = connectedCheckBox(optionList, self._config, 'controlnetInpainting')
-            inpaintLine.addWidget(cnInpaintCheckBox, stretch = 1)
+            inpaint_line.addWidget(QLabel('CN Inpaint:'), stretch = 4)
+            cn_inpaint_checkbox = connected_checkbox(option_list, self._config, 'controlnetInpainting')
+            inpaint_line.addWidget(cn_inpaint_checkbox, stretch = 1)
         else:
-            inpaintLine.addSpacing(5)
+            inpaint_line.addSpacing(5)
 
-        seedInput = connectedSpinBox(optionList, self._config, 'seed')
-        seedInput.setRange(-1, 99999999999999999999)
-        addOptionLine("Seed:", seedInput, "Controls image generation, use -1 to use a random value each time.")
+        seed_input = connected_spinbox(option_list, self._config, 'seed')
+        seed_input.setRange(-1, 99999999999999999999)
+        add_option_line("Seed:", seed_input, "Controls image generation, use -1 to use a random value each time.")
 
-        lastSeedBox = connectedTextEdit(optionList, self._config, 'lastSeed');
-        lastSeedBox.setReadOnly(True)
-        addOptionLine("Last Seed", lastSeedBox, "Seed used during the last inpainting action.")
+        last_seed_box = connected_textedit(option_list, self._config, 'lastSeed');
+        last_seed_box.setReadOnly(True)
+        add_option_line("Last Seed", last_seed_box, "Seed used during the last inpainting action.")
 
         
         # Put action buttons on the bottom:
-        buttonBar = BorderedWidget(controlPanel)
-        buttonBarLayout = QHBoxLayout()
-        buttonBar.setLayout(buttonBarLayout)
-        buttonBar.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Maximum)
-        controlLayout.addWidget(buttonBar, stretch=5)
+        button_bar = BorderedWidget(control_panel)
+        button_bar_layout = QHBoxLayout()
+        button_bar.setLayout(button_bar_layout)
+        button_bar.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Maximum)
+        control_layout.addWidget(button_bar, stretch=5)
 
-        # interrogateButton:
-        interrogateButton = QPushButton();
-        interrogateButton.setText("Interrogate")
-        interrogateButton.setToolTip("Attempt to generate a prompt that describes the current selection")
-        interrogateButton.clicked.connect(lambda: controller.interrogate())
-        buttonBarLayout.addWidget(interrogateButton, stretch=1)
-        interrogateButton.resize(interrogateButton.width(), interrogateButton.height() * 2)
+        # interrogate_button:
+        interrogate_button = QPushButton();
+        interrogate_button.setText("Interrogate")
+        interrogate_button.setToolTip("Attempt to generate a prompt that describes the current selection")
+        interrogate_button.clicked.connect(lambda: controller.interrogate())
+        button_bar_layout.addWidget(interrogate_button, stretch=1)
+        interrogate_button.resize(interrogate_button.width(), interrogate_button.height() * 2)
         # Start generation button:
-        startButton = QPushButton();
-        startButton.setText("Generate")
-        startButton.clicked.connect(lambda: controller.startAndManageInpainting())
-        buttonBarLayout.addWidget(startButton, stretch=2)
-        startButton.resize(startButton.width(), startButton.height() * 2)
+        start_button = QPushButton();
+        start_button.setText("Generate")
+        start_button.clicked.connect(lambda: controller.start_and_manage_inpainting())
+        button_bar_layout.addWidget(start_button, stretch=2)
+        start_button.resize(start_button.width(), start_button.height() * 2)
 
         # Add image panel sliders:
-        self.stepSlider = ParamSlider(self,
+        self._step_slider = ParamSlider(self,
                 'Sampling steps:',
                 self._config,
                 'samplingSteps',
                 'minSamplingSteps',
                 'maxSamplingSteps',
                 orientation=Qt.Orientation.Vertical,
-                verticalTextPt=int(self._config.get("fontPointSize") * 1.3))
-        self.cfgSlider = ParamSlider(
+                vertical_text_pt=int(self._config.get("fontPointSize") * 1.3))
+        self._cfg_slider = ParamSlider(
                 self,
                 "CFG scale:",
                 config,
@@ -243,8 +246,8 @@ class StableDiffusionMainWindow(MainWindow):
                 'maxCfgScale',
                 'cfgScaleStep',
                 orientation=Qt.Orientation.Vertical,
-                verticalTextPt=int(self._config.get("fontPointSize") * 1.3))
-        self.denoiseSlider = ParamSlider(self,
+                vertical_text_pt=int(self._config.get("fontPointSize") * 1.3))
+        self._denoise_slider = ParamSlider(self,
                 'Denoising strength:',
                 self._config,
                 'denoisingStrength',
@@ -252,7 +255,7 @@ class StableDiffusionMainWindow(MainWindow):
                 'maxDenoisingStrength',
                 'denoisingStrengthStep',
                 orientation=Qt.Orientation.Vertical,
-                verticalTextPt=int(self._config.get("fontPointSize") * 1.3))
-        self._imagePanel.addSlider(self.stepSlider)
-        self._imagePanel.addSlider(self.cfgSlider)
-        self._imagePanel.addSlider(self.denoiseSlider)
+                vertical_text_pt=int(self._config.get("fontPointSize") * 1.3))
+        self._image_panel.add_slider(self._step_slider)
+        self._image_panel.add_slider(self._cfg_slider)
+        self._image_panel.add_slider(self._denoise_slider)

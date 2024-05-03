@@ -1,29 +1,33 @@
+"""
+Provides a utility function for handling image or widget placement.
+"""
+
 from PyQt5.QtCore import Qt, QPoint, QRect, QSize
 
-def getScaledPlacement(containerRect, innerSize, marginWidth=0):
+def get_scaled_placement(container_rect, inner_size, margin_width=0):
     """
     Calculate the most appropriate placement of a scaled rectangle within a container, without changing aspect ratio.
     Parameters:
     -----------
-    containerRect : QRect
+    container_rect : QRect
         Bounds of the container where the scaled rectangle will be placed.        
-    innerSize : QSize
+    inner_size : QSize
         S of the rectangle to be scaled and placed within the container.
-    marginWidth : int
+    margin_width : int
         Distance in pixels of the area around the container edges that should remain empty.
     Returns:
     --------
     placement : QRect
-        Size and position of the scaled rectangle within containerRect.
+        Size and position of the scaled rectangle within container_rect.
     scale : number
         Amount that the inner rectangle's width and height should be scaled.
     """
-    containerSize = containerRect.size() - QSize(marginWidth * 2, marginWidth * 2)
-    scale = min(containerSize.width()/max(innerSize.width(), 1), containerSize.height()/max(innerSize.height(), 1))
-    x = containerRect.x() + marginWidth
-    y = containerRect.y() + marginWidth
-    if (innerSize.width() * scale) < containerSize.width():
-        x += (containerSize.width() - innerSize.width() * scale) / 2
-    if (innerSize.height() * scale) < containerSize.height():
-        y += (containerSize.height() - innerSize.height() * scale) / 2
-    return QRect(int(x), int(y), int(innerSize.width() * scale), int(innerSize.height() * scale))
+    container_size = container_rect.size() - QSize(margin_width * 2, margin_width * 2)
+    scale = min(container_size.width()/max(inner_size.width(), 1), container_size.height()/max(inner_size.height(), 1))
+    x = container_rect.x() + margin_width
+    y = container_rect.y() + margin_width
+    if (inner_size.width() * scale) < container_size.width():
+        x += (container_size.width() - inner_size.width() * scale) / 2
+    if (inner_size.height() * scale) < container_size.height():
+        y += (container_size.height() - inner_size.height() * scale) / 2
+    return QRect(int(x), int(y), int(inner_size.width() * scale), int(inner_size.height() * scale))

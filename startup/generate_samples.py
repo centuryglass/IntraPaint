@@ -1,8 +1,11 @@
+"""
+Provides an image inpainting function using a local GLID3-XL instance.
+"""
 import torch
 from torchvision.transforms import functional as TF
 from PIL import Image
 
-def generateSamples(
+def generate_samples(
         device,
         ldm_model,
         diffusion,

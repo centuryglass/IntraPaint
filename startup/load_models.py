@@ -1,3 +1,6 @@
+"""
+Loads the ML models that make up GLID3-XL.
+"""
 import torch
 from torchvision import transforms
 from guided_diffusion.script_util import create_model_and_diffusion, model_and_diffusion_defaults
@@ -5,7 +8,7 @@ from encoders.modules import BERTEmbedder
 import clip
 import gc
 
-def loadModels( device,
+def load_models( device,
         model_path="inpaint.pt",
         bert_path="bert.pt",
         kl_path="kl-f8.pt",

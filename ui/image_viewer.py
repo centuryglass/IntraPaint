@@ -1,76 +1,79 @@
+"""
+A PyQt5 widget wrapper for data_model/edited_image.
+"""
+
 from PyQt5.QtWidgets import QWidget, QSizePolicy
 from PyQt5.QtGui import QPainter, QPen, QImage
 from PyQt5.QtCore import Qt, QPoint, QRect, QSize
 import PyQt5.QtGui as QtGui
 from PIL import Image
 
-from ui.image_utils import qImageToImage, imageToQImage
-from ui.util.get_scaled_placement import getScaledPlacement
-from ui.util.equal_margins import getEqualMargins
+from ui.image_utils import qimage_to_pil_image, pil_image_to_qimage
+from ui.util.get_scaled_placement import get_scaled_placement
+from ui.util.equal_margins import get_equal_margins
 
 class ImageViewer(QWidget):
     """
     Shows the image being edited, and allows the user to select sections.
     """
 
-    def __init__(self, editedImage):
+    def __init__(self, edited_image):
         super().__init__()
-        self._editedImage = editedImage
-        self._borderSize = 4
-        editedImage.sizeChanged.connect(lambda: self.resizeEvent(None))
-        editedImage.selectionChanged.connect(lambda: self.update())
-        editedImage.contentChanged.connect(lambda: self.update())
+        self._edited_image = edited_image
+        self._border_size = 4
+        edited_image.size_changed.connect(lambda: self.resizeEvent(None))
+        edited_image.selection_changed.connect(lambda: self.update())
+        edited_image.content_changed.connect(lambda: self.update())
         self.setSizePolicy(QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding))
 
     def resizeEvent(self, event):
-        print(f"viewerSize: {self.size()}")
-        if self._editedImage.hasImage():
-            self._imageRect = getScaledPlacement(QRect(QPoint(0, 0), self.size()), self._editedImage.size(), self._borderSize)
+        if self._edited_image.has_image():
+            self._image_rect = get_scaled_placement(QRect(QPoint(0, 0), self.size()), self._edited_image.size(), self._border_size)
         else:
-            self._imageRect = getScaledPlacement(QRect(QPoint(0, 0), self.size()), self.size(), self._borderSize)
+            self._image_rect = get_scaled_placement(QRect(QPoint(0, 0), self.size()), self.size(), self._border_size)
 
-    def _imageToWidgetCoords(self, point):
+    def _image_to_widget_coords(self, point):
         assert isinstance(point, QPoint)
-        scale = self._imageRect.width() / self._editedImage.width()
-        return QPoint(int(point.x() * scale) + self._imageRect.x(),
-                int(point.y() * scale) + self._imageRect.y())
+        scale = self._image_rect.width() / self._edited_image.width()
+        return QPoint(int(point.x() * scale) + self._image_rect.x(),
+                int(point.y() * scale) + self._image_rect.y())
 
-    def _widgetToImageCoords(self, point):
+    def _widget_to_image_coords(self, point):
         assert isinstance(point, QPoint)
-        scale = self._imageRect.width() / self._editedImage.width()
-        return QPoint(int((point.x() - self._imageRect.x()) / scale),
-                int((point.y() - self._imageRect.y()) / scale))
+        scale = self._image_rect.width() / self._edited_image.width()
+        return QPoint(int((point.x() - self._image_rect.x()) / scale),
+                int((point.y() - self._image_rect.y()) / scale))
 
     def paintEvent(self, event):
         """Draw the image, selection area, and border."""
         painter = QPainter(self)
-        linePen = QPen(Qt.black, 2, Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin)
-        painter.setPen(linePen)
-        if self._editedImage.hasImage():
-            painter.drawImage(self._imageRect, self._editedImage.getQImage())
+        line_pen = QPen(Qt.black, 2, Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin)
+        painter.setPen(line_pen)
+        if self._edited_image.has_image():
+            painter.drawImage(self._image_rect, self._edited_image.get_qimage())
             # outline selection:
-            selection = self._editedImage.getSelectionBounds()
-            selectionTopLeft = self._imageToWidgetCoords(selection.topLeft())
-            selectionBottomRight = self._imageToWidgetCoords(selection.topLeft() +
+            selection = self._edited_image.get_selection_bounds()
+            selectionTopLeft = self._image_to_widget_coords(selection.topLeft())
+            selectionBottomRight = self._image_to_widget_coords(selection.topLeft() +
                     + QPoint(selection.width(), selection.height()))
             selectedRect = QRect(selectionTopLeft, selection.size())
             selectedRect.setBottomRight(selectionBottomRight)
             painter.drawRect(selectedRect)
         # draw margin:
-        margin = self._borderSize // 2
-        linePen.setWidth(self._borderSize)
-        painter.drawRect(QRect(QPoint(0, 0), self.size()).marginsRemoved(getEqualMargins(2)))
+        margin = self._border_size // 2
+        line_pen.setWidth(self._border_size)
+        painter.drawRect(QRect(QPoint(0, 0), self.size()).marginsRemoved(get_equal_margins(2)))
 
     def sizeHint(self):
-        if self._editedImage.hasImage():
-            return self._editedImage.size()
+        if self._edited_image.has_image():
+            return self._edited_image.size()
         return QSize(512, 512)
 
     def mousePressEvent(self, event):
         """Select the area in in the image to be edited."""
-        if event.button() == Qt.LeftButton and self._editedImage.hasImage():
-            imageCoords = self._widgetToImageCoords(event.pos())
-            selection = self._editedImage.getSelectionBounds()
-            selection.moveTopLeft(imageCoords)
-            self._editedImage.setSelectionBounds(selection)
+        if event.button() == Qt.LeftButton and self._edited_image.has_image():
+            image_coords = self._widget_to_image_coords(event.pos())
+            selection = self._edited_image.get_selection_bounds()
+            selection.moveTopLeft(image_coords)
+            self._edited_image.set_selection_bounds(selection)
 

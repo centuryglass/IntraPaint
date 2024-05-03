@@ -1,24 +1,28 @@
+"""Adds general-purpose utility functions for manipulating image data"""
+
+import io
 from PIL import Image
 from PyQt5.QtGui import QImage
 from PyQt5.QtCore import QBuffer
-import traceback, io
 
-"""Adds general-purpose utility functions to reuse in UI code"""
 
-def imageToQImage(pilImage):
+def pil_image_to_qimage(pil_image):
     """Convert a PIL Image to a RGB888 formatted PyQt5 QImage."""
-    if isinstance(pilImage, Image.Image):
-        return QImage(pilImage.tobytes("raw","RGB"),
-                pilImage.width,
-                pilImage.height,
-                pilImage.width * 3,
+    if isinstance(pil_image, Image.Image):
+        return QImage(pil_image.tobytes("raw","RGB"),
+                pil_image.width,
+                pil_image.height,
+                pil_image.width * 3,
                 QImage.Format_RGB888)
+    raise TypeError("Invalid PIL Image parameter.")
 
-def qImageToImage(qImage):
+
+def qimage_to_pil_image(qimage):
     """Convert a PyQt5 QImage to a PIL image, in PNG format."""
-    if isinstance(qImage, QImage):
+    if isinstance(qimage, QImage):
         buffer = QBuffer()
         buffer.open(QBuffer.ReadWrite)
-        qImage.save(buffer, "PNG")
+        qimage.save(buffer, "PNG")
         pil_im = Image.open(io.BytesIO(buffer.data()))
         return pil_im
+    raise TypeError("Invalid QImage parameter.")

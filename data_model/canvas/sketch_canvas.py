@@ -1,101 +1,107 @@
+"""
+Provides a Canvas implementation for directly drawing within edited image sections. Allows painting in full color
+with drawing tablet support. Used as a fallback implementation on systems that can't use the superior brushlib_canvas
+module.
+"""
 from PyQt5.QtCore import Qt, QSize
 from PyQt5.QtGui import QPainter, QPixmap
 from PyQt5.QtWidgets import QGraphicsPixmapItem
 from data_model.canvas.pixmap_canvas import PixmapCanvas
 
 class SketchCanvas(PixmapCanvas):
-    def __init__(self, config, initData):
-        super().__init__(config, initData)
-        config.connect(self, 'sketchBrushSize', lambda size: self.setBrushSize(size))
-        self.setBrushSize(config.get('sketchBrushSize'))
+    def __init__(self, config, image_data):
+        super().__init__(config, image_data)
+        self._has_sketch = False
+        config.connect(self, 'sketchBrushSize', lambda size: self.set_brush_size(size))
+        self.set_brush_size(config.get('sketchBrushSize'))
         self.shading = False
-        self._shadingPixmap = QGraphicsPixmapItem()
-        self._setEmptyShadingPixmap()
+        self._shading_pixmap = QGraphicsPixmapItem()
+        self._set_empty_shading_pixmap()
 
-    def addToScene(self, scene, zValue = None):
-        super().addToScene(scene, zValue)
-        self._shadingPixmap.setZValue(self.zValue())
-        scene.addItem(self._shadingPixmap)
+    def add_to_scene(self, scene, z_value = None):
+        super().add_to_scene(scene, z_value)
+        self._shading_pixmap.setZValue(self.zValue())
+        scene.addItem(self._shading_pixmap)
 
-    def setImage(self, initData):
-        super().setImage(initData)
-        self.hasSketch = initData is not None and not isinstance(initData, QSize)
+    def set_image(self, image_data):
+        super().set_image(image_data)
+        self._has_sketch = image_data is not None and not isinstance(image_data, QSize)
 
-    def startStroke(self):
-        super().startStroke()
+    def start_stroke(self):
+        super().start_stroke()
         if self._config.get("pressureOpacity"):
             self.shading = True
 
-    def endStroke(self):
-        super().endStroke()
-        self._applyShading()
+    def end_stroke(self):
+        super().end_stroke()
+        self._apply_shading()
 
-    def drawLine(self, line, color, sizeMultiplier=None, sizeOverride=None):
-        self.hasSketch = True
+    def draw_line(self, line, color, size_multiplier=None, size_override=None):
+        self._has_sketch = True
         if self.shading:
             pixmap = QPixmap(self.size())
-            pixmap.swap(self._shadingPixmap.pixmap())
-            self._baseDraw(pixmap, line, color, QPainter.CompositionMode.CompositionMode_Source,
-                    sizeMultiplier, sizeOverride)
-            self._shadingPixmap.setPixmap(pixmap)
+            pixmap.swap(self._shading_pixmap.pixmap())
+            self._base_draw(pixmap, line, color, QPainter.CompositionMode.CompositionMode_Source,
+                    size_multiplier, size_override)
+            self._shading_pixmap.setPixmap(pixmap)
         else:
-            super().drawLine(line, color, sizeMultiplier, sizeOverride)
+            super().draw_line(line, color, size_multiplier, size_override)
 
-    def drawPoint(self, point, color, sizeMultiplier=None, sizeOverride=None):
+    def draw_point(self, point, color, size_multiplier=None, size_override=None):
         if self.shading:
             pixmap = QPixmap(self.size())
-            pixmap.swap(self._shadingPixmap.pixmap())
-            self._baseDraw(pixmap, point, color, QPainter.CompositionMode.CompositionMode_Source,
-                    sizeMultiplier, sizeOverride)
-            self._shadingPixmap.setPixmap(pixmap)
+            pixmap.swap(self._shading_pixmap.pixmap())
+            self._base_draw(pixmap, point, color, QPainter.CompositionMode.CompositionMode_Source,
+                    size_multiplier, size_override)
+            self._shading_pixmap.setPixmap(pixmap)
         else:
-            super().drawPoint(point, color, sizeMultiplier, sizeOverride)
-        self.hasSketch = True
+            super().draw_point(point, color, size_multiplier, size_override)
+        self._has_sketch = True
 
 
-    def startShading(self):
+    def start_shading(self):
         self.shading = True
 
-    def _setEmptyShadingPixmap(self):
-            blankPixmap = QPixmap(self.size())
-            blankPixmap.fill(Qt.transparent)
-            self._shadingPixmap.setPixmap(blankPixmap)
+    def _set_empty_shading_pixmap(self):
+        blank_pixmap = QPixmap(self.size())
+        blank_pixmap.fill(Qt.transparent)
+        self._shading_pixmap.setPixmap(blank_pixmap)
 
-    def _applyShading(self):
+    def _apply_shading(self):
         if self.shading:
             pixmap = QPixmap(self.size())
             pixmap.swap(self.pixmap())
             painter = QPainter(pixmap)
             painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_SourceOver)
-            painter.drawPixmap(0, 0, self.width(), self.height(), self._shadingPixmap.pixmap())
+            painter.drawPixmap(0, 0, self.width(), self.height(), self._shading_pixmap.pixmap())
             painter.end()
             self.setPixmap(pixmap)
-            self._setEmptyShadingPixmap()
+            self._set_empty_shading_pixmap()
             self.shading = False
 
-    def getImage(self):
-        self._applyShading()
-        return super().getImage()
+    def get_pil_image(self):
+        self._apply_shading()
+        return super().get_pil_image()
 
     def resize(self, size):
         super().resize(size)
-        self._shadingPixmap.setPixmap(self._shadingPixmap.pixmap().scaled(size))
+        self._shading_pixmap.setPixmap(self._shading_pixmap.pixmap().scaled(size))
 
     def clear(self):
         super().clear()
-        self._setEmptyShadingPixmap()
-        self.hasSketch = False
+        self._set_empty_shading_pixmap()
+        self._has_sketch = False
         self.update()
 
     def fill(self, color):
         super().fill(color)
-        self.hasSketch = True
+        self._has_sketch = True
         self.update()
 
     def setVisible(self, visible):
         super().setVisible(visible)
-        self._shadingPixmap.setVisible(visible)
+        self._shading_pixmap.setVisible(visible)
 
     def setOpacity(self, opacity):
         super().setOpacity(opacity)
-        self._shadingPixmap.setOpacity(opacity)
+        self._shading_pixmap.setOpacity(opacity)

@@ -1,33 +1,23 @@
-import argparse
-import sys
-from startup.utils import *
+"""
+Starts the GLID3-XL image inpainting server.
+"""
+from startup.load_models import load_models
+from startup.utils import build_arg_parser
+from startup.ml_utils import get_device
+from colabFiles.server import startServer
 
 # argument parsing:
-parser = buildArgParser(includeGenParams=False, includeEditParams=False)
+parser = build_arg_parser(include_gen_params=False, include_edit_params=False)
 parser.add_argument('--port', type = int, default = 5555, required = False,
                     help='Port used when running in server mode.')
 args = parser.parse_args()
 
-import gc
-import os
 
-from PIL import Image
-import torch
-from torchvision.transforms import functional as TF
-import numpy as np
-
-from startup.load_models import loadModels
-from startup.create_sample_function import createSampleFunction
-from startup.generate_samples import generateSamples
-from startup.utils import *
-from startup.ml_utils import *
-
-
-device = getDevice()
+device = get_device()
 print('Using device:', device)
 
 
-model_params, model, diffusion, ldm, bert, clip_model, clip_preprocess, normalize = loadModels(device,
+model_params, model, diffusion, ldm, bert, clip_model, clip_preprocess, normalize = load_models(device,
         model_path=args.model_path,
         bert_path=args.bert_path,
         kl_path=args.kl_path,
@@ -36,6 +26,5 @@ model_params, model, diffusion, ldm, bert, clip_model, clip_preprocess, normaliz
         cpu = args.cpu,
         ddpm = args.ddpm,
         ddim = args.ddim)
-from colabFiles.server import startServer
 app = startServer(device, model_params, model, diffusion, ldm, bert, clip_model, clip_preprocess, normalize)
 app.run(port=args.port, host= '0.0.0.0')
