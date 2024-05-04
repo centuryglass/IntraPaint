@@ -98,7 +98,7 @@ class MaskPanel(QWidget):
         self._mask_sketch_toggle = DualToggle(self, DRAW_MODES.MASK, DRAW_MODES.SKETCH, config)
         self._mask_sketch_toggle.setIcons('./resources/mask.png', 'resources/sketch.png')
         self._mask_sketch_toggle.setToolTips("Draw over the area to be inpainted", "Add details to help guide inpainting")
-        self._mask_sketch_toggle.value_changed.connect(lambda selection: self.set_draw_mode(selection))
+        self._mask_sketch_toggle.value_changed.connect(lambda m: self.set_draw_mode(m if m != "" else None))
 
 
         self._color_picker_button = QPushButton(self)
@@ -109,7 +109,6 @@ class MaskPanel(QWidget):
         self._color_picker_button.setVisible(False)
 
         try:
-            from data_model.canvas.brushlib import Brushlib
             from ui.widget.brush_picker import BrushPicker
             self._brush_picker_button = QPushButton(self)
             self._brush_picker = None

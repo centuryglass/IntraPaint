@@ -261,6 +261,6 @@ class ControlnetPanel(CollapsibleBox):
             else:
                 self._saved_state = config.get(CONTROLNET_CONFIG_KEY)
                 config.set(CONTROLNET_CONFIG_KEY, {})
-        set_enabled(len(initial_control_state) > 0)
+        set_enabled('model' in initial_control_state)
         enabled_checkbox.stateChanged.connect(set_enabled) 
         self.show_button_bar(True)

@@ -5,7 +5,7 @@ brushlib/libmypaint QT library is available, currently only true for x86_64 Linu
 from PyQt5.QtWidgets import QWidget, QTabWidget, QGridLayout, QScrollArea, QSizePolicy
 from PyQt5.QtGui import QPixmap, QImage, QPainter
 from PyQt5.QtCore import Qt, QRect
-from data_model.canvas.brushlib import Brushlib
+from brushlib import MPBrushLib as brushlib
 from ui.util.get_scaled_placement import get_scaled_placement
 import os
 
@@ -27,7 +27,7 @@ class IconButton(QWidget):
         return self._image.size()
 
     def is_selected(self):
-        activeBrush = Brushlib.get_active_brush()
+        activeBrush = brushlib.get_active_brush()
         return activeBrush is not None and activeBrush == self._brushpath
 
     def resizeEvent(self, event):
@@ -43,7 +43,7 @@ class IconButton(QWidget):
 
     def mousePressEvent(self, event):
         if event.button() == Qt.LeftButton and not self.is_selected() and self._image_rect.contains(event.pos()):
-            Brushlib.load_brush(self._brushpath)
+            brushlib.load_brush(self._brushpath)
             self.parent().update()
 
 class BrushPicker(QTabWidget):
