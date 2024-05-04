@@ -219,7 +219,7 @@ class A1111Webservice(WebService):
                     64, # seams_fix_width
                     0.35, # seams_fix_denoise
                     32, # seams_fix_padding
-                    config.getOptions('upscaleMethod').index(upscaler), # upscaler_index
+                    config.get_options('upscaleMethod').index(upscaler), # upscaler_index
                     False, # save_upscaled_image a.k.a Upscaled
                     0, # redraw_mode (linear)
                     False, # save_seams_fix_image a.k.a Seams fix
