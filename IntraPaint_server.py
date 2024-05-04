@@ -4,7 +4,7 @@ Starts the GLID3-XL image inpainting server.
 from startup.load_models import load_models
 from startup.utils import build_arg_parser
 from startup.ml_utils import get_device
-from colabFiles.server import startServer
+from colabFiles.server import start_server
 
 # argument parsing:
 parser = build_arg_parser(include_gen_params=False, include_edit_params=False)
@@ -26,5 +26,5 @@ model_params, model, diffusion, ldm, bert, clip_model, clip_preprocess, normaliz
         cpu = args.cpu,
         ddpm = args.ddpm,
         ddim = args.ddim)
-app = startServer(device, model_params, model, diffusion, ldm, bert, clip_model, clip_preprocess, normalize)
+app = start_server(device, model_params, model, diffusion, ldm, bert, clip_model, clip_preprocess, normalize)
 app.run(port=args.port, host= '0.0.0.0')

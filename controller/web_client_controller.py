@@ -2,44 +2,50 @@
 Provides image editing functionality through the GLID3-XL API provided through Intrapaint_server.py or
 colabFiles/IntraPaint_colab_server.ipynb.
 """
+import sys
+import requests
 from PyQt5.QtCore import QThread
 from PyQt5.QtWidgets import QInputDialog
-import requests, io, sys
 
 from ui.window.main_window import MainWindow
+from ui.util.screen_size import screen_size
 from controller.base_controller import BaseInpaintController
 from startup.utils import image_to_base64, load_image_from_base64
-from ui.util.screen_size import screen_size
 
 
 class WebClientController(BaseInpaintController):
+    """Provides image editing functionality through the GLID3-XL API."""
     def __init__(self, args):
         super().__init__(args)
         self._server_url = args.server_url
         self._fast_ngrok_connection = args.fast_ngrok_connection
+        self._window = None
 
+    @staticmethod
     def health_check(url):
+        """Static method to check if the GLID3-XL API is available."""
         try:
             res = requests.get(url, timeout=30)
             return res.status_code == 200 and ('application/json' in res.headers['content-type']) \
-                and 'success' in res.json() and res.json()['success'] == True
+                and 'success' in res.json() and res.json()['success'] is True
         except Exception as err:
             print(f"error connecting to {url}: {err}")
             return False
 
     def window_init(self):
+        """Initialize and show the main application window."""
         self._window = MainWindow(self._config, self._edited_image, self._mask_canvas, self._sketch_canvas, self)
         size = screen_size(self._window)
         self._window.setGeometry(0, 0, size.width(), size.height())
         self._window.show()
 
         # Make sure a valid connection exists:
-        def prompt_for_url(promptText):
-            newUrl, urlEntered = QInputDialog.getText(self._window, 'Inpainting UI', promptText)
-            if not urlEntered: # User clicked 'Cancel'
+        def prompt_for_url(prompt_text):
+            new_url, url_entered = QInputDialog.getText(self._window, 'Inpainting UI', prompt_text)
+            if not url_entered: # User clicked 'Cancel'
                 sys.exit()
-            if newUrl != '':
-                self._server_url=newUrl
+            if new_url != '':
+                self._server_url=new_url
 
         # Get URL if one was not provided on the command line:
         while self._server_url == '':
@@ -47,19 +53,12 @@ class WebClientController(BaseInpaintController):
             prompt_for_url('Enter server URL:')
 
         # Check connection:
-        def health_check_passes():
-            try:
-                res = requests.get(self._server_url, timeout=30)
-                return res.status_code == 200 and ('application/json' in res.headers['content-type']) \
-                    and 'success' in res.json() and res.json()['success'] == True
-            except Exception as err:
-                print(f"error connecting to {self._server_url}: {err}")
-                return False
         while not WebClientController.health_check(self._server_url):
             prompt_for_url('Server connection failed, enter a new URL or click "OK" to retry')
 
 
     def _inpaint(self, selection, mask, save_image, status_signal):
+        """Handle image editing operations using the GLID3-XL API."""
         batch_size = self._config.get('batchSize')
         batch_count = self._config.get('batchCount')
         body = {
@@ -75,15 +74,14 @@ class WebClientController(BaseInpaintController):
             'height': selection.height
         }
 
-        def error_check(server_response, contextStr):
+        def error_check(server_response, context_str):
             if server_response.status_code != 200:
                 if server_response.content and ('application/json' in server_response.headers['content-type']) \
                         and server_response.json() and 'error' in server_response.json():
-                    raise Exception(f"{server_response.status_code} response to {contextStr}: {server_response.json()['error']}")
-                else:
-                    print("RES")
-                    print(server_response.content)
-                    raise Exception(f"{server_response.status_code} response to {contextStr}: unknown error")
+                    raise RuntimeError(f"{server_response.status_code} response to {context_str}: " + \
+                                    f"{server_response.json()['error']}")
+                print(f"RESPONSE: {server_response.content}")
+                raise RuntimeError(f"{server_response.status_code} response to {context_str}: unknown error")
         res = requests.post(self._server_url, json=body, timeout=30)
         error_check(res, 'New inpainting request')
 
@@ -115,8 +113,7 @@ class WebClientController(BaseInpaintController):
                 if error_count > max_errors:
                     print('Inpainting failed, reached max retries.')
                     break
-                else:
-                    continue
+                continue
             error_count = 0 # Reset error count on success.
 
             # On valid response, for each entry in res.json.sample:

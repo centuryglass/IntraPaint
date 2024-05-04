@@ -11,6 +11,7 @@ class LoginModal(QDialog):
         super().__init__()
         self.user=None
         self.pw=None
+        self._res=None
 
         self.setModal(True)
 
@@ -67,7 +68,7 @@ class LoginModal(QDialog):
         self._login_button.clicked.connect(on_login)
 
         def on_cancel():
-            self._res = False
+            self._res=None
             self.hide()
 
         self._cancel_button.clicked.connect(on_cancel)
@@ -81,5 +82,9 @@ class LoginModal(QDialog):
 
     def show_login_modal(self):
         self.exec_()
-        if self._res.status_code == 200:
+        if self._res is not None and self._res.status_code == 200:
             return (self.user, self.pw)
+        return (None, None)
+
+    def get_login_response(self):
+        return self._res

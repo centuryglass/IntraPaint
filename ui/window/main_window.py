@@ -140,7 +140,7 @@ class MainWindow(QMainWindow):
 
         if hasattr(self._mask_panel, '_open_brush_picker'):
             try:
-                from data_model.canvas.brushlib import Brushlib
+                import brushlib.MPBrushLib as brushlib
                 from ui.widget.brush_picker import BrushPicker
                 add_action("Open brush menu", None, lambda: self._mask_panel._open_brush_picker(), tool_menu)
                 def load_brush():

@@ -18,6 +18,10 @@ class SketchCanvas(PixmapCanvas):
         self._shading_pixmap = QGraphicsPixmapItem()
         self._set_empty_shading_pixmap()
 
+    def has_sketch(self):
+        """Returns whether the canvas contains non-empty image data."""
+        return self._has_sketch
+
     def add_to_scene(self, scene, z_value = None):
         super().add_to_scene(scene, z_value)
         self._shading_pixmap.setZValue(self.zValue())

@@ -2,23 +2,16 @@
 Runs a simple HTTP server that provides access to GLID3-XL image editing operations.
 """
 
-from flask import Flask, request, jsonify, make_response, abort, current_app, send_file
-from flask_cors import CORS, cross_origin
-from PIL import Image
+from datetime import datetime
 from threading import Thread, Lock
-import torch
-from torchvision.transforms import functional as TF
-import numpy as np
-from startup.utils import *
-from startup.ml_utils import *
-from startup.load_models import load_models
+from flask import Flask, request, jsonify, make_response, abort, current_app
+from flask_cors import CORS, cross_origin
+from startup.utils import image_to_base64, load_image_from_base64
+from startup.ml_utils import foreach_image_in_sample
 from startup.create_sample_function import create_sample_function
 from startup.generate_samples import generate_samples
-import io
-import base64
-from datetime import datetime
 
-def startServer(device, model_params, model, diffusion, ldm_model, bert_model, clip_model, clip_preprocess, normalize):
+def start_server(device, model_params, model, diffusion, ldm_model, bert_model, clip_model, clip_preprocess, normalize):
     """
     Starts a Flask server to handle inpainting requests from a remote UI.
 
@@ -50,17 +43,17 @@ def startServer(device, model_params, model, diffusion, ldm_model, bert_model, c
     # Start an inpainting request:
     @app.route("/", methods=["POST"])
     @cross_origin()
-    def startInpainting():
+    def start_inpainting():
         # Extract arguments from body, convert images from base64
         json = request.get_json(force=True)
-        def requestedOrDefault(key, defaultValue):
+        def requested_or_default(key, default_value):
             if key in json:
                 return json[key]
-            return defaultValue
-        batch_size = requestedOrDefault('batch_size', 1)
-        num_batches = requestedOrDefault('num_batches', 1)
-        width = requestedOrDefault('width', 256)
-        height = requestedOrDefault('height', 256)
+            return default_value
+        batch_size = requested_or_default('batch_size', 1)
+        num_batches = requested_or_default('num_batches', 1)
+        width = requested_or_default('width', 256)
+        height = requested_or_default('height', 256)
 
         edit = None
         mask = None
@@ -89,14 +82,14 @@ def startServer(device, model_params, model, diffusion, ldm_model, bert_model, c
                     normalize,
                     edit=edit,
                     mask=mask,
-                    prompt = requestedOrDefault("prompt", ""),
-                    negative = requestedOrDefault("negative", ""),
-                    guidance_scale = requestedOrDefault("guidanceScale", 5.0),
+                    prompt = requested_or_default("prompt", ""),
+                    negative = requested_or_default("negative", ""),
+                    guidance_scale = requested_or_default("guidanceScale", 5.0),
                     batch_size = batch_size,
                     width = width,
                     height = height,
-                    cutn = requestedOrDefault("cutn", 16),
-                    skip_timesteps = requestedOrDefault("skipSteps", False))
+                    cutn = requested_or_default("cutn", 16),
+                    skip_timesteps = requested_or_default("skipSteps", False))
         except Exception as err:
             abort(make_response({"error": f"creating sample function failed, {err}"}, 500))
 
@@ -104,10 +97,10 @@ def startServer(device, model_params, model, diffusion, ldm_model, bert_model, c
             with current_app.lock:
                 timestamp = datetime.timestamp(datetime.now())
                 try:
-                    def addImageToResponse(k, image):
+                    def add_image_to_response(k, image):
                         name = f'{i * batch_size + k:05}'
                         current_app.samples[name] = { "image": image_to_base64(image), "timestamp": timestamp }
-                    foreach_image_in_sample(sample, batch_size, ldm_model, addImageToResponse)
+                    foreach_image_in_sample(sample, batch_size, ldm_model, add_image_to_response)
                 except Exception as err:
                     current_app.lastError = f"sample save error: {err}"
                     print(current_app.lastError)
@@ -129,7 +122,8 @@ def startServer(device, model_params, model, diffusion, ldm_model, bert_model, c
         # Start image generation thread:
         with current_app.lock:
             if current_app.in_progress or current_app.thread and current_app.thread.is_alive():
-                abort(make_response({error: "Cannot start a new operation, an existing operation is still running"}, 409))
+                abort(make_response({'error': "Cannot start a new operation, an existing operation is still running"},
+                            409))
             current_app.samples = {}
             current_app.in_progress = True
             current_app.thread = Thread(target = run_thread)
@@ -147,9 +141,9 @@ def startServer(device, model_params, model, diffusion, ldm_model, bert_model, c
         # newer timestamp, set response.samples[sampleName] = { timestamp, base64Image }
         response = { "samples": {} }
         with current_app.lock:
-            for key in current_app.samples:
-                if key not in json["samples"] or json["samples"][key] < current_app.samples[key]["timestamp"]:
-                    response["samples"][key] = current_app.samples[key]
+            for key, sample in current_app.samples.items():
+                if key not in json["samples"] or json["samples"][key] < sample["timestamp"]:
+                    response["samples"][key] = sample
             # If any errors were saved for the most recent request, use those to set response.errors
             if current_app.lastError != "":
                 response["error"] = current_app.lastError

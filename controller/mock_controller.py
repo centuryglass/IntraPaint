@@ -6,8 +6,6 @@ from controller.base_controller import BaseInpaintController
 
 class MockController(BaseInpaintController):
     """Mock controller for UI testing, performs no real inpainting"""
-    def __init__(self, args):
-        super().__init__(args)
 
     def _inpaint(self, selection, mask, load_image):
         print("Mock inpainting call:")
@@ -17,8 +15,7 @@ class MockController(BaseInpaintController):
         for option_name in config_options:
             value = self._config.get(option_name)
             print(f"\t{option_name}: {value}")
-        test_sample = Image.open(open('mask.png', 'rb')).convert('RGB')
-        for y in range(0, self._config.get('batchCount')):
-            for x in range(0, self._config.get('batchSize')):
-                load_image(test_sample, y, x)
-
+        with Image.open(open('mask.png', 'rb')).convert('RGB') as test_sample:
+            for y in range(0, self._config.get('batchCount')):
+                for x in range(0, self._config.get('batchSize')):
+                    load_image(test_sample, y, x)
