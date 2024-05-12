@@ -124,9 +124,15 @@ class StableDiffusionMainWindow(MainWindow):
 
         # ControlNet panel, if controlnet is installed:
         if self._config.get('controlnetVersion') > 0:
+            control_types = None
+            try:
+                control_types = controller._webservice.get_controlnet_control_types(),
+            except RuntimeError:
+                pass # API doesn't support control type selection, make do without it.
             controlnet_panel = ControlnetPanel(self._config,
-                    controller._webservice.get_controlnet_control_types(),
-                    controller._webservice.get_controlnet_modules())
+                    control_types,
+                    controller._webservice.get_controlnet_modules(),
+                    controller._webservice.get_controlnet_models())
             controlnet_panel.set_expanded_size_policy(QSizePolicy.Maximum)
             if controlnet_panel.is_expanded():
                 self.layout().setStretch(1, self.layout().stretch(1) + OPEN_PANEL_STRETCH)

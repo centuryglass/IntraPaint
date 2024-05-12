@@ -1,15 +1,15 @@
 """
 Miscellaneous utility functions for handling torch-related functionality
 """
+import os
 import torch
 from torchvision.transforms import functional as TF
 import numpy as np
-import os
 
 
-def get_device(useCPU=False):
+def get_device(use_cpu=False):
     """Initializes the Torch device."""
-    if useCPU or (not torch.cuda.is_available()):
+    if use_cpu or (not torch.cuda.is_available()):
         print("Warning: CPU mode is not supported, image generation will almost certainly fail.")
         return torch.device('cpu')
     return torch.device('cuda:0')
@@ -31,15 +31,15 @@ def foreach_in_sample(sample, batch_size, action):
 
 def foreach_image_in_sample(sample, batch_size, ldm_model, action):
     """Runs a function for each PIL image extracted from a sample"""
-    def convertParam(k, numpyData):
-        action(k, image_from_numpy_data(numpyData, ldm_model))
+    def convertParam(k, numpy_data):
+        action(k, image_from_numpy_data(numpy_data, ldm_model))
     foreach_in_sample(sample, batch_size, convertParam)
 
 
 def get_save_fn(prefix, batch_size, ldm_model, clip_model, clip_preprocess, device):
     """Creates and returns a function that saves sample data to disk."""
     def save_sample(i, sample, clip_score_fn=None):
-        def saveImage(k, numpy_data):
+        def save_image(k, numpy_data):
             npy_filename = f'output_npy/{prefix}{i * batch_size + k:05}.npy'
             with open(npy_filename, 'wb') as outfile:
                 np.save(outfile, numpy_data.detach().cpu().numpy())
@@ -52,5 +52,5 @@ def get_save_fn(prefix, batch_size, ldm_model, clip_model, clip_preprocess, devi
                 os.rename(filename, final_filename)
                 npy_final = f'output_npy/{prefix}_{score:0.3f}_{i * batch_size + k:05}.npy'
                 os.rename(npy_filename, npy_final)
-        foreach_in_sample(sample, batch_size, saveImage)
+        foreach_in_sample(sample, batch_size, save_image)
     return save_sample

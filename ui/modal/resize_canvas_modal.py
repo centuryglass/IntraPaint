@@ -9,7 +9,17 @@ from ui.util.get_scaled_placement import get_scaled_placement
 import math
 
 class ResizeCanvasModal(QDialog):
+    """ResizeCanvasModal.
+    """
+
     def __init__(self, qImage):
+        """__init__.
+
+        Parameters
+        ----------
+        qImage :
+            qImage
+        """
         super().__init__()
 
         self._resize = False
@@ -34,11 +44,32 @@ class ResizeCanvasModal(QDialog):
 
         # Preview widget:
         class PreviewWidget(QWidget):
+            """PreviewWidget.
+            """
+
             def __init__(prev, parent):
+                """__init__.
+
+                Parameters
+                ----------
+                prev :
+                    prev
+                parent :
+                    parent
+                """
                 super().__init__(parent)
                 prev.resizeEvent(None)
 
             def resizeEvent(prev, event):
+                """resizeEvent.
+
+                Parameters
+                ----------
+                prev :
+                    prev
+                event :
+                    event
+                """
                 width = self._widthbox.spinbox.value()
                 height = self._heightbox.spinbox.value()
                 x_off = self._x_offsetbox.spinbox.value()
@@ -53,6 +84,13 @@ class ResizeCanvasModal(QDialog):
                 draw_area = get_scaled_placement(QRect(0, 0, prev.width(), prev.height()), full_rect.size())
                 scale = draw_area.width() / full_rect.width()
                 def get_draw_rect(src):
+                    """get_draw_rect.
+
+                    Parameters
+                    ----------
+                    src :
+                        src
+                    """
                     return QRect(draw_area.x() + int(src.x() * scale),
                             draw_area.y() + int (src.y() * scale),
                             int(src.width() * scale),
@@ -62,6 +100,15 @@ class ResizeCanvasModal(QDialog):
                 prev.update()
 
             def paintEvent(prev, event):
+                """paintEvent.
+
+                Parameters
+                ----------
+                prev :
+                    prev
+                event :
+                    event
+                """
                 painter = QPainter(prev)
                 linePen = QPen(Qt.black, 2, Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin)
                 painter.setPen(linePen)
@@ -72,6 +119,17 @@ class ResizeCanvasModal(QDialog):
         self._preview = PreviewWidget(self)
 
         def on_dim_change(old_value, new_value, labeled_offsetbox):
+            """on_dim_change.
+
+            Parameters
+            ----------
+            old_value :
+                old_value
+            new_value :
+                new_value
+            labeled_offsetbox :
+                labeled_offsetbox
+            """
             labeled_offsetbox.spinbox.setRange(int(-old_value), int(old_value) + int(new_value))
             self._preview.resizeEvent(None)
 
@@ -83,6 +141,8 @@ class ResizeCanvasModal(QDialog):
         center_button = QPushButton(self)
         center_button.setText("Center")
         def center():
+            """center.
+            """
             width = self._widthbox.spinbox.value()
             height = self._heightbox.spinbox.value()
             x_off = (width // 2) - (current_width // 2)
@@ -96,6 +156,8 @@ class ResizeCanvasModal(QDialog):
         self._resize_button = QPushButton(self)
         self._resize_button.setText("Resize image canvas")
         def on_resize():
+            """on_resize.
+            """
             self._resize = True
             self.hide()
         self._resize_button.clicked.connect(on_resize)
@@ -103,6 +165,8 @@ class ResizeCanvasModal(QDialog):
         self._cancel_button = QPushButton(self)
         self._cancel_button.setText("Cancel")
         def on_cancel():
+            """on_cancel.
+            """
             self._resize = False
             self.hide()
         self._cancel_button.clicked.connect(on_cancel)
@@ -130,10 +194,19 @@ class ResizeCanvasModal(QDialog):
         self.resizeEvent(None)
 
     def resizeEvent(self, event):
+        """resizeEvent.
+
+        Parameters
+        ----------
+        event :
+            event
+        """
         min_preview = math.ceil(min(self.width(), self.height()) * 0.8)
         self._preview.setMinimumSize(QSize(min_preview, min_preview))
 
     def showResizeModal(self):
+        """showResizeModal.
+        """
         self.exec_()
         if self._resize:
             new_size = QSize(self._widthbox.spinbox.value(), self._heightbox.spinbox.value())

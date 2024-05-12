@@ -12,7 +12,7 @@ import pprint
 
 class ControlnetPanel(CollapsibleBox):
 
-    def __init__(self, config, control_types, module_detail, title = "ControlNet"):
+    def __init__(self, config, control_types, module_detail, model_list, title = "ControlNet"):
         super().__init__(title=title, scrolling=False, start_closed=(len(config.get('controlnetArgs')) == 0))
         REUSE_IMAGE_VALUE='SELECTION' #value to signal that the control image is from selection, not a file
         CONTROLNET_CONFIG_KEY='controlnetArgs'
@@ -77,11 +77,13 @@ class ControlnetPanel(CollapsibleBox):
         # Mode-selection row:
         selection_row = QHBoxLayout()
         layout.addLayout(selection_row)
-        control_type_combobox = QComboBox(self)
-        for control in control_types:
-            control_type_combobox.addItem(control)
-        control_type_combobox.setCurrentIndex(control_type_combobox.findText("All"))
-        selection_row.addWidget(LabelWrapper(control_type_combobox, 'Control Type'))
+        control_type_combobox = None
+        if control_types is not None:
+            control_type_combobox = QComboBox(self)
+            for control in control_types:
+                control_type_combobox.addItem(control)
+            control_type_combobox.setCurrentIndex(control_type_combobox.findText("All"))
+            selection_row.addWidget(LabelWrapper(control_type_combobox, 'Control Type'))
         
         module_combobox = QComboBox(self)
         selection_row.addWidget(LabelWrapper(module_combobox, 'Control Module'))
@@ -103,16 +105,18 @@ class ControlnetPanel(CollapsibleBox):
         model_combobox.currentIndexChanged.connect(handle_model_change)
 
         def handle_module_change(selection):
-            if selection not in module_detail['module_detail']:
-                for option in module_detail['module_list']:
-                    if selection.startswith(option):
-                        selection = option
-                        break
-            if selection not in module_detail['module_detail']:
-                print(f"Warning: invalid selection {selection} not found")
-                return
+            details = {}
+            if 'module_detail' in module_detail:
+                if selection not in module_detail['module_detail']:
+                    for option in module_detail['module_list']:
+                        if selection.startswith(option):
+                            selection = option
+                            break
+                if selection not in module_detail['module_detail']:
+                    print(f"Warning: invalid selection {selection} not found")
+                    return
+                details = module_detail['module_detail'][selection]
             config.set(CONTROLNET_CONFIG_KEY, selection, inner_key='module')
-            details = module_detail['module_detail'][selection]
             while options_layout.count() > 0:
                 row = options_layout.itemAt(0)
                 while row.layout().count() > 0:
@@ -216,9 +220,14 @@ class ControlnetPanel(CollapsibleBox):
             model_combobox.currentIndexChanged.disconnect(handle_model_change)
             while model_combobox.count() > 0:
                 model_combobox.removeItem(0)
-            for model in control_types[typename]['model_list']:
-                model_combobox.addItem(model)
-            defaultModel = control_types[typename]['default_model']
+            defaultModel = 'none'
+            if control_types is not None:
+                for model in control_types[typename]['model_list']:
+                    model_combobox.addItem(model)
+                defaultModel = control_types[typename]['default_model']
+            else:
+                for model in model_list['model_list']:
+                    model_combobox.addItem(model)
             model_combobox.currentIndexChanged.connect(handle_model_change)
             if defaultModel != 'none':
                 model_combobox.setCurrentIndex(model_combobox.findText(defaultModel))
@@ -226,18 +235,24 @@ class ControlnetPanel(CollapsibleBox):
                 model_combobox.setCurrentIndex(0)
 
             module_combobox.currentIndexChanged.disconnect(module_change_handler)
+            default_module = 'none'
             while module_combobox.count() > 0:
                 module_combobox.removeItem(0)
-            for module in control_types[typename]['module_list']:
-                module_combobox.addItem(module)
-            defaultModule = control_types[typename]['default_option']
+            if control_types is not None:
+                for module in control_types[typename]['module_list']:
+                    module_combobox.addItem(module)
+                default_module = control_types[typename]['default_option']
+            else:
+                for module in module_detail['module_list']:
+                    module_combobox.addItem(module)
             module_combobox.currentIndexChanged.connect(module_change_handler)
-            if defaultModule != 'none':
-                module_combobox.setCurrentIndex(module_combobox.findText(defaultModule))
+            if default_module != 'none':
+                module_combobox.setCurrentIndex(module_combobox.findText(default_module))
             else:
                 module_combobox.setCurrentIndex(0)
         load_control_type('All')
-        control_type_combobox.currentIndexChanged.connect(lambda: load_control_type(control_type_combobox.currentText()))
+        if control_type_combobox is not None:
+            control_type_combobox.currentIndexChanged.connect(lambda: load_control_type(control_type_combobox.currentText()))
 
         # Restore previous state on start:
         if 'module' in initial_control_state:
@@ -254,7 +269,8 @@ class ControlnetPanel(CollapsibleBox):
             if enabled_checkbox.isChecked() != checked:
                 enabled_checkbox.setChecked(checked)
             for widget in [control_type_combobox, module_combobox, model_combobox]:
-                widget.setEnabled(checked)
+                if widget is not None:
+                    widget.setEnabled(checked)
             options_combobox.setEnabled(checked and options_layout.count() > 0)
             if checked:
                 config.set(CONTROLNET_CONFIG_KEY, self._saved_state)

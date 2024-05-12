@@ -1,16 +1,16 @@
 """
 Miscellaneous utility functions needed in many places
 """
-from PIL import Image
 import argparse
 import base64
-import requests
 import io
+import requests
+from PIL import Image
 
-def fetch(url_or_path):
+def fetch(url_or_path, timeout=180):
     """Open a file from either a path or a URL."""
     if str(url_or_path).startswith('http://') or str(url_or_path).startswith('https://'):
-        r = requests.get(url_or_path)
+        r = requests.get(url_or_path, timeout=timeout)
         r.raise_for_status()
         fd = io.BytesIO()
         fd.write(r.content)
@@ -27,10 +27,10 @@ def image_to_base64(pil_image, include_prefix=False):
         pil_image = Image.open(pil_image)
     buffer = io.BytesIO()
     pil_image.save(buffer, format='PNG')
-    imageStr = str(base64.b64encode(buffer.getvalue()), 'utf-8')
+    image_str = str(base64.b64encode(buffer.getvalue()), 'utf-8')
     if include_prefix:
-        imageStr = BASE_64_PREFIX + imageStr
-    return imageStr
+        image_str = BASE_64_PREFIX + image_str
+    return image_str
 
 
 def load_image_from_base64(image_str):
@@ -81,9 +81,10 @@ def build_arg_parser(default_model='inpaint.pt', include_edit_params=True, inclu
     if include_gen_params:
         parser.add_argument('--init_image', type=str, required = False, default = None,
                            help='init image to use')
-    if include_edit_params: 
+    if include_edit_params:
         parser.add_argument('--edit', type = str, required = True,
-                            help='path to the image you want to edit (either an image file or .npy containing a numpy array of the image embeddings)')
+                            help='path to the image you want to edit (either an image file or .npy containing a ' + \
+                                'numpy array of the image embeddings)')
 
         parser.add_argument('--edit_x', type = int, required = False, default = 0,
                             help='x position of the edit image in the generation frame (need to be multiple of 8)')
@@ -98,7 +99,8 @@ def build_arg_parser(default_model='inpaint.pt', include_edit_params=True, inclu
                             help='height of the edit image in the generation frame (need to be multiple of 8)')
 
         parser.add_argument('--mask', type = str, required = False,
-                            help='path to a mask image. white pixels = keep, black pixels = discard. width = image width/8, height = image height/8')
+                            help='path to a mask image. white pixels = keep, black pixels = discard. width = ' + \
+                            'image width/8, height = image height/8')
     parser.add_argument('--cpu', dest='cpu', action='store_true')
 
     parser.add_argument('--clip_score', dest='clip_score', action='store_true')
@@ -106,12 +108,12 @@ def build_arg_parser(default_model='inpaint.pt', include_edit_params=True, inclu
     parser.add_argument('--clip_guidance', dest='clip_guidance', action='store_true')
 
     parser.add_argument('--clip_guidance_scale', type = float, default = 150, required = False,
-                        help='Controls how much the image should look like the prompt') # may need to use lower value for ddim
+                        help='Controls how much the image should look like the prompt')
 
     parser.add_argument('--cutn', type = int, default = 16, required = False,
                         help='Number of cuts')
 
     parser.add_argument('--ddim', dest='ddim', action='store_true') # turn on to use 50 step ddim
 
-    parser.add_argument('--ddpm', dest='ddpm', action='store_true') # turn on to use 50 step ddim
+    parser.add_argument('--ddpm', dest='ddpm', action='store_true') # turn on to use 50 step ddpm
     return parser

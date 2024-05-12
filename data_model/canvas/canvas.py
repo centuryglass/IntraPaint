@@ -20,8 +20,7 @@ class Canvas():
 
 
     def __init__(self, config, image):
-        """
-        Initialize with config values and optional arbitrary initial image data.
+        """ Initialize with config values and optional arbitrary initial image data.
 
         Parameters
         ----------
@@ -246,7 +245,7 @@ class Canvas():
         raise NotImplementedError("Canvas.draw_line() not implemented")
 
 
-    def erase_point(self, point, color, size_multiplier, size_override = None):
+    def erase_point(self, point, size_multiplier, size_override = None):
         """
         Unimplemented. Implementations should erase a circle in the canvas based on expected parameters and the current
         brush size.
@@ -265,7 +264,7 @@ class Canvas():
         raise NotImplementedError("Canvas.erase_point() not implemented")
 
 
-    def erase_line(self, line, color, size_multiplier, size_override = None):
+    def erase_line(self, line, size_multiplier, size_override = None):
         """
         Unimplemented. Implementations should erase a line on the canvas based on expected parameters and the current
         brush size.

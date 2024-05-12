@@ -13,7 +13,7 @@ try:
 except ImportError:
     print('spaceMouse support not installed.')
     spacenav = None
-from PyQt5.QtCore import QObject, QThread, QRect, QSize, pyqtSignal
+from PyQt5.QtCore import QObject, QThread, pyqtSignal
 
 # Once the xy offset of sequential spacenav events adds up to this value, the selection window will
 # reach max scrolling speed:
@@ -162,7 +162,7 @@ class SpacenavManager():
             with self._thread_data['lock']:
                 self._thread_data['pending'] = False
             if self._window is None or not self._edited_image.has_image() \
-                    or self._window.isSampleSelectorVisible():
+                    or self._window.is_sample_selector_visible():
                 return
             selection = self._edited_image.get_selection_bounds()
             #print(f"moveTo: {selection.x() + x_offset},{selection.y() + y_offset}")

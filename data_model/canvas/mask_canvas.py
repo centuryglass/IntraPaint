@@ -10,15 +10,25 @@ from ui.util.contrast_color import contrast_color
 from data_model.canvas.pixmap_canvas import PixmapCanvas
 
 class MaskCanvas(PixmapCanvas):
+    """Provides a Canvas implementation for marking sections of an image to be edited with AI inpainting."""
+
     def __init__(self, config, image):
+        """Initialize with config values and optional arbitrary initial image data.
+
+        Parameters
+        ----------
+        config: data_model.Config
+            Used for setting initial size if no initial image data is provided.
+        image: QImage or PIL Image or QPixmap or QSize or str, optional
+        """
         super().__init__(config, image)
-        config.connect(self, 'maskBrushSize', lambda size: self.set_brush_size(size))
+        config.connect(self, 'maskBrushSize', self.set_brush_size)
         self.set_brush_size(config.get('maskBrushSize'))
         self._outline = None
         self._drawing = False
         self._bounding_box = None
-        config.connect(self, 'inpaintFullRes', lambda b: self._handle_changes())
-        config.connect(self, 'inpaintFullResPadding', lambda x: self._handle_changes())
+        config.connect(self, 'inpaintFullRes', lambda v: self._handle_changes())
+        config.connect(self, 'inpaintFullResPadding', lambda v: self._handle_changes())
 
         self._dither_mask = QPixmap(QSize(512, 512))
         dither_stamp = QPixmap(QSize(8, 8))
@@ -33,82 +43,71 @@ class MaskCanvas(PixmapCanvas):
         self._set_empty_outline()
         self.setOpacity(0.5)
 
+
     def add_to_scene(self, scene, z_value=None):
+        """Adds the canvas to a QGraphicsScene.
+
+        Parameters
+        ----------
+        scene : QGraphicsScene
+            Scene that will display the canvas content.
+        z_value : int
+            Level within the scene where canvas content is drawn, higher levels appear above lower ones.
+        """
         super().add_to_scene(scene, z_value)
         self._outline.setZValue(self.zValue())
         scene.addItem(self._outline)
 
-    def _set_empty_outline(self):
-        blank_pixmap = QPixmap(self.size())
-        blank_pixmap.fill(Qt.transparent)
-        self._outline.setPixmap(blank_pixmap)
-        self._bounding_box = None
 
     def get_inpainting_mask(self):
+        """Returns the canvas content as a 1-bit PIL Image mask. """
         image = self.get_pil_image()
         image = image.convert('L').point( lambda p: 255 if p < 1 else 0 )
         return image
 
+
     def start_stroke(self):
+        """Signals the start of a brush stroke, to be called once whenever user input starts or resumes."""
         super().start_stroke()
         self._set_empty_outline()
 
+
     def end_stroke(self):
+        """Signals the end of a brush stroke, to be called once whenever user input stops or pauses."""
         super().end_stroke()
         self._draw_outline()
 
+
     def set_image(self, image):
+        """Loads an image into the canvas, overwriting existing canvas content.
+
+        Parameters
+        ----------
+        image_data : QImage or QPixmap or QSize or PIL Image or str
+            An image, image size, or image path. If necessary, the canvas will be resized to match the image size.
+            If image_data is a QSize, the canvas will be cleared.
+        """
         super().set_image(image)
         self._draw_outline()
         self.update()
 
-    def _draw_outline(self):
-        if not hasattr(self, '_drawing') or self._drawing:
-            return
-        image = self.get_qimage()
-
-        # find edges:
-        buffer = image.bits().asstring(image.byteCount())
-        arr = np.frombuffer(buffer, dtype=np.uint8).reshape((image.height(), image.width(), 4))
-        gray = cv2.cvtColor(arr, cv2.COLOR_BGR2GRAY)
-        edges= cv2.Canny(gray, 50, 150)
-
-        # find bounds:
-        nonzero_rows = np.any(arr[:, :, 3] > 0, axis=1)
-        nonzero_cols = np.any(arr[:, :, 3] > 0, axis=0)
-        top = np.argmax(nonzero_rows)
-        bottom = image.height() - 1 - np.argmax(np.flip(nonzero_rows))
-        left = np.argmax(nonzero_cols)
-        right = image.width() - 1 - np.argmax(np.flip(nonzero_cols))
-        if left > right:
-            self._bounding_box = None
-        else:
-            self._bounding_box = QRect(left, top, right - left, bottom - top)
-
-        # expand edges to draw a thicker outline:
-        thickness = max(2, image.width() // 200, image.height() // 200)
-        thickness = min(thickness, 4)
-        edges = 255 - cv2.dilate(edges, np.ones((thickness, thickness), np.uint8), iterations=1)
-        edges_a = np.zeros((edges.shape[0], edges.shape[1], 4), dtype=np.uint8)
-        edges_a[:, :, 3] = 255 - edges
-        outline = QImage(edges_a.data, edges_a.shape[1], edges_a.shape[0], edges_a.strides[0], QImage.Format_RGBA8888)
-        painter = QPainter(outline)
-        painter.setCompositionMode(QPainter.CompositionMode_SourceIn)
-        painter.drawPixmap(0, 0, self._dither_mask)
-
-        if self._config.get('inpaintFullRes'):
-            masked_area = self.get_masked_area()
-            if masked_area is not None:
-                painter.setCompositionMode(QPainter.CompositionMode_SourceOver)
-                color = contrast_color(self.scene().views()[0])
-                pen = QPen(color, 2, Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin)
-                painter.setPen(pen)
-                painter.drawRect(masked_area)
-        painter.end()
-        self._outline.setPixmap(QPixmap.fromImage(outline))
-
 
     def get_masked_area(self, ignore_config = False):
+        """Returns the smallest QRect containing all masked areas, plus padding.
+
+        Used for showing the actual area visible to the image model when the 'inpaintFullRes' config option is set
+        to true. The padding abount is set by the 'inpaintFullResPadding' config option, measured in pixels
+
+        Parameters
+        ----------
+        ignore_config : bool
+            If true, return the masked area bounds even when 'inpaintFullRes' is disabled in config.
+        Returns
+        -------
+        QRect or None
+           Rectangle containing all non-transparent mask canvas content plus padding, or None if the canvas is empty
+           or config.get('inpaintFullRes') is false and ignore_config is false.
+        """
         if ((not ignore_config) and (not self._config.get('inpaintFullRes'))) or self._bounding_box is None:
             return None
         padding = self._config.get('inpaintFullResPadding')
@@ -158,6 +157,46 @@ class MaskCanvas(PixmapCanvas):
         mask_rect = QRect(QPoint(int(left), int(top)), QPoint(int(right), int(bottom)))
         return mask_rect
 
+
+    def resize(self, size):
+        """Updates the canvas size, scaling any image content to match.
+
+        Parameters
+        ----------
+        size : QSize
+            New canvas size in pixels.
+        """
+        super().resize(size)
+        self._outline.setPixmap(self._outline.pixmap().scaled(size))
+
+
+    def fill(self):
+        """Updates the mask to cover the entire canvas bounds."""
+        super().fill(Qt.red)
+        self._draw_outline()
+        self.update()
+
+
+    def clear(self):
+        """Clears the mask so that no area is marked for editing."""
+        super().fill(Qt.transparent)
+        self._set_empty_outline()
+        self.update()
+
+
+    def setVisible(self, visible):
+        """Shows or hides the canvas."""
+        super().setVisible(visible)
+        self._outline.setVisible(visible)
+
+
+    def setOpacity(self, opacity):
+        """Changes the opacity used when drawing the masked area."""
+        super().setOpacity(opacity)
+        self._outline.setOpacity(opacity)
+
+
+    # Outline masked areas with dotted lines, and draw the bonding rectangle used when 'inpaintFullRes' is set:
     def _handle_changes(self):
         width = self._dither_mask.width()
         height = self._dither_mask.height()
@@ -173,24 +212,53 @@ class MaskCanvas(PixmapCanvas):
         self._draw_outline()
         super()._handle_changes()
 
-    def resize(self, size):
-        super().resize(size)
-        self._outline.setPixmap(self._outline.pixmap().scaled(size))
+    def _set_empty_outline(self):
+        blank_pixmap = QPixmap(self.size())
+        blank_pixmap.fill(Qt.transparent)
+        self._outline.setPixmap(blank_pixmap)
+        self._bounding_box = None
 
-    def fill(self, color):
-        super().fill(color)
-        self._draw_outline()
-        self.update()
+    def _draw_outline(self):
+        if not hasattr(self, '_drawing') or self._drawing or self.scene() is None:
+            return
+        image = self.get_qimage()
 
-    def clear(self):
-        super().clear()
-        self._set_empty_outline()
-        self.update()
+        # find edges:
+        buffer = image.bits().asstring(image.byteCount())
+        arr = np.frombuffer(buffer, dtype=np.uint8).reshape((image.height(), image.width(), 4))
+        gray = cv2.cvtColor(arr, cv2.COLOR_BGR2GRAY)
+        edges= cv2.Canny(gray, 50, 150)
 
-    def setVisible(self, visible):
-        super().setVisible(visible)
-        self._outline.setVisible(visible)
+        # find bounds:
+        nonzero_rows = np.any(arr[:, :, 3] > 0, axis=1)
+        nonzero_cols = np.any(arr[:, :, 3] > 0, axis=0)
+        top = np.argmax(nonzero_rows)
+        bottom = image.height() - 1 - np.argmax(np.flip(nonzero_rows))
+        left = np.argmax(nonzero_cols)
+        right = image.width() - 1 - np.argmax(np.flip(nonzero_cols))
+        if left > right:
+            self._bounding_box = None
+        else:
+            self._bounding_box = QRect(left, top, right - left, bottom - top)
 
-    def setOpacity(self, opacity):
-        super().setOpacity(opacity)
-        self._outline.setOpacity(opacity)
+        # expand edges to draw a thicker outline:
+        thickness = max(2, image.width() // 200, image.height() // 200)
+        thickness = min(thickness, 4)
+        edges = 255 - cv2.dilate(edges, np.ones((thickness, thickness), np.uint8), iterations=1)
+        edges_a = np.zeros((edges.shape[0], edges.shape[1], 4), dtype=np.uint8)
+        edges_a[:, :, 3] = 255 - edges
+        outline = QImage(edges_a.data, edges_a.shape[1], edges_a.shape[0], edges_a.strides[0], QImage.Format_RGBA8888)
+        painter = QPainter(outline)
+        painter.setCompositionMode(QPainter.CompositionMode_SourceIn)
+        painter.drawPixmap(0, 0, self._dither_mask)
+
+        if self._config.get('inpaintFullRes'):
+            masked_area = self.get_masked_area()
+            if masked_area is not None:
+                painter.setCompositionMode(QPainter.CompositionMode_SourceOver)
+                color = contrast_color(self.scene().views()[0])
+                pen = QPen(color, 2, Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin)
+                painter.setPen(pen)
+                painter.drawRect(masked_area)
+        painter.end()
+        self._outline.setPixmap(QPixmap.fromImage(outline))

@@ -193,7 +193,7 @@ class StableDiffusionController(BaseInpaintController):
                     image = self._edited_image.get_selection_content()
                     config = self._config
                     self.prompt_ready.emit(self._webservice.interrogate(config, image))
-                except Exception as err:
+                except RuntimeError as err:
                     print (f"err:{err}")
                     self.error_signal.emit(err)
                 self.finished.emit()
@@ -230,9 +230,19 @@ class StableDiffusionController(BaseInpaintController):
 
         try:
             self._config.set('controlnetVersion', float(self._webservice.get_controlnet_version()))
-        except Exception as err:
-            print(f"Loading controlnet config failed: {err}")
-            self._config.set('controlnetVersion', -1.0)
+        except RuntimeError:
+            # The webui fork at lllyasviel/stable-diffusion-webui-forge is mostly compatible with the A1111 API, but
+            # it doesn't have the ControlNet version endpoint. Berore assuming ControlNet isn't installed, check if
+            # the ControlNet model list endpoint returns anything:
+            try:
+                model_list = self._webservice.get_controlnet_models()
+                if model_list is not None and 'model_list' in model_list and len(model_list['model_list']) > 0:
+                    self._config.set('controlnetVersion', 1.0)
+                else:
+                    self._config.set('controlnetVersion', -1.0)
+            except RuntimeError as err:
+                print(f"Loading controlnet config failed: {err}")
+                self._config.set('controlnetVersion', -1.0)
 
         option_loading_params = [
             ['styles', self._webservice.get_styles],
@@ -330,15 +340,13 @@ class StableDiffusionController(BaseInpaintController):
             raise RuntimeError('Image generation in progress, try again later.')
 
         def async_request():
-            """async_request.
-            """
             try:
                 image_data, info = generate_images()
                 if info is not None:
                     print(f"Image generation result info: {info}")
                 for image in image_data:
                     images.append(image)
-            except Exception as err:
+            except RuntimeError as err:
                 print(f"request failed: {err}")
                 errors.append(err)
         thread = threading.Thread(target=async_request)
@@ -362,7 +370,7 @@ class StableDiffusionController(BaseInpaintController):
                     else:
                         status_text = f"{status_text} ETA: {seconds}s"
                 status_signal.emit({'progress': status_text})
-            except Exception as err:
+            except RuntimeError as err:
                 error_count += 1
                 print(f'Error {error_count}: {err}')
                 if error_count > max_errors:
@@ -379,13 +387,6 @@ class StableDiffusionController(BaseInpaintController):
             idx += 1
 
     def _apply_status_update(self, status_dict):
-        """_apply_status_update.
-
-        Parameters
-        ----------
-        status_dict :
-            status_dict
-        """
         if 'seed' in status_dict:
             self._config.set('lastSeed', str(status_dict['seed']))
         if 'progress' in status_dict:

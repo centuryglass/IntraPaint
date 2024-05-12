@@ -1,12 +1,12 @@
 """
 Loads the ML models that make up GLID3-XL.
 """
+import gc
 import torch
 from torchvision import transforms
+import clip
 from guided_diffusion.script_util import create_model_and_diffusion, model_and_diffusion_defaults
 from encoders.modules import BERTEmbedder
-import clip
-import gc
 
 def load_models( device,
         model_path="inpaint.pt",
@@ -38,8 +38,8 @@ def load_models( device,
         'use_fp16': False,
         'use_scale_shift_norm': False,
         'clip_embed_dim': 768 if 'clip_proj.weight' in model_state_dict else None,
-        'image_condition': True if model_state_dict['input_blocks.0.0.weight'].shape[1] == 8 else False,
-        'super_res_condition': True if 'external_block.0.0.weight' in model_state_dict else False,
+        'image_condition': bool(model_state_dict['input_blocks.0.0.weight'].shape[1] == 8),
+        'super_res_condition': bool('external_block.0.0.weight' in model_state_dict)
     }
 
     if ddpm:

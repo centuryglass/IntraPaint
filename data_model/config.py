@@ -121,6 +121,8 @@ class Config(QObject):
 
         # Default mypaint brushes:
         self._set_default('brush_default', './resources/brushes/experimental/1pixel.myb')
+        self._set_default('brush_last', './resources/brushes/experimental/1pixel.myb')
+        self._set_default('brush_favorites', [])
         self._set_default('brush_pressure_size', './resources/brushes/experimental/pixel_hardink.myb')
         self._set_default('brush_pressure_opacity', './resources/brushes/deevad/watercolor_glazing.myb')
         self._set_default('brush_pressure_both', './resources/brushes/tanda/acrylic-04-with-water.myb')

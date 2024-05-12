@@ -121,10 +121,12 @@ class MaskCreator(QGraphicsView):
         self.update()
 
     def fill(self):
-        canvas = self._sketch_canvas if self._sketch_mode else self._mask_canvas
-        color = self._sketch_color if self._sketch_mode else Qt.red
-        if canvas.enabled():
-            canvas.fill(color)
+        if self._sketch_mode:
+            if self._sketch_canvas.enabled():
+                self._sketch_canvas.fill(self._sketch_color)
+        else:
+            if self._mask_canvas.enabled():
+                self._mask_canvas.fill()
         self.update()
 
     def load_image(self, pil_image):
@@ -182,7 +184,7 @@ class MaskCreator(QGraphicsView):
                     if size_multiplier is not None:
                         size_multiplier = max(size_multiplier, 0.5)
                     if self._use_eraser:
-                        canvas.erase_line(line, color, size_multiplier, size_override)
+                        canvas.erase_line(line, size_multiplier, size_override)
                     else:
                         canvas.draw_line(line, color, size_multiplier, size_override)
                     canvas.end_stroke()
@@ -193,7 +195,7 @@ class MaskCreator(QGraphicsView):
 
                     self._last_point = self._widget_to_image_coords(event.pos())
                     if self._use_eraser or self._tablet_eraser:
-                        canvas.erase_point(self._last_point, color, size_multiplier, size_override)
+                        canvas.erase_point(self._last_point, size_multiplier, size_override)
                     else:
                         canvas.draw_point(self._last_point, color, size_multiplier, size_override)
                 self.update()
@@ -210,7 +212,7 @@ class MaskCreator(QGraphicsView):
             line = QLine(self._last_point, new_last_point)
             self._last_point = new_last_point
             if self._use_eraser or self._tablet_eraser:
-                canvas.erase_line(line, color, size_multiplier, size_override)
+                canvas.erase_line(line, size_multiplier, size_override)
             else:
                 canvas.draw_line(line, color, size_multiplier, size_override)
             self.update()
@@ -231,14 +233,6 @@ class MaskCreator(QGraphicsView):
             self._pen_pressure = None
             self._tablet_eraser = False
             canvas = self._sketch_canvas if self._sketch_mode else self._mask_canvas
-            self._last_point = self._widget_to_image_coords(event.pos())
-            color = QColor(self._sketch_color if self._sketch_mode else Qt.red)
-            size_multiplier = self._pen_pressure if (self._pressure_size and self._pen_pressure is not None) else None
-            size_override = 1 if event.button() == Qt.RightButton else None
-            if self._use_eraser or self._tablet_eraser:
-                canvas.erase_point(self._last_point, color, size_multiplier, size_override)
-            else:
-                canvas.draw_point(self._last_point, color, size_multiplier, size_override)
             canvas.end_stroke()
             self._mask_canvas.setOpacity(0.6 if canvas == self._mask_canvas else 0.4)
         self.update()

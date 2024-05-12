@@ -117,7 +117,7 @@ class MaskPanel(QWidget):
             self._brush_picker_button.setIcon(QIcon(QPixmap('./resources/brush.png')))
             def open_brush_picker():
                 if self._brush_picker is None:
-                    self._brush_picker = BrushPicker()
+                    self._brush_picker = BrushPicker(self._config)
                 self._brush_picker.show()
                 self._brush_picker.raise_()
             self.open_brush_picker = open_brush_picker
