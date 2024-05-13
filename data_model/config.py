@@ -259,8 +259,6 @@ class Config(QObject):
         """
         if not key in self._entries:
             raise KeyError(f"Tried to get unknown config value '{key}'")
-        if not key in self._options:
-            raise RuntimeError(f"Config value '{key}' does not have an associated options list")
         with self._lock:
             return self._entries[key].get_option_index()
 

@@ -136,6 +136,8 @@ class SettingsModal(QDialog):
             Setting display name to show in the UI.
         """
         combobox = QComboBox()
+        if initial_value is not None and initial_value not in options:
+            options.append(initial_value)
         for option in options:
             if isinstance(option, dict):
                 combobox.addItem(option['text'])
