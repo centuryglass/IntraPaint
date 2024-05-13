@@ -288,14 +288,12 @@ class MaskPanel(QWidget):
         """Enable tablet controls on first tablet event"""
         if not hasattr(self, '_pressure_size_checkbox'):
             config = self._config
-            self._pressure_size_checkbox = connected_checkbox(self, config, 'pressure_size', 'size',
-                    'Tablet pen pressure affects line width')
+            self._pressure_size_checkbox = connected_checkbox(self, config, 'pressure_size')
             self._pressure_size_checkbox.setIcon(QIcon(QPixmap('./resources/pressureSize.png')))
             config.connect(self, 'pressure_size', lambda enabled: self._mask_creator.set_pressure_size_mode(enabled))
             self._mask_creator.set_pressure_size_mode(config.get('pressure_size'))
 
-            self._pressure_opacity_checkbox = connected_checkbox(self, config, 'pressure_opacity', 'opacity',
-                    'Tablet pen pressure affects color opacity (sketch mode only)')
+            self._pressure_opacity_checkbox = connected_checkbox(self, config, 'pressure_opacity')
             config.connect(self, 'pressure_opacity', lambda enabled: self._mask_creator.set_pressure_opacity_mode(enabled))
             self._pressure_opacity_checkbox.setIcon(QIcon(QPixmap('./resources/pressureOpacity.png')))
             self._mask_creator.set_pressure_opacity_mode(config.get('pressure_opacity'))
