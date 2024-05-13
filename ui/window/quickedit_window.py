@@ -1,5 +1,5 @@
 """
-Absolutely minimal editing window meant for performing a single inpainting operation using GLID3-XL.
+Absolutely minimal editing window meant for performing a single inpainting operation using GLID-3-XL.
 """
 from PyQt5.QtWidgets import *
 from PyQt5.QtCore import Qt, QPoint, QRect, QBuffer

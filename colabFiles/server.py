@@ -1,5 +1,5 @@
 """
-Runs a simple HTTP server that provides access to GLID3-XL image editing operations.
+Runs a simple HTTP server that provides access to GLID-3-XL image editing operations.
 """
 
 from datetime import datetime

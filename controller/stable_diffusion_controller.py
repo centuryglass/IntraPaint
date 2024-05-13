@@ -46,11 +46,11 @@ class StableDiffusionController(BaseInpaintController):
         # when using appropriate modes:
         def update_mask_state(edit_mode):
             self._mask_canvas.set_enabled(edit_mode == 'Inpaint')
-        self._config.connect(self._mask_canvas, 'editMode', update_mask_state)
+        self._config.connect(self._mask_canvas, 'edit_mode', update_mask_state)
         def update_sketch_state(edit_mode):
             self._sketch_canvas.set_enabled(edit_mode != 'Text to Image')
-        self._config.connect(self._sketch_canvas, 'editMode', update_sketch_state)
-        edit_mode = self._config.get('editMode')
+        self._config.connect(self._sketch_canvas, 'edit_mode', update_sketch_state)
+        edit_mode = self._config.get('edit_mode')
         update_mask_state(edit_mode)
         update_sketch_state(edit_mode)
 
@@ -200,6 +200,7 @@ class StableDiffusionController(BaseInpaintController):
 
         worker = InterrogateWorker(self._config, self._edited_image, self._webservice)
         def set_prompt(prompt_text):
+            print(f'Set prompt to {prompt_text}')
             self._config.set('prompt', prompt_text)
         worker.prompt_ready.connect(set_prompt)
         def handle_error(err):
@@ -229,7 +230,7 @@ class StableDiffusionController(BaseInpaintController):
             prompt_for_url('Server connection failed, enter a new URL or click "OK" to retry')
 
         try:
-            self._config.set('controlnetVersion', float(self._webservice.get_controlnet_version()))
+            self._config.set('controlnet_version', float(self._webservice.get_controlnet_version()))
         except RuntimeError:
             # The webui fork at lllyasviel/stable-diffusion-webui-forge is mostly compatible with the A1111 API, but
             # it doesn't have the ControlNet version endpoint. Berore assuming ControlNet isn't installed, check if
@@ -237,17 +238,17 @@ class StableDiffusionController(BaseInpaintController):
             try:
                 model_list = self._webservice.get_controlnet_models()
                 if model_list is not None and 'model_list' in model_list and len(model_list['model_list']) > 0:
-                    self._config.set('controlnetVersion', 1.0)
+                    self._config.set('controlnet_version', 1.0)
                 else:
-                    self._config.set('controlnetVersion', -1.0)
+                    self._config.set('controlnet_version', -1.0)
             except RuntimeError as err:
                 print(f"Loading controlnet config failed: {err}")
-                self._config.set('controlnetVersion', -1.0)
+                self._config.set('controlnet_version', -1.0)
 
         option_loading_params = [
             ['styles', self._webservice.get_styles],
-            ['samplingMethod', self._webservice.get_samplers],
-            ['upscaleMethod', self._webservice.get_upscalers]
+            ['sampling_method', self._webservice.get_samplers],
+            ['upscale_method', self._webservice.get_upscalers]
         ]
 
         # load various option lists:
@@ -314,7 +315,7 @@ class StableDiffusionController(BaseInpaintController):
 
     def _inpaint(self, selection, mask, save_image, status_signal):
         """Handle image editing operations using stable-diffusion-webui."""
-        edit_mode = self._config.get('editMode')
+        edit_mode = self._config.get('edit_mode')
         if edit_mode != 'Inpaint':
             mask = None
 
@@ -388,6 +389,6 @@ class StableDiffusionController(BaseInpaintController):
 
     def _apply_status_update(self, status_dict):
         if 'seed' in status_dict:
-            self._config.set('lastSeed', str(status_dict['seed']))
+            self._config.set('last_seed', str(status_dict['seed']))
         if 'progress' in status_dict:
             self._window.set_loading_message(status_dict['progress'])

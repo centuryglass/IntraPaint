@@ -1,5 +1,5 @@
 """
-Starts the GLID3-XL image inpainting server.
+Starts the GLID-3-XL image inpainting server.
 """
 from startup.load_models import load_models
 from startup.utils import build_arg_parser

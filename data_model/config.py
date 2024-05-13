@@ -8,16 +8,16 @@ Main features
     - Allow typesafe changes to those values through config.set()
     - Subscribe to specific value changes through config.connect()
 """
-
 import sys
 import json
 import os.path
 import importlib.util
 from threading import Lock
 from inspect import signature
-from PIL import Image
 from PyQt5.QtWidgets import QStyleFactory
 from PyQt5.QtCore import QObject, QSize, QTimer
+
+CONFIG_DEFINITIONS = "resources/config_defs.json"
 
 class Config(QObject):
     """
@@ -46,20 +46,49 @@ class Config(QObject):
             default values. Any expected keys not found in the file will be added with default values. Any unexpected
 
         """
-        self._values = {}
-        self._types = {}
+        self._entries = {}
         self._connected = {}
-        self._options = {}
         self._json_path = json_path
         self._lock = Lock()
         self._save_timer = QTimer()
         self._save_timer.setSingleShot(True)
 
-        # UI options:
-        self._set_default('style', 'Fusion', QStyleFactory.keys())
-        self._set_default('fontPointSize', 10)
+        if not os.path.isfile(CONFIG_DEFINITIONS):
+            raise RuntimeError(f"Config definition file not found at {CONFIG_DEFINITIONS}")
+        try:
+            with open(CONFIG_DEFINITIONS, encoding="utf-8") as file:
+                json_data = json.load(file)
+                for key, definition in json_data.items():
+                    initial_value = definition['default']
+                    if definition['type'] == 'Size':
+                        initial_value = QSize(*(int(n) for n in initial_value.split("x")))
+                    elif definition['type'] == 'int':
+                        initial_value = int(initial_value)
+                    elif definition['type'] == 'float':
+                        initial_value = float(initial_value)
+                    elif definition['type'] == 'string':
+                        initial_value = str(initial_value)
+                    elif definition['type'] == 'bool':
+                        initial_value = bool(initial_value)
+                    elif definition['type'] == 'list':
+                        initial_value = list(initial_value)
+                    elif definition['type'] == 'dict':
+                        initial_value = dict(initial_value)
+                    else:
+                        raise RuntimeError(f"Config value definition for {key} had invalid data type " + \
+                                f"{definition['type']}")
+                    label = definition['label']
+                    category = definition['category']
+                    tooltip  = definition['description']
+                    options = None if 'options' not in definition else list(definition['options'])
+                    range_options = None if 'range_options' not in definition else dict(definition['range_options'])
+                    save_json = definition['saved']
+                    self._add_entry(key, initial_value, label, category, tooltip, options, range_options, save_json)
 
-        # Themes will vary based on system, so initial options need to be dynamically loaded:
+        except json.JSONDecodeError as err:
+            raise RuntimeError(f"Reading JSON config definitions failed: {err}") from err
+
+        # Before reading existing config, dynamically initialize style and theme options:
         theme_options = ['None']
         def module_installed(name):
             if name in sys.modules:
@@ -70,126 +99,10 @@ class Config(QObject):
         if module_installed('qt_material'):
             from qt_material import list_themes
             theme_options += [ f"qt_material_{theme}" for theme in list_themes() ]
-        self._set_default('theme', 'None', theme_options)
+        self.update_options('theme', theme_options)
+        self.update_options('style', list(QStyleFactory.keys()))
 
-        # Editing options:
-        self._set_default('maxEditSize', QSize(10240, 10240))
-        self._set_default('minEditSize', QSize(8, 8))
-        self._set_default('editSize', QSize(512, 512))
-        self._set_default('maskBrushSize', 40)
-        self._set_default('sketchBrushSize', 4)
-        self._set_default('minBrushSize', 1)
-        self._set_default('maxBrushSize', 300)
-        self._set_default('saveSketchInResult', True)
-        self._set_default('maxUndo', 10)
 
-        # Inpainting guidance options:
-        self._set_default('prompt', '')
-        self._set_default('negativePrompt', '')
-        self._set_default('guidanceScale', 5.0)
-        self._set_default('maxGuidanceScale', 25.0)
-        self._set_default('guidanceScaleStep', 0.2)
-        self._set_default('cutn', 16)
-
-        # Inpainting behavior options:
-        self._set_default('batchSize', 3)
-        self._set_default('batchCount', 3)
-        self._set_default('maxBatchSize', 30)
-        self._set_default('maxBatchCount', 99)
-        self._set_default('skipSteps', 0)
-        self._set_default('maxSkipSteps', 27)
-        self._set_default('upscaleMode', Image.LANCZOS)
-        self._set_default('downscaleMode', Image.LANCZOS)
-        # Set whether areas in the sketch layer outside of the mask should be included in inpainting results.
-        self._set_default('saveSketchChanges', True)
-        # Inpainting can create subtle changes outside the mask area, which can gradually impact image quality
-        # and create annoying lines in larger images. To fix this, enable this option to apply the mask to the
-        # resulting sample, and re-combine it with the original image. In addition, blur the mask slightly to improve
-        # image composite quality.
-        # NOTE: Regardless of this setting's value, this will always be done if the selection is being scaled.
-        self._set_default('removeUnmaskedChanges', True)
-        # Sets whether to include the original selection as an option in SampleSelector to better evaluate whether
-        # available options are actually an improvement:
-        self._set_default('addOriginalToSamples', True)
-
-        # Optional timelapse path where progress images should be saved:
-        self._set_default('timelapsePath', '')
-
-        # Web client settings (delays in microseconds):
-        self._set_default('minRetryDelay', 300000)
-        self._set_default('maxRetryDelay', 60000000)
-
-        # Default mypaint brushes:
-        self._set_default('brush_default', './resources/brushes/experimental/1pixel.myb')
-        self._set_default('brush_last', './resources/brushes/experimental/1pixel.myb')
-        self._set_default('brush_favorites', [])
-        self._set_default('brush_pressure_size', './resources/brushes/experimental/pixel_hardink.myb')
-        self._set_default('brush_pressure_opacity', './resources/brushes/deevad/watercolor_glazing.myb')
-        self._set_default('brush_pressure_both', './resources/brushes/tanda/acrylic-04-with-water.myb')
-
-        # Settings used only by stable-diffusion:
-        self._set_default('editMode', 'Inpaint', ['Inpaint', 'Text to Image', 'Image to Image'])
-        self._set_default('inpaintMasked', 'Inpaint masked', ['Inpaint masked', 'Inpaint not masked'])
-        self._set_default('maskedContent', 'original', ['fill', 'original', 'latent noise', 'latent nothing'])
-        self._set_default('stableResizeMode', 'Just resize', ['Just resize', 'Crop and resize', 'Resize and fill'])
-        self._set_default("interrogateModel", "clip")
-        self._set_default('samplingSteps', 30)
-        self._set_default('minSamplingSteps', 1)
-        self._set_default('maxSamplingSteps', 150)
-        self._set_default('samplingMethod', 'Euler a', ['Euler a', 'Euler', 'LMS', 'Heun', 'DPM2', 'DPM2 a',
-                'LMS Karras', 'DPM2 Karras', 'DPM2 a Karras', 'DDIM', 'PLMS'])
-        self._set_default('upscaleMethod', 'None', ['None'])
-        self._set_default('styles', 'none', ['none'])
-        self._set_default('maskBlur', 4)
-        self._set_default('maxMaskBlur', 64)
-        self._set_default('restoreFaces', False)
-        self._set_default('tiling', False)
-        self._set_default('cfgScale', 9.0)
-        self._set_default('minCfgScale', 0.0)
-        self._set_default('maxCfgScale', 30.0)
-        self._set_default('cfgScaleStep', 0.5)
-        self._set_default('denoisingStrength', 0.40)
-        self._set_default('minDenoisingStrength', 0.0)
-        self._set_default('maxDenoisingStrength', 1.0)
-        self._set_default('denoisingStrengthStep', 0.01)
-        self._set_default('seed', -1)
-        self._set_default('inpaintFullRes', False)
-        self._set_default('inpaintFullResPadding', 32)
-        self._set_default('inpaintFullResPaddingMax', 1024)
-
-        # Controlnet plugin options:
-        self._set_default('controlnetVersion', -1.0)
-        self._set_default('controlnetUpscaling', False)
-        self._set_default('controlnetDownsampleRate', 1.0)
-        self._set_default('controlnetDownsampleMin', 1.0)
-        self._set_default('controlnetDownsampleMax', 4.0)
-        self._set_default('controlnetDownsampleSteps', 0.1)
-        self._set_default('controlnetInpainting', False)
-        self._set_default('controlnetArgs', {})
-
-        # It's somewhat out of place here, but defining lastSeed and lastFile as config values makes it trivial to
-        # wire them to widgets.
-        self._set_default('lastSeed', "-1")
-        self._set_default('lastFilePath', '')
-
-        # Pen tablet functionality
-        # Should pen pressure affect sketch/mask size?
-        self._set_default('pressureSize', True)
-        # Should pen pressure affect mask opacity?
-        self._set_default('pressureOpacity', False)
-
-        # List all keys stored temporarily in config that shouldn't be saved to JSON:
-        self._set_default('unsavedKeys', [
-                'prompt',
-                'negativePrompt',
-                'timelapsePath',
-                'lastFilePath',
-                'seed',
-                'maxEditSize',
-                'unsavedKeys',
-                'styles',
-                'controlnetVersion'
-        ])
         if os.path.isfile(self._json_path):
             self._read_from_json()
         else:
@@ -214,15 +127,23 @@ class Config(QObject):
             Type varies based on key. Each key is guaranteed to always return the same type, but inner_key values
             are not type-checked.
         """
-        if not key in self._values:
+        if not key in self._entries:
             raise KeyError(f"Tried to get unknown config value '{key}'")
         with self._lock:
-            if inner_key is not None:
-                value = None if inner_key not in self._values[key] else self._values[key][inner_key]
-            else:
-                value = self._values[key]
-        return value
+            return self._entries[key].get_value(inner_key)
 
+
+    def get_label(self, key):
+        """Gets the label text assigned to a config value."""
+        if not key in self._entries:
+            raise KeyError(f"Tried to get label for unknown config value '{key}'")
+        return self._entries[key].get_label()
+
+    def get_tooltip(self, key):
+        """Gets the tooltip text assigned to a config value."""
+        if not key in self._entries:
+            raise KeyError(f"Tried to get tooltip for unknown config value '{key}'")
+        return self._entries[key].get_tooltip()
 
     def set(self, key, value, save_change=True, add_missing_options=False, inner_key=None):
         """
@@ -253,37 +174,13 @@ class Config(QObject):
             If `key` has a list of associated valid options, `value` is not one of those options, and
             `add_missing_options` is false.
         """
-        if not key in self._values:
+        if not key in self._entries:
             raise KeyError(f"Tried to set unknown config value '{key}'")
-        if inner_key is not None and not isinstance(self._values[key], dict):
-            raise TypeError(f"Tried to set '{key}.{inner_key}' to value '{value}', but " + \
-                            f"{key} is type '{type(value)}'")
-        if inner_key is None and type(value) != self._types[key]:
-            raise TypeError(f"Expected '{key}' value '{value}' to have type '{self._types[key]}', found " + \
-                            f"'{type(value)}'")
-        if key in self._options and not value in self._options[key]:
-            if add_missing_options:
-                self.add_option(key, value)
-            else:
-                raise RuntimeError(f"'{key}' value '{value}' is not a valid option in {json.dumps(self._options[key])}")
         value_changed = False
-        last_value = None
         new_value = value
         # Update existing value:
         with self._lock:
-            last_value = self._values[key]
-            if inner_key is None:
-                value_changed = self._values[key] != value
-                self._values[key] = value
-            else:
-                old_inner_value = None if inner_key not in self._values[key] else self._values[key][inner_key]
-                last_value = old_inner_value
-                value_changed = old_inner_value != value
-                if value is None and value_changed:
-                    del self._values[key][inner_key]
-                elif value_changed:
-                    self._values[key][inner_key] = value
-                new_value = self._values[key]
+            value_changed = self._entries[key].set_value(value, add_missing_options, inner_key)
         if not value_changed:
             return
         # Schedule save to JSON file:
@@ -298,10 +195,10 @@ class Config(QObject):
         # Pass change to connected callback functions
         for callback in self._connected[key].values():
             num_args = len(signature(callback).parameters)
-            if num_args == 1:
+            if num_args == 1 and inner_key is None:
                 callback(new_value)
             elif num_args == 2:
-                callback(new_value, last_value)
+                callback(new_value, inner_key)
             if self.get(key, inner_key) != value:
                 break
 
@@ -322,7 +219,7 @@ class Config(QObject):
             If not None, assume the value at `key` is a dict and ensure on_change_fn only runs when `inner_key`
             changes within the value.
         """
-        if not key in self._values:
+        if not key in self._connected:
             raise KeyError(f"Tried to connect to unknown config value '{key}'")
         num_args = len(signature(on_change_fn).parameters)
         if num_args < 1 or num_args > 2:
@@ -331,10 +228,9 @@ class Config(QObject):
         if inner_key is None:
             self._connected[key][connected_object] = on_change_fn
         else:
-            def wrapper_fn(value, last_value):
-                new_inner_value = None if inner_key not in value else value[inner_key]
-                if last_value != new_inner_value:
-                    on_change_fn(new_inner_value)
+            def wrapper_fn(value, changed_inner_key):
+                if changed_inner_key == inner_key:
+                    on_change_fn(value)
             self._connected[key][connected_object] = wrapper_fn
 
 
@@ -342,14 +238,14 @@ class Config(QObject):
         """
         Removes a callback function previously registered through config.connect() for a particular object and key.
         """
-        if not key in self._values:
+        if not key in self._connected:
             raise KeyError(f"Tried to disconnect from unknown config value '{key}'")
-        self._connected[key].pop(connected_object)
+        self._connected[key].pop(connected_object, None)
 
 
     def list(self):
         """Returns all keys tracked by this Config object."""
-        return self._values.keys()
+        return self._entries.keys()
 
 
     def get_option_index(self, key):
@@ -361,14 +257,12 @@ class Config(QObject):
         RuntimeError
             If the value associated with the key does not have a predefined list of options
         """
-        if not key in self._values:
+        if not key in self._entries:
             raise KeyError(f"Tried to get unknown config value '{key}'")
         if not key in self._options:
             raise RuntimeError(f"Config value '{key}' does not have an associated options list")
         with self._lock:
-            value = self._values[key]
-            index = self._options[key].index(value)
-            return index
+            return self._entries[key].get_option_index()
 
 
     def get_options(self, key):
@@ -380,11 +274,9 @@ class Config(QObject):
         RuntimeError
             If the value associated with the key does not have a predefined list of options.
         """
-        if not key in self._values:
+        if not key in self._entries:
             raise KeyError(f"Tried to set unknown config value '{key}'")
-        if not key in self._options:
-            raise RuntimeError(f"Config value '{key}' does not have an associated options list")
-        return self._options[key]
+        return self._entries[key].get_options()
 
 
     def update_options(self, key, options_list):
@@ -396,15 +288,9 @@ class Config(QObject):
         RuntimeError
             If the value associated with the key does not have a predefined list of options.
         """
-        if not key in self._values:
+        if not key in self._entries:
             raise KeyError(f"Tried to get unknown config value '{key}'")
-        if not key in self._options:
-            raise RuntimeError(f"Config value '{key}' does not have an associated options list")
-        if not isinstance(options_list, list) or len(options_list) == 0:
-            raise RuntimeError(f"Provided invalid options for config value '{key}'")
-        self._options[key] = options_list
-        if not self._values[key] in options_list:
-            self.set(key, options_list[0], False)
+        self._entries[key].update_options(options_list)
 
 
     def add_option(self, key, option):
@@ -416,45 +302,39 @@ class Config(QObject):
         RuntimeError
             If the value associated with the key does not have a predefined list of options.
         """
-        if not key in self._values:
+        if not key in self._entries:
             raise KeyError(f"Tried to get unknown config value '{key}'")
-        if not key in self._options:
-            raise RuntimeError(f"Config value '{key}' does not have an associated options list")
-        self._options[key].append(option)
+        self._entries[key].add_option(option)
+
 
     def apply_args(self, args):
         """Loads expected parameters from command line arguments"""
         expected = {
             args.text: 'prompt',
-            args.negative: 'negativePrompt',
-            args.num_batches: 'batchCount',
-            args.batch_size: 'batchSize',
+            args.negative: 'negative_prompt',
+            args.num_batches: 'batch_count',
+            args.batch_size: 'batch_size',
             args.cutn: 'cutn'
         }
         for arg_value, key in expected.items():
             if arg_value:
                 self.set(key, arg_value)
 
-    def _set_default(self, key, initial_value, options=None):
-        self._values[key] = initial_value
-        self._types[key] = type(initial_value)
+
+    def _add_entry(self, key, initial_value, label, category, tooltip, options=None, range_options=None,
+            save_json=True):
+        if key in self._entries:
+            raise KeyError(f"Tried add duplicate config entry '{key}'")
+        entry = _Entry(key, initial_value, label, category, tooltip, options, range_options, save_json)
+        self._entries[key] = entry
         self._connected[key] = {}
-        if options is not None:
-            self._options[key] = options
 
 
     def _write_to_json(self):
         converted_dict = {}
-        keys_to_skip = self.get('unsavedKeys')
         with self._lock:
-            for key, value in self._values.items():
-                if key in keys_to_skip:
-                    continue
-                if isinstance(value, QSize):
-                    value = f"{value.width()}x{value.height()}"
-                elif isinstance(value, list):
-                    value = ','.join(value)
-                converted_dict[key] = value
+            for entry in self._entries.values():
+                entry.save_to_json_dict(converted_dict)
             with open(self._json_path, 'w', encoding='utf-8') as file:
                 json.dump(converted_dict, file, ensure_ascii=False, indent=4)
 
@@ -463,14 +343,164 @@ class Config(QObject):
         try:
             with open(self._json_path, encoding="utf-8") as file:
                 json_data = json.load(file)
-                for key, value in json_data.items():
-                    try:
-                        if self._types[key] == QSize:
-                            value = QSize(*(int(n) for n in value.split("x")))
-                        elif self._types[key] == list:
-                            value = value.split(",")
-                        self.set(key, value, add_missing_options=True)
-                    except (KeyError, RuntimeError) as err:
-                        print(f"Failed to set {key}={value}: {err}")
         except json.JSONDecodeError as err:
             print(f"Reading JSON config failed: {err}")
+        with self._lock:
+            for entry in self._entries.values():
+                entry.load_from_json_dict(json_data)
+
+
+class _Entry():
+    def __init__(self, key, initial_value, label, category, tooltip, options=None, range_options=None, save_json=True):
+        self._key = key
+        self._value = initial_value
+        self._label = label
+        self._category = category
+        self._tooltip = tooltip
+        self.save_json = save_json
+        if options is not None:
+            if (not isinstance(options, list) or initial_value not in options):
+                raise ValueError(f"Invalid options for key {key} with initial value {initial_value}: {options}")
+            self._options = options
+        else:
+            self._options = None
+        if range_options is not None:
+            if not isinstance(initial_value, float) and not isinstance(initial_value, int):
+                raise TypeError(f"range_options provided but {key}={initial_value} is not int or float")
+            if not isinstance(range_options, dict):
+                raise TypeError(f"range_options provided, expected dict but got {range_options}")
+            if 'min' not in range_options or 'max' not in range_options:
+                raise ValueError(f"min and max missing from range options, got {range_options}")
+            range_keys = ['min', 'max', 'step']
+            if isinstance(initial_value, float):
+                if any(k in range_options and not isinstance(range_options[k], float) for k in range_keys):
+                    raise ValueError(f"{key}: initial value is float but range_options are not all float values")
+            if isinstance(initial_value, int):
+                if any(k in range_options and not isinstance(range_options[k], int) for k in range_keys):
+                    raise ValueError(f"{key}: initial value is float but range_options are not all float values")
+            self._range_options = range_options
+        else:
+            self._range_options = None
+
+
+    def set_value(self, value, add_missing_options=False, inner_key=None):
+        """Updates the value or one of its properties, returning value_changed and previous_value"""
+        # Handle inner key changes:
+        if inner_key is not None:
+            # changes to numeric ranges:
+            if self._range_options is not None:
+                if inner_key not in ["min", "max", "step"]:
+                    raise ValueError(f"Invalid inner_key for {self._key}, expected min/max/step, got {inner_key}")
+                if type(self._value) != type(value):
+                    raise TypeError(f"Cannot set {self._key}.{inner_key} to {type(value)} '{value}', type is " + \
+                            f"{type(self._value)}")
+                value_changed = self._range_options[inner_key] != value
+                self._range_options[inner_key] = value
+                return value_changed
+
+            # changes to dict properties:
+            if isinstance(self._value, dict):
+                prev_value = None if inner_key not in self._value else self._value[inner_key]
+                value_changed = prev_value != value
+                self._value[inner_key] = value
+                return value_changed
+            raise TypeError(f"Tried to set '{self._key}.{inner_key}' to value '{value}', but " + \
+                            f"{self._key} is type '{type(self._value)}'")
+
+        # Enforce type consistency for values other than inner dict values:
+        if type(value) != type(self._value):
+            raise TypeError(f"Expected '{self._key}' value '{value}' to have type '{type(self._value)}', found " + \
+                            f"'{type(value)}'")
+
+        # Handle changes to values with predefined options lists:
+        if self._options is not None and not value in self._options:
+            if add_missing_options:
+                self.add_option(value)
+            else:
+                raise RuntimeError(f"'{self._key}' value '{value}' is not a valid option in " + \
+                        f"{json.dumps(self._options)}")
+        value_changed = self._value != value
+        self._value = value
+        return value_changed
+
+
+    def get_value(self, inner_key=None):
+        """Gets the current value, or an inner value or range option if inner_key is not None."""
+        if inner_key is not None:
+            if self._range_options is not None:
+                if inner_key not in ["min", "max", "step"]:
+                    raise ValueError(f"Invalid inner_key for {self._key}, expected min/max/step, got {inner_key}")
+                return self._range_options[inner_key]
+            if isinstance(self._value, dict):
+                return None if inner_key not in self._value else self._value[inner_key]
+            raise TypeError(f"Tried to read {self._key}.{inner_key} from type {type(self._value)}")
+        return self._value
+
+    def get_category(self):
+        """Gets the config option's category name."""
+        return self._category
+
+    def get_label(self):
+        """Gets the config option's label text."""
+        return self._label
+
+    def get_tooltip(self):
+        """Gets the config option's tooltip description."""
+        return self._tooltip
+
+    def get_option_index(self):
+        """ Returns the index of the selected option."""
+        if self._options is None:
+            raise RuntimeError(f"Config value '{self._key}' does not have an associated options list")
+        return self._options.index(self._value)
+
+
+    def get_options(self):
+        """Returns all valid options accepted."""
+        if self._options is None:
+            raise RuntimeError(f"Config value '{self._key}' does not have an associated options list")
+        return self._options.copy()
+
+    def add_option(self, option):
+        """Adds a new item to the list of accepted options."""
+        if self._options is None:
+            raise RuntimeError(f"Config value '{self._key}' does not have an associated options list")
+        if option not in self._options:
+            self._options.append(option)
+
+    def update_options(self, options_list):
+        """Replaces the list of accepted options."""
+        if self._options is None:
+            raise RuntimeError(f"Config value '{self._key}' does not have an associated options list")
+        if not isinstance(options_list, list) or len(options_list) == 0:
+            raise RuntimeError(f"Provided invalid options for config value '{self._key}'")
+        self._options = options_list.copy()
+        if not self._value in options_list:
+            self.set_value(options_list[0], False)
+
+    def save_to_json_dict(self, json_dict):
+        """Adds the value to a dict in a format that can be written to a JSON file."""
+        if self.save_json is True:
+            if isinstance(self._value, QSize):
+                json_dict[self._key] = f"{self._value.width()}x{self._value.height()}"
+            elif self._range_options is not None:
+                json_dict[self._key] = dict(self._range_options)
+                json_dict[self._key]['value'] = self._value
+            else:
+                json_dict[self._key] = self._value
+
+
+    def load_from_json_dict(self, json_dict):
+        """Reads the value from a dict that was loaded from a JSON file."""
+        if self._key not in json_dict:
+            return
+        json_value = json_dict[self._key]
+        if isinstance(self._value, QSize):
+            self._value = QSize(*(int(n) for n in json_value.split("x")))
+        elif self._range_options is not None and isinstance(json_value, dict):
+            for range_key in ['min', 'max', 'step']:
+                if range_key in json_value:
+                    self._range_options[range_key] = json_value[range_key]
+            self._value = json_dict[self._key]['value']
+        else:
+            self._value = json_value

@@ -1,32 +1,55 @@
 # Future development tasks
 
-## Minor features
- - Add missing params to UI:
-  * ddim/ddpm
- - Show window immediately in inpainting_ui, show loading indicator while models load
- - Sample selection improvements:
-  * Add "zoom" option to inspect samples more closely
- - Add undo/redo buttons to mask area
- - Add undo/redo buttons to main image
- - Add "new image" option with custom resolution
+# ControlNet
+- Make "use selection as control" the default
+    - Don't allow it to be unchecked if no image is selected
+    - Automatically uncheck it on image selection
+- Add tabs for up to 3X control layers
+- Figure out a way to preview module preprocessing
+- Get extended controls working in Forge API (PR adding control type endpoint)?
+- Add tooltip descriptions for modules and models
 
-## More ambitious features:
- - Clip ranking within the UI:
-  * Show as numbers, bars of relative length, under image samples
- - Create optional inpainting timelapse animations
-  * Save image every time after changes applied, use images as video frames
-  * Use command line to enable, providing optional starting video for continuing sessions
- - Update server to allow for multiple clients:
-  * Tie inpainting requests to UUID, require UUID to get results
-  * Queue requests, reject if queue exceeds some length
-  * Use DELETE to cancel queued requests
-  * Remove results after a delay, use longer delay if images aren't fetched.
+# sketch canvas/libmypaint
+- Update qt bindings to work with an unmodified version of the latest libmypaint
+- Pull image data into canvas to allow smudging, blurring, etc.
+- Build library binaries for other systems:
+    * Windows
+    * Mac OS (intel and M1)
+    * Raspberry Pi/other ARM-based Linux
+    * others?
+- Clean up library build process
+    * Automate fetching sip dependencies when necessary
+    * Integrate sip build into primary makefile (+ qmake?)
+- Rewrite C++ layers to allow multiple canvases
+- Apply sketch directly to image (with undo!)
+- Add fill tool
 
-## Interesting ideas I probably won't pursue:
- - Add upscaling controls using RealESRGAN or similar as backend.
- - Alternate image generation backends: are better systems available?
- - Alternate image editing frontends:
-  * Browser-based frontend
-  * Plugins for GIMP or other editors
-  * Mobile application
- - Clean up autoedit.py, add it as an option to the UI
+# Config
+- Add categories, tooltips to all config options
+- Integrate config with SettingsModal
+
+# Interface
+- Unify the mask and image panels
+    * Zoom button: Switch between full image view and zoomed-in view
+    * When zoomed in, show small amount of greyed-out or blurred image outside of margins
+- Add drag tool to move selection window 
+
+# Documentation
+- Rewrite README.md for stable-diffusion info
+- Create tutorials for common workflows
+    * Editing with the sketch layer
+    * Filling in details with controlNet + tile
+- Create timelapse editing video
+
+# API
+- ComfyUI support
+- Automatically detect appropriate API/controller/window to use given an endpoint
+
+# Other art tools?
+    - Layers
+    - Selection manipulation
+        * cut/paste masked area
+        * Tranform masked area
+        * Apply color changes, other misc. filters
+    - Text editing
+    - Prompt-based mask generation

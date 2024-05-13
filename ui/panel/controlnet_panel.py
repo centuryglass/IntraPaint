@@ -12,12 +12,12 @@ import pprint
 
 class ControlnetPanel(CollapsibleBox):
 
-    def __init__(self, config, control_types, module_detail, model_list, title = "ControlNet"):
-        super().__init__(title=title, scrolling=False, start_closed=(len(config.get('controlnetArgs')) == 0))
+    def __init__(self, config, control_types, module_detail, model_list, title = "ControlNet",
+            config_key='controlnet_args_0'):
+        super().__init__(title=title, scrolling=False, start_closed=(len(config.get(config_key)) == 0))
         REUSE_IMAGE_VALUE='SELECTION' #value to signal that the control image is from selection, not a file
-        CONTROLNET_CONFIG_KEY='controlnetArgs'
 
-        initial_control_state = config.get(CONTROLNET_CONFIG_KEY)
+        initial_control_state = config.get(config_key)
         self._config = config
         self._saved_state = initial_control_state
 
@@ -32,10 +32,10 @@ class ControlnetPanel(CollapsibleBox):
         enabled_checkbox.setText('Enable ControlNet')
         checkbox_row.addWidget(enabled_checkbox)
 
-        vram_checkbox = connected_checkbox(self, config, CONTROLNET_CONFIG_KEY, text='Low VRAM', inner_key='low_vram')
+        vram_checkbox = connected_checkbox(self, config, config_key, text='Low VRAM', inner_key='low_vram')
         checkbox_row.addWidget(vram_checkbox)
 
-        px_perfect_checkbox = connected_checkbox(self, config, CONTROLNET_CONFIG_KEY, text='Pixel Perfect',
+        px_perfect_checkbox = connected_checkbox(self, config, config_key, text='Pixel Perfect',
                 inner_key='pixel_perfect')
         checkbox_row.addWidget(px_perfect_checkbox)
         
@@ -65,13 +65,13 @@ class ControlnetPanel(CollapsibleBox):
             image_path_edit.setEnabled(not checked)
             if checked:
                 image_path_edit.setText('')
-            config.set(CONTROLNET_CONFIG_KEY, value, inner_key='image')
+            config.set(config_key, value, inner_key='image')
         reuse_image_checkbox.stateChanged.connect(reuse_image_update)
 
         def image_path_update(text):
             if reuse_image_checkbox.checked():
                 return
-            config.set(CONTROLNET_CONFIG_KEY, text, inner_key='image')
+            config.set(config_key, text, inner_key='image')
         image_path_edit.textChanged.connect(image_path_update)
 
         # Mode-selection row:
@@ -101,7 +101,7 @@ class ControlnetPanel(CollapsibleBox):
 
         #on model change, update config:
         def handle_model_change():
-            config.set(CONTROLNET_CONFIG_KEY, model_combobox.currentText(), inner_key='model')
+            config.set(config_key, model_combobox.currentText(), inner_key='model')
         model_combobox.currentIndexChanged.connect(handle_model_change)
 
         def handle_module_change(selection):
@@ -116,7 +116,7 @@ class ControlnetPanel(CollapsibleBox):
                     print(f"Warning: invalid selection {selection} not found")
                     return
                 details = module_detail['module_detail'][selection]
-            config.set(CONTROLNET_CONFIG_KEY, selection, inner_key='module')
+            config.set(config_key, selection, inner_key='module')
             while options_layout.count() > 0:
                 row = options_layout.itemAt(0)
                 while row.layout().count() > 0:
@@ -124,20 +124,20 @@ class ControlnetPanel(CollapsibleBox):
                     row.layout().removeItem(item)
                     if item.widget():
                         widget = item.widget()
-                        config.disconnect(widget, CONTROLNET_CONFIG_KEY)
+                        config.disconnect(widget, config_key)
                         if hasattr(widget, 'disconnect_config'):
                             widget.disconnect_config()
                         else:
-                            config.disconnect(widget, CONTROLNET_CONFIG_KEY)
+                            config.disconnect(widget, config_key)
                         widget.deleteLater()
                 options_layout.removeItem(row)
                 row.layout().deleteLater()
             DEFAULT_PARAMS=['module', 'model', 'low_vram', 'pixel_perfect', 'image', 'weight', 'guidance_start',
                             'guidance_end']
-            current_keys = list(config.get(CONTROLNET_CONFIG_KEY).keys())
+            current_keys = list(config.get(config_key).keys())
             for param in current_keys:
                 if param not in DEFAULT_PARAMS:
-                    config.set(CONTROLNET_CONFIG_KEY, None, inner_key=param)
+                    config.set(config_key, None, inner_key=param)
             if selection != "none":
                 sliders = [
                     {
@@ -182,9 +182,9 @@ class ControlnetPanel(CollapsibleBox):
                     if key == title:
                         if 'Resolution' in key:
                             key = 'processor_res'
-                        elif 'threshold_a' not in config.get(CONTROLNET_CONFIG_KEY):
+                        elif 'threshold_a' not in config.get(config_key):
                             key = 'threshold_a'
-                        elif 'threshold_b' not in config.get(CONTROLNET_CONFIG_KEY):
+                        elif 'threshold_b' not in config.get(config_key):
                             key = 'threshold_b'
                     step = 1 if 'step' not in slider_params else slider_params['step']
                     float_mode = any(x != int(x) for x in [value, min_val, max_val, step])
@@ -198,8 +198,8 @@ class ControlnetPanel(CollapsibleBox):
                         min_val = int(min_val)
                         max_val = int(max_val)
                         step = int(step)
-                    config.set(CONTROLNET_CONFIG_KEY, value, inner_key=key)
-                    slider = ParamSlider(self, title, config, CONTROLNET_CONFIG_KEY, min_val, max_val, step,
+                    config.set(config_key, value, inner_key=key)
+                    slider = ParamSlider(self, title, config, config_key, min_val, max_val, step,
                             inner_key=key)
                     if slider_row.count() > 1:
                         options_layout.addLayout(slider_row)
@@ -273,10 +273,10 @@ class ControlnetPanel(CollapsibleBox):
                     widget.setEnabled(checked)
             options_combobox.setEnabled(checked and options_layout.count() > 0)
             if checked:
-                config.set(CONTROLNET_CONFIG_KEY, self._saved_state)
+                config.set(config_key, self._saved_state)
             else:
-                self._saved_state = config.get(CONTROLNET_CONFIG_KEY)
-                config.set(CONTROLNET_CONFIG_KEY, {})
+                self._saved_state = config.get(config_key)
+                config.set(config_key, {})
         set_enabled('model' in initial_control_state)
         enabled_checkbox.stateChanged.connect(set_enabled) 
         self.show_button_bar(True)

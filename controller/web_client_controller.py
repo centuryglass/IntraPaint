@@ -1,5 +1,5 @@
 """
-Provides image editing functionality through the GLID3-XL API provided through Intrapaint_server.py or
+Provides image editing functionality through the GLID-3-XL API provided through Intrapaint_server.py or
 colabFiles/IntraPaint_colab_server.ipynb.
 """
 import sys
@@ -14,7 +14,7 @@ from startup.utils import image_to_base64, load_image_from_base64
 
 
 class WebClientController(BaseInpaintController):
-    """Provides image editing functionality through the GLID3-XL API."""
+    """Provides image editing functionality through the GLID-3-XL API."""
     def __init__(self, args):
         super().__init__(args)
         self._server_url = args.server_url
@@ -23,7 +23,7 @@ class WebClientController(BaseInpaintController):
 
     @staticmethod
     def health_check(url):
-        """Static method to check if the GLID3-XL API is available."""
+        """Static method to check if the GLID-3-XL API is available."""
         try:
             res = requests.get(url, timeout=30)
             return res.status_code == 200 and ('application/json' in res.headers['content-type']) \
@@ -58,18 +58,18 @@ class WebClientController(BaseInpaintController):
 
 
     def _inpaint(self, selection, mask, save_image, status_signal):
-        """Handle image editing operations using the GLID3-XL API."""
-        batch_size = self._config.get('batchSize')
-        batch_count = self._config.get('batchCount')
+        """Handle image editing operations using the GLID-3-XL API."""
+        batch_size = self._config.get('batch_size')
+        batch_count = self._config.get('batch_count')
         body = {
             'batch_size': batch_size,
             'num_batches': batch_count,
             'edit': image_to_base64(selection),
             'mask': image_to_base64(mask),
             'prompt': self._config.get('prompt'),
-            'negative': self._config.get('negativePrompt'),
-            'guidanceScale': self._config.get('guidanceScale'),
-            'skipSteps': self._config.get('skipSteps'),
+            'negative': self._config.get('negative_prompt'),
+            'guidanceScale': self._config.get('guidance_scale'),
+            'skipSteps': self._config.get('skip_steps'),
             'width': selection.width,
             'height': selection.height
         }

@@ -57,12 +57,14 @@ class BaseInpaintController():
         initial_selection_size = self._edited_image.get_selection_bounds().size()
         self._mask_canvas = MaskCanvas(self._config, initial_selection_size)
 
-        #self._sketch_canvas = SketchCanvas(self._config, initial_selection_size)
-        try:
-            from data_model.canvas.brushlib_canvas import BrushlibCanvas
-            self._sketch_canvas = BrushlibCanvas(self._config, initial_selection_size)
-        except ImportError as err: # fallback to old implementation:
-            print(f"Brushlib import failed: {err}")
+        if self._config.get('use_mypaint_canvas'):
+            try:
+                from data_model.canvas.brushlib_canvas import BrushlibCanvas
+                self._sketch_canvas = BrushlibCanvas(self._config, initial_selection_size)
+            except ImportError as err: # fallback to old implementation:
+                print(f"Brushlib import failed: {err}")
+                self._sketch_canvas = SketchCanvas(self._config, initial_selection_size)
+        else:
             self._sketch_canvas = SketchCanvas(self._config, initial_selection_size)
 
         # Connect mask/sketch size to image selection size:
@@ -146,7 +148,7 @@ class BaseInpaintController():
         except ModuleNotFoundError:
             print('Failed to load theme ' + self._config.get('style'))
         font = self._app.font()
-        font.setPointSize(self._config.get('fontPointSize'))
+        font.setPointSize(self._config.get('font_point_size'))
         self._app.setFont(font)
 
 
@@ -165,7 +167,7 @@ class BaseInpaintController():
     # File IO handling:
     def new_image(self):
         """Open a new image creation modal."""
-        default_size = self._config.get('editSize')
+        default_size = self._config.get('edit_size')
         image_modal = NewImageModal(default_size.width(), default_size.height())
         image_size = image_modal.show_image_modal()
         if image_size and ((not self._edited_image.has_image()) or \
@@ -180,11 +182,11 @@ class BaseInpaintController():
             show_error_dialog(self._window, "Save failed", "Open an image first before trying to save.")
             return
         file, file_selected = open_image_file(self._window, mode='save',
-                selected_file = self._config.get("lastFilePath"))
+                selected_file = self._config.get("last_file_path"))
         try:
             if file and file_selected:
                 self._edited_image.save_image(file)
-                self._config.set("lastFilePath", file)
+                self._config.set("last_file_path", file)
         except Exception as err:
             show_error_dialog(self._window, "Save failed", str(err))
             print(f"Saving image failed: {err}")
@@ -197,14 +199,14 @@ class BaseInpaintController():
         if file and file_selected:
             try:
                 self._edited_image.set_image(file)
-                self._config.set("lastFilePath", file)
+                self._config.set("last_file_path", file)
             except UnidentifiedImageError as err:
                 show_error_dialog(self._window, "Open failed", err)
 
 
     def reload_image(self):
         """Reload the edited image from disk after getting confirmation from a confirmation dialog."""
-        file_path = self._config.get("lastFilePath")
+        file_path = self._config.get("last_file_path")
         if file_path == "":
             show_error_dialog(self._window, "Reload failed", "Enter an image path or click 'Open Image' first.")
             return
@@ -254,9 +256,9 @@ class BaseInpaintController():
         image = self._edited_image.get_pil_image()
         scale_mode = None
         if (new_size.width() <= width and new_size.height() <= height): #downscaling
-            scale_mode = self._config.get('downscaleMode')
+            scale_mode = self._config.get('downscale_mode')
         else:
-            scale_mode = self._config.get('upscaleMode')
+            scale_mode = self._config.get('upscale_mode')
         scaled_image = image.resize((new_size.width(), new_size.height()), scale_mode)
         self._edited_image.set_image(scaled_image)
 
@@ -316,8 +318,8 @@ class BaseInpaintController():
             show_error_dialog(self._window, "Failed",
                     "Existing inpainting operation not yet finished, wait a little longer.")
             return
-        upscale_mode = self._config.get('upscaleMode')
-        downscale_mode = self._config.get('downscaleMode')
+        upscale_mode = self._config.get('upscale_mode')
+        downscale_mode = self._config.get('downscale_mode')
         def resize_image(pil_image, width, height):
             """Resize a PIL image using the appropriate scaling mode:"""
             if width == pil_image.width and height == pil_image.height:
@@ -336,13 +338,13 @@ class BaseInpaintController():
         if self._sketch_canvas.has_sketch():
             inpaint_image = inpaint_image.convert('RGBA')
             inpaint_image = Image.alpha_composite(inpaint_image, sketch_image).convert('RGB')
-        keep_sketch = self._sketch_canvas.has_sketch() and self._config.get('saveSketchInResult')
+        keep_sketch = self._sketch_canvas.has_sketch()
 
         # If necessary, scale image and mask to match the edit size. Keep the unscaled version so it can be used for
         # compositing if "keep sketch" is checked.
         unscaled_inpaint_image = inpaint_image.copy()
 
-        edit_size = self._config.get('editSize')
+        edit_size = self._config.get('edit_size')
         if inpaint_image.width != edit_size.width() or inpaint_image.height != edit_size.height():
             inpaint_image = resize_image(inpaint_image, edit_size.width(), edit_size.height())
         if inpaint_mask.width != edit_size.width() or inpaint_mask.height != edit_size.height():
@@ -379,11 +381,8 @@ class BaseInpaintController():
         worker.status_signal.connect(update_status)
 
         def load_sample_preview(img, idx):
-            if ((config.get('editMode') == 'Inpaint')) and (config.get('removeUnmaskedChanges') \
-                    or img.width != selection.width or img.height != selection.height):
+            if ((config.get('edit_mode') == 'Inpaint')):
                 def point_fn(p):
-                    if config.get('inpaintMasked') == 'Inpaint not masked':
-                        return 0 if p < 1 else 255
                     return 255 if p < 1 else 0
                 mask_alpha = inpaint_mask.convert('L').point(point_fn).filter(ImageFilter.GaussianBlur())
                 img = resize_image(img, selection.width, selection.height)
@@ -403,12 +402,11 @@ class BaseInpaintController():
         sample_image : PIL Image
             Image data to be inserted into the EditedImage selection bounds.
         """
-        if self._config.get('saveSketchInResult'):
-            source_selection = self._edited_image.get_selection_content()
-            sketch_image = self._sketch_canvas.get_pil_image().resize((source_selection.width, source_selection.height),
-                    self._config.get('downscaleMode')).convert('RGBA')
-            source_selection = Image.alpha_composite(source_selection.convert('RGBA'), sketch_image).convert('RGB')
-            self._edited_image.set_selection_content(source_selection)
-            self._sketch_canvas.clear()
+        source_selection = self._edited_image.get_selection_content()
+        sketch_image = self._sketch_canvas.get_pil_image().resize((source_selection.width, source_selection.height),
+                self._config.get('downscale_mode')).convert('RGBA')
+        source_selection = Image.alpha_composite(source_selection.convert('RGBA'), sketch_image).convert('RGB')
+        self._edited_image.set_selection_content(source_selection)
+        self._sketch_canvas.clear()
         if sample_image is not None and isinstance(sample_image, Image.Image):
             self._edited_image.set_selection_content(sample_image)

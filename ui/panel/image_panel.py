@@ -54,7 +54,7 @@ class ImagePanel(QWidget):
         self._image_box_layout.addLayout(controlbar_layout)
 
         controlbar_layout.addWidget(QLabel(self, text="Image Path:"))
-        self._file_text_box = connected_textedit(self, config, "lastFilePath") 
+        self._file_text_box = connected_textedit(self, config, "last_file_path") 
         controlbar_layout.addWidget(self._file_text_box, stretch=255)
 
         # wire x/y coordinate boxes to set selection coordinates:
@@ -91,9 +91,9 @@ class ImagePanel(QWidget):
         self._heightbox = QSpinBox(self)
         controlbar_layout.addWidget(self._heightbox)
 
-        edit_size = config.get('editSize')
-        min_edit_size = config.get('minEditSize')
-        max_edit_size = config.get('maxEditSize')
+        edit_size = config.get('edit_size')
+        min_edit_size = config.get('min_edit_size')
+        max_edit_size = config.get('max_edit_size')
         for size_control, type_name, min_size, max_size, size in [
                 (self._widthbox, "width", min_edit_size.width(), max_edit_size.width(), edit_size.width()),
                 (self._heightbox, "height", min_edit_size.height(), max_edit_size.height(), edit_size.height())]:

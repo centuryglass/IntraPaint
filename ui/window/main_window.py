@@ -1,5 +1,5 @@
 """
-Base implementation of the primary image editing window. On its own, provides an appropriate interface for GLID3-XL
+Base implementation of the primary image editing window. On its own, provides an appropriate interface for GLID-3-XL
 inpainting modes.  Other editing modes should provide subclasses with implementation-specific controls.
 """
 from PyQt5.QtWidgets import *
@@ -169,7 +169,7 @@ class MainWindow(QMainWindow):
 
         # TODO: the following are specific to the A1111 stable-diffusion api and should move to 
         #       stable_diffusion_controller:
-        if hasattr(controller, '_webservice') and 'LCM' in config.get_options('samplingMethod'):
+        if hasattr(controller, '_webservice') and 'LCM' in config.get_options('sampling_method'):
             try:
                 loras = [l['name'] for l in controller._webservice.get_loras()]
                 if 'lcm-lora-sdv1-5' in loras:
@@ -178,19 +178,19 @@ class MainWindow(QMainWindow):
                         prompt = config.get("prompt")
                         if loraKey not in prompt:
                             config.set("prompt", f"{prompt} {loraKey}")
-                        config.set('cfgScale', 1.5)
-                        config.set('samplingSteps', 8)
-                        config.set('samplingMethod', 'LCM')
+                        config.set('guidance_scale', 1.5)
+                        config.set('sampling_steps', 8)
+                        config.set('sampling_method', 'LCM')
                         config.set('seed', -1)
-                        if config.get('batchSize') < 5:
-                            config.set('batchSize', 5)
+                        if config.get('batch_size') < 5:
+                            config.set('batch_size', 5)
                         if self._edited_image.has_image():
                             imageSize = self._edited_image.size()
                             if imageSize.width() < 1200 and imageSize.height() < 1200:
-                                config.set('editSize', imageSize)
+                                config.set('edit_size', imageSize)
                             else:
                                 size = QSize(min(imageSize.width(), 1024), min(imageSize.height(), 1024))
-                                config.set('editSize', size)
+                                config.set('edit_size', size)
                     add_action("LCM Mode", "F10", setLcmMode, tool_menu)
             except:
                 print('Failed to check loras for lcm lora')
@@ -322,81 +322,62 @@ class MainWindow(QMainWindow):
             if mode:
                 self._config.set(config_key, mode)
         scale_mode_list.currentIndexChanged.connect(set_scale_mode)
+        scale_mode_list.setToolTip(config.get_tooltip(config_key))
         return scale_mode_list
 
 
     def _build_control_layout(self, controller):
         inpaint_panel = QWidget(self)
         text_prompt_textbox = connected_textedit(inpaint_panel, self._config, 'prompt')
-        negative_prompt_textbox = connected_textedit(inpaint_panel, self._config, 'negativePrompt')
+        negative_prompt_textbox = connected_textedit(inpaint_panel, self._config, 'negative_prompt')
 
-        batch_size_spinbox = connected_spinbox(inpaint_panel, self._config, 'batchSize', max_key='maxBatchSize')
-        batch_size_spinbox.setRange(1, batch_size_spinbox.maximum())
-        batch_size_spinbox.setToolTip("Inpainting images generated per batch")
+        batch_size_spinbox = connected_spinbox(inpaint_panel, self._config, 'batch_size')
 
-        batch_count_spinbox = connected_spinbox(inpaint_panel, self._config, 'batchCount', max_key='maxBatchCount')
-        batch_count_spinbox.setRange(1, batch_count_spinbox.maximum())
-        batch_count_spinbox.setToolTip("Number of inpainting image batches to generate")
+        batch_count_spinbox = connected_spinbox(inpaint_panel, self._config, 'batch_count')
 
         inpaint_button = QPushButton();
         inpaint_button.setText("Start inpainting")
         inpaint_button.clicked.connect(lambda: controller.start_and_manage_inpainting())
 
         more_options_bar = QHBoxLayout()
-        guidance_scale_spinbox = connected_spinbox(inpaint_panel, self._config, 'guidanceScale',
-                max_key='maxGuidanceScale', step_size_key='guidanceScaleStep')
-        guidance_scale_spinbox.setValue(self._config.get('guidanceScale'))
-        guidance_scale_spinbox.setRange(1.0, self._config.get('maxGuidanceScale'))
-        guidance_scale_spinbox.setToolTip("Scales how strongly the prompt and negative are considered. Higher values "
-                + "are usually more precise, but have less variation.")
+        guidance_scale_spinbox = connected_spinbox(inpaint_panel, self._config, 'guidance_scale')
 
-        skip_steps_checkbox = connected_spinbox(inpaint_panel, self._config, 'skipSteps', max_key='maxSkipSteps')
-        skip_steps_checkbox.setToolTip("Sets how many diffusion steps to skip. Higher values generate faster and "
-                + "produce simpler images.")
+        skip_steps_spinbox = connected_spinbox(inpaint_panel, self._config, 'skip_steps')
 
-        enable_scale_checkbox = connected_checkbox(inpaint_panel, self._config, 'inpaintFullRes')
+        enable_scale_checkbox = connected_checkbox(inpaint_panel, self._config, 'inpaint_full_res')
         enable_scale_checkbox.setText("Scale edited areas")
-        enable_scale_checkbox.setToolTip("Enabling scaling allows for larger sample areas and better results at small "
-                + "scales, but increases the time required to generate images for small areas.")
         def update_scale():
             if self._edited_image.has_image():
                 self._image_panel.reload_scale_bounds()
         enable_scale_checkbox.stateChanged.connect(update_scale)
 
         upscale_mode_label = QLabel(inpaint_panel)
-        upscale_mode_label.setText("Upscaling mode:")
-        upscale_mode_list = self._create_scale_mode_selector(inpaint_panel, 'upscaleMode')
-        upscale_mode_list.setToolTip("Image scaling mode used when increasing image scale");
+        upscale_mode_label.setText(config.get_label('upscale_mode'))
+        upscale_mode_list = self._create_scale_mode_selector(inpaint_panel, 'upscale_mode')
         downscale_mode_label = QLabel(inpaint_panel)
-        downscale_mode_label.setText("Downscaling mode:")
-        downscale_mode_list = self._create_scale_mode_selector(inpaint_panel, 'downscaleMode')
-        downscale_mode_list.setToolTip("Image scaling mode used when decreasing image scale");
+        downscale_mode_label.setText(config.get_label('downscale_mode'))
+        downscale_mode_list = self._create_scale_mode_selector(inpaint_panel, 'downscale_mode')
         
-        more_options_bar.addWidget(QLabel(inpaint_panel, text="Guidance scale:"), stretch=0)
+        more_options_bar.addWidget(QLabel(inpaint_panel, text=config.get_label('guidance_scale')), stretch=0)
         more_options_bar.addWidget(guidance_scale_spinbox, stretch=20)
-        more_options_bar.addWidget(QLabel(inpaint_panel, text="Skip timesteps:"), stretch=0)
-        more_options_bar.addWidget(skip_steps_checkbox, stretch=20)
+        more_options_bar.addWidget(QLabel(inpaint_panel, text=config.get_label('skip_steps')), stretch=0)
+        more_options_bar.addWidget(skip_steps_spinbox, stretch=20)
         more_options_bar.addWidget(enable_scale_checkbox, stretch=10)
         more_options_bar.addWidget(upscale_mode_label, stretch=0)
         more_options_bar.addWidget(upscale_mode_list, stretch=10)
         more_options_bar.addWidget(downscale_mode_label, stretch=0)
         more_options_bar.addWidget(downscale_mode_list, stretch=10)
 
-        zoom_button = QPushButton(); 
-        zoom_button.setText("Zoom")
-        zoom_button.setToolTip("Save frame, zoom out 15%, set mask to new blank area")
-        zoom_button.clicked.connect(lambda: controller.zoomOut())
-        more_options_bar.addWidget(zoom_button, stretch=5)
 
         # Build layout with labels:
         layout = QGridLayout()
-        layout.addWidget(QLabel(inpaint_panel, text="Prompt:"), 1, 1, 1, 1)
+        layout.addWidget(QLabel(inpaint_panel, text=config.get_label('prompt')), 1, 1, 1, 1)
         layout.addWidget(text_prompt_textbox, 1, 2, 1, 1)
-        layout.addWidget(QLabel(inpaint_panel, text="Negative:"), 2, 1, 1, 1)
+        layout.addWidget(QLabel(inpaint_panel, text=config.get_label('nagative_prompt')), 2, 1, 1, 1)
         layout.addWidget(negative_prompt_textbox, 2, 2, 1, 1)
-        layout.addWidget(QLabel(inpaint_panel, text="Batch size:"), 1, 3, 1, 1)
+        layout.addWidget(QLabel(inpaint_panel, text=config.get_label('batch_size')), 1, 3, 1, 1)
         layout.addWidget(batch_size_spinbox, 1, 4, 1, 1)
-        layout.addWidget(QLabel(inpaint_panel, text="Batch count:"), 2, 3, 1, 1)
+        layout.addWidget(QLabel(inpaint_panel, text=config.get_label('batch_count')), 2, 3, 1, 1)
         layout.addWidget(batch_count_spinbox, 2, 4, 1, 1)
         layout.addWidget(inpaint_button, 2, 5, 1, 1)
         layout.setColumnStretch(2, 255) # Maximize prompt input
@@ -414,7 +395,7 @@ class MainWindow(QMainWindow):
         if (visible == is_visible):
             return
         if visible:
-            mask = self._mask if (self._config.get('editMode') == 'Inpaint') else FilledMaskCanvas(self._config)
+            mask = self._mask if (self._config.get('edit_mode') == 'Inpaint') else FilledMaskCanvas(self._config)
             self._sample_selector = SampleSelector(
                     self._config,
                     self._edited_image,

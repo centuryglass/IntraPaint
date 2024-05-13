@@ -115,16 +115,16 @@ class A1111Webservice(WebService):
         """
         body = self._get_base_diffusion_body(config, image, scripts)
         body['init_images'] = [ image_to_base64(image, include_prefix=True) ]
-        body['denoising_strength'] = config.get('denoisingStrength')
+        body['denoising_strength'] = config.get('denoising_strength')
         body['width'] = image.width if width is None else width
         body['height'] = image.height if height is None else height
         if mask is not None:
             body['mask'] = image_to_base64(mask, include_prefix=True)
-            body['mask_blur'] = config.get('maskBlur')
-            body['inpainting_fill'] = config.get_option_index('maskedContent')
-            body['inpainting_mask_invert'] = config.get_option_index('inpaintMasked')
-            body['inpaint_full_res'] = config.get('inpaintFullRes')
-            body['inpaint_full_res_padding'] = config.get('inpaintFullResPadding')
+            body['mask_blur'] = config.get('mask_blur')
+            body['inpainting_fill'] = config.get_option_index('masked_content')
+            body['inpainting_mask_invert'] = 0 #Don't invert
+            body['inpaint_full_res'] = config.get('inpaint_full_res')
+            body['inpaint_full_res_padding'] = config.get('inpaint_full_res_padding')
         if overrides is not None:
             for key in overrides:
                 body[key] = overrides[key]
@@ -191,13 +191,13 @@ class A1111Webservice(WebService):
         dict or None
             Any additional information sent back with the generated images.
         """
-        if config.get('controlnetUpscaling'):
+        if config.get('controlnet_upscaling'):
             scripts = {
                 'controlNet': {
                     'args': [{
                         "module": "tile_resample",
-                        "model": "control_v11f1e_sd15_tile [a371b31b]",
-                        "threshold_a": config.get('controlnetDownsampleRate')
+                        "model": config.get('controlnet_tile_model'),
+                        "threshold_a": config.get('controlnet_downsample_rate')
                     }]
                 }
             }
@@ -207,19 +207,19 @@ class A1111Webservice(WebService):
                 'batch_size': 1,
                 'n_iter': 1
             }
-            upscaler = config.get('upscaleMethod')
+            upscaler = config.get('upscale_method')
             if upscaler != "None":
                 overrides['script_name'] = 'ultimate sd upscale'
                 overrides['script_args'] = [
                     None, # not used
-                    config.get('editSize').width(), #tile width
-                    config.get('editSize').height(), #tile height
+                    config.get('edit_size').width(), #tile width
+                    config.get('edit_size').height(), #tile height
                     8, # mask_blur
                     32, # padding
                     64, # seams_fix_width
                     0.35, # seams_fix_denoise
                     32, # seams_fix_padding
-                    config.get_options('upscaleMethod').index(upscaler), # upscaler_index
+                    config.get_options('upscale_method').index(upscaler), # upscaler_index
                     False, # save_upscaled_image a.k.a Upscaled
                     0, # redraw_mode (linear)
                     False, # save_seams_fix_image a.k.a Seams fix
@@ -236,7 +236,7 @@ class A1111Webservice(WebService):
             'resize_mode': 1,
             'upscaling_resize_w': width,
             'upscaling_resize_h': height,
-            'upscaler_1': config.get('upscaleMethod'),
+            'upscaler_1': config.get('upscale_method'),
             'image': image_to_base64(image, include_prefix=True)
         }
         res = self.post('/sdapi/v1/extra-single-image', body)
@@ -258,7 +258,7 @@ class A1111Webservice(WebService):
             A brief description of the image.
         """
         body = {
-            'model': config.get('interrogateModel'),
+            'model': config.get('interrogate_model'),
             'image': image_to_base64(image, include_prefix=True)
         }
         res = self.post('/sdapi/v1/interrogate', body)
@@ -278,18 +278,18 @@ class A1111Webservice(WebService):
         body = {
             'prompt': config.get('prompt'),
             'seed': config.get('seed'),
-            'batch_size': config.get('batchSize'),
-            'n_iter': config.get('batchCount'),
-            'steps': config.get('samplingSteps'),
-            'cfg_scale': config.get('cfgScale'),
-            'restore_faces': config.get('restoreFaces'),
+            'batch_size': config.get('batch_size'),
+            'n_iter': config.get('batch_count'),
+            'steps': config.get('sampling_steps'),
+            'cfg_scale': config.get('guidance_scale'),
+            'restore_faces': config.get('restore_faces'),
             'tiling': config.get('tiling'),
-            'negative_prompt': config.get('negativePrompt'),
+            'negative_prompt': config.get('negative_prompt'),
             'override_settings': {},
-            'sampler_index': config.get('samplingMethod'),
+            'sampler_index': config.get('sampling_method'),
             'alwayson_scripts': {}
         }
-        controlnet = dict(config.get("controlnetArgs"))
+        controlnet = dict(config.get("controlnet_args_0"))
         if len(controlnet) > 0 and 'model' in controlnet:
             if 'image' in controlnet:
                 if controlnet['image'] == 'SELECTION' and image is not None:

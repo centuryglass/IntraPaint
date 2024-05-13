@@ -53,7 +53,7 @@ class EditedImage(QObject):
         self._config = config
         self._qimage = None
         self._metadata = None
-        self.set_selection_bounds(QRect(QPoint(0, 0), self._config.get('editSize')))
+        self.set_selection_bounds(QRect(QPoint(0, 0), self._config.get('edit_size')))
         if image_data is not None:
             self.set_image(image_data)
 
@@ -85,10 +85,10 @@ class EditedImage(QObject):
         if not self.has_image():
             return
         prompt = self._config.get('prompt')
-        negative = self._config.get('negativePrompt')
-        steps = self._config.get('samplingSteps')
-        sampler = self._config.get('samplingMethod')
-        cfg_scale = self._config.get('cfgScale')
+        negative = self._config.get('negative_prompt')
+        steps = self._config.get('sampling_steps')
+        sampler = self._config.get('sampling_method')
+        cfg_scale = self._config.get('guidance_scale')
         seed = self._config.get('seed')
         params = f"{prompt}\nNegative prompt: {negative}\nSteps: {steps}, Sampler: {sampler}, CFG scale:" + \
                  f"{cfg_scale}, Seed: {seed}, Size: 512x512"
@@ -144,10 +144,10 @@ class EditedImage(QObject):
 
     def get_max_selection_size(self):
         """
-        Returns the largest area that can be selected within the image, based on image size and the 'maxEditSize'
+        Returns the largest area that can be selected within the image, based on image size and the 'max_edit_size'
         config property
         """
-        max_size = self._config.get('maxEditSize')
+        max_size = self._config.get('max_edit_size')
         return QSize(min(max_size.width(), self.width()), min(max_size.height(), self.height()))
 
 
@@ -168,7 +168,7 @@ class EditedImage(QObject):
         initial_bounds = bounds_rect
         bounds_rect = QRect(initial_bounds.topLeft(), initial_bounds.size())
         # Make sure that the selection fits within allowed size limits:
-        min_size = self._config.get('minEditSize')
+        min_size = self._config.get('min_edit_size')
         max_size = self.get_max_selection_size()
         if bounds_rect.width() > self._qimage.width():
             bounds_rect.setWidth(self._qimage.width())
@@ -282,10 +282,10 @@ class EditedImage(QObject):
                 print('Detected saved image gen data, applying to UI')
                 try:
                     self._config.set('prompt', prompt)
-                    self._config.set('negativePrompt', negative)
-                    self._config.set('samplingSteps', steps)
-                    self._config.set('samplingMethod', sampler)
-                    self._config.set('cfgScale', cfg_scale)
+                    self._config.set('negative_prompt', negative)
+                    self._config.set('sampling_steps', steps)
+                    self._config.set('sampling_method', sampler)
+                    self._config.set('guidance_scale', cfg_scale)
                     self._config.set('seed', seed)
                 except (TypeError, RuntimeError) as err:
                     print(f'Failed to load image gen data from metadata: {err}')

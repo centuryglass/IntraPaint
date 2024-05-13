@@ -22,8 +22,8 @@ class SketchCanvas(PixmapCanvas):
         """
         super().__init__(config, image_data)
         self._has_sketch = False
-        config.connect(self, 'sketchBrushSize', self.set_brush_size)
-        self.set_brush_size(config.get('sketchBrushSize'))
+        config.connect(self, 'sketch_brush_size', self.set_brush_size)
+        self.set_brush_size(config.get('sketch_brush_size'))
         self.shading = False
         self._shading_pixmap = QGraphicsPixmapItem()
         self._set_empty_shading_pixmap()
@@ -65,7 +65,7 @@ class SketchCanvas(PixmapCanvas):
     def start_stroke(self):
         """Signals the start of a brush stroke, to be called once whenever user input starts or resumes."""
         super().start_stroke()
-        if self._config.get("pressureOpacity"):
+        if self._config.get("pressure_opacity"):
             self.shading = True
 
 

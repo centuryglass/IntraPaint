@@ -46,7 +46,7 @@ class Canvas():
         if image is not None:
             self.set_image(image)
         else:
-            self.set_image(config.get('editSize'))
+            self.set_image(config.get('edit_size'))
         self._enabled = True
 
 
@@ -54,7 +54,7 @@ class Canvas():
         """
         Reverses the last change applied to canvas image content.
 
-        Canvas tracks a number of state changes defined by the "maxUndo" config parameter, and can reverse those
+        Canvas tracks a number of state changes defined by the "max_undo" config parameter, and can reverse those
         changes using the undo function. The following are considered discrete changes by the undo and redo functions:
         - All changes from draw_point(), draw_line(), erase_point(), and erase_line() made between calling
           start_stroke() and calling end_stroke().
@@ -286,7 +286,7 @@ class Canvas():
     def _save_undo_state(self, clear_redo_stack=True):
         image = self.get_qimage().copy()
         self._undo_stack.append(image)
-        max_undo_count = self._config.get('maxUndo')
+        max_undo_count = self._config.get('max_undo')
         if len(self._undo_stack) > max_undo_count:
             self._undo_stack = self._undo_stack[-max_undo_count:]
         if clear_redo_stack:

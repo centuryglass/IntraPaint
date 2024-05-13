@@ -29,7 +29,7 @@ class ImageScaleModal(QDialog):
         heightbox._layout.addWidget(heightbox._xMultBox)
         heightbox._yMultBox = LabeledSpinbox(heightbox, "Height scale:", "New image height (as multiplier)", 0.0, 1.0, 999.0)
         heightbox._layout.addWidget(heightbox._yMultBox)
-        heightbox._upscaleMethodBox, heightbox._upscaleLayout = connected_combobox(heightbox, config, 'upscaleMethod', text='Upscale Method:')
+        heightbox._upscaleMethodBox, heightbox._upscaleLayout = connected_combobox(heightbox, config, 'upscale_method', text='Upscale Method:')
         heightbox._layout.addLayout(heightbox._upscaleLayout)
 
         # Synchronize scale boxes with pixel size boxes
@@ -55,16 +55,13 @@ class ImageScaleModal(QDialog):
         heightbox._yMultBox.spinbox.valueChanged.connect(lambda px: set_px_on_scale_change(px, default_height, heightbox._heightBox))
 
         # Add controlnet upscale option:
-        if config.get('controlnetVersion') > 0:
-            heightbox._controlnet_checkbox = connected_checkbox(heightbox, config, 'controlnetUpscaling', text='Use ControlNet Tiles')
+        if config.get('controlnet_version') > 0:
+            heightbox._controlnet_checkbox = connected_checkbox(heightbox, config, 'controlnet_upscaling', text='Use ControlNet Tiles')
             heightbox._controlnet_ratebox = connected_spinbox(
                     heightbox,
                     config,
-                    'controlnetDownsampleRate',
-                    'controlnetDownsampleMin',
-                    'controlnetDownsampleMax',
-                    'controlnetDownsampleSteps')
-            heightbox._controlnet_ratebox.setEnabled(config.get('controlnetUpscaling'))
+                    'controlnet_downsample_rate')
+            heightbox._controlnet_ratebox.setEnabled(config.get('controlnet_upscaling'))
             heightbox._controlnet_checkbox.stateChanged.connect(lambda enabled: heightbox._controlnet_ratebox.setEnabled(enabled))
             heightbox._layout.addWidget(heightbox._controlnet_checkbox)
             heightbox._layout.addWidget(heightbox._controlnet_ratebox)
@@ -73,7 +70,7 @@ class ImageScaleModal(QDialog):
         heightbox._create_button.setText("Scale image")
         heightbox._layout.addWidget(heightbox._create_button)
         def on_create():
-            config.disconnect(heightbox._upscaleMethodBox, 'upscaleMethod')
+            config.disconnect(heightbox._upscaleMethodBox, 'upscale_method')
             heightbox._create = True
             heightbox.hide()
         heightbox._create_button.clicked.connect(on_create)
@@ -81,7 +78,7 @@ class ImageScaleModal(QDialog):
         heightbox._cancel_button = QPushButton(heightbox)
         heightbox._cancel_button.setText("Cancel")
         def on_cancel():
-            config.disconnect(heightbox._upscaleMethodBox, 'upscaleMethod')
+            config.disconnect(heightbox._upscaleMethodBox, 'upscale_method')
             heightbox._create = False
             heightbox.hide()
         heightbox._cancel_button.clicked.connect(on_cancel)

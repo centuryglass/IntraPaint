@@ -35,7 +35,7 @@ class Label(QLabel):
         if size is not None:
             self._font.setPointSize(size)
         elif config is not None:
-            font_size = config.get("fontPointSize")
+            font_size = config.get("font_point_size")
             self._font.setPointSize(font_size)
         self.set_orientation(orientation)
         self.setText(text)

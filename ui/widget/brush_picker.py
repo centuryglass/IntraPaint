@@ -46,7 +46,7 @@ class BrushPicker(QTabWidget):
             for x, y, brush in _GridIter(self._group_orders[group]):
                 brush_path = os.path.join(group_dir, brush + '.myb')
                 image_path = os.path.join(group_dir, brush + "_prev.png")
-                brush_icon = _IconButton(image_path, brush_path, False)
+                brush_icon = _IconButton(image_path, brush_path, self._config, False)
 
                 brush_icon.favorite_change.connect(self._add_favorite)
                 group_layout.addWidget(brush_icon, y, x)
@@ -58,13 +58,12 @@ class BrushPicker(QTabWidget):
             group, brush = favorite.split('/')
             brush_path = os.path.join(self._brush_dir, group, brush + '.myb')
             image_path = os.path.join(self._brush_dir, group, brush + '_prev.png')
-            brush_icon = _IconButton(image_path, brush_path, True)
+            brush_icon = _IconButton(image_path, brush_path, self._config, True)
             brush_icon.favorite_change.connect(self._remove_favorite)
             favorite_brushes.append(brush_icon)
         if len(favorite_brushes) > 0:
             self._create_tab(self._FAV_KEY, index=0)
             for x, y, brush in _GridIter(favorite_brushes):
-                print(f"add fav: {brush.saved_name()}")
                 self._layouts[self._FAV_KEY].addWidget(brush, y, x)
 
 
@@ -153,7 +152,7 @@ class BrushPicker(QTabWidget):
 class _IconButton(QWidget):
     favorite_change = pyqtSignal(QWidget)
 
-    def __init__(self, imagepath, brushpath, favorite=False):
+    def __init__(self, imagepath, brushpath, config, favorite=False):
         super().__init__()
         self._favorite = favorite
         self._brushname = os.path.basename(brushpath)[:-4]
@@ -161,6 +160,7 @@ class _IconButton(QWidget):
         self._imagepath = imagepath
         self._image_rect = None
         self._image = QPixmap(imagepath)
+        self._config = config
         inverted = QImage(imagepath)
         inverted.invertPixels(QImage.InvertRgba)
         self._image_inverted = QPixmap.fromImage(inverted)
@@ -176,7 +176,7 @@ class _IconButton(QWidget):
         return f"{group_name}/{self._brushname}"
 
     def copy(self, favorite=False):
-        return _IconButton(self._imagepath, self._brushpath, favorite=favorite)
+        return _IconButton(self._imagepath, self._brushpath, self._config, favorite=favorite)
 
     def sizeHint(self):
         return self._image.size()

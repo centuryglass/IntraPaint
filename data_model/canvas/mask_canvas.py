@@ -22,13 +22,13 @@ class MaskCanvas(PixmapCanvas):
         image: QImage or PIL Image or QPixmap or QSize or str, optional
         """
         super().__init__(config, image)
-        config.connect(self, 'maskBrushSize', self.set_brush_size)
-        self.set_brush_size(config.get('maskBrushSize'))
+        config.connect(self, 'mask_brush_size', self.set_brush_size)
+        self.set_brush_size(config.get('mask_brush_size'))
         self._outline = None
         self._drawing = False
         self._bounding_box = None
-        config.connect(self, 'inpaintFullRes', lambda v: self._handle_changes())
-        config.connect(self, 'inpaintFullResPadding', lambda v: self._handle_changes())
+        config.connect(self, 'inpaint_full_res', lambda v: self._handle_changes())
+        config.connect(self, 'inpaint_full_res_padding', lambda v: self._handle_changes())
 
         self._dither_mask = QPixmap(QSize(512, 512))
         dither_stamp = QPixmap(QSize(8, 8))
@@ -95,22 +95,22 @@ class MaskCanvas(PixmapCanvas):
     def get_masked_area(self, ignore_config = False):
         """Returns the smallest QRect containing all masked areas, plus padding.
 
-        Used for showing the actual area visible to the image model when the 'inpaintFullRes' config option is set
-        to true. The padding abount is set by the 'inpaintFullResPadding' config option, measured in pixels
+        Used for showing the actual area visible to the image model when the 'inpaint_full_res' config option is set
+        to true. The padding abount is set by the 'inpaint_full_res_padding' config option, measured in pixels
 
         Parameters
         ----------
         ignore_config : bool
-            If true, return the masked area bounds even when 'inpaintFullRes' is disabled in config.
+            If true, return the masked area bounds even when 'inpaint_full_res' is disabled in config.
         Returns
         -------
         QRect or None
            Rectangle containing all non-transparent mask canvas content plus padding, or None if the canvas is empty
-           or config.get('inpaintFullRes') is false and ignore_config is false.
+           or config.get('inpaint_full_res') is false and ignore_config is false.
         """
-        if ((not ignore_config) and (not self._config.get('inpaintFullRes'))) or self._bounding_box is None:
+        if ((not ignore_config) and (not self._config.get('inpaint_full_res'))) or self._bounding_box is None:
             return None
-        padding = self._config.get('inpaintFullResPadding')
+        padding = self._config.get('inpaint_full_res_padding')
         top = self._bounding_box.top()
         bottom = self._bounding_box.bottom()
         left = self._bounding_box.left()
@@ -196,7 +196,7 @@ class MaskCanvas(PixmapCanvas):
         self._outline.setOpacity(opacity)
 
 
-    # Outline masked areas with dotted lines, and draw the bonding rectangle used when 'inpaintFullRes' is set:
+    # Outline masked areas with dotted lines, and draw the bonding rectangle used when 'inpaint_full_res' is set:
     def _handle_changes(self):
         width = self._dither_mask.width()
         height = self._dither_mask.height()
@@ -252,7 +252,7 @@ class MaskCanvas(PixmapCanvas):
         painter.setCompositionMode(QPainter.CompositionMode_SourceIn)
         painter.drawPixmap(0, 0, self._dither_mask)
 
-        if self._config.get('inpaintFullRes'):
+        if self._config.get('inpaint_full_res'):
             masked_area = self.get_masked_area()
             if masked_area is not None:
                 painter.setCompositionMode(QPainter.CompositionMode_SourceOver)

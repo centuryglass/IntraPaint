@@ -34,11 +34,11 @@ class SampleSelector(QWidget):
         self._mask_pixmap = QPixmap.fromImage(pil_image_to_qimage(mask_image))
         self._source_image_bounds = QRect(0, 0, 0, 0)
         self._mask_image_bounds = QRect(0, 0, 0, 0)
-        self._include_original = config.get('addOriginalToSamples')
+        self._include_original = config.get('show_original_in_options')
         self._source_option_bounds = None
         self._zoom_image_bounds = None
         
-        self._expected_count = config.get('batchCount') * config.get('batchSize')
+        self._expected_count = config.get('batch_count') * config.get('batch_size')
         self._image_size = QSize(source_image.width, source_image.height)
         self._zoom_mode = False
         self._zoom_index = 0

@@ -13,9 +13,9 @@ class ParamSlider(QWidget):
             label_text,
             config,
             key,
-            min_key,
-            max_key,
-            step_key=None,
+            min_val=None,
+            max_val=None,
+            step_val=None,
             inner_key=None,
             orientation=Qt.Orientation.Horizontal,
             vertical_text_pt=None):
@@ -38,13 +38,13 @@ class ParamSlider(QWidget):
         self._vertical_slider.valueChanged.connect(lambda newValue: self._on_slider_change(newValue))
 
         font = QFont()
-        font.setPointSize(config.get("fontPointSize"))
+        font.setPointSize(config.get("font_point_size"))
         self._spinboxMeasurements = QFontMetrics(font).boundingRect("9999").size() * 1.5
         
         number_text = str(config.get(key, inner_key=inner_key))
         self._stepbox = None
         if key is not None:
-            self.connect_key(key, min_key, max_key, step_key, inner_key)
+            self.connect_key(key, min_val, max_val, step_val, inner_key)
         self.set_orientation(orientation)
 
     def disconnect_config(self):
@@ -65,22 +65,25 @@ class ParamSlider(QWidget):
             self._key = None
             self._inner_key = None
 
-    def connect_key(self, key, min_key, max_key, step_key, inner_key=None):
+    def connect_key(self, key, min_val=None, max_val=None, step_val=None, inner_key=None):
         if self._key == key and self._inner_key == key:
             return
         self.disconnect_config()
         self._key = key
         self._inner_key = inner_key
+        if inner_key is None:
+            self._label.setText(self._config.get_label(key))
+            self.setToolTip(self._config.get_tooltip(key))
         initial_value = self._config.get(key, inner_key)
         self._float_mode = (type(initial_value) is float)
-        min_val = self._config.get(min_key) if isinstance(min_key, str) else min_key
-        max_val = self._config.get(max_key) if isinstance(max_key, str) else max_key
+        min_val = self._config.get(key, inner_key="min") if min_val is None else min_val
+        max_val = self._config.get(key, inner_key="max") if max_val is None else max_val
         
         full_range = max_val - min_val
         tick_interval = 1 if (full_range < 20) else (5 if full_range < 50 else 10)
         if self._float_mode:
             tick_interval *= 100
-        step = 1 if step_key is None else self._config.get(step_key) if isinstance(step_key, str) else step_key
+        step = self._config.get(key, inner_key="step") if step_val is None else step_val
         for slider in (self._horizontal_slider, self._vertical_slider):
             slider.setMinimum(int(min_val * 100) if self._float_mode else min_val)
             slider.setMaximum(int(max_val * 100) if self._float_mode else max_val)
@@ -96,7 +99,8 @@ class ParamSlider(QWidget):
             if value != self._vertical_slider.value():
                 self._vertical_slider.setValue(value)
         self._config.connect(self, key, onConfigChange, inner_key)
-        self._stepbox = connected_spinbox(self, self._config, key, min_key, max_key, step_key, inner_key)
+        self._stepbox = connected_spinbox(self, self._config, self._key, min_val=min_val, max_val=max_val,
+            step_val=step, dict_key=inner_key)
         self.resizeEvent(None)
         self._stepbox.show()
 

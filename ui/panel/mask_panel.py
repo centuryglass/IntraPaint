@@ -59,7 +59,7 @@ class MaskPanel(QWidget):
         self._edited_image = edited_image
 
 
-        self._brush_size_slider = ParamSlider(self, "Brush size", config, "maskBrushSize", "minBrushSize", "maxBrushSize")
+        self._brush_size_slider = ParamSlider(self, "Brush size", config, "mask_brush_size")
         def update_brush_size(mode, size):
             if mode == DRAW_MODES.MASK:
                 self._mask_brush_size = size
@@ -69,8 +69,8 @@ class MaskPanel(QWidget):
                 sketch_canvas.set_brush_size(size)
             self._update_brush_cursor()
 
-        config.connect(self, "maskBrushSize", lambda s: update_brush_size(DRAW_MODES.MASK, s))
-        config.connect(self, "sketchBrushSize", lambda s: update_brush_size(DRAW_MODES.SKETCH, s))
+        config.connect(self, "mask_brush_size", lambda s: update_brush_size(DRAW_MODES.MASK, s))
+        config.connect(self, "sketch_brush_size", lambda s: update_brush_size(DRAW_MODES.SKETCH, s))
         edited_image.selection_changed.connect(lambda: self.resizeEvent(None))
 
         self._tool_toggle = DualToggle(self, TOOL_MODES.PEN, TOOL_MODES.ERASER, config)
@@ -271,7 +271,7 @@ class MaskPanel(QWidget):
 
     def _setup_correct_layout(self):
         widget_aspect_ratio = self.width() / self.height()
-        edit_size = self._config.get("editSize")
+        edit_size = self._config.get("edit_size")
         edit_aspect_ratio = edit_size.width() / edit_size.height()
         if self._layout_type is None or abs(widget_aspect_ratio - edit_aspect_ratio) > 0.2:
             if widget_aspect_ratio > edit_aspect_ratio:
@@ -288,17 +288,17 @@ class MaskPanel(QWidget):
         """Enable tablet controls on first tablet event"""
         if not hasattr(self, '_pressure_size_checkbox'):
             config = self._config
-            self._pressure_size_checkbox = connected_checkbox(self, config, 'pressureSize', 'size',
+            self._pressure_size_checkbox = connected_checkbox(self, config, 'pressure_size', 'size',
                     'Tablet pen pressure affects line width')
             self._pressure_size_checkbox.setIcon(QIcon(QPixmap('./resources/pressureSize.png')))
-            config.connect(self, 'pressureSize', lambda enabled: self._mask_creator.set_pressure_size_mode(enabled))
-            self._mask_creator.set_pressure_size_mode(config.get('pressureSize'))
+            config.connect(self, 'pressure_size', lambda enabled: self._mask_creator.set_pressure_size_mode(enabled))
+            self._mask_creator.set_pressure_size_mode(config.get('pressure_size'))
 
-            self._pressure_opacity_checkbox = connected_checkbox(self, config, 'pressureOpacity', 'opacity',
+            self._pressure_opacity_checkbox = connected_checkbox(self, config, 'pressure_opacity', 'opacity',
                     'Tablet pen pressure affects color opacity (sketch mode only)')
-            config.connect(self, 'pressureOpacity', lambda enabled: self._mask_creator.set_pressure_opacity_mode(enabled))
+            config.connect(self, 'pressure_opacity', lambda enabled: self._mask_creator.set_pressure_opacity_mode(enabled))
             self._pressure_opacity_checkbox.setIcon(QIcon(QPixmap('./resources/pressureOpacity.png')))
-            self._mask_creator.set_pressure_opacity_mode(config.get('pressureOpacity'))
+            self._mask_creator.set_pressure_opacity_mode(config.get('pressure_opacity'))
             # Re-apply visibility and layout based on current mode:
             self.set_draw_mode(self._draw_mode, False)
 
@@ -324,8 +324,7 @@ class MaskPanel(QWidget):
             self._pressure_size_checkbox.setVisible(True)
             self._pressure_opacity_checkbox.setVisible(mode == DRAW_MODES.SKETCH)
 
-        self._brush_size_slider.connect_key("maskBrushSize" if mode == DRAW_MODES.MASK else "sketchBrushSize",
-                "minBrushSize", "maxBrushSize", None)
+        self._brush_size_slider.connect_key("mask_brush_size" if mode == DRAW_MODES.MASK else "sketch_brush_size")
         self._layout_type = None
         self.resizeEvent(None)
         self.update()
@@ -335,10 +334,10 @@ class MaskPanel(QWidget):
             self.set_draw_mode(DRAW_MODES.MASK if self._draw_mode == DRAW_MODES.SKETCH else DRAW_MODES.SKETCH)
 
     def get_brush_size(self):
-        return self._config.get("maskBrushSize" if self._draw_mode == DRAW_MODES.MASK else "sketchBrushSize")
+        return self._config.get("mask_brush_size" if self._draw_mode == DRAW_MODES.MASK else "sketch_brush_size")
 
     def set_brush_size(self, size):
-        self._config.set("maskBrushSize" if self._draw_mode == DRAW_MODES.MASK else "sketchBrushSize", size)
+        self._config.set("mask_brush_size" if self._draw_mode == DRAW_MODES.MASK else "sketch_brush_size", size)
 
     def paintEvent(self, event):
         super().paintEvent(event)
@@ -391,7 +390,7 @@ class MaskPanel(QWidget):
     def _update_brush_cursor(self):
         if not hasattr(self, '_mask_creator'):
             return
-        brush_size = self._config.get("maskBrushSize" if self._draw_mode == DRAW_MODES.MASK else "sketchBrushSize")
+        brush_size = self._config.get("mask_brush_size" if self._draw_mode == DRAW_MODES.MASK else "sketch_brush_size")
         scale = max(self._mask_creator.get_image_display_size().width(), 1) / max(self._mask_canvas.width(), 1)
         scaled_size = max(int(brush_size * scale), 9)
         if scaled_size == self._last_cursor_size:

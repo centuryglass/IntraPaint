@@ -1,5 +1,5 @@
 """
-Provides an image inpainting function using a local GLID3-XL instance.
+Provides an image inpainting function using a local GLID-3-XL instance.
 """
 import torch
 from torchvision.transforms import functional as TF

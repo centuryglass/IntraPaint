@@ -1,5 +1,5 @@
 """
-Loads the ML models that make up GLID3-XL.
+Loads the ML models that make up GLID-3-XL.
 """
 import gc
 import torch

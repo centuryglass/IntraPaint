@@ -31,17 +31,17 @@ class BrushlibCanvas(Canvas):
         """
         super().__init__(config, image)
         self._visible = True
-        config.connect(self, 'sketchBrushSize', self.set_brush_size)
-        self.set_brush_size(config.get('sketchBrushSize'))
-        self._size = config.get('editSize')
-        brushlib.set_surface_size(config.get('editSize'))
+        config.connect(self, 'sketch_brush_size', self.set_brush_size)
+        self.set_brush_size(config.get('sketch_brush_size'))
+        self._size = config.get('edit_size')
+        brushlib.set_surface_size(config.get('edit_size'))
         self._drawing = False
         self._scene = None
         self._scale = 1.0
         self._has_sketch = False
         self._saved_brush_size = None
         self._saved_image = None
-        brushlib.load_brush(config.get('brush_default'))
+        brushlib.load_brush(config.get('mypaint_brush'))
 
 
     def has_sketch(self):

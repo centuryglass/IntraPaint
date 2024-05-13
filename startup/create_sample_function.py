@@ -1,5 +1,5 @@
 """
-Provides functions used to start up a local GLID3-XL instance.
+Provides functions used to start up a local GLID-3-XL instance.
 """
 
 import torch

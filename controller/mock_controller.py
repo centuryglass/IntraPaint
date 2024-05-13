@@ -16,6 +16,6 @@ class MockController(BaseInpaintController):
             value = self._config.get(option_name)
             print(f"\t{option_name}: {value}")
         with Image.open(open('mask.png', 'rb')).convert('RGB') as test_sample:
-            for y in range(0, self._config.get('batchCount')):
-                for x in range(0, self._config.get('batchSize')):
+            for y in range(0, self._config.get('batch_count')):
+                for x in range(0, self._config.get('batch_size')):
                     load_image(test_sample, y, x)
