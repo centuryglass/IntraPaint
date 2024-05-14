@@ -73,8 +73,8 @@ class MaskPanel(QWidget):
         config.connect(self, "sketch_brush_size", lambda s: update_brush_size(DRAW_MODES.SKETCH, s))
         edited_image.selection_changed.connect(lambda: self.resizeEvent(None))
 
-        self._tool_toggle = DualToggle(self, TOOL_MODES.PEN, TOOL_MODES.ERASER, config)
-        self._tool_toggle.setIcons('./resources/pen.png', 'resources/eraser.png')
+        self._tool_toggle = DualToggle(self, [TOOL_MODES.PEN, TOOL_MODES.ERASER], config)
+        self._tool_toggle.set_icons('./resources/pen.png', 'resources/eraser.png')
         self._tool_toggle.set_selected(TOOL_MODES.PEN)
         def set_drawing_tool(selection):
             self._mask_creator.set_use_eraser(selection == TOOL_MODES.ERASER)
@@ -95,9 +95,9 @@ class MaskPanel(QWidget):
             self._mask_creator.fill()
         self._fill_mask_button.clicked.connect(fill_mask)
 
-        self._mask_sketch_toggle = DualToggle(self, DRAW_MODES.MASK, DRAW_MODES.SKETCH, config)
-        self._mask_sketch_toggle.setIcons('./resources/mask.png', 'resources/sketch.png')
-        self._mask_sketch_toggle.setToolTips("Draw over the area to be inpainted", "Add details to help guide inpainting")
+        self._mask_sketch_toggle = DualToggle(self, [DRAW_MODES.MASK, DRAW_MODES.SKETCH], config)
+        self._mask_sketch_toggle.set_icons('./resources/mask.png', 'resources/sketch.png')
+        self._mask_sketch_toggle.set_tooltips("Draw over the area to be inpainted", "Add details to help guide inpainting")
         self._mask_sketch_toggle.value_changed.connect(lambda m: self.set_draw_mode(m if m != "" else None))
 
 

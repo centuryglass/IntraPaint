@@ -3,11 +3,13 @@ Animated widget used to indicate a loading state.
 """
 from PyQt5.QtWidgets import QWidget
 from PyQt5.QtGui import QPainter, QPen, QBrush, QColor
-from PyQt5.QtCore import Qt, QMargins, QRect, QPointF, pyqtProperty, QPropertyAnimation
+from PyQt5.QtCore import Qt, QRect, QPointF, pyqtProperty, QPropertyAnimation
 
 class LoadingWidget(QWidget):
     """Show an animated loading indicator, with an optional message."""
+
     def __init__(self, parent=None, message=""):
+        """Initializes the widget, optionally with a parent widget and/or initial loading message."""
         super().__init__(parent=parent)
         self._message = message
         self._rotation = 0
@@ -17,25 +19,38 @@ class LoadingWidget(QWidget):
         self._anim.setEndValue(359)
         self._anim.setDuration(2000)
 
+
     def set_message(self, message):
+        """Sets the loading message displayed."""
         self._message = message
         self.update()
 
+
     @pyqtProperty(int)
     def rotation(self):
+        """Returns the current animation rotation in degrees."""
         return self._rotation
+
+
     @rotation.setter
     def rotation(self, rotation):
+        """Sets the current animation rotation in degrees."""
         self._rotation = rotation % 360
         self.update()
 
-    def showEvent(self, event):
+
+    def showEvent(self, unused_event):
+        """Starts the animation when the widget is shown."""
         self._anim.start()
 
-    def hideEvent(self, event):
+
+    def hideEvent(self, unused_event):
+        """Stops the animation when the widget is hidden."""
         self._anim.stop()
 
-    def paintEvent(self, event):
+
+    def paintEvent(self, unused_event):
+        """Draws a circle with optional message text and an animated indicator."""
         painter = QPainter(self)
         ellipse_dim = int(min(self.width(), self.height()) * 0.8)
         paint_bounds = QRect((self.width() // 2) - (ellipse_dim // 2),

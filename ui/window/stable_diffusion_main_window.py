@@ -7,6 +7,7 @@ import sys
 
 from ui.config_control_setup import *
 from ui.widget.bordered_widget import BorderedWidget
+from ui.widget.big_int_spinbox import BigIntSpinbox
 from ui.widget.collapsible_box import CollapsibleBox
 from ui.widget.param_slider import ParamSlider
 from ui.window.main_window import MainWindow
@@ -191,7 +192,7 @@ class StableDiffusionMainWindow(MainWindow):
         inpaint_checkbox = connected_checkbox(option_list, self._config, 'inpaint_full_res')
         inpaint_line.addWidget(inpaint_checkbox, stretch = 1)
 
-        seed_input = connected_spinbox(option_list, self._config, 'seed', min_val=-1, max_val=99999999999999999999,
+        seed_input = connected_spinbox(option_list, self._config, 'seed', min_val=-1, max_val=BigIntSpinbox.MAXIMUM,
                 step_val=1)
         add_option_line("Seed:", seed_input, None)
 

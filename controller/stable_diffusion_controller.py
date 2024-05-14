@@ -254,7 +254,9 @@ class StableDiffusionController(BaseInpaintController):
         # load various option lists:
         for config_key, loading_fn in option_loading_params:
             try:
-                self._config.update_options(config_key, loading_fn())
+                options = loading_fn()
+                if options is not None and len(options) > 0:
+                    self._config.update_options(config_key, options)
             except (KeyError, RuntimeError) as err:
                 print(f"error loading {config_key} from {self._server_url}: {err}")
 

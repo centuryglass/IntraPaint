@@ -13,7 +13,6 @@ from ui.config_control_setup import connected_textedit
 from ui.util.contrast_color import contrast_color
 from ui.widget.param_slider import ParamSlider
 from ui.widget.collapsible_box import CollapsibleBox
-from ui.widget.dual_toggle import DualToggle
 
 class ImagePanel(QWidget):
     """
@@ -32,6 +31,7 @@ class ImagePanel(QWidget):
         self._slider_count = 0
         self._minimized = False
         self._border_size = 4
+        self._image_box_layout = None
 
         self._layout = QHBoxLayout()
         self.setLayout(self._layout)
@@ -42,17 +42,12 @@ class ImagePanel(QWidget):
                 orientation=Qt.Orientation.Horizontal)
         self._image_box.toggled().connect(lambda t: self.image_toggled.emit(t))
         self._image_box.set_expanded_size_policy(QSizePolicy.Ignored)
-        self._image_box_layout = QVBoxLayout()
-        self._image_box.set_content_layout(self._image_box_layout)
-        self._layout.addWidget(self._image_box, stretch=255)
 
 
         self._image_viewer = ImageViewer(edited_image)
-        self._image_box_layout.addWidget(self._image_viewer, stretch=255)
 
-        controlbar_layout = QHBoxLayout()
-        self._image_box_layout.addLayout(controlbar_layout)
-
+        self._controlbar = QWidget()
+        controlbar_layout = QHBoxLayout(self._controlbar)
         controlbar_layout.addWidget(QLabel(self, text="Image Path:"))
         self._file_text_box = connected_textedit(self, config, "last_file_path") 
         controlbar_layout.addWidget(self._file_text_box, stretch=255)
@@ -130,20 +125,23 @@ class ImagePanel(QWidget):
         edited_image.selection_changed.connect(set_coords)
         self.setLayout(self._layout)
         self.setSizePolicy(QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding))
+        self._init_image_box_layout()
         self.show_sliders(False)
 
     def set_orientation(self, orientation):
+        prev_image_box = self._image_box
         if self._image_box is not None:
             self._layout.removeWidget(self._image_box)
-            self._image_box.setParent(None)
-            self._image_box = None
         self._image_box = CollapsibleBox("Full Image",
                 parent=self,
                 scrolling=False,
                 orientation=orientation)
+        self._init_image_box_layout()
         self._image_box.toggled().connect(lambda t: self.image_toggled.emit(t))
-        self._image_box.set_content_layout(self._image_box_layout)
         self._layout.insertWidget(self._slider_count, self._image_box)
+        if prev_image_box is not None:
+            prev_image_box.setParent(None)
+            prev_image_box = None
 
     def add_slider(self, slider):
         assert(isinstance(slider, ParamSlider) or isinstance(slider, QSlider))
@@ -192,3 +190,11 @@ class ImagePanel(QWidget):
         painter.setPen(QPen(contrast_color(self), self._border_size/2, Qt.SolidLine,
                     Qt.RoundCap, Qt.RoundJoin))
         painter.drawRect(1, 1, self.width() - 2, self.height() - 2)
+
+    def _init_image_box_layout(self):
+        self._image_box_layout = QVBoxLayout()
+        self._image_box_layout.addWidget(self._image_viewer, stretch=255)
+        self._image_box_layout.addWidget(self._controlbar)
+        self._image_box.set_content_layout(self._image_box_layout)
+        self._layout.addWidget(self._image_box, stretch=255)
+        self._image_box.set_content_layout(self._image_box_layout)

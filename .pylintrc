@@ -76,7 +76,7 @@ ignored-modules=
 
 # Python code to execute, usually for sys.path manipulation such as
 # pygtk.require().
-#init-hook=
+init-hook='import sys; sys.path.append("/home/anthony/Workspace/ML/IntraPaint")'
 
 # Use multiple processes to speed up Pylint. Specifying 0 will auto-detect the
 # number of processors available to use, and will cap the count on Windows to
@@ -199,6 +199,24 @@ good-names=i,
            k,
            ex,
            Run,
+           mousePressEvent,
+           mouseMoveEvent,
+           mouseReleaseEvent,
+           paintEvent,
+           resizeEvent,
+           showEvent,
+           hideEvent,
+           sizeHint,
+           setValue,
+           setSingleStep,
+           setText,
+           setIcon,
+           stepBy,
+           stepEnabled,
+           singleStep,
+           setMinimum,
+           setMaximum,
+           setRange,
            _
 
 # Good variable names regexes, separated by a comma. If names match any regex,
@@ -440,7 +458,8 @@ disable=raw-checker-failed,
         use-symbolic-message-instead,
         use-implicit-booleaness-not-comparison-to-string,
         use-implicit-booleaness-not-comparison-to-zero,
-        no-name-in-module
+        no-name-in-module,
+        too-few-public-methods
 
 # Enable the message, report, category or checker with the given id(s). You can
 # either give multiple identifier separated by comma (,) or put this option
@@ -556,7 +575,7 @@ spelling-store-unknown-words=no
 
 # This flag controls whether inconsistent-quotes generates a warning when the
 # character used as a quote delimiter is used inconsistently within a module.
-check-quote-consistency=no
+check-quote-consistency=yes
 
 # This flag controls whether the implicit-str-concat should generate a warning
 # on implicit string concatenation in sequences defined over several lines.
@@ -636,7 +655,7 @@ callbacks=cb_,
 
 # A regular expression matching the name of dummy variables (i.e. expected to
 # not be used).
-dummy-variables-rgx=_+$|(_[a-zA-Z0-9_]*[a-zA-Z0-9]+?$)|dummy|^ignored_|^unused_
+dummy-variables-rgx=_+$|(_[a-zA-Z0-9_]*[a-zA-Z0-9]+?$)|dummy|^ignored_|^unused_|event
 
 # Argument names that match this expression will be ignored.
 ignored-argument-names=_.*|^ignored_|^unused_

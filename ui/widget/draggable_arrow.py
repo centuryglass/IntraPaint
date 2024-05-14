@@ -8,43 +8,52 @@ from ui.util.get_scaled_placement import get_scaled_placement
 from ui.util.contrast_color import contrast_color
 
 class DraggableArrow(QWidget):
+    """DraggableArrow is a widget that can be dragged along an axis to resize UI elements."""
+
     dragged = pyqtSignal(QPoint)
 
     def __init__(self):
         super().__init__()
         self._dragging = False
-        self.resizeEvent(None)
-        self._mode = 'horizontal'
+        self._mode = Qt.Orientation.Horizontal
         self._hidden = False
+        self._center_box = QRect(0, 0, 0, 0)
+        self.resizeEvent(None)
 
     def set_horizontal_mode(self):
-        if self._mode != 'horizontal':
-            self._mode = 'horizontal'
+        """Puts the widget in horizontal mode, where it can be dragged left and right."""
+        if self._mode != Qt.Orientation.Horizontal:
+            self._mode = Qt.Orientation.Horizontal
             self.update()
 
     def set_vertical_mode(self):
-        if self._mode != 'vertical':
-            self._mode = 'vertical'
+        """Puts the widget in vertical mode, where it can be dragged up and down."""
+        if self._mode != Qt.Orientation.Vertical:
+            self._mode = Qt.Orientation.Vertical
             self.update()
 
     def set_hidden(self, hidden):
+        """Sets whether the widget should be shown or hidden."""
         if self._hidden != hidden:
             self._hidden = hidden
             self.update()
 
-    def resizeEvent(self, event):
-        minSize = min(self.width(), self.height())
-        self._centerBox = get_scaled_placement(QRect(0, 0, self.width(), self.height()), QSize(minSize, minSize // 2))
+    def resizeEvent(self, unused_event):
+        """Recalculate arrow placement when widget bounds change."""
+        min_size = min(self.width(), self.height())
+        self._center_box = get_scaled_placement(QRect(0, 0, self.width(), self.height()),
+                QSize(min_size, min_size // 2))
 
-    def paintEvent(self, event):
+    def paintEvent(self, unused_event):
+        """Draws the arrow in the chosen orientation."""
         if self._hidden:
             return
         painter = QPainter(self)
         color = Qt.green if self._dragging else contrast_color(self)
         size = 4 if self._dragging else 2
         painter.setPen(QPen(color, size, Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin))
-        center_box = self._centerBox
-        if self._mode == 'horizontal':
+        center_box = self._center_box
+        if self._mode == Qt.Orientation.Horizontal:
             y_mid = center_box.y() + (center_box.height() // 2)
             mid_left = QPoint(center_box.x(), y_mid)
             mid_right = QPoint(center_box.right(), y_mid)
@@ -67,17 +76,20 @@ class DraggableArrow(QWidget):
             painter.drawLine(mid_bottom, mid_bottom + QPoint(arrow_size, -arrow_size))
             painter.drawLine(mid_bottom, mid_bottom + QPoint(-arrow_size, -arrow_size))
 
-    def mousePressEvent(self, event):
+    def mousePressEvent(self, unused_event):
+        """Starts dragging the widget when clicked."""
         if self._hidden:
             return
         self._dragging = True
         self.update()
 
     def mouseMoveEvent(self, event):
+        """Emits the drag position when the mouse moves and the widget is being dragged."""
         if event.buttons() and self._dragging:
             self.dragged.emit(event.pos() + self.geometry().topLeft())
 
-    def mouseReleaseEvent(self, event):
+    def mouseReleaseEvent(self, unused_event):
+        """Exits the dragging state when the mouse is released. """
         if self._dragging:
             self._dragging= False
             self.update()
