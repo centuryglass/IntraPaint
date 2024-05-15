@@ -24,8 +24,8 @@ def create_sample_function(
         normalize,
         image=None,
         mask=None,
-        prompt="",
-        negative="",
+        prompt='',
+        negative='',
         guidance_scale=5.0,
         batch_size=1,
         width=256,
@@ -120,7 +120,7 @@ def create_sample_function(
             mask_image = mask_image.resize((width//8,height//8), Image.LANCZOS)
             mask = transforms.ToTensor()(mask_image).unsqueeze(0).to(device)
         else:
-            raise ValueError(f"Expected PIL image or image path for mask, found {mask}")
+            raise ValueError(f'Expected PIL image or image path for mask, found {mask}')
         mask1 = mask > 0.5
         mask1 = mask1.float()
         input_image *= mask1
@@ -131,10 +131,10 @@ def create_sample_function(
         image_embed = torch.zeros(batch_size*2, 4, height//8, width//8, device=device)
 
     model_kwargs = {
-        "context": torch.cat([text_emb, text_blank], dim=0).float(),
-        "clip_embed": torch.cat([text_emb_clip, text_emb_clip_blank], dim=0).float() \
+        'context': torch.cat([text_emb, text_blank], dim=0).float(),
+        'clip_embed': torch.cat([text_emb_clip, text_emb_clip_blank], dim=0).float() \
             if model_params['clip_embed_dim'] else None,
-        "image_embed": image_embed
+        'image_embed': image_embed
     }
 
     # Create a classifier-free guidance sampling function
@@ -148,7 +148,7 @@ def create_sample_function(
         eps = torch.cat([half_eps, half_eps], dim=0)
         return torch.cat([eps, rest], dim=1)
 
-    def cond_fn(x, t, context=None, clip_embed=None, image_embed=None):
+    def cond_fn(x, unused_t, context=None, clip_embed=None, image_embed=None):
         with torch.enable_grad():
             cur_t = diffusion.num_timesteps - 1
             x = x[:batch_size].detach().requires_grad_()

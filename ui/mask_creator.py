@@ -1,16 +1,13 @@
 """
 Combines various data_model/canvas modules to represent and control an edited image section.
 """
-from PyQt5.QtGui import QPainter, QPen, QImage, QPixmap, QColor, QTabletEvent, QTransform
-from PyQt5.QtCore import Qt, QPoint, QLine, QSize, QRect, QRectF, QBuffer, QEvent, QMargins
-from PyQt5.QtWidgets import QGraphicsView, QGraphicsScene, QGraphicsPixmapItem, QGraphicsRectItem
-import PyQt5.QtGui as QtGui
-from PIL import Image
+from PyQt5.QtGui import QPen, QPixmap, QColor, QTabletEvent, QTransform
+from PyQt5.QtCore import Qt, QPoint, QLine, QSize, QRect, QRectF, QEvent, QMargins
+from PyQt5.QtWidgets import QGraphicsView, QGraphicsScene
 
 from ui.util.get_scaled_placement import get_scaled_placement
-from ui.util.equal_margins import get_equal_margins
 from ui.util.contrast_color import contrast_color
-from ui.image_utils import pil_image_to_qimage, qimage_to_pil_image
+from ui.image_utils import pil_image_to_qimage
 
 class MaskCreator(QGraphicsView):
     """
@@ -35,6 +32,8 @@ class MaskCreator(QGraphicsView):
         self._pressure_size = False
         self._pressure_opacity = False
         self._tablet_eraser = False
+        self._image_section = None
+        self._image_pixmap = None
         selection_size = self._mask_canvas.size()
         self._image_rect = get_scaled_placement(QRect(QPoint(0, 0), self.size()), selection_size,
                 self._border_size())
@@ -69,37 +68,47 @@ class MaskCreator(QGraphicsView):
         edited_image.selection_changed.connect(update_image)
         update_image()
 
+
     def set_pressure_size_mode(self, use_pressure_size):
+        """Set whether tablet pen pressure affects line width."""
         self._pressure_size = use_pressure_size
 
     def set_pressure_opacity_mode(self, use_pressure_opacity):
+        """Set whether tablet pen pressure affects line opacity."""
         self._pressure_opacity = use_pressure_opacity
 
     def _get_sketch_opacity(self):
         return 1.0 if (not self._pressure_opacity or self._pen_pressure is None) else min(1, self._pen_pressure * 1.25)
 
     def set_sketch_mode(self, sketch_mode):
+        """Sets whether the sketch canvas is used instead of the mask canvas."""
         self._sketch_mode = sketch_mode
         self._mask_canvas.setOpacity(0.4 if sketch_mode else 0.6)
 
     def set_eyedropper_mode(self, eyedropper_mode):
+        """Sets whether left-clicking should capture image colors instead of drawing."""
         self._eyedropper_mode = eyedropper_mode
 
     def set_line_mode(self, line_mode):
+        """Sets whether clicking on the canvas should draw a line from the last clicked point."""
         self._line_mode = line_mode
         if line_mode:
             self._drawing = False
 
     def get_sketch_color(self):
+        """Returns the current sketch canvas brush color."""
         return self._sketch_color
 
     def set_sketch_color(self, sketch_color):
+        """Sets the current sketch canvas brush color."""
         self._sketch_color = sketch_color
 
     def set_use_eraser(self, use_eraser):
+        """Sets if left-clicking should erase from the active canvas instead of drawing."""
         self._use_eraser = use_eraser
 
     def clear(self):
+        """Clears image content in the active canvas."""
         if self._sketch_mode:
             if self._sketch_canvas.enabled():
                 self._sketch_canvas.clear()
@@ -109,18 +118,21 @@ class MaskCreator(QGraphicsView):
         self.update()
 
     def undo(self):
+        """Reverses the last drawing operation done in the active canvas."""
         canvas = self._sketch_canvas if self._sketch_mode else self._mask_canvas
         if canvas.enabled():
             canvas.undo()
         self.update()
 
     def redo(self):
+        """Restores the last drawing operation in the active canvas removed by undo."""
         canvas = self._sketch_canvas if self._sketch_mode else self._mask_canvas
         if canvas.enabled():
             canvas.redo()
         self.update()
 
     def fill(self):
+        """Fills the active canvas."""
         if self._sketch_mode:
             if self._sketch_canvas.enabled():
                 self._sketch_canvas.fill(self._sketch_color)
@@ -130,11 +142,12 @@ class MaskCreator(QGraphicsView):
         self.update()
 
     def load_image(self, pil_image):
-        selectionSize = self._mask_canvas.size()
-        selectionRectF = QRectF(0.0, 0.0, float(selectionSize.width()), float(selectionSize.height()))
-        self._scene.setSceneRect(selectionRectF)
-        self._imageSection = pil_image_to_qimage(pil_image)
-        self._image_pixmap = QPixmap.fromImage(self._imageSection)
+        """Loads a new image section behind the canvas."""
+        selection_size = self._mask_canvas.size()
+        selection_rect_f = QRectF(0.0, 0.0, float(selection_size.width()), float(selection_size.height()))
+        self._scene.setSceneRect(selection_rect_f)
+        self._image_section = pil_image_to_qimage(pil_image)
+        self._image_pixmap = QPixmap.fromImage(self._image_section)
         self.resizeEvent(None)
         self.resetCachedContent()
         self.update()
@@ -146,20 +159,26 @@ class MaskCreator(QGraphicsView):
 
 
     def get_color_at_point(self, point):
+        """Returns the color of the image and sketch canvas at a given point.
+
+        If the point is outside of the widget bounds, QColor(0, 0, 0) is returned instead.
+        """
         sketch_color = QColor(0, 0, 0, 0)
         image_color = QColor(0, 0, 0, 0)
-        if self._sketch_canvas._has_sketch:
+        if self._sketch_canvas.has_sketch():
             sketch_color = self._sketch_canvas.get_color_at_point(point)
-        image_color = self._imageSection.pixelColor(point)
-        def getComponent(sketchComp, imageComp):
-            return int((sketchComp * sketch_color.alphaF()) + (imageComp * image_color.alphaF() * (1.0 - sketch_color.alphaF())))
-        red = getComponent(sketch_color.red(), image_color.red())
-        green = getComponent(sketch_color.green(), image_color.green())
-        blue = getComponent(sketch_color.blue(), image_color.blue())
+        image_color = self._image_section.pixelColor(point)
+        def get_component(sketch_component, image_component):
+            return int((sketch_component * sketch_color.alphaF()) + (image_component * image_color.alphaF()
+                        * (1.0 - sketch_color.alphaF())))
+        red = get_component(sketch_color.red(), image_color.red())
+        green = get_component(sketch_color.green(), image_color.green())
+        blue = get_component(sketch_color.blue(), image_color.blue())
         combined = QColor(red, green, blue)
         return combined
 
     def mousePressEvent(self, event):
+        """Start drawing, erasing, or color sampling when clicking if an image is loaded."""
         if not self._edited_image.has_image():
             return
         if event.button() == Qt.LeftButton or event.button() == Qt.RightButton:
@@ -174,9 +193,9 @@ class MaskCreator(QGraphicsView):
                 color = QColor(self._sketch_color if self._sketch_mode else Qt.red)
                 if self._sketch_mode and self._pressure_opacity:
                     color.setAlphaF(self._get_sketch_opacity())
-                size_multiplier = self._pen_pressure if (self._pressure_size and self._pen_pressure is not None) else None
+                size_multiplier = self._pen_pressure if (self._pressure_size and self._pen_pressure is not None) \
+                                  else None
                 if self._line_mode:
-                    #canvas.start_stroke()
                     new_point = self._widget_to_image_coords(event.pos())
                     line = QLine(self._last_point, new_point)
                     self._last_point = new_point
@@ -201,7 +220,9 @@ class MaskCreator(QGraphicsView):
                 self.update()
 
     def mouseMoveEvent(self, event):
-        if (Qt.LeftButton == event.buttons() or Qt.RightButton == event.buttons()) and self._drawing and not self._eyedropper_mode:
+        """Continue any active drawing when the mouse is moved with a button held down."""
+        if (Qt.LeftButton == event.buttons() or Qt.RightButton == event.buttons()) and self._drawing \
+                           and not self._eyedropper_mode:
             size_override = 1 if Qt.RightButton == event.buttons() else None
             canvas = self._sketch_canvas if self._sketch_mode else self._mask_canvas
             color = QColor(self._sketch_color if self._sketch_mode else Qt.red)
@@ -218,16 +239,18 @@ class MaskCreator(QGraphicsView):
             self.update()
 
     def tabletEvent(self, tabletEvent):
+        """Update pen pressure and eraser status when a drawing tablet event is triggered."""
         if tabletEvent.type() == QEvent.TabletRelease:
             self._pen_pressure = None
             self._tablet_eraser = False
         elif tabletEvent.type() == QEvent.TabletPress:
-            self._tablet_eraser = (tabletEvent.pointerType() == QTabletEvent.PointerType.Eraser)
+            self._tablet_eraser = tabletEvent.pointerType() == QTabletEvent.PointerType.Eraser
             self._pen_pressure = tabletEvent.pressure()
         else:
             self._pen_pressure = tabletEvent.pressure()
 
     def mouseReleaseEvent(self, event):
+        """Finishes any drawing operations when the mouse button is released."""
         if (event.button() == Qt.LeftButton or event.button() == Qt.RightButton) and self._drawing:
             self._drawing = False
             self._pen_pressure = None
@@ -239,6 +262,7 @@ class MaskCreator(QGraphicsView):
 
 
     def drawBackground(self, painter, rect):
+        """Renders the image behind the sketch and mask canvases."""
         x_scale = self._image_rect.width() / self.size().width()
         y_scale = self._image_rect.height() / self.size().height()
         image_rect = QRectF(0, 0, rect.width() * x_scale, rect.height() * y_scale).toAlignedRect()
@@ -249,7 +273,9 @@ class MaskCreator(QGraphicsView):
         painter.setPen(QPen(contrast_color(self), 4, Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin))
         painter.drawRect(border_rect)
 
+
     def drawForeground(self, painter, rect):
+        """Draws a border around the edited image section and blocks out any out-of-bounds canvas content."""
         x_scale = self._image_rect.width() / self.size().width()
         y_scale = self._image_rect.height() / self.size().height()
         image_rect = QRectF(0, 0, rect.width() * x_scale, rect.height() * y_scale).toAlignedRect()
@@ -275,7 +301,8 @@ class MaskCreator(QGraphicsView):
         super().drawForeground(painter, rect)
 
 
-    def resizeEvent(self, event):
+    def resizeEvent(self, unused_event):
+        """Recalculate image and canvas sizes when the widget is resized."""
         selection_size = self._mask_canvas.size()
         selection_rect_f = QRectF(0.0, 0.0, float(selection_size.width()), float(selection_size.height()))
         if selection_rect_f != self._scene.sceneRect():
@@ -290,12 +317,11 @@ class MaskCreator(QGraphicsView):
         transformation.scale(x_scale, y_scale)
         transformation.translate(float(self._image_rect.x()), float(self._image_rect.y()))
         self.setTransform(transformation)
-        # TODO: find a good way to do this within MaskPanel directly:
-        if self.parent() and hasattr(self.parent(), '_updateBrushCursor'):
-            self.parent()._updateBrushCursor()
         self.update()
 
+
     def get_image_display_size(self):
+        """Get the QSize in pixels of the area where the edited image section is drawn."""
         return QSize(self._image_rect.width(), self._image_rect.height())
 
     def _border_size(self):

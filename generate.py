@@ -7,18 +7,17 @@ from startup.load_models import load_models
 from startup.create_sample_function import create_sample_function
 from startup.generate_samples import generate_samples
 from startup.utils import build_arg_parser
-from startup.ml_utils import get_device
+from startup.ml_utils import get_device, get_save_fn
 
 # argument parsing:
 parser = build_arg_parser(default_model='finetune.pt', include_edit_params=False)
 args = parser.parse_args()
 
-if args.model_path == 'inpaint.pt':
-    print("Error: generate.py does not support inpainting. Use one of the following:")
-    print("\tquickEdit.py:          To perform quick inpainting operations with a minimal UI.")
-    print("\tinpainting_ui.py:      To use the inpainting UI, running both UI and generation on the same machine.")
-    print("\tinpainting_server.py:  To run inpainting operations for a remote UI client")
-    print("\tautoedit.py:           To run experimental automated random inpainting operations")
+if args.model_path in ('inpaint.pt', 'ongo.pt'):
+    print('Error: generate.py does not support inpainting. Use one of the following:')
+    print('\tIntraPaint.py:          To use the inpainting UI, running both UI and generation on the same machine.')
+    print('\ttIntraPaint_server.py:  To run inpainting operations for a remote UI client')
+    print('\tglid_quickEdit.py:      To perform quick inpainting operations with a minimal UI.')
     sys.exit()
 
 device = get_device(args.cpu)

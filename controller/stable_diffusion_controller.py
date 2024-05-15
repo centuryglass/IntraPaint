@@ -15,6 +15,7 @@ from ui.modal.modal_utils import show_error_dialog
 from ui.util.screen_size import screen_size
 from controller.base_controller import BaseInpaintController
 from api.a1111_webservice import A1111Webservice
+from data_model.config import Config
 
 
 class StableDiffusionController(BaseInpaintController):
@@ -49,8 +50,8 @@ class StableDiffusionController(BaseInpaintController):
         self._config.connect(self._mask_canvas, 'edit_mode', update_mask_state)
         def update_sketch_state(edit_mode):
             self._sketch_canvas.set_enabled(edit_mode != 'Text to Image')
-        self._config.connect(self._sketch_canvas, 'edit_mode', update_sketch_state)
-        edit_mode = self._config.get('edit_mode')
+        self._config.connect(self._sketch_canvas, Config.EDIT_MODE, update_sketch_state)
+        edit_mode = self._config.get(Config.EDIT_MODE)
         update_mask_state(edit_mode)
         update_sketch_state(edit_mode)
 
@@ -82,15 +83,15 @@ class StableDiffusionController(BaseInpaintController):
                 10,
                 'Max checkpoints loaded:')
         vae_options = list(map(lambda v: v['model_name'], self._webservice.get_vae()))
-        vae_options.insert(0, "Automatic")
-        vae_options.insert(0, "None")
+        vae_options.insert(0, 'Automatic')
+        vae_options.insert(0, 'None')
         settings_modal.add_combobox_setting('sd_vae',
                 'Models',
                 settings['sd_vae'],
                 vae_options,
                 'Stable-Diffusion VAE:')
         settings_modal.set_tooltip('sd_vae',
-                "Automatic: use VAE with same name as model\nNone: use embedded VAE\n" \
+                'Automatic: use VAE with same name as model\nNone: use embedded VAE\n' \
                 + re.sub(r'<.*?>', '', settings['sd_vae_explanation']))
         settings_modal.add_spinbox_setting('sd_vae_checkpoint_cache',
                 'Models',
@@ -109,13 +110,13 @@ class StableDiffusionController(BaseInpaintController):
         settings_modal.add_spinbox_setting('ESRGAN_tile',
                 'Upscalers',
                 int(settings['ESRGAN_tile']),
-                8, 9999, "ESRGAN tile size")
+                8, 9999, 'ESRGAN tile size')
         settings_modal.add_spinbox_setting('ESRGAN_tile_overlap',
                 'Upscalers',
                 int(settings['ESRGAN_tile_overlap']),
                 8,
                 9999,
-                "ESRGAN tile overlap")
+                'ESRGAN tile overlap')
         return True
 
 
@@ -128,7 +129,7 @@ class StableDiffusionController(BaseInpaintController):
     def update_settings(self, changed_settings):
         """Applies changed settings from a ui.modal SettingsModal to the stable-diffusion-webui."""
         for key in changed_settings:
-            print(f"Setting {key} to {changed_settings[key]}")
+            print(f'Setting {key} to {changed_settings[key]}')
         self._webservice.set_config(changed_settings)
 
 
@@ -155,9 +156,9 @@ class StableDiffusionController(BaseInpaintController):
                 res = webservice.login_check()
             if res.status_code == 200 or (res.status_code == 401 and res.json()['detail'] == 'Not authenticated'):
                 return True
-            raise RuntimeError(f"{res.status_code} : {res.text}")
+            raise RuntimeError(f'{res.status_code} : {res.text}')
         except RuntimeError as err:
-            print(f"error checking login: {err}")
+            print(f'error checking login: {err}')
             return False
 
 
@@ -169,10 +170,10 @@ class StableDiffusionController(BaseInpaintController):
         in the UI. Displays an error dialog instead if no image is loaded or another API operation is in-progress.
         """
         if not self._edited_image.has_image():
-            show_error_dialog(self._window, "Interrogate failed", "Create or load an image first.")
+            show_error_dialog(self._window, 'Interrogate failed', 'Create or load an image first.')
             return
         if self._thread is not None:
-            show_error_dialog(self._window, "Interrogate failed", "Existing operation currently in progress")
+            show_error_dialog(self._window, 'Interrogate failed', 'Existing operation currently in progress')
             return
 
         class InterrogateWorker(QObject):
@@ -191,23 +192,22 @@ class StableDiffusionController(BaseInpaintController):
                 """Run interrogation in the child thread, emit a signal and exit when finished."""
                 try:
                     image = self._edited_image.get_selection_content()
-                    config = self._config
-                    self.prompt_ready.emit(self._webservice.interrogate(config, image))
+                    self.prompt_ready.emit(self._webservice.interrogate(self._config, image))
                 except RuntimeError as err:
-                    print (f"err:{err}")
+                    print (f'err:{err}')
                     self.error_signal.emit(err)
                 self.finished.emit()
 
         worker = InterrogateWorker(self._config, self._edited_image, self._webservice)
         def set_prompt(prompt_text):
             print(f'Set prompt to {prompt_text}')
-            self._config.set('prompt', prompt_text)
+            self._config.set(Config.PROMPT, prompt_text)
         worker.prompt_ready.connect(set_prompt)
         def handle_error(err):
             self._window.set_is_loading(False)
-            show_error_dialog(self._window, "Interrogate failure", err)
+            show_error_dialog(self._window, 'Interrogate failure', err)
         worker.error_signal.connect(handle_error)
-        self._start_thread(worker, loading_text="Running CLIP interrogate")
+        self._start_thread(worker, loading_text='Running CLIP interrogate')
 
 
     def window_init(self):
@@ -222,7 +222,6 @@ class StableDiffusionController(BaseInpaintController):
 
         # Get URL if one was not provided on the command line:
         while self._server_url == '':
-            print('requesting url:')
             prompt_for_url('Enter server URL:')
 
         # Check connection:
@@ -230,7 +229,7 @@ class StableDiffusionController(BaseInpaintController):
             prompt_for_url('Server connection failed, enter a new URL or click "OK" to retry')
 
         try:
-            self._config.set('controlnet_version', float(self._webservice.get_controlnet_version()))
+            self._config.set(Config.CONTROLNET_VERSION, float(self._webservice.get_controlnet_version()))
         except RuntimeError:
             # The webui fork at lllyasviel/stable-diffusion-webui-forge is mostly compatible with the A1111 API, but
             # it doesn't have the ControlNet version endpoint. Berore assuming ControlNet isn't installed, check if
@@ -238,17 +237,17 @@ class StableDiffusionController(BaseInpaintController):
             try:
                 model_list = self._webservice.get_controlnet_models()
                 if model_list is not None and 'model_list' in model_list and len(model_list['model_list']) > 0:
-                    self._config.set('controlnet_version', 1.0)
+                    self._config.set(Config.CONTROLNET_VERSION, 1.0)
                 else:
-                    self._config.set('controlnet_version', -1.0)
+                    self._config.set(Config.CONTROLNET_VERSION, -1.0)
             except RuntimeError as err:
-                print(f"Loading controlnet config failed: {err}")
-                self._config.set('controlnet_version', -1.0)
+                print(f'Loading controlnet config failed: {err}')
+                self._config.set(Config.CONTROLNET_VERSION, -1.0)
 
         option_loading_params = [
-            ['styles', self._webservice.get_styles],
-            ['sampling_method', self._webservice.get_samplers],
-            ['upscale_method', self._webservice.get_upscalers]
+            [Config.STYLES, self._webservice.get_styles],
+            [Config.SAMPLING_METHOD, self._webservice.get_samplers],
+            [Config.UPSCALE_METHOD, self._webservice.get_upscalers]
         ]
 
         # load various option lists:
@@ -258,7 +257,7 @@ class StableDiffusionController(BaseInpaintController):
                 if options is not None and len(options) > 0:
                     self._config.update_options(config_key, options)
             except (KeyError, RuntimeError) as err:
-                print(f"error loading {config_key} from {self._server_url}: {err}")
+                print(f'error loading {config_key} from {self._server_url}: {err}')
 
         # initialize remote options modal:
         # Handle final window init now that data is loaded from the API:
@@ -270,13 +269,13 @@ class StableDiffusionController(BaseInpaintController):
         self._window.show()
 
 
-    def _scale(self, size):
+    def _scale(self, new_size):
         """Provide extra upscaling modes using stable-diffusion-webui."""
         width = self._edited_image.width()
         height = self._edited_image.height()
         # If downscaling, use base implementation:
-        if (size.width() <= width and size.height() <= height):
-            super()._scale(size)
+        if (new_size.width() <= width and new_size.height() <= height):
+            super()._scale(new_size)
             return
         # If upscaling, use stable-diffusion-webui upscale api:
         class UpscaleWorker(QObject):
@@ -296,18 +295,18 @@ class StableDiffusionController(BaseInpaintController):
                 """Handle the upscaling request, then emit a signal and exit when finished."""
                 try:
                     images, info = self._webservice.upscale(self._edited_image.get_pil_image(),
-                            size.width(),
-                            size.height(),
+                            new_size.width(),
+                            new_size.height(),
                             self._config)
                     if info is not None:
-                        print(f"Upscaling result info: {info}")
+                        print(f'Upscaling result info: {info}')
                     self.image_ready.emit(images[-1])
-                except Exception as err:
+                except IOError as err:
                     self.error_signal.emit(err)
                 self.finished.emit()
         worker = UpscaleWorker(self._config, self._edited_image, self._webservice)
         def handle_error(err):
-            show_error_dialog(self._window, "Upscale failure", err)
+            show_error_dialog(self._window, 'Upscale failure', err)
         worker.error_signal.connect(handle_error)
         def apply_upscaled(img):
             self._edited_image.set_image(img)
@@ -317,7 +316,7 @@ class StableDiffusionController(BaseInpaintController):
 
     def _inpaint(self, selection, mask, save_image, status_signal):
         """Handle image editing operations using stable-diffusion-webui."""
-        edit_mode = self._config.get('edit_mode')
+        edit_mode = self._config.get(Config.EDIT_MODE)
         if edit_mode != 'Inpaint':
             mask = None
 
@@ -346,11 +345,11 @@ class StableDiffusionController(BaseInpaintController):
             try:
                 image_data, info = generate_images()
                 if info is not None:
-                    print(f"Image generation result info: {info}")
+                    print(f'Image generation result info: {info}')
                 for image in image_data:
                     images.append(image)
             except RuntimeError as err:
-                print(f"request failed: {err}")
+                print(f'request failed: {err}')
                 errors.append(err)
         thread = threading.Thread(target=async_request)
         thread.start()
@@ -362,16 +361,16 @@ class StableDiffusionController(BaseInpaintController):
                 break
             try:
                 status = self._webservice.progress_check()
-                status_text = f"{int(status['progress'] * 100)}%"
+                status_text = f'{int(status["progress"] * 100)}%'
                 if 'eta_relative' in status and status['eta_relative'] != 0:
                     # TODO: eta_relative is not a ms value, perhaps use it with timestamps to estimate actual ETA?
                     eta_sec = int(status['eta_relative'] / 1000)
                     minutes = eta_sec // 60
                     seconds = eta_sec % 60
                     if minutes > 0:
-                        status_text = f"{status_text} ETA: {minutes}:{seconds}"
+                        status_text = f'{status_text} ETA: {minutes}:{seconds}'
                     else:
-                        status_text = f"{status_text} ETA: {seconds}s"
+                        status_text = f'{status_text} ETA: {seconds}s'
                 status_signal.emit({'progress': status_text})
             except RuntimeError as err:
                 error_count += 1
@@ -391,6 +390,6 @@ class StableDiffusionController(BaseInpaintController):
 
     def _apply_status_update(self, status_dict):
         if 'seed' in status_dict:
-            self._config.set('last_seed', str(status_dict['seed']))
+            self._config.set(Config.LAST_SEED, str(status_dict['seed']))
         if 'progress' in status_dict:
             self._window.set_loading_message(status_dict['progress'])

@@ -62,7 +62,8 @@ if controller_mode == 'auto':
                 device = get_device()
                 (mem_free, memTotal) = torch.cuda.mem_get_info(device)
                 if mem_free < MIN_VRAM:
-                    raise RuntimeError(f"Not enough VRAM to run local, expected at least {MIN_VRAM}, found {mem_free} of {memTotal}")
+                    raise RuntimeError(f"Not enough VRAM to run local, expected at least {MIN_VRAM}, found " + \
+                            f"{mem_free} of {memTotal}")
                 controller_mode = 'local'
             except RuntimeError as err:
                 print(f"Failed to start in local mode, defaulting to web. Exception: {err}")

@@ -14,6 +14,7 @@ from PyQt5.QtGui import QImage, QPainter
 from PyQt5.QtCore import QObject, QRect, QPoint, QSize, pyqtSignal
 from PIL import Image, PngImagePlugin
 from ui.image_utils import qimage_to_pil_image, pil_image_to_qimage
+from data_model.config import Config
 
 class EditedImage(QObject):
     """
@@ -53,7 +54,7 @@ class EditedImage(QObject):
         self._config = config
         self._qimage = None
         self._metadata = None
-        self.set_selection_bounds(QRect(QPoint(0, 0), self._config.get('edit_size')))
+        self.set_selection_bounds(QRect(QPoint(0, 0), self._config.get(Config.EDIT_SIZE)))
         if image_data is not None:
             self.set_image(image_data)
 
@@ -84,14 +85,14 @@ class EditedImage(QObject):
         """
         if not self.has_image():
             return
-        prompt = self._config.get('prompt')
-        negative = self._config.get('negative_prompt')
-        steps = self._config.get('sampling_steps')
-        sampler = self._config.get('sampling_method')
-        cfg_scale = self._config.get('guidance_scale')
-        seed = self._config.get('seed')
-        params = f"{prompt}\nNegative prompt: {negative}\nSteps: {steps}, Sampler: {sampler}, CFG scale:" + \
-                 f"{cfg_scale}, Seed: {seed}, Size: 512x512"
+        prompt = self._config.get(Config.PROMPT)
+        negative = self._config.get(Config.NEGATIVE_PROMPT)
+        steps = self._config.get(Config.SAMPLING_STEPS)
+        sampler = self._config.get(Config.SAMPLING_METHOD)
+        cfg_scale = self._config.get(Config.GUIDANCE_SCALE)
+        seed = self._config.get(Config.SEED)
+        params = f'{prompt}\nNegative prompt: {negative}\nSteps: {steps}, Sampler: {sampler}, CFG scale:' + \
+                 f'{cfg_scale}, Seed: {seed}, Size: 512x512'
         if self._metadata is None:
             self._metadata = {}
         self._metadata['parameters'] = params
@@ -116,7 +117,7 @@ class EditedImage(QObject):
         elif isinstance(image, Image.Image):
             self._qimage = pil_image_to_qimage(image)
         else:
-            raise RuntimeError("ImageViewer.set_image: image was not a string, QImage, or PIL Image")
+            raise RuntimeError('ImageViewer.set_image: image was not a string, QImage, or PIL Image')
         # Make sure the selection still fits within image bounds:
         last_selection = self._selection
         self.set_selection_bounds(self._selection)
@@ -144,10 +145,10 @@ class EditedImage(QObject):
 
     def get_max_selection_size(self):
         """
-        Returns the largest area that can be selected within the image, based on image size and the 'max_edit_size'
+        Returns the largest area that can be selected within the image, based on image size and the Config.MAX_EDIT_SIZE
         config property
         """
-        max_size = self._config.get('max_edit_size')
+        max_size = self._config.get(Config.MAX_EDIT_SIZE)
         return QSize(min(max_size.width(), self.width()), min(max_size.height(), self.height()))
 
 
@@ -168,7 +169,7 @@ class EditedImage(QObject):
         initial_bounds = bounds_rect
         bounds_rect = QRect(initial_bounds.topLeft(), initial_bounds.size())
         # Make sure that the selection fits within allowed size limits:
-        min_size = self._config.get('min_edit_size')
+        min_size = self._config.get(Config.MIN_EDIT_SIZE)
         max_size = self.get_max_selection_size()
         if bounds_rect.width() > self._qimage.width():
             bounds_rect.setWidth(self._qimage.width())
@@ -252,7 +253,7 @@ class EditedImage(QObject):
                     # I've seen this a few times, mostly with images edited in Krita. This data isn't important to
                     # me, so it'll just be discarded. If it's important to you, open a GitHub issue with details or
                     # submit a PR and I'll take care of it.
-                    print(f"failed to preserve '{key}' in metadata: {err}")
+                    print(f'failed to preserve "{key}" in metadata: {err}')
             image.save(image_path, 'PNG', pnginfo=info)
         else:
             image.save(image_path)
@@ -281,19 +282,19 @@ class EditedImage(QObject):
                     negative = divider_match.group(2)
                 print('Detected saved image gen data, applying to UI')
                 try:
-                    self._config.set('prompt', prompt)
-                    self._config.set('negative_prompt', negative)
-                    self._config.set('sampling_steps', steps)
-                    self._config.set('sampling_method', sampler)
-                    self._config.set('guidance_scale', cfg_scale)
-                    self._config.set('seed', seed)
+                    self._config.set(Config.PROMPT, prompt)
+                    self._config.set(Config.NEGATIVE_PROMPT, negative)
+                    self._config.set(Config.SAMPLING_STEPS, steps)
+                    self._config.set(Config.SAMPLING_METHOD, sampler)
+                    self._config.set(Config.GUIDANCE_SCALE, cfg_scale)
+                    self._config.set(Config.SEED, seed)
                 except (TypeError, RuntimeError) as err:
                     print(f'Failed to load image gen data from metadata: {err}')
             else:
-                print("Warning: image parameters do not match expected patterns, cannot be used. " + \
-                      f"parameters:{param_str}")
+                print('Warning: image parameters do not match expected patterns, cannot be used. ' + \
+                      f'parameters:{param_str}')
         self._qimage = pil_image_to_qimage(image)
         self._qimage.convertTo(QImage.Format_RGB888)
         if self._qimage.isNull():
             self._qimage = None
-            raise RuntimeError(f"'{image}' is not a valid image file.")
+            raise RuntimeError(f'"{image}" is not a valid image file.')

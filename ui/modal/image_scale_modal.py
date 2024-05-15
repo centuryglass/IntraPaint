@@ -1,36 +1,42 @@
-"""
-Popup modal window used for scaling the edited image.
-"""
-from PyQt5.QtWidgets import QWidget, QDialog, QSpinBox, QLabel, QVBoxLayout, QHBoxLayout, QPushButton
+"""Popup modal window used for scaling the edited image."""
+from PyQt5.QtWidgets import QDialog, QLabel, QVBoxLayout, QPushButton
 from PyQt5.QtCore import QSize
 from ui.config_control_setup import connected_combobox, connected_checkbox, connected_spinbox
 from ui.widget.labeled_spinbox import LabeledSpinbox
+from data_model.config import Config
 
 
 class ImageScaleModal(QDialog):
-    def __init__(heightbox, default_width, default_height, config):
+    """Popup modal window used for scaling the edited image."""
+
+    def __init__(self, default_width, default_height, config):
         super().__init__()
 
-        heightbox._create = False
-        heightbox.setModal(True)
-        heightbox._layout = QVBoxLayout()
+        self._create = False
+        self.setModal(True)
+        self._layout = QVBoxLayout()
 
-        heightbox._title = QLabel(heightbox)
-        heightbox._title.setText("Scale image")
-        heightbox._layout.addWidget(heightbox._title)
+        self._title = QLabel(self)
+        self._title.setText('Scale image')
+        self._layout.addWidget(self._title)
 
         min_val = 8
         max_val = 20000
-        heightbox._widthbox = LabeledSpinbox(heightbox, "Width:", "New image width in pixels", min_val, default_width, max_val)
-        heightbox._layout.addWidget(heightbox._widthbox)
-        heightbox._heightBox = LabeledSpinbox(heightbox, "Height:", "New image height in pixels", min_val, default_height, max_val)
-        heightbox._layout.addWidget(heightbox._heightBox)
-        heightbox._xMultBox = LabeledSpinbox(heightbox, "Width scale:", "New image width (as multiplier)", 0.0, 1.0, 999.0)
-        heightbox._layout.addWidget(heightbox._xMultBox)
-        heightbox._yMultBox = LabeledSpinbox(heightbox, "Height scale:", "New image height (as multiplier)", 0.0, 1.0, 999.0)
-        heightbox._layout.addWidget(heightbox._yMultBox)
-        heightbox._upscaleMethodBox, heightbox._upscaleLayout = connected_combobox(heightbox, config, 'upscale_method', text='Upscale Method:')
-        heightbox._layout.addLayout(heightbox._upscaleLayout)
+        self._widthbox = LabeledSpinbox(self, 'Width:', 'New image width in pixels', min_val, default_width,
+                max_val)
+        self._layout.addWidget(self._widthbox)
+        self._heightbox = LabeledSpinbox(self, 'Height:', 'New image height in pixels', min_val,
+                default_height, max_val)
+        self._layout.addWidget(self._heightbox)
+        self._x_mult_box = LabeledSpinbox(self, 'Width scale:', 'New image width (as multiplier)', 0.0, 1.0,
+                999.0)
+        self._layout.addWidget(self._x_mult_box)
+        self._y_mult_box = LabeledSpinbox(self, 'Height scale:', 'New image height (as multiplier)', 0.0, 1.0,
+                999.0)
+        self._layout.addWidget(self._y_mult_box)
+        self._upscale_method_box, self._upscale_layout = connected_combobox(self, config,
+                Config.UPSCALE_METHOD, text='Upscale Method:')
+        self._layout.addLayout(self._upscale_layout)
 
         # Synchronize scale boxes with pixel size boxes
         def set_scale_on_px_change(pixel_size, base_value, scale_box):
@@ -39,7 +45,7 @@ class ImageScaleModal(QDialog):
             if int(base_value * float(current_scale)) != pixel_size:
                 scale_box.spinbox.setValue(new_scale)
             elif current_scale != new_scale:
-                print(f"ignoring rounding error, {current_scale} vs {new_scale}")
+                print(f'ignoring rounding error, {current_scale} vs {new_scale}')
 
         def set_px_on_scale_change(scale, base_value, pxbox):
             current_pixel_size = pxbox.spinbox.value()
@@ -47,46 +53,53 @@ class ImageScaleModal(QDialog):
             if round(int(current_pixel_size) / base_value, 2) != scale:
                 pxbox.spinbox.setValue(new_pixel_size)
             elif current_pixel_size != new_pixel_size:
-                print(f"ignoring rounding error, {current_pixel_size} vs {new_pixel_size}")
+                print(f'ignoring rounding error, {current_pixel_size} vs {new_pixel_size}')
 
-        heightbox._widthbox.spinbox.valueChanged.connect(lambda px: set_scale_on_px_change(px, default_width, heightbox._xMultBox))
-        heightbox._xMultBox.spinbox.valueChanged.connect(lambda px: set_px_on_scale_change(px, default_width, heightbox._widthbox))
-        heightbox._heightBox.spinbox.valueChanged.connect(lambda px: set_scale_on_px_change(px, default_height, heightbox._yMultBox))
-        heightbox._yMultBox.spinbox.valueChanged.connect(lambda px: set_px_on_scale_change(px, default_height, heightbox._heightBox))
+        self._widthbox.spinbox.valueChanged.connect(
+                lambda px: set_scale_on_px_change(px, default_width, self._x_mult_box))
+        self._x_mult_box.spinbox.valueChanged.connect(
+                lambda px: set_px_on_scale_change(px, default_width, self._widthbox))
+        self._heightbox.spinbox.valueChanged.connect(
+                lambda px: set_scale_on_px_change(px, default_height, self._y_mult_box))
+        self._y_mult_box.spinbox.valueChanged.connect(
+                lambda px: set_px_on_scale_change(px, default_height, self._heightbox))
 
         # Add controlnet upscale option:
-        if config.get('controlnet_version') > 0:
-            heightbox._controlnet_checkbox = connected_checkbox(heightbox, config, 'controlnet_upscaling', text='Use ControlNet Tiles')
-            heightbox._controlnet_ratebox = connected_spinbox(
-                    heightbox,
+        if config.get(Config.CONTROLNET_VERSION) > 0:
+            self._controlnet_checkbox = connected_checkbox(self, config, Config.CONTROLNET_UPSCALING,
+                    text='Use ControlNet Tiles')
+            self._controlnet_ratebox = connected_spinbox(
+                    self,
                     config,
-                    'controlnet_downsample_rate')
-            heightbox._controlnet_ratebox.setEnabled(config.get('controlnet_upscaling'))
-            heightbox._controlnet_checkbox.stateChanged.connect(lambda enabled: heightbox._controlnet_ratebox.setEnabled(enabled))
-            heightbox._layout.addWidget(heightbox._controlnet_checkbox)
-            heightbox._layout.addWidget(heightbox._controlnet_ratebox)
+                    Config.CONTROLNET_DOWNSAMPLE_RATE)
+            self._controlnet_ratebox.setEnabled(config.get(Config.CONTROLNET_UPSCALING))
+            self._controlnet_checkbox.stateChanged.connect(self._controlnet_ratebox.setEnabled)
+            self._layout.addWidget(self._controlnet_checkbox)
+            self._layout.addWidget(self._controlnet_ratebox)
 
-        heightbox._create_button = QPushButton(heightbox)
-        heightbox._create_button.setText("Scale image")
-        heightbox._layout.addWidget(heightbox._create_button)
+        self._create_button = QPushButton(self)
+        self._create_button.setText('Scale image')
+        self._layout.addWidget(self._create_button)
         def on_create():
-            config.disconnect(heightbox._upscaleMethodBox, 'upscale_method')
-            heightbox._create = True
-            heightbox.hide()
-        heightbox._create_button.clicked.connect(on_create)
+            config.disconnect(self._upscale_method_box, Config.UPSCALE_METHOD)
+            self._create = True
+            self.hide()
+        self._create_button.clicked.connect(on_create)
 
-        heightbox._cancel_button = QPushButton(heightbox)
-        heightbox._cancel_button.setText("Cancel")
+        self._cancel_button = QPushButton(self)
+        self._cancel_button.setText('Cancel')
         def on_cancel():
-            config.disconnect(heightbox._upscaleMethodBox, 'upscale_method')
-            heightbox._create = False
-            heightbox.hide()
-        heightbox._cancel_button.clicked.connect(on_cancel)
-        heightbox._layout.addWidget(heightbox._cancel_button)
-        
-        heightbox.setLayout(heightbox._layout)
+            config.disconnect(self._upscale_method_box, Config.UPSCALE_METHOD)
+            self._create = False
+            self.hide()
+        self._cancel_button.clicked.connect(on_cancel)
+        self._layout.addWidget(self._cancel_button)
+
+        self.setLayout(self._layout)
 
     def show_image_modal(self):
+        """Show the modal, returning the selected size when the modal closes."""
         self.exec_()
         if self._create:
-            return QSize(self._widthbox.spinbox.value(), self._heightBox.spinbox.value())
+            return QSize(self._widthbox.spinbox.value(), self._heightbox.spinbox.value())
+        return None

@@ -1,51 +1,60 @@
 """
-Absolutely minimal editing window meant for performing a single inpainting operation using GLID-3-XL.
+Minimal editing window meant for performing a single inpainting operation using GLID-3-XL.
 """
-from PyQt5.QtWidgets import *
+import io
+import sys
+from PyQt5.QtWidgets import QApplication, QMainWindow
 from PyQt5.QtCore import Qt, QPoint, QRect, QBuffer
-from PyQt5.QtGui import QPainter, QPen
-from PIL import Image, ImageOps
-import PyQt5.QtGui as QtGui
-import io, sys
+from PyQt5.QtGui import QPainter, QPen, QPixmap, QImage
+from PIL.Image import Image
 
 class QuickEditWindow(QMainWindow):
+    """A minimal editing window meant for performing a single inpainting operation using GLID-3-XL."""
 
-    def __init__(self, width, height, im):
+
+    def __init__(self,im):
+        """Create the window at a given size and load an image for inpainting.
+
+        Parameters
+        ----------
+        im : str or PIL image
+            Image or image path to edit
+        """
         super().__init__()
         self._drawing = False
         self._last_point = QPoint()
 
-        try:
-            if isinstance(im, str):
-                self.qim = QtGui.QImage(im)
-            elif isinstance(im, Image.Image):
-                self.qim = QtGui.QImage(im.tobytes("raw","RGB"), im.width, im.height, QtGui.QImage.Format_RGB888)
-            else:
-                raise Exception(f"Invalid source image type: {im}")
-        except Exception as err:
-            print(f"Error: {err}")
-            sys.exit()
-        self._image = QtGui.QPixmap.fromImage(self.qim)
+        if isinstance(im, str):
+            self.qim = QImage(im)
+        elif isinstance(im, Image):
+            self.qim = QImage(im.tobytes('raw','RGB'), im.width, im.height, QImage.Format_RGB888)
+        else:
+            raise TypeError(f'Invalid source image type: {im}')
+        self._image = QPixmap.fromImage(self.qim)
 
-        canvas = QtGui.QImage(self.qim.width(), self.qim.height(), QtGui.QImage.Format_ARGB32)
-        self._canvas = QtGui.QPixmap.fromImage(canvas)
+        canvas = QImage(self.qim.width(), self.qim.height(), QImage.Format_ARGB32)
+        self._canvas = QPixmap.fromImage(canvas)
         self._canvas.fill(Qt.transparent)
 
         self.setGeometry(0, 0, self.qim.width(), self.qim.height())
         self.resize(self._image.width(), self._image.height())
         self.show()
 
-    def paintEvent(self, event):
+    def paintEvent(self, unused_event):
+        """Draws the image and mask canvas in the window."""
         painter = QPainter(self)
         painter.drawPixmap(QRect(0, 0, self._image.width(), self._image.height()), self._image)
         painter.drawPixmap(QRect(0, 0, self._canvas.width(), self._canvas.height()), self._canvas)
 
     def mousePressEvent(self, event):
+        """Start drawing the mask on left-click."""
         if event.button() == Qt.LeftButton:
             self._drawing = True
             self._last_point = event.pos()
 
+
     def mouseMoveEvent(self, event):
+        """Draw to the mask on mouse move when the left mouse button is held."""
         if event.buttons() and Qt.LeftButton and self._drawing:
             painter = QPainter(self._canvas)
             painter.setPen(QPen(Qt.red, (self.width()+self.height())/20, Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin))
@@ -54,29 +63,33 @@ class QuickEditWindow(QMainWindow):
             self.update()
 
     def mouseReleaseEvent(self, event):
+        """Stop drawing when the left mouse button is released."""
         if event.button == Qt.LeftButton:
             self._drawing = False
 
     def get_mask(self):
+        """Returns the image mask as a PIL Image."""
         image = self._canvas.toImage()
         buffer = QBuffer()
         buffer.open(QBuffer.ReadWrite)
-        image.save(buffer, "PNG")
+        image.save(buffer, 'PNG')
         pil_im = Image.open(io.BytesIO(buffer.data()))
         return pil_im
 
-    def resizeEvent(self, event):
-        self._image = QtGui.QPixmap.fromImage(self.qim)
+    def resizeEvent(self, unused_event):
+        """adjust image and canvas scale on resize."""
+        self._image = QPixmap.fromImage(self.qim)
         self._image = self._image.scaled(self.width(), self.height())
 
-        canvas = QtGui.QImage(self.width(), self.height(), QtGui.QImage.Format_ARGB32)
-        self._canvas = QtGui.QPixmap.fromImage(canvas)
+        canvas = QImage(self.width(), self.height(), QImage.Format_ARGB32)
+        self._canvas = QPixmap.fromImage(canvas)
         self._canvas.fill(Qt.transparent)
 
-def get_drawn_mask(width, height, image):
+
+def get_drawn_mask(image):
     """Get the user to draw an image mask, then return it as a PIL Image."""
     print('draw the area for inpainting, then close the window')
     app = QApplication(sys.argv)
-    d = QuickEditWindow(width, height, image)
+    d = QuickEditWindow(image)
     app.exec_()
     return d.get_mask()

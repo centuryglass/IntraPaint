@@ -155,7 +155,7 @@ class WebService():
 
 
     def _handle_auth_error(self):
-        raise NotImplementedError("Authentication is not implemented")
+        raise NotImplementedError('Authentication is not implemented')
 
 
     def _build_address(self, endpoint, url_params=None):

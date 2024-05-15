@@ -1,16 +1,15 @@
-"""
-Interface for classes that display image data through a QGraphicsView and support various drawing and editing
+"""Interface for classes that display image data through a QGraphicsView and support various drawing and editing
 operations.
 """
 
 from PyQt5.QtGui import QColor
 from PyQt5.QtCore import QObject, pyqtSignal
 from ui.image_utils import qimage_to_pil_image
+from data_model.config import Config
 
 class Canvas():
-    """
-    Interface for classes that display image data through a QGraphicsView and support various drawing and editing
-    operations.
+    """Interface for classes that display image data through a QGraphicsView and support various drawing and editing
+       operations.
 
     Signals
     -------
@@ -20,7 +19,7 @@ class Canvas():
 
 
     def __init__(self, config, image):
-        """ Initialize with config values and optional arbitrary initial image data.
+        """Initialize with config values and optional arbitrary initial image data.
 
         Parameters
         ----------
@@ -46,7 +45,7 @@ class Canvas():
         if image is not None:
             self.set_image(image)
         else:
-            self.set_image(config.get('edit_size'))
+            self.set_image(config.get(Config.EDIT_SIZE))
         self._enabled = True
 
 
@@ -162,39 +161,39 @@ class Canvas():
 
     def add_to_scene(self, scene):
         """Unimplemented. Implementations should add the canvas to a QGraphicsScene"""
-        raise NotImplementedError("Canvas.add_to_scene not implemented")
+        raise NotImplementedError('Canvas.add_to_scene not implemented')
 
 
     def set_image(self, image_data):
         """
         Unimplemented. Implementations should initialize canvas content from a QImage, QPixmap, PIL Image, or QSize.
         """
-        raise NotImplementedError("Canvas.set_image() not implemented")
+        raise NotImplementedError('Canvas.set_image() not implemented')
 
 
     def size(self):
         """Unimplemented. Implementations should return the canvas size in pixels as QSize."""
-        raise NotImplementedError("Canvas.size() not implemented")
+        raise NotImplementedError('Canvas.size() not implemented')
 
 
     def width(self):
         """Unimplemented. Implementations should return the canvas width in pixels as int."""
-        raise NotImplementedError("Canvas.width() not implemented")
+        raise NotImplementedError('Canvas.width() not implemented')
 
 
     def height(self):
         """Unimplemented. Implementations should return the canvas height in pixels as int."""
-        raise NotImplementedError("Canvas.height() not implemented")
+        raise NotImplementedError('Canvas.height() not implemented')
 
 
     def get_qimage(self):
         """Unimplemented. Implementations should return the canvas contents as a QImage."""
-        raise NotImplementedError("Canvas.get_qimage() not implemented")
+        raise NotImplementedError('Canvas.get_qimage() not implemented')
 
 
     def resize(self, size):
         """Unimplemented. Implementations should resize the canvas to match the QSize parameter."""
-        raise NotImplementedError("Canvas.resize() not implemented")
+        raise NotImplementedError('Canvas.resize() not implemented')
 
 
     def end_stroke(self):
@@ -202,7 +201,7 @@ class Canvas():
         Unimplemented, intended for handling necessary steps after a series of connected drawing operations.
         Additional requirements are implementation-specific. Implementations should *not* call super().end_stroke()
         """
-        raise NotImplementedError("Canvas.end_stroke() not implemented")
+        raise NotImplementedError('Canvas.end_stroke() not implemented')
 
 
     def draw_point(self, point, color, size_multiplier, size_override = None):
@@ -222,7 +221,7 @@ class Canvas():
             If defined, both self.brush_size() and size_multiplier should be ignored, and this value should be used
             as the circle diameter instead.
         """
-        raise NotImplementedError("Canvas.draw_point() not implemented")
+        raise NotImplementedError('Canvas.draw_point() not implemented')
 
 
     def draw_line(self, line, color, size_multiplier, size_override = None):
@@ -242,7 +241,7 @@ class Canvas():
             If defined, both self.brush_size() and size_multiplier should be ignored, and this value should be used
             as the line thickness instead.
         """
-        raise NotImplementedError("Canvas.draw_line() not implemented")
+        raise NotImplementedError('Canvas.draw_line() not implemented')
 
 
     def erase_point(self, point, size_multiplier, size_override = None):
@@ -261,7 +260,7 @@ class Canvas():
             If defined, both self.brush_size() and size_multiplier should be ignored, and this value should be used
             as the circle diameter instead.
         """
-        raise NotImplementedError("Canvas.erase_point() not implemented")
+        raise NotImplementedError('Canvas.erase_point() not implemented')
 
 
     def erase_line(self, line, size_multiplier, size_override = None):
@@ -280,13 +279,13 @@ class Canvas():
             If defined, both self.brush_size() and size_multiplier should be ignored, and this value should be used
             as the line thickness instead.
         """
-        raise NotImplementedError("Canvas.erase_line() not implemented")
+        raise NotImplementedError('Canvas.erase_line() not implemented')
 
 
     def _save_undo_state(self, clear_redo_stack=True):
         image = self.get_qimage().copy()
         self._undo_stack.append(image)
-        max_undo_count = self._config.get('max_undo')
+        max_undo_count = self._config.get(Config.MAX_UNDO)
         if len(self._undo_stack) > max_undo_count:
             self._undo_stack = self._undo_stack[-max_undo_count:]
         if clear_redo_stack:

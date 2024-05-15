@@ -11,6 +11,7 @@ from ui.window.main_window import MainWindow
 from ui.util.screen_size import screen_size
 from controller.base_controller import BaseInpaintController
 from startup.utils import image_to_base64, load_image_from_base64
+from data_model.config import Config
 
 
 class WebClientController(BaseInpaintController):
@@ -28,8 +29,8 @@ class WebClientController(BaseInpaintController):
             res = requests.get(url, timeout=30)
             return res.status_code == 200 and ('application/json' in res.headers['content-type']) \
                 and 'success' in res.json() and res.json()['success'] is True
-        except Exception as err:
-            print(f"error connecting to {url}: {err}")
+        except requests.exceptions.RequestException as err:
+            print(f'Request error: {err}')
             return False
 
     def window_init(self):
@@ -59,17 +60,17 @@ class WebClientController(BaseInpaintController):
 
     def _inpaint(self, selection, mask, save_image, status_signal):
         """Handle image editing operations using the GLID-3-XL API."""
-        batch_size = self._config.get('batch_size')
-        batch_count = self._config.get('batch_count')
+        batch_size = self._config.get(Config.BATCH_SIZE)
+        batch_count = self._config.get(Config.BATCH_COUNT)
         body = {
             'batch_size': batch_size,
             'num_batches': batch_count,
             'edit': image_to_base64(selection),
             'mask': image_to_base64(mask),
-            'prompt': self._config.get('prompt'),
-            'negative': self._config.get('negative_prompt'),
-            'guidanceScale': self._config.get('guidance_scale'),
-            'skipSteps': self._config.get('skip_steps'),
+            'prompt': self._config.get(Config.PROMPT),
+            'negative': self._config.get(Config.NEGATIVE_PROMPT),
+            'guidanceScale': self._config.get(Config.GUIDANCE_SCALE),
+            'skipSteps': self._config.get(Config.SKIP_STEPS),
             'width': selection.width,
             'height': selection.height
         }
@@ -107,7 +108,7 @@ class WebClientController(BaseInpaintController):
             try:
                 res = requests.get(f'{self._server_url}/sample', json={'samples': samples}, timeout=30)
                 error_check(res, 'sample update request')
-            except Exception as err:
+            except requests.exceptions.RequestException as err:
                 error_count += 1
                 print(f'Error {error_count}: {err}')
                 if error_count > max_errors:
@@ -127,7 +128,7 @@ class WebClientController(BaseInpaintController):
                     batch = int(sample_name) // batch_size
                     save_image(sample_image, idx, batch)
                     samples[sample_name] = json_body['samples'][sample_name]['timestamp']
-                except Exception as err:
+                except IOError as err:
                     print(f'Warning: {err}')
                     error_count += 1
                     continue

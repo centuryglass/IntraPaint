@@ -8,6 +8,7 @@ from PyQt5.QtGui import QPixmap, QPainter, QImage, QPen
 from PyQt5.QtWidgets import QGraphicsPixmapItem
 from ui.util.contrast_color import contrast_color
 from data_model.canvas.pixmap_canvas import PixmapCanvas
+from data_model.config import Config
 
 class MaskCanvas(PixmapCanvas):
     """Provides a Canvas implementation for marking sections of an image to be edited with AI inpainting."""
@@ -22,13 +23,13 @@ class MaskCanvas(PixmapCanvas):
         image: QImage or PIL Image or QPixmap or QSize or str, optional
         """
         super().__init__(config, image)
-        config.connect(self, 'mask_brush_size', self.set_brush_size)
-        self.set_brush_size(config.get('mask_brush_size'))
+        config.connect(self, Config.MASK_BRUSH_SIZE, self.set_brush_size)
+        self.set_brush_size(config.get(Config.MASK_BRUSH_SIZE))
         self._outline = None
         self._drawing = False
         self._bounding_box = None
-        config.connect(self, 'inpaint_full_res', lambda v: self._handle_changes())
-        config.connect(self, 'inpaint_full_res_padding', lambda v: self._handle_changes())
+        config.connect(self, Config.INPAINT_FULL_RES, lambda v: self._handle_changes())
+        config.connect(self, Config.INPAINT_FULL_RES_PADDING, lambda v: self._handle_changes())
 
         self._dither_mask = QPixmap(QSize(512, 512))
         dither_stamp = QPixmap(QSize(8, 8))
@@ -78,7 +79,7 @@ class MaskCanvas(PixmapCanvas):
         self._draw_outline()
 
 
-    def set_image(self, image):
+    def set_image(self, image_data):
         """Loads an image into the canvas, overwriting existing canvas content.
 
         Parameters
@@ -87,7 +88,7 @@ class MaskCanvas(PixmapCanvas):
             An image, image size, or image path. If necessary, the canvas will be resized to match the image size.
             If image_data is a QSize, the canvas will be cleared.
         """
-        super().set_image(image)
+        super().set_image(image_data)
         self._draw_outline()
         self.update()
 
@@ -95,22 +96,23 @@ class MaskCanvas(PixmapCanvas):
     def get_masked_area(self, ignore_config = False):
         """Returns the smallest QRect containing all masked areas, plus padding.
 
-        Used for showing the actual area visible to the image model when the 'inpaint_full_res' config option is set
-        to true. The padding abount is set by the 'inpaint_full_res_padding' config option, measured in pixels
+        Used for showing the actual area visible to the image model when the Config.INPAINT_FULL_RES config option is
+        set to true. The padding abount is set by the Config.INPAINT_FULL_RES_PADDING config option, measured in
+        pixels.
 
         Parameters
         ----------
         ignore_config : bool
-            If true, return the masked area bounds even when 'inpaint_full_res' is disabled in config.
+            If true, return the masked area bounds even when Config.INPAINT_FULL_RES is disabled in config.
         Returns
         -------
         QRect or None
            Rectangle containing all non-transparent mask canvas content plus padding, or None if the canvas is empty
-           or config.get('inpaint_full_res') is false and ignore_config is false.
+           or config.get(Config.INPAINT_FULL_RES) is false and ignore_config is false.
         """
-        if ((not ignore_config) and (not self._config.get('inpaint_full_res'))) or self._bounding_box is None:
+        if ((not ignore_config) and (not self._config.get(Config.INPAINT_FULL_RES))) or self._bounding_box is None:
             return None
-        padding = self._config.get('inpaint_full_res_padding')
+        padding = self._config.get(Config.INPAINT_FULL_RES_PADDING)
         top = self._bounding_box.top()
         bottom = self._bounding_box.bottom()
         left = self._bounding_box.left()
@@ -196,7 +198,7 @@ class MaskCanvas(PixmapCanvas):
         self._outline.setOpacity(opacity)
 
 
-    # Outline masked areas with dotted lines, and draw the bonding rectangle used when 'inpaint_full_res' is set:
+    # Outline masked areas with dotted lines, and draw the bonding rectangle used when Config.INPAINT_FULL_RES is set:
     def _handle_changes(self):
         width = self._dither_mask.width()
         height = self._dither_mask.height()
@@ -252,7 +254,7 @@ class MaskCanvas(PixmapCanvas):
         painter.setCompositionMode(QPainter.CompositionMode_SourceIn)
         painter.drawPixmap(0, 0, self._dither_mask)
 
-        if self._config.get('inpaint_full_res'):
+        if self._config.get(Config.INPAINT_FULL_RES):
             masked_area = self.get_masked_area()
             if masked_area is not None:
                 painter.setCompositionMode(QPainter.CompositionMode_SourceOver)

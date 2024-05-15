@@ -9,9 +9,9 @@ from guided_diffusion.script_util import create_model_and_diffusion, model_and_d
 from encoders.modules import BERTEmbedder
 
 def load_models( device,
-        model_path="inpaint.pt",
-        bert_path="bert.pt",
-        kl_path="kl-f8.pt",
+        model_path='inpaint.pt',
+        bert_path='bert.pt',
+        kl_path='kl-f8.pt',
         clip_model_name='ViT-L/14',
         steps=None,
         clip_guidance=False,
@@ -19,6 +19,7 @@ def load_models( device,
         ddpm=False,
         ddim=False):
     """Loads all ML models and associated variables."""
+
     model_state_dict = torch.load(model_path, map_location='cpu')
 
     model_params = {
@@ -71,34 +72,35 @@ def load_models( device,
     def set_requires_grad(model, value):
         for param in model.parameters():
             param.requires_grad = value
-    print(f"loaded and configured primary model from {model_path}")
+    print(f'loaded and configured primary model from {model_path}')
     model_state_dict = None
     gc.collect()
 
     # vae
-    ldm = torch.load(kl_path, map_location="cpu")
+    ldm = torch.load(kl_path, map_location='cpu')
     ldm.to(device)
     ldm.eval()
     ldm.requires_grad_(clip_guidance)
     set_requires_grad(ldm, clip_guidance)
-    print(f"loaded and configured latent diffusion model from {kl_path}")
+    print(f'loaded and configured latent diffusion model from {kl_path}')
     gc.collect()
 
     bert = BERTEmbedder(1280, 32)
-    sd = torch.load(bert_path, map_location="cpu")
+    sd = torch.load(bert_path, map_location='cpu')
     bert.load_state_dict(sd)
     bert.to(device)
     bert.half().eval()
     set_requires_grad(bert, False)
-    print(f"loaded and configured BERT model from {bert_path}")
+    print(f'loaded and configured BERT model from {bert_path}')
     sd = None
     gc.collect()
 
     # clip
     clip_model, clip_preprocess = clip.load(clip_model_name, device=device, jit=False)
     clip_model.eval().requires_grad_(False)
-    print(f"loaded and configured CLIP model from {clip_model_name}")
+    print(f'loaded and configured CLIP model from {clip_model_name}')
     gc.collect()
 
-    normalize = transforms.Normalize(mean=[0.48145466, 0.4578275, 0.40821073], std=[0.26862954, 0.26130258, 0.27577711])
+    normalize = transforms.Normalize(mean=[0.48145466, 0.4578275, 0.40821073],
+            std=[0.26862954, 0.26130258, 0.27577711])
     return model_params, model, diffusion, ldm, bert, clip_model, clip_preprocess, normalize

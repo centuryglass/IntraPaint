@@ -1,21 +1,43 @@
 """
 Panel providing controls for the stable-diffusion ControlNet extension. Only supported by stable_diffusion_controller.
 """
-from PyQt5.QtWidgets import *
-from PyQt5.QtCore import Qt
+from PyQt5.QtWidgets import QVBoxLayout, QHBoxLayout, QCheckBox, QPushButton, QLineEdit, QComboBox, QSizePolicy
 from ui.widget.collapsible_box import CollapsibleBox
 from ui.widget.label_wrapper import LabelWrapper
 from ui.widget.param_slider import ParamSlider
-from ui.modal.modal_utils import open_image_file
 from ui.config_control_setup import connected_checkbox
-import pprint
+from data_model.config import Config
 
 class ControlnetPanel(CollapsibleBox):
+    """ControlnetPanel provides controls for the stable-diffusion ControlNet extension."""
 
-    def __init__(self, config, control_types, module_detail, model_list, title = "ControlNet",
-            config_key='controlnet_args_0'):
-        super().__init__(title=title, scrolling=False, start_closed=(len(config.get(config_key)) == 0))
-        REUSE_IMAGE_VALUE='SELECTION' #value to signal that the control image is from selection, not a file
+
+    REUSE_IMAGE_VALUE='SELECTION' #value to signal that the control image is from selection, not a file
+
+    # Default parameters used in ControlNet requests for all modules/models
+    DEFAULT_PARAMS=['module', 'model', 'low_vram', 'pixel_perfect', 'image', 'weight', 'guidance_start',
+                            'guidance_end']
+
+    def __init__(self, config, control_types, module_detail, model_list, title = 'ControlNet',
+            config_key=Config.CONTROLNET_ARGS_0):
+        """Initializes the panel based on data from the stable-diffusion-webui.
+
+        Parameters
+        ----------
+        config : data_model.config.Config
+            Shared application configuration object.
+        control_types : dict or None
+            API data defining available control types. If none, only the module and model dropdowns are used.
+        module_detail : dict
+            API data defining available ControlNet modules.
+        model_list : dict
+            API data defining available ControlNet models.
+        title : str, default = "ControlNet"
+            Title to display at the top of the panel.
+        config_key : str, default = Config.CONTROLNET_ARGS_0
+            Config key where ControlNet selection will be saved.
+        """
+        super().__init__(title=title, scrolling=False, start_closed=len(config.get(config_key)) == 0)
 
         initial_control_state = config.get(config_key)
         self._config = config
@@ -38,10 +60,11 @@ class ControlnetPanel(CollapsibleBox):
         px_perfect_checkbox = connected_checkbox(self, config, config_key, text='Pixel Perfect',
                 inner_key='pixel_perfect')
         checkbox_row.addWidget(px_perfect_checkbox)
-        
-        
+
+
         # Control image row:
-        use_selection = 'image' in initial_control_state and initial_control_state['image'] == REUSE_IMAGE_VALUE
+        use_selection = bool('image' in initial_control_state
+                and initial_control_state['image'] == ControlnetPanel.REUSE_IMAGE_VALUE)
         image_row = QHBoxLayout()
         layout.addLayout(image_row)
 
@@ -60,7 +83,7 @@ class ControlnetPanel(CollapsibleBox):
         image_row.addWidget(reuse_image_checkbox, stretch=10)
         reuse_image_checkbox.setChecked(use_selection)
         def reuse_image_update(checked):
-            value = REUSE_IMAGE_VALUE if checked else image_path_edit.text()
+            value = ControlnetPanel.REUSE_IMAGE_VALUE if checked else image_path_edit.text()
             load_image_button.setEnabled(not checked)
             image_path_edit.setEnabled(not checked)
             if checked:
@@ -82,9 +105,9 @@ class ControlnetPanel(CollapsibleBox):
             control_type_combobox = QComboBox(self)
             for control in control_types:
                 control_type_combobox.addItem(control)
-            control_type_combobox.setCurrentIndex(control_type_combobox.findText("All"))
+            control_type_combobox.setCurrentIndex(control_type_combobox.findText('All'))
             selection_row.addWidget(LabelWrapper(control_type_combobox, 'Control Type'))
-        
+
         module_combobox = QComboBox(self)
         selection_row.addWidget(LabelWrapper(module_combobox, 'Control Module'))
 
@@ -93,7 +116,7 @@ class ControlnetPanel(CollapsibleBox):
 
 
         # Dynamic options section:
-        options_combobox = CollapsibleBox("Options", start_closed=True)
+        options_combobox = CollapsibleBox('Options', start_closed=True)
         options_combobox.set_expanded_size_policy(QSizePolicy.Maximum)
         options_layout = QVBoxLayout()
         options_combobox.set_content_layout(options_layout)
@@ -113,7 +136,7 @@ class ControlnetPanel(CollapsibleBox):
                             selection = option
                             break
                 if selection not in module_detail['module_detail']:
-                    print(f"Warning: invalid selection {selection} not found")
+                    print(f'Warning: invalid selection {selection} not found')
                     return
                 details = module_detail['module_detail'][selection]
             config.set(config_key, selection, inner_key='module')
@@ -132,13 +155,11 @@ class ControlnetPanel(CollapsibleBox):
                         widget.deleteLater()
                 options_layout.removeItem(row)
                 row.layout().deleteLater()
-            DEFAULT_PARAMS=['module', 'model', 'low_vram', 'pixel_perfect', 'image', 'weight', 'guidance_start',
-                            'guidance_end']
             current_keys = list(config.get(config_key).keys())
             for param in current_keys:
-                if param not in DEFAULT_PARAMS:
+                if param not in ControlnetPanel.DEFAULT_PARAMS:
                     config.set(config_key, None, inner_key=param)
-            if selection != "none":
+            if selection != 'none':
                 sliders = [
                     {
                         'display': 'Control Weight',
@@ -212,7 +233,8 @@ class ControlnetPanel(CollapsibleBox):
             else:
                 options_combobox.set_expanded(False)
                 options_combobox.setEnabled(False)
-        module_change_handler = lambda: handle_module_change(module_combobox.currentText())
+        def module_change_handler():
+            handle_module_change(module_combobox.currentText())
         module_combobox.currentIndexChanged.connect(module_change_handler)
 
         # Setup control types, update other boxes on change:
@@ -220,17 +242,17 @@ class ControlnetPanel(CollapsibleBox):
             model_combobox.currentIndexChanged.disconnect(handle_model_change)
             while model_combobox.count() > 0:
                 model_combobox.removeItem(0)
-            defaultModel = 'none'
+            default_model = 'none'
             if control_types is not None:
                 for model in control_types[typename]['model_list']:
                     model_combobox.addItem(model)
-                defaultModel = control_types[typename]['default_model']
+                default_model = control_types[typename]['default_model']
             else:
                 for model in model_list['model_list']:
                     model_combobox.addItem(model)
             model_combobox.currentIndexChanged.connect(handle_model_change)
-            if defaultModel != 'none':
-                model_combobox.setCurrentIndex(model_combobox.findText(defaultModel))
+            if default_model != 'none':
+                model_combobox.setCurrentIndex(model_combobox.findText(default_model))
             else:
                 model_combobox.setCurrentIndex(0)
 
@@ -252,7 +274,8 @@ class ControlnetPanel(CollapsibleBox):
                 module_combobox.setCurrentIndex(0)
         load_control_type('All')
         if control_type_combobox is not None:
-            control_type_combobox.currentIndexChanged.connect(lambda: load_control_type(control_type_combobox.currentText()))
+            control_type_combobox.currentIndexChanged.connect(
+                    lambda: load_control_type(control_type_combobox.currentText()))
 
         # Restore previous state on start:
         if 'module' in initial_control_state:
@@ -278,5 +301,5 @@ class ControlnetPanel(CollapsibleBox):
                 self._saved_state = config.get(config_key)
                 config.set(config_key, {})
         set_enabled('model' in initial_control_state)
-        enabled_checkbox.stateChanged.connect(set_enabled) 
+        enabled_checkbox.stateChanged.connect(set_enabled)
         self.show_button_bar(True)

@@ -38,10 +38,10 @@ class BrushPicker(QTabWidget):
         self._layouts = {}
         self._pages = {}
         self._config = config
-        self._read_order_file(os.path.join(self._brush_dir, BrushPicker.BRUSH_CONF_FILE))
+        self._read_order_file(os.path.join(BrushPicker.BRUSH_DIR, BrushPicker.BRUSH_CONF_FILE))
         # scan for added groups:
-        for group in os.listdir(self._brush_dir):
-            group_dir = os.path.join(self._brush_dir, group)
+        for group in os.listdir(BrushPicker.BRUSH_DIR):
+            group_dir = os.path.join(BrushPicker.BRUSH_DIR, group)
             if group in self._group_orders or not os.path.isdir(group_dir):
                 continue
             if self._read_order_file(os.path.join(group_dir, BrushPicker.BRUSH_ORDER_FILE)):
@@ -55,7 +55,7 @@ class BrushPicker(QTabWidget):
                 brush_name = file[:-4]
                 self._group_orders[group].append(brush_name)
         for group in self._groups:
-            group_dir = os.path.join(self._brush_dir, group)
+            group_dir = os.path.join(BrushPicker.BRUSH_DIR, group)
             if not os.path.isdir(group_dir):
                 continue
             self._create_tab(group)
@@ -67,21 +67,21 @@ class BrushPicker(QTabWidget):
 
                 brush_icon.favorite_change.connect(self._add_favorite)
                 group_layout.addWidget(brush_icon, y, x)
-        favorite_list = config.get(self._FAV_CONFIG_KEY)
+        favorite_list = config.get(BrushPicker.FAV_CONFIG_KEY)
         favorite_brushes = []
         for favorite in favorite_list:
             if '/' not in favorite:
                 continue
             group, brush = favorite.split('/')
-            brush_path = os.path.join(self._brush_dir, group, brush + BrushPicker.BRUSH_EXTENSION)
-            image_path = os.path.join(self._brush_dir, group, brush + BrushPicker.BRUSH_ICON_EXTENSION)
+            brush_path = os.path.join(BrushPicker.BRUSH_DIR, group, brush + BrushPicker.BRUSH_EXTENSION)
+            image_path = os.path.join(BrushPicker.BRUSH_DIR, group, brush + BrushPicker.BRUSH_ICON_EXTENSION)
             brush_icon = _IconButton(image_path, brush_path, self._config, True)
             brush_icon.favorite_change.connect(self._remove_favorite)
             favorite_brushes.append(brush_icon)
         if len(favorite_brushes) > 0:
-            self._create_tab(self._FAV_KEY, index=0)
+            self._create_tab(BrushPicker.FAV_KEY, index=0)
             for x, y, brush in _GridIter(favorite_brushes):
-                self._layouts[self._FAV_KEY].addWidget(brush, y, x)
+                self._layouts[BrushPicker.FAV_KEY].addWidget(brush, y, x)
 
 
     def _create_tab(self, tab_name, index=None):
@@ -105,7 +105,7 @@ class BrushPicker(QTabWidget):
     def _get_favorite_brush_widgets(self):
         """Loads favorite brushes from config."""
         fav_list = []
-        layout = self._layouts[self._FAV_KEY]
+        layout = self._layouts[BrushPicker.FAV_KEY]
         for row in range(layout.rowCount()):
             for col in range(layout.columnCount()):
                 item = layout.itemAtPosition(row, col)
@@ -116,19 +116,19 @@ class BrushPicker(QTabWidget):
 
     def _save_favorite_brushes(self, fav_list):
         """Saves favorite brushes to config whenever a favorite is added or removed."""
-        self._config.set(self._FAV_CONFIG_KEY, [brush.saved_name() for brush in fav_list])
+        self._config.set(BrushPicker.FAV_CONFIG_KEY, [brush.saved_name() for brush in fav_list])
 
 
     def _add_favorite(self, icon_button):
-        if icon_button.saved_name() in self._config.get(self._FAV_CONFIG_KEY):
+        if icon_button.saved_name() in self._config.get(BrushPicker.FAV_CONFIG_KEY):
             return
-        if self._FAV_KEY not in self._layouts:
-            self._create_tab(self._FAV_KEY, index=0)
+        if BrushPicker.FAV_KEY not in self._layouts:
+            self._create_tab(BrushPicker.FAV_KEY, index=0)
 
         fav_list = self._get_favorite_brush_widgets()
         fav_list.append(icon_button.copy(True))
         for x, y, brush in _GridIter(fav_list, len(fav_list) - 1):
-            self._layouts[self._FAV_KEY].addWidget(brush, y, x)
+            self._layouts[BrushPicker.FAV_KEY].addWidget(brush, y, x)
             brush.favorite_change.connect(self._remove_favorite)
         self._save_favorite_brushes(fav_list)
         self.update()
@@ -137,12 +137,12 @@ class BrushPicker(QTabWidget):
     def _remove_favorite(self, icon_button):
         fav_list = self._get_favorite_brush_widgets()
         fav_list.remove(icon_button)
-        self._layouts[self._FAV_KEY].removeWidget(icon_button)
+        self._layouts[BrushPicker.FAV_KEY].removeWidget(icon_button)
         icon_button.setParent(None)
         for brush in fav_list:
-            self._layouts[self._FAV_KEY].removeWidget(brush)
+            self._layouts[BrushPicker.FAV_KEY].removeWidget(brush)
         for x, y, brush in _GridIter(fav_list):
-            self._layouts[self._FAV_KEY].addWidget(brush, y, x)
+            self._layouts[BrushPicker.FAV_KEY].addWidget(brush, y, x)
         self._save_favorite_brushes(fav_list)
         self.update()
 

@@ -55,6 +55,7 @@ ignore=build,
        ldm,
        resources,
        pyspacenav,
+       guided_diffusion,
        taming-transformers
 
 # Add files or directories matching the regular expressions patterns to the
@@ -194,6 +195,7 @@ function-naming-style=snake_case
 #function-rgx=
 
 # Good variable names which should always be accepted, separated by a comma.
+# Most of these are pyQt5 inherited class methods.
 good-names=i,
            j,
            k,
@@ -206,6 +208,8 @@ good-names=i,
            resizeEvent,
            showEvent,
            hideEvent,
+           tabletEvent,
+           eventFilter,
            sizeHint,
            setValue,
            setSingleStep,
@@ -217,6 +221,10 @@ good-names=i,
            setMinimum,
            setMaximum,
            setRange,
+           setVisible,
+           setOpacity,
+           drawBackground,
+           drawForeground,
            _
 
 # Good variable names regexes, separated by a comma. If names match any regex,
@@ -459,7 +467,13 @@ disable=raw-checker-failed,
         use-implicit-booleaness-not-comparison-to-string,
         use-implicit-booleaness-not-comparison-to-zero,
         no-name-in-module,
-        too-few-public-methods
+        too-few-public-methods,
+        too-many-public-methods,
+        too-many-arguments,
+        too-many-locals,
+        too-many-instance-attributes,
+        too-many-branches,
+        too-many-statements
 
 # Enable the message, report, category or checker with the given id(s). You can
 # either give multiple identifier separated by comma (,) or put this option

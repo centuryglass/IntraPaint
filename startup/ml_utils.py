@@ -10,7 +10,7 @@ import numpy as np
 def get_device(use_cpu=False):
     """Initializes the Torch device."""
     if use_cpu or (not torch.cuda.is_available()):
-        print("Warning: CPU mode is not supported, image generation will almost certainly fail.")
+        print('Warning: CPU mode is not supported, image generation will almost certainly fail.')
         return torch.device('cpu')
     return torch.device('cuda:0')
 
@@ -31,12 +31,12 @@ def foreach_in_sample(sample, batch_size, action):
 
 def foreach_image_in_sample(sample, batch_size, ldm_model, action):
     """Runs a function for each PIL image extracted from a sample"""
-    def convertParam(k, numpy_data):
+    def convert_param(k, numpy_data):
         action(k, image_from_numpy_data(numpy_data, ldm_model))
-    foreach_in_sample(sample, batch_size, convertParam)
+    foreach_in_sample(sample, batch_size, convert_param)
 
 
-def get_save_fn(prefix, batch_size, ldm_model, clip_model, clip_preprocess, device):
+def get_save_fn(prefix, batch_size, ldm_model, unused_clip_model, unused_clip_preprocess, unused_device):
     """Creates and returns a function that saves sample data to disk."""
     def save_sample(i, sample, clip_score_fn=None):
         def save_image(k, numpy_data):

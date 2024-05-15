@@ -5,12 +5,14 @@ import gc
 from PIL import Image
 import torch
 
+from PyQt5.QtCore import QSize
+
 from startup.load_models import load_models
 from startup.create_sample_function import create_sample_function
 from startup.generate_samples import generate_samples
 from startup.ml_utils import get_device, foreach_image_in_sample
-
 from controller.base_controller import BaseInpaintController
+from data_model.config import Config
 
 class LocalDeviceController(BaseInpaintController):
     """Provides image editing functionality through a local instance of GLID-3-XL."""
@@ -36,10 +38,9 @@ class LocalDeviceController(BaseInpaintController):
                 cpu = args.cpu,
                 ddpm = args.ddpm,
                 ddim = args.ddim)
-        print("Loaded models")
 
 
-    def _inpaint(self, selection, mask, send_image, status_signal):
+    def _inpaint(self, selection, mask, save_image, status_signal):
         gc.collect()
         if not isinstance(selection, Image.Image):
             raise TypeError(f'Expected PIL Image selection, got {selection}')
@@ -50,8 +51,8 @@ class LocalDeviceController(BaseInpaintController):
         if selection.height != mask.height:
             raise RuntimeError(f'Selection and mask widths should match, found {selection.width} and {mask.width}')
 
-        batch_size = self._config.get('batch_size')
-        batch_count = self._config.get('batch_count')
+        batch_size = self._config.get(Config.BATCH_SIZE)
+        batch_count = self._config.get(Config.BATCH_COUNT)
         sample_fn, clip_score_fn = create_sample_function(
                 self._device,
                 self._model,
@@ -64,26 +65,26 @@ class LocalDeviceController(BaseInpaintController):
                 self._normalize,
                 image=None, # Inpainting uses edit instead of this param
                 mask=mask,
-                prompt=self._config.get('prompt'),
-                negative=self._config.get('negative_prompt'),
-                guidance_scale=self._config.get('guidance_scale'),
+                prompt=self._config.get(Config.PROMPT),
+                negative=self._config.get(Config.NEGATIVE_PROMPT),
+                guidance_scale=self._config.get(Config.GUIDANCE_SCALE),
                 batch_size=batch_size,
                 edit=selection,
                 width=selection.width,
                 height=selection.height,
                 edit_width=selection.width,
                 edit_height=selection.height,
-                cutn=self._config.get('cutn'),
+                cutn=self._config.get(Config.CUTN),
                 clip_guidance=self._clip_guidance,
-                skip_timesteps=self._config.get('skip_steps'),
+                skip_timesteps=self._config.get(Config.SKIP_STEPS),
                 ddpm=self._ddpm,
                 ddim=self._ddim)
-        def save_sample(i, sample, clip_score=False):
+        def save_sample(i, sample, unused_clip_score=False):
             foreach_image_in_sample(
                     sample,
                     batch_size,
                     self._ldm,
-                    lambda k, img: send_image(img, (i * batch_size) + k))
+                    lambda k, img: save_image(img, (i * batch_size) + k))
         generate_samples(
                 self._device,
                 self._ldm,
@@ -94,3 +95,9 @@ class LocalDeviceController(BaseInpaintController):
                 batch_count,
                 selection.width,
                 selection.height)
+
+    def refresh_settings(self, settings_modal):
+        """Settings not in scope for GLID-3-XL controller."""
+
+    def update_settings(self, changed_settings):
+        """Settings not in scope for GLID-3-XL controller."""

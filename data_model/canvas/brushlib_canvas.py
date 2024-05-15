@@ -11,14 +11,16 @@ from PyQt5.QtCore import Qt, QLine, QSize
 from PIL import Image
 from brushlib import MPBrushLib as brushlib
 from data_model.canvas.canvas import Canvas
+from data_model.config import Config
 from ui.image_utils import pil_image_to_qimage
 
 
-RADIUS_LOG = brushlib.BrushSetting.MYPAINT_BRUSH_SETTING_RADIUS_LOGARITHMIC
-ERASER = brushlib.BrushSetting.MYPAINT_BRUSH_SETTING_ERASER
 
 class BrushlibCanvas(Canvas):
     """BrushlibCanvas provides an image editing layer that uses the MyPaint brush engine."""
+
+    RADIUS_LOG = brushlib.BrushSetting.MYPAINT_BRUSH_SETTING_RADIUS_LOGARITHMIC
+    ERASER = brushlib.BrushSetting.MYPAINT_BRUSH_SETTING_ERASER
 
     def __init__(self, config, image):
         """Initialize with config values and optional arbitrary initial image data.
@@ -31,17 +33,17 @@ class BrushlibCanvas(Canvas):
         """
         super().__init__(config, image)
         self._visible = True
-        config.connect(self, 'sketch_brush_size', self.set_brush_size)
-        self.set_brush_size(config.get('sketch_brush_size'))
-        self._size = config.get('edit_size')
-        brushlib.set_surface_size(config.get('edit_size'))
+        config.connect(self, Config.SKETCH_BRUSH_SIZE, self.set_brush_size)
+        self.set_brush_size(config.get(Config.SKETCH_BRUSH_SIZE))
+        self._size = config.get(Config.EDIT_SIZE)
+        brushlib.set_surface_size(config.get(Config.EDIT_SIZE))
         self._drawing = False
         self._scene = None
         self._scale = 1.0
         self._has_sketch = False
         self._saved_brush_size = None
         self._saved_image = None
-        brushlib.load_brush(config.get('mypaint_brush'))
+        brushlib.load_brush(config.get(Config.MYPAINT_BRUSH))
 
 
     def has_sketch(self):
@@ -72,7 +74,7 @@ class BrushlibCanvas(Canvas):
         """
         super().set_brush_size(size)
         size_log_radius = math.log(size / 2)
-        brushlib.set_brush_value(RADIUS_LOG, size_log_radius)
+        brushlib.set_brush_value(BrushlibCanvas.RADIUS_LOG, size_log_radius)
 
 
     def add_to_scene(self, scene, z_value=None):
@@ -117,7 +119,7 @@ class BrushlibCanvas(Canvas):
                 brushlib.set_surface_size(image_data.size())
             brushlib.load_image(image_data)
         else:
-            raise TypeError(f"Invalid image param {image_data}")
+            raise TypeError(f'Invalid image param {image_data}')
 
 
     def size(self):
@@ -194,7 +196,7 @@ class BrushlibCanvas(Canvas):
         """
         if not self._visible:
             return
-        brushlib.set_brush_value(ERASER, 0.0)
+        brushlib.set_brush_value(BrushlibCanvas.ERASER, 0.0)
         self._draw(point, color, size_multiplier, size_override)
 
 
@@ -214,7 +216,7 @@ class BrushlibCanvas(Canvas):
         """
         if not self._visible:
             return
-        brushlib.set_brush_value(ERASER, 0.0)
+        brushlib.set_brush_value(BrushlibCanvas.ERASER, 0.0)
         self._draw(line, color, size_multiplier, size_override)
 
 
@@ -232,7 +234,7 @@ class BrushlibCanvas(Canvas):
         """
         if not self._visible:
             return
-        brushlib.set_brush_value(ERASER, 1.0)
+        brushlib.set_brush_value(BrushlibCanvas.ERASER, 1.0)
         self._draw(point, Qt.black, size_multiplier, size_override)
 
 
@@ -250,7 +252,7 @@ class BrushlibCanvas(Canvas):
         """
         if not self._visible:
             return
-        brushlib.set_brush_value(ERASER, 1.0)
+        brushlib.set_brush_value(BrushlibCanvas.ERASER, 1.0)
         self._draw(line, Qt.black, size_multiplier, size_override)
 
 

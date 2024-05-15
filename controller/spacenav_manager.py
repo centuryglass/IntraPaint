@@ -86,14 +86,14 @@ class SpacenavManager():
 
             def run(self):
                 """Main thread loop."""
-                print("Loading optional space mouse support for panning:")
+                print('Loading optional space mouse support for panning:')
                 try:
                     spacenav.open()
                     atexit.register(spacenav.close)
                 except spacenav.ConnectionError:
-                    print("spacenav connection failed, space mouse will not be used.")
+                    print('spacenav connection failed, space mouse will not be used.')
                     return
-                print("spacenav connection started.")
+                print('spacenav connection started.')
 
                 def send_nav_signal():
                     x = 0

@@ -39,12 +39,12 @@ class SettingsModal(QDialog):
         bottom_panel_layout.addSpacing(300)
 
         cancel_button = QPushButton()
-        cancel_button.setText("Cancel")
+        cancel_button.setText('Cancel')
         cancel_button.clicked.connect(self.hide)
         bottom_panel_layout.addWidget(cancel_button, stretch=1)
 
         save_button = QPushButton()
-        save_button.setText("Save")
+        save_button.setText('Save')
         def on_save():
             self.changes_saved.emit(self._changes)
             self.hide()
@@ -69,7 +69,7 @@ class SettingsModal(QDialog):
             Text explaining the updated setting, to be shown when the mouse hovers over the setting's control widget.
         """
         if setting_name not in self._inputs:
-            raise ValueError(f"{setting_name} not defined")
+            raise ValueError(f'{setting_name} not defined')
         self._inputs[setting_name].setToolTip(tooltip)
 
 

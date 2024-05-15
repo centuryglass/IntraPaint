@@ -1,22 +1,22 @@
 """
 Simplified script for single glid-3-xl inpainting operations.
 """
-import sys, gc
+import gc
 import torch
 
 from startup.load_models import load_models
 from startup.create_sample_function import create_sample_function
 from startup.generate_samples import generate_samples
 from startup.utils import build_arg_parser
-from startup.ml_utils import get_device
+from startup.ml_utils import get_device, get_save_fn
 
 # argument parsing:
 parser = build_arg_parser(include_gen_params=False)
 args = parser.parse_args()
 
 if not args.mask:
-    from edit_ui.quickedit_window import getDrawnMask
-    args.mask = getDrawnMask(args.width, args.height, args.edit)
+    from ui.window.quickedit_window import get_drawn_mask
+    args.mask = get_drawn_mask(args.edit)
 
 device = get_device(args.cpu)
 if args.seed >= 0:

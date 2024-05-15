@@ -1,35 +1,58 @@
 """
 Panel used to edit the selected area of the edited image.
 """
-from PyQt5.QtWidgets import (QWidget, QLabel, QSpinBox, QCheckBox, QPushButton, QRadioButton,
-        QColorDialog, QGridLayout, QSpacerItem)
-from PyQt5.QtCore import Qt, QPoint, QRect, QSize, QBuffer, QEvent
-from PyQt5.QtGui import QPainter, QPen, QCursor, QPixmap, QBitmap, QIcon
-from PIL import Image
+from PyQt5.QtWidgets import QWidget, QPushButton, QColorDialog, QGridLayout
+from PyQt5.QtCore import Qt, QSize, QEvent
+from PyQt5.QtGui import QPainter, QPen, QCursor, QPixmap, QIcon
 
 from ui.mask_creator import MaskCreator
-from ui.util.get_scaled_placement import get_scaled_placement
 from ui.config_control_setup import connected_checkbox
 from ui.util.equal_margins import get_equal_margins
 from ui.util.contrast_color import contrast_color
 from ui.widget.dual_toggle import DualToggle
 from ui.widget.param_slider import ParamSlider
-import os, sys
+from data_model.config import Config
 
-class DRAW_MODES:
-    MASK = "Mask"
-    SKETCH = "Sketch"
-    def is_valid(option):
-        return option == DRAW_MODES.MASK or option == DRAW_MODES.SKETCH or option is None
 
-class TOOL_MODES:
-    PEN = "Pen"
-    ERASER = "Eraser"
-    def is_valid(option):
-        return option == TOOL_MODES.PEN or option == TOOL_MODES.ERASER or option is None
 
 class MaskPanel(QWidget):
+    """MaskPanel is used to edit the selected area of the edited image."""
+
+    class DrawModes:
+        """Panel drawing mode options."""
+
+        MASK = 'Mask'
+        SKETCH = 'Sketch'
+        @staticmethod
+        def is_valid(option):
+            """Returns whether a value is a valid drawing mode."""
+            return option == MaskPanel.DrawModes.MASK or option == MaskPanel.DrawModes.SKETCH or option is None
+
+    class ToolModes:
+        """Drawing tool options."""
+
+        PEN = 'Pen'
+        ERASER = 'Eraser'
+        @staticmethod
+        def is_valid(option):
+            """Returns whether a value is a valid drawing tool mode."""
+            return option == MaskPanel.ToolModes.PEN or option == MaskPanel.ToolModes.ERASER or option is None
+
+
     def __init__(self, config, mask_canvas, sketch_canvas, edited_image):
+        """Initialize the panel with the edited image and config values.
+
+        Parameters
+        ----------
+        config : data_model.config.Config
+            Shared config data object.
+        mask_canvas : data_model.canvas.canvas.Canvas
+            Canvas used for selecting inpainting areas.
+        sketch_canvas : data_model.canvas.canvas.Canvas
+            Canvas used for directly painting on the image.
+        edited_image : data_model.edited_image.EditedImage
+            Image being edited.
+        """
         super().__init__()
 
         self._cursor_pixmap = QPixmap('./resources/cursor.png')
@@ -41,10 +64,14 @@ class MaskPanel(QWidget):
         self._last_cursor_size = None
         self._config = config
         self._draw_mode = None
+        self._pressure_size_checkbox = None
+        self._pressure_opacity_checkbox = None
+        self._color_picker_button = None
+        self._brush_picker_button = None
 
         def set_sketch_color(color):
             self._mask_creator.set_sketch_color(color)
-            if hasattr(self, '_color_picker_button'):
+            if self._color_picker_button is not None:
                 icon = QPixmap(QSize(64, 64))
                 icon.fill(color)
                 self._color_picker_button.setIcon(QIcon(icon))
@@ -59,9 +86,9 @@ class MaskPanel(QWidget):
         self._edited_image = edited_image
 
 
-        self._brush_size_slider = ParamSlider(self, "Brush size", config, "mask_brush_size")
+        self._brush_size_slider = ParamSlider(self, 'Brush size', config, Config.MASK_BRUSH_SIZE)
         def update_brush_size(mode, size):
-            if mode == DRAW_MODES.MASK:
+            if mode == MaskPanel.DrawModes.MASK:
                 self._mask_brush_size = size
                 mask_canvas.set_brush_size(size)
             else:
@@ -69,41 +96,42 @@ class MaskPanel(QWidget):
                 sketch_canvas.set_brush_size(size)
             self._update_brush_cursor()
 
-        config.connect(self, "mask_brush_size", lambda s: update_brush_size(DRAW_MODES.MASK, s))
-        config.connect(self, "sketch_brush_size", lambda s: update_brush_size(DRAW_MODES.SKETCH, s))
+        config.connect(self, Config.MASK_BRUSH_SIZE, lambda s: update_brush_size(MaskPanel.DrawModes.MASK, s))
+        config.connect(self, Config.SKETCH_BRUSH_SIZE, lambda s: update_brush_size(MaskPanel.DrawModes.SKETCH, s))
         edited_image.selection_changed.connect(lambda: self.resizeEvent(None))
 
-        self._tool_toggle = DualToggle(self, [TOOL_MODES.PEN, TOOL_MODES.ERASER], config)
+        self._tool_toggle = DualToggle(self, [MaskPanel.ToolModes.PEN, MaskPanel.ToolModes.ERASER], config)
         self._tool_toggle.set_icons('./resources/pen.png', 'resources/eraser.png')
-        self._tool_toggle.set_selected(TOOL_MODES.PEN)
+        self._tool_toggle.set_selected(MaskPanel.ToolModes.PEN)
         def set_drawing_tool(selection):
-            self._mask_creator.set_use_eraser(selection == TOOL_MODES.ERASER)
+            self._mask_creator.set_use_eraser(selection == MaskPanel.ToolModes.ERASER)
         self._tool_toggle.value_changed.connect(set_drawing_tool)
 
         self._clear_mask_button = QPushButton(self)
-        self._clear_mask_button.setText("clear")
+        self._clear_mask_button.setText('clear')
         self._clear_mask_button.setIcon(QIcon(QPixmap('./resources/clear.png')))
         def clear_mask():
             self._mask_creator.clear()
-            self._tool_toggle.set_selected(TOOL_MODES.PEN)
+            self._tool_toggle.set_selected(MaskPanel.ToolModes.PEN)
         self._clear_mask_button.clicked.connect(clear_mask)
 
         self._fill_mask_button = QPushButton(self)
-        self._fill_mask_button.setText("fill")
+        self._fill_mask_button.setText('fill')
         self._fill_mask_button.setIcon(QIcon(QPixmap('./resources/fill.png')))
         def fill_mask():
             self._mask_creator.fill()
         self._fill_mask_button.clicked.connect(fill_mask)
 
-        self._mask_sketch_toggle = DualToggle(self, [DRAW_MODES.MASK, DRAW_MODES.SKETCH], config)
+        self._mask_sketch_toggle = DualToggle(self, [MaskPanel.DrawModes.MASK, MaskPanel.DrawModes.SKETCH], config)
         self._mask_sketch_toggle.set_icons('./resources/mask.png', 'resources/sketch.png')
-        self._mask_sketch_toggle.set_tooltips("Draw over the area to be inpainted", "Add details to help guide inpainting")
-        self._mask_sketch_toggle.value_changed.connect(lambda m: self.set_draw_mode(m if m != "" else None))
+        self._mask_sketch_toggle.set_tooltips('Draw over the area to be inpainted',
+                'Add details to help guide inpainting')
+        self._mask_sketch_toggle.value_changed.connect(lambda m: self.set_draw_mode(m if m != '' else None))
 
 
         self._color_picker_button = QPushButton(self)
-        self._color_picker_button.setText("Color")
-        self._color_picker_button.setToolTip("Select sketch brush color")
+        self._color_picker_button.setText('Color')
+        self._color_picker_button.setToolTip('Select sketch brush color')
         self._color_picker_button.clicked.connect(lambda: set_sketch_color(QColorDialog.getColor()))
         set_sketch_color(self._mask_creator.get_sketch_color())
         self._color_picker_button.setVisible(False)
@@ -112,8 +140,8 @@ class MaskPanel(QWidget):
             from ui.widget.brush_picker import BrushPicker
             self._brush_picker_button = QPushButton(self)
             self._brush_picker = None
-            self._brush_picker_button.setText("Brush")
-            self._brush_picker_button.setToolTip("Select sketch brush type")
+            self._brush_picker_button.setText('Brush')
+            self._brush_picker_button.setToolTip('Select sketch brush type')
             self._brush_picker_button.setIcon(QIcon(QPixmap('./resources/brush.png')))
             def open_brush_picker():
                 if self._brush_picker is None:
@@ -124,7 +152,7 @@ class MaskPanel(QWidget):
             self._brush_picker_button.clicked.connect(open_brush_picker)
             self._brush_picker_button.setVisible(False)
         except ImportError as err:
-            print(f"Skipping brush selection init, brushlib loading failed: {err}")
+            print(f'Skipping brush selection init, brushlib loading failed: {err}')
 
 
         self._layout = QGridLayout()
@@ -138,11 +166,11 @@ class MaskPanel(QWidget):
         def handle_sketch_mode_enabled_change(enabled):
             self._mask_sketch_toggle.setEnabled(enabled and self._mask_canvas.enabled())
             if not enabled and self._mask_canvas.enabled():
-                self.set_draw_mode(DRAW_MODES.MASK)
+                self.set_draw_mode(MaskPanel.DrawModes.MASK)
             elif enabled and not self._mask_canvas.enabled():
-                self.set_draw_mode(DRAW_MODES.SKETCH)
+                self.set_draw_mode(MaskPanel.DrawModes.SKETCH)
             elif not enabled:
-                self.set_draw_mode(DRAW_MODES.SKETCH if enabled else None)
+                self.set_draw_mode(MaskPanel.DrawModes.SKETCH if enabled else None)
             self.setEnabled(enabled or self._mask_canvas.enabled())
             self.resizeEvent(None)
         sketch_canvas.enabled_state_changed.connect(handle_sketch_mode_enabled_change)
@@ -151,11 +179,11 @@ class MaskPanel(QWidget):
         def handle_mask_mode_enabled_change(enabled):
             self._mask_sketch_toggle.setEnabled(enabled and self._sketch_canvas.enabled())
             if not enabled and self._sketch_canvas.enabled():
-                self.set_draw_mode(DRAW_MODES.SKETCH)
+                self.set_draw_mode(MaskPanel.DrawModes.SKETCH)
             elif enabled and not self._sketch_canvas.enabled():
-                self.set_draw_mode(DRAW_MODES.MASK)
+                self.set_draw_mode(MaskPanel.DrawModes.MASK)
             else:
-                self.set_draw_mode(DRAW_MODES.MASK if enabled else None)
+                self.set_draw_mode(MaskPanel.DrawModes.MASK if enabled else None)
 
             self.setEnabled(enabled or self._mask_canvas.enabled())
             self.resizeEvent(None)
@@ -164,7 +192,7 @@ class MaskPanel(QWidget):
 
 
     def _clear_control_layout(self):
-        widgets = [ 
+        widgets = [
             self._mask_creator,
             self._brush_size_slider,
             self._tool_toggle,
@@ -173,10 +201,10 @@ class MaskPanel(QWidget):
             self._mask_sketch_toggle,
             self._color_picker_button
         ]
-        if hasattr(self, '_pressure_size_checkbox'):
+        if self._pressure_size_checkbox is not None:
             widgets.append(self._pressure_size_checkbox)
             widgets.append(self._pressure_opacity_checkbox)
-        if hasattr(self, '_brush_picker_button'):
+        if self._brush_picker_button is not None:
             widgets.append(self._brush_picker_button)
         for widget in widgets:
             if self._layout.indexOf(widget) != -1:
@@ -194,7 +222,7 @@ class MaskPanel(QWidget):
         self._brush_size_slider.set_orientation(Qt.Orientation.Vertical)
         border_size = self._brush_size_slider.sizeHint().width() // 3
         self._layout.addWidget(self._color_picker_button, 0, 1, 1, 2)
-        if hasattr(self, '_brush_picker_button'):
+        if self._brush_picker_button is not None:
             self._layout.addWidget(self._brush_picker_button, 1, 1, 1, 2)
         else:
             self._layout.setRowStretch(1, 0)
@@ -205,7 +233,7 @@ class MaskPanel(QWidget):
         self._layout.addWidget(self._mask_sketch_toggle, 2, 1, 2, 1)
         self._layout.addWidget(self._tool_toggle, 4, 1, 2, 1)
         self._layout.addWidget(self._brush_size_slider, 2, 2, 4, 1)
-        if hasattr(self, '_pressure_size_checkbox'):
+        if self._pressure_size_checkbox is not None:
             self._layout.addWidget(self._pressure_size_checkbox, 6, 1, 1, 2)
             self._layout.addWidget(self._pressure_opacity_checkbox, 7, 1, 1, 2)
             if not self._pressure_size_checkbox.isVisible():
@@ -226,6 +254,7 @@ class MaskPanel(QWidget):
         self._layout.setContentsMargins(get_equal_margins(border_size))
         self._layout_type = Qt.Orientation.Vertical
 
+
     def _setup_horizontal_layout(self):
         self._clear_control_layout()
         self._tool_toggle.set_orientation(Qt.Orientation.Horizontal)
@@ -233,14 +262,14 @@ class MaskPanel(QWidget):
         self._brush_size_slider.set_orientation(Qt.Orientation.Horizontal)
         self._layout.addWidget(self._tool_toggle, 1, 2)
         self._layout.addWidget(self._mask_sketch_toggle, 1, 3)
-        if hasattr(self, '_brush_picker_button'):
+        if self._brush_picker_button is not None:
             self._layout.addWidget(self._color_picker_button, 2, 2)
             self._layout.addWidget(self._brush_picker_button, 2, 3)
         else:
             self._layout.addWidget(self._color_picker_button, 2, 2, 1, 2)
         if not self._color_picker_button.isVisible():
             self._layout.setRowStretch(2, 0)
-        if hasattr(self, '_pressure_size_checkbox'):
+        if self._pressure_size_checkbox is not None:
             if self._pressure_opacity_checkbox.isVisible():
                 self._layout.addWidget(self._pressure_size_checkbox, 3, 2)
                 self._layout.addWidget(self._pressure_opacity_checkbox, 3, 3)
@@ -269,9 +298,10 @@ class MaskPanel(QWidget):
         self._layout.setContentsMargins(get_equal_margins(self._border_size))
         self._layout_type = Qt.Orientation.Horizontal
 
+
     def _setup_correct_layout(self):
         widget_aspect_ratio = self.width() / self.height()
-        edit_size = self._config.get("edit_size")
+        edit_size = self._config.get(Config.EDIT_SIZE)
         edit_aspect_ratio = edit_size.width() / edit_size.height()
         if self._layout_type is None or abs(widget_aspect_ratio - edit_aspect_ratio) > 0.2:
             if widget_aspect_ratio > edit_aspect_ratio:
@@ -284,60 +314,82 @@ class MaskPanel(QWidget):
             self._update_brush_cursor()
 
 
-    def tabletEvent(self, tablet_event):
+    def tabletEvent(self, unused_tablet_event):
         """Enable tablet controls on first tablet event"""
-        if not hasattr(self, '_pressure_size_checkbox'):
+        if self._pressure_size_checkbox is None:
             config = self._config
-            self._pressure_size_checkbox = connected_checkbox(self, config, 'pressure_size')
+            self._pressure_size_checkbox = connected_checkbox(self, config, Config.PRESSURE_SIZE)
             self._pressure_size_checkbox.setIcon(QIcon(QPixmap('./resources/pressureSize.png')))
-            config.connect(self, 'pressure_size', lambda enabled: self._mask_creator.set_pressure_size_mode(enabled))
-            self._mask_creator.set_pressure_size_mode(config.get('pressure_size'))
+            config.connect(self, Config.PRESSURE_SIZE, self._mask_creator.set_pressure_size_mode)
+            self._mask_creator.set_pressure_size_mode(config.get(Config.PRESSURE_SIZE))
 
-            self._pressure_opacity_checkbox = connected_checkbox(self, config, 'pressure_opacity')
-            config.connect(self, 'pressure_opacity', lambda enabled: self._mask_creator.set_pressure_opacity_mode(enabled))
+            self._pressure_opacity_checkbox = connected_checkbox(self, config, Config.PRESSURE_OPACITY)
+            config.connect(self, Config.PRESSURE_OPACITY, self._mask_creator.set_pressure_opacity_mode)
             self._pressure_opacity_checkbox.setIcon(QIcon(QPixmap('./resources/pressureOpacity.png')))
-            self._mask_creator.set_pressure_opacity_mode(config.get('pressure_opacity'))
+            self._mask_creator.set_pressure_opacity_mode(config.get(Config.PRESSURE_OPACITY))
             # Re-apply visibility and layout based on current mode:
             self.set_draw_mode(self._draw_mode, False)
 
+
     def set_draw_mode(self, mode, ignore_if_unchanged=True):
+        """Sets whether the panel is sketching into the image or masking off an area for inpainting.
+
+        Parameters
+        ----------
+        mode : MaskPanel.DrawModes
+            Selected drawing mode.
+        ignore_if_unchanged : bool, default=True
+            If false, reload the appropriate layout for the selected mode even if that mode is already chosen.
+        """
         if mode == self._draw_mode and ignore_if_unchanged:
             return
-        if not DRAW_MODES.is_valid(mode):
-            raise Exception(f"tried to set invalid drawing mode {mode}")
-        if mode == DRAW_MODES.MASK and not self._mask_canvas.enabled():
-            raise Exception("called setDrawMode(MASK) when mask mode is disabled")
-        if mode == DRAW_MODES.SKETCH and not self._sketch_canvas.enabled():
-            raise Exception("called setDrawMode(SKETCH) when sketch mode is disabled")
+        if not MaskPanel.DrawModes.is_valid(mode):
+            raise ValueError(f'tried to set invalid drawing mode {mode}')
+        if mode == MaskPanel.DrawModes.MASK and not self._mask_canvas.enabled():
+            raise ValueError('called setDrawMode(MASK) when mask mode is disabled')
+        if mode == MaskPanel.DrawModes.SKETCH and not self._sketch_canvas.enabled():
+            raise ValueError('called setDrawMode(SKETCH) when sketch mode is disabled')
         self._draw_mode = mode
         self._mask_sketch_toggle.set_selected(mode)
-        self._mask_creator.set_sketch_mode(mode == DRAW_MODES.SKETCH)
-        self._color_picker_button.setVisible(mode == DRAW_MODES.SKETCH)
-        if hasattr(self, '_brush_picker_button'):
-            self._brush_picker_button.setVisible(mode == DRAW_MODES.SKETCH)
-            if hasattr(self, '_pressure_opacity_checkbox'):
-                self._pressure_size_checkbox.setVisible(mode == DRAW_MODES.MASK)
+        self._mask_creator.set_sketch_mode(mode == MaskPanel.DrawModes.SKETCH)
+        self._color_picker_button.setVisible(mode == MaskPanel.DrawModes.SKETCH)
+        if self._brush_picker_button is not None:
+            self._brush_picker_button.setVisible(mode == MaskPanel.DrawModes.SKETCH)
+            if self._pressure_opacity_checkbox is not None:
+                self._pressure_size_checkbox.setVisible(mode == MaskPanel.DrawModes.MASK)
                 self._pressure_opacity_checkbox.setVisible(False)
-        elif hasattr(self, '_pressure_size_checkbox'):
+        elif self._pressure_size_checkbox is not None:
             self._pressure_size_checkbox.setVisible(True)
-            self._pressure_opacity_checkbox.setVisible(mode == DRAW_MODES.SKETCH)
+            self._pressure_opacity_checkbox.setVisible(mode == MaskPanel.DrawModes.SKETCH)
 
-        self._brush_size_slider.connect_key("mask_brush_size" if mode == DRAW_MODES.MASK else "sketch_brush_size")
+        self._brush_size_slider.connect_key(Config.MASK_BRUSH_SIZE if mode == MaskPanel.DrawModes.MASK
+                else Config.SKETCH_BRUSH_SIZE)
         self._layout_type = None
         self.resizeEvent(None)
         self.update()
 
+
     def toggle_draw_mode(self):
+        """Switches drawing mode to whatever mode isn't currently active."""
         if self._draw_mode is not None:
-            self.set_draw_mode(DRAW_MODES.MASK if self._draw_mode == DRAW_MODES.SKETCH else DRAW_MODES.SKETCH)
+            self.set_draw_mode(MaskPanel.DrawModes.MASK if self._draw_mode == MaskPanel.DrawModes.SKETCH
+                    else MaskPanel.DrawModes.SKETCH)
+
 
     def get_brush_size(self):
-        return self._config.get("mask_brush_size" if self._draw_mode == DRAW_MODES.MASK else "sketch_brush_size")
+        """Returns the current brush size in pixels."""
+        return self._config.get(Config.MASK_BRUSH_SIZE if self._draw_mode == MaskPanel.DrawModes.MASK
+                else Config.SKETCH_BRUSH_SIZE)
+
 
     def set_brush_size(self, size):
-        self._config.set("mask_brush_size" if self._draw_mode == DRAW_MODES.MASK else "sketch_brush_size", size)
+        """Sets the current brush size in pixels."""
+        self._config.set(Config.MASK_BRUSH_SIZE if self._draw_mode == MaskPanel.DrawModes.MASK
+                else Config.SKETCH_BRUSH_SIZE, size)
+
 
     def paintEvent(self, event):
+        """Draws a border around the panel."""
         super().paintEvent(event)
         painter = QPainter(self)
         painter.setPen(QPen(contrast_color(self), self._border_size//2, Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin))
@@ -347,13 +399,17 @@ class MaskPanel(QWidget):
                         Qt.RoundJoin))
             painter.drawRect(self._color_picker_button.geometry())
 
-    def resizeEvent(self, event):
+
+    def resizeEvent(self, unused_event):
+        """Selects the most appropriate layout based on available space whenever the panel size changes."""
         self._setup_correct_layout()
         self._update_brush_cursor()
 
-    def eventFilter(self, source, event):
+
+    def eventFilter(self, unused_source, event):
+        """Draw straight lines when shift is held, use the eyedropper tool when control is held in sketch mode."""
         if event.type() == QEvent.KeyPress:
-            if event.key() == Qt.Key_Control and not self._draw_mode == DRAW_MODES.MASK:
+            if event.key() == Qt.Key_Control and not self._draw_mode == MaskPanel.DrawModes.MASK:
                 self._eyedropper_mode = True
                 self._mask_creator.set_eyedropper_mode(True)
                 self._mask_creator.set_line_mode(False)
@@ -370,25 +426,38 @@ class MaskPanel(QWidget):
                 self._mask_creator.set_line_mode(False)
         return False
 
+
     def select_pen_tool(self):
-        self._tool_toggle.set_selected(TOOL_MODES.PEN)
+        """Switches to the pen tool if the eraser tool is currently selected."""
+        self._tool_toggle.set_selected(MaskPanel.ToolModes.PEN)
+
 
     def select_eraser_tool(self):
-        self._tool_toggle.set_selected(TOOL_MODES.ERASER)
+        """Switches to the eraser tool if the pen tool is currently selected."""
+        self._tool_toggle.set_selected(MaskPanel.ToolModes.ERASER)
+
 
     def swap_draw_tool(self):
+        """Toggles between the pen and eraser tools."""
         self._tool_toggle.toggle()
 
+
     def undo(self):
+        """Reverses the last drawing operation in the active canvas."""
         self._mask_creator.undo()
 
+
     def redo(self):
+        """Restores an undone drawing operation in the active canvas."""
         self._mask_creator.redo()
 
+
     def _update_brush_cursor(self):
+        """Recalculate brush cursor based on panel and brush sizes."""
         if not hasattr(self, '_mask_creator'):
             return
-        brush_size = self._config.get("mask_brush_size" if self._draw_mode == DRAW_MODES.MASK else "sketch_brush_size")
+        brush_size = self._config.get(Config.MASK_BRUSH_SIZE if self._draw_mode == MaskPanel.DrawModes.MASK
+                else Config.SKETCH_BRUSH_SIZE)
         scale = max(self._mask_creator.get_image_display_size().width(), 1) / max(self._mask_canvas.width(), 1)
         scaled_size = max(int(brush_size * scale), 9)
         if scaled_size == self._last_cursor_size:

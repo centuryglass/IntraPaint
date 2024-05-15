@@ -2,7 +2,7 @@
 Provides a utility function for handling image or widget placement.
 """
 
-from PyQt5.QtCore import Qt, QPoint, QRect, QSize
+from PyQt5.QtCore import QRect, QSize
 
 def get_scaled_placement(container_rect, inner_size, margin_width=0):
     """

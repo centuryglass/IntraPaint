@@ -7,6 +7,7 @@ from PyQt5.QtCore import Qt, QSize
 from PyQt5.QtGui import QPainter, QPixmap
 from PyQt5.QtWidgets import QGraphicsPixmapItem
 from data_model.canvas.pixmap_canvas import PixmapCanvas
+from data_model.config import Config
 
 class SketchCanvas(PixmapCanvas):
     """Provides a Canvas implementation for directly drawing within edited image sections."""
@@ -22,8 +23,8 @@ class SketchCanvas(PixmapCanvas):
         """
         super().__init__(config, image_data)
         self._has_sketch = False
-        config.connect(self, 'sketch_brush_size', self.set_brush_size)
-        self.set_brush_size(config.get('sketch_brush_size'))
+        config.connect(self, Config.SKETCH_BRUSH_SIZE, self.set_brush_size)
+        self.set_brush_size(config.get(Config.SKETCH_BRUSH_SIZE))
         self.shading = False
         self._shading_pixmap = QGraphicsPixmapItem()
         self._set_empty_shading_pixmap()
@@ -65,7 +66,7 @@ class SketchCanvas(PixmapCanvas):
     def start_stroke(self):
         """Signals the start of a brush stroke, to be called once whenever user input starts or resumes."""
         super().start_stroke()
-        if self._config.get("pressure_opacity"):
+        if self._config.get(Config.PRESSURE_OPACITY):
             self.shading = True
 
 
