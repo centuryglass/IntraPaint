@@ -1,10 +1,9 @@
-"""
-Provides a utility function for handling image or widget placement.
-"""
+"""Provides a utility function for handling image or widget placement."""
 
 from PyQt5.QtCore import QRect, QSize
 
-def get_scaled_placement(container_rect, inner_size, margin_width=0):
+def get_scaled_placement(container_rect: QRect,
+        inner_size: QSize, margin_width: int = 0) -> QRect:
     """
     Calculate the most appropriate placement of a scaled rectangle within a container, without changing aspect ratio.
     Parameters:
@@ -19,13 +18,11 @@ def get_scaled_placement(container_rect, inner_size, margin_width=0):
     --------
     placement : QRect
         Size and position of the scaled rectangle within container_rect.
-    scale : number
-        Amount that the inner rectangle's width and height should be scaled.
     """
     container_size = container_rect.size() - QSize(margin_width * 2, margin_width * 2)
     scale = min(container_size.width()/max(inner_size.width(), 1), container_size.height()/max(inner_size.height(), 1))
-    x = container_rect.x() + margin_width
-    y = container_rect.y() + margin_width
+    x = float(container_rect.x() + margin_width)
+    y = float(container_rect.y() + margin_width)
     if (inner_size.width() * scale) < container_size.width():
         x += (container_size.width() - inner_size.width() * scale) / 2
     if (inner_size.height() * scale) < container_size.height():

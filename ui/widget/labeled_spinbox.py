@@ -1,6 +1,7 @@
 """
 Minimal wrapper class for creating a labeled spinbox widget.
 """
+from typing import Optional
 from PyQt5.QtWidgets import QWidget, QDoubleSpinBox, QLabel, QHBoxLayout
 from ui.widget.big_int_spinbox import BigIntSpinbox
 
@@ -9,7 +10,13 @@ class LabeledSpinbox(QWidget):
     """
 
 
-    def __init__(self, parent, label_text, tooltip, min_value, default_value, max_value):
+    def __init__(self,
+            parent: Optional[QWidget],
+            label_text: str,
+            tooltip: str,
+            min_value: int | float,
+            default_value: int | float,
+            max_value: int | float) -> None:
         """Initializes the spinbox, sets label text, and establishes type, initial value, and accepted range.
 
         Parameters
@@ -29,12 +36,12 @@ class LabeledSpinbox(QWidget):
         """
         super().__init__(parent)
         self.setToolTip(tooltip)
-        self.layout = QHBoxLayout()
-        self.label = QLabel(self)
-        self.label.setText(label_text)
+        self._layout = QHBoxLayout()
+        self._label = QLabel(self)
+        self._label.setText(label_text)
         self.spinbox = QDoubleSpinBox(self) if isinstance(default_value, float) else BigIntSpinbox(self)
         self.spinbox.setRange(min_value, max_value)
         self.spinbox.setValue(default_value)
-        self.layout.addWidget(self.label, 1)
-        self.layout.addWidget(self.spinbox, 2)
-        self.setLayout(self.layout)
+        self._layout.addWidget(self._label, 1)
+        self._layout.addWidget(self.spinbox, 2)
+        self.setLayout(self._layout)

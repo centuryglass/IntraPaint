@@ -2,12 +2,13 @@
 Base implementation of the primary image editing window. On its own, provides an appropriate interface for GLID-3-XL
 inpainting modes.  Other editing modes should provide subclasses with implementation-specific controls.
 """
+from typing import Callable, Optional
 import sys
 import math
 from PyQt5.QtWidgets import QMainWindow, QGridLayout, QLabel, QWidget, QPushButton, QVBoxLayout, QHBoxLayout, \
-         QComboBox, QFileDialog, QStackedWidget, QAction, QMessageBox
+         QLayout, QComboBox, QFileDialog, QStackedWidget, QAction, QMenuBar
 from PyQt5.QtGui import QIcon
-from PyQt5.QtCore import Qt, QRect, QSize
+from PyQt5.QtCore import Qt, QRect, QSize, QEvent
 from PIL import Image
 
 from ui.modal.modal_utils import request_confirmation
@@ -19,19 +20,30 @@ from ui.config_control_setup import connected_textedit, connected_spinbox, conne
 from ui.widget.draggable_arrow import DraggableArrow
 from ui.widget.loading_widget import LoadingWidget
 from ui.util.screen_size import screen_size
+from data_model.canvas.canvas import Canvas
 from data_model.canvas.filled_canvas import FilledMaskCanvas
 from data_model.config import Config
+from data_model.layer_stack import LayerStack
+try:
+    from libmypaint_pyqt5 import MPBrushLib as brushlib
+except ImportError:
+    brushlib = None
 
 class MainWindow(QMainWindow):
     """Main user interface for inpainting."""
 
-    def __init__(self, config, edited_image, mask, sketch, controller):
+    def __init__(self,
+            config: Config,
+            layer_stack: LayerStack,
+            mask: Canvas,
+            sketch: Canvas,
+            controller):
         """Initializes the main application window and sets up the default UI layout and menu options.
 
         config : data_model.config.Config
             Shared application configuration object.
-        edited_image : data_model.edited_image.EditedImage
-            Image being edited.
+        layer_stack : data_model.layer_stack.LayerStack
+            Image layers being edited.
         mask : data_model.canvas.mask_canvas.MaskCanvas
             Canvas used for masking off inpainting areas.
         sketch : data_model.canvas.canvas.Canvas
@@ -45,7 +57,7 @@ class MainWindow(QMainWindow):
         # Initialize UI/editing data model:
         self._controller = controller
         self._config = config
-        self._edited_image = edited_image
+        self._layer_stack = layer_stack
         self._mask = mask
         self._sketch = sketch
         self._dragging_divider = False
@@ -73,9 +85,14 @@ class MainWindow(QMainWindow):
         self._loading_widget.hide()
 
         # Image/Mask editing layout:
-        self._image_panel = ImagePanel(self._config, self._edited_image)
-        self._mask_panel = MaskPanel(self._config, self._mask, self._sketch, self._edited_image)
+        self._image_panel = ImagePanel(self._config, self._layer_stack)
+        self._mask_panel = MaskPanel(self._config, self._mask, self._sketch, self._layer_stack)
 
+        self._mask_panel.setEnabled(False)
+        def enable_mask_controls():
+            self._mask_panel.setEnabled(True)
+            self._layer_stack.visible_content_changed.disconnect(enable_mask_controls)
+        self._layer_stack.visible_content_changed.connect(enable_mask_controls)
 
         self.installEventFilter(self._mask_panel)
         self._divider = DraggableArrow()
@@ -87,7 +104,10 @@ class MainWindow(QMainWindow):
         # Set up menu:
         self._menu = self.menuBar()
 
-        def add_action(name, shortcut, on_trigger, menu):
+        def add_action(name: str,
+                shortcut: Optional[str],
+                on_trigger: Callable,
+                menu: QMenuBar):
             action = QAction(name, self)
             if shortcut is not None:
                 action.setShortcut(shortcut)
@@ -104,8 +124,7 @@ class MainWindow(QMainWindow):
         add_action('Load', 'Ctrl+O', lambda: if_not_selecting(controller.load_image), file_menu)
         add_action('Reload', 'F5', lambda: if_not_selecting(controller.reload_image), file_menu)
         def try_quit():
-            if (not self._edited_image.has_image()) or request_confirmation(self, 'Quit now?',
-                    'All unsaved changes will be lost.'):
+            if request_confirmation(self, 'Quit now?', 'All unsaved changes will be lost.'):
                 self.close()
         add_action('Quit', 'Ctrl+Q', try_quit, file_menu)
 
@@ -121,16 +140,7 @@ class MainWindow(QMainWindow):
         image_menu = self._menu.addMenu('Image')
         add_action('Resize canvas', 'F2', lambda: if_not_selecting(controller.resize_canvas), image_menu)
         add_action('Scale image', 'F3', lambda: if_not_selecting(controller.scale_image), image_menu)
-        def update_metadata():
-            """update_metadata.
-            """
-            self._edited_image.update_metadata()
-            message_box = QMessageBox(self)
-            message_box.setWindowTitle('Metadata updated')
-            message_box.setText('On save, current image generation paremeters will be stored within the image')
-            message_box.setStandardButtons(QMessageBox.Ok)
-            message_box.exec()
-        add_action('Update image metadata', None, update_metadata, image_menu)
+        add_action('Update image metadata', None, controller.update_metadata, image_menu)
 
         # Tools:
         tool_menu = self._menu.addMenu('Tools')
@@ -154,19 +164,15 @@ class MainWindow(QMainWindow):
         add_action('Increase brush size', 'Ctrl+]', lambda: if_not_selecting(lambda: brush_size_change(1)), tool_menu)
         add_action('Decrease brush size', 'Ctrl+[', lambda: if_not_selecting(lambda: brush_size_change(-1)), tool_menu)
 
-        if hasattr(self._mask_panel, '_open_brush_picker'):
-            try:
-                from brushlib import MPBrushLib as brushlib
-                add_action('Open brush menu', None, self._mask_panel._open_brush_picker, tool_menu)
-                def load_brush():
-                    is_pyinstaller_bundle = getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS')
-                    options = QFileDialog.Option.DontUseNativeDialog if is_pyinstaller_bundle else None
-                    file, file_selected = QFileDialog.getOpenFileName(self, 'Open Brush File', options)
-                    if file_selected:
-                        brushlib.load_brush(file)
-                add_action('Load MyPaint Brush (.myb)', None, load_brush, tool_menu)
-            except ImportError as err:
-                print(f'Skipping brush selection init, brushlib loading failed: {err}')
+        if hasattr(self._mask_panel, '_open_brush_picker') and brushlib is not None:
+            add_action('Open brush menu', None, self._mask_panel._open_brush_picker, tool_menu)
+            def load_brush():
+                is_pyinstaller_bundle = getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS')
+                options = QFileDialog.Option.DontUseNativeDialog if is_pyinstaller_bundle else None
+                file, file_selected = QFileDialog.getOpenFileName(self, 'Open Brush File', options)
+                if file_selected:
+                    brushlib.load_brush(file)
+            add_action('Load MyPaint Brush (.myb)', None, load_brush, tool_menu)
 
         self._settings = SettingsModal(self)
         if controller.init_settings(self._settings):
@@ -184,9 +190,9 @@ class MainWindow(QMainWindow):
 
         # TODO: the following are specific to the A1111 stable-diffusion api and should move to
         #       stable_diffusion_controller:
-        if hasattr(controller, '_webservice') and 'LCM' in config.get_options(Config.SAMPLING_METHOD):
+        if 'LCM' in config.get_options(Config.SAMPLING_METHOD):
             try:
-                loras = [l['name'] for l in controller._webservice.get_loras()]
+                loras = [lora['name'] for lora in controller._webservice.get_loras()]
                 if 'lcm-lora-sdv1-5' in loras:
                     def set_lcm_mode():
                         lora_key= '<lora:lcm-lora-sdv1-5:1>'
@@ -199,13 +205,12 @@ class MainWindow(QMainWindow):
                         config.set(Config.SEED, -1)
                         if config.get(Config.BATCH_SIZE) < 5:
                             config.set(Config.BATCH_SIZE, 5)
-                        if self._edited_image.has_image():
-                            image_size = self._edited_image.size()
-                            if image_size.width() < 1200 and image_size.height() < 1200:
-                                config.set(Config.EDIT_SIZE, image_size)
-                            else:
-                                size = QSize(min(image_size.width(), 1024), min(image_size.height(), 1024))
-                                config.set(Config.EDIT_SIZE, size)
+                        image_size = self._layer_stack.size
+                        if image_size.width() < 1200 and image_size.height() < 1200:
+                            config.set(Config.EDIT_SIZE, image_size)
+                        else:
+                            size = QSize(min(image_size.width(), 1024), min(image_size.height(), 1024))
+                            config.set(Config.EDIT_SIZE, size)
                     add_action('LCM Mode', 'F10', set_lcm_mode, tool_menu)
             except RuntimeError:
                 print('Failed to check loras for lcm lora')
@@ -213,15 +218,15 @@ class MainWindow(QMainWindow):
         # Build config + control layout (varying based on implementation):
         self._build_control_layout(controller)
 
-    def _should_use_wide_layout(self):
+    def _should_use_wide_layout(self) -> bool:
         return self.height() <= (self.width() * 1.2)
 
-    def _should_use_tabbed_layout(self):
+    def _should_use_tabbed_layout(self) -> bool:
         main_display_size = screen_size(self)
         required_height = 0
 
         # Calculate max heights, taking into account possible expanded panels:
-        def get_required_height(item):
+        def get_required_height(item: QWidget) -> int:
             height = 0
             if hasattr(item, 'expanded_size'):
                 height = max(height, item.expanded_size().height())
@@ -253,7 +258,7 @@ class MainWindow(QMainWindow):
                 self._scale_handler = None
 
 
-    def set_image_sliders_enabled(self, sliders_enabled):
+    def set_image_sliders_enabled(self, sliders_enabled: bool):
         """Sets whether the ImagePanel control sliders should be shown."""
         self._sliders_enabled = sliders_enabled
         if not sliders_enabled and self._image_panel.sliders_showing():
@@ -312,9 +317,6 @@ class MainWindow(QMainWindow):
         self._image_panel.set_orientation(Qt.Orientation.Vertical)
         self.update()
 
-    #def _setupTabbedLayout(self):
-
-
 
     def _setup_correct_layout(self):
         if self._should_use_wide_layout():
@@ -324,7 +326,7 @@ class MainWindow(QMainWindow):
             self._setup_tall_layout()
 
 
-    def _create_scale_mode_selector(self, parent, config_key):
+    def _create_scale_mode_selector(self, parent: QWidget, config_key: str) -> QComboBox:
         scale_mode_list = QComboBox(parent)
         filter_types = [
             ('Bilinear', Image.BILINEAR),
@@ -367,8 +369,7 @@ class MainWindow(QMainWindow):
         enable_scale_checkbox = connected_checkbox(inpaint_panel, self._config, Config.INPAINT_FULL_RES)
         enable_scale_checkbox.setText(self._config.get_label(Config.INPAINT_FULL_RES))
         def update_scale():
-            if self._edited_image.has_image():
-                self._image_panel.reload_scale_bounds()
+            self._image_panel.reload_scale_bounds()
         enable_scale_checkbox.stateChanged.connect(update_scale)
 
         upscale_mode_label = QLabel(inpaint_panel)
@@ -389,7 +390,6 @@ class MainWindow(QMainWindow):
         more_options_bar.addWidget(downscale_mode_label, stretch=0)
         more_options_bar.addWidget(downscale_mode_list, stretch=10)
 
-
         # Build layout with labels:
         layout = QGridLayout()
         layout.addWidget(QLabel(inpaint_panel, text=self._config.get_label(Config.PROMPT)), 1, 1, 1, 1)
@@ -409,12 +409,12 @@ class MainWindow(QMainWindow):
         self.resizeEvent(None)
 
 
-    def is_sample_selector_visible(self):
+    def is_sample_selector_visible(self) -> bool:
         """Returns whether the generated image selection screen is showing."""
         return hasattr(self, '_sample_selector') and self._central_widget.currentWidget() == self._sample_selector
 
 
-    def set_sample_selector_visible(self, visible):
+    def set_sample_selector_visible(self, visible: bool):
         """Shows or hides the generated image selection screen."""
         is_visible = self.is_sample_selector_visible()
         if visible == is_visible:
@@ -423,7 +423,7 @@ class MainWindow(QMainWindow):
             mask = self._mask if (self._config.get(Config.EDIT_MODE) == 'Inpaint') else FilledMaskCanvas(self._config)
             self._sample_selector = SampleSelector(
                     self._config,
-                    self._edited_image,
+                    self._layer_stack,
                     mask,
                     self._sketch,
                     lambda: self.set_sample_selector_visible(False),
@@ -438,18 +438,19 @@ class MainWindow(QMainWindow):
             del self._sample_selector
             self._sample_selector = None
 
-    def load_sample_preview(self, image, idx):
+    def load_sample_preview(self, image: Image.Image, idx: int):
         """Adds an image to the generated image selection screen."""
         if self._sample_selector is None:
             print(f'Tried to load sample {idx} after sampleSelector was closed')
         else:
             self._sample_selector.load_sample_image(image, idx)
 
-    def layout(self):
+    def layout(self) -> QLayout:
         """Returns the window's layout."""
         return self._layout
 
-    def set_is_loading(self, is_loading, message=None):
+
+    def set_is_loading(self, is_loading: bool, message: Optional[str] = None):
         """Sets whether the loading spinner is shown, optionally setting loading spinner message text."""
         if self._sample_selector is not None:
             self._sample_selector.set_is_loading(is_loading, message)
@@ -466,7 +467,7 @@ class MainWindow(QMainWindow):
             self.update()
 
 
-    def set_loading_message(self, message):
+    def set_loading_message(self, message: str):
         """Sets the loading spinner message text."""
         if self._sample_selector is not None:
             self._sample_selector.set_loading_message(message)
@@ -483,13 +484,13 @@ class MainWindow(QMainWindow):
             self._loading_widget.setGeometry(loading_bounds)
 
 
-    def mousePressEvent(self, event):
+    def mousePressEvent(self, event: QEvent):
         """Suppresses mouse events when the loading spinner is active."""
         if not self._is_loading:
             super().mousePressEvent(event)
 
 
-    def _on_image_panel_toggle(self, image_showing):
+    def _on_image_panel_toggle(self, image_showing: bool):
         if image_showing:
             self._image_layout.setStretch(0, 255)
             self._image_layout.setStretch(2, 100)

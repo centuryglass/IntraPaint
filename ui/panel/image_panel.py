@@ -1,6 +1,6 @@
 """Panel used to display the edited image and associated controls. """
 from PyQt5.QtWidgets import QWidget, QSpinBox, QLabel, QVBoxLayout, QHBoxLayout, QSlider, QSizePolicy
-from PyQt5.QtCore import Qt, pyqtSignal
+from PyQt5.QtCore import Qt, QRect, pyqtSignal
 from PyQt5.QtGui import QPainter, QPen
 
 from ui.image_viewer import ImageViewer
@@ -9,28 +9,28 @@ from ui.util.contrast_color import contrast_color
 from ui.widget.param_slider import ParamSlider
 from ui.widget.collapsible_box import CollapsibleBox
 from data_model.config import Config
+from data_model.layer_stack import LayerStack
+from util.validation import assert_type
 
 class ImagePanel(QWidget):
     """Holds the image viewer, provides inputs for selecting an editing area and saving/loading images."""
 
-
     image_toggled = pyqtSignal(bool)
 
-
-    def __init__(self, config, edited_image):
+    def __init__(self, config: Config, layer_stack: LayerStack):
         """Initializes the panel layout.
 
         Parameters
         ----------
         config : data_model.config.Config
             Shared application configuration object.
-        edited_image : data_model.edited_image.EditedImage
-            Image being edited
+        layer_stack : data_model.layer_stack.LayerStack
+            Image layers being edited.
         """
         super().__init__()
 
-        edited_image.size_changed.connect(lambda newSize: self.reload_scale_bounds())
-        self._edited_image = edited_image
+        layer_stack.size_changed.connect(lambda newSize: self.reload_scale_bounds())
+        self._layer_stack = layer_stack
         self._config = config
         self._show_sliders = None
         self._slider_count = 0
@@ -48,7 +48,7 @@ class ImagePanel(QWidget):
         self._image_box.toggled().connect(self.image_toggled.emit)
         self._image_box.set_expanded_size_policy(QSizePolicy.Ignored)
 
-        self._image_viewer = ImageViewer(edited_image)
+        self._image_viewer = ImageViewer(self, layer_stack)
 
         self._controlbar = QWidget()
         controlbar_layout = QHBoxLayout(self._controlbar)
@@ -62,11 +62,10 @@ class ImagePanel(QWidget):
         controlbar_layout.addWidget(self._x_coord_box)
         self._x_coord_box.setRange(0, 0)
         self._x_coord_box.setToolTip('Selected X coordinate')
-        def set_x(value):
-            if edited_image.has_image():
-                last_selected = edited_image.get_selection_bounds()
-                last_selected.moveLeft(min(value, edited_image.width() - last_selected.width()))
-                edited_image.set_selection_bounds(last_selected)
+        def set_x(value: int):
+            last_selected = layer_stack.selection
+            last_selected.moveLeft(min(value, layer_stack.width - last_selected.width()))
+            layer_stack.selection = last_selected
         self._x_coord_box.valueChanged.connect(set_x)
 
         controlbar_layout.addWidget(QLabel(self, text='Y:'))
@@ -74,11 +73,10 @@ class ImagePanel(QWidget):
         controlbar_layout.addWidget(self._y_coord_box)
         self._y_coord_box.setRange(0, 0)
         self._y_coord_box.setToolTip('Selected Y coordinate')
-        def set_y(value):
-            if edited_image.has_image():
-                last_selected = edited_image.get_selection_bounds()
-                last_selected.moveTop(min(value, edited_image.height() - last_selected.height()))
-                edited_image.set_selection_bounds(last_selected)
+        def set_y(value: int):
+            last_selected = layer_stack.selection
+            last_selected.moveTop(min(value, layer_stack.height - last_selected.height()))
+            layer_stack.selection = last_selected
         self._y_coord_box.valueChanged.connect(set_y)
 
         # Selection size controls:
@@ -103,37 +101,34 @@ class ImagePanel(QWidget):
 
         def set_w():
             value = self._widthbox.value()
-            if edited_image.has_image():
-                selection = edited_image.get_selection_bounds()
-                selection.setWidth(value)
-                edited_image.set_selection_bounds(selection)
+            selection = layer_stack.selection
+            selection.setWidth(value)
+            layer_stack.selection = selection
         self._widthbox.editingFinished.connect(set_w)
 
         def set_h():
             value = self._heightbox.value()
-            if edited_image.has_image():
-                selection = edited_image.get_selection_bounds()
-                selection.setHeight(value)
-                edited_image.set_selection_bounds(selection)
+            selection = layer_stack.selection
+            selection.setHeight(value)
+            layer_stack.selection = selection
         self._heightbox.editingFinished.connect(set_h)
 
         # Update coordinate controls automatically when the selection changes:
-        def set_coords(bounds):
+        def set_coords(bounds: QRect):
             self._x_coord_box.setValue(bounds.left())
             self._y_coord_box.setValue(bounds.top())
             self._widthbox.setValue(bounds.width())
             self._heightbox.setValue(bounds.height())
-            if edited_image.has_image():
-                self._x_coord_box.setMaximum(edited_image.width() - bounds.width())
-                self._y_coord_box.setMaximum(edited_image.height() - bounds.height())
-        edited_image.selection_changed.connect(set_coords)
+            self._x_coord_box.setRange(0, layer_stack.width - bounds.width())
+            self._y_coord_box.setRange(0, layer_stack.height - bounds.height())
+        layer_stack.selection_bounds_changed.connect(set_coords)
         self.setLayout(self._layout)
         self.setSizePolicy(QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding))
         self._init_image_box_layout()
         self.show_sliders(False)
 
 
-    def set_orientation(self, orientation):
+    def set_orientation(self, orientation: Qt.Orientation):
         """Sets the panel to a vertical or horizontal Qt.Orientation."""
         prev_image_box = self._image_box
         if self._image_box is not None:
@@ -150,9 +145,9 @@ class ImagePanel(QWidget):
             prev_image_box = None
 
 
-    def add_slider(self, slider):
+    def add_slider(self, slider: QSlider | ParamSlider):
         """Adds a QSlider or ParamSlider control widget to the panel."""
-        assert isinstance(slider, (ParamSlider, QSlider))
+        assert_type(slider, (ParamSlider, QSlider))
         self._layout.insertWidget(self._slider_count, slider, stretch=1)
         self._slider_count += 1
         self.show_sliders(self._show_sliders)
@@ -163,7 +158,7 @@ class ImagePanel(QWidget):
         return self._show_sliders
 
 
-    def show_sliders(self, show_sliders):
+    def show_sliders(self, show_sliders: bool):
         """Shows or hides all sliders added with add_slider."""
         self._show_sliders = show_sliders
         if show_sliders:
@@ -185,19 +180,15 @@ class ImagePanel(QWidget):
 
     def reload_scale_bounds(self):
         """Recalculate image scaling bounds based on image size and edit size limits."""
-        max_edit_size = self._edited_image.get_max_selection_size()
-        if not self._edited_image.has_image():
-            self._widthbox.setMaximum(max_edit_size.width())
-            self._heightbox.setMaximum(max_edit_size.height())
-        else:
-            image_size = self._edited_image.size()
-            for spinbox, max_edit_dim in [
-                    (self._widthbox, max_edit_size.width()),
-                    (self._heightbox, max_edit_size.height())]:
-                spinbox.setMaximum(max_edit_dim)
-            selection_size = self._edited_image.get_selection_bounds().size()
-            self._x_coord_box.setMaximum(image_size.width() - selection_size.width())
-            self._y_coord_box.setMaximum(image_size.height() - selection_size.height())
+        max_edit_size = self._layer_stack.max_selection_size
+        image_size = self._layer_stack.size
+        for spinbox, max_edit_dim in [
+                (self._widthbox, max_edit_size.width()),
+                (self._heightbox, max_edit_size.height())]:
+            spinbox.setMaximum(max_edit_dim)
+        selection_size = self._layer_stack.selection.size()
+        self._x_coord_box.setMaximum(image_size.width() - selection_size.width())
+        self._y_coord_box.setMaximum(image_size.height() - selection_size.height())
 
 
     def paintEvent(self, unused_event):

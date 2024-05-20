@@ -1,6 +1,6 @@
 {
     "style": {
-        "label": "User interface style",
+        "label": "Style:",
         "category": "Interface",
         "description": "Qt style to use for the user interface",
         "type": "string",
@@ -9,7 +9,7 @@
         "saved": true
     },
     "theme": {
-        "label": "User interface theme",
+        "label": "Theme:",
         "category": "Interface",
         "description": "Theme to use for the user interface",
         "type": "string",
@@ -18,7 +18,7 @@
         "saved": true
     },
     "font_point_size": {
-        "label": "Font size",
+        "label": "Font size:",
         "category": "Interface",
         "description": "Font point size to use for user interface text",
         "type": "int",
@@ -27,8 +27,16 @@
     },
 
 
+    "default_image_size": {
+        "label": "Default image size:",
+        "category": "Editing",
+        "description": "Maximum size in pixels of the area selected for editing",
+        "type": "Size",
+        "default": "1024x1024",
+        "saved": true
+    },
     "max_edit_size": {
-        "label": "Maximum editing size",
+        "label": "Maximum editing size:",
         "category": "Editing",
         "description": "Maximum size in pixels of the area selected for editing",
         "type": "Size",
@@ -36,7 +44,7 @@
         "saved": true
     },
     "min_edit_size": {
-        "label": "Minimum editing size",
+        "label": "Minimum editing size:",
         "category": "Editing",
         "description": "Minimum size in pixels of the area selected for editing",
         "type": "Size",
@@ -44,7 +52,7 @@
         "saved": true
     },
     "edit_size": {
-        "label": "Editing size",
+        "label": "Editing size:",
         "category": "Editing",
         "description": "Current/initial size in pixels of the area selected for editing",
         "type": "Size",
@@ -52,7 +60,7 @@
         "saved": true
     },
     "mask_brush_size": {
-        "label": "Mask tool brush size",
+        "label": "Brush size:",
         "category": "Editing",
         "description": "Current/initial brush size (in pixels) for the mask selection tool.",
         "type": "int",
@@ -65,7 +73,7 @@
         }
     },
     "sketch_brush_size": {
-        "label": "Sketch tool brush size",
+        "label": "Brush size:",
         "category": "Editing",
         "description": "Current/initial brush size (in pixels) for the drawing/painting tool.",
         "type": "int",
@@ -78,7 +86,7 @@
         }
     },
     "use_mypaint_canvas": {
-        "label": "Enable MyPaint brush canvas",
+        "label": "Enable MyPaint brush canvas:",
         "category": "Editing",
         "description": "Use the MyPaint brush engine when painting on the edited image. This will be ignored on systems without libmypaint support",
         "type": "bool",
@@ -86,7 +94,7 @@
         "saved": true
     },
     "mypaint_brush": {
-        "label": "Selected MyPaint brush",
+        "label": "Selected MyPaint brush:",
         "category": "Editing",
         "description": "Currently selected MyPaint brush file.",
         "type": "string",
@@ -94,7 +102,7 @@
         "saved": true
     },
     "brush_favorites": {
-        "label": "Favorite MyPaint brushes",
+        "label": "Favorite MyPaint brushes:",
         "category": "Editing",
         "description": "Brushes to list in the 'Favorites' tab of the brush selection window",
         "type": "list",
@@ -102,7 +110,7 @@
         "saved": true
     },
     "max_undo": {
-        "label": "Maximum undo count",
+        "label": "Maximum undo count:",
         "category": "Editing",
         "description": "Number of actions that can be reversed using the 'undo' option.",
         "type": "int",
@@ -128,7 +136,7 @@
 
 
     "prompt": {
-        "label": "Prompt",
+        "label": "Prompt:",
         "category": "Image generation",
         "description": "Description that generated images should match.",
         "type": "string",
@@ -136,7 +144,7 @@
         "saved": false
     },
     "negative_prompt": {
-        "label": "Negative prompt",
+        "label": "Negative prompt:",
         "category": "Image generation",
         "description": "Description that generated images should not match.",
         "type": "string",
@@ -144,7 +152,7 @@
         "saved": false
     },
     "guidance_scale": {
-        "label": "Guidance scale",
+        "label": "Guidance scale:",
         "category": "Image generation",
         "description": "Controls how strongly the prompt and negative prompt are applied. Higher values are more consistent but may be less creative.  Overly high or low values may cause image distortion.",
         "type": "float",
@@ -157,7 +165,7 @@
         }
     },
     "batch_size": {
-        "label": "Batch size",
+        "label": "Batch size:",
         "category": "Image generation",
         "description": "Number of image options to simultaneously create in a single image editing operation. Increasing this value too much may result in errors or slowdown if GPU memory limits are reached.",
         "type": "int",
@@ -170,7 +178,7 @@
         }
     },
     "batch_count": {
-        "label": "Batch count",
+        "label": "Batch count:",
         "category": "Image generation",
         "description": "Number of image batches to create in a single image editing operation. Increasing this value doesn't require additional memory, but it slows down image editing more than increasing the batch size does.",
         "type": "int",
@@ -183,7 +191,7 @@
         }
     },
     "show_original_in_options": {
-        "label": "Include original in options",
+        "label": "Include original in options:",
         "category": "Image generation",
         "description": "When the user is choosing between generated images, include the source image in the options. This makes it easier to tell when none of the generated images are better than the original.",
         "type": "bool",
@@ -192,7 +200,7 @@
     },
 
     "edit_mode": {
-        "label": "Edit mode",
+        "label": "Edit mode:",
         "category": "Stable-Diffusion",
         "description": "Stable-Diffusion image editing mode. 'Text to Image' completely replaces the selected image section with new content, 'Image to Image' creates altered versions of the image selection, and 'Inpaint' works like 'Image to Image' except that it only affects areas selected by the mask tool",
         "type": "string",
@@ -205,7 +213,7 @@
         "saved": true
     },
     "masked_content": {
-        "label": "Masked content",
+        "label": "Masked content:",
         "category": "Stable-Diffusion",
         "description": "Determines what should be used to fill the masked area before inpainting. 'fill' replaces it with a solid color, 'original' keeps it as-is, 'latent noise' replaces it with random data, and 'latent nothing' clears it. Unless you're inpainting with a denoising strength >0.8, 'original' will almost always be the best option",
         "type": "string",
@@ -219,7 +227,7 @@
         "saved": true
     },
     "interrogate_model": {
-        "label": "Image interrogation model",
+        "label": "Image interrogation model:",
         "category": "Stable-Diffusion",
         "description": "Model used when auto-generating appropriate prompts using the 'interrogate' button. Supported values will vary based on what extensions you've installed into the stable-generation-webui, but 'clip' should always be accepted.",
         "type": "string",
@@ -227,7 +235,7 @@
         "saved": true
     },
     "sampling_steps": {
-        "label": "Sampling steps",
+        "label": "Sampling steps:",
         "category": "Stable-Diffusion",
         "description": "Number of diffusion operations to perform when generating image data. Higher values take longer, but often produce more detailed and accurate results. Different stable-diffusion models and samplers have different requirements, but in most cates setting this higher than 30 has only minimal benefits",
         "type": "int",
@@ -240,7 +248,7 @@
         }
     },
     "denoising_strength": {
-        "label": "Denoising strength",
+        "label": "Denoising strength:",
         "category": "Stable-Diffusion",
         "description": "Controls how dramatically inpainting and image-to-image operations will change the initial image data. At 0.0, the image will be completely unedited, at 1.0 the image will be completely different",
         "type": "float",
@@ -253,7 +261,7 @@
         }
     },
     "sampling_method": {
-        "label": "Sampling method",
+        "label": "Sampling method:",
         "category": "Stable-Diffusion",
         "description": "Mathematical technique used to transform image data during the generation process. 'Euler a' works well in most cases, but certain models or extensions might perform better with other options.",
         "type": "string",
@@ -274,7 +282,7 @@
         "saved": true
     },
     "upscale_method": {
-        "label": "Upscale method",
+        "label": "Upscale method:",
         "category": "Stable-Diffusion",
         "description": "Method to use when increasing image resolution. Available options will be loaded from the stable-diffusion-webui on launch.",
         "type": "string",
@@ -293,7 +301,7 @@
         "saved": true
     },
     "controlnet_tile_model": {
-        "label": "ControlNet tiled upscaling model",
+        "label": "ControlNet tiled upscaling model:",
         "category": "Stable-Diffusion",
         "description": "ControlNet model to use for tiled upscaling, in the 'filename [hash]' format used by the webui. This only needs to change if a newer model is available if using a stable diffusion model not based on stable-diffusion 1.5.",
         "type": "string",
@@ -301,7 +309,7 @@
         "saved": true
     },
     "controlnet_downsample_rate": {
-        "label": "ControlNet tile downsample rate",
+        "label": "ControlNet tile downsample rate:",
         "category": "Stable-Diffusion",
         "description": "Adjusts how strongly the ControlNet tile model preserves the original image data, higher values result in fewer changes.",
         "type": "float",
@@ -314,7 +322,7 @@
         "saved": true
     },
     "mask_blur": {
-        "label": "Mask blur",
+        "label": "Mask blur:",
         "category": "Stable-Diffusion",
         "description": "Pixel radius to blur in the inpainting mask to smoothly combine edited and original image content.",
         "type": "int",
@@ -327,7 +335,7 @@
         "saved": true
     },
     "seed": {
-        "label": "Seed",
+        "label": "Seed:",
         "category": "Stable-Diffusion",
         "description": "Number used to control pseudo-random aspects of image generation, in most cases using the same seed with the same settings and inputs will always produce the same results. If set to -1, a different random seed will be used for each image generation. ",
         "type": "int",
@@ -343,7 +351,7 @@
         "saved": true
     },
     "inpaint_full_res_padding": {
-        "label": "Padding",
+        "label": "Padding:",
         "category": "Stable-Diffusion",
         "description": "Pixel radius outside of the masked area to include when inpainting when the 'Inpaint Full Resolution' option is enabled. Higher values increase contextual awareness while decreasing overall level of detail.",
         "type": "int",
@@ -399,7 +407,7 @@
 
 
     "cutn": {
-        "label": "cutn",
+        "label": "Detail reference count (cutn):",
         "category": "GLID-3-XL",
         "description": "Determines how many random cutouts from the input image are used to guide image generation. Higher values can introduce more detail and variation, but may also introduce more noise and irrelevant information.",
         "type": "int",
@@ -407,7 +415,7 @@
         "saved": true
     },
     "skip_steps": {
-        "label": "Skip steps",
+        "label": "Skip steps:",
         "category": "GLID-3-XL",
         "description": "Number of diffusion steps to skip. Higher values will result in faster image generation with decreased detail and accuracy.",
         "type": "int",
@@ -420,7 +428,7 @@
         }
     },
     "upscale_mode": {
-        "label": "Upscale mode",
+        "label": "Upscale mode:",
         "category": "GLID-3-XL",
         "description": "Upscaling mode used when the inpainting resolution doesn't match the selection size.",
         "type": "int",
@@ -428,7 +436,7 @@
         "saved": true
     },
     "downscale_mode": {
-        "label": "Downscale mode",
+        "label": "Downscale mode:",
         "category": "GLID-3-XL",
         "description": "Downscaling mode used when the inpainting resolution doesn't match the selection size.",
         "type": "int",
@@ -448,15 +456,39 @@
         "saved": false
     },
     "controlnet_version": {
-        "label": "ControlNet version",
+        "label": "ControlNet version:",
         "category": "Cache",
         "description": "ControlNet extension version loaded from the webui",
         "type": "float",
         "default": -1.0,
         "saved": false
     },
+    "controlnet_control_types": {
+        "label": "ControlNet control types:",
+        "category": "Cache",
+        "description": "ControlNet control type definitions loaded from the webui",
+        "type": "dict",
+        "default": {},
+        "saved": false
+    },
+    "controlnet_modules": {
+        "label": "ControlNet modules:",
+        "category": "Cache",
+        "description": "ControlNet module definitions loaded from the webui",
+        "type": "dict",
+        "default": {},
+        "saved": false
+    },
+    "controlnet_models": {
+        "label": "ControlNet models:",
+        "category": "Cache",
+        "description": "ControlNet model definitions loaded from the webui",
+        "type": "dict",
+        "default": {},
+        "saved": false
+    },
     "last_seed": {
-        "label": "Last seed",
+        "label": "Last seed:",
         "category": "Cache",
         "description": "Last seed used for image generation",
         "type": "string",
@@ -464,7 +496,7 @@
         "saved": false
     },
     "last_file_path": {
-        "label": "Last file path",
+        "label": "Last file path:",
         "category": "Cache",
         "description": "Last image file loaded",
         "type": "string",

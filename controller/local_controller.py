@@ -2,22 +2,24 @@
 Provides image editing functionality through a local instance of GLID-3-XL.
 """
 import gc
+from argparse import Namespace
+from typing import Callable
 from PIL import Image
 import torch
-
-from PyQt5.QtCore import QSize
-
+from PyQt5.QtCore import pyqtSignal
 from startup.load_models import load_models
 from startup.create_sample_function import create_sample_function
 from startup.generate_samples import generate_samples
 from startup.ml_utils import get_device, foreach_image_in_sample
 from controller.base_controller import BaseInpaintController
 from data_model.config import Config
+from ui.modal.settings_modal import SettingsModal
+from util.validation import assert_types
 
 class LocalDeviceController(BaseInpaintController):
     """Provides image editing functionality through a local instance of GLID-3-XL."""
 
-    def __init__(self, args):
+    def __init__(self, args: Namespace):
         super().__init__(args)
         self._device = get_device(args.cpu)
         print('Using device:', self._device)
@@ -40,20 +42,21 @@ class LocalDeviceController(BaseInpaintController):
                 ddim = args.ddim)
 
 
-    def _inpaint(self, selection, mask, save_image, status_signal):
+    def _inpaint(self,
+            selection: Image.Image,
+            mask: Image.Image,
+            save_image: Callable[[Image.Image, int]],
+            status_signal: pyqtSignal):
         gc.collect()
-        if not isinstance(selection, Image.Image):
-            raise TypeError(f'Expected PIL Image selection, got {selection}')
-        if not isinstance(mask, Image.Image):
-            raise TypeError(f'Expected PIL Image mask, got {mask}')
+        assert_types((selection, mask), Image.Image)
         if selection.width != mask.width:
             raise RuntimeError(f'Selection and mask widths should match, found {selection.width} and {mask.width}')
         if selection.height != mask.height:
-            raise RuntimeError(f'Selection and mask widths should match, found {selection.width} and {mask.width}')
+            raise RuntimeError(f'Selection and mask heights should match, found {selection.height} and {mask.height}')
 
         batch_size = self._config.get(Config.BATCH_SIZE)
         batch_count = self._config.get(Config.BATCH_COUNT)
-        sample_fn, clip_score_fn = create_sample_function(
+        sample_fn, unused_clip_score_fn = create_sample_function(
                 self._device,
                 self._model,
                 self._model_params,
@@ -96,8 +99,8 @@ class LocalDeviceController(BaseInpaintController):
                 selection.width,
                 selection.height)
 
-    def refresh_settings(self, settings_modal):
+    def refresh_settings(self, settings_modal: SettingsModal):
         """Settings not in scope for GLID-3-XL controller."""
 
-    def update_settings(self, changed_settings):
+    def update_settings(self, changed_settings: dict):
         """Settings not in scope for GLID-3-XL controller."""

@@ -28,7 +28,10 @@ def generate_samples(
         init = None
     for i in range(num_batches):
         samples = sample_fn(init)
-        for j, sample in enumerate(samples):
-            if j % 5 == 0 and j != diffusion.num_timesteps - 1:
-                save_sample(i, sample)
-        save_sample(i, sample, clip_score_fn)
+        if samples is not None:
+            sample = None
+            for j, sample in enumerate(samples):
+                if j % 5 == 0 and j != diffusion.num_timesteps - 1:
+                    save_sample(i, sample)
+            if sample is not None:
+                save_sample(i, sample, clip_score_fn)

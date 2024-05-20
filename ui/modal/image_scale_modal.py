@@ -9,7 +9,7 @@ from data_model.config import Config
 class ImageScaleModal(QDialog):
     """Popup modal window used for scaling the edited image."""
 
-    def __init__(self, default_width, default_height, config):
+    def __init__(self, default_width: int, default_height: int, config: Config):
         super().__init__()
 
         self._create = False
@@ -39,21 +39,20 @@ class ImageScaleModal(QDialog):
         self._layout.addLayout(self._upscale_layout)
 
         # Synchronize scale boxes with pixel size boxes
-        def set_scale_on_px_change(pixel_size, base_value, scale_box):
+        def set_scale_on_px_change(pixel_size: int, base_value: int, scale_box: LabeledSpinbox):
             current_scale = scale_box.spinbox.value()
             new_scale = round(int(pixel_size) / base_value, 2)
+            # Ignore rounding errors:
             if int(base_value * float(current_scale)) != pixel_size:
                 scale_box.spinbox.setValue(new_scale)
-            elif current_scale != new_scale:
-                print(f'ignoring rounding error, {current_scale} vs {new_scale}')
 
-        def set_px_on_scale_change(scale, base_value, pxbox):
+        def set_px_on_scale_change(scale: float, base_value: float, pxbox: LabeledSpinbox):
             current_pixel_size = pxbox.spinbox.value()
             new_pixel_size = int(base_value * float(scale))
+            # Ignore rounding errors:
             if round(int(current_pixel_size) / base_value, 2) != scale:
                 pxbox.spinbox.setValue(new_pixel_size)
-            elif current_pixel_size != new_pixel_size:
-                print(f'ignoring rounding error, {current_pixel_size} vs {new_pixel_size}')
+
 
         self._widthbox.spinbox.valueChanged.connect(
                 lambda px: set_scale_on_px_change(px, default_width, self._x_mult_box))
@@ -80,7 +79,7 @@ class ImageScaleModal(QDialog):
         self._create_button = QPushButton(self)
         self._create_button.setText('Scale image')
         self._layout.addWidget(self._create_button)
-        def on_create():
+        def on_create() -> None:
             config.disconnect(self._upscale_method_box, Config.UPSCALE_METHOD)
             self._create = True
             self.hide()
@@ -88,7 +87,7 @@ class ImageScaleModal(QDialog):
 
         self._cancel_button = QPushButton(self)
         self._cancel_button.setText('Cancel')
-        def on_cancel():
+        def on_cancel() -> None:
             config.disconnect(self._upscale_method_box, Config.UPSCALE_METHOD)
             self._create = False
             self.hide()
@@ -97,7 +96,7 @@ class ImageScaleModal(QDialog):
 
         self.setLayout(self._layout)
 
-    def show_image_modal(self):
+    def show_image_modal(self) -> None:
         """Show the modal, returning the selected size when the modal closes."""
         self.exec_()
         if self._create:

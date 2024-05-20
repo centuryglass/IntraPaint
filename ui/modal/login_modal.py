@@ -1,16 +1,18 @@
 """Popup modal window used for entering login information."""
+from typing import Callable, Optional
 import json
+import requests
 from PyQt5.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QPushButton
 
 
 class LoginModal(QDialog):
     """Popup modal window used for entering login information."""
 
-    def __init__(self, try_login):
+    def __init__(self, try_login: Callable[[str, str], Optional[requests.Response]]) -> None:
         super().__init__()
-        self.user=None
-        self.pw=None
-        self._res=None
+        self.user: Optional[str] = None
+        self.pw: Optional[str] = None
+        self._res: Optional[requests.Response] = None
 
         self.setModal(True)
 
@@ -43,7 +45,7 @@ class LoginModal(QDialog):
         self._cancel_button.setText('Cancel')
         self._button_row.addWidget(self._cancel_button)
         self._layout.addLayout(self._button_row)
-        def on_login():
+        def on_login() -> None:
             if self._name_input.text() == '' or self._password_input.text() == '':
                 self._status.setText('Username and password cannot be empty')
                 return
@@ -61,28 +63,28 @@ class LoginModal(QDialog):
 
         self._login_button.clicked.connect(on_login)
 
-        def on_cancel():
+        def on_cancel() -> None:
             self._res=None
             self.hide()
 
         self._cancel_button.clicked.connect(on_cancel)
         self.setLayout(self._layout)
 
-    def clear_password(self):
+    def clear_password(self) -> None:
         """Clears the password field."""
         self._password_input.setText('')
 
-    def set_status(self, status):
+    def set_status(self, status: str) -> None:
         """Sets status text shown to the user."""
         self._status.setText(status)
 
-    def show_login_modal(self):
+    def show_login_modal(self) -> tuple[str , str] | tuple[None , None]:
         """Shows the login modal and returns user input on close."""
         self.exec_()
         if self._res is not None and self._res.status_code == 200:
             return (self.user, self.pw)
         return (None, None)
 
-    def get_login_response(self):
+    def get_login_response(self) -> Optional[requests.Response]:
         """Gets any saved network response from the login attempt."""
         return self._res

@@ -1,7 +1,8 @@
 """
 Simplified script for glid-3-xl for image generation only, no inpainting functionality.
 """
-import sys, gc
+import sys
+import gc
 import torch
 from startup.load_models import load_models
 from startup.create_sample_function import create_sample_function

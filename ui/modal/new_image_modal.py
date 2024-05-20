@@ -1,4 +1,5 @@
 """Popup modal window used for creating a new image at an arbitrary size."""
+from typing import Optional
 from PyQt5.QtWidgets import QDialog, QLabel, QVBoxLayout, QPushButton
 from PyQt5.QtCore import QSize
 from ui.widget.labeled_spinbox import LabeledSpinbox
@@ -6,7 +7,7 @@ from ui.widget.labeled_spinbox import LabeledSpinbox
 class NewImageModal(QDialog):
     """Popup modal window used for creating a new image at an arbitrary size."""
 
-    def __init__(self, default_width, default_height):
+    def __init__(self, default_width: int, default_height: int):
         super().__init__()
 
         self._create = False
@@ -41,7 +42,7 @@ class NewImageModal(QDialog):
 
         self.setLayout(self._layout)
 
-    def show_image_modal(self):
+    def show_image_modal(self) -> Optional[QSize]:
         """Shows the modal, then returns the user-entered size when closed."""
         self.exec_()
         if self._create:

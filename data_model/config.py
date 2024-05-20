@@ -8,19 +8,27 @@ Main features
     - Allow typesafe changes to those values through config.set()
     - Subscribe to specific value changes through config.connect()
 """
-import sys
+from argparse import Namespace
+from typing import Optional, Any, Callable
 import json
 import os.path
-import importlib.util
 from threading import Lock
 from inspect import signature
 from PyQt5.QtWidgets import QStyleFactory
-from PyQt5.QtCore import QObject, QSize, QTimer
+from PyQt5.QtCore import QSize, QTimer
+# Optional theme modules:
+try:
+    import qdarktheme
+except ImportError:
+    qdarktheme = None
+try:
+    import qt_material
+except ImportError:
+    qt_material = None
 
 
-class Config(QObject):
-    """
-    A shared resource to set inpainting configuration and to provide default values.
+class Config():
+    """A shared resource to set inpainting configuration and to provide default values.
 
     Common Exceptions Raised
     ------------------------
@@ -68,14 +76,11 @@ class Config(QObject):
 
     # System-based theme/style init constants
     DEFAULT_THEME_OPTIONS = ['None']
-    DARK_THEME_MODULE = 'qdarktheme'
     DARK_THEME_OPTIONS = ['qdarktheme_dark', 'qdarktheme_light', 'qdarktheme_auto']
-    MATERIAL_THEME_MODULE = 'qt_material'
 
 
-    def __init__(self, json_path=None):
-        """
-        Load existing config, or initialize from defaults.
+    def __init__(self, json_path: Optional[str] = None) -> None:
+        """Load existing config, or initialize from defaults.
 
         Parameters
         ----------
@@ -86,8 +91,8 @@ class Config(QObject):
         """
         if json_path is None:
             json_path = Config.DEFAULT_CONFIG_PATH
-        self._entries = {}
-        self._connected = {}
+        self._entries: dict[str, _Entry] = {}
+        self._connected: dict[str, dict[Any, Callable[[Any], None] | Callable[[Any, Any], None]]] = {}
         self._json_path = json_path
         self._lock = Lock()
         self._save_timer = QTimer()
@@ -137,15 +142,10 @@ class Config(QObject):
 
         # Before reading existing config, dynamically initialize style and theme options:
         theme_options = Config.DEFAULT_THEME_OPTIONS
-        def module_installed(name):
-            if name in sys.modules:
-                return True
-            return bool((spec := importlib.util.find_spec(name)) is not None)
-        if module_installed(Config.DARK_THEME_MODULE):
+        if qdarktheme is not None:
             theme_options += Config.DARK_THEME_OPTIONS
-        if module_installed(Config.MATERIAL_THEME_MODULE):
-            from qt_material import list_themes
-            theme_options += [ f'{Config.MATERIAL_THEME_MODULE}_{theme}' for theme in list_themes() ]
+        if qt_material is not None:
+            theme_options += [ f'qt_material_{theme}' for theme in qt_material.list_themes() ]
         self.update_options(Config.THEME, theme_options)
         self.update_options(Config.STYLE, list(QStyleFactory.keys()))
 
@@ -156,9 +156,8 @@ class Config(QObject):
             self._write_to_json()
 
 
-    def get(self, key, inner_key=None):
-        """
-        Returns a value from config.
+    def get(self, key: str, inner_key: Optional[str] = None) -> Any:
+        """Returns a value from config.
 
         Parameters
         ----------
@@ -180,23 +179,27 @@ class Config(QObject):
             return self._entries[key].get_value(inner_key)
 
 
-    def get_label(self, key):
+    def get_label(self, key: str) -> str:
         """Gets the label text assigned to a config value."""
         if not key in self._entries:
             raise KeyError(f'Tried to get label for unknown config value "{key}"')
         return self._entries[key].get_label()
 
 
-    def get_tooltip(self, key):
+    def get_tooltip(self, key: str) -> str:
         """Gets the tooltip text assigned to a config value."""
         if not key in self._entries:
             raise KeyError(f'Tried to get tooltip for unknown config value "{key}"')
         return self._entries[key].get_tooltip()
 
 
-    def set(self, key, value, save_change=True, add_missing_options=False, inner_key=None):
-        """
-        Updates a saved value.
+    def set(self,
+            key: str,
+            value: Any,
+            save_change: bool = True,
+            add_missing_options: bool = False,
+            inner_key: Optional[str] = None) -> None:
+        """Updates a saved value.
 
         Parameters
         ----------
@@ -236,7 +239,7 @@ class Config(QObject):
         if save_change:
             with self._lock:
                 if not self._save_timer.isActive():
-                    def write_change():
+                    def write_change() -> None:
                         self._write_to_json()
                         self._save_timer.timeout.disconnect(write_change)
                     self._save_timer.timeout.connect(write_change)
@@ -252,7 +255,11 @@ class Config(QObject):
                 break
 
 
-    def connect(self, connected_object, key, on_change_fn, inner_key = None):
+    def connect(self,
+            connected_object: Any,
+            key: str,
+            on_change_fn: Callable[[Any], None] | Callable[[Any, Any], None],
+            inner_key: Optional[str] = None) -> None:
         """
         Registers a callback function that should run when a particular key is changed.
 
@@ -283,7 +290,7 @@ class Config(QObject):
             self._connected[key][connected_object] = wrapper_fn
 
 
-    def disconnect(self, connected_object, key):
+    def disconnect(self, connected_object: Any, key: str) -> None:
         """
         Removes a callback function previously registered through config.connect() for a particular object and key.
         """
@@ -292,14 +299,13 @@ class Config(QObject):
         self._connected[key].pop(connected_object, None)
 
 
-    def list(self):
+    def list(self) -> list[str]:
         """Returns all keys tracked by this Config object."""
         return self._entries.keys()
 
 
-    def get_option_index(self, key):
-        """
-        Returns the index of the selected option for a given key.
+    def get_option_index(self, key: str) -> int:
+        """Returns the index of the selected option for a given key.
 
         Raises
         ------
@@ -312,9 +318,8 @@ class Config(QObject):
             return self._entries[key].get_option_index()
 
 
-    def get_options(self, key):
-        """
-        Returns all valid options accepted for a given key.
+    def get_options(self, key: str) -> list:
+        """Returns all valid options accepted for a given key.
 
         Raises
         ------
@@ -326,7 +331,7 @@ class Config(QObject):
         return self._entries[key].get_options()
 
 
-    def update_options(self, key, options_list):
+    def update_options(self, key: str, options_list: list) -> None:
         """
         Replaces the list of accepted options for a given key.
 
@@ -340,7 +345,7 @@ class Config(QObject):
         self._entries[key].update_options(options_list)
 
 
-    def add_option(self, key, option):
+    def add_option(self, key: str, option: str) -> None:
         """
         Adds a new item to the list of accepted options for a given key.
 
@@ -354,7 +359,7 @@ class Config(QObject):
         self._entries[key].add_option(option)
 
 
-    def apply_args(self, args):
+    def apply_args(self, args: Namespace) -> None:
         """Loads expected parameters from command line arguments"""
         expected = {
             args.text: Config.PROMPT,
@@ -366,12 +371,17 @@ class Config(QObject):
         for arg_value, key in expected.items():
             if arg_value:
                 self.set(key, arg_value)
-        if args.width and args.height:
-            self.set(Config.EDIT_SIZE, QSize(args.width, args.height))
 
 
-    def _add_entry(self, key, initial_value, label, category, tooltip, options=None, range_options=None,
-            save_json=True):
+    def _add_entry(self,
+            key: str,
+            initial_value: Any,
+            label: str,
+            category: str,
+            tooltip: str,
+            options: Optional[list] = None,
+            range_options: Optional[dict] = None,
+            save_json=True) -> None:
         if key in self._entries:
             raise KeyError(f'Tried add duplicate config entry "{key}"')
         entry = _Entry(key, initial_value, label, category, tooltip, options, range_options, save_json)
@@ -379,7 +389,7 @@ class Config(QObject):
         self._connected[key] = {}
 
 
-    def _write_to_json(self):
+    def _write_to_json(self) -> None:
         converted_dict = {}
         with self._lock:
             for entry in self._entries.values():
@@ -388,7 +398,7 @@ class Config(QObject):
                 json.dump(converted_dict, file, ensure_ascii=False, indent=4)
 
 
-    def _read_from_json(self):
+    def _read_from_json(self) -> None:
         try:
             with open(self._json_path, encoding='utf-8') as file:
                 json_data = json.load(file)
@@ -400,7 +410,15 @@ class Config(QObject):
 
 
 class _Entry():
-    def __init__(self, key, initial_value, label, category, tooltip, options=None, range_options=None, save_json=True):
+    def __init__(self,
+            key: str,
+            initial_value: Any,
+            label: str,
+            category: str,
+            tooltip: str,
+            options: Optional[list[str]] = None,
+            range_options: Optional[dict[str, int | float]] = None,
+            save_json: bool = True) -> None:
         self._key = key
         self._value = initial_value
         self._label = label
@@ -432,7 +450,10 @@ class _Entry():
             self._range_options = None
 
 
-    def set_value(self, value, add_missing_options=False, inner_key=None):
+    def set_value(self,
+            value: Any,
+            add_missing_options: bool = False,
+            inner_key: Optional[str] = None) -> None:
         """Updates the value or one of its properties, returning value_changed and previous_value"""
         # Handle inner key changes:
         if inner_key is not None:
@@ -441,7 +462,7 @@ class _Entry():
                 if inner_key not in Config.RangeKey.ALL:
                     raise ValueError(f'Invalid inner_key for {self._key}, expected {Config.RangeKey.ALL}, " + \
                             f"got {inner_key}')
-                if type(self._value) != type(value):
+                if not isinstance(self._value, type(value)):
                     raise TypeError(f'Cannot set {self._key}.{inner_key} to {type(value)} "{value}", type is ' + \
                             f'{type(self._value)}')
                 value_changed = self._range_options[inner_key] != value
@@ -458,7 +479,7 @@ class _Entry():
                             f'{self._key} is type "{type(self._value)}"')
 
         # Enforce type consistency for values other than inner dict values:
-        if type(value) != type(self._value):
+        if not isinstance(value, type(self._value)):
             raise TypeError(f'Expected "{self._key}" value "{value}" to have type "{type(self._value)}", found ' + \
                             f'"{type(value)}"')
 
@@ -474,7 +495,7 @@ class _Entry():
         return value_changed
 
 
-    def get_value(self, inner_key=None):
+    def get_value(self, inner_key: Optional[str] = None) -> Any:
         """Gets the current value, or an inner value or range option if inner_key is not None."""
         if inner_key is not None:
             if self._range_options is not None:
@@ -488,35 +509,36 @@ class _Entry():
         return self._value
 
 
-    def get_category(self):
+    def get_category(self) -> str:
         """Gets the config option's category name."""
         return self._category
 
 
-    def get_label(self):
+    def get_label(self) -> str:
         """Gets the config option's label text."""
         return self._label
 
 
-    def get_tooltip(self):
+    def get_tooltip(self) -> str:
         """Gets the config option's tooltip description."""
         return self._tooltip
 
 
-    def get_option_index(self):
+    def get_option_index(self) -> int:
         """ Returns the index of the selected option."""
         if self._options is None:
             raise RuntimeError(f'Config value "{self._key}" does not have an associated options list')
         return self._options.index(self._value)
 
 
-    def get_options(self):
+    def get_options(self) -> list:
         """Returns all valid options accepted."""
         if self._options is None:
             raise RuntimeError(f'Config value "{self._key}" does not have an associated options list')
         return self._options.copy()
 
-    def add_option(self, option):
+
+    def add_option(self, option: str) -> None:
         """Adds a new item to the list of accepted options."""
         if self._options is None:
             raise RuntimeError(f'Config value "{self._key}" does not have an associated options list')
@@ -524,7 +546,7 @@ class _Entry():
             self._options.append(option)
 
 
-    def update_options(self, options_list):
+    def update_options(self, options_list: list[str]) -> None:
         """Replaces the list of accepted options."""
         if self._options is None:
             raise RuntimeError(f'Config value "{self._key}" does not have an associated options list')
@@ -535,7 +557,7 @@ class _Entry():
             self.set_value(options_list[0], False)
 
 
-    def save_to_json_dict(self, json_dict):
+    def save_to_json_dict(self, json_dict: dict[str, Any]) -> None:
         """Adds the value to a dict in a format that can be written to a JSON file."""
         if self.save_json is True:
             if isinstance(self._value, QSize):
@@ -547,7 +569,7 @@ class _Entry():
                 json_dict[self._key] = self._value
 
 
-    def load_from_json_dict(self, json_dict):
+    def load_from_json_dict(self, json_dict: dict) -> None:
         """Reads the value from a dict that was loaded from a JSON file."""
         if self._key not in json_dict:
             return

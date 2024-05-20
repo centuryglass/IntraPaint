@@ -3,12 +3,15 @@ Provides image editing functionality through the GLID-3-XL API provided through 
 colabFiles/IntraPaint_colab_server.ipynb.
 """
 import sys
+from typing import Optional, Callable
 import requests
-from PyQt5.QtCore import QThread
+from PyQt5.QtCore import QThread, pyqtSignal
 from PyQt5.QtWidgets import QInputDialog
+from PIL import Image
 
 from ui.window.main_window import MainWindow
 from ui.util.screen_size import screen_size
+from ui.modal.settings_modal import SettingsModal
 from controller.base_controller import BaseInpaintController
 from startup.utils import image_to_base64, load_image_from_base64
 from data_model.config import Config
@@ -23,7 +26,7 @@ class WebClientController(BaseInpaintController):
         self._window = None
 
     @staticmethod
-    def health_check(url):
+    def health_check(url: str):
         """Static method to check if the GLID-3-XL API is available."""
         try:
             res = requests.get(url, timeout=30)
@@ -35,13 +38,13 @@ class WebClientController(BaseInpaintController):
 
     def window_init(self):
         """Initialize and show the main application window."""
-        self._window = MainWindow(self._config, self._edited_image, self._mask_canvas, self._sketch_canvas, self)
+        self._window = MainWindow(self._config, self._layer_stack, self._mask_canvas, self._sketch_canvas, self)
         size = screen_size(self._window)
         self._window.setGeometry(0, 0, size.width(), size.height())
         self._window.show()
 
         # Make sure a valid connection exists:
-        def prompt_for_url(prompt_text):
+        def prompt_for_url(prompt_text: str):
             new_url, url_entered = QInputDialog.getText(self._window, 'Inpainting UI', prompt_text)
             if not url_entered: # User clicked 'Cancel'
                 sys.exit()
@@ -58,7 +61,11 @@ class WebClientController(BaseInpaintController):
             prompt_for_url('Server connection failed, enter a new URL or click "OK" to retry')
 
 
-    def _inpaint(self, selection, mask, save_image, status_signal):
+    def _inpaint(self,
+            selection: Optional[Image.Image],
+            mask: Optional[Image.Image],
+            save_image: Callable[[Image.Image, int], None],
+            status_signal: pyqtSignal):
         """Handle image editing operations using the GLID-3-XL API."""
         batch_size = self._config.get(Config.BATCH_SIZE)
         batch_count = self._config.get(Config.BATCH_COUNT)
@@ -75,14 +82,14 @@ class WebClientController(BaseInpaintController):
             'height': selection.height
         }
 
-        def error_check(server_response, context_str):
+        def error_check(server_response: requests.Response, context_str: str):
             if server_response.status_code != 200:
                 if server_response.content and ('application/json' in server_response.headers['content-type']) \
                         and server_response.json() and 'error' in server_response.json():
-                    raise RuntimeError(f"{server_response.status_code} response to {context_str}: " + \
-                                    f"{server_response.json()['error']}")
-                print(f"RESPONSE: {server_response.content}")
-                raise RuntimeError(f"{server_response.status_code} response to {context_str}: unknown error")
+                    raise RuntimeError(f'{server_response.status_code} response to {context_str}: ' + \
+                                    f'{server_response.json()["error"]}')
+                print(f'RESPONSE: {server_response.content}')
+                raise RuntimeError(f'{server_response.status_code} response to {context_str}: unknown error')
         res = requests.post(self._server_url, json=body, timeout=30)
         error_check(res, 'New inpainting request')
 
@@ -133,3 +140,9 @@ class WebClientController(BaseInpaintController):
                     error_count += 1
                     continue
             in_progress = json_body['in_progress']
+
+    def refresh_settings(self, settings_modal: SettingsModal):
+        """Settings not in scope for GLID-3-XL controller."""
+
+    def update_settings(self, changed_settings: dict):
+        """Settings not in scope for GLID-3-XL controller."""

@@ -3,11 +3,11 @@ Provides simple popup windows for error messages, requesting confirmation, and l
 """
 import sys
 import traceback
-from PyQt5.QtWidgets import QMessageBox, QFileDialog
+from PyQt5.QtWidgets import QMessageBox, QFileDialog, QWidget
 from PIL import UnidentifiedImageError
 
 
-def show_error_dialog(parent, title, error):
+def show_error_dialog(parent: QWidget, title: str, error: str) -> None:
     """Opens a message box to show some text to the user."""
     print(f'Error: {error}')
     if hasattr(error, '__traceback__'):
@@ -18,7 +18,7 @@ def show_error_dialog(parent, title, error):
     messagebox.setStandardButtons(QMessageBox.Ok)
     messagebox.exec()
 
-def request_confirmation(parent, title, message):
+def request_confirmation(parent: QWidget, title: str, message: str) -> bool:
     """Requests confirmation from the user, returns whether that confirmation was granted."""
     confirmbox = QMessageBox(parent)
     confirmbox.setWindowTitle(title)
@@ -27,7 +27,9 @@ def request_confirmation(parent, title, message):
     response = confirmbox.exec()
     return bool(response == QMessageBox.Ok)
 
-def open_image_file(parent, mode='load', selected_file=''):
+
+def open_image_file(parent: QWidget, mode: str = 'load',
+        selected_file: str = '') -> tuple[str | None, str]:
     """Opens an image file for editing, saving, etc."""
     is_pyinstaller_bundle = getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS')
     options = QFileDialog.Option.DontUseNativeDialog if is_pyinstaller_bundle else None

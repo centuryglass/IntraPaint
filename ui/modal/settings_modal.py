@@ -2,8 +2,9 @@
 Popup modal providing a dynamic settings interface, to be populated by the controller. Currently only used with
 stable_diffusion_controller.
 """
+from typing import Any
 from PyQt5.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QPushButton, QLineEdit, QComboBox, QDoubleSpinBox, \
-         QCheckBox
+         QCheckBox, QWidget
 from PyQt5.QtCore import pyqtSignal
 from ui.widget.bordered_widget import BorderedWidget
 from ui.widget.collapsible_box import CollapsibleBox
@@ -16,7 +17,7 @@ class SettingsModal(QDialog):
 
     changes_saved = pyqtSignal(dict)
 
-    def __init__(self, parent):
+    def __init__(self, parent: QWidget):
         super().__init__(parent)
         self.setModal(True)
 
@@ -58,7 +59,7 @@ class SettingsModal(QDialog):
         self.exec_()
 
 
-    def set_tooltip(self, setting_name, tooltip):
+    def set_tooltip(self, setting_name: str, tooltip: str):
         """Sets tooltip text for a setting.
 
         Parameters
@@ -73,7 +74,7 @@ class SettingsModal(QDialog):
         self._inputs[setting_name].setToolTip(tooltip)
 
 
-    def update_settings(self, settings):
+    def update_settings(self, settings: dict):
         """Sets all setting control widgets to match current settings values.
 
         Parameters
@@ -99,7 +100,11 @@ class SettingsModal(QDialog):
                 del self._changes[key]
 
 
-    def add_text_setting(self, setting_name, panel_name, initial_value, label_text):
+    def add_text_setting(self,
+            setting_name: str,
+            panel_name: str,
+            initial_value: Any,
+            label_text: str):
         """Adds a new setting that accepts an arbitrary text value.
 
         Parameters
@@ -119,7 +124,12 @@ class SettingsModal(QDialog):
         self._add_setting(setting_name, panel_name, textbox, label_text)
 
 
-    def add_combobox_setting(self, setting_name, panel_name, initial_value, options, label_text):
+    def add_combobox_setting(self,
+            setting_name: str,
+            panel_name: str,
+            initial_value: str,
+            options: list[str],
+            label_text: str):
         """Adds a new setting that accepts one of several pre-determined options.
 
         Parameters
@@ -150,7 +160,13 @@ class SettingsModal(QDialog):
         self._add_setting(setting_name, panel_name, combobox, label_text)
 
 
-    def add_spinbox_setting(self, setting_name, panel_name, initial_value, min_value, max_value, label_text):
+    def add_spinbox_setting(self,
+            setting_name: str,
+            panel_name: str,
+            initial_value: int | float,
+            min_value: int | float,
+            max_value: int | float,
+            label_text: str):
         """Adds a new numeric setting.
 
         Parameters
@@ -175,7 +191,11 @@ class SettingsModal(QDialog):
         self._add_setting(setting_name, panel_name, spinbox, label_text)
 
 
-    def add_checkbox_setting(self, setting_name, panel_name, initial_value, label_text):
+    def add_checkbox_setting(self,
+            setting_name: str,
+            panel_name: str,
+            initial_value: bool,
+            label_text: str):
         """Adds a new checkbox setting.
 
         Parameters
@@ -195,11 +215,11 @@ class SettingsModal(QDialog):
         self._add_setting(setting_name, panel_name, checkbox, label_text)
 
 
-    def _add_change(self, setting, new_value):
+    def _add_change(self, setting: str, new_value: Any):
         self._changes[setting] = new_value
 
 
-    def _add_panel_if_missing(self, panel_name):
+    def _add_panel_if_missing(self, panel_name: str):
         if panel_name not in self._panels:
             panel = CollapsibleBox(title=panel_name)
             panel_layout = QVBoxLayout()
@@ -209,7 +229,11 @@ class SettingsModal(QDialog):
             self._panel_layout.addWidget(panel)
 
 
-    def _add_setting(self, setting_name, panel_name, widget, label_text):
+    def _add_setting(self,
+            setting_name: str,
+            panel_name: str,
+            widget: QWidget,
+            label_text: str):
         self._add_panel_if_missing(panel_name)
         self._panel_layouts[panel_name].addWidget(LabelWrapper(widget, label_text))
         self._inputs[setting_name] = widget

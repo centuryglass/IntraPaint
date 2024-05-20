@@ -2,8 +2,10 @@
 A container widget that can be expanded or collapsed.
 Originally adapted from https://stackoverflow.com/a/52617714
 """
-from PyQt5.QtWidgets import QWidget, QScrollArea, QToolButton, QHBoxLayout, QVBoxLayout, QSizePolicy
-from PyQt5.QtCore import Qt
+from typing import Optional
+from PyQt5.QtWidgets import QWidget, QScrollArea, QToolButton, QHBoxLayout, QVBoxLayout, QSizePolicy, QLayout, \
+         QBoxLayout
+from PyQt5.QtCore import Qt, QSize, pyqtBoundSignal
 
 from ui.widget.bordered_widget import BorderedWidget
 from ui.widget.label import Label
@@ -14,11 +16,11 @@ class CollapsibleBox(BorderedWidget):
 
 
     def __init__(self,
-            title="",
-            parent=None,
-            start_closed=False,
-            scrolling=True,
-            orientation=Qt.Orientation.Vertical):
+            title: str = "",
+            parent: Optional[QWidget] = None,
+            start_closed: bool = False,
+            scrolling: bool = True,
+            orientation: Qt.Orientation = Qt.Orientation.Vertical):
         """Initializes the widget, optionally adding it to a parent widget.
 
         Parameters
@@ -43,24 +45,22 @@ class CollapsibleBox(BorderedWidget):
         layout.setContentsMargins(0, 0, 0, 0)
 
 
-        self._toggle_button = QToolButton(
-            text=title, checkable=True, checked=not start_closed
-        )
+        self._toggle_button = QToolButton(text=title, checkable=True, checked=not start_closed)
         self._toggle_button.setStyleSheet("QToolButton { border: none; }")
         if self._is_vertical:
             self._toggle_button.setToolButtonStyle(
-                Qt.ToolButtonTextBesideIcon
+                Qt.ToolButtonStyle.ToolButtonTextBesideIcon
             )
             layout.addWidget(self._toggle_button, stretch=1)
             self._toggle_button.setSizePolicy(QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Expanding))
         else:
             self._toggle_label = Label(title)
-            self._toggle_label.setAlignment(Qt.AlignTop)
-            self._toggle_button.setToolButtonStyle(Qt.ToolButtonIconOnly)
+            self._toggle_label.setAlignment(Qt.AlignmentFlag.AlignTop)
+            self._toggle_button.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonIconOnly)
             button_bar = QWidget()
             button_bar_layout = QVBoxLayout()
-            button_bar_layout.addWidget(self._toggle_button, alignment=Qt.AlignTop)
-            button_bar_layout.addWidget(self._toggle_label, alignment=Qt.AlignTop)
+            button_bar_layout.addWidget(self._toggle_button, alignment=Qt.AlignmentFlag.AlignTop)
+            button_bar_layout.addWidget(self._toggle_label, alignment=Qt.AlignmentFlag.AlignTop)
             button_bar_layout.addStretch(255)
             button_bar_layout.setContentsMargins(0,0,0,0)
             button_bar.setLayout(button_bar_layout)
@@ -69,7 +69,7 @@ class CollapsibleBox(BorderedWidget):
             for widget in [button_bar, self._toggle_label, self._toggle_button]:
                 widget.setMinimumWidth(min_width)
             layout.addWidget(button_bar, stretch=1)
-        self._toggle_button.setArrowType(Qt.DownArrow if self._is_vertical else Qt.RightArrow)
+        self._toggle_button.setArrowType(Qt.ArrowType.DownArrow if self._is_vertical else Qt.ArrowType.RightArrow)
         self._toggle_button.toggled.connect(self.on_pressed)
 
         if scrolling:
@@ -89,7 +89,8 @@ class CollapsibleBox(BorderedWidget):
         layout.addWidget(self.scroll_area, stretch=255)
         self._start_closed = start_closed
 
-    def set_content_layout(self, layout):
+
+    def set_content_layout(self, layout: QLayout) -> None:
         """Adds a layout to the widget.
 
         Items should be added to the box by adding them to this layout.
@@ -103,7 +104,7 @@ class CollapsibleBox(BorderedWidget):
         if self._start_closed:
             self.on_pressed()
 
-    def set_expanded_size_policy(self, policy):
+    def set_expanded_size_policy(self, policy: QSizePolicy.Policy) -> None:
         """Sets the size policy applied to widget content along the expansion axis when expanded.
 
         Parameters
@@ -121,18 +122,27 @@ class CollapsibleBox(BorderedWidget):
                 self.setSizePolicy(self._expanded_size_policy, QSizePolicy.Expanding)
 
 
-    def toggled(self):
+    def toggled(self) -> pyqtBoundSignal:
         """Returns the internal pyqtSignal emitted when the box is expanded or collapsed."""
         return self._toggle_button.toggled
 
 
-    def show_button_bar(self, show_bar):
+    def show_button_bar(self, show_bar: bool) -> None:
         """Sets whether the box bar with the label and toggle button should be shown or hidden.
 
         If hidden, the box will be forced into the "expanded" state.
         """
-        self.layout().setStretch(0, 1 if show_bar else 0)
-        button_bar = self.layout().itemAt(0).widget()
+        layout = self.layout()
+        if layout is None:
+            return
+        assert isinstance(layout, QBoxLayout)
+        layout.setStretch(0, 1 if show_bar else 0)
+        layout_item = layout.itemAt(0)
+        if layout_item is None:
+            return
+        button_bar = layout_item.widget()
+        if button_bar is None:
+            return
         button_bar.setEnabled(show_bar)
         button_bar.setVisible(show_bar)
         if self._is_vertical:
@@ -145,7 +155,8 @@ class CollapsibleBox(BorderedWidget):
         if not show_bar:
             self.set_expanded(True)
 
-    def sizeHint(self):
+
+    def sizeHint(self) -> QSize:
         """Returns ideal box size based on expanded size policy and expansion state."""
         size = super().sizeHint()
         if not self._toggle_button.isChecked():
@@ -155,20 +166,25 @@ class CollapsibleBox(BorderedWidget):
                 size.setHeight(self._toggle_button.sizeHint().height())
         return size
 
-    def on_pressed(self):
+
+    def on_pressed(self) -> None:
         """When clicked, show or hide box content."""
+        layout = self.layout()
+        if layout is None:
+            return
+        assert isinstance(layout, QBoxLayout)
         checked = self._toggle_button.isChecked()
         self._toggle_button.setArrowType(
-            Qt.DownArrow if (checked == self._is_vertical) else Qt.RightArrow)
+            Qt.ArrowType.DownArrow if (checked == self._is_vertical) else Qt.ArrowType.RightArrow)
         if checked:
-            self.layout().addWidget(self.scroll_area, stretch=255)
+            layout.addWidget(self.scroll_area, stretch=255)
             self.scroll_area.setVisible(True)
             if self._is_vertical:
                 self.setSizePolicy(QSizePolicy.Expanding, self._expanded_size_policy)
             else:
                 self.setSizePolicy(self._expanded_size_policy, QSizePolicy.Expanding)
         else:
-            self.layout().removeWidget(self.scroll_area)
+            layout.removeWidget(self.scroll_area)
             self.scroll_area.setVisible(False)
             if self._is_vertical:
                 self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Maximum)
@@ -176,12 +192,13 @@ class CollapsibleBox(BorderedWidget):
                 self.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Expanding)
         self.update()
 
-    def is_expanded(self):
+
+    def is_expanded(self) -> bool:
         """Returns whether the box is currently expanded."""
         return self._toggle_button.isChecked()
 
 
-    def set_expanded(self, expanded):
+    def set_expanded(self, expanded: bool) -> None:
         """Sets whether the box is in the expanded state."""
         if expanded != self._toggle_button.isChecked():
             self._toggle_button.setChecked(expanded)

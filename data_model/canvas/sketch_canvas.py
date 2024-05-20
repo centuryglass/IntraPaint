@@ -3,16 +3,20 @@ Provides a Canvas implementation for directly drawing within edited image sectio
 with drawing tablet support. Used as a fallback implementation on systems that can't use the superior brushlib_canvas
 module.
 """
-from PyQt5.QtCore import Qt, QSize
-from PyQt5.QtGui import QPainter, QPixmap
-from PyQt5.QtWidgets import QGraphicsPixmapItem
+from typing import Optional
+from PIL import Image
+from PyQt5.QtCore import Qt, QSize, QPoint, QLine
+from PyQt5.QtGui import QPainter, QImage, QPixmap, QColor
+from PyQt5.QtWidgets import QGraphicsPixmapItem, QGraphicsScene
 from data_model.canvas.pixmap_canvas import PixmapCanvas
 from data_model.config import Config
 
 class SketchCanvas(PixmapCanvas):
     """Provides a Canvas implementation for directly drawing within edited image sections."""
 
-    def __init__(self, config, image_data):
+    def __init__(self,
+            config: Config,
+            image_data: Optional[QImage | Image.Image | QPixmap | QSize | str]):
         """Initialize with config values and optional arbitrary initial image data.
 
         Parameters
@@ -30,12 +34,12 @@ class SketchCanvas(PixmapCanvas):
         self._set_empty_shading_pixmap()
 
 
-    def has_sketch(self):
+    def has_sketch(self) -> bool:
         """Returns whether the canvas contains non-empty image data."""
         return self._has_sketch
 
 
-    def add_to_scene(self, scene, z_value = None):
+    def add_to_scene(self, scene: QGraphicsScene, z_value: Optional[int] = None):
         """Adds the canvas to a QGraphicsScene.
 
         Parameters
@@ -50,7 +54,7 @@ class SketchCanvas(PixmapCanvas):
         scene.addItem(self._shading_pixmap)
 
 
-    def set_image(self, image_data):
+    def set_image(self, image_data: QImage | QPixmap | QSize | Image.Image | str):
         """Loads an image into the canvas, overwriting existing canvas content.
 
         Parameters
@@ -76,7 +80,11 @@ class SketchCanvas(PixmapCanvas):
         self._apply_shading()
 
 
-    def draw_point(self, point, color, size_multiplier=None, size_override=None):
+    def draw_point(self,
+            point: QPoint,
+            color: QColor,
+            size_multiplier: Optional[float] = None,
+            size_override: Optional[int] = None):
         """Draws a single point on the canvas.
 
         Parameters
@@ -101,7 +109,11 @@ class SketchCanvas(PixmapCanvas):
         self._has_sketch = True
 
 
-    def draw_line(self, line, color, size_multiplier=None, size_override=None):
+    def draw_line(self,
+            line: QLine,
+            color: QColor,
+            size_multiplier: Optional[float] = None,
+            size_override: Optional[int] = None):
         """Draws a line on the canvas.
 
         Parameters
@@ -131,19 +143,19 @@ class SketchCanvas(PixmapCanvas):
         self.shading = True
 
 
-    def get_qimage(self):
+    def get_qimage(self) -> QImage:
         """Returns the canvas image content as QImage."""
         self._apply_shading()
-        return super().get_pil_image()
+        return super().get_qimage()
 
 
-    def get_pil_image(self):
+    def get_pil_image(self) -> Image.Image:
         """Returns the canvas image content as PIL Image."""
         self._apply_shading()
         return super().get_pil_image()
 
 
-    def resize(self, size):
+    def resize(self, size: QSize):
         """Updates the canvas size, scaling any image content to match.
 
         Parameters
@@ -155,7 +167,7 @@ class SketchCanvas(PixmapCanvas):
         self._shading_pixmap.setPixmap(self._shading_pixmap.pixmap().scaled(size))
 
 
-    def fill(self, color):
+    def fill(self, color: QColor):
         """Fills the canvas with a single QColor."""
         super().fill(color)
         self._has_sketch = True
@@ -170,13 +182,13 @@ class SketchCanvas(PixmapCanvas):
         self.update()
 
 
-    def setVisible(self, visible):
+    def setVisible(self, visible: bool):
         """Shows or hides the canvas."""
         super().setVisible(visible)
         self._shading_pixmap.setVisible(visible)
 
 
-    def setOpacity(self, opacity):
+    def setOpacity(self, opacity: float):
         """Changes the opacity used when drawing the masked area."""
         super().setOpacity(opacity)
         self._shading_pixmap.setOpacity(opacity)

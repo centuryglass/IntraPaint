@@ -5,6 +5,7 @@ import sys
 import threading
 import re
 import os
+import datetime
 import requests
 from PyQt5.QtCore import QObject, pyqtSignal
 from PyQt5.QtWidgets import QInputDialog
@@ -169,8 +170,8 @@ class StableDiffusionController(BaseInpaintController):
         automatically generates an appropriate prompt. Once returned, that prompt is copied to the appropriate field
         in the UI. Displays an error dialog instead if no image is loaded or another API operation is in-progress.
         """
-        if not self._edited_image.has_image():
-            show_error_dialog(self._window, 'Interrogate failed', 'Create or load an image first.')
+        if not self._layer_stack.has_image:
+            show_error_dialog(self._window, 'Save failed', 'Open or create an image first.')
             return
         if self._thread is not None:
             show_error_dialog(self._window, 'Interrogate failed', 'Existing operation currently in progress')
@@ -182,23 +183,23 @@ class StableDiffusionController(BaseInpaintController):
             prompt_ready = pyqtSignal(str)
             error_signal = pyqtSignal(Exception)
 
-            def __init__(self, config, edited_image, webservice):
+            def __init__(self, config, layer_stack, webservice):
                 super().__init__()
                 self._config = config
-                self._edited_image = edited_image
+                self._layer_stack = layer_stack
                 self._webservice = webservice
 
             def run(self):
                 """Run interrogation in the child thread, emit a signal and exit when finished."""
                 try:
-                    image = self._edited_image.get_selection_content()
+                    image = self._layer_stack.pil_image_selection_content()
                     self.prompt_ready.emit(self._webservice.interrogate(self._config, image))
                 except RuntimeError as err:
                     print (f'err:{err}')
                     self.error_signal.emit(err)
                 self.finished.emit()
 
-        worker = InterrogateWorker(self._config, self._edited_image, self._webservice)
+        worker = InterrogateWorker(self._config, self._layer_stack, self._webservice)
         def set_prompt(prompt_text):
             print(f'Set prompt to {prompt_text}')
             self._config.set(Config.PROMPT, prompt_text)
@@ -259,9 +260,22 @@ class StableDiffusionController(BaseInpaintController):
             except (KeyError, RuntimeError) as err:
                 print(f'error loading {config_key} from {self._server_url}: {err}')
 
+        dict_params = [
+            [Config.CONTROLNET_CONTROL_TYPES, self._webservice.get_controlnet_control_types],
+            [Config.CONTROLNET_MODULES, self._webservice.get_controlnet_modules],
+            [Config.CONTROLNET_MODELS, self._webservice.get_controlnet_models]
+        ]
+        for config_key, loading_fn in dict_params:
+            try:
+                value = loading_fn()
+                if value is not None and len(value) > 0:
+                    self._config.set(config_key, value)
+            except (KeyError, RuntimeError) as err:
+                print(f'error loading {config_key} from {self._server_url}: {err}')
+
         # initialize remote options modal:
         # Handle final window init now that data is loaded from the API:
-        self._window = StableDiffusionMainWindow(self._config, self._edited_image, self._mask_canvas,
+        self._window = StableDiffusionMainWindow(self._config, self._layer_stack, self._mask_canvas,
                 self._sketch_canvas, self)
         size = screen_size(self._window)
         self._window.setGeometry(0, 0, size.width(), size.height())
@@ -271,8 +285,8 @@ class StableDiffusionController(BaseInpaintController):
 
     def _scale(self, new_size):
         """Provide extra upscaling modes using stable-diffusion-webui."""
-        width = self._edited_image.width()
-        height = self._edited_image.height()
+        width = self._layer_stack.width
+        height = self._layer_stack.height
         # If downscaling, use base implementation:
         if (new_size.width() <= width and new_size.height() <= height):
             super()._scale(new_size)
@@ -285,16 +299,16 @@ class StableDiffusionController(BaseInpaintController):
             status_signal = pyqtSignal(dict)
             error_signal = pyqtSignal(Exception)
 
-            def __init__(self, config, edited_image, webservice):
+            def __init__(self, config, layer_stack, webservice):
                 super().__init__()
                 self._config = config
-                self._edited_image = edited_image
+                self._layer_stack = layer_stack
                 self._webservice = webservice
 
             def run(self):
                 """Handle the upscaling request, then emit a signal and exit when finished."""
                 try:
-                    images, info = self._webservice.upscale(self._edited_image.get_pil_image(),
+                    images, info = self._webservice.upscale(self._layer_stack.pil_image(),
                             new_size.width(),
                             new_size.height(),
                             self._config)
@@ -304,12 +318,12 @@ class StableDiffusionController(BaseInpaintController):
                 except IOError as err:
                     self.error_signal.emit(err)
                 self.finished.emit()
-        worker = UpscaleWorker(self._config, self._edited_image, self._webservice)
+        worker = UpscaleWorker(self._config, self._layer_stack, self._webservice)
         def handle_error(err):
             show_error_dialog(self._window, 'Upscale failure', err)
         worker.error_signal.connect(handle_error)
         def apply_upscaled(img):
-            self._edited_image.set_image(img)
+            self._layer_stack.set_image(img)
         worker.image_ready.connect(apply_upscaled)
         self._start_thread(worker)
 
@@ -354,6 +368,8 @@ class StableDiffusionController(BaseInpaintController):
         thread = threading.Thread(target=async_request)
         thread.start()
 
+        init_eta_relative = None
+        init_eta_timestamp = None
         while thread.is_alive():
             sleep_time = min(min_refresh * pow(2, error_count), max_refresh)
             thread.join(timeout=sleep_time / 1000000)
@@ -362,15 +378,24 @@ class StableDiffusionController(BaseInpaintController):
             try:
                 status = self._webservice.progress_check()
                 status_text = f'{int(status["progress"] * 100)}%'
+                print(f'status: {status}')
                 if 'eta_relative' in status and status['eta_relative'] != 0:
-                    # TODO: eta_relative is not a ms value, perhaps use it with timestamps to estimate actual ETA?
-                    eta_sec = int(status['eta_relative'] / 1000)
-                    minutes = eta_sec // 60
-                    seconds = eta_sec % 60
-                    if minutes > 0:
-                        status_text = f'{status_text} ETA: {minutes}:{seconds}'
+                    timestamp = datetime.datetime.now().timestamp()
+                    if init_eta_relative is None:
+                        init_eta_relative = float(status['eta_relative'])
+                        init_eta_timestamp = timestamp
                     else:
-                        status_text = f'{status_text} ETA: {seconds}s'
+                        ms_passed = timestamp - init_eta_timestamp
+                        eta_passed = init_eta_relative - float(status['eta_relative'])
+                        fraction_time_complete = eta_passed/init_eta_relative
+                        ms_remaining = ms_passed / fraction_time_complete
+                        eta_sec = int(ms_remaining / 1000)
+                        minutes = eta_sec // 60
+                        seconds = eta_sec % 60
+                        if minutes > 0:
+                            status_text = f'{status_text} ETA: {minutes}:{seconds}'
+                        else:
+                            status_text = f'{status_text} ETA: {seconds}s'
                 status_signal.emit({'progress': status_text})
             except RuntimeError as err:
                 error_count += 1
@@ -388,7 +413,7 @@ class StableDiffusionController(BaseInpaintController):
             save_image(image, idx)
             idx += 1
 
-    def _apply_status_update(self, status_dict):
+    def _apply_status_update(self, status_dict: dict):
         if 'seed' in status_dict:
             self._config.set(Config.LAST_SEED, str(status_dict['seed']))
         if 'progress' in status_dict:

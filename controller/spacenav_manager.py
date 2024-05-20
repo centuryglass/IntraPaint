@@ -8,12 +8,10 @@ import atexit
 import time
 import math
 from threading import Lock
-try:
-    import spacenav
-except ImportError:
-    print('spaceMouse support not installed.')
-    spacenav = None
-from PyQt5.QtCore import QObject, QThread, pyqtSignal
+import spacenav
+from PyQt5.QtCore import QObject, QThread, QSize, QRect, pyqtSignal
+from PyQt5.QtWidgets import QMainWindow
+from data_model.layer_stack import LayerStack
 
 # Once the xy offset of sequential spacenav events adds up to this value, the selection window will
 # reach max scrolling speed:
@@ -25,20 +23,20 @@ MAX_SPEED_CONTROL = 1
 class SpacenavManager():
     """Tracks spacemouse input and applies it to the edited image selection window."""
 
-    def __init__(self, window, edited_image):
-        """Connects the manager to the editen image and the main application window.""
+    def __init__(self, window: QMainWindow, layer_stack: LayerStack):
+        """Connects the manager to the edited image and the main application window.""
 
         Parameters
         ----------
         window : MainWindow
             The main application window.
-        edited_image : EditedImage
-            The image being edited.
+        layer_stack : data_model.layer_stack.LayerStack
+            Image layers being edited.
         """
         if spacenav is None:
             return
         self._window = window
-        self._edited_image = edited_image
+        self._layer_stack = layer_stack
         self._thread_data = {
             'readEvents': True,
             'pending': False,
@@ -53,21 +51,21 @@ class SpacenavManager():
         }
         self._thread = None
 
-        def update_image_size(size):
+        def update_image_size(size: QSize):
             with self._thread_data['lock']:
                 if size.width() != self._thread_data['w_image']:
                     self._thread_data['w_image'] = size.width()
                 if size.height() != self._thread_data['h_image']:
                     self._thread_data['h_image'] = size.height()
-        self._edited_image.size_changed.connect(update_image_size)
+        self._layer_stack.size_changed.connect(update_image_size)
 
-        def update_selection_size(bounds):
+        def update_selection_size(bounds: QRect, unused_last_bounds: QRect):
             with self._thread_data['lock']:
                 if bounds.width() != self._thread_data['w_sel']:
                     self._thread_data['w_sel'] = bounds.width()
                 if bounds.height() != self._thread_data['h_sel']:
                     self._thread_data['h_sel'] = bounds.height()
-        self._edited_image.selection_changed.connect(update_selection_size)
+        self._layer_stack.selection_bounds_changed.connect(update_selection_size)
 
         def stop_loop():
             with self._thread_data['lock']:
@@ -80,7 +78,7 @@ class SpacenavManager():
 
             nav_event_signal = pyqtSignal(int, int)
 
-            def __init__(self, thread_data):
+            def __init__(self, thread_data: dict):
                 super().__init__()
                 self._thread_data = thread_data
 
@@ -158,16 +156,15 @@ class SpacenavManager():
                     QThread.currentThread().yieldCurrentThread()
         self._worker = SpacenavThreadWorker(self._thread_data)
 
-        def handle_nav_event(x_offset, y_offset):
+        def handle_nav_event(x_offset: int, y_offset: int):
             with self._thread_data['lock']:
                 self._thread_data['pending'] = False
-            if self._window is None or not self._edited_image.has_image() \
-                    or self._window.is_sample_selector_visible():
+            if self._window is None or self._window.is_sample_selector_visible():
                 return
-            selection = self._edited_image.get_selection_bounds()
+            selection = self._layer_stack.selection
             #print(f"moveTo: {selection.x() + x_offset},{selection.y() + y_offset}")
             selection.moveTo(selection.x() + x_offset, selection.y() + y_offset)
-            self._edited_image.set_selection_bounds(selection)
+            self._layer_stack.selection = selection
             self._window.repaint()
         self._worker.nav_event_signal.connect(handle_nav_event)
 

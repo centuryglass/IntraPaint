@@ -1,26 +1,29 @@
 """
 Provides an extended QSlider widget with integrated data_model/config connection.
 """
-from PyQt5.QtWidgets import QWidget, QSlider, QSizePolicy
-from PyQt5.QtCore import Qt, QSize
+from typing import Optional
+from PyQt5.QtWidgets import QWidget, QSlider, QSizePolicy, QDoubleSpinBox
+from PyQt5.QtCore import Qt, QSize, QEvent
 from PyQt5.QtGui import QFont, QFontMetrics
 from ui.config_control_setup import connected_spinbox
 from ui.widget.label import Label
+from ui.widget.big_int_spinbox import BigIntSpinbox
+from data_model.config import Config
 
 class ParamSlider(QWidget):
     """ParamSlider is an extended QSlider widget with integrated data_model/config connection."""
 
     def __init__(self,
-            parent,
-            label_text,
-            config,
-            key,
-            min_val=None,
-            max_val=None,
-            step_val=None,
-            inner_key=None,
-            orientation=Qt.Orientation.Horizontal,
-            vertical_text_pt=None):
+            parent: Optional[QWidget],
+            label_text: str,
+            config: Config,
+            key: str,
+            min_val: Optional[int | float] = None,
+            max_val: Optional[int | float] = None,
+            step_val: Optional[int | float] = None,
+            inner_key: Optional[str] = None,
+            orientation: Qt.Orientation = Qt.Orientation.Horizontal,
+            vertical_text_pt: Optional[int] = None) -> None:
         """Initializes the slider, setting connected config property and other settings.
 
         Parameters
@@ -50,10 +53,11 @@ class ParamSlider(QWidget):
             Optional alternate font size to use when the slider is in vertical mode.
         """
         super().__init__(parent)
-        self._key = None
-        self._inner_key = None
-        self._float_mode = None
-        self._orientation = None
+        self._key: Optional[str] = None
+        self._inner_key: Optional[str] = None
+        self._float_mode: Optional[bool] = None
+        self._orientation: Optional[Qt.Orientation] = None
+        self._stepbox: Optional[BigIntSpinbox | QDoubleSpinBox] = None
         self._config = config
 
         self._label = Label(label_text, config, self, size=vertical_text_pt, orientation=orientation)
@@ -68,13 +72,12 @@ class ParamSlider(QWidget):
         font = QFont()
         font.setPointSize(config.get("font_point_size"))
         self._spinbox_measurements = QFontMetrics(font).boundingRect("9999").size() * 1.5
-        self._stepbox = None
         if key is not None:
             self.connect_key(key, min_val, max_val, step_val, inner_key)
         self.set_orientation(orientation)
 
 
-    def disconnect_config(self):
+    def disconnect_config(self) -> None:
         """Disconnects the slider from any config values."""
         if self._key is not None:
             try:
@@ -94,7 +97,12 @@ class ParamSlider(QWidget):
             self._inner_key = None
 
 
-    def connect_key(self, key, min_val=None, max_val=None, step_val=None, inner_key=None):
+    def connect_key(self,
+            key: str,
+            min_val: Optional[int | float] = None,
+            max_val: Optional[int | float] = None,
+            step_val: Optional[int | float] = None,
+            inner_key: Optional[str] = None) -> None:
         """Connects the slider to a new config value.
 
         Parameters
@@ -132,15 +140,15 @@ class ParamSlider(QWidget):
             tick_interval *= 100
         step = self._config.get(key, inner_key="step") if step_val is None else step_val
         for slider in (self._horizontal_slider, self._vertical_slider):
-            slider.setMinimum(int(min_val * 100) if self._float_mode else min_val)
-            slider.setMaximum(int(max_val * 100) if self._float_mode else max_val)
-            slider.setSingleStep(int(step * 100) if self._float_mode else step)
-            slider.setValue(int(initial_value * 100) if self._float_mode else initial_value)
+            slider.setMinimum(int(min_val * 100) if self._float_mode else int(min_val))
+            slider.setMaximum(int(max_val * 100) if self._float_mode else int(max_val))
+            slider.setSingleStep(int(step * 100) if self._float_mode else int(step))
+            slider.setValue(int(initial_value * 100) if self._float_mode else int(initial_value))
             slider.setTickInterval(tick_interval)
-        def on_config_change(new_value):
+        def on_config_change(new_value: int | float) -> None:
             if new_value is None:
                 return
-            value = int(new_value * 100) if self._float_mode else new_value
+            value = int(new_value * 100) if self._float_mode else int(new_value)
             if value != self._horizontal_slider.value():
                 self._horizontal_slider.setValue(value)
             if value != self._vertical_slider.value():
@@ -152,7 +160,7 @@ class ParamSlider(QWidget):
         self._stepbox.show()
 
 
-    def sizeHint(self):
+    def sizeHint(self) -> QSize:
         """Returns ideal widget size based on contents."""
         if self._orientation == Qt.Orientation.Vertical:
             return QSize(max(self._vertical_slider.sizeHint().width(),
@@ -168,7 +176,7 @@ class ParamSlider(QWidget):
                     self._spinbox_measurements.height()))
 
 
-    def resizeEvent(self, unused_event):
+    def resizeEvent(self, unused_event: Optional[QEvent]) -> None:
         """Recalculates slider geometry when the widget size changes."""
         if self._stepbox is None:
             return
@@ -188,7 +196,7 @@ class ParamSlider(QWidget):
                     self.height())
 
 
-    def set_orientation(self, orientation):
+    def set_orientation(self, orientation: Qt.Orientation) -> None:
         """Sets vertical or horizontal orientation."""
         if self._orientation == orientation:
             return
@@ -205,7 +213,7 @@ class ParamSlider(QWidget):
         self.update()
 
 
-    def _on_slider_change(self, new_value):
+    def _on_slider_change(self, new_value: int) -> None:
         """Handle slider value changes."""
         if self._key is None:
             return

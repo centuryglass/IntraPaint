@@ -1,11 +1,13 @@
 """
 Provides a Canvas implementation for marking sections of an image to be edited with AI inpainting.
 """
+from typing import Optional
 import numpy as np
 import cv2
+from PIL import Image
 from PyQt5.QtCore import Qt, QRect, QPoint, QSize
 from PyQt5.QtGui import QPixmap, QPainter, QImage, QPen
-from PyQt5.QtWidgets import QGraphicsPixmapItem
+from PyQt5.QtWidgets import QGraphicsPixmapItem, QGraphicsScene
 from ui.util.contrast_color import contrast_color
 from data_model.canvas.pixmap_canvas import PixmapCanvas
 from data_model.config import Config
@@ -13,7 +15,9 @@ from data_model.config import Config
 class MaskCanvas(PixmapCanvas):
     """Provides a Canvas implementation for marking sections of an image to be edited with AI inpainting."""
 
-    def __init__(self, config, image):
+    def __init__(self,
+            config: Config,
+            image: Optional[QImage | Image.Image | QPixmap | QSize | str]):
         """Initialize with config values and optional arbitrary initial image data.
 
         Parameters
@@ -45,7 +49,7 @@ class MaskCanvas(PixmapCanvas):
         self.setOpacity(0.5)
 
 
-    def add_to_scene(self, scene, z_value=None):
+    def add_to_scene(self, scene: QGraphicsScene, z_value: Optional[int] = None):
         """Adds the canvas to a QGraphicsScene.
 
         Parameters
@@ -60,7 +64,7 @@ class MaskCanvas(PixmapCanvas):
         scene.addItem(self._outline)
 
 
-    def get_inpainting_mask(self):
+    def get_inpainting_mask(self) -> Image.Image:
         """Returns the canvas content as a 1-bit PIL Image mask. """
         image = self.get_pil_image()
         image = image.convert('L').point( lambda p: 255 if p < 1 else 0 )
@@ -79,7 +83,7 @@ class MaskCanvas(PixmapCanvas):
         self._draw_outline()
 
 
-    def set_image(self, image_data):
+    def set_image(self, image_data: QImage | QPixmap | QSize | Image.Image | str):
         """Loads an image into the canvas, overwriting existing canvas content.
 
         Parameters
@@ -93,7 +97,7 @@ class MaskCanvas(PixmapCanvas):
         self.update()
 
 
-    def get_masked_area(self, ignore_config = False):
+    def get_masked_area(self, ignore_config: bool = False) -> QRect:
         """Returns the smallest QRect containing all masked areas, plus padding.
 
         Used for showing the actual area visible to the image model when the Config.INPAINT_FULL_RES config option is
@@ -160,7 +164,7 @@ class MaskCanvas(PixmapCanvas):
         return mask_rect
 
 
-    def resize(self, size):
+    def resize(self, size: QSize):
         """Updates the canvas size, scaling any image content to match.
 
         Parameters
@@ -186,13 +190,13 @@ class MaskCanvas(PixmapCanvas):
         self.update()
 
 
-    def setVisible(self, visible):
+    def setVisible(self, visible: bool):
         """Shows or hides the canvas."""
         super().setVisible(visible)
         self._outline.setVisible(visible)
 
 
-    def setOpacity(self, opacity):
+    def setOpacity(self, opacity: float):
         """Changes the opacity used when drawing the masked area."""
         super().setOpacity(opacity)
         self._outline.setOpacity(opacity)
@@ -249,6 +253,8 @@ class MaskCanvas(PixmapCanvas):
         edges = 255 - cv2.dilate(edges, np.ones((thickness, thickness), np.uint8), iterations=1)
         edges_a = np.zeros((edges.shape[0], edges.shape[1], 4), dtype=np.uint8)
         edges_a[:, :, 3] = 255 - edges
+        # edges_a.strides is definitely a tuple, not sure why pylint disagrees.
+        # pylint: disable-next=unsubscriptable-object
         outline = QImage(edges_a.data, edges_a.shape[1], edges_a.shape[0], edges_a.strides[0], QImage.Format_RGBA8888)
         painter = QPainter(outline)
         painter.setCompositionMode(QPainter.CompositionMode_SourceIn)

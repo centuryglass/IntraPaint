@@ -1,14 +1,15 @@
 """
 Animated widget used to indicate a loading state.
 """
+from typing import Optional
 from PyQt5.QtWidgets import QWidget
-from PyQt5.QtGui import QPainter, QPen, QBrush, QColor
+from PyQt5.QtGui import QPainter, QPen, QBrush, QColor, QShowEvent, QHideEvent, QPaintEvent
 from PyQt5.QtCore import Qt, QRect, QPointF, pyqtProperty, QPropertyAnimation
 
 class LoadingWidget(QWidget):
     """Show an animated loading indicator, with an optional message."""
 
-    def __init__(self, parent=None, message=""):
+    def __init__(self, parent: Optional[QWidget] = None, message: str = "") -> None:
         """Initializes the widget, optionally with a parent widget and/or initial loading message."""
         super().__init__(parent=parent)
         self._message = message
@@ -20,36 +21,36 @@ class LoadingWidget(QWidget):
         self._anim.setDuration(2000)
 
 
-    def set_message(self, message):
+    def set_message(self, message: str) -> None:
         """Sets the loading message displayed."""
         self._message = message
         self.update()
 
 
     @pyqtProperty(int)
-    def rotation(self):
+    def rotation(self) -> int:
         """Returns the current animation rotation in degrees."""
         return self._rotation
 
 
     @rotation.setter
-    def rotation(self, rotation):
+    def rotation(self, rotation: int) -> None:
         """Sets the current animation rotation in degrees."""
         self._rotation = rotation % 360
         self.update()
 
 
-    def showEvent(self, unused_event):
+    def showEvent(self, unused_event: Optional[QShowEvent]) -> None:
         """Starts the animation when the widget is shown."""
         self._anim.start()
 
 
-    def hideEvent(self, unused_event):
+    def hideEvent(self, unused_event: Optional[QHideEvent]) -> None:
         """Stops the animation when the widget is hidden."""
         self._anim.stop()
 
 
-    def paintEvent(self, unused_event):
+    def paintEvent(self, unused_event: Optional[QPaintEvent]) -> None:
         """Draws a circle with optional message text and an animated indicator."""
         painter = QPainter(self)
         ellipse_dim = int(min(self.width(), self.height()) * 0.8)
@@ -59,14 +60,16 @@ class LoadingWidget(QWidget):
                 ellipse_dim)
 
         # draw background circle:
-        painter.setPen(QPen(Qt.black, 4, Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin))
-        painter.setBrush(QBrush(QColor(0, 0, 0, 200), Qt.SolidPattern))
+        painter.setPen(QPen(Qt.GlobalColor.black, 4, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap,
+                    Qt.PenJoinStyle.RoundJoin))
+        painter.setBrush(QBrush(QColor(0, 0, 0, 200), Qt.BrushStyle.SolidPattern))
         painter.drawEllipse(paint_bounds)
 
         # Write text:
-        painter.setPen(QPen(Qt.white, 4, Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin))
-        painter.setBrush(QBrush(Qt.white, Qt.SolidPattern))
-        painter.drawText(QRect(0, 0, self.width(), self.height()), Qt.AlignCenter, self._message)
+        painter.setPen(QPen(Qt.GlobalColor.white, 4, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap,
+                    Qt.PenJoinStyle.RoundJoin))
+        painter.setBrush(QBrush(Qt.GlobalColor.white, Qt.BrushStyle.SolidPattern))
+        painter.drawText(QRect(0, 0, self.width(), self.height()), Qt.AlignmentFlag.AlignCenter, self._message)
 
         # Draw animated indicator:
         painter.translate(QPointF(self.width() / 2, self.height() / 2))

@@ -1,7 +1,8 @@
 """
 A MainWindow implementation providing controls specific to stable-diffusion inpainting.
 """
-from PyQt5.QtWidgets import QLabel, QHBoxLayout, QVBoxLayout, QGridLayout, QPushButton, QSizePolicy, QSpinBox
+from typing import Optional
+from PyQt5.QtWidgets import QLabel, QHBoxLayout, QVBoxLayout, QGridLayout, QPushButton, QSizePolicy, QSpinBox, QWidget
 from PyQt5.QtCore import Qt, QSize
 
 from ui.config_control_setup import connected_textedit, connected_spinbox, connected_combobox, connected_checkbox
@@ -12,6 +13,9 @@ from ui.widget.param_slider import ParamSlider
 from ui.window.main_window import MainWindow
 from ui.panel.controlnet_panel import ControlnetPanel
 from data_model.config import Config
+from data_model.layer_stack import LayerStack
+from data_model.canvas.canvas import Canvas
+from controller.base_controller import BaseInpaintController
 
 
 class StableDiffusionMainWindow(MainWindow):
@@ -19,15 +23,20 @@ class StableDiffusionMainWindow(MainWindow):
 
     OPEN_PANEL_STRETCH = 80
 
-    def __init__(self, config, edited_image, mask, sketch, controller):
+    def __init__(self,
+            config: Config,
+            layer_stack: LayerStack,
+            mask: Canvas,
+            sketch: Canvas,
+            controller: BaseInpaintController) -> None:
         """Initializes the window and builds the layout.
 
         Parameters
         ----------
         config : data_model.config.Config
             Shared application configuration object.
-        edited_image : data_model.edited_image.EditedImage
-            Image being edited.
+        layer_stack : data_model.layer_stack.LayerStack
+            Image layers being edited.
         mask : data_model.canvas.mask_canvas.MaskCanvas
             Canvas used for masking off inpainting areas.
         sketch : data_model.canvas.canvas.Canvas
@@ -35,12 +44,12 @@ class StableDiffusionMainWindow(MainWindow):
         controller : controller.base_controller.stable_diffusion_controller.StableDiffusionController
             Object managing application behavior.
         """
-        super().__init__(config, edited_image, mask, sketch, controller)
+        super().__init__(config, layer_stack, mask, sketch, controller)
         # Decrease imageLayout stretch to make room for additional controls:
         self.layout().setStretch(0, 180)
 
 
-    def _build_control_layout(self, controller):
+    def _build_control_layout(self, controller: BaseInpaintController) -> None:
         """Adds controls for Stable-diffusion inpainting."""
         control_panel = BorderedWidget(self)
         control_panel.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Maximum)
@@ -55,7 +64,7 @@ class StableDiffusionMainWindow(MainWindow):
         main_control_box.set_expanded_size_policy(QSizePolicy.Maximum)
         if main_control_box.is_expanded():
             self.layout().setStretch(1, self.layout().stretch(1) + StableDiffusionMainWindow.OPEN_PANEL_STRETCH)
-        def on_main_controls_expanded(expanded):
+        def on_main_controls_expanded(expanded: bool):
             self.set_image_sliders_enabled(not expanded)
             stretch = self.layout().stretch(1) + (StableDiffusionMainWindow.OPEN_PANEL_STRETCH if expanded
                     else -StableDiffusionMainWindow.OPEN_PANEL_STRETCH)
@@ -65,8 +74,6 @@ class StableDiffusionMainWindow(MainWindow):
         main_controls = QHBoxLayout()
         main_control_box.set_content_layout(main_controls)
         control_layout.addWidget(main_control_box, stretch=20)
-
-
 
         # Left side: sliders and other wide inputs:
         wide_options = BorderedWidget()
@@ -96,7 +103,7 @@ class StableDiffusionMainWindow(MainWindow):
         width_spinbox.setValue(self._config.get(Config.EDIT_SIZE).width())
         width_spinbox.setToolTip('Resize selection content to this width before inpainting')
         config = self._config
-        def set_w(value):
+        def set_w(value: int):
             size = config.get(Config.EDIT_SIZE)
             config.set(Config.EDIT_SIZE, QSize(value, size.height()))
         width_spinbox.valueChanged.connect(set_w)
@@ -121,7 +128,7 @@ class StableDiffusionMainWindow(MainWindow):
         height_spinbox.setValue(self._config.get(Config.EDIT_SIZE).height())
         height_spinbox.setToolTip('Resize selection content to this height before inpainting')
         config = self._config
-        def set_h(value):
+        def set_h(value: int):
             size = config.get(Config.EDIT_SIZE)
             config.set(Config.EDIT_SIZE, QSize(size.width(), value))
         height_spinbox.valueChanged.connect(set_h)
@@ -143,19 +150,14 @@ class StableDiffusionMainWindow(MainWindow):
 
         # ControlNet panel, if controlnet is installed:
         if self._config.get(Config.CONTROLNET_VERSION) > 0:
-            control_types = None
-            try:
-                control_types = controller._webservice.get_controlnet_control_types()
-            except RuntimeError:
-                pass # API doesn't support control type selection, make do without it.
             controlnet_panel = ControlnetPanel(self._config,
-                    control_types,
-                    controller._webservice.get_controlnet_modules(),
-                    controller._webservice.get_controlnet_models())
+                    self._config.get(Config.CONTROLNET_CONTROL_TYPES),
+                    self._config.get(Config.CONTROLNET_MODULES),
+                    self._config.get(Config.CONTROLNET_MODELS))
             controlnet_panel.set_expanded_size_policy(QSizePolicy.Maximum)
             if controlnet_panel.is_expanded():
                 self.layout().setStretch(1, self.layout().stretch(1) + StableDiffusionMainWindow.OPEN_PANEL_STRETCH)
-            def on_controlnet_expanded(expanded):
+            def on_controlnet_expanded(expanded: bool):
                 stretch = self.layout().stretch(1) + (StableDiffusionMainWindow.OPEN_PANEL_STRETCH if expanded
                         else -StableDiffusionMainWindow.OPEN_PANEL_STRETCH)
                 stretch = max(stretch, 1)
@@ -169,7 +171,7 @@ class StableDiffusionMainWindow(MainWindow):
         option_list_layout = QVBoxLayout()
         option_list_layout.setSpacing(max(2, self.height() // 200))
         option_list.setLayout(option_list_layout)
-        def add_option_line(label_text, widget, tooltip=None):
+        def add_option_line(label_text: str, widget: QWidget, tooltip: Optional[str] = None) -> QHBoxLayout:
             option_line = QHBoxLayout()
             option_list_layout.addLayout(option_line)
             option_line.addWidget(QLabel(label_text), stretch=1)
@@ -178,7 +180,7 @@ class StableDiffusionMainWindow(MainWindow):
             option_line.addWidget(widget, stretch=2)
             return option_line
 
-        def add_combo_box(config_key, inpainting_only, tooltip=None):
+        def add_combo_box(config_key: str, inpainting_only: bool, tooltip: Optional[str] = None) -> QHBoxLayout:
             label_text = self._config.get_label(config_key)
             combobox = connected_combobox(option_list, self._config, config_key)
             if inpainting_only:
@@ -197,7 +199,7 @@ class StableDiffusionMainWindow(MainWindow):
         padding_spinbox.setMinimum(0)
         padding_line.addWidget(padding_spinbox, stretch = 2)
         option_list_layout.insertLayout(padding_line_index, padding_line)
-        def padding_layout_update(inpaint_full_res):
+        def padding_layout_update(inpaint_full_res: bool) -> None:
             padding_label.setVisible(inpaint_full_res)
             padding_spinbox.setVisible(inpaint_full_res)
         padding_layout_update(self._config.get(Config.INPAINT_FULL_RES))

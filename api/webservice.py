@@ -3,6 +3,7 @@ Basic interface for classes used to access HTTP web services.
 
 Provides basic session management, auth access, and functions for making GET and POST requests.
 """
+from typing import Optional
 import secrets
 import requests
 
@@ -13,7 +14,7 @@ class WebService():
     POST requests.
     """
 
-    def __init__(self, url):
+    def __init__(self, url: str):
         """__init__.
 
         Parameters
@@ -40,12 +41,12 @@ class WebService():
 
 
     def get(self,
-            endpoint,
-            timeout=None,
-            url_params=None,
-            headers=None,
-            fail_on_auth_error=False,
-            throw_on_failure=True):
+            endpoint: str,
+            timeout: Optional[int] = None,
+            url_params: Optional[dict[str, str]] = None,
+            headers: Optional[dict[str, str]] = None,
+            fail_on_auth_error: bool = False,
+            throw_on_failure: bool = True) -> requests.Response:
         """Sends a HTTP GET request to the webservice
 
         Parameters
@@ -73,14 +74,14 @@ class WebService():
 
 
     def post(self,
-            endpoint,
+            endpoint: str,
             body,
-            body_format='application/json',
-            timeout=None,
-            url_params=None,
-            headers=None,
-            fail_on_auth_error=False,
-            throw_on_failure=True):
+            body_format: str = 'application/json',
+            timeout: Optional[int] = None,
+            url_params: Optional[dict[str, str]] = None,
+            headers: Optional[dict[str, str]] = None,
+            fail_on_auth_error: bool = False,
+            throw_on_failure: bool = True) -> requests.Response:
         """Sends a HTTP POST request to the webservice
 
         Parameters
@@ -113,15 +114,15 @@ class WebService():
 
 
     def _send(self,
-            endpoint,
-            method,
+            endpoint: str,
+            method: str,
             body,
-            body_format='application/json',
-            timeout=None,
-            url_params=None,
-            headers=None,
-            fail_on_auth_error=False,
-            throw_on_failure=True):
+            body_format: str = 'application/json',
+            timeout: Optional[int] = None,
+            url_params: Optional[dict[str, str]] = None,
+            headers: Optional[dict[str, str]] = None,
+            fail_on_auth_error: bool = False,
+            throw_on_failure: bool = True) -> requests.Response:
         address = self._build_address(endpoint, url_params)
         res = None
         if headers is None:
@@ -134,10 +135,10 @@ class WebService():
             else:
                 res = self._session.post(address, timeout=timeout, headers=headers, data=body)
         else:
-            raise NotImplementedError(f"HTTP method {method} not implemented")
+            raise ValueError(f'HTTP method {method} not supported')
         if res.status_code == 401:
             if fail_on_auth_error and throw_on_failure:
-                raise RuntimeError(f"HTTP method {method} failed with status 401: unauthorized")
+                raise RuntimeError(f'HTTP method {method} failed with status 401: unauthorized')
             if not fail_on_auth_error:
                 self._handle_auth_error()
                 return self._send(endpoint,
@@ -150,7 +151,7 @@ class WebService():
                         fail_on_auth_error,
                         throw_on_failure)
         elif res.status_code != 200 and throw_on_failure:
-            raise RuntimeError(f"{res.status_code}: {res.text}")
+            raise RuntimeError(f'{res.status_code}: {res.text}')
         return res
 
 
@@ -158,8 +159,8 @@ class WebService():
         raise NotImplementedError('Authentication is not implemented')
 
 
-    def _build_address(self, endpoint, url_params=None):
-        address = f"{self._server_url}{endpoint}"
+    def _build_address(self, endpoint: str, url_params: Optional[dict[str, str]] = None) -> str:
+        address = f'{self._server_url}{endpoint}'
         if url_params is not None:
             for key, value in url_params.items():
                 address = address + ('?' if ('?' not in address) else '&') + key + '=' + value

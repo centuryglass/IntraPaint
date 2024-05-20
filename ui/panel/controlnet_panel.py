@@ -1,12 +1,14 @@
 """
 Panel providing controls for the stable-diffusion ControlNet extension. Only supported by stable_diffusion_controller.
 """
+from typing import Optional
 from PyQt5.QtWidgets import QVBoxLayout, QHBoxLayout, QCheckBox, QPushButton, QLineEdit, QComboBox, QSizePolicy
 from ui.widget.collapsible_box import CollapsibleBox
 from ui.widget.label_wrapper import LabelWrapper
 from ui.widget.param_slider import ParamSlider
 from ui.config_control_setup import connected_checkbox
 from data_model.config import Config
+from util.validation import assert_type
 
 class ControlnetPanel(CollapsibleBox):
     """ControlnetPanel provides controls for the stable-diffusion ControlNet extension."""
@@ -18,8 +20,13 @@ class ControlnetPanel(CollapsibleBox):
     DEFAULT_PARAMS=['module', 'model', 'low_vram', 'pixel_perfect', 'image', 'weight', 'guidance_start',
                             'guidance_end']
 
-    def __init__(self, config, control_types, module_detail, model_list, title = 'ControlNet',
-            config_key=Config.CONTROLNET_ARGS_0):
+    def __init__(self,
+            config: Config,
+            control_types: Optional[dict],
+            module_detail: dict,
+            model_list: dict,
+            title: str = 'ControlNet',
+            config_key: str = Config.CONTROLNET_ARGS_0):
         """Initializes the panel based on data from the stable-diffusion-webui.
 
         Parameters
@@ -38,6 +45,11 @@ class ControlnetPanel(CollapsibleBox):
             Config key where ControlNet selection will be saved.
         """
         super().__init__(title=title, scrolling=False, start_closed=len(config.get(config_key)) == 0)
+        if isinstance(control_types, dict) and len(control_types) == 0:
+            control_types = None
+        assert_type(model_list, dict)
+        if 'model_list' not in model_list:
+            raise KeyError(f'Controlnet model list had unexpected structure: {model_list}')
 
         initial_control_state = config.get(config_key)
         self._config = config
@@ -82,7 +94,7 @@ class ControlnetPanel(CollapsibleBox):
         reuse_image_checkbox.setText('Selection as Control')
         image_row.addWidget(reuse_image_checkbox, stretch=10)
         reuse_image_checkbox.setChecked(use_selection)
-        def reuse_image_update(checked):
+        def reuse_image_update(checked: bool):
             value = ControlnetPanel.REUSE_IMAGE_VALUE if checked else image_path_edit.text()
             load_image_button.setEnabled(not checked)
             image_path_edit.setEnabled(not checked)
@@ -91,7 +103,7 @@ class ControlnetPanel(CollapsibleBox):
             config.set(config_key, value, inner_key='image')
         reuse_image_checkbox.stateChanged.connect(reuse_image_update)
 
-        def image_path_update(text):
+        def image_path_update(text: str):
             if reuse_image_checkbox.checked():
                 return
             config.set(config_key, text, inner_key='image')
@@ -127,7 +139,7 @@ class ControlnetPanel(CollapsibleBox):
             config.set(config_key, model_combobox.currentText(), inner_key='model')
         model_combobox.currentIndexChanged.connect(handle_model_change)
 
-        def handle_module_change(selection):
+        def handle_module_change(selection: str):
             details = {}
             if 'module_detail' in module_detail:
                 if selection not in module_detail['module_detail']:
@@ -238,7 +250,7 @@ class ControlnetPanel(CollapsibleBox):
         module_combobox.currentIndexChanged.connect(module_change_handler)
 
         # Setup control types, update other boxes on change:
-        def load_control_type(typename):
+        def load_control_type(typename: str):
             model_combobox.currentIndexChanged.disconnect(handle_model_change)
             while model_combobox.count() > 0:
                 model_combobox.removeItem(0)
@@ -288,7 +300,7 @@ class ControlnetPanel(CollapsibleBox):
                 model_combobox.setCurrentIndex(model)
 
         # Setup "Enabled" control:
-        def set_enabled(checked):
+        def set_enabled(checked: bool):
             if enabled_checkbox.isChecked() != checked:
                 enabled_checkbox.setChecked(checked)
             for widget in [control_type_combobox, module_combobox, model_combobox]:

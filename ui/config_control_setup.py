@@ -4,14 +4,21 @@ Creates UI input components linked to data_model.config values.
 - Changes to the component update the corresponding config value.
 - Changes to the config value are applied to the input (if necessary).
 """
-
-from PyQt5.QtWidgets import QDoubleSpinBox, QLineEdit, QCheckBox, QComboBox, QPlainTextEdit, QHBoxLayout, QLabel
+from typing import Optional
+from PyQt5.QtWidgets import QDoubleSpinBox, QLineEdit, QCheckBox, QComboBox, QPlainTextEdit, QHBoxLayout, QLabel, \
+         QWidget
 from PyQt5.QtGui import QFont, QFontMetrics
 from ui.widget.big_int_spinbox import BigIntSpinbox
 from data_model.config import Config
 
 
-def connected_spinbox(parent, config, key, min_val=None, max_val=None, step_val=None, dict_key=None):
+def connected_spinbox(parent: Optional[QWidget],
+        config: Config,
+        key: str,
+        min_val: Optional[int | float] = None,
+        max_val: Optional[int | float] = None,
+        step_val: Optional[int | float] = None,
+        dict_key: Optional[str] = None) -> QDoubleSpinBox | BigIntSpinbox:
     """Creates a spinbox widget connected to a numeric config property.
 
     Properties can be either integer or floating point, but the type needs to be consistent with the config value's
@@ -59,11 +66,11 @@ def connected_spinbox(parent, config, key, min_val=None, max_val=None, step_val=
     elif max_val is not None:
         spinbox.setRange(spinbox.minimum(), max_val)
         spinbox.setRange(min_val, spinbox.maximum())
-    def apply_change_to_spinbox(new_value):
+    def apply_change_to_spinbox(new_value: int) -> None:
         if spinbox.value() != new_value:
             spinbox.setValue(new_value if new_value is not None else 0)
     config.connect(spinbox, key, apply_change_to_spinbox, inner_key=dict_key)
-    def apply_change_to_config(new_value):
+    def apply_change_to_config(new_value: int) -> None:
         num_value = int(new_value) if isinstance(initial_value, int) else float(new_value)
         if config.get(key, inner_key=dict_key) != num_value:
             config.set(key, num_value, inner_key=dict_key)
@@ -82,7 +89,11 @@ def connected_spinbox(parent, config, key, min_val=None, max_val=None, step_val=
     return spinbox
 
 
-def connected_textedit(parent, config, key, multi_line=False, inner_key=None):
+def connected_textedit(parent: Optional[QWidget],
+        config: Config,
+        key: str,
+        multi_line: bool = False,
+        inner_key: Optional[str] = None) -> QLineEdit | QPlainTextEdit:
     """Creates a textedit widget connected to a string config property.
 
     Parameters
@@ -116,7 +127,11 @@ def connected_textedit(parent, config, key, multi_line=False, inner_key=None):
     return textedit
 
 
-def connected_checkbox(parent, config, key, text=None, inner_key=None):
+def connected_checkbox(parent: Optional[QWidget],
+        config: Config,
+        key: str,
+        text: Optional[str] = None,
+        inner_key: Optional[str] = None) -> QCheckBox:
     """Creates a checkbox widget connected to a boolean config property.
 
     Parameters
@@ -143,7 +158,10 @@ def connected_checkbox(parent, config, key, text=None, inner_key=None):
     return checkbox
 
 
-def connected_combobox(parent, config, key, text=None):
+def connected_combobox(parent: Optional[QWidget],
+        config: Config,
+        key: str,
+        text: Optional[str] = None) -> QComboBox | tuple[QComboBox, QHBoxLayout]:
     """Creates a combobox widget connected to a config property with a pre-defined  option list.
 
     Parameters

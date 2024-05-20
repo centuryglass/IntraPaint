@@ -1,6 +1,7 @@
 """
 Provides an interface for choosing between AI-generated changes to selected image content.
 """
+from typing import Callable, Optional
 import math
 import gc
 from PyQt5.QtWidgets import QWidget, QLabel, QPushButton
@@ -14,23 +15,30 @@ from ui.util.contrast_color import contrast_color
 from ui.widget.loading_widget import LoadingWidget
 from ui.image_utils import pil_image_to_qimage
 from data_model.config import Config
+from data_model.canvas.canvas import Canvas
+from data_model.layer_stack import LayerStack
 
 class SampleSelector(QWidget):
     """Shows all inpainting samples as they load, allows the user to select one or discard all of them."""
 
-    def __init__(self, config, edited_image, mask, sketch, close_selector, make_selection):
+    def __init__(self,
+            config: Config,
+            layer_stack: LayerStack,
+            mask: Canvas,
+            sketch: Canvas,
+            close_selector: Callable,
+            make_selection: Callable[[Optional[Image.Image]], None]):
         super().__init__()
 
         self._config = config
         self._sketch = sketch
         self._make_selection = make_selection
 
-        source_image = edited_image.get_selection_content()
+        source_image = layer_stack.pil_image_selection_content()
         sketch_image = sketch.get_pil_image().convert('RGBA')
         source_image = Image.alpha_composite(source_image.convert('RGBA'), sketch_image).convert('RGB')
         mask_image = mask.get_pil_image()
 
-        self._edited_image = edited_image
         self._source_pixmap = QPixmap.fromImage(pil_image_to_qimage(source_image))
         self._mask_pixmap = QPixmap.fromImage(pil_image_to_qimage(mask_image))
         self._source_image_bounds = QRect(0, 0, 0, 0)
@@ -85,7 +93,7 @@ class SampleSelector(QWidget):
             close_selector()
         self._close_selector = free_memory_and_close
 
-    def toggle_zoom(self, index=-1):
+    def toggle_zoom(self, index: int = -1):
         """Switch between showing all options and zooming in on a single option."""
         if self._zoom_button is None:
             return
@@ -95,7 +103,7 @@ class SampleSelector(QWidget):
         else:
             self._zoom_button.setText('Zoom out')
             self._zoom_mode = True
-            if 0 < index < self._option_count():
+            if isinstance(index, int) and 0 < index < self._option_count():
                 self._zoom_index = index
             else:
                 self._zoom_index = 0
@@ -103,7 +111,7 @@ class SampleSelector(QWidget):
         self.update()
 
 
-    def set_is_loading(self, is_loading, message=None):
+    def set_is_loading(self, is_loading:bool, message: Optional[str] = None):
         """Show or hide the loading indicator"""
         if is_loading:
             self._loading_widget.show()
@@ -117,12 +125,12 @@ class SampleSelector(QWidget):
         self.update()
 
 
-    def set_loading_message(self, message):
+    def set_loading_message(self, message: str):
         """Updates loading message text while waiting for generated image options."""
         self._loading_widget.set_message(message)
 
 
-    def load_sample_image(self, image_sample, idx):
+    def load_sample_image(self, image_sample: Image.Image, idx: int):
         """
         Loads an inpainting sample image into the appropriate SampleWidget.
         Parameters:
@@ -142,7 +150,8 @@ class SampleSelector(QWidget):
             self._options[idx]['image'] = image_sample
         self.update()
 
-    def resizeEvent(self, unused_event):
+
+    def resizeEvent(self, unused_event: QEvent):
         """Recalculate all bounds on resize."""
         status_area = QRect(0, 0, self.width(), self.height() // 8)
         self._source_image_bounds = get_scaled_placement(status_area, self._image_size, 5)
@@ -199,7 +208,7 @@ class SampleSelector(QWidget):
                     arrow_size, arrow_size)
         else:
             margin = 10
-            def get_scale_factor_for_row_count(num_rows):
+            def get_scale_factor_for_row_count(num_rows: int):
                 num_columns = math.ceil(option_count / num_rows)
                 img_bounds = QRect(0, 0, option_area.width() // num_columns, option_area.height() // num_rows)
                 img_rect = get_scaled_placement(img_bounds, self._image_size, margin)
@@ -230,7 +239,7 @@ class SampleSelector(QWidget):
                     self._options[idx]['bounds'] = get_scaled_placement(container_rect, self._image_size, 10)
 
 
-    def paintEvent(self, event):
+    def paintEvent(self, event: QEvent):
         """Draw all generated image options within the widget."""
         super().paintEvent(event)
         line_color = contrast_color(self)
@@ -258,7 +267,7 @@ class SampleSelector(QWidget):
             draw_image({ 'bounds': self._zoom_image_bounds, 'pixmap': pixmap })
 
             # draw arrows:
-            def draw_arrow(arrow_bounds, pts, text):
+            def draw_arrow(arrow_bounds: QRect, pts: list, text: str):
                 painter.setPen(QPen(Qt.black, 4, Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin))
                 text_bounds = QRect(arrow_bounds)
                 text_bounds.moveTop(text_bounds.top() - text_bounds.height())
@@ -302,7 +311,7 @@ class SampleSelector(QWidget):
                 draw_image(option)
 
 
-    def _option_count(self):
+    def _option_count(self) -> int:
         return max(len(self._options), self._expected_count)  + (1 if self._include_original else 0)
 
 
@@ -324,27 +333,22 @@ class SampleSelector(QWidget):
             self.toggle_zoom(0)
 
 
-    def eventFilter(self, source, event):
-        """Intercept mouse wheel events, use for scrolling in zoom mode:"""
-        if event.type() == QEvent.Wheel:
-            if event.angleDelta().y() > 0:
-                self._zoom_next()
-            elif event.angleDelta().y() < 0:
-                self._zoom_prev()
-            return True
+    def _handle_key_event(self, event: QEvent):
+        toggle_zoom = False
+        zoom_index = None
+        event_handled = False
+        def key_index():
+            return int(event.text()) - 1
 
-        # Keyboard event handling:
-        if event.type() == QEvent.KeyPress:
-            toggle_zoom = False
-            zoom_index = -1
-            if event.key() == Qt.Key_Escape:
+        match event.key():
+            case Qt.Key_Escape:
                 if self._zoom_mode:
                     toggle_zoom = True
                 else:
                     self._make_selection(None)
                     self._close_selector()
-                    return True
-            elif (event.key() == Qt.Key_Return or event.key() == Qt.Key_Enter) and self._zoom_mode:
+                event_handled = True
+            case Qt.Key_Return | Qt.Key_Enter if self._zoom_mode:
                 if self._zoom_index >= len(self._options):
                     # Original selected, just close selector
                     self._make_selection(None)
@@ -355,35 +359,48 @@ class SampleSelector(QWidget):
                         self._make_selection(option['image'])
                         self._close_selector()
                 return True
-            elif event.text().isdigit() and (int(event.text()) - 1) < self._option_count():
-                if (not self._zoom_mode) or (int(event.text()) - 1) == self._zoom_index:
+            case Qt.Key_0 | Qt.Key_1 | Qt.Key_2 | Qt.Key_3 | Qt.Key_4 | Qt.Key_5 | Qt.Key_6 | Qt.Key_7 | Qt.Key_8 \
+                            | Qt.Key_9 if key_index() < self._option_count():
+                if not self._zoom_mode or key_index() == self._zoom_index:
                     toggle_zoom = True
-                zoom_index = int(event.text()) - 1
+                zoom_index = key_index()
             # Allow both gaming-style (WASD) and Vim-style (hjkl) navigation:
-            elif self._zoom_mode:
-                if event.text().lower() == 'h' or event.text().lower() == 'a':
-                    self._zoom_prev()
-                    return True
-                if event.text().lower() == 'l' or event.text().lower() == 'd':
+            case Qt.Key_H | Qt.Key_A if self._zoom_mode:
+                self._zoom_prev()
+            case Qt.Key_L | Qt.Key_D if self._zoom_mode:
+                self._zoom_next()
+            case Qt.Key_K | Qt.Key_W if self._zoom_mode:
+                toggle_zoom = True
+            case Qt.Key_J | Qt.Key_S:
+                toggle_zoom = True
+            case _:
+                return False
+
+        if toggle_zoom:
+            self.toggle_zoom(zoom_index)
+        elif self._zoom_mode and zoom_index is not None and zoom_index >= 0:
+            self._zoom_index = zoom_index
+            self.resizeEvent(None)
+            self.update()
+        return True
+
+
+    def eventFilter(self, source, event: QEvent):
+        """Intercept mouse wheel events, use for scrolling in zoom mode:"""
+        match event.type():
+            case QEvent.Wheel:
+                if event.angleDelta().y() > 0:
                     self._zoom_next()
-                    return True
-                if event.text().lower() == 'k' or event.text().lower() == 'w':
-                    toggle_zoom = True
-            elif event.text().lower() == 'j' or event.text().lower() == 's':
-                toggle_zoom = True # Zoom in on "down"
-            if toggle_zoom:
-                self.toggle_zoom(zoom_index)
+                elif event.angleDelta().y() < 0:
+                    self._zoom_prev()
                 return True
-            if self._zoom_mode and zoom_index >= 0:
-                self._zoom_index = zoom_index
-                self.resizeEvent(None)
-                self.update()
-                return True
-            return False
-        return super().eventFilter(source, event)
+            case QEvent.KeyPress:
+                return self._handle_key_event(event)
+            case _:
+                return super().eventFilter(source, event)
 
 
-    def mousePressEvent(self, event):
+    def mousePressEvent(self, event: QEvent):
         """Handle image selection and arrow button clicks."""
         if event.button() != Qt.LeftButton:
             return
@@ -392,13 +409,9 @@ class SampleSelector(QWidget):
             # Check for arrow clicks:
             if self._left_arrow_bounds.contains(event.pos()):
                 self._zoom_prev()
-                return
-            if self._right_arrow_bounds.contains(event.pos()):
+            elif self._right_arrow_bounds.contains(event.pos()):
                 self._zoom_next()
-                return
-            if self._is_loading:
-                return
-            if self._zoom_image_bounds.contains(event.pos()):
+            elif self._zoom_image_bounds.contains(event.pos()) and not self._is_loading:
                 if self._include_original and self._zoom_index == max_idx:
                     # Original chosen, no need to change anything besides applying sketch:
                     self._make_selection(None)
@@ -408,9 +421,7 @@ class SampleSelector(QWidget):
                     if isinstance(option['image'], Image.Image):
                         self._make_selection(option['image'])
                         self._close_selector()
-        else:
-            if self._is_loading:
-                return
+        elif not self._is_loading:
             if self._include_original and self._source_option_bounds is not None:
                 if self._source_option_bounds.contains(event.pos()): # Original image chosen
                     self._make_selection(None)
