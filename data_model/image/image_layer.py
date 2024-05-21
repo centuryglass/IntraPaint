@@ -2,8 +2,9 @@
 from PyQt5.QtGui import QImage, QPainter, QPixmap
 from PyQt5.QtCore import Qt, QObject, QRect, QPoint, QSize, pyqtSignal
 from PIL import Image
-from ui.image_utils import qimage_to_pil_image, pil_image_to_qimage
+from util.image_utils import qimage_to_pil_image, pil_image_to_qimage
 from util.validation import assert_type, assert_types
+
 
 class ImageLayer(QObject):
     """Represents an edited image layer."""
@@ -36,7 +37,6 @@ class ImageLayer(QObject):
         self._pixmap = None
         self.set_image(image_data)
 
-
     @property
     def pixmap(self) -> QPixmap:
         """Returns the layer's pixmap content."""
@@ -50,7 +50,6 @@ class ImageLayer(QObject):
             self._pixmap = new_pixmap
             self.pixmap_changed.emit(new_pixmap)
             self.content_changed.emit()
-
 
     @property
     def visible(self) -> bool:
@@ -75,7 +74,6 @@ class ImageLayer(QObject):
         assert_type(new_name, str)
         self._name = new_name
 
-
     @property
     def saved(self) -> bool:
         """Returns whether layer content is included when saving image data.  Non-visible layers are never saved."""
@@ -86,18 +84,15 @@ class ImageLayer(QObject):
         """Sets whether this layer is saved when visible and image data is saved."""
         self._saved = saved
 
-
     def qimage(self) -> QImage:
         """Returns the image currently being edited as a QImage object"""
         return self.pixmap.toImage()
-
 
     def pil_image(self) -> Image.Image:
         """Returns the image currently being edited as a PIL Image object"""
         return qimage_to_pil_image(self.qimage())
 
-
-    def set_image(self, image_data : Image.Image | QImage | QPixmap | QSize):
+    def set_image(self, image_data: Image.Image | QImage | QPixmap | QSize):
         """
         Loads a new image to be edited.
 
@@ -118,7 +113,6 @@ class ImageLayer(QObject):
             pixmap.fill(Qt.transparent)
             self.pixmap = pixmap
 
-
     def scale(self, scaled_size: QSize):
         """Scales the layer image content to a new resolution size."""
         assert_type(scaled_size, QSize)
@@ -126,7 +120,6 @@ class ImageLayer(QObject):
             return
         scaled = self.pixmap.scaled(scaled_size)
         self.pixmap = scaled
-
 
     def resize_canvas(self, new_size: QSize, x_offset: int, y_offset: int):
         """
@@ -153,31 +146,29 @@ class ImageLayer(QObject):
         self.pixmap = new_pixmap
         self.content_changed.emit()
 
-
     @property
     def size(self) -> QSize:
         """Returns the edited image size in pixels as a QSize object."""
         return self.pixmap.size()
 
-
     @property
     def width(self) -> int:
         """Returns the edited image width in pixels."""
-        return self.size().width()
-
+        return self.size.width()
 
     @property
     def height(self) -> int:
         """Returns the edited image height in pixels."""
-        return self.size().height()
-
+        return self.size.height()
 
     def cropped_pixmap_content(self, bounds_rect: QRect) -> QPixmap:
         """Returns the contents of a bounding QRect as a QPixmap object."""
         assert_type(bounds_rect, QRect)
-        self._validate_bounds(bounds_rect)
+        try:
+            self._validate_bounds(bounds_rect)
+        except:
+            return self.pixmap()
         return self.pixmap.copy(bounds_rect)
-
 
     def insert_image_content(
             self,
@@ -196,7 +187,11 @@ class ImageLayer(QObject):
         """
         assert_type(image_data, (QImage, QPixmap, Image.Image))
         assert_type(bounds_rect, QRect)
-        self._validate_bounds(bounds_rect)
+
+        try:
+            self._validate_bounds(bounds_rect)
+        except:
+            return
         pixmap = QPixmap(self.pixmap.size())
         pixmap.swap(self.pixmap)
         painter = QPainter(pixmap)
@@ -209,9 +204,8 @@ class ImageLayer(QObject):
 
     def clear(self):
         """Replaces all image content with transparency."""
-        self.pixmap.fill(Qt.transparency)
+        self.pixmap.fill(Qt.transparent)
         self.content_changed.emit()
-
 
     def _validate_bounds(self, bounds_rect: QRect):
         assert_type(bounds_rect, QRect)

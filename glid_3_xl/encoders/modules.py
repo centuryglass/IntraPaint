@@ -3,7 +3,7 @@ import torch.nn as nn
 from torch.nn import functional as F
 from functools import partial
 
-from encoders.x_transformer import Encoder, TransformerWrapper  # TODO: can we directly rely on lucidrains code and simply add this as a reuirement? --> test
+from glid_3_xl.encoders.x_transformer import Encoder, TransformerWrapper  # TODO: can we directly rely on lucidrains code and simply add this as a reuirement? --> test
 
 
 class AbstractEncoder(nn.Module):

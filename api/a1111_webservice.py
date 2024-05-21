@@ -9,17 +9,20 @@ import io
 import sys
 import requests
 from PIL import Image
+from requests import Response
+
 from api.webservice import WebService
-from startup.utils import image_to_base64, load_image_from_base64
-from data_model.config import Config
+from util.image_utils import load_image_from_base64, image_to_base64
+from data_model.config.application_config import AppConfig
 from ui.modal.login_modal import LoginModal
+
 
 class A1111Webservice(WebService):
     """
     A1111Webservice provides access to the a1111/stable-diffusion-webui through the REST API.
     """
 
-    class Endpoints():
+    class Endpoints:
         """REST API endpoint constants."""
         OPTIONS = '/sdapi/v1/options'
         REFRESH_CKPT = '/sdapi/v1/refresh-checkpoints'
@@ -48,8 +51,7 @@ class A1111Webservice(WebService):
         CONTROLNET_SETTINGS = '/controlnet/settings'
         LOGIN = '/login'
 
-
-    class ImgParams():
+    class ImgParams:
         """Image generation body key constants."""
         INIT_IMAGES = 'init_images'
         DENOISING = 'denoising_strength'
@@ -79,7 +81,6 @@ class A1111Webservice(WebService):
         """Calls the login check endpoint, returning a status 401 response if a login is required."""
         return self.get('/login_check')
 
-
     def set_config(self, config_updates: dict) -> requests.Response:
         """
         Updates the stable-diffusion-webui configuration.
@@ -92,7 +93,6 @@ class A1111Webservice(WebService):
         """
         return self.post(A1111Webservice.Endpoints.OPTIONS, config_updates, timeout=30).json()
 
-
     def refresh_checkpoints(self) -> requests.Response:
         """Requests an updated list of available stable-diffusion models.
 
@@ -102,7 +102,6 @@ class A1111Webservice(WebService):
             HTTP response with the list of updated stable-diffusion models.
         """
         return self.post(A1111Webservice.Endpoints.REFRESH_CKPT, body={})
-
 
     def refresh_vae(self) -> requests.Response:
         """Requests an updated list of available stable-diffusion VAE models.
@@ -118,7 +117,6 @@ class A1111Webservice(WebService):
         """
         return self.post(A1111Webservice.Endpoints.REFRESH_VAE, body={})
 
-
     def refresh_loras(self) -> requests.Response:
         """Requests an updated list of available stable-diffusion LORA models.
 
@@ -132,7 +130,6 @@ class A1111Webservice(WebService):
         """
         return self.post(A1111Webservice.Endpoints.REFRESH_LORA, body={})
 
-
     def progress_check(self) -> dict:
         """Checks the progress of an ongoing image operation.
 
@@ -143,16 +140,15 @@ class A1111Webservice(WebService):
         """
         return self.get(A1111Webservice.Endpoints.PROGRESS).json()
 
-
     # Image manipulation:
     def img2img(self,
-            image: Image.Image,
-            config: Config,
-            mask: Optional[Image.Image] = None,
-            width: Optional[int] = None,
-            height: Optional[int] = None,
-            overrides: Optional[dict] = None,
-            scripts: Optional[list[dict]] = None) -> tuple[list[Image.Image], Optional[dict]]:
+                image: Image.Image,
+                config: AppConfig,
+                mask: Optional[Image.Image] = None,
+                width: Optional[int] = None,
+                height: Optional[int] = None,
+                overrides: Optional[dict] = None,
+                scripts: Optional[list[dict]] = None) -> tuple[list[Image.Image], Optional[dict]]:
         """Starts a request to alter an image section using selected parameters.
 
         Parameters
@@ -180,30 +176,29 @@ class A1111Webservice(WebService):
             Any additional information sent back with the generated images.
         """
         body = self._get_base_diffusion_body(config, image, scripts)
-        body[A1111Webservice.ImgParams.INIT_IMAGES] = [ image_to_base64(image, include_prefix=True) ]
-        body[A1111Webservice.ImgParams.DENOISING] = config.get(Config.DENOISING_STRENGTH)
+        body[A1111Webservice.ImgParams.INIT_IMAGES] = [image_to_base64(image, include_prefix=True)]
+        body[A1111Webservice.ImgParams.DENOISING] = config.get(AppConfig.DENOISING_STRENGTH)
         body[A1111Webservice.ImgParams.WIDTH] = image.width if width is None else width
         body[A1111Webservice.ImgParams.HEIGHT] = image.height if height is None else height
         if mask is not None:
             body[A1111Webservice.ImgParams.MASK] = image_to_base64(mask, include_prefix=True)
-            body[A1111Webservice.ImgParams.MASK_BLUR] = config.get(Config.MASK_BLUR)
-            body[A1111Webservice.ImgParams.INPAINT_FILL] = config.get_option_index(Config.MASKED_CONTENT)
-            body[A1111Webservice.ImgParams.MASK_INVERT] = 0 #Don't invert
-            body[A1111Webservice.ImgParams.INPAINT_FULL_RES] = config.get(Config.INPAINT_FULL_RES)
-            body[A1111Webservice.ImgParams.INPAINT_FULL_RES_PADDING] = config.get(Config.INPAINT_FULL_RES_PADDING)
+            body[A1111Webservice.ImgParams.MASK_BLUR] = config.get(AppConfig.MASK_BLUR)
+            body[A1111Webservice.ImgParams.INPAINT_FILL] = config.get_option_index(AppConfig.MASKED_CONTENT)
+            body[A1111Webservice.ImgParams.MASK_INVERT] = 0  #Don't invert
+            body[A1111Webservice.ImgParams.INPAINT_FULL_RES] = config.get(AppConfig.INPAINT_FULL_RES)
+            body[A1111Webservice.ImgParams.INPAINT_FULL_RES_PADDING] = config.get(AppConfig.INPAINT_FULL_RES_PADDING)
         if overrides is not None:
             for key in overrides:
                 body[key] = overrides[key]
         res = self.post(A1111Webservice.Endpoints.IMG2IMG, body)
         return self._handle_image_response(res)
 
-
     def txt2img(self,
-            config: Config,
-            width: Optional[int] = None,
-            height: Optional[int] = None,
-            scripts: Optional[list[dict]] = None,
-            image: Optional[Image.Image] = None) -> tuple[list[Image.Image], Optional[dict]]:
+                config: AppConfig,
+                width: Optional[int] = None,
+                height: Optional[int] = None,
+                scripts: Optional[list[dict]] = None,
+                image: Optional[Image.Image] = None) -> tuple[list[Image.Image], Optional[dict]]:
         """Starts a request to generate new images using selected parameters.
 
         Parameters
@@ -231,12 +226,11 @@ class A1111Webservice(WebService):
         res = self.post(A1111Webservice.Endpoints.TXT2IMG, body)
         return self._handle_image_response(res)
 
-
     def upscale(self,
-            image: Image.Image,
-            width: int,
-            height: int,
-            config: Config) -> tuple[list[Image.Image], Optional[dict]]:
+                image: Image.Image,
+                width: int,
+                height: int,
+                config: AppConfig) -> tuple[list[Image.Image], Optional[dict]]:
         """Starts a request to upscale an image.
 
         Parameters
@@ -256,13 +250,13 @@ class A1111Webservice(WebService):
         dict or None
             Any additional information sent back with the generated images.
         """
-        if config.get(Config.CONTROLNET_UPSCALING):
+        if config.get(AppConfig.CONTROLNET_UPSCALING):
             scripts = {
                 'controlNet': {
                     'args': [{
                         'module': 'tile_resample',
-                        'model': config.get(Config.CONTROLNET_TILE_MODEL),
-                        'threshold_a': config.get(Config.CONTROLNET_DOWNSAMPLE_RATE)
+                        'model': config.get(AppConfig.CONTROLNET_TILE_MODEL),
+                        'threshold_a': config.get(AppConfig.CONTROLNET_DOWNSAMPLE_RATE)
                     }]
                 }
             }
@@ -272,28 +266,28 @@ class A1111Webservice(WebService):
                 'batch_size': 1,
                 'n_iter': 1
             }
-            upscaler = config.get(Config.UPSCALE_METHOD)
+            upscaler = config.get(AppConfig.UPSCALE_METHOD)
             if upscaler != 'None':
                 overrides['script_name'] = 'ultimate sd upscale'
                 overrides['script_args'] = [
-                    None, # not used
-                    config.get(Config.EDIT_SIZE).width(), #tile width
-                    config.get(Config.EDIT_SIZE).height(), #tile height
-                    8, # mask_blur
-                    32, # padding
-                    64, # seams_fix_width
-                    0.35, # seams_fix_denoise
-                    32, # seams_fix_padding
-                    config.get_options(Config.UPSCALE_METHOD).index(upscaler), # upscaler_index
-                    False, # save_upscaled_image a.k.a Upscaled
-                    0, # redraw_mode (linear)
-                    False, # save_seams_fix_image a.k.a Seams fix
-                    8, # seams_fix_mask_blur
-                    0, # seams_fix_type (none)
-                    1, # target_size_type (use below)
-                    width, # custom_width
-                    height, # custom_height
-                    None # custom_scale (ignored)
+                    None,  # not used
+                    config.get(AppConfig.EDIT_SIZE).width(),  #tile width
+                    config.get(AppConfig.EDIT_SIZE).height(),  #tile height
+                    8,  # mask_blur
+                    32,  # padding
+                    64,  # seams_fix_width
+                    0.35,  # seams_fix_denoise
+                    32,  # seams_fix_padding
+                    config.get_options(AppConfig.UPSCALE_METHOD).index(upscaler),  # upscaler_index
+                    False,  # save_upscaled_image a.k.a Upscaled
+                    0,  # redraw_mode (linear)
+                    False,  # save_seams_fix_image a.k.a Seams fix
+                    8,  # seams_fix_mask_blur
+                    0,  # seams_fix_type (none)
+                    1,  # target_size_type (use below)
+                    width,  # custom_width
+                    height,  # custom_height
+                    None  # custom_scale (ignored)
                 ]
             return self.img2img(image, config, width=width, height=height, overrides=overrides, scripts=scripts)
         # otherwise, normal upscaling without controlNet:
@@ -301,14 +295,13 @@ class A1111Webservice(WebService):
             'resize_mode': 1,
             'upscaling_resize_w': width,
             'upscaling_resize_h': height,
-            'upscaler_1': config.get(Config.UPSCALE_METHOD),
+            'upscaler_1': config.get(AppConfig.UPSCALE_METHOD),
             'image': image_to_base64(image, include_prefix=True)
         }
         res = self.post(A1111Webservice.Endpoints.UPSCALE, body)
         return self._handle_image_response(res)
 
-
-    def interrogate(self, config: Config, image: Image.Image) -> str:
+    def interrogate(self, config: AppConfig, image: Image.Image) -> str:
         """Requests text describing an image.
 
         Parameters
@@ -323,12 +316,11 @@ class A1111Webservice(WebService):
             A brief description of the image.
         """
         body = {
-            'model': config.get(Config.INTERROGATE_MODEL),
+            'model': config.get(AppConfig.INTERROGATE_MODEL),
             'image': image_to_base64(image, include_prefix=True)
         }
         res = self.post(A1111Webservice.Endpoints.INTERROGATE, body)
         return res.json()['caption']
-
 
     def interrupt(self) -> dict:
         """
@@ -338,26 +330,25 @@ class A1111Webservice(WebService):
         res = self.post(A1111Webservice.Endpoints.INTERRUPT, body={})
         return res.json()
 
-
-    def _get_base_diffusion_body(self,
-            config: Config,
-            image: Optional[Image.Image] = None,
-            scripts: Optional[dict] = None) -> dict:
+    @staticmethod
+    def _get_base_diffusion_body(config: AppConfig,
+                                 image: Optional[Image.Image] = None,
+                                 scripts: Optional[dict] = None) -> dict:
         body = {
-            A1111Webservice.ImgParams.PROMPT: config.get(Config.PROMPT),
-            A1111Webservice.ImgParams.SEED: config.get(Config.SEED),
-            A1111Webservice.ImgParams.BATCH_SIZE: config.get(Config.BATCH_SIZE),
-            A1111Webservice.ImgParams.BATCH_COUNT: config.get(Config.BATCH_COUNT),
-            A1111Webservice.ImgParams.STEPS: config.get(Config.SAMPLING_STEPS),
-            A1111Webservice.ImgParams.CFG_SCALE: config.get(Config.GUIDANCE_SCALE),
-            A1111Webservice.ImgParams.RESTORE_FACES: config.get(Config.RESTORE_FACES),
-            A1111Webservice.ImgParams.TILING: config.get(Config.TILING),
-            A1111Webservice.ImgParams.NEGATIVE: config.get(Config.NEGATIVE_PROMPT),
+            A1111Webservice.ImgParams.PROMPT: config.get(AppConfig.PROMPT),
+            A1111Webservice.ImgParams.SEED: config.get(AppConfig.SEED),
+            A1111Webservice.ImgParams.BATCH_SIZE: config.get(AppConfig.BATCH_SIZE),
+            A1111Webservice.ImgParams.BATCH_COUNT: config.get(AppConfig.BATCH_COUNT),
+            A1111Webservice.ImgParams.STEPS: config.get(AppConfig.SAMPLING_STEPS),
+            A1111Webservice.ImgParams.CFG_SCALE: config.get(AppConfig.GUIDANCE_SCALE),
+            A1111Webservice.ImgParams.RESTORE_FACES: config.get(AppConfig.RESTORE_FACES),
+            A1111Webservice.ImgParams.TILING: config.get(AppConfig.TILING),
+            A1111Webservice.ImgParams.NEGATIVE: config.get(AppConfig.NEGATIVE_PROMPT),
             A1111Webservice.ImgParams.OVERRIDE_SETTINGS: {},
-            A1111Webservice.ImgParams.SAMPLER_IDX: config.get(Config.SAMPLING_METHOD),
+            A1111Webservice.ImgParams.SAMPLER_IDX: config.get(AppConfig.SAMPLING_METHOD),
             A1111Webservice.ImgParams.ALWAYSON_SCRIPTS: {}
         }
-        controlnet = dict(config.get(Config.CONTROLNET_ARGS_0))
+        controlnet = dict(config.get(AppConfig.CONTROLNET_ARGS_0))
         if len(controlnet) > 0 and 'model' in controlnet:
             if 'image' in controlnet:
                 if controlnet['image'] == 'SELECTION' and image is not None:
@@ -370,17 +361,19 @@ class A1111Webservice(WebService):
                         del controlnet['image']
                 else:
                     del controlnet['image']
+                empty_keys = [k for k in controlnet.keys() if controlnet[k] is None]
+                for empty_key in empty_keys:
+                    del controlnet[empty_key]
             if scripts is None:
                 scripts = {}
             if 'controlNet' not in scripts:
-                scripts['controlNet'] = { 'args': [] }
+                scripts['controlNet'] = {'args': []}
             scripts['controlNet']['args'].append(controlnet)
         if scripts is not None:
             body['alwayson_scripts'] = scripts
         return body
 
-
-    def _handle_image_response(self, res: requests.Response) -> tuple[list[Image.Image], Optional[dict]]:
+    def _handle_image_response(self, res: requests.Response) -> Response:
         if res.status_code != 200:
             return res
         res_body = res.json()
@@ -405,12 +398,10 @@ class A1111Webservice(WebService):
                     images.append(load_image_from_base64(image))
         return images, info
 
-
     # Load misc. service info:
     def get_config(self) -> dict:
         """Returns a dict containing the stable-diffusion-webui's current configuration."""
         return self.get('/sdapi/v1/options', timeout=30).json()
-
 
     def get_styles(self) -> list:
         """Returns a list of image generation style objects saved by the stable-diffusion-webui.
@@ -422,7 +413,6 @@ class A1111Webservice(WebService):
         res_body = self.get(A1111Webservice.Endpoints.STYLES).json()
         return [json.dumps(s) for s in res_body]
 
-
     def get_scripts(self) -> dict:
         """Returns available scripts installed to the stable-diffusion-webui.
         Returns
@@ -431,7 +421,6 @@ class A1111Webservice(WebService):
             Response will have 'txt2img' and 'img2img' keys, each holding a list of scripts avaliable for that mode.
         """
         return self.get(A1111Webservice.Endpoints.SCRIPTS).json()
-
 
     def get_script_info(self) -> list[dict]:
         """Returns information on expected script parameters
@@ -442,26 +431,21 @@ class A1111Webservice(WebService):
         """
         return self.get(A1111Webservice.Endpoints.SCRIPT_INFO).json()
 
-
     def _get_name_list(self, endpoint: str) -> list[str]:
         res_body = self.get(endpoint, timeout=30).json()
         return [obj['name'] for obj in res_body]
-
 
     def get_samplers(self) -> list[str]:
         """Returns the list of image sampler algorithms available for image generation."""
         return self._get_name_list(A1111Webservice.Endpoints.SAMPLERS)
 
-
     def get_upscalers(self) -> list[str]:
         """Returns the list of image upscalers available."""
         return self._get_name_list(A1111Webservice.Endpoints.UPSCALERS)
 
-
     def get_latent_upscale_modes(self) -> list[str]:
         """Returns the list of stable-diffusion enhanced upscaling modes."""
         return self._get_name_list(A1111Webservice.Endpoints.LATENT_UPSCALE_MODES)
-
 
     def get_hypernetworks(self) -> list[str]:
         """Returns the list of hypernetworks available.
@@ -471,14 +455,12 @@ class A1111Webservice(WebService):
         """
         return self._get_name_list(A1111Webservice.Endpoints.HYPERNETWORKS)
 
-
     def get_models(self) -> list[dict]:
         """Returns the list of available stable-diffusion models cached by the webui.
 
         If available models may have changed, instead consider using the slower refresh_checkpoints method.
         """
         return self.get(A1111Webservice.Endpoints.SD_MODELS, timeout=30).json()
-
 
     def get_vae(self) -> list[dict]:
         """Returns the list of available stable-diffusion VAE models cached by the webui.
@@ -487,7 +469,6 @@ class A1111Webservice(WebService):
         """
         return self.get(A1111Webservice.Endpoints.VAE_MODELS, timeout=30).json()
 
-
     def get_controlnet_version(self) -> int:
         """
         Returns the installed version of the stable-diffusion ControlNet extension, or raises if the exception is not
@@ -495,26 +476,21 @@ class A1111Webservice(WebService):
         """
         return self.get(A1111Webservice.Endpoints.CONTROLNET_VERSION, timeout=30).json()['version']
 
-
     def get_controlnet_models(self) -> dict:
         """Returns a dict defining the models available to the stable-diffusion ControlNet extension."""
         return self.get(A1111Webservice.Endpoints.CONTROLNET_MODELS, timeout=30).json()
-
 
     def get_controlnet_modules(self) -> dict:
         """Returns a dict defining the modules available to the stable-diffusion ControlNet extension."""
         return self.get(A1111Webservice.Endpoints.CONTROLNET_MODULES, timeout=30).json()
 
-
     def get_controlnet_control_types(self) -> dict:
         """Returns a dict defining the control types available to the stable-diffusion ControlNet extension."""
         return self.get(A1111Webservice.Endpoints.CONTROLNET_CONTROL_TYPES, timeout=30).json()['control_types']
 
-
     def get_controlnet_settings(self) -> dict:
         """Returns the current settings applied to the stable-diffusion ControlNet extension."""
         return self.get(A1111Webservice.Endpoints.CONTROLNET_SETTINGS, timeout=30).json()
-
 
     def get_loras(self) -> list:
         """Returns the list of available stable-diffusion LORA models cached by the webui.
@@ -523,12 +499,10 @@ class A1111Webservice(WebService):
         """
         return self.get(A1111Webservice.Endpoints.LORA_MODELS, timeout=30).json()
 
-
     def _login(self, username: str, password: str) -> requests.Response:
-        body = { 'username': username, 'password': password }
+        body = {'username': username, 'password': password}
         return self.post(A1111Webservice.Endpoints.LOGIN, body, 'x-www-form-urlencoded', timeout=30,
-                throw_on_failure=False)
-
+                         throw_on_failure=False)
 
     def _handle_auth_error(self):
         login_modal = LoginModal(self._login)

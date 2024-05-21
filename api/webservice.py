@@ -8,7 +8,7 @@ import secrets
 import requests
 
 
-class WebService():
+class WebService:
     """
     WebService establishes a connection to a URL, handles basic auth, and provides convenience methods for GET and
     POST requests.
@@ -27,7 +27,6 @@ class WebService():
         self._auth = None
         self._session_hash = secrets.token_hex(5)
 
-
     def set_auth(self, auth):
         """Set session authentication.
 
@@ -38,7 +37,6 @@ class WebService():
             webservice being targeted.
         """
         self._session.auth = auth
-
 
     def get(self,
             endpoint: str,
@@ -70,18 +68,17 @@ class WebService():
             The response returned by the webservice.
         """
         return self._send(endpoint, 'GET', None, None, timeout, url_params, headers, fail_on_auth_error,
-                throw_on_failure)
-
+                          throw_on_failure)
 
     def post(self,
-            endpoint: str,
-            body,
-            body_format: str = 'application/json',
-            timeout: Optional[int] = None,
-            url_params: Optional[dict[str, str]] = None,
-            headers: Optional[dict[str, str]] = None,
-            fail_on_auth_error: bool = False,
-            throw_on_failure: bool = True) -> requests.Response:
+             endpoint: str,
+             body,
+             body_format: str = 'application/json',
+             timeout: Optional[int] = None,
+             url_params: Optional[dict[str, str]] = None,
+             headers: Optional[dict[str, str]] = None,
+             fail_on_auth_error: bool = False,
+             throw_on_failure: bool = True) -> requests.Response:
         """Sends a HTTP POST request to the webservice
 
         Parameters
@@ -110,19 +107,18 @@ class WebService():
             The response returned by the webservice.
         """
         return self._send(endpoint, 'POST', body, body_format, timeout, url_params, headers, fail_on_auth_error,
-                throw_on_failure)
-
+                          throw_on_failure)
 
     def _send(self,
-            endpoint: str,
-            method: str,
-            body,
-            body_format: str = 'application/json',
-            timeout: Optional[int] = None,
-            url_params: Optional[dict[str, str]] = None,
-            headers: Optional[dict[str, str]] = None,
-            fail_on_auth_error: bool = False,
-            throw_on_failure: bool = True) -> requests.Response:
+              endpoint: str,
+              method: str,
+              body,
+              body_format: Optional[str] = 'application/json',
+              timeout: Optional[int] = None,
+              url_params: Optional[dict[str, str]] = None,
+              headers: Optional[dict[str, str]] = None,
+              fail_on_auth_error: bool = False,
+              throw_on_failure: bool = True) -> requests.Response:
         address = self._build_address(endpoint, url_params)
         res = None
         if headers is None:
@@ -142,22 +138,20 @@ class WebService():
             if not fail_on_auth_error:
                 self._handle_auth_error()
                 return self._send(endpoint,
-                        method,
-                        body,
-                        body_format,
-                        timeout,
-                        url_params,
-                        headers,
-                        fail_on_auth_error,
-                        throw_on_failure)
+                                  method,
+                                  body,
+                                  body_format,
+                                  timeout,
+                                  url_params,
+                                  headers,
+                                  fail_on_auth_error,
+                                  throw_on_failure)
         elif res.status_code != 200 and throw_on_failure:
             raise RuntimeError(f'{res.status_code}: {res.text}')
         return res
 
-
     def _handle_auth_error(self):
         raise NotImplementedError('Authentication is not implemented')
-
 
     def _build_address(self, endpoint: str, url_params: Optional[dict[str, str]] = None) -> str:
         address = f'{self._server_url}{endpoint}'

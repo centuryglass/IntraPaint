@@ -4,8 +4,8 @@ from typing import Optional
 from PyQt5.QtGui import QPainter, QPixmap, QImage
 from PyQt5.QtCore import Qt, QObject, QSize, QPoint, QRect, pyqtSignal
 from PIL import Image
-from data_model.image_layer import ImageLayer
-from ui.image_utils import qimage_to_pil_image
+from data_model.image.image_layer import ImageLayer
+from util.image_utils import qimage_to_pil_image
 from util.validation import assert_type, assert_types, assert_valid_index
 
 
@@ -18,10 +18,10 @@ class LayerStack(QObject):
     layer_removed = pyqtSignal(ImageLayer)
 
     def __init__(self,
-            image_size: QSize,
-            selection_size: QSize,
-            min_selection_size: QSize,
-            max_selection_size: QSize):
+                 image_size: QSize,
+                 selection_size: QSize,
+                 min_selection_size: QSize,
+                 max_selection_size: QSize):
         """Initializes the layer stack with an empty initial layer."""
         super().__init__()
         self._size = image_size
@@ -38,14 +38,12 @@ class LayerStack(QObject):
     @property
     def size(self) -> QSize:
         """Gets the size of the edited image."""
-        return self._size
-
+        return QSize(self._size.width(), self._size.height())
 
     @property
     def width(self) -> int:
         """Gets the width of the edited image."""
         return self._size.width()
-
 
     @property
     def height(self) -> int:
@@ -57,7 +55,6 @@ class LayerStack(QObject):
         """Gets the minimum size allowed for the selected editing region."""
         return self._min_selection_size
 
-
     @min_selection_size.setter
     def min_selection_size(self, new_min: QSize):
         """Sets the minimum size allowed for the selected editing region."""
@@ -65,7 +62,6 @@ class LayerStack(QObject):
         self._min_selection_size = new_min
         if new_min.width() > self._selection.width() or new_min.height() > self._selection.height():
             self.selection = self._selection
-
 
     @property
     def max_selection_size(self) -> QSize:
@@ -80,20 +76,19 @@ class LayerStack(QObject):
         if new_max.width() < self._selection.width() or new_max.height() < self._selection.height():
             self.selection = self._selection
 
-
     def scale(self, new_size: QSize):
         """Scales all layer image content to a new resolution size."""
         assert_type(new_size, QSize)
-        if new_size == self.size:
+        if new_size == self._size:
             return
-        for layer in self._layers:
-            layer.scale(new_size)
-        self._size = new_size
-        self.size_changed.emit(new_size)
-        self.visible_content_changed.emit()
+        self._set_size(new_size)
         # Re-apply bounds to make sure they still fit:
         if not QRect(QPoint(0, 0), new_size).contains(self._selection):
             self.selection = self._selection
+        self.size_changed.emit(self.size)
+        for layer in self._layers:
+            layer.scale(self.size)
+        self.visible_content_changed.emit()
 
 
     def resize_canvas(self, new_size: QSize, x_offset: int, y_offset: int):
@@ -113,22 +108,22 @@ class LayerStack(QObject):
         assert_types((x_offset, y_offset), int)
         if new_size == self.size and x_offset == 0 and y_offset == 0:
             return
-        size_changed = self._size == new_size
-        self._size = new_size
-        for layer in self._layers:
-            layer.resize_canvas(new_size, x_offset, y_offset)
-        if size_changed:
-            self.size_changed.emit(new_size)
-        self.visible_content_changed.emit()
+        size_changed = self._size != new_size
+        self._set_size(new_size)
         self.selection = self._selection.translated(x_offset, y_offset)
-
-
+        if not QRect(QPoint(0, 0), self.size).contains(self._selection):
+            self.selection = self._selection
+        if size_changed:
+            self.size_changed.emit(self.size)
+        for layer in self._layers:
+            layer.resize_canvas(self.size, x_offset, y_offset)
+        self.visible_content_changed.emit()
 
     def create_layer(self,
-            layer_name: Optional[str] = None,
-            image_data: Optional[Image.Image | QImage | QPixmap] = None,
-            saved: bool = True,
-            index: Optional[int] = None):
+                     layer_name: Optional[str] = None,
+                     image_data: Optional[Image.Image | QImage | QPixmap] = None,
+                     saved: bool = True,
+                     index: Optional[int] = None):
         """
         Creates a new image layer and adds it to the stack.
 
@@ -161,14 +156,16 @@ class LayerStack(QObject):
             image_data = self.size
         layer = ImageLayer(image_data, layer_name, saved)
         self._layers.insert(index, layer)
+
         def handle_layer_update():
+            """Pass on layer update signals."""
             if layer.visible and layer in self._layers:
                 self.visible_content_changed.emit()
+
         layer.content_changed.connect(handle_layer_update)
         if not isinstance(layer, QSize):
             self.visible_content_changed.emit()
         self.layer_added.emit(layer, index)
-
 
     def pop_layer(self, index: int) -> ImageLayer:
         """Removes and returns an image layer."""
@@ -177,28 +174,24 @@ class LayerStack(QObject):
             raise RuntimeError('Cannot remove final layer')
         removed_layer = self._layers.pop(index)
         if removed_layer.visible:
-            self.content_changed.emit()
+            self.visible_content_changed.emit()
         self.layer_removed.emit(removed_layer)
         return removed_layer
-
 
     def set_layer_visibility(self, index: int, visible: bool):
         """Shows or hides an image layer."""
         assert_valid_index(index, self._layers)
         self._layers[index].visible = bool(visible)
-        self.content_changed.emit()
-
+        self.visible_content_changed.emit()
 
     def count(self) -> int:
         """Returns the number of layers"""
         return len(self._layers)
 
-
     def get_layer(self, index: int) -> ImageLayer:
         """Returns a layer from the stack"""
         assert_valid_index(index, self._layers)
         return self._layers[index]
-
 
     def pixmap(self, saved_only: bool = True) -> QPixmap:
         """Returns combined visible layer content as a QPixmap, optionally including unsaved layers."""
@@ -212,16 +205,13 @@ class LayerStack(QObject):
         painter.end()
         return pixmap
 
-
     def qimage(self, saved_only: bool = True) -> QImage:
         """Returns combined visible layer content as a QImage object, optionally including unsaved layers."""
         return self.pixmap(saved_only).toImage()
 
-
     def pil_image(self, saved_only: bool = True) -> Image.Image:
         """Returns combined visible layer content as a PIL Image object, optionally including unsaved layers."""
         return qimage_to_pil_image(self.pixmap(saved_only).toImage())
-
 
     def get_max_selection_size(self) -> QSize:
         """
@@ -230,12 +220,10 @@ class LayerStack(QObject):
         max_size = self.max_selection_size
         return QSize(min(max_size.width(), self.width), min(max_size.height(), self.height))
 
-
     @property
     def selection(self) -> QRect:
         """Returns the bounds of the area selected for editing within the image."""
         return QRect(self._selection.topLeft(), self._selection.size())
-
 
     @selection.setter
     def selection(self, bounds_rect: QRect):
@@ -289,31 +277,25 @@ class LayerStack(QObject):
         painter.end()
         return pixmap
 
-
     def cropped_qimage_content(self, bounds_rect: QRect) -> QImage:
         """Returns the contents of a bounding QRect as a QImage."""
         return self.cropped_pixmap_content(bounds_rect).toImage()
 
-
-    def cropped_pil_image_content(self, bounds_rect: QRect) -> QImage:
+    def cropped_pil_image_content(self, bounds_rect: QRect) -> Image.Image:
         """Returns the contents of a bounding QRect as a PIL Image."""
         return qimage_to_pil_image(self.cropped_pixmap_content(bounds_rect).toImage())
-
 
     def pixmap_selection_content(self) -> QPixmap:
         """Returns the contents of the selection area as a QPixmap."""
         return self.cropped_pixmap_content(self.selection)
 
-
     def qimage_selection_content(self) -> QImage:
         """Returns the contents of the selection area as a QImage."""
         return self.cropped_qimage_content(self.selection)
 
-
     def pil_image_selection_content(self) -> Image.Image:
         """Returns the contents of the selection area as a PIL Image."""
         return qimage_to_pil_image(self.cropped_qimage_content(self.selection))
-
 
     def set_selection_content(self, image_data: Image.Image | QImage | QPixmap, layer_index: int = 0):
         """Updates selection content within a layer.
@@ -328,8 +310,7 @@ class LayerStack(QObject):
         assert_valid_index(layer_index, self._layers)
         self._layers[layer_index].insert_image_content(image_data, self.selection)
 
-
-    def set_image(self, image_data : Image.Image | QImage | QPixmap | QSize, layer_index: int = 0):
+    def set_image(self, image_data: Image.Image | QImage | QPixmap | QSize, layer_index: int = 0):
         """
         Loads a new image to be edited.
 
@@ -355,3 +336,8 @@ class LayerStack(QObject):
         if layer_index == len(self._layers):
             self.create_layer()
         self._layers[layer_index].set_image(image_data)
+
+    def _set_size(self, new_size: QSize) -> None:
+        """Update the size without replacing the size object."""
+        self._size.setWidth(new_size.width())
+        self._size.setHeight(new_size.height())

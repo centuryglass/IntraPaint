@@ -18,12 +18,12 @@ except ImportError as web_import_error:
 try:
     from controller.local_controller import LocalDeviceController
     import torch
-    from startup.ml_utils import get_device
+    from glid_3_xl.ml_utils import get_device
 except ImportError as local_err:
     print(f'Local GLID-3-XL mode not available: {local_err}')
     LocalDeviceController = None
     torch = None
-from startup.utils import build_arg_parser
+from util.arg_parser import build_arg_parser
 
 DEFAULT_SD_URL = 'http://localhost:7860'
 DEFAULT_GLID_URL = 'http://localhost:5555'
@@ -32,7 +32,7 @@ MIN_GLID_VRAM = 8000000000 # This is just a rough estimate.
 def parse_args_and_start() -> None:
     """Apply args, and start in the appropriate image generation mode."""
     # argument parsing:
-    parser = build_arg_parser(default_model='inpaint.pt', include_edit_params=False)
+    parser = build_arg_parser(default_model='glid_3_xl/models/inpaint.pt', include_edit_params=False)
     parser.add_argument('--mode', type = str, required = False, default = 'auto',
                         help = 'Set where inpainting operations should be completed. \nOptions:\n'
                         + '"auto": Attempt to guess at the most appropriate editing mode.\n'

@@ -7,10 +7,10 @@ from PIL import Image
 from PyQt5.QtGui import QImage, QPixmap, QColor
 from PyQt5.QtCore import QObject, QPoint, QLine, QSize, pyqtSignal
 from PyQt5.QtWidgets import QGraphicsScene
-from ui.image_utils import qimage_to_pil_image
-from data_model.config import Config
+from util.image_utils import qimage_to_pil_image
+from data_model.config.application_config import AppConfig
 
-class Canvas():
+class Canvas:
     """Interface for classes that display image data through a QGraphicsView and support various drawing and editing
        operations.
 
@@ -20,14 +20,14 @@ class Canvas():
         Emitted whenever a Canvas is enabled or disabled.
     """
 
-    class UndoState():
+    class UndoState:
         """Stores a timestamped image change for undo/redo purposes."""
         def __init__(self, image: QImage):
             self.image = image
             self.timestamp = datetime.datetime.now().timestamp()
 
 
-    def __init__(self, config: Config, image: QImage):
+    def __init__(self, config: AppConfig, image: QImage):
         """Initialize with config values and optional arbitrary initial image data.
 
         Parameters
@@ -55,7 +55,7 @@ class Canvas():
         if image is not None:
             self.set_image(image)
         else:
-            self.set_image(config.get(Config.EDIT_SIZE))
+            self.set_image(config.get(AppConfig.EDIT_SIZE))
         self._enabled = True
 
 
@@ -308,7 +308,7 @@ class Canvas():
     def _save_undo_state(self, clear_redo_stack: bool = True):
         image = self.get_qimage().copy()
         self._undo_stack.append(Canvas.UndoState(image))
-        max_undo_count = self._config.get(Config.MAX_UNDO)
+        max_undo_count = self._config.get(AppConfig.MAX_UNDO)
         if len(self._undo_stack) > max_undo_count:
             self._undo_stack = self._undo_stack[-max_undo_count:]
         if clear_redo_stack:

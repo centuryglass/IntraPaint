@@ -2,10 +2,10 @@
 A container widget that can be expanded or collapsed.
 Originally adapted from https://stackoverflow.com/a/52617714
 """
-from typing import Optional
+from typing import Optional, Callable, Tuple, Any, Dict
 from PyQt5.QtWidgets import QWidget, QScrollArea, QToolButton, QHBoxLayout, QVBoxLayout, QSizePolicy, QLayout, \
-         QBoxLayout
-from PyQt5.QtCore import Qt, QSize, pyqtBoundSignal
+    QBoxLayout
+from PyQt5.QtCore import Qt, QSize, pyqtBoundSignal, pyqtSignal
 
 from ui.widget.bordered_widget import BorderedWidget
 from ui.widget.label import Label
@@ -14,13 +14,12 @@ from ui.widget.label import Label
 class CollapsibleBox(BorderedWidget):
     """A container widget that can be expanded or collapsed."""
 
-
     def __init__(self,
-            title: str = "",
-            parent: Optional[QWidget] = None,
-            start_closed: bool = False,
-            scrolling: bool = True,
-            orientation: Qt.Orientation = Qt.Orientation.Vertical):
+                 title: str = "",
+                 parent: Optional[QWidget] = None,
+                 start_closed: bool = False,
+                 scrolling: bool = True,
+                 orientation: Qt.Orientation = Qt.Orientation.Vertical):
         """Initializes the widget, optionally adding it to a parent widget.
 
         Parameters
@@ -44,7 +43,6 @@ class CollapsibleBox(BorderedWidget):
         layout.setSpacing(0)
         layout.setContentsMargins(0, 0, 0, 0)
 
-
         self._toggle_button = QToolButton(text=title, checkable=True, checked=not start_closed)
         self._toggle_button.setStyleSheet("QToolButton { border: none; }")
         if self._is_vertical:
@@ -62,7 +60,7 @@ class CollapsibleBox(BorderedWidget):
             button_bar_layout.addWidget(self._toggle_button, alignment=Qt.AlignmentFlag.AlignTop)
             button_bar_layout.addWidget(self._toggle_label, alignment=Qt.AlignmentFlag.AlignTop)
             button_bar_layout.addStretch(255)
-            button_bar_layout.setContentsMargins(0,0,0,0)
+            button_bar_layout.setContentsMargins(0, 0, 0, 0)
             button_bar.setLayout(button_bar_layout)
             button_bar.setSizePolicy(QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed))
             min_width = self._toggle_label.image_size().width() + 2
@@ -88,7 +86,6 @@ class CollapsibleBox(BorderedWidget):
 
         layout.addWidget(self.scroll_area, stretch=255)
         self._start_closed = start_closed
-
 
     def set_content_layout(self, layout: QLayout) -> None:
         """Adds a layout to the widget.
@@ -121,11 +118,9 @@ class CollapsibleBox(BorderedWidget):
             else:
                 self.setSizePolicy(self._expanded_size_policy, QSizePolicy.Expanding)
 
-
-    def toggled(self) -> pyqtBoundSignal:
+    def toggled(self) -> pyqtSignal | pyqtSignal | Callable[[tuple[Any, ...], dict[str, Any]], Any]:
         """Returns the internal pyqtSignal emitted when the box is expanded or collapsed."""
         return self._toggle_button.toggled
-
 
     def show_button_bar(self, show_bar: bool) -> None:
         """Sets whether the box bar with the label and toggle button should be shown or hidden.
@@ -155,7 +150,6 @@ class CollapsibleBox(BorderedWidget):
         if not show_bar:
             self.set_expanded(True)
 
-
     def sizeHint(self) -> QSize:
         """Returns ideal box size based on expanded size policy and expansion state."""
         size = super().sizeHint()
@@ -165,7 +159,6 @@ class CollapsibleBox(BorderedWidget):
             else:
                 size.setHeight(self._toggle_button.sizeHint().height())
         return size
-
 
     def on_pressed(self) -> None:
         """When clicked, show or hide box content."""
@@ -192,11 +185,9 @@ class CollapsibleBox(BorderedWidget):
                 self.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Expanding)
         self.update()
 
-
     def is_expanded(self) -> bool:
         """Returns whether the box is currently expanded."""
         return self._toggle_button.isChecked()
-
 
     def set_expanded(self, expanded: bool) -> None:
         """Sets whether the box is in the expanded state."""

@@ -7,6 +7,7 @@ from PyQt5.QtWidgets import QAbstractSpinBox, QLineEdit, QWidget
 from PyQt5.QtCore import pyqtSignal, QRegExp
 from PyQt5.QtGui import QRegExpValidator
 
+
 class BigIntSpinbox(QAbstractSpinBox):
     """BigIntSpinbox is a QSpinBox supporting integers between -18446744073709551616 and 18446744073709551615."""
 
@@ -14,8 +15,8 @@ class BigIntSpinbox(QAbstractSpinBox):
     # to overflow.
     valueChanged = pyqtSignal(str)
 
-    MINIMUM= -18446744073709551616
-    MAXIMUM= 18446744073709551615
+    MINIMUM = -18446744073709551616
+    MAXIMUM = 18446744073709551615
 
     def __init__(self, parent: Optional[QWidget] = None) -> None:
         """Optionally initialize with a parent widget."""
@@ -31,18 +32,18 @@ class BigIntSpinbox(QAbstractSpinBox):
         validator = QRegExpValidator(rx, self)
 
         self._line_edit.setValidator(validator)
+
         def on_change(value: str) -> None:
-            # Make sure we're not emitting change signals on clear/while typing a new negative number:
+            """Make sure we're not emitting change signals on clear/while typing a new negative number"""
             if len(value) > 0 and value != "-":
                 self.valueChanged.emit(value)
+
         self._line_edit.textChanged.connect(on_change)
         self.setLineEdit(self._line_edit)
-
 
     def value(self) -> int:
         """Returns the current numeric value as an int."""
         return int(self._line_edit.text())
-
 
     def setValue(self, value: int) -> None:
         """Sets a new integer value if within the accepted range."""
@@ -51,32 +52,27 @@ class BigIntSpinbox(QAbstractSpinBox):
         else:
             pass
 
-
     def setSingleStep(self, single_step: int) -> None:
         """Sets the amount the spinbox value should change when the controls are used to change the value once."""
         assert isinstance(single_step, int)
         # don't use negative values
         self._single_step = abs(single_step)
 
-
     def stepBy(self, steps: int) -> None:
         """Offset the current value based on current step size and some integer step count."""
-        self.setValue(self.value() + steps*self.singleStep())
+        self.setValue(self.value() + steps * self.singleStep())
 
     def stepEnabled(self) -> QAbstractSpinBox.StepEnabled:
         """Resurns whether incrementing/decrementing the value by steps is enabled."""
         return self.StepUpEnabled | self.StepDownEnabled
 
-
     def singleStep(self) -> int:
         """Returns the amount the spinbox value changes when controls are clicked once. """
         return self._single_step
 
-
     def minimum(self) -> int:
         """Returns the current minimum accepted value."""
         return self._minimum
-
 
     def setMinimum(self, minimum: int) -> None:
         """Sets the minimum value accepted, must be an integer no less than -18446744073709551616."""
@@ -84,7 +80,6 @@ class BigIntSpinbox(QAbstractSpinBox):
         if minimum < BigIntSpinbox.MINIMUM:
             raise ValueError(f"Minimum cannot be less that {BigIntSpinbox.MINIMUM}, got {minimum}")
         self._minimum = minimum
-
 
     def maximum(self) -> int:
         """Returns the current maximum accepted value."""
@@ -97,12 +92,10 @@ class BigIntSpinbox(QAbstractSpinBox):
             raise ValueError(f"Maximum cannot be greater that {BigIntSpinbox.MAXIMUM}, got {maximum}")
         self._maximum = maximum
 
-
     def setRange(self, minimum: int, maximum: int) -> None:
         """Sets the range of accepted values."""
         self.setMinimum(minimum)
         self.setMaximum(maximum)
-
 
     def _value_in_range(self, value: int) -> bool:
         return bool(self.minimum() <= value <= self.maximum())

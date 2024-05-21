@@ -6,6 +6,7 @@ from PyQt5.QtWidgets import QWidget
 from PyQt5.QtGui import QPainter, QPen, QBrush, QColor, QShowEvent, QHideEvent, QPaintEvent
 from PyQt5.QtCore import Qt, QRect, QPointF, pyqtProperty, QPropertyAnimation
 
+
 class LoadingWidget(QWidget):
     """Show an animated loading indicator, with an optional message."""
 
@@ -20,18 +21,15 @@ class LoadingWidget(QWidget):
         self._anim.setEndValue(359)
         self._anim.setDuration(2000)
 
-
     def set_message(self, message: str) -> None:
         """Sets the loading message displayed."""
         self._message = message
         self.update()
 
-
     @pyqtProperty(int)
     def rotation(self) -> int:
         """Returns the current animation rotation in degrees."""
         return self._rotation
-
 
     @rotation.setter
     def rotation(self, rotation: int) -> None:
@@ -39,35 +37,32 @@ class LoadingWidget(QWidget):
         self._rotation = rotation % 360
         self.update()
 
-
     def showEvent(self, unused_event: Optional[QShowEvent]) -> None:
         """Starts the animation when the widget is shown."""
         self._anim.start()
 
-
     def hideEvent(self, unused_event: Optional[QHideEvent]) -> None:
         """Stops the animation when the widget is hidden."""
         self._anim.stop()
-
 
     def paintEvent(self, unused_event: Optional[QPaintEvent]) -> None:
         """Draws a circle with optional message text and an animated indicator."""
         painter = QPainter(self)
         ellipse_dim = int(min(self.width(), self.height()) * 0.8)
         paint_bounds = QRect((self.width() // 2) - (ellipse_dim // 2),
-                (self.height() // 2 - ellipse_dim // 2),
-                ellipse_dim,
-                ellipse_dim)
+                             (self.height() // 2 - ellipse_dim // 2),
+                             ellipse_dim,
+                             ellipse_dim)
 
         # draw background circle:
         painter.setPen(QPen(Qt.GlobalColor.black, 4, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap,
-                    Qt.PenJoinStyle.RoundJoin))
+                            Qt.PenJoinStyle.RoundJoin))
         painter.setBrush(QBrush(QColor(0, 0, 0, 200), Qt.BrushStyle.SolidPattern))
         painter.drawEllipse(paint_bounds)
 
         # Write text:
         painter.setPen(QPen(Qt.GlobalColor.white, 4, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap,
-                    Qt.PenJoinStyle.RoundJoin))
+                            Qt.PenJoinStyle.RoundJoin))
         painter.setBrush(QBrush(Qt.GlobalColor.white, Qt.BrushStyle.SolidPattern))
         painter.drawText(QRect(0, 0, self.width(), self.height()), Qt.AlignmentFlag.AlignCenter, self._message)
 
@@ -75,4 +70,4 @@ class LoadingWidget(QWidget):
         painter.translate(QPointF(self.width() / 2, self.height() / 2))
         painter.rotate(self._rotation)
         painter.drawEllipse(QRect(0, int(-ellipse_dim / 2 + ellipse_dim * 0.05),
-                    self.width() // 20, self.height() // 40))
+                                  self.width() // 20, self.height() // 40))

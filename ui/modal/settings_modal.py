@@ -4,7 +4,7 @@ stable_diffusion_controller.
 """
 from typing import Any
 from PyQt5.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QPushButton, QLineEdit, QComboBox, QDoubleSpinBox, \
-         QCheckBox, QWidget
+    QCheckBox, QWidget
 from PyQt5.QtCore import pyqtSignal
 from ui.widget.bordered_widget import BorderedWidget
 from ui.widget.collapsible_box import CollapsibleBox
@@ -46,18 +46,18 @@ class SettingsModal(QDialog):
 
         save_button = QPushButton()
         save_button.setText('Save')
+
         def on_save():
             self.changes_saved.emit(self._changes)
             self.hide()
+
         save_button.clicked.connect(on_save)
         bottom_panel_layout.addWidget(save_button, stretch=1)
         layout.addWidget(bottom_panel, stretch=1)
 
-
     def show_modal(self):
         """Shows the settings modal."""
         self.exec_()
-
 
     def set_tooltip(self, setting_name: str, tooltip: str):
         """Sets tooltip text for a setting.
@@ -72,7 +72,6 @@ class SettingsModal(QDialog):
         if setting_name not in self._inputs:
             raise ValueError(f'{setting_name} not defined')
         self._inputs[setting_name].setToolTip(tooltip)
-
 
     def update_settings(self, settings: dict):
         """Sets all setting control widgets to match current settings values.
@@ -99,12 +98,11 @@ class SettingsModal(QDialog):
             if key in self._changes:
                 del self._changes[key]
 
-
     def add_text_setting(self,
-            setting_name: str,
-            panel_name: str,
-            initial_value: Any,
-            label_text: str):
+                         setting_name: str,
+                         panel_name: str,
+                         initial_value: Any,
+                         label_text: str):
         """Adds a new setting that accepts an arbitrary text value.
 
         Parameters
@@ -123,13 +121,12 @@ class SettingsModal(QDialog):
         textbox.textChanged.connect(lambda: self._add_change(setting_name, textbox.text()))
         self._add_setting(setting_name, panel_name, textbox, label_text)
 
-
     def add_combobox_setting(self,
-            setting_name: str,
-            panel_name: str,
-            initial_value: str,
-            options: list[str],
-            label_text: str):
+                             setting_name: str,
+                             panel_name: str,
+                             initial_value: str,
+                             options: list[str],
+                             label_text: str):
         """Adds a new setting that accepts one of several pre-determined options.
 
         Parameters
@@ -153,20 +150,21 @@ class SettingsModal(QDialog):
                 combobox.addItem(option['text'])
             else:
                 combobox.addItem(option)
+
         def update_value(selected_index):
             self._add_change(setting_name, options[selected_index])
+
         combobox.setCurrentIndex(options.index(initial_value))
         combobox.currentIndexChanged.connect(update_value)
         self._add_setting(setting_name, panel_name, combobox, label_text)
 
-
     def add_spinbox_setting(self,
-            setting_name: str,
-            panel_name: str,
-            initial_value: int | float,
-            min_value: int | float,
-            max_value: int | float,
-            label_text: str):
+                            setting_name: str,
+                            panel_name: str,
+                            initial_value: int | float,
+                            min_value: int | float,
+                            max_value: int | float,
+                            label_text: str):
         """Adds a new numeric setting.
 
         Parameters
@@ -187,15 +185,14 @@ class SettingsModal(QDialog):
         spinbox = QDoubleSpinBox() if isinstance(initial_value, float) else BigIntSpinbox()
         spinbox.setRange(min_value, max_value)
         spinbox.setValue(initial_value)
-        spinbox.valueChanged.connect(lambda newValue: self._add_change(setting_name, newValue))
+        spinbox.valueChanged.connect(lambda new_value: self._add_change(setting_name, new_value))
         self._add_setting(setting_name, panel_name, spinbox, label_text)
 
-
     def add_checkbox_setting(self,
-            setting_name: str,
-            panel_name: str,
-            initial_value: bool,
-            label_text: str):
+                             setting_name: str,
+                             panel_name: str,
+                             initial_value: bool,
+                             label_text: str):
         """Adds a new checkbox setting.
 
         Parameters
@@ -211,13 +208,11 @@ class SettingsModal(QDialog):
         """
         checkbox = QCheckBox()
         checkbox.setChecked(initial_value)
-        checkbox.stateChanged.connect(lambda isChecked: self._add_change(setting_name, bool(isChecked)))
+        checkbox.stateChanged.connect(lambda is_checked: self._add_change(setting_name, bool(is_checked)))
         self._add_setting(setting_name, panel_name, checkbox, label_text)
-
 
     def _add_change(self, setting: str, new_value: Any):
         self._changes[setting] = new_value
-
 
     def _add_panel_if_missing(self, panel_name: str):
         if panel_name not in self._panels:
@@ -228,12 +223,11 @@ class SettingsModal(QDialog):
             self._panel_layouts[panel_name] = panel_layout
             self._panel_layout.addWidget(panel)
 
-
     def _add_setting(self,
-            setting_name: str,
-            panel_name: str,
-            widget: QWidget,
-            label_text: str):
+                     setting_name: str,
+                     panel_name: str,
+                     widget: QWidget,
+                     label_text: str):
         self._add_panel_if_missing(panel_name)
         self._panel_layouts[panel_name].addWidget(LabelWrapper(widget, label_text))
         self._inputs[setting_name] = widget

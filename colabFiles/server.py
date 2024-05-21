@@ -4,12 +4,16 @@ Runs a simple HTTP server that provides access to GLID-3-XL image editing operat
 
 from datetime import datetime
 from threading import Thread, Lock
+from typing import Any
+
+import flask
 from flask import Flask, request, jsonify, make_response, abort, current_app
 from flask_cors import CORS, cross_origin
-from startup.utils import image_to_base64, load_image_from_base64
-from startup.ml_utils import foreach_image_in_sample
-from startup.create_sample_function import create_sample_function
-from startup.generate_samples import generate_samples
+from util.image_utils import load_image_from_base64, image_to_base64
+from glid_3_xl.ml_utils import foreach_image_in_sample
+from glid_3_xl.create_sample_function import create_sample_function
+from glid_3_xl.generate_samples import generate_samples
+
 
 def start_server(device, model_params, model, diffusion, ldm_model, bert_model, clip_model, clip_preprocess, normalize):
     """
@@ -18,7 +22,6 @@ def start_server(device, model_params, model, diffusion, ldm_model, bert_model, 
     Note that this server can only handle a single client. In the future, using a direct connection would probably
     be superior, but it's not worth the extra effort right now.
     """
-
 
     print("Starting server...")
     app = Flask(__name__)
@@ -34,10 +37,10 @@ def start_server(device, model_params, model, diffusion, ldm_model, bert_model, 
         current_app.samples = {}
         current_app.lock = Lock()
 
-    # Check if the server's up:
     @app.route("/", methods=["GET"])
     @cross_origin()
-    def health_check():
+    def health_check() -> flask.Response:
+        """Call to check if the server is up."""
         return jsonify(success=True)
 
     # Start an inpainting request:
@@ -46,10 +49,12 @@ def start_server(device, model_params, model, diffusion, ldm_model, bert_model, 
     def start_inpainting():
         # Extract arguments from body, convert images from base64
         json = request.get_json(force=True)
+
         def requested_or_default(key, default_value):
             if key in json:
                 return json[key]
             return default_value
+
         batch_size = requested_or_default('batch_size', 1)
         num_batches = requested_or_default('num_batches', 1)
         width = requested_or_default('width', 256)
@@ -71,25 +76,25 @@ def start_server(device, model_params, model, diffusion, ldm_model, bert_model, 
         sample_fn = None
         try:
             sample_fn, clip_score_fn = create_sample_function(
-                    device,
-                    model,
-                    model_params,
-                    bert_model,
-                    clip_model,
-                    clip_preprocess,
-                    ldm_model,
-                    diffusion,
-                    normalize,
-                    edit=edit,
-                    mask=mask,
-                    prompt = requested_or_default("prompt", ""),
-                    negative = requested_or_default("negative", ""),
-                    guidance_scale = requested_or_default("guidanceScale", 5.0),
-                    batch_size = batch_size,
-                    width = width,
-                    height = height,
-                    cutn = requested_or_default("cutn", 16),
-                    skip_timesteps = requested_or_default("skipSteps", False))
+                device,
+                model,
+                model_params,
+                bert_model,
+                clip_model,
+                clip_preprocess,
+                ldm_model,
+                diffusion,
+                normalize,
+                edit=edit,
+                mask=mask,
+                prompt=requested_or_default("prompt", ""),
+                negative=requested_or_default("negative", ""),
+                guidance_scale=requested_or_default("guidanceScale", 5.0),
+                batch_size=batch_size,
+                width=width,
+                height=height,
+                cutn=requested_or_default("cutn", 16),
+                skip_timesteps=requested_or_default("skipSteps", False))
         except Exception as err:
             abort(make_response({"error": f"creating sample function failed, {err}"}, 500))
 
@@ -99,34 +104,35 @@ def start_server(device, model_params, model, diffusion, ldm_model, bert_model, 
                 try:
                     def add_image_to_response(k, image):
                         name = f'{i * batch_size + k:05}'
-                        current_app.samples[name] = { "image": image_to_base64(image), "timestamp": timestamp }
+                        current_app.samples[name] = {"image": image_to_base64(image), "timestamp": timestamp}
+
                     foreach_image_in_sample(sample, batch_size, ldm_model, add_image_to_response)
-                except Exception as err:
-                    current_app.lastError = f"sample save error: {err}"
+                except Exception as save_err:
+                    current_app.lastError = f"sample save error: {save_err}"
                     print(current_app.lastError)
 
         def run_thread():
             with context:
                 generate_samples(device,
-                        ldm_model,
-                        diffusion,
-                        sample_fn,
-                        save_sample,
-                        batch_size,
-                        num_batches,
-                        width,
-                        height)
+                                 ldm_model,
+                                 diffusion,
+                                 sample_fn,
+                                 save_sample,
+                                 batch_size,
+                                 num_batches,
+                                 width,
+                                 height)
                 with current_app.lock:
                     current_app.in_progress = False
-                
+
         # Start image generation thread:
         with current_app.lock:
             if current_app.in_progress or current_app.thread and current_app.thread.is_alive():
                 abort(make_response({'error': "Cannot start a new operation, an existing operation is still running"},
-                            409))
+                                    409))
             current_app.samples = {}
             current_app.in_progress = True
-            current_app.thread = Thread(target = run_thread)
+            current_app.thread = Thread(target=run_thread)
             current_app.thread.start()
 
         return jsonify(success=True)
@@ -134,12 +140,12 @@ def start_server(device, model_params, model, diffusion, ldm_model, bert_model, 
     # Request updated images:
     @app.route("/sample", methods=["GET"])
     @cross_origin()
-    def list_updated():
+    def list_updated() -> dict[str, dict[Any, Any] | bool | Any]:
         json = request.get_json(force=True)
         # Parse (sampleName, timestamp) pairs from request.samples
         # Check (sampleName, timestamp) pairs from the most recent request. If any missing from the request or have a
         # newer timestamp, set response.samples[sampleName] = { timestamp, base64Image }
-        response = { "samples": {} }
+        response = {"samples": {}}
         with current_app.lock:
             for key, sample in current_app.samples.items():
                 if key not in json["samples"] or json["samples"][key] < sample["timestamp"]:

@@ -5,18 +5,18 @@ from typing import Optional
 from PyQt5.QtWidgets import QWidget, QDoubleSpinBox, QLabel, QHBoxLayout
 from ui.widget.big_int_spinbox import BigIntSpinbox
 
+
 class LabeledSpinbox(QWidget):
     """LabeledSpinbox is a labeled numeric spinbox widget that automatically initializes with the correct data type.
     """
 
-
     def __init__(self,
-            parent: Optional[QWidget],
-            label_text: str,
-            tooltip: str,
-            min_value: int | float,
-            default_value: int | float,
-            max_value: int | float) -> None:
+                 parent: Optional[QWidget],
+                 label_text: str,
+                 tooltip: str,
+                 min_value: int | float,
+                 default_value: int | float,
+                 max_value: int | float) -> None:
         """Initializes the spinbox, sets label text, and establishes type, initial value, and accepted range.
 
         Parameters

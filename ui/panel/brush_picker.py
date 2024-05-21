@@ -7,10 +7,11 @@ import os
 import re
 from PyQt5.QtWidgets import QWidget, QTabWidget, QGridLayout, QScrollArea, QSizePolicy, QMenu
 from PyQt5.QtGui import QPixmap, QImage, QPainter, QPaintEvent, QMouseEvent, QResizeEvent
-from PyQt5.QtCore import Qt, QRect, QPoint, QSize, QEvent, pyqtSignal
+from PyQt5.QtCore import Qt, QRect, QPoint, QSize, pyqtSignal
 from libmypaint_pyqt5 import MPBrushLib as brushlib
 from ui.util.get_scaled_placement import get_scaled_placement
-from data_model.config import Config
+from data_model.config.application_config import AppConfig
+
 
 class BrushPicker(QTabWidget):
     """BrushPicker elects between the default mypaint brushes found in resources/brushes."""
@@ -24,7 +25,7 @@ class BrushPicker(QTabWidget):
     BRUSH_EXTENSION = '.myb'
     BRUSH_ICON_EXTENSION = '_prev.png'
 
-    def __init__(self, config: Config, parent: Optional[QWidget] = None) -> None:
+    def __init__(self, config: AppConfig, parent: Optional[QWidget] = None) -> None:
         """Loads brushes and optionally adds the widget to a parent.
 
         Parameters
@@ -38,7 +39,7 @@ class BrushPicker(QTabWidget):
         self._groups: list[str] = []
         self._group_orders: dict[str, list[str]] = {}
         self._layouts: dict[str, QGridLayout] = {}
-        self._pages: dict[str, QWidget]  = {}
+        self._pages: dict[str, QWidget] = {}
         self._config = config
         self._read_order_file(os.path.join(BrushPicker.BRUSH_DIR, BrushPicker.BRUSH_CONF_FILE))
         # scan for added groups:
@@ -85,7 +86,6 @@ class BrushPicker(QTabWidget):
             for x, y, brush in _GridIter(favorite_brushes):
                 self._layouts[BrushPicker.FAV_KEY].addWidget(brush, y, x)
 
-
     def _create_tab(self, tab_name: str, index: Optional[int] = None) -> None:
         """Adds a new brush category tab."""
         if tab_name in self._layouts:
@@ -103,7 +103,6 @@ class BrushPicker(QTabWidget):
         else:
             self.insertTab(index, tab, tab_name)
 
-
     def _get_favorite_brush_widgets(self) -> list[QWidget]:
         """Loads favorite brushes from config."""
         fav_list = []
@@ -116,11 +115,9 @@ class BrushPicker(QTabWidget):
                     fav_list.append(item.widget())
         return [brush for brush in fav_list if brush is not None]
 
-
     def _save_favorite_brushes(self, fav_list: list[QWidget]) -> None:
         """Saves favorite brushes to config whenever a favorite is added or removed."""
         self._config.set(BrushPicker.FAV_CONFIG_KEY, [brush.saved_name() for brush in fav_list])
-
 
     def _add_favorite(self, icon_button: QWidget) -> None:
         if icon_button.saved_name() in self._config.get(BrushPicker.FAV_CONFIG_KEY):
@@ -136,7 +133,6 @@ class BrushPicker(QTabWidget):
         self._save_favorite_brushes(fav_list)
         self.update()
 
-
     def _remove_favorite(self, icon_button: QWidget) -> None:
         fav_list = self._get_favorite_brush_widgets()
         fav_list.remove(icon_button)
@@ -148,7 +144,6 @@ class BrushPicker(QTabWidget):
             self._layouts[BrushPicker.FAV_KEY].addWidget(brush, y, x)
         self._save_favorite_brushes(fav_list)
         self.update()
-
 
     def _read_order_file(self, file_path: str) -> bool:
         if not os.path.exists(file_path):
@@ -177,7 +172,7 @@ class _IconButton(QWidget):
 
     favorite_change = pyqtSignal(QWidget)
 
-    def __init__(self, imagepath: str, brushpath: str, config: Config, favorite: bool = False) -> None:
+    def __init__(self, imagepath: str, brushpath: str, config: AppConfig, favorite: bool = False) -> None:
         """Initialize using paths to the brush file and icon."""
         super().__init__()
         self._favorite = favorite
@@ -197,33 +192,27 @@ class _IconButton(QWidget):
         self.customContextMenuRequested.connect(self._menu)
         self.resizeEvent(None)
 
-
     def saved_name(self) -> str:
         """Returns the name used to save this brush to favorites."""
         group_name = os.path.basename(os.path.dirname(self._brushpath))
         return f'{group_name}/{self._brushname}'
 
-
     def copy(self, favorite: bool = False) -> QWidget:
         """Creates a new IconButton with the same brush file and icon."""
         return _IconButton(self._imagepath, self._brushpath, self._config, favorite=favorite)
 
-
     def sizeHint(self) -> QSize:
         """Set ideal size based on the brush icon size."""
         return self._image.size()
-
 
     def is_selected(self) -> bool:
         """Checks whether this brush is the selected brush."""
         active_brush = brushlib.get_active_brush()
         return active_brush is not None and active_brush == self._brushpath
 
-
     def resizeEvent(self, unused_event: Optional[QResizeEvent]) -> None:
         """Recalculates icon bounds when the widget size changes."""
         self._image_rect = get_scaled_placement(QRect(0, 0, self.width(), self.height()), self._image.size())
-
 
     def paintEvent(self, unused_event: Optional[QPaintEvent]) -> None:
         """Paints the icon image in the widget bounds, preserving aspect ratio."""
@@ -236,7 +225,6 @@ class _IconButton(QWidget):
         else:
             painter.drawPixmap(self._image_rect, self._image)
 
-
     def mousePressEvent(self, event: Optional[QMouseEvent]) -> None:
         """Load the associated brush when left-clicked."""
         if event is not None and event.button() == Qt.MouseButton.LeftButton and not self.is_selected() \
@@ -245,7 +233,6 @@ class _IconButton(QWidget):
             parent = self.parent()
             if isinstance(parent, QWidget):
                 parent.update()
-
 
     def _menu(self, pos: QPoint) -> None:
         """Adds a menu option to add this brush to favorites or remove it from favorites."""
@@ -258,7 +245,7 @@ class _IconButton(QWidget):
         menu.exec_(self.mapToGlobal(pos))
 
 
-class _GridIter():
+class _GridIter:
     """Iterates through brush grid positions and list items."""
     WIDTH = 5
 

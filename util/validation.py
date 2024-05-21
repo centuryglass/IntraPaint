@@ -1,6 +1,7 @@
 """Provides a convenience function for miscellaneous validation."""
 from typing import Any, Iterable
 
+
 def assert_type(value: Any, expected_type: Any) -> None:
     """Checks if a value's type matches expectations.
 
@@ -18,12 +19,13 @@ def assert_type(value: Any, expected_type: Any) -> None:
     if not isinstance(value, expected_type):
         raise TypeError(f'Expected value of type {expected_type}, got value {value}')
 
-def assert_types(values: Iterable[Any] , expected_type: Any) -> None:
+
+def assert_types(values: Iterable[Any], expected_type: Any) -> None:
     """Checks if a group of values all have certain expected types.
 
     Parameters
     ----------
-    value : iterable
+    values : iterable
         Iterable collection of values to validate
     expected_type : type or class or tuple of types or classes
         Valid type or types that the value could match.
@@ -31,6 +33,9 @@ def assert_types(values: Iterable[Any] , expected_type: Any) -> None:
     ------
     TypeError
         If the value is not of the expected type.
+
+    Args:
+        values:
     """
     for value in values:
         if not isinstance(value, expected_type):

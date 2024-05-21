@@ -1,11 +1,11 @@
 """
 Provides an interface for choosing between AI-generated changes to selected image content.
 """
-from typing import Callable, Optional
+from typing import Callable, Optional, Any, List
 import math
 import gc
 from PyQt5.QtWidgets import QWidget, QLabel, QPushButton
-from PyQt5.QtGui import QPainter, QPen, QPixmap
+from PyQt5.QtGui import QPainter, QPen, QPixmap, QPaintEvent, QResizeEvent
 from PyQt5.QtCore import Qt, QPoint, QRect, QSize, QEvent
 from PIL import Image
 
@@ -13,16 +13,16 @@ from ui.util.get_scaled_placement import get_scaled_placement
 from ui.util.equal_margins import get_equal_margins
 from ui.util.contrast_color import contrast_color
 from ui.widget.loading_widget import LoadingWidget
-from ui.image_utils import pil_image_to_qimage
-from data_model.config import Config
-from data_model.canvas.canvas import Canvas
-from data_model.layer_stack import LayerStack
+from util.image_utils import pil_image_to_qimage
+from data_model.config.application_config import AppConfig
+from data_model.image.canvas import Canvas
+from data_model.image.layer_stack import LayerStack
 
 class SampleSelector(QWidget):
     """Shows all inpainting samples as they load, allows the user to select one or discard all of them."""
 
     def __init__(self,
-            config: Config,
+            config: AppConfig,
             layer_stack: LayerStack,
             mask: Canvas,
             sketch: Canvas,
@@ -30,6 +30,8 @@ class SampleSelector(QWidget):
             make_selection: Callable[[Optional[Image.Image]], None]):
         super().__init__()
 
+        self._left_arrow_bounds = None
+        self._right_arrow_bounds = None
         self._config = config
         self._sketch = sketch
         self._make_selection = make_selection
@@ -43,22 +45,22 @@ class SampleSelector(QWidget):
         self._mask_pixmap = QPixmap.fromImage(pil_image_to_qimage(mask_image))
         self._source_image_bounds = QRect(0, 0, 0, 0)
         self._mask_image_bounds = QRect(0, 0, 0, 0)
-        self._include_original = config.get(Config.SHOW_ORIGINAL_IN_OPTIONS)
+        self._include_original = config.get(AppConfig.SHOW_ORIGINAL_IN_OPTIONS)
         self._source_option_bounds = None
         self._zoom_image_bounds = None
 
-        self._expected_count = config.get(Config.BATCH_COUNT) * config.get(Config.BATCH_SIZE)
+        self._expected_count = config.get(AppConfig.BATCH_COUNT) * config.get(AppConfig.BATCH_SIZE)
         self._image_size = QSize(source_image.width, source_image.height)
         self._zoom_mode = False
         self._zoom_index = 0
-        self._options = []
+        self._options: List[dict[str, Any]] = []
         while len(self._options) < self._expected_count:
             self._options.append({'image': None, 'pixmap': None, 'bounds': None})
 
-        self._instructions = QLabel(self, text='Click a sample to apply it to the source image, or click "cancel" to'
-                + ' discard all samples.')
+        self._instructions = QLabel('Click a sample to apply it to the source image, or click "cancel" to discard all'
+                                    ' samples.', self)
         self._instructions.show()
-        if ((self._expected_count) > 1) or self._include_original:
+        if (self._expected_count > 1) or self._include_original:
             self._zoom_button = QPushButton(self)
             self._zoom_button.setText('Zoom in')
             self._zoom_button.clicked.connect(self.toggle_zoom)
@@ -151,7 +153,7 @@ class SampleSelector(QWidget):
         self.update()
 
 
-    def resizeEvent(self, unused_event: QEvent):
+    def resizeEvent(self, unused_event: Optional[QResizeEvent]):
         """Recalculate all bounds on resize."""
         status_area = QRect(0, 0, self.width(), self.height() // 8)
         self._source_image_bounds = get_scaled_placement(status_area, self._image_size, 5)
@@ -208,9 +210,9 @@ class SampleSelector(QWidget):
                     arrow_size, arrow_size)
         else:
             margin = 10
-            def get_scale_factor_for_row_count(num_rows: int):
-                num_columns = math.ceil(option_count / num_rows)
-                img_bounds = QRect(0, 0, option_area.width() // num_columns, option_area.height() // num_rows)
+            def get_scale_factor_for_row_count(row_count: int):
+                column_count = math.ceil(option_count / row_count)
+                img_bounds = QRect(0, 0, option_area.width() // column_count, option_area.height() // row_count)
                 img_rect = get_scaled_placement(img_bounds, self._image_size, margin)
                 return img_rect.width() / self._image_size.width()
             num_rows = 1
@@ -239,7 +241,7 @@ class SampleSelector(QWidget):
                     self._options[idx]['bounds'] = get_scaled_placement(container_rect, self._image_size, 10)
 
 
-    def paintEvent(self, event: QEvent):
+    def paintEvent(self, event: Optional[QPaintEvent]):
         """Draw all generated image options within the widget."""
         super().paintEvent(event)
         line_color = contrast_color(self)
@@ -249,15 +251,15 @@ class SampleSelector(QWidget):
         if self._mask_pixmap is not None:
             painter.drawPixmap(self._mask_image_bounds, self._mask_pixmap)
         painter.setPen(QPen(line_color, 2, Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin))
-        def draw_image(option):
+        def draw_image(image_option):
             painter.setPen(QPen(line_color, 4, Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin))
-            painter.drawRect(option['bounds'].marginsAdded(get_equal_margins(2)))
-            if ('pixmap' in option) and (option['pixmap'] is not None):
-                painter.drawPixmap(option['bounds'], option['pixmap'])
+            painter.drawRect(image_option['bounds'].marginsAdded(get_equal_margins(2)))
+            if ('pixmap' in image_option) and (image_option['pixmap'] is not None):
+                painter.drawPixmap(image_option['bounds'], image_option['pixmap'])
             else:
-                painter.fillRect(option['bounds'], Qt.black)
+                painter.fillRect(image_option['bounds'], Qt.black)
                 painter.setPen(QPen(line_color, 4, Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin))
-                painter.drawText(option['bounds'], Qt.AlignCenter, 'Waiting for image...')
+                painter.drawText(image_option['bounds'], Qt.AlignCenter, 'Waiting for image...')
         if self._zoom_mode:
             pixmap = None
             if self._zoom_index >= len(self._options):
@@ -336,7 +338,6 @@ class SampleSelector(QWidget):
     def _handle_key_event(self, event: QEvent):
         toggle_zoom = False
         zoom_index = None
-        event_handled = False
         def key_index():
             return int(event.text()) - 1
 
@@ -347,7 +348,6 @@ class SampleSelector(QWidget):
                 else:
                     self._make_selection(None)
                     self._close_selector()
-                event_handled = True
             case Qt.Key_Return | Qt.Key_Enter if self._zoom_mode:
                 if self._zoom_index >= len(self._options):
                     # Original selected, just close selector

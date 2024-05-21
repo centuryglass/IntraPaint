@@ -1,0 +1,32 @@
+{
+  "sd_model_checkpoint": {
+    "label": "Stable-Diffusion Model:",
+    "category": "Models",
+    "description": "Active image generation model",
+    "type": "string",
+    "options": []
+  },
+  "sd_checkpoints_keep_in_cpu": {
+    "label": "Only keep one model on GPU/TPU",
+    "category": "Models",
+    "description": "If selected, checkpoints after the first are cached in RAM instead",
+    "type": "bool"
+  },
+  "sd_checkpoints_limit": {
+    "label": "Max checkpoints loaded:",
+    "category": "Models",
+    "description": "Number of image generation models to keep in memory.",
+    "type": "int",
+    "range_options": {
+      "min": 1,
+      "max": 10,
+      "step": 1
+    },
+    "sd_vae": {
+      "label": "Stable-Diffusion VAE model:",
+      "category": "Models",
+      "description": "VAE model used for final image data creation.",
+      "type": "string"
+    }
+  }
+}

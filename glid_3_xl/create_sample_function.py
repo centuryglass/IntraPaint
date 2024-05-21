@@ -1,7 +1,9 @@
 """
 Provides functions used to start up a local GLID-3-XL instance.
 """
+import io
 
+import requests
 import torch
 import clip
 import numpy as np
@@ -10,7 +12,7 @@ from torchvision import transforms
 from torchvision.transforms import functional as TF
 from torch.nn import functional as F
 from encoders.modules import MakeCutouts
-from startup.utils import fetch
+
 
 def create_sample_function(
         device,
@@ -45,12 +47,11 @@ def create_sample_function(
     Creates a function that will generate a set of sample images, along with an accompanying clip ranking function.
     """
     # bert context
-    text_emb = bert_model.encode([prompt]*batch_size).to(device).float()
-    text_blank = bert_model.encode([negative]*batch_size).to(device).float()
+    text_emb = bert_model.encode([prompt] * batch_size).to(device).float()
+    text_blank = bert_model.encode([negative] * batch_size).to(device).float()
 
-    text = clip.tokenize([prompt]*batch_size, truncate=True).to(device)
-    text_clip_blank = clip.tokenize([negative]*batch_size, truncate=True).to(device)
-
+    text = clip.tokenize([prompt] * batch_size, truncate=True).to(device)
+    text_clip_blank = clip.tokenize([negative] * batch_size, truncate=True).to(device)
 
     # clip context
     text_emb_clip = clip_model.encode_text(text)
@@ -66,17 +67,17 @@ def create_sample_function(
 
     # image context
     if edit:
-        input_image = torch.zeros(1, 4, height//8, width//8, device=device)
+        input_image = torch.zeros(1, 4, height // 8, width // 8, device=device)
         input_image_pil = None
         np_image = None
         if isinstance(edit, Image.Image):
-            input_image = torch.zeros(1, 4, height//8, width//8, device=device)
+            input_image = torch.zeros(1, 4, height // 8, width // 8, device=device)
             input_image_pil = edit
         elif isinstance(edit, str) and edit.endswith('.npy'):
             with open(edit, 'rb') as f:
                 np_image = np.load(f)
                 np_image = torch.from_numpy(np_image).unsqueeze(0).to(device)
-                input_image = torch.zeros(1, 4, height//8, width//8, device=device)
+                input_image = torch.zeros(1, 4, height // 8, width // 8, device=device)
         elif isinstance(edit, str):
             w = edit_width if edit_width else width
             h = edit_height if edit_height else height
@@ -87,8 +88,8 @@ def create_sample_function(
             np_image = 2 * np_image - 1
             np_image = ldm_model.encode(np_image).sample()
 
-        y = edit_y//8
-        x = edit_x//8
+        y = edit_y // 8
+        x = edit_x // 8
         ycrop = y + np_image.shape[2] - input_image.shape[2]
         xcrop = x + np_image.shape[3] - input_image.shape[3]
 
@@ -96,28 +97,28 @@ def create_sample_function(
         xcrop = xcrop if xcrop > 0 else 0
 
         input_image[
-            0,
-            :,
-            y if y >=0 else 0:y+np_image.shape[2],
-            x if x >=0 else 0:x+np_image.shape[3]
+        0,
+        :,
+        y if y >= 0 else 0:y + np_image.shape[2],
+        x if x >= 0 else 0:x + np_image.shape[3]
         ] = np_image[
             :,
             :,
-            0 if y > 0 else -y:np_image.shape[2]-ycrop,
-            0 if x > 0 else -x:np_image.shape[3]-xcrop
-        ]
+            0 if y > 0 else -y:np_image.shape[2] - ycrop,
+            0 if x > 0 else -x:np_image.shape[3] - xcrop
+            ]
         input_image_pil = ldm_model.decode(input_image)
         input_image_pil = TF.to_pil_image(input_image_pil.squeeze(0).add(1).div(2).clamp(0, 1))
         input_image *= 0.18215
 
         if isinstance(mask, Image.Image):
-            mask_image = mask.convert('L').point( lambda p: 255 if p < 1 else 0 )
+            mask_image = mask.convert('L').point(lambda p: 255 if p < 1 else 0)
             mask_image.save('mask.png')
-            mask_image = mask_image.resize((width//8,height//8), Image.LANCZOS)
+            mask_image = mask_image.resize((width // 8, height // 8), Image.LANCZOS)
             mask = transforms.ToTensor()(mask_image).unsqueeze(0).to(device)
         elif isinstance(edit, str):
             mask_image = Image.open(fetch(mask)).convert('L')
-            mask_image = mask_image.resize((width//8,height//8), Image.LANCZOS)
+            mask_image = mask_image.resize((width // 8, height // 8), Image.LANCZOS)
             mask = transforms.ToTensor()(mask_image).unsqueeze(0).to(device)
         else:
             raise ValueError(f'Expected PIL image or image path for mask, found {mask}')
@@ -125,10 +126,10 @@ def create_sample_function(
         mask1 = mask1.float()
         input_image *= mask1
 
-        image_embed = torch.cat(batch_size*2*[input_image], dim=0).float()
+        image_embed = torch.cat(batch_size * 2 * [input_image], dim=0).float()
     elif model_params['image_condition']:
         # using inpaint model but no image is provided
-        image_embed = torch.zeros(batch_size*2, 4, height//8, width//8, device=device)
+        image_embed = torch.zeros(batch_size * 2, 4, height // 8, width // 8, device=device)
 
     model_kwargs = {
         'context': torch.cat([text_emb, text_blank], dim=0).float(),
@@ -174,10 +175,12 @@ def create_sample_function(
 
             clip_in = normalize(make_cutouts(x_img.add(1).div(2)))
             clip_embeds = clip_model.encode_image(clip_in).float()
+
             def spherical_dist_loss(x, y):
                 x = F.normalize(x, dim=-1)
                 y = F.normalize(y, dim=-1)
                 return (x - y).norm(dim=-1).div(2).arcsin().pow(2).mul(2)
+
             dists = spherical_dist_loss(clip_embeds.unsqueeze(1), text_emb_clip.unsqueeze(0))
             dists = dists.view([cutn, n, -1])
 
@@ -193,10 +196,11 @@ def create_sample_function(
         base_sample_fn = diffusion.ddim_sample_loop_progressive
     else:
         base_sample_fn = diffusion.plms_sample_loop_progressive
+
     def sample_fn(init):
         return base_sample_fn(
             model_fn,
-            (batch_size*2, 4, int(height/8), int(width/8)),
+            (batch_size * 2, 4, int(height / 8), int(width / 8)),
             clip_denoised=False,
             model_kwargs=model_kwargs,
             cond_fn=cond_fn if clip_guidance else None,
@@ -205,10 +209,24 @@ def create_sample_function(
             init_image=init,
             skip_timesteps=skip_timesteps
         )
+
     def clip_score_fn(image):
         """Provides a CLIP score ranking image closeness to text"""
         image_emb = clip_model.encode_image(clip_preprocess(image).unsqueeze(0).to(device))
         image_emb_norm = image_emb / image_emb.norm(dim=-1, keepdim=True)
         similarity = torch.nn.functional.cosine_similarity(image_emb_norm, text_emb_norm, dim=-1)
         return similarity.item()
+
     return sample_fn, clip_score_fn
+
+
+def fetch(url_or_path, timeout=180):
+    """Open a file from either a path or a URL."""
+    if str(url_or_path).startswith('http://') or str(url_or_path).startswith('https://'):
+        r = requests.get(url_or_path, timeout=timeout)
+        r.raise_for_status()
+        fd = io.BytesIO()
+        fd.write(r.content)
+        fd.seek(0)
+        return fd
+    return open(url_or_path, 'rb')

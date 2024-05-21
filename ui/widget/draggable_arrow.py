@@ -8,6 +8,7 @@ from PyQt5.QtCore import Qt, QPoint, QSize, QRect, pyqtSignal
 from ui.util.get_scaled_placement import get_scaled_placement
 from ui.util.contrast_color import contrast_color
 
+
 class DraggableArrow(QWidget):
     """DraggableArrow is a widget that can be dragged along an axis to resize UI elements."""
 
@@ -43,7 +44,7 @@ class DraggableArrow(QWidget):
         """Recalculate arrow placement when widget bounds change."""
         min_size = min(self.width(), self.height())
         self._center_box = get_scaled_placement(QRect(0, 0, self.width(), self.height()),
-                QSize(min_size, min_size // 2))
+                                                QSize(min_size, min_size // 2))
 
     def paintEvent(self, unused_event: Optional[QPaintEvent]) -> None:
         """Draws the arrow in the chosen orientation."""
@@ -53,7 +54,7 @@ class DraggableArrow(QWidget):
         color: Qt.GlobalColor | QColor = Qt.GlobalColor.green if self._dragging else contrast_color(self)
         size = 4 if self._dragging else 2
         painter.setPen(QPen(color, size, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap,
-                    Qt.PenJoinStyle.RoundJoin))
+                            Qt.PenJoinStyle.RoundJoin))
         center_box = self._center_box
         if self._mode == Qt.Orientation.Horizontal:
             y_mid = center_box.y() + (center_box.height() // 2)
@@ -95,5 +96,5 @@ class DraggableArrow(QWidget):
     def mouseReleaseEvent(self, unused_event: Optional[QMouseEvent]) -> None:
         """Exits the dragging state when the mouse is released. """
         if self._dragging:
-            self._dragging= False
+            self._dragging = False
             self.update()

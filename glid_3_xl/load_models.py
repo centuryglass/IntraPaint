@@ -5,19 +5,20 @@ import gc
 import torch
 from torchvision import transforms
 import clip
-from guided_diffusion.script_util import create_model_and_diffusion, model_and_diffusion_defaults
+from glid_3_xl.guided_diffusion import create_model_and_diffusion, model_and_diffusion_defaults
 from encoders.modules import BERTEmbedder
 
-def load_models( device,
-        model_path='inpaint.pt',
-        bert_path='bert.pt',
-        kl_path='kl-f8.pt',
-        clip_model_name='ViT-L/14',
-        steps=None,
-        clip_guidance=False,
-        cpu=False,
-        ddpm=False,
-        ddim=False):
+
+def load_models(device,
+                model_path='inpaint.pt',
+                bert_path='bert.pt',
+                kl_path='kl-f8.pt',
+                clip_model_name='ViT-L/14',
+                steps=None,
+                clip_guidance=False,
+                cpu=False,
+                ddpm=False,
+                ddim=False):
     """Loads all ML models and associated variables."""
 
     model_state_dict = torch.load(model_path, map_location='cpu')
@@ -28,7 +29,7 @@ def load_models( device,
         'diffusion_steps': 1000,
         'rescale_timesteps': True,
         'timestep_respacing': '27',  # Modify this value to decrease the number of
-                                     # timesteps.
+        # timesteps.
         'image_size': 32,
         'learn_sigma': False,
         'noise_schedule': 'linear',
@@ -47,7 +48,7 @@ def load_models( device,
         model_params['timestep_respacing'] = 1000
     if ddim:
         if steps:
-            model_params['timestep_respacing'] = 'ddim'+str(steps)
+            model_params['timestep_respacing'] = 'ddim' + str(steps)
         else:
             model_params['timestep_respacing'] = 'ddim50'
     elif steps:
@@ -72,6 +73,7 @@ def load_models( device,
     def set_requires_grad(model, value):
         for param in model.parameters():
             param.requires_grad = value
+
     print(f'loaded and configured primary model from {model_path}')
     model_state_dict = None
     gc.collect()
@@ -102,5 +104,5 @@ def load_models( device,
     gc.collect()
 
     normalize = transforms.Normalize(mean=[0.48145466, 0.4578275, 0.40821073],
-            std=[0.26862954, 0.26130258, 0.27577711])
+                                     std=[0.26862954, 0.26130258, 0.27577711])
     return model_params, model, diffusion, ldm, bert, clip_model, clip_preprocess, normalize

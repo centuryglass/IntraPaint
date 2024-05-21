@@ -4,11 +4,11 @@ Simplified script for single glid-3-xl inpainting operations.
 import gc
 import torch
 
-from startup.load_models import load_models
-from startup.create_sample_function import create_sample_function
-from startup.generate_samples import generate_samples
-from startup.utils import build_arg_parser
-from startup.ml_utils import get_device, get_save_fn
+from glid_3_xl.load_models import load_models
+from glid_3_xl.create_sample_function import create_sample_function
+from glid_3_xl.generate_samples import generate_samples
+from util.arg_parser import build_arg_parser
+from glid_3_xl.ml_utils import get_device, get_save_fn
 
 # argument parsing:
 parser = build_arg_parser(include_gen_params=False)

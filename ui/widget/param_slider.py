@@ -8,22 +8,23 @@ from PyQt5.QtGui import QFont, QFontMetrics
 from ui.config_control_setup import connected_spinbox
 from ui.widget.label import Label
 from ui.widget.big_int_spinbox import BigIntSpinbox
-from data_model.config import Config
+from data_model.config.application_config import AppConfig
+
 
 class ParamSlider(QWidget):
     """ParamSlider is an extended QSlider widget with integrated data_model/config connection."""
 
     def __init__(self,
-            parent: Optional[QWidget],
-            label_text: str,
-            config: Config,
-            key: str,
-            min_val: Optional[int | float] = None,
-            max_val: Optional[int | float] = None,
-            step_val: Optional[int | float] = None,
-            inner_key: Optional[str] = None,
-            orientation: Qt.Orientation = Qt.Orientation.Horizontal,
-            vertical_text_pt: Optional[int] = None) -> None:
+                 parent: Optional[QWidget],
+                 label_text: str,
+                 config: AppConfig,
+                 key: str,
+                 min_val: Optional[int | float] = None,
+                 max_val: Optional[int | float] = None,
+                 step_val: Optional[int | float] = None,
+                 inner_key: Optional[str] = None,
+                 orientation: Qt.Orientation = Qt.Orientation.Horizontal,
+                 vertical_text_pt: Optional[int] = None) -> None:
         """Initializes the slider, setting connected config property and other settings.
 
         Parameters
@@ -76,7 +77,6 @@ class ParamSlider(QWidget):
             self.connect_key(key, min_val, max_val, step_val, inner_key)
         self.set_orientation(orientation)
 
-
     def disconnect_config(self) -> None:
         """Disconnects the slider from any config values."""
         if self._key is not None:
@@ -96,13 +96,12 @@ class ParamSlider(QWidget):
             self._key = None
             self._inner_key = None
 
-
     def connect_key(self,
-            key: str,
-            min_val: Optional[int | float] = None,
-            max_val: Optional[int | float] = None,
-            step_val: Optional[int | float] = None,
-            inner_key: Optional[str] = None) -> None:
+                    key: str,
+                    min_val: Optional[int | float] = None,
+                    max_val: Optional[int | float] = None,
+                    step_val: Optional[int | float] = None,
+                    inner_key: Optional[str] = None) -> None:
         """Connects the slider to a new config value.
 
         Parameters
@@ -145,7 +144,9 @@ class ParamSlider(QWidget):
             slider.setSingleStep(int(step * 100) if self._float_mode else int(step))
             slider.setValue(int(initial_value * 100) if self._float_mode else int(initial_value))
             slider.setTickInterval(tick_interval)
+
         def on_config_change(new_value: int | float) -> None:
+            """Update the slider when the connected config value changes."""
             if new_value is None:
                 return
             value = int(new_value * 100) if self._float_mode else int(new_value)
@@ -153,28 +154,27 @@ class ParamSlider(QWidget):
                 self._horizontal_slider.setValue(value)
             if value != self._vertical_slider.value():
                 self._vertical_slider.setValue(value)
+
         self._config.connect(self, key, on_config_change, inner_key)
         self._stepbox = connected_spinbox(self, self._config, self._key, min_val=min_val, max_val=max_val,
-            step_val=step, dict_key=inner_key)
+                                          step_val=step, dict_key=inner_key)
         self.resizeEvent(None)
         self._stepbox.show()
-
 
     def sizeHint(self) -> QSize:
         """Returns ideal widget size based on contents."""
         if self._orientation == Qt.Orientation.Vertical:
             return QSize(max(self._vertical_slider.sizeHint().width(),
-                        self._label.sizeHint().width(),
-                        self._spinbox_measurements.width()),
-                    self._vertical_slider.sizeHint().height() + self._label.sizeHint().height() + \
-                    self._spinbox_measurements.height())
+                             self._label.sizeHint().width(),
+                             self._spinbox_measurements.width()),
+                         self._vertical_slider.sizeHint().height() + self._label.sizeHint().height() + \
+                         self._spinbox_measurements.height())
         #horizontal
-        return QSize(self._horizontal_slider.sizeHint().width() + self._label.sizeHint().width() + \
-                self._spinbox_measurements.width(), \
-                max(self._horizontal_slider.sizeHint().height(),
-                    self._label.sizeHint().height(),
-                    self._spinbox_measurements.height()))
-
+        return QSize(self._horizontal_slider.sizeHint().width() + self._label.sizeHint().width() +
+                     self._spinbox_measurements.width(),
+                     max(self._horizontal_slider.sizeHint().height(),
+                         self._label.sizeHint().height(),
+                         self._spinbox_measurements.height()))
 
     def resizeEvent(self, unused_event: Optional[QEvent]) -> None:
         """Recalculates slider geometry when the widget size changes."""
@@ -186,15 +186,14 @@ class ParamSlider(QWidget):
             self._label.setGeometry(0, 0, self.width(), label_height)
             self._stepbox.setGeometry(0, self.height() - number_height, self.width(), number_height)
             self._vertical_slider.setGeometry(0, label_height, self.width(),
-                    self.height() - label_height - number_height - 5)
-        else: #horizontal
+                                              self.height() - label_height - number_height - 5)
+        else:  #horizontal
             label_width = self._label.sizeHint().width()
             number_width = self._spinbox_measurements.width()
             self._label.setGeometry(0, 0, label_width, self.height())
             self._stepbox.setGeometry(self.width() - number_width, 0, number_width, self.height())
             self._horizontal_slider.setGeometry(label_width, 0, self.width() - label_width - number_width - 5,
-                    self.height())
-
+                                                self.height())
 
     def set_orientation(self, orientation: Qt.Orientation) -> None:
         """Sets vertical or horizontal orientation."""
@@ -205,18 +204,17 @@ class ParamSlider(QWidget):
             self._horizontal_slider.setVisible(False)
             self._vertical_slider.setVisible(True)
             self.setSizePolicy(QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Ignored))
-        else: #horizontal
+        else:  #horizontal
             self._horizontal_slider.setVisible(True)
             self._vertical_slider.setVisible(False)
             self.setSizePolicy(QSizePolicy(QSizePolicy.Ignored, QSizePolicy.Fixed))
         self._label.set_orientation(orientation)
         self.update()
 
-
     def _on_slider_change(self, new_value: int) -> None:
         """Handle slider value changes."""
         if self._key is None:
             return
         self._config.set(self._key, (float(new_value) / 100) if self._float_mode else new_value,
-                inner_key=self._inner_key)
+                         inner_key=self._inner_key)
         self.resizeEvent(None)

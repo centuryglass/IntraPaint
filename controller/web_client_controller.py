@@ -13,8 +13,8 @@ from ui.window.main_window import MainWindow
 from ui.util.screen_size import screen_size
 from ui.modal.settings_modal import SettingsModal
 from controller.base_controller import BaseInpaintController
-from startup.utils import image_to_base64, load_image_from_base64
-from data_model.config import Config
+from util.image_utils import load_image_from_base64, image_to_base64
+from data_model.config.application_config import AppConfig
 
 
 class WebClientController(BaseInpaintController):
@@ -36,7 +36,7 @@ class WebClientController(BaseInpaintController):
             print(f'Request error: {err}')
             return False
 
-    def window_init(self):
+    def window_init(self) -> None:
         """Initialize and show the main application window."""
         self._window = MainWindow(self._config, self._layer_stack, self._mask_canvas, self._sketch_canvas, self)
         size = screen_size(self._window)
@@ -44,7 +44,8 @@ class WebClientController(BaseInpaintController):
         self._window.show()
 
         # Make sure a valid connection exists:
-        def prompt_for_url(prompt_text: str):
+        def prompt_for_url(prompt_text: str) -> None:
+            """Requests a server URL from the user."""
             new_url, url_entered = QInputDialog.getText(self._window, 'Inpainting UI', prompt_text)
             if not url_entered: # User clicked 'Cancel'
                 sys.exit()
@@ -65,19 +66,19 @@ class WebClientController(BaseInpaintController):
             selection: Optional[Image.Image],
             mask: Optional[Image.Image],
             save_image: Callable[[Image.Image, int], None],
-            status_signal: pyqtSignal):
+            status_signal: pyqtSignal) -> None:
         """Handle image editing operations using the GLID-3-XL API."""
-        batch_size = self._config.get(Config.BATCH_SIZE)
-        batch_count = self._config.get(Config.BATCH_COUNT)
+        batch_size = self._config.get(AppConfig.BATCH_SIZE)
+        batch_count = self._config.get(AppConfig.BATCH_COUNT)
         body = {
             'batch_size': batch_size,
             'num_batches': batch_count,
             'edit': image_to_base64(selection),
             'mask': image_to_base64(mask),
-            'prompt': self._config.get(Config.PROMPT),
-            'negative': self._config.get(Config.NEGATIVE_PROMPT),
-            'guidanceScale': self._config.get(Config.GUIDANCE_SCALE),
-            'skipSteps': self._config.get(Config.SKIP_STEPS),
+            'prompt': self._config.get(AppConfig.PROMPT),
+            'negative': self._config.get(AppConfig.NEGATIVE_PROMPT),
+            'guidanceScale': self._config.get(AppConfig.GUIDANCE_SCALE),
+            'skipSteps': self._config.get(AppConfig.SKIP_STEPS),
             'width': selection.width,
             'height': selection.height
         }
@@ -102,7 +103,7 @@ class WebClientController(BaseInpaintController):
         # refresh times in microseconds:
         min_refresh = 300000
         max_refresh = 60000000
-        if('.ngrok.io' in self._server_url and not self._fast_ngrok_connection):
+        if '.ngrok.io' in self._server_url and not self._fast_ngrok_connection:
             # Free ngrok accounts only allow 20 connections per minute, lower the refresh rate to avoid failures:
             min_refresh = 3000000
 

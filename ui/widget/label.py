@@ -5,7 +5,8 @@ from typing import Optional
 from PyQt5.QtGui import QPainter, QPixmap, QPainterPath, QTransform, QFontMetrics, QFont, QColor
 from PyQt5.QtCore import Qt, QSize, QPointF
 from PyQt5.QtWidgets import QLabel, QSizePolicy, QWidget
-from data_model.config import Config
+from data_model.config.application_config import AppConfig
+
 
 class Label(QLabel):
     """Label is an extended QLabel implementation that supports vertical text."""
@@ -13,9 +14,9 @@ class Label(QLabel):
     def __init__(
             self,
             text: str,
-            config: Optional[Config] = None,
+            config: Optional[AppConfig] = None,
             parent: Optional[QWidget] = None,
-            size: Optional[int] =None,
+            size: Optional[int] = None,
             bg_color: QColor | Qt.GlobalColor = Qt.GlobalColor.transparent,
             orientation: Qt.Orientation = Qt.Orientation.Vertical):
         """__init__.
@@ -56,11 +57,10 @@ class Label(QLabel):
         if size is not None:
             self._font.setPointSize(size)
         elif config is not None:
-            font_size = config.get('font_point_size')
+            font_size = config.get(AppConfig.FONT_POINT_SIZE)
             self._font.setPointSize(font_size)
         self.set_orientation(orientation)
         self.setText(text)
-
 
     def set_orientation(self, orientation: Qt.Orientation) -> None:
         """Sets the label's text orientation."""
@@ -75,7 +75,6 @@ class Label(QLabel):
             self._image, self._image_inverted = self._draw_text_pixmaps()
             self._merge_text_and_icon()
 
-
     def set_inverted(self, invert_colors: bool) -> None:
         """Sets whether the label should be drawn using inverted colors."""
         if invert_colors == self._inverted:
@@ -85,7 +84,6 @@ class Label(QLabel):
         self._inverted = invert_colors
         self.setPixmap(self._image_inverted if invert_colors else self._image)
         self.update()
-
 
     def sizeHint(self) -> QSize:
         """Calculate ideal widget size based on text size."""
@@ -100,7 +98,6 @@ class Label(QLabel):
 
         self._image, self._image_inverted = self._draw_text_pixmaps()
         self._merge_text_and_icon()
-
 
     def setIcon(self, icon: QPixmap | str) -> None:
         """Adds an icon to the label before its text.
@@ -119,7 +116,6 @@ class Label(QLabel):
         self._icon = icon
         self._merge_text_and_icon()
 
-
     def _draw_text_pixmaps(self) -> tuple[QPixmap, QPixmap]:
         """Re-renders the label text."""
         drawn_text = '     ' if self._text is None else (self._text + '     ')
@@ -130,7 +126,7 @@ class Label(QLabel):
 
         path = QPainterPath()
         text_pt = QPointF(0, -(text_bounds.height() * 0.3)) if self._orientation == Qt.Orientation.Vertical \
-                else QPointF(0, text_bounds.height())
+            else QPointF(0, text_bounds.height())
         path.addText(text_pt, self._font, drawn_text)
         if self._orientation == Qt.Orientation.Vertical:
             rotation = QTransform()
@@ -138,24 +134,26 @@ class Label(QLabel):
             path = rotation.map(path)
 
         def draw(bg: QColor | Qt.GlobalColor, fg: QColor | Qt.GlobalColor) -> QPixmap:
+            """Perform drawing operations on one of the internal label images."""
             image = QPixmap(image_size)
             image.fill(bg)
             painter = QPainter(image)
             painter.fillPath(path, fg)
             painter.end()
             return image
+
         image, inverted = (draw(bg, fg) for (bg, fg) in ((self._bg_color, self._fg_color),
-                    (self._fg_color, self._bg_color)))
+                                                         (self._fg_color, self._bg_color)))
         return image, inverted
 
     def _merge_text_and_icon(self) -> None:
         """Combines the text and icon into a single internal image."""
         assert self._image is not None and self._image_inverted is not None
         if self._icon is not None:
-            scaled_icon = self._icon.scaledToWidth(self._image.width()) if self._orientation == Qt.Orientation.Vertical\
-                    else self._icon.scaledToHeight(self._image.height())
-            icon_padding = (self._image.width() if self._orientation == Qt.Orientation.Vertical \
-                    else self._image.height()) // 3
+            scaled_icon = self._icon.scaledToWidth(self._image.width()) if self._orientation == Qt.Orientation.Vertical \
+                else self._icon.scaledToHeight(self._image.height())
+            icon_padding = (self._image.width() if self._orientation == Qt.Orientation.Vertical
+                            else self._image.height()) // 3
             new_size = QSize(self._image.width(), self._image.height())
             if self._orientation == Qt.Orientation.Vertical:
                 new_size.setHeight(new_size.height() + icon_padding + scaled_icon.height())
@@ -163,6 +161,7 @@ class Label(QLabel):
                 new_size.setWidth(new_size.width() + icon_padding + scaled_icon.width())
 
             def draw(text_image: QPixmap) -> QPixmap:
+                """Perform drawing operations on one of the internal label images."""
                 assert self._icon is not None
                 merged_image = QPixmap(new_size)
                 merged_image.fill(self._bg_color if text_image == self._image else self._fg_color)
@@ -174,6 +173,7 @@ class Label(QLabel):
                     painter.drawPixmap(self._icon.width() + icon_padding, 0, text_image)
                 painter.end()
                 return merged_image
+
             self._image, self._image_inverted = (draw(img) for img in (self._image, self._image_inverted))
         if self._orientation == Qt.Orientation.Vertical:
             self.setSizePolicy(QSizePolicy(QSizePolicy.Fixed, QSizePolicy.MinimumExpanding))

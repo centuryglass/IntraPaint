@@ -45,7 +45,9 @@ class LoginModal(QDialog):
         self._cancel_button.setText('Cancel')
         self._button_row.addWidget(self._cancel_button)
         self._layout.addLayout(self._button_row)
+
         def on_login() -> None:
+            """Attempt to log in, show a message on error or set response on success."""
             if self._name_input.text() == '' or self._password_input.text() == '':
                 self._status.setText('Username and password cannot be empty')
                 return
@@ -64,7 +66,8 @@ class LoginModal(QDialog):
         self._login_button.clicked.connect(on_login)
 
         def on_cancel() -> None:
-            self._res=None
+            """Close and set response to none when the cancel button is clicked."""
+            self._res = None
             self.hide()
 
         self._cancel_button.clicked.connect(on_cancel)
@@ -78,12 +81,12 @@ class LoginModal(QDialog):
         """Sets status text shown to the user."""
         self._status.setText(status)
 
-    def show_login_modal(self) -> tuple[str , str] | tuple[None , None]:
+    def show_login_modal(self) -> tuple[str, str] | tuple[None, None]:
         """Shows the login modal and returns user input on close."""
         self.exec_()
         if self._res is not None and self._res.status_code == 200:
-            return (self.user, self.pw)
-        return (None, None)
+            return self.user, self.pw
+        return None, None
 
     def get_login_response(self) -> Optional[requests.Response]:
         """Gets any saved network response from the login attempt."""

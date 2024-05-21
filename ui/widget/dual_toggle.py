@@ -5,7 +5,7 @@ from typing import Optional
 from PyQt5.QtGui import QPixmap, QMouseEvent
 from PyQt5.QtWidgets import QWidget, QFrame, QSizePolicy
 from PyQt5.QtCore import Qt, QSize, pyqtSignal, QEvent
-from data_model.config import Config
+from data_model.config.application_config import AppConfig
 from ui.widget.label import Label
 
 class DualToggle(QWidget):
@@ -16,7 +16,7 @@ class DualToggle(QWidget):
     def __init__(self,
             parent: QWidget,
             options: list[str],
-            config: Optional[Config] = None,
+            config: Optional[AppConfig] = None,
             orientation: Qt.Orientation = Qt.Orientation.Horizontal):
         """__init__.
 

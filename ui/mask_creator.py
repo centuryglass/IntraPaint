@@ -2,13 +2,14 @@
 Combines various data_model/canvas modules to represent and control an edited image section.
 """
 from typing import Optional
-from PyQt5.QtGui import QColor, QPixmap, QImage, QTabletEvent
+from PyQt5.QtGui import QColor, QPixmap, QImage, QTabletEvent, QMouseEvent
 from PyQt5.QtCore import Qt, QPoint, QLine, QSize, QEvent, pyqtSignal
 from PyQt5.QtWidgets import QApplication, QWidget
 from ui.widget.fixed_aspect_graphics_view import FixedAspectGraphicsView
-from data_model.canvas.canvas import Canvas
-from data_model.layer_stack import LayerStack
-from data_model.config import Config
+from data_model.image.canvas import Canvas
+from data_model.image.layer_stack import LayerStack
+from data_model.config.application_config import AppConfig
+
 
 class MaskCreator(FixedAspectGraphicsView):
     """
@@ -20,6 +21,7 @@ class MaskCreator(FixedAspectGraphicsView):
 
         MASK = 'Mask'
         SKETCH = 'Sketch'
+
         @staticmethod
         def is_valid(option):
             """Returns whether a value is a valid drawing mode."""
@@ -30,21 +32,20 @@ class MaskCreator(FixedAspectGraphicsView):
 
         PEN = 'Pen'
         ERASER = 'Eraser'
+
         @staticmethod
         def is_valid(option):
             """Returns whether a value is a valid drawing tool mode."""
             return option == MaskCreator.ToolMode.PEN or option == MaskCreator.ToolMode.ERASER or option is None
 
-
     color_selected = pyqtSignal(QColor)
 
-
     def __init__(self,
-            parent: Optional[QWidget],
-            mask_canvas: Canvas,
-            sketch_canvas: Canvas,
-            layer_stack: LayerStack,
-            config: Config):
+                 parent: Optional[QWidget],
+                 mask_canvas: Canvas,
+                 sketch_canvas: Canvas,
+                 layer_stack: LayerStack,
+                 config: AppConfig):
         super().__init__(parent)
         self._config = config
         self._mask_canvas = mask_canvas
@@ -54,7 +55,7 @@ class MaskCreator(FixedAspectGraphicsView):
         self._last_point = QPoint()
         self._tool_mode = MaskCreator.ToolMode.PEN
         self._draw_mode = MaskCreator.DrawMode.MASK if mask_canvas.enabled() else MaskCreator.DrawMode.SKETCH
-        self._line_mode=False
+        self._line_mode = False
         self._sketch_color = QColor(0, 0, 0)
         self._pen_pressure = None
         self._pressure_size = False
@@ -68,33 +69,33 @@ class MaskCreator(FixedAspectGraphicsView):
         mask_canvas.add_to_scene(self.scene(), 1)
         self.resizeEvent(None)
 
-        def update_image():
+        def update_image() -> None:
+            """Apply the changes when image layer content is altered."""
             self.content_size = layer_stack.selection.size()
             self.background = layer_stack.qimage_selection_content()
+
         layer_stack.size_changed.connect(update_image)
         layer_stack.selection_bounds_changed.connect(update_image)
         layer_stack.visible_content_changed.connect(update_image)
         update_image()
 
-
-    def set_pressure_size_mode(self, use_pressure_size: bool):
+    def set_pressure_size_mode(self, use_pressure_size: bool) -> None:
         """Set whether tablet pen pressure affects line width."""
         self._pressure_size = use_pressure_size
 
-    def set_pressure_opacity_mode(self, use_pressure_opacity: bool):
+    def set_pressure_opacity_mode(self, use_pressure_opacity: bool) -> None:
         """Set whether tablet pen pressure affects line opacity."""
         self._pressure_opacity = use_pressure_opacity
 
     def _get_sketch_opacity(self) -> float:
         return 1.0 if (not self._pressure_opacity or self._pen_pressure is None) else min(1, self._pen_pressure * 1.25)
 
-
-    def set_draw_mode(self, mode: DrawMode):
+    def set_draw_mode(self, mode: str) -> None:
         """Sets whether the panel is sketching into the image or masking off an area for inpainting.
 
         Parameters
         ----------
-        mode : MaskCreator.DrawMode
+        mode : str from MaskCreator.DrawMode
             Selected drawing mode.
         """
         if mode == self._draw_mode:
@@ -110,28 +111,23 @@ class MaskCreator(FixedAspectGraphicsView):
             self._draw_mode = mode
             self._mask_canvas.setOpacity(0.4 if mode == MaskCreator.DrawMode.SKETCH else 0.6)
 
-
-    def get_draw_mode(self) -> DrawMode:
+    def get_draw_mode(self) -> Optional[str]:
         """Returns the current MaskCreator.DrawMode drawing mode."""
         return self._draw_mode
 
-
-    def set_line_mode(self, line_mode: bool):
+    def set_line_mode(self, line_mode: bool) -> None:
         """Sets whether clicking on the canvas should draw a line from the last clicked point."""
         self._line_mode = line_mode
         if line_mode:
             self._drawing = False
 
-
     def get_sketch_color(self) -> QColor:
         """Returns the current sketch canvas brush color."""
         return self._sketch_color
 
-
     def set_sketch_color(self, sketch_color: QColor):
         """Sets the current sketch canvas brush color."""
         self._sketch_color = sketch_color
-
 
     def set_tool_mode(self, mode: ToolMode):
         """Selects between draw ane erase modes."""
@@ -141,11 +137,9 @@ class MaskCreator(FixedAspectGraphicsView):
             raise ValueError(f'tried to set invalid drawing tool mode {mode}')
         self._tool_mode = mode
 
-
-    def get_tool_mode(self) -> ToolMode:
+    def get_tool_mode(self) -> str:
         """Returns the current MaskCreator.ToolMode drawing tool mode."""
         return self._tool_mode
-
 
     def clear(self):
         """Clears image content in the active canvas."""
@@ -157,7 +151,6 @@ class MaskCreator(FixedAspectGraphicsView):
                 self._mask_canvas.clear()
         self.update()
 
-
     def undo(self):
         """Reverses the last drawing operation done in the active canvas."""
         canvas = self._sketch_canvas if self._draw_mode == MaskCreator.DrawMode.SKETCH else self._mask_canvas
@@ -165,14 +158,12 @@ class MaskCreator(FixedAspectGraphicsView):
             canvas.undo()
         self.update()
 
-
     def redo(self):
         """Restores the last drawing operation in the active canvas removed by undo."""
         canvas = self._sketch_canvas if self._draw_mode == MaskCreator.DrawMode.SKETCH else self._mask_canvas
         if canvas.enabled():
             canvas.redo()
         self.update()
-
 
     def fill(self):
         """Fills the active canvas."""
@@ -184,11 +175,9 @@ class MaskCreator(FixedAspectGraphicsView):
                 self._mask_canvas.fill()
         self.update()
 
-
-    def load_image(self, image : Optional[QPixmap | QImage]):
+    def load_image(self, image: Optional[QPixmap | QImage]):
         """Loads a new image section behind the canvas."""
         self.background = image
-
 
     def get_color_at_point(self, point: QPoint) -> QColor:
         """Returns the color of the image and sketch canvas at a given point.
@@ -201,17 +190,19 @@ class MaskCreator(FixedAspectGraphicsView):
             sketch_color = self._sketch_canvas.get_color_at_point(point)
         if self.background is not None:
             image_color = self.background.toImage().pixelColor(point)
-        def get_component(sketch_component, image_component):
+
+        def get_component(sketch_component: float, image_component: float) -> float:
+            """Get combined values for a RGBA image color component"""
             return int((sketch_component * sketch_color.alphaF()) + (image_component * image_color.alphaF()
-                        * (1.0 - sketch_color.alphaF())))
+                                                                     * (1.0 - sketch_color.alphaF())))
+
         red = get_component(sketch_color.red(), image_color.red())
         green = get_component(sketch_color.green(), image_color.green())
         blue = get_component(sketch_color.blue(), image_color.blue())
         combined = QColor(red, green, blue)
         return combined
 
-
-    def mousePressEvent(self, event: QEvent):
+    def mousePressEvent(self, event: Optional[QMouseEvent]) -> None:
         """Start drawing, erasing, or color sampling when clicking if an image is loaded."""
         if not self._layer_stack.has_image:
             return
@@ -229,7 +220,7 @@ class MaskCreator(FixedAspectGraphicsView):
                 if self._draw_mode == MaskCreator.DrawMode.SKETCH and self._pressure_opacity:
                     color.setAlphaF(self._get_sketch_opacity())
                 size_multiplier = self._pen_pressure if (self._pressure_size and self._pen_pressure is not None) \
-                                  else None
+                    else None
                 if self._line_mode:
                     new_point = self.widget_to_scene_coords(event.pos()).toPoint()
                     line = QLine(self._last_point, new_point)
@@ -254,8 +245,7 @@ class MaskCreator(FixedAspectGraphicsView):
                         canvas.draw_point(self._last_point, color, size_multiplier, size_override)
                 self.update()
 
-
-    def mouseMoveEvent(self, event: QEvent):
+    def mouseMoveEvent(self, event: Optional[QMouseEvent]) -> None:
         """Continue any active drawing when the mouse is moved with a button held down."""
         if not self._layer_stack.has_image:
             return
@@ -275,19 +265,18 @@ class MaskCreator(FixedAspectGraphicsView):
                 canvas.draw_line(line, color, size_multiplier, size_override)
             self.update()
 
-
-    def tabletEvent(self, tabletEvent: QEvent):
+    def tabletEvent(self, tablet_event: Optional[QTabletEvent]) -> None:
         """Update pen pressure and eraser status when a drawing tablet event is triggered."""
-        if tabletEvent.type() == QEvent.TabletRelease:
+        if tablet_event.type() == QEvent.TabletRelease:
             self._pen_pressure = None
             self._tablet_eraser = False
-        elif tabletEvent.type() == QEvent.TabletPress:
-            self._tablet_eraser = tabletEvent.pointerType() == QTabletEvent.PointerType.Eraser
-            self._pen_pressure = tabletEvent.pressure()
+        elif tablet_event.type() == QEvent.TabletPress:
+            self._tablet_eraser = tablet_event.pointerType() == QTabletEvent.PointerType.Eraser
+            self._pen_pressure = tablet_event.pressure()
         else:
-            self._pen_pressure = tabletEvent.pressure()
+            self._pen_pressure = tablet_event.pressure()
 
-    def mouseReleaseEvent(self, event: QEvent):
+    def mouseReleaseEvent(self, event: Optional[QMouseEvent]) -> None:
         """Finishes any drawing operations when the mouse button is released."""
         if not self._layer_stack.has_image:
             return
@@ -299,7 +288,6 @@ class MaskCreator(FixedAspectGraphicsView):
             canvas.end_stroke()
             self._mask_canvas.setOpacity(0.6 if canvas == self._mask_canvas else 0.4)
         self.update()
-
 
     def get_image_display_size(self) -> QSize:
         """Get the QSize in pixels of the area where the edited image section is drawn."""

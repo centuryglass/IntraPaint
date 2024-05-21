@@ -7,13 +7,14 @@ from ui.util.get_scaled_placement import get_scaled_placement
 from ui.util.contrast_color import contrast_color
 from util.validation import assert_type
 
+
 class FixedAspectGraphicsView(QGraphicsView):
     """A QGraphicsView that maintains an aspect ratio and simplifies scene management."""
 
     def __init__(self, parent: Optional[QWidget] = None) -> None:
         super().__init__(parent)
         self._scene = QGraphicsScene()
-        self._content_size: Optional[QSize] = None
+        self._content_size: QSize = QSize(0, 0)
         self._content_rect: Optional[QRect] = None
         self._background: Optional[QPixmap] = None
 
@@ -25,23 +26,22 @@ class FixedAspectGraphicsView(QGraphicsView):
         self.setViewportUpdateMode(QGraphicsView.FullViewportUpdate)
         self.setScene(self._scene)
 
-
     @property
     def content_size(self) -> Optional[QSize]:
         """Gets the actual (not displayed) size of the viewed content."""
-        return self._content_size
-
+        return QSize(self._content_size.width(), self._content_size.height())
 
     @content_size.setter
     def content_size(self, new_size: QSize) -> None:
         """Updates the actual (not displayed) size of the viewed content."""
         assert_type(new_size, QSize)
-        if new_size == self.content_size:
+        if new_size == self._content_size:
             return
-        self._content_size = new_size
+        self._content_size.setWidth(new_size.width())
+        self._content_size.setHeight(new_size.height())
         self.resizeEvent(None)
         self.resetCachedContent()
-
+        self.update()
 
     @property
     def displayed_content_size(self) -> Optional[QSize]:
@@ -65,12 +65,10 @@ class FixedAspectGraphicsView(QGraphicsView):
             self._background = new_background
         self.resetCachedContent()
 
-
     def widget_to_scene_coords(self, point: QPoint) -> QPointF:
         """Returns a point within the scene content corresponding to some point within the widget bounds."""
         assert_type(point, QPoint)
         return self.mapToScene(point)
-
 
     def scene_to_widget_coords(self, point: QPoint) -> QPointF:
         """Returns a point within the widget bounds corresponding to some point within the scene content."""
@@ -82,7 +80,6 @@ class FixedAspectGraphicsView(QGraphicsView):
         y0 = self._content_rect.y()
         return QPointF(x0 + point.x() * x_scale, y0 + point.y() * y_scale)
 
-
     def widget_to_painter_coords(self, point: QPoint | QPointF, painter_bounds: QRectF) -> QPointF:
         """Converts a point from widget coordinates to painter coordinates."""
         assert_type(point, (QPoint, QPointF))
@@ -93,12 +90,10 @@ class FixedAspectGraphicsView(QGraphicsView):
         y0 = painter_bounds.y()
         return QPointF(x0 + point.x() * x_scale, y0 + point.y() * y_scale)
 
-
     def scene_point_to_painter_coords(self, point: QPoint, painter_rect: QRectF) -> QPointF:
         """Converts a point from scene coordinates to painter coordinates."""
         widget_point = self.scene_to_widget_coords(point)
         return self.widget_to_painter_coords(widget_point, painter_rect)
-
 
     def _content_rect_to_painter_coords(self, painter_rect: QRectF) -> QRectF:
         """Converts a rectangle from scene coordinates to painter coordinates."""
@@ -108,7 +103,6 @@ class FixedAspectGraphicsView(QGraphicsView):
         top_left = self.widget_to_painter_coords(top_left, painter_rect)
         bottom_right = self.widget_to_painter_coords(bottom_right, painter_rect)
         return QRectF(top_left.x(), top_left.y(), bottom_right.x() - top_left.x(), bottom_right.y() - top_left.y())
-
 
     def drawBackground(self, painter: Optional[QPainter], rect: QRectF) -> None:
         """Renders any background image behind all scene contents."""
@@ -121,9 +115,8 @@ class FixedAspectGraphicsView(QGraphicsView):
         margins = QMarginsF(border_size, border_size, border_size, border_size)
         border_rect = content_rect.marginsAdded(margins)
         painter.setPen(QPen(contrast_color(self), 4, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap,
-                    Qt.PenJoinStyle.RoundJoin))
+                            Qt.PenJoinStyle.RoundJoin))
         painter.drawRect(border_rect)
-
 
     def drawForeground(self, painter: Optional[QPainter], rect: QRectF) -> None:
         """Draws a border around the scene area and blocks out any out-of-bounds content."""
@@ -140,24 +133,23 @@ class FixedAspectGraphicsView(QGraphicsView):
         border_top = int(border_rect.y())
         border_bottom = border_top + int(border_rect.height())
 
-        max_size = 200000000 # Larger than the viewport can ever possibly be, small enough to avoid overflow issues
+        max_size = 200000000  # Larger than the viewport can ever possibly be, small enough to avoid overflow issues
         painter.fillRect(border_left, -(max_size // 2), -max_size, max_size, fill_color)
         painter.fillRect(border_right, -(max_size // 2), max_size, max_size, fill_color)
         painter.fillRect(-(max_size // 2), border_top, max_size, -max_size, fill_color)
         painter.fillRect(-(max_size // 2), border_bottom, max_size, max_size, fill_color)
 
         painter.setPen(QPen(contrast_color(self), 4, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap,
-                    Qt.PenJoinStyle.RoundJoin))
+                            Qt.PenJoinStyle.RoundJoin))
         painter.drawRect(border_rect)
         super().drawForeground(painter, rect)
-
 
     def resizeEvent(self, event: Optional[QResizeEvent]) -> None:
         """Recalculate content size when the widget is resized."""
         super().resizeEvent(event)
         if self.content_size is None:
             raise RuntimeError('FixedAspectGraphicsView implementations must set content_size in __init__ before the ' +
-                    'first resizeEvent is triggered')
+                               'first resizeEvent is triggered')
         content_rect_f = QRectF(0.0, 0.0, float(self.content_size.width()), float(self.content_size.height()))
         if content_rect_f != self._scene.sceneRect():
             self._scene.setSceneRect(content_rect_f)
@@ -171,7 +163,6 @@ class FixedAspectGraphicsView(QGraphicsView):
         transformation.translate(float(self._content_rect.x()), float(self._content_rect.y()))
         self.setTransform(transformation)
         self.update()
-
 
     def _border_size(self) -> int:
         return (min(self.width(), self.height()) // 40) + 1

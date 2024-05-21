@@ -6,10 +6,11 @@ from PyQt5.QtGui import QPainter, QPixmap, QPen, QImage, QColor
 from PyQt5.QtCore import Qt, QLine, QSize, QPoint
 from PyQt5.QtWidgets import QGraphicsPixmapItem, QGraphicsScene
 from PIL import Image
-from data_model.canvas.canvas import Canvas
-from data_model.config import Config
-from ui.image_utils import pil_image_to_qimage
+from data_model.image.canvas import Canvas
+from data_model.config.application_config import AppConfig
+from util.image_utils import pil_image_to_qimage
 from util.validation import assert_type
+
 
 class PixmapCanvas(Canvas, QGraphicsPixmapItem):
     """
@@ -17,8 +18,8 @@ class PixmapCanvas(Canvas, QGraphicsPixmapItem):
     """
 
     def __init__(self,
-            config: Config,
-            image: Optional[QImage | Image.Image | QPixmap | QSize | str]):
+                 config: AppConfig,
+                 image: Optional[QImage | Image.Image | QPixmap | QSize | str]) -> None:
         """Initialize with config values and optional arbitrary initial image data.
 
         Parameters
@@ -33,8 +34,7 @@ class PixmapCanvas(Canvas, QGraphicsPixmapItem):
         self._drawing = False
         self._image = None
 
-
-    def add_to_scene(self, scene: QGraphicsScene, z_value: Optional[int] = None):
+    def add_to_scene(self, scene: QGraphicsScene, z_value: Optional[int] = None) -> None:
         """Adds the canvas to a QGraphicsScene. This must only ever be called once.
 
         Parameters
@@ -51,8 +51,7 @@ class PixmapCanvas(Canvas, QGraphicsPixmapItem):
         self.setZValue(z_value)
         scene.addItem(self)
 
-
-    def set_image(self, image_data: QImage | Image.Image | QPixmap | QSize | str):
+    def set_image(self, image_data: QImage | Image.Image | QPixmap | QSize | str) -> None:
         """Loads an image into the canvas, overwriting existing canvas content.
 
         Parameters
@@ -63,11 +62,11 @@ class PixmapCanvas(Canvas, QGraphicsPixmapItem):
         """
         self._image = None
         assert_type(image_data, (QImage, Image.Image, QPixmap, QSize, str))
-        if isinstance(image_data, QSize): # Blank initial image:
+        if isinstance(image_data, QSize):  # Blank initial image:
             pixmap = QPixmap(image_data)
             pixmap.fill(Qt.transparent)
             self.setPixmap(pixmap)
-        elif isinstance(image_data, str): # Load from image path:
+        elif isinstance(image_data, str):  # Load from image path:
             self.setPixmap(QPixmap(image_data, "RGBA"))
         elif isinstance(image_data, Image.Image):
             self.setPixmap(QPixmap.fromImage(pil_image_to_qimage(image_data)))
@@ -75,21 +74,17 @@ class PixmapCanvas(Canvas, QGraphicsPixmapItem):
             self._image = image_data
             self.setPixmap(QPixmap.fromImage(image_data))
 
-
     def size(self) -> QSize:
         """Returns the canvas size in pixels as QSize."""
         return self.pixmap().size()
-
 
     def width(self) -> int:
         """Returns the canvas width in pixels as int."""
         return self.pixmap().width()
 
-
     def height(self) -> int:
         """Returns the canvas height in pixels as int."""
         return self.pixmap().height()
-
 
     def get_qimage(self) -> QImage:
         """Returns the canvas image content as QImage."""
@@ -97,15 +92,13 @@ class PixmapCanvas(Canvas, QGraphicsPixmapItem):
             self._image = self.pixmap().toImage()
         return self._image
 
-
     def get_color_at_point(self, point: QPoint) -> QColor:
         """Returns canvas image color at QPoint pixel coordinates, or QColor(0,0,0) if point is outside of bounds."""
         if self.get_qimage().rect().contains(point):
             return self.get_qimage().pixelColor(point)
         return QColor(0, 0, 0, 0)
 
-
-    def resize(self, size: QSize):
+    def resize(self, size: QSize) -> None:
         """Updates the canvas size, scaling any image content to match.
 
         Parameters
@@ -118,26 +111,23 @@ class PixmapCanvas(Canvas, QGraphicsPixmapItem):
             self.setPixmap(self.pixmap().scaled(size))
             self._handle_changes()
 
-
-    def start_stroke(self):
+    def start_stroke(self) -> None:
         """Signals the start of a brush stroke, to be called once whenever user input starts or resumes."""
         super().start_stroke()
         if self._drawing:
             self.end_stroke()
         self._drawing = True
 
-
-    def end_stroke(self):
+    def end_stroke(self) -> None:
         """Signals the end of a brush stroke, to be called once whenever user input stops or pauses."""
         if self._drawing:
             self._drawing = False
 
-
     def draw_point(self,
-            point: QPoint,
-            color: QColor,
-            size_multiplier: Optional[float] = 1.0,
-            size_override: Optional[int] = None):
+                   point: QPoint,
+                   color: QColor,
+                   size_multiplier: Optional[float] = 1.0,
+                   size_override: Optional[int] = None) -> None:
         """Draws a single point on the canvas.
 
         Parameters
@@ -149,18 +139,17 @@ class PixmapCanvas(Canvas, QGraphicsPixmapItem):
         size_multiplier : float, optional
             Multiplier applied to brush size when calculating drawn point diameter.
         size_override : int, optional
-            Optional value that should override brush_size for this operation only.
+            Value that should override brush_size for this operation only.
         """
         if not self._drawing:
             self.start_stroke()
         self._draw(point, color, QPainter.CompositionMode.CompositionMode_SourceOver, size_multiplier, size_override)
 
-
     def draw_line(self,
-            line: QLine,
-            color: QColor,
-            size_multiplier: Optional[float] = 1.0,
-            size_override: Optional[int] = None):
+                  line: QLine,
+                  color: QColor,
+                  size_multiplier: Optional[float] = 1.0,
+                  size_override: Optional[int] = None) -> None:
         """Draws a line on the canvas.
 
         Parameters
@@ -172,38 +161,36 @@ class PixmapCanvas(Canvas, QGraphicsPixmapItem):
         size_multiplier : float, optional
             Multiplier applied to brush size when calculating drawn line width.
         size_override : int, optional
-            Optional value that should override brush_size for this operation only.
+            Value that should override brush_size for this operation only.
         """
         if not self._drawing:
             self.start_stroke()
         self._draw(line, color, QPainter.CompositionMode.CompositionMode_SourceOver, size_multiplier, size_override)
 
-
     def erase_point(self,
-            point: QPoint,
-            size_multiplier: Optional[float] = 1.0,
-            size_override: Optional[int] = None):
+                    point: QPoint,
+                    size_multiplier: Optional[float] = 1.0,
+                    size_override: Optional[int] = None) -> None:
         """Erases a single point on the canvas.
 
         Parameters
         ----------
         point : QPoint
-            Position where the point should be eraseed.
+            Position where the point should be erased.
         size_multiplier : float, optional
             Multiplier applied to brush size when calculating erased point diameter.
         size_override : int, optional
-            Optional value that should override brush_size for this operation only.
+            Value that should override brush_size for this operation only.
         """
         if not self._drawing:
             self.start_stroke()
         self._draw(point, Qt.transparent, QPainter.CompositionMode.CompositionMode_Clear, size_multiplier,
-                size_override)
-
+                   size_override)
 
     def erase_line(self,
-            line: QLine,
-            size_multiplier: Optional[float] = 1.0,
-            size_override: Optional[int] = None):
+                   line: QLine,
+                   size_multiplier: Optional[float] = 1.0,
+                   size_override: Optional[int] = None) -> None:
         """Erases a line on the canvas.
 
         Parameters
@@ -213,14 +200,13 @@ class PixmapCanvas(Canvas, QGraphicsPixmapItem):
         size_multiplier : float, optional
             Multiplier applied to brush size when calculating drawn line width.
         size_override : int, optional
-            Optional value that should override brush_size for this operation only.
+            Value that should override brush_size for this operation only.
         """
         if not self._drawing:
             self.start_stroke()
         self._draw(line, Qt.transparent, QPainter.CompositionMode.CompositionMode_Clear, size_multiplier, size_override)
 
-
-    def fill(self, color: QColor):
+    def fill(self, color: QColor) -> None:
         """Fills the canvas with a single QColor."""
         super().fill(color)
         if not self.enabled():
@@ -235,45 +221,41 @@ class PixmapCanvas(Canvas, QGraphicsPixmapItem):
         self._handle_changes()
         self.update()
 
-
-    def clear(self):
+    def clear(self) -> None:
         """Replaces all canvas image contents with transparency."""
         super().clear()
         if self._drawing:
             self.end_stroke()
         self.fill(Qt.transparent)
 
-
-    def _handle_changes(self):
+    def _handle_changes(self) -> None:
         self._image = None
 
-
     def _base_draw(self,
-            pixmap: QPixmap,
-            pos: QPoint | QLine,
-            color: QColor,
-            composition_mode: QPainter.CompositionMode,
-            size_multiplier: Optional[float] = 1.0,
-            size_override: Optional[int] = None):
+                   pixmap: QPixmap,
+                   pos: QPoint | QLine,
+                   color: QColor,
+                   composition_mode: QPainter.CompositionMode,
+                   size_multiplier: Optional[float] = 1.0,
+                   size_override: Optional[int] = None) -> None:
         painter = QPainter(pixmap)
         painter.setCompositionMode(composition_mode)
         size = int(self._brush_size * size_multiplier) if size_override is None else int(size_override)
         painter.setPen(QPen(color, size, Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin))
         if isinstance(pos, QLine):
             painter.drawLine(pos)
-        else: # Should be QPoint
+        else:  # Should be QPoint
             painter.drawPoint(pos)
         painter.end()
 
-
     def _draw(self,
-            pos: QPoint | QLine,
-            color: QColor,
-            composition_mode: QPainter.CompositionMode,
-            size_multiplier: Optional[float] = 1.0,
-            size_override: Optional[int] = None):
+              pos: QPoint | QLine,
+              color: QColor,
+              composition_mode: QPainter.CompositionMode,
+              size_multiplier: Optional[float] = 1.0,
+              size_override: Optional[int] = None) -> None:
         if size_multiplier is None:
-            size_multiplier=1.0
+            size_multiplier = 1.0
         if not self.enabled():
             return
         pixmap = QPixmap(self.size())

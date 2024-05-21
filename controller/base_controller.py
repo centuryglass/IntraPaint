@@ -11,7 +11,6 @@ from PIL import Image, ImageFilter, UnidentifiedImageError, PngImagePlugin
 from PyQt5.QtWidgets import QApplication, QMessageBox
 from PyQt5.QtCore import QObject, QThread, QRect, QSize, pyqtSignal
 from PyQt5.QtGui import QScreen
-# Optional theme imports:
 try:
     import qdarktheme
 except ImportError:
@@ -21,12 +20,13 @@ try:
 except ImportError:
     qt_material = None
 
-from data_model.config import Config
-from data_model.layer_stack import LayerStack
-from data_model.canvas.mask_canvas import MaskCanvas
-from data_model.canvas.sketch_canvas import SketchCanvas
+from data_model.config.application_config import AppConfig
+from data_model.image.layer_stack import LayerStack
+from data_model.image.mask_canvas import MaskCanvas
+from data_model.image.sketch_canvas import SketchCanvas
+
 try:
-    from data_model.canvas.brushlib_canvas import BrushlibCanvas
+    from data_model.image.brushlib_canvas import BrushlibCanvas
 except ImportError as brushlib_err:
     print(f'Brushlib import failed: {brushlib_err}')
     BrushlibCanvas = None
@@ -40,7 +40,6 @@ from ui.modal.settings_modal import SettingsModal
 from ui.util.screen_size import screen_size
 
 from util.validation import assert_type
-
 # Optional spacenav support:
 try:
     from controller.spacenav_manager import SpacenavManager
@@ -48,33 +47,60 @@ except ImportError as spacenav_err:
     print(f'spaceMouse support not enabled: {spacenav_err}')
     SpacenavManager = None
 
+NEW_IMAGE_CONFIRMATION_TITLE = 'Create new image?'
+NEW_IMAGE_CONFIRMATION_MESSAGE = 'This will discard all unsaved changes.'
+SAVE_ERROR_MESSAGE_NO_IMAGE = 'Open or create an image first before trying to save.'
+SAVE_ERROR_TITLE = 'Save failed'
+LOAD_ERROR_TITLE = 'Open failed'
+RELOAD_ERROR_MESSAGE_NO_IMAGE = 'Enter an image path or click "Open Image" first.'
+RELOAD_ERROR_TITLE = 'Reload failed'
+RELOAD_CONFIRMATION_TITLE = 'Reload image?'
+RELOAD_CONFIRMATION_MESSAGE = 'This will discard all unsaved changes.'
+METADATA_UPDATE_TITLE = 'Metadata updated'
+METADATA_UPDATE_MESSAGE = 'On save, current image generation parameters will be stored within the image'
+RESIZE_ERROR_TITLE = 'Resize failed'
+RESIZE_ERROR_MESSAGE_NO_IMAGE = 'Open or create an image first before trying to resize.'
+SCALING_ERROR_TITLE = 'Scaling failed'
+SCALING_ERROR_MESSAGE_NO_IMAGE = 'Open or create an image first before trying to scale.'
+GENERATE_ERROR_TITLE_UNEXPECTED = 'Inpainting failure'
+GENERATE_ERROR_TITLE_NO_IMAGE = 'Save failed'
+GENERATE_ERROR_MESSAGE_NO_IMAGE = 'Open or create an image first before trying to start image generation.'
+GENERATE_ERROR_TITLE_EXISTING_OP = 'Failed'
+GENERATE_ERROR_MESSAGE_EXISTING_OP = 'Existing image generation operation not yet finished, wait a little longer.'
 
-class BaseInpaintController():
-    """Shared base class for managing impainting. 
+METADATA_PARAMETER_KEY = 'parameters'
+INPAINT_MODE = 'Inpaint'
+
+
+class BaseInpaintController:
+    """Shared base class for managing inpainting.
 
     At a bare minimum, subclasses will need to implement self._inpaint.
     """
-    def __init__(self, args: Namespace):
+
+    def __init__(self, args: Namespace) -> None:
         self._app = QApplication(sys.argv)
         screen = self._app.primaryScreen()
-        def screen_area(screen: Optional[QScreen]):
-            if screen is None:
+
+        def screen_area(screen_option: Optional[QScreen]) -> int:
+            """Calculate the area of an available screen."""
+            if screen_option is None:
                 return 0
-            return screen.availableGeometry().width() * screen.availableGeometry().height()
+            return screen_option.availableGeometry().width() * screen_option.availableGeometry().height()
+
         for s in self._app.screens():
             if screen_area(s) > screen_area(screen):
                 screen = s
-        self._config = Config()
+        self._config = AppConfig()
         self._adjust_config_defaults()
         self._config.apply_args(args)
 
-        self._layer_stack = LayerStack(self._config.get(Config.DEFAULT_IMAGE_SIZE),
-                self._config.get(Config.EDIT_SIZE),
-                self._config.get(Config.MIN_EDIT_SIZE),
-                self._config.get(Config.MAX_EDIT_SIZE))
+        self._layer_stack = LayerStack(self._config.get(AppConfig.DEFAULT_IMAGE_SIZE),
+                                       self._config.get(AppConfig.EDIT_SIZE),
+                                       self._config.get(AppConfig.MIN_EDIT_SIZE),
+                                       self._config.get(AppConfig.MAX_EDIT_SIZE))
         if args.init_image:
             self.load_image(args.init_image)
-
 
         self._window = None
         self._nav_manager = None
@@ -84,25 +110,23 @@ class BaseInpaintController():
         initial_selection_size = self._layer_stack.selection.size()
         self._mask_canvas = MaskCanvas(self._config, initial_selection_size)
 
-        if self._config.get(Config.USE_MYPAINT_CANVAS) and BrushlibCanvas is not None:
+        if self._config.get(AppConfig.USE_MYPAINT_CANVAS) and BrushlibCanvas is not None:
             self._sketch_canvas = BrushlibCanvas(self._config, initial_selection_size)
             self._sketch_canvas.connect_layer_stack(self._layer_stack)
         else:
             self._sketch_canvas = SketchCanvas(self._config, initial_selection_size)
 
-        # Connect mask/sketch size to image selection size:
-        def resize_canvases(selection_bounds: QRect, unused_last_bounds: QRect):
+        def resize_canvases(selection_bounds: QRect, unused_last_bounds: QRect) -> None:
+            """Connect mask/sketch size to image selection size"""
             size = selection_bounds.size()
             self._mask_canvas.resize(size)
             self._sketch_canvas.resize(size)
+
         self._layer_stack.selection_bounds_changed.connect(resize_canvases)
         self._thread = None
 
-
     def _adjust_config_defaults(self):
-        # no-op, override to adjust config before data initialization
-        return
-
+        """no-op, override to adjust config before data initialization."""
 
     def init_settings(self, unused_settings_modal: SettingsModal) -> bool:
         """ 
@@ -114,7 +138,6 @@ class BaseInpaintController():
         """
         return False
 
-
     def refresh_settings(self, settings_modal: SettingsModal):
         """
         Unimplemented function used to update a SettingsModal to reflect any changes.  This should only be called in
@@ -125,7 +148,6 @@ class BaseInpaintController():
         settings_modal : SettingsModal
         """
         raise NotImplementedError('refresh_settings not implemented!')
-
 
     def update_settings(self, changed_settings: dict):
         """
@@ -139,7 +161,6 @@ class BaseInpaintController():
         """
         raise NotImplementedError('update_settings not implemented!')
 
-
     def window_init(self):
         """Initialize and show the main application window."""
         self._window = MainWindow(self._config, self._layer_stack, self._mask_canvas, self._sketch_canvas, self)
@@ -150,11 +171,10 @@ class BaseInpaintController():
         self.fix_styles()
         self._window.show()
 
-
-    def fix_styles(self):
+    def fix_styles(self) -> None:
         """Update application styling based on theme configuration, UI configuration, and available theme modules."""
         self._app.setStyle(self._config.get('style'))
-        theme = self._config.get(Config.THEME)
+        theme = self._config.get(AppConfig.THEME)
         if theme.startswith('qdarktheme_') and qdarktheme is not None:
             if theme.endswith('_light'):
                 qdarktheme.setup_theme('light')
@@ -168,11 +188,10 @@ class BaseInpaintController():
         elif theme != 'None':
             print(f'Failed to load theme {theme}')
         font = self._app.font()
-        font.setPointSize(self._config.get(Config.FONT_POINT_SIZE))
+        font.setPointSize(self._config.get(AppConfig.FONT_POINT_SIZE))
         self._app.setFont(font)
 
-
-    def start_app(self):
+    def start_app(self) -> None:
         """Start the application after performing any additional required setup steps."""
         self.window_init()
 
@@ -184,31 +203,30 @@ class BaseInpaintController():
         self._app.exec_()
         sys.exit()
 
-
     # File IO handling:
-    def new_image(self):
+    def new_image(self) -> None:
         """Open a new image creation modal."""
-        default_size = self._config.get(Config.EDIT_SIZE)
+        default_size = self._config.get(AppConfig.EDIT_SIZE)
         image_modal = NewImageModal(default_size.width(), default_size.height())
         image_size = image_modal.show_image_modal()
-        if image_size and (not self._layer_stack.has_image or request_confirmation(self._window, 'Create new image?',
-                'This will discard all unsaved changes.')):
-            new_image = Image.new('RGB', (image_size.width(), image_size.height()), color = 'white')
+        if image_size and (not self._layer_stack.has_image or request_confirmation(self._window,
+                                                                                   NEW_IMAGE_CONFIRMATION_TITLE,
+                                                                                   NEW_IMAGE_CONFIRMATION_MESSAGE)):
+            new_image = Image.new('RGB', (image_size.width(), image_size.height()), color='white')
             self._layer_stack.set_image(new_image)
             for i in range(1, self._layer_stack.count()):
                 self._layer_stack.get_layer(i).clear()
             self._metadata = None
 
-
-    def save_image(self, file_path: Optional[str] = None):
+    def save_image(self, file_path: Optional[str] = None) -> None:
         """Open a save dialog, and save the edited image to disk, preserving any metadata."""
         if not self._layer_stack.has_image:
-            show_error_dialog(self._window, 'Save failed', 'Open or create an image first before trying to save.')
+            show_error_dialog(self._window, SAVE_ERROR_TITLE, SAVE_ERROR_MESSAGE_NO_IMAGE)
             return
         try:
             if not isinstance(file_path, str):
                 file_path, file_selected = open_image_file(self._window, mode='save',
-                        selected_file = self._config.get(Config.LAST_FILE_PATH))
+                                                           selected_file=self._config.get(AppConfig.LAST_FILE_PATH))
                 if not file_path or not file_selected:
                     return
             assert_type(file_path, str)
@@ -222,18 +240,17 @@ class BaseInpaintController():
                         # Encountered some sort of image metadata that PIL knows how to read but not how to write.
                         # I've seen this a few times, mostly with images edited in Krita. This data isn't important to
                         # me, so it'll just be discarded. If it's important to you, open a GitHub issue with details or
-                        # submit a PR and I'll take care of it.
+                        # submit a PR, and I'll take care of it.
                         print(f'failed to preserve "{key}" in metadata: {png_err}')
                 image.save(file_path, 'PNG', pnginfo=info)
             else:
                 image.save(file_path, 'PNG')
-            self._config.set(Config.LAST_FILE_PATH, file_path)
+            self._config.set(AppConfig.LAST_FILE_PATH, file_path)
         except (IOError, TypeError) as save_err:
-            show_error_dialog(self._window, 'Save failed', str(save_err))
+            show_error_dialog(self._window, SAVE_ERROR_TITLE, str(save_err))
             raise save_err
 
-
-    def load_image(self, file_path: Optional[str] = None):
+    def load_image(self, file_path: Optional[str] = None) -> None:
         """Open a loading dialog, then load the selected image for editing."""
         if file_path is None:
             file_path, file_selected = open_image_file(self._window)
@@ -247,10 +264,10 @@ class BaseInpaintController():
                 self._metadata = image.info
             else:
                 self._metadata = None
-            if 'parameters' in self._metadata:
-                param_str = self._metadata['parameters']
+            if METADATA_PARAMETER_KEY in self._metadata:
+                param_str = self._metadata[METADATA_PARAMETER_KEY]
                 match = re.match(r'^(.*\n?.*)\nSteps: (\d+), Sampler: (.*), CFG scale: (.*), Seed: (.+), Size.*',
-                        param_str)
+                                 param_str)
                 if match:
                     prompt = match.group(1)
                     negative = ''
@@ -264,39 +281,38 @@ class BaseInpaintController():
                         negative = divider_match.group(2)
                     print('Detected saved image gen data, applying to UI')
                     try:
-                        self._config.set(Config.PROMPT, prompt)
-                        self._config.set(Config.NEGATIVE_PROMPT, negative)
-                        self._config.set(Config.SAMPLING_STEPS, steps)
-                        self._config.set(Config.SAMPLING_METHOD, sampler)
-                        self._config.set(Config.GUIDANCE_SCALE, cfg_scale)
-                        self._config.set(Config.SEED, seed)
+                        self._config.set(AppConfig.PROMPT, prompt)
+                        self._config.set(AppConfig.NEGATIVE_PROMPT, negative)
+                        self._config.set(AppConfig.SAMPLING_STEPS, steps)
+                        self._config.set(AppConfig.SAMPLING_METHOD, sampler)
+                        self._config.set(AppConfig.GUIDANCE_SCALE, cfg_scale)
+                        self._config.set(AppConfig.SEED, seed)
                     except (TypeError, RuntimeError) as err:
                         print(f'Failed to load image gen data from metadata: {err}')
                 else:
-                    print('Warning: image parameters do not match expected patterns, cannot be used. ' + \
+                    print('Warning: image parameters do not match expected patterns, cannot be used. '
                           f'parameters:{param_str}')
             self._layer_stack.set_image(image)
-            self._config.set(Config.LAST_FILE_PATH, file_path)
+            self._config.set(AppConfig.LAST_FILE_PATH, file_path)
         except UnidentifiedImageError as err:
-            show_error_dialog(self._window, 'Open failed', err)
+            show_error_dialog(self._window, LOAD_ERROR_TITLE, err)
             return
 
-
-    def reload_image(self):
+    def reload_image(self) -> None:
         """Reload the edited image from disk after getting confirmation from a confirmation dialog."""
-        file_path = self._config.get(Config.LAST_FILE_PATH)
+        file_path = self._config.get(AppConfig.LAST_FILE_PATH)
         if file_path == '':
-            show_error_dialog(self._window, 'Reload failed', 'Enter an image path or click "Open Image" first.')
+            show_error_dialog(self._window, RELOAD_ERROR_TITLE, RELOAD_ERROR_MESSAGE_NO_IMAGE)
             return
         if not os.path.isfile(file_path):
-            show_error_dialog(self._window, 'Reload failed', f'Image path "{file_path}" is not a valid file.')
+            show_error_dialog(self._window, RELOAD_ERROR_TITLE, f'Image path "{file_path}" is not a valid file.')
             return
         if not self._layer_stack.has_image or request_confirmation(self._window,
-                'Reload image?', 'This will discard all unsaved changes.'):
+                                                                   RELOAD_CONFIRMATION_TITLE,
+                                                                   RELOAD_CONFIRMATION_MESSAGE):
             self.load_image(file_path)
 
-
-    def update_metadata(self, show_messagebox: bool = True):
+    def update_metadata(self, show_messagebox: bool = True) -> None:
         """
         Adds image editing parameters from config to the image metadata, in a format compatible with the A1111
         stable-diffusion webui. Parameters will be applied to the image file when save_image is called.
@@ -306,29 +322,28 @@ class BaseInpaintController():
         show_messagebox: bool
             If true, show a messagebox after the update to let the user know what happened.
         """
-        prompt = self._config.get(Config.PROMPT)
-        negative = self._config.get(Config.NEGATIVE_PROMPT)
-        steps = self._config.get(Config.SAMPLING_STEPS)
-        sampler = self._config.get(Config.SAMPLING_METHOD)
-        cfg_scale = self._config.get(Config.GUIDANCE_SCALE)
-        seed = self._config.get(Config.SEED)
+        prompt = self._config.get(AppConfig.PROMPT)
+        negative = self._config.get(AppConfig.NEGATIVE_PROMPT)
+        steps = self._config.get(AppConfig.SAMPLING_STEPS)
+        sampler = self._config.get(AppConfig.SAMPLING_METHOD)
+        cfg_scale = self._config.get(AppConfig.GUIDANCE_SCALE)
+        seed = self._config.get(AppConfig.SEED)
         params = f'{prompt}\nNegative prompt: {negative}\nSteps: {steps}, Sampler: {sampler}, CFG scale:' + \
                  f'{cfg_scale}, Seed: {seed}, Size: 512x512'
         if self._metadata is None:
             self._metadata = {}
-        self._metadata['parameters'] = params
+        self._metadata[METADATA_PARAMETER_KEY] = params
         if show_messagebox:
             message_box = QMessageBox(self)
-            message_box.setWindowTitle('Metadata updated')
-            message_box.setText('On save, current image generation paremeters will be stored within the image')
+            message_box.setWindowTitle(METADATA_UPDATE_TITLE)
+            message_box.setText(METADATA_UPDATE_MESSAGE)
             message_box.setStandardButtons(QMessageBox.Ok)
             message_box.exec()
 
-
-    def resize_canvas(self):
+    def resize_canvas(self) -> None:
         """Crop or extend the edited image without scaling its contents based on user input into a popup modal."""
         if not self._layer_stack.has_image:
-            show_error_dialog(self._window, 'Save failed', 'Open or create an image first before trying to resize.')
+            show_error_dialog(self._window, RESIZE_ERROR_TITLE, RESIZE_ERROR_MESSAGE_NO_IMAGE)
             return
         resize_modal = ResizeCanvasModal(self._layer_stack.qimage())
         new_size, offset = resize_modal.show_resize_modal()
@@ -336,11 +351,10 @@ class BaseInpaintController():
             return
         self._layer_stack.resize_canvas(new_size, offset.x(), offset.y())
 
-
-    def scale_image(self):
+    def scale_image(self) -> None:
         """Scale the edited image based on user input into a popup modal."""
         if not self._layer_stack.has_image:
-            show_error_dialog(self._window, 'Save failed', 'Open or create an image first before trying to scale.')
+            show_error_dialog(self._window, SCALING_ERROR_TITLE, SCALING_ERROR_MESSAGE_NO_IMAGE)
             return
         width = self._layer_stack.width
         height = self._layer_stack.height
@@ -349,49 +363,51 @@ class BaseInpaintController():
         if new_size is not None:
             self._scale(new_size)
 
-
-    def _scale(self, new_size: QSize): # Override to allow alternate or external upscalers:
+    def _scale(self, new_size: QSize) -> None:  # Override to allow alternate or external upscalers:
         width = self._layer_stack.width
         height = self._layer_stack.height
         if new_size is None or (new_size.width() == width and new_size.height() == height):
             return
         image = self._layer_stack.pil_image()
-        scale_mode = None
-        if (new_size.width() <= width and new_size.height() <= height): #downscaling
-            scale_mode = self._config.get(Config.DOWNSCALE_MODE)
+        if new_size.width() <= width and new_size.height() <= height:  # downscaling
+            scale_mode = self._config.get(AppConfig.DOWNSCALE_MODE)
         else:
-            scale_mode = self._config.get(Config.UPSCALE_MODE)
+            scale_mode = self._config.get(AppConfig.UPSCALE_MODE)
         scaled_image = image.resize((new_size.width(), new_size.height()), scale_mode)
         self._layer_stack.set_image(scaled_image)
 
-
-    def _start_thread(self, thread_worker: QObject, loading_text: Optional[str] = None):
+    def _start_thread(self, thread_worker: QObject, loading_text: Optional[str] = None) -> None:
         if self._thread is not None:
             raise RuntimeError('Tried to start a new async operation while the previous one is still running')
         self._window.set_is_loading(True, loading_text)
         self._thread = QThread()
         self._worker = thread_worker
         self._worker.moveToThread(self._thread)
-        def clear_worker():
+
+        def clear_worker() -> None:
+            """Clean up thread worker object on finish."""
             self._thread.quit()
             self._window.set_is_loading(False)
             self._worker.deleteLater()
             self._worker = None
+
         self._worker.finished.connect(clear_worker)
         self._thread.started.connect(self._worker.run)
-        def clear_old_thread():
+
+        def clear_old_thread() -> None:
+            """Cleanup async task thread on finish."""
             self._thread.deleteLater()
             self._thread = None
+
         self._thread.finished.connect(clear_old_thread)
         self._thread.start()
 
-
     # Image generation handling:
     def _inpaint(self,
-            selection: Optional[Image.Image],
-            mask: Optional[Image.Image],
-            save_image: Callable[[Image.Image, int], None],
-            status_signal: pyqtSignal):
+                 selection: Optional[Image.Image],
+                 mask: Optional[Image.Image],
+                 save_image: Callable[[Image.Image, int], None],
+                 status_signal: pyqtSignal) -> None:
         """Unimplemented method for handling image inpainting.
 
         Parameters
@@ -407,23 +423,20 @@ class BaseInpaintController():
         """
         raise NotImplementedError('_inpaint method not implemented.')
 
-
-    def _apply_status_update(self, unused_status_dict: dict):
+    def _apply_status_update(self, unused_status_dict: dict) -> None:
         """Optional unimplemented method for handling image editing status updates."""
 
-
-    def start_and_manage_inpainting(self):
+    def start_and_manage_inpainting(self) -> None:
         """Start inpainting/image editing based on the current state of the UI."""
         if not self._layer_stack.has_image:
-            show_error_dialog(self._window, 'Save failed',
-                    'Open or create an image first before trying to start inpainting.')
+            show_error_dialog(self._window, GENERATE_ERROR_TITLE_NO_IMAGE, GENERATE_ERROR_MESSAGE_NO_IMAGE)
             return
         if self._thread is not None:
-            show_error_dialog(self._window, 'Failed',
-                    'Existing inpainting operation not yet finished, wait a little longer.')
+            show_error_dialog(self._window, GENERATE_ERROR_TITLE_EXISTING_OP, GENERATE_ERROR_MESSAGE_EXISTING_OP)
             return
-        upscale_mode = self._config.get(Config.UPSCALE_MODE)
-        downscale_mode = self._config.get(Config.DOWNSCALE_MODE)
+        upscale_mode = self._config.get(AppConfig.UPSCALE_MODE)
+        downscale_mode = self._config.get(AppConfig.DOWNSCALE_MODE)
+
         def resize_image(pil_image: Image.Image, width: int, height: int) -> Image.Image:
             """Resize a PIL image using the appropriate scaling mode:"""
             if width == pil_image.width and height == pil_image.height:
@@ -444,71 +457,73 @@ class BaseInpaintController():
             inpaint_image = Image.alpha_composite(inpaint_image, sketch_image).convert('RGB')
         keep_sketch = self._sketch_canvas.has_sketch()
 
-        # If necessary, scale image and mask to match the edit size. Keep the unscaled version so it can be used for
+        # If necessary, scale image and mask to match the edit size. Keep the unscaled version, so it can be used for
         # compositing if "keep sketch" is checked.
         unscaled_inpaint_image = inpaint_image.copy()
 
-        edit_size = self._config.get(Config.EDIT_SIZE)
+        edit_size = self._config.get(AppConfig.EDIT_SIZE)
         if inpaint_image.width != edit_size.width() or inpaint_image.height != edit_size.height():
             inpaint_image = resize_image(inpaint_image, edit_size.width(), edit_size.height())
         if inpaint_mask.width != edit_size.width() or inpaint_mask.height != edit_size.height():
             inpaint_mask = resize_image(inpaint_mask, edit_size.width(), edit_size.height())
 
-        def do_inpaint(img, mask, save, status_signal):
-            self._inpaint(img, mask, save, status_signal)
+        do_inpaint = self._inpaint
         config = self._config
+
         class InpaintThreadWorker(QObject):
-            """Handles inpainting witin its own thread."""
+            """Handles inpainting within its own thread."""
             finished = pyqtSignal()
             image_ready = pyqtSignal(Image.Image, int)
             status_signal = pyqtSignal(dict)
             error_signal = pyqtSignal(Exception)
 
-            def run(self):
+            def run(self) -> None:
                 """Start the inpainting thread."""
-                def send_image(img, idx):
-                    self.image_ready.emit(img, idx)
                 try:
-                    do_inpaint(inpaint_image, inpaint_mask, send_image, self.status_signal)
+                    do_inpaint(inpaint_image, inpaint_mask, self.image_ready.emit, self.status_signal)
                 except (IOError, ValueError, RuntimeError) as err:
                     self.error_signal.emit(err)
                 self.finished.emit()
+
         worker = InpaintThreadWorker()
 
-        def handle_error(err):
+        def handle_error(err: BaseException) -> None:
+            """Close sample selector and show an error popup if anything goes wrong."""
             self._window.set_sample_selector_visible(False)
-            show_error_dialog(self._window, 'Inpainting failure', err)
+            show_error_dialog(self._window, GENERATE_ERROR_TITLE_UNEXPECTED, err)
+
         worker.error_signal.connect(handle_error)
+        worker.status_signal.connect(self._apply_status_update)
 
-        def update_status(status_dict):
-            self._apply_status_update(status_dict)
-        worker.status_signal.connect(update_status)
-
-        def load_sample_preview(img, idx):
-            if config.get(Config.EDIT_MODE) == 'Inpaint':
-                def point_fn(p):
+        def load_sample_preview(img: Image.Image, idx: int) -> None:
+            """Apply image mask to inpainting results."""
+            if config.get(AppConfig.EDIT_MODE) == INPAINT_MODE:
+                def point_fn(p: int) -> int:
+                    """Convert pixel to 1-bit."""
                     return 255 if p < 1 else 0
+
                 mask_alpha = inpaint_mask.convert('L').point(point_fn).filter(ImageFilter.GaussianBlur())
                 img = resize_image(img, selection.width, selection.height)
                 mask_alpha = resize_image(mask_alpha, selection.width, selection.height)
                 img = Image.composite(unscaled_inpaint_image if keep_sketch else selection, img, mask_alpha)
             self._window.load_sample_preview(img, idx)
+
         worker.image_ready.connect(load_sample_preview)
         self._window.set_sample_selector_visible(True)
         self._start_thread(worker)
 
-
-    def select_and_apply_sample(self, sample_image):
+    def select_and_apply_sample(self, sample_image: Image.Image) -> None:
         """Apply an AI-generated image change to the edited image.
 
         Parameters
         ----------
         sample_image : PIL Image
-            Image data to be inserted into the EditedImage selection bounds.
+            Data to be inserted into the edited image selection bounds.
         """
         source_selection = self._layer_stack.pil_image_selection_content()
         sketch_image = self._sketch_canvas.get_pil_image().resize((source_selection.width, source_selection.height),
-                self._config.get(Config.DOWNSCALE_MODE)).convert('RGBA')
+                                                                  self._config.get(AppConfig.DOWNSCALE_MODE)).convert(
+            'RGBA')
         source_selection = Image.alpha_composite(source_selection.convert('RGBA'), sketch_image).convert('RGB')
         self._layer_stack.set_selection_content(source_selection)
         self._sketch_canvas.clear()
