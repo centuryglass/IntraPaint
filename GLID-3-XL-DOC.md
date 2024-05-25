@@ -95,7 +95,7 @@ python autoedit.py --edit image.png --model_path inpaint.pt --batch_size 6 --tex
 
 ```
 
-# Training/Fine tuning
+# Training/Fine-tuning
 Train with same flags as guided diffusion. Data directory should contain image and text files with the same name (image1.png image1.txt)
 
 ```

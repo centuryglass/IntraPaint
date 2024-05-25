@@ -9,10 +9,10 @@ from typing import Any
 import flask
 from flask import Flask, request, jsonify, make_response, abort, current_app
 from flask_cors import CORS, cross_origin
-from util.image_utils import load_image_from_base64, image_to_base64
-from glid_3_xl.ml_utils import foreach_image_in_sample
-from glid_3_xl.create_sample_function import create_sample_function
-from glid_3_xl.generate_samples import generate_samples
+from src.util import load_image_from_base64, image_to_base64
+from src.glid_3_xl import foreach_image_in_sample
+from src.glid_3_xl.create_sample_function import create_sample_function
+from src.glid_3_xl import generate_samples
 
 
 def start_server(device, model_params, model, diffusion, ldm_model, bert_model, clip_model, clip_preprocess, normalize):

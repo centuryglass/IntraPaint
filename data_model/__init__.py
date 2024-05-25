@@ -1,1 +1,0 @@
-"""data_model provides modules that structure and control application data."""

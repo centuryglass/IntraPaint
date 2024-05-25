@@ -1,9 +1,9 @@
 """
 Starts the GLID-3-XL image inpainting server.
 """
-from glid_3_xl.load_models import load_models
-from util.arg_parser import build_arg_parser
-from glid_3_xl.ml_utils import get_device
+from src.glid_3_xl.load_models import load_models
+from src.glid_3_xl.ml_utils import get_device
+from src.util.arg_parser import build_arg_parser
 from colabFiles.server import start_server
 
 # argument parsing:

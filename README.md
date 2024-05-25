@@ -2,8 +2,8 @@
 
 Collaborate with AI to make art.
 
-| ![example-1.png](./examples/example-1.png) | 
-|:--:| 
+|                   ![example-1.png](./examples/example-1.png)                   | 
+|:------------------------------------------------------------------------------:| 
 | *1. Draw over the area you want to change, provide a text prompt for guidance* |
 
 | ![example-2.png](./examples/example-2.png) | 
@@ -57,7 +57,7 @@ To run the server, you'll need a CUDA-capable GPU with around 10GB of memory. I'
 Once you've followed the steps for setting up both the client and server, you can run both together using `python IntraPaint.py --mode=local` In this mode the two components will communicate directly instead of through HTTP requests, so performance is slightly better.
 
 ## Tips:
-- Larger edit areas lose details due to scaling, best results are at 256x256 or smaller.
+- Larger edit areas lose details due to scaling, the best results are at 256x256 or smaller.
 - Non-square edit areas tend to produce worse results than square areas.
 - The AI can only see the section of the image that's currently in the editing area. If you're trying to get it to extend or match other parts of your image, make sure they're in that area.
 - Using the "draw sketch" option, you can draw directly into the selected area on the right side of the screen to provide additional visual guidance to the AI. This can make it much easier to influence what features it emphasizes and what colors it uses. 

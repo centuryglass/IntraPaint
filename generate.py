@@ -4,11 +4,11 @@ Simplified script for glid-3-xl for image generation only, no inpainting functio
 import sys
 import gc
 import torch
-from glid_3_xl.load_models import load_models
-from glid_3_xl.create_sample_function import create_sample_function
-from glid_3_xl.generate_samples import generate_samples
-from util.arg_parser import build_arg_parser
-from glid_3_xl.ml_utils import get_device, get_save_fn
+from src.glid_3_xl.load_models import load_models
+from src.glid_3_xl.create_sample_function import create_sample_function
+from src.glid_3_xl.generate_samples import generate_samples
+from src.glid_3_xl.ml_utils import get_device, get_save_fn
+from src.util.arg_parser import build_arg_parser
 
 # argument parsing:
 parser = build_arg_parser(default_model='glid_3_xl/models/finetune.pt', include_edit_params=False)

@@ -7,3 +7,6 @@ output_npy
 guided_diffusion.egg-info
 condaStart
 config.json
+tamint-transformers
+ldm
+*@neomake*.py

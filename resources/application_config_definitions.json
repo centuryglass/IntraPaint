@@ -1,0 +1,514 @@
+{
+    "style": {
+        "label": "Style:",
+        "category": "Interface",
+        "description": "Qt style to use for the user interface",
+        "type": "string",
+        "default": "fusion",
+        "options": ["fusion"],
+        "saved": true
+    },
+    "theme": {
+        "label": "Theme:",
+        "category": "Interface",
+        "description": "Theme to use for the user interface",
+        "type": "string",
+        "default": "None",
+        "options": ["None"],
+        "saved": true
+    },
+    "font_point_size": {
+        "label": "Font size:",
+        "category": "Interface",
+        "description": "Font point size to use for user interface text",
+        "type": "int",
+        "default": 10,
+        "saved": true
+    },
+
+
+    "default_image_size": {
+        "label": "Default image size:",
+        "category": "Editing",
+        "description": "Maximum size in pixels of the area selected for editing",
+        "type": "Size",
+        "default": "1024x1024",
+        "saved": true
+    },
+    "max_edit_size": {
+        "label": "Maximum editing size:",
+        "category": "Editing",
+        "description": "Maximum size in pixels of the area selected for editing",
+        "type": "Size",
+        "default": "10240x10240",
+        "saved": true
+    },
+    "min_edit_size": {
+        "label": "Minimum editing size:",
+        "category": "Editing",
+        "description": "Minimum size in pixels of the area selected for editing",
+        "type": "Size",
+        "default": "8x8",
+        "saved": true
+    },
+    "edit_size": {
+        "label": "Editing size:",
+        "category": "Editing",
+        "description": "Current/initial size in pixels of the area selected for editing",
+        "type": "Size",
+        "default": "512x512",
+        "saved": true
+    },
+    "mask_brush_size": {
+        "label": "Brush size:",
+        "category": "Editing",
+        "description": "Current/initial brush size (in pixels) for the mask selection tool.",
+        "type": "int",
+        "default": 40,
+        "saved": true,
+        "range_options": {
+            "min": 1,
+            "max": 300,
+            "step": 1
+        }
+    },
+    "sketch_brush_size": {
+        "label": "Brush size:",
+        "category": "Editing",
+        "description": "Current/initial brush size (in pixels) for the drawing/painting tool.",
+        "type": "int",
+        "default": 8,
+        "saved": true,
+        "range_options": {
+            "min": 1,
+            "max": 300,
+            "step": 1
+        }
+    },
+    "use_mypaint_canvas": {
+        "label": "Enable MyPaint brush canvas:",
+        "category": "Editing",
+        "description": "Use the MyPaint brush engine when painting on the edited image. This will be ignored on systems without libmypaint support",
+        "type": "bool",
+        "default": true,
+        "saved": true
+    },
+    "mypaint_brush": {
+        "label": "Selected MyPaint brush:",
+        "category": "Editing",
+        "description": "Currently selected MyPaint brush file.",
+        "type": "string",
+        "default": "./resources/brushes/experimental/1pixel.myb",
+        "saved": true
+    },
+    "brush_favorites": {
+        "label": "Favorite MyPaint brushes:",
+        "category": "Editing",
+        "description": "Brushes to list in the 'Favorites' tab of the brush selection window",
+        "type": "list",
+        "default": [],
+        "saved": true
+    },
+    "max_undo": {
+        "label": "Maximum undo count:",
+        "category": "Editing",
+        "description": "Number of actions that can be reversed using the 'undo' option.",
+        "type": "int",
+        "default": 30,
+        "saved": true
+    },
+    "pressure_size": {
+        "label": "pressure=size",
+        "category": "Editing",
+        "description": "Whether tablet pen pressure should affect the size of lines drawn. This has no effect when using sketch mode and the MyPaint canvas.",
+        "type": "bool",
+        "default": true,
+        "saved": true
+    },
+    "pressure_opacity": {
+        "label": "pressure=opacity",
+        "category": "Editing",
+        "description": "Whether tablet pen pressure should affect the opacity of lines drawn. This has no effect when using mask mode or using sketch mode with the MyPaint canvas.",
+        "type": "bool",
+        "default": false,
+        "saved": true
+    },
+
+
+    "prompt": {
+        "label": "Prompt:",
+        "category": "Image generation",
+        "description": "Description that generated images should match.",
+        "type": "string",
+        "default": "",
+        "saved": false
+    },
+    "negative_prompt": {
+        "label": "Negative prompt:",
+        "category": "Image generation",
+        "description": "Description that generated images should not match.",
+        "type": "string",
+        "default": "",
+        "saved": false
+    },
+    "guidance_scale": {
+        "label": "Guidance scale:",
+        "category": "Image generation",
+        "description": "Controls how strongly the prompt and negative prompt are applied. Higher values are more consistent but may be less creative.  Overly high or low values may cause image distortion.",
+        "type": "float",
+        "default": 9.0,
+        "saved": true,
+        "range_options": {
+            "min": 0.0,
+            "max": 20.0,
+            "step": 0.1
+        }
+    },
+    "batch_size": {
+        "label": "Batch size:",
+        "category": "Image generation",
+        "description": "Number of image options to simultaneously create in a single image editing operation. Increasing this value too much may result in errors or slowdown if GPU memory limits are reached.",
+        "type": "int",
+        "default": 5,
+        "saved": true,
+        "range_options": {
+            "min": 1,
+            "max": 20,
+            "step": 1
+        }
+    },
+    "batch_count": {
+        "label": "Batch count:",
+        "category": "Image generation",
+        "description": "Number of image batches to create in a single image editing operation. Increasing this value doesn't require additional memory, but it slows down image editing more than increasing the batch size does.",
+        "type": "int",
+        "default": 1,
+        "saved": true,
+        "range_options": {
+            "min": 1,
+            "max": 99,
+            "step": 1
+        }
+    },
+    "show_original_in_options": {
+        "label": "Include original in options:",
+        "category": "Image generation",
+        "description": "When the user is choosing between generated images, include the source image in the options. This makes it easier to tell when none of the generated images are better than the original.",
+        "type": "bool",
+        "default": true,
+        "saved": true
+    },
+
+    "edit_mode": {
+        "label": "Edit mode:",
+        "category": "Stable-Diffusion",
+        "description": "Stable-Diffusion image editing mode. 'Text to Image' completely replaces the selected image section with new content, 'Image to Image' creates altered versions of the image selection, and 'Inpaint' works like 'Image to Image' except that it only affects areas selected by the mask tool",
+        "type": "string",
+        "default": "Inpaint",
+        "options": [
+            "Inpaint",
+            "Image to Image",
+            "Text to Image"
+        ],
+        "saved": true
+    },
+    "masked_content": {
+        "label": "Masked content:",
+        "category": "Stable-Diffusion",
+        "description": "Determines what should be used to fill the masked area before inpainting. 'fill' replaces it with a solid color, 'original' keeps it as-is, 'latent noise' replaces it with random data, and 'latent nothing' clears it. Unless you're inpainting with a denoising strength >0.8, 'original' will almost always be the best option",
+        "type": "string",
+        "default": "original",
+        "options": [
+            "fill",
+            "original",
+            "latent noise",
+            "latent nothing"
+        ],
+        "saved": true
+    },
+    "interrogate_model": {
+        "label": "Image interrogation model:",
+        "category": "Stable-Diffusion",
+        "description": "Model used when auto-generating appropriate prompts using the 'interrogate' button. Supported values will vary based on what extensions you've installed into the stable-generation-webui, but 'clip' should always be accepted.",
+        "type": "string",
+        "default": "clip",
+        "saved": true
+    },
+    "sampling_steps": {
+        "label": "Sampling steps:",
+        "category": "Stable-Diffusion",
+        "description": "Number of diffusion operations to perform when generating image data. Higher values take longer, but often produce more detailed and accurate results. Different stable-diffusion models and samplers have different requirements, but in most cates setting this higher than 30 has only minimal benefits",
+        "type": "int",
+        "default": 30,
+        "saved": false,
+        "range_options": {
+            "min": 1,
+            "max": 150,
+            "step": 1
+        }
+    },
+    "denoising_strength": {
+        "label": "Denoising strength:",
+        "category": "Stable-Diffusion",
+        "description": "Controls how dramatically inpainting and image-to-image operations will change the initial image data. At 0.0, the image will be completely unedited, at 1.0 the image will be completely different",
+        "type": "float",
+        "default": 0.4,
+        "saved": false,
+        "range_options": {
+            "min": 0.0,
+            "max": 1.0,
+            "step": 0.01
+        }
+    },
+    "sampling_method": {
+        "label": "Sampling method:",
+        "category": "Stable-Diffusion",
+        "description": "Mathematical technique used to transform image data during the generation process. 'Euler a' works well in most cases, but certain models or extensions might perform better with other options.",
+        "type": "string",
+        "default": "Euler a",
+        "options": [
+            "Euler a",
+            "Euler",
+            "LMS",
+            "Heun",
+            "DPM2",
+            "DPM2 a",
+            "LMS Karras", 
+            "DPM2 Karras",
+            "DPM2 a Karras",
+            "DDIM",
+            "PLMS"
+        ],
+        "saved": true
+    },
+    "upscale_method": {
+        "label": "Upscale method:",
+        "category": "Stable-Diffusion",
+        "description": "Method to use when increasing image resolution. Available options will be loaded from the stable-diffusion-webui on launch.",
+        "type": "string",
+        "default": "None",
+        "options": [
+            "None"
+        ],
+        "saved": true
+    },
+    "controlnet_upscaling": {
+        "label": "ControlNet tiled upscaling",
+        "category": "Stable-Diffusion",
+        "description": "Whether to use the ControlNet tile model to improve image upscaling. When enabled and supported, all other image generation options will influence upscaling results. To use this, the ControlNet extension needs to be installed in the stable-diffusion-webui, and the controlnet tile model needs to be downloaded to the correct folder.",
+        "type": "bool",
+        "default": false,
+        "saved": true
+    },
+    "controlnet_tile_model": {
+        "label": "ControlNet tiled upscaling model:",
+        "category": "Stable-Diffusion",
+        "description": "ControlNet model to use for tiled upscaling, in the 'filename [hash]' format used by the webui. This only needs to change if a newer model is available if using a stable diffusion model not based on stable-diffusion 1.5.",
+        "type": "string",
+        "default": "control_v11f1e_sd15_tile [a371b31b]",
+        "saved": true
+    },
+    "controlnet_downsample_rate": {
+        "label": "ControlNet tile downsample rate:",
+        "category": "Stable-Diffusion",
+        "description": "Adjusts how strongly the ControlNet tile model preserves the original image data, higher values result in fewer changes.",
+        "type": "float",
+        "range_options": {
+            "min": 1.0,
+            "max": 4.0,
+            "step": 0.1
+        },
+        "default": 1.0,
+        "saved": true
+    },
+    "mask_blur": {
+        "label": "Mask blur:",
+        "category": "Stable-Diffusion",
+        "description": "Pixel radius to blur in the inpainting mask to smoothly combine edited and original image content.",
+        "type": "int",
+        "default": 4,
+        "range_options": {
+            "min": 0,
+            "max": 64,
+            "step": 1
+        },
+        "saved": true
+    },
+    "seed": {
+        "label": "Seed:",
+        "category": "Stable-Diffusion",
+        "description": "Number used to control pseudo-random aspects of image generation, in most cases using the same seed with the same settings and inputs will always produce the same results. If set to -1, a different random seed will be used for each image generation. ",
+        "type": "int",
+        "default": -1,
+        "saved": true
+    },
+    "inpaint_full_res": {
+        "label": "Inpaint Full Resolution",
+        "category": "Stable-Diffusion",
+        "description": "If true, inpaint the masked area at higher resolution by ignoring the unmasked area. This can increase image quality by sacrificing awareness of additional image content.",
+        "type": "bool",
+        "default": false,
+        "saved": true
+    },
+    "inpaint_full_res_padding": {
+        "label": "Padding:",
+        "category": "Stable-Diffusion",
+        "description": "Pixel radius outside of the masked area to include when inpainting when the 'Inpaint Full Resolution' option is enabled. Higher values increase contextual awareness while decreasing overall level of detail.",
+        "type": "int",
+        "default": 32,
+        "range_options": {
+            "min": 0,
+            "max": 1024,
+            "step": 1
+        },
+        "saved": true
+    },
+    "restore_faces": {
+        "label": "Restore faces",
+        "category": "Stable-Diffusion",
+        "description": "Use a face restoration model to correct image data after stable-diffusion runs. In most cases you'll probably get better results without it.",
+        "type": "bool",
+        "default": false,
+        "saved": true
+    },
+    "tiling": {
+        "label": "Tiling",
+        "category": "Stable-Diffusion",
+        "description": "Generate tiling images that can be seamlessly repeated.",
+        "type": "bool",
+        "default": false,
+        "saved": true
+    },
+    "controlnet_args_0": {
+        "label": "ControlNet Settings (first layer)",
+        "category": "Stable-Diffusion",
+        "description": "First layer ControlNet extension settings.",
+        "type": "dict",
+        "default": {},
+        "saved": true
+    },
+    "controlnet_args_1": {
+        "label": "ControlNet Settings (second layer)",
+        "category": "Stable-Diffusion",
+        "description": "Second layer ControlNet extension settings.",
+        "type": "dict",
+        "default": {},
+        "saved": true
+    },
+    "controlnet_args_2": {
+        "label": "ControlNet Settings (third layer)",
+        "category": "Stable-Diffusion",
+        "description": "Second layer ControlNet extension settings.",
+        "type": "dict",
+        "default": {},
+        "saved": true
+    },
+
+
+
+    "cutn": {
+        "label": "Detail reference count (cutn):",
+        "category": "GLID-3-XL",
+        "description": "Determines how many random cutouts from the input image are used to guide image generation. Higher values can introduce more detail and variation, but may also introduce more noise and irrelevant information.",
+        "type": "int",
+        "default": 16,
+        "saved": true
+    },
+    "skip_steps": {
+        "label": "Skip steps:",
+        "category": "GLID-3-XL",
+        "description": "Number of diffusion steps to skip. Higher values will result in faster image generation with decreased detail and accuracy.",
+        "type": "int",
+        "default": 0,
+        "saved": true,
+        "range_options": {
+            "min": 0,
+            "max": 27,
+            "step": 1
+        }
+    },
+    "upscale_mode": {
+        "label": "Upscale mode:",
+        "category": "GLID-3-XL",
+        "description": "Upscaling mode used when the inpainting resolution doesn't match the selection size.",
+        "type": "int",
+        "default": 1,
+        "saved": true
+    },
+    "downscale_mode": {
+        "label": "Downscale mode:",
+        "category": "GLID-3-XL",
+        "description": "Downscaling mode used when the inpainting resolution doesn't match the selection size.",
+        "type": "int",
+        "default": 1,
+        "saved": true
+    },
+
+    "styles": {
+        "label": "styles",
+        "category": "Cache",
+        "description": "Saved style prompts loaded from the webui",
+        "type": "string",
+        "default": "None",
+        "options": [
+            "None"
+        ],
+        "saved": false
+    },
+    "controlnet_version": {
+        "label": "ControlNet version:",
+        "category": "Cache",
+        "description": "ControlNet extension version loaded from the webui",
+        "type": "float",
+        "default": -1.0,
+        "saved": false
+    },
+    "controlnet_control_types": {
+        "label": "ControlNet control types:",
+        "category": "Cache",
+        "description": "ControlNet control type definitions loaded from the webui",
+        "type": "dict",
+        "default": {},
+        "saved": false
+    },
+    "controlnet_modules": {
+        "label": "ControlNet modules:",
+        "category": "Cache",
+        "description": "ControlNet module definitions loaded from the webui",
+        "type": "dict",
+        "default": {},
+        "saved": false
+    },
+    "controlnet_models": {
+        "label": "ControlNet models:",
+        "category": "Cache",
+        "description": "ControlNet model definitions loaded from the webui",
+        "type": "dict",
+        "default": {},
+        "saved": false
+    },
+    "lora_models": {
+        "label": "LoRA models:",
+        "category": "Cache",
+        "description": "LoRA model definitions loaded from the webui",
+        "type": "list",
+        "default": {},
+        "saved": false
+    },
+    "last_seed": {
+        "label": "Last seed:",
+        "category": "Cache",
+        "description": "Last seed used for image generation",
+        "type": "string",
+        "default": "-1",
+        "saved": false
+    },
+    "last_file_path": {
+        "label": "Last file path:",
+        "category": "Cache",
+        "description": "Last image file loaded",
+        "type": "string",
+        "default": "",
+        "saved": false
+    }
+}

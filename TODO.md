@@ -6,7 +6,7 @@
 - Implement show/hide layers in widget
 - Sketch interaction with layers:
   * Drawing tools should copy content into the active layer
-  * Erasers shoule erase layer content to transparency
+  * Erasers should erase layer content to transparency
 - Selection/Layer interaction:
   * Add right-click "Send to new layer" option in 
 - Selected image generations should be applied to active layer
@@ -55,7 +55,7 @@
 # sketch canvas/libmypaint
 - Build library binaries for other systems:
     * Windows
-    * Mac OS (intel and M1)
+    * macOS (intel and M1)
     * Raspberry Pi/other ARM-based Linux
     * others?
 - Clean up library build process
