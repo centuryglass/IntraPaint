@@ -144,10 +144,13 @@ class ImagePanel(QWidget):
             self._y_coord_box.setValue(bounds.top())
             self._width_box.setValue(bounds.width())
             self._height_box.setValue(bounds.height())
+            self._width_box.setMaximum(min(max_edit_size.width(), layer_stack.width - bounds.x()))
+            self._height_box.setMaximum(min(max_edit_size.height(), layer_stack.height - bounds.y()))
             self._x_coord_box.setRange(0, layer_stack.width - bounds.width())
             self._y_coord_box.setRange(0, layer_stack.height - bounds.height())
 
         layer_stack.selection_bounds_changed.connect(set_coordinates)
+        set_coordinates(layer_stack.selection)
         self.setLayout(self._layout)
         self.setSizePolicy(QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding))
         self._init_image_box_layout()

@@ -2,8 +2,9 @@
 
 from typing import Optional, List
 from PyQt5.QtWidgets import QWidget, QLabel, QVBoxLayout, QHBoxLayout, QScrollArea, QSizePolicy
-from PyQt5.QtGui import QPainter, QColor, QPaintEvent
-from PyQt5.QtCore import QRect, QSize
+from PyQt5.QtGui import QPainter, QColor, QPaintEvent, QMouseEvent
+from PyQt5.QtCore import Qt, QRect, QSize
+from PyQt5.QtSvg import QSvgWidget
 from src.image.image_layer import ImageLayer
 from src.image.layer_stack import LayerStack
 from src.ui.util.get_scaled_placement import get_scaled_placement
@@ -12,8 +13,10 @@ from src.ui.util.contrast_color import LUMINANCE_THRESHOLD, relative_luminance
 LIST_SPACING = 4
 DEFAULT_LIST_ITEM_SIZE = QSize(350, 100)
 DEFAULT_LIST_SIZE = QSize(380, 600)
+ICON_PATH_VISIBLE_LAYER = 'resources/visible.svg'
+ICON_PATH_HIDDEN_LAYER = 'resources/hidden.svg'
 
-WINDOW_TITLE = "Image Layers"
+WINDOW_TITLE = 'Image Layers'
 
 
 class LayerItem(QWidget):
@@ -41,6 +44,32 @@ class LayerItem(QWidget):
         self.setAutoFillBackground(True)
         self.setPalette(palette)
 
+        def get_layer_visibility_icon_path(layer):
+            return ICON_PATH_VISIBLE_LAYER if layer.visible else ICON_PATH_HIDDEN_LAYER
+
+        class VisibilityButton(QSvgWidget):
+            """Show/hide layer button."""
+
+            def __init__(self, layer) -> None:
+                """Connect to the layer and load the initial icon."""
+                super().__init__()
+                self._layer = layer
+                layer.visibility_changed.connect(self._update_icon)
+                self._update_icon()
+
+            def _update_icon(self):
+                """Loads the open eye icon if the layer is visible, the closed eye icon otherwise."""
+                self.load(ICON_PATH_VISIBLE_LAYER if self._layer.visible else ICON_PATH_HIDDEN_LAYER)
+                self.renderer().setAspectRatioMode(Qt.AspectRatioMode.KeepAspectRatio)
+                self.update()
+
+            def mousePressEvent(self, unused_event: Optional[QMouseEvent]) -> None:
+                """Toggle visibility on click."""
+                self._layer.visible = not self._layer.visible
+
+        self._visibility_button = VisibilityButton(self._layer)
+        self._layout.addWidget(self._visibility_button, stretch=10)
+
     def paintEvent(self, unused_event: Optional[QPaintEvent]) -> None:
         """Draws the scaled layer contents to the widget."""
         pixmap = self._layer.pixmap
@@ -50,7 +79,7 @@ class LayerItem(QWidget):
         painter = QPainter(self)
         painter.drawPixmap(pixmap_bounds, pixmap)
         if not self._layer.visible:
-            painter.fillRect(QColor.fromRgb(0, 0, 0, 100))
+            painter.fillRect(pixmap_bounds, QColor.fromRgb(0, 0, 0, 100))
 
     def sizeHint(self) -> QSize:
         """Returns a reasonable default size."""
