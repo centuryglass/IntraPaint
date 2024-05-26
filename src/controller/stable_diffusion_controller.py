@@ -313,6 +313,7 @@ class StableDiffusionController(BaseInpaintController):
         self._window.setGeometry(0, 0, size.width(), size.height())
         self.fix_styles()
         if self._init_image is not None:
+            print('loading init image:')
             self.load_image(self._init_image)
         self._window.show()
 

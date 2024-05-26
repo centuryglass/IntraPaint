@@ -10,7 +10,7 @@ from argparse import Namespace
 from PIL import Image, ImageFilter, UnidentifiedImageError, PngImagePlugin
 from PyQt5.QtWidgets import QApplication, QMessageBox, QMainWindow
 from PyQt5.QtCore import QObject, QThread, QRect, QSize, pyqtSignal
-from PyQt5.QtGui import QScreen
+from PyQt5.QtGui import QScreen, QImage
 try:
     import qdarktheme
 except ImportError:
@@ -171,6 +171,7 @@ class BaseInpaintController:
         self._window.setMaximumWidth(size.width())
         self.fix_styles()
         if self._init_image is not None:
+            print('loading init image:')
             self.load_image(self._init_image)
         self._window.show()
 
@@ -295,6 +296,7 @@ class BaseInpaintController:
                 else:
                     print('Warning: image parameters do not match expected patterns, cannot be used. '
                           f'parameters:{param_str}')
+            image = QImage(file_path)
             self._layer_stack.set_image(image)
             self._config.set(AppConfig.LAST_FILE_PATH, file_path)
         except UnidentifiedImageError as err:

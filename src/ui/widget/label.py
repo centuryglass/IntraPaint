@@ -150,8 +150,10 @@ class Label(QLabel):
         """Combines the text and icon into a single internal image."""
         assert self._image is not None and self._image_inverted is not None
         if self._icon is not None:
-            scaled_icon = self._icon.scaledToWidth(self._image.width()) if self._orientation == Qt.Orientation.Vertical \
-                else self._icon.scaledToHeight(self._image.height())
+            if self._orientation == Qt.Orientation.Vertical:
+                scaled_icon = self._icon.scaledToWidth(self._image.width())
+            else:
+                scaled_icon = self._icon.scaledToHeight(self._image.height())
             icon_padding = (self._image.width() if self._orientation == Qt.Orientation.Vertical
                             else self._image.height()) // 3
             new_size = QSize(self._image.width(), self._image.height())

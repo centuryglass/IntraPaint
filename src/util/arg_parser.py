@@ -48,7 +48,7 @@ def build_arg_parser(default_model='glid_3_xl/models/inpaint.pt', include_edit_p
                             help='init image to use')
     if include_edit_params:
         parser.add_argument('--edit', type=str, required=True,
-                            help='path to the image you want to edit (either an image file or .npy containing a ' + \
+                            help='path to the image you want to edit (either an image file or .npy containing a '
                                  'numpy array of the image embeddings)')
 
         parser.add_argument('--edit_x', type=int, required=False, default=0,
@@ -64,7 +64,7 @@ def build_arg_parser(default_model='glid_3_xl/models/inpaint.pt', include_edit_p
                             help='height of the edit image in the generation frame (need to be multiple of 8)')
 
         parser.add_argument('--mask', type=str, required=False,
-                            help='path to a mask image. white pixels = keep, black pixels = discard. width = ' + \
+                            help='path to a mask image. white pixels = keep, black pixels = discard. width = '
                                  'image width/8, height = image height/8')
     parser.add_argument('--cpu', dest='cpu', action='store_true')
 

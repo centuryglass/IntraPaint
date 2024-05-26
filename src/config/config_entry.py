@@ -88,10 +88,10 @@ class ConfigEntry:
             # changes to numeric ranges:
             if self._range_options is not None:
                 if inner_key not in RangeKey.ALL:
-                    raise ValueError(f'Invalid inner_key for {self._key}, expected {RangeKey.ALL}, " + \
-                            f"got {inner_key}')
+                    raise ValueError(f'Invalid inner_key for {self._key}, expected {RangeKey.ALL}, '
+                                     f'got {inner_key}')
                 if not isinstance(self._value, type(value)):
-                    raise TypeError(f'Cannot set {self._key}.{inner_key} to {type(value)} "{value}", type is ' + \
+                    raise TypeError(f'Cannot set {self._key}.{inner_key} to {type(value)} "{value}", type is '
                                     f'{type(self._value)}')
                 value_changed = self._range_options[inner_key] != value
                 self._range_options[inner_key] = value
@@ -103,20 +103,20 @@ class ConfigEntry:
                 value_changed = prev_value != value
                 self._value[inner_key] = value
                 return value_changed
-            raise TypeError(f'Tried to set "{self._key}.{inner_key}" to value "{value}", but ' + \
+            raise TypeError(f'Tried to set "{self._key}.{inner_key}" to value "{value}", but '
                             f'{self._key} is type "{type(self._value)}"')
 
         # Enforce type consistency for values other than inner dict values:
         if not isinstance(value, type(self._value)):
-            raise TypeError(f'Expected "{self._key}" value "{value}" to have type "{type(self._value)}", found ' + \
+            raise TypeError(f'Expected "{self._key}" value "{value}" to have type "{type(self._value)}", found '
                             f'"{type(value)}"')
 
         # Handle changes to values with predefined options lists:
-        if self._options is not None and not value in self._options:
+        if self._options is not None and value not in self._options:
             if add_missing_options:
                 self.add_option(value)
             else:
-                raise RuntimeError(f'"{self._key}" value "{value}" is not a valid option in ' + \
+                raise RuntimeError(f'"{self._key}" value "{value}" is not a valid option in '
                                    f'{json.dumps(self._options)}')
         value_changed = self._value != value
         self._value = value
@@ -127,7 +127,7 @@ class ConfigEntry:
         if inner_key is not None:
             if self._range_options is not None:
                 if inner_key not in RangeKey.ALL:
-                    raise ValueError(f'Invalid inner_key for {self._key}, expected {RangeKey.ALL}, ' + \
+                    raise ValueError(f'Invalid inner_key for {self._key}, expected {RangeKey.ALL}, '
                                      f'got {inner_key}')
                 return self._range_options[inner_key]
             if isinstance(self._value, dict):
@@ -172,7 +172,7 @@ class ConfigEntry:
         if not isinstance(options_list, list) or len(options_list) == 0:
             raise RuntimeError(f'Provided invalid options for config value "{self._key}"')
         self._options = options_list.copy()
-        if not self._value in options_list:
+        if self._value not in options_list:
             self.set_value(options_list[0], False)
 
     def add_option(self, option: str) -> None:

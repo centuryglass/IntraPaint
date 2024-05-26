@@ -44,16 +44,13 @@ class LayerItem(QWidget):
         self.setAutoFillBackground(True)
         self.setPalette(palette)
 
-        def get_layer_visibility_icon_path(layer):
-            return ICON_PATH_VISIBLE_LAYER if layer.visible else ICON_PATH_HIDDEN_LAYER
-
         class VisibilityButton(QSvgWidget):
             """Show/hide layer button."""
 
-            def __init__(self, layer) -> None:
+            def __init__(self, connected_layer: ImageLayer) -> None:
                 """Connect to the layer and load the initial icon."""
                 super().__init__()
-                self._layer = layer
+                self._layer = connected_layer
                 layer.visibility_changed.connect(self._update_icon)
                 self._update_icon()
 

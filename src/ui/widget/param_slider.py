@@ -161,9 +161,9 @@ class ParamSlider(QWidget):
             return QSize(max(self._vertical_slider.sizeHint().width(),
                              self._label.sizeHint().width(),
                              self._spinbox_measurements.width()),
-                         self._vertical_slider.sizeHint().height() + self._label.sizeHint().height() + \
+                         self._vertical_slider.sizeHint().height() + self._label.sizeHint().height() +
                          self._spinbox_measurements.height())
-        #horizontal
+        # horizontal
         return QSize(self._horizontal_slider.sizeHint().width() + self._label.sizeHint().width() +
                      self._spinbox_measurements.width(),
                      max(self._horizontal_slider.sizeHint().height(),
@@ -181,7 +181,7 @@ class ParamSlider(QWidget):
             self._step_box.setGeometry(0, self.height() - number_height, self.width(), number_height)
             self._vertical_slider.setGeometry(0, label_height, self.width(),
                                               self.height() - label_height - number_height - 5)
-        else:  #horizontal
+        else:  # horizontal
             label_width = self._label.sizeHint().width()
             number_width = self._spinbox_measurements.width()
             self._label.setGeometry(0, 0, label_width, self.height())
@@ -198,7 +198,7 @@ class ParamSlider(QWidget):
             self._horizontal_slider.setVisible(False)
             self._vertical_slider.setVisible(True)
             self.setSizePolicy(QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Ignored))
-        else:  #horizontal
+        else:  # horizontal
             self._horizontal_slider.setVisible(True)
             self._vertical_slider.setVisible(False)
             self.setSizePolicy(QSizePolicy(QSizePolicy.Ignored, QSizePolicy.Fixed))

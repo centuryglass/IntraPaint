@@ -1,6 +1,7 @@
 """Panel used to display the edited image and associated controls. """
-from PyQt5.QtWidgets import QWidget, QSpinBox, QLabel, QVBoxLayout, QHBoxLayout, QSlider, QSizePolicy
-from PyQt5.QtCore import Qt, QRect, pyqtSignal
+from PyQt5.QtWidgets import QWidget, QSpinBox, QDoubleSpinBox, QLabel, QVBoxLayout, QHBoxLayout, QSlider, QSizePolicy, \
+    QPushButton
+from PyQt5.QtCore import Qt, QRect, QPoint, pyqtSignal
 from PyQt5.QtGui import QPainter, QPen
 
 from src.ui.image_viewer import ImageViewer
@@ -13,17 +14,14 @@ from src.image.layer_stack import LayerStack
 from src.util.validation import assert_type
 
 IMAGE_PANEL_TITLE = 'Full Image'
-
+SCALE_SLIDER_LABEL = 'Zoom:'
+SCALE_RESET_BUTTON_LABEL = 'Reset View'
+SCALE_RESET_BUTTON_TOOLTIP = 'Restore default image zoom and offset'
 SELECTION_X_LABEL = 'X:'
-
 SELECTION_X_TOOLTIP = 'Selected X coordinate'
-
 SELECTION_Y_LABEL = 'Y:'
-
 SELECTION_Y_TOOLTIP = 'Selected Y coordinate'
-
 SELECTION_WIDTH_LABEL = 'W:'
-
 SELECTION_HEIGHT_LABEL = 'H:'
 
 
@@ -69,7 +67,61 @@ class ImagePanel(QWidget):
         control_bar_layout = QHBoxLayout(self._control_bar)
         control_bar_layout.addWidget(QLabel(config.get_label(AppConfig.LAST_FILE_PATH)))
         self._file_text_box = connected_textedit(self, config, AppConfig.LAST_FILE_PATH)
-        control_bar_layout.addWidget(self._file_text_box, stretch=255)
+        control_bar_layout.addWidget(self._file_text_box, stretch=100)
+
+        # image zoom controls
+        self._image_scale_slider = QSlider(Qt.Orientation.Horizontal)
+        self._image_scale_slider.setRange(1, 4000)
+        self._image_scale_slider.setSingleStep(10)
+        self._image_scale_slider.setValue(int(self._image_viewer.scale * 100))
+        self._image_scale_box = QDoubleSpinBox()
+        self._image_scale_box.setRange(0.001, 40)
+        self._image_scale_box.setSingleStep(0.1)
+        self._image_scale_box.setValue(self._image_viewer.scale)
+
+        scale_signals = [
+            self._image_viewer.scale_changed,
+            self._image_scale_slider.valueChanged,
+            self._image_scale_box.valueChanged
+        ]
+
+        def on_scale_change(new_scale: float | int) -> None:
+            """Synchronize slider, spin box, and panel scale:"""
+            if isinstance(new_scale, int):
+                float_scale = new_scale / 100
+                int_scale = new_scale
+            else:
+                float_scale = new_scale
+                int_scale = int(float_scale * 100)
+            for scale_signal in scale_signals:
+                scale_signal.disconnect(on_scale_change)
+            if self._image_scale_box.value() != float_scale:
+                self._image_scale_box.setValue(float_scale)
+            if self._image_scale_slider.value() != int_scale:
+                self._image_scale_slider.setValue(int_scale)
+            if self._image_viewer.scale != float_scale:
+                self._image_viewer.scale = float_scale
+            for scale_signal in scale_signals:
+                scale_signal.connect(on_scale_change)
+
+        for signal in scale_signals:
+            signal.connect(on_scale_change)
+
+        control_bar_layout.addWidget(QLabel(SCALE_SLIDER_LABEL))
+        control_bar_layout.addWidget(self._image_scale_slider, stretch=100)
+        control_bar_layout.addWidget(self._image_scale_box)
+
+        self.scale_reset_button = QPushButton()
+        self.scale_reset_button.setText(SCALE_RESET_BUTTON_LABEL)
+        self.scale_reset_button.setToolTip(SCALE_RESET_BUTTON_TOOLTIP)
+
+        def reset_scale() -> None:
+            """Set image zoom and offsets back to default."""
+            self._image_viewer.scale = 1.0
+            self._image_viewer.offset = QPoint(0, 0)
+
+        self.scale_reset_button.clicked.connect(reset_scale)
+        control_bar_layout.addWidget(self.scale_reset_button)
 
         # wire x/y coordinate boxes to set selection coordinates:
         control_bar_layout.addWidget(QLabel(SELECTION_X_LABEL, self))
@@ -144,8 +196,8 @@ class ImagePanel(QWidget):
             self._y_coord_box.setValue(bounds.top())
             self._width_box.setValue(bounds.width())
             self._height_box.setValue(bounds.height())
-            self._width_box.setMaximum(min(max_edit_size.width(), layer_stack.width - bounds.x()))
-            self._height_box.setMaximum(min(max_edit_size.height(), layer_stack.height - bounds.y()))
+            self._width_box.setMaximum(min(max_edit_size.width(), layer_stack.width))
+            self._height_box.setMaximum(min(max_edit_size.height(), layer_stack.height))
             self._x_coord_box.setRange(0, layer_stack.width - bounds.width())
             self._y_coord_box.setRange(0, layer_stack.height - bounds.height())
 
@@ -205,9 +257,8 @@ class ImagePanel(QWidget):
         """Recalculate image scaling bounds based on image size and edit size limits."""
         max_edit_size = self._layer_stack.max_selection_size
         image_size = self._layer_stack.size
-        for spinbox, max_edit_dim in [
-                (self._width_box, max_edit_size.width()),
-                (self._height_box, max_edit_size.height())]:
+        for spinbox, max_edit_dim in [(self._width_box, max_edit_size.width()),
+                                      (self._height_box, max_edit_size.height())]:
             spinbox.setMaximum(max_edit_dim)
         selection_size = self._layer_stack.selection.size()
         self._x_coord_box.setMaximum(image_size.width() - selection_size.width())

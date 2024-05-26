@@ -6,8 +6,8 @@ from typing import Callable, Optional, Any
 import sys
 import math
 from PyQt5.QtWidgets import QMainWindow, QGridLayout, QLabel, QWidget, QPushButton, QVBoxLayout, QHBoxLayout, \
-    QComboBox, QFileDialog, QStackedWidget, QAction, QMenuBar, QBoxLayout
-from PyQt5.QtGui import QIcon, QMouseEvent, QResizeEvent
+    QComboBox, QFileDialog, QStackedWidget, QAction, QMenuBar, QBoxLayout, QApplication
+from PyQt5.QtGui import QIcon, QMouseEvent, QResizeEvent, QHideEvent
 from PyQt5.QtCore import Qt, QRect, QSize, QPoint
 from PIL import Image
 
@@ -553,3 +553,7 @@ class MainWindow(QMainWindow):
     def layout(self) -> QBoxLayout:
         """Gets the window's layout as QBoxLayout."""
         return self._layout
+
+    def hideEvent(self, unused_event: Optional[QHideEvent]) -> None:
+        """Close the application when the main window is hidden."""
+        QApplication.exit()

@@ -43,7 +43,8 @@ class ImageLayer(QObject):
         elif isinstance(image_data, QImage):
             self.q_image = image_data
         elif isinstance(image_data, QSize):
-            self._size = image_data
+            q_image = QImage(image_data, QImage.Format.Format_ARGB32_Premultiplied)
+            self.q_image = q_image
         else:
             raise TypeError(f'Invalid layer image data: {image_data}')
 
@@ -88,7 +89,7 @@ class ImageLayer(QObject):
     @property
     def size(self) -> QSize:
         """Returns the layer size in pixels as a QSize object."""
-        return self._image.size()
+        return QSize(0, 0) if self._image is None else self._image.size()
 
     @size.setter
     def size(self, new_size: QSize) -> None:

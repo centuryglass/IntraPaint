@@ -28,7 +28,7 @@ def tile_pattern_fill(pixmap: QPixmap,
 
 
 def get_transparency_tile_pixmap(size: Optional[QSize] = None) -> QPixmap:
-    """Returns a tileable pixmap used to represent transparency."""
+    """Returns a tiling pixmap used to represent transparency."""
     if size is None:
         size = QSize(TRANSPARENCY_PATTERN_BACKGROUND_DIM, TRANSPARENCY_PATTERN_BACKGROUND_DIM)
     transparency_pixmap = QPixmap(size)

@@ -74,7 +74,7 @@ class CanvasView(FixedAspectGraphicsView):
         self._image_section = None
         self._image_pixmap = None
         self._mode_swap_timestamps = []
-        self.content_size = self._mask_canvas.size
+        self.content_size = self._layer_stack.selection.size()
         sketch_canvas.add_to_scene(self.scene(), 0)
         mask_canvas.add_to_scene(self.scene(), 1)
         self.resizeEvent(None)

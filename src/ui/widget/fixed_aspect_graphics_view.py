@@ -2,7 +2,7 @@
 from typing import Optional
 from PyQt5.QtWidgets import QWidget, QGraphicsView, QGraphicsScene
 from PyQt5.QtGui import QPixmap, QImage, QPainter, QPen, QTransform, QResizeEvent
-from PyQt5.QtCore import Qt, QPoint, QPointF, QRect, QRectF, QSize, QMarginsF
+from PyQt5.QtCore import Qt, QPoint, QPointF, QRect, QRectF, QSize, QMarginsF, pyqtSignal
 from src.ui.util.get_scaled_placement import get_scaled_placement
 from src.ui.util.contrast_color import contrast_color
 from src.util.validation import assert_type
@@ -11,6 +11,8 @@ from src.util.validation import assert_type
 class FixedAspectGraphicsView(QGraphicsView):
     """A QGraphicsView that maintains an aspect ratio and simplifies scene management."""
 
+    scale_changed = pyqtSignal(float)
+
     def __init__(self, parent: Optional[QWidget] = None) -> None:
         super().__init__(parent)
         self._scene = QGraphicsScene()
@@ -18,11 +20,15 @@ class FixedAspectGraphicsView(QGraphicsView):
         self._content_rect: Optional[QRect] = None
         self._background: Optional[QPixmap] = None
 
+        self._scale = 1.0
+        self._scale_adjustment = 0.0
+        self._offset = QPointF(0.0, 0.0)
+
         self.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.setCacheMode(QGraphicsView.CacheBackground)
-        self.setTransformationAnchor(QGraphicsView.NoAnchor)
+        self.setTransformationAnchor(QGraphicsView.ViewportAnchor.NoAnchor)
         self.setViewportUpdateMode(QGraphicsView.FullViewportUpdate)
         self.setScene(self._scene)
 
@@ -51,6 +57,31 @@ class FixedAspectGraphicsView(QGraphicsView):
         return self._content_rect.size()
 
     @property
+    def scale(self) -> float:
+        """Returns the image content scale."""
+        return self._scale + self._scale_adjustment
+
+    @scale.setter
+    def scale(self, new_scale: float) -> None:
+        """Updates the image content scale, limiting minimum scale to 0.01."""
+        new_scale = max(new_scale, 0.001)
+        self._scale_adjustment = new_scale - self._scale
+        self.resizeEvent(None)
+        self.scale_changed.emit(new_scale)
+
+    @property
+    def offset(self) -> QPointF:
+        """Gets the image offset in pixels."""
+        return QPointF(self._offset)
+
+    @offset.setter
+    def offset(self, new_offset: QPoint | QPointF) -> None:
+        """Updates the image offset."""
+        self._offset.setX(float(new_offset.x()))
+        self._offset.setY(float(new_offset.y()))
+        self.resizeEvent(None)
+
+    @property
     def background(self) -> QPixmap | None:
         """Returns the background image content."""
         return self._background
@@ -73,42 +104,13 @@ class FixedAspectGraphicsView(QGraphicsView):
     def scene_to_widget_coordinates(self, point: QPoint) -> QPointF:
         """Returns a point within the widget bounds corresponding to some point within the scene content."""
         assert_type(point, QPoint)
-        assert self._content_rect is not None and self.content_size is not None
-        x_scale = self._content_rect.width() / self.content_size.width()
-        y_scale = self._content_rect.height() / self.content_size.height()
-        x0 = self._content_rect.x()
-        y0 = self._content_rect.y()
-        return QPointF(x0 + point.x() * x_scale, y0 + point.y() * y_scale)
-
-    def widget_to_painter_coordinates(self, point: QPoint | QPointF, painter_bounds: QRectF) -> QPointF:
-        """Converts a point from widget coordinates to painter coordinates."""
-        assert_type(point, (QPoint, QPointF))
-        assert_type(painter_bounds, QRectF)
-        x_scale = painter_bounds.width() / self.size().width()
-        y_scale = painter_bounds.height() / self.size().height()
-        x0 = painter_bounds.x()
-        y0 = painter_bounds.y()
-        return QPointF(x0 + point.x() * x_scale, y0 + point.y() * y_scale)
-
-    def scene_point_to_painter_coordinates(self, point: QPoint, painter_rect: QRectF) -> QPointF:
-        """Converts a point from scene coordinates to painter coordinates."""
-        widget_point = self.scene_to_widget_coordinates(point)
-        return self.widget_to_painter_coordinates(widget_point, painter_rect)
-
-    def _content_rect_to_painter_coordinates(self, painter_rect: QRectF) -> QRectF:
-        """Converts a rectangle from scene coordinates to painter coordinates."""
-        assert self._content_rect is not None
-        top_left = QPoint(self._content_rect.x(), self._content_rect.y())
-        bottom_right = QPoint(top_left.x() + self._content_rect.width(), top_left.y() + self._content_rect.height())
-        top_left = self.widget_to_painter_coordinates(top_left, painter_rect)
-        bottom_right = self.widget_to_painter_coordinates(bottom_right, painter_rect)
-        return QRectF(top_left.x(), top_left.y(), bottom_right.x() - top_left.x(), bottom_right.y() - top_left.y())
+        return self.mapFromScene(point)
 
     def drawBackground(self, painter: Optional[QPainter], rect: QRectF) -> None:
         """Renders any background image behind all scene contents."""
         if painter is None or self._background is None or self._content_rect is None:
             return
-        content_rect = self._content_rect_to_painter_coordinates(rect)
+        content_rect = self.mapToScene(self._content_rect).boundingRect()
         if self._background is not None:
             painter.drawPixmap(content_rect, self._background, QRectF(self._background.rect()))
         border_size = float(self._border_size())
@@ -122,19 +124,21 @@ class FixedAspectGraphicsView(QGraphicsView):
         """Draws a border around the scene area and blocks out any out-of-bounds content."""
         if painter is None:
             return
-        content_rect = self._content_rect_to_painter_coordinates(rect)
+        content_rect = self.mapToScene(self._content_rect).boundingRect()
         border_rect = content_rect.adjusted(-5.0, -5.0, 5.0, 5.0)
 
         # QGraphicsView fails to clip content sometimes, so fill everything outside the scene with the
         # background color, then draw the border:
+        pt0 = content_rect.topLeft()
+        pt1 = QPointF(pt0.x() + border_rect.width(), pt0.y() + border_rect.height())
         fill_color = self.palette().color(self.backgroundRole())
-        border_left = int(border_rect.x())
-        border_right = border_left + int(border_rect.width())
-        border_top = int(border_rect.y())
-        border_bottom = border_top + int(border_rect.height())
+        border_left = int(pt0.x())
+        border_right = int(pt1.x())
+        border_top = int(pt0.y())
+        border_bottom = int(pt1.y())
 
-        max_size = 200000000  # Larger than the viewport can ever possibly be, small enough to avoid overflow issues
-        painter.fillRect(border_left, -(max_size // 2), -max_size, max_size, fill_color)
+        max_size = 20000000  # Large enough to ensure everything is covered, small enough to avoid overflow issues.
+        painter.fillRect(border_left - max_size, -(max_size // 2), max_size, max_size, fill_color)
         painter.fillRect(border_right, -(max_size // 2), max_size, max_size, fill_color)
         painter.fillRect(-(max_size // 2), border_top, max_size, -max_size, fill_color)
         painter.fillRect(-(max_size // 2), border_bottom, max_size, max_size, fill_color)
@@ -150,19 +154,24 @@ class FixedAspectGraphicsView(QGraphicsView):
         if self.content_size is None:
             raise RuntimeError('FixedAspectGraphicsView implementations must set content_size in __init__ before the ' +
                                'first resizeEvent is triggered')
-        content_rect_f = QRectF(0.0, 0.0, float(self.content_size.width()), float(self.content_size.height()))
+        content_rect_f = QRectF(self._offset.x(), self._offset.y(), float(self.content_size.width()),
+                                float(self.content_size.height()))
         if content_rect_f != self._scene.sceneRect():
             self._scene.setSceneRect(content_rect_f)
 
         border_size = self._border_size()
         self._content_rect = get_scaled_placement(QRect(QPoint(0, 0), self.size()), self.content_size, border_size)
-        x_scale = self._content_rect.width() / self.content_size.width()
-        y_scale = self._content_rect.height() / self.content_size.height()
+        new_scale = self.displayed_content_size.width() / self.content_size.width()
+        scale_changed = new_scale != self._scale
+        self._scale = new_scale
+        adjusted_scale = self._scale + self._scale_adjustment
         transformation = QTransform()
-        transformation.scale(x_scale, y_scale)
-        transformation.translate(float(self._content_rect.x()), float(self._content_rect.y()))
+        transformation.scale(adjusted_scale, adjusted_scale)
         self.setTransform(transformation)
+        if scale_changed:
+            self.scale_changed.emit(adjusted_scale)
         self.update()
 
     def _border_size(self) -> int:
         return (min(self.width(), self.height()) // 40) + 1
+

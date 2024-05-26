@@ -363,7 +363,7 @@ class SampleSelector(QWidget):
                         self._close_selector()
                 return True
             case Qt.Key_0 | Qt.Key_1 | Qt.Key_2 | Qt.Key_3 | Qt.Key_4 | Qt.Key_5 | Qt.Key_6 | Qt.Key_7 | Qt.Key_8 \
-                 | Qt.Key_9 if key_index() < self._option_count():
+                    | Qt.Key_9 if key_index() < self._option_count():
                 if not self._zoom_mode or key_index() == self._zoom_index:
                     toggle_zoom = True
                 zoom_index = key_index()

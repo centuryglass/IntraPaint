@@ -119,6 +119,7 @@ class MPSurface(QObject):
         image = image.scaled(self.size)
         if image.format() != QImage.Format_ARGB32_Premultiplied:
             image = image.convertToFormat(QImage.Format_ARGB32_Premultiplied)
+        self.clear()
 
         for y in range(self._tiles_height):
             for x in range(self._tiles_width):

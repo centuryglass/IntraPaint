@@ -29,6 +29,7 @@ class LayerStack(QObject):
         self._min_selection_size = min_selection_size
         self._max_selection_size = max_selection_size
         self._selection = QRect(0, 0, selection_size.width(), selection_size.height())
+        self.selection = self._selection
 
         self._image_cache_saved = CachedData(None)
         self._pixmap_cache_saved = CachedData(None)
@@ -369,7 +370,7 @@ class LayerStack(QObject):
             self._layers[layer_index].pixmap = image_data
         elif isinstance(image_data, QImage):
             self.size = image_data.size()
-            self._layers[layer_index].pixmap = image_data
+            self._layers[layer_index].q_image = image_data
         else:  # PIL Image
             self.size = QSize(image_data.width, image_data.height)
             self._layers[layer_index].pil_image = image_data
@@ -378,3 +379,4 @@ class LayerStack(QObject):
         """Update the size without replacing the size object."""
         self._size.setWidth(new_size.width())
         self._size.setHeight(new_size.height())
+        self.selection = self._selection

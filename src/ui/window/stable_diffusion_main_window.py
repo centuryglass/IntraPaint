@@ -16,12 +16,17 @@ from src.config.application_config import AppConfig
 from src.image.layer_stack import LayerStack
 from src.image.canvas.mask_canvas import MaskCanvas
 from src.image.canvas.sketch_canvas import SketchCanvas
-
 try:
     from src.image.canvas.mypaint_canvas import MyPaintCanvas
 except ImportError:
     MyPaintCanvas = None
 from src.controller.base_controller import BaseInpaintController
+
+EDIT_MODE_INPAINT = 'Inpaint'
+CONTROL_BOX_LABEL = 'Controls'
+INTERROGATE_BUTTON_TEXT = 'Interrogate'
+INTERROGATE_BUTTON_TOOLTIP = 'Attempt to generate a prompt that describes the current selection'
+GENERATE_BUTTON_TEXT = 'Generate'
 
 
 class StableDiffusionMainWindow(MainWindow):
@@ -63,7 +68,7 @@ class StableDiffusionMainWindow(MainWindow):
         self.layout().addWidget(control_panel, stretch=10)
 
         main_control_box = CollapsibleBox(
-            'Controls',
+            CONTROL_BOX_LABEL,
             control_panel,
             start_closed=self._should_use_wide_layout())
         main_control_box.set_expanded_size_policy(QSizePolicy.Maximum)
@@ -91,7 +96,7 @@ class StableDiffusionMainWindow(MainWindow):
         wide_options.setLayout(wide_options_layout)
         # Font size will be used to limit the height of the prompt boxes:
         textbox_height = self.font().pixelSize() * 4
-        if textbox_height < 0:  #font uses pt, not px
+        if textbox_height < 0:  # font uses pt, not px
             textbox_height = self.font().pointSize() * 6
 
         # First line: prompt, batch size, width
@@ -140,6 +145,7 @@ class StableDiffusionMainWindow(MainWindow):
         config = self._config
 
         def set_h(value: int):
+            """Adjust edited section height when the height box changes."""
             size = config.get(AppConfig.EDIT_SIZE)
             config.set(AppConfig.EDIT_SIZE, QSize(size.width(), value))
 
@@ -172,6 +178,7 @@ class StableDiffusionMainWindow(MainWindow):
                 self.layout().setStretch(1, self.layout().stretch(1) + StableDiffusionMainWindow.OPEN_PANEL_STRETCH)
 
             def on_controlnet_expanded(expanded: bool):
+                """Adjust layout stretch values to make room when the ControlNet panel is opened."""
                 stretch = self.layout().stretch(1) + (StableDiffusionMainWindow.OPEN_PANEL_STRETCH if expanded
                                                       else -StableDiffusionMainWindow.OPEN_PANEL_STRETCH)
                 stretch = max(stretch, 1)
@@ -188,6 +195,7 @@ class StableDiffusionMainWindow(MainWindow):
         option_list.setLayout(option_list_layout)
 
         def add_option_line(label_text: str, widget: QWidget, tooltip: Optional[str] = None) -> QHBoxLayout:
+            """Handles labels and layout when adding a new line."""
             option_line = QHBoxLayout()
             option_list_layout.addLayout(option_line)
             option_line.addWidget(QLabel(label_text), stretch=1)
@@ -197,6 +205,7 @@ class StableDiffusionMainWindow(MainWindow):
             return option_line
 
         def add_combo_box(config_key: str, inpainting_only: bool, tooltip: Optional[str] = None) -> QHBoxLayout:
+            """Handles layout, labels, and config connections when adding a new combo box."""
             label_text = self._config.get_label(config_key)
             combobox = connected_combobox(option_list, self._config, config_key)
             if inpainting_only:
@@ -217,12 +226,13 @@ class StableDiffusionMainWindow(MainWindow):
         option_list_layout.insertLayout(padding_line_index, padding_line)
 
         def padding_layout_update(inpaint_full_res: bool) -> None:
+            """Only show the 'full-res padding' spin box if 'inpaint full-res' is checked."""
             padding_label.setVisible(inpaint_full_res)
             padding_spinbox.setVisible(inpaint_full_res)
 
         padding_layout_update(self._config.get(AppConfig.INPAINT_FULL_RES))
         self._config.connect(self, AppConfig.INPAINT_FULL_RES, padding_layout_update)
-        self._config.connect(self, AppConfig.EDIT_MODE, lambda mode: padding_layout_update(mode == 'Inpaint'))
+        self._config.connect(self, AppConfig.EDIT_MODE, lambda mode: padding_layout_update(mode == EDIT_MODE_INPAINT))
 
         checkbox_line = QHBoxLayout()
         option_list_layout.addLayout(checkbox_line)
@@ -256,14 +266,14 @@ class StableDiffusionMainWindow(MainWindow):
 
         # interrogate_button:
         interrogate_button = QPushButton()
-        interrogate_button.setText('Interrogate')
-        interrogate_button.setToolTip('Attempt to generate a prompt that describes the current selection')
+        interrogate_button.setText(INTERROGATE_BUTTON_TEXT)
+        interrogate_button.setToolTip(INTERROGATE_BUTTON_TOOLTIP)
         interrogate_button.clicked.connect(controller.interrogate)
         button_bar_layout.addWidget(interrogate_button, stretch=1)
         interrogate_button.resize(interrogate_button.width(), interrogate_button.height() * 2)
         # Start generation button:
         start_button = QPushButton()
-        start_button.setText('Generate')
+        start_button.setText(GENERATE_BUTTON_TEXT)
         start_button.clicked.connect(controller.start_and_manage_inpainting)
         button_bar_layout.addWidget(start_button, stretch=2)
         start_button.resize(start_button.width(), start_button.height() * 2)

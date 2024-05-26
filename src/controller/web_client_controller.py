@@ -95,10 +95,11 @@ class WebClientController(BaseInpaintController):
         }
 
         def error_check(server_response: requests.Response, context_str: str):
+            """Make sure network errors throw exceptions with useful error messages."""
             if server_response.status_code != 200:
                 if server_response.content and ('application/json' in server_response.headers['content-type']) \
                         and server_response.json() and 'error' in server_response.json():
-                    raise RuntimeError(f'{server_response.status_code} response to {context_str}: ' + \
+                    raise RuntimeError(f'{server_response.status_code} response to {context_str}: '
                                        f'{server_response.json()["error"]}')
                 print(f'RESPONSE: {server_response.content}')
                 raise RuntimeError(f'{server_response.status_code} response to {context_str}: unknown error')
@@ -121,7 +122,7 @@ class WebClientController(BaseInpaintController):
 
         while in_progress:
             sleep_time = min(min_refresh * pow(2, error_count), max_refresh)
-            #print(f"Checking for response in {sleep_time//1000} ms...")
+            # print(f"Checking for response in {sleep_time//1000} ms...")
             QThread.usleep(sleep_time)
             # GET server_url/sample, sending previous samples:
             try:
