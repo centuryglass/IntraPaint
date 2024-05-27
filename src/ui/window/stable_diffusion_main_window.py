@@ -113,14 +113,14 @@ class StableDiffusionMainWindow(MainWindow):
         wide_options_layout.addWidget(QLabel('W:'), 0, 4)
         width_spinbox = QSpinBox(self)
         width_spinbox.setRange(1, 4096)
-        width_spinbox.setValue(self._config.get(AppConfig.EDIT_SIZE).width())
+        width_spinbox.setValue(self._config.get(AppConfig.GENERATION_SIZE).width())
         width_spinbox.setToolTip('Resize selection content to this width before inpainting')
         config = self._config
 
         def set_w(value: int):
-            """Adjust edited section width when the width box changes."""
-            size = config.get(AppConfig.EDIT_SIZE)
-            config.set(AppConfig.EDIT_SIZE, QSize(value, size.height()))
+            """Adjust edited image generation width when the width box changes."""
+            size = config.get(AppConfig.GENERATION_SIZE)
+            config.set(AppConfig.GENERATION_SIZE, QSize(value, size.height()))
 
         width_spinbox.valueChanged.connect(set_w)
         wide_options_layout.addWidget(width_spinbox, 0, 5)
@@ -140,14 +140,14 @@ class StableDiffusionMainWindow(MainWindow):
         wide_options_layout.addWidget(QLabel('H:'), 1, 4)
         height_spinbox = QSpinBox(self)
         height_spinbox.setRange(1, 4096)
-        height_spinbox.setValue(self._config.get(AppConfig.EDIT_SIZE).height())
+        height_spinbox.setValue(self._config.get(AppConfig.GENERATION_SIZE).height())
         height_spinbox.setToolTip('Resize selection content to this height before inpainting')
         config = self._config
 
         def set_h(value: int):
-            """Adjust edited section height when the height box changes."""
-            size = config.get(AppConfig.EDIT_SIZE)
-            config.set(AppConfig.EDIT_SIZE, QSize(size.width(), value))
+            """Adjust edited image generation height when the height box changes."""
+            size = config.get(AppConfig.GENERATION_SIZE)
+            config.set(AppConfig.GENERATION_SIZE, QSize(size.width(), value))
 
         height_spinbox.valueChanged.connect(set_h)
         wide_options_layout.addWidget(height_spinbox, 1, 5)

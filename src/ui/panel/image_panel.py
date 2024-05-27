@@ -2,7 +2,7 @@
 from typing import Optional
 from PyQt5.QtWidgets import QWidget, QSpinBox, QDoubleSpinBox, QLabel, QVBoxLayout, QHBoxLayout, QSlider, QSizePolicy, \
     QPushButton
-from PyQt5.QtCore import Qt, QRect, pyqtSignal
+from PyQt5.QtCore import Qt, QRect, QSize, pyqtSignal
 from PyQt5.QtGui import QPainter, QPen
 
 from src.ui.image_viewer import ImageViewer
@@ -194,6 +194,8 @@ class ImagePanel(QWidget):
             selection = layer_stack.selection
             selection.setWidth(value)
             layer_stack.selection = selection
+            edit_size = config.get(AppConfig.EDIT_SIZE)
+            config.set(AppConfig.EDIT_SIZE, QSize(layer_stack.selection.width(), edit_size.height()))
 
         self._width_box.editingFinished.connect(set_w)
 
@@ -203,6 +205,8 @@ class ImagePanel(QWidget):
             selection = layer_stack.selection
             selection.setHeight(value)
             layer_stack.selection = selection
+            edit_size = config.get(AppConfig.EDIT_SIZE)
+            config.set(AppConfig.EDIT_SIZE, QSize(edit_size.width(), layer_stack.selection.height()))
 
         self._height_box.editingFinished.connect(set_h)
 

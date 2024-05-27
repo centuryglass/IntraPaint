@@ -210,7 +210,7 @@ class BaseInpaintController:
     # File IO handling:
     def new_image(self) -> None:
         """Open a new image creation modal."""
-        default_size = self._config.get(AppConfig.EDIT_SIZE)
+        default_size = self._config.get(AppConfig.DEFAULT_IMAGE_SIZE)
         image_modal = NewImageModal(default_size.width(), default_size.height())
         image_size = image_modal.show_image_modal()
         if image_size and (not self._layer_stack.has_image or request_confirmation(self._window,
@@ -466,7 +466,7 @@ class BaseInpaintController:
         # compositing if "keep sketch" is checked.
         unscaled_inpaint_image = inpaint_image.copy()
 
-        edit_size = self._config.get(AppConfig.EDIT_SIZE)
+        edit_size = self._config.get(AppConfig.GENERATION_SIZE)
         if inpaint_image.width != edit_size.width() or inpaint_image.height != edit_size.height():
             inpaint_image = resize_image(inpaint_image, edit_size.width(), edit_size.height())
         if inpaint_mask.width != edit_size.width() or inpaint_mask.height != edit_size.height():

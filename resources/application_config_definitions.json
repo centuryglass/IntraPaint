@@ -25,14 +25,20 @@
         "default": 10,
         "saved": true
     },
-
-
     "default_image_size": {
         "label": "Default image size:",
         "category": "Editing",
-        "description": "Maximum size in pixels of the area selected for editing",
+        "description": "Default size when creating new images",
         "type": "Size",
         "default": "1024x1024",
+        "saved": true
+    },
+    "edit_size": {
+        "label": "Editing size:",
+        "category": "Editing",
+        "description": "Current/initial size in pixels of the area selected for editing",
+        "type": "Size",
+        "default": "512x512",
         "saved": true
     },
     "max_edit_size": {
@@ -51,12 +57,28 @@
         "default": "8x8",
         "saved": true
     },
-    "edit_size": {
-        "label": "Editing size:",
+    "generation_size": {
+        "label": "Generation size:",
         "category": "Editing",
-        "description": "Current/initial size in pixels of the area selected for editing",
+        "description": "Current/initial size in pixels used for AI image generation",
         "type": "Size",
         "default": "512x512",
+        "saved": true
+    },
+    "max_generation_size": {
+        "label": "Maximum generation size:",
+        "category": "Editing",
+        "description": "Maximum size in pixels allowed for AI image generation",
+        "type": "Size",
+        "default": "2048x2048",
+        "saved": true
+    },
+    "min_generation_size": {
+        "label": "Minimum generation size:",
+        "category": "Editing",
+        "description": "Minimum size in pixels allowed for AI image generation",
+        "type": "Size",
+        "default": "256x256",
         "saved": true
     },
     "mask_brush_size": {

@@ -271,8 +271,8 @@ class A1111Webservice(WebService):
                 overrides['script_name'] = 'ultimate sd upscale'
                 overrides['script_args'] = [
                     None,  # not used
-                    config.get(AppConfig.EDIT_SIZE).width(),  # tile width
-                    config.get(AppConfig.EDIT_SIZE).height(),  # tile height
+                    config.get(AppConfig.GENERATION_SIZE).width(),  # tile width
+                    config.get(AppConfig.GENERATION_SIZE).height(),  # tile height
                     8,  # mask_blur
                     32,  # padding
                     64,  # seams_fix_width
