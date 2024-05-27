@@ -154,7 +154,14 @@ class MPSurface(QObject):
         else:
             buffer_idx = x + y * self._tiles_width
             pixel_buffer = self._tile_buffer[buffer_idx]
-            tile = MPTile(pixel_buffer, clear_buffer_if_new)
+            def tile_dim(img_dim, idx, max_idx):
+                """Get a tile's width or height."""
+                if idx != max_idx or img_dim % TILE_DIM == 0:
+                    return TILE_DIM
+                return img_dim % TILE_DIM
+            width = tile_dim(self.width, x, self._tiles_width - 1)
+            height = tile_dim(self.height, y, self._tiles_height - 1)
+            tile = MPTile(pixel_buffer, clear_buffer_if_new, QSize(width, height))
             self._tiles[point] = tile
             tile.setPos(QPoint(x * TILE_DIM, y * TILE_DIM))
         if tile.scene() is None:

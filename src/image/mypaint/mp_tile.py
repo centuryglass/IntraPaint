@@ -22,11 +22,13 @@ class MPTile(QGraphicsItem):
     def __init__(self,
                  tile_buffer: TilePixelBuffer,
                  clear_buffer: bool = True,
+                 size: QSize = QSize(TILE_DIM, TILE_DIM),
                  parent: Optional[QGraphicsItem] = None):
         """Initialize tile data."""
         super().__init__(parent)
         self._pixels = tile_buffer
-        self._cache_image = QImage(QSize(TILE_DIM, TILE_DIM), QImage.Format_ARGB32_Premultiplied)
+        self._size = size
+        self._cache_image = QImage(size, QImage.Format_ARGB32_Premultiplied)
         self._cache_valid = False
         self.setCacheMode(QGraphicsItem.NoCache)
         if clear_buffer:
@@ -69,15 +71,12 @@ class MPTile(QGraphicsItem):
 
     def update_cache(self) -> None:
         """Copy data into the QImage cache."""
-        np_pixels = numpy_16bit_to_8bit(pixel_data_as_numpy_16bit(self._pixels))
-        np_image = image_data_as_numpy_8bit(self._cache_image)
-        np.copyto(np_image, np_pixels)
+        self.copy_tile_into_image(self._cache_image, 0, 0, False)
         self._cache_valid = True
 
-    @staticmethod
-    def copy_pixel_buffer_into_image(pixels, image: QImage, x: int, y: int, skip_if_transparent: bool = True) -> bool:
+    def copy_tile_into_image(self, image: QImage, x: int, y: int, skip_if_transparent: bool = True) -> bool:
         """Copy tile data into a QImage at arbitrary (x, y) image coordinates, returning whether data was copied."""
-        np_pixels = pixel_data_as_numpy_16bit(pixels)
+        np_pixels = pixel_data_as_numpy_16bit(self._pixels)[:self._size.height(), :self._size.width()]
         np_image = image_data_as_numpy_8bit(image)
         np_image, np_pixels = numpy_intersect(np_image, np_pixels, x, y)
         if np_image is None:
@@ -87,10 +86,6 @@ class MPTile(QGraphicsItem):
         np_pixels = numpy_16bit_to_8bit(np_pixels)
         np.copyto(np_image, np_pixels)
         return True
-
-    def copy_tile_into_image(self, image: QImage, x: int, y: int, skip_if_transparent: bool = True) -> bool:
-        """Copy this tile's data into a QImage at arbitrary (x, y) image coordinates."""
-        return MPTile.copy_pixel_buffer_into_image(self._pixels, image, x, y, skip_if_transparent)
 
     @staticmethod
     def copy_image_into_pixel_buffer(pixels, image: QImage, x: int, y: int, skip_if_transparent: bool = True) -> bool:
