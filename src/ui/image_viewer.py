@@ -5,11 +5,13 @@ import math
 from typing import Optional
 
 from PyQt5.QtCore import Qt, QRect, QRectF, QSize, QPoint, QPointF, QEvent
-from PyQt5.QtGui import QPen, QPainter, QMouseEvent, QPixmap
+from PyQt5.QtGui import QPen, QPainter, QMouseEvent, QPixmap, QColor
 from PyQt5.QtWidgets import QWidget, QSizePolicy, QGraphicsPixmapItem, QApplication
 
 from src.image.image_layer import ImageLayer
 from src.image.layer_stack import LayerStack
+from src.image.outline import Outline
+from src.ui.util.get_scaled_placement import get_scaled_placement
 from src.ui.util.tile_pattern_fill import get_transparency_tile_pixmap
 from src.ui.widget.fixed_aspect_graphics_view import FixedAspectGraphicsView
 from src.util.validation import assert_type
@@ -43,21 +45,19 @@ class ImageViewer(FixedAspectGraphicsView):
         self.background = get_transparency_tile_pixmap()
         self.setSizePolicy(QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding))
         self.installEventFilter(self)
+        self._follow_selection = False
 
         # Selection and border rectangle setup:
-        self._selection_item = QGraphicsPixmapItem()
-        self._selection_pixmap: Optional[QPixmap] = None
-        self.scene().addItem(self._selection_item)
+        self._scene_outline = Outline(self.scene(), self)
+        self._scene_outline.dash_pattern = [1, 0]  # solid line
+        self._selection_outline = Outline(self.scene(), self)
+        self._selection_outline.animated = True
 
-        self._border_item = QGraphicsPixmapItem()
-        self._border_pixmap: Optional[QPixmap] = None
-        self.scene().addItem(self._border_item)
-
-        # Selection offset handling:
+        # View offset handling:
         self._drag_pt: Optional[QPoint] = None
 
         # Connect layer stack event handlers:
-        layer_stack.visible_content_changed.connect(self.update)
+        layer_stack.visible_content_changed.connect(self._update_drawn_borders)
 
         def set_size(new_size: QSize) -> None:
             """Update bounds and background when the image size changes."""
@@ -75,6 +75,8 @@ class ImageViewer(FixedAspectGraphicsView):
             self._selection = new_rect
             self._update_drawn_borders()
             self.resetCachedContent()
+            if self.follow_selection:
+                self.zoom_to_selection()
             self.update()
 
         layer_stack.selection_bounds_changed.connect(update_selection)
@@ -85,7 +87,7 @@ class ImageViewer(FixedAspectGraphicsView):
             layer_item.setZValue(index)
             self._layer_items[new_layer] = layer_item
             self.scene().addItem(layer_item)
-            self._selection_item.setZValue(max(self._selection_item.zValue(), index + 1))
+            self._selection_outline.setZValue(max(self._selection_outline.zValue(), index + 1))
             if layer_item.isVisible():
                 self.resetCachedContent()
                 self.update()
@@ -113,36 +115,90 @@ class ImageViewer(FixedAspectGraphicsView):
             add_layer(layer, i)
         update_selection(layer_stack.selection, None)
 
+    def zoom_to_selection(self) -> None:
+        """Adjust viewport scale and offset to center the selected editing area in the view."""
+        super().reset_scale()  # Reset zoom without clearing 'follow_selection' flag.
+        selection = self._layer_stack.selection
+        margin = max(int(selection.width() / 20), int(selection.height() / 20), 10)
+        self.offset = QPoint(int(selection.center().x() - (self.content_size.width() // 2)),
+                             int(selection.center().y() - (self.content_size.height() // 2)))
+        self.scale = get_scaled_placement(QRect(QPoint(0, 0), self.size()),
+                                          selection.size(), 0).width() / (selection.width() + margin)
+
+    @property
+    def follow_selection(self) -> bool:
+        """Returns whether the view is tracking the image generation area."""
+        return self._follow_selection
+
+    @follow_selection.setter
+    def follow_selection(self, should_follow) -> None:
+        """Sets whether the view should follow the image generation area. Setting to true updates the view, setting to
+           false does not."""
+        self._follow_selection = should_follow
+        self._selection_outline.animated = not should_follow
+        if should_follow:
+            self.zoom_to_selection()
+
+    def reset_scale(self) -> None:
+        """If the scale resets, stop tracking the selection."""
+        self._follow_selection = False
+        super().reset_scale()
+
     def _update_border_rect_item(self, scene_item: QGraphicsPixmapItem, pixmap: Optional[QPixmap],
                                  rect: QRect) -> QPixmap:
         """Move and redraw a pixmap item so that it outlines a rectangle in the scene."""
-        scene_item.setPos(rect.x() - 5, rect.y() - 5)
+        scene_item.setPos(rect.x(), rect.y())
         if pixmap is not None and pixmap.size() == self._selection.size():
             return pixmap
-        pixmap = QPixmap(QSize(rect.width() + 10, rect.height() + 10))
+        max_dim = max(rect.width(), rect.height())
+        if max_dim < 100:
+            scale_factor = 10
+        elif max_dim < 1000:
+            scale_factor = 3
+        else:
+            scale_factor = 1
+
+        pixmap = QPixmap(QSize((scale_factor * rect.width()) + (scale_factor * 3),
+                               (scale_factor * rect.height()) + (scale_factor * 3)))
         pixmap.fill(Qt.GlobalColor.transparent)
         painter = QPainter(pixmap)
-        line_pen = QPen(Qt.black, 2, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap, Qt.PenJoinStyle.RoundJoin)
+        line_black = QColor(Qt.GlobalColor.black)
+        line_white = QColor(Qt.GlobalColor.white)
+        line_black.setAlphaF(0.7)
+        line_white.setAlphaF(0.7)
+        line_pen = QPen(line_black, scale_factor, Qt.PenStyle.DashLine, Qt.PenCapStyle.FlatCap,
+                        Qt.PenJoinStyle.BevelJoin)
         painter.setPen(line_pen)
-        painter_rect = QRect(0, 0, pixmap.width(), pixmap.height())
+        painter_rect = QRect(-scale_factor, -scale_factor, pixmap.width() - scale_factor,
+                             pixmap.height() - scale_factor)
         painter.drawRect(painter_rect)
-        line_pen.setColor(Qt.white)
+
+        line_pen.setColor(line_white)
         painter.setPen(line_pen)
-        painter_rect.adjust(2, 2, -2, -2)
+        painter_rect.adjust(scale_factor, scale_factor, -scale_factor, -scale_factor)
         painter.drawRect(painter_rect)
-        line_pen.setColor(Qt.black)
+        line_pen.setColor(line_black)
+
         painter.setPen(line_pen)
-        painter_rect.adjust(2, 2, -2, -2)
+        painter_rect.adjust(scale_factor, scale_factor, -scale_factor, -scale_factor)
+        painter.drawRect(painter_rect)
+
+        line_pen.setColor(Qt.GlobalColor.black)
+        line_pen.setWidth(1)
+        painter.setPen(line_pen)
         painter.drawRect(painter_rect)
         scene_item.setPixmap(pixmap)
+        scene_item.setScale(1 / scale_factor)
         return pixmap
 
     def _update_drawn_borders(self):
         """Make sure that the selection and image borders are in the right place in the scene."""
-        self._selection_pixmap = self._update_border_rect_item(self._selection_item, self._selection_pixmap,
-                                                               self._selection)
-        self._border_pixmap = self._update_border_rect_item(self._border_item, self._border_pixmap,
-                                                            QRect(QPoint(0, 0), self.content_size))
+        scene_rect = QRectF(0.0, 0.0, float(self.content_size.width()), float(self.content_size.height()))
+        selection = QRectF(self._selection.x(), self._selection.y(), self._selection.width(), self._selection.height())
+        self._scene_outline.outlined_region = scene_rect
+        self._scene_outline.setVisible(self._layer_stack.has_image)
+        self._selection_outline.outlined_region = selection
+        self._selection_outline.setVisible(self._layer_stack.has_image)
 
     def sizeHint(self) -> QSize:
         """Returns image size as ideal widget size."""

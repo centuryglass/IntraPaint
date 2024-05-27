@@ -32,6 +32,21 @@ class FixedAspectGraphicsView(QGraphicsView):
         self.setViewportUpdateMode(QGraphicsView.FullViewportUpdate)
         self.setScene(self._scene)
 
+    def reset_scale(self) -> None:
+        """Resets the scale to fit content in the view and re-centers the scene."""
+        scale_will_change = self._scale_adjustment != 0.0
+        self._scale_adjustment = 0.0
+        self.offset = QPoint(0,0)
+        self.resizeEvent(None)
+        self.centerOn(QPoint(int(self._content_size.width() / 2), int(self._content_size.height() / 2)))
+        if scale_will_change:
+            self.scale_changed.emit(self.scale)
+
+    @property
+    def is_at_default_view(self) -> bool:
+        """Returns whether the scale and offsets are both at default values."""
+        return self._scale_adjustment == 0.0 and self._offset == QPointF(0.0, 0.0)
+
     @property
     def content_size(self) -> Optional[QSize]:
         """Gets the actual (not displayed) size of the viewed content."""
@@ -67,6 +82,8 @@ class FixedAspectGraphicsView(QGraphicsView):
         new_scale = max(new_scale, 0.001)
         self._scale_adjustment = new_scale - self._scale
         self.resizeEvent(None)
+        self.centerOn(QPoint(int(self._content_size.width() / 2 + self._offset.x()),
+                             int(self._content_size.height() / 2 + self._offset.y())))
         self.scale_changed.emit(new_scale)
 
     @property
@@ -154,18 +171,25 @@ class FixedAspectGraphicsView(QGraphicsView):
         if self.content_size is None:
             raise RuntimeError('FixedAspectGraphicsView implementations must set content_size in __init__ before the ' +
                                'first resizeEvent is triggered')
-        content_rect_f = QRectF(self._offset.x(), self._offset.y(), float(self.content_size.width()),
-                                float(self.content_size.height()))
-        if content_rect_f != self._scene.sceneRect():
-            self._scene.setSceneRect(content_rect_f)
 
+        # Handle scale adjustments when the widget size changes:
         border_size = self._border_size()
         self._content_rect = get_scaled_placement(QRect(QPoint(0, 0), self.size()), self.content_size, border_size)
         new_scale = self.displayed_content_size.width() / self.content_size.width()
         scale_changed = new_scale != self._scale
         self._scale = new_scale
         adjusted_scale = self._scale + self._scale_adjustment
+
+        # Adjust the scene viewpoint/scrolling based on scale and offset:
+        content_rect_f = QRectF(self._offset.x(), self._offset.y(), float(self.content_size.width()),
+                                float(self.content_size.height()))
+        if content_rect_f != self._scene.sceneRect():
+            self._scene.setSceneRect(content_rect_f)
+            self.centerOn(QPoint(int(self._content_size.width() / 2 + self._offset.x()),
+                                 int(self._content_size.height() / 2 + self._offset.y())))
+
         transformation = QTransform()
+        transformation.translate(self._offset.x(), self._offset.y())
         transformation.scale(adjusted_scale, adjusted_scale)
         self.setTransform(transformation)
         if scale_changed:

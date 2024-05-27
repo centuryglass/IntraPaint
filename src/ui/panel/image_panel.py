@@ -1,7 +1,8 @@
 """Panel used to display the edited image and associated controls. """
+from typing import Optional
 from PyQt5.QtWidgets import QWidget, QSpinBox, QDoubleSpinBox, QLabel, QVBoxLayout, QHBoxLayout, QSlider, QSizePolicy, \
     QPushButton
-from PyQt5.QtCore import Qt, QRect, QPoint, pyqtSignal
+from PyQt5.QtCore import Qt, QRect, pyqtSignal
 from PyQt5.QtGui import QPainter, QPen
 
 from src.ui.image_viewer import ImageViewer
@@ -16,6 +17,9 @@ from src.util.validation import assert_type
 IMAGE_PANEL_TITLE = 'Full Image'
 SCALE_SLIDER_LABEL = 'Zoom:'
 SCALE_RESET_BUTTON_LABEL = 'Reset View'
+SCALE_RESET_BUTTON_TOOLTIP = 'Zoom out to view the entire image.'
+SCALE_ZOOM_BUTTON_LABEL = 'Zoom to selection'
+SCALE_ZOOM_BUTTON_TOOLTIP = 'Zoom in on the area selected for image generation'
 SCALE_RESET_BUTTON_TOOLTIP = 'Restore default image zoom and offset'
 SELECTION_X_LABEL = 'X:'
 SELECTION_X_TOOLTIP = 'Selected X coordinate'
@@ -85,8 +89,29 @@ class ImagePanel(QWidget):
             self._image_scale_box.valueChanged
         ]
 
+        control_bar_layout.addWidget(QLabel(SCALE_SLIDER_LABEL))
+        control_bar_layout.addWidget(self._image_scale_slider, stretch=100)
+        control_bar_layout.addWidget(self._image_scale_box)
+
+        def toggle_scale():
+            """Toggle between default zoom and zooming in on the editing selection."""
+            if self._image_viewer.is_at_default_view and not self._image_viewer.follow_selection:
+                self._image_viewer.follow_selection = True
+                self.scale_reset_button.setText(SCALE_RESET_BUTTON_LABEL)
+                self.scale_reset_button.setToolTip(SCALE_RESET_BUTTON_TOOLTIP)
+            else:
+                self._image_viewer.reset_scale()
+                self.scale_reset_button.setText(SCALE_ZOOM_BUTTON_LABEL)
+                self.scale_reset_button.setToolTip(SCALE_ZOOM_BUTTON_TOOLTIP)
+
+        self.scale_reset_button = QPushButton()
+        self.scale_reset_button.setText(SCALE_ZOOM_BUTTON_LABEL)
+        self.scale_reset_button.setToolTip(SCALE_ZOOM_BUTTON_TOOLTIP)
+
+        self.scale_reset_button.clicked.connect(toggle_scale)
+        control_bar_layout.addWidget(self.scale_reset_button)
         def on_scale_change(new_scale: float | int) -> None:
-            """Synchronize slider, spin box, and panel scale:"""
+            """Synchronize slider, spin box, panel scale, and zoom button text:"""
             if isinstance(new_scale, int):
                 float_scale = new_scale / 100
                 int_scale = new_scale
@@ -103,25 +128,16 @@ class ImagePanel(QWidget):
                 self._image_viewer.scale = float_scale
             for scale_signal in scale_signals:
                 scale_signal.connect(on_scale_change)
+            if self._image_viewer.is_at_default_view and not self._image_viewer.follow_selection:
+                self.scale_reset_button.setText(SCALE_ZOOM_BUTTON_LABEL)
+                self.scale_reset_button.setToolTip(SCALE_ZOOM_BUTTON_TOOLTIP)
+            else:
+                self.scale_reset_button.setText(SCALE_RESET_BUTTON_LABEL)
+                self.scale_reset_button.setToolTip(SCALE_RESET_BUTTON_TOOLTIP)
 
         for signal in scale_signals:
             signal.connect(on_scale_change)
 
-        control_bar_layout.addWidget(QLabel(SCALE_SLIDER_LABEL))
-        control_bar_layout.addWidget(self._image_scale_slider, stretch=100)
-        control_bar_layout.addWidget(self._image_scale_box)
-
-        self.scale_reset_button = QPushButton()
-        self.scale_reset_button.setText(SCALE_RESET_BUTTON_LABEL)
-        self.scale_reset_button.setToolTip(SCALE_RESET_BUTTON_TOOLTIP)
-
-        def reset_scale() -> None:
-            """Set image zoom and offsets back to default."""
-            self._image_viewer.scale = 1.0
-            self._image_viewer.offset = QPoint(0, 0)
-
-        self.scale_reset_button.clicked.connect(reset_scale)
-        control_bar_layout.addWidget(self.scale_reset_button)
 
         # wire x/y coordinate boxes to set selection coordinates:
         control_bar_layout.addWidget(QLabel(SELECTION_X_LABEL, self))
@@ -278,3 +294,4 @@ class ImagePanel(QWidget):
         self._image_box.set_content_layout(self._image_box_layout)
         self._layout.addWidget(self._image_box, stretch=255)
         self._image_box.set_content_layout(self._image_box_layout)
+
