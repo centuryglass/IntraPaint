@@ -42,15 +42,13 @@ class FixedAspectGraphicsView(QGraphicsView):
         ----------
         new_cursor: QCursor or QPixmap or None
             If a QCursor is given, the cursor will be applied normally.  If None is given, the default cursor will be
-            applied. If a QPixmap is given, an invisible cursor will be used, and the pixmap will be drawn over the
+            applied. If a QPixmap is given, a cross cursor will be used, and the pixmap will be drawn over the
             last mouse coordinates, centered on the mouse pointer. This allows extra large cursors to be used, which
             can cause problems with some windowing systems if applied normally.
         """
         if isinstance(new_cursor, QPixmap):
             self._cursor_pixmap = new_cursor
-            hidden_cursor = QPixmap(1, 1)
-            hidden_cursor.fill(Qt.GlobalColor.transparent)
-            self.setCursor(QCursor(hidden_cursor))
+            self.setCursor(QCursor(Qt.CursorShape.CrossCursor))
             self.update()
         else:
             self._cursor_pixmap = None

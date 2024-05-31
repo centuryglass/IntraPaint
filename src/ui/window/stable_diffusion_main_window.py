@@ -47,13 +47,12 @@ class StableDiffusionMainWindow(MainWindow):
         # Decrease imageLayout stretch to make room for additional controls:
         self.layout().setStretch(0, 180)
 
-    def _build_control_layout(self, controller) -> None:
+    def _build_control_panel(self, controller) -> None:
         """Adds controls for Stable-diffusion inpainting."""
         control_panel = BorderedWidget()
         control_panel.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Maximum)
         control_layout = QVBoxLayout()
         control_panel.setLayout(control_layout)
-        self.layout().addWidget(control_panel, stretch=10)
 
         main_control_box = CollapsibleBox(CONTROL_BOX_LABEL, control_panel)
         main_control_box.set_expanded_size_policy(QSizePolicy.Maximum)
@@ -261,3 +260,4 @@ class StableDiffusionMainWindow(MainWindow):
         start_button.clicked.connect(controller.start_and_manage_inpainting)
         button_bar_layout.addWidget(start_button, stretch=2)
         start_button.resize(start_button.width(), start_button.height() * 2)
+        return control_panel

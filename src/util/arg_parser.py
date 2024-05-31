@@ -40,6 +40,7 @@ def build_arg_parser(default_model='glid_3_xl/models/inpaint.pt', include_edit_p
 
     parser.add_argument('--guidance_scale', type=float, default=5.0, required=False,
                         help='classifier-free guidance scale')
+    parser.add_argument('--window_size', type=str, required=False, help='fixed application window size')
 
     parser.add_argument('--steps', type=int, default=0, required=False,
                         help='number of diffusion steps')

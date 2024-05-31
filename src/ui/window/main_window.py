@@ -9,7 +9,7 @@ from PIL import Image
 from PyQt5.QtCore import Qt, QRect, QSize
 from PyQt5.QtGui import QIcon, QMouseEvent, QResizeEvent, QHideEvent, QPixmap
 from PyQt5.QtWidgets import QMainWindow, QGridLayout, QLabel, QWidget, QPushButton, QVBoxLayout, QHBoxLayout, \
-    QComboBox, QStackedWidget, QAction, QMenuBar, QBoxLayout, QApplication
+    QComboBox, QStackedWidget, QAction, QMenuBar, QBoxLayout, QApplication, QTabWidget
 
 from src.config.application_config import AppConfig
 from src.image.layer_stack import LayerStack
@@ -22,6 +22,15 @@ from src.ui.sample_selector import SampleSelector
 from src.ui.widget.loading_widget import LoadingWidget
 from src.ui.image_viewer import ImageViewer
 from src.undo_stack import undo, redo
+
+MAIN_TAB_NAME = "Main"
+TOOL_TAB_NAME = "Tools"
+CONTROL_TAB_NAME = "Image Generation"
+
+# Cutoff sizes for including panels in the main page instead of new tabs:
+CONTROL_PANEL_HEIGHT_THRESHOLD = 1450
+TOOL_PANEL_WIDTH_THRESHOLD = 920
+CONTROL_PANEL_STRETCH = 20
 
 
 class MainWindow(QMainWindow):
@@ -54,13 +63,13 @@ class MainWindow(QMainWindow):
         self._layer_panel: Optional[LayerPanel] = None
 
         # Create components, build layout:
-        self._layout = QVBoxLayout()
+        self._main_widget = QTabWidget(self)
+        self._main_widget.setTabBarAutoHide(True)
+        self._main_page_tab = QWidget()
+        self._main_widget.addTab(self._main_page_tab, MAIN_TAB_NAME)
+        self._layout = QVBoxLayout(self._main_page_tab)
         self._reactive_widget = None
         self._reactive_layout = None
-        self._main_page_widget = QWidget(self)
-        self._main_page_widget.setLayout(self._layout)
-        self._main_tab_widget = None
-        self._main_widget = self._main_page_widget
         self._central_widget = QStackedWidget(self)
         self._central_widget.addWidget(self._main_widget)
         self.setCentralWidget(self._central_widget)
@@ -77,7 +86,7 @@ class MainWindow(QMainWindow):
         self._image_viewer = ImageViewer(self, layer_stack, config)
         self._layout.addWidget(self._image_viewer)
 
-        self._tool_panel = ToolPanel(layer_stack, self._image_viewer, config)
+        self._tool_panel = ToolPanel(layer_stack, self._image_viewer, config, controller.start_and_manage_inpainting)
         # Set up menu:
         self._menu = self.menuBar()
 
@@ -186,7 +195,9 @@ class MainWindow(QMainWindow):
                 print('Failed to check loras for lcm lora')
 
         # Build config + control layout (varying based on implementation):
-        self._build_control_layout(controller)
+        self._control_panel = self._build_control_panel(controller)
+        self._layout.addWidget(self._control_panel, stretch=CONTROL_PANEL_STRETCH)
+        self.refresh_layout()
 
     def _get_appropriate_orientation(self) -> Qt.Orientation:
         """Returns whether the window's image and tool layout should be vertical or horizontal."""
@@ -195,7 +206,40 @@ class MainWindow(QMainWindow):
     def refresh_layout(self) -> None:
         """Update orientation and layout based on window dimensions."""
         orientation = self._get_appropriate_orientation()
-        if orientation == self._orientation:
+        tab_names = [self._main_widget.tabText(i) for i in range(self._main_widget.count())]
+
+        # Move control panel to tab or layout as required:
+        use_control_tab = self.height() < CONTROL_PANEL_HEIGHT_THRESHOLD
+        if use_control_tab and CONTROL_TAB_NAME not in tab_names:
+            self._layout.removeWidget(self._control_panel)
+            self._main_widget.addTab(self._control_panel, CONTROL_TAB_NAME)
+        elif not use_control_tab:
+            if CONTROL_TAB_NAME in tab_names:
+                self._main_widget.removeTab(tab_names.index(CONTROL_TAB_NAME))
+            self._layout.addWidget(self._control_panel, stretch=CONTROL_PANEL_STRETCH)
+            self._control_panel.show()
+
+        # Move tool panel to tab or layout as required:
+        if orientation == Qt.Orientation.Horizontal:
+            use_tool_tab = self.width() < TOOL_PANEL_WIDTH_THRESHOLD
+        else:
+            use_tool_tab = False
+        if use_tool_tab and TOOL_TAB_NAME not in tab_names:
+            if self._reactive_layout is not None:
+                self._reactive_layout.removeWidget(self._tool_panel)
+            self._main_widget.addTab(self._tool_panel, TOOL_TAB_NAME)
+            self._tool_panel.set_orientation(Qt.Orientation.Horizontal)
+        elif not use_tool_tab and TOOL_TAB_NAME in tab_names:
+            self._main_widget.removeTab(tab_names.index(TOOL_TAB_NAME))
+            if self._reactive_layout is not None:
+                self._reactive_layout.addWidget(self._tool_panel)
+                self._tool_panel.show()
+        
+        self._tool_panel.show_generate_button(use_control_tab and not use_tool_tab)
+        self._tool_panel.show_tab_toggle(not use_tool_tab)
+
+        # Flip the orientation if necessary:
+        if self._reactive_layout is not None and (orientation == self._orientation or use_tool_tab):
             return
         self._orientation = orientation
         last_reactive_widget = self._reactive_widget
@@ -208,9 +252,11 @@ class MainWindow(QMainWindow):
         self._reactive_layout.addWidget(self._image_viewer, stretch=80)
         self._reactive_layout.addWidget(self._tool_panel, stretch=2)
         self._tool_panel.set_orientation(orientation)
+        self._tool_panel.show()
         self._layout.insertWidget(0, self._reactive_widget)
         if last_reactive_widget is not None:
             last_reactive_widget.setParent(None)
+
 
     def _create_scale_mode_selector(self, parent: QWidget, config_key: str) -> QComboBox:
         """Returns a combo box that selects between image scaling algorithms."""
@@ -237,7 +283,7 @@ class MainWindow(QMainWindow):
         scale_mode_list.setToolTip(self._config.get_tooltip(config_key))
         return scale_mode_list
 
-    def _build_control_layout(self, controller) -> None:
+    def _build_control_panel(self, controller) -> None:
         """Adds image editing controls to the layout."""
         inpaint_panel = QWidget(self)
         text_prompt_textbox = connected_textedit(inpaint_panel, self._config, AppConfig.PROMPT)
@@ -292,8 +338,7 @@ class MainWindow(QMainWindow):
 
         layout.addLayout(more_options_bar, 3, 1, 1, 4)
         inpaint_panel.setLayout(layout)
-        self.layout().addWidget(inpaint_panel, stretch=20)
-        self.resizeEvent(None)
+        return inpaint_panel
 
     def is_sample_selector_visible(self) -> bool:
         """Returns whether the generated image selection screen is showing."""

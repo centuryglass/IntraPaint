@@ -110,6 +110,7 @@ class BrushPanel(QTabWidget):
         content.setSizePolicy(QSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding))
 
         tab.setSizePolicy(QSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding))
+        tab.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
 
         tab.setWidget(content)
         layout = QGridLayout()

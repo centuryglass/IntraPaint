@@ -295,8 +295,16 @@ class StableDiffusionController(BaseInpaintController):
         # initialize remote options modal:
         # Handle final window init now that data is loaded from the API:
         self._window = StableDiffusionMainWindow(self._config, self._layer_stack, self)
+        if self._fixed_window_size is not None:
+            size = self._fixed_window_size
+            self._window.setGeometry(0, 0, size.width(), size.height())
+            self._window.setMaximumSize(self._fixed_window_size)
+            self._window.setMinimumSize(self._fixed_window_size)
+        else:
+            size = screen_size(self._window)
+            self._window.setGeometry(0, 0, size.width(), size.height())
+            self._window.setMaximumSize(size)
         size = screen_size(self._window)
-        self._window.setGeometry(0, 0, size.width(), size.height())
         self.fix_styles()
         if self._init_image is not None:
             print('loading init image:')

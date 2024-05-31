@@ -2,7 +2,7 @@
 from typing import Optional
 
 from PyQt5.QtCore import Qt, QPoint, QSize, QRect
-from PyQt5.QtGui import QCursor, QPixmap, QTabletEvent, QMouseEvent, QColor, QIcon
+from PyQt5.QtGui import QCursor, QTabletEvent, QMouseEvent, QColor, QIcon
 
 from src.image.image_layer import ImageLayer
 from src.image.layer_canvas import LayerCanvas
@@ -15,7 +15,7 @@ RESOURCES_BRUSH_ICON = 'resources/brush.svg'
 RESOURCES_CURSOR = './resources/cursor.svg'
 RESOURCES_MIN_CURSOR = './resources/minCursor.svg'
 
-MAX_CURSOR_SIZE = 50
+MAX_CURSOR_SIZE = 255
 MIN_CURSOR_SIZE = 9
 
 BRUSH_LABEL = 'Brush'
@@ -218,6 +218,7 @@ class MyPaintTool(BaseTool):
         if not self._active or self._scaling_cursor is False or self._scaled_icon_cursor is None:
             return
         brush_cursor_size = int(self.brush_size * self._image_viewer.scene_scale)
+        print(f'setting {brush_cursor_size}px cursor.')
         if brush_cursor_size < MIN_CURSOR_SIZE:
             self.cursor = self._small_brush_cursor
         else:

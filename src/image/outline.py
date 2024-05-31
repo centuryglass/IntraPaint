@@ -105,7 +105,7 @@ class Outline(QGraphicsItem):
     @animated.setter
     def animated(self, should_animate) -> None:
         """Sets whether dotted lines are animated."""
-        self._animation.animated = should_animate
+        self._animation.animated = False # should_animate
 
     def showEvent(self, _: Optional[QShowEvent]) -> None:
         """Starts the animation when the outline is shown."""

@@ -89,6 +89,11 @@ class CollapsibleBox(BorderedWidget):
         layout.addWidget(self.scroll_area, stretch=255)
         self._start_closed = start_closed
 
+    def setHorizontalScrollBarPolicy(self, policy: Qt.ScrollBarPolicy) -> None:
+        """Expose scroll bar horizontal policy control for the inner scroll area."""
+        if isinstance(self.scroll_area, QScrollArea):
+            self.scroll_area.setHorizontalScrollBarPolicy(policy)
+
     @property
     def orientation(self) -> Qt.Orientation:
         """Returns whether the widget opens and closes vertically or horizontally."""

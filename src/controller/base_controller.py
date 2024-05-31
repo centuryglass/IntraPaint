@@ -73,6 +73,10 @@ class BaseInpaintController:
     def __init__(self, args: Namespace) -> None:
         self._app = QApplication(sys.argv)
         screen = self._app.primaryScreen()
+        self._fixed_window_size = args.window_size
+        if self._fixed_window_size is not None:
+            x, y = (int(dim) for dim in self._fixed_window_size.split('x'))
+            self._fixed_window_size = QSize(x, y)
 
         def screen_area(screen_option: Optional[QScreen]) -> int:
             """Calculate the area of an available screen."""
@@ -140,10 +144,15 @@ class BaseInpaintController:
     def window_init(self):
         """Initialize and show the main application window."""
         self._window = MainWindow(self._config, self._layer_stack, self)
-        size = screen_size(self._window)
-        self._window.setGeometry(0, 0, size.width(), size.height())
-        self._window.setMaximumHeight(size.height())
-        self._window.setMaximumWidth(size.width())
+        if self._fixed_window_size is not None:
+            size = self._fixed_window_size
+            self._window.setGeometry(0, 0, size.width(), size.height())
+            self._window.setMaximumSize(self._fixed_window_size)
+            self._window.setMinimumSize(self._fixed_window_size)
+        else:
+            size = screen_size(self._window)
+            self._window.setGeometry(0, 0, size.width(), size.height())
+            self._window.setMaximumSize(size)
         self.fix_styles()
         if self._init_image is not None:
             print('loading init image:')

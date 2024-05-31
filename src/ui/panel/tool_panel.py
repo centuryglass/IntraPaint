@@ -1,9 +1,9 @@
 """Selects between image editing tools, and controls their settings."""
-from typing import Optional, Dict
+from typing import Optional, Dict, Callable
 
 from PyQt5.QtCore import Qt, pyqtSignal, QRect, QSize
-from PyQt5.QtGui import QMouseEvent, QPaintEvent, QPainter, QPen, QResizeEvent
-from PyQt5.QtWidgets import QWidget, QLabel, QHBoxLayout, QVBoxLayout, QSizePolicy, QStackedLayout
+from PyQt5.QtGui import QMouseEvent, QPaintEvent, QPainter, QPen, QResizeEvent, QKeySequence
+from PyQt5.QtWidgets import QWidget, QLabel, QHBoxLayout, QVBoxLayout, QSizePolicy, QStackedLayout, QPushButton
 
 from src.config.application_config import AppConfig
 from src.image.layer_stack import LayerStack
@@ -21,12 +21,14 @@ from src.ui.widget.collapsible_box import CollapsibleBox
 
 TOOL_PANEL_TITLE = "Tools"
 LIST_SPACING = 10
+GENERATE_BUTTON_TEXT = 'Generate'
 
 
 class ToolPanel(BorderedWidget):
     """Selects between image editing tools, and controls their settings."""
 
-    def __init__(self, layer_stack: LayerStack, image_viewer: ImageViewer, config: AppConfig) -> None:
+    def __init__(self, layer_stack: LayerStack, image_viewer: ImageViewer, config: AppConfig,
+                 generate_fn: Callable[[], None]) -> None:
         """Initializes instances of all Tool classes, connects them to image data, and sets up the tool interface.
 
         Parameters:
@@ -37,6 +39,8 @@ class ToolPanel(BorderedWidget):
             Used by tools that interact with the way image data is displayed.
         config: AppConfig
             Used by tools to save and load configurable properties.
+        generate_fn: Callable
+            Connected to the "Generate" button, if one is enabled.
         """
         super().__init__()
         self.setSizePolicy(QSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.Maximum))
@@ -53,8 +57,11 @@ class ToolPanel(BorderedWidget):
                                          scrolling=False,
                                          orientation=Qt.Orientation.Horizontal)
         self._panel_box.set_expanded_size_policy(QSizePolicy.Ignored)
+        self._panel_box.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
 
         self._layer_panel = LayerPanel(layer_stack)
+
+        self._generate_button = QPushButton(GENERATE_BUTTON_TEXT)
 
         # Setup tool list:
         self._tool_list = QWidget()
@@ -72,7 +79,11 @@ class ToolPanel(BorderedWidget):
                 self._layout = QHBoxLayout(self)
                 self._tool = connected_tool
                 self._icon = connected_tool.get_icon()
-                self._label = QLabel(connected_tool.label)
+                label_text = connected_tool.label
+                if connected_tool.get_hotkey() is not None:
+                    key_sequence = QKeySequence(connected_tool.get_hotkey())
+                    label_text += f' [{key_sequence.toString()}]'
+                self._label = QLabel(label_text)
                 self._layout.addStretch(30)
                 self._layout.addWidget(self._label, stretch=100)
                 self._icon_bounds = QRect()
@@ -157,6 +168,7 @@ class ToolPanel(BorderedWidget):
             return
         self._orientation = orientation
         prev_panel_box = self._panel_box
+        show_generate_button = self._generate_button.isVisible()
         if self._panel_box is not None:
             self._layout.removeWidget(self._panel_box)
         self._panel_box = CollapsibleBox(TOOL_PANEL_TITLE,
@@ -174,9 +186,26 @@ class ToolPanel(BorderedWidget):
             if widget is None:
                 continue
             self._panel_box_layout.addWidget(widget, stretch=stretch)
+        if show_generate_button:
+            self._panel_box_layout.addWidget(self._generate_button)
         if prev_panel_box is not None:
             prev_panel_box.setParent(None)
         self.update()
+
+    def show_tab_toggle(self, should_show: bool) -> None:
+        """Sets whether the button to show/hide the tool panel should be visible."""
+        if self._panel_box is not None:
+            self._panel_box.show_button_bar(should_show)
+
+    def show_generate_button(self, should_show: bool) -> None:
+        """Shows or hides the image generation button."""
+        if not should_show and self._generate_button.isVisible():
+            if self._panel_box_layout is not None:
+                self._panel_box_layout.removeWidget(self._generate_button)
+            self._generate_button.setParent(None)
+        elif should_show and not self._generate_button.isVisible():
+            self._panel_box_layout.addWidget(self._generate_button)
+            self._generate_button.show()
 
     def _switch_active_tool(self, tool_label: Optional[str]) -> None:
         """Sets a new tool as the active tool."""
