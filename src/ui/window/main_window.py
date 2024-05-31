@@ -22,6 +22,7 @@ from src.ui.sample_selector import SampleSelector
 from src.ui.widget.loading_widget import LoadingWidget
 from src.ui.image_viewer import ImageViewer
 from src.undo_stack import undo, redo
+from src.util.image_utils import qimage_to_pil_image
 
 MAIN_TAB_NAME = "Main"
 TOOL_TAB_NAME = "Tools"
@@ -355,6 +356,7 @@ class MainWindow(QMainWindow):
             else:
                 mask = QPixmap(self._layer_stack.selection.size())
                 mask.fill(Qt.red)
+                mask = qimage_to_pil_image(mask.toImage())
             self._sample_selector = SampleSelector(
                 self._config,
                 self._layer_stack,
