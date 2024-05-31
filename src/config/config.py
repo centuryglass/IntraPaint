@@ -50,7 +50,8 @@ class Config:
             Child class where definition keys should be written as properties when first initialized.
         """
         self._entries: dict[str, ConfigEntry] = {}
-        self._connected: dict[str, dict[Any, Callable[[Any], None] | Callable[[Any, Any], None]]] = {}
+        self._connected: dict[str, dict[Any, Callable[[], None] | Callable[[Any], None] | Callable[[Any, Any], None]]] \
+            = {}
         self._json_path = saved_value_path
         self._lock = Lock()
         self._save_timer = QTimer()
@@ -201,7 +202,9 @@ class Config:
         # Pass change to connected callback functions
         for callback in self._connected[key].values():
             num_args = len(signature(callback).parameters)
-            if num_args == 1 and inner_key is None:
+            if num_args == 0 and inner_key is None:
+                callback()
+            elif num_args == 1 and inner_key is None:
                 callback(new_value)
             elif num_args == 2:
                 callback(new_value, inner_key)
@@ -211,7 +214,7 @@ class Config:
     def connect(self,
                 connected_object: Any,
                 key: str,
-                on_change_fn: Callable[[Any], None] | Callable[[Any, Any], None],
+                on_change_fn: Callable[[], None] | Callable[[Any], None] | Callable[[Any, Any], None],
                 inner_key: Optional[str] = None) -> None:
         """
         Registers a callback function that should run when a particular key is changed.
@@ -231,9 +234,9 @@ class Config:
         if key not in self._connected:
             raise KeyError(f'Tried to connect to unknown config value "{key}"')
         num_args = len(signature(on_change_fn).parameters)
-        if num_args < 1 or num_args > 2:
+        if num_args > 2:
             raise RuntimeError(f'callback function connected to {key} value takes {num_args} '
-                               'parameters, expected 1-2')
+                               'parameters, expected 0-2')
         if inner_key is None:
             self._connected[key][connected_object] = on_change_fn
         else:

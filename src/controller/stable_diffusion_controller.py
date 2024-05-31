@@ -69,21 +69,6 @@ class StableDiffusionController(BaseInpaintController):
             self._webservice.login(os.environ['SD_UNAME'], os.environ['SD_PASS'])
             self._webservice.set_auth((os.environ['SD_UNAME'], os.environ['SD_PASS']))
 
-        def update_mask_state(new_edit_mode) -> None:
-            """Configure mask to only be available when inpainting appropriate modes."""
-            self._mask_canvas.enabled = new_edit_mode == 'Inpaint'
-
-        self._config.connect(self._mask_canvas, AppConfig.EDIT_MODE, update_mask_state)
-
-        def update_sketch_state(new_edit_mode) -> None:
-            """Disable sketch canvas while in text to image mode."""
-            self._sketch_canvas.enabled = new_edit_mode != 'Text to Image'
-
-        self._config.connect(self._sketch_canvas, AppConfig.EDIT_MODE, update_sketch_state)
-        edit_mode = self._config.get(AppConfig.EDIT_MODE)
-        update_mask_state(edit_mode)
-        update_sketch_state(edit_mode)
-
     def init_settings(self, settings_modal: SettingsModal) -> bool:
         """Adds relevant stable-diffusion-webui settings to a ui.modal SettingsModal.  """
         if not isinstance(self._webservice, A1111Webservice):
@@ -182,9 +167,11 @@ class StableDiffusionController(BaseInpaintController):
                                           and res.json()[AUTH_ERROR_DETAIL_KEY] == AUTH_ERROR_MESSAGE):
                 return True
             raise RuntimeError(f'{res.status_code} : {res.text}')
-        except RuntimeError as err:
-            print(f'error checking login: {err}')
+        except RuntimeError as status_err:
+            print(f'Login check returned failure response: {status_err}')
             return False
+        except requests.exceptions.RequestException as req_err:
+            print(f'Login check connection failed: {req_err}')
 
     def interrogate(self) -> None:
         """ Calls the "interrogate" endpoint to automatically generate image prompts.
@@ -307,8 +294,7 @@ class StableDiffusionController(BaseInpaintController):
 
         # initialize remote options modal:
         # Handle final window init now that data is loaded from the API:
-        self._window = StableDiffusionMainWindow(self._config, self._layer_stack, self._mask_canvas,
-                                                 self._sketch_canvas, self)
+        self._window = StableDiffusionMainWindow(self._config, self._layer_stack, self)
         size = screen_size(self._window)
         self._window.setGeometry(0, 0, size.width(), size.height())
         self.fix_styles()

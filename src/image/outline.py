@@ -4,6 +4,7 @@ from PyQt5.QtWidgets import QWidget, QGraphicsItem, QGraphicsView, QGraphicsScen
 from PyQt5.QtGui import QPainter, QPen, QPainterPath, QColor, QShowEvent, QHideEvent
 from PyQt5.QtCore import Qt, pyqtProperty, QPropertyAnimation, QRectF, QObject
 
+
 class Outline(QGraphicsItem):
     """Outlines a region in a variable QGraphicsView, adjusting line width based on view scale.
 
@@ -37,6 +38,7 @@ class Outline(QGraphicsItem):
                 super().__init__()
                 self._outline = outline
                 self._dash_offset = 0
+                self._animated = False
                 self._anim = QPropertyAnimation(self, b"dash_offset")
                 self._anim.setLoopCount(-1)
                 self._anim.setStartValue(0)
@@ -101,18 +103,18 @@ class Outline(QGraphicsItem):
         return self._animation.animated
 
     @animated.setter
-    def animated(self, should_animate) -> bool:
+    def animated(self, should_animate) -> None:
         """Sets whether dotted lines are animated."""
         self._animation.animated = should_animate
 
-    def showEvent(self, unused_event: Optional[QShowEvent]) -> None:
+    def showEvent(self, _: Optional[QShowEvent]) -> None:
         """Starts the animation when the outline is shown."""
         if self._animated:
-            self._anim.start()
+            self._animation.animated = True
 
-    def hideEvent(self, unused_event: Optional[QHideEvent]) -> None:
+    def hideEvent(self, _: Optional[QHideEvent]) -> None:
         """Stops the animation when the outline is hidden."""
-        self._anim.stop()
+        self._animation.animated = False
 
     def get_outline_width(self) -> float:
         """Gets the outline width based on the current scale of the scene within its QGraphicsView."""
@@ -156,7 +158,7 @@ class Outline(QGraphicsItem):
         return self._rect
 
     @outlined_region.setter
-    def outlined_region(self, new_region) -> QRectF:
+    def outlined_region(self, new_region) -> None:
         """Updates the outlined area in the scene."""
         self.prepareGeometryChange()
         self._rect = new_region

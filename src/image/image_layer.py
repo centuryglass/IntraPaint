@@ -1,4 +1,12 @@
 """Manages an edited image layer."""
+from sys import version_info
+if version_info[1] >= 11:
+    from typing import Self, Optional
+else:
+    from typing import Optional
+    from typing_extensions import Self
+from collections.abc import Generator
+from contextlib import contextmanager
 from PyQt5.QtGui import QImage, QPainter, QPixmap
 from PyQt5.QtCore import Qt, QObject, QRect, QPoint, QSize, pyqtSignal
 from PIL import Image
@@ -12,6 +20,7 @@ class ImageLayer(QObject):
 
     visibility_changed = pyqtSignal(bool)
     content_changed = pyqtSignal()
+    opacity_changed = pyqtSignal(float)
 
     def __init__(
             self,
@@ -35,6 +44,7 @@ class ImageLayer(QObject):
         self._saved = bool(saved)
         self._visible = True
         self._image = None
+        self._opacity = 1.0
         self._pixmap = CachedData(None)
         if isinstance(image_data, QPixmap):
             self.pixmap = image_data
@@ -44,9 +54,41 @@ class ImageLayer(QObject):
             self.q_image = image_data
         elif isinstance(image_data, QSize):
             q_image = QImage(image_data, QImage.Format.Format_ARGB32_Premultiplied)
+            q_image.fill(Qt.transparent)
             self.q_image = q_image
         else:
             raise TypeError(f'Invalid layer image data: {image_data}')
+
+    def copy(self) -> Self:
+        """Creates a copy of this layer."""
+        layer = ImageLayer(self._image.copy(), self.name + ' copy', self.saved)
+        layer.opacity = self.opacity
+        return layer
+
+    @property
+    def opacity(self) -> float:
+        """Returns the layer opacity."""
+        return self._opacity  # TODO: apply when saving
+
+    @opacity.setter
+    def opacity(self, new_opacity) -> None:
+        """Updates the layer opacity."""
+        self._opacity = new_opacity
+        self.opacity_changed.emit(new_opacity)
+
+    @contextmanager
+    def borrow_image(self) -> Generator[Optional[QImage], None, None]:
+        """Provides direct access to the image for editing, automatically marking it as changed when complete."""
+        try:
+            yield self._image
+        finally:
+            self._pixmap.invalidate()
+            self.content_changed.emit()
+
+    def refresh_pixmap(self) -> None:
+        """Regenerate the image pixmap cache and notify self.content_changed subscribers."""
+        self._pixmap.data = self._generate_pixmap(self._image)
+        self.content_changed.emit()
 
     @property
     def q_image(self) -> QImage:
@@ -56,7 +98,10 @@ class ImageLayer(QObject):
     @q_image.setter
     def q_image(self, new_image: QImage) -> None:
         """Replaces the layer's QImage content."""
-        self._image = new_image
+        if new_image.format() != QImage.Format_ARGB32_Premultiplied:
+            self._image = new_image.convertToFormat(QImage.Format_ARGB32_Premultiplied)
+        else:
+            self._image = new_image
         self._pixmap.invalidate()
         self.content_changed.emit()
 
@@ -64,7 +109,7 @@ class ImageLayer(QObject):
     def pixmap(self) -> QPixmap:
         """Returns the layer's pixmap content."""
         if not self._pixmap.valid:
-            self._update_pixmap_cache()
+            self._pixmap.data = self._generate_pixmap(self._image)
         return self._pixmap.data
 
     @pixmap.setter
@@ -203,14 +248,14 @@ class ImageLayer(QObject):
             self._validate_bounds(bounds_rect)
         except ValueError:
             return
-        painter = QPainter(self._image)
-        if isinstance(image_data, QPixmap):
-            painter.drawPixmap(bounds_rect, image_data)
-        elif isinstance(image_data, (Image.Image, QImage)):
-            qimage = image_data if isinstance(image_data, QImage) else pil_image_to_qimage(image_data)
-            painter.drawImage(bounds_rect, qimage)
-        self._pixmap.invalidate()
-        self.content_changed.emit()
+        with self.borrow_image() as layer_image:
+            painter = QPainter(layer_image)
+            painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_Source)
+            if isinstance(image_data, QPixmap):
+                painter.drawPixmap(bounds_rect, image_data)
+            elif isinstance(image_data, (Image.Image, QImage)):
+                qimage = image_data if isinstance(image_data, QImage) else pil_image_to_qimage(image_data)
+                painter.drawImage(bounds_rect, qimage)
 
     def clear(self):
         """Replaces all image content with transparency."""
@@ -224,5 +269,6 @@ class ImageLayer(QObject):
         if not layer_bounds.contains(bounds_rect):
             raise ValueError(f'{bounds_rect} not within {layer_bounds}')
 
-    def _update_pixmap_cache(self):
-        self._pixmap.data = QPixmap.fromImage(self._image)
+    def _generate_pixmap(self, image: QImage) -> QPixmap:
+        """Generate and return a new pixmap for the layer's image data."""
+        return QPixmap.fromImage(image)

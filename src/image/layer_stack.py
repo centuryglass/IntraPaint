@@ -1,13 +1,16 @@
 """Manages an edited image composed of multiple layers."""
 import re
 from typing import Optional
-from PyQt5.QtGui import QPainter, QPixmap, QImage
+from PyQt5.QtGui import QPainter, QPixmap, QImage, QColor
 from PyQt5.QtCore import Qt, QObject, QSize, QPoint, QRect, pyqtSignal
 from PIL import Image
 from src.image.image_layer import ImageLayer
+from src.image.mask_layer import MaskLayer
 from src.util.image_utils import qimage_to_pil_image
 from src.util.validation import assert_type, assert_types, assert_valid_index
 from src.util.cached_data import CachedData
+from src.config.application_config import AppConfig
+from src.undo_stack import commit_action
 
 
 class LayerStack(QObject):
@@ -17,18 +20,21 @@ class LayerStack(QObject):
     size_changed = pyqtSignal(QSize)
     layer_added = pyqtSignal(ImageLayer, int)
     layer_removed = pyqtSignal(ImageLayer)
+    active_layer_changed = pyqtSignal(int)
 
     def __init__(self,
                  image_size: QSize,
                  selection_size: QSize,
                  min_selection_size: QSize,
-                 max_selection_size: QSize):
+                 max_selection_size: QSize,
+                 config: AppConfig):
         """Initializes the layer stack with an empty initial layer."""
         super().__init__()
         self._size = image_size
         self._min_selection_size = min_selection_size
         self._max_selection_size = max_selection_size
         self._selection = QRect(0, 0, selection_size.width(), selection_size.height())
+        self._config = config
         self.selection = self._selection
 
         self._image_cache_saved = CachedData(None)
@@ -36,18 +42,51 @@ class LayerStack(QObject):
         self._image_cache_full = CachedData(None)
         self._pixmap_cache_full = CachedData(None)
         self._layers = []
+        self._active_layer: Optional[int] = None
 
-    def _has_unsaved(self) -> bool:
-        """Returns whether any layers are present that should not be saved."""
-        return any(layer.saved is False for layer in self._layers)
+        # Create mask layer:
+        self._mask_layer = MaskLayer(image_size, config, self.selection_bounds_changed)
+        self._mask_layer.update_selection(self._selection)
 
-    def _invalidate_all_cached(self, full_caches_only=False) -> None:
-        """Mark all image/pixmap caches as invalid."""
-        if not full_caches_only:
-            self._image_cache_saved.invalidate()
-            self._pixmap_cache_saved.invalidate()
-        self._image_cache_full.invalidate()
-        self._pixmap_cache_full.invalidate()
+        def handle_mask_layer_update():
+            """Refresh appropriate caches and send on signals if the mask layer changes."""
+            if self._mask_layer.visible:
+                self._image_cache_full.invalidate()
+                self._pixmap_cache_full.invalidate()
+                self.visible_content_changed.emit()
+
+        self._mask_layer.content_changed.connect(handle_mask_layer_update)
+
+        def handle_mask_layer_visibility_change():
+            """Refresh appropriate caches and send on signals if the mask layer is shown or hidden."""
+            self._image_cache_full.invalidate()
+            self._pixmap_cache_full.invalidate()
+            self.visible_content_changed.emit()
+        self._mask_layer.content_changed.connect(handle_mask_layer_visibility_change)
+
+    @property
+    def active_layer(self) -> int:
+        """Returns the index of the layer currently selected for editing."""
+        return self._active_layer
+
+    @active_layer.setter
+    def active_layer(self, new_active_layer) -> None:
+        """Updates the index of the layer currently selected for editing."""
+        assert_valid_index(new_active_layer, self._layers)
+        self._active_layer = new_active_layer
+        self.active_layer_changed.emit(new_active_layer)
+
+    @property
+    def mask_layer(self) -> MaskLayer:
+        """Returns the unique MaskLayer used for highlighting image regions."""
+        return self._mask_layer
+
+    def get_layer_index(self, layer: ImageLayer) -> Optional[int]:
+        """Returns a layer's index in the stack, or None if it isn't found."""
+        try:
+            return self._layers.index(layer)
+        except ValueError:
+            return None
 
     @property
     def has_image(self) -> bool:
@@ -72,7 +111,7 @@ class LayerStack(QObject):
         if not QRect(QPoint(0, 0), new_size).contains(self._selection):
             self.selection = self._selection
         self.size_changed.emit(self.size)
-        for layer in self._layers:
+        for layer in [self._mask_layer, *self._layers]:
             layer.size = self.size
         self.visible_content_changed.emit()
 
@@ -137,7 +176,7 @@ class LayerStack(QObject):
             self.selection = self._selection
         if size_changed:
             self.size_changed.emit(self.size)
-        for layer in self._layers:
+        for layer in [self._mask_layer, *self._layers]:
             layer.resize_canvas(self.size, x_offset, y_offset)
         if self.has_image:
             self._invalidate_all_cached()
@@ -147,7 +186,7 @@ class LayerStack(QObject):
                      layer_name: Optional[str] = None,
                      image_data: Optional[Image.Image | QImage | QPixmap] = None,
                      saved: bool = True,
-                     index: Optional[int] = None):
+                     index: Optional[int] = None) -> None:
         """
         Creates a new image layer and adds it to the stack.
 
@@ -181,6 +220,8 @@ class LayerStack(QObject):
         else:
             layer = ImageLayer(image_data, layer_name, saved)
         self._layers.insert(index, layer)
+        if self.active_layer is None:
+            self.active_layer = index
 
         def handle_layer_update():
             """Pass on layer update signals."""
@@ -219,6 +260,7 @@ class LayerStack(QObject):
         self.layer_removed.emit(removed_layer)
         return removed_layer
 
+    @property
     def count(self) -> int:
         """Returns the number of layers"""
         return len(self._layers)
@@ -236,7 +278,7 @@ class LayerStack(QObject):
         image = QImage(self.size, QImage.Format.Format_ARGB32_Premultiplied)
         image.fill(Qt.transparent)
         painter = QPainter(image)
-        for layer in reversed(self._layers):
+        for layer in [*reversed(self._layers), self._mask_layer]:
             if not layer.visible or (saved_only and not layer.saved):
                 continue
             layer_image = layer.q_image
@@ -308,13 +350,26 @@ class LayerStack(QObject):
             bounds_rect.moveTop(0)
         if bounds_rect != self._selection:
             last_bounds = self._selection
-            self._selection = bounds_rect
-            self.selection_bounds_changed.emit(self.selection, last_bounds)
+
+            def apply():
+                """Finalize the selection update and broadcast the change."""
+                if self.selection != bounds_rect:
+                    self._selection = bounds_rect
+                    self.selection_bounds_changed.emit(self.selection, last_bounds)
+                    self._config.set(AppConfig.EDIT_SIZE, self._selection.size())
+
+            def reverse():
+                """To undo, restore the previous selection bounds."""
+                if self.selection != last_bounds:
+                    self._selection = last_bounds
+                    self.selection_bounds_changed.emit(last_bounds, bounds_rect)
+                    self._config.set(AppConfig.EDIT_SIZE, self._selection.size())
+            commit_action(apply, reverse)
 
     def cropped_qimage_content(self, bounds_rect: QRect) -> QImage:
         """Returns the contents of a bounding QRect as a QImage."""
         assert_type(bounds_rect, QRect)
-        image = self.q_image(saved_only=False)
+        image = self.q_image(saved_only=True)
         return image.copy(bounds_rect)
 
     def cropped_pixmap_content(self, bounds_rect: QRect) -> QPixmap:
@@ -375,8 +430,27 @@ class LayerStack(QObject):
             self.size = QSize(image_data.width, image_data.height)
             self._layers[layer_index].pil_image = image_data
 
+    def get_color_at_point(self, image_point: QPoint) -> QColor:
+        """Gets the combined color of visible saved layers at a single point, or QColor(0, 0, 0) if out of bounds."""
+        if not (0 <= image_point.x() < self.size.width()) or not (0 <= image_point.y() < self.size.height()):
+            return QColor(0, 0, 0)
+        return self.q_image(True).pixelColor(image_point)
+
     def _set_size(self, new_size: QSize) -> None:
         """Update the size without replacing the size object."""
         self._size.setWidth(new_size.width())
         self._size.setHeight(new_size.height())
         self.selection = self._selection
+
+    def _has_unsaved(self) -> bool:
+        """Returns whether any layers are present that should not be saved."""
+        return any(layer.saved is False for layer in self._layers)
+
+    def _invalidate_all_cached(self, full_caches_only=False) -> None:
+        """Mark all image/pixmap caches as invalid."""
+        if not full_caches_only:
+            self._image_cache_saved.invalidate()
+            self._pixmap_cache_saved.invalidate()
+        self._image_cache_full.invalidate()
+        self._pixmap_cache_full.invalidate()
+

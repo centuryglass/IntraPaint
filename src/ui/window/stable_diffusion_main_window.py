@@ -2,28 +2,22 @@
 A MainWindow implementation providing controls specific to stable-diffusion inpainting.
 """
 from typing import Optional
-from PyQt5.QtWidgets import QLabel, QHBoxLayout, QVBoxLayout, QGridLayout, QPushButton, QSizePolicy, QSpinBox, QWidget
-from PyQt5.QtCore import Qt, QSize
 
+from PyQt5.QtCore import QSize
+from PyQt5.QtWidgets import QLabel, QHBoxLayout, QVBoxLayout, QGridLayout, QPushButton, QSizePolicy, QSpinBox, QWidget
+
+from src.config.application_config import AppConfig
+from src.image.layer_stack import LayerStack
 from src.ui.config_control_setup import connected_textedit, connected_spinbox, connected_combobox, connected_checkbox
-from src.ui.widget.bordered_widget import BorderedWidget
+from src.ui.panel.controlnet_panel import ControlnetPanel
 from src.ui.widget.big_int_spinbox import BigIntSpinbox
+from src.ui.widget.bordered_widget import BorderedWidget
 from src.ui.widget.collapsible_box import CollapsibleBox
 from src.ui.widget.param_slider import ParamSlider
 from src.ui.window.main_window import MainWindow
-from src.ui.panel.controlnet_panel import ControlnetPanel
-from src.config.application_config import AppConfig
-from src.image.layer_stack import LayerStack
-from src.image.canvas.mask_canvas import MaskCanvas
-from src.image.canvas.sketch_canvas import SketchCanvas
-try:
-    from src.image.canvas.mypaint_canvas import MyPaintCanvas
-except ImportError:
-    MyPaintCanvas = None
-from src.controller.base_controller import BaseInpaintController
 
 EDIT_MODE_INPAINT = 'Inpaint'
-CONTROL_BOX_LABEL = 'Controls'
+CONTROL_BOX_LABEL = 'Image Generation Controls'
 INTERROGATE_BUTTON_TEXT = 'Interrogate'
 INTERROGATE_BUTTON_TOOLTIP = 'Attempt to generate a prompt that describes the current selection'
 GENERATE_BUTTON_TEXT = 'Generate'
@@ -37,9 +31,7 @@ class StableDiffusionMainWindow(MainWindow):
     def __init__(self,
                  config: AppConfig,
                  layer_stack: LayerStack,
-                 mask: MaskCanvas,
-                 sketch: SketchCanvas | MyPaintCanvas,
-                 controller: BaseInpaintController) -> None:
+                 controller) -> None:
         """Initializes the window and builds the layout.
 
         Parameters
@@ -48,18 +40,14 @@ class StableDiffusionMainWindow(MainWindow):
             Shared application configuration object.
         layer_stack : LayerStack
             Image layers being edited.
-        mask : MaskCanvas
-            Canvas used for masking off inpainting areas.
-        sketch : SketchCanvas or MyPaintCanvas
-            Canvas used for sketching directly into the image.
         controller : controller.base_controller.stable_diffusion_controller.StableDiffusionController
             Object managing application behavior.
         """
-        super().__init__(config, layer_stack, mask, sketch, controller)
+        super().__init__(config, layer_stack, controller)
         # Decrease imageLayout stretch to make room for additional controls:
         self.layout().setStretch(0, 180)
 
-    def _build_control_layout(self, controller: BaseInpaintController) -> None:
+    def _build_control_layout(self, controller) -> None:
         """Adds controls for Stable-diffusion inpainting."""
         control_panel = BorderedWidget()
         control_panel.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Maximum)
@@ -67,17 +55,13 @@ class StableDiffusionMainWindow(MainWindow):
         control_panel.setLayout(control_layout)
         self.layout().addWidget(control_panel, stretch=10)
 
-        main_control_box = CollapsibleBox(
-            CONTROL_BOX_LABEL,
-            control_panel,
-            start_closed=self._should_use_wide_layout())
+        main_control_box = CollapsibleBox(CONTROL_BOX_LABEL, control_panel)
         main_control_box.set_expanded_size_policy(QSizePolicy.Maximum)
         if main_control_box.is_expanded():
             self.layout().setStretch(1, self.layout().stretch(1) + StableDiffusionMainWindow.OPEN_PANEL_STRETCH)
 
         def on_main_controls_expanded(expanded: bool):
             """When the main controls are showing, adjust the layout and hide redundant sliders."""
-            self.set_image_sliders_enabled(not expanded)
             stretch = self.layout().stretch(1) + (StableDiffusionMainWindow.OPEN_PANEL_STRETCH if expanded
                                                   else -StableDiffusionMainWindow.OPEN_PANEL_STRETCH)
             stretch = max(stretch, 10)
@@ -277,27 +261,3 @@ class StableDiffusionMainWindow(MainWindow):
         start_button.clicked.connect(controller.start_and_manage_inpainting)
         button_bar_layout.addWidget(start_button, stretch=2)
         start_button.resize(start_button.width(), start_button.height() * 2)
-
-        # Add image panel sliders:
-        self._step_slider = ParamSlider(self,
-                                        self._config.get_label(AppConfig.SAMPLING_STEPS),
-                                        self._config,
-                                        AppConfig.SAMPLING_STEPS,
-                                        orientation=Qt.Orientation.Vertical,
-                                        vertical_text_pt=int(self._config.get(AppConfig.FONT_POINT_SIZE) * 1.3))
-        self._cfg_slider = ParamSlider(
-            self,
-            self._config.get_label(AppConfig.GUIDANCE_SCALE),
-            config,
-            AppConfig.GUIDANCE_SCALE,
-            orientation=Qt.Orientation.Vertical,
-            vertical_text_pt=int(self._config.get(AppConfig.FONT_POINT_SIZE) * 1.3))
-        self._denoise_slider = ParamSlider(self,
-                                           self._config.get_label(AppConfig.DENOISING_STRENGTH),
-                                           self._config,
-                                           AppConfig.DENOISING_STRENGTH,
-                                           orientation=Qt.Orientation.Vertical,
-                                           vertical_text_pt=int(self._config.get(AppConfig.FONT_POINT_SIZE) * 1.3))
-        self._image_panel.add_slider(self._step_slider)
-        self._image_panel.add_slider(self._cfg_slider)
-        self._image_panel.add_slider(self._denoise_slider)

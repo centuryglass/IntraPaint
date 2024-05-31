@@ -9,7 +9,7 @@ from typing import Optional, Callable, Any
 from argparse import Namespace
 from PIL import Image, ImageFilter, UnidentifiedImageError, PngImagePlugin
 from PyQt5.QtWidgets import QApplication, QMessageBox, QMainWindow
-from PyQt5.QtCore import QObject, QThread, QRect, QSize, pyqtSignal
+from PyQt5.QtCore import QObject, QThread, QSize, pyqtSignal
 from PyQt5.QtGui import QScreen, QImage
 try:
     import qdarktheme
@@ -22,14 +22,6 @@ except ImportError:
 
 from src.config.application_config import AppConfig
 from src.image.layer_stack import LayerStack
-from src.image.canvas.mask_canvas import MaskCanvas
-from src.image.canvas.sketch_canvas import SketchCanvas
-
-try:
-    from src.image.canvas.mypaint_canvas import MyPaintCanvas
-except ImportError as mypaint_err:
-    print(f'libMyPaint import failed: {mypaint_err}')
-    MyPaintCanvas = None
 
 from src.ui.window.main_window import MainWindow
 from src.ui.modal.new_image_modal import NewImageModal
@@ -98,7 +90,8 @@ class BaseInpaintController:
         self._layer_stack = LayerStack(self._config.get(AppConfig.DEFAULT_IMAGE_SIZE),
                                        self._config.get(AppConfig.EDIT_SIZE),
                                        self._config.get(AppConfig.MIN_EDIT_SIZE),
-                                       self._config.get(AppConfig.MAX_EDIT_SIZE))
+                                       self._config.get(AppConfig.MAX_EDIT_SIZE),
+                                       self._config)
         self._init_image = args.init_image
 
         self._window: Optional[QMainWindow] = None
@@ -106,24 +99,6 @@ class BaseInpaintController:
         self._worker: Optional[QObject] = None
         self._metadata: Optional[dict[str, Any]] = None
 
-        initial_selection_size = self._layer_stack.selection.size()
-        self._mask_canvas = MaskCanvas(self._config, initial_selection_size)
-
-        if self._config.get(AppConfig.USE_MYPAINT_CANVAS) and MyPaintCanvas is not None:
-            print('using mypaint canvas')
-            self._sketch_canvas = MyPaintCanvas(self._config, initial_selection_size)
-            self._sketch_canvas.connect_layer_stack(self._layer_stack)
-        else:
-            print('fallback to sketch canvas')
-            self._sketch_canvas = SketchCanvas(self._config, initial_selection_size)
-
-        def resize_canvases(selection_bounds: QRect, unused_last_bounds: QRect) -> None:
-            """Connect mask/sketch size to image selection size"""
-            size = selection_bounds.size()
-            self._mask_canvas.size = size
-            self._sketch_canvas.size = size
-
-        self._layer_stack.selection_bounds_changed.connect(resize_canvases)
         self._thread = None
 
     def _adjust_config_defaults(self):
@@ -164,7 +139,7 @@ class BaseInpaintController:
 
     def window_init(self):
         """Initialize and show the main application window."""
-        self._window = MainWindow(self._config, self._layer_stack, self._mask_canvas, self._sketch_canvas, self)
+        self._window = MainWindow(self._config, self._layer_stack, self)
         size = screen_size(self._window)
         self._window.setGeometry(0, 0, size.width(), size.height())
         self._window.setMaximumHeight(size.height())
@@ -218,7 +193,7 @@ class BaseInpaintController:
                                                                                    NEW_IMAGE_CONFIRMATION_MESSAGE)):
             new_image = Image.new('RGB', (image_size.width(), image_size.height()), color='white')
             self._layer_stack.set_image(new_image)
-            for i in range(1, self._layer_stack.count()):
+            for i in range(1, self._layer_stack.count):
                 self._layer_stack.get_layer(i).clear()
             self._metadata = None
 
@@ -454,23 +429,14 @@ class BaseInpaintController:
 
         # If sketch mode was used, write the sketch onto the image selection:
         inpaint_image = selection.copy()
-        inpaint_mask = self._mask_canvas.pil_image
-        sketch_image = self._sketch_canvas.pil_image
-        sketch_image = resize_image(sketch_image, inpaint_image.width, inpaint_image.height).convert('RGBA')
-        if self._sketch_canvas.has_sketch:
-            inpaint_image = inpaint_image.convert('RGBA')
-            inpaint_image = Image.alpha_composite(inpaint_image, sketch_image).convert('RGB')
-        keep_sketch = self._sketch_canvas.has_sketch
+        inpaint_mask = self._layer_stack.mask_layer.pil_mask_image
 
-        # If necessary, scale image and mask to match the edit size. Keep the unscaled version, so it can be used for
-        # compositing if "keep sketch" is checked.
-        unscaled_inpaint_image = inpaint_image.copy()
-
-        edit_size = self._config.get(AppConfig.GENERATION_SIZE)
-        if inpaint_image.width != edit_size.width() or inpaint_image.height != edit_size.height():
-            inpaint_image = resize_image(inpaint_image, edit_size.width(), edit_size.height())
-        if inpaint_mask.width != edit_size.width() or inpaint_mask.height != edit_size.height():
-            inpaint_mask = resize_image(inpaint_mask, edit_size.width(), edit_size.height())
+        # If necessary, scale image and mask to match the image generation size.
+        generation_size = self._config.get(AppConfig.GENERATION_SIZE)
+        if inpaint_image.width != generation_size.width() or inpaint_image.height != generation_size.height():
+            inpaint_image = resize_image(inpaint_image, generation_size.width(), generation_size.height())
+        if inpaint_mask.width != generation_size.width() or inpaint_mask.height != generation_size.height():
+            inpaint_mask = resize_image(inpaint_mask, generation_size.width(), generation_size.height())
 
         do_inpaint = self._inpaint
         config = self._config
@@ -510,7 +476,7 @@ class BaseInpaintController:
                 mask_alpha = inpaint_mask.convert('L').point(point_fn).filter(ImageFilter.GaussianBlur())
                 img = resize_image(img, selection.width, selection.height)
                 mask_alpha = resize_image(mask_alpha, selection.width, selection.height)
-                img = Image.composite(unscaled_inpaint_image if keep_sketch else selection, img, mask_alpha)
+                img = Image.composite(selection, img, mask_alpha)
             self._window.load_sample_preview(img, idx)
 
         worker.image_ready.connect(load_sample_preview)
@@ -525,12 +491,5 @@ class BaseInpaintController:
         sample_image : PIL Image
             Data to be inserted into the edited image selection bounds.
         """
-        source_selection = self._layer_stack.pil_image_selection_content()
-        source_size = (source_selection.width, source_selection.height)
-        downscale_mode = self._config.get(AppConfig.DOWNSCALE_MODE)
-        sketch_image = self._sketch_canvas.pil_image.resize(source_size, downscale_mode).convert('RGBA')
-        source_selection = Image.alpha_composite(source_selection.convert('RGBA'), sketch_image).convert('RGB')
-        self._layer_stack.set_selection_content(source_selection)
-        self._sketch_canvas.clear()
         if sample_image is not None and isinstance(sample_image, Image.Image):
             self._layer_stack.set_selection_content(sample_image)

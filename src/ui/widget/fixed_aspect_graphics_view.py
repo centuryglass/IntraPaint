@@ -1,8 +1,8 @@
 """A QGraphicsView that maintains an aspect ratio and simplifies scene management."""
-from typing import Optional
+from typing import Optional, List
 from PyQt5.QtWidgets import QWidget, QGraphicsView, QGraphicsScene
-from PyQt5.QtGui import QPixmap, QImage, QPainter, QPen, QTransform, QResizeEvent
-from PyQt5.QtCore import Qt, QPoint, QPointF, QRect, QRectF, QSize, QMarginsF, pyqtSignal
+from PyQt5.QtGui import QPixmap, QImage, QPainter, QPen, QTransform, QResizeEvent, QMouseEvent, QCursor
+from PyQt5.QtCore import Qt, QObject, QPoint, QPointF, QRect, QRectF, QSize, QMarginsF, pyqtSignal, QEvent
 from src.ui.util.get_scaled_placement import get_scaled_placement
 from src.ui.util.contrast_color import contrast_color
 from src.util.validation import assert_type
@@ -19,6 +19,9 @@ class FixedAspectGraphicsView(QGraphicsView):
         self._content_size: QSize = QSize(0, 0)
         self._content_rect: Optional[QRect] = None
         self._background: Optional[QPixmap] = None
+        self._event_filters: List[QObject] = []
+        self._last_cursor_pos: Optional[QPoint] = None
+        self._cursor_pixmap: Optional[QPixmap] = None
 
         self._scale = 1.0
         self._scale_adjustment = 0.0
@@ -32,15 +35,38 @@ class FixedAspectGraphicsView(QGraphicsView):
         self.setViewportUpdateMode(QGraphicsView.FullViewportUpdate)
         self.setScene(self._scene)
 
+    def set_cursor(self, new_cursor: QCursor | QPixmap | None):
+        """Sets the cursor over the scene, optionally with custom rendering for large cursors.
+
+        Parameters
+        ----------
+        new_cursor: QCursor or QPixmap or None
+            If a QCursor is given, the cursor will be applied normally.  If None is given, the default cursor will be
+            applied. If a QPixmap is given, an invisible cursor will be used, and the pixmap will be drawn over the
+            last mouse coordinates, centered on the mouse pointer. This allows extra large cursors to be used, which
+            can cause problems with some windowing systems if applied normally.
+        """
+        if isinstance(new_cursor, QPixmap):
+            self._cursor_pixmap = new_cursor
+            hidden_cursor = QPixmap(1, 1)
+            hidden_cursor.fill(Qt.GlobalColor.transparent)
+            self.setCursor(QCursor(hidden_cursor))
+            self.update()
+        else:
+            self._cursor_pixmap = None
+            if new_cursor is None:
+                new_cursor = QCursor()
+            self.setCursor(new_cursor)
+
     def reset_scale(self) -> None:
         """Resets the scale to fit content in the view and re-centers the scene."""
         scale_will_change = self._scale_adjustment != 0.0
         self._scale_adjustment = 0.0
-        self.offset = QPoint(0,0)
+        self.offset = QPoint(0, 0)
         self.resizeEvent(None)
         self.centerOn(QPoint(int(self._content_size.width() / 2), int(self._content_size.height() / 2)))
         if scale_will_change:
-            self.scale_changed.emit(self.scale)
+            self.scale_changed.emit(self.scene_scale)
 
     @property
     def is_at_default_view(self) -> bool:
@@ -72,12 +98,12 @@ class FixedAspectGraphicsView(QGraphicsView):
         return self._content_rect.size()
 
     @property
-    def scale(self) -> float:
+    def scene_scale(self) -> float:
         """Returns the image content scale."""
         return self._scale + self._scale_adjustment
 
-    @scale.setter
-    def scale(self, new_scale: float) -> None:
+    @scene_scale.setter
+    def scene_scale(self, new_scale: float) -> None:
         """Updates the image content scale, limiting minimum scale to 0.01."""
         new_scale = max(new_scale, 0.001)
         self._scale_adjustment = new_scale - self._scale
@@ -138,32 +164,15 @@ class FixedAspectGraphicsView(QGraphicsView):
         painter.drawRect(border_rect)
 
     def drawForeground(self, painter: Optional[QPainter], rect: QRectF) -> None:
-        """Draws a border around the scene area and blocks out any out-of-bounds content."""
-        if painter is None:
+        """Draws cursor pixmap over the scene if one is installed."""
+        if painter is None or self._cursor_pixmap is None or self._last_cursor_pos is None:
             return
-        content_rect = self.mapToScene(self._content_rect).boundingRect()
-        border_rect = content_rect.adjusted(-5.0, -5.0, 5.0, 5.0)
-
-        # QGraphicsView fails to clip content sometimes, so fill everything outside the scene with the
-        # background color, then draw the border:
-        pt0 = content_rect.topLeft()
-        pt1 = QPointF(pt0.x() + border_rect.width(), pt0.y() + border_rect.height())
-        fill_color = self.palette().color(self.backgroundRole())
-        border_left = int(pt0.x())
-        border_right = int(pt1.x())
-        border_top = int(pt0.y())
-        border_bottom = int(pt1.y())
-
-        max_size = 20000000  # Large enough to ensure everything is covered, small enough to avoid overflow issues.
-        painter.fillRect(border_left - max_size, -(max_size // 2), max_size, max_size, fill_color)
-        painter.fillRect(border_right, -(max_size // 2), max_size, max_size, fill_color)
-        painter.fillRect(-(max_size // 2), border_top, max_size, -max_size, fill_color)
-        painter.fillRect(-(max_size // 2), border_bottom, max_size, max_size, fill_color)
-
-        painter.setPen(QPen(contrast_color(self), 4, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap,
-                            Qt.PenJoinStyle.RoundJoin))
-        painter.drawRect(border_rect)
-        super().drawForeground(painter, rect)
+        center_point = self.mapToScene(self._last_cursor_pos)
+        scale = self.scene_scale
+        pixmap_rect = QRectF(0.0, 0.0, self._cursor_pixmap.width() / scale,
+                             self._cursor_pixmap.height() / scale).toRect()
+        pixmap_rect.moveCenter(center_point.toPoint())
+        painter.drawPixmap(pixmap_rect, self._cursor_pixmap)
 
     def resizeEvent(self, event: Optional[QResizeEvent]) -> None:
         """Recalculate content size when the widget is resized."""
@@ -199,3 +208,51 @@ class FixedAspectGraphicsView(QGraphicsView):
     def _border_size(self) -> int:
         return (min(self.width(), self.height()) // 40) + 1
 
+    def installEventFilter(self, event_filter: QObject) -> None:
+        """Extend default event filter management to deal with QGraphicsView mouse event oddities."""
+        if event_filter not in self._event_filters:
+            self._event_filters.append(event_filter)
+        super().installEventFilter(event_filter)
+
+    def removeEventFilter(self, event_filter: QObject) -> None:
+        """Extend default event filter management to deal with QGraphicsView mouse event oddities."""
+        if event_filter in self._event_filters:
+            self._event_filters.remove(event_filter)
+        super().removeEventFilter(event_filter)
+
+    def _pixmap_cursor_update(self, cursor_point: QPoint) -> None:
+        """If a pixmap cursor is in use, keep last cursor point updated and force a redraw when the mouse moves."""
+        if cursor_point != self._last_cursor_pos:
+            self._last_cursor_pos = cursor_point
+
+    def mousePressEvent(self, event: Optional[QMouseEvent], get_result=False) -> bool:
+        """Custom mousePress handler to deal with QGraphicsView oddities. Child classes must call this implementation
+           first with get_result=True, then exit without further action if it returns true."""
+        self._pixmap_cursor_update(event.pos())
+        for event_filter in self._event_filters:
+            if event_filter.eventFilter(self, event):
+                return True if get_result else None
+        return False if get_result else None
+
+    def mouseMoveEvent(self, event: Optional[QMouseEvent], get_result=False) -> None:
+        """Custom mouseMove handler to deal with QGraphicsView oddities. Child classes must call this implementation
+           first with get_result=True, then exit without further action if it returns true."""
+        self._pixmap_cursor_update(event.pos())
+        for event_filter in self._event_filters:
+            if event_filter.eventFilter(self, event):
+                return True if get_result else None
+        return False if get_result else None
+
+    def mouseReleaseEvent(self, event: Optional[QMouseEvent], get_result=False) -> None:
+        """Custom mouseRelease handler to deal with QGraphicsView oddities. Child classes must call this implementation
+           first with get_result=True, then exit without further action if it returns true."""
+        self._pixmap_cursor_update(event.pos())
+        for event_filter in self._event_filters:
+            if event_filter.eventFilter(self, event):
+                return True if get_result else None
+        return False if get_result else None
+
+    def leaveEvent(self, event: Optional[QEvent]):
+        """Clear the pixmap mouse cursor on leave."""
+        self._last_cursor_pos = None
+        super().leaveEvent(event)

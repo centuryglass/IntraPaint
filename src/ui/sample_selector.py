@@ -1,22 +1,22 @@
 """
 Provides an interface for choosing between AI-generated changes to selected image content.
 """
-from typing import Callable, Optional, Any, List
-import math
 import gc
-from PyQt5.QtWidgets import QWidget, QLabel, QPushButton
-from PyQt5.QtGui import QPainter, QPen, QPixmap, QPaintEvent, QResizeEvent, QKeyEvent
-from PyQt5.QtCore import Qt, QPoint, QRect, QSize, QEvent
-from PIL import Image
+import math
+from typing import Callable, Optional, Any, List, cast
 
-from src.ui.util.get_scaled_placement import get_scaled_placement
-from src.ui.util.equal_margins import get_equal_margins
+from PIL import Image
+from PyQt5.QtCore import Qt, QPoint, QRect, QSize, QEvent
+from PyQt5.QtGui import QPainter, QPen, QPixmap, QPaintEvent, QResizeEvent, QKeyEvent, QWheelEvent, QMouseEvent
+from PyQt5.QtWidgets import QWidget, QLabel, QPushButton
+
+from src.config.application_config import AppConfig
+from src.image.layer_stack import LayerStack
 from src.ui.util.contrast_color import contrast_color
+from src.ui.util.equal_margins import get_equal_margins
+from src.ui.util.get_scaled_placement import get_scaled_placement
 from src.ui.widget.loading_widget import LoadingWidget
 from src.util.image_utils import pil_image_to_qimage
-from src.config.application_config import AppConfig
-from src.image.canvas.canvas import Canvas
-from src.image.layer_stack import LayerStack
 
 
 class SampleSelector(QWidget):
@@ -25,8 +25,7 @@ class SampleSelector(QWidget):
     def __init__(self,
                  config: AppConfig,
                  layer_stack: LayerStack,
-                 mask: Canvas,
-                 sketch: Canvas,
+                 mask: Image.Image,
                  close_selector: Callable,
                  make_selection: Callable[[Optional[Image.Image]], None]):
         super().__init__()
@@ -34,16 +33,12 @@ class SampleSelector(QWidget):
         self._left_arrow_bounds = None
         self._right_arrow_bounds = None
         self._config = config
-        self._sketch = sketch
         self._make_selection = make_selection
 
         source_image = layer_stack.pil_image_selection_content()
-        sketch_image = sketch.pil_image.convert('RGBA')
-        source_image = Image.alpha_composite(source_image.convert('RGBA'), sketch_image).convert('RGB')
-        mask_image = mask.pil_image
 
         self._source_pixmap = QPixmap.fromImage(pil_image_to_qimage(source_image))
-        self._mask_pixmap = QPixmap.fromImage(pil_image_to_qimage(mask_image))
+        self._mask_pixmap = QPixmap.fromImage(pil_image_to_qimage(mask))
         self._source_image_bounds = QRect(0, 0, 0, 0)
         self._mask_image_bounds = QRect(0, 0, 0, 0)
         self._include_original = config.get(AppConfig.SHOW_ORIGINAL_IN_OPTIONS)
@@ -389,19 +384,21 @@ class SampleSelector(QWidget):
 
     def eventFilter(self, source, event: QEvent):
         """Intercept mouse wheel events, use for scrolling in zoom mode:"""
+        if not self.isVisible():
+            return super().eventFilter(source, event)
         match event.type():
             case QEvent.Wheel:
+                event = cast(QWheelEvent, event)
                 if event.angleDelta().y() > 0:
                     self._zoom_next()
                 elif event.angleDelta().y() < 0:
                     self._zoom_prev()
                 return True
             case QEvent.KeyPress:
-                return self._handle_key_event(event)
-            case _:
-                return super().eventFilter(source, event)
+                return self._handle_key_event(cast(QKeyEvent, event))
+        return super().eventFilter(source, event)
 
-    def mousePressEvent(self, event: QEvent):
+    def mousePressEvent(self, event: QMouseEvent):
         """Handle image selection and arrow button clicks."""
         if event.button() != Qt.LeftButton:
             return

@@ -33,22 +33,23 @@ class CollapsibleBox(BorderedWidget):
         scrolling : bool, default=True
             If true, use scroll bars if box content exceeds the ideal widget bounds
         orientation : Qt.Orientation, default=Vertical
-            Whether the box collapses to a vertically or horizontally.
+            Whether the box collapses vertically or horizontally.
         """
         super().__init__(parent)
         self._widget_size_max = self.maximumWidth()
-        self._is_vertical = orientation == Qt.Orientation.Vertical
+        self._orientation = orientation
         self._expanded_size_policy = QSizePolicy.Preferred
-        layout = QVBoxLayout(self) if self._is_vertical else QHBoxLayout(self)
+        layout = QVBoxLayout(self) if self._orientation == Qt.Orientation.Vertical else QHBoxLayout(self)
         layout.setSpacing(0)
         layout.setContentsMargins(0, 0, 0, 0)
 
         self._toggle_button = QToolButton(text=title, checkable=True, checked=not start_closed)
         self._toggle_button.setStyleSheet("QToolButton { border: none; }")
-        if self._is_vertical:
+        if self._orientation == Qt.Orientation.Vertical:
             self._toggle_button.setToolButtonStyle(
                 Qt.ToolButtonStyle.ToolButtonTextBesideIcon
             )
+            self._toggle_label = None
             layout.addWidget(self._toggle_button, stretch=1)
             self._toggle_button.setSizePolicy(QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Expanding))
         else:
@@ -67,7 +68,8 @@ class CollapsibleBox(BorderedWidget):
             for widget in [button_bar, self._toggle_label, self._toggle_button]:
                 widget.setMinimumWidth(min_width)
             layout.addWidget(button_bar, stretch=1)
-        self._toggle_button.setArrowType(Qt.ArrowType.DownArrow if self._is_vertical else Qt.ArrowType.RightArrow)
+        self._toggle_button.setArrowType(Qt.ArrowType.DownArrow if self._orientation == Qt.Orientation.Vertical
+                                         else Qt.ArrowType.RightArrow)
         self._toggle_button.toggled.connect(self.on_pressed)
 
         if scrolling:
@@ -78,14 +80,32 @@ class CollapsibleBox(BorderedWidget):
         else:
             self.scroll_area = QWidget()
             self.content = self.scroll_area
-        self.scroll_area.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-        if self._is_vertical:
+        self.scroll_area.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding)
+        if self._orientation == Qt.Orientation.Vertical:
             self.setSizePolicy(QSizePolicy.Expanding, self._expanded_size_policy)
         else:
             self.setSizePolicy(self._expanded_size_policy, QSizePolicy.Expanding)
 
         layout.addWidget(self.scroll_area, stretch=255)
         self._start_closed = start_closed
+
+    @property
+    def orientation(self) -> Qt.Orientation:
+        """Returns whether the widget opens and closes vertically or horizontally."""
+        return self.orientation
+
+    @orientation.setter
+    def orientation(self, orientation: Qt.Orientation) -> None:
+        """Updates the widget orientation."""
+        if orientation == self.orientation:
+            return
+
+    def set_title_label(self, title: str) -> None:
+        """Updates the title label."""
+        if self._toggle_label is None:
+            self._toggle_button.setText(title)
+        else:
+            self._toggle_label.setText(title)
 
     def set_content_layout(self, layout: QLayout) -> None:
         """Adds a layout to the widget.
@@ -113,7 +133,7 @@ class CollapsibleBox(BorderedWidget):
             return
         self._expanded_size_policy = policy
         if self.is_expanded():
-            if self._is_vertical:
+            if self._orientation == Qt.Orientation.Vertical:
                 self.setSizePolicy(QSizePolicy.Expanding, self._expanded_size_policy)
             else:
                 self.setSizePolicy(self._expanded_size_policy, QSizePolicy.Expanding)
@@ -140,7 +160,7 @@ class CollapsibleBox(BorderedWidget):
             return
         button_bar.setEnabled(show_bar)
         button_bar.setVisible(show_bar)
-        if self._is_vertical:
+        if self._orientation == Qt.Orientation.Vertical:
             button_bar.setMaximumHeight(self.height() if show_bar else 0)
         else:
             button_bar.setMaximumWidth(self.width() if show_bar else 0)
@@ -154,7 +174,7 @@ class CollapsibleBox(BorderedWidget):
         """Returns ideal box size based on expanded size policy and expansion state."""
         size = super().sizeHint()
         if not self._toggle_button.isChecked():
-            if self._is_vertical:
+            if self._orientation == Qt.Orientation.Vertical:
                 size.setWidth(self._toggle_button.sizeHint().width())
             else:
                 size.setHeight(self._toggle_button.sizeHint().height())
@@ -168,18 +188,19 @@ class CollapsibleBox(BorderedWidget):
         assert isinstance(layout, QBoxLayout)
         checked = self._toggle_button.isChecked()
         self._toggle_button.setArrowType(
-            Qt.ArrowType.DownArrow if (checked == self._is_vertical) else Qt.ArrowType.RightArrow)
+            Qt.ArrowType.DownArrow if (checked == self._orientation == Qt.Orientation.Vertical)
+            else Qt.ArrowType.RightArrow)
         if checked:
             layout.addWidget(self.scroll_area, stretch=255)
             self.scroll_area.setVisible(True)
-            if self._is_vertical:
+            if self._orientation == Qt.Orientation.Vertical:
                 self.setSizePolicy(QSizePolicy.Expanding, self._expanded_size_policy)
             else:
                 self.setSizePolicy(self._expanded_size_policy, QSizePolicy.Expanding)
         else:
             layout.removeWidget(self.scroll_area)
             self.scroll_area.setVisible(False)
-            if self._is_vertical:
+            if self._orientation == Qt.Orientation.Vertical:
                 self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Maximum)
             else:
                 self.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Expanding)

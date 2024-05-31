@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   version="1.1"
+   id="svg1"
+   width="21.111469"
+   height="21.111469"
+   viewBox="0 0 21.11147 21.11147"
+   sodipodi:docname="cursor+.svg"
+   inkscape:version="1.3.2 (091e20ef0f, 2023-11-25, custom)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <defs
+     id="defs1">
+    <linearGradient
+       id="linearGradient1">
+      <stop
+         style="stop-color:#000000;stop-opacity:1;"
+         offset="0"
+         id="stop3" />
+      <stop
+         style="stop-color:#000000;stop-opacity:0;"
+         offset="1"
+         id="stop4" />
+    </linearGradient>
+    <linearGradient
+       id="linearGradient1-1">
+      <stop
+         style="stop-color:#000000;stop-opacity:1;"
+         offset="0"
+         id="stop1" />
+      <stop
+         style="stop-color:#000000;stop-opacity:1;"
+         offset="0.5"
+         id="stop5" />
+      <stop
+         style="stop-color:#000000;stop-opacity:0;"
+         offset="1"
+         id="stop2" />
+    </linearGradient>
+  </defs>
+  <sodipodi:namedview
+     id="namedview1"
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1.0"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     inkscape:zoom="24.804688"
+     inkscape:cx="5.0796849"
+     inkscape:cy="11.530078"
+     inkscape:window-width="1728"
+     inkscape:window-height="902"
+     inkscape:window-x="2160"
+     inkscape:window-y="1266"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="g1" />
+  <g
+     inkscape:groupmode="layer"
+     inkscape:label="Image"
+     id="g1"
+     transform="translate(20.3155,0.31549999)">
+    <path
+       id="path12"
+       style="color:#000000;fill:#333333;fill-rule:evenodd;stroke-linejoin:bevel;-inkscape-stroke:none"
+       d="M -10.075266 6.7802031 L -10.075266 9.8446563 L -10.075266 9.8466094 L -10.077219 9.8466094 L -13.141672 9.8466094 L -13.141672 10.163016 L -13.141672 10.479422 L -10.077219 10.479422 L -10.075266 10.479422 L -10.075266 10.481375 L -10.075266 13.545828 L -9.7588594 13.545828 L -9.4424531 13.545828 L -9.4424531 10.481375 L -9.4424531 10.479422 L -9.4405 10.479422 L -6.3760469 10.479422 L -6.3760469 10.163016 L -6.3760469 9.8466094 L -9.4405 9.8466094 L -9.4424531 9.8466094 L -9.4424531 9.8446563 L -9.4424531 6.7802031 L -9.7588594 6.7802031 L -10.075266 6.7802031 z " />
+  </g>
+</svg>

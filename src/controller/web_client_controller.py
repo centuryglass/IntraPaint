@@ -39,7 +39,7 @@ class WebClientController(BaseInpaintController):
 
     def window_init(self) -> None:
         """Initialize and show the main application window."""
-        self._window = MainWindow(self._config, self._layer_stack, self._mask_canvas, self._sketch_canvas, self)
+        self._window = MainWindow(self._config, self._layer_stack, self)
         size = screen_size(self._window)
         self._window.setGeometry(0, 0, size.width(), size.height())
         self._window.show()

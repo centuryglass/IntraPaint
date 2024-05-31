@@ -532,5 +532,13 @@
         "type": "string",
         "default": "",
         "saved": false
+    },
+    "last_brush_color": {
+        "label": "Last brush color:",
+        "category": "Cache",
+        "description": "Last brush color",
+        "type": "string",
+        "default": "#ff000000",
+        "saved": false
     }
 }

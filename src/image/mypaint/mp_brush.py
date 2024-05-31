@@ -5,7 +5,7 @@ from typing import Optional, Any
 from ctypes import c_void_p, c_float, c_char_p, c_int
 from multiprocessing import Process, Pipe
 from PyQt5.QtGui import QColor
-from PyQt5.QtCore import QByteArray, QFile, QIODevice
+from PyQt5.QtCore import Qt, QByteArray, QFile, QIODevice
 from src.image.mypaint.libmypaint import libmypaint, load_libmypaint, DEFAULT_LIBRARY_PATH
 
 
@@ -69,10 +69,10 @@ class MPBrush:
         return self._color
 
     @color.setter
-    def color(self, new_color: QColor) -> None:
+    def color(self, new_color: QColor | Qt.GlobalColor) -> None:
         """Updates the brush color."""
-        if new_color == self._color:
-            return
+        if isinstance(new_color, Qt.GlobalColor):
+            new_color = QColor(new_color)
         self._color = new_color
         self.set_value(MPBrush.COLOR_H, max(self._color.hue(), 0) / 360.0)
         self.set_value(MPBrush.COLOR_S, self._color.saturation() / 255.0)
@@ -108,14 +108,17 @@ class BrushSetting:
         self.max_value = setting[0].max
         self.default_value = getattr(setting[0], 'def')
 
+def _get_max_setting_index() -> int:
+    """Gets the number of libMyPaint brush settings values to dynamically register with the class.
 
-def _load_brush_settings():
-    """Dynamically load settings into the brush class when the module first loads."""
+    Normal behavior is to return the expected default, but this can cause problems with otherwise compatible earlier
+    versions of libMyPaint that use fewer settings. If DYNAMIC_MYPAINT_BRUSH_SETTINGS is a defined environment variable,
+    the settings count will instead be found by checking increasing values in a child process until it fails the
+    'index < count' assertion and terminates.
+    """
+    if "DYNAMIC_MYPAINT_BRUSH_SETTINGS" not in os.environ:
+        return 64
 
-    # Setting count in libmypaint varies depending on version, and there's no way I know to get the count from the
-    # library. We can iterate over possible values to determine all possible settings, but going past the end of the
-    # list triggers an assertion failure and terminates the program. To get around this, read the settings from
-    # a child process until that process crashes.
     def read_settings(connection: Any) -> None:
         """Send back valid settings IDs through a connection after validating each with libmypaint."""
         devnull = os.open(os.devnull, os.O_WRONLY)
@@ -137,6 +140,12 @@ def _load_brush_settings():
     process.join()
     while parent_connection.poll():
         max_setting = max(max_setting, parent_connection.recv())
+    return max_setting
+
+
+def _load_brush_settings():
+    """Dynamically load settings into the brush class when the module first loads."""
+    max_setting = _get_max_setting_index()
     settings = []
     for setting_id in range(max_setting):
         setting = BrushSetting(setting_id)

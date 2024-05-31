@@ -2,15 +2,17 @@
 Selects between the default MyPaint brushes found in resources/brushes. This widget can only be used if a compatible
 brushlib/libmypaint QT library is available, currently only true for x86_64 Linux.
 """
-from typing import Optional, Any
 import os
 import re
-from PyQt5.QtWidgets import QWidget, QTabWidget, QGridLayout, QScrollArea, QSizePolicy, QMenu
+from typing import Optional, Any
+
+from PyQt5.QtCore import Qt, QRect, QPoint, pyqtSignal
 from PyQt5.QtGui import QPixmap, QImage, QPainter, QPaintEvent, QMouseEvent, QResizeEvent
-from PyQt5.QtCore import Qt, QRect, QPoint, QSize, pyqtSignal
+from PyQt5.QtWidgets import QWidget, QTabWidget, QGridLayout, QScrollArea, QSizePolicy, QMenu
+
+from src.config.application_config import AppConfig
 from src.image.mypaint.mp_brush import MPBrush
 from src.ui.util.get_scaled_placement import get_scaled_placement
-from src.config.application_config import AppConfig
 
 
 class BrushPanel(QTabWidget):
@@ -73,7 +75,7 @@ class BrushPanel(QTabWidget):
             for x, y, brush in _GridIter(self._group_orders[group]):
                 brush_path = os.path.join(group_dir, brush + BrushPanel.BRUSH_EXTENSION)
                 image_path = os.path.join(group_dir, brush + BrushPanel.BRUSH_ICON_EXTENSION)
-                brush_icon = _IconButton(self._brush, image_path, brush_path, False)
+                brush_icon = _IconButton(self._brush, image_path, brush_path, self._config, False)
 
                 brush_icon.favorite_change.connect(self._add_favorite)
                 group_layout.addWidget(brush_icon, y, x)
@@ -88,13 +90,14 @@ class BrushPanel(QTabWidget):
             group, brush = favorite.split('/')
             brush_path = os.path.join(BrushPanel.BRUSH_DIR, group, brush + BrushPanel.BRUSH_EXTENSION)
             image_path = os.path.join(BrushPanel.BRUSH_DIR, group, brush + BrushPanel.BRUSH_ICON_EXTENSION)
-            brush_icon = _IconButton(self._brush, image_path, brush_path, True)
+            brush_icon = _IconButton(self._brush, image_path, brush_path, self._config, True)
             brush_icon.favorite_change.connect(self._remove_favorite)
             favorite_brushes.append(brush_icon)
         if len(favorite_brushes) > 0:
             self._create_tab(BrushPanel.FAV_KEY, index=0)
             for x, y, brush in _GridIter(favorite_brushes):
                 self._layouts[BrushPanel.FAV_KEY].addWidget(brush, y, x)
+            self.setCurrentIndex(0)
 
     def _create_tab(self, tab_name: str, index: Optional[int] = None) -> None:
         """Adds a new brush category tab."""
@@ -102,9 +105,15 @@ class BrushPanel(QTabWidget):
             return
         tab = QScrollArea(self)
         tab.setWidgetResizable(True)
+        tab.setAlignment(Qt.AlignTop | Qt.AlignLeft)
         content = QWidget(tab)
+        content.setSizePolicy(QSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding))
+
+        tab.setSizePolicy(QSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding))
+
         tab.setWidget(content)
         layout = QGridLayout()
+        layout.setAlignment(Qt.AlignTop | Qt.AlignLeft)
         content.setLayout(layout)
         self._pages[tab_name] = content
         self._layouts[tab_name] = layout
@@ -183,7 +192,8 @@ class _IconButton(QWidget):
 
     favorite_change = pyqtSignal(QWidget)
 
-    def __init__(self, brush: MPBrush, image_path: str, brush_path: str, favorite: bool = False) -> None:
+    def __init__(self, brush: MPBrush, image_path: str, brush_path: str, config: AppConfig,
+                 favorite: bool = False) -> None:
         """Initialize using paths to the brush file and icon."""
         super().__init__()
         self._brush = brush
@@ -193,12 +203,15 @@ class _IconButton(QWidget):
         self._image_path = image_path
         self._image_rect: Optional[QRect] = None
         self._image = QPixmap(image_path)
+        self._config = config
         inverted = QImage(image_path)
         inverted.invertPixels(QImage.InvertRgba)
         self._image_inverted = QPixmap.fromImage(inverted)
         size_policy = QSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding)
         size_policy.setWidthForHeight(True)
         self.setSizePolicy(size_policy)
+        self.setMinimumSize(self._image.width() // 2, self._image.height() // 2)
+        self.setMaximumSize(self._image.width(), self._image.height())
         self.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self.customContextMenuRequested.connect(self._menu)
         self.resizeEvent(None)
@@ -210,11 +223,7 @@ class _IconButton(QWidget):
 
     def copy(self, favorite: bool = False) -> QWidget:
         """Creates a new IconButton with the same brush file and icon."""
-        return _IconButton(self._brush, self._image_path, self._brush_path, favorite=favorite)
-
-    def sizeHint(self) -> QSize:
-        """Set ideal size based on the brush icon size."""
-        return self._image.size()
+        return _IconButton(self._brush, self._image_path, self._brush_path, self._config, favorite=favorite)
 
     def is_selected(self) -> bool:
         """Checks whether this brush is the selected brush."""
@@ -241,6 +250,7 @@ class _IconButton(QWidget):
         if event is not None and event.button() == Qt.MouseButton.LeftButton and not self.is_selected() \
                 and self._image_rect is not None and self._image_rect.contains(event.pos()):
             self._brush.load_file(self._brush_path, True)
+            self._config.set(AppConfig.MYPAINT_BRUSH, self._brush_path)
             parent = self.parent()
             if isinstance(parent, QWidget):
                 parent.update()

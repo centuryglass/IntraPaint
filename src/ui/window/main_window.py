@@ -2,34 +2,26 @@
 Base implementation of the primary image editing window. On its own, provides an appropriate interface for GLID-3-XL
 inpainting modes.  Other editing modes should provide subclasses with implementation-specific controls.
 """
-from typing import Callable, Optional, Any
-import sys
 import math
-from PyQt5.QtWidgets import QMainWindow, QGridLayout, QLabel, QWidget, QPushButton, QVBoxLayout, QHBoxLayout, \
-    QComboBox, QFileDialog, QStackedWidget, QAction, QMenuBar, QBoxLayout, QApplication
-from PyQt5.QtGui import QIcon, QMouseEvent, QResizeEvent, QHideEvent
-from PyQt5.QtCore import Qt, QRect, QSize, QPoint
-from PIL import Image
+from typing import Callable, Optional, Any
 
+from PIL import Image
+from PyQt5.QtCore import Qt, QRect, QSize
+from PyQt5.QtGui import QIcon, QMouseEvent, QResizeEvent, QHideEvent, QPixmap
+from PyQt5.QtWidgets import QMainWindow, QGridLayout, QLabel, QWidget, QPushButton, QVBoxLayout, QHBoxLayout, \
+    QComboBox, QStackedWidget, QAction, QMenuBar, QBoxLayout, QApplication
+
+from src.config.application_config import AppConfig
+from src.image.layer_stack import LayerStack
+from src.ui.config_control_setup import connected_textedit, connected_spinbox, connected_checkbox
 from src.ui.modal.modal_utils import request_confirmation
 from src.ui.modal.settings_modal import SettingsModal
-from src.ui.panel.canvas_panel import CanvasPanel
-from src.ui.panel.image_panel import ImagePanel
 from src.ui.panel.layer_panel import LayerPanel
+from src.ui.panel.tool_panel import ToolPanel
 from src.ui.sample_selector import SampleSelector
-from src.ui.config_control_setup import connected_textedit, connected_spinbox, connected_checkbox
-from src.ui.widget.draggable_arrow import DraggableArrow
 from src.ui.widget.loading_widget import LoadingWidget
-from src.ui.util.screen_size import screen_size
-from src.image.canvas.mask_canvas import MaskCanvas
-from src.image.canvas.sketch_canvas import SketchCanvas
-try:
-    from src.image.canvas.mypaint_canvas import MyPaintCanvas
-except ImportError:
-    MyPaintCanvas = None
-from src.image.canvas.filled_canvas import FilledMaskCanvas
-from src.image.layer_stack import LayerStack
-from src.config.application_config import AppConfig
+from src.ui.image_viewer import ImageViewer
+from src.undo_stack import undo, redo
 
 
 class MainWindow(QMainWindow):
@@ -38,8 +30,6 @@ class MainWindow(QMainWindow):
     def __init__(self,
                  config: AppConfig,
                  layer_stack: LayerStack,
-                 mask: MaskCanvas,
-                 sketch: SketchCanvas | MyPaintCanvas,
                  controller: Any):
         """Initializes the main application window and sets up the default UI layout and menu options.
 
@@ -47,10 +37,6 @@ class MainWindow(QMainWindow):
             Shared application configuration object.
         layer_stack : LayerStack
             Image layers being edited.
-        mask : MaskCanvas
-            Canvas used for masking off inpainting areas.
-        sketch : SketchCanvas or MyPaintCanvas
-            Canvas used for sketching directly into the image.
         controller : BaseController
             Object managing application behavior.
         """
@@ -61,18 +47,16 @@ class MainWindow(QMainWindow):
         self._controller = controller
         self._config = config
         self._layer_stack = layer_stack
-        self._mask = mask
-        self._sketch = sketch
-        self._dragging_divider = False
-        self._timelapse_path = None
         self._sample_selector = None
         self._layout_mode = 'horizontal'
-        self._sliders_enabled = True
+        self._orientation = None
 
         self._layer_panel: Optional[LayerPanel] = None
 
         # Create components, build layout:
         self._layout = QVBoxLayout()
+        self._reactive_widget = None
+        self._reactive_layout = None
         self._main_page_widget = QWidget(self)
         self._main_page_widget.setLayout(self._layout)
         self._main_tab_widget = None
@@ -90,25 +74,10 @@ class MainWindow(QMainWindow):
         self._loading_widget.hide()
 
         # Image/Mask editing layout:
-        self._image_panel = ImagePanel(self._config, self._layer_stack)
-        self._canvas_panel = CanvasPanel(self._config, self._mask, self._sketch, self._layer_stack)
+        self._image_viewer = ImageViewer(self, layer_stack, config)
+        self._layout.addWidget(self._image_viewer)
 
-        if not self._layer_stack.has_image:
-            self._canvas_panel.setEnabled(False)
-
-            def enable_mask_controls() -> None:
-                """Enable the mask panel the first time image content is loaded."""
-                self._canvas_panel.setEnabled(True)
-                self._layer_stack.visible_content_changed.disconnect(enable_mask_controls)
-            self._layer_stack.visible_content_changed.connect(enable_mask_controls)
-
-        self.installEventFilter(self._canvas_panel)
-        self._divider = DraggableArrow()
-        self._scale_handler = None
-        self._image_layout = None
-        self._setup_correct_layout()
-        self._image_panel.image_toggled.connect(self._on_image_panel_toggle)
-
+        self._tool_panel = ToolPanel(layer_stack, self._image_viewer, config)
         # Set up menu:
         self._menu = self.menuBar()
 
@@ -145,8 +114,8 @@ class MainWindow(QMainWindow):
 
         # Edit:
         edit_menu = self._menu.addMenu('Edit')
-        add_action('Undo', 'Ctrl+Z', lambda: if_not_selecting(self._canvas_panel.undo), edit_menu)
-        add_action('Redo', 'Ctrl+Shift+Z', lambda: if_not_selecting(self._canvas_panel.redo), edit_menu)
+        add_action('Undo', 'Ctrl+Z', lambda: if_not_selecting(undo), edit_menu)
+        add_action('Redo', 'Ctrl+Shift+Z', lambda: if_not_selecting(redo), edit_menu)
         add_action('Generate', 'F4', lambda: if_not_selecting(controller.start_and_manage_inpainting),
                    edit_menu)
 
@@ -158,50 +127,8 @@ class MainWindow(QMainWindow):
 
         # Tools:
         tool_menu = self._menu.addMenu('Tools')
-
-        def sketch_mode_toggle() -> None:
-            """Switch between mask and sketch modes."""
-            try:
-                self._canvas_panel.toggle_draw_mode()
-            except ValueError:
-                pass  # Other mode is disabled, just do nothing
-
-        add_action('Toggle mask/sketch editing mode', 'F6', lambda: if_not_selecting(sketch_mode_toggle), tool_menu)
-
-        def mask_tool_toggle() -> None:
-            """Switch between pen and eraser tools."""
-            self._canvas_panel.swap_draw_tool()
-
-        add_action('Toggle pen/eraser tool', 'F7', lambda: if_not_selecting(mask_tool_toggle), tool_menu)
-
-        def clear_both() -> None:
-            """Clear both the mask and sketch panels."""
-            mask.clear()
-            sketch.clear()
-            self._canvas_panel.update()
-
-        add_action('Clear mask and sketch', 'F8', lambda: if_not_selecting(clear_both), tool_menu)
-
-        def brush_size_change(offset: int) -> None:
-            """Adjust the active canvas brush size by some amount."""
-            size = self._canvas_panel.brush_size
-            self._canvas_panel.brush_size = size + offset
-
-        add_action('Increase brush size', 'Ctrl+]', lambda: if_not_selecting(lambda: brush_size_change(1)), tool_menu)
-        add_action('Decrease brush size', 'Ctrl+[', lambda: if_not_selecting(lambda: brush_size_change(-1)), tool_menu)
-
-        if hasattr(self._canvas_panel, 'open_brush_picker'):
-            add_action('Open brush menu', None, self._canvas_panel.open_brush_picker, tool_menu)
-
-            def load_brush() -> None:
-                """Load a .myb brush file."""
-                is_pyinstaller_bundle = getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS')
-                options = QFileDialog.Option.DontUseNativeDialog if is_pyinstaller_bundle else None
-                file, file_selected = QFileDialog.getOpenFileName(self, 'Open Brush File', options)
-                if file_selected:
-                    self.sketch.surface.brush.load_file(file, True)
-
-            add_action('Load MyPaint Brush (.myb)', None, load_brush, tool_menu)
+        # add_action('Toggle pen/eraser tool', 'F7', lambda: if_not_selecting(mask_tool_toggle), tool_menu)
+        add_action('Clear mask', 'F8', lambda: if_not_selecting(layer_stack.mask_layer.clear), tool_menu)
 
         def show_layers() -> None:
             """Show the layer panel."""
@@ -209,6 +136,7 @@ class MainWindow(QMainWindow):
                 self._layer_panel = LayerPanel(self._layer_stack)
             self._layer_panel.show()
             self._layer_panel.raise_()
+
         add_action('Show layers', None, show_layers, tool_menu)
 
         self._settings = SettingsModal(self)
@@ -260,123 +188,29 @@ class MainWindow(QMainWindow):
         # Build config + control layout (varying based on implementation):
         self._build_control_layout(controller)
 
-    def _should_use_wide_layout(self) -> bool:
-        """Returns whether a wider layout would be more appropriate than the default."""
-        return self.height() <= (self.width() * 1.2)
+    def _get_appropriate_orientation(self) -> Qt.Orientation:
+        """Returns whether the window's image and tool layout should be vertical or horizontal."""
+        return Qt.Orientation.Vertical if self.height() > (self.width() * 1.2) else Qt.Orientation.Horizontal
 
-    def _should_use_tabbed_layout(self) -> bool:
-        """Returns whether a tabbed layout would be more appropriate than the default."""
-        main_display_size = screen_size(self)
-        required_height = 0
-
-        def get_required_height(layout_item: QWidget) -> int:
-            """Calculate max heights, taking into account possible expanded panels."""
-            height = 0
-            if hasattr(layout_item, 'expanded_size'):
-                height = max(height, layout_item.expanded_size().height())
-            if hasattr(layout_item, 'sizeHint'):
-                height = max(height, layout_item.sizeHint().height())
-            inner_height = 0
-            if layout_item.layout() is not None and isinstance(layout_item.layout(), QVBoxLayout):
-                for inner_item in (layout_item.layout().itemAt(i) for i in range(layout_item.layout().count())):
-                    if inner_item is None:
-                        continue
-                    inner_item_widget = inner_item.widget()
-                    if inner_item_widget is not None:
-                        inner_height += get_required_height(inner_item.widget())
-                height = max(height, inner_height)
-            return height
-
-        for item in (self.layout().itemAt(i) for i in range(self.layout().count())):
-            required_height += get_required_height(item)
-        if required_height == 0 and self._main_tab_widget is not None:
-            for item in (self._main_tab_widget.widget(i) for i in range(self._main_tab_widget.count())):
-                required_height += get_required_height(item)
-        return required_height > (main_display_size.height() * 0.9)
-
-    def _clear_editing_layout(self):
-        """Clear the window layout before rearranging it."""
-        if self._image_layout is not None:
-            for widget in [self._image_panel, self._divider, self._canvas_panel]:
-                self._image_layout.removeWidget(widget)
-            self.layout().removeItem(self._image_layout)
-            self._image_layout = None
-            if self._scale_handler is not None:
-                self._divider.dragged.disconnect(self._scale_handler)
-                self._scale_handler = None
-
-    def set_image_sliders_enabled(self, sliders_enabled: bool) -> None:
-        """Sets whether the ImagePanel control sliders should be shown."""
-        self._sliders_enabled = sliders_enabled
-        if not sliders_enabled and self._image_panel.sliders_showing():
-            self._image_panel.show_sliders(False)
-        elif sliders_enabled and not self._image_panel.sliders_showing() and self._should_use_wide_layout():
-            self._image_panel.show_sliders(True)
-
-    def _setup_wide_layout(self) -> None:
-        """Arrange window widgets in the wide layout mode."""
-        if self._image_layout is not None:
-            self._clear_editing_layout()
-        image_layout = QHBoxLayout()
-        self._divider.set_horizontal_mode()
-        self._image_layout = image_layout
-
-        def scale_widgets(pos: QPoint) -> None:
-            """Adjust image and mask panel widths when the slider widget is dragged."""
-            x = pos.x()
-            img_weight = int(x / self.width() * 300)
-            mask_weight = 300 - img_weight
-            self._image_layout.setStretch(0, img_weight)
-            self._image_layout.setStretch(2, mask_weight)
-            self.update()
-
-        self._scale_handler = scale_widgets
-        self._divider.dragged.connect(self._scale_handler)
-
-        image_layout.addWidget(self._image_panel, stretch=255)
-        image_layout.addWidget(self._divider, stretch=5)
-        image_layout.addWidget(self._canvas_panel, stretch=100)
-        self._layout.insertLayout(0, image_layout, stretch=255)
-        self._image_panel.show_sliders(True and self._sliders_enabled)
-        self._image_panel.set_orientation(Qt.Orientation.Horizontal)
-        self.update()
-
-    def _setup_tall_layout(self) -> None:
-        """Arrange window widgets in the tall layout mode."""
-        if self._image_layout is not None:
-            self._clear_editing_layout()
-        image_layout = QVBoxLayout()
-        self._image_layout = image_layout
-        self._divider.set_vertical_mode()
-
-        def scale_widgets(pos: QPoint) -> None:
-            """Adjust image and mask panel heights when the slider widget is dragged."""
-            y = pos.y()
-            img_weight = int(y / self.height() * 300)
-            mask_wight = 300 - img_weight
-            self._image_layout.setStretch(0, img_weight)
-            self._image_layout.setStretch(2, mask_wight)
-            self.update()
-
-        self._scale_handler = scale_widgets
-        self._divider.dragged.connect(self._scale_handler)
-
-        image_layout.addWidget(self._image_panel, stretch=255)
-        image_layout.addWidget(self._divider, stretch=5)
-        image_layout.addWidget(self._canvas_panel, stretch=100)
-        self.layout().insertLayout(0, image_layout, stretch=255)
-        self._image_layout = image_layout
-        self._image_panel.show_sliders(False)
-        self._image_panel.set_orientation(Qt.Orientation.Vertical)
-        self.update()
-
-    def _setup_correct_layout(self) -> None:
-        """Applies whatever layout is the most appropriate given the current window dimensions."""
-        if self._should_use_wide_layout():
-            if isinstance(self._image_layout, QVBoxLayout) or self._image_layout is None:
-                self._setup_wide_layout()
-        elif isinstance(self._image_layout, QHBoxLayout) or self._image_layout is None:
-            self._setup_tall_layout()
+    def refresh_layout(self) -> None:
+        """Update orientation and layout based on window dimensions."""
+        orientation = self._get_appropriate_orientation()
+        if orientation == self._orientation:
+            return
+        self._orientation = orientation
+        last_reactive_widget = self._reactive_widget
+        if self._reactive_layout is not None:
+            for panel in (self._image_viewer, self._tool_panel):
+                self._reactive_layout.removeWidget(panel)
+        self._reactive_widget = QWidget(self)
+        self._reactive_layout = QVBoxLayout(self._reactive_widget) if orientation == Qt.Orientation.Vertical \
+            else QHBoxLayout(self._reactive_widget)
+        self._reactive_layout.addWidget(self._image_viewer, stretch=80)
+        self._reactive_layout.addWidget(self._tool_panel, stretch=2)
+        self._tool_panel.set_orientation(orientation)
+        self._layout.insertWidget(0, self._reactive_widget)
+        if last_reactive_widget is not None:
+            last_reactive_widget.setParent(None)
 
     def _create_scale_mode_selector(self, parent: QWidget, config_key: str) -> QComboBox:
         """Returns a combo box that selects between image scaling algorithms."""
@@ -425,12 +259,6 @@ class MainWindow(QMainWindow):
         enable_scale_checkbox = connected_checkbox(inpaint_panel, self._config, AppConfig.INPAINT_FULL_RES)
         enable_scale_checkbox.setText(self._config.get_label(AppConfig.INPAINT_FULL_RES))
 
-        def update_scale() -> None:
-            """Adjust image panel scaling when the 'Inpaint full res' option changes."""
-            self._image_panel.reload_scale_bounds()
-
-        enable_scale_checkbox.stateChanged.connect(update_scale)
-
         upscale_mode_label = QLabel(inpaint_panel)
         upscale_mode_label.setText(self._config.get_label(AppConfig.UPSCALE_MODE))
         upscale_mode_list = self._create_scale_mode_selector(inpaint_panel, AppConfig.UPSCALE_MODE)
@@ -477,13 +305,15 @@ class MainWindow(QMainWindow):
         if visible == is_visible:
             return
         if visible:
-            mask = self._mask if self._config.get(AppConfig.EDIT_MODE) == 'Inpaint' \
-                              else FilledMaskCanvas(self._config)
+            if self._config.get(AppConfig.EDIT_MODE) == 'Inpaint':
+                mask = self._layer_stack.mask_layer.pil_mask_image
+            else:
+                mask = QPixmap(self._layer_stack.selection.size())
+                mask.fill(Qt.red)
             self._sample_selector = SampleSelector(
                 self._config,
                 self._layer_stack,
                 mask,
-                self._sketch,
                 lambda: self.set_sample_selector_visible(False),
                 self._controller.select_and_apply_sample)
             self._central_widget.addWidget(self._sample_selector)
@@ -526,29 +356,17 @@ class MainWindow(QMainWindow):
 
     def resizeEvent(self, unused_event: Optional[QResizeEvent]) -> None:
         """Applies the most appropriate layout when the window size changes."""
-        self._should_use_tabbed_layout()
-        self._setup_correct_layout()
         if hasattr(self, '_loading_widget'):
             loading_widget_size = int(self.height() / 8)
             loading_bounds = QRect(self.width() // 2 - loading_widget_size // 2, loading_widget_size * 3,
                                    loading_widget_size, loading_widget_size)
             self._loading_widget.setGeometry(loading_bounds)
+        self.refresh_layout()
 
     def mousePressEvent(self, event: Optional[QMouseEvent]) -> None:
         """Suppresses mouse events when the loading spinner is active."""
         if not self._is_loading:
             super().mousePressEvent(event)
-
-    def _on_image_panel_toggle(self, image_showing: bool) -> None:
-        """Adjust layout when the image panel is shown or hidden."""
-        if image_showing:
-            self._image_layout.setStretch(0, 255)
-            self._image_layout.setStretch(2, 100)
-        else:
-            self._image_layout.setStretch(0, 1)
-            self._image_layout.setStretch(2, 255)
-        self._divider.set_hidden(not image_showing)
-        self.update()
 
     def layout(self) -> QBoxLayout:
         """Gets the window's layout as QBoxLayout."""
