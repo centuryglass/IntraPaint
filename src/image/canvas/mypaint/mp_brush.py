@@ -6,7 +6,7 @@ from ctypes import c_void_p, c_float, c_char_p, c_int
 from multiprocessing import Process, Pipe
 from PyQt5.QtGui import QColor
 from PyQt5.QtCore import Qt, QByteArray, QFile, QIODevice
-from src.image.mypaint.libmypaint import libmypaint, load_libmypaint, DEFAULT_LIBRARY_PATH
+from src.image.canvas.mypaint.libmypaint import libmypaint, load_libmypaint, DEFAULT_LIBRARY_PATH
 
 
 class MPBrush:

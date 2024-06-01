@@ -4,9 +4,10 @@ from PyQt5.QtCore import Qt, QPoint
 from PyQt5.QtGui import QKeyEvent, QMouseEvent, QWheelEvent, QIcon, QPixmap, QPainter
 from PyQt5.QtWidgets import QVBoxLayout, QHBoxLayout, QWidget, QPushButton
 from src.image.layer_stack import LayerStack
-from src.image.mypaint.mp_brush import MPBrush
+from src.image.canvas.mypaint.mp_brush import MPBrush
 from src.config.application_config import AppConfig
-from src.tools.mypaint_tool import MyPaintTool
+from src.tools.canvas_tool import CanvasTool
+from src.image.canvas.pixmap_layer_canvas import PixmapLayerCanvas
 from src.ui.image_viewer import ImageViewer
 from src.ui.widget.param_slider import ParamSlider
 from src.ui.widget.dual_toggle import DualToggle
@@ -32,11 +33,11 @@ TOOL_MODE_DRAW = "Draw"
 TOOL_MODE_ERASE = "Erase"
 
 
-class MaskTool(MyPaintTool):
+class MaskTool(CanvasTool):
     """Implements brush controls using a MyPaint surface."""
 
     def __init__(self, layer_stack: LayerStack, image_viewer: ImageViewer, config: AppConfig) -> None:
-        super().__init__(layer_stack, image_viewer)
+        super().__init__(layer_stack, image_viewer, PixmapLayerCanvas(image_viewer.scene()))
         self._config = config
         self._last_click = None
         self._control_panel = None
@@ -48,7 +49,6 @@ class MaskTool(MyPaintTool):
 
         # Setub brush, load size from config
         self.brush_color = Qt.red
-        self.brush_path = RESOURCES_MASK_BRUSH
         self.brush_size = config.get(AppConfig.MASK_BRUSH_SIZE)
         self.layer = layer_stack.mask_layer
 

@@ -7,7 +7,8 @@ from PyQt5.QtWidgets import QVBoxLayout, QPushButton, QColorDialog, QWidget
 
 from src.config.application_config import AppConfig
 from src.image.layer_stack import LayerStack
-from src.tools.mypaint_tool import MyPaintTool
+from src.image.canvas.mypaint_layer_canvas import MyPaintLayerCanvas
+from src.tools.canvas_tool import CanvasTool
 from src.ui.image_viewer import ImageViewer
 from src.ui.panel.brush_panel import BrushPanel
 from src.ui.widget.param_slider import ParamSlider
@@ -28,11 +29,11 @@ COLOR_BUTTON_LABEL = 'Color'
 COLOR_BUTTON_TOOLTIP = 'Select sketch brush color'
 
 
-class BrushTool(MyPaintTool):
+class BrushTool(CanvasTool):
     """Implements brush controls using a MyPaint surface."""
 
     def __init__(self, layer_stack: LayerStack, image_viewer: ImageViewer, config: AppConfig) -> None:
-        super().__init__(layer_stack, image_viewer)
+        super().__init__(layer_stack, image_viewer, MyPaintLayerCanvas(image_viewer.scene()))
         self._config = config
         self._last_click = None
         self._control_panel = None
@@ -102,9 +103,9 @@ class BrushTool(MyPaintTool):
         # Color picker:
         def set_brush_color(color: QColor) -> None:
             """Update the brush color within the canvas."""
-            if color == self._canvas.brush.color:
+            if color == self.brush_color:
                 return
-            self._canvas.brush.color = color
+            self.brush_color = color
             icon = QPixmap(QSize(64, 64))
             icon.fill(color)
             color_picker_button.setIcon(QIcon(icon))
@@ -115,7 +116,7 @@ class BrushTool(MyPaintTool):
         color_picker_button.clicked.connect(lambda: set_brush_color(color_dialog.getColor()))
         self._config.connect(color_picker_button, AppConfig.LAST_BRUSH_COLOR,
                              lambda color_str: set_brush_color(QColor(color_str)))
-        set_brush_color(self._canvas.brush.color)
+        set_brush_color(self.brush_color)
         control_layout.addWidget(color_picker_button, stretch=2)
 
         # Brush selection:

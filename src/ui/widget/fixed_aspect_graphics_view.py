@@ -1,12 +1,13 @@
 """A QGraphicsView that maintains an aspect ratio and simplifies scene management."""
 from typing import Optional, List
-from PyQt5.QtWidgets import QWidget, QGraphicsView, QGraphicsScene
+from PyQt5.QtWidgets import QWidget, QGraphicsView, QGraphicsScene, QGraphicsPixmapItem
 from PyQt5.QtGui import QPixmap, QImage, QPainter, QPen, QTransform, QResizeEvent, QMouseEvent, QCursor
 from PyQt5.QtCore import Qt, QObject, QPoint, QPointF, QRect, QRectF, QSize, QMarginsF, pyqtSignal, QEvent
 from src.ui.util.get_scaled_placement import get_scaled_placement
 from src.ui.util.contrast_color import contrast_color
 from src.util.validation import assert_type
 
+CURSOR_ITEM_Z_LEVEL = 9999
 
 class FixedAspectGraphicsView(QGraphicsView):
     """A QGraphicsView that maintains an aspect ratio and simplifies scene management."""
@@ -22,6 +23,7 @@ class FixedAspectGraphicsView(QGraphicsView):
         self._event_filters: List[QObject] = []
         self._last_cursor_pos: Optional[QPoint] = None
         self._cursor_pixmap: Optional[QPixmap] = None
+        self._cursor_pixmap_item: Optional[QGraphicsPixmapItem] = None
 
         self._scale = 1.0
         self._scale_adjustment = 0.0
@@ -47,14 +49,35 @@ class FixedAspectGraphicsView(QGraphicsView):
             can cause problems with some windowing systems if applied normally.
         """
         if isinstance(new_cursor, QPixmap):
-            self._cursor_pixmap = new_cursor
+            if self._cursor_pixmap_item is None:
+                self._cursor_pixmap_item = QGraphicsPixmapItem(new_cursor)
+                self._cursor_pixmap_item.setZValue(CURSOR_ITEM_Z_LEVEL)
+            else:
+                self._cursor_pixmap_item.setPixmap(new_cursor)
+            if self._cursor_pixmap_item.scene() is None and self._last_cursor_pos is not None:
+                self.scene().addItem(self._cursor_pixmap_item)
+            self._cursor_pixmap_item.setScale(1 / self.scene_scale)
+            self.set_cursor_pos(self._last_cursor_pos)
             self.setCursor(QCursor(Qt.CursorShape.CrossCursor))
-            self.update()
         else:
-            self._cursor_pixmap = None
+            if self._cursor_pixmap_item is not None and self._cursor_pixmap_item.scene() is not None:
+                self.scene().removeItem(self._cursor_pixmap_item)
+                self._cursor_pixmap_item.setVisible(False)
             if new_cursor is None:
                 new_cursor = QCursor()
             self.setCursor(new_cursor)
+        self.update()
+
+    def set_cursor_pos(self, cursor_pos: QPoint) -> None:
+        """Updates the last cursor position within the widget so that pixmap cursor rendering stays active."""
+        self._last_cursor_pos = cursor_pos
+        if self._cursor_pixmap_item is not None and self._cursor_pixmap_item.scene() is not None:
+            self._cursor_pixmap_item.setVisible(cursor_pos is not None)
+            if cursor_pos is None:
+                return
+            scene_pos = self.mapToScene(cursor_pos)
+            self._cursor_pixmap_item.setPos(scene_pos.x() - self._cursor_pixmap_item.pixmap().width() * self._cursor_pixmap_item.scale() / 2,
+                                            scene_pos.y() - self._cursor_pixmap_item.pixmap().height() * self._cursor_pixmap_item.scale() / 2)
 
     def reset_scale(self) -> None:
         """Resets the scale to fit content in the view and re-centers the scene."""
@@ -222,11 +245,13 @@ class FixedAspectGraphicsView(QGraphicsView):
         """If a pixmap cursor is in use, keep last cursor point updated and force a redraw when the mouse moves."""
         if cursor_point != self._last_cursor_pos:
             self._last_cursor_pos = cursor_point
+        if self._cursor_pixmap is not None:
+            self.update()
 
     def mousePressEvent(self, event: Optional[QMouseEvent], get_result=False) -> bool:
         """Custom mousePress handler to deal with QGraphicsView oddities. Child classes must call this implementation
            first with get_result=True, then exit without further action if it returns true."""
-        self._pixmap_cursor_update(event.pos())
+        self.set_cursor_pos(event.pos())
         for event_filter in self._event_filters:
             if event_filter.eventFilter(self, event):
                 return True if get_result else None
@@ -235,7 +260,7 @@ class FixedAspectGraphicsView(QGraphicsView):
     def mouseMoveEvent(self, event: Optional[QMouseEvent], get_result=False) -> None:
         """Custom mouseMove handler to deal with QGraphicsView oddities. Child classes must call this implementation
            first with get_result=True, then exit without further action if it returns true."""
-        self._pixmap_cursor_update(event.pos())
+        self.set_cursor_pos(event.pos())
         for event_filter in self._event_filters:
             if event_filter.eventFilter(self, event):
                 return True if get_result else None
@@ -244,7 +269,7 @@ class FixedAspectGraphicsView(QGraphicsView):
     def mouseReleaseEvent(self, event: Optional[QMouseEvent], get_result=False) -> None:
         """Custom mouseRelease handler to deal with QGraphicsView oddities. Child classes must call this implementation
            first with get_result=True, then exit without further action if it returns true."""
-        self._pixmap_cursor_update(event.pos())
+        self.set_cursor_pos(event.pos())
         for event_filter in self._event_filters:
             if event_filter.eventFilter(self, event):
                 return True if get_result else None

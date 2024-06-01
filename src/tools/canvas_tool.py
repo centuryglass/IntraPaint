@@ -5,9 +5,8 @@ from PyQt5.QtCore import Qt, QPoint, QSize, QRect
 from PyQt5.QtGui import QCursor, QTabletEvent, QMouseEvent, QColor, QIcon
 
 from src.image.image_layer import ImageLayer
-from src.image.layer_canvas import LayerCanvas
+from src.image.canvas.layer_canvas import LayerCanvas
 from src.image.layer_stack import LayerStack
-from src.image.mypaint.mp_brush import MPBrush
 from src.tools.base_tool import BaseTool
 from src.ui.image_viewer import ImageViewer
 
@@ -16,7 +15,7 @@ RESOURCES_CURSOR = './resources/cursor.svg'
 RESOURCES_MIN_CURSOR = './resources/minCursor.svg'
 
 MAX_CURSOR_SIZE = 255
-MIN_CURSOR_SIZE = 9
+MIN_CURSOR_SIZE = 20
 
 BRUSH_LABEL = 'Brush'
 BRUSH_TOOLTIP = 'Paint into the image'
@@ -24,15 +23,15 @@ COLOR_BUTTON_LABEL = 'Color'
 COLOR_BUTTON_TOOLTIP = 'Select sketch brush color'
 
 
-class MyPaintTool(BaseTool):
-    """Base template for tools that use a MyPaint surface within an image layer.
+class CanvasTool(BaseTool):
+    """Base template for tools that use a LayerCanvas to edit an image layer using drawing commands.
 
-    MyPaintTool handles the connection between a layer and a MyPaint canvas, and the process of applying inputs to
+    CanvasTool handles the connection between a layer and a MyPaint canvas, and the process of applying inputs to
     that canvas. Implementations are responsible for providing their own control panel, configuring brush properties,
     and setting or updating the affected layer.
     """
 
-    def __init__(self, layer_stack: LayerStack, image_viewer: ImageViewer) -> None:
+    def __init__(self, layer_stack: LayerStack, image_viewer: ImageViewer, canvas: LayerCanvas) -> None:
         super().__init__()
         self._layer = None
         self._active = False
@@ -50,10 +49,10 @@ class MyPaintTool(BaseTool):
         self._scaling_cursor = True
         image_viewer.scale_changed.connect(self.update_brush_cursor)
 
-        # Create LayerCanvas
+        # Create MyPaintLayerCanvas
         self._layer_stack = layer_stack
         self._image_viewer = image_viewer
-        self._canvas = LayerCanvas(image_viewer.scene(), None)
+        self._canvas = canvas
 
         def update_size(new_size: QSize) -> None:
             """Sync canvas size with image size."""
@@ -66,7 +65,7 @@ class MyPaintTool(BaseTool):
         Parameters
         ----------
         icon: QIcon, optional
-            Cursor icon to use. If None, dynamic cursor updates will be disabled. If an icon, MyPaintTool will
+            Cursor icon to use. If None, dynamic cursor updates will be disabled. If an icon, CanvasTool will
             dynamically scale it to match the brush size, using an alternate instead if it's below MIN_CURSOR_SIZE.
         """
         self._scaling_cursor = icon is not None
@@ -118,22 +117,27 @@ class MyPaintTool(BaseTool):
     @property
     def brush_path(self) -> Optional[str]:
         """Gets the active brush file path, if any."""
-        return self._canvas.brush_path
+        if hasattr(self._canvas, 'brush_path'):
+            return self._canvas.brush_path
+        return None
 
     @brush_path.setter
     def brush_path(self, new_path: str) -> None:
         """Updates the active brush size."""
-        self._canvas.brush_path = new_path
+        if hasattr(self._canvas, 'brush_path'):
+            self._canvas.brush_path = new_path
+        else:
+            raise RuntimeError(f'Tried to set brush path {new_path} when layer canvas has no brush support.')
 
     @property
     def brush_color(self) -> QColor:
         """Gets the active brush color."""
-        return self._canvas.brush.color
+        return self._canvas.brush_color
 
     @brush_color.setter
     def brush_color(self, new_color: QColor | Qt.GlobalColor) -> None:
         """Updates the active brush color."""
-        self._canvas.brush.color = new_color
+        self._canvas.brush_color = new_color
 
     def on_activate(self) -> None:
         """Connect the canvas to the active layer."""
@@ -153,16 +157,11 @@ class MyPaintTool(BaseTool):
     def _stroke_to(self, image_coordinates: QPoint) -> None:
         """Draws coordinates to the canvas, including tablet data if available."""
         if self._tablet_input == QTabletEvent.PointerType.Eraser:
-            eraser_prev = self._canvas.brush.get_value(MPBrush.ERASER)
-            self._canvas.brush.set_value(MPBrush.ERASER, 1.0)
-        else:
-            eraser_prev = None
-
+            self._canvas.eraser = True
         self._canvas.stroke_to(image_coordinates.x(), image_coordinates.y(), self._tablet_pressure,
                                self._tablet_x_tilt, self._tablet_y_tilt)
-
-        if eraser_prev is not None:
-            self._canvas.brush.set_value(MPBrush.ERASER, eraser_prev)
+        if self._tablet_input == QTabletEvent.PointerType.Eraser:
+            self._canvas.eraser = False
 
     def mouse_click(self, event: Optional[QMouseEvent], image_coordinates: QPoint) -> bool:
         """Starts drawing when the mouse is clicked in the scene."""
@@ -218,12 +217,11 @@ class MyPaintTool(BaseTool):
         if not self._active or self._scaling_cursor is False or self._scaled_icon_cursor is None:
             return
         brush_cursor_size = int(self.brush_size * self._image_viewer.scene_scale)
-        print(f'setting {brush_cursor_size}px cursor.')
         if brush_cursor_size < MIN_CURSOR_SIZE:
             self.cursor = self._small_brush_cursor
         else:
             scaled_cursor = self._scaled_icon_cursor.pixmap(brush_cursor_size, brush_cursor_size)
-            if brush_cursor_size < MAX_CURSOR_SIZE:
-                self.cursor = QCursor(scaled_cursor)
-            else:
+            if brush_cursor_size > MAX_CURSOR_SIZE:
                 self.cursor = scaled_cursor
+            else:
+                self.cursor = QCursor(scaled_cursor)

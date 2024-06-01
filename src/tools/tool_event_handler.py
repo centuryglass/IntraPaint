@@ -97,6 +97,7 @@ class ToolEventHandler(QObject):
 
         def find_image_coordinates(typed_event: QMouseEvent | QTabletEvent) -> Optional[QPoint]:
             """Find event image coordinates and detect mouse enter/exit."""
+            self._image_viewer.set_cursor_pos(typed_event.pos())
             image_coordinates = self._image_viewer.widget_to_scene_coordinates(typed_event.pos()).toPoint()
             point_in_image = QRect(QPoint(0, 0), self._image_viewer.content_size).contains(image_coordinates)
             if point_in_image and not self._mouse_in_bounds:
