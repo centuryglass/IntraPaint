@@ -283,7 +283,7 @@ def get_selection_control_boxes(config: AppConfig,
                                           (h_box, h_slider, min_edit_size.height(), max_edit_size.height())):
         for control in filter(lambda ctrl_widget: ctrl_widget is not None, (box, slider)):
             control.setRange(min_val, max_val)
-            control.setSingleStep(min_val)
+            control.setSingleStep(1)
     for coord_widget in x_box, x_slider, y_box, y_slider:
         if coord_widget is not None:
             coord_widget.setMinimum(0)

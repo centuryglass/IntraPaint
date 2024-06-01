@@ -63,9 +63,8 @@ class MaskLayer(ImageLayer):
     def update_selection(self, new_selection: QRect) -> None:
         """Update the area marked for image generation."""
         self._selection = new_selection
-        with self.borrow_image() as _:
-            pass  # Trigger the usual mask post-processing
-        self.refresh_pixmap()
+        self._update_bounds()
+        self.content_changed.emit()
 
     # Disabling unwanted layer functionality:
     def copy(self) -> Self:
@@ -85,6 +84,37 @@ class MaskLayer(ImageLayer):
     # Updating cached selection
 
     # Enforcing image properties:
+    def _update_bounds(self, np_image: Optional[np.ndarray] = None) -> None:
+        """Update saved mask bounds within the selection."""
+        if np_image is None:
+            image = self.q_image
+            image_ptr = image.bits()
+            image_ptr.setsize(image.byteCount())
+            np_image = np.ndarray(shape=(image.height(), image.width(), 4), dtype=np.uint8, buffer=image_ptr)
+        selection = self._selection
+        # Get a numpy array for just the selected region:
+        selection_image = np_image[selection.y():selection.y() + selection.height(),
+                          selection.x():selection.x() + selection.width(), :]
+        # Find and save the bounds of the masked area within the selection:
+        if np.all(selection_image[:, :, 3] == 0):
+            self._bounding_box = None
+        else:
+            masked_rows = np.any(selection_image[:, :, 3] >= ALPHA_THRESHOLD, axis=1)
+            masked_columns = np.any(selection_image[:, :, 3] >= ALPHA_THRESHOLD, axis=0)
+            top = np.argmax(masked_rows) + selection.y()
+            bottom = selection.y() + selection.height() - 1 - np.argmax(np.flip(masked_rows))
+            left = selection.x() + np.argmax(masked_columns)
+            right = selection.x() + selection.width() - 1 - np.argmax(np.flip(masked_columns))
+            if left >= right:
+                self._bounding_box = None
+            else:
+                self._bounding_box = QRect(left, top, right - left, bottom - top)
+
+    def selection_is_empty(self) -> bool:
+        """Returns whether the current selection mask is empty."""
+        self._update_bounds()
+        return self._bounding_box is None or self._bounding_box.isEmpty()
+
     @contextmanager
     def borrow_image(self) -> Generator[Optional[QImage], None, None]:
         """Provides direct access to the image for editing, then applies mask restrictions and draws outlines."""
@@ -95,23 +125,7 @@ class MaskLayer(ImageLayer):
             image_ptr = image.bits()
             image_ptr.setsize(image.byteCount())
             np_image = np.ndarray(shape=(image.height(), image.width(), 4), dtype=np.uint8, buffer=image_ptr)
-            # Get a numpy array for just the selected region:
-            selection_image = np_image[selection.y():selection.y() + selection.height(),
-                              selection.x():selection.x() + selection.width(), :]
-            # Find and save the bounds of the masked area within the selection:
-            if np.all(selection_image[:, :, 3] == 0):
-                self._bounding_box = None
-            else:
-                masked_rows = np.any(selection_image[:, :, 3] >= ALPHA_THRESHOLD, axis=1)
-                masked_columns = np.any(selection_image[:, :, 3] >= ALPHA_THRESHOLD, axis=0)
-                top = np.argmax(masked_rows) + selection.y()
-                bottom = selection.y() + selection.height() - 1 - np.argmax(np.flip(masked_rows))
-                left = selection.x() + np.argmax(masked_columns)
-                right = selection.x() + selection.width() - 1 - np.argmax(np.flip(masked_columns))
-                if left >= right:
-                    self._bounding_box = None
-                else:
-                    self._bounding_box = QRect(left, top, right - left, bottom - top)
+            self._update_bounds(np_image)
             # Areas under ALPHA_THRESHOLD set to (0, 0, 0, 0), areas within the threshold set to #FF0000 with opacity
             # varying based on the selection bounds:
             masked = np_image[:, :, 3] >= ALPHA_THRESHOLD
@@ -231,7 +245,7 @@ class MaskLayer(ImageLayer):
                 assert height_to_add >= 0
                 d_top = min(top - selection_top, height_to_add // 2)
                 height_to_add -= d_top
-                d_bottom = min(selection_bottom, height_to_add)
+                d_bottom = min(selection_bottom - bottom, height_to_add)
                 height_to_add -= d_bottom
                 if height_to_add > 0:
                     d_top = min(top - selection_top, d_top + height_to_add)

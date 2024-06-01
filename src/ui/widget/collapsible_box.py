@@ -75,6 +75,7 @@ class CollapsibleBox(BorderedWidget):
         if scrolling:
             self.scroll_area = QScrollArea()
             self.content = QWidget(self.scroll_area)
+            self.content.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding)
             self.scroll_area.setWidget(self.content)
             self.scroll_area.setWidgetResizable(True)
         else:

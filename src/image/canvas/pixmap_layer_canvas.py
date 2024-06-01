@@ -33,6 +33,7 @@ class PixmapLayerCanvas(LayerCanvas):
         super().start_stroke()
         if self._pixmap_item is not None:
             self._pixmap_item.setOpacity(ACTIVE_PIXMAP_OPACITY)
+
     def end_stroke(self) -> None:
         """Finishes a brush stroke, copying it back to the layer."""
         super().end_stroke()
@@ -75,9 +76,10 @@ class PixmapLayerCanvas(LayerCanvas):
         pen = QPen(self.brush_color, size, Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin)
         painter.setPen(pen)
         if self._last_point is None:
-            painter.drawPoint(x, y)
+            painter.drawPoint(x - self.edit_region.x(), y - self.edit_region.y())
         else:
-            painter.drawLine(self._last_point.x(), self._last_point.y(), x, y)
+            painter.drawLine(self._last_point.x() - self.edit_region.x(), self._last_point.y() - self.edit_region.y(),
+                             x, y)
         painter.end()
         self._last_point = QPoint(x, y)
         self._pixmap_item.setPixmap(pixmap)

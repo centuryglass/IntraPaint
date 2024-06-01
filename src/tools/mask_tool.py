@@ -1,8 +1,8 @@
 """Marks areas within the image generation selection for inpainting."""
 from typing import Optional
-from PyQt5.QtCore import Qt, QPoint
+from PyQt5.QtCore import Qt, QPoint, QRect
 from PyQt5.QtGui import QKeyEvent, QMouseEvent, QWheelEvent, QIcon, QPixmap, QPainter
-from PyQt5.QtWidgets import QVBoxLayout, QHBoxLayout, QWidget, QPushButton
+from PyQt5.QtWidgets import QVBoxLayout, QHBoxLayout, QWidget, QPushButton, QApplication
 from src.image.layer_stack import LayerStack
 from src.image.canvas.mypaint.mp_brush import MPBrush
 from src.config.application_config import AppConfig
@@ -51,6 +51,12 @@ class MaskTool(CanvasTool):
         self.brush_color = Qt.red
         self.brush_size = config.get(AppConfig.MASK_BRUSH_SIZE)
         self.layer = layer_stack.mask_layer
+
+        def update_draw_area(draw_area: QRect) -> None:
+            """Limit the canvas to the selection bounds."""
+            self._canvas.edit_region = draw_area
+        layer_stack.selection_bounds_changed.connect(update_draw_area)
+        update_draw_area(layer_stack.selection)
 
     def get_hotkey(self) -> Qt.Key:
         """Returns the hotkey that should activate this tool."""
@@ -135,28 +141,11 @@ class MaskTool(CanvasTool):
         control_layout.addWidget(clear_fill_line)
         return self._control_panel
 
-    def key_event(self, event: Optional[QKeyEvent]) -> bool:
-        """Adjust brush size with square bracket keys."""
-        if event.type() != QKeyEvent.Type.KeyPress:
-            return False
-        match event.key():
-            case Qt.Key.Key_BracketLeft:
-                self._config.set(AppConfig.MASK_BRUSH_SIZE, max(1, self._canvas.brush_size - 1))
-            case Qt.Key.Key_BracketRight:
-                self._config.set(AppConfig.MASK_BRUSH_SIZE, max(1, self._canvas.brush_size + 1))
-            case _:
-                return False
-        return True
-
-    def wheel_event(self, event: Optional[QWheelEvent]) -> bool:
-        """Adjust brush size if scrolling with shift held down."""
-        if event.angleDelta().x() > 0:
-            self._config.set(AppConfig.MASK_BRUSH_SIZE, max(1, self._canvas.brush_size - 1))
-        elif event.angleDelta().x() < 0:
-            self._config.set(AppConfig.MASK_BRUSH_SIZE, max(1, self._canvas.brush_size + 1))
-        else:
-            return False
-        return True
+    def adjust_brush_size(self, offset: int) -> None:
+        """Change brush size by some offset amount, multiplying offset by 10 if shift is held."""
+        if QApplication.keyboardModifiers() == Qt.ShiftModifier:
+            offset *= 10
+        self._config.set(AppConfig.MASK_BRUSH_SIZE, max(1, self._canvas.brush_size + offset))
 
     def on_activate(self) -> None:
         """Override MyPaint tool to keep mask layer visible."""
@@ -167,6 +156,7 @@ class MaskTool(CanvasTool):
         """Hide the mask layer while actively drawing."""
         if event.buttons() == Qt.LeftButton or event.buttons() == Qt.RightButton:
             self._image_viewer.stop_rendering_layer(self.layer)
+            self._canvas.z_value = self._layer_stack.count + 1
         return super().mouse_click(event, image_coordinates)
 
     def mouse_release(self, event: Optional[QMouseEvent], image_coordinates: QPoint) -> bool:

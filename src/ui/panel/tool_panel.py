@@ -137,6 +137,7 @@ class ToolPanel(BorderedWidget):
         self._tool_control_box = CollapsibleBox()
         self._tool_control_layout = QStackedLayout()
         self._tool_control_box.set_content_layout(self._tool_control_layout)
+        self._tool_control_box.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
 
         # Create individual tools:
         def add_tool(new_tool: BaseTool):
@@ -187,8 +188,8 @@ class ToolPanel(BorderedWidget):
             if widget is None:
                 continue
             self._panel_box_layout.addWidget(widget, stretch=stretch)
-        if show_generate_button:
-            self._panel_box_layout.addWidget(self._generate_button)
+        self._panel_box_layout.addWidget(self._generate_button)
+        self._generate_button.setVisible(show_generate_button)
         if prev_panel_box is not None:
             prev_panel_box.setParent(None)
         self.update()
@@ -203,7 +204,7 @@ class ToolPanel(BorderedWidget):
         if not should_show and self._generate_button.isVisible():
             if self._panel_box_layout is not None:
                 self._panel_box_layout.removeWidget(self._generate_button)
-            self._generate_button.setParent(None)
+            self._generate_button.setVisible(False)
         elif should_show and not self._generate_button.isVisible():
             self._panel_box_layout.addWidget(self._generate_button)
             self._generate_button.show()

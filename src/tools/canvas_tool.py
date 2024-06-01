@@ -2,7 +2,8 @@
 from typing import Optional
 
 from PyQt5.QtCore import Qt, QPoint, QSize, QRect
-from PyQt5.QtGui import QCursor, QTabletEvent, QMouseEvent, QColor, QIcon
+from PyQt5.QtGui import QCursor, QTabletEvent, QMouseEvent, QColor, QIcon, QKeyEvent, QWheelEvent
+from PyQt5.QtWidgets import QApplication
 
 from src.image.image_layer import ImageLayer
 from src.image.canvas.layer_canvas import LayerCanvas
@@ -226,3 +227,48 @@ class CanvasTool(BaseTool):
                 self.cursor = scaled_cursor
             else:
                 self.cursor = QCursor(scaled_cursor)
+
+    def key_event(self, event: Optional[QKeyEvent]) -> bool:
+        """Move selection with arrow keys."""
+        translation = QPoint(0, 0)
+        multiplier = 10 if QApplication.keyboardModifiers() == Qt.ShiftModifier else 1
+        match event.key():
+            case Qt.Key.Key_Left:
+                translation.setX(-1 * multiplier)
+            case Qt.Key.Key_Right:
+                translation.setX(1 * multiplier)
+            case Qt.Key.Key_Up:
+                translation.setY(-1 * multiplier)
+            case Qt.Key.Key_Down:
+                translation.setY(1 * multiplier)
+            case Qt.Key.Key_BracketLeft:
+                if hasattr(self, 'adjust_brush_size'):
+                    self.adjust_brush_size(-1)
+                    return True
+                return False
+            case Qt.Key.Key_BracketRight:
+                if hasattr(self, 'adjust_brush_size'):
+                    self.adjust_brush_size(1)
+                    return True
+                return False
+            case _:
+                return False
+        if self._image_viewer.follow_selection:
+            self._layer_stack.selection = self._layer_stack.selection.translated(translation)
+        else:
+            self._image_viewer.offset = self._image_viewer.offset + translation
+        return True
+
+    def wheel_event(self, event: Optional[QWheelEvent]) -> bool:
+        """Adjust brush size if scrolling with shift held down."""
+        if not hasattr(self, 'adjust_brush_size'):
+            return False
+        offset = 0
+        if event.angleDelta().x() > 0:
+                offset -= 1
+        elif event.angleDelta().x() < 0:
+                offset += 1
+        if offset != 0:
+            self.adjust_brush_size(offset)
+            return True
+        return False

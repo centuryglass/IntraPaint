@@ -6,6 +6,7 @@ from PyQt5.QtWidgets import QApplication
 
 from src.ui.image_viewer import ImageViewer
 from src.tools.base_tool import BaseTool
+from src.hotkey_filter import HotkeyFilter
 
 
 class ToolEventHandler(QObject):
@@ -19,7 +20,6 @@ class ToolEventHandler(QObject):
         self._image_viewer = image_viewer
         self._active_tool: Optional[BaseTool] = None
         self._active_delegate: Optional[BaseTool] = None
-        self._tool_hotkeys = {}
         self._tool_modifier_delegates: Dict[BaseTool, Dict[Qt.KeyModifiers, BaseTool]] = {}
         self._last_modifier_state = QApplication.keyboardModifiers()
         self._mouse_in_bounds = False
@@ -28,9 +28,15 @@ class ToolEventHandler(QObject):
 
     def register_hotkey(self, key: Qt.Key, tool: BaseTool) -> None:
         """Register a keystroke that should load a specific tool."""
-        if key in self._tool_hotkeys:
-            raise ValueError(f'Key {key} already registered for tool {tool.label}.')
-        self._tool_hotkeys[key] = tool
+
+        def set_active():
+            """On hotkey press, set the active tool and consume the event if another tool was previously active."""
+            if self._active_tool == tool:
+                return False
+            self.active_tool = tool
+            self._image_viewer.focusWidget()
+            return True
+        HotkeyFilter.instance().register_keybinding(set_active, key, Qt.KeyboardModifier.NoModifier, self._image_viewer)
 
     def register_tool_delegate(self, source_tool: BaseTool, delegate_tool: BaseTool,
                                modifiers: Qt.KeyboardModifiers | Qt.KeyboardModifier) -> None:
@@ -120,14 +126,7 @@ class ToolEventHandler(QObject):
             case QEvent.Type.MouseButtonRelease:
                 event = cast(QMouseEvent, event)
                 event_handled = active_tool.mouse_release(event, find_image_coordinates(event))
-            case QEvent.Type.KeyPress:
-                event = cast(QKeyEvent, event)
-                if event.modifiers() == Qt.KeyboardModifier.NoModifier and event.key() in self._tool_hotkeys:
-                    self.active_tool = self._tool_hotkeys[event.key()]
-                    event_handled = True
-                else:
-                    event_handled = self._active_tool.key_event(event)
-            case QEvent.Type.KeyRelease:
+            case QEvent.Type.KeyPress | QEvent.Type.KeyRelease:
                 event = cast(QKeyEvent, event)
                 event_handled = active_tool.key_event(event)
             case QEvent.Type.TabletMove | QEvent.Type.TabletEnterProximity | QEvent.Type.TabletLeaveProximity | \

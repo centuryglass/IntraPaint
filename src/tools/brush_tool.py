@@ -3,7 +3,7 @@ from typing import Optional
 
 from PyQt5.QtCore import Qt, QSize
 from PyQt5.QtGui import QCursor, QPixmap, QKeyEvent, QWheelEvent, QColor, QIcon
-from PyQt5.QtWidgets import QVBoxLayout, QPushButton, QColorDialog, QWidget
+from PyQt5.QtWidgets import QVBoxLayout, QPushButton, QColorDialog, QWidget, QApplication
 
 from src.config.application_config import AppConfig
 from src.image.layer_stack import LayerStack
@@ -124,25 +124,8 @@ class BrushTool(CanvasTool):
         control_layout.addWidget(brush_panel, stretch=8)
         return self._control_panel
 
-    def key_event(self, event: Optional[QKeyEvent]) -> bool:
-        """Adjust brush size with square bracket keys."""
-        if event.type() != QKeyEvent.Type.KeyPress:
-            return False
-        match event.key():
-            case Qt.Key.Key_BracketLeft:
-                self._config.set(AppConfig.SKETCH_BRUSH_SIZE, max(1, self._canvas.brush_size - 1))
-            case Qt.Key.Key_BracketRight:
-                self._config.set(AppConfig.SKETCH_BRUSH_SIZE, max(1, self._canvas.brush_size + 1))
-            case _:
-                return False
-        return True
-
-    def wheel_event(self, event: Optional[QWheelEvent]) -> bool:
-        """Adjust brush size if scrolling with shift held down."""
-        if event.angleDelta().x() > 0:
-            self._config.set(AppConfig.SKETCH_BRUSH_SIZE, max(1, self._canvas.brush_size - 1))
-        elif event.angleDelta().x() < 0:
-            self._config.set(AppConfig.SKETCH_BRUSH_SIZE, max(1, self._canvas.brush_size + 1))
-        else:
-            return False
-        return True
+    def adjust_brush_size(self, offset: int) -> None:
+        """Change brush size by some offset amount, multiplying offset by 10 if shift is held."""
+        if QApplication.keyboardModifiers() == Qt.ShiftModifier:
+            offset *= 10
+        self._config.set(AppConfig.SKETCH_BRUSH_SIZE, max(1, self._canvas.brush_size + offset))

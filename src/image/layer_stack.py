@@ -10,7 +10,7 @@ from src.util.image_utils import qimage_to_pil_image
 from src.util.validation import assert_type, assert_types, assert_valid_index
 from src.util.cached_data import CachedData
 from src.config.application_config import AppConfig
-from src.undo_stack import commit_action
+from src.undo_stack import commit_action, last_action
 
 
 class LayerStack(QObject):
@@ -351,20 +351,25 @@ class LayerStack(QObject):
         if bounds_rect != self._selection:
             last_bounds = self._selection
 
-            def apply():
-                """Finalize the selection update and broadcast the change."""
-                if self.selection != bounds_rect:
-                    self._selection = bounds_rect
-                    self.selection_bounds_changed.emit(self.selection, last_bounds)
-                    self._config.set(AppConfig.EDIT_SIZE, self._selection.size())
+            def update_fn(prev_bounds: QRect, next_bounds: QRect) -> None:
+                """Apply an arbitrary selection change."""
+                if self._selection != next_bounds:
+                    self._selection = next_bounds
+                    self.selection_bounds_changed.emit(next_bounds, prev_bounds)
+                    if next_bounds.size() != prev_bounds.size():
+                        self._config.set(AppConfig.EDIT_SIZE, self._selection.size())
 
-            def reverse():
-                """To undo, restore the previous selection bounds."""
-                if self.selection != last_bounds:
-                    self._selection = last_bounds
-                    self.selection_bounds_changed.emit(last_bounds, bounds_rect)
-                    self._config.set(AppConfig.EDIT_SIZE, self._selection.size())
-            commit_action(apply, reverse)
+            action_type = 'layer_stack.selection'
+            with last_action() as prev_action:
+                if prev_action is not None and prev_action.type == action_type:
+                    last_bounds = prev_action.action_data['prev_bounds']
+                    prev_action.redo = lambda: update_fn(last_bounds, bounds_rect)
+                    prev_action.undo = lambda: update_fn(bounds_rect, last_bounds)
+                    return prev_action.redo()
+
+            commit_action(lambda: update_fn(last_bounds, bounds_rect),
+                          lambda: update_fn(bounds_rect, last_bounds),
+                          action_type, { 'prev_bounds': last_bounds })
 
     def cropped_qimage_content(self, bounds_rect: QRect) -> QImage:
         """Returns the contents of a bounding QRect as a QImage."""

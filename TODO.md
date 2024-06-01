@@ -1,5 +1,19 @@
 # Future development tasks
 
+
+raise mask/brush cursor opacity/add white
+fixed selection panel option?
+width/height boxes should have step 1
+remove debug sample image saving
+
+# Input
+- Global hotkey management
+- Expand hotkeys for all tools
+- Configurable hotkeys
+- escape unfocuses text input
+- non-numeric unfocuses numeric input
+- tab navigation keys
+
 # ToolPanel
 - Show hotkeys in UI
 - Navigation tool
@@ -12,11 +26,6 @@
 - Paint bucket tool
 - Text tool
 - More conventional selection controls?
-
-# Input
-- Global hotkey management
-- Expand hotkeys for all tools
-- Configurable hotkeys
 
 # Bugfix
 - "masked only" selection not cleared when mask is cleared

@@ -38,6 +38,10 @@ PROGRESS_KEY_CURRENT_IMAGE = 'current_image'
 PROGRESS_KEY_FRACTION = "progress"
 PROGRESS_KEY_ETA_RELATIVE = 'eta_relative'
 
+GENERATE_ERROR_TITLE = "Image generation failed"
+GENERATE_ERROR_MESSAGE_EMPTY_MASK = ("Selection mask was empty. Either use the mask tool to mark part of the image"
+                                     " generation area for inpainting, or switch to another image generation mode.")
+
 MODE_INPAINT = 'Inpaint'
 MODE_TXT2IMG = 'Text to Image'
 
@@ -384,6 +388,8 @@ class StableDiffusionController(BaseInpaintController):
         edit_mode = self._config.get(AppConfig.EDIT_MODE)
         if edit_mode != MODE_INPAINT:
             mask = None
+        elif self._layer_stack.mask_layer.selection_is_empty():
+            raise RuntimeError(GENERATE_ERROR_MESSAGE_EMPTY_MASK)
 
         def generate_images() -> tuple[list[Image], dict | None]:
             """Call the appropriate image generation endpoint and return generated images."""

@@ -8,6 +8,7 @@ from PyQt5.QtCore import Qt, QRect, QRectF, QSize, QPoint, QPointF, QEvent, pyqt
 from PyQt5.QtGui import QPainter, QMouseEvent, QWheelEvent
 from PyQt5.QtWidgets import QWidget, QSizePolicy, QGraphicsPixmapItem, QApplication
 
+from src.image.Border import Border
 from src.image.image_layer import ImageLayer
 from src.image.layer_stack import LayerStack
 from src.image.outline import Outline
@@ -16,6 +17,11 @@ from src.ui.util.tile_pattern_fill import get_transparency_tile_pixmap
 from src.ui.widget.fixed_aspect_graphics_view import FixedAspectGraphicsView
 from src.util.validation import assert_type
 from src.config.application_config import AppConfig
+from src.hotkey_filter import HotkeyFilter
+
+
+SELECTION_BORDER_OPACITY = 0.6
+SELECTION_BORDER_COLOR = Qt.GlobalColor.black
 
 
 class ImageViewer(FixedAspectGraphicsView):
@@ -60,6 +66,9 @@ class ImageViewer(FixedAspectGraphicsView):
 
     def __init__(self, parent: Optional[QWidget], layer_stack: LayerStack, config: AppConfig):
         super().__init__(parent)
+        HotkeyFilter.instance().set_default_focus(self)
+        HotkeyFilter.instance().register_keybinding(lambda: self.toggle_zoom() is None, Qt.Key_Z,
+                                                    Qt.KeyboardModifier.NoModifier, self)
         self._layer_stack = layer_stack
         self._config = config
         self._selection = layer_stack.selection
@@ -82,6 +91,12 @@ class ImageViewer(FixedAspectGraphicsView):
         self._masked_selection_outline.setOpacity(0.9)
         self._masked_selection_outline.animated = True
         mask_layer = layer_stack.mask_layer
+
+        # border drawn when zoomed to selection:
+        self._border = Border(self.scene(), self)
+        self._border.color = SELECTION_BORDER_COLOR
+        self._border.setOpacity(SELECTION_BORDER_OPACITY)
+        self._border.setVisible(False)
 
         def update_selection_only_bounds():
             """Sync 'inpaint masked only' bounds with mask layer changes."""
@@ -135,7 +150,7 @@ class ImageViewer(FixedAspectGraphicsView):
             layer_item.setZValue(index)
             self._layer_items[new_layer] = layer_item
             self.scene().addItem(layer_item)
-            for outline in self._selection_outline, self._masked_selection_outline:
+            for outline in self._selection_outline, self._masked_selection_outline, self._border:
                 outline.setZValue(max(self._selection_outline.zValue(), index + 1))
             if new_layer in self._hidden:
                 layer_item.hidden = True
@@ -177,6 +192,12 @@ class ImageViewer(FixedAspectGraphicsView):
         self.scene_scale = get_scaled_placement(QRect(QPoint(0, 0), self.size()),
                                                 selection.size(), 0).width() / (selection.width() + margin)
 
+    def toggle_zoom(self) -> None:
+        """Toggles between zooming in on the selection and zooming out to the full image view."""
+        self.follow_selection = not self._follow_selection
+        if not self.follow_selection:
+            self.reset_scale()
+
     def stop_rendering_layer(self, layer: ImageLayer) -> None:
         """Makes the ImageViewer stop direct rendering of a particular layer until further notice."""
         self._hidden.add(layer)
@@ -208,6 +229,7 @@ class ImageViewer(FixedAspectGraphicsView):
            false does not."""
         self._follow_selection = should_follow
         self._selection_outline.animated = not should_follow
+        self._border.setVisible(should_follow)
         if should_follow:
             self.zoom_to_selection()
 
@@ -224,6 +246,7 @@ class ImageViewer(FixedAspectGraphicsView):
         image_loaded = self._layer_stack.has_image
         self._scene_outline.setVisible(image_loaded)
         self._selection_outline.outlined_region = selection
+        self._border.windowed_area = selection.toAlignedRect()
         self._selection_outline.setVisible(image_loaded)
         self._masked_selection_outline.setVisible(image_loaded and self._config.get(AppConfig.INPAINT_FULL_RES))
         mask_layer = self._layer_stack.mask_layer

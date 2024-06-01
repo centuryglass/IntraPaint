@@ -152,9 +152,9 @@ class SelectionTool(BaseTool):
 
     def mouse_click(self, event: Optional[QMouseEvent], image_coordinates: QPoint) -> bool:
         """Move the selection on left-click, start resizing on right-click."""
-        if QApplication.keyboardModifiers() != Qt.KeyboardModifier.NoModifier:
-            return False
         if event.buttons() == Qt.LeftButton:
+            if QApplication.keyboardModifiers() != Qt.KeyboardModifier.NoModifier:
+                return False
             self._move_selection(image_coordinates)
         elif event.buttons() == Qt.RightButton:
             self._image_viewer.follow_selection = False

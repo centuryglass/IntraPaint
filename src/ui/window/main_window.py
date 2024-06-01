@@ -7,11 +7,12 @@ from typing import Callable, Optional, Any
 
 from PIL import Image
 from PyQt5.QtCore import Qt, QRect, QSize
-from PyQt5.QtGui import QIcon, QMouseEvent, QResizeEvent, QHideEvent, QPixmap
+from PyQt5.QtGui import QIcon, QMouseEvent, QResizeEvent, QHideEvent, QPixmap, QKeySequence
 from PyQt5.QtWidgets import QMainWindow, QGridLayout, QLabel, QWidget, QPushButton, QVBoxLayout, QHBoxLayout, \
     QComboBox, QStackedWidget, QAction, QMenuBar, QBoxLayout, QApplication, QTabWidget
 
 from src.config.application_config import AppConfig
+from src.hotkey_filter import HotkeyFilter
 from src.image.layer_stack import LayerStack
 from src.ui.config_control_setup import connected_textedit, connected_spinbox, connected_checkbox
 from src.ui.modal.modal_utils import request_confirmation
@@ -27,6 +28,7 @@ from src.util.image_utils import qimage_to_pil_image
 MAIN_TAB_NAME = "Main"
 TOOL_TAB_NAME = "Tools"
 CONTROL_TAB_NAME = "Image Generation"
+MAX_TABS = 3
 
 # Cutoff sizes for including panels in the main page instead of new tabs:
 CONTROL_PANEL_HEIGHT_THRESHOLD = 1450
@@ -75,6 +77,12 @@ class MainWindow(QMainWindow):
         self._central_widget.addWidget(self._main_widget)
         self.setCentralWidget(self._central_widget)
         self._central_widget.setCurrentWidget(self._main_widget)
+
+        # Connect number keys to tabs when tab widget is visible:
+        for i in range(min(MAX_TABS, 9)):
+            tab_index_key = QKeySequence(str(i + 1))[0]
+            HotkeyFilter.instance().register_keybinding(lambda idx=i: self.focus_tab(idx), tab_index_key,
+                                                        Qt.KeyboardModifier.NoModifier, self._central_widget)
 
         # Loading widget (for interrogate):
         self._is_loading = False
@@ -235,7 +243,7 @@ class MainWindow(QMainWindow):
             if self._reactive_layout is not None:
                 self._reactive_layout.addWidget(self._tool_panel)
                 self._tool_panel.show()
-        
+
         self._tool_panel.show_generate_button(use_control_tab and not use_tool_tab)
         self._tool_panel.show_tab_toggle(not use_tool_tab)
 
@@ -257,7 +265,6 @@ class MainWindow(QMainWindow):
         self._layout.insertWidget(0, self._reactive_widget)
         if last_reactive_widget is not None:
             last_reactive_widget.setParent(None)
-
 
     def _create_scale_mode_selector(self, parent: QWidget, config_key: str) -> QComboBox:
         """Returns a combo box that selects between image scaling algorithms."""
@@ -340,6 +347,14 @@ class MainWindow(QMainWindow):
         layout.addLayout(more_options_bar, 3, 1, 1, 4)
         inpaint_panel.setLayout(layout)
         return inpaint_panel
+
+    def focus_tab(self, tab_index: int) -> bool:
+        """Attempt to focus a tab index, returning whether changing focus was possible."""
+        if self.is_sample_selector_visible() or not (0 <= tab_index < self._main_widget.count()) \
+                or tab_index == self._main_widget.currentIndex():
+            return False
+        self._main_widget.setCurrentIndex(tab_index)
+        return True
 
     def is_sample_selector_visible(self) -> bool:
         """Returns whether the generated image selection screen is showing."""

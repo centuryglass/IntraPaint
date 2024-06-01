@@ -11,7 +11,7 @@ from src.tools.base_tool import BaseTool
 
 RESOURCES_EYEDROPPER_ICON = 'resources/eyedropper_icon.svg'
 RESOURCES_EYEDROPPER_CURSOR = 'resources/eyedropper_cursor.svg'
-CURSOR_SIZE = 30
+CURSOR_SIZE = 50
 
 EYEDROPPER_LABEL = 'Color Picker'
 EYEDROPPER_TOOLTIP = "Select a brush color"
@@ -27,7 +27,7 @@ class EyedropperTool(BaseTool):
         self._control_panel = None
         self._icon = QIcon(RESOURCES_EYEDROPPER_ICON)
         cursor_icon = QIcon(RESOURCES_EYEDROPPER_CURSOR)
-        self.cursor = QCursor(cursor_icon.pixmap(CURSOR_SIZE, CURSOR_SIZE))
+        self.cursor = QCursor(cursor_icon.pixmap(CURSOR_SIZE, CURSOR_SIZE), 0, CURSOR_SIZE)
 
     def get_hotkey(self) -> Qt.Key:
         """Returns the hotkey that should activate this tool."""
