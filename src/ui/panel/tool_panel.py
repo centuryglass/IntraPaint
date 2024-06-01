@@ -62,6 +62,7 @@ class ToolPanel(BorderedWidget):
         self._layer_panel = LayerPanel(layer_stack)
 
         self._generate_button = QPushButton(GENERATE_BUTTON_TEXT)
+        self._generate_button.clicked.connect(generate_fn)
 
         # Setup tool list:
         self._tool_list = QWidget()

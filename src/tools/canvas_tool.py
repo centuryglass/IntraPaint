@@ -173,7 +173,8 @@ class CanvasTool(BaseTool):
                 self.brush_size = self._cached_size
                 self._cached_size = None
             elif event.buttons() == Qt.RightButton:
-                self._cached_size = self._canvas.brush_size
+                if self._cached_size is None:
+                    self._cached_size = self._canvas.brush_size
                 self.brush_size = 1
             self._canvas.start_stroke()
             self._stroke_to(image_coordinates)

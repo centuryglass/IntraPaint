@@ -127,6 +127,11 @@ class MaskLayer(ImageLayer):
             # selection_masked = selection_image[:, :, 3] > 0
             # selection_image[selection_masked][3] = ALPHA_SELECTED
 
+    def clear(self):
+        """Replaces all image content with transparency."""
+        with self.borrow_image() as image:
+            image.fill(Qt.transparent)
+
     @property
     def pil_mask_image(self) -> Image.Image:
         """Gets the selection mask as a PIL image mask."""
