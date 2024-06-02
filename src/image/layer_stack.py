@@ -35,6 +35,7 @@ class LayerStack(QObject):
         self._max_selection_size = max_selection_size
         self._selection = QRect(0, 0, selection_size.width(), selection_size.height())
         self._config = config
+        self._copy_buffer: Optional[QImage] = None
         self.selection = self._selection
 
         self._image_cache_saved = CachedData(None)
@@ -65,12 +66,12 @@ class LayerStack(QObject):
         self._mask_layer.content_changed.connect(handle_mask_layer_visibility_change)
 
     @property
-    def active_layer(self) -> int:
+    def active_layer(self) -> Optional[int]:
         """Returns the index of the layer currently selected for editing."""
         return self._active_layer
 
     @active_layer.setter
-    def active_layer(self, new_active_layer) -> None:
+    def active_layer(self, new_active_layer: Optional[int]) -> None:
         """Updates the index of the layer currently selected for editing."""
         if new_active_layer is not None:
             assert_valid_index(new_active_layer, self._layers)
@@ -191,6 +192,11 @@ class LayerStack(QObject):
         """
         Creates a new image layer and adds it to the stack.
 
+        
+        - After the layer is created, the 'layer_added' signal is triggered.
+        - If no layer was active, the new layer becomes active and the 'active_layer_changed' signal is triggered.
+        - If the new layer is visible, the 'visible_content_changed' signal is triggered.
+
         Parameters
         ----------
         layer_name: str or None, default=None
@@ -220,9 +226,6 @@ class LayerStack(QObject):
             layer = ImageLayer(self.size, layer_name, saved)
         else:
             layer = ImageLayer(image_data, layer_name, saved)
-        self._layers.insert(index, layer)
-        if self.active_layer is None:
-            self.active_layer = index
 
         def handle_layer_update():
             """Pass on layer update signals."""
@@ -234,38 +237,214 @@ class LayerStack(QObject):
                     self._invalidate_all_cached()
                 self.visible_content_changed.emit()
 
-        layer.content_changed.connect(handle_layer_update)
-
         def handle_layer_visibility_change():
             """Invalidate caches and signal size change when layer visibility changes."""
             if layer in self._layers:
                 self._invalidate_all_cached(not layer.saved)
                 self.visible_content_changed.emit()
 
-        layer.visibility_changed.connect(handle_layer_visibility_change)
+        last_active = self.active_layer
 
-        if layer.visible and image_data is not None:
-            self._invalidate_all_cached(not layer.saved)
-            self.visible_content_changed.emit()
-        self.layer_added.emit(layer, index)
+        def add_layer():
+            """Add the layer to the stack and connect update signals."""
+            self._layers.insert(index, layer)
+            layer.content_changed.connect(handle_layer_update)
+            layer.visibility_changed.connect(handle_layer_visibility_change)
+            self.layer_added.emit(layer, index)
+            if last_active is None:
+                self.active_layer = index
+            if layer.visible and image_data is not None:
+                self._invalidate_all_cached(not layer.saved)
+                self.visible_content_changed.emit()
 
-    def pop_layer(self, index: int) -> ImageLayer:
-        """Removes and returns an image layer."""
-        assert_valid_index(index, self._layers)
-        # If active layer < index, no active layer change is needed.
-        if self.active_layer == index:
-            if self.count == 1:
+        def undo_add_layer():
+            """Disconnect update signals and remove the layer from the stack."""
+            layer.content_changed.disconnect(handle_layer_update)
+            layer.visibility_changed.connect(handle_layer_visibility_change)
+            self._layers.remove(layer)
+            if last_active is None:
                 self.active_layer = None
+            self.layer_removed.emit(layer)
+            if layer.visible and image_data is not None:
+                self._invalidate_all_cached(not layer.saved)
+                self.visible_content_changed.emit()
+        commit_action(add_layer, undo_add_layer)
+
+    def copy_layer(self, index: int) -> None:
+        """Copies a layer, inserting the copy below the original."""
+        assert_valid_index(index, self._layers)
+        layer = self._layers[index]
+        self.create_layer(layer.name + ' copy', layer.q_image.copy(), layer.saved, index + 1)
+        self._layers[index + 1].visible = layer.visible
+
+    def remove_layer(self, index: int) -> None:
+        """Removes an image layer.
+
+        - If the removed index was invalid, throw an assertion error and exit.
+        - If the removed layer was active, the previous layer becomes active, or no layer will become active if
+          that was the last layer.
+        - The 'layer_removed' signal is triggered.
+        - If the active layer was after the removed layer, the 'active_layer_changed' signal is triggered with
+          the adjusted index.
+        - If the removed layer was visible, the 'visible_content_changed' signal is triggered.
+        """
+        assert_valid_index(index, self._layers)
+        last_active_layer = self.active_layer
+        next_active_layer = last_active_layer
+        layer = self._layers[index]
+
+        # If the removed layer is active, the layer before it becomes active:
+        if last_active_layer == index:
+            if self.count == 1:
+                next_active_layer = None
             elif index == (self.count - 1):
-                self.active_layer = (index - 1)
-        removed_layer = self._layers.pop(index)
-        if self.active_layer is not None and self.active_layer > index:
-            self._active_layer = (self._active_layer - 1)
-        if removed_layer.visible:
-            self._invalidate_all_cached(not removed_layer.saved)
-            self.visible_content_changed.emit()
-        self.layer_removed.emit(removed_layer)
-        return removed_layer
+                next_active_layer = (index - 1)
+        elif last_active_layer is not None and last_active_layer > index:
+            next_active_layer = last_active_layer - 1
+
+        def remove() -> None:
+            """Remove the layer, update active index if necessary, send appropriate signals."""
+            if next_active_layer is None or next_active_layer <= index:
+                self.active_layer = next_active_layer
+            self._layers.pop(index)
+            self.layer_removed.emit(layer)
+            if next_active_layer is not None and next_active_layer > index:
+                self.active_layer = next_active_layer
+            else:
+                self.active_layer = self.active_layer
+            if layer.visible:
+                self._invalidate_all_cached(not layer.saved)
+                self.visible_content_changed.emit()
+
+        def undo_remove() -> None:
+            """Restore the removed layer."""
+            self._layers.insert(index, layer)
+            if layer.visible:
+                self._invalidate_all_cached(not layer.saved)
+                self.visible_content_changed.emit()
+            self.layer_added.emit(layer, index)
+            self.active_layer = last_active_layer
+        commit_action(remove, undo_remove)
+
+    def move_layer(self, index: int, offset: int) -> None:
+        """Moves a layer up or down in the stack.
+
+        - Layer offset is checked against layer bounds. If the layer cannot move by the given offset, the function
+          will exit without doing anything.
+        - The layer will first be removed, triggering all the usual signals you would get from remove_layer.
+        - The layer is then inserted at the new index, triggering all the usual signals you would get from add_layer.
+        - Both operations will be combined in the undo stack into a single operation.
+        Parameters
+        ----------
+            index: int
+                The index of the layer to move.
+            offset: int
+                The amount the index should change.
+        """
+        assert_valid_index(index, self._layers)
+        insert_index = index + offset
+        if not 0 <= insert_index <= self.count - 1:
+            return
+
+        def move(last_index, next_index):
+            """Remove and replace the layer, adjusting active index as necessary."""
+            active_index = self.active_layer
+            layer = self._layers.pop(last_index)
+            self.layer_removed.emit(layer)
+            self._layers.insert(next_index, layer)
+            self.layer_added.emit(layer, next_index)
+            if active_index == last_index:
+                self.active_layer = next_index
+            elif last_index < active_index <= next_index:
+                self.active_layer = active_index - 1
+            elif last_index > active_index >= next_index:
+                self.active_layer = active_index + 1
+        commit_action(lambda i=index: move(i, insert_index), lambda i=index: move(insert_index, i))
+    
+    def merge_layer_down(self, index: int) -> None:
+        """Merges a layer with the one beneath it on the stack.
+
+        - If this layer is on the bottom of the stack, the function will fail silently.
+        - This will trigger the 'layer_removed' signal first as the top layer is removed.
+        - If the top and bottom layers don't have the same visibility, the 'visible_content_changed' signal is emitted.
+        - If the active layer index was greater than or equal to the index of the removed layer, the active layer
+          index will be decreased by one.
+        """
+        assert_valid_index(index, self._layers)
+        if index == self.count - 1:
+            return
+        top_layer = self._layers[index]
+        base_layer = self._layers[index + 1]
+        active_index = self.active_layer
+
+        last_layer_image = base_layer.q_image.copy()
+        merged_image = last_layer_image.copy()
+        painter = QPainter(merged_image)
+        painter.drawImage(QRect(0, 0, merged_image.width(), merged_image.height()), top_layer.q_image)
+
+        def do_merge() -> None:
+            self._layers.pop(index)
+            self.layer_removed.emit(top_layer)
+            if active_index > index:
+                self.active_layer = active_index - 1
+            else:
+                self.active_layer = active_index
+            base_layer.q_image = merged_image
+            if top_layer.visible and not base_layer.visible:
+                self.visible_content_changed.emit()
+
+        def undo_merge() -> None:
+            base_layer.q_image = last_layer_image
+            self._layers.insert(index, top_layer)
+            self.layer_added.emit(top_layer, index)
+            if self.active_layer >= index:
+                self.active_layer = active_index + 1
+            else:
+                self.active_layer = active_index
+            if top_layer.visible != base_layer.visible:
+                self.visible_content_changed.emit()
+        commit_action(do_merge, undo_merge)
+
+    def copy_masked(self, index: int, use_buffer=True) -> QImage:
+        """Returns the image content within a layer that's covered by the mask, optionally saving it it in the copy
+           buffer."""
+        assert_valid_index(index, self._layers)
+        inpaint_mask = self.mask_layer.q_image
+        image = self._layers[index].q_image.copy()
+        painter = QPainter(image)
+        painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_DestinationIn)
+        painter.drawImage(QRect(0, 0, image.width(), image.height()), inpaint_mask)
+        painter.end()
+        if use_buffer:
+            self._copy_buffer = image
+        return image
+
+    def cut_masked(self, index: int, use_buffer=True) -> None:
+        """Replaces all masked image content in a layer with transparency, optionally saving it in the copy
+           buffer."""
+        assert_valid_index(index, self._layers)
+        layer = self._layers[index]
+        source_content = layer.q_image.copy()
+        inpaint_mask = self.mask_layer.q_image.copy()
+        self._copy_buffer = self.copy_masked(index)
+
+        def make_cut() -> None:
+            with layer.borrow_image() as layer_image:
+                painter = QPainter(layer_image)
+                painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_DestinationOut)
+                painter.drawImage(QRect(0, 0, layer_image.width(), layer_image.height()), inpaint_mask)
+
+        def undo_cut() -> None:
+            with layer.borrow_image() as layer_image:
+                painter = QPainter(layer_image)
+                painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_Source)
+                painter.drawImage(QRect(0, 0, layer_image.width(), layer_image.height()), source_content)
+        commit_action(make_cut, undo_cut)
+
+    def paste(self) -> None:
+        """If the copy buffer contains image data, paste it into a new layer."""
+
+
 
     @property
     def count(self) -> int:

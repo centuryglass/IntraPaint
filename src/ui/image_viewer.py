@@ -39,19 +39,17 @@ class ImageViewer(FixedAspectGraphicsView):
             self._layer = layer
             self._hidden = False
 
-            def update_pixmap() -> None:
-                """Keep the graphics item pixmap in sync with the layer."""
-                self.setPixmap(layer.pixmap)
-                self.update()
-
-            def update_visibility(visible: bool) -> None:
-                """Show the layer only when not hidden and when the layer is visible."""
-                self.setVisible(visible and not self.hidden)
-            layer.visibility_changed.connect(update_visibility)
-            layer.content_changed.connect(update_pixmap)
+            layer.visibility_changed.connect(self._update_visibility)
+            layer.content_changed.connect(self._update_pixmap)
             layer.opacity_changed.connect(self.setOpacity)
             self.setOpacity(layer.opacity)
             self.setVisible(layer.visible)
+            self._update_pixmap()
+
+        def __del__(self):
+            self._layer.visibility_changed.disconnect(self._update_visibility)
+            self._layer.content_changed.disconnect(self._update_pixmap)
+            self._layer.opacity_changed.disconnect(self.setOpacity)
 
         @property
         def hidden(self) -> bool:
@@ -63,6 +61,13 @@ class ImageViewer(FixedAspectGraphicsView):
             """Sets whether the layer should be hidden in the view regardless of layer visibility."""
             self._hidden = hidden
             self.setVisible(self._layer.visible and not hidden)
+
+        def _update_pixmap(self) -> None:
+            self.setPixmap(self._layer.pixmap)
+            self.update()
+
+        def _update_visibility(self, visible: bool) -> None:
+            self.setVisible(visible and not self.hidden)
 
     def __init__(self, parent: Optional[QWidget], layer_stack: LayerStack, config: AppConfig):
         super().__init__(parent)
@@ -79,6 +84,8 @@ class ImageViewer(FixedAspectGraphicsView):
         self.installEventFilter(self)
         self._follow_selection = False
         self._hidden = set()
+        # TODO: Hidden layers either need to be cleared periodically or tracked by other means, or else memory taken
+        #      by removed layers will never be cleared.
 
         # Selection and border rectangle setup:
         self._scene_outline = Outline(self.scene(), self)

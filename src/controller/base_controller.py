@@ -33,6 +33,7 @@ from src.ui.util.screen_size import screen_size
 from src.util.image_utils import pil_image_to_qimage
 
 from src.util.validation import assert_type
+from src.undo_stack import commit_action
 # Optional spacenav support:
 try:
     from src.controller.spacenav_manager import SpacenavManager
@@ -509,5 +510,11 @@ class BaseInpaintController:
                 painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_DestinationIn)
                 painter.drawImage(QRect(0, 0, image.width(), image.height()), inpaint_mask)
                 painter.end()
-            self._layer_stack.set_selection_content(image,
-                    composition_mode = QPainter.CompositionMode.CompositionMode_SourceOver)
+            layer = self._layer_stack.get_layer(self._layer_stack.active_layer)
+            bounds = self._layer_stack.selection
+            prev_image = layer.cropped_image_content(bounds)
+            def apply():
+                layer.insert_image_content(image, bounds, QPainter.CompositionMode.CompositionMode_SourceOver)
+            def undo():
+                layer.insert_image_content(prev_image, bounds)
+            commit_action(apply, undo)

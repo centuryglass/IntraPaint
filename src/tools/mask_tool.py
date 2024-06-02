@@ -48,12 +48,6 @@ class MaskTool(CanvasTool):
         self.brush_size = config.get(AppConfig.MASK_BRUSH_SIZE)
         self.layer = layer_stack.mask_layer
 
-        def update_draw_area(draw_area: QRect) -> None:
-            """Limit the canvas to the selection bounds."""
-            self._canvas.edit_region = draw_area
-        layer_stack.selection_bounds_changed.connect(update_draw_area)
-        update_draw_area(layer_stack.selection)
-
     def get_hotkey(self) -> Qt.Key:
         """Returns the hotkey that should activate this tool."""
         return Qt.Key.Key_M
@@ -99,7 +93,7 @@ class MaskTool(CanvasTool):
         def set_drawing_tool(selection: str):
             """Switches the mask tool between draw and erase modes."""
             # TODO: would be better to do this without direct canvas access.
-            self._canvas.brush.set_value(MPBrush.ERASER, 1.0 if selection == TOOL_MODE_ERASE else 0.0)
+            self._canvas.eraser = selection == TOOL_MODE_ERASE
 
         tool_toggle.value_changed.connect(set_drawing_tool)
         control_layout.addWidget(tool_toggle)

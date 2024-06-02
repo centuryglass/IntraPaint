@@ -269,7 +269,7 @@ class ToolPanel(BorderedWidget):
         if show_layer_panel:
             if self._layer_panel is None:
                 self._layer_panel = LayerPanel(self._layer_stack)
-            self._panel_box_layout.insertWidget(self._panel_box_layout.count() - 1, self._layer_panel)
+            self._panel_box_layout.insertWidget(self._panel_box_layout.count() - 2, self._layer_panel)
         elif self._layer_panel is not None:
             if self._panel_box_layout is not None:
                 self._panel_box_layout.removeWidget(self._layer_panel)
