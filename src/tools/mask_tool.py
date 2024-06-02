@@ -12,12 +12,8 @@ from src.ui.image_viewer import ImageViewer
 from src.ui.widget.param_slider import ParamSlider
 from src.ui.widget.dual_toggle import DualToggle
 
-MASK_LABEL = 'Mask'
-MASK_TOOLTIP = 'Mark areas for inpainting'
-COLOR_BUTTON_LABEL = 'Color'
-COLOR_BUTTON_TOOLTIP = 'Select sketch brush color'
-
-MASK_LAYER_NAME = "Inpainting Mask"
+MASK_LABEL = 'Mask Selection'
+MASK_TOOLTIP = 'Mark areas for inpainting or editing'
 
 RESOURCES_PEN_PNG = './resources/pen.png'
 RESOURCES_ERASER_PNG = 'resources/eraser.png'

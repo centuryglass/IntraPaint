@@ -157,15 +157,15 @@ class ToolPanel(BorderedWidget):
             self._event_handler.register_hotkey(new_tool.get_hotkey(), new_tool)
             self._tool_list_layout.addWidget(button)
 
-        selection_tool = SelectionTool(layer_stack, image_viewer, config)
-        add_tool(selection_tool)
-        self._switch_active_tool(selection_tool.label)
         brush_tool = BrushTool(layer_stack, image_viewer, config)
         add_tool(brush_tool)
-        mask_tool = MaskTool(layer_stack, image_viewer, config)
-        add_tool(mask_tool)
+        self._switch_active_tool(brush_tool.label)
         eyedropper_tool = EyedropperTool(layer_stack, config)
         add_tool(eyedropper_tool)
+        selection_tool = SelectionTool(layer_stack, image_viewer, config)
+        add_tool(selection_tool)
+        mask_tool = MaskTool(layer_stack, image_viewer, config)
+        add_tool(mask_tool)
         for tool in brush_tool, mask_tool:
             self._event_handler.register_tool_delegate(tool, selection_tool, Qt.KeyboardModifier.AltModifier)
         self._event_handler.register_tool_delegate(brush_tool, eyedropper_tool, Qt.KeyboardModifier.ControlModifier)
@@ -264,12 +264,12 @@ class ToolPanel(BorderedWidget):
         self._tool_list.setMaximumWidth(self.width())
         self._tool_scroll_area.setMaximumWidth(self.width())
         self._tool_control_box.setMaximumWidth(self.width() - self._tool_scroll_area.contentsMargins().left() * 2)
-        show_layer_panel = ((self._orientation == Qt.Orientation.Vertical and self.width() >= LAYER_PANEL_MIN_WIDTH)
-                or (self._orientation == Qt.Orientation.Horizontal and self.height() >= LAYER_PANEL_MIN_HEIGHT))
+        show_layer_panel = ((self._orientation == Qt.Orientation.Horizontal and self.width() >= LAYER_PANEL_MIN_WIDTH)
+                or (self._orientation == Qt.Orientation.Vertical and self.height() >= LAYER_PANEL_MIN_HEIGHT))
         if show_layer_panel:
             if self._layer_panel is None:
                 self._layer_panel = LayerPanel(self._layer_stack)
-            self._panel_box_layout.addWidget(self._layer_panel)
+            self._panel_box_layout.insertWidget(self._panel_box_layout.count() - 1, self._layer_panel)
         elif self._layer_panel is not None:
             if self._panel_box_layout is not None:
                 self._panel_box_layout.removeWidget(self._layer_panel)

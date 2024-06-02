@@ -12,7 +12,7 @@ from src.ui.config_control_setup import get_selection_control_boxes
 from src.config.application_config import AppConfig
 
 RESOURCES_SELECTION_ICON = 'resources/selection.svg'
-SELECTION_LABEL = 'Selection'
+SELECTION_LABEL = 'Select Image Generation Area'
 SELECTION_TOOLTIP = 'Select an image region for AI image generation'
 
 SCALE_SLIDER_LABEL = 'Zoom:'

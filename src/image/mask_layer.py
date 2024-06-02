@@ -8,7 +8,7 @@ else:
     from typing_extensions import Self
 from collections.abc import Generator
 from contextlib import contextmanager
-from PyQt5.QtGui import QImage, QPainter, QPixmap
+from PyQt5.QtGui import QImage, QPainter, QPixmap, QPolygon, QPen
 from PyQt5.QtCore import Qt, QRect, QPoint, QSize, pyqtSignal
 import numpy as np
 import cv2
@@ -16,7 +16,6 @@ from PIL import Image
 from src.util.validation import assert_type
 from src.image.image_layer import ImageLayer
 from src.config.application_config import AppConfig
-from src.ui.util.tile_pattern_fill import tile_pattern_fill
 from src.util.image_utils import qimage_to_pil_image
 
 MASK_LAYER_NAME = "Inpainting Mask"
@@ -57,8 +56,6 @@ class MaskLayer(ImageLayer):
         self._bounding_box = None
         self._selection = QRect()
         selection_signal.connect(self.update_selection)
-        self._dither_mask = QPixmap(QSize(512, 512))
-        tile_pattern_fill(self._dither_mask, 2, Qt.white, Qt.black)
 
     def update_selection(self, new_selection: QRect) -> None:
         """Update the area marked for image generation."""
@@ -159,26 +156,31 @@ class MaskLayer(ImageLayer):
         image_ptr.setsize(image.byteCount())
         arr = np.ndarray(shape=(image.height(), image.width(), 4), dtype=np.uint8, buffer=image_ptr)
 
-        # Find and draw edges:
+        # Convert edges to polygons and draw:
         gray = cv2.cvtColor(arr, cv2.COLOR_BGR2GRAY)
         edges = cv2.Canny(gray, 50, 150)
+        polygons = []
+        contours, _ = cv2.findContours(edges, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+        for contour in contours:
+            polygon = QPolygon()
+            for point in contour:
+                polygon.append(QPoint(point[0][0], point[0][1]))
+            polygons.append(polygon)
 
-        # expand edges to draw a thicker outline:
-        thickness = max(2, image.width() // 200, image.height() // 200)
-        thickness = min(thickness, 4)
-        edges = 255 - cv2.dilate(edges, np.ones((thickness, thickness), np.uint8), iterations=1)
-        edges_a = np.zeros((edges.shape[0], edges.shape[1], 4), dtype=np.uint8)
-        edges_a[:, :, 3] = 255 - edges
-        # edges_a.strides is definitely a tuple, not sure why pylint disagrees.
-        # pylint: disable-next=unsubscriptable-object
-        outline = QImage(edges_a.data, edges_a.shape[1], edges_a.shape[0], edges_a.strides[0], QImage.Format_RGBA8888)
-        painter = QPainter(outline)
-        painter.setCompositionMode(QPainter.CompositionMode_SourceIn)
-        painter.drawTiledPixmap(0, 0, outline.width(), outline.height(), self._dither_mask)
-
-        painter.end()
         painter = QPainter(image)
-        painter.drawImage(0, 0, outline)
+        line_pen_1 = QPen(Qt.GlobalColor.black, 1)
+        line_pen_2 = QPen(Qt.GlobalColor.white, 1)
+        dash_pattern = [2, 2]
+        line_pen_1.setDashPattern(dash_pattern)
+        line_pen_2.setDashPattern(dash_pattern)
+        line_pen_2.setDashOffset(2)
+
+        for polygon in polygons:
+            painter.setPen(line_pen_1)
+            painter.drawPolygon(polygon)
+            painter.setPen(line_pen_2)
+            painter.drawPolygon(polygon)
+
         painter.end()
         return QPixmap.fromImage(image)
 
