@@ -3,7 +3,7 @@ from typing import Optional, Dict, Callable
 
 from PyQt5.QtCore import Qt, pyqtSignal, QRect, QSize
 from PyQt5.QtGui import QMouseEvent, QPaintEvent, QPainter, QPen, QResizeEvent, QKeySequence
-from PyQt5.QtWidgets import QWidget, QLabel, QHBoxLayout, QVBoxLayout, QSizePolicy, QStackedLayout, QPushButton
+from PyQt5.QtWidgets import QWidget, QLabel, QHBoxLayout, QVBoxLayout, QSizePolicy, QScrollArea, QPushButton
 
 from src.config.application_config import AppConfig
 from src.image.layer_stack import LayerStack
@@ -23,6 +23,8 @@ TOOL_PANEL_TITLE = "Tools"
 LIST_SPACING = 10
 GENERATE_BUTTON_TEXT = 'Generate'
 
+LAYER_PANEL_MIN_WIDTH = 1000
+LAYER_PANEL_MIN_HEIGHT = 1000
 
 class ToolPanel(BorderedWidget):
     """Selects between image editing tools, and controls their settings."""
@@ -43,7 +45,7 @@ class ToolPanel(BorderedWidget):
             Connected to the "Generate" button, if one is enabled.
         """
         super().__init__()
-        self.setSizePolicy(QSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.Maximum))
+        self.setSizePolicy(QSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding))
         self._layer_stack = layer_stack
         self._image_viewer = image_viewer
         self._config = config
@@ -134,10 +136,16 @@ class ToolPanel(BorderedWidget):
         self._active_tool: Optional[BaseTool] = None
         self._active_tool_panel: Optional[QWidget] = None
 
-        self._tool_control_box = CollapsibleBox()
-        self._tool_control_layout = QStackedLayout()
-        self._tool_control_box.set_content_layout(self._tool_control_layout)
-        self._tool_control_box.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self._tool_control_box = BorderedWidget()
+        self._tool_control_layout = QVBoxLayout(self._tool_control_box)
+        self._tool_control_box.setSizePolicy(QSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding))
+
+        self._tool_scroll_area = QScrollArea()
+        self._tool_scroll_area.setWidgetResizable(True)
+        self._tool_scroll_area.setWidget(self._tool_control_box)
+        self._tool_scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self._tool_scroll_area.setSizePolicy(QSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.Expanding))
+
 
         # Create individual tools:
         def add_tool(new_tool: BaseTool):
@@ -164,6 +172,11 @@ class ToolPanel(BorderedWidget):
         self.resizeEvent(None)
         self.set_orientation(Qt.Orientation.Vertical)
 
+    @property
+    def orientation(self) -> Qt.Orientation:
+        """Gets the current panel orientation."""
+        return self._orientation
+
     def set_orientation(self, orientation: Qt.Orientation):
         """Sets the panel to a vertical or horizontal Qt.Orientation."""
         if self._orientation == orientation:
@@ -180,18 +193,15 @@ class ToolPanel(BorderedWidget):
         self._panel_box_layout = QHBoxLayout() if orientation == Qt.Orientation.Vertical else QVBoxLayout()
         self._panel_box.set_content_layout(self._panel_box_layout)
         self._layout.addWidget(self._panel_box)
-        for widget, stretch in (
-                (self._tool_list, 30),
-                (self._tool_control_box, 30),
-                # (self._layer_panel, 30)
-        ):
-            if widget is None:
-                continue
-            self._panel_box_layout.addWidget(widget, stretch=stretch)
+        self._panel_box_layout.addWidget(self._tool_list)
+        self._panel_box_layout.addWidget(self._tool_scroll_area)
+        if self._layer_panel is not None:
+            self._panel_box_layout.addWidget(self._layer_panel)
         self._panel_box_layout.addWidget(self._generate_button)
         self._generate_button.setVisible(show_generate_button)
         if prev_panel_box is not None:
             prev_panel_box.setParent(None)
+        self.resizeEvent(None)
         self.update()
 
     def show_tab_toggle(self, should_show: bool) -> None:
@@ -229,7 +239,6 @@ class ToolPanel(BorderedWidget):
             self._update_cursor()
             active_tool.cursor_change.connect(self._update_cursor)
             tool_panel = active_tool.get_control_panel()
-            self._tool_control_box.set_title_label(self._active_tool.label + " Tool Settings")
             if tool_panel is not None:
                 self._active_tool_panel = tool_panel
                 self._tool_control_layout.addWidget(tool_panel)
@@ -246,3 +255,17 @@ class ToolPanel(BorderedWidget):
     def resizeEvent(self, event: Optional[QResizeEvent]) -> None:
         """Keep tool list sized correctly within the panel."""
         self._tool_list.setMaximumWidth(self.width())
+        self._tool_scroll_area.setMaximumWidth(self.width())
+        self._tool_control_box.setMaximumWidth(self.width() - self._tool_scroll_area.contentsMargins().left() * 2)
+        show_layer_panel = ((self._orientation == Qt.Orientation.Vertical and self.width() >= LAYER_PANEL_MIN_WIDTH)
+                or (self._orientation == Qt.Orientation.Horizontal and self.height() >= LAYER_PANEL_MIN_HEIGHT))
+        if show_layer_panel:
+            if self._layer_panel is None:
+                self._layer_panel = LayerPanel(self._layer_stack)
+            self._panel_box_layout.addWidget(self._layer_panel)
+        elif self._layer_panel is not None:
+            if self._panel_box_layout is not None:
+                self._panel_box_layout.removeWidget(self._layer_panel)
+            self._layer_panel.hide()
+            self._layer_panel.setParent(None)
+            self._layer_panel = None

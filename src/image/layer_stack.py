@@ -72,9 +72,10 @@ class LayerStack(QObject):
     @active_layer.setter
     def active_layer(self, new_active_layer) -> None:
         """Updates the index of the layer currently selected for editing."""
-        assert_valid_index(new_active_layer, self._layers)
+        if new_active_layer is not None:
+            assert_valid_index(new_active_layer, self._layers)
         self._active_layer = new_active_layer
-        self.active_layer_changed.emit(new_active_layer)
+        self.active_layer_changed.emit(new_active_layer if new_active_layer is not None else -1)
 
     @property
     def mask_layer(self) -> MaskLayer:
@@ -251,9 +252,15 @@ class LayerStack(QObject):
     def pop_layer(self, index: int) -> ImageLayer:
         """Removes and returns an image layer."""
         assert_valid_index(index, self._layers)
-        if len(self._layers) == 1:
-            raise RuntimeError('Cannot remove final layer')
+        # If active layer < index, no active layer change is needed.
+        if self.active_layer == index:
+            if self.count == 1:
+                self.active_layer = None
+            elif index == (self.count - 1):
+                self.active_layer = (index - 1)
         removed_layer = self._layers.pop(index)
+        if self.active_layer is not None and self.active_layer > index:
+            self._active_layer = (self._active_layer - 1)
         if removed_layer.visible:
             self._invalidate_all_cached(not removed_layer.saved)
             self.visible_content_changed.emit()
@@ -397,18 +404,26 @@ class LayerStack(QObject):
         """Returns the contents of the selection area as a PIL Image."""
         return qimage_to_pil_image(self.cropped_qimage_content(self.selection))
 
-    def set_selection_content(self, image_data: Image.Image | QImage | QPixmap, layer_index: int = 0):
+    def set_selection_content(self,
+                              image_data: Image.Image | QImage | QPixmap,
+                              layer_index: Optional[int] = None,
+                              composition_mode: QPainter.CompositionMode = QPainter.CompositionMode_Source):
         """Updates selection content within a layer.
         Parameters
         ----------
         image_data: PIL Image or QImage or QPixmap
             Image data to draw into the selection. If the size of the image doesn't match the size of the
             bounds_rect, it will be scaled to fit.
-        layer_index: int, default = 0
-            Layer where image data will be inserted. If none are specified, the base layer is used.
+        layer_index: int, default = None
+            Layer where image data will be inserted. If none is specified, the active layer is used.
+        composition_mode: QPainter.CompositionMode, default=Source
+            Mode used to insert image content. Default behavior is for the new image content to completely replace the
+            old content.
         """
+        if layer_index is None:
+            layer_index = self.active_layer
         assert_valid_index(layer_index, self._layers)
-        self._layers[layer_index].insert_image_content(image_data, self.selection)
+        self._layers[layer_index].insert_image_content(image_data, self.selection, composition_mode)
 
     def set_image(self, image_data: Image.Image | QImage | QPixmap, layer_index: int = 0):
         """

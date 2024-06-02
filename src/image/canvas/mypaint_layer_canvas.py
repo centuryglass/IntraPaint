@@ -105,8 +105,6 @@ class MyPaintLayerCanvas(LayerCanvas):
     def _set_is_eraser(self, should_erase: bool) -> None:
         """Sets whether the active brush should work as an eraser."""
         super()._set_is_eraser(should_erase)
-        prev_eraser_value = self._last_eraser_value if self._last_eraser_value is not None \
-                            else self._mp_surface.brush.get_value(MPBrush.Eraser)
         if should_erase:
             if self._last_eraser_value is None:
                 self._last_eraser_value = self._mp_surface.brush.get_value(MPBrush.Eraser)
@@ -114,6 +112,11 @@ class MyPaintLayerCanvas(LayerCanvas):
             self._mp_surface.brush.set_value(MPBrush.ERASER, self._last_eraser_value
                                              if self._last_eraser_value is not None else 1.0)
             self._last_eraser_value = None
+
+    def _set_z_value(self, z_value: int) -> None:
+        """Updates the level where content will be shown in a GraphicsScene."""
+        super()._set_z_value(z_value)
+        self._mp_surface.set_z_values(z_value)
 
     def _update_scene_content_bounds(self, new_bounds: QRect) -> None:
         """Resize the internal graphics representation."""
@@ -141,8 +144,8 @@ class MyPaintLayerCanvas(LayerCanvas):
         if self._layer is not None and self._layer.visible and self._edit_region is not None \
                 and not self._edit_region.isEmpty() and not self._last_stroke_bounds.isEmpty():
 
-            tile_change_image = QImage(self._last_stroke_bounds.size(), QImage.Format_ARGB32_Premultiplied)
-            tile_change_image.fill(Qt.GlobalColor.transparent)
+            tile_change_image = self._layer.cropped_image_content(self._last_stroke_bounds)
+            reverse_image = tile_change_image.copy()
             change_x = self._last_stroke_bounds.x()
             change_y = self._last_stroke_bounds.y()
             for tile in self._last_stroke_tiles:
@@ -158,6 +161,7 @@ class MyPaintLayerCanvas(LayerCanvas):
                 """Copy the combined tile changes into the image."""
                 with layer.borrow_image() as layer_image:
                     layer_painter = QPainter(layer_image)
+                    layer_painter.setCompositionMode(QPainter.CompositionMode_Source)
                     layer_painter.drawImage(change_x, change_y, tile_change_image)
 
             def reverse():

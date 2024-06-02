@@ -230,7 +230,8 @@ class ImageLayer(QObject):
     def insert_image_content(
             self,
             image_data: Image.Image | QImage | QPixmap,
-            bounds_rect: QRect):
+            bounds_rect: QRect,
+            composition_mode: QPainter.CompositionMode=QPainter.CompositionMode.CompositionMode_Source):
         """
         Replaces the contents of an area within the image with new image content.
 
@@ -241,6 +242,9 @@ class ImageLayer(QObject):
             bounds_rect, it will be scaled to fit.
         bounds_rect: QRect
             Area where image data will be inserted. This must be within the edited image bounds.
+        composition_mode: QPainter.CompositionMode, default=Source
+            Mode used to insert image content. Default behavior is for the new image content to completely replace the
+            old content.
         """
         assert_type(image_data, (QImage, QPixmap, Image.Image))
         assert_type(bounds_rect, QRect)
@@ -250,7 +254,7 @@ class ImageLayer(QObject):
             return
         with self.borrow_image() as layer_image:
             painter = QPainter(layer_image)
-            painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_Source)
+            painter.setCompositionMode(composition_mode)
             if isinstance(image_data, QPixmap):
                 painter.drawPixmap(bounds_rect, image_data)
             elif isinstance(image_data, (Image.Image, QImage)):

@@ -9,8 +9,8 @@ from typing import Optional, Callable, Any
 from argparse import Namespace
 from PIL import Image, ImageFilter, UnidentifiedImageError, PngImagePlugin
 from PyQt5.QtWidgets import QApplication, QMessageBox, QMainWindow
-from PyQt5.QtCore import QObject, QThread, QSize, pyqtSignal
-from PyQt5.QtGui import QScreen, QImage
+from PyQt5.QtCore import QObject, QRect, QThread, QSize, pyqtSignal
+from PyQt5.QtGui import QScreen, QImage, QPainter
 try:
     import qdarktheme
 except ImportError:
@@ -30,6 +30,7 @@ from src.ui.modal.image_scale_modal import ImageScaleModal
 from src.ui.modal.modal_utils import show_error_dialog, request_confirmation, open_image_file
 from src.ui.modal.settings_modal import SettingsModal
 from src.ui.util.screen_size import screen_size
+from src.util.image_utils import pil_image_to_qimage
 
 from src.util.validation import assert_type
 # Optional spacenav support:
@@ -501,4 +502,12 @@ class BaseInpaintController:
             Data to be inserted into the edited image selection bounds.
         """
         if sample_image is not None and isinstance(sample_image, Image.Image):
-            self._layer_stack.set_selection_content(sample_image)
+            image = pil_image_to_qimage(sample_image).convertToFormat(QImage.Format.Format_ARGB32_Premultiplied)
+            if self._config.get(AppConfig.EDIT_MODE) == "Inpaint":
+                inpaint_mask = self._layer_stack.mask_layer.cropped_image_content(self._layer_stack.selection)
+                painter = QPainter(image)
+                painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_DestinationIn)
+                painter.drawImage(QRect(0, 0, image.width(), image.height()), inpaint_mask)
+                painter.end()
+            self._layer_stack.set_selection_content(image,
+                    composition_mode = QPainter.CompositionMode.CompositionMode_SourceOver)

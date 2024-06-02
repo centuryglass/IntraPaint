@@ -100,7 +100,7 @@ class CanvasTool(BaseTool):
         else:
             layer_index = self._layer_stack.get_layer_index(self._layer)
             if layer_index is not None:
-                self._canvas.z_value = layer_index
+                self._canvas.z_value = -layer_index
             self._canvas.connect_to_layer(layer)
             self._image_viewer.stop_rendering_layer(layer)
 
@@ -166,6 +166,8 @@ class CanvasTool(BaseTool):
 
     def mouse_click(self, event: Optional[QMouseEvent], image_coordinates: QPoint) -> bool:
         """Starts drawing when the mouse is clicked in the scene."""
+        if self._layer is None:
+            return False
         if event.buttons() == Qt.LeftButton or event.buttons() == Qt.RightButton:
             if self._drawing:
                 self._canvas.end_stroke()
@@ -184,6 +186,8 @@ class CanvasTool(BaseTool):
 
     def mouse_move(self, event: Optional[QMouseEvent], image_coordinates: QPoint) -> bool:
         """Receives a mouse move event, returning whether the tool consumed the event."""
+        if self._layer is None:
+            return False
         if event.buttons() == Qt.LeftButton or event.buttons() == Qt.RightButton and self._drawing:
             self._stroke_to(image_coordinates)
             return True
@@ -191,6 +195,8 @@ class CanvasTool(BaseTool):
 
     def mouse_release(self, event: Optional[QMouseEvent], image_coordinates: QPoint) -> bool:
         """Receives a mouse release event, returning whether the tool consumed the event."""
+        if self._layer is None:
+            return False
         if self._drawing:
             self._drawing = False
             self._stroke_to(image_coordinates)

@@ -262,10 +262,12 @@ def get_selection_control_boxes(config: AppConfig,
         widget.setToolTip(tooltip)
         layout = QHBoxLayout(widget)
         layout.setSpacing(0)
+        layout.setContentsMargins(0, 0, 0, 0)
         label = QLabel(label_text)
         layout.addWidget(label, stretch=1)
         if include_sliders:
             slider = QSlider(Qt.Orientation.Horizontal)
+            slider.setContentsMargins(1, 1, 1, 1)
             sliders.append(slider)
             layout.addWidget(slider, stretch=2)
         spin_box = QSpinBox()

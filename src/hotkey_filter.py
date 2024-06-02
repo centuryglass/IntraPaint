@@ -7,7 +7,7 @@ else:
     from typing_extensions import Self
 from PyQt5.QtCore import Qt, QObject, QEvent
 from PyQt5.QtGui import QKeyEvent
-from PyQt5.QtWidgets import QApplication, QWidget, QPlainTextEdit, QLineEdit, QAbstractSpinBox
+from PyQt5.QtWidgets import QApplication, QWidget, QTextEdit, QLineEdit, QPlainTextEdit, QAbstractSpinBox, QDialog
 
 
 class HotkeyFilter(QObject):
@@ -85,7 +85,7 @@ class HotkeyFilter(QObject):
             return super().eventFilter(source, event)
         # Avoid blocking inputs to text fields:
         focused_widget = QApplication.focusWidget()
-        if isinstance(focused_widget, (QLineEdit, QPlainTextEdit, QAbstractSpinBox)):
+        if isinstance(focused_widget, (QLineEdit, QTextEdit, QLineEdit, QPlainTextEdit, QAbstractSpinBox, QDialog)):
             if event.key() == Qt.Key_Escape and self._default_focus is not None and self._default_focus.isVisible():
                 self._default_focus.setFocus()
                 return True

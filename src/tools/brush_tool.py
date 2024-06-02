@@ -42,20 +42,23 @@ class BrushTool(CanvasTool):
         self._cached_size = None
         self._icon = QIcon(RESOURCES_BRUSH_ICON)
 
-        if layer_stack.count > 0:
-            active_layer = layer_stack.get_layer(layer_stack.active_layer)
-            self.layer = active_layer
 
         # Load brush and size from config
         self.brush_path = config.get(AppConfig.MYPAINT_BRUSH)
         self.brush_size = config.get(AppConfig.SKETCH_BRUSH_SIZE)
 
-        def active_layer_update(layer_idx: int) -> None:
+        def active_layer_update(layer_idx: Optional[int]) -> None:
             """Synchronize with active layer changes."""
-            layer = layer_stack.get_layer(layer_idx)
-            self.layer = layer
+            if layer_idx < 0:
+                self.layer = None
+            else:
+                layer = layer_stack.get_layer(layer_idx)
+                self.layer = layer
+                self._canvas.z_value = -layer_idx
 
         layer_stack.active_layer_changed.connect(active_layer_update)
+        if layer_stack.active_layer is not None:
+            active_layer_update(layer_stack.active_layer)
 
         self._eyedropper_cursor = QCursor(QPixmap(RESOURCES_EYEDROPPER_PNG))
         self._line_brush_cursor = QCursor(Qt.CursorShape.ArrowCursor)

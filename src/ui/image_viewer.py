@@ -147,7 +147,7 @@ class ImageViewer(FixedAspectGraphicsView):
         def add_layer(new_layer: ImageLayer, index: int) -> None:
             """Adds an image layer into the view."""
             layer_item = ImageViewer.LayerItem(new_layer)
-            layer_item.setZValue(index)
+            layer_item.setZValue(-index)
             self._layer_items[new_layer] = layer_item
             self.scene().addItem(layer_item)
             for outline in self._selection_outline, self._masked_selection_outline, self._border:
@@ -159,19 +159,20 @@ class ImageViewer(FixedAspectGraphicsView):
                 self.update()
 
         layer_stack.layer_added.connect(add_layer)
-        add_layer(layer_stack.mask_layer, layer_stack.count + 999)
+        add_layer(layer_stack.mask_layer, -1)
         for i in range(layer_stack.count):
             add_layer(layer_stack.get_layer(i), i)
 
         def remove_layer(removed_layer: ImageLayer) -> None:
             """Removes an image layer from the view."""
             layer_item = self._layer_items[removed_layer]
+            layer_was_visible = layer_item.isVisible()
             self.scene().removeItem(layer_item)
             for item in self._layer_items.values():
-                if item.zValue() > layer_item.zValue():
-                    item.setZValue(item.zValue() - 1)
+                if item.zValue() < layer_item.zValue():
+                    item.setZValue(item.zValue() + 1)
             del self._layer_items[removed_layer]
-            if layer_item.visible():
+            if layer_was_visible:
                 self.update()
         layer_stack.layer_removed.connect(remove_layer)
 
