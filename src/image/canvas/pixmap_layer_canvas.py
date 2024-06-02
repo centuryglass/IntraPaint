@@ -79,7 +79,7 @@ class PixmapLayerCanvas(LayerCanvas):
             painter.drawPoint(x - self.edit_region.x(), y - self.edit_region.y())
         else:
             painter.drawLine(self._last_point.x() - self.edit_region.x(), self._last_point.y() - self.edit_region.y(),
-                             x, y)
+                             x - self.edit_region.x(), y - self.edit_region.y())
         painter.end()
         self._last_point = QPoint(x, y)
         self._pixmap_item.setPixmap(pixmap)
