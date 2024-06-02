@@ -186,11 +186,13 @@ class ToolPanel(BorderedWidget):
         show_generate_button = self._generate_button.isVisible()
         if self._panel_box is not None:
             self._layout.removeWidget(self._panel_box)
+        box_orientation = Qt.Orientation.Vertical if orientation == Qt.Orientation.Horizontal \
+                          else Qt.Orientation.Horizontal
         self._panel_box = CollapsibleBox(TOOL_PANEL_TITLE,
                                          parent=self,
                                          scrolling=False,
-                                         orientation=orientation)
-        self._panel_box_layout = QHBoxLayout() if orientation == Qt.Orientation.Vertical else QVBoxLayout()
+                                         orientation=box_orientation)
+        self._panel_box_layout = QVBoxLayout() if orientation == Qt.Orientation.Vertical else QHBoxLayout()
         self._panel_box.set_content_layout(self._panel_box_layout)
         self._layout.addWidget(self._panel_box)
         self._panel_box_layout.addWidget(self._tool_list)
@@ -199,6 +201,11 @@ class ToolPanel(BorderedWidget):
             self._panel_box_layout.addWidget(self._layer_panel)
         self._panel_box_layout.addWidget(self._generate_button)
         self._generate_button.setVisible(show_generate_button)
+        if orientation == Qt.Orientation.Horizontal:
+            generate_label = "\n".join(GENERATE_BUTTON_TEXT)
+        else:
+            generate_label = GENERATE_BUTTON_TEXT
+        self._generate_button.setText(generate_label)
         if prev_panel_box is not None:
             prev_panel_box.setParent(None)
         self.resizeEvent(None)
