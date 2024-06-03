@@ -4,23 +4,26 @@ Assuming you're running the A1111 stable-diffusion API on the same machine with 
 `python IntraPaint.py` should be all you need. For more information on options, run `python IntraPaint.py --help`
 """
 from typing import Any
+import logging
+logging.basicConfig(filename='intrapaint.log', format='%(asctime)s : %(levelname)s : %(name)s: %(message)s',
+                    level=logging.INFO)
 from src.controller.mock_controller import MockController
 try:
     from src.controller.stable_diffusion_controller import StableDiffusionController
 except ImportError as stable_import_error:
-    print(f'Stable-diffusion mode not available: {stable_import_error}')
+    logging.error(f'Stable-diffusion mode not available: {stable_import_error}')
     StableDiffusionController = None
 try:
     from src.controller.web_client_controller import WebClientController
 except ImportError as web_import_error:
-    print(f'Network GLID-3-XL mode not available: {web_import_error}')
+    logging.error(f'Network GLID-3-XL mode not available: {web_import_error}')
     WebClientController = None
 try:
     from src.controller.local_controller import LocalDeviceController
     import torch
     from src.glid_3_xl.ml_utils import get_device
 except ImportError as local_err:
-    print(f'Local GLID-3-XL mode not available: {local_err}')
+    logging.error(f'Local GLID-3-XL mode not available: {local_err}')
     LocalDeviceController = None
     torch = None
 from src.util.arg_parser import build_arg_parser
@@ -29,6 +32,7 @@ DEFAULT_SD_URL = 'http://localhost:7860'
 DEFAULT_GLID_URL = 'http://localhost:5555'
 DEFAULT_GLID_MODEL = 'glid_3_xl/models/inpaint.pt'
 MIN_GLID_VRAM = 8000000000  # This is just a rough estimate.
+logger = logging.getLogger(__name__)
 
 
 def parse_args_and_start() -> None:
@@ -69,7 +73,7 @@ def parse_args_and_start() -> None:
         controller_mode = 'stable' if health_check(StableDiffusionController, args.server_url) \
                 else 'web' if health_check(WebClientController, args.server_url) else 'auto'
     if controller_mode == 'auto':
-        print(f'Unable to identify server type for url "{args.server_url}", checking default localhost ports...')
+        logger.info(f'Unable to identify server type for url "{args.server_url}", checking default localhost ports...')
         if health_check(StableDiffusionController, DEFAULT_SD_URL):
             args.server_url = DEFAULT_SD_URL
             controller_mode = 'stable'
@@ -77,7 +81,7 @@ def parse_args_and_start() -> None:
             args.server_url = DEFAULT_GLID_URL
             controller_mode = 'web'
         else:
-            print('Failed to identify webservice, trying local mode.')
+            logger.info('Failed to identify webservice, trying local mode.')
             controller_mode = 'local'
 
     match controller_mode:
@@ -98,7 +102,11 @@ def parse_args_and_start() -> None:
             controller = MockController(args)
         case _:
             raise RuntimeError(f'Exiting: invalid or unsupported mode "{controller_mode}"')
-    controller.start_app()
+
+    try:
+        controller.start_app()
+    except Exception as err:
+        logger.exception('main crashed, error: %s', err)
 
 
 if __name__ == '__main__':

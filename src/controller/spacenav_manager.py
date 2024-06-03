@@ -8,10 +8,13 @@ import atexit
 import time
 import math
 from threading import Lock
+import logging
 import spacenav
 from PyQt5.QtCore import QObject, QThread, QSize, QRect, pyqtSignal
 from PyQt5.QtWidgets import QMainWindow
 from src.image.layer_stack import LayerStack
+
+logger = logging.getLogger(__name__)
 
 # Once the xy offset of sequential spacenav events adds up to this value, the selection window will
 # reach max scrolling speed:
@@ -100,14 +103,14 @@ class SpacenavManager:
 
             def run(self) -> None:
                 """Main thread loop."""
-                print('Loading optional space mouse support for panning:')
+                logger.info('Loading optional space mouse support for panning:')
                 try:
                     spacenav.open()
                     atexit.register(spacenav.close)
                 except spacenav.ConnectionError:
-                    print('spacenav connection failed, space mouse will not be used.')
+                    logger.warning('spacenav connection failed, space mouse will not be used.')
                     return
-                print('spacenav connection started.')
+                logger.info('spacenav connection started.')
 
                 def send_nav_signal() -> None:
                     """Convert spacemouse events to appropriate selection changes, emit results to main thread."""

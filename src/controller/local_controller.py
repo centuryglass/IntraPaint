@@ -4,6 +4,7 @@ Provides image editing functionality through a local instance of GLID-3-XL.
 import gc
 from argparse import Namespace
 from typing import Callable
+import logging
 from PIL import Image
 import torch
 from PyQt5.QtCore import pyqtSignal
@@ -16,6 +17,8 @@ from src.config.application_config import AppConfig
 from src.ui.modal.settings_modal import SettingsModal
 from src.util.validation import assert_types
 
+logger = logging.getLogger(__name__)
+
 
 class LocalDeviceController(BaseInpaintController):
     """Provides image editing functionality through a local instance of GLID-3-XL."""
@@ -23,7 +26,7 @@ class LocalDeviceController(BaseInpaintController):
     def __init__(self, args: Namespace):
         super().__init__(args)
         self._device = get_device(args.cpu)
-        print('Using device:', self._device)
+        logger.info('Using device:', self._device)
         if args.seed >= 0:
             torch.manual_seed(args.seed)
         self._clip_guidance = args.clip_guidance

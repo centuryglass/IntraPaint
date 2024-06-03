@@ -8,6 +8,7 @@ import os
 import datetime
 from argparse import Namespace
 from typing import Optional, Callable, Any
+import logging
 
 import requests
 from PIL import Image
@@ -22,6 +23,8 @@ from src.ui.modal.modal_utils import show_error_dialog
 from src.ui.util.screen_size import screen_size
 from src.controller.base_controller import BaseInpaintController
 from src.api.a1111_webservice import A1111Webservice
+
+logger = logging.getLogger(__name__)
 
 AUTH_ERROR_DETAIL_KEY = 'detail'
 AUTH_ERROR_MESSAGE = 'Not authenticated'
@@ -172,10 +175,10 @@ class StableDiffusionController(BaseInpaintController):
                 return True
             raise RuntimeError(f'{res.status_code} : {res.text}')
         except RuntimeError as status_err:
-            print(f'Login check returned failure response: {status_err}')
+            logger.error(f'Login check returned failure response: {status_err}')
             return False
         except requests.exceptions.RequestException as req_err:
-            print(f'Login check connection failed: {req_err}')
+            logger.error(f'Login check connection failed: {req_err}')
 
     def interrogate(self) -> None:
         """ Calls the "interrogate" endpoint to automatically generate image prompts.
@@ -209,7 +212,7 @@ class StableDiffusionController(BaseInpaintController):
                     image = self._layer_stack.pil_image_selection_content()
                     self.prompt_ready.emit(self._webservice.interrogate(self._config, image))
                 except RuntimeError as err:
-                    print(f'err:{err}')
+                    logger.error(f'err:{err}')
                     self.error_signal.emit(err)
                 self.finished.emit()
 
@@ -217,7 +220,6 @@ class StableDiffusionController(BaseInpaintController):
 
         def set_prompt(prompt_text: str) -> None:
             """Update the image prompt in config with the interrogate results."""
-            print(f'Set prompt to {prompt_text}')
             self._config.set(AppConfig.PROMPT, prompt_text)
 
         worker.prompt_ready.connect(set_prompt)
@@ -264,7 +266,7 @@ class StableDiffusionController(BaseInpaintController):
                 else:
                     self._config.set(AppConfig.CONTROLNET_VERSION, -1.0)
             except RuntimeError as err:
-                print(f'Loading controlnet config failed: {err}')
+                logger.error(f'Loading controlnet config failed: {err}')
                 self._config.set(AppConfig.CONTROLNET_VERSION, -1.0)
 
         option_loading_params = [
@@ -280,7 +282,7 @@ class StableDiffusionController(BaseInpaintController):
                 if options is not None and len(options) > 0:
                     self._config.update_options(config_key, options)
             except (KeyError, RuntimeError) as err:
-                print(f'error loading {config_key} from {self._server_url}: {err}')
+                logger.error(f'error loading {config_key} from {self._server_url}: {err}')
 
         data_params = [
             [AppConfig.CONTROLNET_CONTROL_TYPES, self._webservice.get_controlnet_control_types],
@@ -294,7 +296,7 @@ class StableDiffusionController(BaseInpaintController):
                 if value is not None and len(value) > 0:
                     self._config.set(config_key, value)
             except (KeyError, RuntimeError) as err:
-                print(f'error loading {config_key} from {self._server_url}: {err}')
+                logger.error(f'error loading {config_key} from {self._server_url}: {err}')
 
         # initialize remote options modal:
         # Handle final window init now that data is loaded from the API:
@@ -311,7 +313,7 @@ class StableDiffusionController(BaseInpaintController):
         size = screen_size(self._window)
         self.fix_styles()
         if self._init_image is not None:
-            print('loading init image:')
+            logger.info('loading init image:')
             self.load_image(self._init_image)
         self._window.show()
 
@@ -346,7 +348,7 @@ class StableDiffusionController(BaseInpaintController):
                                                             new_size.height(),
                                                             self._config)
                     if info is not None:
-                        print(f'Upscaling result info: {info}')
+                        logger.debug(f'Upscaling result info: {info}')
                     self.image_ready.emit(images[-1])
                 except IOError as err:
                     self.error_signal.emit(err)
@@ -417,11 +419,11 @@ class StableDiffusionController(BaseInpaintController):
             try:
                 image_data, info = generate_images()
                 if info is not None:
-                    print(f'Image generation result info: {info}')
+                    logger.debug(f'Image generation result info: {info}')
                 for response_image in image_data:
                     images.append(response_image)
             except RuntimeError as image_gen_error:
-                print(f'request failed: {image_gen_error}')
+                logger.error(f'request failed: {image_gen_error}')
                 errors.append(image_gen_error)
 
         thread = threading.Thread(target=async_request)
@@ -455,12 +457,12 @@ class StableDiffusionController(BaseInpaintController):
                 error_count += 1
                 print(f'Error {error_count}: {err}')
                 if error_count > max_errors:
-                    print('Inpainting failed, reached max retries.')
+                    logger.error('Inpainting failed, reached max retries.')
                     break
                 continue
             error_count = 0  # Reset error count on success.
         if len(errors) > 0:
-            print('Inpainting failed with error, raising...')
+            logger.error('Inpainting failed with error, raising...')
             raise errors[0]
         idx = 0
         for image in images:

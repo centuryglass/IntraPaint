@@ -8,6 +8,7 @@ else:
     from typing_extensions import Self
 from collections.abc import Generator
 from contextlib import contextmanager
+import logging
 from PyQt5.QtGui import QImage, QPainter, QPixmap, QPolygon, QPen
 from PyQt5.QtCore import Qt, QRect, QPoint, QSize, pyqtSignal
 import numpy as np
@@ -17,6 +18,8 @@ from src.util.validation import assert_type
 from src.image.image_layer import ImageLayer
 from src.config.application_config import AppConfig
 from src.util.image_utils import qimage_to_pil_image
+
+logger = logging.getLogger(__name__)
 
 MASK_LAYER_NAME = "Inpainting Mask"
 MASK_OPACITY_ACTIVE = 0.6
@@ -256,7 +259,7 @@ class MaskLayer(ImageLayer):
         except AssertionError:
             # Weird edge cases that pop up sometimes when you try to do unreasonable things like change size to 500x8
             mask_rect = QRect(QPoint(int(left), int(top)), QPoint(int(right), int(bottom)))
-            print(f'Border calc bug: calculated rect was {mask_rect}, ratio was {image_ratio}')
+            logger.error(f'Border calc bug: calculated rect was {mask_rect}, ratio was {image_ratio}')
         mask_rect = QRect(QPoint(int(left), int(top)), QPoint(int(right), int(bottom)))
         return mask_rect
 

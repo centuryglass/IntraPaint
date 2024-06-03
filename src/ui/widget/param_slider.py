@@ -2,6 +2,7 @@
 Provides an extended QSlider widget with integrated Config value connection.
 """
 from typing import Optional
+import logging
 from PyQt5.QtWidgets import QWidget, QSlider, QSizePolicy, QDoubleSpinBox
 from PyQt5.QtCore import Qt, QSize, QEvent
 from PyQt5.QtGui import QFont, QFontMetrics
@@ -9,6 +10,8 @@ from src.ui.config_control_setup import connected_spinbox
 from src.ui.widget.label import Label
 from src.ui.widget.big_int_spinbox import BigIntSpinbox
 from src.config.application_config import AppConfig
+
+logger = logging.getLogger(__name__)
 
 
 class ParamSlider(QWidget):
@@ -80,13 +83,13 @@ class ParamSlider(QWidget):
             try:
                 self._config.disconnect(self, self._key)
             except KeyError as err:
-                print(f"Disconnecting slider from {self._key} failed: {err}")
+                logger.error(f"Disconnecting slider from {self._key} failed: {err}")
             if self._step_box is not None:
                 step_box = self._step_box
                 try:
                     self._config.disconnect(step_box, self._key)
                 except KeyError as err:
-                    print(f"Disconnecting step box from {self._key} failed: {err}")
+                    logger.error(f"Disconnecting step box from {self._key} failed: {err}")
                 step_box.valueChanged.disconnect()
                 step_box.setParent(None)
                 step_box.deleteLater()

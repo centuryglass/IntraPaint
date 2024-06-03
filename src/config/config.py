@@ -13,12 +13,14 @@ import os.path
 from inspect import signature
 from threading import Lock
 from typing import Optional, Any, Callable, List
+import logging
 
 from PyQt5.QtCore import QSize, QTimer
 
 from src.config.config_entry import ConfigEntry, DefinitionKey, DefinitionType
 from src.util.validation import assert_type
 
+logger = logging.getLogger(__name__)
 
 class Config:
     """A shared resource to set inpainting configuration and to provide default values.
@@ -342,7 +344,7 @@ class Config:
             with open(self._json_path, encoding='utf-8') as file:
                 json_data = json.load(file)
         except json.JSONDecodeError as err:
-            print(f'Reading JSON config failed: {err}')
+            logger.error(f'Reading JSON config failed: {err}')
         with self._lock:
             for entry in self._entries.values():
                 entry.load_from_json_dict(json_data)

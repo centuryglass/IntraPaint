@@ -8,6 +8,7 @@ import os
 import io
 import sys
 import requests
+import logging
 from PIL import Image
 from requests import Response
 
@@ -16,6 +17,7 @@ from src.util.image_utils import load_image_from_base64, image_to_base64
 from src.config.application_config import AppConfig
 from src.ui.modal.login_modal import LoginModal
 
+logger = logging.getLogger(__name__)
 
 class A1111Webservice(WebService):
     """
@@ -357,7 +359,7 @@ class A1111Webservice(WebService):
                     try:
                         controlnet['image'] = image_to_base64(controlnet['image'], include_prefix=True)
                     except (IOError, KeyError) as err:
-                        print(f"Error loading controlnet image {controlnet['image']}: {err}")
+                        logger.error(f"Error loading controlnet image {controlnet['image']}: {err}")
                         del controlnet['image']
                 else:
                     del controlnet['image']
@@ -514,6 +516,6 @@ class A1111Webservice(WebService):
             except RuntimeError:
                 auth = None
             if login_modal.get_login_response() is None:
-                print('Login aborted, exiting')
+                logger.info('Login aborted, exiting')
                 sys.exit()
         self.set_auth(auth)

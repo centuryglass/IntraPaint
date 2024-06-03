@@ -4,6 +4,7 @@ inpainting modes.  Other editing modes should provide subclasses with implementa
 """
 import math
 from typing import Callable, Optional, Any
+import logging
 
 from PIL import Image
 from PyQt5.QtCore import Qt, QRect, QSize
@@ -25,6 +26,8 @@ from src.ui.image_viewer import ImageViewer
 from src.undo_stack import undo, redo
 from src.util.image_utils import qimage_to_pil_image
 from src.ui.util.screen_size import screen_size
+
+logger = logging.getLogger(__name__)
 
 MAIN_TAB_NAME = "Main"
 TOOL_TAB_NAME = "Tools"
@@ -209,7 +212,7 @@ class MainWindow(QMainWindow):
 
                     add_action('LCM Mode', 'F10', set_lcm_mode, tool_menu)
             except RuntimeError:
-                print('Failed to check loras for lcm lora')
+                logger.error('Failed to check loras for lcm lora')
 
         # Build config + control layout (varying based on implementation):
         self._control_panel = self._build_control_panel(controller)
@@ -452,7 +455,7 @@ class MainWindow(QMainWindow):
     def load_sample_preview(self, image: Image.Image, idx: int) -> None:
         """Adds an image to the generated image selection screen."""
         if self._sample_selector is None:
-            print(f'Tried to load sample {idx} after sampleSelector was closed')
+            logger.error(f'Tried to load sample {idx} after sampleSelector was closed')
         else:
             self._sample_selector.load_sample_image(image, idx)
 

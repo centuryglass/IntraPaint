@@ -1,53 +1,50 @@
 # Future development tasks
 
-
-raise mask/brush cursor opacity/add white
-fixed selection panel option?
-width/height boxes should have step 1
-remove debug sample image saving
-
 # Input
-- Global hotkey management
-- Expand hotkeys for all tools
 - Configurable hotkeys
-- escape unfocuses text input
-- non-numeric unfocuses numeric input
-- tab navigation keys
+
+# ImagePanel
+- Restore with minimal toolbar, no orientation
+- Move pan/zoom to toolbar
+
+# Layers
+- Support variable layer sizes
+- Support layer offsets
+- automatic layer resizing when copying into areas outside of bounds
+- variable layer opacity support
 
 # ToolPanel
-- Show hotkeys in UI
+- Show hotkeys/inputs in UI
 - Navigation tool
     - add "select all" button
-    - rename to mask selection?
     - selection to generation size
     - selection to full image
-- Add another tool to handle view zoom+pan
-- Add "shift to draw lines" in MyPaint tool
+- Mask tool
+    - Move 'inpaint masked only' widgets here
+    - Add select by color/fill select
+- Add "shift to draw lines" in brush/mask tools
+- Pencil tool:
+  - Hard-edged drawing via PixmapCanvas
 - Paint bucket tool
 - Text tool
-- More conventional selection controls?
+- 
+- 
 
-# Bugfix
-- "masked only" selection not cleared when mask is cleared
-- Cursor gets lost sometimes on transition to image cursor
-
-# Undo system
-- Add undo support to sample selection
+# Menus
+- Add layer menu duplicating layer panel options
+- edit menu: cut/copy/paste using mask and active layer
+- Open as layer
+- Save with layers,mask,metadata
+- open mypaint brush panel
+- open mypaint brush file
 
 # LayerPanel
-- Add a 'new layer' button
-- Implement active layer switching
-- Layer copying
-- Layer deletion
-- Layer re-order
-- cut+paste via mask tool
+- drag+drop layer reordering
+- layer locking
 
 # Layout
 - Add --window_size arg for testing reactive layouts
-- Fix various widget scrolling issues
-- Add tabs for image generation
-- Find better placement for "Interrogate/Generate" buttons
-- Add Layer panel to window (again)
+- Fix brushPanel layout woes
 - Panel cleanup with FormLayout
 - Add click+drag resizing to CollapsibleBox
 - Add option to pop out CollapsibleBox content as window
@@ -58,9 +55,11 @@ remove debug sample image saving
 - Add context menu for selections:
     * Select
     * Send to new layer
+    * Save as
 - Nicer selection page design:
     * Use an actual layout
     * Right-click for zoom
+    * arbitrary zoom via graphicsView?
 
 # ControlNet
 - Make "use selection as control" the default
@@ -80,7 +79,6 @@ remove debug sample image saving
 
 # sketch canvas/libmypaint
 - Cleanup and release libmypaint-pyqt5 package
-- Better fix for brush setting init
 
 # Config
 - Integrate config with SettingsModal

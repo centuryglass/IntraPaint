@@ -2,12 +2,14 @@
 import os
 import sys
 from typing import Optional, Any
+import logging
 from ctypes import c_void_p, c_float, c_char_p, c_int
 from multiprocessing import Process, Pipe
 from PyQt5.QtGui import QColor
 from PyQt5.QtCore import Qt, QByteArray, QFile, QIODevice
 from src.image.canvas.mypaint.libmypaint import libmypaint, load_libmypaint, DEFAULT_LIBRARY_PATH
 
+logger = logging.getLogger(__name__)
 
 class MPBrush:
     """Python wrapper for libmypaint brush data."""
@@ -58,7 +60,7 @@ class MPBrush:
         libmypaint.mypaint_brush_from_defaults(self._brush)
         c_string = c_char_p(content.data())
         if not bool(libmypaint.mypaint_brush_from_string(self._brush, c_string)):
-            print('Failed to read selected MyPaint brush')
+            logger.error('Failed to read selected MyPaint brush')
         self.color = self._color
         if size >= 0:
             self.set_value(MPBrush.RADIUS_LOGARITHMIC, size)
@@ -90,8 +92,8 @@ class MPBrush:
                                                         f'0-{len(self._setting_info)}'
         setting_info = self._setting_info[setting]
         if not setting_info.min_value <= value <= setting_info.max_value:
-            print(f'Warning: value {value} not in expected range {setting_info.min_value}-{setting_info.max_value} '
-                  f'for MyPaint brush setting "{setting_info.name}"')
+            logger.warning(f'Warning: value {value} not in expected range {setting_info.min_value}'
+                           f'-{setting_info.max_value} for MyPaint brush setting "{setting_info.name}"')
         libmypaint.mypaint_brush_set_base_value(self._brush, c_int(setting), c_float(value))
 
 

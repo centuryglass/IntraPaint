@@ -2,6 +2,7 @@
 Panel providing controls for the stable-diffusion ControlNet extension. Only supported by stable_diffusion_controller.
 """
 from typing import Optional
+import logging
 from PyQt5.QtWidgets import QVBoxLayout, QHBoxLayout, QCheckBox, QPushButton, QLineEdit, QComboBox, QSizePolicy
 from src.ui.widget.collapsible_box import CollapsibleBox
 from src.ui.widget.label_wrapper import LabelWrapper
@@ -9,6 +10,8 @@ from src.ui.widget.param_slider import ParamSlider
 from src.ui.config_control_setup import connected_checkbox
 from src.config.application_config import AppConfig
 from src.util.validation import assert_type
+
+logger = logging.getLogger(__name__)
 
 # UI/Label text:
 ENABLE_CONTROLNET_CHECKBOX_LABEL = 'Enable ControlNet'
@@ -201,7 +204,7 @@ class ControlnetPanel(CollapsibleBox):
                             selection = option
                             break
                 if selection not in module_detail[MODULE_DETAIL_KEY]:
-                    print(f'Warning: invalid selection {selection} not found')
+                    logger.warning(f'Warning: invalid selection {selection} not found')
                     return
                 details = module_detail[MODULE_DETAIL_KEY][selection]
             config.set(config_key, selection, inner_key=CONTROL_MODULE_KEY)

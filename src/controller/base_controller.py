@@ -7,6 +7,7 @@ import sys
 import re
 from typing import Optional, Callable, Any
 from argparse import Namespace
+import logging
 from PIL import Image, ImageFilter, UnidentifiedImageError, PngImagePlugin
 from PyQt5.QtWidgets import QApplication, QMessageBox, QMainWindow
 from PyQt5.QtCore import QObject, QRect, QThread, QSize, pyqtSignal
@@ -40,6 +41,7 @@ try:
 except ImportError as spacenav_err:
     print(f'spaceMouse support not enabled: {spacenav_err}')
     SpacenavManager = None
+logger = logging.getLogger(__name__)
 
 NEW_IMAGE_CONFIRMATION_TITLE = 'Create new image?'
 NEW_IMAGE_CONFIRMATION_MESSAGE = 'This will discard all unsaved changes.'
@@ -157,7 +159,7 @@ class BaseInpaintController:
             self._window.setMaximumSize(size)
         self.fix_styles()
         if self._init_image is not None:
-            print('loading init image:')
+            logger.info('loading init image:')
             self.load_image(self._init_image)
         self._window.show()
 
@@ -176,7 +178,7 @@ class BaseInpaintController:
             xml_file = theme[len('qt_material_'):]
             qt_material.apply_stylesheet(self._app, theme=xml_file)
         elif theme != 'None':
-            print(f'Failed to load theme {theme}')
+            logger.error(f'Failed to load theme {theme}')
         font = self._app.font()
         font.setPointSize(self._config.get(AppConfig.FONT_POINT_SIZE))
         self._app.setFont(font)
@@ -269,7 +271,7 @@ class BaseInpaintController:
                     if divider_match:
                         prompt = divider_match.group(1)
                         negative = divider_match.group(2)
-                    print('Detected saved image gen data, applying to UI')
+                    logger.info('Detected saved image gen data, applying to UI')
                     try:
                         self._config.set(AppConfig.PROMPT, prompt)
                         self._config.set(AppConfig.NEGATIVE_PROMPT, negative)
@@ -278,10 +280,10 @@ class BaseInpaintController:
                         self._config.set(AppConfig.GUIDANCE_SCALE, cfg_scale)
                         self._config.set(AppConfig.SEED, seed)
                     except (TypeError, RuntimeError) as err:
-                        print(f'Failed to load image gen data from metadata: {err}')
+                        logger.error(f'Failed to load image gen data from metadata: {err}')
                 else:
-                    print('Warning: image parameters do not match expected patterns, cannot be used. '
-                          f'parameters:{param_str}')
+                    logger.warning('image parameters do not match expected patterns, cannot be used. '
+                                f'parameters:{param_str}')
             image = QImage(file_path)
             self._layer_stack.set_image(image)
             self._config.set(AppConfig.LAST_FILE_PATH, file_path)
