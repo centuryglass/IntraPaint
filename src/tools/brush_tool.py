@@ -2,12 +2,12 @@
 from typing import Optional
 
 from PyQt5.QtCore import Qt, QSize
-from PyQt5.QtGui import QCursor, QPixmap, QKeyEvent, QWheelEvent, QColor, QIcon
+from PyQt5.QtGui import QCursor, QPixmap, QColor, QIcon
 from PyQt5.QtWidgets import QVBoxLayout, QPushButton, QColorDialog, QWidget, QApplication
 
 from src.config.application_config import AppConfig
-from src.image.layer_stack import LayerStack
 from src.image.canvas.mypaint_layer_canvas import MyPaintLayerCanvas
+from src.image.layer_stack import LayerStack
 from src.tools.canvas_tool import CanvasTool
 from src.ui.image_viewer import ImageViewer
 from src.ui.panel.brush_panel import BrushPanel
@@ -41,7 +41,6 @@ class BrushTool(CanvasTool):
         self._drawing = False
         self._cached_size = None
         self._icon = QIcon(RESOURCES_BRUSH_ICON)
-
 
         # Load brush and size from config
         self.brush_path = config.get(AppConfig.MYPAINT_BRUSH)

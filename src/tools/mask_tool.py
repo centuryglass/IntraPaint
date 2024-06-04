@@ -1,16 +1,17 @@
 """Marks areas within the image generation selection for inpainting."""
 from typing import Optional
-from PyQt5.QtCore import Qt, QPoint, QRect
-from PyQt5.QtGui import QKeyEvent, QMouseEvent, QWheelEvent, QIcon, QPixmap, QPainter
+
+from PyQt5.QtCore import Qt, QPoint
+from PyQt5.QtGui import QMouseEvent, QIcon, QPixmap, QPainter
 from PyQt5.QtWidgets import QVBoxLayout, QHBoxLayout, QWidget, QPushButton, QApplication
-from src.image.layer_stack import LayerStack
-from src.image.canvas.mypaint.mp_brush import MPBrush
+
 from src.config.application_config import AppConfig
-from src.tools.canvas_tool import CanvasTool
 from src.image.canvas.pixmap_layer_canvas import PixmapLayerCanvas
+from src.image.layer_stack import LayerStack
+from src.tools.canvas_tool import CanvasTool
 from src.ui.image_viewer import ImageViewer
-from src.ui.widget.param_slider import ParamSlider
 from src.ui.widget.dual_toggle import DualToggle
+from src.ui.widget.param_slider import ParamSlider
 
 MASK_LABEL = 'Mask Selection'
 MASK_TOOLTIP = 'Mark areas for inpainting or editing'
@@ -43,7 +44,7 @@ class MaskTool(CanvasTool):
         self._icon = QIcon(RESOURCES_MASK_ICON)
         self.set_scaling_icon_cursor(QIcon(RESOURCES_MASK_CURSOR))
 
-        # Setub brush, load size from config
+        # Setup brush, load size from config
         self.brush_color = Qt.red
         self.brush_size = config.get(AppConfig.MASK_BRUSH_SIZE)
         self.layer = layer_stack.mask_layer

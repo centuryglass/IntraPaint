@@ -1,11 +1,10 @@
 """
 Draws content to an image layer.
 """
-import math
-from typing import Optional, List, Set
+from typing import Optional
 
-from PyQt5.QtCore import QRect, Qt, QSize
-from PyQt5.QtGui import QColor, QImage, QPainter
+from PyQt5.QtCore import QRect, QPoint
+from PyQt5.QtGui import QColor
 from PyQt5.QtWidgets import QGraphicsScene
 
 from src.image.image_layer import ImageLayer
@@ -40,12 +39,15 @@ class LayerCanvas:
                 self.end_stroke()
             self._layer.visibility_changed.disconnect(self._load_layer_content)
             self._layer.content_changed.disconnect(self._load_layer_content)
+            self._layer.position_changed.disconnect(self._update_canvas_position)
         self._layer = new_layer
         if new_layer is not None:
             self._layer.visibility_changed.connect(self._load_layer_content)
             self._layer.content_changed.connect(self._load_layer_content)
+            self._layer.position_changed.connect(self._update_canvas_position)
             if self._edit_region is None:
                 self.edit_region = QRect(0, 0, new_layer.width, new_layer.height)
+            self._update_canvas_position(new_layer.position)
         self._load_layer_content()
 
     @property
@@ -146,12 +148,16 @@ class LayerCanvas:
         if self._z_value != z_value:
             self._z_value = z_value
 
+    def _update_canvas_position(self, new_position: QPoint) -> None:
+        """Updates the canvas position within the graphics scene."""
+        raise NotImplementedError('Implement _update_canvas_position to adjust canvas placement in the scene.')
+
     def _update_scene_content_bounds(self, new_bounds: QRect) -> None:
         """Resize and reposition the internal graphics representation."""
         raise NotImplementedError('Implement _update_scene_content_size to adjust the canvas size.')
 
     def _draw(self, x: float, y: float, pressure: Optional[float], x_tilt: Optional[float],
-                  y_tilt: Optional[float]) -> None:
+              y_tilt: Optional[float]) -> None:
         """Use active settings to draw to the canvas with the given inputs."""
         raise NotImplementedError('implement _draw to update the canvas image.')
 

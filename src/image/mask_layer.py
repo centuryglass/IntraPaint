@@ -87,14 +87,14 @@ class MaskLayer(ImageLayer):
     def _update_bounds(self, np_image: Optional[np.ndarray] = None) -> None:
         """Update saved mask bounds within the selection."""
         if np_image is None:
-            image = self.q_image
+            image = self.qimage
             image_ptr = image.bits()
             image_ptr.setsize(image.byteCount())
             np_image = np.ndarray(shape=(image.height(), image.width(), 4), dtype=np.uint8, buffer=image_ptr)
         selection = self._selection
         # Get a numpy array for just the selected region:
         selection_image = np_image[selection.y():selection.y() + selection.height(),
-                          selection.x():selection.x() + selection.width(), :]
+                                   selection.x():selection.x() + selection.width(), :]
         # Find and save the bounds of the masked area within the selection:
         if np.all(selection_image[:, :, 3] == 0):
             self._bounding_box = None
@@ -121,7 +121,6 @@ class MaskLayer(ImageLayer):
         with super().borrow_image() as image:
             yield image
             # Got image back from borrower, do mask post-processing:
-            selection = self._selection
             image_ptr = image.bits()
             image_ptr.setsize(image.byteCount())
             np_image = np.ndarray(shape=(image.height(), image.width(), 4), dtype=np.uint8, buffer=image_ptr)

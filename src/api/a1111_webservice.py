@@ -19,6 +19,7 @@ from src.ui.modal.login_modal import LoginModal
 
 logger = logging.getLogger(__name__)
 
+
 class A1111Webservice(WebService):
     """
     A1111Webservice provides access to the a1111/stable-diffusion-webui through the REST API.

@@ -41,6 +41,10 @@ class PixmapLayerCanvas(LayerCanvas):
         if self._pixmap_item is not None:
             self._pixmap_item.setOpacity(INACTIVE_PIXMAP_OPACITY)
 
+    def _update_canvas_position(self, new_position: QPoint) -> None:
+        """Updates the canvas position within the graphics scene."""
+        self._pixmap_item.setPos(new_position)
+
     def _set_z_value(self, z_value: int) -> None:
         """Updates the level where content will be shown in a GraphicsScene."""
         super()._set_z_value(z_value)

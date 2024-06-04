@@ -11,7 +11,7 @@ from PIL import Image, ImageOps
 from torchvision import transforms
 from torchvision.transforms import functional as TF
 from torch.nn import functional as F
-from encoders.modules import MakeCutouts
+from src.glid_3_xl.encoders.modules import MakeCutouts
 
 
 def create_sample_function(
@@ -150,7 +150,7 @@ def create_sample_function(
         eps = torch.cat([half_eps, half_eps], dim=0)
         return torch.cat([eps, rest], dim=1)
 
-    def cond_fn(x, unused_t, context=None, clip_embed=None, image_embed=None):
+    def cond_fn(x, _, context=None, clip_embed=None, image_embed=None):
         with torch.enable_grad():
             cur_t = diffusion.num_timesteps - 1
             x = x[:batch_size].detach().requires_grad_()

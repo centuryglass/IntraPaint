@@ -1,8 +1,9 @@
 """Fills in all bounds except an inner rectangular region with a solid color."""
-from typing import Optional, List
+from typing import Optional
+
+from PyQt5.QtCore import Qt, QRectF
+from PyQt5.QtGui import QPainter, QPainterPath, QColor
 from PyQt5.QtWidgets import QWidget, QGraphicsItem, QGraphicsView, QGraphicsScene, QStyleOptionGraphicsItem
-from PyQt5.QtGui import QPainter, QPen, QPainterPath, QColor, QShowEvent, QHideEvent
-from PyQt5.QtCore import Qt, pyqtProperty, QPropertyAnimation, QRectF, QObject
 
 
 class Border(QGraphicsItem):
@@ -36,7 +37,6 @@ class Border(QGraphicsItem):
         bottom = QRectF(self._rect.x(), window_bottom, self._rect.width(), height - window_bottom)
         for border_rect in (left, right, top, bottom):
             painter.fillRect(border_rect, self._color)
-
 
     @property
     def color(self) -> QColor:

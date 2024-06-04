@@ -1,9 +1,9 @@
 """Popup modal window used for entering login information."""
-from typing import Callable, Optional
 import json
+from typing import Callable, Optional
+
 import requests
 from PyQt5.QtWidgets import QDialog, QHBoxLayout, QFormLayout, QLabel, QLineEdit, QPushButton
-from PyQt5.QtCore import Qt
 
 LOGIN_TITLE = 'Enter image generation server credentials:'
 USERNAME_LABEL = 'Username:'
@@ -13,6 +13,7 @@ CANCEL_BUTTON_TEXT = 'Cancel'
 
 ERROR_MISSING_INFO = 'Username and password cannot be empty.'
 ERROR_UNKNOWN = 'Unknown error, try again.'
+
 
 class LoginModal(QDialog):
     """Popup modal window used for entering login information."""

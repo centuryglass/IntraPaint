@@ -1,5 +1,12 @@
 # Future development tasks
 
+# Bugs
+- Keep size on brush change isn't working
+- "Time is running backwards" errors
+- rare: brush input stuck going to selection 
+- 1px draw mode not reverting until next stroke finishes
+- Weird issue with canvas/layer image corruption (copy to layer/navigation conflict?)
+
 # Input
 - Configurable hotkeys
 
@@ -8,8 +15,7 @@
 - Move pan/zoom to toolbar
 
 # Layers
-- Support variable layer sizes
-- Support layer offsets
+- Combine layer movement in undo stack.
 - automatic layer resizing when copying into areas outside of bounds
 - variable layer opacity support
 
@@ -43,7 +49,6 @@
 - layer locking
 
 # Layout
-- Add --window_size arg for testing reactive layouts
 - Fix brushPanel layout woes
 - Panel cleanup with FormLayout
 - Add click+drag resizing to CollapsibleBox

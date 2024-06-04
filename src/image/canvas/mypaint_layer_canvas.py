@@ -4,8 +4,8 @@ Draws content to an image layer.
 import math
 from typing import Optional, Set
 
-from PyQt5.QtCore import QRect, QSize, Qt
-from PyQt5.QtGui import QColor, QImage, QPainter
+from PyQt5.QtCore import QRect, QPoint
+from PyQt5.QtGui import QColor, QPainter
 from PyQt5.QtWidgets import QGraphicsScene
 
 from src.image.canvas.layer_canvas import LayerCanvas
@@ -54,6 +54,7 @@ class MyPaintLayerCanvas(LayerCanvas):
         super().start_stroke()
         self._last_stroke_tiles.clear()
         self._mp_surface.start_stroke()
+
     @property
     def _bounds_x(self):
         """Returns last stroke bounding box x-coordinate."""
@@ -74,6 +75,10 @@ class MyPaintLayerCanvas(LayerCanvas):
         """Returns last stroke bounding box height."""
         return self._last_stroke_bounds.height()
 
+    def _update_canvas_position(self, new_position: QPoint) -> None:
+        """Updates the canvas position within the graphics scene."""
+        self._mp_surface.scene_position = new_position
+
     def _handle_tile_updates(self, tile: MPTile) -> None:
         """Make sure added/updated MyPaint tiles are in the correct scene with the right z-value, and track bounds."""
         if self._scene is None:
@@ -85,7 +90,9 @@ class MyPaintLayerCanvas(LayerCanvas):
         # If currently drawing, use tiles to track the stroke bounds:
         if self._drawing:
             self._last_stroke_tiles.add(tile)
-            tile_bounds = QRect(int(tile.x()), int(tile.y()), tile.size.width(), tile.size.height())
+            tile_bounds = QRect(int(tile.x() - self._mp_surface.scene_position.x()),
+                                int(tile.y() - self._mp_surface.scene_position.y()),
+                                tile.size.width(), tile.size.height())
             if self._last_stroke_bounds.isEmpty():
                 self._last_stroke_bounds = tile_bounds
             else:
@@ -124,7 +131,7 @@ class MyPaintLayerCanvas(LayerCanvas):
             self._mp_surface.reset_surface(new_bounds.size())
 
     def _draw(self, x: float, y: float, pressure: Optional[float], x_tilt: Optional[float],
-                  y_tilt: Optional[float]) -> None:
+              y_tilt: Optional[float]) -> None:
         """Use active settings to draw to the canvas with the given inputs."""
         if pressure is not None or x_tilt is not None or y_tilt is not None:
             self._mp_surface.stroke_to(x, y, pressure, x_tilt, y_tilt)
@@ -151,8 +158,9 @@ class MyPaintLayerCanvas(LayerCanvas):
             for tile in self._last_stroke_tiles:
                 if not tile.is_valid:
                     continue
-                tile.copy_tile_into_image(tile_change_image, destination=QRect(int(tile.x() - change_x),
-                                                                               int(tile.y() - change_y),
+                destination_x = int(tile.x() - self._mp_surface.scene_position.x() - change_x)
+                destination_y = int(tile.y() - self._mp_surface.scene_position.y() - change_y)
+                tile.copy_tile_into_image(tile_change_image, destination=QRect(destination_x, destination_y,
                                                                                tile.size.width(), tile.size.height()))
             reverse_image = self._layer.cropped_image_content(self._last_stroke_bounds)
             layer = self._layer

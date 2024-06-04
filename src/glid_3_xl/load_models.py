@@ -6,7 +6,7 @@ import torch
 from torchvision import transforms
 import clip
 from src.glid_3_xl.guided_diffusion.script_util import create_model_and_diffusion, model_and_diffusion_defaults
-from encoders.modules import BERTEmbedder
+from src.glid_3_xl.encoders.modules import BERTEmbedder
 
 
 # noinspection SpellCheckingInspection

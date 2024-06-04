@@ -10,6 +10,7 @@ from src.image.layer_stack import LayerStack
 from src.tools.base_tool import BaseTool
 from src.tools.brush_tool import BrushTool
 from src.tools.eyedropper_tool import EyedropperTool
+from src.tools.layer_transform_tool import LayerTransformTool
 from src.tools.mask_tool import MaskTool
 from src.tools.selection_tool import SelectionTool
 from src.tools.tool_event_handler import ToolEventHandler
@@ -25,6 +26,7 @@ GENERATE_BUTTON_TEXT = 'Generate'
 
 LAYER_PANEL_MIN_WIDTH = 1000
 LAYER_PANEL_MIN_HEIGHT = 1000
+
 
 class ToolPanel(BorderedWidget):
     """Selects between image editing tools, and controls their settings."""
@@ -146,8 +148,8 @@ class ToolPanel(BorderedWidget):
         self._tool_scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self._tool_scroll_area.setSizePolicy(QSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.Expanding))
 
-
         # Create individual tools:
+
         def add_tool(new_tool: BaseTool):
             """Set up a ToolButton for a new tool, and index the tool by label."""
             self._tools[new_tool.label] = new_tool
@@ -166,6 +168,8 @@ class ToolPanel(BorderedWidget):
         add_tool(selection_tool)
         mask_tool = MaskTool(layer_stack, image_viewer, config)
         add_tool(mask_tool)
+        transform_tool = LayerTransformTool(layer_stack, image_viewer, config)
+        add_tool(transform_tool)
         for tool in brush_tool, mask_tool:
             self._event_handler.register_tool_delegate(tool, selection_tool, Qt.KeyboardModifier.AltModifier)
         self._event_handler.register_tool_delegate(brush_tool, eyedropper_tool, Qt.KeyboardModifier.ControlModifier)
@@ -187,7 +191,7 @@ class ToolPanel(BorderedWidget):
         if self._panel_box is not None:
             self._layout.removeWidget(self._panel_box)
         box_orientation = Qt.Orientation.Vertical if orientation == Qt.Orientation.Horizontal \
-                          else Qt.Orientation.Horizontal
+            else Qt.Orientation.Horizontal
         self._panel_box = CollapsibleBox(TOOL_PANEL_TITLE,
                                          parent=self,
                                          scrolling=False,
@@ -236,6 +240,7 @@ class ToolPanel(BorderedWidget):
         """Reconfigures the panel for a new active tool."""
         if self._active_tool_panel is not None:
             self._tool_control_layout.removeWidget(self._active_tool_panel)
+            self._active_tool_panel.hide()
             self._active_tool_panel.setParent(None)
             self._active_tool_panel = None
         active_tool = None if tool_label not in self._tools else self._tools[tool_label]
@@ -249,6 +254,7 @@ class ToolPanel(BorderedWidget):
             if tool_panel is not None:
                 self._active_tool_panel = tool_panel
                 self._tool_control_layout.addWidget(tool_panel)
+                tool_panel.show()
         else:
             self._update_cursor()
 
@@ -265,7 +271,8 @@ class ToolPanel(BorderedWidget):
         self._tool_scroll_area.setMaximumWidth(self.width())
         self._tool_control_box.setMaximumWidth(self.width() - self._tool_scroll_area.contentsMargins().left() * 2)
         show_layer_panel = ((self._orientation == Qt.Orientation.Horizontal and self.width() >= LAYER_PANEL_MIN_WIDTH)
-                or (self._orientation == Qt.Orientation.Vertical and self.height() >= LAYER_PANEL_MIN_HEIGHT))
+                            or (self._orientation == Qt.Orientation.Vertical
+                                and self.height() >= LAYER_PANEL_MIN_HEIGHT))
         if show_layer_panel:
             if self._layer_panel is None:
                 self._layer_panel = LayerPanel(self._layer_stack)

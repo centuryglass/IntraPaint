@@ -11,6 +11,7 @@ from src.image.canvas.mypaint.libmypaint import libmypaint, load_libmypaint, DEF
 
 logger = logging.getLogger(__name__)
 
+
 class MPBrush:
     """Python wrapper for libmypaint brush data."""
 
@@ -45,6 +46,7 @@ class MPBrush:
 
     def load_file(self, file_path: str, preserve_size: bool = False) -> None:
         """Load a brush from a .myb file, optionally preserving brush size."""
+        logger.info(f'loading brush file {file_path}')
         file = QFile(file_path)
         if not file.open(QIODevice.ReadOnly | QIODevice.Text):
             raise IOError(f'Failed to open {file_path}')
@@ -63,6 +65,7 @@ class MPBrush:
             logger.error('Failed to read selected MyPaint brush')
         self.color = self._color
         if size >= 0:
+            logger.info(f'restore saved logarithmic radius {size} after brush load.')
             self.set_value(MPBrush.RADIUS_LOGARITHMIC, size)
 
     @property
@@ -109,6 +112,7 @@ class BrushSetting:
         self.min_value = setting[0].min
         self.max_value = setting[0].max
         self.default_value = getattr(setting[0], 'def')
+
 
 def _get_max_setting_index() -> int:
     """Gets the number of libMyPaint brush settings values to dynamically register with the class.

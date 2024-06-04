@@ -6,7 +6,7 @@ from PyQt5.QtCore import Qt, QObject, QSize, QPoint, QRect, pyqtSignal
 from PIL import Image
 from src.image.image_layer import ImageLayer
 from src.image.mask_layer import MaskLayer
-from src.util.image_utils import qimage_to_pil_image
+from src.util.image_utils import qimage_to_pil_image, pil_image_to_qimage
 from src.util.validation import assert_type, assert_types, assert_valid_index
 from src.util.cached_data import CachedData
 from src.config.application_config import AppConfig
@@ -102,7 +102,7 @@ class LayerStack(QObject):
 
     @size.setter
     def size(self, new_size) -> None:
-        """Scales all layer image content to a new resolution size."""
+        """Updates the full image size, scaling the mask layer."""
         assert_type(new_size, QSize)
         if new_size == self._size:
             return
@@ -113,8 +113,7 @@ class LayerStack(QObject):
         if not QRect(QPoint(0, 0), new_size).contains(self._selection):
             self.selection = self._selection
         self.size_changed.emit(self.size)
-        for layer in [self._mask_layer, *self._layers]:
-            layer.size = self.size
+        self._mask_layer.size = self.size
         self.visible_content_changed.emit()
 
     @property
@@ -274,7 +273,7 @@ class LayerStack(QObject):
         """Copies a layer, inserting the copy below the original."""
         assert_valid_index(index, self._layers)
         layer = self._layers[index]
-        self.create_layer(layer.name + ' copy', layer.q_image.copy(), layer.saved, index + 1)
+        self.create_layer(layer.name + ' copy', layer.qimage.copy(), layer.saved, index + 1)
         self._layers[index + 1].visible = layer.visible
 
     def remove_layer(self, index: int) -> None:
@@ -377,24 +376,33 @@ class LayerStack(QObject):
         base_layer = self._layers[index + 1]
         active_index = self.active_layer
 
-        last_layer_image = base_layer.q_image.copy()
-        merged_image = last_layer_image.copy()
+        base_pos = base_layer.position
+        base_size = base_layer.size
+        last_layer_image = base_layer.qimage.copy()
+        merged_bounds = QRect(base_layer.position, base_layer.size).united(QRect(top_layer.position, top_layer.size))
+        merged_image = QImage(merged_bounds.size(), QImage.Format.Format_ARGB32_Premultiplied)
+        merged_image.fill(Qt.transparent)
         painter = QPainter(merged_image)
-        painter.drawImage(QRect(0, 0, merged_image.width(), merged_image.height()), top_layer.q_image)
+        painter.drawImage(QRect(base_pos - merged_bounds.topLeft(), base_size), last_layer_image)
+        painter.drawImage(QRect(top_layer.position - merged_bounds.topLeft(), top_layer.size), top_layer.qimage)
 
         def do_merge() -> None:
+            """Combine the two layers, adjust active index as needed."""
             self._layers.pop(index)
             self.layer_removed.emit(top_layer)
             if active_index > index:
                 self.active_layer = active_index - 1
             else:
                 self.active_layer = active_index
-            base_layer.q_image = merged_image
-            if top_layer.visible and not base_layer.visible:
+            base_layer.qimage = merged_image
+            base_layer.set_position(merged_bounds.topLeft(), False)
+            if top_layer.visible != base_layer.visible:
                 self.visible_content_changed.emit()
 
         def undo_merge() -> None:
-            base_layer.q_image = last_layer_image
+            """Revert the base layer to its previous state and re-insert the top layer."""
+            base_layer.qimage = last_layer_image
+            base_layer.set_position(base_pos, False)
             self._layers.insert(index, top_layer)
             self.layer_added.emit(top_layer, index)
             if self.active_layer >= index:
@@ -406,14 +414,15 @@ class LayerStack(QObject):
         commit_action(do_merge, undo_merge)
 
     def copy_masked(self, index: int, use_buffer=True) -> QImage:
-        """Returns the image content within a layer that's covered by the mask, optionally saving it it in the copy
+        """Returns the image content within a layer that's covered by the mask, optionally saving it in the copy
            buffer."""
         assert_valid_index(index, self._layers)
-        inpaint_mask = self.mask_layer.q_image
-        image = self._layers[index].q_image.copy()
+        inpaint_mask = self.mask_layer.qimage
+        layer = self._layers[index]
+        image = layer.qimage.copy()
         painter = QPainter(image)
         painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_DestinationIn)
-        painter.drawImage(QRect(0, 0, image.width(), image.height()), inpaint_mask)
+        painter.drawImage(QRect(-layer.position.x(), -layer.position.y(), image.width(), image.height()), inpaint_mask)
         painter.end()
         if use_buffer:
             self._copy_buffer = image
@@ -424,17 +433,21 @@ class LayerStack(QObject):
            buffer."""
         assert_valid_index(index, self._layers)
         layer = self._layers[index]
-        source_content = layer.q_image.copy()
-        inpaint_mask = self.mask_layer.q_image.copy()
-        self._copy_buffer = self.copy_masked(index)
+        source_content = layer.qimage.copy()
+        inpaint_mask = self.mask_layer.qimage.copy()
+        if use_buffer:
+            self._copy_buffer = self.copy_masked(index)
 
         def make_cut() -> None:
+            """Paint the mask on the image with the DestinationOut mode to replace masked with transparency…"""
             with layer.borrow_image() as layer_image:
                 painter = QPainter(layer_image)
                 painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_DestinationOut)
-                painter.drawImage(QRect(0, 0, layer_image.width(), layer_image.height()), inpaint_mask)
+                painter.drawImage(QRect(-layer.position.x(), -layer.position.y(), layer_image.width(),
+                                        layer_image.height()), inpaint_mask)
 
         def undo_cut() -> None:
+            """Restore the original image content."""
             with layer.borrow_image() as layer_image:
                 painter = QPainter(layer_image)
                 painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_Source)
@@ -443,8 +456,9 @@ class LayerStack(QObject):
 
     def paste(self) -> None:
         """If the copy buffer contains image data, paste it into a new layer."""
-
-
+        if self._copy_buffer is not None:
+            insert_index = 0 if self.active_layer is None else self.active_layer
+            self.create_layer("Paste layer", self._copy_buffer, index=insert_index)
 
     @property
     def count(self) -> int:
@@ -456,7 +470,7 @@ class LayerStack(QObject):
         assert_valid_index(index, self._layers)
         return self._layers[index]
 
-    def q_image(self, saved_only: bool = True) -> QImage:
+    def qimage(self, saved_only: bool = True) -> QImage:
         """Returns combined visible layer content as a QImage object, optionally including unsaved layers."""
         cache = self._image_cache_saved if saved_only else self._image_cache_full
         if cache.valid:
@@ -467,9 +481,9 @@ class LayerStack(QObject):
         for layer in [*reversed(self._layers), self._mask_layer]:
             if not layer.visible or (saved_only and not layer.saved):
                 continue
-            layer_image = layer.q_image
+            layer_image = layer.qimage
             if layer_image is not None:
-                painter.drawImage(0, 0, layer_image)
+                painter.drawImage(layer.position, layer_image)
         painter.end()
         cache.data = image
         return image
@@ -479,14 +493,14 @@ class LayerStack(QObject):
         cache = self._pixmap_cache_saved if saved_only else self._pixmap_cache_full
         if cache.valid:
             return cache.data
-        image = self.q_image(saved_only)
+        image = self.qimage(saved_only)
         pixmap = QPixmap.fromImage(image)
         cache.data = pixmap
         return pixmap
 
     def pil_image(self, saved_only: bool = True) -> Image.Image:
         """Returns combined visible layer content as a PIL Image object, optionally including unsaved layers."""
-        return qimage_to_pil_image(self.q_image(saved_only))
+        return qimage_to_pil_image(self.qimage(saved_only))
 
     def get_max_selection_size(self) -> QSize:
         """
@@ -501,7 +515,7 @@ class LayerStack(QObject):
         return QRect(self._selection.topLeft(), self._selection.size())
 
     @selection.setter
-    def selection(self, bounds_rect: QRect):
+    def selection(self, bounds_rect: QRect) -> None:
         """
         Updates the bounds of the selected area within the image. If `bounds_rect` exceeds the maximum selection size
         or doesn't fit fully within the image bounds, the closest valid region will be selected.
@@ -551,16 +565,17 @@ class LayerStack(QObject):
                     last_bounds = prev_action.action_data['prev_bounds']
                     prev_action.redo = lambda: update_fn(last_bounds, bounds_rect)
                     prev_action.undo = lambda: update_fn(bounds_rect, last_bounds)
-                    return prev_action.redo()
+                    prev_action.redo()
+                    return
 
             commit_action(lambda: update_fn(last_bounds, bounds_rect),
                           lambda: update_fn(bounds_rect, last_bounds),
-                          action_type, { 'prev_bounds': last_bounds })
+                          action_type, {'prev_bounds': last_bounds})
 
     def cropped_qimage_content(self, bounds_rect: QRect) -> QImage:
         """Returns the contents of a bounding QRect as a QImage."""
         assert_type(bounds_rect, QRect)
-        image = self.q_image(saved_only=True)
+        image = self.qimage(saved_only=True)
         return image.copy(bounds_rect)
 
     def cropped_pixmap_content(self, bounds_rect: QRect) -> QPixmap:
@@ -624,16 +639,16 @@ class LayerStack(QObject):
             self._layers[layer_index].pixmap = image_data
         elif isinstance(image_data, QImage):
             self.size = image_data.size()
-            self._layers[layer_index].q_image = image_data
+            self._layers[layer_index].qimage = image_data
         else:  # PIL Image
             self.size = QSize(image_data.width, image_data.height)
-            self._layers[layer_index].pil_image = image_data
+            self._layers[layer_index].qimage = pil_image_to_qimage(image_data)
 
     def get_color_at_point(self, image_point: QPoint) -> QColor:
         """Gets the combined color of visible saved layers at a single point, or QColor(0, 0, 0) if out of bounds."""
         if not (0 <= image_point.x() < self.size.width()) or not (0 <= image_point.y() < self.size.height()):
             return QColor(0, 0, 0)
-        return self.q_image(True).pixelColor(image_point)
+        return self.qimage(True).pixelColor(image_point)
 
     def _set_size(self, new_size: QSize) -> None:
         """Update the size without replacing the size object."""

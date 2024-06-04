@@ -10,7 +10,6 @@ _redo_stack = []
 _access_lock = Lock()
 
 
-
 class _UndoAction:
     def __init__(self, undo_action: Callable[[], None],
                  redo_action: Callable[[], None],
@@ -23,8 +22,8 @@ class _UndoAction:
 
 
 def commit_action(action: Callable[[], None], undo_action: Callable[[], None],
-                 action_type: Optional[str] = None,
-                 action_data: Optional[Dict[str, Any]] = None) -> None:
+                  action_type: Optional[str] = None,
+                  action_data: Optional[Dict[str, Any]] = None) -> None:
     """Performs an action, then commits it to the undo stack.
 
     The undo stack is lock-protected.  Make sure that the function parameters provided don't also call commit_action.
@@ -70,9 +69,9 @@ def undo() -> None:
     with _access_lock:
         if len(_undo_stack) == 0:
             return
-        last_action = _undo_stack.pop()
-        last_action.undo()
-        _redo_stack.append(last_action)
+        last_action_object = _undo_stack.pop()
+        last_action_object.undo()
+        _redo_stack.append(last_action_object)
 
 
 def redo() -> None:
@@ -81,8 +80,8 @@ def redo() -> None:
     with _access_lock:
         if len(_redo_stack) == 0:
             return
-        last_action = _redo_stack.pop()
-        last_action.redo()
-        _undo_stack.append(last_action)
+        last_action_object = _redo_stack.pop()
+        last_action_object.redo()
+        _undo_stack.append(last_action_object)
         if len(_undo_stack) > MAX_UNDO:
             _undo_stack = _undo_stack[:-MAX_UNDO]

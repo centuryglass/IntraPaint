@@ -4,14 +4,14 @@ Builds an argument parser for an image generation script.
 import argparse
 
 
-def build_arg_parser(default_model='glid_3_xl/models/inpaint.pt', include_edit_params=True, include_gen_params=True):
+def build_arg_parser(default_model='models/inpaint.pt', include_edit_params=True, include_gen_params=True):
     """Create a command-line argument parser that includes options shared between several scripts"""
     parser = argparse.ArgumentParser()
     parser.add_argument('--model_path', type=str, default=default_model,
                         help='path to the diffusion model')
-    parser.add_argument('--kl_path', type=str, default='glid_3_xl/models/kl-f8.pt',
+    parser.add_argument('--kl_path', type=str, default='models/kl-f8.pt',
                         help='path to the LDM first stage model')
-    parser.add_argument('--bert_path', type=str, default='glid_3_xl/models/bert.pt',
+    parser.add_argument('--bert_path', type=str, default='models/bert.pt',
                         help='path to the LDM first stage model')
     parser.add_argument('--text', type=str, required=False, default='',
                         help='your text prompt')

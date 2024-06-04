@@ -11,7 +11,6 @@ from src.ui.util.get_scaled_placement import get_scaled_placement
 from src.ui.widget.bordered_widget import BorderedWidget
 from src.ui.util.tile_pattern_fill import get_transparency_tile_pixmap
 
-
 LIST_SPACING = 4
 DEFAULT_LIST_ITEM_SIZE = QSize(350, 60)
 DEFAULT_LIST_SIZE = QSize(380, 400)
@@ -54,7 +53,7 @@ class LayerItem(BorderedWidget):
         self._active = False
         self._active_color = self.color
         self._inactive_color = self._active_color.darker() if self._active_color.lightness() > 100 \
-                else self._active_color.lighter()
+            else self._active_color.lighter()
         self.setSizePolicy(QSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.Fixed))
         if LayerItem._layer_transparency_background is None:
             LayerItem._layer_transparency_background = get_transparency_tile_pixmap(QSize(64, 64))
@@ -152,22 +151,29 @@ class LayerItem(BorderedWidget):
             clear_option = menu.addAction('Clear masked')
             clear_option.triggered.connect(lambda: self._layer_stack.cut_masked(index))
             copy_masked_option = menu.addAction('Copy masked to new layer')
+
+
             def do_copy() -> None:
+                """Make the copy, then add it as a new layer."""
                 masked = self._layer_stack.copy_masked(index)
                 self._layer_stack.create_layer(self._layer.name + ' content', masked, index=index)
+
             copy_masked_option.triggered.connect(do_copy)
         else:
             clear_mask_option = menu.addAction('Clear mask')
             clear_mask_option.triggered.connect(lambda: self._layer_stack.mask_layer.clear())
             if self._layer_stack.active_layer is not None:
                 mask_active_option = menu.addAction('Mask all in active layer')
+
                 def mask_active() -> None:
-                    layer_image = self._layer_stack.get_layer(self._layer_stack.active_layer).q_image.copy()
+                    """Draw the layer into the mask, then let MaskLayer automatically convert it to red/transparent."""
+                    layer_image = self._layer_stack.get_layer(self._layer_stack.active_layer).qimage.copy()
                     with self._layer_stack.mask_layer.borrow_image() as mask_image:
                         painter = QPainter(mask_image)
                         painter.setCompositionMode(QPainter.CompositionMode_Source)
                         painter.drawImage(QRect(0, 0, mask_image.width(), mask_image.height()), layer_image)
                         painter.end()
+
                 mask_active_option.triggered.connect(mask_active)
         menu.exec_(self.mapToGlobal(pos))
 
@@ -232,6 +238,7 @@ class LayerPanel(QWidget):
                 layer_widget.setParent(None)
                 self._layer_widgets.remove(layer_widget)
                 self.update()
+
         self._layer_stack.layer_removed.connect(delete_layer_widget)
 
         def activate_layer(layer_idx: int) -> None:
@@ -241,6 +248,7 @@ class LayerPanel(QWidget):
             for widget in self._layer_widgets:
                 idx = self._layer_stack.get_layer_index(widget.layer)
                 widget.active = idx == layer_idx
+
         self._layer_stack.active_layer_changed.connect(activate_layer)
         activate_layer(self._layer_stack.active_layer)
 
@@ -256,23 +264,27 @@ class LayerPanel(QWidget):
             button.setToolTip(tooltip)
             button.clicked.connect(action)
             self._button_bar_layout.addWidget(button)
+            return button
 
         def add_layer() -> None:
             """Add a new layer below the active one."""
             new_index = 1 if self._layer_stack.active_layer is None else self._layer_stack.active_layer + 1
             self._layer_stack.create_layer(index=new_index)
+
         self._add_button = create_button(ADD_BUTTON_LABEL, ADD_BUTTON_TOOLTIP, add_layer)
 
         def delete_layer() -> None:
             """Delete the active layer."""
             if self._layer_stack.active_layer is not None:
                 self._layer_stack.remove_layer(self._layer_stack.active_layer)
+
         self._delete_button = create_button(DELETE_BUTTON_LABEL, DELETE_BUTTON_TOOLTIP, delete_layer)
 
         def move_layer(offset: int) -> None:
             """Moves the active layer within the stack by a set offset."""
             if self._layer_stack.active_layer is not None:
                 self._layer_stack.move_layer(self._layer_stack.active_layer, offset)
+
         self._move_up_button = create_button(LAYER_UP_BUTTON_LABEL, LAYER_UP_BUTTON_TOOLTIP, lambda: move_layer(-1))
         self._move_up_button = create_button(LAYER_DOWN_BUTTON_LABEL, LAYER_DOWN_BUTTON_TOOLTIP, lambda: move_layer(1))
 
@@ -280,6 +292,7 @@ class LayerPanel(QWidget):
             """Merges the active layer with the one below it."""
             if self._layer_stack.active_layer is not None:
                 self._layer_stack.merge_layer_down(self._layer_stack.active_layer)
+
         self._merge_down_button = create_button(MERGE_DOWN_BUTTON_LABEL, MERGE_DOWN_BUTTON_TOOLTIP, merge_down)
 
     def _layer_widget(self, layer: ImageLayer) -> LayerItem:

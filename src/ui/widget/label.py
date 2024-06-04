@@ -99,6 +99,7 @@ class Label(QLabel):
         self._image, self._image_inverted = self._draw_text_pixmaps()
         self._merge_text_and_icon()
 
+    # noinspection PyPep8Naming
     def setIcon(self, icon: QPixmap | str) -> None:
         """Adds an icon to the label before its text.
 

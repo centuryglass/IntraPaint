@@ -22,6 +22,7 @@ from src.util.validation import assert_type
 
 logger = logging.getLogger(__name__)
 
+
 class Config:
     """A shared resource to set inpainting configuration and to provide default values.
 

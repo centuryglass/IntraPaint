@@ -1,10 +1,6 @@
 """Passes ImageViewer input events to an active editing tool."""
 from sys import version_info
-if version_info[1] >= 11:
-    from typing import Self, Optional, Dict, Callable, List, cast
-else:
-    from typing import Optional, Dict, Callable, List, cast
-    from typing_extensions import Self
+from typing import Optional, Dict, Callable, List, cast
 from PyQt5.QtCore import Qt, QObject, QEvent
 from PyQt5.QtGui import QKeyEvent
 from PyQt5.QtWidgets import QApplication, QWidget, QTextEdit, QLineEdit, QPlainTextEdit, QAbstractSpinBox, QDialog
@@ -16,7 +12,7 @@ class HotkeyFilter(QObject):
     shared_instance = None
 
     @staticmethod
-    def instance() -> Self:
+    def instance() -> 'HotkeyFilter':
         """Returns the shared application hotkey manager."""
         if HotkeyFilter.shared_instance is None:
             return HotkeyFilter()
@@ -46,7 +42,7 @@ class HotkeyFilter(QObject):
     def __init__(self):
         """Registers and handles application-level hotkeys."""
         super().__init__()
-        if HotkeyFilter.shared_instance  is not None:
+        if HotkeyFilter.shared_instance is not None:
             raise RuntimeError("HotkeyFilter shouldn't be initialized directly; use HotkeyFilter.instance()")
         HotkeyFilter.shared_instance = self
         self._bindings: Dict[Qt.Key: List[HotkeyFilter.KeyBinding]] = {}
@@ -83,6 +79,7 @@ class HotkeyFilter(QObject):
         """Check for registered keys and trigger associated actions."""
         if event.type() != QEvent.Type.KeyPress:
             return super().eventFilter(source, event)
+        event = cast(QKeyEvent, event)
         # Avoid blocking inputs to text fields:
         focused_widget = QApplication.focusWidget()
         if isinstance(focused_widget, (QLineEdit, QTextEdit, QLineEdit, QPlainTextEdit, QAbstractSpinBox, QDialog)):
@@ -90,7 +87,6 @@ class HotkeyFilter(QObject):
                 self._default_focus.setFocus()
                 return True
             return False
-        event = cast(QKeyEvent, event)
         if event.key() not in self._bindings:
             return super().eventFilter(source, event)
         event_handled = False

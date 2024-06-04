@@ -31,7 +31,7 @@ from src.ui.modal.image_scale_modal import ImageScaleModal
 from src.ui.modal.modal_utils import show_error_dialog, request_confirmation, open_image_file
 from src.ui.modal.settings_modal import SettingsModal
 from src.ui.util.screen_size import screen_size
-from src.util.image_utils import pil_image_to_qimage
+from src.util.image_utils import pil_image_to_qimage, qimage_to_pil_image
 
 from src.util.validation import assert_type
 from src.undo_stack import commit_action
@@ -283,7 +283,7 @@ class BaseInpaintController:
                         logger.error(f'Failed to load image gen data from metadata: {err}')
                 else:
                     logger.warning('image parameters do not match expected patterns, cannot be used. '
-                                f'parameters:{param_str}')
+                                   f'parameters:{param_str}')
             image = QImage(file_path)
             self._layer_stack.set_image(image)
             self._config.set(AppConfig.LAST_FILE_PATH, file_path)
@@ -338,7 +338,7 @@ class BaseInpaintController:
         if not self._layer_stack.has_image:
             show_error_dialog(self._window, RESIZE_ERROR_TITLE, RESIZE_ERROR_MESSAGE_NO_IMAGE)
             return
-        resize_modal = ResizeCanvasModal(self._layer_stack.q_image())
+        resize_modal = ResizeCanvasModal(self._layer_stack.qimage())
         new_size, offset = resize_modal.show_resize_modal()
         if new_size is None:
             return
@@ -438,7 +438,7 @@ class BaseInpaintController:
                 return pil_image.resize((width, height), upscale_mode)
             return pil_image.resize((width, height), downscale_mode)
 
-        selection = self._layer_stack.pil_image_selection_content()
+        selection = qimage_to_pil_image(self._layer_stack.qimage_selection_content())
 
         # If sketch mode was used, write the sketch onto the image selection:
         inpaint_image = selection.copy()
@@ -446,6 +446,7 @@ class BaseInpaintController:
 
         # If necessary, scale image and mask to match the image generation size.
         generation_size = self._config.get(AppConfig.GENERATION_SIZE)
+        print(f'applying generation size {generation_size}')
         if inpaint_image.width != generation_size.width() or inpaint_image.height != generation_size.height():
             inpaint_image = resize_image(inpaint_image, generation_size.width(), generation_size.height())
         if inpaint_mask.width != generation_size.width() or inpaint_mask.height != generation_size.height():
@@ -515,8 +516,12 @@ class BaseInpaintController:
             layer = self._layer_stack.get_layer(self._layer_stack.active_layer)
             bounds = self._layer_stack.selection
             prev_image = layer.cropped_image_content(bounds)
+
             def apply():
+                """Inserts the selection into the active layer."""
                 layer.insert_image_content(image, bounds, QPainter.CompositionMode.CompositionMode_SourceOver)
+
             def undo():
+                """Revert the selection to its previous state."""
                 layer.insert_image_content(prev_image, bounds)
             commit_action(apply, undo)

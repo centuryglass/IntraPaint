@@ -200,14 +200,14 @@ class CanvasTool(BaseTool):
         if self._drawing:
             self._drawing = False
             self._stroke_to(image_coordinates)
+            if self._cached_size:
+                self.brush_size = self._cached_size
+                self._cached_size = None
             self._canvas.end_stroke()
             self._tablet_input = None
             self._tablet_pressure = None
             self._tablet_x_tilt = None
             self._tablet_y_tilt = None
-            if self._cached_size:
-                self.brush_size = self._cached_size
-                self._cached_size = None
             return True
         return False
 
@@ -236,6 +236,8 @@ class CanvasTool(BaseTool):
 
     def key_event(self, event: Optional[QKeyEvent]) -> bool:
         """Move selection with arrow keys."""
+        if event.type() != QKeyEvent.Type.KeyPress:
+            return False
         translation = QPoint(0, 0)
         multiplier = 10 if QApplication.keyboardModifiers() == Qt.ShiftModifier else 1
         match event.key():
@@ -271,9 +273,9 @@ class CanvasTool(BaseTool):
             return False
         offset = 0
         if event.angleDelta().x() > 0:
-                offset -= 1
+            offset -= 1
         elif event.angleDelta().x() < 0:
-                offset += 1
+            offset += 1
         if offset != 0:
             self.adjust_brush_size(offset)
             return True

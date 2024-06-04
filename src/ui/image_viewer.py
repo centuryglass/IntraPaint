@@ -8,7 +8,7 @@ from PyQt5.QtCore import Qt, QRect, QRectF, QSize, QPoint, QPointF, QEvent, pyqt
 from PyQt5.QtGui import QPainter, QMouseEvent, QWheelEvent
 from PyQt5.QtWidgets import QWidget, QSizePolicy, QGraphicsPixmapItem, QApplication
 
-from src.image.Border import Border
+from src.image.border import Border
 from src.image.image_layer import ImageLayer
 from src.image.layer_stack import LayerStack
 from src.image.outline import Outline
@@ -42,6 +42,7 @@ class ImageViewer(FixedAspectGraphicsView):
             layer.visibility_changed.connect(self._update_visibility)
             layer.content_changed.connect(self._update_pixmap)
             layer.opacity_changed.connect(self.setOpacity)
+            layer.position_changed.connect(self._update_position)
             self.setOpacity(layer.opacity)
             self.setVisible(layer.visible)
             self._update_pixmap()
@@ -50,6 +51,7 @@ class ImageViewer(FixedAspectGraphicsView):
             self._layer.visibility_changed.disconnect(self._update_visibility)
             self._layer.content_changed.disconnect(self._update_pixmap)
             self._layer.opacity_changed.disconnect(self.setOpacity)
+            self._layer.position_changed.disconnect(self._update_position)
 
         @property
         def hidden(self) -> bool:
@@ -69,7 +71,10 @@ class ImageViewer(FixedAspectGraphicsView):
         def _update_visibility(self, visible: bool) -> None:
             self.setVisible(visible and not self.hidden)
 
-    def __init__(self, parent: Optional[QWidget], layer_stack: LayerStack, config: AppConfig):
+        def _update_position(self, new_position: QPoint) -> None:
+            self.setPos(new_position)
+
+    def __init__(self, parent: Optional[QWidget], layer_stack: LayerStack, config: AppConfig) -> None:
         super().__init__(parent)
         HotkeyFilter.instance().set_default_focus(self)
         HotkeyFilter.instance().register_keybinding(lambda: self.toggle_zoom() is None, Qt.Key_Z,
@@ -140,7 +145,7 @@ class ImageViewer(FixedAspectGraphicsView):
         layer_stack.size_changed.connect(set_size)
         set_size(self.content_size)
 
-        def update_selection(new_rect: QRect, unused_last_rect: Optional[QRect]) -> None:
+        def update_selection(new_rect: QRect, _: Optional[QRect]) -> None:
             """Update the viewer content when the selection changes."""
             self._selection = new_rect
             self._update_drawn_borders()
@@ -155,6 +160,7 @@ class ImageViewer(FixedAspectGraphicsView):
             """Adds an image layer into the view."""
             layer_item = ImageViewer.LayerItem(new_layer)
             layer_item.setZValue(-index)
+            layer_item.setPos(new_layer.position)
             self._layer_items[new_layer] = layer_item
             self.scene().addItem(layer_item)
             for outline in self._selection_outline, self._masked_selection_outline, self._border:

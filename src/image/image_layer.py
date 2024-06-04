@@ -10,9 +10,10 @@ from contextlib import contextmanager
 from PyQt5.QtGui import QImage, QPainter, QPixmap
 from PyQt5.QtCore import Qt, QObject, QRect, QPoint, QSize, pyqtSignal
 from PIL import Image
-from src.util.image_utils import qimage_to_pil_image, pil_image_to_qimage
+from src.util.image_utils import pil_image_to_qimage
 from src.util.validation import assert_type, assert_types
 from src.util.cached_data import CachedData
+from src.undo_stack import commit_action
 
 
 class ImageLayer(QObject):
@@ -21,6 +22,7 @@ class ImageLayer(QObject):
     visibility_changed = pyqtSignal(bool)
     content_changed = pyqtSignal()
     opacity_changed = pyqtSignal(float)
+    position_changed = pyqtSignal(QPoint)
 
     def __init__(
             self,
@@ -46,16 +48,17 @@ class ImageLayer(QObject):
         self._image = None
         self._opacity = 1.0
         self._pixmap = CachedData(None)
+        self._position = QPoint(0, 0)
         if isinstance(image_data, QPixmap):
             self.pixmap = image_data
         elif isinstance(image_data, Image.Image):
             self.pil_image = image_data
         elif isinstance(image_data, QImage):
-            self.q_image = image_data
+            self.qimage = image_data
         elif isinstance(image_data, QSize):
-            q_image = QImage(image_data, QImage.Format.Format_ARGB32_Premultiplied)
-            q_image.fill(Qt.transparent)
-            self.q_image = q_image
+            qimage = QImage(image_data, QImage.Format.Format_ARGB32_Premultiplied)
+            qimage.fill(Qt.transparent)
+            self.qimage = qimage
         else:
             raise TypeError(f'Invalid layer image data: {image_data}')
 
@@ -76,6 +79,29 @@ class ImageLayer(QObject):
         self._opacity = new_opacity
         self.opacity_changed.emit(new_opacity)
 
+    @property
+    def position(self) -> QPoint:
+        """Returns the layer placement relative to the full image."""
+        return self._position
+
+    @position.setter
+    def position(self, position: QPoint) -> None:
+        """Updates the layer placement relative to the full image."""
+        last_position = self.position
+
+        def _apply_move(pos: QPoint):
+            self._position = pos
+            self.position_changed.emit(pos)
+        commit_action(lambda: _apply_move(position), lambda: _apply_move(last_position))
+
+    def set_position(self, position: QPoint, allow_undo=True):
+        """Updates the layer placement relative to the full image, with the option to not register to change history."""
+        if allow_undo:
+            self.position = position
+        else:
+            self._position = position
+            self.position_changed.emit(position)
+
     @contextmanager
     def borrow_image(self) -> Generator[Optional[QImage], None, None]:
         """Provides direct access to the image for editing, automatically marking it as changed when complete."""
@@ -91,12 +117,12 @@ class ImageLayer(QObject):
         self.content_changed.emit()
 
     @property
-    def q_image(self) -> QImage:
+    def qimage(self) -> QImage:
         """Returns the image currently being edited as a QImage object"""
         return self._image
 
-    @q_image.setter
-    def q_image(self, new_image: QImage) -> None:
+    @qimage.setter
+    def qimage(self, new_image: QImage) -> None:
         """Replaces the layer's QImage content."""
         if new_image.format() != QImage.Format_ARGB32_Premultiplied:
             self._image = new_image.convertToFormat(QImage.Format_ARGB32_Premultiplied)
@@ -120,16 +146,6 @@ class ImageLayer(QObject):
             self._pixmap.data = new_pixmap
             self._image = new_pixmap.toImage()
             self.content_changed.emit()
-
-    @property
-    def pil_image(self) -> Image.Image:
-        """Returns the image currently being edited as a PIL Image object"""
-        return qimage_to_pil_image(self.q_image)
-
-    @pil_image.setter
-    def pil_image(self, new_image: Image.Image) -> None:
-        """Replaces the layer's image content with PIL Image data."""
-        self.q_image = pil_image_to_qimage(new_image)
 
     @property
     def size(self) -> QSize:
@@ -231,7 +247,7 @@ class ImageLayer(QObject):
             self,
             image_data: Image.Image | QImage | QPixmap,
             bounds_rect: QRect,
-            composition_mode: QPainter.CompositionMode=QPainter.CompositionMode.CompositionMode_Source):
+            composition_mode: QPainter.CompositionMode = QPainter.CompositionMode.CompositionMode_Source):
         """
         Replaces the contents of an area within the image with new image content.
 

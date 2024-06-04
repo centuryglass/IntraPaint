@@ -310,7 +310,6 @@ class StableDiffusionController(BaseInpaintController):
             size = screen_size(self._window)
             self._window.setGeometry(0, 0, size.width(), size.height())
             self._window.setMaximumSize(size)
-        size = screen_size(self._window)
         self.fix_styles()
         if self._init_image is not None:
             logger.info('loading init image:')

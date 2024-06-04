@@ -36,6 +36,7 @@ class ToolEventHandler(QObject):
             self.active_tool = tool
             self._image_viewer.focusWidget()
             return True
+
         HotkeyFilter.instance().register_keybinding(set_active, key, Qt.KeyboardModifier.NoModifier, self._image_viewer)
 
     def register_tool_delegate(self, source_tool: BaseTool, delegate_tool: BaseTool,

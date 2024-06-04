@@ -90,6 +90,7 @@ class CollapsibleBox(BorderedWidget):
         layout.addWidget(self.scroll_area, stretch=255)
         self._start_closed = start_closed
 
+    # noinspection PyPep8Naming
     def setHorizontalScrollBarPolicy(self, policy: Qt.ScrollBarPolicy) -> None:
         """Expose scroll bar horizontal policy control for the inner scroll area."""
         if isinstance(self.scroll_area, QScrollArea):

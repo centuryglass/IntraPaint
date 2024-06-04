@@ -9,6 +9,7 @@ from src.util.validation import assert_type
 
 CURSOR_ITEM_Z_LEVEL = 9999
 
+
 class FixedAspectGraphicsView(QGraphicsView):
     """A QGraphicsView that maintains an aspect ratio and simplifies scene management."""
 
@@ -76,8 +77,10 @@ class FixedAspectGraphicsView(QGraphicsView):
             if cursor_pos is None:
                 return
             scene_pos = self.mapToScene(cursor_pos)
-            self._cursor_pixmap_item.setPos(scene_pos.x() - self._cursor_pixmap_item.pixmap().width() * self._cursor_pixmap_item.scale() / 2,
-                                            scene_pos.y() - self._cursor_pixmap_item.pixmap().height() * self._cursor_pixmap_item.scale() / 2)
+            self._cursor_pixmap_item.setPos(scene_pos.x() - self._cursor_pixmap_item.pixmap().width()
+                                            * self._cursor_pixmap_item.scale() / 2,
+                                            scene_pos.y() - self._cursor_pixmap_item.pixmap().height()
+                                            * self._cursor_pixmap_item.scale() / 2)
 
     def reset_scale(self) -> None:
         """Resets the scale to fit content in the view and re-centers the scene."""

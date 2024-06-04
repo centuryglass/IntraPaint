@@ -7,7 +7,7 @@ from typing import Callable
 import logging
 from PIL import Image
 import torch
-from PyQt5.QtCore import pyqtSignal
+from PyQt5.QtCore import pyqtSignal, QSize
 from src.glid_3_xl.load_models import load_models
 from src.glid_3_xl.create_sample_function import create_sample_function
 from src.glid_3_xl.generate_samples import generate_samples
@@ -26,12 +26,15 @@ class LocalDeviceController(BaseInpaintController):
     def __init__(self, args: Namespace):
         super().__init__(args)
         self._device = get_device(args.cpu)
-        logger.info('Using device:', self._device)
+        logger.info('Using device: %s', self._device)
         if args.seed >= 0:
             torch.manual_seed(args.seed)
         self._clip_guidance = args.clip_guidance
         self._ddim = args.ddim
         self._ddpm = args.ddpm
+        generate_size = self._config.get(AppConfig.GENERATION_SIZE)
+        if generate_size.width() > 256 or generate_size.height() > 256:
+            self._config.set(AppConfig.GENERATION_SIZE, QSize(256, 256))
 
         self._model_params, self._model, self._diffusion, self._ldm, self._bert, self._clip_model, \
             self._clip_preprocess, self._normalize = load_models(self._device,
@@ -55,6 +58,9 @@ class LocalDeviceController(BaseInpaintController):
             raise RuntimeError(f'Selection and mask widths should match, found {selection.width} and {mask.width}')
         if selection.height != mask.height:
             raise RuntimeError(f'Selection and mask heights should match, found {selection.height} and {mask.height}')
+        if selection.mode == 'RGBA':
+            selection = selection.convert('RGB')
+        print(f'gen size: {selection.width}x{selection.height}')
 
         batch_size = self._config.get(AppConfig.BATCH_SIZE)
         batch_count = self._config.get(AppConfig.BATCH_COUNT)

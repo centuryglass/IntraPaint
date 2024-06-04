@@ -47,7 +47,7 @@ class StableDiffusionMainWindow(MainWindow):
         # Decrease imageLayout stretch to make room for additional controls:
         self.layout().setStretch(0, 180)
 
-    def _build_control_panel(self, controller) -> None:
+    def _build_control_panel(self, controller) -> QWidget:
         """Adds controls for Stable-diffusion inpainting."""
         control_panel = BorderedWidget()
         control_panel.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Maximum)

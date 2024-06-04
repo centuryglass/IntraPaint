@@ -75,7 +75,7 @@ class SpacenavManager:
 
         self._layer_stack.size_changed.connect(update_image_size)
 
-        def update_selection_size(bounds: QRect, unused_last_bounds: QRect):
+        def update_selection_size(bounds: QRect, _: QRect):
             """Keep selection size in sync with the current selection."""
             with self._thread_data.lock:
                 if bounds.width() != self._thread_data.w_sel:
@@ -89,6 +89,7 @@ class SpacenavManager:
             """Stop the event thread when the application finishes."""
             with self._thread_data.lock:
                 self._thread_data.readEvents = False
+            logger.info('Spacenav connection terminating at exit.')
 
         atexit.register(stop_loop)
 

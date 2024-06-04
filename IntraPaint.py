@@ -5,9 +5,12 @@ Assuming you're running the A1111 stable-diffusion API on the same machine with 
 """
 from typing import Any
 import logging
+import atexit
+
 logging.basicConfig(filename='intrapaint.log', format='%(asctime)s : %(levelname)s : %(name)s: %(message)s',
                     level=logging.INFO)
 from src.controller.mock_controller import MockController
+
 try:
     from src.controller.stable_diffusion_controller import StableDiffusionController
 except ImportError as stable_import_error:
@@ -30,7 +33,7 @@ from src.util.arg_parser import build_arg_parser
 
 DEFAULT_SD_URL = 'http://localhost:7860'
 DEFAULT_GLID_URL = 'http://localhost:5555'
-DEFAULT_GLID_MODEL = 'glid_3_xl/models/inpaint.pt'
+DEFAULT_GLID_MODEL = 'models/inpaint.pt'
 MIN_GLID_VRAM = 8000000000  # This is just a rough estimate.
 logger = logging.getLogger(__name__)
 
@@ -71,7 +74,7 @@ def parse_args_and_start() -> None:
 
     if controller_mode == 'auto' and args.server_url != '':
         controller_mode = 'stable' if health_check(StableDiffusionController, args.server_url) \
-                else 'web' if health_check(WebClientController, args.server_url) else 'auto'
+            else 'web' if health_check(WebClientController, args.server_url) else 'auto'
     if controller_mode == 'auto':
         logger.info(f'Unable to identify server type for url "{args.server_url}", checking default localhost ports...')
         if health_check(StableDiffusionController, DEFAULT_SD_URL):
@@ -108,6 +111,12 @@ def parse_args_and_start() -> None:
     except Exception as err:
         logger.exception('main crashed, error: %s', err)
 
+
+def exit_log():
+    logger.info('IntraPaint exiting now.')
+
+
+atexit.register(exit_log)
 
 if __name__ == '__main__':
     parse_args_and_start()

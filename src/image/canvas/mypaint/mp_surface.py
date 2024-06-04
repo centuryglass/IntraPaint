@@ -33,6 +33,7 @@ class MPSurface(QObject):
         self._null_tile = MPTile(self._null_buffer)
 
         self._size = QSize(0, 0)
+        self._scene_position = QPoint(0, 0)
         self._tiles_width = 0
         self._tiles_height = 0
 
@@ -46,10 +47,10 @@ class MPSurface(QObject):
         self._scene = None
 
         # Initialize surface data, starting with empty functions:
-        def empty_update_function(unused_surface: c_void_p, unused_request: POINTER(MyPaintTileRequest)) -> None:
+        def empty_update_function(_unused, _unused2) -> None:
             """No action, to be replaced on tiled_surface_init."""
 
-        def destroy_surface(unused_surface: c_void_p) -> None:
+        def destroy_surface(_unused) -> None:
             """No action needed, python will handle the memory management."""
 
         self._surface_data.parent.destroy = MyPaintSurfaceDestroyFunction(destroy_surface)
@@ -58,8 +59,7 @@ class MPSurface(QObject):
         if size is not None and not size.isNull():
             self.reset_surface(size)
 
-        def on_tile_request_start(unused_surface: POINTER(MyPaintTiledSurface),
-                                  request: POINTER(MyPaintTileRequest)) -> None:
+        def on_tile_request_start(_, request: POINTER(MyPaintTileRequest)) -> None:
             """Locate or create the required tile and pass it back to libmypaint when a tile operation starts."""
             tx = request[0].tx
             ty = request[0].ty
@@ -69,7 +69,7 @@ class MPSurface(QObject):
                 tile = self.get_tile_from_idx(tx, ty, True)
             request[0].buffer = c_uint16_p(tile.get_bits(False))
 
-        def on_tile_request_end(unused_surface: POINTER(MyPaintTiledSurface),
+        def on_tile_request_end(_: POINTER(MyPaintTiledSurface),
                                 request: POINTER(MyPaintTileRequest)) -> None:
             """Update tile cache and send an update signal when a tile painting operation finishes."""
             tx = request[0].tx
@@ -100,6 +100,23 @@ class MPSurface(QObject):
         """Returns the active MyPaint brush."""
         return self._brush
 
+    @property
+    def scene_position(self) -> QPoint:
+        """Returns the surface's coordinates within the scene."""
+        return self._scene_position
+
+    @scene_position.setter
+    def scene_position(self, position: QPoint) -> None:
+        """Updates the surface's position in the scene, moving all active tiles."""
+        self._scene_position = position
+        for coordinate_str, tile in self._tiles.items():
+            if tile.is_valid and tile.scene() is not None:
+                x, y = (int(value) for value in coordinate_str.split(','))
+                x_px = x * TILE_DIM
+                y_px = y * TILE_DIM
+                tile.setPos(QPoint(self._scene_position.x() + x_px,self._scene_position.y() + y_px))
+                tile.update()
+
     def _assert_valid_surface(self) -> None:
         """Throws a runtime error if called when surface size is null."""
         if self._size.isNull():
@@ -115,6 +132,8 @@ class MPSurface(QObject):
     def stroke_to(self, x: float, y: float, pressure: float, x_tilt: float, y_tilt: float):
         """Continue a brush stroke, providing tablet inputs."""
         self._assert_valid_surface()
+        x -= self.scene_position.x()
+        y -= self.scene_position.y()
         dtime = 0.1  # time() - self._dtime_start
         libmypaint.mypaint_surface_begin_atomic(byref(self._surface_data))
         libmypaint.mypaint_brush_stroke_to(self.brush.brush_ptr, byref(self._surface_data),
@@ -182,7 +201,7 @@ class MPSurface(QObject):
             height = tile_dim(self.height, y, self._tiles_height - 1)
             tile = MPTile(pixel_buffer, clear_buffer_if_new, QSize(width, height))
             self._tiles[point] = tile
-            tile.setPos(QPoint(x * TILE_DIM, y * TILE_DIM))
+            tile.setPos(QPoint(self._scene_position.x() + x * TILE_DIM,self._scene_position.y() + y * TILE_DIM))
         if tile.scene() is None:
             self.tile_created.emit(tile)
         return tile
