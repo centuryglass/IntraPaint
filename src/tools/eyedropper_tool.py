@@ -57,7 +57,7 @@ class EyedropperTool(BaseTool):
         self._control_panel.setCurrentColor(initial_color)
         self._config.connect(self._control_panel, AppConfig.LAST_BRUSH_COLOR,
                              lambda color_str: self._control_panel.setCurrentColor(QColor(color_str)))
-        self._control_panel.colorSelected.connect(lambda color: self._config.set(AppConfig.LAST_BRUSH_COLOR,
+        self._control_panel.currentColorChanged.connect(lambda color: self._config.set(AppConfig.LAST_BRUSH_COLOR,
                                                                                  color.name(QColor.HexArgb)))
         return self._control_panel
 
