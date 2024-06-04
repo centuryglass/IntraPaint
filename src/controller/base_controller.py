@@ -10,7 +10,7 @@ from argparse import Namespace
 import logging
 from PIL import Image, ImageFilter, UnidentifiedImageError, PngImagePlugin
 from PyQt5.QtWidgets import QApplication, QMessageBox, QMainWindow
-from PyQt5.QtCore import QObject, QRect, QThread, QSize, pyqtSignal
+from PyQt5.QtCore import QObject, QRect, QPoint, QThread, QSize, pyqtSignal
 from PyQt5.QtGui import QScreen, QImage, QPainter
 try:
     import qdarktheme
@@ -507,19 +507,20 @@ class BaseInpaintController:
         """
         if sample_image is not None and isinstance(sample_image, Image.Image):
             image = pil_image_to_qimage(sample_image).convertToFormat(QImage.Format.Format_ARGB32_Premultiplied)
+            layer = self._layer_stack.get_layer(self._layer_stack.active_layer)
             if self._config.get(AppConfig.EDIT_MODE) == "Inpaint":
                 inpaint_mask = self._layer_stack.mask_layer.cropped_image_content(self._layer_stack.selection)
                 painter = QPainter(image)
                 painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_DestinationIn)
-                painter.drawImage(QRect(0, 0, image.width(), image.height()), inpaint_mask)
+                painter.drawImage(QRect(QPoint(0, 0), image.size()), inpaint_mask)
                 painter.end()
-            layer = self._layer_stack.get_layer(self._layer_stack.active_layer)
             bounds = self._layer_stack.selection
+            pos = layer.position
             prev_image = layer.cropped_image_content(bounds)
 
             def apply():
                 """Inserts the selection into the active layer."""
-                layer.insert_image_content(image, bounds, QPainter.CompositionMode.CompositionMode_SourceOver)
+                layer.insert_image_content(image, QRect(bounds.topLeft() - pos, bounds.size()), QPainter.CompositionMode.CompositionMode_SourceOver)
 
             def undo():
                 """Revert the selection to its previous state."""

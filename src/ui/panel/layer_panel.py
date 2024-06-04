@@ -175,6 +175,14 @@ class LayerItem(BorderedWidget):
                         painter.end()
 
                 mask_active_option.triggered.connect(mask_active)
+        mirror_horiz_option = menu.addAction('Mirror horizontally')
+        def _mirror_horiz():
+            self._layer.qimage = self._layer.qimage.mirrored(horizontal=True, vertical=False)
+        mirror_horiz_option.triggered.connect(_mirror_horiz)
+        mirror_vert_option = menu.addAction('Mirror vertically')
+        def _mirror_vert():
+            self._layer.qimage = self._layer.qimage.mirrored(horizontal=False, vertical=True)
+        mirror_vert_option.triggered.connect(_mirror_vert)
         menu.exec_(self.mapToGlobal(pos))
 
 

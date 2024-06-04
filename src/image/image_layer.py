@@ -225,7 +225,7 @@ class ImageLayer(QObject):
         assert_types((x_offset, y_offset), int)
         if new_size == self.size and x_offset == 0 and y_offset == 0:
             return
-        new_image = QImage(new_size)
+        new_image = QImage(new_size, QImage.Format.Format_ARGB32_Premultiplied)
         new_image.fill(Qt.transparent)
         painter = QPainter(new_image)
         painter.drawImage(x_offset, y_offset, self._image)
