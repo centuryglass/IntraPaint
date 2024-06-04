@@ -135,23 +135,29 @@ class LayerItem(BorderedWidget):
         menu.setTitle(self._layer.name)
         if self._layer != self._layer_stack.mask_layer:
             index = self._layer_stack.get_layer_index(self._layer)
+
             if index > 0:
                 up_option = menu.addAction('Move up')
                 up_option.triggered.connect(lambda: self._layer_stack.move_layer(index, -1))
+
             if index < self._layer_stack.count - 1:
                 down_option = menu.addAction('Move down')
                 down_option.triggered.connect(lambda: self._layer_stack.move_layer(index, 1))
+
             copy_option = menu.addAction('Copy')
             copy_option.triggered.connect(lambda: self._layer_stack.copy_layer(index))
+
             delete_option = menu.addAction('Delete')
             delete_option.triggered.connect(lambda: self._layer_stack.remove_layer(index))
+
             if index < self._layer_stack.count - 1:
                 merge_option = menu.addAction('Merge down')
                 merge_option.triggered.connect(lambda: self._layer_stack.merge_layer_down(index))
+
             clear_option = menu.addAction('Clear masked')
             clear_option.triggered.connect(lambda: self._layer_stack.cut_masked(index))
-            copy_masked_option = menu.addAction('Copy masked to new layer')
 
+            copy_masked_option = menu.addAction('Copy masked to new layer')
 
             def do_copy() -> None:
                 """Make the copy, then add it as a new layer."""
@@ -159,9 +165,12 @@ class LayerItem(BorderedWidget):
                 self._layer_stack.create_layer(self._layer.name + ' content', masked, index=index)
 
             copy_masked_option.triggered.connect(do_copy)
+
+            resize_option = menu.addAction('Layer to image size')
+            resize_option.triggered.connect(lambda: self._layer_stack.layer_to_image_size(index))
         else:
             clear_mask_option = menu.addAction('Clear mask')
-            clear_mask_option.triggered.connect(lambda: self._layer_stack.mask_layer.clear())
+            clear_mask_option.triggered.connect(self._layer_stack.mask_layer.clear)
             if self._layer_stack.active_layer is not None:
                 mask_active_option = menu.addAction('Mask all in active layer')
 
@@ -180,6 +189,7 @@ class LayerItem(BorderedWidget):
             self._layer.qimage = self._layer.qimage.mirrored(horizontal=True, vertical=False)
         mirror_horiz_option.triggered.connect(_mirror_horiz)
         mirror_vert_option = menu.addAction('Mirror vertically')
+
         def _mirror_vert():
             self._layer.qimage = self._layer.qimage.mirrored(horizontal=False, vertical=True)
         mirror_vert_option.triggered.connect(_mirror_vert)

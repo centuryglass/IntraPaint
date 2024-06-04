@@ -13,7 +13,7 @@ from PIL import Image
 from src.util.image_utils import pil_image_to_qimage
 from src.util.validation import assert_type, assert_types
 from src.util.cached_data import CachedData
-from src.undo_stack import commit_action
+from src.undo_stack import commit_action, last_action
 
 
 class ImageLayer(QObject):
@@ -62,11 +62,8 @@ class ImageLayer(QObject):
         else:
             raise TypeError(f'Invalid layer image data: {image_data}')
 
-    def copy(self) -> Self:
-        """Creates a copy of this layer."""
-        layer = ImageLayer(self._image.copy(), self.name + ' copy', self.saved)
-        layer.opacity = self.opacity
-        return layer
+
+    # PROPERTY DEFINITIONS: 
 
     @property
     def opacity(self) -> float:
@@ -92,29 +89,17 @@ class ImageLayer(QObject):
         def _apply_move(pos: QPoint):
             self._position = pos
             self.position_changed.emit(pos)
-        commit_action(lambda: _apply_move(position), lambda: _apply_move(last_position))
 
-    def set_position(self, position: QPoint, allow_undo=True):
-        """Updates the layer placement relative to the full image, with the option to not register to change history."""
-        if allow_undo:
-            self.position = position
-        else:
-            self._position = position
-            self.position_changed.emit(position)
+        # Merge position change operations in the undo history:
+        action_type = 'image_layer.position'
+        with last_action() as prev_action:
+            if prev_action is not None and prev_action.type == action_type \
+                    and prev_action.action_data['layer'] == self:
+                prev_action.redo = lambda: _apply_move(position)
+                prev_action.redo()
+                return
 
-    @contextmanager
-    def borrow_image(self) -> Generator[Optional[QImage], None, None]:
-        """Provides direct access to the image for editing, automatically marking it as changed when complete."""
-        try:
-            yield self._image
-        finally:
-            self._pixmap.invalidate()
-            self.content_changed.emit()
-
-    def refresh_pixmap(self) -> None:
-        """Regenerate the image pixmap cache and notify self.content_changed subscribers."""
-        self._pixmap.data = self._generate_pixmap(self._image)
-        self.content_changed.emit()
+        commit_action(lambda: _apply_move(position), lambda: _apply_move(last_position), action_type, {'layer': self})
 
     @property
     def qimage(self) -> QImage:
@@ -208,6 +193,38 @@ class ImageLayer(QObject):
         """Sets whether this layer is saved when visible and image data is saved."""
         self._saved = saved
 
+
+    # LAYER/IMAGE FUNCTIONS:
+    def copy(self) -> Self:
+        """Creates a copy of this layer."""
+        layer = ImageLayer(self._image.copy(), self.name + ' copy', self.saved)
+        layer.opacity = self.opacity
+        return layer
+
+
+    def set_position(self, position: QPoint, allow_undo=True):
+        """Updates the layer placement relative to the full image, with the option to not register to change history."""
+        if allow_undo:
+            self.position = position
+        else:
+            self._position = position
+            self.position_changed.emit(position)
+
+    @contextmanager
+    def borrow_image(self) -> Generator[Optional[QImage], None, None]:
+        """Provides direct access to the image for editing, automatically marking it as changed when complete."""
+        try:
+            yield self._image
+        finally:
+            self._pixmap.invalidate()
+            self.content_changed.emit()
+
+    def refresh_pixmap(self) -> None:
+        """Regenerate the image pixmap cache and notify self.content_changed subscribers."""
+        self._pixmap.data = self._generate_pixmap(self._image)
+        self.content_changed.emit()
+
+
     def resize_canvas(self, new_size: QSize, x_offset: int, y_offset: int):
         """
         Changes the layer size without scaling existing image content.
@@ -282,6 +299,8 @@ class ImageLayer(QObject):
         self._image.fill(Qt.transparent)
         self._pixmap.invalidate()
         self.content_changed.emit()
+
+    # INTERNAL:
 
     def _validate_bounds(self, bounds_rect: QRect):
         assert_type(bounds_rect, QRect)
