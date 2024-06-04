@@ -114,10 +114,11 @@ class MyPaintLayerCanvas(LayerCanvas):
         super()._set_is_eraser(should_erase)
         if should_erase:
             if self._last_eraser_value is None:
-                self._last_eraser_value = self._mp_surface.brush.get_value(MPBrush.Eraser)
+                self._last_eraser_value = self._mp_surface.brush.get_value(MPBrush.ERASER)
+            self._mp_surface.brush.set_value(MPBrush.ERASER, 1.0)
         else:
             self._mp_surface.brush.set_value(MPBrush.ERASER, self._last_eraser_value
-                                             if self._last_eraser_value is not None else 1.0)
+                                             if self._last_eraser_value is not None else 0.0)
             self._last_eraser_value = None
 
     def _set_z_value(self, z_value: int) -> None:
