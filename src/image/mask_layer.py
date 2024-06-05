@@ -17,7 +17,7 @@ from PIL import Image
 from src.util.validation import assert_type
 from src.image.image_layer import ImageLayer
 from src.config.application_config import AppConfig
-from src.util.image_utils import qimage_to_pil_image
+from src.util.image_utils import qimage_to_pil_image, image_content_bounds
 
 logger = logging.getLogger(__name__)
 
@@ -64,7 +64,7 @@ class MaskLayer(ImageLayer):
         """Update the area marked for image generation."""
         self._selection = new_selection
         self._update_bounds()
-        self.content_changed.emit()
+        self.content_changed.emit(self)
 
     # Disabling unwanted layer functionality:
     def copy(self) -> Self:
@@ -92,23 +92,11 @@ class MaskLayer(ImageLayer):
             image_ptr.setsize(image.byteCount())
             np_image = np.ndarray(shape=(image.height(), image.width(), 4), dtype=np.uint8, buffer=image_ptr)
         selection = self._selection
-        # Get a numpy array for just the selected region:
-        selection_image = np_image[selection.y():selection.y() + selection.height(),
-                                   selection.x():selection.x() + selection.width(), :]
-        # Find and save the bounds of the masked area within the selection:
-        if np.all(selection_image[:, :, 3] == 0):
+        bounds = image_content_bounds(np_image, selection, ALPHA_THRESHOLD)
+        if bounds.isNull():
             self._bounding_box = None
         else:
-            masked_rows = np.any(selection_image[:, :, 3] >= ALPHA_THRESHOLD, axis=1)
-            masked_columns = np.any(selection_image[:, :, 3] >= ALPHA_THRESHOLD, axis=0)
-            top = np.argmax(masked_rows) + selection.y()
-            bottom = selection.y() + selection.height() - 1 - np.argmax(np.flip(masked_rows))
-            left = selection.x() + np.argmax(masked_columns)
-            right = selection.x() + selection.width() - 1 - np.argmax(np.flip(masked_columns))
-            if left >= right:
-                self._bounding_box = None
-            else:
-                self._bounding_box = QRect(left, top, right - left, bottom - top)
+            self._bounding_box = bounds
 
     def selection_is_empty(self) -> bool:
         """Returns whether the current selection mask is empty."""

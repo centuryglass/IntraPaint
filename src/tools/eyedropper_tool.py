@@ -58,7 +58,7 @@ class EyedropperTool(BaseTool):
         self._config.connect(self._control_panel, AppConfig.LAST_BRUSH_COLOR,
                              lambda color_str: self._control_panel.setCurrentColor(QColor(color_str)))
         self._control_panel.currentColorChanged.connect(lambda color: self._config.set(AppConfig.LAST_BRUSH_COLOR,
-                                                                                 color.name(QColor.HexArgb)))
+                                                                                       color.name(QColor.HexArgb)))
         return self._control_panel
 
     def mouse_click(self, event: Optional[QMouseEvent], image_coordinates: QPoint) -> bool:

@@ -146,18 +146,9 @@ class MainWindow(QMainWindow):
         edit_menu = self._menu.addMenu('Edit')
         add_action('Undo', 'Ctrl+Z', lambda: if_not_selecting(undo), edit_menu)
         add_action('Redo', 'Ctrl+Shift+Z', lambda: if_not_selecting(redo), edit_menu)
-
-        def _copy() -> None:
-            if layer_stack.active_layer is not None:
-                layer_stack.copy_masked(layer_stack.active_layer, True)
-
-        add_action('copy', 'Ctrl+C', lambda: if_not_selecting(_copy), edit_menu)
-        add_action('paste', 'Ctrl+V', lambda: if_not_selecting(layer_stack.paste), edit_menu)
-
-        def _cut() -> None:
-            if layer_stack.active_layer is not None:
-                layer_stack.cut_masked(layer_stack.active_layer, True)
-        add_action('cut', 'Ctrl+X', lambda: if_not_selecting(_cut), edit_menu)
+        add_action('Cut', 'Ctrl+X', lambda: if_not_selecting(layer_stack.cut_masked), edit_menu)
+        add_action('Copy', 'Ctrl+C', lambda: if_not_selecting(layer_stack.copy_masked), edit_menu)
+        add_action('Paste', 'Ctrl+V', lambda: if_not_selecting(layer_stack.paste), edit_menu)
 
         add_action('Generate', 'F4', lambda: if_not_selecting(controller.start_and_manage_inpainting),
                    edit_menu)
@@ -166,6 +157,27 @@ class MainWindow(QMainWindow):
         add_action('Resize canvas', 'F2', lambda: if_not_selecting(controller.resize_canvas), image_menu)
         add_action('Scale image', 'F3', lambda: if_not_selecting(controller.scale_image), image_menu)
         add_action('Update image metadata', None, controller.update_metadata, image_menu)
+
+        # Layer:
+        layer_menu = self._menu.addMenu('Layer')
+        add_action('New layer', 'Ctrl+Shift+N', lambda: if_not_selecting(layer_stack.create_layer), layer_menu)
+        add_action('Copy layer', 'Ctrl+Shift+C', lambda: if_not_selecting(layer_stack.copy_layer), layer_menu)
+        add_action('Delete layer', 'Ctrl+Shift+D', lambda: if_not_selecting(layer_stack.remove_layer), layer_menu)
+        add_action('Select previous', 'Ctrl+Up', lambda: if_not_selecting(lambda: layer_stack.offset_selection(-1)),
+                   layer_menu)
+        add_action('Select next', 'Ctrl+Down', lambda: if_not_selecting(lambda: layer_stack.offset_selection(1)),
+                   layer_menu)
+        add_action('Move up', 'Ctrl+Shift+PgUp', lambda: if_not_selecting(lambda: layer_stack.move_layer(-1)),
+                   layer_menu)
+        add_action('Move down', 'Ctrl+Shift+PgDown', lambda: if_not_selecting(lambda: layer_stack.move_layer(1)),
+                   layer_menu)
+        add_action('Merge down', 'Ctrl+Shift+End', lambda: if_not_selecting(layer_stack.merge_layer_down), layer_menu)
+        add_action('Layer to Image Size', None, lambda: if_not_selecting(layer_stack.layer_to_image_size), layer_menu)
+
+        def _layer_to_content():
+            if layer_stack.active_layer is not None:
+                layer_stack.active_layer.crop_to_content()
+        add_action('Crop layer to contents', None, lambda: if_not_selecting(_layer_to_content), layer_menu)
 
         # Tools:
         tool_menu = self._menu.addMenu('Tools')

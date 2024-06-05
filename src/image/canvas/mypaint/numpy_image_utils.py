@@ -5,12 +5,12 @@ import numpy as np
 from src.image.canvas.mypaint.libmypaint import TilePixelBuffer, TILE_DIM
 
 
-def pixel_data_as_numpy_16bit(pixel_data: TilePixelBuffer) -> np.array:
+def pixel_data_as_numpy_16bit(pixel_data: TilePixelBuffer) -> np.ndarray:
     """Returns a numpy array interface for a tile pixel buffer."""
     return np.ctypeslib.as_array(pixel_data, shape=(TILE_DIM, TILE_DIM, 4))
 
 
-def image_data_as_numpy_8bit(image: QImage) -> np.array:
+def image_data_as_numpy_8bit(image: QImage) -> np.ndarray:
     """Returns a numpy array interface for a QImage's internal data buffer."""
     assert image.format() == QImage.Format_ARGB32_Premultiplied, \
         f'Image must be pre-converted to ARGB32_premultiplied, format was {image.format()}'
@@ -19,21 +19,21 @@ def image_data_as_numpy_8bit(image: QImage) -> np.array:
     return np.ndarray(shape=(image.height(), image.width(), 4), dtype=np.uint8, buffer=image_ptr)
 
 
-def numpy_8bit_to_16bit(np_image: np.array) -> np.array:
+def numpy_8bit_to_16bit(np_image: np.ndarray) -> np.ndarray:
     """Converts a numpy image array with 8-bit image color data to 16-bit color image data."""
     img_arr = (np_image.astype(np.float32) / 255 * (1 << 15)).astype(np.uint16)
     img_arr[:, :, [0, 2]] = img_arr[:, :, [2, 0]]  # R and G channels need to be swapped.
     return img_arr
 
 
-def numpy_16bit_to_8bit(np_image: np.array) -> np.array:
+def numpy_16bit_to_8bit(np_image: np.ndarray) -> np.ndarray:
     """Converts a numpy image array with 16-bit image color data to 8-bit color image data."""
     img_arr = (np_image / (1 << 15) * 255).astype(np.uint8)
     img_arr[:, :, [0, 2]] = img_arr[:, :, [2, 0]]  # R and G channels need to be swapped.
     return img_arr
 
 
-def is_fully_transparent(np_image: np.array) -> bool:
+def is_fully_transparent(np_image: np.ndarray) -> bool:
     """Returns whether numpy image data is 100% transparent."""
     return np.all(np_image[:, :, 3] == 0)
 
@@ -46,7 +46,7 @@ def zero_image(image: QImage) -> None:
     img_arr[:, :, [3]] = 0
 
 
-def numpy_intersect(arr1: np.array, arr2: np.array,
+def numpy_intersect(arr1: np.ndarray, arr2: np.ndarray,
                     x: int = 0, y: int = 0) -> Tuple[np.array, np.array] | Tuple[None, None]:
     """Takes two offset numpy arrays and returns only their intersecting regions."""
     w1 = arr1.shape[1]

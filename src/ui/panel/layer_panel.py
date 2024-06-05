@@ -124,11 +124,9 @@ class LayerItem(BorderedWidget):
     def mousePressEvent(self, event: Optional[QMouseEvent]) -> None:
         """Activate layer on click."""
         if not self.active and event.button() == Qt.MouseButton.LeftButton:
-            index = self._layer_stack.get_layer_index(self._layer)
-            if index is not None:
-                self.active = True
-                self._layer_stack.active_layer = index
-                self.update()
+            self._layer_stack.active_layer = self._layer
+            self.active = True
+            self.update()
 
     def _menu(self, pos: QPoint) -> None:
         menu = QMenu()
@@ -138,45 +136,49 @@ class LayerItem(BorderedWidget):
 
             if index > 0:
                 up_option = menu.addAction('Move up')
-                up_option.triggered.connect(lambda: self._layer_stack.move_layer(index, -1))
+                up_option.triggered.connect(lambda: self._layer_stack.move_layer(-1, self.layer))
 
             if index < self._layer_stack.count - 1:
                 down_option = menu.addAction('Move down')
-                down_option.triggered.connect(lambda: self._layer_stack.move_layer(index, 1))
+                down_option.triggered.connect(lambda: self._layer_stack.move_layer(1, self.layer))
 
             copy_option = menu.addAction('Copy')
-            copy_option.triggered.connect(lambda: self._layer_stack.copy_layer(index))
+            copy_option.triggered.connect(lambda: self._layer_stack.copy_layer(self.layer))
 
             delete_option = menu.addAction('Delete')
-            delete_option.triggered.connect(lambda: self._layer_stack.remove_layer(index))
+            delete_option.triggered.connect(lambda: self._layer_stack.remove_layer(self.layer))
 
             if index < self._layer_stack.count - 1:
                 merge_option = menu.addAction('Merge down')
-                merge_option.triggered.connect(lambda: self._layer_stack.merge_layer_down(index))
+                merge_option.triggered.connect(lambda: self._layer_stack.merge_layer_down(self.layer))
 
             clear_option = menu.addAction('Clear masked')
-            clear_option.triggered.connect(lambda: self._layer_stack.cut_masked(index))
+            clear_option.triggered.connect(lambda: self._layer_stack.cut_masked(self.layer))
 
             copy_masked_option = menu.addAction('Copy masked to new layer')
 
             def do_copy() -> None:
                 """Make the copy, then add it as a new layer."""
-                masked = self._layer_stack.copy_masked(index)
-                self._layer_stack.create_layer(self._layer.name + ' content', masked, index=index)
+                masked = self._layer_stack.copy_masked(self.layer)
+                self._layer_stack.create_layer(self._layer.name + ' content', masked, layer_index=index)
 
             copy_masked_option.triggered.connect(do_copy)
 
             resize_option = menu.addAction('Layer to image size')
-            resize_option.triggered.connect(lambda: self._layer_stack.layer_to_image_size(index))
+            resize_option.triggered.connect(lambda: self._layer_stack.layer_to_image_size(self.layer))
+
+            crop_content_option = menu.addAction('Crop layer to content')
+            crop_content_option.triggered.connect(self._layer.crop_to_content)
         else:
             clear_mask_option = menu.addAction('Clear mask')
             clear_mask_option.triggered.connect(self._layer_stack.mask_layer.clear)
-            if self._layer_stack.active_layer is not None:
+            if self._layer_stack.active_layer_index is not None:
                 mask_active_option = menu.addAction('Mask all in active layer')
 
                 def mask_active() -> None:
                     """Draw the layer into the mask, then let MaskLayer automatically convert it to red/transparent."""
-                    layer_image = self._layer_stack.get_layer(self._layer_stack.active_layer).qimage.copy()
+                    layer_image = self._layer_stack.get_layer_by_index(
+                        self._layer_stack.active_layer_index).qimage.copy()
                     with self._layer_stack.mask_layer.borrow_image() as mask_image:
                         painter = QPainter(mask_image)
                         painter.setCompositionMode(QPainter.CompositionMode_Source)
@@ -184,15 +186,13 @@ class LayerItem(BorderedWidget):
                         painter.end()
 
                 mask_active_option.triggered.connect(mask_active)
-        mirror_horiz_option = menu.addAction('Mirror horizontally')
-        def _mirror_horiz():
-            self._layer.qimage = self._layer.qimage.mirrored(horizontal=True, vertical=False)
-        mirror_horiz_option.triggered.connect(_mirror_horiz)
-        mirror_vert_option = menu.addAction('Mirror vertically')
 
-        def _mirror_vert():
-            self._layer.qimage = self._layer.qimage.mirrored(horizontal=False, vertical=True)
-        mirror_vert_option.triggered.connect(_mirror_vert)
+        mirror_horiz_option = menu.addAction('Mirror horizontally')
+        mirror_horiz_option.triggered.connect(self.layer.flip_horizontal)
+
+        mirror_vert_option = menu.addAction('Mirror vertically')
+        mirror_vert_option.triggered.connect(self.layer.flip_vertical)
+
         menu.exec_(self.mapToGlobal(pos))
 
 
@@ -237,81 +237,53 @@ class LayerPanel(QWidget):
         self._scroll_area.setSizePolicy(QSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.Expanding))
         self._layout.addWidget(self._scroll_area, stretch=10)
 
-        def add_layer_widget(layer: ImageLayer, layer_idx: int) -> None:
-            """Add a layer to the list."""
+        def _add_layer_widget(layer: ImageLayer, layer_idx: int) -> None:
             widget = self._layer_widget(layer)
             self._layer_widgets.append(widget)
             self._list_layout.insertWidget(layer_idx + 1, widget)
-
-        self._layer_stack.layer_added.connect(add_layer_widget)
-        add_layer_widget(layer_stack.mask_layer, -1)
+        self._layer_stack.layer_added.connect(_add_layer_widget)
+        _add_layer_widget(layer_stack.mask_layer, -1)
         for i in range(self._layer_stack.count):
-            add_layer_widget(self._layer_stack.get_layer(i), i + 1)
+            _add_layer_widget(self._layer_stack.get_layer_by_index(i), i + 1)
 
-        def delete_layer_widget(layer: ImageLayer) -> None:
-            """Remove a layer from the list."""
+        def _delete_layer_widget(layer: ImageLayer) -> None:
             layer_widget = self._layer_widget(layer)
             if layer_widget is not None:
                 self._list_layout.removeWidget(layer_widget)
                 layer_widget.setParent(None)
                 self._layer_widgets.remove(layer_widget)
                 self.update()
+        self._layer_stack.layer_removed.connect(_delete_layer_widget)
 
-        self._layer_stack.layer_removed.connect(delete_layer_widget)
-
-        def activate_layer(layer_idx: int) -> None:
-            """Change the layer marked as active."""
-            if layer_idx is None:
-                return
+        def _activate_layer(layer_id: Optional[int], _=None) -> None:
             for widget in self._layer_widgets:
-                idx = self._layer_stack.get_layer_index(widget.layer)
-                widget.active = idx == layer_idx
-
-        self._layer_stack.active_layer_changed.connect(activate_layer)
-        activate_layer(self._layer_stack.active_layer)
+                widget.active = layer_id == widget.layer.id
+        self._layer_stack.active_layer_changed.connect(_activate_layer)
+        if self._layer_stack.active_layer is not None:
+            _activate_layer(self._layer_stack.active_layer.id)
 
         # BUTTON BAR:
         self._button_bar = QWidget()
         self._layout.addWidget(self._button_bar)
         self._button_bar_layout = QHBoxLayout(self._button_bar)
 
-        def create_button(text: str, tooltip: str, action: Callable[[], None]) -> QPushButton:
-            """Configure a new button and add it to the button bar."""
+        def _create_button(text: str, tooltip: str, action: Callable[[], None]) -> QPushButton:
             button = QPushButton()
             button.setText(text)
             button.setToolTip(tooltip)
-            button.clicked.connect(action)
+            button.clicked.connect(lambda: action())
             self._button_bar_layout.addWidget(button)
             return button
 
-        def add_layer() -> None:
-            """Add a new layer below the active one."""
-            new_index = 1 if self._layer_stack.active_layer is None else self._layer_stack.active_layer + 1
-            self._layer_stack.create_layer(index=new_index)
+        self._add_button = _create_button(ADD_BUTTON_LABEL, ADD_BUTTON_TOOLTIP, self._layer_stack.create_layer)
+        self._delete_button = _create_button(DELETE_BUTTON_LABEL, DELETE_BUTTON_TOOLTIP, self._layer_stack.remove_layer)
+        self._move_up_button = _create_button(LAYER_UP_BUTTON_LABEL, LAYER_UP_BUTTON_TOOLTIP,
+                                              lambda: self._layer_stack.move_layer(-1))
+        self._move_up_button = _create_button(LAYER_DOWN_BUTTON_LABEL, LAYER_DOWN_BUTTON_TOOLTIP,
+                                              lambda: self._layer_stack.move_layer(1))
 
-        self._add_button = create_button(ADD_BUTTON_LABEL, ADD_BUTTON_TOOLTIP, add_layer)
-
-        def delete_layer() -> None:
-            """Delete the active layer."""
-            if self._layer_stack.active_layer is not None:
-                self._layer_stack.remove_layer(self._layer_stack.active_layer)
-
-        self._delete_button = create_button(DELETE_BUTTON_LABEL, DELETE_BUTTON_TOOLTIP, delete_layer)
-
-        def move_layer(offset: int) -> None:
-            """Moves the active layer within the stack by a set offset."""
-            if self._layer_stack.active_layer is not None:
-                self._layer_stack.move_layer(self._layer_stack.active_layer, offset)
-
-        self._move_up_button = create_button(LAYER_UP_BUTTON_LABEL, LAYER_UP_BUTTON_TOOLTIP, lambda: move_layer(-1))
-        self._move_up_button = create_button(LAYER_DOWN_BUTTON_LABEL, LAYER_DOWN_BUTTON_TOOLTIP, lambda: move_layer(1))
-
-        def merge_down() -> None:
-            """Merges the active layer with the one below it."""
-            if self._layer_stack.active_layer is not None:
-                self._layer_stack.merge_layer_down(self._layer_stack.active_layer)
-
-        self._merge_down_button = create_button(MERGE_DOWN_BUTTON_LABEL, MERGE_DOWN_BUTTON_TOOLTIP, merge_down)
+        self._merge_down_button = _create_button(MERGE_DOWN_BUTTON_LABEL, MERGE_DOWN_BUTTON_TOOLTIP,
+                                                 self._layer_stack.merge_layer_down)
 
     def _layer_widget(self, layer: ImageLayer) -> LayerItem:
         """Returns the layer widget for the given layer, or creates and returns a new one if none exists."""

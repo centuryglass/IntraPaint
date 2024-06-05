@@ -1,15 +1,15 @@
 """An image editing tool that moves the selected editing region."""
 
 from typing import Optional
-from PyQt5.QtWidgets import QWidget, QVBoxLayout, QApplication, QLabel, QSlider, QHBoxLayout, QDoubleSpinBox, \
-         QPushButton
+
+from PyQt5.QtCore import Qt, QPoint
 from PyQt5.QtGui import QMouseEvent, QKeyEvent, QCursor, QIcon
-from PyQt5.QtCore import Qt, QRect, QPoint
+from PyQt5.QtWidgets import QWidget, QVBoxLayout, QApplication, QLabel
+
+from src.config.application_config import AppConfig
 from src.image.layer_stack import LayerStack
 from src.tools.base_tool import BaseTool
 from src.ui.image_viewer import ImageViewer
-from src.ui.config_control_setup import get_selection_control_boxes
-from src.config.application_config import AppConfig
 
 RESOURCES_SELECTION_ICON = 'resources/selection.svg'
 TRANSFORM_LABEL = 'Transform Layers'
@@ -17,7 +17,7 @@ TRANSFORM_TOOLTIP = 'Move, scale, or rotate the active layer.'
 
 
 class LayerTransformTool(BaseTool):
-    """Applies transformations to the active layer.."""
+    """Applies transformations to the active layer."""
 
     def __init__(self, layer_stack: LayerStack, image_viewer: ImageViewer, config: AppConfig) -> None:
         super().__init__()
@@ -31,10 +31,10 @@ class LayerTransformTool(BaseTool):
         self._dragging = False
         self._initial_click_pos: Optional[QPoint] = None
         self._initial_layer_offset: Optional[QPoint] = None
-        self._active_layer_idx = self._layer_stack.active_layer
+        self._active_layer_idx = self._layer_stack.active_layer_index
         self._layer_stack.active_layer_changed.connect(self._handle_layer_change)
 
-    def _handle_layer_change(self, layer_idx: int) -> None:
+    def _handle_layer_change(self, _, layer_idx: int) -> None:
         if self._active_layer_idx != layer_idx:
             self._active_layer_idx = layer_idx
             self._dragging = False
@@ -73,7 +73,7 @@ class LayerTransformTool(BaseTool):
             return False
         self._dragging = True
         self._initial_click_pos = image_coordinates
-        self._initial_layer_offset = self._layer_stack.get_layer(self._active_layer_idx).position
+        self._initial_layer_offset = self._layer_stack.get_layer_by_index(self._active_layer_idx).position
         return True
 
     def mouse_move(self, event: Optional[QMouseEvent], image_coordinates: QPoint) -> bool:
@@ -81,7 +81,7 @@ class LayerTransformTool(BaseTool):
                 or self._initial_layer_offset is None:
             return False
         mouse_offset = image_coordinates - self._initial_click_pos
-        layer = self._layer_stack.get_layer(self._active_layer_idx)
+        layer = self._layer_stack.get_layer_by_index(self._active_layer_idx)
         layer.position = self._initial_layer_offset + mouse_offset
         return True
 
@@ -108,7 +108,7 @@ class LayerTransformTool(BaseTool):
                 translation.setY(1 * multiplier)
             case _:
                 return False
-        layer = self._layer_stack.get_layer(self._active_layer_idx)
+        layer = self._layer_stack.get_layer_by_index(self._active_layer_idx)
         layer.position = layer.position + translation
         return True
 

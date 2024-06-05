@@ -114,7 +114,7 @@ class MPSurface(QObject):
                 x, y = (int(value) for value in coordinate_str.split(','))
                 x_px = x * TILE_DIM
                 y_px = y * TILE_DIM
-                tile.setPos(QPoint(self._scene_position.x() + x_px,self._scene_position.y() + y_px))
+                tile.setPos(QPoint(self._scene_position.x() + x_px, self._scene_position.y() + y_px))
                 tile.update()
 
     def _assert_valid_surface(self) -> None:
@@ -201,7 +201,7 @@ class MPSurface(QObject):
             height = tile_dim(self.height, y, self._tiles_height - 1)
             tile = MPTile(pixel_buffer, clear_buffer_if_new, QSize(width, height))
             self._tiles[point] = tile
-            tile.setPos(QPoint(self._scene_position.x() + x * TILE_DIM,self._scene_position.y() + y * TILE_DIM))
+            tile.setPos(QPoint(self._scene_position.x() + x * TILE_DIM, self._scene_position.y() + y * TILE_DIM))
         if tile.scene() is None:
             self.tile_created.emit(tile)
         return tile

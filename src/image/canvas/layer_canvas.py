@@ -47,8 +47,8 @@ class LayerCanvas:
             self._layer.position_changed.connect(self._update_canvas_position)
             if self._edit_region is None:
                 self.edit_region = QRect(0, 0, new_layer.width, new_layer.height)
-            self._update_canvas_position(new_layer.position)
-        self._load_layer_content()
+            self._update_canvas_position(new_layer, new_layer.position)
+        self._load_layer_content(new_layer)
 
     @property
     def eraser(self) -> bool:
@@ -108,7 +108,7 @@ class LayerCanvas:
         if new_region is not None:
             self._update_scene_content_bounds(new_region)
             if self._layer is not None:
-                self._load_layer_content()
+                self._load_layer_content(self._layer)
 
     def start_stroke(self) -> None:
         """Signals the start of a brush stroke, to be called once whenever user input starts or resumes."""
@@ -130,7 +130,7 @@ class LayerCanvas:
     def end_stroke(self) -> None:
         """Finishes a brush stroke, copying it back to the layer."""
         self._drawing = False
-        self._copy_changes_to_layer()
+        self._copy_changes_to_layer(self._layer)
 
     def _set_brush_size(self, new_size: int) -> None:
         self._brush_size = new_size
@@ -148,7 +148,7 @@ class LayerCanvas:
         if self._z_value != z_value:
             self._z_value = z_value
 
-    def _update_canvas_position(self, new_position: QPoint) -> None:
+    def _update_canvas_position(self, layer: ImageLayer, new_position: QPoint) -> None:
         """Updates the canvas position within the graphics scene."""
         raise NotImplementedError('Implement _update_canvas_position to adjust canvas placement in the scene.')
 
@@ -161,11 +161,11 @@ class LayerCanvas:
         """Use active settings to draw to the canvas with the given inputs."""
         raise NotImplementedError('implement _draw to update the canvas image.')
 
-    def _load_layer_content(self) -> None:
+    def _load_layer_content(self, layer: ImageLayer) -> None:
         """Refreshes the layer content within the canvas, or clears it if the layer is hidden."""
         raise NotImplementedError('implement _load_layer_content to copy layer content to the canvas.')
 
-    def _copy_changes_to_layer(self):
+    def _copy_changes_to_layer(self, layer: ImageLayer):
         """Copies content back to the connected layer."""
         raise NotImplementedError('implement _copy_changes_to_layer to write the canvas content back to the layer.')
 

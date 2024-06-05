@@ -45,7 +45,7 @@ class ImageViewer(FixedAspectGraphicsView):
             layer.position_changed.connect(self._update_position)
             self.setOpacity(layer.opacity)
             self.setVisible(layer.visible)
-            self._update_pixmap()
+            self._update_pixmap(layer)
 
         def __del__(self):
             self._layer.visibility_changed.disconnect(self._update_visibility)
@@ -64,14 +64,14 @@ class ImageViewer(FixedAspectGraphicsView):
             self._hidden = hidden
             self.setVisible(self._layer.visible and not hidden)
 
-        def _update_pixmap(self) -> None:
+        def _update_pixmap(self, _) -> None:
             self.setPixmap(self._layer.pixmap)
             self.update()
 
-        def _update_visibility(self, visible: bool) -> None:
+        def _update_visibility(self, _, visible: bool) -> None:
             self.setVisible(visible and not self.hidden)
 
-        def _update_position(self, new_position: QPoint) -> None:
+        def _update_position(self, _, new_position: QPoint) -> None:
             self.setPos(new_position)
 
     def __init__(self, parent: Optional[QWidget], layer_stack: LayerStack, config: AppConfig) -> None:
@@ -103,6 +103,10 @@ class ImageViewer(FixedAspectGraphicsView):
         self._masked_selection_outline.setOpacity(0.9)
         self._masked_selection_outline.animated = True
         mask_layer = layer_stack.mask_layer
+
+        # active layer outline:
+        self._active_layer_outline = Outline(self.scene(), self)
+        self._active_layer_outline.dash_pattern = [5, 1]  # nearly solid line
 
         # border drawn when zoomed to selection:
         self._border = Border(self.scene(), self)
@@ -174,7 +178,7 @@ class ImageViewer(FixedAspectGraphicsView):
         layer_stack.layer_added.connect(add_layer)
         add_layer(layer_stack.mask_layer, -1)
         for i in range(layer_stack.count):
-            add_layer(layer_stack.get_layer(i), i)
+            add_layer(layer_stack.get_layer_by_index(i), i)
 
         def remove_layer(removed_layer: ImageLayer) -> None:
             """Removes an image layer from the view."""
@@ -192,7 +196,7 @@ class ImageViewer(FixedAspectGraphicsView):
         self.resizeEvent(None)
         # Add initial layers to the view:
         for i in range(layer_stack.count):
-            layer = self._layer_stack.get_layer(i)
+            layer = self._layer_stack.get_layer_by_index(i)
             add_layer(layer, i)
         update_selection(layer_stack.selection, None)
 

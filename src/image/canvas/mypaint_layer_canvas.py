@@ -75,7 +75,7 @@ class MyPaintLayerCanvas(LayerCanvas):
         """Returns last stroke bounding box height."""
         return self._last_stroke_bounds.height()
 
-    def _update_canvas_position(self, new_position: QPoint) -> None:
+    def _update_canvas_position(self, _, new_position: QPoint) -> None:
         """Updates the canvas position within the graphics scene."""
         self._mp_surface.scene_position = new_position
 
@@ -139,12 +139,13 @@ class MyPaintLayerCanvas(LayerCanvas):
         else:
             self._mp_surface.basic_stroke_to(x, y)
 
-    def _load_layer_content(self) -> None:
+    def _load_layer_content(self, layer: ImageLayer) -> None:
         """Refreshes the layer content within the canvas, or clears it if the layer is hidden."""
-        if self._layer is None or not self._layer.visible or self._edit_region.isEmpty():
+        assert layer == self._layer
+        if layer is None or not layer.visible or self._edit_region.isEmpty():
             self._mp_surface.clear()
         else:
-            image = self._layer.cropped_image_content(self._edit_region)
+            image = layer.cropped_image_content(self._edit_region)
             self._mp_surface.load_image(image)
 
     def _copy_changes_to_layer(self, use_stroke_bounds: bool = False):

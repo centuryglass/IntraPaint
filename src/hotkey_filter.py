@@ -1,6 +1,6 @@
 """Passes ImageViewer input events to an active editing tool."""
-from sys import version_info
 from typing import Optional, Dict, Callable, List, cast
+
 from PyQt5.QtCore import Qt, QObject, QEvent
 from PyQt5.QtGui import QKeyEvent
 from PyQt5.QtWidgets import QApplication, QWidget, QTextEdit, QLineEdit, QPlainTextEdit, QAbstractSpinBox, QDialog

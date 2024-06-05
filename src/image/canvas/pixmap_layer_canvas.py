@@ -1,11 +1,10 @@
 """
 Draws content to an image layer using basic Qt drawing operations.
 """
-import math
-from typing import Optional, Set
+from typing import Optional
 
-from PyQt5.QtCore import QRect, QSize, Qt, QPoint
-from PyQt5.QtGui import QColor, QImage, QPainter, QPixmap, QPen
+from PyQt5.QtCore import QRect, Qt, QPoint
+from PyQt5.QtGui import QPainter, QPixmap, QPen
 from PyQt5.QtWidgets import QGraphicsScene, QGraphicsPixmapItem
 
 from src.image.canvas.layer_canvas import LayerCanvas
@@ -41,7 +40,7 @@ class PixmapLayerCanvas(LayerCanvas):
         if self._pixmap_item is not None:
             self._pixmap_item.setOpacity(INACTIVE_PIXMAP_OPACITY)
 
-    def _update_canvas_position(self, new_position: QPoint) -> None:
+    def _update_canvas_position(self, _, new_position: QPoint) -> None:
         """Updates the canvas position within the graphics scene."""
         self._pixmap_item.setPos(new_position)
 
@@ -88,11 +87,12 @@ class PixmapLayerCanvas(LayerCanvas):
         self._last_point = QPoint(x, y)
         self._pixmap_item.setPixmap(pixmap)
 
-    def _load_layer_content(self) -> None:
+    def _load_layer_content(self, layer: ImageLayer) -> None:
         """Refreshes the layer content within the canvas, or clears it if the layer is hidden."""
+        assert self._layer == layer
         if self._pixmap_item is None:
             return
-        if self._layer is not None and self._layer.visible:
+        if layer is not None and layer.visible:
             pixmap = QPixmap.fromImage(self._layer.cropped_image_content(self.edit_region))
         else:
             pixmap = QPixmap(self.edit_region.size())

@@ -10,19 +10,26 @@ from contextlib import contextmanager
 from PyQt5.QtGui import QImage, QPainter, QPixmap
 from PyQt5.QtCore import Qt, QObject, QRect, QPoint, QSize, pyqtSignal
 from PIL import Image
-from src.util.image_utils import pil_image_to_qimage
+from src.ui.modal.modal_utils import show_error_dialog
+from src.util.image_utils import pil_image_to_qimage, image_content_bounds
 from src.util.validation import assert_type, assert_types
 from src.util.cached_data import CachedData
 from src.undo_stack import commit_action, last_action
+
+CROP_TO_CONTENT_ERROR_TITLE = 'Layer cropping failed'
+CROP_TO_CONTENT_ERROR_MESSAGE_EMPTY = 'Layer has no image content.'
+CROP_TO_CONTENT_ERROR_MESSAGE_FULL = 'Layer is already cropped to fit image content.'
 
 
 class ImageLayer(QObject):
     """Represents an edited image layer."""
 
-    visibility_changed = pyqtSignal(bool)
-    content_changed = pyqtSignal()
-    opacity_changed = pyqtSignal(float)
-    position_changed = pyqtSignal(QPoint)
+    visibility_changed = pyqtSignal(QObject, bool)
+    content_changed = pyqtSignal(QObject)
+    opacity_changed = pyqtSignal(QObject, float)
+    position_changed = pyqtSignal(QObject, QPoint)
+
+    _next_layer_id = 0
 
     def __init__(
             self,
@@ -49,10 +56,12 @@ class ImageLayer(QObject):
         self._opacity = 1.0
         self._pixmap = CachedData(None)
         self._position = QPoint(0, 0)
+        self._id = ImageLayer._next_layer_id
+        ImageLayer._next_layer_id += 1
         if isinstance(image_data, QPixmap):
             self.pixmap = image_data
         elif isinstance(image_data, Image.Image):
-            self.pil_image = image_data
+            self.qimage = pil_image_to_qimage(image_data)
         elif isinstance(image_data, QImage):
             self.qimage = image_data
         elif isinstance(image_data, QSize):
@@ -62,8 +71,11 @@ class ImageLayer(QObject):
         else:
             raise TypeError(f'Invalid layer image data: {image_data}')
 
-
-    # PROPERTY DEFINITIONS: 
+    # PROPERTY DEFINITIONS:
+    @property
+    def id(self) -> int:
+        """Gets this layer's unique identifier"""
+        return self._id
 
     @property
     def opacity(self) -> float:
@@ -74,7 +86,7 @@ class ImageLayer(QObject):
     def opacity(self, new_opacity) -> None:
         """Updates the layer opacity."""
         self._opacity = new_opacity
-        self.opacity_changed.emit(new_opacity)
+        self.opacity_changed.emit(self, new_opacity)
 
     @property
     def position(self) -> QPoint:
@@ -88,7 +100,7 @@ class ImageLayer(QObject):
 
         def _apply_move(pos: QPoint):
             self._position = pos
-            self.position_changed.emit(pos)
+            self.position_changed.emit(self, pos)
 
         # Merge position change operations in the undo history:
         action_type = 'image_layer.position'
@@ -114,7 +126,7 @@ class ImageLayer(QObject):
         else:
             self._image = new_image
         self._pixmap.invalidate()
-        self.content_changed.emit()
+        self.content_changed.emit(self)
 
     @property
     def pixmap(self) -> QPixmap:
@@ -130,7 +142,7 @@ class ImageLayer(QObject):
         if new_pixmap != self._pixmap:
             self._pixmap.data = new_pixmap
             self._image = new_pixmap.toImage()
-            self.content_changed.emit()
+            self.content_changed.emit(self)
 
     @property
     def size(self) -> QSize:
@@ -148,7 +160,7 @@ class ImageLayer(QObject):
         else:
             return
         self._pixmap.invalidate()
-        self.content_changed.emit()
+        self.content_changed.emit(self)
 
     @property
     def width(self) -> int:
@@ -170,7 +182,7 @@ class ImageLayer(QObject):
         """Sets whether this layer is marked as visible."""
         if self._visible != bool(visible):
             self._visible = bool(visible)
-            self.visibility_changed.emit(self._visible)
+            self.visibility_changed.emit(self, self._visible)
 
     @property
     def name(self) -> str:
@@ -193,14 +205,13 @@ class ImageLayer(QObject):
         """Sets whether this layer is saved when visible and image data is saved."""
         self._saved = saved
 
-
     # LAYER/IMAGE FUNCTIONS:
+
     def copy(self) -> Self:
         """Creates a copy of this layer."""
         layer = ImageLayer(self._image.copy(), self.name + ' copy', self.saved)
         layer.opacity = self.opacity
         return layer
-
 
     def set_position(self, position: QPoint, allow_undo=True):
         """Updates the layer placement relative to the full image, with the option to not register to change history."""
@@ -208,7 +219,7 @@ class ImageLayer(QObject):
             self.position = position
         else:
             self._position = position
-            self.position_changed.emit(position)
+            self.position_changed.emit(self, position)
 
     @contextmanager
     def borrow_image(self) -> Generator[Optional[QImage], None, None]:
@@ -217,13 +228,12 @@ class ImageLayer(QObject):
             yield self._image
         finally:
             self._pixmap.invalidate()
-            self.content_changed.emit()
+            self.content_changed.emit(self)
 
     def refresh_pixmap(self) -> None:
         """Regenerate the image pixmap cache and notify self.content_changed subscribers."""
         self._pixmap.data = self._generate_pixmap(self._image)
-        self.content_changed.emit()
-
+        self.content_changed.emit(self)
 
     def resize_canvas(self, new_size: QSize, x_offset: int, y_offset: int):
         """
@@ -249,7 +259,7 @@ class ImageLayer(QObject):
         painter.end()
         self._image = new_image
         self._pixmap.invalidate()
-        self.content_changed.emit()
+        self.content_changed.emit(self)
 
     def cropped_image_content(self, bounds_rect: QRect) -> QImage:
         """Returns the contents of a bounding QRect as a QImage object."""
@@ -298,7 +308,42 @@ class ImageLayer(QObject):
         """Replaces all image content with transparency."""
         self._image.fill(Qt.transparent)
         self._pixmap.invalidate()
-        self.content_changed.emit()
+        self.content_changed.emit(self)
+
+    def flip_horizontal(self):
+        """Mirrors layer content horizontally, saving the change to the undo history."""
+
+        def _flip():
+            self.qimage = self.qimage.mirrored(horizontal=True, vertical=False)
+        commit_action(_flip, _flip)
+
+    def flip_vertical(self):
+        """Mirrors layer content vertically, saving the change to the undo history."""
+
+        def _flip():
+            self.qimage = self.qimage.mirrored(horizontal=False, vertical=True)
+        commit_action(_flip, _flip)
+
+    def crop_to_content(self):
+        """Crops the layer to remove transparent areas."""
+        full_bounds = QRect(self.position, self.size)
+        cropped_bounds = image_content_bounds(self.qimage)
+        if cropped_bounds.isNull():
+            show_error_dialog(None, CROP_TO_CONTENT_ERROR_TITLE, CROP_TO_CONTENT_ERROR_MESSAGE_EMPTY)
+        elif cropped_bounds.size() == full_bounds.size():
+            show_error_dialog(None, CROP_TO_CONTENT_ERROR_TITLE, CROP_TO_CONTENT_ERROR_MESSAGE_FULL)
+        else:
+            full_image = self.qimage.copy()
+            cropped_image = full_image.copy(cropped_bounds)
+
+            def _do_crop():
+                self.qimage = cropped_image
+                self.set_position(full_bounds.topLeft() + cropped_bounds.topLeft(), False)
+
+            def _undo_crop():
+                self.qimage = full_image
+                self.set_position(full_bounds.topLeft(), False)
+            commit_action(_do_crop, _undo_crop)
 
     # INTERNAL:
 
