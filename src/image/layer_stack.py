@@ -591,10 +591,10 @@ class LayerStack(QObject):
         if layer is None:
             return
         inpaint_mask = self.mask_layer.qimage
-        image = layer.qimage.copy()
+        image = layer.qimage.copy(QRect(-layer.position.x(), -layer.position.y(), self.width, self.height))
         painter = QPainter(image)
         painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_DestinationIn)
-        painter.drawImage(QRect(-layer.position.x(), -layer.position.y(), image.width(), image.height()), inpaint_mask)
+        painter.drawImage(QRect(0, 0, image.width(), image.height()), inpaint_mask)
         painter.end()
         self._copy_buffer = image
         return image
