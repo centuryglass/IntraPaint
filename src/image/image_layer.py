@@ -27,7 +27,7 @@ class ImageLayer(QObject):
     visibility_changed = pyqtSignal(QObject, bool)
     content_changed = pyqtSignal(QObject)
     opacity_changed = pyqtSignal(QObject, float)
-    position_changed = pyqtSignal(QObject, QPoint)
+    bounds_changed = pyqtSignal(QObject, QRect)
 
     _next_layer_id = 0
 
@@ -100,7 +100,7 @@ class ImageLayer(QObject):
 
         def _apply_move(pos: QPoint):
             self._position = pos
-            self.position_changed.emit(self, pos)
+            self.bounds_changed.emit(self, self.geometry)
 
         # Merge position change operations in the undo history:
         action_type = 'image_layer.position'
@@ -121,12 +121,15 @@ class ImageLayer(QObject):
     @qimage.setter
     def qimage(self, new_image: QImage) -> None:
         """Replaces the layer's QImage content."""
+        size_changed = new_image.size() != self.size
         if new_image.format() != QImage.Format_ARGB32_Premultiplied:
             self._image = new_image.convertToFormat(QImage.Format_ARGB32_Premultiplied)
         else:
             self._image = new_image
         self._pixmap.invalidate()
         self.content_changed.emit(self)
+        if size_changed:
+            self.bounds_changed.emit(self, self.geometry)
 
     @property
     def pixmap(self) -> QPixmap:
@@ -161,15 +164,21 @@ class ImageLayer(QObject):
             return
         self._pixmap.invalidate()
         self.content_changed.emit(self)
+        self.bounds_changed.emit(self, self.geometry)
+
+    @property
+    def geometry(self) -> QRect:
+        """Returns the layer's position and size."""
+        return QRect(self.position, self.size)
 
     @property
     def width(self) -> int:
-        """Returns the edited image width in pixels."""
+        """Returns the layer width in pixels."""
         return self.size.width()
 
     @property
     def height(self) -> int:
-        """Returns the edited image height in pixels."""
+        """Returns the layer height in pixels."""
         return self.size.height()
 
     @property
@@ -219,7 +228,7 @@ class ImageLayer(QObject):
             self.position = position
         else:
             self._position = position
-            self.position_changed.emit(self, position)
+            self.bounds_changed.emit(self, self.geometry)
 
     @contextmanager
     def borrow_image(self) -> Generator[Optional[QImage], None, None]:
@@ -260,6 +269,7 @@ class ImageLayer(QObject):
         self._image = new_image
         self._pixmap.invalidate()
         self.content_changed.emit(self)
+        self.bounds_changed.emit(self, self.geometry)
 
     def cropped_image_content(self, bounds_rect: QRect) -> QImage:
         """Returns the contents of a bounding QRect as a QImage object."""

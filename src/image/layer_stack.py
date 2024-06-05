@@ -1,6 +1,6 @@
 """Manages an edited image composed of multiple layers."""
 import re
-from typing import Optional, Tuple
+from typing import Optional, Tuple, Dict, Any
 
 from PIL import Image
 from PyQt5.QtCore import Qt, QObject, QSize, QPoint, QRect, pyqtSignal
@@ -632,6 +632,43 @@ class LayerStack(QObject):
             raise RuntimeError(f'set_selection_content: No layer specified, and no layer is active, layer={layer}')
         insert_layer.insert_image_content(image_data, self.selection, composition_mode)
 
+    def save_layer_stack_file(self, file_path: str, metadata: Dict[str, Any]) -> None:
+        size = self.size
+        data = {'metadata': metadata, 'size': f'{size.width()}x{size.height()}', 'files': []}
+        # Create temporary directory tmpdir
+        # Save mask as {tmpdir}/mask.png
+        # For each layer:
+        #   filename = {index}_{layer.name}.png
+        #   save to {tmpdir}/{filename}
+        #   layer_data = {
+        #       'name': filename,
+        #       'pos': f'{layer.position.x()},{layer.position.y()}
+        #       'visible: f'{layer.visible}
+        #   }
+        #   data['files'].append(layer_data)
+        # save data as json to {tmpdir}/data.json
+        # compress tmpdir contents
+        # move compressed to file_path
+        # remove tmpdir
+
+    def load_layer_stack_file(self, file_path: Optional[str] = None) -> None:
+        """
+        create temporary directory tmpdir
+        extract file_path to tmpdir
+        load data from {tmpdir}/data.json
+        self._metadata = data['metadata']
+        layers = []
+        mask_layer = QImage(f'{tmpdir}/mask.json')
+
+        for layer_data in layer['files']:
+            split layer_data['filename'] into {index}_{layer_name}.png
+            image = QImage(layer_data['filename'])
+            layers.append((layer_data['
+            self._layer_stack.create_layer(layer_name, image)
+            layer = self._layer_stack.get_layer(self._layer_stack.count - 1)
+            layer.position = layer_data['position']
+        """
+        
     def set_image(self, image_data: Image.Image | QImage | QPixmap):
         """
         Loads a new image to be edited. This clears all layers, updates the image size, and inserts the image as a new

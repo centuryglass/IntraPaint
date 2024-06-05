@@ -39,12 +39,12 @@ class LayerCanvas:
                 self.end_stroke()
             self._layer.visibility_changed.disconnect(self._load_layer_content)
             self._layer.content_changed.disconnect(self._load_layer_content)
-            self._layer.position_changed.disconnect(self._update_canvas_position)
+            self._layer.bounds_changed.disconnect(self._handle_bounds_change)
         self._layer = new_layer
         if new_layer is not None:
             self._layer.visibility_changed.connect(self._load_layer_content)
             self._layer.content_changed.connect(self._load_layer_content)
-            self._layer.position_changed.connect(self._update_canvas_position)
+            self._layer.bounds_changed.connect(self._handle_bounds_change)
             if self._edit_region is None:
                 self.edit_region = QRect(0, 0, new_layer.width, new_layer.height)
             self._update_canvas_position(new_layer, new_layer.position)
@@ -147,6 +147,11 @@ class LayerCanvas:
         """Updates the level where content will be shown in a GraphicsScene."""
         if self._z_value != z_value:
             self._z_value = z_value
+
+    def _handle_bounds_change(self, layer: ImageLayer, new_bounds: QRect) -> None:
+        if new_bounds.size() != self.edit_region.size():
+            self._update_scene_content_bounds(QRect(self.edit_region.topLeft(), new_bounds.width()))
+        self._update_canvas_position(layer, new_bounds.topLeft())
 
     def _update_canvas_position(self, layer: ImageLayer, new_position: QPoint) -> None:
         """Updates the canvas position within the graphics scene."""

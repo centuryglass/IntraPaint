@@ -27,8 +27,8 @@ class Border(QGraphicsItem):
               unused_option: Optional[QStyleOptionGraphicsItem],
               unused_widget: Optional[QWidget] = None) -> None:
         """Draws the outline within the scene."""
-        height = self._view.contentsRect().height()
-        width = self._view.contentsRect().width()
+        height = self._view.scene().height()
+        width = self._view.scene().width()
         window_right = self._rect.x() + self._rect.width()
         window_bottom = self._rect.y() + self._rect.height()
         left = QRectF(0.0, 0.0, self._rect.x(), height)

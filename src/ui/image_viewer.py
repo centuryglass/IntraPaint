@@ -4,7 +4,7 @@ A PyQt5 widget wrapper for the LayerStack class.
 import math
 from typing import Optional, cast
 
-from PyQt5.QtCore import Qt, QRect, QRectF, QSize, QPoint, QPointF, QEvent, pyqtSignal
+from PyQt5.QtCore import Qt, QRect, QRectF, QSize, QPoint, QPointF, QEvent, pyqtSignal, QSizeF
 from PyQt5.QtGui import QPainter, QMouseEvent, QWheelEvent
 from PyQt5.QtWidgets import QWidget, QSizePolicy, QGraphicsPixmapItem, QApplication
 
@@ -42,7 +42,7 @@ class ImageViewer(FixedAspectGraphicsView):
             layer.visibility_changed.connect(self._update_visibility)
             layer.content_changed.connect(self._update_pixmap)
             layer.opacity_changed.connect(self.setOpacity)
-            layer.position_changed.connect(self._update_position)
+            layer.bounds_changed.connect(self._update_position)
             self.setOpacity(layer.opacity)
             self.setVisible(layer.visible)
             self._update_pixmap(layer)
@@ -51,7 +51,7 @@ class ImageViewer(FixedAspectGraphicsView):
             self._layer.visibility_changed.disconnect(self._update_visibility)
             self._layer.content_changed.disconnect(self._update_pixmap)
             self._layer.opacity_changed.disconnect(self.setOpacity)
-            self._layer.position_changed.disconnect(self._update_position)
+            self._layer.bounds_changed.disconnect(self._update_position)
 
         @property
         def hidden(self) -> bool:
@@ -71,8 +71,8 @@ class ImageViewer(FixedAspectGraphicsView):
         def _update_visibility(self, _, visible: bool) -> None:
             self.setVisible(visible and not self.hidden)
 
-        def _update_position(self, _, new_position: QPoint) -> None:
-            self.setPos(new_position)
+        def _update_position(self, _, new_bounds: QRect) -> None:
+            self.setPos(new_bounds.topLeft())
 
     def __init__(self, parent: Optional[QWidget], layer_stack: LayerStack, config: AppConfig) -> None:
         super().__init__(parent)
@@ -92,6 +92,9 @@ class ImageViewer(FixedAspectGraphicsView):
         # TODO: Hidden layers either need to be cleared periodically or tracked by other means, or else memory taken
         #      by removed layers will never be cleared.
 
+        # View offset handling:
+        self._drag_pt: Optional[QPoint] = None
+
         # Selection and border rectangle setup:
         self._scene_outline = Outline(self.scene(), self)
         self._scene_outline.dash_pattern = [1, 0]  # solid line
@@ -105,8 +108,28 @@ class ImageViewer(FixedAspectGraphicsView):
         mask_layer = layer_stack.mask_layer
 
         # active layer outline:
+        self._active_layer_id = -1
         self._active_layer_outline = Outline(self.scene(), self)
         self._active_layer_outline.dash_pattern = [5, 1]  # nearly solid line
+
+        def _update_active_layer_border(_, new_bounds: QRect) -> None:
+            self._active_layer_outline.outlined_region = QRectF(new_bounds)
+
+        def _update_active_layer_tracking(active_id: int, _) -> None:
+            if active_id != self._active_layer_id:
+                last_active = layer_stack.get_layer_by_id(self._active_layer_id)
+                if last_active is not None:
+                    last_active.bounds_changed.disconnect(_update_active_layer_border)
+                self._active_layer_id = active_id
+                if active_id is not None:
+                    new_active_layer = layer_stack.get_layer_by_id(active_id)
+                    if new_active_layer is not None:
+                        new_active_layer.bounds_changed.connect(_update_active_layer_border)
+                        self._active_layer_outline.outlined_region = QRectF(new_active_layer.geometry)
+                        self._active_layer_outline.setVisible(True)
+                else:
+                    self._active_layer_outline.setVisible(False)
+        layer_stack.active_layer_changed.connect(_update_active_layer_tracking)
 
         # border drawn when zoomed to selection:
         self._border = Border(self.scene(), self)
@@ -131,9 +154,6 @@ class ImageViewer(FixedAspectGraphicsView):
                 update_selection_only_bounds()
         config.connect(self, AppConfig.INPAINT_FULL_RES, update_masked_selection_visibility)
         config.connect(self, AppConfig.INPAINT_FULL_RES_PADDING, update_selection_only_bounds)
-
-        # View offset handling:
-        self._drag_pt: Optional[QPoint] = None
 
         # Connect layer stack event handlers:
         layer_stack.visible_content_changed.connect(self._update_drawn_borders)
@@ -167,7 +187,7 @@ class ImageViewer(FixedAspectGraphicsView):
             layer_item.setPos(new_layer.position)
             self._layer_items[new_layer] = layer_item
             self.scene().addItem(layer_item)
-            for outline in self._selection_outline, self._masked_selection_outline, self._border:
+            for outline in self._selection_outline, self._masked_selection_outline, self._active_layer_outline, self._border:
                 outline.setZValue(max(self._selection_outline.zValue(), index + 1))
             if new_layer in self._hidden:
                 layer_item.hidden = True
@@ -256,25 +276,6 @@ class ImageViewer(FixedAspectGraphicsView):
         self._follow_selection = False
         super().reset_scale()
 
-    def _update_drawn_borders(self):
-        """Make sure that the selection and image borders are in the right place in the scene."""
-        scene_rect = QRectF(0.0, 0.0, float(self.content_size.width()), float(self.content_size.height()))
-        selection = QRectF(self._selection.x(), self._selection.y(), self._selection.width(), self._selection.height())
-        self._scene_outline.outlined_region = scene_rect
-        image_loaded = self._layer_stack.has_image
-        self._scene_outline.setVisible(image_loaded)
-        self._selection_outline.outlined_region = selection
-        self._border.windowed_area = selection.toAlignedRect()
-        self._selection_outline.setVisible(image_loaded)
-        self._masked_selection_outline.setVisible(image_loaded and self._config.get(AppConfig.INPAINT_FULL_RES))
-        mask_layer = self._layer_stack.mask_layer
-        bounds = mask_layer.get_masked_area()
-        if bounds is not None:
-            self._masked_selection_outline.setVisible(mask_layer.visible)
-            self._masked_selection_outline.outlined_region = QRectF(bounds)
-        else:
-            self._masked_selection_outline.setVisible(False)
-
     def sizeHint(self) -> QSize:
         """Returns image size as ideal widget size."""
         return self.content_size
@@ -332,3 +333,28 @@ class ImageViewer(FixedAspectGraphicsView):
             self.resizeEvent(None)
             return True
         return False
+
+    def _update_drawn_borders(self):
+        """Make sure that the selection and image borders are in the right place in the scene."""
+        scene_rect = QRectF(0.0, 0.0, float(self.content_size.width()), float(self.content_size.height()))
+        selection = QRectF(self._selection.x(), self._selection.y(), self._selection.width(), self._selection.height())
+        self._scene_outline.outlined_region = scene_rect
+        image_loaded = self._layer_stack.has_image
+        self._scene_outline.setVisible(image_loaded)
+        self._selection_outline.outlined_region = selection
+        self._border.windowed_area = selection.toAlignedRect()
+        self._selection_outline.setVisible(image_loaded)
+        self._masked_selection_outline.setVisible(image_loaded and self._config.get(AppConfig.INPAINT_FULL_RES))
+        if self._layer_stack.active_layer_id is not None:
+            self._active_layer_outline.setVisible(True)
+            self._active_layer_outline.outlined_region = QRectF(QPointF(self._layer_stack.active_layer.position),
+                                                                QSizeF(self._layer_stack.active_layer.size))
+        else:
+            self._active_layer_outline.setVisible(False)
+        mask_layer = self._layer_stack.mask_layer
+        bounds = mask_layer.get_masked_area()
+        if bounds is not None:
+            self._masked_selection_outline.setVisible(mask_layer.visible)
+            self._masked_selection_outline.outlined_region = QRectF(bounds)
+        else:
+            self._masked_selection_outline.setVisible(False)

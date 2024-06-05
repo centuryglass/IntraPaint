@@ -167,7 +167,7 @@ class MPSurface(QObject):
                 y_px = y * TILE_DIM
                 if MPTile.copy_image_into_pixel_buffer(pixel_buffer, image, x_px, y_px, True):
                     tile = self.get_tile_from_idx(x, y, False)
-                    tile.update_cache()
+                    tile.set_cache(image.copy(QRect(x_px, y_px, tile.size.width(), tile.size.height())))
                     self.tile_updated.emit(tile)
 
     def clear(self) -> None:

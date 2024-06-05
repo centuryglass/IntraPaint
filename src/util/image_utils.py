@@ -75,25 +75,30 @@ def image_content_bounds(image: QImage | np.ndarray, search_bounds: Optional[QRe
     else:
         np_image = image
     if search_bounds is not None:
-        x_min = min(0, search_bounds.x())
+        x_min = max(0, search_bounds.x())
         x_max = min(np_image.shape[1], search_bounds.x() + search_bounds.width())
-        y_min = min(0, search_bounds.y())
+        y_min = max(0, search_bounds.y())
         y_max = min(np_image.shape[0], search_bounds.y() + search_bounds.height())
         if x_max <= x_min or y_max <= y_min:
             return QRect()
         np_image = np_image[y_min:y_max, x_min:x_max:, :]
+    else:
+        x_min = 0
+        y_min = 0
+        y_max = np_image.shape[0]
+        x_max = np_image.shape[1]
     content_rows = np.any(np_image[:, :, 3] > alpha_threshold, axis=1)
     if not np.any(content_rows):
         return QRect()
     content_columns = np.any(np_image[:, :, 3] > alpha_threshold, axis=0)
-    min_content_row = np.argmax(content_rows)
-    max_content_row = np_image.shape[0] - np.argmax(np.flip(content_rows)) - 1
-    min_content_column = np.argmax(content_columns)
-    max_content_column = np_image.shape[1] - np.argmax(np.flip(content_columns)) - 1
+    min_content_row = y_min + np.argmax(content_rows)
+    max_content_row = y_max - np.argmax(np.flip(content_rows)) - 1
+    min_content_column = x_min + np.argmax(content_columns)
+    max_content_column = x_max - np.argmax(np.flip(content_columns)) - 1
     if search_bounds is None:
         search_bounds = QRect(0, 0, np_image.shape[1], np_image.shape[0])
-    left = search_bounds.x() + min_content_column
-    top = search_bounds.y() + min_content_row
+    left = min_content_column
+    top = min_content_row
     width = max_content_column - min_content_column + 1
     height = max_content_row - min_content_row + 1
     logger.debug(f'image_content_bounds: searched {search_bounds.width()}x{search_bounds.height()} region at '
@@ -101,4 +106,6 @@ def image_content_bounds(image: QImage | np.ndarray, search_bounds: Optional[QRe
                  f'content bounds {width}x{height} at ({left},{top})')
     if width <= 0 or height <= 0:
         return QRect()
-    return QRect(left, top, width, height)
+    bounds = QRect(left, top, width, height)
+    assert search_bounds.contains(bounds)
+    return bounds
