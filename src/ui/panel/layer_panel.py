@@ -7,9 +7,10 @@ from PyQt5.QtCore import Qt, QRect, QSize, QPoint
 from PyQt5.QtSvg import QSvgWidget
 from src.image.image_layer import ImageLayer
 from src.image.layer_stack import LayerStack
-from src.ui.util.get_scaled_placement import get_scaled_placement
+from src.ui.util.geometry_utils import get_scaled_placement, get_rect_transformation
 from src.ui.widget.bordered_widget import BorderedWidget
 from src.ui.util.tile_pattern_fill import get_transparency_tile_pixmap
+from src.ui.util.screen_size import screen_size
 
 LIST_SPACING = 4
 DEFAULT_LIST_ITEM_SIZE = QSize(350, 60)
@@ -50,6 +51,7 @@ class LayerItem(BorderedWidget):
         self._layout.addWidget(self._label, stretch=40)
         self._layer.content_changed.connect(self.update)
         self._layer.visibility_changed.connect(self.update)
+        self._layer.bounds_changed.connect(self._update_all)
         self._active = False
         self._active_color = self.color
         self._inactive_color = self._active_color.darker() if self._active_color.lightness() > 100 \
@@ -85,24 +87,37 @@ class LayerItem(BorderedWidget):
 
     def paintEvent(self, event: Optional[QPaintEvent]) -> None:
         """Draws the scaled layer contents to the widget."""
+        content_bounds = self._layer_stack.merged_layer_geometry
+        image_bounds = self._layer_stack.geometry
+        layer_bounds = self._layer.geometry
         pixmap = self._layer.pixmap
-        pixmap_bounds = QRect(0, 0, self._label.x(), self.height())
-        pixmap_bounds = get_scaled_placement(pixmap_bounds, pixmap.size(), 2)
-        pixmap_bounds.moveLeft(LIST_SPACING)
+        paint_bounds = QRect(0, 0, self._label.x(), self.height())
+        paint_bounds = get_scaled_placement(paint_bounds, content_bounds.size(), 2)
+        paint_bounds.moveLeft(LIST_SPACING)
+        transformation = get_rect_transformation(content_bounds, paint_bounds)
         painter = QPainter(self)
         if self._layer != self._layer_stack.mask_layer:
-            painter.drawTiledPixmap(pixmap_bounds, LayerItem._layer_transparency_background)
+            painter.drawTiledPixmap(paint_bounds, LayerItem._layer_transparency_background)
         else:
-            painter.setPen(Qt.black)
-            painter.drawRect(pixmap_bounds)
-        painter.drawPixmap(pixmap_bounds, pixmap)
+            painter.fillRect(paint_bounds, Qt.GlobalColor.darkGray)
+        painter.setPen(Qt.black)
+        painter.drawRect(paint_bounds)
+        painter.drawPixmap(transformation.mapRect(layer_bounds), pixmap)
+        painter.drawRect(transformation.mapRect(image_bounds))
+        painter.drawRect(transformation.mapRect(layer_bounds))
         if not self._layer.visible:
-            painter.fillRect(pixmap_bounds, QColor.fromRgb(0, 0, 0, 100))
+            painter.fillRect(paint_bounds, QColor.fromRgb(0, 0, 0, 100))
         super().paintEvent(event)
 
     def sizeHint(self) -> QSize:
         """Returns a reasonable default size."""
-        return DEFAULT_LIST_ITEM_SIZE
+        width = DEFAULT_LIST_SIZE.width()
+        height = min(DEFAULT_LIST_SIZE.height(), self._label.sizeHint().height() * 3)
+        screen = screen_size(self)
+        if screen is not None:
+            width = min(width, screen.width() // 5)
+            height = min(height, screen.height() // 16)
+        return QSize(width, height)
 
     @property
     def layer(self) -> ImageLayer:
@@ -123,10 +138,19 @@ class LayerItem(BorderedWidget):
 
     def mousePressEvent(self, event: Optional[QMouseEvent]) -> None:
         """Activate layer on click."""
-        if not self.active and event.button() == Qt.MouseButton.LeftButton:
+        if self._layer == self._layer_stack.mask_layer:
+            print('TODO: activate mask tool on mask layer click')
+        elif not self.active and event.button() == Qt.MouseButton.LeftButton:
             self._layer_stack.active_layer = self._layer
             self.active = True
             self.update()
+
+    def _update_all(self) -> None:
+        parent = self.parent()
+        if parent is None:
+            return
+        for child in parent.children():
+            child.update()
 
     def _menu(self, pos: QPoint) -> None:
         menu = QMenu()
@@ -294,4 +318,8 @@ class LayerPanel(QWidget):
 
     def sizeHint(self) -> QSize:
         """Returns a reasonable default size."""
-        return DEFAULT_LIST_SIZE
+        screen = screen_size(self)
+        if screen is not None:
+            width = min(DEFAULT_LIST_SIZE.width(), screen.width() // 5)
+            height = min(DEFAULT_LIST_SIZE.height(), screen.height() // 5)
+        return QSize(width, height)

@@ -14,7 +14,7 @@ from src.config.application_config import AppConfig
 from src.image.layer_stack import LayerStack
 from src.ui.util.contrast_color import contrast_color
 from src.ui.util.equal_margins import get_equal_margins
-from src.ui.util.get_scaled_placement import get_scaled_placement
+from src.ui.util.geometry_utils import get_scaled_placement
 from src.ui.widget.loading_widget import LoadingWidget
 from src.util.image_utils import pil_image_to_qimage
 

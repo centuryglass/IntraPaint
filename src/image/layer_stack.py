@@ -95,6 +95,8 @@ class LayerStack(QObject):
             layer = self.get_layer_by_id(new_id)
         else:
             raise TypeError(f'Invalid active layer parameter {new_active_layer}, expected ImageLayer or int ID.')
+        if layer is not None:
+            assert layer in self._layers, f'Tried to set removed or invalid layer {layer.name} as active'
         new_idx = None if layer is None else self.get_layer_index(layer)
         if last_id == new_id and last_idx == new_idx:
             return
@@ -133,6 +135,20 @@ class LayerStack(QObject):
         """Gets the size of the edited image."""
         return QSize(self._size.width(), self._size.height())
 
+    @property
+    def geometry(self) -> QRect:
+        """Gets image geometry as a QRect. Image position will always be 0,0, so this is mostly a convenience function
+           for assorted rectangle calculations."""
+        return QRect(QPoint(0, 0), self._size)
+
+    @property
+    def merged_layer_geometry(self) -> QRect:
+        """Gets the bounding box containing all image layers."""
+        bounds = self.geometry
+        for layer in self._layers:
+            bounds = bounds.united(layer.geometry)
+        return bounds
+
     @size.setter
     def size(self, new_size) -> None:
         """Updates the full image size, scaling the mask layer."""
@@ -148,6 +164,7 @@ class LayerStack(QObject):
         self.size_changed.emit(self.size)
         self._mask_layer.size = self.size
         self.visible_content_changed.emit()
+
 
     @property
     def width(self) -> int:

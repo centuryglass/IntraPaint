@@ -97,7 +97,6 @@ class MaskLayer(ImageLayer):
             self._bounding_box = None
         else:
             self._bounding_box = bounds
-            print(f'selection area: {bounds} in {selection}')
 
     def selection_is_empty(self) -> bool:
         """Returns whether the current selection mask is empty."""

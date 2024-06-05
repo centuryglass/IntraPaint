@@ -7,7 +7,7 @@ from PyQt5.QtGui import QPainter, QColor, QPen, QPaintEvent
 from PyQt5.QtCore import Qt, QPoint, QRect, QMargins
 from src.ui.util.contrast_color import contrast_color
 
-DEFAULT_MARGIN = 5
+DEFAULT_MARGIN = 2
 DEFAULT_LINE_MARGIN = 1
 DEFAULT_LINE_WIDTH = 1
 

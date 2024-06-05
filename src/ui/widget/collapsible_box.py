@@ -55,6 +55,7 @@ class CollapsibleBox(BorderedWidget):
         else:
             self._toggle_label = Label(title)
             self._toggle_label.setAlignment(Qt.AlignmentFlag.AlignTop)
+            self._toggle_label.set_inverted(True)
             self._toggle_button.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonIconOnly)
             button_bar = QWidget()
             button_bar_layout = QVBoxLayout()

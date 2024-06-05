@@ -11,7 +11,7 @@ from src.image.layer_stack import LayerStack
 from src.tools.base_tool import BaseTool
 from src.ui.image_viewer import ImageViewer
 
-RESOURCES_SELECTION_ICON = 'resources/selection.svg'
+RESOURCES_SELECTION_ICON = 'resources/layer_transform.svg'
 TRANSFORM_LABEL = 'Transform Layers'
 TRANSFORM_TOOLTIP = 'Move, scale, or rotate the active layer.'
 
@@ -25,7 +25,7 @@ class LayerTransformTool(BaseTool):
         self._image_viewer = image_viewer
         self._config = config
         self._icon = QIcon(RESOURCES_SELECTION_ICON)
-        self.cursor = QCursor(Qt.CursorShape.CrossCursor)
+        self.cursor = QCursor(Qt.CursorShape.OpenHandCursor)
         self._control_panel: Optional[QWidget] = None
         self._control_layout: Optional[QVBoxLayout] = None
         self._dragging = False

@@ -6,13 +6,14 @@ import os
 import re
 from typing import Optional, Any
 
-from PyQt5.QtCore import Qt, QRect, QPoint, pyqtSignal
+from PyQt5.QtCore import Qt, QRect, QPoint, pyqtSignal, QSize
 from PyQt5.QtGui import QPixmap, QImage, QPainter, QPaintEvent, QMouseEvent, QResizeEvent
 from PyQt5.QtWidgets import QWidget, QTabWidget, QGridLayout, QScrollArea, QSizePolicy, QMenu
 
 from src.config.application_config import AppConfig
 from src.image.canvas.mypaint.mp_brush import MPBrush
-from src.ui.util.get_scaled_placement import get_scaled_placement
+from src.ui.util.geometry_utils import get_scaled_placement
+from src.ui.util.screen_size import screen_size
 
 
 class BrushPanel(QTabWidget):
@@ -49,6 +50,12 @@ class BrushPanel(QTabWidget):
         self._read_order_file(os.path.join(BrushPanel.BRUSH_DIR, BrushPanel.BRUSH_CONF_FILE))
         self._setup_brush_tabs()
         self._setup_favorites_tab()
+
+    def sizeHint(self) -> QSize:
+        screen = screen_size(self)
+        if screen is None:
+            return super().sizeHint()
+        return QSize(screen.width() // 5, screen.height() // 5)
 
     def _setup_brush_tabs(self) -> None:
         """Reads in brush files, organizes them into tabs."""
@@ -234,6 +241,19 @@ class _IconButton(QWidget):
     def resizeEvent(self, unused_event: Optional[QResizeEvent]) -> None:
         """Recalculates icon bounds when the widget size changes."""
         self._image_rect = get_scaled_placement(QRect(0, 0, self.width(), self.height()), self._image.size())
+
+    def sizeHint(self):
+        width = self._image.width()
+        height = self._image.height()
+        screen = screen_size(self)
+        if screen is not None:
+            width = min(width, screen.width() // 50)
+            height = min(height, screen.height() // 50)
+            if width < height:
+                height = int(width * self._image.height() / self._image.width())
+            else:
+                width = int(height * self._image.width() / self._image.height())
+        return QSize(width, height)
 
     def paintEvent(self, unused_event: Optional[QPaintEvent]) -> None:
         """Paints the icon image in the widget bounds, preserving aspect ratio."""

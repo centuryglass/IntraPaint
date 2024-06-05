@@ -16,9 +16,10 @@ from src.tools.selection_tool import SelectionTool
 from src.tools.tool_event_handler import ToolEventHandler
 from src.ui.image_viewer import ImageViewer
 from src.ui.panel.layer_panel import LayerPanel
-from src.ui.util.get_scaled_placement import get_scaled_placement
+from src.ui.util.geometry_utils import get_scaled_placement
 from src.ui.widget.bordered_widget import BorderedWidget
 from src.ui.widget.collapsible_box import CollapsibleBox
+from src.ui.util.screen_size import screen_size
 
 TOOL_PANEL_TITLE = "Tools"
 LIST_SPACING = 10
@@ -47,7 +48,7 @@ class ToolPanel(BorderedWidget):
             Connected to the "Generate" button, if one is enabled.
         """
         super().__init__()
-        self.setSizePolicy(QSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding))
+        self.setSizePolicy(QSizePolicy(QSizePolicy.Expanding, QSizePolicy.MinimumExpanding))
         self._layer_stack = layer_stack
         self._image_viewer = image_viewer
         self._config = config

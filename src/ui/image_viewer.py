@@ -12,7 +12,7 @@ from src.image.border import Border
 from src.image.image_layer import ImageLayer
 from src.image.layer_stack import LayerStack
 from src.image.outline import Outline
-from src.ui.util.get_scaled_placement import get_scaled_placement
+from src.ui.util.geometry_utils import get_scaled_placement
 from src.ui.util.tile_pattern_fill import get_transparency_tile_pixmap
 from src.ui.widget.fixed_aspect_graphics_view import FixedAspectGraphicsView
 from src.util.validation import assert_type
@@ -345,7 +345,7 @@ class ImageViewer(FixedAspectGraphicsView):
         self._border.windowed_area = selection.toAlignedRect()
         self._selection_outline.setVisible(image_loaded)
         self._masked_selection_outline.setVisible(image_loaded and self._config.get(AppConfig.INPAINT_FULL_RES))
-        if self._layer_stack.active_layer_id is not None:
+        if self._layer_stack.active_layer is not None:
             self._active_layer_outline.setVisible(True)
             self._active_layer_outline.outlined_region = QRectF(QPointF(self._layer_stack.active_layer.position),
                                                                 QSizeF(self._layer_stack.active_layer.size))

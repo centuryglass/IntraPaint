@@ -5,7 +5,7 @@ from PyQt5.QtWidgets import QWidget, QDialog, QLabel, QVBoxLayout, QHBoxLayout, 
 from PyQt5.QtCore import Qt, QSize, QRect, QPoint
 from PyQt5.QtGui import QPainter, QPen, QImage, QResizeEvent, QPaintEvent
 from src.ui.widget.labeled_spinbox import LabeledSpinbox
-from src.ui.util.get_scaled_placement import get_scaled_placement
+from src.ui.util.geometry_utils import get_scaled_placement
 
 WINDOW_TITLE = 'Resize image canvas'
 MIN_PX_VALUE = 8

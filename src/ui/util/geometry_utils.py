@@ -1,6 +1,7 @@
 """Provides a utility function for handling image or widget placement."""
 
-from PyQt5.QtCore import QRect, QSize
+from PyQt5.QtCore import QRect, QSize, QRectF
+from PyQt5.QtGui import QTransform, QPolygonF
 
 
 def get_scaled_placement(container_rect: QRect,
@@ -30,3 +31,21 @@ def get_scaled_placement(container_rect: QRect,
     if (inner_size.height() * scale) < container_size.height():
         y += (container_size.height() - inner_size.height() * scale) / 2
     return QRect(int(x), int(y), int(inner_size.width() * scale), int(inner_size.height() * scale))
+
+
+def get_rect_transformation(source: QRect | QSize, destination: QRect | QSize) -> QTransform:
+    """Gets the transformation required to transform source into destination. Parameters may be either QRect or QSize,
+       if QSize is used they will be treated as a rectangle of that size at the origin."""
+    transform = QTransform()
+    if isinstance(source, QSize):
+        source = QRect(0, 0, source.width(), source.height())
+    if isinstance(destination, QSize):
+        destination = QRect(0, 0, destination.width(), destination.height())
+    scale_x = destination.width() / source.width()
+    scale_y = destination.height() / source.height()
+    transform = transform.scale(scale_x, scale_y)
+    # Translate back to destination coordinates:
+    transform = transform.translate(destination.x() / scale_x - source.x(), destination.y() / scale_y - source.y())
+    test = transform.mapRect(source)
+    assert test == destination, f'{source} => {test} != {destination}'
+    return transform
