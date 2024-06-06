@@ -14,7 +14,7 @@ SAVE_IMAGE_MODE = 'save'
 LOAD_IMAGE_TITLE = 'Open Image'
 SAVE_IMAGE_TITLE = 'Save Image'
 LOAD_IMAGE_ERROR_MSG = 'Open failed'
-PNG_IMAGE_FILTER = 'Images (*.png)'
+PNG_IMAGE_FILTER = 'Images (*.png *.inpt)'
 
 
 def show_error_dialog(parent: QWidget, title: str, error: str | BaseException) -> None:

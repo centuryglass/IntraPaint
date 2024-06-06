@@ -222,21 +222,24 @@ class BaseInpaintController:
                 if not file_path or not file_selected:
                     return
             assert_type(file_path, str)
-            image = self._layer_stack.pil_image(saved_only=True)
-            if self._metadata is not None:
-                info = PngImagePlugin.PngInfo()
-                for key in self._metadata:
-                    try:
-                        info.add_itxt(key, self._metadata[key])
-                    except AttributeError as png_err:
-                        # Encountered some sort of image metadata that PIL knows how to read but not how to write.
-                        # I've seen this a few times, mostly with images edited in Krita. This data isn't important to
-                        # me, so it'll just be discarded. If it's important to you, open a GitHub issue with details or
-                        # submit a PR, and I'll take care of it.
-                        print(f'failed to preserve "{key}" in metadata: {png_err}')
-                image.save(file_path, 'PNG', pnginfo=info)
+            if file_path.endswith('.inpt'):
+                self._layer_stack.save_layer_stack_file(file_path, self._metadata)
             else:
-                image.save(file_path, 'PNG')
+                image = self._layer_stack.pil_image(saved_only=True)
+                if self._metadata is not None:
+                    info = PngImagePlugin.PngInfo()
+                    for key in self._metadata:
+                        try:
+                            info.add_itxt(key, self._metadata[key])
+                        except AttributeError as png_err:
+                            # Encountered some sort of image metadata that PIL knows how to read but not how to write.
+                            # I've seen this a few times, mostly with images edited in Krita. This data isn't important to
+                            # me, so it'll just be discarded. If it's important to you, open a GitHub issue with details or
+                            # submit a PR, and I'll take care of it.
+                            print(f'failed to preserve "{key}" in metadata: {png_err}')
+                    image.save(file_path, 'PNG', pnginfo=info)
+                else:
+                    image.save(file_path, 'PNG')
             self._config.set(AppConfig.LAST_FILE_PATH, file_path)
         except (IOError, TypeError) as save_err:
             show_error_dialog(self._window, SAVE_ERROR_TITLE, str(save_err))
@@ -250,15 +253,22 @@ class BaseInpaintController:
                 return
         assert_type(file_path, str)
         try:
-            image = Image.open(file_path)
-            # try and load metadata:
-            if hasattr(image, 'info') and image.info is not None:
-                self._metadata = image.info
+            if file_path.endswith('.inpt'):
+                self._metadata = self._layer_stack.load_layer_stack_file(file_path)
             else:
-                self._metadata = None
+                image = Image.open(file_path)
+                # try and load metadata:
+                if hasattr(image, 'info') and image.info is not None:
+                    self._metadata = image.info
+                else:
+                    self._metadata = None
+                self._layer_stack.set_image(QImage(file_path))
+            self._config.set(AppConfig.LAST_FILE_PATH, file_path)
+
+            # File loaded, attempt to apply metadata:
             if METADATA_PARAMETER_KEY in self._metadata:
                 param_str = self._metadata[METADATA_PARAMETER_KEY]
-                match = re.match(r'^(.*\n?.*)\nSteps: (\d+), Sampler: (.*), CFG scale: (.*), Seed: (.+), Size.*',
+                match = re.match(r'^(.*\n?.*)\nSteps: ?(\d+), Sampler: ?(.*), CFG scale: ?(.*), Seed: ?(.+), Size.*',
                                  param_str)
                 if match:
                     prompt = match.group(1)
@@ -267,7 +277,7 @@ class BaseInpaintController:
                     sampler = match.group(3)
                     cfg_scale = float(match.group(4))
                     seed = int(match.group(5))
-                    divider_match = re.match('^(.*)\nNegative prompt: (.*)$', prompt)
+                    divider_match = re.match('^(.*)\nNegative prompt: ?(.*)$', prompt)
                     if divider_match:
                         prompt = divider_match.group(1)
                         negative = divider_match.group(2)
@@ -284,9 +294,6 @@ class BaseInpaintController:
                 else:
                     logger.warning('image parameters do not match expected patterns, cannot be used. '
                                    f'parameters:{param_str}')
-            image = QImage(file_path)
-            self._layer_stack.set_image(image)
-            self._config.set(AppConfig.LAST_FILE_PATH, file_path)
         except UnidentifiedImageError as err:
             show_error_dialog(self._window, LOAD_ERROR_TITLE, err)
             return

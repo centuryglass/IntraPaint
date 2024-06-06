@@ -1,5 +1,9 @@
 """Manages an edited image composed of multiple layers."""
+import json
+import os.path
 import re
+import shutil
+import tempfile
 from typing import Optional, Tuple, Dict, Any
 
 from PIL import Image
@@ -13,6 +17,10 @@ from src.undo_stack import commit_action, last_action
 from src.util.cached_data import CachedData
 from src.util.image_utils import qimage_to_pil_image
 from src.util.validation import assert_type, assert_types, assert_valid_index
+
+LAYER_DATA_FILE_EMBEDDED = 'data.json'
+
+MASK_LAYER_FILE_EMBEDDED = 'mask.png'
 
 
 class LayerStack(QObject):
@@ -626,7 +634,7 @@ class LayerStack(QObject):
         """If the copy buffer contains image data, paste it into a new layer."""
         if self._copy_buffer is not None:
             insert_index = 0 if self.active_layer is None else self.active_layer_index
-            self.create_layer('Paste layer', self._copy_buffer, layer_index=insert_index)
+            self.create_layer('Paste layer', self._copy_buffer.copy(), layer_index=insert_index)
 
     def set_selection_content(self,
                               image_data: Image.Image | QImage | QPixmap,
@@ -649,42 +657,70 @@ class LayerStack(QObject):
             raise RuntimeError(f'set_selection_content: No layer specified, and no layer is active, layer={layer}')
         insert_layer.insert_image_content(image_data, self.selection, composition_mode)
 
-    def save_layer_stack_file(self, file_path: str, metadata: Dict[str, Any]) -> None:
+    def save_layer_stack_file(self, file_path: str, metadata: Optional[Dict[str, Any]]) -> None:
+        """Save layers and image metadata to a file that can be opened for future editing."""
         size = self.size
         data = {'metadata': metadata, 'size': f'{size.width()}x{size.height()}', 'files': []}
         # Create temporary directory tmpdir
-        # Save mask as {tmpdir}/mask.png
-        # For each layer:
-        #   filename = {index}_{layer.name}.png
-        #   save to {tmpdir}/{filename}
-        #   layer_data = {
-        #       'name': filename,
-        #       'pos': f'{layer.position.x()},{layer.position.y()}
-        #       'visible: f'{layer.visible}
-        #   }
-        #   data['files'].append(layer_data)
-        # save data as json to {tmpdir}/data.json
-        # compress tmpdir contents
-        # move compressed to file_path
-        # remove tmpdir
+        tmpdir = tempfile.mkdtemp()
+        self.mask_layer.qimage.save(os.path.join(tmpdir, MASK_LAYER_FILE_EMBEDDED))
+        for layer in self._layers:
+            index = self._layers.index(layer)
+            layer.qimage.save(os.path.join(tmpdir, f'{index}.png'))
+            data['files'].append({
+                'name': layer.name,
+                'pos': f'{layer.position.x()},{layer.position.y()}',
+                'visible': layer.visible
+            })
+        json_path = os.path.join(tmpdir, LAYER_DATA_FILE_EMBEDDED)
+        with open(json_path, 'w', encoding='utf-8') as file:
+            json.dump(data, file, indent=4, ensure_ascii=False)
+        shutil.make_archive(file_path, 'zip', tmpdir)
+        shutil.move(f'{file_path}.zip', file_path)
+        shutil.rmtree(tmpdir)
 
-    def load_layer_stack_file(self, file_path: Optional[str] = None) -> None:
-        """
-        create temporary directory tmpdir
-        extract file_path to tmpdir
-        load data from {tmpdir}/data.json
-        self._metadata = data['metadata']
-        layers = []
-        mask_layer = QImage(f'{tmpdir}/mask.json')
+    def load_layer_stack_file(self, file_path: str) -> Optional[Dict[str, Any]]:
+        """Load layers and image metadata from a file, returning the metadata."""
+        tmpdir = tempfile.mkdtemp()
+        shutil.unpack_archive(file_path, tmpdir, format='zip')
+        old_mask_image = self.mask_layer.qimage
+        old_layers = self._layers.copy()
+        new_layers = []
+        old_size = self.size
+        with open(os.path.join(tmpdir, LAYER_DATA_FILE_EMBEDDED)) as json_file:
+            data = json.load(json_file)
+        w, h = (int(substr) for substr in data['size'].split('x'))
+        new_size = QSize(w, h)
+        new_mask_image = QImage(os.path.join(tmpdir, MASK_LAYER_FILE_EMBEDDED))
+        for i, file_data in enumerate(data['files']):
+            image = QImage(os.path.join(tmpdir, f'{i}.png'))
+            name = file_data['name']
+            x, y = (int(substr) for substr in file_data['pos'].split(','))
+            layer = self._create_layer_internal(name, image)
+            layer.position = QPoint(x, y)
+            layer.visible = file_data['visible']
+            new_layers.append(layer)
+        shutil.rmtree(tmpdir)
 
-        for layer_data in layer['files']:
-            split layer_data['filename'] into {index}_{layer_name}.png
-            image = QImage(layer_data['filename'])
-            layers.append((layer_data['
-            self._layer_stack.create_layer(layer_name, image)
-            layer = self._layer_stack.get_layer(self._layer_stack.count - 1)
-            layer.position = layer_data['position']
-        """
+        def _load():
+            for old_layer in old_layers:
+                self._remove_layer_internal(old_layer)
+            self._set_size(new_size)
+            self.mask_layer.qimage = new_mask_image
+            for new_layer in new_layers:
+                self._insert_layer_internal(new_layer, self.count)
+
+        def _undo_load():
+            for new_layer in new_layers:
+                self._remove_layer_internal(new_layer)
+            self._set_size(old_size)
+            self.mask_layer.qimage = old_mask_image
+            for old_layer in old_layers:
+                self._insert_layer_internal(old_layer, self.count)
+        commit_action(_load, _undo_load)
+        metadata = data['metadata']
+        print( metadata['parameters'])
+        return metadata
         
     def set_image(self, image_data: Image.Image | QImage | QPixmap):
         """
