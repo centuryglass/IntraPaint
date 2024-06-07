@@ -33,7 +33,7 @@ class BrushTool(CanvasTool):
     """Implements brush controls using a MyPaint surface."""
 
     def __init__(self, layer_stack: LayerStack, image_viewer: ImageViewer, config: AppConfig) -> None:
-        super().__init__(layer_stack, image_viewer, MyPaintLayerCanvas(image_viewer.scene()))
+        super().__init__(layer_stack, image_viewer, MyPaintLayerCanvas(image_viewer.scene()), config)
         self._config = config
         self._last_click = None
         self._control_panel = None
@@ -59,7 +59,8 @@ class BrushTool(CanvasTool):
 
     def get_hotkey(self) -> Qt.Key:
         """Returns the hotkey that should activate this tool."""
-        return Qt.Key.Key_B
+        key = self._config.get_keycodes(AppConfig.BRUSH_TOOL_KEY)
+        return key[0]
 
     def get_icon(self) -> QIcon:
         """Returns an icon used to represent this tool."""

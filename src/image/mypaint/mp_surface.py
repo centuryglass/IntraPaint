@@ -2,12 +2,12 @@
 import math
 from time import time
 from typing import Any, Optional
-from ctypes import sizeof, c_void_p, POINTER, pointer, byref, c_float, c_double, c_int
+from ctypes import sizeof, POINTER, pointer, byref, c_float, c_double, c_int
 from PyQt5.QtCore import Qt, QObject, QPoint, QSize, QRect, pyqtSignal
 from PyQt5.QtGui import QImage, QColor
-from src.image.canvas.mypaint.mp_brush import MPBrush
-from src.image.canvas.mypaint.mp_tile import MPTile
-from src.image.canvas.mypaint.libmypaint import libmypaint, MyPaintTiledSurface, MyPaintTileRequestStartFunction, \
+from src.image.mypaint.mp_brush import MPBrush
+from src.image.mypaint.mp_tile import MPTile
+from src.image.mypaint.libmypaint import libmypaint, MyPaintTiledSurface, MyPaintTileRequestStartFunction, \
     MyPaintTileRequestEndFunction, MyPaintSurfaceDestroyFunction, \
     MyPaintTileRequest, TilePixelBuffer, TILE_DIM, \
     RectangleBuffer, MyPaintRectangles, RECTANGLE_BUF_SIZE, c_uint16_p

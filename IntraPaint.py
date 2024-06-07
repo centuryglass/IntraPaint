@@ -109,8 +109,8 @@ def parse_args_and_start() -> None:
     try:
         controller.start_app()
     except Exception as err:
-        print('main crashed, error: ', err)
         logger.exception('main crashed, error: %s', err)
+        raise err
 
 
 def exit_log():

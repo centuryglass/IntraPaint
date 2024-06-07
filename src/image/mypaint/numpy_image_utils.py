@@ -2,7 +2,7 @@
 from typing import Tuple
 from PyQt5.QtGui import QImage
 import numpy as np
-from src.image.canvas.mypaint.libmypaint import TilePixelBuffer, TILE_DIM
+from src.image.mypaint.libmypaint import TilePixelBuffer, TILE_DIM
 
 
 def pixel_data_as_numpy_16bit(pixel_data: TilePixelBuffer) -> np.ndarray:

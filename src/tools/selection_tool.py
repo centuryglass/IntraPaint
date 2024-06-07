@@ -38,7 +38,8 @@ class SelectionTool(BaseTool):
 
     def get_hotkey(self) -> Qt.Key:
         """Returns the hotkey that should activate this tool."""
-        return Qt.Key.Key_S
+        key = self._config.get_keycodes(AppConfig.GENERATION_AREA_SELECTION_TOOL_KEY)
+        return key[0]
 
     def get_icon(self) -> QIcon:
         """Returns an icon used to represent this tool."""

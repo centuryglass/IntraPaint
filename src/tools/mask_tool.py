@@ -34,7 +34,7 @@ class MaskTool(CanvasTool):
     """Implements brush controls using a MyPaint surface."""
 
     def __init__(self, layer_stack: LayerStack, image_viewer: ImageViewer, config: AppConfig) -> None:
-        super().__init__(layer_stack, image_viewer, PixmapLayerCanvas(image_viewer.scene()))
+        super().__init__(layer_stack, image_viewer, PixmapLayerCanvas(image_viewer.scene()), config)
         self._config = config
         self._last_click = None
         self._control_panel = None

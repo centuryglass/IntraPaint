@@ -11,7 +11,7 @@ from PyQt5.QtGui import QPixmap, QImage, QPainter, QPaintEvent, QMouseEvent, QRe
 from PyQt5.QtWidgets import QWidget, QTabWidget, QGridLayout, QScrollArea, QSizePolicy, QMenu
 
 from src.config.application_config import AppConfig
-from src.image.canvas.mypaint.mp_brush import MPBrush
+from src.image.mypaint.mp_brush import MPBrush
 from src.ui.util.geometry_utils import get_scaled_placement
 from src.ui.util.screen_size import screen_size
 

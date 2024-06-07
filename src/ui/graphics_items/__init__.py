@@ -1,0 +1,1 @@
+"""Holds various QGraphicsItem subclasses."""

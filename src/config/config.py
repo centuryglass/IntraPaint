@@ -16,6 +16,7 @@ from typing import Optional, Any, Callable, List
 import logging
 
 from PyQt5.QtCore import QSize, QTimer
+from PyQt5.QtGui import QKeySequence
 
 from src.config.config_entry import ConfigEntry, DefinitionKey, DefinitionType
 from src.util.validation import assert_type
@@ -137,6 +138,16 @@ class Config:
             raise KeyError(f'Tried to get unknown config value "{key}"')
         with self._lock:
             return self._entries[key].get_value(inner_key)
+
+    def get_keycodes(self, key: str) -> QKeySequence:
+        """Returns a config value as a key sequence, throws RuntimeError if the value isn't a keycode."""
+        code_string = self.get(key)
+        if not isinstance(code_string, str):
+            raise RuntimeError(f'Tried to get key code "{key}", found {code_string}')
+        sequence = QKeySequence(code_string)
+        if sequence.isEmpty():
+            raise RuntimeError(f'key "{key}": value "{code_string}" is not a valid key code or code list')
+        return sequence
 
     def get_label(self, key: str) -> str:
         """Gets the label text assigned to a config value."""
@@ -312,6 +323,22 @@ class Config:
         if key not in self._entries:
             raise KeyError(f'Tried to get unknown config value "{key}"')
         self._entries[key].add_option(option)
+
+    def get_categories(self) -> List[str]:
+        """Returns all unique category strings."""
+        categories = []
+        for value in self._entries.values():
+            if value.category not in categories:
+                categories.append(value.category)
+        return categories
+
+    def get_category_keys(self, category: str) -> List[str]:
+        """Returns all keys with the given category."""
+        keys = []
+        for key, value in self._entries.items():
+            if value.category == category:
+                keys.append(key)
+        return keys
 
     def _add_entry(self,
                    key: str,

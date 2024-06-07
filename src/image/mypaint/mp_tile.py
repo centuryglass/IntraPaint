@@ -5,8 +5,8 @@ import numpy as np
 from PyQt5.QtWidgets import QWidget, QGraphicsItem, QStyleOptionGraphicsItem
 from PyQt5.QtGui import QImage, QPainter, QPainterPath
 from PyQt5.QtCore import Qt, QRectF, QRect, QSize, QPoint
-from src.image.canvas.mypaint.libmypaint import TILE_DIM, TilePixelBuffer
-from src.image.canvas.mypaint.numpy_image_utils import pixel_data_as_numpy_16bit, image_data_as_numpy_8bit, \
+from src.image.mypaint.libmypaint import TILE_DIM, TilePixelBuffer
+from src.image.mypaint.numpy_image_utils import pixel_data_as_numpy_16bit, image_data_as_numpy_8bit, \
     numpy_8bit_to_16bit, numpy_16bit_to_8bit, numpy_intersect, \
     is_fully_transparent
 

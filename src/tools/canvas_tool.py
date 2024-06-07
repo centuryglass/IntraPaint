@@ -5,11 +5,13 @@ from PyQt5.QtCore import Qt, QPoint, QSize, QRect
 from PyQt5.QtGui import QCursor, QTabletEvent, QMouseEvent, QColor, QIcon, QKeyEvent, QWheelEvent
 from PyQt5.QtWidgets import QApplication
 
+from src.config.application_config import AppConfig
 from src.image.image_layer import ImageLayer
 from src.image.canvas.layer_canvas import LayerCanvas
 from src.image.layer_stack import LayerStack
 from src.tools.base_tool import BaseTool
 from src.ui.image_viewer import ImageViewer
+from src.util.key_code_utils import get_modifiers
 
 RESOURCES_BRUSH_ICON = 'resources/brush.svg'
 RESOURCES_CURSOR = './resources/cursor.svg'
@@ -32,8 +34,9 @@ class CanvasTool(BaseTool):
     and setting or updating the affected layer.
     """
 
-    def __init__(self, layer_stack: LayerStack, image_viewer: ImageViewer, canvas: LayerCanvas) -> None:
+    def __init__(self, layer_stack: LayerStack, image_viewer: ImageViewer, canvas: LayerCanvas, config: AppConfig) -> None:
         super().__init__()
+        self._config = config
         self._layer = None
         self._active = False
         self._drawing = False
@@ -234,49 +237,40 @@ class CanvasTool(BaseTool):
             else:
                 self.cursor = QCursor(scaled_cursor)
 
+    def _speed_modifier_held(self) -> bool:
+        speed_modifier = self._config.get(AppConfig.SPEED_MODIFIER)
+        if speed_modifier == '':
+            return False
+        speed_modifier = get_modifiers(speed_modifier)
+        return QApplication.keyboardModifiers() & speed_modifier == speed_modifier
+
     def key_event(self, event: Optional[QKeyEvent]) -> bool:
         """Move selection with arrow keys."""
         if event.type() != QKeyEvent.Type.KeyPress:
             return False
-        translation = QPoint(0, 0)
-        multiplier = 10 if QApplication.keyboardModifiers() == Qt.ShiftModifier else 1
-        match event.key():
-            case Qt.Key.Key_Left:
-                translation.setX(-1 * multiplier)
-            case Qt.Key.Key_Right:
-                translation.setX(1 * multiplier)
-            case Qt.Key.Key_Up:
-                translation.setY(-1 * multiplier)
-            case Qt.Key.Key_Down:
-                translation.setY(1 * multiplier)
-            case Qt.Key.Key_BracketLeft:
-                if hasattr(self, 'adjust_brush_size'):
-                    self.adjust_brush_size(-1)
-                    return True
-                return False
-            case Qt.Key.Key_BracketRight:
-                if hasattr(self, 'adjust_brush_size'):
-                    self.adjust_brush_size(1)
-                    return True
-                return False
-            case _:
-                return False
-        if self._image_viewer.follow_selection:
-            self._layer_stack.selection = self._layer_stack.selection.translated(translation)
-        else:
-            self._image_viewer.offset = self._image_viewer.offset + translation
-        return True
+        size_down_key = self._config.get_keycodes(AppConfig.BRUSH_SIZE_DECREASE)[0]
+        size_up_key = self._config.get_keycodes(AppConfig.BRUSH_SIZE_INCREASE)[0]
+        if event.key() in (size_down_key, size_up_key):
+            if hasattr(self, 'adjust_brush_size'):
+                size_change = -1 if event.key() == size_down_key else 1
+                if self._speed_modifier_held():
+                    size_change *= self._config.get(AppConfig.SPEED_MODIFIER_MULTIPLIER)
+                self.adjust_brush_size(size_change)
+                return True
+        return False
 
     def wheel_event(self, event: Optional[QWheelEvent]) -> bool:
-        """Adjust brush size if scrolling with shift held down."""
+        """Adjust brush size if scrolling horizontal."""
         if not hasattr(self, 'adjust_brush_size'):
             return False
         offset = 0
-        if event.angleDelta().x() > 0:
+        if event.angleDelta().x() < 0:
             offset -= 1
-        elif event.angleDelta().x() < 0:
+        elif event.angleDelta().x() > 0:
             offset += 1
         if offset != 0:
+            if self._speed_modifier_held():
+                offset *= self._config.get(AppConfig.SPEED_MODIFIER_MULTIPLIER)
             self.adjust_brush_size(offset)
             return True
         return False

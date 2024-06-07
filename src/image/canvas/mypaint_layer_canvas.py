@@ -10,9 +10,9 @@ from PyQt5.QtWidgets import QGraphicsScene
 
 from src.image.canvas.layer_canvas import LayerCanvas
 from src.image.image_layer import ImageLayer
-from src.image.canvas.mypaint.mp_brush import MPBrush
-from src.image.canvas.mypaint.mp_surface import MPSurface
-from src.image.canvas.mypaint.mp_tile import MPTile
+from src.image.mypaint.mp_brush import MPBrush
+from src.image.mypaint.mp_surface import MPSurface
+from src.image.mypaint.mp_tile import MPTile
 from src.undo_stack import commit_action
 
 

@@ -20,7 +20,7 @@ from src.ui.modal.modal_utils import request_confirmation
 from src.ui.modal.settings_modal import SettingsModal
 from src.ui.panel.layer_panel import LayerPanel
 from src.ui.panel.tool_panel import ToolPanel
-from src.ui.sample_selector import SampleSelector
+from src.ui.sample_selector_view import SampleSelector
 from src.ui.widget.loading_widget import LoadingWidget
 from src.ui.image_viewer import ImageViewer
 from src.undo_stack import undo, redo
@@ -111,14 +111,14 @@ class MainWindow(QMainWindow):
         # Set up menu:
         self._menu = self.menuBar()
 
-        def add_action(name: str,
-                       shortcut: Optional[str],
-                       on_trigger: Callable,
-                       menu: QMenuBar) -> None:
+        def add_action(config_key: str, on_trigger: Callable, menu: QMenuBar) -> None:
             """Adds an action to the menu bar."""
+            name = config.get_label(config_key)
+            shortcut = config.get(config_key)
             action = QAction(name, self)
-            if shortcut is not None:
+            if shortcut != '':
                 action.setShortcut(shortcut)
+            action.setToolTip(config.get_tooltip(config_key))
             action.triggered.connect(on_trigger)
             menu.addAction(action)
 
@@ -130,59 +130,59 @@ class MainWindow(QMainWindow):
             if not self.is_sample_selector_visible():
                 fn()
 
-        add_action('New Image', 'Ctrl+N', lambda: if_not_selecting(controller.new_image), file_menu)
-        add_action('Save', 'Ctrl+S', controller.save_image, file_menu)
-        add_action('Load', 'Ctrl+O', lambda: if_not_selecting(controller.load_image), file_menu)
-        add_action('Reload', 'F5', lambda: if_not_selecting(controller.reload_image), file_menu)
+        add_action(AppConfig.NEW_IMAGE_SHORTCUT, lambda: if_not_selecting(controller.new_image), file_menu)
+        add_action(AppConfig.SAVE_SHORTCUT, controller.save_image, file_menu)
+        add_action(AppConfig.LOAD_SHORTCUT, lambda: if_not_selecting(controller.load_image), file_menu)
+        add_action(AppConfig.RELOAD_SHORTCUT, lambda: if_not_selecting(controller.reload_image), file_menu)
 
         def try_quit() -> None:
             """Quits the application if the user confirms."""
             if request_confirmation(self, 'Quit now?', 'All unsaved changes will be lost.'):
                 self.close()
 
-        add_action('Quit', 'Ctrl+Q', try_quit, file_menu)
+        add_action(AppConfig.QUIT_SHORTCUT, try_quit, file_menu)
 
         # Edit:
         edit_menu = self._menu.addMenu('Edit')
-        add_action('Undo', 'Ctrl+Z', lambda: if_not_selecting(undo), edit_menu)
-        add_action('Redo', 'Ctrl+Shift+Z', lambda: if_not_selecting(redo), edit_menu)
-        add_action('Cut', 'Ctrl+X', lambda: if_not_selecting(layer_stack.cut_masked), edit_menu)
-        add_action('Copy', 'Ctrl+C', lambda: if_not_selecting(layer_stack.copy_masked), edit_menu)
-        add_action('Paste', 'Ctrl+V', lambda: if_not_selecting(layer_stack.paste), edit_menu)
+        add_action(AppConfig.UNDO_SHORTCUT, lambda: if_not_selecting(undo), edit_menu)
+        add_action(AppConfig.REDO_SHORTCUT, lambda: if_not_selecting(redo), edit_menu)
+        add_action(AppConfig.CUT_SHORTCUT, lambda: if_not_selecting(layer_stack.cut_masked), edit_menu)
+        add_action(AppConfig.COPY_SHORTCUT, lambda: if_not_selecting(layer_stack.copy_masked), edit_menu)
+        add_action(AppConfig.PASTE_SHORTCUT, lambda: if_not_selecting(layer_stack.paste), edit_menu)
 
-        add_action('Generate', 'F4', lambda: if_not_selecting(controller.start_and_manage_inpainting),
-                   edit_menu)
         # Image:
         image_menu = self._menu.addMenu('Image')
-        add_action('Resize canvas', 'F2', lambda: if_not_selecting(controller.resize_canvas), image_menu)
-        add_action('Scale image', 'F3', lambda: if_not_selecting(controller.scale_image), image_menu)
-        add_action('Update image metadata', None, controller.update_metadata, image_menu)
+        add_action(AppConfig.RESIZE_CANVAS_SHORTCUT, lambda: if_not_selecting(controller.resize_canvas), image_menu)
+        add_action(AppConfig.SCALE_IMAGE_SHORTCUT, lambda: if_not_selecting(controller.scale_image), image_menu)
+        add_action(AppConfig.UPDATE_METADATA_SHORTCUT, controller.update_metadata, image_menu)
+        add_action(AppConfig.GENERATE_SHORTCUT, lambda: if_not_selecting(controller.start_and_manage_inpainting),
+                   image_menu)
 
         # Layer:
         layer_menu = self._menu.addMenu('Layer')
-        add_action('New layer', 'Ctrl+Shift+N', lambda: if_not_selecting(layer_stack.create_layer), layer_menu)
-        add_action('Copy layer', 'Ctrl+Shift+C', lambda: if_not_selecting(layer_stack.copy_layer), layer_menu)
-        add_action('Delete layer', 'Ctrl+Shift+D', lambda: if_not_selecting(layer_stack.remove_layer), layer_menu)
-        add_action('Select previous', 'Ctrl+Up', lambda: if_not_selecting(lambda: layer_stack.offset_selection(-1)),
+        add_action(AppConfig.NEW_LAYER_SHORTCUT,  lambda: if_not_selecting(layer_stack.create_layer), layer_menu)
+        add_action(AppConfig.COPY_LAYER_SHORTCUT, lambda: if_not_selecting(layer_stack.copy_layer), layer_menu)
+        add_action(AppConfig.DELETE_LAYER_SHORTCUT,  lambda: if_not_selecting(layer_stack.remove_layer), layer_menu)
+        add_action(AppConfig.SELECT_PREVIOUS_LAYER_SHORTCUT, lambda: if_not_selecting(lambda: layer_stack.offset_selection(-1)),
                    layer_menu)
-        add_action('Select next', 'Ctrl+Down', lambda: if_not_selecting(lambda: layer_stack.offset_selection(1)),
+        add_action(AppConfig.SELECT_NEXT_LAYER_SHORTCUT, lambda: if_not_selecting(lambda: layer_stack.offset_selection(1)),
                    layer_menu)
-        add_action('Move up', 'Ctrl+Shift+PgUp', lambda: if_not_selecting(lambda: layer_stack.move_layer(-1)),
+        add_action(AppConfig.MOVE_LAYER_UP_SHORTCUT, lambda: if_not_selecting(lambda: layer_stack.move_layer(-1)),
                    layer_menu)
-        add_action('Move down', 'Ctrl+Shift+PgDown', lambda: if_not_selecting(lambda: layer_stack.move_layer(1)),
+        add_action(AppConfig.MOVE_LAYER_DOWN_SHORTCUT, lambda: if_not_selecting(lambda: layer_stack.move_layer(1)),
                    layer_menu)
-        add_action('Merge down', 'Ctrl+Shift+End', lambda: if_not_selecting(layer_stack.merge_layer_down), layer_menu)
-        add_action('Layer to Image Size', None, lambda: if_not_selecting(layer_stack.layer_to_image_size), layer_menu)
+        add_action(AppConfig.MERGE_LAYER_DOWN_SHORTCUT, lambda: if_not_selecting(layer_stack.merge_layer_down), layer_menu)
+        add_action(AppConfig.LAYER_TO_IMAGE_SIZE_SHORTCUT, lambda: if_not_selecting(layer_stack.layer_to_image_size), layer_menu)
 
         def _layer_to_content():
             if layer_stack.active_layer is not None:
                 layer_stack.active_layer.crop_to_content()
-        add_action('Crop layer to contents', None, lambda: if_not_selecting(_layer_to_content), layer_menu)
+        add_action(AppConfig.CROP_TO_CONTENT_SHORTCUT, lambda: if_not_selecting(_layer_to_content), layer_menu)
 
         # Tools:
         tool_menu = self._menu.addMenu('Tools')
         # add_action('Toggle pen/eraser tool', 'F7', lambda: if_not_selecting(mask_tool_toggle), tool_menu)
-        add_action('Clear mask', 'F8', lambda: if_not_selecting(layer_stack.mask_layer.clear), tool_menu)
+        add_action(AppConfig.CLEAR_MASK_SHORTCUT, lambda: if_not_selecting(layer_stack.mask_layer.clear), tool_menu)
 
         def show_layers() -> None:
             """Show the layer panel."""
@@ -191,7 +191,7 @@ class MainWindow(QMainWindow):
             self._layer_panel.show()
             self._layer_panel.raise_()
 
-        add_action('Show layers', 'F7', show_layers, tool_menu)
+        add_action(AppConfig.SHOW_LAYER_MENU_SHORTCUT, show_layers, tool_menu)
 
         self._settings = SettingsModal(self)
         if controller.init_settings(self._settings):
@@ -208,7 +208,7 @@ class MainWindow(QMainWindow):
                 self._settings.setGeometry(frame)
                 self._settings.show_modal()
 
-            add_action('Settings', 'F9', lambda: if_not_selecting(show_settings), tool_menu)
+            add_action(AppConfig.SETTINGS_SHORTCUT, lambda: if_not_selecting(show_settings), tool_menu)
 
         # TODO: the following are specific to the A1111 stable-diffusion api and should move to
         #       stable_diffusion_controller:
@@ -235,7 +235,7 @@ class MainWindow(QMainWindow):
                             size = QSize(min(image_size.width(), 1024), min(image_size.height(), 1024))
                             config.set(AppConfig.EDIT_SIZE, size)
 
-                    add_action('LCM Mode', 'F10', set_lcm_mode, tool_menu)
+                    add_action(AppConfig.LCM_MODE_SHORTCUT, set_lcm_mode, tool_menu)
             except RuntimeError:
                 logger.error('Failed to check loras for lcm lora')
 
@@ -481,7 +481,7 @@ class MainWindow(QMainWindow):
         if self._sample_selector is None:
             logger.error(f'Tried to load sample {idx} after sampleSelector was closed')
         else:
-            self._sample_selector.load_sample_image(image, idx)
+            self._sample_selector.add_image_option(image, idx)
 
     def set_is_loading(self, is_loading: bool, message: Optional[str] = None) -> None:
         """Sets whether the loading spinner is shown, optionally setting loading spinner message text."""

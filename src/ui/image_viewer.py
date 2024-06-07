@@ -5,13 +5,13 @@ import math
 from typing import Optional, cast
 
 from PyQt5.QtCore import Qt, QRect, QRectF, QSize, QPoint, QPointF, QEvent, pyqtSignal, QSizeF
-from PyQt5.QtGui import QPainter, QMouseEvent, QWheelEvent
+from PyQt5.QtGui import QPainter, QMouseEvent, QWheelEvent, QKeySequence
 from PyQt5.QtWidgets import QWidget, QSizePolicy, QGraphicsPixmapItem, QApplication
 
-from src.image.border import Border
+from src.ui.graphics_items.border import Border
 from src.image.image_layer import ImageLayer
 from src.image.layer_stack import LayerStack
-from src.image.outline import Outline
+from src.ui.graphics_items.outline import Outline
 from src.ui.util.geometry_utils import get_scaled_placement
 from src.ui.util.tile_pattern_fill import get_transparency_tile_pixmap
 from src.ui.widget.fixed_aspect_graphics_view import FixedAspectGraphicsView
@@ -19,6 +19,7 @@ from src.util.validation import assert_type
 from src.config.application_config import AppConfig
 from src.hotkey_filter import HotkeyFilter
 
+BASE_ZOOM_OFFSET = 0.05
 
 SELECTION_BORDER_OPACITY = 0.6
 SELECTION_BORDER_COLOR = Qt.GlobalColor.black
@@ -77,8 +78,65 @@ class ImageViewer(FixedAspectGraphicsView):
     def __init__(self, parent: Optional[QWidget], layer_stack: LayerStack, config: AppConfig) -> None:
         super().__init__(parent)
         HotkeyFilter.instance().set_default_focus(self)
-        HotkeyFilter.instance().register_keybinding(lambda: self.toggle_zoom() is None, Qt.Key_Z,
+
+        # Bind directional navigation and selection keys:
+        zoom_key = config.get_keycodes(AppConfig.ZOOM_TOGGLE)[0]
+        HotkeyFilter.instance().register_keybinding(lambda: self.toggle_zoom() is None, zoom_key,
                                                     Qt.KeyboardModifier.NoModifier, self)
+        for pan_key, scroll_key, offset in ((AppConfig.PAN_LEFT, AppConfig.MOVE_LEFT, (-1.0, 0.0)),
+                                               (AppConfig.PAN_RIGHT, AppConfig.MOVE_RIGHT, (1.0, 0.0)),
+                                               (AppConfig.PAN_UP, AppConfig.MOVE_UP, (0.0, -1.0)),
+                                               (AppConfig.PAN_DOWN, AppConfig.MOVE_DOWN, (0.0, 1.0))):
+            dx, dy = offset
+
+            # Bind view panning:
+            def _pan(x=dx, y=dy) -> bool:
+                self.offset = QPointF(self.offset.x() + x, self.offset.y() + y)
+                self.resizeEvent(None)
+                return True
+            pan_keycode = config.get_keycodes(pan_key)[0]
+            HotkeyFilter.instance().register_keybinding(_pan, pan_keycode, widget=self)
+
+            # Bind selection offset:
+            def _scroll(x=dx, y=dy) -> bool:
+                selection = layer_stack.selection
+                layer_stack.selection = selection.translated(int(x), int(y))
+                self.resizeEvent(None)
+                return layer_stack.selection != selection
+            scroll_keycode = config.get_keycodes(scroll_key)[0]
+            HotkeyFilter.instance().register_keybinding(_scroll, scroll_keycode, widget=self)
+
+            # Fast navigation:
+            speed_modifier = config.get(AppConfig.SPEED_MODIFIER)
+            if speed_modifier != '':
+                fast_pan_keycode = QKeySequence(f'{speed_modifier}+{config.get(pan_key)}')[0]
+                fast_scroll_keycode = QKeySequence(f'{speed_modifier}+{config.get(scroll_key)}')[0]
+                multiplier = config.get(AppConfig.SPEED_MODIFIER_MULTIPLIER)
+                HotkeyFilter.instance().register_keybinding(lambda x=dx * multiplier, y=dy * multiplier: _pan(x, y),
+                                                            fast_pan_keycode, widget=self)
+                HotkeyFilter.instance().register_keybinding(lambda x=dx * multiplier, y=dy * multiplier: _scroll(x, y),
+                                                            fast_scroll_keycode, widget=self)
+
+        # Bind zoom keys:
+        for config_key, direction in ((AppConfig.ZOOM_IN, 1), (AppConfig.ZOOM_OUT, -1)):
+            offset = BASE_ZOOM_OFFSET * direction
+            zoom_keycode = config.get_keycodes(config_key)[0]
+
+            def _zoom(change=offset) -> bool:
+                self.scene_scale = self.scene_scale + change
+                self.resizeEvent(None)
+                return True
+
+            HotkeyFilter.instance().register_keybinding(_zoom, zoom_keycode, widget=self)
+
+            speed_modifier = config.get(AppConfig.SPEED_MODIFIER)
+            if speed_modifier != '':
+                fast_zoom_keycode = QKeySequence(f'{speed_modifier}+{config.get(config_key)}')[0]
+                multiplier = config.get(AppConfig.SPEED_MODIFIER_MULTIPLIER)
+                HotkeyFilter.instance().register_keybinding(lambda off=offset * multiplier: _zoom(off),
+                        fast_zoom_keycode, widget=self)
+
+
         self._layer_stack = layer_stack
         self._config = config
         self._selection = layer_stack.selection

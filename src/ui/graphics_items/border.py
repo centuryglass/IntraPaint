@@ -63,7 +63,7 @@ class Border(QGraphicsItem):
 
     def boundingRect(self) -> QRectF:
         """Returns the rectangle within the scene containing all pixels drawn by the outline."""
-        return QRectF(self._view.contentsRect())
+        return self.scene().sceneRect()
 
     def shape(self) -> QPainterPath:
         """Returns the outline's bounds as a shape."""

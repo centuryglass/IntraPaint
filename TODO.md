@@ -7,8 +7,6 @@
 - 1px draw mode not reverting until next stroke finishes
 - Weird issue with canvas/layer image corruption (copy to layer/navigation conflict?)
 
-# Input
-- Configurable hotkeys
 
 # ImagePanel
 - Restore with minimal toolbar, no orientation

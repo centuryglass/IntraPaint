@@ -498,7 +498,7 @@ class BaseInpaintController:
                 img = resize_image(img, selection.width, selection.height)
                 mask_alpha = resize_image(mask_alpha, selection.width, selection.height)
                 img = Image.composite(selection, img, mask_alpha)
-            self._window.load_sample_preview(img, idx)
+            self._window.load_sample_preview(pil_image_to_qimage(img), idx)
 
         worker.image_ready.connect(load_sample_preview)
         self._window.set_sample_selector_visible(True)
