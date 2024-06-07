@@ -32,7 +32,7 @@ model_params, model, diffusion, ldm, bert, clip_model, clip_preprocess, normaliz
                                                                                                 cpu=args.cpu,
                                                                                                 ddpm=args.ddpm,
                                                                                                 ddim=args.ddim)
-
+batch_size, batch_count = (param if param is not None else 1 for param in (args.batch_size, args.num_batches))
 sample_fn, clip_score_fn = create_sample_function(
     device,
     model,
@@ -48,7 +48,7 @@ sample_fn, clip_score_fn = create_sample_function(
     prompt=args.text,
     negative=args.negative,
     guidance_scale=args.guidance_scale,
-    batch_size=args.batch_size,
+    batch_size=batch_size,
     width=args.width,
     height=args.height,
     cutn=args.cutn,
@@ -67,9 +67,9 @@ generate_samples(device,
                  ldm,
                  diffusion,
                  sample_fn,
-                 get_save_fn(args.prefix, args.batch_size, ldm, clip_model, clip_preprocess, device),
-                 args.batch_size,
-                 args.num_batches,
+                 get_save_fn(args.prefix, batch_size, ldm, clip_model, clip_preprocess, device),
+                 batch_size,
+                 batch_count,
                  width=args.width,
                  height=args.height,
                  clip_score_fn=clip_score_fn if args.clip_score else None)

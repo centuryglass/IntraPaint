@@ -52,7 +52,6 @@ class LocalDeviceController(BaseInpaintController):
                  mask: Image.Image,
                  save_image: Callable[[Image.Image, int], None],
                  status_signal: pyqtSignal) -> None:
-        gc.collect()
         assert_types((selection, mask), Image.Image)
         if selection.width != mask.width:
             raise RuntimeError(f'Selection and mask widths should match, found {selection.width} and {mask.width}')

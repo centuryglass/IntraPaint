@@ -48,6 +48,7 @@ class MaskTool(CanvasTool):
         self.brush_color = Qt.red
         self.brush_size = config.get(AppConfig.MASK_BRUSH_SIZE)
         self.layer = layer_stack.mask_layer
+        self.update_brush_cursor()
 
     def get_hotkey(self) -> Qt.Key:
         """Returns the hotkey that should activate this tool."""

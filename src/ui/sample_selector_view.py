@@ -1,34 +1,45 @@
+"""
+Provides an interface for choosing between AI-generated changes to selected image content.
+"""
 import math
+import time
 from typing import Callable, Optional, cast
 
 from PIL import Image
-from PyQt5.QtCore import Qt, QRect, QSize, QPoint, QSizeF, QPointF, QRectF, QEvent
-from PyQt5.QtGui import QImage, QResizeEvent, QPixmap, QTransform, QPainter, QWheelEvent, QKeyEvent, QMouseEvent, \
-    QPainterPath
-from PyQt5.QtWidgets import QWidget, QGraphicsView, QGraphicsScene, QGraphicsPixmapItem, QVBoxLayout, QLabel, \
-    QStyleOptionGraphicsItem
+from PyQt5.QtCore import Qt, QRect, QSize, QPoint, QSizeF, QRectF, QEvent, pyqtSignal
+from PyQt5.QtGui import QImage, QResizeEvent, QPixmap, QPainter, QWheelEvent, QMouseEvent, \
+    QPainterPath, QKeyEvent
+from PyQt5.QtWidgets import QWidget, QGraphicsPixmapItem, QVBoxLayout, QLabel, \
+    QStyleOptionGraphicsItem, QHBoxLayout, QPushButton, QStyle
+
 from src.config.application_config import AppConfig
 from src.image.layer_stack import LayerStack
 from src.ui.graphics_items.loading_spinner import LoadingSpinner
 from src.ui.util.geometry_utils import get_scaled_placement
+from src.ui.util.text import max_font_size
+from src.ui.widget.image_graphics_view import ImageGraphicsView
+from src.util.image_utils import get_standard_qt_icon
+from src.util.validation import assert_valid_index
 
-SCALE_OFFSET_STEP = 0.05
 
-MAX_SCALE_OFFSET = 20.0
+CANCEL_BUTTON_TEXT = 'Cancel'
+CANCEL_BUTTON_TOOLTIP = 'This will discard all generated images.'
+PREVIOUS_BUTTON_TEXT = 'Previous'
+ZOOM_BUTTON_TEXT = 'Toggle zoom'
+NEXT_BUTTON_TEXT = 'Next'
+
 
 ORIGINAL_CONTENT_LABEL = "Original image content"
-
 LOADING_IMG_TEXT = 'Loading...'
 
 SELECTION_TITLE = 'Select from generated image options.'
-ZOOM_IN_BUTTON_LABEL = 'Zoom in [z]'
-ZOOM_OUT_BUTTON_LABEL = 'Zoom out [z]'
-CANCEL_BUTTON_LABEL = 'Cancel'
 VIEW_MARGIN = 6
 IMAGE_MARGIN_FRACTION = 1/6
+SCROLL_DEBOUNCE_MS = 100
 
 
 class SampleSelector(QWidget):
+    """Shows all inpainting samples as they load, allows the user to select one or discard all of them."""
 
     def __init__(self,
                  config: AppConfig,
@@ -45,46 +56,93 @@ class SampleSelector(QWidget):
         self._options = []
         self._zoomed_in = False
         self._zoom_index = 0
-        self._scale = 1.0
-        self._scale_offset = 0.0
-        self._scene_bounds = QRect()
-        self._layout = QVBoxLayout(self)
+        self._last_scroll_time = time.time() * 1000
 
+        self._base_option_offset = QPoint(0, 0)
+        self._base_option_scale = 0.0
+        self._option_scale_offset = 0.0
+        self._option_pos_offset = QPoint(0, 0)
+
+        self._layout = QVBoxLayout(self)
         self._layout.addWidget(QLabel(SELECTION_TITLE))
-        self._view = QGraphicsView()
+
+        # Setup main option view widget:
+        self._view = _SelectionView(config)
+        self._view.scale_changed.connect(self._scale_change_slot)
+        self._view.offset_changed.connect(self._offset_change_slot)
+
+        self._view.installEventFilter(self)
+
+        def _selection_scroll(dx, dy):
+            if dx > 0:
+                self._zoom_next()
+            elif dx < 0:
+                self._zoom_prev()
+            if dy != 0 and (dy > 0) == self._zoomed_in:
+                self.toggle_zoom()
+        self._view.content_scrolled.connect(_selection_scroll)
+        self._view.zoom_toggled.connect(self.toggle_zoom)
+
         self._layout.addWidget(self._view, stretch=255)
         self._loading_spinner = LoadingSpinner()
         self._loading_spinner.setZValue(1)
         self._loading_spinner.visible = False
-        self.installEventFilter(self)
+        self._view.scene().addItem(self._loading_spinner)
 
-        self._loading_image = QImage(self._config.get(AppConfig.GENERATION_SIZE), QImage.Format_ARGB32_Premultiplied)
+        # Add initial images, placeholders for expected images:
+        self._loading_image = QImage(self._config.get(AppConfig.EDIT_SIZE), QImage.Format_ARGB32_Premultiplied)
         self._loading_image.fill(Qt.GlobalColor.black)
         painter = QPainter(self._loading_image)
         painter.setPen(Qt.GlobalColor.white)
         painter.drawText(QRect(0, 0, self._loading_image.width(), self._loading_image.height()), Qt.AlignCenter,
                          LOADING_IMG_TEXT)
 
-        # Scene/view setup:
-        self._scene = QGraphicsScene()
-        self._scene.setSceneRect(QRectF(0, 0, float(self.width()), float(self.height())))
-        self._view.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self._view.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
-        self._view.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
-        self._view.setCacheMode(QGraphicsView.CacheBackground)
-        self._view.setTransformationAnchor(QGraphicsView.ViewportAnchor.NoAnchor)
-        self._view.setViewportUpdateMode(QGraphicsView.FullViewportUpdate)
-        self._view.setScene(self._scene)
-        self._scene.addItem(self._loading_spinner)
-
         original_image = self._layer_stack.qimage_selection_content().scaled(self._loading_image.size())
         original_option = _ImageOption(original_image, ORIGINAL_CONTENT_LABEL)
-        self._scene.addItem(original_option)
+        self._view.scene().addItem(original_option)
         self._options.append(original_option)
 
         expected_count = config.get(AppConfig.BATCH_SIZE) * config.get(AppConfig.BATCH_COUNT)
         for i in range(expected_count):
             self.add_image_option(self._loading_image, i)
+
+        self._button_bar = QWidget()
+        self._layout.addWidget(self._button_bar)
+        self._button_bar_layout = QHBoxLayout(self._button_bar)
+
+        self._cancel_button = QPushButton()
+        self._cancel_button.setIcon(get_standard_qt_icon(QStyle.SP_DialogCancelButton))
+        self._cancel_button.setText(CANCEL_BUTTON_TEXT)
+        self._cancel_button.setToolTip(CANCEL_BUTTON_TOOLTIP)
+        self._cancel_button.clicked.connect(self._close_selector)
+        self._button_bar_layout.addWidget(self._cancel_button)
+
+        self._button_bar_layout.addStretch(255)
+
+        def _add_key_hint(button, config_key):
+            key_str = config.get(config_key)
+            if key_str != '':
+                button.setText(f'{button.text()} [{key_str}]')
+
+        self._prev_button = QPushButton()
+        self._prev_button.setIcon(get_standard_qt_icon(QStyle.SP_ArrowLeft))
+        self._prev_button.setText(PREVIOUS_BUTTON_TEXT)
+        self._prev_button.clicked.connect(self._zoom_prev)
+        _add_key_hint(self._prev_button, AppConfig.MOVE_LEFT)
+        self._button_bar_layout.addWidget(self._prev_button)
+
+        self._zoom_button = QPushButton()
+        self._zoom_button.setText(ZOOM_BUTTON_TEXT)
+        self._zoom_button.clicked.connect(self.toggle_zoom)
+        _add_key_hint(self._zoom_button, AppConfig.ZOOM_TOGGLE)
+        self._button_bar_layout.addWidget(self._zoom_button)
+
+        self._next_button = QPushButton()
+        self._next_button.setIcon(get_standard_qt_icon(QStyle.SP_ArrowRight))
+        self._next_button.setText(NEXT_BUTTON_TEXT)
+        self._next_button.clicked.connect(self._zoom_next)
+        _add_key_hint(self._next_button, AppConfig.MOVE_RIGHT)
+        self._button_bar_layout.addWidget(self._next_button)
 
     def set_is_loading(self, is_loading: bool, message: Optional[str] = None):
         """Show or hide the loading indicator"""
@@ -102,65 +160,129 @@ class SampleSelector(QWidget):
             raise IndexError(f'invalid index {idx}, max is {len(self._options)}')
         idx += 1  # Original image gets index zero
         if idx == len(self._options):
-            self._options.append(_ImageOption(image, f'Option {idx + 1}'))
-            self._scene.addItem(self._options[-1])
+            self._options.append(_ImageOption(image, f'Option {idx}'))
+            self._view.scene().addItem(self._options[-1])
         else:
             self._options[idx].image = image
+        # Image options might come back at a different size if generation size doesn't match edit size, make
+        # sure they're all displayed the same:
+        size = self._options[idx].size
+        original_size = self._options[0].size
+        if size != original_size:
+            if size.width() < original_size.width():
+                self._options[idx].size = original_size
+            else:
+                for option in self._options:
+                    option.size = size
         self.resizeEvent(None)
 
     def toggle_zoom(self, zoom_index: Optional[int] = None) -> None:
+        """Toggle between zoomin in on one option and showing all of them."""
         if zoom_index is not None:
             self._zoom_index = zoom_index
         self._zoomed_in = not self._zoomed_in
-        print(f'zoom toggle: {self._zoom_index}, zoom = {self._zoomed_in}')
-        self.resizeEvent(None)
-
-    def _zoom_prev(self):
-        if not self._zoomed_in:
-            self._zoomed_in = True
-        self._zoom_index -= 1
-        if self._zoom_index < 0:
-            self._zoom_index = len(self._options) - 1
-        print('zoom next: ', self._zoom_index)
-        self.resizeEvent(None)
-
-    def _zoom_next(self):
-        if not self._zoomed_in:
-            self._zoomed_in = True
-        self._zoom_index += 1
-        if self._zoom_index >= len(self._options):
-            self._zoom_index = 0
-        print('zoom prev: ', self._zoom_index)
+        if self._zoomed_in:
+            self._zoom_to_option(self._zoom_index)
+        else:
+            if not self._scroll_debounce_finished():
+                return
+            self._view.reset_scale()
+            self._option_pos_offset = QPoint(0, 0)
+            self._option_scale_offset = 0.0
+            for option in self._options:
+                option.setOpacity(1.0)
         self.resizeEvent(None)
 
     def resizeEvent(self, unused_event: Optional[QResizeEvent]):
         """Recalculate all bounds on resize and update view scale."""
-        self._scene.setSceneRect(QRectF(0, 0, float(self._view.width()), float(self._view.height())))
         self._apply_ideal_image_arrangement()
+
+    def eventFilter(self, source, event: QEvent):
+        """Use horizontal scroll to move through selections, select items when clicked."""
+        if event.type() == QEvent.Wheel:
+            event = cast(QWheelEvent, event)
+            if event.angleDelta().x() > 0:
+                self._zoom_next()
+            elif event.angleDelta().x() < 0:
+                self._zoom_prev()
+            return event.angleDelta().x() != 0
+        elif event.type() == QEvent.KeyPress:
+            event = cast(QKeyEvent, event)
+            if event.key() == Qt.Key_Escape:
+                if self._zoomed_in:
+                    self.toggle_zoom()
+                else:
+                    self._close_selector()
+            elif event.key() == Qt.Key_Enter and self._zoomed_in:
+                self._select_option(self._zoom_index)
+            else:
+                return False
+            return True
+        elif event.type() == QEvent.MouseButtonPress:
+            event = cast(QMouseEvent, event)
+            if event.button() != Qt.LeftButton or self._loading_spinner.visible:
+                return False
+            if source == self._view:
+                view_pos = event.pos()
+            else:
+                view_pos = QPoint(self._view.x() + event.pos().x(), self._view.y() + event.pos().y())
+            scene_pos = self._view.mapToScene(view_pos).toPoint()
+            for i in range(len(self._options)):
+                if self._options[i].bounds.contains(scene_pos):
+                    self._select_option(i)
+        return False
+
+    def _offset_change_slot(self, offset: QPoint) -> None:
+        if not self._zoomed_in:
+            return
+        self._option_pos_offset = offset - self._base_option_offset
+
+    def _scale_change_slot(self, scale: float) -> None:
+        if not self._zoomed_in:
+            return
+        self._option_scale_offset = scale - self._base_option_scale
+
+    def _select_option(self, option_index: int) -> None:
+        if option_index == 0:  # Original image, no changes needed:
+            self._make_selection(None)
+        else:
+            self._make_selection(self._options[option_index].image)
+        self._close_selector()
+        return True
+
+    def _scroll_debounce_finished(self) -> bool:
+        ms_time = time.time() * 1000
+        if ms_time > self._last_scroll_time + SCROLL_DEBOUNCE_MS:
+            self._last_scroll_time = ms_time
+            return True
+        return False
+
+    def _zoom_to_option(self, option_index: int) -> None:
+        assert_valid_index(option_index, self._options)
+        if not self._scroll_debounce_finished():
+            return
+        if not self._zoomed_in:
+            self._zoomed_in = True
+        self._zoom_index = option_index
+        self._view.scale_changed.disconnect(self._scale_change_slot)
+        self._view.offset_changed.disconnect(self._offset_change_slot)
+        self._view.zoom_to_bounds(self._options[self._zoom_index].bounds)
+        self._base_option_offset = self._view.offset
+        self._base_option_scale = self._view.scene_scale
+        self._view.offset = self._view.offset + self._option_pos_offset
+        self._view.scene_scale = self._view.scene_scale + self._option_scale_offset
+        self._view.scale_changed.connect(self._scale_change_slot)
+        self._view.offset_changed.connect(self._offset_change_slot)
         for i, option in enumerate(self._options):
             option.setOpacity(1.0 if not self._zoomed_in or i == self._zoom_index else 0.5)
-        if len(self._options) > 0:
-            if self._zoomed_in:
-                if self._zoom_index is None or not 0 <= self._zoom_index < len(self._options):
-                    self._zoom_index = 0
-                option = self._options[self._zoom_index]
-                self._scale = min(self._view.width() / (option.width + VIEW_MARGIN * 2),
-                                  self._view.height() / (option.height + VIEW_MARGIN * 2))
-            else:
-                content_width = self._scene_bounds.width()
-                view_width = self._view.width()
-                self._scale = view_width / content_width
-            transformation = QTransform()
-            final_scale = max(self._scale + self._scale_offset, 0.01)
-            transformation.scale(final_scale, final_scale)
-            self._view.setTransform(transformation)
-            if self._zoomed_in:
-                option_bounds = self._options[self._zoom_index].bounds
-                self._scene.setSceneRect(QRectF(option_bounds))
-                self._view.centerOn(option_bounds.center())
-            else:
-                self._scene.setSceneRect(QRectF(self._scene_bounds))
-                self._view.centerOn(self._scene_bounds.center())
+
+    def _zoom_prev(self):
+        idx = len(self._options) - 1 if self._zoom_index <= 0 else self._zoom_index - 1
+        self._zoom_to_option(idx)
+
+    def _zoom_next(self):
+        idx = 0 if self._zoom_index >= len(self._options) - 1 else self._zoom_index + 1
+        self._zoom_to_option(idx)
 
     def _apply_ideal_image_arrangement(self) -> None:
         """Arrange options in a grid within the scene, choosing grid dimensions to maximize use of available space."""
@@ -206,7 +328,7 @@ class SampleSelector(QWidget):
             scene_y0 += (new_height - scene_size.height()) // 2
             scene_size.setHeight(new_height)
 
-        self._scene_bounds = QRect(QPoint(0, 0), scene_size.toSize())
+        self._view.content_size = scene_size.toSize()
         for idx in range(option_count):
             row = idx // num_columns
             col = idx % num_columns
@@ -214,119 +336,9 @@ class SampleSelector(QWidget):
             y = scene_y0 + (image_size.height() + image_margin) * row
             self._options[idx].setPos(x, y)
 
-    def _handle_key_event(self, event: Optional[QKeyEvent]):
-        if event is None:
-            return
-        toggle_zoom = False
-        zoom_index = None
-
-        def key_index():
-            """Get the image index for a numeric key code."""
-            return int(event.text()) - 1
-
-        match event.key():
-            case Qt.Key_Escape:
-                if self._zoomed_in:
-                    toggle_zoom = True
-                else:
-                    self._make_selection(None)
-                    self._close_selector()
-            case Qt.Key_Return | Qt.Key_Enter if self._zoomed_in:
-                if self._zoom_index >= len(self._options):
-                    # Original selected, just close selector
-                    self._make_selection(None)
-                    self._close_selector()
-                else:
-                    option = self._options[self._zoom_index]
-                    if isinstance(option['image'], Image.Image):
-                        self._make_selection(option['image'])
-                        self._close_selector()
-                return True
-            case Qt.Key_0 | Qt.Key_1 | Qt.Key_2 | Qt.Key_3 | Qt.Key_4 | Qt.Key_5 | Qt.Key_6 | Qt.Key_7 | Qt.Key_8 \
-                 | Qt.Key_9 if key_index() < self._option_count():
-                if not self._zoom_mode or key_index() == self._zoom_index:
-                    toggle_zoom = True
-                zoom_index = key_index()
-            case Qt.Key_Left | Qt.Key_A | Qt.Key_H:
-                if self._zoomed_in:
-                    self._zoom_prev()
-            case Qt.Key_Right | Qt.Key_D | Qt.Key_L:
-                if self._zoomed_in:
-                    self._zoom_next()
-            case Qt.Key_Up | Qt.Key_W | Qt.Key_K:
-                if self._zoomed_in:
-                    toggle_zoom = True
-            case Qt.Key_Down | Qt.Key_S | Qt.Key_J:
-                if not self._zoomed_in:
-                    toggle_zoom = True
-            case _:
-                return False
-        if toggle_zoom:
-            self.toggle_zoom(zoom_index)
-        elif self._zoomed_in and zoom_index is not None and zoom_index >= 0:
-            self._zoom_index = zoom_index
-            self.resizeEvent(None)
-            self.update()
-        return True
-
-    def eventFilter(self, source, event: QEvent):
-        """Intercept mouse wheel events, use for scrolling in zoom mode:"""
-        if not self.isVisible():
-            return super().eventFilter(source, event)
-        match event.type():
-            case QEvent.Wheel:
-                print('wheelevent')
-                event = cast(QWheelEvent, event)
-                if event.angleDelta().y() > 0:
-                    self._zoom_next()
-                elif event.angleDelta().y() < 0:
-                    self._zoom_prev()
-                elif event.angleDelta().x() > 0:
-                    self._scale_offset = min(self._scale_offset + SCALE_OFFSET_STEP, MAX_SCALE_OFFSET)
-                    self.resizeEvent(None)
-                elif event.angleDelta().x() < 0:
-                    self._scale_offset = max(self._scale_offset - SCALE_OFFSET_STEP, -self._scale)
-                    self.resizeEvent(None)
-                return True
-            case QEvent.KeyPress:
-                return self._handle_key_event(cast(QKeyEvent, event))
-        return super().eventFilter(source, event)
-
-    def mousePressEvent(self, event: QMouseEvent):
-        """Handle image selection and arrow button clicks."""
-        if event.button() != Qt.LeftButton or self._loading_spinner.visible:
-            return
-        if self._zoomed_in:
-            max_idx = max(len(self._options), self._expected_count) - (0 if self._include_original else 1)
-            # Check for arrow clicks:
-            if self._left_arrow_bounds.contains(event.pos()):
-                self._zoom_prev()
-            elif self._right_arrow_bounds.contains(event.pos()):
-                self._zoom_next()
-            elif self._zoom_image_bounds.contains(event.pos()) and not self._is_loading:
-                if self._include_original and self._zoom_index == max_idx:
-                    # Original chosen, no need to change anything besides applying sketch:
-                    self._make_selection(None)
-                    self._close_selector()
-                else:
-                    option = self._options[self._zoom_index]
-                    if isinstance(option['image'], Image.Image):
-                        self._make_selection(option['image'])
-                        self._close_selector()
-        elif not self._is_loading:
-            if self._include_original and self._source_option_bounds is not None:
-                if self._source_option_bounds.contains(event.pos()):  # Original image chosen
-                    self._make_selection(None)
-                    self._close_selector()
-                    return
-            for option in self._options:
-                if option['bounds'].contains(event.pos()) and isinstance(option['image'], Image.Image):
-                    self._make_selection(option['image'])
-                    self._close_selector()
-                    return
-
 
 class _ImageOption(QGraphicsPixmapItem):
+    """Displays a generated image option in the view, labeled with a title."""
 
     def __init__(self, image: QImage, label_text: str) -> None:
         super().__init__()
@@ -336,6 +348,7 @@ class _ImageOption(QGraphicsPixmapItem):
 
     @property
     def image(self) -> QImage:
+        """Access the generated image option."""
         return self._image
 
     @image.setter
@@ -346,32 +359,45 @@ class _ImageOption(QGraphicsPixmapItem):
 
     @property
     def bounds(self) -> QRect:
+        """Return the image bounds within the scene."""
         return QRect(self.pos().toPoint(), self.size)
 
     @property
     def size(self) -> QSize:
-        return self._image.size()
+        """Accesses the image size."""
+        return self.pixmap().size()
+
+    @size.setter
+    def size(self, new_size) -> QSize:
+        if new_size != self.size:
+            self.setPixmap(QPixmap.fromImage(self.image.scaled(new_size)))
+            self.update()
 
     @property
     def width(self) -> int:
+        """Returns the image width."""
         return self.size.width()
 
     @property
     def height(self) -> int:
+        """Returns the image height."""
         return self.size.height()
 
     @property
     def x(self) -> int:
+        """Returns the item's x-coordinate in the scene."""
         return int(self.pos().x())
 
     @property
     def y(self) -> int:
+        """Returns the item's y-coordinate in the scene."""
         return int(self.pos().y())
 
     def paint(self,
               painter: Optional[QPainter],
               option: Optional[QStyleOptionGraphicsItem],
               widget: Optional[QWidget] = None) -> None:
+        """Draw the label above the image."""
         super().paint(painter, option, widget)
         painter.save()
         image_margin = int(min(self.width, self.height) * IMAGE_MARGIN_FRACTION)
@@ -382,6 +408,39 @@ class _ImageOption(QGraphicsPixmapItem):
         text_background.addRoundedRect(QRectF(text_bounds), corner_radius, corner_radius)
         painter.fillPath(text_background, Qt.black)
         painter.setPen(Qt.white)
+        font = painter.font()
+        font_size = min(font.pointSize(), max_font_size(self._label_text, font, text_bounds))
+        font.setPointSize(font_size)
+        painter.setFont(font)
         painter.drawText(text_bounds, Qt.AlignCenter, self._label_text)
         painter.restore()
 
+
+class _SelectionView(ImageGraphicsView):
+    """Minimal ImageGraphicsView controlled by the SampleSelector"""
+
+    zoom_toggled = pyqtSignal()
+    content_scrolled = pyqtSignal(int, int)
+
+    def __init__(self, config: AppConfig) -> None:
+        super().__init__(config)
+        self.content_size = self.size()
+
+    def scroll_content(self, dx: int | float, dy: int | float) -> bool:
+        """Scroll content by the given offset, returning whether content was able to move."""
+        self.content_scrolled.emit(int(dx), int(dy))
+        return True
+
+    def toggle_zoom(self) -> None:
+        """Zoom in on some area of focus, or back to the full scene. Bound to the 'Toggle Zoom' key."""
+        self.zoom_toggled.emit()
+
+    def mousePressEvent(self, event: Optional[QMouseEvent], **kwargs) -> None:
+        """Pass mouse events back to the parent widget unless the ImageGraphicsView handles them.
+
+        QGraphicsView likes to intercept mouse events before the parent widget can process them, this gets around that
+        behavior.
+        """
+        if super().mousePressEvent(event, True):
+            return
+        self.parent().eventFilter(self, event)

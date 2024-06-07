@@ -54,8 +54,7 @@ class BrushTool(CanvasTool):
         if layer_stack.active_layer is not None:
             _active_layer_update(layer_stack.active_layer.id, layer_stack.active_layer_index)
 
-        self._eyedropper_cursor = QCursor(QPixmap(RESOURCES_EYEDROPPER_PNG))
-        self._line_brush_cursor = QCursor(Qt.CursorShape.ArrowCursor)
+        self.update_brush_cursor()
 
     def get_hotkey(self) -> Qt.Key:
         """Returns the hotkey that should activate this tool."""

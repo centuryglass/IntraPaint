@@ -4,9 +4,10 @@ import base64
 import io
 import logging
 from PIL import Image
-from PyQt5.QtGui import QImage
+from PyQt5.QtGui import QImage, QIcon
 from PyQt5.QtCore import QBuffer, QRect
 import numpy as np
+from PyQt5.QtWidgets import QStyle, QWidget, QApplication
 
 logger = logging.getLogger(__name__)
 
@@ -109,3 +110,12 @@ def image_content_bounds(image: QImage | np.ndarray, search_bounds: Optional[QRe
     bounds = QRect(left, top, width, height)
     assert search_bounds.contains(bounds)
     return bounds
+
+
+def get_standard_qt_icon(icon_code: int, style_source: Optional[QWidget] = None) -> QIcon:
+    """Returns one of the standard Qt icons."""
+    if style_source is None:
+        style = QApplication.style()
+    else:
+        style = style_source.style()
+    return style.standardIcon(icon_code)

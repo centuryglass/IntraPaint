@@ -6,6 +6,8 @@ from PyQt5.QtWidgets import QGraphicsObject, QStyleOptionGraphicsItem, QWidget
 from PyQt5.QtGui import QPainter, QPen, QBrush, QColor, QPainterPath
 from PyQt5.QtCore import Qt, QRect, QRectF, QPointF, pyqtProperty, QPropertyAnimation
 
+from src.ui.util.text import max_font_size
+
 ANIM_DURATION_MS = 2000
 
 BACKGROUND_COLOR = Qt.GlobalColor.black
@@ -25,6 +27,7 @@ class LoadingSpinner(QGraphicsObject):
         super().__init__()
         self._message = message
         self._rotation = 0
+        self._font_size = None
         self._anim = QPropertyAnimation(self, b"rotation")
         self._anim.setLoopCount(-1)
         self._anim.setStartValue(0)
@@ -40,6 +43,7 @@ class LoadingSpinner(QGraphicsObject):
     def message(self, message: str) -> None:
         """Sets the loading message displayed."""
         self._message = message
+        self._font_size = None
         self.update()
 
     @pyqtProperty(int)
@@ -104,6 +108,11 @@ class LoadingSpinner(QGraphicsObject):
         painter.setBrush(QBrush(TEXT_COLOR, Qt.BrushStyle.SolidPattern))
         text_bounds = QRect(int(self.scene().sceneRect().x()), ellipse_y + ellipse_radius * 2,
                             int(self.scene().width()), ellipse_radius // 4)
+        font = painter.font()
+        if self._font_size is None:
+            self._font_size = min(font.pointSize(), max_font_size(self._message, font, text_bounds))
+        font.setPointSize(self._font_size)
+        painter.setFont(font)
         painter.drawText(text_bounds, Qt.AlignmentFlag.AlignCenter, self._message)
 
         # Draw animated indicator:

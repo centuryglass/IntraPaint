@@ -24,10 +24,10 @@ def build_arg_parser(default_model='models/inpaint.pt', include_edit_params=True
     parser.add_argument('--prefix', type=str, required=False, default='',
                         help='prefix for output files')
 
-    parser.add_argument('--num_batches', type=int, default=1, required=False,
+    parser.add_argument('--num_batches', type=int, required=False,
                         help='number of batches')
 
-    parser.add_argument('--batch_size', type=int, default=1, required=False,
+    parser.add_argument('--batch_size', type=int, required=False,
                         help='batch size')
     parser.add_argument('--width', type=int, default=256, required=False,
                         help='image size of output (multiple of 8)')

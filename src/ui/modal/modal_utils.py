@@ -5,9 +5,10 @@ import sys
 import traceback
 import logging
 
-from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QMessageBox, QFileDialog, QWidget, QStyle
 from PIL import UnidentifiedImageError
+
+from src.util.image_utils import get_standard_qt_icon
 
 logger = logging.getLogger(__name__)
 
@@ -27,7 +28,7 @@ def show_error_dialog(parent: QWidget, title: str, error: str | BaseException) -
     messagebox = QMessageBox(parent)
     messagebox.setWindowTitle(title)
     messagebox.setText(f'{error}')
-    messagebox.setWindowIcon(messagebox.style().standardIcon(QStyle.SP_MessageBoxWarning))
+    messagebox.setWindowIcon(get_standard_qt_icon(QStyle.SP_MessageBoxWarning, parent))
     messagebox.setStandardButtons(QMessageBox.Ok)
     messagebox.exec()
 
@@ -38,7 +39,7 @@ def request_confirmation(parent: QWidget, title: str, message: str) -> bool:
     confirm_box.setWindowTitle(title)
     confirm_box.setText(message)
     confirm_box.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
-    confirm_box.setWindowIcon(confirm_box.style().standardIcon(QStyle.SP_MessageBoxQuestion))
+    confirm_box.setWindowIcon(get_standard_qt_icon(QStyle.SP_MessageBoxQuestion, parent))
     response = confirm_box.exec()
     return bool(response == QMessageBox.Ok)
 

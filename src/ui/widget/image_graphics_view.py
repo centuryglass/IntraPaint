@@ -1,21 +1,28 @@
-"""A QGraphicsView that maintains an aspect ratio and simplifies scene management."""
-from typing import Optional, List
-from PyQt5.QtWidgets import QWidget, QGraphicsView, QGraphicsScene, QGraphicsPixmapItem
-from PyQt5.QtGui import QPixmap, QImage, QPainter, QPen, QTransform, QResizeEvent, QMouseEvent, QCursor
+"""A QGraphicsView meant for displaying image content without using scrollbars."""
+import math
+from typing import Optional, List, cast
+from PyQt5.QtWidgets import QWidget, QGraphicsView, QGraphicsScene, QGraphicsPixmapItem, QApplication
+from PyQt5.QtGui import QPixmap, QImage, QPainter, QPen, QTransform, QResizeEvent, QMouseEvent, QCursor, QKeySequence, \
+    QWheelEvent, QEnterEvent
 from PyQt5.QtCore import Qt, QObject, QPoint, QPointF, QRect, QRectF, QSize, QMarginsF, pyqtSignal, QEvent
+
+from src.config.application_config import AppConfig
+from src.hotkey_filter import HotkeyFilter
 from src.ui.util.geometry_utils import get_scaled_placement
 from src.ui.util.contrast_color import contrast_color
 from src.util.validation import assert_type
 
 CURSOR_ITEM_Z_LEVEL = 9999
+BASE_ZOOM_OFFSET = 0.05
 
 
-class FixedAspectGraphicsView(QGraphicsView):
-    """A QGraphicsView that maintains an aspect ratio and simplifies scene management."""
+class ImageGraphicsView(QGraphicsView):
+    """A QGraphicsView meant for displaying image content without using scrollbars."""
 
     scale_changed = pyqtSignal(float)
+    offset_changed = pyqtSignal(QPoint)
 
-    def __init__(self, parent: Optional[QWidget] = None) -> None:
+    def __init__(self, config: AppConfig, parent: Optional[QWidget] = None) -> None:
         super().__init__(parent)
         self._scene = QGraphicsScene()
         self._content_size: QSize = QSize(0, 0)
@@ -25,10 +32,12 @@ class FixedAspectGraphicsView(QGraphicsView):
         self._last_cursor_pos: Optional[QPoint] = None
         self._cursor_pixmap: Optional[QPixmap] = None
         self._cursor_pixmap_item: Optional[QGraphicsPixmapItem] = None
+        self._centered_on = QPoint(self.width() // 2, self.height() // 2)
 
         self._scale = 1.0
         self._scale_adjustment = 0.0
         self._offset = QPointF(0.0, 0.0)
+        self._drag_pt: Optional[QPoint] = None
 
         self.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
@@ -37,6 +46,69 @@ class FixedAspectGraphicsView(QGraphicsView):
         self.setTransformationAnchor(QGraphicsView.ViewportAnchor.NoAnchor)
         self.setViewportUpdateMode(QGraphicsView.FullViewportUpdate)
         self.setScene(self._scene)
+        self.installEventFilter(self)
+
+        # Bind directional navigation and selection keys:
+        zoom_key = config.get_keycodes(AppConfig.ZOOM_TOGGLE)[0]
+        HotkeyFilter.instance().register_keybinding(lambda: self.toggle_zoom() is None, zoom_key,
+                                                    Qt.KeyboardModifier.NoModifier, self)
+        for pan_key, scroll_key, offset in ((AppConfig.PAN_LEFT, AppConfig.MOVE_LEFT, (-1.0, 0.0)),
+                                            (AppConfig.PAN_RIGHT, AppConfig.MOVE_RIGHT, (1.0, 0.0)),
+                                            (AppConfig.PAN_UP, AppConfig.MOVE_UP, (0.0, -1.0)),
+                                            (AppConfig.PAN_DOWN, AppConfig.MOVE_DOWN, (0.0, 1.0))):
+            dx, dy = offset
+
+            # Bind view panning:
+            def _pan(x=dx, y=dy) -> bool:
+                self.offset = QPointF(self.offset.x() + x, self.offset.y() + y)
+                self.resizeEvent(None)
+                return True
+
+            pan_keycode = config.get_keycodes(pan_key)[0]
+            HotkeyFilter.instance().register_keybinding(_pan, pan_keycode, widget=self)
+
+            # Bind selection offset:
+            def _scroll(x=dx, y=dy) -> bool:
+                return self.scroll_content(x, y)
+
+            scroll_keycode = config.get_keycodes(scroll_key)[0]
+            HotkeyFilter.instance().register_keybinding(_scroll, scroll_keycode, widget=self)
+
+            # Fast navigation:
+            speed_modifier = config.get(AppConfig.SPEED_MODIFIER)
+            if speed_modifier != '':
+                fast_pan_keycode = QKeySequence(f'{speed_modifier}+{config.get(pan_key)}')[0]
+                fast_scroll_keycode = QKeySequence(f'{speed_modifier}+{config.get(scroll_key)}')[0]
+                multiplier = config.get(AppConfig.SPEED_MODIFIER_MULTIPLIER)
+                HotkeyFilter.instance().register_keybinding(lambda x=dx * multiplier, y=dy * multiplier: _pan(x, y),
+                                                            fast_pan_keycode, widget=self)
+                HotkeyFilter.instance().register_keybinding(lambda x=dx * multiplier, y=dy * multiplier: _scroll(x, y),
+                                                            fast_scroll_keycode, widget=self)
+
+        # Bind zoom keys:
+        for config_key, direction in ((AppConfig.ZOOM_IN, 1), (AppConfig.ZOOM_OUT, -1)):
+            offset = BASE_ZOOM_OFFSET * direction
+            zoom_keycode = config.get_keycodes(config_key)[0]
+
+            def _zoom(change=offset) -> bool:
+                self.scene_scale = self.scene_scale + change
+                self.resizeEvent(None)
+                return True
+
+            HotkeyFilter.instance().register_keybinding(_zoom, zoom_keycode, widget=self)
+
+            speed_modifier = config.get(AppConfig.SPEED_MODIFIER)
+            if speed_modifier != '':
+                fast_zoom_keycode = QKeySequence(f'{speed_modifier}+{config.get(config_key)}')[0]
+                multiplier = config.get(AppConfig.SPEED_MODIFIER_MULTIPLIER)
+                HotkeyFilter.instance().register_keybinding(lambda off=offset * multiplier: _zoom(off),
+                                                            fast_zoom_keycode, widget=self)
+
+    def centerOn(self, pos: QPoint | QPointF) -> None:
+        """Cache the center point whenever it changes."""
+        super().centerOn(pos)
+        self._centered_on.setX(int(pos.x()))
+        self._centered_on.setY(int(pos.y()))
 
     def set_cursor(self, new_cursor: QCursor | QPixmap | None):
         """Sets the cursor over the scene, optionally with custom rendering for large cursors.
@@ -55,10 +127,12 @@ class FixedAspectGraphicsView(QGraphicsView):
                 self._cursor_pixmap_item.setZValue(CURSOR_ITEM_Z_LEVEL)
             else:
                 self._cursor_pixmap_item.setPixmap(new_cursor)
-            if self._cursor_pixmap_item.scene() is None and self._last_cursor_pos is not None:
+            if self._cursor_pixmap_item.scene() is None:
                 self.scene().addItem(self._cursor_pixmap_item)
             self._cursor_pixmap_item.setScale(1 / self.scene_scale)
-            self.set_cursor_pos(self._last_cursor_pos)
+            self._cursor_pixmap_item.setVisible(self._last_cursor_pos is not None)
+            if self._last_cursor_pos is not None:
+                self.set_cursor_pos(self._last_cursor_pos)
             self.setCursor(QCursor(Qt.CursorShape.CrossCursor))
         else:
             if self._cursor_pixmap_item is not None and self._cursor_pixmap_item.scene() is not None:
@@ -69,7 +143,7 @@ class FixedAspectGraphicsView(QGraphicsView):
             self.setCursor(new_cursor)
         self.update()
 
-    def set_cursor_pos(self, cursor_pos: QPoint) -> None:
+    def set_cursor_pos(self, cursor_pos: Optional[QPoint]) -> None:
         """Updates the last cursor position within the widget so that pixmap cursor rendering stays active."""
         self._last_cursor_pos = cursor_pos
         if self._cursor_pixmap_item is not None and self._cursor_pixmap_item.scene() is not None:
@@ -110,6 +184,7 @@ class FixedAspectGraphicsView(QGraphicsView):
             return
         self._content_size.setWidth(new_size.width())
         self._content_size.setHeight(new_size.height())
+        self.centerOn(QPointF(new_size.width() / 2, new_size.height() / 2))
         self.resizeEvent(None)
         self.resetCachedContent()
         self.update()
@@ -131,9 +206,9 @@ class FixedAspectGraphicsView(QGraphicsView):
         """Updates the image content scale, limiting minimum scale to 0.01."""
         new_scale = max(new_scale, 0.001)
         self._scale_adjustment = new_scale - self._scale
-        self.resizeEvent(None)
         self.centerOn(QPoint(int(self._content_size.width() / 2 + self._offset.x()),
                              int(self._content_size.height() / 2 + self._offset.y())))
+        self.resizeEvent(None)
         self.scale_changed.emit(new_scale)
 
     @property
@@ -144,8 +219,11 @@ class FixedAspectGraphicsView(QGraphicsView):
     @offset.setter
     def offset(self, new_offset: QPoint | QPointF) -> None:
         """Updates the image offset."""
+        change = (QPointF(new_offset) if isinstance(new_offset, QPoint) else new_offset) - self._offset
         self._offset.setX(float(new_offset.x()))
         self._offset.setY(float(new_offset.y()))
+        self.centerOn(self._centered_on + change.toPoint())
+        self.offset_changed.emit(self._offset.toPoint())
         self.resizeEvent(None)
 
     @property
@@ -202,7 +280,7 @@ class FixedAspectGraphicsView(QGraphicsView):
         """Recalculate content size when the widget is resized."""
         super().resizeEvent(event)
         if self.content_size is None:
-            raise RuntimeError('FixedAspectGraphicsView implementations must set content_size in __init__ before the ' +
+            raise RuntimeError('ImageGraphicsView implementations must set content_size in __init__ before the ' +
                                'first resizeEvent is triggered')
 
         # Handle scale adjustments when the widget size changes:
@@ -214,12 +292,13 @@ class FixedAspectGraphicsView(QGraphicsView):
         adjusted_scale = self._scale + self._scale_adjustment
 
         # Adjust the scene viewpoint/scrolling based on scale and offset:
-        content_rect_f = QRectF(self._offset.x(), self._offset.y(), float(self.content_size.width()),
-                                float(self.content_size.height()))
+        scene_window_width = self.displayed_content_size.width() / adjusted_scale
+        scene_window_height = self.displayed_content_size.height() / adjusted_scale
+        content_rect_f = QRectF(self._centered_on.x() - scene_window_width / 2,
+                                self._centered_on.y() - scene_window_height // 2,
+                                scene_window_width, scene_window_height)
         if content_rect_f != self._scene.sceneRect():
             self._scene.setSceneRect(content_rect_f)
-            self.centerOn(QPoint(int(self._content_size.width() / 2 + self._offset.x()),
-                                 int(self._content_size.height() / 2 + self._offset.y())))
 
         transformation = QTransform()
         transformation.translate(self._offset.x(), self._offset.y())
@@ -255,6 +334,10 @@ class FixedAspectGraphicsView(QGraphicsView):
         """Custom mousePress handler to deal with QGraphicsView oddities. Child classes must call this implementation
            first with get_result=True, then exit without further action if it returns true."""
         self.set_cursor_pos(event.pos())
+        key_modifiers = QApplication.keyboardModifiers()
+        if event.buttons() == Qt.MouseButton.MiddleButton or (event.buttons() == Qt.MouseButton.LeftButton
+                                                              and key_modifiers == Qt.ControlModifier):
+            self._drag_pt = event.pos()
         for event_filter in self._event_filters:
             if event_filter.eventFilter(self, event):
                 return True if get_result else None
@@ -264,6 +347,21 @@ class FixedAspectGraphicsView(QGraphicsView):
         """Custom mouseMove handler to deal with QGraphicsView oddities. Child classes must call this implementation
            first with get_result=True, then exit without further action if it returns true."""
         self.set_cursor_pos(event.pos())
+        if self._drag_pt is not None and event is not None:
+            key_modifiers = QApplication.keyboardModifiers()
+            if event.buttons() == Qt.MouseButton.MiddleButton or (event.buttons() == Qt.MouseButton.LeftButton
+                                                                  and key_modifiers == Qt.ControlModifier):
+                mouse_pt = event.pos()
+                scale = self.scene_scale
+                x_off = (self._drag_pt.x() - mouse_pt.x()) / scale
+                y_off = (self._drag_pt.y() - mouse_pt.y()) / scale
+                distance = math.sqrt(x_off**2 + y_off**2)
+                if distance < 1:
+                    return
+                self.offset = QPointF(self.offset.x() + x_off, self.offset.y() + y_off)
+                self._drag_pt = mouse_pt
+            else:
+                self._drag_pt = None
         for event_filter in self._event_filters:
             if event_filter.eventFilter(self, event):
                 return True if get_result else None
@@ -278,7 +376,43 @@ class FixedAspectGraphicsView(QGraphicsView):
                 return True if get_result else None
         return False if get_result else None
 
+    def eventFilter(self, source, event: QEvent):
+        """Intercept mouse wheel events, use for scrolling in zoom mode:"""
+        if event.type() == QEvent.Leave:
+            self.set_cursor_pos(None)
+        elif event.type() == QEvent.Enter:
+            event = cast(QEnterEvent, event)
+            self.set_cursor_pos(event.pos())
+        elif event.type() == QEvent.Wheel:
+            event = cast(QWheelEvent, event)
+            if event.angleDelta().y() == 0:
+                return False
+            if event.angleDelta().y() > 0:
+                self.scene_scale = self.scene_scale + 0.05
+            elif event.angleDelta().y() < 0 and self.scene_scale > 0.05:
+                self.scene_scale = self.scene_scale - 0.05
+
+            self.resizeEvent(None)
+        return False
+
     def leaveEvent(self, event: Optional[QEvent]):
         """Clear the pixmap mouse cursor on leave."""
         self._last_cursor_pos = None
         super().leaveEvent(event)
+
+    def scroll_content(self, dx: int | float, dy: int | float) -> bool:
+        """Scroll content by the given offset, returning whether content was able to move."""
+        return False
+
+    def toggle_zoom(self) -> None:
+        """Zoom in on some area of focus, or back to the full scene. Bound to the 'Toggle Zoom' key."""
+
+    def zoom_to_bounds(self, bounds: QRect) -> None:
+        """Adjust viewport scale and offset to center a selected area in the view."""
+        self.reset_scale()  # Reset zoom without clearing 'follow_selection' flag.
+        margin = max(int(bounds.width() / 20), int(bounds.height() / 20), 10)
+        self.offset = QPoint(int(bounds.center().x() - (self.content_size.width() // 2)),
+                             int(bounds.center().y() - (self.content_size.height() // 2)))
+        self.scene_scale = get_scaled_placement(QRect(QPoint(0, 0), self.size()),
+                                                bounds.size(), 0).width() / (bounds.width() + margin)
+        self.resizeEvent(None)

@@ -6,6 +6,7 @@ from PyQt5.QtGui import QPainter, QPixmap, QPainterPath, QTransform, QFontMetric
 from PyQt5.QtCore import Qt, QSize, QPointF
 from PyQt5.QtWidgets import QLabel, QSizePolicy, QWidget
 from src.config.application_config import AppConfig
+from src.ui.util.text import find_text_size
 
 
 class Label(QLabel):
@@ -120,14 +121,14 @@ class Label(QLabel):
     def _draw_text_pixmaps(self) -> tuple[QPixmap, QPixmap]:
         """Re-renders the label text."""
         drawn_text = '     ' if self._text is None else (self._text + '     ')
-        text_bounds = QFontMetrics(self._font).boundingRect(drawn_text)
-        w = int(text_bounds.height() * 1.3) if self._orientation == Qt.Orientation.Vertical else text_bounds.width()
-        h = text_bounds.width() if self._orientation == Qt.Orientation.Vertical else int(text_bounds.height() * 1.3)
+        text_size = find_text_size(drawn_text, self._font)
+        w = int(text_size.height() * 1.3) if self._orientation == Qt.Orientation.Vertical else text_size.width()
+        h = text_size.width() if self._orientation == Qt.Orientation.Vertical else int(text_size.height() * 1.3)
         image_size = QSize(w, h)
 
         path = QPainterPath()
-        text_pt = QPointF(0, -(text_bounds.height() * 0.3)) if self._orientation == Qt.Orientation.Vertical \
-            else QPointF(0, text_bounds.height())
+        text_pt = QPointF(0, -(text_size.height() * 0.3)) if self._orientation == Qt.Orientation.Vertical \
+            else QPointF(0, text_size.height())
         path.addText(text_pt, self._font, drawn_text)
         if self._orientation == Qt.Orientation.Vertical:
             rotation = QTransform()

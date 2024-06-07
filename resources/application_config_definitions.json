@@ -549,6 +549,14 @@
         "default": "#ff000000",
         "saved": false
     },
+    "last_active_tool": {
+        "label": "Last active tool:",
+        "category": "Cache",
+        "description": "Label of the last active tool, to restore after restart",
+        "type": "string",
+        "default": "brush",
+        "saved": true
+    },
     "speed_modifier": {
         "label": "Key Speed Modifier:",
         "category": "Keybindings",
@@ -786,7 +794,7 @@
         "category": "Keybindings",
         "description": "Start AI image generation.",
         "type": "string",
-        "default": "F8",
+        "default": "F4",
         "saved": true
     },
     "resize_canvas_shortcut": {
@@ -898,7 +906,7 @@
         "category": "Keybindings",
         "description": "Clear the mask selection layer.",
         "type": "string",
-        "default": "F6",
+        "default": "F8",
         "saved": true
     },
     "show_layer_menu_shortcut": {

@@ -14,22 +14,18 @@ from src.image.layer_stack import LayerStack
 from src.ui.graphics_items.outline import Outline
 from src.ui.util.geometry_utils import get_scaled_placement
 from src.ui.util.tile_pattern_fill import get_transparency_tile_pixmap
-from src.ui.widget.fixed_aspect_graphics_view import FixedAspectGraphicsView
+from src.ui.widget.image_graphics_view import ImageGraphicsView
 from src.util.validation import assert_type
 from src.config.application_config import AppConfig
 from src.hotkey_filter import HotkeyFilter
 
-BASE_ZOOM_OFFSET = 0.05
 
 SELECTION_BORDER_OPACITY = 0.6
 SELECTION_BORDER_COLOR = Qt.GlobalColor.black
 
 
-class ImageViewer(FixedAspectGraphicsView):
+class ImageViewer(ImageGraphicsView):
     """Shows the image being edited, and allows the user to select sections."""
-
-    # Emits the visible section of the edited image as it changed.
-    visible_section_changed = pyqtSignal(QRect)
 
     class LayerItem(QGraphicsPixmapItem):
         """Renders an image layer into a QGraphicsScene."""
@@ -76,66 +72,8 @@ class ImageViewer(FixedAspectGraphicsView):
             self.setPos(new_bounds.topLeft())
 
     def __init__(self, parent: Optional[QWidget], layer_stack: LayerStack, config: AppConfig) -> None:
-        super().__init__(parent)
+        super().__init__(config, parent)
         HotkeyFilter.instance().set_default_focus(self)
-
-        # Bind directional navigation and selection keys:
-        zoom_key = config.get_keycodes(AppConfig.ZOOM_TOGGLE)[0]
-        HotkeyFilter.instance().register_keybinding(lambda: self.toggle_zoom() is None, zoom_key,
-                                                    Qt.KeyboardModifier.NoModifier, self)
-        for pan_key, scroll_key, offset in ((AppConfig.PAN_LEFT, AppConfig.MOVE_LEFT, (-1.0, 0.0)),
-                                               (AppConfig.PAN_RIGHT, AppConfig.MOVE_RIGHT, (1.0, 0.0)),
-                                               (AppConfig.PAN_UP, AppConfig.MOVE_UP, (0.0, -1.0)),
-                                               (AppConfig.PAN_DOWN, AppConfig.MOVE_DOWN, (0.0, 1.0))):
-            dx, dy = offset
-
-            # Bind view panning:
-            def _pan(x=dx, y=dy) -> bool:
-                self.offset = QPointF(self.offset.x() + x, self.offset.y() + y)
-                self.resizeEvent(None)
-                return True
-            pan_keycode = config.get_keycodes(pan_key)[0]
-            HotkeyFilter.instance().register_keybinding(_pan, pan_keycode, widget=self)
-
-            # Bind selection offset:
-            def _scroll(x=dx, y=dy) -> bool:
-                selection = layer_stack.selection
-                layer_stack.selection = selection.translated(int(x), int(y))
-                self.resizeEvent(None)
-                return layer_stack.selection != selection
-            scroll_keycode = config.get_keycodes(scroll_key)[0]
-            HotkeyFilter.instance().register_keybinding(_scroll, scroll_keycode, widget=self)
-
-            # Fast navigation:
-            speed_modifier = config.get(AppConfig.SPEED_MODIFIER)
-            if speed_modifier != '':
-                fast_pan_keycode = QKeySequence(f'{speed_modifier}+{config.get(pan_key)}')[0]
-                fast_scroll_keycode = QKeySequence(f'{speed_modifier}+{config.get(scroll_key)}')[0]
-                multiplier = config.get(AppConfig.SPEED_MODIFIER_MULTIPLIER)
-                HotkeyFilter.instance().register_keybinding(lambda x=dx * multiplier, y=dy * multiplier: _pan(x, y),
-                                                            fast_pan_keycode, widget=self)
-                HotkeyFilter.instance().register_keybinding(lambda x=dx * multiplier, y=dy * multiplier: _scroll(x, y),
-                                                            fast_scroll_keycode, widget=self)
-
-        # Bind zoom keys:
-        for config_key, direction in ((AppConfig.ZOOM_IN, 1), (AppConfig.ZOOM_OUT, -1)):
-            offset = BASE_ZOOM_OFFSET * direction
-            zoom_keycode = config.get_keycodes(config_key)[0]
-
-            def _zoom(change=offset) -> bool:
-                self.scene_scale = self.scene_scale + change
-                self.resizeEvent(None)
-                return True
-
-            HotkeyFilter.instance().register_keybinding(_zoom, zoom_keycode, widget=self)
-
-            speed_modifier = config.get(AppConfig.SPEED_MODIFIER)
-            if speed_modifier != '':
-                fast_zoom_keycode = QKeySequence(f'{speed_modifier}+{config.get(config_key)}')[0]
-                multiplier = config.get(AppConfig.SPEED_MODIFIER_MULTIPLIER)
-                HotkeyFilter.instance().register_keybinding(lambda off=offset * multiplier: _zoom(off),
-                        fast_zoom_keycode, widget=self)
-
 
         self._layer_stack = layer_stack
         self._config = config
@@ -144,14 +82,9 @@ class ImageViewer(FixedAspectGraphicsView):
         self.content_size = layer_stack.size
         self.background = get_transparency_tile_pixmap()
         self.setSizePolicy(QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding))
-        self.installEventFilter(self)
         self._follow_selection = False
         self._hidden = set()
-        # TODO: Hidden layers either need to be cleared periodically or tracked by other means, or else memory taken
-        #      by removed layers will never be cleared.
 
-        # View offset handling:
-        self._drag_pt: Optional[QPoint] = None
 
         # Selection and border rectangle setup:
         self._scene_outline = Outline(self.scene(), self)
@@ -247,7 +180,7 @@ class ImageViewer(FixedAspectGraphicsView):
             self.scene().addItem(layer_item)
             for outline in self._selection_outline, self._masked_selection_outline, self._active_layer_outline, self._border:
                 outline.setZValue(max(self._selection_outline.zValue(), index + 1))
-            if new_layer in self._hidden:
+            if new_layer.id in self._hidden:
                 layer_item.hidden = True
             if layer_item.isVisible():
                 self.resetCachedContent()
@@ -280,13 +213,7 @@ class ImageViewer(FixedAspectGraphicsView):
 
     def zoom_to_selection(self) -> None:
         """Adjust viewport scale and offset to center the selected editing area in the view."""
-        super().reset_scale()  # Reset zoom without clearing 'follow_selection' flag.
-        selection = self._layer_stack.selection
-        margin = max(int(selection.width() / 20), int(selection.height() / 20), 10)
-        self.offset = QPoint(int(selection.center().x() - (self.content_size.width() // 2)),
-                             int(selection.center().y() - (self.content_size.height() // 2)))
-        self.scene_scale = get_scaled_placement(QRect(QPoint(0, 0), self.size()),
-                                                selection.size(), 0).width() / (selection.width() + margin)
+        self.zoom_to_bounds(self._layer_stack.selection)
 
     def toggle_zoom(self) -> None:
         """Toggles between zooming in on the selection and zooming out to the full image view."""
@@ -296,14 +223,14 @@ class ImageViewer(FixedAspectGraphicsView):
 
     def stop_rendering_layer(self, layer: ImageLayer) -> None:
         """Makes the ImageViewer stop direct rendering of a particular layer until further notice."""
-        self._hidden.add(layer)
+        self._hidden.add(layer.id)
         if layer in self._layer_items:
             self._layer_items[layer].hidden = True
         self.update()
 
     def resume_rendering_layer(self, layer: ImageLayer) -> None:
         """Makes the ImageViewer resume normal rendering for a layer."""
-        self._hidden.discard(layer)
+        self._hidden.discard(layer.id)
         if layer in self._layer_items:
             self._layer_items[layer].hidden = False
         self.update()
@@ -329,11 +256,6 @@ class ImageViewer(FixedAspectGraphicsView):
         if should_follow:
             self.zoom_to_selection()
 
-    def reset_scale(self) -> None:
-        """If the scale resets, stop tracking the selection."""
-        self._follow_selection = False
-        super().reset_scale()
-
     def sizeHint(self) -> QSize:
         """Returns image size as ideal widget size."""
         return self.content_size
@@ -344,11 +266,7 @@ class ImageViewer(FixedAspectGraphicsView):
             return
         if not self._layer_stack.has_image or event is None:
             return
-        key_modifiers = QApplication.keyboardModifiers()
-        if event.buttons() == Qt.MouseButton.MiddleButton or (event.buttons() == Qt.MouseButton.LeftButton
-                                                              and key_modifiers == Qt.ControlModifier):
-            self._drag_pt = event.pos()
-        elif event.button() == Qt.LeftButton and self._layer_stack.has_image:
+        if event.button() == Qt.LeftButton:
             image_coordinates = self.widget_to_scene_coordinates(event.pos())
             selection = self._layer_stack.selection
             selection.moveTopLeft(image_coordinates.toPoint())
@@ -358,21 +276,6 @@ class ImageViewer(FixedAspectGraphicsView):
         """Adjust the offset when the widget is dragged with ctrl+LMB or MMB."""
         if super().mouseMoveEvent(event, True):
             return
-        if self._drag_pt is not None and event is not None:
-            key_modifiers = QApplication.keyboardModifiers()
-            if event.buttons() == Qt.MouseButton.MiddleButton or (event.buttons() == Qt.MouseButton.LeftButton
-                                                                  and key_modifiers == Qt.ControlModifier):
-                mouse_pt = event.pos()
-                scale = self.scene_scale
-                x_off = (self._drag_pt.x() - mouse_pt.x()) / scale
-                y_off = (self._drag_pt.y() - mouse_pt.y()) / scale
-                distance = math.sqrt(x_off**2 + y_off**2)
-                if distance < 1:
-                    return
-                self.offset = QPointF(self.offset.x() + x_off, self.offset.y() + y_off)
-                self._drag_pt = mouse_pt
-            else:
-                self._drag_pt = None
 
     def drawBackground(self, painter: QPainter, rect: QRectF) -> None:
         """Draw the background as a fixed size tiling image."""
@@ -380,17 +283,12 @@ class ImageViewer(FixedAspectGraphicsView):
             return
         painter.drawTiledPixmap(rect, self.background)
 
-    def eventFilter(self, source, event: QEvent):
-        """Intercept mouse wheel events, use for scrolling in zoom mode:"""
-        if event.type() == QEvent.Wheel:
-            event = cast(QWheelEvent, event)
-            if event.angleDelta().y() > 0:
-                self.scene_scale = self.scene_scale + 0.05
-            elif event.angleDelta().y() < 0 and self.scene_scale > 0.05:
-                self.scene_scale = self.scene_scale - 0.05
-            self.resizeEvent(None)
-            return True
-        return False
+    def scroll_content(self, dx: int | float, dy: int | float) -> bool:
+        """Scroll the selection by the given offset, returning whether it was able to move."""
+        selection = self._layer_stack.selection
+        self._layer_stack.selection = selection.translated(int(dx), int(dy))
+        self.resizeEvent(None)
+        return self._layer_stack.selection != selection
 
     def _update_drawn_borders(self):
         """Make sure that the selection and image borders are in the right place in the scene."""

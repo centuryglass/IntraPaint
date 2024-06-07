@@ -19,7 +19,6 @@ from src.ui.panel.layer_panel import LayerPanel
 from src.ui.util.geometry_utils import get_scaled_placement
 from src.ui.widget.bordered_widget import BorderedWidget
 from src.ui.widget.collapsible_box import CollapsibleBox
-from src.ui.util.screen_size import screen_size
 
 TOOL_PANEL_TITLE = "Tools"
 LIST_SPACING = 10
@@ -162,7 +161,6 @@ class ToolPanel(BorderedWidget):
 
         brush_tool = BrushTool(layer_stack, image_viewer, config)
         add_tool(brush_tool)
-        self._switch_active_tool(brush_tool.label)
         eyedropper_tool = EyedropperTool(layer_stack, config)
         add_tool(eyedropper_tool)
         selection_tool = SelectionTool(layer_stack, image_viewer, config)
@@ -174,6 +172,7 @@ class ToolPanel(BorderedWidget):
         for tool in brush_tool, mask_tool:
             self._event_handler.register_tool_delegate(tool, selection_tool, Qt.KeyboardModifier.AltModifier)
         self._event_handler.register_tool_delegate(brush_tool, eyedropper_tool, Qt.KeyboardModifier.ControlModifier)
+        self._switch_active_tool(config.get(AppConfig.LAST_ACTIVE_TOOL))
         self.resizeEvent(None)
         self.set_orientation(Qt.Orientation.Vertical)
 
@@ -234,6 +233,8 @@ class ToolPanel(BorderedWidget):
     def _switch_active_tool(self, tool_label: Optional[str]) -> None:
         """Sets a new tool as the active tool."""
         active_tool = None if tool_label not in self._tools else self._tools[tool_label]
+        if active_tool is not None:
+            self._config.set(AppConfig.LAST_ACTIVE_TOOL, active_tool.label)
         self._event_handler.active_tool = active_tool
         # Event handler will send a signal to trigger _setup_active_tool
 

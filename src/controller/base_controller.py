@@ -453,7 +453,6 @@ class BaseInpaintController:
 
         # If necessary, scale image and mask to match the image generation size.
         generation_size = self._config.get(AppConfig.GENERATION_SIZE)
-        print(f'applying generation size {generation_size}')
         if inpaint_image.width != generation_size.width() or inpaint_image.height != generation_size.height():
             inpaint_image = resize_image(inpaint_image, generation_size.width(), generation_size.height())
         if inpaint_mask.width != generation_size.width() or inpaint_mask.height != generation_size.height():
@@ -504,7 +503,7 @@ class BaseInpaintController:
         self._window.set_sample_selector_visible(True)
         self._start_thread(worker)
 
-    def select_and_apply_sample(self, sample_image: Image.Image) -> None:
+    def select_and_apply_sample(self, sample_image: Image.Image | QImage) -> None:
         """Apply an AI-generated image change to the edited image.
 
         Parameters
@@ -512,8 +511,11 @@ class BaseInpaintController:
         sample_image : PIL Image
             Data to be inserted into the edited image selection bounds.
         """
-        if sample_image is not None and isinstance(sample_image, Image.Image):
-            image = pil_image_to_qimage(sample_image).convertToFormat(QImage.Format.Format_ARGB32_Premultiplied)
+        if sample_image is not None:
+            if isinstance(sample_image, Image.Image):
+                image = pil_image_to_qimage(sample_image).convertToFormat(QImage.Format.Format_ARGB32_Premultiplied)
+            else:
+                image = sample_image.convertToFormat(QImage.Format.Format_ARGB32_Premultiplied)
             layer = self._layer_stack.active_layer
             if self._config.get(AppConfig.EDIT_MODE) == "Inpaint":
                 inpaint_mask = self._layer_stack.mask_layer.cropped_image_content(self._layer_stack.selection)

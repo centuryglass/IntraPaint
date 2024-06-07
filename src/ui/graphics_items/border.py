@@ -5,6 +5,8 @@ from PyQt5.QtCore import Qt, QRectF
 from PyQt5.QtGui import QPainter, QPainterPath, QColor
 from PyQt5.QtWidgets import QWidget, QGraphicsItem, QGraphicsView, QGraphicsScene, QStyleOptionGraphicsItem
 
+from src.ui.widget.image_graphics_view import ImageGraphicsView
+
 
 class Border(QGraphicsItem):
     """Fills in all bounds except an inner rectangular region with a solid color.
@@ -14,7 +16,7 @@ class Border(QGraphicsItem):
 
     def __init__(self,
                  scene: QGraphicsScene,
-                 view: QGraphicsView,
+                 view: ImageGraphicsView,
                  parent: Optional[QGraphicsItem] = None):
         super().__init__(parent)
         self._rect = QRectF()
@@ -27,8 +29,8 @@ class Border(QGraphicsItem):
               unused_option: Optional[QStyleOptionGraphicsItem],
               unused_widget: Optional[QWidget] = None) -> None:
         """Draws the outline within the scene."""
-        height = self._view.scene().height()
-        width = self._view.scene().width()
+        height = self._view.content_size.height()
+        width = self._view.content_size.width()
         window_right = self._rect.x() + self._rect.width()
         window_bottom = self._rect.y() + self._rect.height()
         left = QRectF(0.0, 0.0, self._rect.x(), height)
