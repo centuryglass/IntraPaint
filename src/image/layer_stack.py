@@ -4,7 +4,7 @@ import os.path
 import re
 import shutil
 import tempfile
-from typing import Optional, Tuple, Dict, Any
+from typing import Optional, Tuple, Dict, Any, List
 
 from PIL import Image
 from PyQt5.QtCore import Qt, QObject, QSize, QPoint, QRect, pyqtSignal
@@ -52,7 +52,7 @@ class LayerStack(QObject):
         self._pixmap_cache_saved = CachedData(None)
         self._image_cache_full = CachedData(None)
         self._pixmap_cache_full = CachedData(None)
-        self._layers = []
+        self._layers: List[ImageLayer] = []
         self._active_layer_id: Optional[int] = None
 
         # Create mask layer:
@@ -139,11 +139,6 @@ class LayerStack(QObject):
         return len(self._layers) > 0
 
     @property
-    def size(self) -> QSize:
-        """Gets the size of the edited image."""
-        return QSize(self._size.width(), self._size.height())
-
-    @property
     def geometry(self) -> QRect:
         """Gets image geometry as a QRect. Image position will always be 0,0, so this is mostly a convenience function
            for assorted rectangle calculations."""
@@ -156,6 +151,11 @@ class LayerStack(QObject):
         for layer in self._layers:
             bounds = bounds.united(layer.geometry)
         return bounds
+
+    @property
+    def size(self) -> QSize:
+        """Gets the size of the edited image."""
+        return QSize(self._size.width(), self._size.height())
 
     @size.setter
     def size(self, new_size) -> None:
@@ -172,7 +172,6 @@ class LayerStack(QObject):
         self.size_changed.emit(self.size)
         self._mask_layer.size = self.size
         self.visible_content_changed.emit()
-
 
     @property
     def width(self) -> int:
@@ -236,7 +235,7 @@ class LayerStack(QObject):
 
             action_type = 'layer_stack.selection'
             with last_action() as prev_action:
-                if prev_action is not None and prev_action.type == action_type:
+                if prev_action is not None and prev_action.type == action_type and prev_action.action_data is not None:
                     last_bounds = prev_action.action_data['prev_bounds']
                     prev_action.redo = lambda: update_fn(last_bounds, bounds_rect)
                     prev_action.undo = lambda: update_fn(bounds_rect, last_bounds)
@@ -419,9 +418,8 @@ class LayerStack(QObject):
                 The layer object to copy, or its id. If None, the active layer will be used, and the method will fail
                 silently if no layer is active.
         """
-        layer, layer_id, layer_index = self._layer_values_from_layer_or_id_or_active(layer)
-        if layer is None:
-            return
+        layer, layer_index = self._layer_values_from_layer_or_id_or_active(layer)
+        assert layer is not None and layer_index is not None
         assert_valid_index(layer_index, self._layers)
         self.create_layer(layer.name + ' copy', layer.qimage.copy(), layer.saved, layer_index + 1)
         self._layers[layer_index + 1].visible = layer.visible
@@ -443,15 +441,15 @@ class LayerStack(QObject):
                 The layer object to copy, or its id. If None, the active layer will be used, and the method will fail
                 silently if no layer is active.
         """
-        removed_layer, _, removed_layer_index = self._layer_values_from_layer_or_id_or_active(layer)
+        removed_layer, removed_layer_index = self._layer_values_from_layer_or_id_or_active(layer)
         if removed_layer is None:
             return
 
-        def _remove(l=removed_layer):
-            self._remove_layer_internal(l)
+        def _remove(img_layer=removed_layer):
+            self._remove_layer_internal(img_layer)
 
-        def _undo_remove(l=removed_layer, i=removed_layer_index):
-            self._insert_layer_internal(l,i)
+        def _undo_remove(img_layer=removed_layer, idx=removed_layer_index):
+            self._insert_layer_internal(img_layer, idx)
         commit_action(_remove, _undo_remove)
 
     def offset_selection(self, offset: int) -> None:
@@ -482,9 +480,8 @@ class LayerStack(QObject):
                 The layer object to copy, or its id. If None, the active layer will be used, and the method will fail
                 silently if no layer is active.
         """
-        moved_layer, moved_layer_id, moved_layer_index = self._layer_values_from_layer_or_id_or_active(layer)
-        if moved_layer is None:
-            return
+        moved_layer, moved_layer_index = self._layer_values_from_layer_or_id_or_active(layer)
+        assert moved_layer is not None and moved_layer_index is not None
         assert_valid_index(moved_layer_index, self._layers)
         insert_index = moved_layer_index + offset
         if not 0 <= insert_index <= self.count - 1:
@@ -517,14 +514,12 @@ class LayerStack(QObject):
                 The layer object to copy, or its id. If None, the active layer will be used, and the method will fail
                 silently if no layer is active.
         """
-        top_layer, top_layer_id, top_layer_index = self._layer_values_from_layer_or_id_or_active(layer)
-        if top_layer is None:
-            return
+        top_layer, top_layer_index = self._layer_values_from_layer_or_id_or_active(layer)
+        assert top_layer is not None and top_layer_index is not None
         if top_layer_index == self.count - 1:
             return
-        base_layer, base_layer_id, base_layer_index = self._layer_values_from_layer_or_id_or_active(
-                self._layers[top_layer_index + 1])
-        active_layer_id = self._active_layer_id
+        base_layer, base_layer_index = self._layer_values_from_layer_or_id_or_active(self._layers[top_layer_index + 1])
+        assert base_layer is not None and base_layer_index is not None
 
         base_pos = base_layer.position
         base_size = base_layer.size
@@ -558,7 +553,7 @@ class LayerStack(QObject):
                 The layer object to copy, or its id. If None, the active layer will be used, and the method will fail
                 silently if no layer is active.
         """
-        layer, _, _ = self._layer_values_from_layer_or_id_or_active(layer)
+        layer, _ = self._layer_values_from_layer_or_id_or_active(layer)
         if layer is None:
             return
         layer_bounds = QRect(layer.position, layer.size)
@@ -595,9 +590,9 @@ class LayerStack(QObject):
                 The layer object to copy, or its id. If None, the active layer will be used, and the method will fail
                 silently if no layer is active.
         """
-        layer, _, _ = self._layer_values_from_layer_or_id_or_active(layer)
+        layer, _ = self._layer_values_from_layer_or_id_or_active(layer)
         if layer is None:
-            return
+            return None
         inpaint_mask = self.mask_layer.qimage
         image = layer.qimage.copy(QRect(-layer.position.x(), -layer.position.y(), self.width, self.height))
         painter = QPainter(image)
@@ -607,9 +602,9 @@ class LayerStack(QObject):
         self._copy_buffer = image
         return image
 
-    def cut_masked(self, layer: Optional[ImageLayer | int] = None)  -> None:
+    def cut_masked(self, layer: Optional[ImageLayer | int] = None) -> None:
         """Replaces all masked image content in a layer with transparency, saving it in the copy buffer."""
-        layer, _, _ = self._layer_values_from_layer_or_id_or_active(layer)
+        layer, _ = self._layer_values_from_layer_or_id_or_active(layer)
         if layer is None:
             return
         source_content = layer.qimage.copy()
@@ -618,6 +613,7 @@ class LayerStack(QObject):
 
         def _make_cut() -> None:
             with layer.borrow_image() as layer_image:
+                assert layer_image is not None
                 painter = QPainter(layer_image)
                 painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_DestinationOut)
                 painter.drawImage(QRect(-layer.position.x(), -layer.position.y(), layer_image.width(),
@@ -625,6 +621,7 @@ class LayerStack(QObject):
 
         def _undo_cut() -> None:
             with layer.borrow_image() as layer_image:
+                assert layer_image is not None
                 painter = QPainter(layer_image)
                 painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_Source)
                 painter.drawImage(QRect(0, 0, layer_image.width(), layer_image.height()), source_content)
@@ -635,6 +632,7 @@ class LayerStack(QObject):
         if self._copy_buffer is not None:
             insert_index = 0 if self.active_layer is None else self.active_layer_index
             self.create_layer('Paste layer', self._copy_buffer.copy(), layer_index=insert_index)
+            self.active_layer = self._layers[insert_index]
 
     def set_selection_content(self,
                               image_data: Image.Image | QImage | QPixmap,
@@ -652,7 +650,7 @@ class LayerStack(QObject):
             Mode used to insert image content. Default behavior is for the new image content to completely replace the
             old content.
         """
-        insert_layer, _, _ = self._layer_values_from_layer_or_id_or_active(layer)
+        insert_layer, _ = self._layer_values_from_layer_or_id_or_active(layer)
         if insert_layer is None:
             raise RuntimeError(f'set_selection_content: No layer specified, and no layer is active, layer={layer}')
         insert_layer.insert_image_content(image_data, self.selection, composition_mode)
@@ -660,7 +658,7 @@ class LayerStack(QObject):
     def save_layer_stack_file(self, file_path: str, metadata: Optional[Dict[str, Any]]) -> None:
         """Save layers and image metadata to a file that can be opened for future editing."""
         size = self.size
-        data = {'metadata': metadata, 'size': f'{size.width()}x{size.height()}', 'files': []}
+        data: Dict[str, Any] = {'metadata': metadata, 'size': f'{size.width()}x{size.height()}', 'files': []}
         # Create temporary directory tmpdir
         tmpdir = tempfile.mkdtemp()
         self.mask_layer.qimage.save(os.path.join(tmpdir, MASK_LAYER_FILE_EMBEDDED))
@@ -719,7 +717,7 @@ class LayerStack(QObject):
                 self._insert_layer_internal(old_layer, self.count)
         commit_action(_load, _undo_load)
         metadata = data['metadata']
-        print( metadata['parameters'])
+        print(metadata['parameters'])
         return metadata
         
     def set_image(self, image_data: Image.Image | QImage | QPixmap):
@@ -732,7 +730,6 @@ class LayerStack(QObject):
         image_data: PIL Image or QImage or QPixmap
             Layer stack size will be adjusted to match image data size.
         """
-        last_active_id = self.active_layer_id
         old_layers = self._layers.copy()
         old_size = self.size
         mask_image = self.mask_layer.qimage.copy()
@@ -776,21 +773,18 @@ class LayerStack(QObject):
         self._pixmap_cache_full.invalidate()
 
     def _layer_values_from_layer_or_id_or_active(self, layer: Optional[ImageLayer | int]) -> Tuple[Optional[ImageLayer],
-                                                                                          Optional[int], Optional[int]]:
+                                                                                                   Optional[int]]:
         """Returns layer, layer_id, layer_index, given a layer, id, or None. If None, use the active layer."""
         if layer is None:
             if self._active_layer_id is None:
-                return None, None, None
-            layer = self._active_layer_id
-        if isinstance(layer, ImageLayer):
-            layer_id = layer.id
+                return None, None
+            layer = self.active_layer
         elif isinstance(layer, int):
-            layer_id = layer
             layer = self.get_layer_by_id(layer)
-        else:
+        elif not isinstance(layer, ImageLayer):
             raise TypeError(f'Invalid layer parameter {layer}, expected ImageLayer or int ID')
         layer_index = None if layer is None else self.get_layer_index(layer)
-        return layer, layer_id, layer_index
+        return layer, layer_index
 
     def _layer_content_change_slot(self, layer: ImageLayer) -> None:
         if layer.visible and layer in self._layers:
@@ -807,8 +801,8 @@ class LayerStack(QObject):
             self.visible_content_changed.emit()
 
     def _create_layer_internal(self, layer_name: Optional[str] = None,
-                     image_data: Optional[Image.Image | QImage | QPixmap] = None,
-                     saved: bool = True) -> ImageLayer:
+                               image_data: Optional[Image.Image | QImage | QPixmap] = None,
+                               saved: bool = True) -> ImageLayer:
         """Returns a new layer object given valid data. This emits no signals, connects no signal handlers, and does
            not add the layer to the stack."""
         if layer_name is None:
@@ -858,13 +852,15 @@ class LayerStack(QObject):
 
         active_layer = self.active_layer
         active_layer_index = self.active_layer_index
+        assert active_layer is not None and active_layer_index is not None
 
         next_active_layer = active_layer
         next_active_layer_index = self.active_layer_index
         index = self.get_layer_index(layer)
+        assert index is not None
 
         if active_layer == layer:  # index stays the same, but active layer changes
-            if active_layer_index < self.count - 1: # Switch to layer below if possible
+            if active_layer_index < self.count - 1:  # Switch to layer below if possible
                 next_active_layer = self._layers[next_active_layer_index + 1]
             elif active_layer_index > 0:  # Otherwise switch to layer above
                 next_active_layer = self._layers[next_active_layer_index - 1]

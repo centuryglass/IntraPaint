@@ -4,7 +4,7 @@ Draws content to an image layer.
 import math
 from typing import Optional, Set
 
-from PyQt5.QtCore import QRect, QPoint
+from PyQt5.QtCore import QRect, QPoint, QSize
 from PyQt5.QtGui import QColor, QPainter
 from PyQt5.QtWidgets import QGraphicsScene
 
@@ -23,7 +23,7 @@ class MyPaintLayerCanvas(LayerCanvas):
                  edit_region: Optional[QRect] = None) -> None:
         """Initialize a MyPaint surface, and connect to the image layer."""
         super().__init__(scene, layer, edit_region)
-        self._mp_surface = MPSurface(QRect() if self.edit_region is None else self.edit_region.size())
+        self._mp_surface = MPSurface(QSize() if self.edit_region is None else self.edit_region.size())
         self._last_stroke_bounds = QRect()
         self._last_stroke_tiles: Set[MPTile] = set()
         self._last_eraser_value: Optional[float] = None
@@ -135,6 +135,9 @@ class MyPaintLayerCanvas(LayerCanvas):
               y_tilt: Optional[float]) -> None:
         """Use active settings to draw to the canvas with the given inputs."""
         if pressure is not None or x_tilt is not None or y_tilt is not None:
+            pressure = 0.0 if pressure is None else pressure
+            x_tilt = 0.0 if x_tilt is None else x_tilt
+            y_tilt = 0.0 if y_tilt is None else y_tilt
             self._mp_surface.stroke_to(x, y, pressure, x_tilt, y_tilt)
         else:
             self._mp_surface.basic_stroke_to(x, y)
@@ -142,7 +145,7 @@ class MyPaintLayerCanvas(LayerCanvas):
     def _load_layer_content(self, layer: ImageLayer) -> None:
         """Refreshes the layer content within the canvas, or clears it if the layer is hidden."""
         assert layer == self._layer
-        if layer is None or not layer.visible or self._edit_region.isEmpty():
+        if layer is None or not layer.visible or self._edit_region is None or self._edit_region.isEmpty():
             self._mp_surface.clear()
         else:
             image = layer.cropped_image_content(self._edit_region)
@@ -163,7 +166,8 @@ class MyPaintLayerCanvas(LayerCanvas):
                 destination_x = int(tile.x() - self._mp_surface.scene_position.x() - change_x)
                 destination_y = int(tile.y() - self._mp_surface.scene_position.y() - change_y)
                 tile.copy_tile_into_image(tile_change_image, destination=QRect(destination_x, destination_y,
-                                                                               tile.size.width(), tile.size.height()))
+                                                                               tile.size.width(), tile.size.height()),
+                                          color_correction_edge_width=32)
             reverse_image = self._layer.cropped_image_content(self._last_stroke_bounds)
             layer = self._layer
 

@@ -1,7 +1,7 @@
 """Provides a utility function for handling image or widget placement."""
 
-from PyQt5.QtCore import QRect, QSize, QRectF
-from PyQt5.QtGui import QTransform, QPolygonF
+from PyQt5.QtCore import QRect, QSize
+from PyQt5.QtGui import QTransform
 
 
 def get_scaled_placement(container_rect: QRect,

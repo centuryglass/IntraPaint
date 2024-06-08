@@ -3,6 +3,7 @@ Miscellaneous utility functions for handling torch-related functionality
 """
 import os
 import torch
+# noinspection PyPep8Naming
 from torchvision.transforms import functional as TF
 import numpy as np
 
@@ -31,15 +32,15 @@ def foreach_in_sample(sample, batch_size, action):
 
 def foreach_image_in_sample(sample, batch_size, ldm_model, action):
     """Runs a function for each PIL image extracted from a sample"""
-    def convert_param(k, numpy_data):
+    def _convert_param(k, numpy_data):
         action(k, image_from_numpy_data(numpy_data, ldm_model))
-    foreach_in_sample(sample, batch_size, convert_param)
+    foreach_in_sample(sample, batch_size, _convert_param)
 
 
 def get_save_fn(prefix, batch_size, ldm_model, unused_clip_model, unused_clip_preprocess, unused_device):
     """Creates and returns a function that saves sample data to disk."""
-    def save_sample(i, sample, clip_score_fn=None):
-        def save_image(k, numpy_data):
+    def _save_sample(i, sample, clip_score_fn=None):
+        def _save_image(k, numpy_data):
             npy_filename = f'output_npy/{prefix}{i * batch_size + k:05}.npy'
             with open(npy_filename, 'wb') as outfile:
                 np.save(outfile, numpy_data.detach().cpu().numpy())
@@ -52,5 +53,5 @@ def get_save_fn(prefix, batch_size, ldm_model, unused_clip_model, unused_clip_pr
                 os.rename(filename, final_filename)
                 npy_final = f'output_npy/{prefix}_{score:0.3f}_{i * batch_size + k:05}.npy'
                 os.rename(npy_filename, npy_final)
-        foreach_in_sample(sample, batch_size, save_image)
-    return save_sample
+        foreach_in_sample(sample, batch_size, _save_image)
+    return _save_sample

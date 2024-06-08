@@ -20,7 +20,7 @@ from src.ui.modal.modal_utils import request_confirmation
 from src.ui.modal.settings_modal import SettingsModal
 from src.ui.panel.layer_panel import LayerPanel
 from src.ui.panel.tool_panel import ToolPanel
-from src.ui.sample_selector_view import SampleSelector
+from src.ui.generated_image_selector import GeneratedImageSelector
 from src.ui.widget.loading_widget import LoadingWidget
 from src.ui.image_viewer import ImageViewer
 from src.undo_stack import undo, redo
@@ -61,7 +61,7 @@ class MainWindow(QMainWindow):
         self._controller = controller
         self._config = config
         self._layer_stack = layer_stack
-        self._sample_selector = None
+        self._image_selector = None
         self._layout_mode = 'horizontal'
         self._orientation = None
 
@@ -127,7 +127,7 @@ class MainWindow(QMainWindow):
 
         def if_not_selecting(fn: Callable[[], Any]) -> None:
             """Only run the requested action if the sample selector is closed."""
-            if not self.is_sample_selector_visible():
+            if not self.is_image_selector_visible():
                 fn()
 
         add_action(AppConfig.NEW_IMAGE_SHORTCUT, lambda: if_not_selecting(controller.new_image), file_menu)
@@ -160,19 +160,21 @@ class MainWindow(QMainWindow):
 
         # Layer:
         layer_menu = self._menu.addMenu('Layer')
-        add_action(AppConfig.NEW_LAYER_SHORTCUT,  lambda: if_not_selecting(layer_stack.create_layer), layer_menu)
+        add_action(AppConfig.NEW_LAYER_SHORTCUT, lambda: if_not_selecting(layer_stack.create_layer), layer_menu)
         add_action(AppConfig.COPY_LAYER_SHORTCUT, lambda: if_not_selecting(layer_stack.copy_layer), layer_menu)
-        add_action(AppConfig.DELETE_LAYER_SHORTCUT,  lambda: if_not_selecting(layer_stack.remove_layer), layer_menu)
-        add_action(AppConfig.SELECT_PREVIOUS_LAYER_SHORTCUT, lambda: if_not_selecting(lambda: layer_stack.offset_selection(-1)),
-                   layer_menu)
-        add_action(AppConfig.SELECT_NEXT_LAYER_SHORTCUT, lambda: if_not_selecting(lambda: layer_stack.offset_selection(1)),
-                   layer_menu)
+        add_action(AppConfig.DELETE_LAYER_SHORTCUT, lambda: if_not_selecting(layer_stack.remove_layer), layer_menu)
+        add_action(AppConfig.SELECT_PREVIOUS_LAYER_SHORTCUT,
+                   lambda: if_not_selecting(lambda: layer_stack.offset_selection(-1)), layer_menu)
+        add_action(AppConfig.SELECT_NEXT_LAYER_SHORTCUT,
+                   lambda: if_not_selecting(lambda: layer_stack.offset_selection(1)), layer_menu)
         add_action(AppConfig.MOVE_LAYER_UP_SHORTCUT, lambda: if_not_selecting(lambda: layer_stack.move_layer(-1)),
                    layer_menu)
         add_action(AppConfig.MOVE_LAYER_DOWN_SHORTCUT, lambda: if_not_selecting(lambda: layer_stack.move_layer(1)),
                    layer_menu)
-        add_action(AppConfig.MERGE_LAYER_DOWN_SHORTCUT, lambda: if_not_selecting(layer_stack.merge_layer_down), layer_menu)
-        add_action(AppConfig.LAYER_TO_IMAGE_SIZE_SHORTCUT, lambda: if_not_selecting(layer_stack.layer_to_image_size), layer_menu)
+        add_action(AppConfig.MERGE_LAYER_DOWN_SHORTCUT, lambda: if_not_selecting(layer_stack.merge_layer_down),
+                   layer_menu)
+        add_action(AppConfig.LAYER_TO_IMAGE_SIZE_SHORTCUT, lambda: if_not_selecting(layer_stack.layer_to_image_size),
+                   layer_menu)
 
         def _layer_to_content():
             if layer_stack.active_layer is not None:
@@ -330,7 +332,7 @@ class MainWindow(QMainWindow):
         min_w_ctrl_panel = self._min_control_panel_size.width()
         if self._orientation == Qt.Orientation.Horizontal:
             min_h_ctrl_panel = self._min_horizontal_window_size.height() + self._min_control_panel_size.height()
-        elif self._orientation == Qt.Orientation.Vertical:
+        else:  # self._orientation == Qt.Orientation.Vertical:
             min_h_ctrl_panel = self._min_vertical_window_size.height() + self._min_horizontal_tool_panel_size.height() \
                                + self._min_control_panel_size.height()
         w_show_ctrl_panel = min_w_ctrl_panel + width_buffer * 2
@@ -438,19 +440,19 @@ class MainWindow(QMainWindow):
 
     def focus_tab(self, tab_index: int) -> bool:
         """Attempt to focus a tab index, returning whether changing focus was possible."""
-        if self.is_sample_selector_visible() or not (0 <= tab_index < self._main_widget.count()) \
+        if self.is_image_selector_visible() or not (0 <= tab_index < self._main_widget.count()) \
                 or tab_index == self._main_widget.currentIndex():
             return False
         self._main_widget.setCurrentIndex(tab_index)
         return True
 
-    def is_sample_selector_visible(self) -> bool:
+    def is_image_selector_visible(self) -> bool:
         """Returns whether the generated image selection screen is showing."""
-        return hasattr(self, '_sample_selector') and self._central_widget.currentWidget() == self._sample_selector
+        return hasattr(self, '_image_selector') and self._central_widget.currentWidget() == self._image_selector
 
-    def set_sample_selector_visible(self, visible: bool):
+    def set_image_selector_visible(self, visible: bool):
         """Shows or hides the generated image selection screen."""
-        is_visible = self.is_sample_selector_visible()
+        is_visible = self.is_image_selector_visible()
         if visible == is_visible:
             return
         if visible:
@@ -460,33 +462,33 @@ class MainWindow(QMainWindow):
                 mask = QPixmap(self._layer_stack.selection.size())
                 mask.fill(Qt.red)
                 mask = qimage_to_pil_image(mask.toImage())
-            self._sample_selector = SampleSelector(
+            self._image_selector = GeneratedImageSelector(
                 self._config,
                 self._layer_stack,
                 mask,
-                lambda: self.set_sample_selector_visible(False),
+                lambda: self.set_image_selector_visible(False),
                 self._controller.select_and_apply_sample)
-            self._central_widget.addWidget(self._sample_selector)
-            self._central_widget.setCurrentWidget(self._sample_selector)
-            self.installEventFilter(self._sample_selector)
+            self._central_widget.addWidget(self._image_selector)
+            self._central_widget.setCurrentWidget(self._image_selector)
+            self.installEventFilter(self._image_selector)
         else:
-            self.removeEventFilter(self._sample_selector)
+            self.removeEventFilter(self._image_selector)
             self._central_widget.setCurrentWidget(self._main_widget)
-            self._central_widget.removeWidget(self._sample_selector)
-            del self._sample_selector
-            self._sample_selector = None
+            self._central_widget.removeWidget(self._image_selector)
+            del self._image_selector
+            self._image_selector = None
 
     def load_sample_preview(self, image: Image.Image, idx: int) -> None:
         """Adds an image to the generated image selection screen."""
-        if self._sample_selector is None:
+        if self._image_selector is None:
             logger.error(f'Tried to load sample {idx} after sampleSelector was closed')
         else:
-            self._sample_selector.add_image_option(image, idx)
+            self._image_selector.add_image_option(image, idx)
 
     def set_is_loading(self, is_loading: bool, message: Optional[str] = None) -> None:
         """Sets whether the loading spinner is shown, optionally setting loading spinner message text."""
-        if self._sample_selector is not None:
-            self._sample_selector.set_is_loading(is_loading, message)
+        if self._image_selector is not None:
+            self._image_selector.set_is_loading(is_loading, message)
         else:
             if is_loading:
                 self._loading_widget.show()
@@ -501,8 +503,8 @@ class MainWindow(QMainWindow):
 
     def set_loading_message(self, message: str) -> None:
         """Sets the loading spinner message text."""
-        if self._sample_selector is not None:
-            self._sample_selector.set_loading_message(message)
+        if self._image_selector is not None:
+            self._image_selector.set_loading_message(message)
 
     def resizeEvent(self, unused_event: Optional[QResizeEvent]) -> None:
         """Applies the most appropriate layout when the window size changes."""

@@ -1,13 +1,9 @@
 """Global stack for tracking undo/redo state."""
 from contextlib import contextmanager
-from typing import Callable, Optional, Dict, Any, Generator
+from typing import Callable, Optional, Dict, Any, Generator, List
 from threading import Lock
 
 MAX_UNDO = 50
-
-_undo_stack = []
-_redo_stack = []
-_access_lock = Lock()
 
 
 class _UndoAction:
@@ -19,6 +15,10 @@ class _UndoAction:
         self.redo = redo_action
         self.type = action_type
         self.action_data = action_data
+
+_undo_stack: List[_UndoAction] = []
+_redo_stack: List[_UndoAction] = []
+_access_lock = Lock()
 
 
 def commit_action(action: Callable[[], None], undo_action: Callable[[], None],
@@ -48,8 +48,8 @@ def commit_action(action: Callable[[], None], undo_action: Callable[[], None],
     global _undo_stack, _redo_stack, _access_lock
     with _access_lock:
         action()
-        undo_action = _UndoAction(undo_action, action, action_type, action_data)
-        _undo_stack.append(undo_action)
+        undo_entry = _UndoAction(undo_action, action, action_type, action_data)
+        _undo_stack.append(undo_entry)
         if len(_undo_stack) > MAX_UNDO:
             _undo_stack = _undo_stack[:-MAX_UNDO]
         _redo_stack.clear()

@@ -1,6 +1,6 @@
 """Low-level wrapper for the libmypaint library."""
 import os
-from typing import Optional
+from typing import Optional, TypeAlias
 from ctypes import CFUNCTYPE, POINTER, Structure, c_int, c_void_p, c_float, c_double, c_char_p, c_uint16, CDLL
 from ctypes.util import find_library
 
@@ -115,7 +115,8 @@ class MyPaintTiledSurface(Structure):
     ]
 
 
-TilePixelBuffer = c_uint16 * 4 * TILE_DIM * TILE_DIM
+# noinspection PyTypeChecker
+TilePixelBuffer: TypeAlias = c_uint16 * 4 * TILE_DIM * TILE_DIM
 
 
 # Brush settings:

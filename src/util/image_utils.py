@@ -1,12 +1,13 @@
 """Adds general-purpose utility functions for manipulating image data"""
-from typing import Optional
 import base64
 import io
 import logging
-from PIL import Image
-from PyQt5.QtGui import QImage, QIcon
-from PyQt5.QtCore import QBuffer, QRect
+from typing import Optional
+
 import numpy as np
+from PIL import Image
+from PyQt5.QtCore import QBuffer, QRect
+from PyQt5.QtGui import QImage, QIcon
 from PyQt5.QtWidgets import QStyle, QWidget, QApplication
 
 logger = logging.getLogger(__name__)
@@ -112,7 +113,7 @@ def image_content_bounds(image: QImage | np.ndarray, search_bounds: Optional[QRe
     return bounds
 
 
-def get_standard_qt_icon(icon_code: int, style_source: Optional[QWidget] = None) -> QIcon:
+def get_standard_qt_icon(icon_code: QStyle.StandardPixmap, style_source: Optional[QWidget] = None) -> QIcon:
     """Returns one of the standard Qt icons."""
     if style_source is None:
         style = QApplication.style()

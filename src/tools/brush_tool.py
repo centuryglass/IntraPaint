@@ -2,7 +2,7 @@
 from typing import Optional
 
 from PyQt5.QtCore import Qt, QSize
-from PyQt5.QtGui import QCursor, QPixmap, QColor, QIcon
+from PyQt5.QtGui import QPixmap, QColor, QIcon
 from PyQt5.QtWidgets import QVBoxLayout, QPushButton, QColorDialog, QWidget, QApplication
 
 from src.config.application_config import AppConfig

@@ -34,7 +34,8 @@ class CanvasTool(BaseTool):
     and setting or updating the affected layer.
     """
 
-    def __init__(self, layer_stack: LayerStack, image_viewer: ImageViewer, canvas: LayerCanvas, config: AppConfig) -> None:
+    def __init__(self, layer_stack: LayerStack, image_viewer: ImageViewer, canvas: LayerCanvas,
+                 config: AppConfig) -> None:
         super().__init__()
         self._config = config
         self._layer = None
@@ -97,7 +98,7 @@ class CanvasTool(BaseTool):
         self._layer = layer
         if not self._active:
             return
-        if layer is None or self._layer_stack.count == 0:
+        if layer is None:
             self._canvas.connect_to_layer(None)
             self._image_viewer.hide_active_layer = False
         else:
@@ -169,7 +170,7 @@ class CanvasTool(BaseTool):
 
     def mouse_click(self, event: Optional[QMouseEvent], image_coordinates: QPoint) -> bool:
         """Starts drawing when the mouse is clicked in the scene."""
-        if self._layer is None:
+        if self._layer is None or not self._layer_stack.has_image:
             return False
         if event.buttons() == Qt.LeftButton or event.buttons() == Qt.RightButton:
             if self._drawing:

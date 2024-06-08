@@ -13,3 +13,5 @@ regex~=2024.5.15
 Flask~=2.3.3
 setuptools~=69.0.3
 typing_extensions; python_version < '3.11'
+
+typing_extensions~=4.11.0

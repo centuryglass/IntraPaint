@@ -9,6 +9,8 @@ import time
 import math
 from threading import Lock
 import logging
+from typing import Optional
+
 import spacenav
 from PyQt5.QtCore import QObject, QThread, QSize, QRect, pyqtSignal
 from PyQt5.QtWidgets import QMainWindow
@@ -41,6 +43,8 @@ class SpacenavManager:
             return
         self._window = window
         self._layer_stack = layer_stack
+        self._thread: Optional[QThread] = None
+        self._worker: Optional['SpacenavThreadWorker'] = None
 
         class ThreadData:
             """Shares data between main thread and spacemouse thread."""
@@ -189,6 +193,7 @@ class SpacenavManager:
         """Starts the spacemouse worker thread to track inputs."""
         if spacenav is None or self._thread is not None:
             return
+        assert self._worker is not None
         self._thread = QThread()
         self._worker.moveToThread(self._thread)
         self._thread.started.connect(self._worker.run)

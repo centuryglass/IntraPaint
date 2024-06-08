@@ -1,24 +1,21 @@
 """
 A PyQt5 widget wrapper for the LayerStack class.
 """
-import math
-from typing import Optional, cast
+from typing import Optional
 
-from PyQt5.QtCore import Qt, QRect, QRectF, QSize, QPoint, QPointF, QEvent, pyqtSignal, QSizeF
-from PyQt5.QtGui import QPainter, QMouseEvent, QWheelEvent, QKeySequence
-from PyQt5.QtWidgets import QWidget, QSizePolicy, QGraphicsPixmapItem, QApplication
+from PyQt5.QtCore import Qt, QRect, QRectF, QSize, QPointF, QSizeF
+from PyQt5.QtGui import QPainter, QMouseEvent
+from PyQt5.QtWidgets import QWidget, QSizePolicy, QGraphicsPixmapItem
 
-from src.ui.graphics_items.border import Border
+from src.config.application_config import AppConfig
+from src.hotkey_filter import HotkeyFilter
 from src.image.image_layer import ImageLayer
 from src.image.layer_stack import LayerStack
+from src.ui.graphics_items.border import Border
 from src.ui.graphics_items.outline import Outline
-from src.ui.util.geometry_utils import get_scaled_placement
 from src.ui.util.tile_pattern_fill import get_transparency_tile_pixmap
 from src.ui.widget.image_graphics_view import ImageGraphicsView
 from src.util.validation import assert_type
-from src.config.application_config import AppConfig
-from src.hotkey_filter import HotkeyFilter
-
 
 SELECTION_BORDER_OPACITY = 0.6
 SELECTION_BORDER_COLOR = Qt.GlobalColor.black
@@ -84,7 +81,6 @@ class ImageViewer(ImageGraphicsView):
         self.setSizePolicy(QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding))
         self._follow_selection = False
         self._hidden = set()
-
 
         # Selection and border rectangle setup:
         self._scene_outline = Outline(self.scene(), self)
@@ -178,7 +174,8 @@ class ImageViewer(ImageGraphicsView):
             layer_item.setPos(new_layer.position)
             self._layer_items[new_layer] = layer_item
             self.scene().addItem(layer_item)
-            for outline in self._selection_outline, self._masked_selection_outline, self._active_layer_outline, self._border:
+            for outline in (self._selection_outline, self._masked_selection_outline, self._active_layer_outline,
+                            self._border):
                 outline.setZValue(max(self._selection_outline.zValue(), index + 1))
             if new_layer.id in self._hidden:
                 layer_item.hidden = True
@@ -260,6 +257,7 @@ class ImageViewer(ImageGraphicsView):
         """Returns image size as ideal widget size."""
         return self.content_size
 
+    # noinspection PyMethodOverriding
     def mousePressEvent(self, event: Optional[QMouseEvent]) -> None:
         """Select the area in the image to be edited."""
         if super().mousePressEvent(event, True):
@@ -272,6 +270,7 @@ class ImageViewer(ImageGraphicsView):
             selection.moveTopLeft(image_coordinates.toPoint())
             self._layer_stack.selection = selection
 
+    # noinspection PyMethodOverriding
     def mouseMoveEvent(self, event: Optional[QMouseEvent]) -> None:
         """Adjust the offset when the widget is dragged with ctrl+LMB or MMB."""
         if super().mouseMoveEvent(event, True):

@@ -107,7 +107,7 @@ class BaseInpaintController:
         self._worker: Optional[QObject] = None
         self._metadata: Optional[dict[str, Any]] = None
 
-        self._thread = None
+        self._thread: Optional[QThread] = None
 
     def _adjust_config_defaults(self):
         """no-op, override to adjust config before data initialization."""
@@ -188,7 +188,7 @@ class BaseInpaintController:
         self.window_init()
 
         # Configure support for spacemouse panning, if relevant:
-        if SpacenavManager is not None:
+        if SpacenavManager is not None and self._window is not None:
             self._nav_manager = SpacenavManager(self._window, self._layer_stack)
             self._nav_manager.start_thread()
 
@@ -196,8 +196,10 @@ class BaseInpaintController:
         sys.exit()
 
     # File IO handling:
+
     def new_image(self) -> None:
         """Open a new image creation modal."""
+        assert self._window is not None
         default_size = self._config.get(AppConfig.DEFAULT_IMAGE_SIZE)
         image_modal = NewImageModal(default_size.width(), default_size.height())
         image_size = image_modal.show_image_modal()
@@ -212,6 +214,7 @@ class BaseInpaintController:
 
     def save_image(self, file_path: Optional[str] = None) -> None:
         """Open a save dialog, and save the edited image to disk, preserving any metadata."""
+        assert self._window is not None
         if not self._layer_stack.has_image:
             show_error_dialog(self._window, SAVE_ERROR_TITLE, SAVE_ERROR_MESSAGE_NO_IMAGE)
             return
@@ -233,9 +236,9 @@ class BaseInpaintController:
                             info.add_itxt(key, self._metadata[key])
                         except AttributeError as png_err:
                             # Encountered some sort of image metadata that PIL knows how to read but not how to write.
-                            # I've seen this a few times, mostly with images edited in Krita. This data isn't important to
-                            # me, so it'll just be discarded. If it's important to you, open a GitHub issue with details or
-                            # submit a PR, and I'll take care of it.
+                            # I've seen this a few times, mostly with images edited in Krita. This data isn't important
+                            # to me, so it'll just be discarded. If it's important to you, open a GitHub issue with
+                            # details or submit a PR, and I'll take care of it.
                             print(f'failed to preserve "{key}" in metadata: {png_err}')
                     image.save(file_path, 'PNG', pnginfo=info)
                 else:
@@ -247,6 +250,7 @@ class BaseInpaintController:
 
     def load_image(self, file_path: Optional[str] = None) -> None:
         """Open a loading dialog, then load the selected image for editing."""
+        assert self._window is not None
         if file_path is None:
             file_path, file_selected = open_image_file(self._window)
             if not file_path or not file_selected:
@@ -266,7 +270,7 @@ class BaseInpaintController:
             self._config.set(AppConfig.LAST_FILE_PATH, file_path)
 
             # File loaded, attempt to apply metadata:
-            if METADATA_PARAMETER_KEY in self._metadata:
+            if self._metadata is not None and METADATA_PARAMETER_KEY in self._metadata:
                 param_str = self._metadata[METADATA_PARAMETER_KEY]
                 match = re.match(r'^(.*\n?.*)\nSteps: ?(\d+), Sampler: ?(.*), CFG scale: ?(.*), Seed: ?(.+), Size.*',
                                  param_str)
@@ -300,6 +304,7 @@ class BaseInpaintController:
 
     def reload_image(self) -> None:
         """Reload the edited image from disk after getting confirmation from a confirmation dialog."""
+        assert self._window is not None
         file_path = self._config.get(AppConfig.LAST_FILE_PATH)
         if file_path == '':
             show_error_dialog(self._window, RELOAD_ERROR_TITLE, RELOAD_ERROR_MESSAGE_NO_IMAGE)
@@ -322,6 +327,7 @@ class BaseInpaintController:
         show_messagebox: bool
             If true, show a messagebox after the update to let the user know what happened.
         """
+        assert self._window is not None
         prompt = self._config.get(AppConfig.PROMPT)
         negative = self._config.get(AppConfig.NEGATIVE_PROMPT)
         steps = self._config.get(AppConfig.SAMPLING_STEPS)
@@ -334,7 +340,7 @@ class BaseInpaintController:
             self._metadata = {}
         self._metadata[METADATA_PARAMETER_KEY] = params
         if show_messagebox:
-            message_box = QMessageBox(self)
+            message_box = QMessageBox()
             message_box.setWindowTitle(METADATA_UPDATE_TITLE)
             message_box.setText(METADATA_UPDATE_MESSAGE)
             message_box.setStandardButtons(QMessageBox.Ok)
@@ -342,17 +348,19 @@ class BaseInpaintController:
 
     def resize_canvas(self) -> None:
         """Crop or extend the edited image without scaling its contents based on user input into a popup modal."""
+        assert self._window is not None
         if not self._layer_stack.has_image:
             show_error_dialog(self._window, RESIZE_ERROR_TITLE, RESIZE_ERROR_MESSAGE_NO_IMAGE)
             return
         resize_modal = ResizeCanvasModal(self._layer_stack.qimage())
         new_size, offset = resize_modal.show_resize_modal()
-        if new_size is None:
+        if new_size is None or offset is None:
             return
         self._layer_stack.resize_canvas(new_size, offset.x(), offset.y())
 
     def scale_image(self) -> None:
         """Scale the edited image based on user input into a popup modal."""
+        assert self._window is not None
         if not self._layer_stack.has_image:
             show_error_dialog(self._window, SCALING_ERROR_TITLE, SCALING_ERROR_MESSAGE_NO_IMAGE)
             return
@@ -377,8 +385,7 @@ class BaseInpaintController:
         self._layer_stack.set_image(scaled_image)
 
     def _start_thread(self, thread_worker: QObject, loading_text: Optional[str] = None) -> None:
-        if self._thread is not None:
-            raise RuntimeError('Tried to start a new async operation while the previous one is still running')
+        assert self._window is not None
         self._window.set_is_loading(True, loading_text)
         self._thread = QThread()
         self._worker = thread_worker
@@ -386,7 +393,9 @@ class BaseInpaintController:
 
         def clear_worker() -> None:
             """Clean up thread worker object on finish."""
-            self._thread.quit()
+            assert self._window is not None and self._worker is not None
+            if self._thread is not None:
+                self._thread.quit()
             self._window.set_is_loading(False)
             self._worker.deleteLater()
             self._worker = None
@@ -396,6 +405,7 @@ class BaseInpaintController:
 
         def clear_old_thread() -> None:
             """Cleanup async task thread on finish."""
+            assert self._thread is not None
             self._thread.deleteLater()
             self._thread = None
 
@@ -428,6 +438,7 @@ class BaseInpaintController:
 
     def start_and_manage_inpainting(self) -> None:
         """Start inpainting/image editing based on the current state of the UI."""
+        assert self._window is not None
         if not self._layer_stack.has_image:
             show_error_dialog(self._window, GENERATE_ERROR_TITLE_NO_IMAGE, GENERATE_ERROR_MESSAGE_NO_IMAGE)
             return
@@ -480,6 +491,7 @@ class BaseInpaintController:
 
         def handle_error(err: BaseException) -> None:
             """Close sample selector and show an error popup if anything goes wrong."""
+            assert self._window is not None
             self._window.set_sample_selector_visible(False)
             show_error_dialog(self._window, GENERATE_ERROR_TITLE_UNEXPECTED, err)
 
@@ -488,6 +500,7 @@ class BaseInpaintController:
 
         def load_sample_preview(img: Image.Image, idx: int) -> None:
             """Apply image mask to inpainting results."""
+            assert self._window is not None
             if config.get(AppConfig.EDIT_MODE) == INPAINT_MODE:
                 def point_fn(p: int) -> int:
                     """Convert pixel to 1-bit."""
@@ -516,7 +529,6 @@ class BaseInpaintController:
                 image = pil_image_to_qimage(sample_image).convertToFormat(QImage.Format.Format_ARGB32_Premultiplied)
             else:
                 image = sample_image.convertToFormat(QImage.Format.Format_ARGB32_Premultiplied)
-            layer = self._layer_stack.active_layer
             if self._config.get(AppConfig.EDIT_MODE) == "Inpaint":
                 inpaint_mask = self._layer_stack.mask_layer.cropped_image_content(self._layer_stack.selection)
                 painter = QPainter(image)
@@ -524,15 +536,19 @@ class BaseInpaintController:
                 painter.drawImage(QRect(QPoint(0, 0), image.size()), inpaint_mask)
                 painter.end()
             bounds = self._layer_stack.selection
-            pos = layer.position
-            prev_image = layer.cropped_image_content(bounds)
+            layer = self._layer_stack.active_layer
+            if layer is None:
+                self._layer_stack.create_layer(image_data=image)
+            else:
+                pos = layer.position
+                prev_image = layer.cropped_image_content(bounds)
 
-            def apply():
-                """Inserts the selection into the active layer."""
-                layer.insert_image_content(image, QRect(bounds.topLeft() - pos, bounds.size()),
-                                           QPainter.CompositionMode.CompositionMode_SourceOver)
+                def apply():
+                    """Inserts the selection into the active layer."""
+                    layer.insert_image_content(image, QRect(bounds.topLeft() - pos, bounds.size()),
+                                               QPainter.CompositionMode.CompositionMode_SourceOver)
 
-            def undo():
-                """Revert the selection to its previous state."""
-                layer.insert_image_content(prev_image, bounds)
-            commit_action(apply, undo)
+                def undo():
+                    """Revert the selection to its previous state."""
+                    layer.insert_image_content(prev_image, bounds)
+                commit_action(apply, undo)

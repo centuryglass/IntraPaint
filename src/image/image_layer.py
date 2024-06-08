@@ -52,7 +52,7 @@ class ImageLayer(QObject):
         self._name = str(name)
         self._saved = bool(saved)
         self._visible = True
-        self._image = None
+        self._image = QImage()
         self._opacity = 1.0
         self._pixmap = CachedData(None)
         self._position = QPoint(0, 0)
@@ -105,7 +105,7 @@ class ImageLayer(QObject):
         # Merge position change operations in the undo history:
         action_type = 'image_layer.position'
         with last_action() as prev_action:
-            if prev_action is not None and prev_action.type == action_type \
+            if prev_action is not None and prev_action.type == action_type and prev_action.action_data is not None \
                     and prev_action.action_data['layer'] == self:
                 prev_action.redo = lambda: _apply_move(position)
                 prev_action.redo()
@@ -155,7 +155,7 @@ class ImageLayer(QObject):
     @size.setter
     def size(self, new_size: QSize) -> None:
         """Updates the layer size. Scales existing content, or creates with transparency if not initialized."""
-        if self._image is None:
+        if self._image.isNull():
             self._image = QImage(new_size, QImage.Format.Format_ARGB32_Premultiplied)
             self._image.fill(Qt.transparent)
         elif new_size != self.size:

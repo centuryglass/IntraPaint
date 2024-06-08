@@ -20,7 +20,7 @@ class ToolEventHandler(QObject):
         self._image_viewer = image_viewer
         self._active_tool: Optional[BaseTool] = None
         self._active_delegate: Optional[BaseTool] = None
-        self._tool_modifier_delegates: Dict[BaseTool, Dict[Qt.KeyModifiers, BaseTool]] = {}
+        self._tool_modifier_delegates: Dict[BaseTool, Dict[Qt.KeyboardModifiers, BaseTool]] = {}
         self._last_modifier_state = QApplication.keyboardModifiers()
         self._mouse_in_bounds = False
         image_viewer.setMouseTracking(True)

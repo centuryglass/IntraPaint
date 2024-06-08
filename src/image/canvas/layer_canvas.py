@@ -18,7 +18,7 @@ class LayerCanvas:
         """Initialize a MyPaint surface, and connect to the image layer."""
         self._layer: Optional[ImageLayer] = None
         if edit_region is not None:
-            self._edit_region = edit_region
+            self._edit_region: Optional[QRect] = edit_region
         elif layer is not None:
             self._edit_region = QRect(0, 0, layer.width, layer.height)
         else:
@@ -41,14 +41,14 @@ class LayerCanvas:
             self._layer.content_changed.disconnect(self._load_layer_content)
             self._layer.bounds_changed.disconnect(self._handle_bounds_change)
         self._layer = new_layer
-        if new_layer is not None:
+        if self._layer is not None:
             self._layer.visibility_changed.connect(self._load_layer_content)
             self._layer.content_changed.connect(self._load_layer_content)
             self._layer.bounds_changed.connect(self._handle_bounds_change)
             if self._edit_region is None:
-                self.edit_region = QRect(0, 0, new_layer.width, new_layer.height)
-            self._update_canvas_position(new_layer, new_layer.position)
-        self._load_layer_content(new_layer)
+                self.edit_region = QRect(0, 0, self._layer.width, self._layer.height)
+            self._update_canvas_position(self._layer, self._layer.position)
+            self._load_layer_content(self._layer)
 
     @property
     def eraser(self) -> bool:
@@ -97,12 +97,12 @@ class LayerCanvas:
         self._set_brush_color(new_color)
 
     @property
-    def edit_region(self) -> QRect:
+    def edit_region(self) -> Optional[QRect]:
         """Returns the bounds within the layer that the canvas is editing."""
         return self._edit_region
 
     @edit_region.setter
-    def edit_region(self, new_region: QRect) -> None:
+    def edit_region(self, new_region: Optional[QRect]) -> None:
         """Updates the bounds within the layer that the canvas is editing."""
         self._edit_region = new_region
         if new_region is not None:
@@ -130,7 +130,8 @@ class LayerCanvas:
     def end_stroke(self) -> None:
         """Finishes a brush stroke, copying it back to the layer."""
         self._drawing = False
-        self._copy_changes_to_layer(self._layer)
+        if self._layer is not None:
+            self._copy_changes_to_layer(self._layer)
 
     def _set_brush_size(self, new_size: int) -> None:
         self._brush_size = new_size
@@ -149,8 +150,9 @@ class LayerCanvas:
             self._z_value = z_value
 
     def _handle_bounds_change(self, layer: ImageLayer, new_bounds: QRect) -> None:
-        if new_bounds.size() != self.edit_region.size():
-            self._update_scene_content_bounds(QRect(self.edit_region.topLeft(), new_bounds.width()))
+        assert self._edit_region is not None
+        if new_bounds.size() != self._edit_region.size():
+            self._update_scene_content_bounds(QRect(self._edit_region.topLeft(), new_bounds.size()))
         self._update_canvas_position(layer, new_bounds.topLeft())
 
     def _update_canvas_position(self, layer: ImageLayer, new_position: QPoint) -> None:

@@ -3,7 +3,7 @@ Provides image editing functionality through the GLID-3-XL API provided through 
 colabFiles/IntraPaint_colab_server.ipynb.
 """
 import sys
-from typing import Optional, Callable
+from typing import Optional, Callable, Any, Dict
 import requests
 from PyQt5.QtCore import QThread, pyqtSignal
 from PyQt5.QtWidgets import QInputDialog
@@ -79,6 +79,7 @@ class WebClientController(BaseInpaintController):
         status_signal : pyqtSignal
             Signal to emit when status updates are available.
         """
+        assert selection is not None and mask is not None, "GLID-3-XL only supports inpainting"
         batch_size = self._config.get(AppConfig.BATCH_SIZE)
         batch_count = self._config.get(AppConfig.BATCH_COUNT)
         body = {
@@ -109,7 +110,7 @@ class WebClientController(BaseInpaintController):
 
         # POST to server_url, check response
         # If invalid or error response, throw Exception
-        samples = {}
+        samples: Dict[str, Any] = {}
         in_progress = True
         error_count = 0
         max_errors = 10

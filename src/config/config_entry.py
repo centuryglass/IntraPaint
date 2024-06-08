@@ -1,6 +1,6 @@
 """Represents configurable typed values loaded from JSON definitions."""
 import json
-from typing import Any, Optional, List
+from typing import Any, Optional, List, Dict
 
 from PyQt5.QtCore import QSize
 
@@ -54,12 +54,9 @@ class ConfigEntry:
         self._category = category
         self._tooltip = tooltip
         self.save_json = save_json
-        if options is not None:
-            if not isinstance(options, list) or initial_value not in options:
-                raise ValueError(f'Invalid options for key {key} with initial value {initial_value}: {options}')
-            self._options = options
-        else:
-            self._options = None
+        if options is not None and (not isinstance(options, list) or initial_value not in options):
+            raise ValueError(f'Invalid options for key {key} with initial value {initial_value}: {options}')
+        self._options = options
         if range_options is not None:
             if not isinstance(initial_value, float) and not isinstance(initial_value, int):
                 raise TypeError(f'range_options provided but {key}={initial_value} is not int or float')
@@ -74,9 +71,7 @@ class ConfigEntry:
             if isinstance(initial_value, int):
                 if any(k in range_options and not isinstance(range_options[k], int) for k in range_keys):
                     raise ValueError(f'{key}: initial value is float but range_options are not all float values')
-            self._range_options = range_options
-        else:
-            self._range_options = None
+        self._range_options = range_options
 
     def set_value(self,
                   value: Any,
@@ -182,7 +177,7 @@ class ConfigEntry:
         if option not in self._options:
             self._options.append(option)
 
-    def save_to_json_dict(self, json_dict: dict[str, Any]) -> None:
+    def save_to_json_dict(self, json_dict: Dict[str, Any]) -> None:
         """Adds the value to a dict in a format that can be written to a JSON file."""
         if self.save_json is True:
             if isinstance(self._value, QSize):
@@ -193,7 +188,7 @@ class ConfigEntry:
             else:
                 json_dict[self._key] = self._value
 
-    def load_from_json_dict(self, json_dict: dict) -> None:
+    def load_from_json_dict(self, json_dict: Dict[str, Any]) -> None:
         """Reads the value from a dict that was loaded from a JSON file."""
         if self._key not in json_dict:
             return

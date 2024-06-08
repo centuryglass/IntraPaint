@@ -3,7 +3,7 @@ Draws content to an image layer using basic Qt drawing operations.
 """
 from typing import Optional
 
-from PyQt5.QtCore import QRect, Qt, QPoint
+from PyQt5.QtCore import QRect, Qt, QPoint, QPointF
 from PyQt5.QtGui import QPainter, QPixmap, QPen
 from PyQt5.QtWidgets import QGraphicsScene, QGraphicsPixmapItem
 
@@ -42,6 +42,7 @@ class PixmapLayerCanvas(LayerCanvas):
 
     def _update_canvas_position(self, _, new_position: QPoint) -> None:
         """Updates the canvas position within the graphics scene."""
+        assert self._pixmap_item is not None
         self._pixmap_item.setPos(new_position)
 
     def _set_z_value(self, z_value: int) -> None:
@@ -66,7 +67,7 @@ class PixmapLayerCanvas(LayerCanvas):
     def _draw(self, x: float, y: float, pressure: Optional[float], x_tilt: Optional[float],
               y_tilt: Optional[float]) -> None:
         """Use active settings to draw to the canvas with the given inputs."""
-        if self._pixmap_item is None:
+        if self._pixmap_item is None or self.edit_region is None:
             return
         pixmap = QPixmap(self.edit_region.size())
         pixmap.swap(self._pixmap_item.pixmap())
@@ -79,32 +80,33 @@ class PixmapLayerCanvas(LayerCanvas):
         pen = QPen(self.brush_color, size, Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin)
         painter.setPen(pen)
         if self._last_point is None:
-            painter.drawPoint(x - self.edit_region.x(), y - self.edit_region.y())
+            painter.drawPoint(QPointF(x - self.edit_region.x(), y - self.edit_region.y()))
         else:
-            painter.drawLine(self._last_point.x() - self.edit_region.x(), self._last_point.y() - self.edit_region.y(),
-                             x - self.edit_region.x(), y - self.edit_region.y())
+            painter.drawLine(QPointF(self._last_point.x() - self.edit_region.x(),
+                                     self._last_point.y() - self.edit_region.y()),
+                             QPointF(x - self.edit_region.x(), y - self.edit_region.y()))
         painter.end()
-        self._last_point = QPoint(x, y)
+        self._last_point = QPoint(int(x), int(y))
         self._pixmap_item.setPixmap(pixmap)
 
     def _load_layer_content(self, layer: ImageLayer) -> None:
         """Refreshes the layer content within the canvas, or clears it if the layer is hidden."""
-        assert self._layer == layer
+        assert self._layer == layer and self._edit_region is not None
         if self._pixmap_item is None:
             return
         if layer is not None and layer.visible:
-            pixmap = QPixmap.fromImage(self._layer.cropped_image_content(self.edit_region))
+            pixmap = QPixmap.fromImage(self._layer.cropped_image_content(self._edit_region))
         else:
-            pixmap = QPixmap(self.edit_region.size())
+            pixmap = QPixmap(self._edit_region.size())
             pixmap.fill(Qt.GlobalColor.transparent)
         self._pixmap_item.setPixmap(pixmap)
 
     def _copy_changes_to_layer(self, use_stroke_bounds: bool = False):
         """Copies content back to the connected layer."""
         if self._layer is not None and self._layer.visible and self._pixmap_item is not None \
-                and not self._edit_region.isEmpty():
+                and self._edit_region is not None and not self._edit_region.isEmpty():
             image = self._pixmap_item.pixmap().toImage()
-            prev_image = self._layer.cropped_image_content(self.edit_region)
+            prev_image = self._layer.cropped_image_content(self._edit_region)
             edit_region = self.edit_region
             layer = self._layer
 

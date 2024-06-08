@@ -2,7 +2,7 @@
 QSpinbox implementation that supports a larger range of integer values.
 Adapted from https://stackoverflow.com/a/26861829
 """
-from typing import Optional
+from typing import Optional, Any
 from PyQt5.QtWidgets import QAbstractSpinBox, QLineEdit, QWidget
 from PyQt5.QtCore import pyqtSignal, QRegExp
 from PyQt5.QtGui import QRegExpValidator
@@ -62,7 +62,7 @@ class BigIntSpinbox(QAbstractSpinBox):
         """Offset the current value based on current step size and some integer step count."""
         self.setValue(self.value() + steps * self.singleStep())
 
-    def stepEnabled(self) -> QAbstractSpinBox.StepEnabled:
+    def stepEnabled(self) -> Any:
         """Returns whether incrementing/decrementing the value by steps is enabled."""
         return self.StepUpEnabled | self.StepDownEnabled
 

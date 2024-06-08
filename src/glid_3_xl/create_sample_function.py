@@ -9,7 +9,9 @@ import clip
 import numpy as np
 from PIL import Image, ImageOps
 from torchvision import transforms
+# noinspection PyPep8Naming
 from torchvision.transforms import functional as TF
+# noinspection PyPep8Naming
 from torch.nn import functional as F
 from src.glid_3_xl.encoders.modules import MakeCutouts
 
@@ -96,17 +98,18 @@ def create_sample_function(
         y_crop = y_crop if y_crop > 0 else 0
         x_crop = x_crop if x_crop > 0 else 0
 
-        input_image[
-        0,
-        :,
-        y if y >= 0 else 0:y + np_image.shape[2],
-        x if x >= 0 else 0:x + np_image.shape[3]
-        ] = np_image[
-            :,
-            :,
-            0 if y > 0 else -y:np_image.shape[2] - y_crop,
-            0 if x > 0 else -x:np_image.shape[3] - x_crop
-            ]
+        y_in_min = max(y, 0)
+        y_in_max = y + np_image.shape[2]
+        x_in_min = max(x, 0)
+        x_in_max = x + np_image.shape[3]
+
+        y_out_min = max(-y, 0)
+        y_out_max = np_image.shape[2] - y_crop
+        x_out_min = max(-x, 0)
+        x_out_max = np_image.shape[3] - x_crop
+
+        input_image[0, :, y_in_min:y_in_max, x_in_min:x_in_max] = np_image[:, :, y_out_min:y_out_max,
+                                                                                 x_out_min:x_out_max]
         input_image_pil = ldm_model.decode(input_image)
         input_image_pil = TF.to_pil_image(input_image_pil.squeeze(0).add(1).div(2).clamp(0, 1))
         input_image *= 0.18215
@@ -151,6 +154,7 @@ def create_sample_function(
         return torch.cat([eps, rest], dim=1)
 
     def cond_fn(x, _, context=None, clip_embed=None, image_embed=None):
+        """Calculates the gradient of a loss function with respect to input x for a guided diffusion model step."""
         with torch.enable_grad():
             cur_t = diffusion.num_timesteps - 1
             x = x[:batch_size].detach().requires_grad_()
@@ -177,12 +181,12 @@ def create_sample_function(
             clip_in = normalize(make_cutouts(x_img.add(1).div(2)))
             clip_embeds = clip_model.encode_image(clip_in).float()
 
-            def spherical_dist_loss(x, y):
+            def _spherical_dist_loss(x, y):
                 x = F.normalize(x, dim=-1)
                 y = F.normalize(y, dim=-1)
                 return (x - y).norm(dim=-1).div(2).arcsin().pow(2).mul(2)
 
-            dists = spherical_dist_loss(clip_embeds.unsqueeze(1), text_emb_clip.unsqueeze(0))
+            dists = _spherical_dist_loss(clip_embeds.unsqueeze(1), text_emb_clip.unsqueeze(0))
             dists = dists.view([cutn, n, -1])
 
             losses = dists.sum(2).mean(0)
@@ -198,7 +202,7 @@ def create_sample_function(
     else:
         base_sample_fn = diffusion.plms_sample_loop_progressive
 
-    def sample_fn(init):
+    def _sample_fn(init):
         return base_sample_fn(
             model_fn,
             (batch_size * 2, 4, int(height / 8), int(width / 8)),
@@ -218,7 +222,7 @@ def create_sample_function(
         similarity = torch.nn.functional.cosine_similarity(image_emb_norm, text_emb_norm, dim=-1)
         return similarity.item()
 
-    return sample_fn, clip_score_fn
+    return _sample_fn, clip_score_fn
 
 
 def fetch(url_or_path, timeout=180):

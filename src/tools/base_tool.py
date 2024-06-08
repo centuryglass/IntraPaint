@@ -12,6 +12,7 @@ from PyQt5.QtWidgets import QWidget
 from PyQt5.QtGui import QCursor, QPixmap, QMouseEvent, QTabletEvent, QKeyEvent, QWheelEvent, QIcon
 
 
+# noinspection PyMethodMayBeStatic
 class BaseTool(QObject):
     """
     Basic interface for tools that interact with image data.
@@ -61,7 +62,7 @@ class BaseTool(QObject):
 
     cursor_change = pyqtSignal()
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
         self._cursor: Optional[QCursor | QPixmap] = None
 
@@ -127,6 +128,7 @@ class BaseTool(QObject):
         Mouse enter events are non-standard, the widget managing this tool needs to identify these itself by tracking
         mouse event coordinates and detecting when the cursor moves inside the image bounds.
         """
+        return False
 
     def mouse_exit(self, event: Optional[QEvent], image_coordinates: QPoint) -> bool:
         """Receives a mouse exit event, returning whether the tool consumed the event.

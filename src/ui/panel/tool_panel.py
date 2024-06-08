@@ -227,7 +227,8 @@ class ToolPanel(BorderedWidget):
                 self._panel_box_layout.removeWidget(self._generate_button)
             self._generate_button.setVisible(False)
         elif should_show and not self._generate_button.isVisible():
-            self._panel_box_layout.addWidget(self._generate_button)
+            if self._panel_box_layout is not None:
+                self._panel_box_layout.addWidget(self._generate_button)
             self._generate_button.show()
 
     def _switch_active_tool(self, tool_label: Optional[str]) -> None:

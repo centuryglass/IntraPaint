@@ -71,7 +71,7 @@ def load_models(device,
     else:
         model.convert_to_fp32()
 
-    def set_requires_grad(model, value):
+    def _set_requires_grad(model, value):
         for param in model.parameters():
             param.requires_grad = value
 
@@ -83,7 +83,7 @@ def load_models(device,
     ldm.to(device)
     ldm.eval()
     ldm.requires_grad_(clip_guidance)
-    set_requires_grad(ldm, clip_guidance)
+    _set_requires_grad(ldm, clip_guidance)
     print(f'loaded and configured latent diffusion model from {kl_path}')
     gc.collect()
 
@@ -92,7 +92,7 @@ def load_models(device,
     bert.load_state_dict(sd)
     bert.to(device)
     bert.half().eval()
-    set_requires_grad(bert, False)
+    _set_requires_grad(bert, False)
     print(f'loaded and configured BERT model from {bert_path}')
     gc.collect()
 

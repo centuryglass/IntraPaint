@@ -263,7 +263,7 @@ class A1111Webservice(WebService):
                     }]
                 }
             }
-            overrides = {
+            overrides: Dict[str, Any] = {
                 'width': width,
                 'height': height,
                 'batch_size': 1,

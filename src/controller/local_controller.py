@@ -1,19 +1,20 @@
 """
 Provides image editing functionality through a local instance of GLID-3-XL.
 """
-import gc
+import logging
 from argparse import Namespace
 from typing import Callable
-import logging
-from PIL import Image
+
 import torch
+from PIL import Image
 from PyQt5.QtCore import pyqtSignal, QSize
-from src.glid_3_xl.load_models import load_models
+
+from src.config.application_config import AppConfig
+from src.controller.base_controller import BaseInpaintController
 from src.glid_3_xl.create_sample_function import create_sample_function
 from src.glid_3_xl.generate_samples import generate_samples
+from src.glid_3_xl.load_models import load_models
 from src.glid_3_xl.ml_utils import get_device, foreach_image_in_sample
-from src.controller.base_controller import BaseInpaintController
-from src.config.application_config import AppConfig
 from src.ui.modal.settings_modal import SettingsModal
 from src.util.validation import assert_types
 

@@ -33,8 +33,8 @@ class HotkeyFilter(QObject):
             If not None, the action should only be invoked if this widget is showing.
         """
 
-        def __init__(self, action: Callable[[], bool], key: Qt.Key,
-                     modifiers: Qt.KeyboardModifier | Qt.KeyboardModifiers = Qt.NoModifier,
+        def __init__(self, action: Callable[[], bool], key: Qt.Key | int,
+                     modifiers: Qt.KeyboardModifier | Qt.KeyboardModifiers | int = Qt.NoModifier,
                      widget: Optional[QWidget] = None):
             self.action = action
             self.key = key
@@ -56,8 +56,8 @@ class HotkeyFilter(QObject):
            returns focus to the focus widget."""
         self._default_focus = focus_widget
 
-    def register_keybinding(self, action: Callable[[], bool], key: Qt.Key,
-                            modifiers: Qt.KeyboardModifier | Qt.KeyboardModifiers = Qt.NoModifier,
+    def register_keybinding(self, action: Callable[[], bool], key: Qt.Key | int,
+                            modifiers: Qt.KeyboardModifier | Qt.KeyboardModifiers | int = Qt.NoModifier,
                             widget: Optional[QWidget] = None) -> None:
         """Register a keystroke that should invoke an action.
 
@@ -86,8 +86,10 @@ class HotkeyFilter(QObject):
             self._bindings[key] = []
         self._bindings[key].append(keybinding)
 
-    def eventFilter(self, source: QObject, event: QEvent):
+    def eventFilter(self, source: Optional[QObject], event: Optional[QEvent]) -> bool:
         """Check for registered keys and trigger associated actions."""
+        if event is None:
+            return False
         if event.type() != QEvent.Type.KeyPress:
             return super().eventFilter(source, event)
         event = cast(QKeyEvent, event)

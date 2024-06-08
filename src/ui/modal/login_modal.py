@@ -85,7 +85,7 @@ class LoginModal(QDialog):
         """Sets status text shown to the user."""
         self._status.setText(status)
 
-    def show_login_modal(self) -> tuple[str, str] | tuple[None, None]:
+    def show_login_modal(self) -> tuple[str | None, str | None]:
         """Shows the login modal and returns user input on close."""
         self.exec_()
         if self._res is not None and self._res.status_code == 200:

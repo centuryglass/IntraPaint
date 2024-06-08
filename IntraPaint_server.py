@@ -14,15 +14,9 @@ args = parser.parse_args()
 
 device = get_device()
 print('Using device:', device)
-
-model_params, model, diffusion, ldm, bert, clip_model, clip_preprocess, normalize = load_models(device,
-                                                                                                model_path=args.model_path,
-                                                                                                bert_path=args.bert_path,
-                                                                                                kl_path=args.kl_path,
-                                                                                                steps=args.steps,
-                                                                                                clip_guidance=args.clip_guidance,
-                                                                                                cpu=args.cpu,
-                                                                                                ddpm=args.ddpm,
-                                                                                                ddim=args.ddim)
+model_data = load_models(device, model_path=args.model_path, bert_path=args.bert_path, kl_path=args.kl_path,
+                         steps=args.steps, clip_guidance=args.clip_guidance, cpu=args.cpu, ddpm=args.ddpm,
+                         ddim=args.ddim)
+model_params, model, diffusion, ldm, bert, clip_model, clip_preprocess, normalize = model_data
 app = start_server(device, model_params, model, diffusion, ldm, bert, clip_model, clip_preprocess, normalize)
 app.run(port=args.port, host='0.0.0.0')

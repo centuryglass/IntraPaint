@@ -4,7 +4,8 @@ Builds an argument parser for an image generation script.
 import argparse
 
 
-def build_arg_parser(default_model='models/inpaint.pt', include_edit_params=True, include_gen_params=True):
+def build_arg_parser(default_model='models/inpaint.pt', include_edit_params=True,
+                     include_gen_params=True) -> argparse.ArgumentParser:
     """Create a command-line argument parser that includes options shared between several scripts"""
     parser = argparse.ArgumentParser()
     parser.add_argument('--model_path', type=str, default=default_model,

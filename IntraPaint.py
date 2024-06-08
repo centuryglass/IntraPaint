@@ -114,6 +114,7 @@ def parse_args_and_start() -> None:
 
 
 def exit_log():
+    """Log when IntraPaint exits under normal circumstances."""
     logger.info('IntraPaint exiting now.')
 
 

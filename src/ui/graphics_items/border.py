@@ -3,7 +3,7 @@ from typing import Optional
 
 from PyQt5.QtCore import Qt, QRectF
 from PyQt5.QtGui import QPainter, QPainterPath, QColor
-from PyQt5.QtWidgets import QWidget, QGraphicsItem, QGraphicsView, QGraphicsScene, QStyleOptionGraphicsItem
+from PyQt5.QtWidgets import QWidget, QGraphicsItem, QGraphicsScene, QStyleOptionGraphicsItem
 
 from src.ui.widget.image_graphics_view import ImageGraphicsView
 

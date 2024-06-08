@@ -322,4 +322,5 @@ class LayerPanel(QWidget):
         if screen is not None:
             width = min(DEFAULT_LIST_SIZE.width(), screen.width() // 5)
             height = min(DEFAULT_LIST_SIZE.height(), screen.height() // 5)
-        return QSize(width, height)
+            return QSize(width, height)
+        return DEFAULT_LIST_SIZE

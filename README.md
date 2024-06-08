@@ -6,8 +6,8 @@ Collaborate with AI to make art.
 |:------------------------------------------------------------------------------:| 
 | *1. Draw over the area you want to change, provide a text prompt for guidance* |
 
-| ![example-2.png](./examples/example-2.png) | 
-|:--:| 
+|    ![example-2.png](./examples/example-2.png)     | 
+|:-------------------------------------------------:| 
 | *2. Generate options, pick the one you like best* |
 
 | ![example-3.png](./examples/example-3.png) | 
@@ -15,8 +15,8 @@ Collaborate with AI to make art.
 | *3. Your choice is inserted into the image* |
 
 | ![example-4.png](./examples/example-4.png) | 
-|:--:| 
-| *4. Repeat.* |
+|:------------------------------------------:| 
+|                *4. Repeat.*                |
 
 ## Background:
 

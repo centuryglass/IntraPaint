@@ -23,7 +23,7 @@ SPINNER_COLOR = Qt.GlobalColor.white
 class LoadingSpinner(QGraphicsObject):
     """Show an animated loading indicator, with an optional message."""
 
-    def __init__(self, message=""):
+    def __init__(self, message: str = ""):
         super().__init__()
         self._message = message
         self._rotation = 0
@@ -73,6 +73,8 @@ class LoadingSpinner(QGraphicsObject):
 
     def boundingRect(self) -> QRectF:
         """Returns the scene boundaries as the loading spinner bounds."""
+        if self.scene() is None:
+            return QRectF()
         return self.scene().sceneRect()
 
     def shape(self) -> QPainterPath:
@@ -86,14 +88,17 @@ class LoadingSpinner(QGraphicsObject):
               unused_option: Optional[QStyleOptionGraphicsItem],
               unused_widget: Optional[QWidget] = None) -> None:
         """Draws a background overlay, a circle with optional message text, and an animated indicator."""
+        scene = self.scene()
+        if painter is None or scene is None:
+            return
         painter.save()
         background_color = QColor(BACKGROUND_COLOR)
         background_color.setAlphaF(BACKGROUND_OPACITY)
-        painter.fillRect(self.scene().sceneRect(), background_color)
-        ellipse_radius = int(min(self.scene().sceneRect().width(), self.scene().sceneRect().height())
+        painter.fillRect(scene.sceneRect(), background_color)
+        ellipse_radius = int(min(scene.sceneRect().width(), scene.sceneRect().height())
                              * ELLIPSE_SCENE_FRACTION)
-        ellipse_x = int(self.scene().width() / 2 - ellipse_radius)
-        ellipse_y = int(self.scene().height() / 2 - ellipse_radius)
+        ellipse_x = int(scene.width() / 2 - ellipse_radius)
+        ellipse_y = int(scene.height() / 2 - ellipse_radius)
         paint_bounds = QRect(ellipse_x, ellipse_y, ellipse_radius * 2, ellipse_radius * 2)
 
         # draw background circle:
@@ -106,8 +111,8 @@ class LoadingSpinner(QGraphicsObject):
         painter.setPen(QPen(SPINNER_COLOR, LINE_WIDTH, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap,
                             Qt.PenJoinStyle.RoundJoin))
         painter.setBrush(QBrush(TEXT_COLOR, Qt.BrushStyle.SolidPattern))
-        text_bounds = QRect(int(self.scene().sceneRect().x()), ellipse_y + ellipse_radius * 2,
-                            int(self.scene().width()), ellipse_radius // 4)
+        text_bounds = QRect(int(scene.sceneRect().x()), ellipse_y + ellipse_radius * 2,
+                            int(scene.width()), ellipse_radius // 4)
         font = painter.font()
         if self._font_size is None:
             self._font_size = min(font.pointSize(), max_font_size(self._message, font, text_bounds))

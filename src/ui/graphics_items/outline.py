@@ -1,11 +1,13 @@
 """Outlines a region in a variable QGraphicsView, adjusting line width based on view scale."""
 from typing import Optional, List
-from PyQt5.QtWidgets import QWidget, QGraphicsItem, QGraphicsView, QGraphicsScene, QStyleOptionGraphicsItem
+
+from PyQt5.QtCore import Qt, pyqtProperty, QPropertyAnimation, QRectF
 from PyQt5.QtGui import QPainter, QPen, QPainterPath, QColor, QShowEvent, QHideEvent
-from PyQt5.QtCore import Qt, pyqtProperty, QPropertyAnimation, QRectF, QObject
+from PyQt5.QtWidgets import QWidget, QGraphicsItem, QGraphicsView, QGraphicsScene, QStyleOptionGraphicsItem, \
+    QGraphicsObject
 
 
-class Outline(QGraphicsItem):
+class Outline(QGraphicsObject):
     """Outlines a region in a variable QGraphicsView, adjusting line width based on view scale.
 
     The outline will have the following properties:
@@ -29,59 +31,22 @@ class Outline(QGraphicsItem):
         self._view = view
         self._animated = False
         self._dash_pattern = [2, 2, 4, 2, 2, 2]
-
-        class Animation(QObject):
-            """Property animations need to be held within a QObject, and QGraphicsOutline isn't a QObject, so this
-               class takes care of animation."""
-
-            def __init__(self, outline: Outline):
-                super().__init__()
-                self._outline = outline
-                self._dash_offset = 0
-                self._animated = False
-                self._anim = QPropertyAnimation(self, b"dash_offset")
-                self._anim.setLoopCount(-1)
-                self._anim.setStartValue(0)
-                self._anim.setEndValue(140)
-                self._anim.setDuration(1000)
-
-            @property
-            def max_value(self) -> int:
-                """Returns the animation max_value."""
-                return self._anim.duration()
-
-            @max_value.setter
-            def max_value(self, max_value: int) -> None:
-                """Updates the animation max_value."""
-                self._anim.setEndValue(max_value)
-
-            @pyqtProperty(int)
-            def dash_offset(self) -> int:
-                """Returns the animated dash offset."""
-                return self._dash_offset
-
-            @dash_offset.setter
-            def dash_offset(self, new_offset: int) -> None:
-                """Updates the animated dash offset."""
-                self._dash_offset = new_offset
-                self._outline.update()
-
-            @property
-            def animated(self) -> bool:
-                """Returns whether dotted lines are animated."""
-                return self._animated
-
-            @animated.setter
-            def animated(self, should_animate) -> None:
-                """Sets whether dotted lines are animated."""
-                self._animated = should_animate
-                if should_animate:
-                    self._anim.start()
-                else:
-                    self._anim.stop()
-
-        self._animation = Animation(self)
+        self._dash_offset = 0
+        self._anim = QPropertyAnimation(self, b"dash_offset")
+        self._anim.setLoopCount(-1)
+        self._anim.setStartValue(0)
+        self._anim.setEndValue(140)
+        self._anim.setDuration(1000)
         scene.addItem(self)
+
+    @pyqtProperty(int)
+    def dash_offset(self) -> int:
+        """Animate dash offset to make the selection more visible."""
+        return self._dash_offset
+
+    @dash_offset.setter
+    def dash_offset(self, offset: int) -> None:
+        self._dash_offset = offset
 
     @property
     def dash_pattern(self) -> List[int]:
@@ -95,26 +60,30 @@ class Outline(QGraphicsItem):
         pattern_length = 0
         for length in dash_pattern:
             pattern_length += length
-        self._animation.end_value = pattern_length * 10
+        self._anim.setEndValue(pattern_length * 10)
 
     @property
     def animated(self) -> bool:
         """Returns whether dotted lines are animated."""
-        return self._animation.animated
+        return self._animated
 
     @animated.setter
-    def animated(self, should_animate) -> None:
+    def animated(self, should_animate: bool) -> None:
         """Sets whether dotted lines are animated."""
-        self._animation.animated = should_animate
+        self._animated = should_animate
+        if self._animated and self.isVisible():
+            self._anim.start()
+        else:
+            self._anim.stop()
 
     def showEvent(self, _: Optional[QShowEvent]) -> None:
         """Starts the animation when the outline is shown."""
         if self._animated:
-            self._animation.animated = True
+            self._anim.start()
 
     def hideEvent(self, _: Optional[QHideEvent]) -> None:
         """Stops the animation when the outline is hidden."""
-        self._animation.animated = False
+        self._anim.stop()
 
     def get_outline_width(self) -> float:
         """Gets the outline width based on the current scale of the scene within its QGraphicsView."""
@@ -128,6 +97,8 @@ class Outline(QGraphicsItem):
               unused_option: Optional[QStyleOptionGraphicsItem],
               unused_widget: Optional[QWidget] = None) -> None:
         """Draws the outline within the scene."""
+        if painter is None:
+            return
         line_width = self.get_outline_width()
 
         outline_white = QColor(Qt.GlobalColor.white)
@@ -143,7 +114,7 @@ class Outline(QGraphicsItem):
         white_line_pen = QPen(outline_white, line_width)
         dotted_line_pen = QPen(Qt.GlobalColor.black, line_width / 4, Qt.PenStyle.DotLine)
         dotted_line_pen.setDashPattern(self.dash_pattern)
-        dotted_line_pen.setDashOffset(self._animation.dash_offset / 10)
+        dotted_line_pen.setDashOffset(self._dash_offset / 10)
 
         painter.setPen(white_line_pen)
         painter.drawRect(mid_border)
@@ -158,7 +129,7 @@ class Outline(QGraphicsItem):
         return self._rect
 
     @outlined_region.setter
-    def outlined_region(self, new_region) -> None:
+    def outlined_region(self, new_region: QRectF) -> None:
         """Updates the outlined area in the scene."""
         self.prepareGeometryChange()
         self._rect = new_region

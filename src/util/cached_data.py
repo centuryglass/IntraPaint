@@ -25,7 +25,7 @@ class CachedData:
         return self._data
 
     @data.setter
-    def data(self, new_data) -> None:
+    def data(self, new_data: Any) -> None:
         """Updates cached data and marks it as valid."""
         self._data = new_data
         self._valid = True

@@ -4,15 +4,15 @@ Runs a simple HTTP server that provides access to GLID-3-XL image editing operat
 
 from datetime import datetime
 from threading import Thread, Lock
-from typing import Any
+from typing import Any, Dict
 
 import flask
 from flask import Flask, request, jsonify, make_response, abort, current_app
 from flask_cors import CORS, cross_origin
-from src.util import load_image_from_base64, image_to_base64
-from src.glid_3_xl import foreach_image_in_sample
+from src.util.image_utils import load_image_from_base64, image_to_base64
+from src.glid_3_xl.ml_utils import foreach_image_in_sample
 from src.glid_3_xl.create_sample_function import create_sample_function
-from src.glid_3_xl import generate_samples
+from src.glid_3_xl.generate_samples import generate_samples
 
 
 def start_server(device, model_params, model, diffusion, ldm_model, bert_model, clip_model, clip_preprocess, normalize):
@@ -140,12 +140,12 @@ def start_server(device, model_params, model, diffusion, ldm_model, bert_model, 
     # Request updated images:
     @app.route("/sample", methods=["GET"])
     @cross_origin()
-    def list_updated() -> dict[str, dict[Any, Any] | bool | Any]:
+    def list_updated() -> Dict[str, Dict[Any, Any]]:
         json = request.get_json(force=True)
         # Parse (sampleName, timestamp) pairs from request.samples
         # Check (sampleName, timestamp) pairs from the most recent request. If any missing from the request or have a
         # newer timestamp, set response.samples[sampleName] = { timestamp, base64Image }
-        response = {"samples": {}}
+        response: Dict[str, Dict[Any, Any]] = {"samples": {}}
         with current_app.lock:
             for key, sample in current_app.samples.items():
                 if key not in json["samples"] or json["samples"][key] < sample["timestamp"]:

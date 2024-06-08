@@ -42,7 +42,7 @@ def assert_types(values: Iterable[Any], expected_type: Any) -> None:
             raise TypeError(f'Expected value of type {expected_type}, got value {value}')
 
 
-def assert_valid_index(index: int, list_value: list[Any], allow_end: bool = False) -> None:
+def assert_valid_index(index: Any, list_value: list[Any], allow_end: bool = False) -> None:
     """Checks if a value is a valid index into a list.
 
     Parameters

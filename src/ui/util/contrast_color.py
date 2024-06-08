@@ -10,6 +10,9 @@ LUMINANCE_THRESHOLD = 0.179
 
 def relative_luminance(color: QColor | Qt.GlobalColor) -> float:
     """Returns the relative luminance of a color."""
+    if isinstance(color, Qt.GlobalColor):
+        color = QColor(color)
+
     def adjust_component(c: float) -> float:
         """Calculated to fit W3C guidelines from https://www.w3.org/TR/WCAG20/#relativeluminancedef"""
         return (c / 12.92) if c <= 0.03928 else (((c + 0.055) / 1.055) ** 2.4)

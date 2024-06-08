@@ -7,7 +7,7 @@ import re
 import os
 import datetime
 from argparse import Namespace
-from typing import Optional, Callable, Any
+from typing import Optional, Callable, Any, Dict
 import logging
 
 import requests
@@ -179,6 +179,7 @@ class StableDiffusionController(BaseInpaintController):
             return False
         except requests.exceptions.RequestException as req_err:
             logger.error(f'Login check connection failed: {req_err}')
+            return False
 
     def interrogate(self) -> None:
         """ Calls the "interrogate" endpoint to automatically generate image prompts.
@@ -226,6 +227,7 @@ class StableDiffusionController(BaseInpaintController):
 
         def handle_error(err: BaseException) -> None:
             """Show an error popup if interrogate fails."""
+            assert self._window is not None
             self._window.set_is_loading(False)
             show_error_dialog(self._window, INTERROGATE_ERROR_TITLE, err)
 
@@ -269,30 +271,30 @@ class StableDiffusionController(BaseInpaintController):
                 logger.error(f'Loading controlnet config failed: {err}')
                 self._config.set(AppConfig.CONTROLNET_VERSION, -1.0)
 
-        option_loading_params = [
-            [AppConfig.STYLES, self._webservice.get_styles],
-            [AppConfig.SAMPLING_METHOD, self._webservice.get_samplers],
-            [AppConfig.UPSCALE_METHOD, self._webservice.get_upscalers]
-        ]
+        option_loading_params = (
+            (AppConfig.STYLES, self._webservice.get_styles),
+            (AppConfig.SAMPLING_METHOD, self._webservice.get_samplers),
+            (AppConfig.UPSCALE_METHOD, self._webservice.get_upscalers)
+        )
 
         # load various option lists:
-        for config_key, loading_fn in option_loading_params:
+        for config_key, option_loading_fn in option_loading_params:
             try:
-                options = loading_fn()
+                options = option_loading_fn()
                 if options is not None and len(options) > 0:
                     self._config.update_options(config_key, options)
             except (KeyError, RuntimeError) as err:
                 logger.error(f'error loading {config_key} from {self._server_url}: {err}')
 
-        data_params = [
-            [AppConfig.CONTROLNET_CONTROL_TYPES, self._webservice.get_controlnet_control_types],
-            [AppConfig.CONTROLNET_MODULES, self._webservice.get_controlnet_modules],
-            [AppConfig.CONTROLNET_MODELS, self._webservice.get_controlnet_models],
-            [AppConfig.LORA_MODELS, self._webservice.get_loras]
-        ]
-        for config_key, loading_fn in data_params:
+        data_params = (
+            (AppConfig.CONTROLNET_CONTROL_TYPES, self._webservice.get_controlnet_control_types),
+            (AppConfig.CONTROLNET_MODULES, self._webservice.get_controlnet_modules),
+            (AppConfig.CONTROLNET_MODELS, self._webservice.get_controlnet_models),
+            (AppConfig.LORA_MODELS, self._webservice.get_loras)
+        )
+        for config_key, data_loading_fn in data_params:
             try:
-                value = loading_fn()
+                value = data_loading_fn()
                 if value is not None and len(value) > 0:
                     self._config.set(config_key, value)
             except (KeyError, RuntimeError) as err:
@@ -468,8 +470,9 @@ class StableDiffusionController(BaseInpaintController):
             save_image(image, idx)
             idx += 1
 
-    def _apply_status_update(self, status_dict: dict[str: str]) -> None:
+    def _apply_status_update(self, status_dict: Dict[str, str]) -> None:
         """Show status updates in the UI."""
+        assert self._window is not None
         if 'seed' in status_dict:
             self._config.set(AppConfig.LAST_SEED, str(status_dict['seed']))
         if 'progress' in status_dict:

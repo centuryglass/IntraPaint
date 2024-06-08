@@ -56,7 +56,7 @@ class MPSurface(QObject):
         self._surface_data.parent.destroy = MyPaintSurfaceDestroyFunction(destroy_surface)
         self._surface_data.tile_request_start = MyPaintTileRequestStartFunction(empty_update_function)
         self._surface_data.tile_request_end = MyPaintTileRequestEndFunction(empty_update_function)
-        if size is not None and not size.isNull():
+        if size is not None and not size.isEmpty():
             self.reset_surface(size)
 
         def on_tile_request_start(_, request: POINTER(MyPaintTileRequest)) -> None:

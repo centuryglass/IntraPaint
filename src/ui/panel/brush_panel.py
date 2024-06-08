@@ -52,6 +52,7 @@ class BrushPanel(QTabWidget):
         self._setup_favorites_tab()
 
     def sizeHint(self) -> QSize:
+        """Define suggested size as a fraction of screen size."""
         screen = screen_size(self)
         if screen is None:
             return super().sizeHint()
@@ -243,6 +244,7 @@ class _IconButton(QWidget):
         self._image_rect = get_scaled_placement(QRect(0, 0, self.width(), self.height()), self._image.size())
 
     def sizeHint(self):
+        """Define suggested button size based on screen size."""
         width = self._image.width()
         height = self._image.height()
         screen = screen_size(self)

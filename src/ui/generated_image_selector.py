@@ -38,8 +38,8 @@ IMAGE_MARGIN_FRACTION = 1/6
 SCROLL_DEBOUNCE_MS = 100
 
 
-class SampleSelector(QWidget):
-    """Shows all inpainting samples as they load, allows the user to select one or discard all of them."""
+class GeneratedImageSelector(QWidget):
+    """Shows all images from an image generation operation, allows the user to select one or discard all of them."""
 
     def __init__(self,
                  config: AppConfig,
@@ -89,18 +89,18 @@ class SampleSelector(QWidget):
         self._loading_spinner.visible = False
         self._view.scene().addItem(self._loading_spinner)
 
+        original_image = self._layer_stack.qimage_selection_content()
+        original_option = _ImageOption(original_image, ORIGINAL_CONTENT_LABEL)
+        self._view.scene().addItem(original_option)
+        self._options.append(original_option)
+
         # Add initial images, placeholders for expected images:
-        self._loading_image = QImage(self._config.get(AppConfig.EDIT_SIZE), QImage.Format_ARGB32_Premultiplied)
+        self._loading_image = QImage(original_image.size(), QImage.Format_ARGB32_Premultiplied)
         self._loading_image.fill(Qt.GlobalColor.black)
         painter = QPainter(self._loading_image)
         painter.setPen(Qt.GlobalColor.white)
         painter.drawText(QRect(0, 0, self._loading_image.width(), self._loading_image.height()), Qt.AlignCenter,
                          LOADING_IMG_TEXT)
-
-        original_image = self._layer_stack.qimage_selection_content().scaled(self._loading_image.size())
-        original_option = _ImageOption(original_image, ORIGINAL_CONTENT_LABEL)
-        self._view.scene().addItem(original_option)
-        self._options.append(original_option)
 
         expected_count = config.get(AppConfig.BATCH_SIZE) * config.get(AppConfig.BATCH_COUNT)
         for i in range(expected_count):
@@ -168,12 +168,7 @@ class SampleSelector(QWidget):
         # sure they're all displayed the same:
         size = self._options[idx].size
         original_size = self._options[0].size
-        if size != original_size:
-            if size.width() < original_size.width():
-                self._options[idx].size = original_size
-            else:
-                for option in self._options:
-                    option.size = size
+        assert size == original_size, f'Expected images to be {original_size}, got {size}'
         self.resizeEvent(None)
 
     def toggle_zoom(self, zoom_index: Optional[int] = None) -> None:
@@ -248,7 +243,6 @@ class SampleSelector(QWidget):
         else:
             self._make_selection(self._options[option_index].image)
         self._close_selector()
-        return True
 
     def _scroll_debounce_finished(self) -> bool:
         ms_time = time.time() * 1000
@@ -321,11 +315,11 @@ class SampleSelector(QWidget):
         scene_y0 = VIEW_MARGIN
         if scene_ratio < view_ratio:
             new_width = int(view_ratio * scene_size.height())
-            scene_x0 += (new_width - scene_size.width()) // 2
+            scene_x0 += (new_width - scene_size.width()) / 2
             scene_size.setWidth(new_width)
         elif scene_ratio > view_ratio:
             new_height = scene_size.width() // view_ratio
-            scene_y0 += (new_height - scene_size.height()) // 2
+            scene_y0 += (new_height - scene_size.height()) / 2
             scene_size.setHeight(new_height)
 
         self._view.content_size = scene_size.toSize()
@@ -368,7 +362,7 @@ class _ImageOption(QGraphicsPixmapItem):
         return self.pixmap().size()
 
     @size.setter
-    def size(self, new_size) -> QSize:
+    def size(self, new_size) -> None:
         if new_size != self.size:
             self.setPixmap(QPixmap.fromImage(self.image.scaled(new_size)))
             self.update()
@@ -384,14 +378,14 @@ class _ImageOption(QGraphicsPixmapItem):
         return self.size.height()
 
     @property
-    def x(self) -> int:
+    def x(self) -> float:
         """Returns the item's x-coordinate in the scene."""
-        return int(self.pos().x())
+        return self.pos().x()
 
     @property
-    def y(self) -> int:
+    def y(self) -> float:
         """Returns the item's y-coordinate in the scene."""
-        return int(self.pos().y())
+        return self.pos().y()
 
     def paint(self,
               painter: Optional[QPainter],
@@ -417,7 +411,7 @@ class _ImageOption(QGraphicsPixmapItem):
 
 
 class _SelectionView(ImageGraphicsView):
-    """Minimal ImageGraphicsView controlled by the SampleSelector"""
+    """Minimal ImageGraphicsView controlled by the GeneratedImageSelector"""
 
     zoom_toggled = pyqtSignal()
     content_scrolled = pyqtSignal(int, int)

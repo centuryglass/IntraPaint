@@ -4,6 +4,7 @@ Provides simple popup windows for error messages, requesting confirmation, and l
 import sys
 import traceback
 import logging
+from typing import Optional
 
 from PyQt5.QtWidgets import QMessageBox, QFileDialog, QWidget, QStyle
 from PIL import UnidentifiedImageError
@@ -20,7 +21,7 @@ LOAD_IMAGE_ERROR_MSG = 'Open failed'
 PNG_IMAGE_FILTER = 'Images (*.png *.inpt)'
 
 
-def show_error_dialog(parent: QWidget, title: str, error: str | BaseException) -> None:
+def show_error_dialog(parent: Optional[QWidget], title: str, error: str | BaseException) -> None:
     """Opens a message box to show some text to the user."""
     logger.error(f'Error: {error}')
     if isinstance(error, BaseException) and hasattr(error, '__traceback__'):

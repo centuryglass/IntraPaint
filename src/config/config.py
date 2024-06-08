@@ -12,7 +12,7 @@ import json
 import os.path
 from inspect import signature
 from threading import Lock
-from typing import Optional, Any, Callable, List
+from typing import Optional, Any, Callable, List, Dict
 import logging
 
 from PyQt5.QtCore import QSize, QTimer
@@ -39,7 +39,7 @@ class Config:
         a fixed list of acceptable options.
     """
 
-    def __init__(self, definition_path: str, saved_value_path: Optional[str], child_class) -> None:
+    def __init__(self, definition_path: str, saved_value_path: Optional[str], child_class: type) -> None:
         """Load existing config, or initialize from defaults.
 
         Parameters
@@ -108,12 +108,13 @@ class Config:
             raise RuntimeError(f'Reading JSON config definitions failed: {err}') from err
 
         self._adjust_defaults()
-        if os.path.isfile(self._json_path):
-            self._read_from_json()
-        else:
-            self._write_to_json()
+        if self._json_path is not None:
+            if os.path.isfile(self._json_path):
+                self._read_from_json()
+            else:
+                self._write_to_json()
 
-    def _adjust_defaults(self):
+    def _adjust_defaults(self) -> None:
         """Override this to perform any adjustments to default values needed before file IO, e.g. loading list options
            from an external source."""
 
@@ -298,7 +299,7 @@ class Config:
             raise KeyError(f'Tried to set unknown config value "{key}"')
         return self._entries[key].options
 
-    def update_options(self, key: str, options_list: list) -> None:
+    def update_options(self, key: str, options_list: List[str]) -> None:
         """
         Replaces the list of accepted options for a given key.
 
@@ -346,9 +347,9 @@ class Config:
                    label: str,
                    category: str,
                    tooltip: str,
-                   options: Optional[list] = None,
-                   range_options: Optional[dict] = None,
-                   save_json=True) -> None:
+                   options: Optional[List[str]] = None,
+                   range_options: Optional[Dict[str, int | float]] = None,
+                   save_json: bool = True) -> None:
         if key in self._entries:
             raise KeyError(f'Tried add duplicate config entry "{key}"')
         entry = ConfigEntry(key, initial_value, label, category, tooltip, options, range_options, save_json)
@@ -358,7 +359,7 @@ class Config:
     def _write_to_json(self) -> None:
         if self._json_path is None:
             return
-        converted_dict = {}
+        converted_dict: Dict[str, Any] = {}
         with self._lock:
             for entry in self._entries.values():
                 entry.save_to_json_dict(converted_dict)

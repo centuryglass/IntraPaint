@@ -97,10 +97,13 @@ class ResizeCanvasModal(QDialog):
 
             def paintEvent(self, unused_event: Optional[QPaintEvent]) -> None:
                 """Draw image with proposed changes to canvas bounds."""
+                if self._canvas_bounds is None:
+                    return
                 painter = QPainter(self)
-                line_pen = QPen(Qt.GlobalColor.black, 2, Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin)
+                line_pen = QPen(Qt.GlobalColor.black, 2, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap,
+                                Qt.PenJoinStyle.RoundJoin)
                 painter.setPen(line_pen)
-                painter.fillRect(self._canvas_bounds, Qt.darkGray)
+                painter.fillRect(self._canvas_bounds, Qt.GlobalColor.darkGray)
                 painter.drawImage(self._image_bounds, qimage)
                 painter.drawRect(self._canvas_bounds)
                 painter.drawRect(self._image_bounds)
@@ -147,9 +150,9 @@ class ResizeCanvasModal(QDialog):
         self._cancel_button.clicked.connect(lambda: on_select(False))
 
         option_bar = QWidget(self)
-        option_bar.setLayout(QHBoxLayout())
-        option_bar.layout().addWidget(self._cancel_button)
-        option_bar.layout().addWidget(self._resize_button)
+        layout = QHBoxLayout(option_bar)
+        layout.addWidget(self._cancel_button)
+        layout.addWidget(self._resize_button)
 
         self._layout = QVBoxLayout()
         ordered_widgets = [

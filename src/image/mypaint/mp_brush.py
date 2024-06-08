@@ -1,7 +1,7 @@
 """Python wrapper for libmypaint brush data."""
 import os
 import sys
-from typing import Optional, Any
+from typing import Optional, Any, List
 import logging
 from ctypes import c_void_p, c_float, c_char_p, c_int
 from multiprocessing import Process, Pipe
@@ -98,6 +98,18 @@ class MPBrush:
             logger.warning(f'Warning: value {value} not in expected range {setting_info.min_value}'
                            f'-{setting_info.max_value} for MyPaint brush setting "{setting_info.name}"')
         libmypaint.mypaint_brush_set_base_value(self._brush, c_int(setting), c_float(value))
+
+    # Explicitly list expected dynamic properties so the linter will stop complaining:
+    COLOR_H: int
+    COLOR_S: int
+    COLOR_V: int
+    SNAP_TO_PIXEL: int
+    ANTI_ALIASING: int
+    RADIUS_LOGARITHMIC: int
+    DIRECTION_FILTER: int
+    DABS_PER_ACTUAL_RADIUS: int
+    ERASER: int
+    _setting_info: List['BrushSetting']
 
 
 class BrushSetting:
