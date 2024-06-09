@@ -1,6 +1,9 @@
 """Provides a convenience function for miscellaneous validation."""
 from typing import Any, Iterable
 
+from PyQt5.QtGui import QColor
+from PyQt5.QtWidgets import QWidget
+
 
 def assert_type(value: Any, expected_type: Any) -> None:
     """Checks if a value's type matches expectations.
@@ -64,3 +67,11 @@ def assert_valid_index(index: Any, list_value: list[Any], allow_end: bool = Fals
     assert_type(list_value, list)
     if not 0 <= index < (len(list_value) + 1 if allow_end else len(list_value)):
         raise ValueError(f'index {index} is invalid, expected (0 <= index < {len(list_value)})')
+
+
+def debug_widget_bounds(widget: QWidget, color: QColor) -> None:
+    """Sets a widget background to a solid color, useful for debugging layout issues."""
+    palette = widget.palette()
+    palette.setColor(widget.backgroundRole(), color)
+    widget.setPalette(palette)
+    widget.setAutoFillBackground(True)

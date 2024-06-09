@@ -914,7 +914,7 @@ class LayerStack(QObject):
 
     def _set_selection_internal(self, bounds_rect: QRect) -> None:
         """Updates the selection, adjusting as needed based on image bounds, and sending the selection_changed signal
-           if any changes happened.. Does not update undo history."""
+           if any changes happened. Does not update undo history."""
         assert_type(bounds_rect, QRect)
         bounds_rect = self._get_closest_valid_selection(bounds_rect)
         if bounds_rect != self._selection:

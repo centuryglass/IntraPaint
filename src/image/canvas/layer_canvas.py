@@ -168,7 +168,7 @@ class LayerCanvas:
         """Use active settings to draw to the canvas with the given inputs."""
         raise NotImplementedError('implement _draw to update the canvas image.')
 
-    def _load_layer_content(self, layer: ImageLayer) -> None:
+    def _load_layer_content(self, layer: Optional[ImageLayer]) -> None:
         """Refreshes the layer content within the canvas, or clears it if the layer is hidden."""
         raise NotImplementedError('implement _load_layer_content to copy layer content to the canvas.')
 

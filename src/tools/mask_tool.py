@@ -73,7 +73,7 @@ class MaskTool(CanvasTool):
         # Initialize control panel on first request:
         self._control_panel = QWidget()
         control_layout = QVBoxLayout(self._control_panel)
-        control_layout.setAlignment(Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignTop)
+        # control_layout.setAlignment(Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignTop)
 
         # Size slider:
         brush_size_slider = ParamSlider(self._control_panel, self._config.get_label(AppConfig.MASK_BRUSH_SIZE),

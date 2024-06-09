@@ -142,7 +142,7 @@ class MyPaintLayerCanvas(LayerCanvas):
         else:
             self._mp_surface.basic_stroke_to(x, y)
 
-    def _load_layer_content(self, layer: ImageLayer) -> None:
+    def _load_layer_content(self, layer: Optional[ImageLayer]) -> None:
         """Refreshes the layer content within the canvas, or clears it if the layer is hidden."""
         assert layer == self._layer
         if layer is None or not layer.visible or self._edit_region is None or self._edit_region.isEmpty():

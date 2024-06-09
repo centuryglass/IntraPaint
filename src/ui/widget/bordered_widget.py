@@ -2,8 +2,8 @@
 A simple widget that just draws a border around its content.
 """
 from typing import Optional
-from PyQt5.QtWidgets import QWidget
-from PyQt5.QtGui import QPainter, QColor, QPen, QPaintEvent
+from PyQt5.QtWidgets import QFrame, QWidget
+from PyQt5.QtGui import QPainter, QColor, QPen, QPaintEvent, QPalette
 from PyQt5.QtCore import Qt, QPoint, QRect, QMargins
 from src.ui.util.contrast_color import contrast_color
 
@@ -12,27 +12,20 @@ DEFAULT_LINE_MARGIN = 1
 DEFAULT_LINE_WIDTH = 1
 
 
-class BorderedWidget(QWidget):
+class BorderedWidget(QFrame):
     """BorderedWidget draws a 1-pixel border around its content."""
 
     def __init__(self, parent: Optional[QWidget] = None):
         """Initialize the widget, optionally adding it to a parent."""
         super().__init__(parent)
-        self._color = contrast_color(self)
+        self._color = QColor()
         self._contents_margin = DEFAULT_MARGIN
         self._line_margin = DEFAULT_LINE_MARGIN
-        self._line_width = DEFAULT_LINE_WIDTH
+        self.setFrameStyle(QFrame.Shape.Panel | QFrame.Shadow.Plain)
+        self.setLineWidth(DEFAULT_LINE_WIDTH)
         self.contents_margin = self._contents_margin
-
-    def paintEvent(self, event: Optional[QPaintEvent]) -> None:
-        """Draws the widget borders."""
-        super().paintEvent(event)
-        painter = QPainter(self)
-        painter.setPen(QPen(self._color, self._line_width, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap,
-                            Qt.PenJoinStyle.RoundJoin))
-        border = QRect(QPoint(0, 0), self.size()).adjusted(self._line_margin, self._line_margin, -self._line_margin,
-                                                           -self._line_margin)
-        painter.drawRect(border)
+        self.color = contrast_color(self)
+        self.setAutoFillBackground(True)
 
     @property
     def color(self) -> QColor:
@@ -44,6 +37,9 @@ class BorderedWidget(QWidget):
         """Updates the drawn border color."""
         if new_color != self._color:
             self._color = new_color
+            palette = self.palette()
+            palette.setColor(QPalette.Mid, new_color)
+            self.setPalette(palette)
             self.update()
 
     @property
@@ -72,9 +68,9 @@ class BorderedWidget(QWidget):
     @property
     def line_width(self) -> int:
         """Returns the line width of the drawn border."""
-        return self._line_width
+        return self.lineWidth()
 
     @line_width.setter
     def line_width(self, new_width: int) -> None:
         """Updates the line width of the drawn border."""
-        self._line_width = new_width
+        self.setLineWidth(new_width)

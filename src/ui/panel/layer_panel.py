@@ -10,9 +10,10 @@ from src.image.layer_stack import LayerStack
 from src.ui.util.geometry_utils import get_scaled_placement, get_rect_transformation
 from src.ui.widget.bordered_widget import BorderedWidget
 from src.ui.util.tile_pattern_fill import get_transparency_tile_pixmap
-from src.ui.util.screen_size import screen_size
+from src.ui.util.screen_size import get_screen_size
 
 LIST_SPACING = 4
+MIN_VISIBLE_LAYERS = 3
 DEFAULT_LIST_ITEM_SIZE = QSize(350, 60)
 DEFAULT_LIST_SIZE = QSize(380, 400)
 ICON_PATH_VISIBLE_LAYER = 'resources/visible.svg'
@@ -113,7 +114,7 @@ class LayerItem(BorderedWidget):
         """Returns a reasonable default size."""
         width = DEFAULT_LIST_SIZE.width()
         height = min(DEFAULT_LIST_SIZE.height(), self._label.sizeHint().height() * 3)
-        screen = screen_size(self)
+        screen = get_screen_size(self)
         if screen is not None:
             width = min(width, screen.width() // 5)
             height = min(height, screen.height() // 16)
@@ -265,6 +266,7 @@ class LayerPanel(QWidget):
             widget = self._layer_widget(layer)
             self._layer_widgets.append(widget)
             self._list_layout.insertWidget(layer_idx + 1, widget)
+            self.resizeEvent(None)
         self._layer_stack.layer_added.connect(_add_layer_widget)
         _add_layer_widget(layer_stack.mask_layer, -1)
         for i in range(self._layer_stack.count):
@@ -276,7 +278,7 @@ class LayerPanel(QWidget):
                 self._list_layout.removeWidget(layer_widget)
                 layer_widget.setParent(None)
                 self._layer_widgets.remove(layer_widget)
-                self.update()
+                self.resizeEvent(None)
         self._layer_stack.layer_removed.connect(_delete_layer_widget)
 
         def _activate_layer(layer_id: Optional[int], _=None) -> None:
@@ -309,18 +311,15 @@ class LayerPanel(QWidget):
         self._merge_down_button = _create_button(MERGE_DOWN_BUTTON_LABEL, MERGE_DOWN_BUTTON_TOOLTIP,
                                                  self._layer_stack.merge_layer_down)
 
+    def resizeEvent(self, event):
+        """Keep a fixed number of layers visible."""
+        if len(self._layer_widgets) > 0:
+            self._scroll_area.setMinimumHeight((self._layer_widgets[0].height() + LIST_SPACING)
+                                               * min(MIN_VISIBLE_LAYERS, len(self._layer_widgets)))
+
     def _layer_widget(self, layer: ImageLayer) -> LayerItem:
         """Returns the layer widget for the given layer, or creates and returns a new one if none exists."""
         for widget in self._layer_widgets:
             if widget.layer == layer:
                 return widget
         return LayerItem(layer, self._layer_stack, self)
-
-    def sizeHint(self) -> QSize:
-        """Returns a reasonable default size."""
-        screen = screen_size(self)
-        if screen is not None:
-            width = min(DEFAULT_LIST_SIZE.width(), screen.width() // 5)
-            height = min(DEFAULT_LIST_SIZE.height(), screen.height() // 5)
-            return QSize(width, height)
-        return DEFAULT_LIST_SIZE

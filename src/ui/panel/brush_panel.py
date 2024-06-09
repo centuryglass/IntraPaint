@@ -4,16 +4,20 @@ brushlib/libmypaint QT library is available, currently only true for x86_64 Linu
 """
 import os
 import re
-from typing import Optional, Any
+from typing import Optional, List, Dict
 
 from PyQt5.QtCore import Qt, QRect, QPoint, pyqtSignal, QSize
 from PyQt5.QtGui import QPixmap, QImage, QPainter, QPaintEvent, QMouseEvent, QResizeEvent
-from PyQt5.QtWidgets import QWidget, QTabWidget, QGridLayout, QScrollArea, QSizePolicy, QMenu
+from PyQt5.QtWidgets import QWidget, QTabWidget, QMenu
 
 from src.config.application_config import AppConfig
 from src.image.mypaint.mp_brush import MPBrush
 from src.ui.util.geometry_utils import get_scaled_placement
-from src.ui.util.screen_size import screen_size
+from src.ui.util.screen_size import get_screen_size
+from src.ui.widget.grid_container import GridContainer
+
+MIN_COLUMNS = 2
+MAX_COLUMNS = 10
 
 
 class BrushPanel(QTabWidget):
@@ -42,21 +46,13 @@ class BrushPanel(QTabWidget):
         """
         super().__init__(parent)
         self._brush = brush
-        self._groups: list[str] = []
-        self._group_orders: dict[str, list[str]] = {}
-        self._layouts: dict[str, QGridLayout] = {}
-        self._pages: dict[str, QWidget] = {}
+        self._groups: List[str] = []
+        self._group_orders: Dict[str, List[str]] = {}
+        self._pages: Dict[str, GridContainer] = {}
         self._config = config
         self._read_order_file(os.path.join(BrushPanel.BRUSH_DIR, BrushPanel.BRUSH_CONF_FILE))
         self._setup_brush_tabs()
         self._setup_favorites_tab()
-
-    def sizeHint(self) -> QSize:
-        """Define suggested size as a fraction of screen size."""
-        screen = screen_size(self)
-        if screen is None:
-            return super().sizeHint()
-        return QSize(screen.width() // 5, screen.height() // 5)
 
     def _setup_brush_tabs(self) -> None:
         """Reads in brush files, organizes them into tabs."""
@@ -79,14 +75,12 @@ class BrushPanel(QTabWidget):
             if not os.path.isdir(group_dir):
                 continue
             self._create_tab(group)
-            group_layout = self._layouts[group]
-            for x, y, brush in _GridIter(self._group_orders[group]):
-                brush_path = os.path.join(group_dir, brush + BrushPanel.BRUSH_EXTENSION)
-                image_path = os.path.join(group_dir, brush + BrushPanel.BRUSH_ICON_EXTENSION)
+            for brush_name in self._group_orders[group]:
+                brush_path = os.path.join(group_dir, brush_name + BrushPanel.BRUSH_EXTENSION)
+                image_path = os.path.join(group_dir, brush_name + BrushPanel.BRUSH_ICON_EXTENSION)
                 brush_icon = _IconButton(self._brush, image_path, brush_path, self._config, False)
-
                 brush_icon.favorite_change.connect(self._add_favorite)
-                group_layout.addWidget(brush_icon, y, x)
+                self._pages[group].add_widget(brush_icon)
 
     def _setup_favorites_tab(self) -> None:
         """Reads favorite brushes, adds them in a new tab."""
@@ -103,49 +97,27 @@ class BrushPanel(QTabWidget):
             favorite_brushes.append(brush_icon)
         if len(favorite_brushes) > 0:
             self._create_tab(BrushPanel.FAV_KEY, index=0)
-            for x, y, brush in _GridIter(favorite_brushes):
-                self._layouts[BrushPanel.FAV_KEY].addWidget(brush, y, x)
+            for brush_widget in favorite_brushes:
+                self._pages[BrushPanel.FAV_KEY].add_widget(brush_widget)
             self.setCurrentIndex(0)
 
     def _create_tab(self, tab_name: str, index: Optional[int] = None) -> None:
         """Adds a new brush category tab."""
-        if tab_name in self._layouts:
+        if tab_name in self._pages:
             return
-        tab = QScrollArea(self)
-        tab.setWidgetResizable(True)
-        tab.setAlignment(Qt.AlignTop | Qt.AlignLeft)
-        content = QWidget(tab)
-        content.setSizePolicy(QSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding))
-
-        tab.setSizePolicy(QSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding))
-        tab.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-
-        tab.setWidget(content)
-        layout = QGridLayout()
-        layout.setAlignment(Qt.AlignTop | Qt.AlignLeft)
-        content.setLayout(layout)
+        content = GridContainer()
         self._pages[tab_name] = content
-        self._layouts[tab_name] = layout
         if index is None:
-            self.addTab(tab, tab_name)
+            self.addTab(content, tab_name)
         else:
-            self.insertTab(index, tab, tab_name)
+            self.insertTab(index, content, tab_name)
 
-    def _get_favorite_brush_widgets(self) -> list[QWidget]:
-        """Loads favorite brushes from config."""
-        fav_list = []
-        layout = self._layouts[BrushPanel.FAV_KEY]
-        for row in range(layout.rowCount()):
-            for col in range(layout.columnCount()):
-                item = layout.itemAtPosition(row, col)
-                if item is not None:
-                    brush = item.widget()
-                    if brush is not None:
-                        fav_list.append(brush)
-        return [brush for brush in fav_list if brush is not None]
-
-    def _save_favorite_brushes(self, fav_list: list[QWidget]) -> None:
+    def _save_favorite_brushes(self) -> None:
         """Saves favorite brushes to config whenever a favorite is added or removed."""
+        if BrushPanel.FAV_KEY not in self._pages:
+            fav_list = []
+        else:
+            fav_list = self._pages[BrushPanel.FAV_KEY].findChildren(_IconButton)
         self._config.set(BrushPanel.FAV_CONFIG_KEY, [brush.saved_name() for brush in fav_list])
 
     def _add_favorite(self, icon_button: QWidget) -> None:
@@ -154,25 +126,18 @@ class BrushPanel(QTabWidget):
         if BrushPanel.FAV_KEY not in self._layouts:
             self._create_tab(BrushPanel.FAV_KEY, index=0)
 
-        fav_list = self._get_favorite_brush_widgets()
-        fav_list.append(icon_button.copy(True))
-        for x, y, brush in _GridIter(fav_list, len(fav_list) - 1):
-            self._layouts[BrushPanel.FAV_KEY].addWidget(brush, y, x)
-            brush.favorite_change.connect(self._remove_favorite)
-        self._save_favorite_brushes(fav_list)
-        self.update()
+        brush_copy = icon_button.copy(True)
+        self._pages[BrushPanel.FAV_KEY].add_widget(brush_copy)
+        brush_copy.favorite_change.connect(self._remove_favorite)
+        self._save_favorite_brushes()
+        self.resizeEvent(None)
 
     def _remove_favorite(self, icon_button: QWidget) -> None:
-        fav_list = self._get_favorite_brush_widgets()
-        fav_list.remove(icon_button)
-        self._layouts[BrushPanel.FAV_KEY].removeWidget(icon_button)
+        self._pages[BrushPanel.FAV_KEY].remove_widget(icon_button)
+        icon_button.favorite_change.disconnect(self._remove_favorite)
         icon_button.setParent(None)
-        for brush in fav_list:
-            self._layouts[BrushPanel.FAV_KEY].removeWidget(brush)
-        for x, y, brush in _GridIter(fav_list):
-            self._layouts[BrushPanel.FAV_KEY].addWidget(brush, y, x)
-        self._save_favorite_brushes(fav_list)
-        self.update()
+        self._save_favorite_brushes()
+        self.resizeEvent(None)
 
     def _read_order_file(self, file_path: str) -> bool:
         if not os.path.exists(file_path):
@@ -216,14 +181,16 @@ class _IconButton(QWidget):
         inverted = QImage(image_path)
         inverted.invertPixels(QImage.InvertRgba)
         self._image_inverted = QPixmap.fromImage(inverted)
-        size_policy = QSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding)
-        size_policy.setWidthForHeight(True)
-        self.setSizePolicy(size_policy)
         self.setMinimumSize(self._image.width() // 2, self._image.height() // 2)
         self.setMaximumSize(self._image.width(), self._image.height())
         self.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self.customContextMenuRequested.connect(self._menu)
         self.resizeEvent(None)
+
+        palette = self.palette()
+        palette.setColor(self.backgroundRole(), Qt.red)
+        self.setPalette(palette)
+        self.setAutoFillBackground(True)
 
     def saved_name(self) -> str:
         """Returns the name used to save this brush to favorites."""
@@ -247,10 +214,10 @@ class _IconButton(QWidget):
         """Define suggested button size based on screen size."""
         width = self._image.width()
         height = self._image.height()
-        screen = screen_size(self)
+        screen = get_screen_size(self)
         if screen is not None:
-            width = min(width, screen.width() // 50)
-            height = min(height, screen.height() // 50)
+            width = min(width, screen.width() // 30)
+            height = min(height, screen.height() // 30)
             if width < height:
                 height = int(width * self._image.height() / self._image.width())
             else:
@@ -287,33 +254,3 @@ class _IconButton(QWidget):
             raise RuntimeError('Unable to set up brush option menu')
         fav_option.triggered.connect(lambda: self.favorite_change.emit(self))
         menu.exec_(self.mapToGlobal(pos))
-
-
-class _GridIter:
-    """Iterates through brush grid positions and list items."""
-    WIDTH = 5
-
-    def __init__(self, item_list: list[Any], i: int = 0) -> None:
-        """Sets the iterated list and initial list index."""
-        self._list = item_list
-        self._i = i
-        self._x = 0
-        self._y = 0
-
-    def __iter__(self) -> Any:
-        self._x = self._i % _GridIter.WIDTH
-        self._y = self._i // _GridIter.WIDTH
-        return self
-
-    def __next__(self) -> tuple[int, int, Any]:
-        """returns the next column, row, list item."""
-        x = self._x
-        y = self._y
-        i = x + y * _GridIter.WIDTH
-        if i >= len(self._list):
-            raise StopIteration
-        self._x += 1
-        if self._x >= _GridIter.WIDTH:
-            self._y += 1
-            self._x = 0
-        return x, y, self._list[i]

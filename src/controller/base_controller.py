@@ -30,7 +30,7 @@ from src.ui.modal.resize_canvas_modal import ResizeCanvasModal
 from src.ui.modal.image_scale_modal import ImageScaleModal
 from src.ui.modal.modal_utils import show_error_dialog, request_confirmation, open_image_file
 from src.ui.modal.settings_modal import SettingsModal
-from src.ui.util.screen_size import screen_size
+from src.ui.util.screen_size import get_screen_size
 from src.util.image_utils import pil_image_to_qimage, qimage_to_pil_image
 
 from src.util.validation import assert_type
@@ -154,7 +154,7 @@ class BaseInpaintController:
             self._window.setMaximumSize(self._fixed_window_size)
             self._window.setMinimumSize(self._fixed_window_size)
         else:
-            size = screen_size(self._window)
+            size = get_screen_size(self._window)
             self._window.setGeometry(0, 0, size.width(), size.height())
             self._window.setMaximumSize(size)
         self.fix_styles()

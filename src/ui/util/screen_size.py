@@ -6,7 +6,7 @@ from PyQt5.QtWidgets import QApplication, QMainWindow
 from PyQt5.QtCore import QSize
 
 
-def screen_size(window: Optional[QMainWindow] = None) -> QSize:
+def get_screen_size(window: Optional[QMainWindow] = None) -> QSize:
     """Returns the size of the display a window is in, or the size of the primary display if window is None."""
     display = None
     if window is not None:

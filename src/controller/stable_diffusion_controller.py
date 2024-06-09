@@ -20,7 +20,7 @@ from src.config.application_config import AppConfig
 from src.ui.modal.settings_modal import SettingsModal
 from src.ui.window.stable_diffusion_main_window import StableDiffusionMainWindow
 from src.ui.modal.modal_utils import show_error_dialog
-from src.ui.util.screen_size import screen_size
+from src.ui.util.screen_size import get_screen_size
 from src.controller.base_controller import BaseInpaintController
 from src.api.a1111_webservice import A1111Webservice
 
@@ -309,7 +309,7 @@ class StableDiffusionController(BaseInpaintController):
             self._window.setMaximumSize(self._fixed_window_size)
             self._window.setMinimumSize(self._fixed_window_size)
         else:
-            size = screen_size(self._window)
+            size = get_screen_size(self._window)
             self._window.setGeometry(0, 0, size.width(), size.height())
             self._window.setMaximumSize(size)
         self.fix_styles()

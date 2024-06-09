@@ -16,6 +16,7 @@ class _UndoAction:
         self.type = action_type
         self.action_data = action_data
 
+
 _undo_stack: List[_UndoAction] = []
 _redo_stack: List[_UndoAction] = []
 _access_lock = Lock()

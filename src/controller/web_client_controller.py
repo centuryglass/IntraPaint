@@ -10,7 +10,7 @@ from PyQt5.QtWidgets import QInputDialog
 from PIL import Image
 
 from src.ui.window.main_window import MainWindow
-from src.ui.util.screen_size import screen_size
+from src.ui.util.screen_size import get_screen_size
 from src.ui.modal.settings_modal import SettingsModal
 from src.controller.base_controller import BaseInpaintController
 from src.util.image_utils import load_image_from_base64, image_to_base64
@@ -40,7 +40,7 @@ class WebClientController(BaseInpaintController):
     def window_init(self) -> None:
         """Initialize and show the main application window."""
         self._window = MainWindow(self._config, self._layer_stack, self)
-        size = screen_size(self._window)
+        size = get_screen_size(self._window)
         self._window.setGeometry(0, 0, size.width(), size.height())
         self._window.show()
 

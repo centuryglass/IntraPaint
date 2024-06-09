@@ -89,7 +89,7 @@ class PixmapLayerCanvas(LayerCanvas):
         self._last_point = QPoint(int(x), int(y))
         self._pixmap_item.setPixmap(pixmap)
 
-    def _load_layer_content(self, layer: ImageLayer) -> None:
+    def _load_layer_content(self, layer: Optional[ImageLayer]) -> None:
         """Refreshes the layer content within the canvas, or clears it if the layer is hidden."""
         assert self._layer == layer and self._edit_region is not None
         if self._pixmap_item is None:

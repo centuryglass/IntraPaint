@@ -1,15 +1,21 @@
 """An image editing tool that moves the selected editing region."""
 
-from typing import Optional
-from PyQt5.QtWidgets import QWidget, QVBoxLayout, QApplication, QLabel, QSlider, QHBoxLayout, QDoubleSpinBox, \
-         QPushButton
-from PyQt5.QtGui import QMouseEvent, QKeyEvent, QCursor, QIcon
+from typing import Optional, cast
+
 from PyQt5.QtCore import Qt, QRect, QPoint
+from PyQt5.QtGui import QMouseEvent, QKeyEvent, QCursor, QIcon
+from PyQt5.QtWidgets import QWidget, QApplication, QLabel, QSlider, QDoubleSpinBox, \
+    QPushButton, QGridLayout
+
+from src.config.application_config import AppConfig
 from src.image.layer_stack import LayerStack
 from src.tools.base_tool import BaseTool
-from src.ui.image_viewer import ImageViewer
 from src.ui.config_control_setup import get_selection_control_boxes
-from src.config.application_config import AppConfig
+from src.ui.image_viewer import ImageViewer
+
+SELECT_LAYER_BUTTON_TOOLTIP = "Select the entire active layer."
+
+SELECT_LAYER_BUTTON_TEXT = "Select entire layer"
 
 RESOURCES_SELECTION_ICON = 'resources/selection.svg'
 SELECTION_LABEL = 'Select Image Generation Area'
@@ -58,20 +64,19 @@ class SelectionTool(BaseTool):
         if self._control_panel is not None:
             return self._control_panel
         self._control_panel = QWidget()
-        self._control_layout = QVBoxLayout(self._control_panel)
-        self._control_layout.setSpacing(1)
-
-        image_scale_bar = QWidget()
-        self._control_layout.addWidget(image_scale_bar)
-        scale_layout = QHBoxLayout(image_scale_bar)
-        scale_layout.addWidget(QLabel(SCALE_SLIDER_LABEL))
+        self._control_layout = QGridLayout(self._control_panel)
+        self._control_layout.setSpacing(5)
+        self._control_layout.setAlignment(Qt.AlignCenter)
+        for i, stretch in enumerate((1, 8, 1)):
+            self._control_layout.setColumnStretch(i, stretch)
+        self._control_layout.addWidget(QLabel(SCALE_SLIDER_LABEL), 0, 0)
         image_scale_slider = QSlider(Qt.Orientation.Horizontal)
-        scale_layout.addWidget(image_scale_slider, stretch=100)
+        self._control_layout.addWidget(image_scale_slider, 0, 1)
         image_scale_slider.setRange(1, 4000)
         image_scale_slider.setSingleStep(10)
         image_scale_slider.setValue(int(self._image_viewer.scene_scale * 100))
         image_scale_box = QDoubleSpinBox()
-        scale_layout.addWidget(image_scale_box)
+        self._control_layout.addWidget(image_scale_box, 0, 2)
         image_scale_box.setRange(0.001, 40)
         image_scale_box.setSingleStep(0.1)
         image_scale_box.setValue(self._image_viewer.scene_scale)
@@ -113,7 +118,12 @@ class SelectionTool(BaseTool):
         # wire x/y coordinate boxes to set selection coordinates:
         coordinate_controls = get_selection_control_boxes(self._config, self._layer_stack, True)
         for control_widget in coordinate_controls:
-            self._control_layout.addWidget(control_widget)
+            row = self._control_layout.rowCount()
+            ctrl_label, ctrl_slider, ctrl_box = (cast(QWidget, child) for child in control_widget.children()
+                                                 if isinstance(child, QWidget))
+            self._control_layout.addWidget(ctrl_label, row, 0)
+            self._control_layout.addWidget(ctrl_slider, row, 1)
+            self._control_layout.addWidget(ctrl_box, row, 2)
 
         scale_reset_button = QPushButton()
 
@@ -130,9 +140,21 @@ class SelectionTool(BaseTool):
 
         scale_reset_button.setText(SCALE_ZOOM_BUTTON_LABEL)
         scale_reset_button.setToolTip(SCALE_ZOOM_BUTTON_TOOLTIP)
-
         scale_reset_button.clicked.connect(toggle_scale)
-        self._control_layout.addWidget(scale_reset_button)
+        self._control_layout.addWidget(scale_reset_button, self._control_layout.rowCount(), 0, 1, 3)
+
+        def select_full_layer():
+            """Expand the selection to fit the entire active layer."""
+            active_layer = self._layer_stack.active_layer
+            if active_layer is None:
+                return
+            self._layer_stack.selection = active_layer.geometry
+        select_layer_button = QPushButton()
+        select_layer_button.setText(SELECT_LAYER_BUTTON_TEXT)
+        select_layer_button.setToolTip(SELECT_LAYER_BUTTON_TOOLTIP)
+        select_layer_button.clicked.connect(select_full_layer)
+        self._control_layout.addWidget(select_layer_button, self._control_layout.rowCount(), 0, 1, 3)
+
         return self._control_panel
 
     def _move_selection(self, selection_pt: QPoint) -> None:
