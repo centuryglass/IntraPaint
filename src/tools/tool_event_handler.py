@@ -32,13 +32,12 @@ class ToolEventHandler(QObject):
 
         def set_active():
             """On hotkey press, set the active tool and consume the event if another tool was previously active."""
-            if self._active_tool == tool:
+            if self._active_tool == tool or not self._image_viewer.isVisible():
                 return False
             self.active_tool = tool
             self._image_viewer.focusWidget()
             return True
-        HotkeyFilter.instance().register_keybinding(set_active, keys, Qt.KeyboardModifier.NoModifier,
-                                                    self._image_viewer)
+        HotkeyFilter.instance().register_keybinding(set_active, keys, Qt.KeyboardModifier.NoModifier)
 
     def register_tool_delegate(self, source_tool: BaseTool, delegate_tool: BaseTool,
                                modifiers: Qt.KeyboardModifiers | Qt.KeyboardModifier) -> None:
@@ -65,14 +64,14 @@ class ToolEventHandler(QObject):
             return
         self._last_modifier_state = modifiers
         if self._active_delegate and self._tool_modifier_delegates[self._active_tool] != modifiers:
-            self._active_delegate.on_deactivate()
+            self._active_delegate.is_active = False
             self._active_delegate = None
-            self._active_tool.on_activate()
+            self._active_tool.is_active = True
             self.tool_changed.emit(self._active_tool.label)
         if modifiers in self._tool_modifier_delegates[self._active_tool]:
-            self._active_tool.on_deactivate()
+            self._active_tool.is_active = False
             self._active_delegate = self._tool_modifier_delegates[self._active_tool][modifiers]
-            self._active_delegate.on_activate()
+            self._active_delegate.is_active = True
             self.tool_changed.emit(self._active_delegate.label)
 
     @property
@@ -84,15 +83,15 @@ class ToolEventHandler(QObject):
     def active_tool(self, new_tool: BaseTool) -> None:
         """Sets a new active tool."""
         if self._active_delegate is not None:
-            self._active_delegate.on_deactivate()
+            self._active_delegate.is_active = False
             self._active_delegate = None
         elif self._active_tool is not None:
-            self._active_tool.on_deactivate()
+            self._active_tool.is_active = False
         self._active_tool = new_tool
         if new_tool not in self._tool_modifier_delegates:
             self._tool_modifier_delegates[new_tool] = {}
         if new_tool is not None:
-            new_tool.on_activate()
+            new_tool.is_active = True
         self._mouse_in_bounds = False
         if new_tool is not None:
             self.tool_changed.emit(new_tool.label)

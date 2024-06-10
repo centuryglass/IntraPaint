@@ -86,7 +86,6 @@ class LayerTransformTool(BaseTool):
             if self._aspect_ratio_checkbox.isChecked() and self._active_layer_id is not None:
                 max_scale = max(self._scale_x, self._scale_y)
                 self.scale(max_scale, max_scale)
-
         self._aspect_ratio_checkbox.clicked.connect(_restore_aspect_ratio)
 
         # Register movement key overrides, tied to control panel visibility:
@@ -100,6 +99,8 @@ class LayerTransformTool(BaseTool):
             self._down_keys[control] = config.get_keycodes(down_key_code)
 
             def _step(steps: int, spinbox) -> bool:
+                if not self.is_active:
+                    return False
                 spinbox.stepBy(steps)
                 return True
 
@@ -107,7 +108,7 @@ class LayerTransformTool(BaseTool):
                 def _binding(mult, n=sign, box=control) -> bool:
                     return _step(n * mult, box)
 
-                HotkeyFilter.instance().register_speed_modified_keybinding(_binding, self._config, key, control)
+                HotkeyFilter.instance().register_speed_modified_keybinding(_binding, self._config, key)
 
     def get_hotkey(self) -> QKeySequence:
         """Returns the hotkey(s) that should activate this tool."""
@@ -224,12 +225,12 @@ class LayerTransformTool(BaseTool):
             if y_scale != self._scale_box_y.value():
                 self._scale_box_y.setValue(y_scale)
 
-    def on_activate(self) -> None:
+    def _on_activate(self) -> None:
         """Connect to the active layer."""
         self._layer_stack.active_layer_changed.connect(self._active_layer_change_slot)
         self.set_layer(self._layer_stack.active_layer)
 
-    def on_deactivate(self) -> None:
+    def _on_deactivate(self) -> None:
         """Disconnect from all layers."""
         self._layer_stack.active_layer_changed.disconnect(self._active_layer_change_slot)
         self.apply_transformations_to_layer()

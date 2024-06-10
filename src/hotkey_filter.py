@@ -33,17 +33,13 @@ class HotkeyFilter(QObject):
             Key that should invoke the action.
         KeyBinding.modifiers:
             Exact keyboard modifiers required to invoke the action.  If none, modifiers will be ignored.
-        KeyBinding.widget:
-            If not None, the action should only be invoked if this widget is showing.
         """
 
         def __init__(self, action: Callable[[], bool], key: Qt.Key | int,
-                     modifiers: Qt.KeyboardModifier | Qt.KeyboardModifiers | int = Qt.NoModifier,
-                     widget: Optional[QWidget] = None):
+                     modifiers: Qt.KeyboardModifier | Qt.KeyboardModifiers | int = Qt.NoModifier):
             self.action = action
             self.key = key
             self.modifiers = modifiers
-            self.widget = widget
 
     def __init__(self):
         """Registers and handles application-level hotkeys."""
@@ -61,8 +57,7 @@ class HotkeyFilter(QObject):
         self._default_focus = focus_widget
 
     def register_keybinding(self, action: Callable[[], bool], keys: QKeySequence,
-                            modifiers: Qt.KeyboardModifier | Qt.KeyboardModifiers | int = Qt.NoModifier,
-                            widget: Optional[QWidget] = None) -> None:
+                            modifiers: Qt.KeyboardModifier | Qt.KeyboardModifiers | int = Qt.NoModifier) -> None:
         """Register a keystroke that should invoke an action.
 
         If keybindings share a key, newer ones will be checked before older ones. This makes it easier to add
@@ -76,8 +71,6 @@ class HotkeyFilter(QObject):
             List of valid keys that should invoke the action.
         modifiers: Qt.KeyboardModifiers, optional
             Exact keyboard modifiers required to invoke the action, defaults to Qt.NoModifier.
-        widget: QWidget, optional
-            If not None, the action should only be invoked if this widget is showing.
         """
         for key in keys:
             assert key != Qt.Key_unknown, 'Invalid keybinding'
@@ -90,13 +83,12 @@ class HotkeyFilter(QObject):
                 key_modifiers = key_modifiers | get_modifiers(keys[:-1])
                 key = QKeySequence(keys[-1])[0]
 
-            keybinding = HotkeyFilter.KeyBinding(action, key, key_modifiers, widget)
+            keybinding = HotkeyFilter.KeyBinding(action, key, key_modifiers)
             if key not in self._bindings:
                 self._bindings[key] = []
             self._bindings[key].insert(0, keybinding)
 
-    def register_config_keybinding(self, action: Callable[[], bool], config: AppConfig, config_key: str,
-                                   widget: Optional[QWidget]) -> None:
+    def register_config_keybinding(self, action: Callable[[], bool], config: AppConfig, config_key: str) -> None:
         """Register a keybinding defined in application config.
 
         Parameters
@@ -107,14 +99,12 @@ class HotkeyFilter(QObject):
             Config object holding the keybindings.
         config_key: str
             Key string for the appropriate key or keys.
-        widget: QWidget, optional
-            If not None, the action should only be invoked if this widget is showing.
         """
         keys = config.get_keycodes(config_key)
-        self.register_keybinding(action, keys, Qt.NoModifier, widget)
+        self.register_keybinding(action, keys, Qt.NoModifier)
 
     def register_speed_modified_keybinding(self, scaling_action: Callable[[int], bool], config: AppConfig,
-                                           config_key: str, widget: Optional[QWidget]) -> None:
+                                           config_key: str) -> None:
         """Register a keybinding defined in application config that's affected by the speed modifier.
 
         If the speed_modifier key has a valid definition in the config file, some actions operate at increased speed if
@@ -129,11 +119,9 @@ class HotkeyFilter(QObject):
             Config object holding the keybindings.
         config_key: str
             Key string for the appropriate key or keys.
-        widget: QWidget, optional
-            If not None, the action should only be invoked if this widget is showing.
         """
         keys = config.get_keycodes(config_key)
-        self.register_keybinding(lambda: scaling_action(1), keys, Qt.NoModifier, widget)
+        self.register_keybinding(lambda: scaling_action(1), keys, Qt.NoModifier)
 
         modifier_string = config.get(AppConfig.SPEED_MODIFIER)
         try:
@@ -143,7 +131,7 @@ class HotkeyFilter(QObject):
             return
         if modifier != Qt.KeyboardModifier.NoModifier:
             multiplier = config.get(AppConfig.SPEED_MODIFIER_MULTIPLIER)
-            self.register_keybinding(lambda: scaling_action(multiplier), keys, modifier, widget)
+            self.register_keybinding(lambda: scaling_action(multiplier), keys, modifier)
 
     def eventFilter(self, source: Optional[QObject], event: Optional[QEvent]) -> bool:
         """Check for registered keys and trigger associated actions."""
@@ -164,10 +152,6 @@ class HotkeyFilter(QObject):
             return super().eventFilter(source, event)
         event_handled = False
         for i, binding in enumerate(self._bindings[event.key()]):
-            if binding.widget is not None and not binding.widget.isVisible():
-                logger.debug(
-                    f'{event.text()}: not claimed by handler {i} of {len(self._bindings[event.key()])}: widget hidden')
-                continue
             if binding.modifiers != QApplication.keyboardModifiers():
                 logger.debug(
                     f'{event.text()}: not claimed by handler {i} of {len(self._bindings[event.key()])}: modifier'

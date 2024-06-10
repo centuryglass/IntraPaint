@@ -66,7 +66,7 @@ class BaseTool(QObject):
     def __init__(self) -> None:
         super().__init__()
         self._cursor: Optional[QCursor | QPixmap] = None
-
+        self._active = False
     @property
     def cursor(self) -> Optional[QCursor | QPixmap]:
         """Returns the active tool cursor or tool pixmap."""
@@ -77,6 +77,21 @@ class BaseTool(QObject):
         """Sets the active tool cursor or tool pixmap."""
         self._cursor = new_cursor
         self.cursor_change.emit()
+
+    @property
+    def is_active(self) -> bool:
+        """Returns whether this tool is currently marked as active."""
+        return self._active
+
+    @is_active.setter
+    def is_active(self, active: bool) -> None:
+        if active == self._active:
+            return
+        self._active = active
+        if active:
+            self._on_activate()
+        else:
+            self._on_deactivate()
 
     def get_hotkey(self) -> QKeySequence:
         """Returns a hotkey or list of keys that should activate this tool."""
@@ -103,10 +118,10 @@ class BaseTool(QObject):
         """Returns a panel providing controls for customizing tool behavior, or None if no such panel is needed."""
         return None
 
-    def on_activate(self) -> None:
+    def _on_activate(self) -> None:
         """Called when the tool becomes active, implement to handle any setup that needs to be done."""
 
-    def on_deactivate(self) -> None:
+    def _on_deactivate(self) -> None:
         """Called when the tool stops being active, implement to handle any cleanup that needs to be done."""
 
     # Event handlers:

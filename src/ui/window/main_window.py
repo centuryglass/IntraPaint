@@ -89,9 +89,12 @@ class MainWindow(QMainWindow):
         # Connect number keys to tabs when tab widget is visible:
         for i in range(min(MAX_TABS, 9)):
             tab_index_key = QKeySequence(str(i + 1))
-            HotkeyFilter.instance().register_keybinding(lambda idx=i: self.focus_tab(idx), tab_index_key,
-                                                        Qt.KeyboardModifier.NoModifier, self._central_widget)
 
+            def _try_tab_focus(idx=i) -> bool:
+                if not self._central_widget.isVisible():
+                    return False
+                return  self.focus_tab(idx)
+            HotkeyFilter.instance().register_keybinding(_try_tab_focus, tab_index_key, Qt.KeyboardModifier.NoModifier)
         # Loading widget (for interrogate):
         self._is_loading = False
         self._loading_widget = LoadingWidget()

@@ -1,9 +1,6 @@
 # Future development tasks
 
 # Bugs
-- Keep size on brush change not working (possibly a pressure issue?)
-- 1px draw mode not reverting until next stroke finishes (mask only)
-- incorrect zLevel issues near bottom layer
 - Layer changes silently discard incomplete transformations
     * Add 'apply' button to tool panel
     * add visual indicator in view that transformation isn't final
@@ -12,8 +9,11 @@
 - Brush icon active indicator doesn't show until tabs switch
 - Ctrl+click and drag not working on sample selector
 - Sample details hard to see if default background is light
-- Minimizing toolbars breaks key bindings
 - system color picker issues on xfce
+
+# intermittent, can't reproduce reliably:
+- Keep size on brush change not working (possibly a pressure issue?)
+- incorrect zLevel issues near bottom layer
 
 1280x800 display issues:
 - Text cut off in some tool panels
@@ -36,6 +36,7 @@
     - selection to generation size button
 - Mask tool
     - Add select by color/fill select
+    - Select inverted option
 - Add "shift to draw lines" in brush/mask tools
 - Pencil tool:
   - Hard-edged drawing via PixmapCanvas

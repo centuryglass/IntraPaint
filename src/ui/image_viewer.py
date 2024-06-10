@@ -1,7 +1,7 @@
 """
 A PyQt5 widget wrapper for the LayerStack class.
 """
-from typing import Optional
+from typing import Optional, Dict
 
 from PyQt5.QtCore import Qt, QRect, QRectF, QSize, QPointF, QSizeF
 from PyQt5.QtGui import QPainter, QMouseEvent
@@ -24,50 +24,6 @@ SELECTION_BORDER_COLOR = Qt.GlobalColor.black
 class ImageViewer(ImageGraphicsView):
     """Shows the image being edited, and allows the user to select sections."""
 
-    class LayerItem(QGraphicsPixmapItem):
-        """Renders an image layer into a QGraphicsScene."""
-
-        def __init__(self, layer: ImageLayer):
-            super().__init__()
-            assert_type(layer, ImageLayer)
-            self._layer = layer
-            self._hidden = False
-
-            layer.visibility_changed.connect(self._update_visibility)
-            layer.content_changed.connect(self._update_pixmap)
-            layer.opacity_changed.connect(self.setOpacity)
-            layer.bounds_changed.connect(self._update_position)
-            self.setOpacity(layer.opacity)
-            self.setVisible(layer.visible)
-            self._update_pixmap(layer)
-
-        def __del__(self):
-            self._layer.visibility_changed.disconnect(self._update_visibility)
-            self._layer.content_changed.disconnect(self._update_pixmap)
-            self._layer.opacity_changed.disconnect(self.setOpacity)
-            self._layer.bounds_changed.disconnect(self._update_position)
-
-        @property
-        def hidden(self) -> bool:
-            """Returns whether this layer is currently hidden."""
-            return self._hidden
-
-        @hidden.setter
-        def hidden(self, hidden: bool) -> None:
-            """Sets whether the layer should be hidden in the view regardless of layer visibility."""
-            self._hidden = hidden
-            self.setVisible(self._layer.visible and not hidden)
-
-        def _update_pixmap(self, _) -> None:
-            self.setPixmap(self._layer.pixmap)
-            self.update()
-
-        def _update_visibility(self, _, visible: bool) -> None:
-            self.setVisible(visible and not self.hidden)
-
-        def _update_position(self, _, new_bounds: QRect) -> None:
-            self.setPos(new_bounds.topLeft())
-
     def __init__(self, parent: Optional[QWidget], layer_stack: LayerStack, config: AppConfig) -> None:
         super().__init__(config, parent)
         HotkeyFilter.instance().set_default_focus(self)
@@ -75,7 +31,7 @@ class ImageViewer(ImageGraphicsView):
         self._layer_stack = layer_stack
         self._config = config
         self._selection = layer_stack.selection
-        self._layer_items = {}
+        self._layer_items: Dict[int, '_LayerItem'] = {}
         self.content_size = layer_stack.size
         self.background = get_transparency_tile_pixmap()
         self.setSizePolicy(QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding))
@@ -93,30 +49,15 @@ class ImageViewer(ImageGraphicsView):
         self._masked_selection_outline.setOpacity(0.9)
         self._masked_selection_outline.animated = True
         mask_layer = layer_stack.mask_layer
+        mask_layer.content_changed.connect(self._mask_content_change_slot)
+        config.connect(self, AppConfig.INPAINT_FULL_RES, self._mask_content_change_slot)
+        config.connect(self, AppConfig.INPAINT_FULL_RES_PADDING, self._mask_content_change_slot)
 
         # active layer outline:
         self._active_layer_id = -1
         self._active_layer_outline = Outline(self.scene(), self)
         self._active_layer_outline.dash_pattern = [5, 1]  # nearly solid line
-
-        def _update_active_layer_border(_, new_bounds: QRect) -> None:
-            self._active_layer_outline.outlined_region = QRectF(new_bounds)
-
-        def _update_active_layer_tracking(active_id: int, _) -> None:
-            if active_id != self._active_layer_id:
-                last_active = layer_stack.get_layer_by_id(self._active_layer_id)
-                if last_active is not None:
-                    last_active.bounds_changed.disconnect(_update_active_layer_border)
-                self._active_layer_id = active_id
-                if active_id is not None:
-                    new_active_layer = layer_stack.get_layer_by_id(active_id)
-                    if new_active_layer is not None:
-                        new_active_layer.bounds_changed.connect(_update_active_layer_border)
-                        self._active_layer_outline.outlined_region = QRectF(new_active_layer.geometry)
-                        self._active_layer_outline.setVisible(True)
-                else:
-                    self._active_layer_outline.setVisible(False)
-        layer_stack.active_layer_changed.connect(_update_active_layer_tracking)
+        layer_stack.active_layer_changed.connect(self._active_layer_change_slot)
 
         # border drawn when zoomed to selection:
         self._border = Border(self.scene(), self)
@@ -124,89 +65,20 @@ class ImageViewer(ImageGraphicsView):
         self._border.setOpacity(SELECTION_BORDER_OPACITY)
         self._border.setVisible(False)
 
-        def update_selection_only_bounds():
-            """Sync 'inpaint masked only' bounds with mask layer changes."""
-            bounds = mask_layer.get_masked_area()
-            if bounds is not None:
-                self._masked_selection_outline.setVisible(mask_layer.visible)
-                self._masked_selection_outline.outlined_region = QRectF(bounds)
-            else:
-                self._masked_selection_outline.setVisible(False)
-        mask_layer.content_changed.connect(update_selection_only_bounds)
-
-        def update_masked_selection_visibility(visible):
-            """Sync visibility between outline and mask layer."""
-            self._masked_selection_outline.setVisible(visible)
-            if visible:
-                update_selection_only_bounds()
-        config.connect(self, AppConfig.INPAINT_FULL_RES, update_masked_selection_visibility)
-        config.connect(self, AppConfig.INPAINT_FULL_RES_PADDING, update_selection_only_bounds)
-
         # Connect layer stack event handlers:
         layer_stack.visible_content_changed.connect(self._update_drawn_borders)
+        layer_stack.size_changed.connect(self._image_size_changed_slot)
+        layer_stack.selection_bounds_changed.connect(self._image_selection_change_slot)
+        layer_stack.layer_added.connect(self._layer_added_slot)
+        layer_stack.layer_removed.connect(self._layer_removed_slot)
 
-        def set_size(new_size: QSize) -> None:
-            """Update bounds and background when the image size changes."""
-            if new_size.width() <= 0 or new_size.height() <= 0:
-                return
-            self.content_size = new_size
-            self._update_drawn_borders()
-            self.resizeEvent(None)
-
-        layer_stack.size_changed.connect(set_size)
-        set_size(self.content_size)
-
-        def update_selection(new_rect: QRect, _: Optional[QRect]) -> None:
-            """Update the viewer content when the selection changes."""
-            self._selection = new_rect
-            self._update_drawn_borders()
-            self.resetCachedContent()
-            if self.follow_selection:
-                self.zoom_to_selection()
-            self.update()
-
-        layer_stack.selection_bounds_changed.connect(update_selection)
-
-        def add_layer(new_layer: ImageLayer, index: int) -> None:
-            """Adds an image layer into the view."""
-            layer_item = ImageViewer.LayerItem(new_layer)
-            layer_item.setZValue(-index)
-            layer_item.setPos(new_layer.position)
-            self._layer_items[new_layer] = layer_item
-            self.scene().addItem(layer_item)
-            for outline in (self._selection_outline, self._masked_selection_outline, self._active_layer_outline,
-                            self._border):
-                outline.setZValue(max(self._selection_outline.zValue(), index + 1))
-            if new_layer.id in self._hidden:
-                layer_item.hidden = True
-            if layer_item.isVisible():
-                self.resetCachedContent()
-                self.update()
-
-        layer_stack.layer_added.connect(add_layer)
-        add_layer(layer_stack.mask_layer, -1)
+        # Manually trigger signal handlers to set up the initial state:
+        self._image_size_changed_slot(self.content_size)
+        self._layer_added_slot(layer_stack.mask_layer, -1)
         for i in range(layer_stack.count):
-            add_layer(layer_stack.get_layer_by_index(i), i)
-
-        def remove_layer(removed_layer: ImageLayer) -> None:
-            """Removes an image layer from the view."""
-            layer_item = self._layer_items[removed_layer]
-            layer_was_visible = layer_item.isVisible()
-            self.scene().removeItem(layer_item)
-            for item in self._layer_items.values():
-                if item.zValue() < layer_item.zValue():
-                    item.setZValue(item.zValue() + 1)
-            del self._layer_items[removed_layer]
-            if layer_was_visible:
-                self.update()
-        layer_stack.layer_removed.connect(remove_layer)
-
+            self._layer_added_slot(layer_stack.get_layer_by_index(i), i)
+        self._image_selection_change_slot(layer_stack.selection, None)
         self.resizeEvent(None)
-        # Add initial layers to the view:
-        for i in range(layer_stack.count):
-            layer = self._layer_stack.get_layer_by_index(i)
-            add_layer(layer, i)
-        update_selection(layer_stack.selection, None)
 
     def zoom_to_selection(self) -> None:
         """Adjust viewport scale and offset to center the selected editing area in the view."""
@@ -221,22 +93,22 @@ class ImageViewer(ImageGraphicsView):
     def stop_rendering_layer(self, layer: ImageLayer) -> None:
         """Makes the ImageViewer stop direct rendering of a particular layer until further notice."""
         self._hidden.add(layer.id)
-        if layer in self._layer_items:
-            self._layer_items[layer].hidden = True
+        if layer.id in self._layer_items:
+            self._layer_items[layer.id].hidden = True
         self.update()
 
     def resume_rendering_layer(self, layer: ImageLayer) -> None:
         """Makes the ImageViewer resume normal rendering for a layer."""
         self._hidden.discard(layer.id)
-        if layer in self._layer_items:
-            self._layer_items[layer].hidden = False
+        if layer.id in self._layer_items:
+            self._layer_items[layer.id].hidden = False
         self.update()
 
     def set_layer_opacity(self, layer: ImageLayer, opacity: float) -> None:
         """Updates the rendered opacity of a layer."""
         if layer not in self._layer_items:
             raise KeyError('Layer not yet present in the imageViewer')
-        self._layer_items[layer].setOpacity(opacity)
+        self._layer_items[layer.id].setOpacity(opacity)
 
     @property
     def follow_selection(self) -> bool:
@@ -313,3 +185,131 @@ class ImageViewer(ImageGraphicsView):
             self._masked_selection_outline.outlined_region = QRectF(bounds)
         else:
             self._masked_selection_outline.setVisible(False)
+
+    def _update_layer_z_values(self) -> None:
+        """Ensure layer item zValues are in sync with the layer stack state."""
+        for layer_id, layer_item in self._layer_items.items():
+            if layer_id == self._layer_stack.mask_layer.id:
+                continue
+            index = self._layer_stack.get_layer_index(layer_id)
+            assert index is not None, f'Layer {layer_id} found in view but not in layer stack.'
+            layer_item.setZValue(-index)
+
+    # Signal handlers: sync with image/layer changes:
+    def _active_layer_bounds_changed_slot(self, _, new_bounds: QRect) -> None:
+        self._active_layer_outline.outlined_region = QRectF(new_bounds)
+
+    def _active_layer_change_slot(self, active_id: int, _) -> None:
+        if active_id != self._active_layer_id:
+            last_active = self._layer_stack.get_layer_by_id(self._active_layer_id)
+            if last_active is not None:
+                last_active.bounds_changed.disconnect(self._active_layer_bounds_changed_slot)
+            self._active_layer_id = active_id
+            if active_id is not None:
+                new_active_layer = self._layer_stack.get_layer_by_id(active_id)
+                if new_active_layer is not None:
+                    new_active_layer.bounds_changed.connect(self._active_layer_bounds_changed_slot)
+                    self._active_layer_outline.outlined_region = QRectF(new_active_layer.geometry)
+                    self._active_layer_outline.setVisible(True)
+            else:
+                self._active_layer_outline.setVisible(False)
+        self._update_layer_z_values()
+
+    def _mask_content_change_slot(self) -> None:
+        """Sync 'inpaint masked only' bounds with mask layer changes."""
+        mask_layer = self._layer_stack.mask_layer
+        bounds = mask_layer.get_masked_area()
+        if bounds is not None:
+            self._masked_selection_outline.setVisible(mask_layer.visible)
+            self._masked_selection_outline.outlined_region = QRectF(bounds)
+        else:
+            self._masked_selection_outline.setVisible(False)
+
+    def _image_size_changed_slot(self, new_size: QSize) -> None:
+        """Update bounds and background when the image size changes."""
+        if new_size.width() <= 0 or new_size.height() <= 0:
+            return
+        self.content_size = new_size
+        self._update_drawn_borders()
+        self.resizeEvent(None)
+
+    def _image_selection_change_slot(self, new_rect: QRect, _: Optional[QRect]) -> None:
+        """Update the viewer content when the selection changes."""
+        self._selection = new_rect
+        self._update_drawn_borders()
+        self.resetCachedContent()
+        if self.follow_selection:
+            self.zoom_to_selection()
+        self.update()
+
+    def _layer_added_slot(self, new_layer: ImageLayer, index: int) -> None:
+        """Adds a new image layer into the view."""
+        layer_item = _LayerItem(new_layer)
+        layer_item.setZValue(-index)
+        layer_item.setPos(new_layer.position)
+        self._layer_items[new_layer.id] = layer_item
+        self.scene().addItem(layer_item)
+        for outline in (self._selection_outline, self._masked_selection_outline, self._active_layer_outline,
+                        self._border):
+            outline.setZValue(max(self._selection_outline.zValue(), index + 1))
+        if new_layer.id in self._hidden:
+            layer_item.hidden = True
+        self._update_layer_z_values()
+        if layer_item.isVisible():
+            self.resetCachedContent()
+            self.update()
+
+    def _layer_removed_slot(self, removed_layer: ImageLayer) -> None:
+        """Removes an image layer from the view."""
+        layer_item = self._layer_items[removed_layer.id]
+        layer_was_visible = layer_item.isVisible()
+        self.scene().removeItem(layer_item)
+        del self._layer_items[removed_layer.id]
+        self._update_layer_z_values()
+        if layer_was_visible:
+            self.update()
+
+
+class _LayerItem(QGraphicsPixmapItem):
+    """Renders an image layer into a QGraphicsScene."""
+
+    def __init__(self, layer: ImageLayer):
+        super().__init__()
+        assert_type(layer, ImageLayer)
+        self._layer = layer
+        self._hidden = False
+
+        layer.visibility_changed.connect(self._update_visibility)
+        layer.content_changed.connect(self._update_pixmap)
+        layer.opacity_changed.connect(self.setOpacity)
+        layer.bounds_changed.connect(self._update_position)
+        self.setOpacity(layer.opacity)
+        self.setVisible(layer.visible)
+        self._update_pixmap(layer)
+
+    def __del__(self):
+        self._layer.visibility_changed.disconnect(self._update_visibility)
+        self._layer.content_changed.disconnect(self._update_pixmap)
+        self._layer.opacity_changed.disconnect(self.setOpacity)
+        self._layer.bounds_changed.disconnect(self._update_position)
+
+    @property
+    def hidden(self) -> bool:
+        """Returns whether this layer is currently hidden."""
+        return self._hidden
+
+    @hidden.setter
+    def hidden(self, hidden: bool) -> None:
+        """Sets whether the layer should be hidden in the view regardless of layer visibility."""
+        self._hidden = hidden
+        self.setVisible(self._layer.visible and not hidden)
+
+    def _update_pixmap(self, _) -> None:
+        self.setPixmap(self._layer.pixmap)
+        self.update()
+
+    def _update_visibility(self, _, visible: bool) -> None:
+        self.setVisible(visible and not self.hidden)
+
+    def _update_position(self, _, new_bounds: QRect) -> None:
+        self.setPos(new_bounds.topLeft())

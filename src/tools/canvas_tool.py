@@ -40,7 +40,6 @@ class CanvasTool(BaseTool):
         super().__init__()
         self._config = config
         self._layer = None
-        self._active = False
         self._drawing = False
         self._cached_size = None
         self._tablet_pressure = None
@@ -68,12 +67,11 @@ class CanvasTool(BaseTool):
 
         for key, sign in ((AppConfig.BRUSH_SIZE_DECREASE, -1), (AppConfig.BRUSH_SIZE_INCREASE, 1)):
             def _size_change(mult, step=sign) -> bool:
-                if not hasattr(self, 'adjust_brush_size'):
+                if not hasattr(self, 'adjust_brush_size') or not self.is_active:
                     return False
                 self.adjust_brush_size(step * mult)
                 return True
-            HotkeyFilter.instance().register_speed_modified_keybinding(_size_change, self._config, key,
-                                                                       self._control_panel)
+            HotkeyFilter.instance().register_speed_modified_keybinding(_size_change, self._config, key)
 
     def set_scaling_icon_cursor(self, icon: Optional[QIcon]) -> None:
         """Sets whether the tool should use a cursor scaled to the brush size and canvas.
@@ -155,16 +153,24 @@ class CanvasTool(BaseTool):
         """Updates the active brush color."""
         self._canvas.brush_color = new_color
 
-    def on_activate(self) -> None:
+    def _on_activate(self) -> None:
         """Connect the canvas to the active layer."""
-        self._active = True
         if self._layer is not None:
             self.layer = self._layer  # Re-apply the connection
         self.update_brush_cursor()
 
-    def on_deactivate(self) -> None:
+    def _on_deactivate(self) -> None:
         """Disconnect from the image when the tool is inactive."""
-        self._active = False
+        if self._drawing:
+            self._drawing = False
+            if self._cached_size:
+                self.brush_size = self._cached_size
+                self._cached_size = None
+            self._canvas.end_stroke()
+            self._tablet_input = None
+            self._tablet_pressure = None
+            self._tablet_x_tilt = None
+            self._tablet_y_tilt = None
         if self._layer is not None:
             self._image_viewer.resume_rendering_layer(self._layer)
         self._canvas.connect_to_layer(None)
@@ -194,6 +200,7 @@ class CanvasTool(BaseTool):
                 if self._cached_size is None:
                     self._cached_size = self._canvas.brush_size
                 self.brush_size = 1
+                print(f'1px mode, cached {self._cached_size}')
             self._canvas.start_stroke()
             self._stroke_to(image_coordinates)
             return True
@@ -237,7 +244,7 @@ class CanvasTool(BaseTool):
 
     def update_brush_cursor(self) -> None:
         """Recalculates the brush cursor size if using a scaling cursor."""
-        if not self._active or self._scaling_cursor is False or self._scaled_icon_cursor is None:
+        if not self.is_active or self._scaling_cursor is False or self._scaled_icon_cursor is None:
             return
         brush_cursor_size = int(self.brush_size * self._image_viewer.scene_scale)
         if brush_cursor_size < MIN_CURSOR_SIZE:

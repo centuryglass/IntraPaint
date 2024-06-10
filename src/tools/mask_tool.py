@@ -164,16 +164,16 @@ class MaskTool(CanvasTool):
             offset *= 10
         self._config.set(AppConfig.MASK_BRUSH_SIZE, max(1, self._canvas.brush_size + offset))
 
-    def on_activate(self) -> None:
+    def _on_activate(self) -> None:
         """Override MyPaint tool to keep mask layer visible."""
-        super().on_activate()
+        super()._on_activate()
         self._image_viewer.resume_rendering_layer(self.layer)
 
     def mouse_click(self, event: Optional[QMouseEvent], image_coordinates: QPoint) -> bool:
         """Hide the mask layer while actively drawing."""
         if event.buttons() == Qt.LeftButton or event.buttons() == Qt.RightButton:
             self._image_viewer.stop_rendering_layer(self.layer)
-            self._canvas.z_value = self._layer_stack.count + 1
+            self._canvas.z_value = 1
         return super().mouse_click(event, image_coordinates)
 
     def mouse_release(self, event: Optional[QMouseEvent], image_coordinates: QPoint) -> bool:
