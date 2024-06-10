@@ -1,11 +1,15 @@
 """Passes ImageViewer input events to an active editing tool."""
 from typing import Optional, Dict, Callable, List, cast
+import logging
 
 from PyQt5.QtCore import Qt, QObject, QEvent
 from PyQt5.QtGui import QKeyEvent, QKeySequence
 from PyQt5.QtWidgets import QApplication, QWidget, QTextEdit, QLineEdit, QPlainTextEdit, QAbstractSpinBox, QComboBox
 
-from src.util.key_code_utils import get_modifiers
+from src.config.application_config import AppConfig
+from src.util.key_code_utils import get_modifiers, get_modifier_string, get_key_string
+
+logger = logging.getLogger(__name__)
 
 
 class HotkeyFilter(QObject):
@@ -56,35 +60,90 @@ class HotkeyFilter(QObject):
            returns focus to the focus widget."""
         self._default_focus = focus_widget
 
-    def register_keybinding(self, action: Callable[[], bool], key: Qt.Key | int,
+    def register_keybinding(self, action: Callable[[], bool], keys: QKeySequence,
                             modifiers: Qt.KeyboardModifier | Qt.KeyboardModifiers | int = Qt.NoModifier,
                             widget: Optional[QWidget] = None) -> None:
         """Register a keystroke that should invoke an action.
+
+        If keybindings share a key, newer ones will be checked before older ones. This makes it easier to add
+        context-specific overrides for keys that only take effect when a particular widget is present.
 
         Parameters
         ----------
         action: Callable
             Function the key binding should invoke. Returns whether the function consumed the key event.
-        key: Qt.Key
-            Keypress that should invoke the action.
+        keys: QKeySequence
+            List of valid keys that should invoke the action.
         modifiers: Qt.KeyboardModifiers, optional
             Exact keyboard modifiers required to invoke the action, defaults to Qt.NoModifier.
         widget: QWidget, optional
             If not None, the action should only be invoked if this widget is showing.
         """
-        assert isinstance(key, (Qt.Key, int)) and key != Qt.Key_unknown, f'Invalid key: {key}'
-        key_string = QKeySequence(key).toString()
-        if '+' in key_string:  # Divide out any modifiers passed in via the key parameter
-            if modifiers is None:
-                modifiers = Qt.KeyboardModifier.NoModifier
-            keys = key_string.split('+')
-            modifiers = modifiers | get_modifiers(keys[:-1])
-            key = QKeySequence(keys[-1])[0]
+        for key in keys:
+            assert key != Qt.Key_unknown, 'Invalid keybinding'
+            key_string = get_key_string(key)
+            key_modifiers = modifiers
+            if '+' in key_string:  # Divide out any modifiers passed in via the key parameter
+                if key_modifiers is None:
+                    key_modifiers = Qt.KeyboardModifier.NoModifier
+                keys = key_string.split('+')
+                key_modifiers = key_modifiers | get_modifiers(keys[:-1])
+                key = QKeySequence(keys[-1])[0]
 
-        keybinding = HotkeyFilter.KeyBinding(action, key, modifiers, widget)
-        if key not in self._bindings:
-            self._bindings[key] = []
-        self._bindings[key].append(keybinding)
+            keybinding = HotkeyFilter.KeyBinding(action, key, key_modifiers, widget)
+            if key not in self._bindings:
+                self._bindings[key] = []
+            self._bindings[key].insert(0, keybinding)
+
+    def register_config_keybinding(self, action: Callable[[], bool], config: AppConfig, config_key: str,
+                                   widget: Optional[QWidget]) -> None:
+        """Register a keybinding defined in application config.
+
+        Parameters
+        ----------
+        action: Callable
+            Function the key binding should invoke. Returns whether the function consumed the key event.
+        config: AppConfig
+            Config object holding the keybindings.
+        config_key: str
+            Key string for the appropriate key or keys.
+        widget: QWidget, optional
+            If not None, the action should only be invoked if this widget is showing.
+        """
+        keys = config.get_keycodes(config_key)
+        self.register_keybinding(action, keys, Qt.NoModifier, widget)
+
+    def register_speed_modified_keybinding(self, scaling_action: Callable[[int], bool], config: AppConfig,
+                                           config_key: str, widget: Optional[QWidget]) -> None:
+        """Register a keybinding defined in application config that's affected by the speed modifier.
+
+        If the speed_modifier key has a valid definition in the config file, some actions operate at increased speed if
+        that modifier is held. This function will register both the base and increased speed versions of those bindings.
+
+        Parameters
+        ----------
+        scaling_action: Callable[[int], bool]
+            Function the key binding should invoke. The int parameter is a multiplier that the function should apply to
+            some scalar action it performs. Return value is whether the function consumed the key event.
+        config: AppConfig
+            Config object holding the keybindings.
+        config_key: str
+            Key string for the appropriate key or keys.
+        widget: QWidget, optional
+            If not None, the action should only be invoked if this widget is showing.
+        """
+        keys = config.get_keycodes(config_key)
+        self.register_keybinding(lambda: scaling_action(1), keys, Qt.NoModifier, widget)
+
+        modifier_string = config.get(AppConfig.SPEED_MODIFIER)
+        try:
+            modifier = get_modifiers(modifier_string)
+        except RuntimeError:
+            logger.error(f'Unsupported speed_modifier {modifier_string} not applied to {config_key} binding')
+            return
+        if modifier != Qt.KeyboardModifier.NoModifier:
+            multiplier = config.get(AppConfig.SPEED_MODIFIER_MULTIPLIER)
+            self.register_keybinding(lambda: scaling_action(multiplier), keys, modifier, widget)
 
     def eventFilter(self, source: Optional[QObject], event: Optional[QEvent]) -> bool:
         """Check for registered keys and trigger associated actions."""
@@ -104,12 +163,22 @@ class HotkeyFilter(QObject):
         if event.key() not in self._bindings:
             return super().eventFilter(source, event)
         event_handled = False
-        for binding in self._bindings[event.key()]:
+        for i, binding in enumerate(self._bindings[event.key()]):
             if binding.widget is not None and not binding.widget.isVisible():
+                logger.debug(
+                    f'{event.text()}: not claimed by handler {i} of {len(self._bindings[event.key()])}: widget hidden')
                 continue
             if binding.modifiers != QApplication.keyboardModifiers():
+                logger.debug(
+                    f'{event.text()}: not claimed by handler {i} of {len(self._bindings[event.key()])}: modifier'
+                    f' mismatch, expected {get_modifier_string(binding.modifiers)}, found'
+                    f' {get_modifier_string(QApplication.keyboardModifiers())}')
                 continue
             event_handled = binding.action()
             if event_handled:
+                logger.debug(f'{event.text()}: claimed by handler {i} of {len(self._bindings[event.key()])}')
                 break
+            else:
+                logger.debug(
+                    f'{event.text()}: not claimed by handler {i} of {len(self._bindings[event.key()])}: got {event_handled}')
         return event_handled

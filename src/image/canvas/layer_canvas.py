@@ -47,8 +47,10 @@ class LayerCanvas:
             self._layer.bounds_changed.connect(self._handle_bounds_change)
             if self._edit_region is None:
                 self.edit_region = QRect(0, 0, self._layer.width, self._layer.height)
-            self._update_canvas_position(self._layer, self._layer.position)
-            self._load_layer_content(self._layer)
+                self._update_canvas_position(self._layer, self._layer.position)
+            else:
+                self._handle_bounds_change(new_layer, new_layer.geometry)
+        self._load_layer_content(self._layer)
 
     @property
     def eraser(self) -> bool:
@@ -154,6 +156,7 @@ class LayerCanvas:
         if new_bounds.size() != self._edit_region.size():
             self._update_scene_content_bounds(QRect(self._edit_region.topLeft(), new_bounds.size()))
         self._update_canvas_position(layer, new_bounds.topLeft())
+        self._edit_region = new_bounds
 
     def _update_canvas_position(self, layer: ImageLayer, new_position: QPoint) -> None:
         """Updates the canvas position within the graphics scene."""

@@ -2,7 +2,7 @@
 from typing import Optional
 
 from PyQt5.QtCore import Qt, QPoint
-from PyQt5.QtGui import QIcon, QCursor, QColor, QMouseEvent
+from PyQt5.QtGui import QIcon, QCursor, QColor, QMouseEvent, QKeySequence
 from PyQt5.QtWidgets import QWidget, QColorDialog
 
 from src.config.application_config import AppConfig
@@ -29,10 +29,9 @@ class EyedropperTool(BaseTool):
         cursor_icon = QIcon(RESOURCES_EYEDROPPER_CURSOR)
         self.cursor = QCursor(cursor_icon.pixmap(CURSOR_SIZE, CURSOR_SIZE), 0, CURSOR_SIZE)
 
-    def get_hotkey(self) -> Qt.Key:
-        """Returns the hotkey that should activate this tool."""
-        key = self._config.get_keycodes(AppConfig.EYEDROPPER_TOOL_KEY)
-        return key[0]
+    def get_hotkey(self) -> QKeySequence:
+        """Returns the hotkey(s) that should activate this tool."""
+        return self._config.get_keycodes(AppConfig.EYEDROPPER_TOOL_KEY)
 
     def get_icon(self) -> QIcon:
         """Returns an icon used to represent this tool."""

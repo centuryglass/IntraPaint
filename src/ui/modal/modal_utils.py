@@ -30,6 +30,7 @@ def show_error_dialog(parent: Optional[QWidget], title: str, error: str | BaseEx
     messagebox.setWindowTitle(title)
     messagebox.setText(f'{error}')
     messagebox.setWindowIcon(get_standard_qt_icon(QStyle.SP_MessageBoxWarning, parent))
+    messagebox.setIcon(QMessageBox.Icon.Critical)
     messagebox.setStandardButtons(QMessageBox.Ok)
     messagebox.exec()
 

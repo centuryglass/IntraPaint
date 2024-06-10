@@ -59,6 +59,42 @@ def get_modifiers(modifier_str: str | List[str]) -> Qt.KeyboardModifier | Qt.Key
     return modifiers
 
 
+def get_modifier_string(modifiers: Qt.KeyboardModifier | Qt.KeyboardModifiers | int) -> str:
+    """Get the string representation of one or more keyboard modifiers."""
+    mod_strings = []
+    for code, name in ((Qt.KeyboardModifier.AltModifier, 'Alt'),
+                       (Qt.KeyboardModifier.ShiftModifier, 'Shift'),
+                       (Qt.KeyboardModifier.ControlModifier, 'Ctrl'),
+                       (Qt.KeyboardModifier.MetaModifier, 'Meta')):
+        if (code & modifiers) == code:
+            mod_strings.append(name)
+    return '+'.join(mod_strings)
+
+
+def get_key_display_string(keys: QKeySequence) -> str:
+    """Creates a display string representing a set of keys, replacing common symbols with appropriate characters."""
+    text = keys.toString()
+    symbol_map = {
+        'Ctrl+': '⌃',
+        'Alt+': '⎇',
+        'Meta+': '⌘',
+        'Shift+': '⇧',
+        'Enter': '⏎',
+        'Del': '⌫',
+        'Home': '⇱',
+        'End': '⇲',
+        'PgUp': '⇞',
+        'PgDown': '⇟',
+        'Up': '↑',
+        'Down': '↓',
+        'Left': '←',
+        'Right': '→'
+    }
+    for key, symbol in symbol_map.items():
+        text = text.replace(key, symbol)
+    return text
+
+
 def _speed_modifier_held(config: AppConfig) -> bool:
     speed_modifier = config.get(AppConfig.SPEED_MODIFIER)
     if speed_modifier == '':

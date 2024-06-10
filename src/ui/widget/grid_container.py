@@ -183,6 +183,8 @@ class GridContainer(QWidget):
             column_count = max(min(math.ceil(len(self._children) / row_count), max_cols), min_cols)
         elif self._fill_horizontal:
             column_count = max(min(self.width() // self._children[-1].sizeHint().width(), max_cols), min_cols)
+            while (self._children[-1].sizeHint().width() * column_count) >= self.width() and column_count > min_cols:
+                column_count -= 1
         else:
             full_area = self.width() * self.height()
             best_fraction = 0

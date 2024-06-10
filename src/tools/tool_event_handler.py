@@ -1,7 +1,7 @@
 """Passes ImageViewer input events to an active editing tool."""
 from typing import Optional, cast, Dict
 from PyQt5.QtCore import Qt, QObject, QEvent, QRect, QPoint, pyqtSignal
-from PyQt5.QtGui import QKeyEvent, QMouseEvent, QTabletEvent, QWheelEvent
+from PyQt5.QtGui import QKeyEvent, QMouseEvent, QTabletEvent, QWheelEvent, QKeySequence
 from PyQt5.QtWidgets import QApplication
 
 from src.ui.image_viewer import ImageViewer
@@ -26,8 +26,9 @@ class ToolEventHandler(QObject):
         image_viewer.setMouseTracking(True)
         image_viewer.installEventFilter(self)
 
-    def register_hotkey(self, key: Qt.Key, tool: BaseTool) -> None:
-        """Register a keystroke that should load a specific tool."""
+    def register_hotkeys(self, tool: BaseTool) -> None:
+        """Register key(s) that should load a specific tool."""
+        keys = tool.get_hotkey()
 
         def set_active():
             """On hotkey press, set the active tool and consume the event if another tool was previously active."""
@@ -36,8 +37,8 @@ class ToolEventHandler(QObject):
             self.active_tool = tool
             self._image_viewer.focusWidget()
             return True
-
-        HotkeyFilter.instance().register_keybinding(set_active, key, Qt.KeyboardModifier.NoModifier, self._image_viewer)
+        HotkeyFilter.instance().register_keybinding(set_active, keys, Qt.KeyboardModifier.NoModifier,
+                                                    self._image_viewer)
 
     def register_tool_delegate(self, source_tool: BaseTool, delegate_tool: BaseTool,
                                modifiers: Qt.KeyboardModifiers | Qt.KeyboardModifier) -> None:
@@ -127,9 +128,6 @@ class ToolEventHandler(QObject):
             case QEvent.Type.MouseButtonRelease:
                 event = cast(QMouseEvent, event)
                 event_handled = active_tool.mouse_release(event, find_image_coordinates(event))
-            case QEvent.Type.KeyPress | QEvent.Type.KeyRelease:
-                event = cast(QKeyEvent, event)
-                event_handled = active_tool.key_event(event)
             case QEvent.Type.TabletMove | QEvent.Type.TabletEnterProximity | QEvent.Type.TabletLeaveProximity | \
                  QEvent.Type.TabletPress | QEvent.Type.TabletRelease:
                 event = cast(QTabletEvent, event)

@@ -7,6 +7,8 @@ from typing import Any
 import logging
 import atexit
 
+from src.ui.modal.modal_utils import show_error_dialog
+
 logging.basicConfig(filename='intrapaint.log', format='%(asctime)s : %(levelname)s : %(name)s: %(message)s',
                     level=logging.INFO)
 from src.controller.mock_controller import MockController
@@ -105,12 +107,7 @@ def parse_args_and_start() -> None:
             controller = MockController(args)
         case _:
             raise RuntimeError(f'Exiting: invalid or unsupported mode "{controller_mode}"')
-
-    try:
-        controller.start_app()
-    except Exception as err:
-        logger.exception('main crashed, error: %s', err)
-        raise err
+    controller.start_app()
 
 
 def exit_log():
@@ -121,4 +118,9 @@ def exit_log():
 atexit.register(exit_log)
 
 if __name__ == '__main__':
-    parse_args_and_start()
+    try:
+        parse_args_and_start()
+    except Exception as err:
+        logger.exception('main crashed, error: %s', err)
+        show_error_dialog(None, title="IntraPaint has crashed.", error=err)
+        raise err

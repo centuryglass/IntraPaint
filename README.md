@@ -10,8 +10,8 @@ Collaborate with AI to make art.
 |:-------------------------------------------------:| 
 | *2. Generate options, pick the one you like best* |
 
-| ![example-3.png](./examples/example-3.png) | 
-|:--:| 
+| ![example-3.png](./examples/example-3.png)  | 
+|:-------------------------------------------:| 
 | *3. Your choice is inserted into the image* |
 
 | ![example-4.png](./examples/example-4.png) | 

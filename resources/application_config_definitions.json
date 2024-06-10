@@ -626,7 +626,7 @@
         "category": "Keybindings",
         "description": "Move the generation selection left",
         "type": "string",
-        "default": "Left",
+        "default": "Left,A,H",
         "saved": true
     },
     "move_right": {
@@ -634,7 +634,7 @@
         "category": "Keybindings",
         "description": "Move the generation selection right",
         "type": "string",
-        "default": "Right",
+        "default": "Right,D,L",
         "saved": true
     },
     "move_up": {
@@ -642,7 +642,7 @@
         "category": "Keybindings",
         "description": "Move the generation selection up",
         "type": "string",
-        "default": "Up",
+        "default": "Up,W,K",
         "saved": true
     },
     "move_down": {
@@ -650,7 +650,7 @@
         "category": "Keybindings",
         "description": "Move the generation selection down",
         "type": "string",
-        "default": "Down",
+        "default": "Down,S,J",
         "saved": true
     },
     "brush_size_increase": {
@@ -706,7 +706,23 @@
         "category": "Keybindings",
         "description": "Activate the selection tool to pick an image area for AI image generation.",
         "type": "string",
-        "default": "S",
+        "default": "G",
+        "saved": true
+    },
+    "rotate_ccw_key": {
+        "label": "Rotate layer counter-clockwise:",
+        "category": "Keybindings",
+        "description": "Rotates the layer when the layer transformation tool is active",
+        "type": "string",
+        "default": "o",
+        "saved": true
+    },
+    "rotate_cw_key": {
+        "label": "Rotate layer clockwise:",
+        "category": "Keybindings",
+        "description": "Rotates the layer when the layer transformation tool is active",
+        "type": "string",
+        "default": "p",
         "saved": true
     },
     "new_image_shortcut": {
@@ -838,7 +854,7 @@
         "saved": true
     },
     "delete_layer_shortcut": {
-        "label": "Delete layere",
+        "label": "Delete layer",
         "category": "Keybindings",
         "description": "Delete the active layer.",
         "type": "string",

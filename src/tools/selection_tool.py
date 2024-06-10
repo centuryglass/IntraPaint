@@ -3,7 +3,7 @@
 from typing import Optional, cast
 
 from PyQt5.QtCore import Qt, QRect, QPoint
-from PyQt5.QtGui import QMouseEvent, QKeyEvent, QCursor, QIcon
+from PyQt5.QtGui import QMouseEvent, QKeyEvent, QCursor, QIcon, QKeySequence
 from PyQt5.QtWidgets import QWidget, QApplication, QLabel, QSlider, QDoubleSpinBox, \
     QPushButton, QGridLayout
 
@@ -42,10 +42,9 @@ class SelectionTool(BaseTool):
         self._control_panel = None
         self._control_layout = None
 
-    def get_hotkey(self) -> Qt.Key:
-        """Returns the hotkey that should activate this tool."""
-        key = self._config.get_keycodes(AppConfig.GENERATION_AREA_SELECTION_TOOL_KEY)
-        return key[0]
+    def get_hotkey(self) -> QKeySequence:
+        """Returns the hotkey(s) that should activate this tool."""
+        return self._config.get_keycodes(AppConfig.GENERATION_AREA_SELECTION_TOOL_KEY)
 
     def get_icon(self) -> QIcon:
         """Returns an icon used to represent this tool."""

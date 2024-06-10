@@ -106,6 +106,7 @@ class BrushPanel(QTabWidget):
         if tab_name in self._pages:
             return
         content = GridContainer()
+        content.fill_horizontal = True
         self._pages[tab_name] = content
         if index is None:
             self.addTab(content, tab_name)

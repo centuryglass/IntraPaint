@@ -142,6 +142,9 @@ class Label(QLabel):
             label_image = QPixmap(image_size)
             label_image.fill(bg)
             painter = QPainter(label_image)
+            painter.setRenderHint(QPainter.RenderHint.LosslessImageRendering, True)
+            painter.setRenderHint(QPainter.RenderHint.SmoothPixmapTransform, True)
+            painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
             painter.fillPath(path, fg)
             painter.end()
             return label_image

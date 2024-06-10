@@ -8,7 +8,7 @@ from PyQt5.QtWidgets import QLabel, QHBoxLayout, QVBoxLayout, QGridLayout, QPush
 
 from src.config.application_config import AppConfig
 from src.image.layer_stack import LayerStack
-from src.ui.config_control_setup import connected_textedit, connected_spinbox, connected_combobox, connected_checkbox
+from src.ui.config_control_setup import connected_textedit, connected_spinbox, connected_combobox
 from src.ui.panel.controlnet_panel import ControlnetPanel
 from src.ui.widget.big_int_spinbox import BigIntSpinbox
 from src.ui.widget.bordered_widget import BorderedWidget
@@ -216,21 +216,6 @@ class StableDiffusionMainWindow(MainWindow):
         padding_layout_update(self._config.get(AppConfig.INPAINT_FULL_RES))
         self._config.connect(self, AppConfig.INPAINT_FULL_RES, padding_layout_update)
         self._config.connect(self, AppConfig.EDIT_MODE, lambda mode: padding_layout_update(mode == EDIT_MODE_INPAINT))
-
-        checkbox_line = QHBoxLayout()
-        option_list_layout.addLayout(checkbox_line)
-        checkbox_line.addWidget(QLabel(self._config.get_label(AppConfig.RESTORE_FACES)), stretch=4)
-        face_checkbox = connected_checkbox(option_list, self._config, AppConfig.RESTORE_FACES)
-        checkbox_line.addWidget(face_checkbox, stretch=1)
-        checkbox_line.addWidget(QLabel(self._config.get_label(AppConfig.TILING)), stretch=4)
-        tiling_checkbox = connected_checkbox(option_list, self._config, AppConfig.TILING)
-        checkbox_line.addWidget(tiling_checkbox, stretch=1)
-
-        inpaint_line = QHBoxLayout()
-        option_list_layout.addLayout(inpaint_line)
-        inpaint_line.addWidget(QLabel(self._config.get_label(AppConfig.INPAINT_FULL_RES)), stretch=4)
-        inpaint_checkbox = connected_checkbox(option_list, self._config, AppConfig.INPAINT_FULL_RES)
-        inpaint_line.addWidget(inpaint_checkbox, stretch=1)
 
         seed_input = connected_spinbox(option_list, self._config, AppConfig.SEED, min_val=-1,
                                        max_val=BigIntSpinbox.MAXIMUM, step_val=1)

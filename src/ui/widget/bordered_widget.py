@@ -2,9 +2,11 @@
 A simple widget that just draws a border around its content.
 """
 from typing import Optional
+
+from PyQt5.QtCore import QMargins
+from PyQt5.QtGui import QColor, QPalette
 from PyQt5.QtWidgets import QFrame, QWidget
-from PyQt5.QtGui import QPainter, QColor, QPen, QPaintEvent, QPalette
-from PyQt5.QtCore import Qt, QPoint, QRect, QMargins
+
 from src.ui.util.contrast_color import contrast_color
 
 DEFAULT_MARGIN = 2

@@ -7,9 +7,10 @@ Supports the following:
 - Override the cursor when over the image viewer.
 """
 from typing import Optional
-from PyQt5.QtCore import Qt, QObject, pyqtSignal, QPoint, QEvent
+
+from PyQt5.QtCore import QObject, pyqtSignal, QPoint, QEvent
+from PyQt5.QtGui import QCursor, QPixmap, QMouseEvent, QTabletEvent, QWheelEvent, QIcon, QKeySequence
 from PyQt5.QtWidgets import QWidget
-from PyQt5.QtGui import QCursor, QPixmap, QMouseEvent, QTabletEvent, QKeyEvent, QWheelEvent, QIcon
 
 
 # noinspection PyMethodMayBeStatic
@@ -77,9 +78,9 @@ class BaseTool(QObject):
         self._cursor = new_cursor
         self.cursor_change.emit()
 
-    def get_hotkey(self) -> Qt.Key:
-        """Returns a hotkey that should activate this tool."""
-        raise NotImplementedError('BaseTool.get_hotkey needs to be implemented to return a Qt.Key code.')
+    def get_hotkey(self) -> QKeySequence:
+        """Returns a hotkey or list of keys that should activate this tool."""
+        raise NotImplementedError('BaseTool.get_hotkey needs to be implemented to return a QKeySequence.')
 
     def get_icon(self) -> QIcon:
         """Returns an icon used to represent this tool."""
@@ -140,10 +141,6 @@ class BaseTool(QObject):
 
     def tablet_event(self, event: Optional[QTabletEvent], image_coordinates: QPoint) -> bool:
         """Receives a graphics tablet input event, returning whether the tool consumed the event."""
-        return False
-
-    def key_event(self, event: Optional[QKeyEvent]) -> bool:
-        """Receives a key press/key release event, returning whether the tool consumed the event."""
         return False
 
     def wheel_event(self, event: Optional[QWheelEvent]) -> bool:

@@ -2,7 +2,7 @@
 from typing import Optional
 
 from PyQt5.QtCore import Qt, QSize
-from PyQt5.QtGui import QPixmap, QColor, QIcon
+from PyQt5.QtGui import QPixmap, QColor, QIcon, QKeySequence
 from PyQt5.QtWidgets import QVBoxLayout, QPushButton, QColorDialog, QWidget, QApplication
 
 from src.config.application_config import AppConfig
@@ -36,7 +36,7 @@ class BrushTool(CanvasTool):
         super().__init__(layer_stack, image_viewer, MyPaintLayerCanvas(image_viewer.scene()), config)
         self._config = config
         self._last_click = None
-        self._control_panel = None
+        self._control_layout = None
         self._active = False
         self._drawing = False
         self._cached_size = None
@@ -56,10 +56,9 @@ class BrushTool(CanvasTool):
 
         self.update_brush_cursor()
 
-    def get_hotkey(self) -> Qt.Key:
-        """Returns the hotkey that should activate this tool."""
-        key = self._config.get_keycodes(AppConfig.BRUSH_TOOL_KEY)
-        return key[0]
+    def get_hotkey(self) -> QKeySequence:
+        """Returns the hotkey(s) that should activate this tool."""
+        return self._config.get_keycodes(AppConfig.BRUSH_TOOL_KEY)
 
     def get_icon(self) -> QIcon:
         """Returns an icon used to represent this tool."""
@@ -75,11 +74,11 @@ class BrushTool(CanvasTool):
 
     def get_control_panel(self) -> Optional[QWidget]:
         """Returns the brush control panel."""
-        if self._control_panel is not None:
+        if self._control_layout is not None:
             return self._control_panel
         # Initialize control panel on first request:
-        self._control_panel = QWidget()
         control_layout = QVBoxLayout(self._control_panel)
+        self._control_layout = control_layout
 
         # Size slider:
         brush_size_slider = ParamSlider(self._control_panel, self._config.get_label(AppConfig.SKETCH_BRUSH_SIZE),

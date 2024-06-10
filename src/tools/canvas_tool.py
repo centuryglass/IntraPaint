@@ -2,12 +2,13 @@
 from typing import Optional
 
 from PyQt5.QtCore import Qt, QPoint, QSize, QRect
-from PyQt5.QtGui import QCursor, QTabletEvent, QMouseEvent, QColor, QIcon, QKeyEvent, QWheelEvent
-from PyQt5.QtWidgets import QApplication
+from PyQt5.QtGui import QCursor, QTabletEvent, QMouseEvent, QColor, QIcon, QWheelEvent
+from PyQt5.QtWidgets import QApplication, QWidget
 
 from src.config.application_config import AppConfig
-from src.image.image_layer import ImageLayer
+from src.hotkey_filter import HotkeyFilter
 from src.image.canvas.layer_canvas import LayerCanvas
+from src.image.image_layer import ImageLayer
 from src.image.layer_stack import LayerStack
 from src.tools.base_tool import BaseTool
 from src.ui.image_viewer import ImageViewer
@@ -55,6 +56,7 @@ class CanvasTool(BaseTool):
         image_viewer.scale_changed.connect(self.update_brush_cursor)
 
         # Create MyPaintLayerCanvas
+        self._control_panel = QWidget()
         self._layer_stack = layer_stack
         self._image_viewer = image_viewer
         self._canvas = canvas
@@ -63,6 +65,15 @@ class CanvasTool(BaseTool):
             """Sync canvas size with image size."""
             self._canvas.edit_region = QRect(QPoint(0, 0), new_size)
         self._layer_stack.size_changed.connect(update_size)
+
+        for key, sign in ((AppConfig.BRUSH_SIZE_DECREASE, -1), (AppConfig.BRUSH_SIZE_INCREASE, 1)):
+            def _size_change(mult, step=sign) -> bool:
+                if not hasattr(self, 'adjust_brush_size'):
+                    return False
+                self.adjust_brush_size(step * mult)
+                return True
+            HotkeyFilter.instance().register_speed_modified_keybinding(_size_change, self._config, key,
+                                                                       self._control_panel)
 
     def set_scaling_icon_cursor(self, icon: Optional[QIcon]) -> None:
         """Sets whether the tool should use a cursor scaled to the brush size and canvas.
@@ -154,9 +165,9 @@ class CanvasTool(BaseTool):
     def on_deactivate(self) -> None:
         """Disconnect from the image when the tool is inactive."""
         self._active = False
-        self._canvas.connect_to_layer(None)
         if self._layer is not None:
             self._image_viewer.resume_rendering_layer(self._layer)
+        self._canvas.connect_to_layer(None)
 
     # Event handlers:
     def _stroke_to(self, image_coordinates: QPoint) -> None:
@@ -244,21 +255,6 @@ class CanvasTool(BaseTool):
             return False
         speed_modifier = get_modifiers(speed_modifier)
         return QApplication.keyboardModifiers() & speed_modifier == speed_modifier
-
-    def key_event(self, event: Optional[QKeyEvent]) -> bool:
-        """Move selection with arrow keys."""
-        if event.type() != QKeyEvent.Type.KeyPress:
-            return False
-        size_down_key = self._config.get_keycodes(AppConfig.BRUSH_SIZE_DECREASE)[0]
-        size_up_key = self._config.get_keycodes(AppConfig.BRUSH_SIZE_INCREASE)[0]
-        if event.key() in (size_down_key, size_up_key):
-            if hasattr(self, 'adjust_brush_size'):
-                size_change = -1 if event.key() == size_down_key else 1
-                if self._speed_modifier_held():
-                    size_change *= self._config.get(AppConfig.SPEED_MODIFIER_MULTIPLIER)
-                self.adjust_brush_size(size_change)
-                return True
-        return False
 
     def wheel_event(self, event: Optional[QWheelEvent]) -> bool:
         """Adjust brush size if scrolling horizontal."""

@@ -57,29 +57,32 @@ class AppConfig(Config):
         if speed_modifier != '' and speed_modifier not in valid_modifiers:
             errors.append(f'Invalid key for speed_modifier option: found {speed_modifier}, expected {valid_modifiers}')
         for key_str in key_binding_options:
-            key_value = self.get(key_str)
-            if key_value != '' and QKeySequence(key_value)[0] == Qt.Key_unknown:
-                errors.append(f'"{key_str}" value "{key_value}" is not a recognized key')
-            elif any(mod_str in key_str for mod_str in speed_modifier_strings) and speed_modifier in valid_modifiers:
-                if speed_modifier in key_value:
-                    errors.append(f'"{key_str}" is set to {key_value}, but {speed_modifier} is the speed modifier key.'
-                                  f' This will cause {key_str} to always operate at 10x speed.')
-                else:
-                    speed_value = f'{speed_modifier}+{key_value}'
-                    speed_value = QKeySequence(speed_value).toString()  # Make sure modifiers are consistent
-                    speed_key = f'{key_str} (with speed modifier)'
-                    if speed_value not in duplicate_map:
-                        duplicate_map[speed_value] = [speed_key]
+            key_values = self.get(key_str).split(',')
+            for key_value in key_values:
+                key_value = key_value.upper()
+                if key_value != '' and QKeySequence(key_value)[0] == Qt.Key_unknown:
+                    errors.append(f'"{key_str}" value "{key_value}" is not a recognized key')
+                elif any(mod_str in key_str for mod_str in speed_modifier_strings) and speed_modifier \
+                        in valid_modifiers:
+                    if speed_modifier in key_value:
+                        errors.append(f'"{key_str}" is set to {key_value}, but {speed_modifier} is the speed modifier'
+                                      f' key. This will cause {key_str} to always operate at 10x speed.')
                     else:
-                        duplicate_map[speed_value].append(speed_key)
-            if '+' in key_value:
-                key_value = QKeySequence(key_value).toString()  # Make sure modifiers are consistent
-            if len(key_value) == 0:
-                errors.append(f'{key_str} is not set.')
-            elif key_value not in duplicate_map:
-                duplicate_map[key_value] = [key_str]
-            else:
-                duplicate_map[key_value].append(key_str)
+                        speed_value = f'{speed_modifier}+{key_value}'
+                        speed_value = QKeySequence(speed_value).toString()  # Make sure modifiers are consistent
+                        speed_key = f'{key_str} (with speed modifier)'
+                        if speed_value not in duplicate_map:
+                            duplicate_map[speed_value] = [speed_key]
+                        else:
+                            duplicate_map[speed_value].append(speed_key)
+                if '+' in key_value:
+                    key_value = QKeySequence(key_value).toString()  # Make sure modifiers are consistent
+                if len(key_value) == 0:
+                    errors.append(f'{key_str} is not set.')
+                elif key_value not in duplicate_map:
+                    duplicate_map[key_value] = [key_str]
+                else:
+                    duplicate_map[key_value].append(key_str)
         for key_binding, config_keys in duplicate_map.items():
             if len(config_keys) > 1:
                 errors.append(f'Key "{key_binding}" is shared between options {config_keys}, some keys may not work.')
@@ -122,7 +125,7 @@ class AppConfig(Config):
     # cooperate.  To regen in one line of node.js:
     # Object.keys(JSON.parse(require('fs').readFileSync('resources/application_config_definitions.json')))
     # .map(k => k.toUpperCase() + ': str').forEach(console.log)
-
+    # UI/Editing:
     STYLE: str
     THEME: str
     FONT_POINT_SIZE: str
@@ -142,6 +145,7 @@ class AppConfig(Config):
     PRESSURE_SIZE: str
     PRESSURE_OPACITY: str
     SPEED_MODIFIER_MULTIPLIER: str
+    # Image generation:
     PROMPT: str
     NEGATIVE_PROMPT: str
     GUIDANCE_SCALE: str
@@ -171,6 +175,7 @@ class AppConfig(Config):
     SKIP_STEPS: str
     UPSCALE_MODE: str
     DOWNSCALE_MODE: str
+    # Cached data:
     STYLES: str
     CONTROLNET_VERSION: str
     CONTROLNET_CONTROL_TYPES: str
@@ -181,6 +186,7 @@ class AppConfig(Config):
     LAST_FILE_PATH: str
     LAST_BRUSH_COLOR: str
     LAST_ACTIVE_TOOL: str
+    # View/Tool Keybindings
     SPEED_MODIFIER: str
     ZOOM_IN: str
     ZOOM_OUT: str
@@ -200,6 +206,10 @@ class AppConfig(Config):
     TRANSFORM_TOOL_KEY: str
     MASK_TOOL_KEY: str
     GENERATION_AREA_SELECTION_TOOL_KEY: str
+    # Transformation Tool keybindings:
+    ROTATE_CCW_KEY: str
+    ROTATE_CW_KEY: str
+    # Menu shortcuts:
     NEW_IMAGE_SHORTCUT: str
     SAVE_SHORTCUT: str
     LOAD_SHORTCUT: str

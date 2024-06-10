@@ -2,7 +2,7 @@
 from typing import Optional, Dict, Callable
 
 from PyQt5.QtCore import Qt, pyqtSignal, QRect, QSize, QMargins
-from PyQt5.QtGui import QMouseEvent, QPaintEvent, QPainter, QPen, QResizeEvent, QKeySequence
+from PyQt5.QtGui import QMouseEvent, QPaintEvent, QPainter, QPen, QResizeEvent
 from PyQt5.QtWidgets import QWidget, QLabel, QHBoxLayout, QVBoxLayout, QSizePolicy, QScrollArea, QPushButton, \
     QStackedLayout
 
@@ -22,6 +22,7 @@ from src.ui.util.screen_size import get_screen_size
 from src.ui.widget.bordered_widget import BorderedWidget
 from src.ui.widget.collapsible_box import CollapsibleBox
 from src.ui.widget.grid_container import GridContainer
+from src.ui.widget.key_hint_label import KeyHintLabel
 
 TOOL_PANEL_TITLE = 'Tools'
 LIST_SPACING = 10
@@ -88,10 +89,10 @@ class ToolPanel(QWidget):
         self._tool_control_box = BorderedWidget()
         self._tool_control_box.contents_margin = 0
         self._tool_control_layout = QVBoxLayout(self._tool_control_box)
-        self._tool_control_layout.setAlignment(Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignHCenter)
+        self._tool_control_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self._tool_control_label = QLabel()
         self._tool_control_label.setStyleSheet("text-decoration: bold;")
-        self._tool_control_label.setAlignment(Qt.AlignmentFlag.AlignHCenter)
+        self._tool_control_label.setAlignment(Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignTop)
         self._tool_control_layout.addWidget(self._tool_control_label, stretch=0)
         
         self._tool_control_box.setSizePolicy(QSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding))
@@ -113,7 +114,7 @@ class ToolPanel(QWidget):
             self._toolbar_tool_widgets[new_tool.label] = toolbar_button
             button.tool_selected.connect(self._switch_active_tool)
             toolbar_button.tool_selected.connect(self._switch_active_tool)
-            self._event_handler.register_hotkey(new_tool.get_hotkey(), new_tool)
+            self._event_handler.register_hotkeys(new_tool)
             self._tool_list.add_widget(button)
 
         brush_tool = BrushTool(layer_stack, image_viewer, config)
@@ -233,7 +234,7 @@ class ToolPanel(QWidget):
         self._active_tool = active_tool
         if active_tool is not None:
             self._tool_control_label.setText(f'{active_tool.label}\n{active_tool.get_tooltip_text()}')
-            for label, widget in self._tool_widgets.items():
+            for label, widget in [*self._tool_widgets.items(), *self._toolbar_tool_widgets.items()]:
                 widget.is_active = label == tool_label
             self._update_cursor()
             active_tool.cursor_change.connect(self._update_cursor)
@@ -241,7 +242,7 @@ class ToolPanel(QWidget):
             tool_panel.setToolTip(active_tool.get_tooltip_text())
             if tool_panel is not None:
                 self._active_tool_panel = tool_panel
-                self._tool_control_layout.addWidget(tool_panel)
+                self._tool_control_layout.addWidget(tool_panel, stretch=1)
                 tool_panel.show()
         else:
             self._update_cursor()
@@ -287,8 +288,10 @@ class _ToolButton(QWidget):
         self.setSizePolicy(QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed))
         label_text = connected_tool.label
         if connected_tool.get_hotkey() is not None:
-            key_sequence = QKeySequence(connected_tool.get_hotkey())
-            label_text += f' [{key_sequence.toString()}]'
+            self._key_hint = KeyHintLabel(connected_tool.get_hotkey(), self)
+            self._key_hint.setAlignment(Qt.AlignmentFlag.AlignRight)
+        else:
+            self._key_hint = None
         self.setToolTip(label_text)
         self._icon_bounds = QRect()
         self._active = False
@@ -299,11 +302,19 @@ class _ToolButton(QWidget):
         if screen is None:
             return QSize(TOOL_ICON_SIZE, TOOL_ICON_SIZE)
         size = min(screen.width() // 30, screen.height() // 30)
-        return QSize(size, size)
+        return QSize(int(size * 1.5), size)
 
     def resizeEvent(self, event: Optional[QResizeEvent]):
         """Recalculate and cache icon bounds on size change."""
         self._icon_bounds = get_scaled_placement(QRect(0, 0, self.width(), self.height()), QSize(10, 10), 8)
+        if self._key_hint is not None:
+            if self.width() <= self.height():
+                self._key_hint.setVisible(False)
+            else:
+                self._key_hint.setGeometry(QRect(self._icon_bounds.right() + 1,
+                                                 self._icon_bounds.center().y() - self._icon_bounds.height() // 4,
+                                                 self._icon_bounds.width() // 2,
+                                                 self._icon_bounds.height() // 2))
 
     @property
     def is_active(self) -> bool:

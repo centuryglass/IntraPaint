@@ -88,7 +88,7 @@ class MainWindow(QMainWindow):
 
         # Connect number keys to tabs when tab widget is visible:
         for i in range(min(MAX_TABS, 9)):
-            tab_index_key = QKeySequence(str(i + 1))[0]
+            tab_index_key = QKeySequence(str(i + 1))
             HotkeyFilter.instance().register_keybinding(lambda idx=i: self.focus_tab(idx), tab_index_key,
                                                         Qt.KeyboardModifier.NoModifier, self._central_widget)
 
@@ -176,6 +176,7 @@ class MainWindow(QMainWindow):
         def _layer_to_content():
             if layer_stack.active_layer is not None:
                 layer_stack.active_layer.crop_to_content()
+
         add_action(AppConfig.CROP_TO_CONTENT_SHORTCUT, lambda: if_not_selecting(_layer_to_content), layer_menu)
 
         # Tools:
@@ -256,7 +257,7 @@ class MainWindow(QMainWindow):
         if self._orientation == Qt.Orientation.Horizontal:
             self._min_horizontal_tool_panel_size = self._tool_panel.sizeHint()
         tab_names = [self._main_widget.tabText(i) for i in range(self._main_widget.count())]
-        if CONTROL_TAB_NAME in tab_names :
+        if CONTROL_TAB_NAME in tab_names:
             if self._orientation == Qt.Orientation.Horizontal:
                 self._min_horizontal_window_size = self.sizeHint()
             elif self._orientation == Qt.Orientation.Vertical:
@@ -316,7 +317,7 @@ class MainWindow(QMainWindow):
                 self._layout.removeWidget(self._control_panel)
             if CONTROL_TAB_NAME not in tab_names:
                 self._main_widget.addTab(self._control_panel, CONTROL_TAB_NAME)
-    
+
         # Show extra "generate" button only when control panel is tabbed:
         self._tool_panel.show_generate_button(self._control_panel.parent() != self._reactive_widget)
 

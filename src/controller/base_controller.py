@@ -492,7 +492,7 @@ class BaseInpaintController:
         def handle_error(err: BaseException) -> None:
             """Close sample selector and show an error popup if anything goes wrong."""
             assert self._window is not None
-            self._window.set_sample_selector_visible(False)
+            self._window.set_image_selector_visible(False)
             show_error_dialog(self._window, GENERATE_ERROR_TITLE_UNEXPECTED, err)
 
         worker.error_signal.connect(handle_error)
@@ -513,7 +513,7 @@ class BaseInpaintController:
             self._window.load_sample_preview(pil_image_to_qimage(img), idx)
 
         worker.image_ready.connect(load_sample_preview)
-        self._window.set_sample_selector_visible(True)
+        self._window.set_image_selector_visible(True)
         self._start_thread(worker)
 
     def select_and_apply_sample(self, sample_image: Image.Image | QImage) -> None:

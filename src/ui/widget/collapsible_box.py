@@ -58,7 +58,7 @@ class CollapsibleBox(BorderedWidget):
             self._toggle_button.setSizePolicy(QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed))
             self._button_bar.setSizePolicy(QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Maximum))
             self._button_bar_layout = QHBoxLayout(self._button_bar)
-            self._button_bar_layout.setAlignment(Qt.AlignmentFlag.AlignLeft)
+            self._button_bar_layout.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
             self._button_bar_layout.addWidget(self._toggle_button, stretch=1)
         else:
             self._toggle_label = Label(title)
@@ -181,10 +181,13 @@ class CollapsibleBox(BorderedWidget):
 
     def add_button_bar_widget(self, widget: QWidget) -> None:
         """Adds a widget to the button bar."""
-        if self._orientation == Qt.Orientation.Horizontal:
-            widget.setMaximumHeight(self._button_bar.height())
-        else:
-            widget.setMaximumWidth(self._button_bar.width())
+        min_bar_dim = min(self._button_bar.width(), self._button_bar.height(), self._button_bar.sizeHint().width(),
+                          self._button_bar.sizeHint().height())
+        widget.setMaximumHeight(min_bar_dim)
+        widget.setMaximumWidth(min_bar_dim)
+        widget.setMinimumHeight(min_bar_dim)
+        widget.setMinimumWidth(min_bar_dim)
+        widget.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
         self._button_bar_layout.addWidget(widget)
 
     def sizeHint(self) -> QSize:
