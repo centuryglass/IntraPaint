@@ -9,6 +9,18 @@
     * add visual indicator in view that transformation isn't final
     * register interruptions for layer actions?
 - Speed modifier doesn't seem to work for brush size key changes
+- Brush icon active indicator doesn't show until tabs switch
+- Ctrl+click and drag not working on sample selector
+- Sample details hard to see if default background is light
+- Minimizing toolbars breaks key bindings
+- system color picker issues on xfce
+
+1280x800 display issues:
+- Text cut off in some tool panels
+- key hints are unreadable
+- Tool icons weirdly tiny
+- Brush icons stacked in larger lists
+- default icon zoom cuts off labels
 
 # ImagePanel
 - Restore with minimal toolbar, no orientation
@@ -54,6 +66,8 @@
     * Select
     * Send to new layer
     * Save as
+- Add focused layer label to bars
+- Add mouse navigation hints to bars
 
 # ControlNet
 - Make "use selection as control" the default
