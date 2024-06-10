@@ -130,6 +130,8 @@ class MyPaintLayerCanvas(LayerCanvas):
         """Resize the internal graphics representation."""
         if self._mp_surface.size != new_bounds.size():
             self._mp_surface.reset_surface(new_bounds.size())
+            if self._layer is not None:
+                self._load_layer_content(self._layer)
 
     def _draw(self, x: float, y: float, pressure: Optional[float], x_tilt: Optional[float],
               y_tilt: Optional[float]) -> None:

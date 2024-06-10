@@ -233,7 +233,6 @@ class LayerTransformTool(BaseTool):
     def _on_deactivate(self) -> None:
         """Disconnect from all layers."""
         self._layer_stack.active_layer_changed.disconnect(self._active_layer_change_slot)
-        self.apply_transformations_to_layer()
         self.set_layer(None)
 
     def set_layer(self, layer: Optional[ImageLayer]) -> None:
@@ -242,6 +241,7 @@ class LayerTransformTool(BaseTool):
             return
         last_layer = self._layer_stack.get_layer_by_id(self._active_layer_id)
         if last_layer is not None:
+            self.apply_transformations_to_layer()
             last_layer.visibility_changed.disconnect(self._layer_visibility_slot)
             last_layer.bounds_changed.disconnect(self._layer_bounds_change_slot)
             last_layer.content_changed.disconnect(self._layer_content_change_slot)
@@ -259,8 +259,8 @@ class LayerTransformTool(BaseTool):
 
     def apply_transformations_to_layer(self) -> None:
         """Applies all pending transformations to the source layer."""
-        layer = self._layer_stack.active_layer
-        if layer is None or layer.id != self._active_layer_id:
+        layer = self._layer_stack.get_layer_by_id(self._active_layer_id)
+        if layer is None:
             return
         bounds = self._transform_pixmap.boundingRect()
         bounds = self._transform_pixmap.mapRectToScene(bounds)
@@ -374,6 +374,7 @@ class LayerTransformTool(BaseTool):
         self._transform_pixmap.setTransformations(graphics_transforms)
 
     def _active_layer_change_slot(self, layer_id: int, layer_index: int) -> None:
+        print(f'active layer now {layer_id}')
         if layer_id == self._active_layer_id:
             self._transform_pixmap.setZValue(-layer_index)
         else:
@@ -395,4 +396,4 @@ class LayerTransformTool(BaseTool):
         if layer != self._layer_stack.get_layer_by_id(self._active_layer_id):
             layer.visibility_changed.disconnect(self._layer_visibility_slot)
             return
-        self._transform_pixmap.setPixmap(layer.pixmap)
+        self._reload_scene_item()
