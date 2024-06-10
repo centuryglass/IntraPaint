@@ -1,14 +1,8 @@
 # Future development tasks
 
 # Bugs
-- Layer changes silently discard incomplete transformations
-    * Add 'apply' button to tool panel
-    * add visual indicator in view that transformation isn't final
-    * register interruptions for layer actions?
 - Speed modifier doesn't seem to work for brush size key changes
 - Brush icon active indicator doesn't show until tabs switch
-- Ctrl+click and drag not working on sample selector
-- Sample details hard to see if default background is light
 - system color picker issues on xfce
 
 # intermittent, can't reproduce reliably:

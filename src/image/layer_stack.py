@@ -717,7 +717,6 @@ class LayerStack(QObject):
                 self._insert_layer_internal(old_layer, self.count)
         commit_action(_load, _undo_load)
         metadata = data['metadata']
-        print(metadata['parameters'])
         return metadata
         
     def set_image(self, image_data: Image.Image | QImage | QPixmap):

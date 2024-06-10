@@ -1,7 +1,7 @@
 """Outlines a region in a variable QGraphicsView, adjusting line width based on view scale."""
 from typing import Optional, List
 
-from PyQt5.QtCore import Qt, pyqtProperty, QPropertyAnimation, QRectF
+from PyQt5.QtCore import Qt, pyqtProperty, QPropertyAnimation, QRectF, QRect
 from PyQt5.QtGui import QPainter, QPen, QPainterPath, QColor, QShowEvent, QHideEvent
 from PyQt5.QtWidgets import QWidget, QGraphicsItem, QGraphicsView, QGraphicsScene, QStyleOptionGraphicsItem, \
     QGraphicsObject
@@ -129,10 +129,10 @@ class Outline(QGraphicsObject):
         return self._rect
 
     @outlined_region.setter
-    def outlined_region(self, new_region: QRectF) -> None:
+    def outlined_region(self, new_region: QRect | QRectF) -> None:
         """Updates the outlined area in the scene."""
         self.prepareGeometryChange()
-        self._rect = new_region
+        self._rect = QRectF(new_region)
 
     def boundingRect(self) -> QRectF:
         """Returns the rectangle within the scene containing all pixels drawn by the outline."""

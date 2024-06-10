@@ -3,22 +3,24 @@ Provides an interface for choosing between AI-generated changes to selected imag
 """
 import math
 import time
-from typing import Callable, Optional, cast
+from typing import Callable, Optional, cast, List
 
 from PIL import Image
 from PyQt5.QtCore import Qt, QRect, QSize, QPoint, QSizeF, QRectF, QEvent, pyqtSignal
 from PyQt5.QtGui import QImage, QResizeEvent, QPixmap, QPainter, QWheelEvent, QMouseEvent, \
     QPainterPath, QKeyEvent
 from PyQt5.QtWidgets import QWidget, QGraphicsPixmapItem, QVBoxLayout, QLabel, \
-    QStyleOptionGraphicsItem, QHBoxLayout, QPushButton, QStyle
+    QStyleOptionGraphicsItem, QHBoxLayout, QPushButton, QStyle, QApplication
 
 from src.config.application_config import AppConfig
 from src.image.layer_stack import LayerStack
 from src.ui.graphics_items.loading_spinner import LoadingSpinner
+from src.ui.graphics_items.outline import Outline
 from src.ui.util.geometry_utils import get_scaled_placement
 from src.ui.util.text import max_font_size
 from src.ui.widget.image_graphics_view import ImageGraphicsView
 from src.util.image_utils import get_standard_qt_icon
+from src.util.key_code_utils import get_key_display_string
 from src.util.validation import assert_valid_index
 
 
@@ -37,6 +39,12 @@ VIEW_MARGIN = 6
 IMAGE_MARGIN_FRACTION = 1/6
 SCROLL_DEBOUNCE_MS = 100
 
+DEFAULT_CONTROL_HINT = 'Ctrl+LMB or MMB and drag: pan view, mouse wheel: zoom, Esc: discard all options'
+ZOOM_CONTROL_HINT = ('Ctrl+LMB or MMB and drag: pan view, mouse wheel: zoom, Enter: select option, Esc: return to full'
+                     ' view')
+
+VIEW_BACKGROUND = Qt.GlobalColor.black
+
 
 class GeneratedImageSelector(QWidget):
     """Shows all images from an image generation operation, allows the user to select one or discard all of them."""
@@ -53,7 +61,8 @@ class GeneratedImageSelector(QWidget):
         self._mask = mask
         self._close_selector = close_selector
         self._make_selection = make_selection
-        self._options = []
+        self._options: List[_ImageOption] = []
+        self._outlines: List[Outline] = []
         self._zoomed_in = False
         self._zoom_index = 0
         self._last_scroll_time = time.time() * 1000
@@ -64,7 +73,9 @@ class GeneratedImageSelector(QWidget):
         self._option_pos_offset = QPoint(0, 0)
 
         self._layout = QVBoxLayout(self)
-        self._layout.addWidget(QLabel(SELECTION_TITLE))
+        self._page_top_label = QLabel(SELECTION_TITLE)
+        self._page_top_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self._layout.addWidget(self._page_top_label)
 
         # Setup main option view widget:
         self._view = _SelectionView(config)
@@ -93,6 +104,8 @@ class GeneratedImageSelector(QWidget):
         original_option = _ImageOption(original_image, ORIGINAL_CONTENT_LABEL)
         self._view.scene().addItem(original_option)
         self._options.append(original_option)
+        self._outlines.append(Outline(self._view.scene(), self._view))
+        self._outlines[0].outlined_region = self._options[0].bounds
 
         # Add initial images, placeholders for expected images:
         self._loading_image = QImage(original_image.size(), QImage.Format_ARGB32_Premultiplied)
@@ -119,10 +132,13 @@ class GeneratedImageSelector(QWidget):
 
         self._button_bar_layout.addStretch(255)
 
+        self._status_label = QLabel(DEFAULT_CONTROL_HINT)
+        self._button_bar_layout.addWidget(self._status_label)
+        self._button_bar_layout.addStretch(255)
+
         def _add_key_hint(button, config_key):
-            key_str = config.get(config_key)
-            if key_str != '':
-                button.setText(f'{button.text()} [{key_str}]')
+            keys = config.get_keycodes(config_key)
+            button.setText(f'{button.text()} [{get_key_display_string(keys)}]')
 
         self._prev_button = QPushButton()
         self._prev_button.setIcon(get_standard_qt_icon(QStyle.SP_ArrowLeft))
@@ -162,6 +178,7 @@ class GeneratedImageSelector(QWidget):
         if idx == len(self._options):
             self._options.append(_ImageOption(image, f'Option {idx}'))
             self._view.scene().addItem(self._options[-1])
+            self._outlines.append(Outline(self._view.scene(), self._view))
         else:
             self._options[idx].image = image
         # Image options might come back at a different size if generation size doesn't match edit size, make
@@ -169,6 +186,7 @@ class GeneratedImageSelector(QWidget):
         size = self._options[idx].size
         original_size = self._options[0].size
         assert size == original_size, f'Expected images to be {original_size}, got {size}'
+        self._outlines[idx].outlined_region = self._options[idx].bounds
         self.resizeEvent(None)
 
     def toggle_zoom(self, zoom_index: Optional[int] = None) -> None:
@@ -186,6 +204,8 @@ class GeneratedImageSelector(QWidget):
             self._option_scale_offset = 0.0
             for option in self._options:
                 option.setOpacity(1.0)
+            self._status_label.setText(DEFAULT_CONTROL_HINT)
+            self._page_top_label.setText(SELECTION_TITLE)
         self.resizeEvent(None)
 
     def resizeEvent(self, unused_event: Optional[QResizeEvent]):
@@ -214,6 +234,8 @@ class GeneratedImageSelector(QWidget):
                 return False
             return True
         elif event.type() == QEvent.MouseButtonPress:
+            if QApplication.keyboardModifiers() == Qt.ControlModifier:
+                return False  # Ctrl+click is for panning, don't select options
             event = cast(QMouseEvent, event)
             if event.button() != Qt.LeftButton or self._loading_spinner.visible:
                 return False
@@ -269,6 +291,8 @@ class GeneratedImageSelector(QWidget):
         self._view.offset_changed.connect(self._offset_change_slot)
         for i, option in enumerate(self._options):
             option.setOpacity(1.0 if not self._zoomed_in or i == self._zoom_index else 0.5)
+        self._page_top_label.setText(self._options[option_index].text)
+        self._status_label.setText(ZOOM_CONTROL_HINT)
 
     def _zoom_prev(self):
         idx = len(self._options) - 1 if self._zoom_index <= 0 else self._zoom_index - 1
@@ -329,6 +353,7 @@ class GeneratedImageSelector(QWidget):
             x = scene_x0 + (image_size.width() + image_margin) * col
             y = scene_y0 + (image_size.height() + image_margin) * row
             self._options[idx].setPos(x, y)
+            self._outlines[idx].outlined_region = self._options[idx].bounds
 
 
 class _ImageOption(QGraphicsPixmapItem):
@@ -339,6 +364,11 @@ class _ImageOption(QGraphicsPixmapItem):
         self._image = image
         self._label_text = label_text
         self.setPixmap(QPixmap.fromImage(image))
+
+    @property
+    def text(self) -> str:
+        """Gets the read-only label text."""
+        return self._label_text
 
     @property
     def image(self) -> QImage:
@@ -438,3 +468,9 @@ class _SelectionView(ImageGraphicsView):
         if super().mousePressEvent(event, True):
             return
         self.parent().eventFilter(self, event)
+
+    def drawBackground(self, painter: Optional[QPainter], rect: QRectF) -> None:
+        """Fill with solid black to increase visibility."""
+        if painter is not None:
+            painter.fillRect(rect, VIEW_BACKGROUND)
+        super().drawBackground(painter, rect)
