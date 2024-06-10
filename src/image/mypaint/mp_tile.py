@@ -151,6 +151,7 @@ class MPTile(QGraphicsItem):
         else:
             min_color_difference = 1.8
             height, width, _ = np_pixels.shape
+            color_correction_edge_width = min(color_correction_edge_width, width // 2 - 1, height // 2 - 1)
 
             # Copy the central area directly
             central_region = (slice(color_correction_edge_width, height - color_correction_edge_width),

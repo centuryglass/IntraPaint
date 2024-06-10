@@ -66,4 +66,5 @@ class EyedropperTool(BaseTool):
         if event.buttons() == Qt.LeftButton:
             color = self._layer_stack.get_color_at_point(image_coordinates)
             self._config.set(AppConfig.LAST_BRUSH_COLOR, color.name(QColor.HexArgb))
+            return True
         return False

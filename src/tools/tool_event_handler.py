@@ -94,7 +94,8 @@ class ToolEventHandler(QObject):
         if new_tool is not None:
             new_tool.on_activate()
         self._mouse_in_bounds = False
-        self.tool_changed.emit(new_tool.label)
+        if new_tool is not None:
+            self.tool_changed.emit(new_tool.label)
 
     def eventFilter(self, source: QObject, event: QEvent):
         """Allow the active tool to intercept and handle events."""
