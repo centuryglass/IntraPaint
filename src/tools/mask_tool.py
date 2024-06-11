@@ -165,7 +165,7 @@ class MaskTool(CanvasTool):
         self._config.set(AppConfig.MASK_BRUSH_SIZE, max(1, self._canvas.brush_size + offset))
 
     def _on_activate(self) -> None:
-        """Override MyPaint tool to keep mask layer visible."""
+        """Override base canvas tool to keep mask layer visible."""
         super()._on_activate()
         self._image_viewer.resume_rendering_layer(self.layer)
 

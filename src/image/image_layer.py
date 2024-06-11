@@ -33,7 +33,7 @@ class ImageLayer(QObject):
 
     def __init__(
             self,
-            image_data: Image.Image | QImage | QPixmap | QSize,
+            image_data: Image.Image | QImage | QSize,
             name: str,
             saved: bool = True):
         """
@@ -41,7 +41,7 @@ class ImageLayer(QObject):
 
         Parameters
         ----------
-        image_data: PIL Image or QImage or QPixmap or QSize
+        image_data: PIL Image or QImage or QSize
             Initial image data, or size of initial transparent image to create.
         name: str
             Name string to assign to this layer.
@@ -58,9 +58,7 @@ class ImageLayer(QObject):
         self._position = QPoint(0, 0)
         self._id = ImageLayer._next_layer_id
         ImageLayer._next_layer_id += 1
-        if isinstance(image_data, QPixmap):
-            self.pixmap = image_data
-        elif isinstance(image_data, Image.Image):
+        if isinstance(image_data, Image.Image):
             self.qimage = pil_image_to_qimage(image_data)
         elif isinstance(image_data, QImage):
             self.qimage = image_data
@@ -115,8 +113,8 @@ class ImageLayer(QObject):
 
     @property
     def qimage(self) -> QImage:
-        """Returns the image currently being edited as a QImage object"""
-        return self._image
+        """Returns a copy of the layer content as a QImage object"""
+        return self._image.copy()
 
     @qimage.setter
     def qimage(self, new_image: QImage) -> None:
@@ -125,7 +123,8 @@ class ImageLayer(QObject):
         if new_image.format() != QImage.Format_ARGB32_Premultiplied:
             self._image = new_image.convertToFormat(QImage.Format_ARGB32_Premultiplied)
         else:
-            self._image = new_image
+            self._image = new_image.copy()
+        self._handle_content_change(self._image)
         self._pixmap.invalidate()
         self.content_changed.emit(self)
         if size_changed:
@@ -135,17 +134,8 @@ class ImageLayer(QObject):
     def pixmap(self) -> QPixmap:
         """Returns the layer's pixmap content."""
         if not self._pixmap.valid:
-            self._pixmap.data = self._generate_pixmap(self._image)
+            self._pixmap.data = QPixmap.fromImage(self._image)
         return self._pixmap.data
-
-    @pixmap.setter
-    def pixmap(self, new_pixmap: QPixmap):
-        """Replaces the layer's pixmap content."""
-        assert_type(new_pixmap, QPixmap)
-        if new_pixmap != self._pixmap:
-            self._pixmap.data = new_pixmap
-            self._image = new_pixmap.toImage()
-            self.content_changed.emit(self)
 
     @property
     def size(self) -> QSize:
@@ -163,6 +153,7 @@ class ImageLayer(QObject):
         else:
             return
         self._pixmap.invalidate()
+        self._handle_content_change(self._image)
         self.content_changed.emit(self)
         self.bounds_changed.emit(self, self.geometry)
 
@@ -237,11 +228,12 @@ class ImageLayer(QObject):
             yield self._image
         finally:
             self._pixmap.invalidate()
+            self._handle_content_change(self._image)
             self.content_changed.emit(self)
 
     def refresh_pixmap(self) -> None:
         """Regenerate the image pixmap cache and notify self.content_changed subscribers."""
-        self._pixmap.data = self._generate_pixmap(self._image)
+        self._pixmap.data = QPixmap.fromImage(self._image)
         self.content_changed.emit(self)
 
     def resize_canvas(self, new_size: QSize, x_offset: int, y_offset: int):
@@ -268,6 +260,7 @@ class ImageLayer(QObject):
         painter.end()
         self._image = new_image
         self._pixmap.invalidate()
+        self._handle_content_change(self._image)
         self.content_changed.emit(self)
         self.bounds_changed.emit(self, self.geometry)
 
@@ -317,33 +310,35 @@ class ImageLayer(QObject):
     def clear(self):
         """Replaces all image content with transparency."""
         self._image.fill(Qt.transparent)
-        self._pixmap.invalidate()
-        self.content_changed.emit(self)
+        self.qimage = self._image
 
     def flip_horizontal(self):
         """Mirrors layer content horizontally, saving the change to the undo history."""
 
         def _flip():
-            self.qimage = self.qimage.mirrored(horizontal=True, vertical=False)
+            self.qimage = self._image.mirrored(horizontal=True, vertical=False)
         commit_action(_flip, _flip)
 
     def flip_vertical(self):
         """Mirrors layer content vertically, saving the change to the undo history."""
 
         def _flip():
-            self.qimage = self.qimage.mirrored(horizontal=False, vertical=True)
+            self.qimage = self._image.mirrored(horizontal=False, vertical=True)
         commit_action(_flip, _flip)
+
+    def _handle_content_change(self, image: QImage) -> None:
+        """Child classes should override to handle changes that they need to make before sending update signals."""
 
     def crop_to_content(self):
         """Crops the layer to remove transparent areas."""
         full_bounds = QRect(self.position, self.size)
-        cropped_bounds = image_content_bounds(self.qimage)
+        cropped_bounds = image_content_bounds(self._image)
         if cropped_bounds.isNull():
             show_error_dialog(None, CROP_TO_CONTENT_ERROR_TITLE, CROP_TO_CONTENT_ERROR_MESSAGE_EMPTY)
         elif cropped_bounds.size() == full_bounds.size():
             show_error_dialog(None, CROP_TO_CONTENT_ERROR_TITLE, CROP_TO_CONTENT_ERROR_MESSAGE_FULL)
         else:
-            full_image = self.qimage.copy()
+            full_image = self._image.copy()
             cropped_image = full_image.copy(cropped_bounds)
 
             def _do_crop():
@@ -362,7 +357,3 @@ class ImageLayer(QObject):
         layer_bounds = QRect(QPoint(0, 0), self.size)
         if not layer_bounds.contains(bounds_rect):
             raise ValueError(f'{bounds_rect} not within {layer_bounds}')
-
-    def _generate_pixmap(self, image: QImage) -> QPixmap:
-        """Generate and return a new pixmap for the layer's image data."""
-        return QPixmap.fromImage(image)

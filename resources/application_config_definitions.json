@@ -25,6 +25,14 @@
         "default": 10,
         "saved": true
     },
+    "animate_outlines": {
+        "label": "Animate outlines and selections:",
+        "category": "Interface",
+        "description": "Enable or disable animated outlines",
+        "type": "bool",
+        "default": true,
+        "saved": true
+    },
     "default_image_size": {
         "label": "Default image size:",
         "category": "Editing",
@@ -106,14 +114,6 @@
             "max": 300,
             "step": 1
         }
-    },
-    "use_mypaint_canvas": {
-        "label": "Enable MyPaint brush canvas:",
-        "category": "Editing",
-        "description": "Use the MyPaint brush engine when painting on the edited image. This will be ignored on systems without libmypaint support",
-        "type": "bool",
-        "default": true,
-        "saved": true
     },
     "mypaint_brush": {
         "label": "Selected MyPaint brush:",
@@ -560,9 +560,9 @@
     "speed_modifier": {
         "label": "Key Speed Modifier:",
         "category": "Keybindings",
-        "description": "If this key is held, movement/zoom/pan/scroll/etc. operations will go faster. (must be Ctrl, Alt, or Shift, not used in other keys)",
+        "description": "If this key is held, movement/zoom/pan/scroll/etc. operations will go faster. (avoid changing, Shift and Ctrl are the only other working options and those cause various conflicts.)",
         "type": "string",
-        "default": "Shift",
+        "default": "Alt",
         "saved": true
     },
     "zoom_in": {

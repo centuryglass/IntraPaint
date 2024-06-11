@@ -507,8 +507,7 @@ class BaseInpaintController:
                     return 255 if p < 1 else 0
 
                 mask_alpha = inpaint_mask.convert('L').point(point_fn).filter(ImageFilter.GaussianBlur())
-                img = resize_image(img, selection.width, selection.height)
-                mask_alpha = resize_image(mask_alpha, selection.width, selection.height)
+                mask_alpha = resize_image(mask_alpha, img.width, img.height)
                 img = Image.composite(selection, img, mask_alpha)
             self._window.load_sample_preview(pil_image_to_qimage(img), idx)
 

@@ -128,6 +128,7 @@ class AppConfig(Config):
     # UI/Editing:
     STYLE: str
     THEME: str
+    ANIMATE_OUTLINES: str
     FONT_POINT_SIZE: str
     DEFAULT_IMAGE_SIZE: str
     EDIT_SIZE: str

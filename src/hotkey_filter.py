@@ -141,6 +141,7 @@ class HotkeyFilter(QObject):
             return super().eventFilter(source, event)
         event = cast(QKeyEvent, event)
 
+
         # Avoid blocking inputs to text fields:
         focused_widget = QApplication.focusWidget()
         if isinstance(focused_widget, (QLineEdit, QTextEdit, QLineEdit, QPlainTextEdit, QAbstractSpinBox, QComboBox)):

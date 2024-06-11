@@ -1,8 +1,6 @@
 # Future development tasks
 
 # Bugs
-- Speed modifier doesn't seem to work for brush size key changes
-- Brush icon active indicator doesn't show until tabs switch
 - system color picker issues on xfce
 
 # intermittent, can't reproduce reliably:

@@ -101,6 +101,7 @@ class GeneratedImageSelector(QWidget):
         self._view.scene().addItem(self._loading_spinner)
 
         original_image = self._layer_stack.qimage_selection_content()
+        original_image = original_image.scaled(config.get(AppConfig.GENERATION_SIZE))
         original_option = _ImageOption(original_image, ORIGINAL_CONTENT_LABEL)
         self._view.scene().addItem(original_option)
         self._options.append(original_option)

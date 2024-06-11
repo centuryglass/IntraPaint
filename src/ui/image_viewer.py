@@ -13,6 +13,7 @@ from src.image.image_layer import ImageLayer
 from src.image.layer_stack import LayerStack
 from src.ui.graphics_items.border import Border
 from src.ui.graphics_items.outline import Outline
+from src.ui.graphics_items.polygon_outline import PolygonOutline
 from src.ui.util.tile_pattern_fill import get_transparency_tile_pixmap
 from src.ui.widget.image_graphics_view import ImageGraphicsView
 from src.util.validation import assert_type
@@ -37,17 +38,19 @@ class ImageViewer(ImageGraphicsView):
         self.setSizePolicy(QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding))
         self._follow_selection = False
         self._hidden = set()
+        self._mask_poly_outline = PolygonOutline(self)
+        self._mask_poly_outline.animated = config.get(AppConfig.ANIMATE_OUTLINES)
 
         # Selection and border rectangle setup:
         self._scene_outline = Outline(self.scene(), self)
         self._scene_outline.dash_pattern = [1, 0]  # solid line
         self._selection_outline = Outline(self.scene(), self)
-        self._selection_outline.animated = True
+        self._selection_outline.animated = config.get(AppConfig.ANIMATE_OUTLINES)
 
         # "inpaint masked only" selection outline:
         self._masked_selection_outline = Outline(self.scene(), self)
         self._masked_selection_outline.setOpacity(0.9)
-        self._masked_selection_outline.animated = True
+        self._masked_selection_outline.animated = config.get(AppConfig.ANIMATE_OUTLINES)
         mask_layer = layer_stack.mask_layer
         mask_layer.content_changed.connect(self._mask_content_change_slot)
         config.connect(self, AppConfig.INPAINT_FULL_RES, self._mask_content_change_slot)
@@ -120,7 +123,7 @@ class ImageViewer(ImageGraphicsView):
         """Sets whether the view should follow the image generation area. Setting to true updates the view, setting to
            false does not."""
         self._follow_selection = should_follow
-        self._selection_outline.animated = not should_follow
+        self._selection_outline.animated = not should_follow and self._config.get(AppConfig.ANIMATE_OUTLINES)
         self._border.setVisible(should_follow)
         if should_follow:
             self.zoom_to_selection()
@@ -222,7 +225,11 @@ class ImageViewer(ImageGraphicsView):
         if bounds is not None:
             self._masked_selection_outline.setVisible(mask_layer.visible)
             self._masked_selection_outline.outlined_region = QRectF(bounds)
+            self._mask_poly_outline.load_polygons(mask_layer.outline)
+            self._mask_poly_outline.setZValue(2)
+            self._mask_poly_outline.setPos(mask_layer.position)
         else:
+            self._mask_poly_outline.load_polygons([])
             self._masked_selection_outline.setVisible(False)
 
     def _image_size_changed_slot(self, new_size: QSize) -> None:

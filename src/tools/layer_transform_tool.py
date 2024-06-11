@@ -281,7 +281,7 @@ class LayerTransformTool(BaseTool):
             # Restore previous scene item visibility:
             for scene_item, visibility in visibility_map.items():
                 scene_item.setVisible(visibility)
-            source_image = layer.qimage.copy()
+            source_image = layer.qimage
         else:
             source_image = None
             transform_image = None

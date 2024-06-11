@@ -5,6 +5,7 @@ Originally adapted from https://stackoverflow.com/a/52617714
 from typing import Optional, Callable, Any, cast
 
 from PyQt5.QtCore import Qt, QSize, pyqtSignal
+from PyQt5.QtGui import QResizeEvent
 from PyQt5.QtWidgets import QWidget, QScrollArea, QToolButton, QHBoxLayout, QVBoxLayout, QSizePolicy, QLayout, \
     QBoxLayout
 
@@ -179,16 +180,23 @@ class CollapsibleBox(BorderedWidget):
         if not show_bar:
             self.set_expanded(True)
 
-    def add_button_bar_widget(self, widget: QWidget) -> None:
-        """Adds a widget to the button bar."""
+    def resizeEvent(self, event: Optional[QResizeEvent]) -> None:
+        """Keep toolbar items sized correctly."""
         min_bar_dim = min(self._button_bar.width(), self._button_bar.height(), self._button_bar.sizeHint().width(),
                           self._button_bar.sizeHint().height())
-        widget.setMaximumHeight(min_bar_dim)
-        widget.setMaximumWidth(min_bar_dim)
-        widget.setMinimumHeight(min_bar_dim)
-        widget.setMinimumWidth(min_bar_dim)
+        for widget in self._button_bar_layout.findChildren(QWidget):
+            if widget in (self._toggle_button, self._toggle_label):
+                continue
+            widget.setMaximumHeight(min_bar_dim)
+            widget.setMaximumWidth(min_bar_dim)
+            widget.setMinimumHeight(min_bar_dim)
+            widget.setMinimumWidth(min_bar_dim)
+
+    def add_button_bar_widget(self, widget: QWidget) -> None:
+        """Adds a widget to the button bar."""
         widget.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
         self._button_bar_layout.addWidget(widget)
+        self.resizeEvent(None)
 
     def sizeHint(self) -> QSize:
         """Returns ideal box size based on expanded size policy and expansion state."""

@@ -188,11 +188,6 @@ class _IconButton(QWidget):
         self.customContextMenuRequested.connect(self._menu)
         self.resizeEvent(None)
 
-        palette = self.palette()
-        palette.setColor(self.backgroundRole(), Qt.red)
-        self.setPalette(palette)
-        self.setAutoFillBackground(True)
-
     def saved_name(self) -> str:
         """Returns the name used to save this brush to favorites."""
         group_name = os.path.basename(os.path.dirname(self._brush_path))
@@ -243,8 +238,10 @@ class _IconButton(QWidget):
             self._brush.load_file(self._brush_path, True)
             self._config.set(AppConfig.MYPAINT_BRUSH, self._brush_path)
             parent = self.parent()
-            if isinstance(parent, QWidget):
-                parent.update()
+            if parent is not None:
+                brushes = parent.findChildren(_IconButton)
+                for brush in brushes:
+                    brush.update()
 
     def _menu(self, pos: QPoint) -> None:
         """Adds a menu option to add this brush to favorites or remove it from favorites."""

@@ -178,6 +178,8 @@ class CanvasTool(BaseTool):
     # Event handlers:
     def _stroke_to(self, image_coordinates: QPoint) -> None:
         """Draws coordinates to the canvas, including tablet data if available."""
+        if not self._layer_stack.has_image:
+            return
         if self._tablet_input == QTabletEvent.PointerType.Eraser:
             self._canvas.eraser = True
         self._canvas.stroke_to(image_coordinates.x(), image_coordinates.y(), self._tablet_pressure,
@@ -208,7 +210,7 @@ class CanvasTool(BaseTool):
 
     def mouse_move(self, event: Optional[QMouseEvent], image_coordinates: QPoint) -> bool:
         """Receives a mouse move event, returning whether the tool consumed the event."""
-        if self._layer is None:
+        if self._layer is None or not self._layer_stack.has_image:
             return False
         if event.buttons() == Qt.LeftButton or event.buttons() == Qt.RightButton and self._drawing:
             self._stroke_to(image_coordinates)
@@ -217,7 +219,7 @@ class CanvasTool(BaseTool):
 
     def mouse_release(self, event: Optional[QMouseEvent], image_coordinates: QPoint) -> bool:
         """Receives a mouse release event, returning whether the tool consumed the event."""
-        if self._layer is None:
+        if self._layer is None or not self._layer_stack.has_image:
             return False
         if self._drawing:
             self._drawing = False

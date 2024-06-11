@@ -6,8 +6,12 @@ from typing import Optional
 
 import numpy as np
 from PIL import Image
-from PyQt5.QtCore import QBuffer, QRect
-from PyQt5.QtGui import QImage, QIcon
+from PyQt5.QtCore import QBuffer, QRect, QSize, Qt, QPoint
+
+from src.ui.util.text import max_font_size
+
+DEFAULT_ICON_SIZE = QSize(64, 64)
+from PyQt5.QtGui import QImage, QIcon, QPixmap, QPainter, QColor
 from PyQt5.QtWidgets import QStyle, QWidget, QApplication
 
 logger = logging.getLogger(__name__)
@@ -120,3 +124,22 @@ def get_standard_qt_icon(icon_code: QStyle.StandardPixmap, style_source: Optiona
     else:
         style = style_source.style()
     return style.standardIcon(icon_code)
+
+def get_character_icon(character: str, color: QColor) -> QIcon:
+    """Renders a character as an icon."""
+    assert len(character) == 1, f'Expected a single character, got {character}'
+    font = QApplication.font()
+    size = DEFAULT_ICON_SIZE
+    pt_size = max_font_size(character, font, size)
+    font.setPointSize(pt_size)
+    font.setBold(True)
+    pixmap = QPixmap(size)
+    pixmap.fill(Qt.GlobalColor.transparent)
+    painter = QPainter(pixmap)
+    painter.setFont(font)
+    painter.setPen(color)
+    painter.setRenderHint(QPainter.RenderHint.TextAntialiasing)
+    painter.drawText(QRect(QPoint(), DEFAULT_ICON_SIZE), Qt.AlignCenter, character)
+    painter.end()
+    return QIcon(pixmap)
+

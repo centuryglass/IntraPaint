@@ -11,7 +11,7 @@ from src.image.canvas.layer_canvas import LayerCanvas
 from src.image.image_layer import ImageLayer
 from src.undo_stack import commit_action
 
-ACTIVE_PIXMAP_OPACITY = 0.6
+ACTIVE_PIXMAP_OPACITY = 0.4
 
 INACTIVE_PIXMAP_OPACITY = 0.2
 

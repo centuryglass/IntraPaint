@@ -400,11 +400,11 @@ class LayerStack(QObject):
         saved: bool, default=True
             Sets whether the new layer is included when saving image data
         layer_index: int or None, default = None
-            Index where the layer will be inserted into the stack. If None, it will be inserted beneath the lowest
-             layer.
+            Index where the layer will be inserted into the stack. If None, it will be inserted above the active layer.
         """
         if layer_index is None:
-            layer_index = len(self._layers)
+            active_index = self.active_layer_index
+            layer_index = len(self._layers) if active_index is None else active_index
         assert_valid_index(layer_index, self._layers, allow_end=True)
         layer = self._create_layer_internal(layer_name, image_data, saved)
         commit_action(lambda new_layer=layer, i=layer_index: self._insert_layer_internal(new_layer, i, True),
@@ -421,7 +421,7 @@ class LayerStack(QObject):
         layer, layer_index = self._layer_values_from_layer_or_id_or_active(layer)
         assert layer is not None and layer_index is not None
         assert_valid_index(layer_index, self._layers)
-        self.create_layer(layer.name + ' copy', layer.qimage.copy(), layer.saved, layer_index + 1)
+        self.create_layer(layer.name + ' copy', layer.qimage, layer.saved, layer_index + 1)
         self._layers[layer_index + 1].visible = layer.visible
 
     def remove_layer(self, layer: Optional[ImageLayer | int] = None) -> None:
@@ -523,7 +523,7 @@ class LayerStack(QObject):
 
         base_pos = base_layer.position
         base_size = base_layer.size
-        base_layer_image = base_layer.qimage.copy()
+        base_layer_image = base_layer.qimage
         merged_bounds = QRect(base_layer.position, base_layer.size).united(QRect(top_layer.position, top_layer.size))
         merged_image = QImage(merged_bounds.size(), QImage.Format.Format_ARGB32_Premultiplied)
         merged_image.fill(Qt.transparent)
@@ -561,7 +561,7 @@ class LayerStack(QObject):
         if layer_bounds == image_bounds:
             return
         layer_position = layer_bounds.topLeft()
-        layer_image = layer.qimage.copy()
+        layer_image = layer.qimage
         resized_image = QImage(self.size, QImage.Format.Format_ARGB32_Premultiplied)
         resized_image.fill(Qt.GlobalColor.transparent)
         painter = QPainter(resized_image)
@@ -594,7 +594,7 @@ class LayerStack(QObject):
         if layer is None:
             return None
         inpaint_mask = self.mask_layer.qimage
-        image = layer.qimage.copy(QRect(-layer.position.x(), -layer.position.y(), self.width, self.height))
+        image = layer.cropped_image_content(QRect(-layer.position.x(), -layer.position.y(), self.width, self.height))
         painter = QPainter(image)
         painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_DestinationIn)
         painter.drawImage(QRect(0, 0, image.width(), image.height()), inpaint_mask)
@@ -607,7 +607,7 @@ class LayerStack(QObject):
         layer, _ = self._layer_values_from_layer_or_id_or_active(layer)
         if layer is None:
             return
-        source_content = layer.qimage.copy()
+        source_content = layer.qimage
         inpaint_mask = self.mask_layer.qimage.copy()
         self._copy_buffer = self.copy_masked(layer)
 

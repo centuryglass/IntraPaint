@@ -127,8 +127,6 @@ class ToolPanel(QWidget):
         add_tool(mask_tool)
         transform_tool = LayerTransformTool(layer_stack, image_viewer, config)
         add_tool(transform_tool)
-        for tool in brush_tool, mask_tool:
-            self._event_handler.register_tool_delegate(tool, selection_tool, Qt.KeyboardModifier.AltModifier)
         self._event_handler.register_tool_delegate(brush_tool, eyedropper_tool, Qt.KeyboardModifier.ControlModifier)
         self._switch_active_tool(config.get(AppConfig.LAST_ACTIVE_TOOL))
         self.resizeEvent(None)
@@ -301,20 +299,17 @@ class _ToolButton(QWidget):
         screen = get_screen_size(self)
         if screen is None:
             return QSize(TOOL_ICON_SIZE, TOOL_ICON_SIZE)
-        size = min(screen.width() // 30, screen.height() // 30)
+        size = max(min(screen.width() // 30, screen.height() // 30), TOOL_ICON_SIZE)
         return QSize(int(size * 1.5), size)
 
     def resizeEvent(self, event: Optional[QResizeEvent]):
         """Recalculate and cache icon bounds on size change."""
         self._icon_bounds = get_scaled_placement(QRect(0, 0, self.width(), self.height()), QSize(10, 10), 8)
         if self._key_hint is not None:
-            if self.width() <= self.height():
-                self._key_hint.setVisible(False)
-            else:
-                self._key_hint.setGeometry(QRect(self._icon_bounds.right() + 1,
-                                                 self._icon_bounds.center().y() - self._icon_bounds.height() // 4,
-                                                 self._icon_bounds.width() // 2,
-                                                 self._icon_bounds.height() // 2))
+            self._key_hint.setGeometry(QRect(self._icon_bounds.right() + 1,
+                                             self._icon_bounds.center().y() - self._icon_bounds.height() // 4,
+                                             self._icon_bounds.width() // 2,
+                                             self._icon_bounds.height() // 2))
 
     @property
     def is_active(self) -> bool:

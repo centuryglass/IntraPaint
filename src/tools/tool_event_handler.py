@@ -1,12 +1,13 @@
 """Passes ImageViewer input events to an active editing tool."""
 from typing import Optional, cast, Dict
+
 from PyQt5.QtCore import Qt, QObject, QEvent, QRect, QPoint, pyqtSignal
-from PyQt5.QtGui import QKeyEvent, QMouseEvent, QTabletEvent, QWheelEvent, QKeySequence
+from PyQt5.QtGui import QMouseEvent, QTabletEvent, QWheelEvent
 from PyQt5.QtWidgets import QApplication
 
-from src.ui.image_viewer import ImageViewer
-from src.tools.base_tool import BaseTool
 from src.hotkey_filter import HotkeyFilter
+from src.tools.base_tool import BaseTool
+from src.ui.image_viewer import ImageViewer
 
 
 class ToolEventHandler(QObject):
