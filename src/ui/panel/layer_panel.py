@@ -37,6 +37,19 @@ MERGE_DOWN_BUTTON_LABEL = '⇓'
 MERGE_DOWN_BUTTON_TOOLTIP = 'Merge the active layer with the one below it.'
 MERGE_BUTTON_LABEL = 'Merge Down'
 
+MENU_OPTION_MOVE_UP = 'Move up'
+MENU_OPTION_MOVE_DOWN = 'Move down'
+MENU_OPTION_COPY = 'Copy'
+MENU_OPTION_DELETE = 'Delete'
+MENU_OPTION_MERGE_DOWN = 'Merge down'
+MENU_OPTION_CLEAR_SELECTED = 'Clear masked'
+MENU_OPTION_COPY_SELECTED = 'Copy masked to new layer'
+MENU_OPTION_LAYER_TO_IMAGE_SIZE = 'Layer to image size'
+MENU_OPTION_CROP_TO_CONTENT = 'Crop layer to content'
+MENU_OPTION_CLEAR_SELECTION = 'Clear mask'
+MENU_OPTION_SELECT_ALL = 'Mask all in active layer'
+MENU_OPTION_INVERT_SELECTION = "Invert selection"
+
 
 class LayerPanel(QWidget):
     """
@@ -280,27 +293,27 @@ class _LayerItem(BorderedWidget):
             index = self._layer_stack.get_layer_index(self._layer)
 
             if index > 0:
-                up_option = menu.addAction('Move up')
+                up_option = menu.addAction(MENU_OPTION_MOVE_UP)
                 up_option.triggered.connect(lambda: self._layer_stack.move_layer(-1, self.layer))
 
             if index < self._layer_stack.count - 1:
-                down_option = menu.addAction('Move down')
+                down_option = menu.addAction(MENU_OPTION_MOVE_DOWN)
                 down_option.triggered.connect(lambda: self._layer_stack.move_layer(1, self.layer))
 
-            copy_option = menu.addAction('Copy')
+            copy_option = menu.addAction(MENU_OPTION_COPY)
             copy_option.triggered.connect(lambda: self._layer_stack.copy_layer(self.layer))
 
-            delete_option = menu.addAction('Delete')
+            delete_option = menu.addAction(MENU_OPTION_DELETE)
             delete_option.triggered.connect(lambda: self._layer_stack.remove_layer(self.layer))
 
             if index < self._layer_stack.count - 1:
-                merge_option = menu.addAction('Merge down')
+                merge_option = menu.addAction(MENU_OPTION_MERGE_DOWN)
                 merge_option.triggered.connect(lambda: self._layer_stack.merge_layer_down(self.layer))
 
-            clear_option = menu.addAction('Clear masked')
+            clear_option = menu.addAction(MENU_OPTION_CLEAR_SELECTED)
             clear_option.triggered.connect(lambda: self._layer_stack.cut_masked(self.layer))
 
-            copy_masked_option = menu.addAction('Copy masked to new layer')
+            copy_masked_option = menu.addAction(MENU_OPTION_COPY_SELECTED)
 
             def do_copy() -> None:
                 """Make the copy, then add it as a new layer."""
@@ -309,16 +322,18 @@ class _LayerItem(BorderedWidget):
 
             copy_masked_option.triggered.connect(do_copy)
 
-            resize_option = menu.addAction('Layer to image size')
+            resize_option = menu.addAction(MENU_OPTION_LAYER_TO_IMAGE_SIZE)
             resize_option.triggered.connect(lambda: self._layer_stack.layer_to_image_size(self.layer))
 
-            crop_content_option = menu.addAction('Crop layer to content')
+            crop_content_option = menu.addAction(MENU_OPTION_CROP_TO_CONTENT)
             crop_content_option.triggered.connect(self._layer.crop_to_content)
         else:
-            clear_mask_option = menu.addAction('Clear mask')
+            invert_option = menu.addAction(MENU_OPTION_INVERT_SELECTION)
+            invert_option.triggered.connect(self._layer_stack.mask_layer.invert_selection)
+            clear_mask_option = menu.addAction(MENU_OPTION_CLEAR_SELECTION)
             clear_mask_option.triggered.connect(self._layer_stack.mask_layer.clear)
             if self._layer_stack.active_layer_index is not None:
-                mask_active_option = menu.addAction('Mask all in active layer')
+                mask_active_option = menu.addAction(MENU_OPTION_SELECT_ALL)
 
                 def mask_active() -> None:
                     """Draw the layer into the mask, then let MaskLayer automatically convert it to red/transparent."""

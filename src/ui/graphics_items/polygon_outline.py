@@ -16,7 +16,7 @@ class PolygonOutline(QGraphicsItemGroup):
 
     def __init__(self,
                  view: QGraphicsView,
-                 polygons: Optional[List[QPolygon]] = None,
+                 polygons: Optional[List[QPolygonF]] = None,
                  parent: Optional[QGraphicsItem] = None):
         super().__init__(parent)
         self._polygons: List[QGraphicsPolygonItem] = []
@@ -79,7 +79,7 @@ class PolygonOutline(QGraphicsItemGroup):
         self._polygons.clear()
         pen = self._get_pen()
         for polygon in polygons:
-            polygon_item = QGraphicsPolygonItem(QPolygonF(polygon))
+            polygon_item = QGraphicsPolygonItem(polygon)
             polygon_item.setBrush(Qt.transparent)
             polygon_item.setPen(pen)
             self.addToGroup(polygon_item)
