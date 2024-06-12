@@ -151,13 +151,12 @@ class LayerPanel(QWidget):
     def sizeHint(self) -> QSize:
         """Returns a reasonable default size."""
         width = DEFAULT_LIST_SIZE.width()
-        height = min(DEFAULT_LIST_SIZE.height(), 999)#self._label.sizeHint().height() * 3)
+        height = DEFAULT_LIST_SIZE.height()
         screen = get_screen_size(self)
         if screen is not None:
             width = min(width, screen.width() // 20)
             height = min(height, screen.height() // 16)
         return QSize(width, height)
-
 
     def _layer_widget(self, layer: ImageLayer) -> '_LayerItem':
         """Returns the layer widget for the given layer, or creates and returns a new one if none exists."""

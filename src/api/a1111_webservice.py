@@ -146,7 +146,6 @@ class A1111Webservice(WebService):
     # Image manipulation:
     def img2img(self,
                 image: Image.Image,
-                config: AppConfig,
                 mask: Optional[Image.Image] = None,
                 width: Optional[int] = None,
                 height: Optional[int] = None,
@@ -158,8 +157,6 @@ class A1111Webservice(WebService):
         ----------
         image : PIL Image
             Source image, usually contents of the EditedImage selection.
-        config : AppConfig
-            Object holding image generation parameters.
         mask : PIL Image, optional
             A 1-bit image mask that's the same size as the image parameter, used to mark which areas should be altered.
             If not provided, the entire image will be altered.
@@ -178,7 +175,8 @@ class A1111Webservice(WebService):
         dict or None
             Any additional information sent back with the generated images.
         """
-        body = self._get_base_diffusion_body(config, image, scripts)
+        config = AppConfig.instance()
+        body = self._get_base_diffusion_body(image, scripts)
         body[A1111Webservice.ImgParams.INIT_IMAGES] = [image_to_base64(image, include_prefix=True)]
         body[A1111Webservice.ImgParams.DENOISING] = config.get(AppConfig.DENOISING_STRENGTH)
         body[A1111Webservice.ImgParams.WIDTH] = image.width if width is None else width
@@ -197,7 +195,6 @@ class A1111Webservice(WebService):
         return self._handle_image_response(res)
 
     def txt2img(self,
-                config: AppConfig,
                 width: Optional[int] = None,
                 height: Optional[int] = None,
                 scripts: Optional[Dict[str, Any]] = None,
@@ -206,8 +203,6 @@ class A1111Webservice(WebService):
 
         Parameters
         ----------
-        config : AppConfig
-            Object holding image generation parameters.
         width : int, optional
             Generated image width requested, in pixels.
         height : int, optional
@@ -223,7 +218,7 @@ class A1111Webservice(WebService):
         dict or None
             Any additional information sent back with the generated images.
         """
-        body = self._get_base_diffusion_body(config, image, scripts)
+        body = self._get_base_diffusion_body(image, scripts)
         body[A1111Webservice.ImgParams.WIDTH] = width
         body[A1111Webservice.ImgParams.HEIGHT] = height
         res = self.post(A1111Webservice.Endpoints.TXT2IMG, body)
@@ -232,8 +227,7 @@ class A1111Webservice(WebService):
     def upscale(self,
                 image: Image.Image,
                 width: int,
-                height: int,
-                config: AppConfig) -> Response | tuple[List[Image.Image], Dict[str, Any] | None]:
+                height: int) -> Response | tuple[List[Image.Image], Dict[str, Any] | None]:
         """Starts a request to upscale an image.
 
         Parameters
@@ -244,8 +238,6 @@ class A1111Webservice(WebService):
             New image width in pixels requested.
         height : int
             New image height in pixels requested.
-        config : AppConfig
-            Object holding additional upscaling parameters.
         Returns
         -------
         list of PIL Images
@@ -253,6 +245,7 @@ class A1111Webservice(WebService):
         dict or None
             Any additional information sent back with the generated images.
         """
+        config = AppConfig.instance()
         if config.get(AppConfig.CONTROLNET_UPSCALING):
             scripts = {
                 'controlNet': {
@@ -292,7 +285,7 @@ class A1111Webservice(WebService):
                     height,  # custom_height
                     None  # custom_scale (ignored)
                 ]
-            return self.img2img(image, config, width=width, height=height, overrides=overrides, scripts=scripts)
+            return self.img2img(image, width=width, height=height, overrides=overrides, scripts=scripts)
         # otherwise, normal upscaling without controlNet:
         body = {
             'resize_mode': 1,
@@ -304,13 +297,11 @@ class A1111Webservice(WebService):
         res = self.post(A1111Webservice.Endpoints.UPSCALE, body)
         return self._handle_image_response(res)
 
-    def interrogate(self, config: AppConfig, image: Image.Image) -> str:
+    def interrogate(self, image: Image.Image) -> str:
         """Requests text describing an image.
 
         Parameters
         ----------
-        config : AppConfig
-            Object defining which image captioning model should be used.
         image : PIL Image
             The image to describe.
         Returns
@@ -319,7 +310,7 @@ class A1111Webservice(WebService):
             A brief description of the image.
         """
         body = {
-            'model': config.get(AppConfig.INTERROGATE_MODEL),
+            'model': AppConfig.instance().get(AppConfig.INTERROGATE_MODEL),
             'image': image_to_base64(image, include_prefix=True)
         }
         res = self.post(A1111Webservice.Endpoints.INTERROGATE, body)
@@ -334,9 +325,9 @@ class A1111Webservice(WebService):
         return res.json()
 
     @staticmethod
-    def _get_base_diffusion_body(config: AppConfig,
-                                 image: Optional[Image.Image] = None,
+    def _get_base_diffusion_body(image: Optional[Image.Image] = None,
                                  scripts: Optional[dict] = None) -> dict:
+        config = AppConfig.instance()
         body = {
             A1111Webservice.ImgParams.PROMPT: config.get(AppConfig.PROMPT),
             A1111Webservice.ImgParams.SEED: config.get(AppConfig.SEED),

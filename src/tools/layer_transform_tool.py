@@ -38,11 +38,10 @@ FLOAT_MIN = -99999.0
 class LayerTransformTool(BaseTool):
     """Applies transformations to the active layer."""
 
-    def __init__(self, layer_stack: LayerStack, image_viewer: ImageViewer, config: AppConfig) -> None:
+    def __init__(self, layer_stack: LayerStack, image_viewer: ImageViewer) -> None:
         super().__init__()
         self._layer_stack = layer_stack
         self._image_viewer = image_viewer
-        self._config = config
         self._icon = QIcon(RESOURCES_SELECTION_ICON)
         self._transform_pixmap = QGraphicsPixmapItem()
         self._transform_pixmap.setVisible(False)
@@ -89,6 +88,7 @@ class LayerTransformTool(BaseTool):
         self._aspect_ratio_checkbox.clicked.connect(_restore_aspect_ratio)
 
         # Register movement key overrides, tied to control panel visibility:
+        config = AppConfig.instance()
         for control, up_key_code, down_key_code in ((self._offset_box_x, AppConfig.MOVE_RIGHT, AppConfig.MOVE_LEFT),
                                                     (self._offset_box_y, AppConfig.MOVE_DOWN, AppConfig.MOVE_UP),
                                                     (self._scale_box_x, AppConfig.PAN_RIGHT, AppConfig.PAN_LEFT),
@@ -108,11 +108,11 @@ class LayerTransformTool(BaseTool):
                 def _binding(mult, n=sign, box=control) -> bool:
                     return _step(n * mult, box)
 
-                HotkeyFilter.instance().register_speed_modified_keybinding(_binding, self._config, key)
+                HotkeyFilter.instance().register_speed_modified_keybinding(_binding, key)
 
     def get_hotkey(self) -> QKeySequence:
         """Returns the hotkey(s) that should activate this tool."""
-        return self._config.get_keycodes(AppConfig.TRANSFORM_TOOL_KEY)
+        return AppConfig.instance().get_keycodes(AppConfig.TRANSFORM_TOOL_KEY)
 
     def get_icon(self) -> QIcon:
         """Returns an icon used to represent this tool."""
@@ -262,6 +262,9 @@ class LayerTransformTool(BaseTool):
         layer = self._layer_stack.get_layer_by_id(self._active_layer_id)
         if layer is None:
             return
+        if (self._rotation % 360.0) == 0.0 and self._scale_x == 1.0 and self._scale_y == 1.0 \
+                and self._offset == QPoint():
+            return
         bounds = self._transform_pixmap.boundingRect()
         bounds = self._transform_pixmap.mapRectToScene(bounds)
         if (self._rotation % 360.0) != 0.0 or self._scale_x != 1.0 or self._scale_y != 1.0:
@@ -298,7 +301,9 @@ class LayerTransformTool(BaseTool):
                 layer.qimage = img
             layer.set_position(pos, False)
 
-        commit_action(_transform, _undo_transform)
+        transformed = commit_action(_transform, _undo_transform, ignore_if_locked=True)
+        if not transformed:
+            print('Warning: pending transformation was discarded')
         self._reload_scene_item()
 
     def _reload_scene_item(self):
@@ -314,10 +319,15 @@ class LayerTransformTool(BaseTool):
             self._transform_pixmap.setPixmap(QPixmap())
             self._transform_pixmap.setVisible(False)
         self._transform_pixmap.prepareGeometryChange()
-        self._transform_pixmap.setPos(layer.position.x(), layer.position.y())
-        self._transform_pixmap.setPixmap(layer.pixmap)
-        self._transform_pixmap.setVisible(layer.visible)
-        self._transform_pixmap.setZValue(-self._layer_stack.get_layer_index(layer))
+        if layer is None:
+            self._transform_pixmap.setPos(0, 0)
+            self._transform_pixmap.setPixmap(QPixmap())
+            self._transform_pixmap.setVisible(False)
+        else:
+            self._transform_pixmap.setPos(layer.position.x(), layer.position.y())
+            self._transform_pixmap.setPixmap(layer.pixmap)
+            self._transform_pixmap.setVisible(layer.visible)
+            self._transform_pixmap.setZValue(-self._layer_stack.get_layer_index(layer))
         self._offset_box_x.setValue(0)
         self._offset_box_y.setValue(0)
         self._scale_box_x.setValue(1.0)

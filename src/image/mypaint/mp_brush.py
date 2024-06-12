@@ -101,16 +101,23 @@ class MPBrush:
 
     # DYNAMIC PROPERTIES:
     # Generate with `python /home/anthony/Workspace/ML/IntraPaint/scripts/dynamic_import_typing.py src/image/mypaint/mp_brush.py`
+
+    ANTI_ALIASING: int
     CHANGE_COLOR_H: int
     CHANGE_COLOR_HSL_S: int
     CHANGE_COLOR_HSV_S: int
     CHANGE_COLOR_L: int
     CHANGE_COLOR_V: int
     COLORIZE: int
+    COLOR_H: int
+    COLOR_S: int
+    COLOR_V: int
     CUSTOM_INPUT: int
     CUSTOM_INPUT_SLOWNESS: int
+    DABS_PER_ACTUAL_RADIUS: int
     DABS_PER_BASIC_RADIUS: int
     DABS_PER_SECOND: int
+    DIRECTION_FILTER: int
     ELLIPTICAL_DAB_ANGLE: int
     ELLIPTICAL_DAB_RATIO: int
     ERASER: int
@@ -140,6 +147,7 @@ class MPBrush:
     POSTERIZE_NUM: int
     PRESSURE_GAIN_LOG: int
     RADIUS_BY_RANDOM: int
+    RADIUS_LOGARITHMIC: int
     RESTORE_COLOR: int
     SLOW_TRACKING: int
     SLOW_TRACKING_PER_DAB: int
@@ -149,6 +157,7 @@ class MPBrush:
     SMUDGE_LENGTH_LOG: int
     SMUDGE_RADIUS_LOG: int
     SMUDGE_TRANSPARENCY: int
+    SNAP_TO_PIXEL: int
     SPEED1_GAMMA: int
     SPEED1_SLOWNESS: int
     SPEED2_GAMMA: int
@@ -157,7 +166,6 @@ class MPBrush:
     STROKE_HOLDTIME: int
     STROKE_THRESHOLD: int
     TRACKING_NOISE: int
-    _setting_info: Dict[str, 'BrushSetting']
 
 
 class BrushSetting:

@@ -6,6 +6,7 @@ from PyQt5.QtGui import QFont, QFontMetrics
 MAX_FONT_PT = 240
 logger = logging.getLogger(__name__)
 
+
 def find_text_size(text: str, font: QFont) -> QSize:
     """Returns the size in pixels required to render the text with the given font."""
     return QFontMetrics(font).boundingRect(text).size()

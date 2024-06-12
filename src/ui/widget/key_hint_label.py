@@ -27,7 +27,7 @@ class KeyHintLabel(QLabel):
     def resizeEvent(self, event: Optional[QResizeEvent]) -> None:
         """Scale font as needed to stay in the bounds."""
         font = self.font()
-        max_size = max(1, min(max_font_size(self._base_text , font, self.size()), self._default_size))
+        max_size = max(1, min(max_font_size(self._base_text, font, self.size()), self._default_size))
         if max_size != font.pointSize():
             font.setPointSize(max_size)
             self.setFont(font)

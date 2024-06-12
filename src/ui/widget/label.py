@@ -17,7 +17,6 @@ class Label(QLabel):
     def __init__(
             self,
             text: str,
-            config: Optional[AppConfig] = None,
             parent: Optional[QWidget] = None,
             size: Optional[int] = None,
             bg_color: QColor | Qt.GlobalColor = Qt.GlobalColor.transparent,
@@ -28,8 +27,6 @@ class Label(QLabel):
         ----------
         text : str
             Initial label text.
-        config : AppConfig, optional, default=None
-            Shared config object used to set font size. If not provided, default font size will be used instead.
         parent : QWidget, optional, default=None
             Optional parent widget
         size : int
@@ -40,7 +37,7 @@ class Label(QLabel):
             Initial orientation.
         """
         super().__init__(parent)
-        self._config = config
+        config = AppConfig.instance()
         self._size = size
         self._font = QFont()
         self._inverted: Optional[bool] = False
@@ -59,7 +56,7 @@ class Label(QLabel):
         self.setStyleSheet(self._base_style)
         if size is not None:
             self._font.setPointSize(size)
-        elif config is not None:
+        else:
             font_size = config.get(AppConfig.FONT_POINT_SIZE)
             self._font.setPointSize(font_size)
         self.set_orientation(orientation)

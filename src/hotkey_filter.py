@@ -88,23 +88,20 @@ class HotkeyFilter(QObject):
                 self._bindings[key] = []
             self._bindings[key].insert(0, keybinding)
 
-    def register_config_keybinding(self, action: Callable[[], bool], config: AppConfig, config_key: str) -> None:
+    def register_config_keybinding(self, action: Callable[[], bool], config_key: str) -> None:
         """Register a keybinding defined in application config.
 
         Parameters
         ----------
         action: Callable
             Function the key binding should invoke. Returns whether the function consumed the key event.
-        config: AppConfig
-            Config object holding the keybindings.
         config_key: str
             Key string for the appropriate key or keys.
         """
-        keys = config.get_keycodes(config_key)
+        keys = AppConfig.instance().get_keycodes(config_key)
         self.register_keybinding(action, keys, Qt.NoModifier)
 
-    def register_speed_modified_keybinding(self, scaling_action: Callable[[int], bool], config: AppConfig,
-                                           config_key: str) -> None:
+    def register_speed_modified_keybinding(self, scaling_action: Callable[[int], bool], config_key: str) -> None:
         """Register a keybinding defined in application config that's affected by the speed modifier.
 
         If the speed_modifier key has a valid definition in the config file, some actions operate at increased speed if
@@ -115,11 +112,10 @@ class HotkeyFilter(QObject):
         scaling_action: Callable[[int], bool]
             Function the key binding should invoke. The int parameter is a multiplier that the function should apply to
             some scalar action it performs. Return value is whether the function consumed the key event.
-        config: AppConfig
-            Config object holding the keybindings.
         config_key: str
             Key string for the appropriate key or keys.
         """
+        config = AppConfig.instance()
         keys = config.get_keycodes(config_key)
         self.register_keybinding(lambda: scaling_action(1), keys, Qt.NoModifier)
 
@@ -140,7 +136,6 @@ class HotkeyFilter(QObject):
         if event.type() != QEvent.Type.KeyPress:
             return super().eventFilter(source, event)
         event = cast(QKeyEvent, event)
-
 
         # Avoid blocking inputs to text fields:
         focused_widget = QApplication.focusWidget()

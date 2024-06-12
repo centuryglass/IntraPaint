@@ -27,9 +27,9 @@ MAX_PX_VALUE = 20000
 class ImageScaleModal(QDialog):
     """Popup modal window used for scaling the edited image."""
 
-    def __init__(self, default_width: int, default_height: int, config: AppConfig):
+    def __init__(self, default_width: int, default_height: int):
         super().__init__()
-
+        config = AppConfig.instance()
         self._should_scale = False
         self.setModal(True)
         self._layout = QVBoxLayout()
@@ -52,8 +52,7 @@ class ImageScaleModal(QDialog):
         self._y_mult_box = LabeledSpinbox(self, HEIGHT_MULT_BOX_LABEL, HEIGHT_MULT_BOX_TOOLTIP, 0.0, 1.0,
                                           999.0)
         self._layout.addWidget(self._y_mult_box)
-        self._upscale_method_box, self._upscale_layout = connected_combobox(self, config,
-                                                                            AppConfig.UPSCALE_METHOD,
+        self._upscale_method_box, self._upscale_layout = connected_combobox(self, AppConfig.UPSCALE_METHOD,
                                                                             text=UPSCALE_METHOD_LABEL)
         self._layout.addLayout(self._upscale_layout)
 
@@ -84,12 +83,9 @@ class ImageScaleModal(QDialog):
 
         # Add controlnet upscale option:
         if config.get(AppConfig.CONTROLNET_VERSION) > 0:
-            self._controlnet_checkbox = connected_checkbox(self, config, AppConfig.CONTROLNET_UPSCALING,
+            self._controlnet_checkbox = connected_checkbox(self, AppConfig.CONTROLNET_UPSCALING,
                                                            text=CONTROLNET_TILE_LABEL)
-            self._controlnet_rate_box = connected_spinbox(
-                self,
-                config,
-                AppConfig.CONTROLNET_DOWNSAMPLE_RATE)
+            self._controlnet_rate_box = connected_spinbox(self, AppConfig.CONTROLNET_DOWNSAMPLE_RATE)
             self._controlnet_rate_box.setEnabled(config.get(AppConfig.CONTROLNET_UPSCALING))
             self._controlnet_checkbox.stateChanged.connect(self._controlnet_rate_box.setEnabled)
             self._layout.addWidget(self._controlnet_checkbox)

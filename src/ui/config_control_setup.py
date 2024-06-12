@@ -27,7 +27,6 @@ SELECTION_HEIGHT_TOOLTIP = 'Set the top edge position of the image generation ar
 
 
 def connected_spinbox(parent: Optional[QWidget],
-                      config: AppConfig,
                       key: str,
                       min_val: Optional[int | float] = None,
                       max_val: Optional[int | float] = None,
@@ -42,8 +41,6 @@ def connected_spinbox(parent: Optional[QWidget],
     ----------
     parent : QWidget or None
         Optional parent widget.
-    config : AppConfig
-        Shared application configuration object.
     key : str
         Numeric config value to connect to the spinbox.
     min_val : int or float or None
@@ -55,6 +52,7 @@ def connected_spinbox(parent: Optional[QWidget],
     dict_key : str or None
         If not None, the spinbox will be connected to the inner property of a dict config value.
     """
+    config = AppConfig.instance()
     initial_value = config.get(key, inner_key=dict_key)
     spinbox = QDoubleSpinBox(parent) if isinstance(initial_value, float) else BigIntSpinbox(parent)
     if initial_value < spinbox.minimum() or initial_value > spinbox.maximum():
@@ -110,7 +108,6 @@ def connected_spinbox(parent: Optional[QWidget],
 
 
 def connected_textedit(parent: Optional[QWidget],
-                       config: AppConfig,
                        key: str,
                        multi_line: bool = False,
                        inner_key: Optional[str] = None) -> QLineEdit | QPlainTextEdit:
@@ -120,8 +117,6 @@ def connected_textedit(parent: Optional[QWidget],
     ----------
     parent : QWidget or None
         Optional parent widget.
-    config : data_model.config.Config
-        Shared application configuration object.
     key : str
         String config value to connect to the textedit.
     multi_line : bool
@@ -129,6 +124,7 @@ def connected_textedit(parent: Optional[QWidget],
     inner_key : str or none
         If not None, the textedit will be connected to the inner property of a dict config value.
     """
+    config = AppConfig.instance()
     textedit = QLineEdit(config.get(key), parent) if not multi_line else QPlainTextEdit(config.get(key), parent)
     if multi_line:
         textedit.textChanged.connect(lambda: config.set(key, textedit.toPlainText(), inner_key=inner_key))
@@ -154,7 +150,6 @@ def connected_textedit(parent: Optional[QWidget],
 
 
 def connected_checkbox(parent: Optional[QWidget],
-                       config: AppConfig,
                        key: str,
                        text: Optional[str] = None,
                        inner_key: Optional[str] = None) -> QCheckBox:
@@ -164,8 +159,6 @@ def connected_checkbox(parent: Optional[QWidget],
     ----------
     parent : QWidget or None
         Optional parent widget.
-    config : AppConfig
-        Shared application configuration object.
     key : str
         Boolean config value to connect to the checkbox.
     text : str or None
@@ -173,6 +166,7 @@ def connected_checkbox(parent: Optional[QWidget],
     inner_key : str or none
         If not None, the checkbox will be connected to the inner property of a dict config value.
     """
+    config = AppConfig.instance()
     checkbox = QCheckBox(parent)
     checkbox.setChecked(bool(config.get(key, inner_key)))
     checkbox.stateChanged.connect(lambda is_checked: config.set(key, bool(is_checked), inner_key=inner_key))
@@ -185,7 +179,6 @@ def connected_checkbox(parent: Optional[QWidget],
 
 
 def connected_combobox(parent: Optional[QWidget],
-                       config: AppConfig,
                        key: str,
                        text: Optional[str] = None) -> QComboBox | tuple[QComboBox, QHBoxLayout]:
     """Creates a combobox widget connected to a config property with a pre-defined  option list.
@@ -194,13 +187,12 @@ def connected_combobox(parent: Optional[QWidget],
     ----------
     parent : QWidget or None
         Optional parent widget.
-    config : AppConfig
-        Shared application configuration object.
     key : str
         Config value to connect to the combobox.
     text : str or None
         Optional label text
     """
+    config = AppConfig.instance()
     combobox = QComboBox(parent)
     options = config.get_options(key)
     for option in options:
@@ -225,15 +217,12 @@ def connected_combobox(parent: Optional[QWidget],
     return combobox
 
 
-def get_selection_control_boxes(config: AppConfig,
-                                layer_stack: LayerStack,
+def get_selection_control_boxes(layer_stack: LayerStack,
                                 include_sliders: bool = False) -> List[QWidget]:
     """
     Creates and returns labeled widgets for controlling the image generation area selection.
     Parameters
     ----------
-        config: AppConfig
-            Used to load max bounds and synchronize the EDIT_SIZE parameter.
         layer_stack: LayerStack
             Edited image object responsible for maintaining the selected image generation area
         include_sliders: bool, default=False
@@ -251,6 +240,7 @@ def get_selection_control_boxes(config: AppConfig,
         height: QWidget
             Control for setting the selection's height.
     """
+    config = AppConfig.instance()
     # Create widgets:
     control_widgets = []
     sliders = []

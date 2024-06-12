@@ -44,7 +44,7 @@ class MaskLayer(ImageLayer):
     - The mask layer can't be set as the active layer.
     """
 
-    def __init__(self, size: QSize, config: AppConfig, selection_signal: pyqtSignal) -> None:
+    def __init__(self, size: QSize, selection_signal: pyqtSignal) -> None:
         """
         Initializes a new mask layer.
         """
@@ -52,7 +52,6 @@ class MaskLayer(ImageLayer):
         self._selection = QRect()
         super().__init__(size, MASK_LAYER_NAME, False)
         self.opacity = MASK_OPACITY_DEFAULT
-        self._config = config
         self._bounding_box = None
         selection_signal.connect(self.update_selection)
 
@@ -121,7 +120,6 @@ class MaskLayer(ImageLayer):
 
     def _handle_content_change(self, image: QImage) -> None:
         """When the image updates, ensure that it meets requirements, and recalculate bounds."""
-
         # Enforce fixed colors, alpha thresholds:
         image_ptr = image.bits()
         image_ptr.setsize(image.byteCount())
@@ -170,9 +168,10 @@ class MaskLayer(ImageLayer):
            Rectangle containing all non-transparent mask canvas content plus padding, or None if the canvas is empty
            or config.get(Config.INPAINT_FULL_RES) is false and ignore_config is false.
         """
-        if (not ignore_config and not self._config.get(AppConfig.INPAINT_FULL_RES)) or self._bounding_box is None:
+        config = AppConfig.instance()
+        if (not ignore_config and not config.get(AppConfig.INPAINT_FULL_RES)) or self._bounding_box is None:
             return None
-        padding = self._config.get(AppConfig.INPAINT_FULL_RES_PADDING)
+        padding = config.get(AppConfig.INPAINT_FULL_RES_PADDING)
         top = self._bounding_box.top()
         bottom = self._bounding_box.bottom()
         left = self._bounding_box.left()

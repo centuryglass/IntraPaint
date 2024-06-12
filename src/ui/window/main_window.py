@@ -38,27 +38,22 @@ MAX_TABS = 3
 class MainWindow(QMainWindow):
     """Main user interface for inpainting."""
 
-    def __init__(self,
-                 config: AppConfig,
-                 layer_stack: LayerStack,
-                 controller: Any):
+    def __init__(self, layer_stack: LayerStack, controller: Any):
         """Initializes the main application window and sets up the default UI layout and menu options.
 
-        config : AppConfig
-            Shared application configuration object.
         layer_stack : LayerStack
             Image layers being edited.
         controller : BaseController
             Object managing application behavior.
         """
         super().__init__()
+        config = AppConfig.instance()
         self.setWindowIcon(QIcon('resources/icon.png'))
         self.setSizePolicy(QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding))
         self.setMinimumSize(QSize(640, 480))
 
         # Initialize UI/editing data model:
         self._controller = controller
-        self._config = config
         self._layer_stack = layer_stack
         self._image_selector = None
         self._layout_mode = 'horizontal'
@@ -93,7 +88,7 @@ class MainWindow(QMainWindow):
             def _try_tab_focus(idx=i) -> bool:
                 if not self._central_widget.isVisible():
                     return False
-                return  self.focus_tab(idx)
+                return self.focus_tab(idx)
             HotkeyFilter.instance().register_keybinding(_try_tab_focus, tab_index_key, Qt.KeyboardModifier.NoModifier)
         # Loading widget (for interrogate):
         self._is_loading = False
@@ -103,7 +98,7 @@ class MainWindow(QMainWindow):
         self._loading_widget.hide()
 
         # Image/Mask editing layout:
-        self._image_viewer = ImageViewer(self, layer_stack, config)
+        self._image_viewer = ImageViewer(self, layer_stack)
         self._layout.addWidget(self._image_viewer)
 
         self._tool_panel = ToolPanel(layer_stack, self._image_viewer, config, controller.start_and_manage_inpainting)
@@ -337,51 +332,51 @@ class MainWindow(QMainWindow):
         ]
         for name, image_filter in filter_types:
             scale_mode_list.addItem(name, image_filter)
-        scale_mode_list.setCurrentIndex(scale_mode_list.findData(self._config.get(config_key)))
+        scale_mode_list.setCurrentIndex(scale_mode_list.findData(AppConfig.instance().get(config_key)))
 
         def set_scale_mode(mode_index: int):
             """Applies the selected scaling mode to config."""
             mode = scale_mode_list.itemData(mode_index)
             if mode:
-                self._config.set(config_key, mode)
+                AppConfig.instance().set(config_key, mode)
 
         scale_mode_list.currentIndexChanged.connect(set_scale_mode)
-        scale_mode_list.setToolTip(self._config.get_tooltip(config_key))
+        scale_mode_list.setToolTip(AppConfig.instance().get_tooltip(config_key))
         return scale_mode_list
 
     def _build_control_panel(self, controller) -> QWidget:
         """Adds image editing controls to the layout."""
+        config = AppConfig.instance()
         inpaint_panel = QWidget(self)
-        text_prompt_textbox = connected_textedit(inpaint_panel, self._config, AppConfig.PROMPT)
-        negative_prompt_textbox = connected_textedit(inpaint_panel, self._config, AppConfig.NEGATIVE_PROMPT)
+        text_prompt_textbox = connected_textedit(inpaint_panel, AppConfig.PROMPT)
+        negative_prompt_textbox = connected_textedit(inpaint_panel, AppConfig.NEGATIVE_PROMPT)
 
-        batch_size_spinbox = connected_spinbox(inpaint_panel, self._config, AppConfig.BATCH_SIZE)
+        batch_size_spinbox = connected_spinbox(inpaint_panel, AppConfig.BATCH_SIZE)
 
-        batch_count_spinbox = connected_spinbox(inpaint_panel, self._config, AppConfig.BATCH_COUNT)
+        batch_count_spinbox = connected_spinbox(inpaint_panel, AppConfig.BATCH_COUNT)
 
         inpaint_button = QPushButton()
         inpaint_button.setText('Start inpainting')
         inpaint_button.clicked.connect(controller.start_and_manage_inpainting)
 
         more_options_bar = QHBoxLayout()
-        guidance_scale_spinbox = connected_spinbox(inpaint_panel, self._config, AppConfig.GUIDANCE_SCALE)
+        guidance_scale_spinbox = connected_spinbox(inpaint_panel, AppConfig.GUIDANCE_SCALE)
 
-        skip_steps_spinbox = connected_spinbox(inpaint_panel, self._config, AppConfig.SKIP_STEPS)
+        skip_steps_spinbox = connected_spinbox(inpaint_panel, AppConfig.SKIP_STEPS)
 
-        enable_scale_checkbox = connected_checkbox(inpaint_panel, self._config, AppConfig.INPAINT_FULL_RES)
-        enable_scale_checkbox.setText(self._config.get_label(AppConfig.INPAINT_FULL_RES))
+        enable_scale_checkbox = connected_checkbox(inpaint_panel, AppConfig.INPAINT_FULL_RES)
+        enable_scale_checkbox.setText(config.get_label(AppConfig.INPAINT_FULL_RES))
 
         upscale_mode_label = QLabel(inpaint_panel)
-        upscale_mode_label.setText(self._config.get_label(AppConfig.UPSCALE_MODE))
+        upscale_mode_label.setText(config.get_label(AppConfig.UPSCALE_MODE))
         upscale_mode_list = self._create_scale_mode_selector(inpaint_panel, AppConfig.UPSCALE_MODE)
         downscale_mode_label = QLabel(inpaint_panel)
-        downscale_mode_label.setText(self._config.get_label(AppConfig.DOWNSCALE_MODE))
+        downscale_mode_label.setText(config.get_label(AppConfig.DOWNSCALE_MODE))
         downscale_mode_list = self._create_scale_mode_selector(inpaint_panel, AppConfig.DOWNSCALE_MODE)
 
-        more_options_bar.addWidget(QLabel(self._config.get_label(AppConfig.GUIDANCE_SCALE), inpaint_panel),
-                                   stretch=0)
+        more_options_bar.addWidget(QLabel(config.get_label(AppConfig.GUIDANCE_SCALE), inpaint_panel), stretch=0)
         more_options_bar.addWidget(guidance_scale_spinbox, stretch=20)
-        more_options_bar.addWidget(QLabel(self._config.get_label(AppConfig.SKIP_STEPS), inpaint_panel), stretch=0)
+        more_options_bar.addWidget(QLabel(config.get_label(AppConfig.SKIP_STEPS), inpaint_panel), stretch=0)
         more_options_bar.addWidget(skip_steps_spinbox, stretch=20)
         more_options_bar.addWidget(enable_scale_checkbox, stretch=10)
         more_options_bar.addWidget(upscale_mode_label, stretch=0)
@@ -391,13 +386,13 @@ class MainWindow(QMainWindow):
 
         # Build layout with labels:
         layout = QGridLayout()
-        layout.addWidget(QLabel(self._config.get_label(AppConfig.PROMPT), inpaint_panel), 1, 1, 1, 1)
+        layout.addWidget(QLabel(config.get_label(AppConfig.PROMPT), inpaint_panel), 1, 1, 1, 1)
         layout.addWidget(text_prompt_textbox, 1, 2, 1, 1)
-        layout.addWidget(QLabel(self._config.get_label(AppConfig.NEGATIVE_PROMPT), inpaint_panel), 2, 1, 1, 1)
+        layout.addWidget(QLabel(config.get_label(AppConfig.NEGATIVE_PROMPT), inpaint_panel), 2, 1, 1, 1)
         layout.addWidget(negative_prompt_textbox, 2, 2, 1, 1)
-        layout.addWidget(QLabel(self._config.get_label(AppConfig.BATCH_SIZE), inpaint_panel), 1, 3, 1, 1)
+        layout.addWidget(QLabel(config.get_label(AppConfig.BATCH_SIZE), inpaint_panel), 1, 3, 1, 1)
         layout.addWidget(batch_size_spinbox, 1, 4, 1, 1)
-        layout.addWidget(QLabel(self._config.get_label(AppConfig.BATCH_COUNT), inpaint_panel), 2, 3, 1, 1)
+        layout.addWidget(QLabel(config.get_label(AppConfig.BATCH_COUNT), inpaint_panel), 2, 3, 1, 1)
         layout.addWidget(batch_count_spinbox, 2, 4, 1, 1)
         layout.addWidget(inpaint_button, 2, 5, 1, 1)
         layout.setColumnStretch(2, 255)  # Maximize prompt input
@@ -424,18 +419,15 @@ class MainWindow(QMainWindow):
         if visible == is_visible:
             return
         if visible:
-            if self._config.get(AppConfig.EDIT_MODE) == 'Inpaint':
+            if AppConfig.instance().get(AppConfig.EDIT_MODE) == 'Inpaint':
                 mask = self._layer_stack.mask_layer.pil_mask_image
             else:
                 mask = QPixmap(self._layer_stack.selection.size())
                 mask.fill(Qt.red)
                 mask = qimage_to_pil_image(mask.toImage())
-            self._image_selector = GeneratedImageSelector(
-                self._config,
-                self._layer_stack,
-                mask,
-                lambda: self.set_image_selector_visible(False),
-                self._controller.select_and_apply_sample)
+            self._image_selector = GeneratedImageSelector(self._layer_stack, mask,
+                                                          lambda: self.set_image_selector_visible(False),
+                                                          self._controller.select_and_apply_sample)
             self._central_widget.addWidget(self._image_selector)
             self._central_widget.setCurrentWidget(self._image_selector)
             self.installEventFilter(self._image_selector)

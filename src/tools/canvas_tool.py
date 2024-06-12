@@ -35,10 +35,8 @@ class CanvasTool(BaseTool):
     and setting or updating the affected layer.
     """
 
-    def __init__(self, layer_stack: LayerStack, image_viewer: ImageViewer, canvas: LayerCanvas,
-                 config: AppConfig) -> None:
+    def __init__(self, layer_stack: LayerStack, image_viewer: ImageViewer, canvas: LayerCanvas) -> None:
         super().__init__()
-        self._config = config
         self._layer = None
         self._drawing = False
         self._cached_size = None
@@ -71,7 +69,8 @@ class CanvasTool(BaseTool):
                     return False
                 self.adjust_brush_size(step * mult)
                 return True
-            HotkeyFilter.instance().register_speed_modified_keybinding(_size_change, self._config, key)
+
+            HotkeyFilter.instance().register_speed_modified_keybinding(_size_change, key)
 
     def set_scaling_icon_cursor(self, icon: Optional[QIcon]) -> None:
         """Sets whether the tool should use a cursor scaled to the brush size and canvas.
@@ -258,8 +257,9 @@ class CanvasTool(BaseTool):
             else:
                 self.cursor = QCursor(scaled_cursor)
 
-    def _speed_modifier_held(self) -> bool:
-        speed_modifier = self._config.get(AppConfig.SPEED_MODIFIER)
+    @staticmethod
+    def _speed_modifier_held() -> bool:
+        speed_modifier = AppConfig.instance().get(AppConfig.SPEED_MODIFIER)
         if speed_modifier == '':
             return False
         speed_modifier = get_modifiers(speed_modifier)
@@ -276,7 +276,7 @@ class CanvasTool(BaseTool):
             offset += 1
         if offset != 0:
             if self._speed_modifier_held():
-                offset *= self._config.get(AppConfig.SPEED_MODIFIER_MULTIPLIER)
+                offset *= AppConfig.instance().get(AppConfig.SPEED_MODIFIER_MULTIPLIER)
             self.adjust_brush_size(offset)
             return True
         return False

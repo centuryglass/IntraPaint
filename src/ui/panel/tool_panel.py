@@ -59,7 +59,6 @@ class ToolPanel(QWidget):
         self.setSizePolicy(QSizePolicy(QSizePolicy.Expanding, QSizePolicy.MinimumExpanding))
         self._layer_stack = layer_stack
         self._image_viewer = image_viewer
-        self._config = config
         self._event_handler = ToolEventHandler(image_viewer)
         self._event_handler.tool_changed.connect(self._setup_active_tool)
         self._layout = QStackedLayout(self)
@@ -117,15 +116,15 @@ class ToolPanel(QWidget):
             self._event_handler.register_hotkeys(new_tool)
             self._tool_list.add_widget(button)
 
-        brush_tool = BrushTool(layer_stack, image_viewer, config)
+        brush_tool = BrushTool(layer_stack, image_viewer)
         add_tool(brush_tool)
-        eyedropper_tool = EyedropperTool(layer_stack, config)
+        eyedropper_tool = EyedropperTool(layer_stack)
         add_tool(eyedropper_tool)
-        selection_tool = SelectionTool(layer_stack, image_viewer, config)
+        selection_tool = SelectionTool(layer_stack, image_viewer)
         add_tool(selection_tool)
-        mask_tool = MaskTool(layer_stack, image_viewer, config)
+        mask_tool = MaskTool(layer_stack, image_viewer)
         add_tool(mask_tool)
-        transform_tool = LayerTransformTool(layer_stack, image_viewer, config)
+        transform_tool = LayerTransformTool(layer_stack, image_viewer)
         add_tool(transform_tool)
         self._event_handler.register_tool_delegate(brush_tool, eyedropper_tool, Qt.KeyboardModifier.ControlModifier)
         self._switch_active_tool(config.get(AppConfig.LAST_ACTIVE_TOOL))
@@ -217,7 +216,7 @@ class ToolPanel(QWidget):
         """Sets a new tool as the active tool."""
         active_tool = None if tool_label not in self._tools else self._tools[tool_label]
         if active_tool is not None:
-            self._config.set(AppConfig.LAST_ACTIVE_TOOL, active_tool.label)
+            AppConfig.instance().set(AppConfig.LAST_ACTIVE_TOOL, active_tool.label)
         self._event_handler.active_tool = active_tool
         # Event handler will send a signal to trigger _setup_active_tool
 

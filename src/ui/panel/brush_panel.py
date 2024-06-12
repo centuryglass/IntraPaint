@@ -32,13 +32,11 @@ class BrushPanel(QTabWidget):
     BRUSH_EXTENSION = '.myb'
     BRUSH_ICON_EXTENSION = '_prev.png'
 
-    def __init__(self, config: AppConfig, brush: MPBrush, parent: Optional[QWidget] = None) -> None:
+    def __init__(self, brush: MPBrush, parent: Optional[QWidget] = None) -> None:
         """Loads brushes and optionally adds the widget to a parent.
 
         Parameters
         ----------
-        config : AppConfig
-            Shared config object, used to save and load favorite brushes.
         brush : MPBrush
             Brush object connected to the MyPaint canvas.
         parent : QWidget, optional
@@ -49,7 +47,6 @@ class BrushPanel(QTabWidget):
         self._groups: List[str] = []
         self._group_orders: Dict[str, List[str]] = {}
         self._pages: Dict[str, GridContainer] = {}
-        self._config = config
         self._read_order_file(os.path.join(BrushPanel.BRUSH_DIR, BrushPanel.BRUSH_CONF_FILE))
         self._setup_brush_tabs()
         self._setup_favorites_tab()
@@ -78,13 +75,13 @@ class BrushPanel(QTabWidget):
             for brush_name in self._group_orders[group]:
                 brush_path = os.path.join(group_dir, brush_name + BrushPanel.BRUSH_EXTENSION)
                 image_path = os.path.join(group_dir, brush_name + BrushPanel.BRUSH_ICON_EXTENSION)
-                brush_icon = _IconButton(self._brush, image_path, brush_path, self._config, False)
+                brush_icon = _IconButton(self._brush, image_path, brush_path, False)
                 brush_icon.favorite_change.connect(self._add_favorite)
                 self._pages[group].add_widget(brush_icon)
 
     def _setup_favorites_tab(self) -> None:
         """Reads favorite brushes, adds them in a new tab."""
-        favorite_list = self._config.get(BrushPanel.FAV_CONFIG_KEY)
+        favorite_list = AppConfig.instance().get(BrushPanel.FAV_CONFIG_KEY)
         favorite_brushes = []
         for favorite in favorite_list:
             if '/' not in favorite:
@@ -92,7 +89,7 @@ class BrushPanel(QTabWidget):
             group, brush = favorite.split('/')
             brush_path = os.path.join(BrushPanel.BRUSH_DIR, group, brush + BrushPanel.BRUSH_EXTENSION)
             image_path = os.path.join(BrushPanel.BRUSH_DIR, group, brush + BrushPanel.BRUSH_ICON_EXTENSION)
-            brush_icon = _IconButton(self._brush, image_path, brush_path, self._config, True)
+            brush_icon = _IconButton(self._brush, image_path, brush_path, True)
             brush_icon.favorite_change.connect(self._remove_favorite)
             favorite_brushes.append(brush_icon)
         if len(favorite_brushes) > 0:
@@ -119,10 +116,10 @@ class BrushPanel(QTabWidget):
             fav_list = []
         else:
             fav_list = self._pages[BrushPanel.FAV_KEY].findChildren(_IconButton)
-        self._config.set(BrushPanel.FAV_CONFIG_KEY, [brush.saved_name() for brush in fav_list])
+        AppConfig.instance().set(BrushPanel.FAV_CONFIG_KEY, [brush.saved_name() for brush in fav_list])
 
     def _add_favorite(self, icon_button: QWidget) -> None:
-        if icon_button.saved_name() in self._config.get(BrushPanel.FAV_CONFIG_KEY):
+        if icon_button.saved_name() in AppConfig.instance().get(BrushPanel.FAV_CONFIG_KEY):
             return
         if BrushPanel.FAV_KEY not in self._layouts:
             self._create_tab(BrushPanel.FAV_KEY, index=0)
@@ -167,8 +164,7 @@ class _IconButton(QWidget):
 
     favorite_change = pyqtSignal(QWidget)
 
-    def __init__(self, brush: MPBrush, image_path: str, brush_path: str, config: AppConfig,
-                 favorite: bool = False) -> None:
+    def __init__(self, brush: MPBrush, image_path: str, brush_path: str, favorite: bool = False) -> None:
         """Initialize using paths to the brush file and icon."""
         super().__init__()
         self._brush = brush
@@ -178,7 +174,6 @@ class _IconButton(QWidget):
         self._image_path = image_path
         self._image_rect: Optional[QRect] = None
         self._image = QPixmap(image_path)
-        self._config = config
         inverted = QImage(image_path)
         inverted.invertPixels(QImage.InvertRgba)
         self._image_inverted = QPixmap.fromImage(inverted)
@@ -195,7 +190,7 @@ class _IconButton(QWidget):
 
     def copy(self, favorite: bool = False) -> QWidget:
         """Creates a new IconButton with the same brush file and icon."""
-        return _IconButton(self._brush, self._image_path, self._brush_path, self._config, favorite=favorite)
+        return _IconButton(self._brush, self._image_path, self._brush_path, favorite=favorite)
 
     def is_selected(self) -> bool:
         """Checks whether this brush is the selected brush."""
@@ -236,7 +231,7 @@ class _IconButton(QWidget):
         if event is not None and event.button() == Qt.MouseButton.LeftButton and not self.is_selected() \
                 and self._image_rect is not None and self._image_rect.contains(event.pos()):
             self._brush.load_file(self._brush_path, True)
-            self._config.set(AppConfig.MYPAINT_BRUSH, self._brush_path)
+            AppConfig.instance().set(AppConfig.MYPAINT_BRUSH, self._brush_path)
             parent = self.parent()
             if parent is not None:
                 brushes = parent.findChildren(_IconButton)

@@ -5,7 +5,6 @@ from typing import Optional
 from PyQt5.QtGui import QPixmap, QMouseEvent
 from PyQt5.QtWidgets import QWidget, QFrame, QSizePolicy
 from PyQt5.QtCore import Qt, QSize, pyqtSignal, QEvent
-from src.config.application_config import AppConfig
 from src.ui.widget.label import Label
 
 
@@ -17,7 +16,6 @@ class DualToggle(QWidget):
     def __init__(self,
                  parent: QWidget,
                  options: list[str],
-                 config: Optional[AppConfig] = None,
                  orientation: Qt.Orientation = Qt.Orientation.Horizontal):
         """__init__.
 
@@ -27,8 +25,6 @@ class DualToggle(QWidget):
             Optional parent widget.
         options : list of str
             Option names. Must be length 2, other lengths will raise ValueError.
-        config : AppConfig
-            Shared application configuration.
         orientation : Qt.Orientation
             Horizontal or vertical orientation.
         """
@@ -40,10 +36,10 @@ class DualToggle(QWidget):
         self._orientation: Optional[Qt.Orientation] = None
         self._selected: Optional[str] = None
         bg_color = parent.palette().color(parent.backgroundRole())
-        self.label1 = Label(options[0], config, self, bg_color=bg_color, orientation=orientation)
+        self.label1 = Label(options[0], self, bg_color=bg_color, orientation=orientation)
         self.label1.setFrameStyle(QFrame.StyledPanel | QFrame.Sunken)
         self.label1.set_inverted(True)
-        self.label2 = Label(options[1], config, self, bg_color=bg_color, orientation=orientation)
+        self.label2 = Label(options[1], self, bg_color=bg_color, orientation=orientation)
         self.label2.setFrameStyle(QFrame.StyledPanel | QFrame.Raised)
         self.set_orientation(orientation)
 

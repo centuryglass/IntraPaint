@@ -24,7 +24,8 @@ _access_lock = Lock()
 
 def commit_action(action: Callable[[], None], undo_action: Callable[[], None],
                   action_type: Optional[str] = None,
-                  action_data: Optional[Dict[str, Any]] = None) -> None:
+                  action_data: Optional[Dict[str, Any]] = None,
+                  ignore_if_locked = False) -> bool:
     """Performs an action, then commits it to the undo stack.
 
     The undo stack is lock-protected.  Make sure that the function parameters provided don't also call commit_action.
@@ -44,9 +45,15 @@ def commit_action(action: Callable[[], None], undo_action: Callable[[], None],
             undo_action()
     action_type: str
         An arbitrary label used to identify the action, to be used when attempting to merge actions in the stack.
-    action_data: d
+    action_data: Dict
+        Arbitrary data to use for merging actions.
+    ignore_if_locked: bool, default=False
+        If true, the function will return False without applying any changes if the lock is already held.
     """
     global _undo_stack, _redo_stack, _access_lock
+
+    if ignore_if_locked and _access_lock.locked():
+        return False
     with _access_lock:
         action()
         undo_entry = _UndoAction(undo_action, action, action_type, action_data)
@@ -54,6 +61,7 @@ def commit_action(action: Callable[[], None], undo_action: Callable[[], None],
         if len(_undo_stack) > MAX_UNDO:
             _undo_stack = _undo_stack[:-MAX_UNDO]
         _redo_stack.clear()
+    return True
 
 
 @contextmanager

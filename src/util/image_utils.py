@@ -7,14 +7,12 @@ from typing import Optional
 import numpy as np
 from PIL import Image
 from PyQt5.QtCore import QBuffer, QRect, QSize, Qt, QPoint
-
-from src.ui.util.text import max_font_size
-
-DEFAULT_ICON_SIZE = QSize(64, 64)
 from PyQt5.QtGui import QImage, QIcon, QPixmap, QPainter, QColor
 from PyQt5.QtWidgets import QStyle, QWidget, QApplication
+from src.ui.util.text import max_font_size
 
 logger = logging.getLogger(__name__)
+DEFAULT_ICON_SIZE = QSize(64, 64)
 
 
 def pil_image_to_qimage(pil_image: Image.Image) -> QImage:
@@ -124,6 +122,7 @@ def get_standard_qt_icon(icon_code: QStyle.StandardPixmap, style_source: Optiona
     else:
         style = style_source.style()
     return style.standardIcon(icon_code)
+
 
 def get_character_icon(character: str, color: QColor) -> QIcon:
     """Renders a character as an icon."""

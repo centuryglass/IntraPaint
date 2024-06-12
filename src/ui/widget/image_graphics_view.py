@@ -23,7 +23,7 @@ class ImageGraphicsView(QGraphicsView):
     scale_changed = pyqtSignal(float)
     offset_changed = pyqtSignal(QPoint)
 
-    def __init__(self, config: AppConfig, parent: Optional[QWidget] = None) -> None:
+    def __init__(self, parent: Optional[QWidget] = None) -> None:
         super().__init__(parent)
         self._scene = QGraphicsScene()
         self._content_size: QSize = QSize(0, 0)
@@ -50,7 +50,7 @@ class ImageGraphicsView(QGraphicsView):
         self.installEventFilter(self)
 
         # Bind directional navigation and selection keys:
-        zoom_key = config.get_keycodes(AppConfig.ZOOM_TOGGLE)
+        zoom_key = AppConfig.instance().get_keycodes(AppConfig.ZOOM_TOGGLE)
 
         def _toggle_zoom_if_visible() -> bool:
             if not self.isVisible():
@@ -71,14 +71,16 @@ class ImageGraphicsView(QGraphicsView):
                 self.offset = QPointF(self.offset.x() + x * mult, self.offset.y() + y * mult)
                 self.resizeEvent(None)
                 return True
-            HotkeyFilter.instance().register_speed_modified_keybinding(_pan, config, pan_key)
+
+            HotkeyFilter.instance().register_speed_modified_keybinding(_pan, pan_key)
 
             # Bind selection offset:
             def _scroll(mult, x=dx, y=dy) -> bool:
                 if not self.isVisible():
                     return False
                 return self.scroll_content(x * mult, y * mult)
-            HotkeyFilter.instance().register_speed_modified_keybinding(_scroll, config, scroll_key)
+
+            HotkeyFilter.instance().register_speed_modified_keybinding(_scroll, scroll_key)
 
         # Bind zoom keys:
         for config_key, direction in ((AppConfig.ZOOM_IN, 1), (AppConfig.ZOOM_OUT, -1)):
@@ -90,7 +92,8 @@ class ImageGraphicsView(QGraphicsView):
                 self.scene_scale = self.scene_scale + change * mult
                 self.resizeEvent(None)
                 return True
-            HotkeyFilter.instance().register_speed_modified_keybinding(_zoom, config, config_key)
+
+            HotkeyFilter.instance().register_speed_modified_keybinding(_zoom, config_key)
 
     def centerOn(self, pos: QPoint | QPointF) -> None:
         """Cache the center point whenever it changes."""

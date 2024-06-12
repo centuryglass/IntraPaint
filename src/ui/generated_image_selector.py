@@ -50,13 +50,11 @@ class GeneratedImageSelector(QWidget):
     """Shows all images from an image generation operation, allows the user to select one or discard all of them."""
 
     def __init__(self,
-                 config: AppConfig,
                  layer_stack: LayerStack,
                  mask: Image.Image,
                  close_selector: Callable,
                  make_selection: Callable[[Optional[Image.Image]], None]) -> None:
         super().__init__(None)
-        self._config = config
         self._layer_stack = layer_stack
         self._mask = mask
         self._close_selector = close_selector
@@ -78,11 +76,12 @@ class GeneratedImageSelector(QWidget):
         self._layout.addWidget(self._page_top_label)
 
         # Setup main option view widget:
-        self._view = _SelectionView(config)
+        self._view = _SelectionView()
         self._view.scale_changed.connect(self._scale_change_slot)
         self._view.offset_changed.connect(self._offset_change_slot)
 
         self._view.installEventFilter(self)
+        config = AppConfig.instance()
 
         def _selection_scroll(dx, dy):
             if dx > 0:
@@ -447,8 +446,8 @@ class _SelectionView(ImageGraphicsView):
     zoom_toggled = pyqtSignal()
     content_scrolled = pyqtSignal(int, int)
 
-    def __init__(self, config: AppConfig) -> None:
-        super().__init__(config)
+    def __init__(self) -> None:
+        super().__init__()
         self.content_size = self.size()
 
     def scroll_content(self, dx: int | float, dy: int | float) -> bool:

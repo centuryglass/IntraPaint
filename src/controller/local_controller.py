@@ -33,9 +33,10 @@ class LocalDeviceController(BaseInpaintController):
         self._clip_guidance = args.clip_guidance
         self._ddim = args.ddim
         self._ddpm = args.ddpm
-        generate_size = self._config.get(AppConfig.GENERATION_SIZE)
+        config = AppConfig.instance()
+        generate_size = config.get(AppConfig.GENERATION_SIZE)
         if generate_size.width() > 256 or generate_size.height() > 256:
-            self._config.set(AppConfig.GENERATION_SIZE, QSize(256, 256))
+            config.set(AppConfig.GENERATION_SIZE, QSize(256, 256))
 
         self._model_params, self._model, self._diffusion, self._ldm, self._bert, self._clip_model, \
             self._clip_preprocess, self._normalize = load_models(self._device,
@@ -54,6 +55,7 @@ class LocalDeviceController(BaseInpaintController):
                  save_image: Callable[[Image.Image, int], None],
                  status_signal: pyqtSignal) -> None:
         assert_types((selection, mask), Image.Image)
+        config = AppConfig.instance()
         if selection.width != mask.width:
             raise RuntimeError(f'Selection and mask widths should match, found {selection.width} and {mask.width}')
         if selection.height != mask.height:
@@ -62,8 +64,8 @@ class LocalDeviceController(BaseInpaintController):
             selection = selection.convert('RGB')
         print(f'gen size: {selection.width}x{selection.height}')
 
-        batch_size = self._config.get(AppConfig.BATCH_SIZE)
-        batch_count = self._config.get(AppConfig.BATCH_COUNT)
+        batch_size = config.get(AppConfig.BATCH_SIZE)
+        batch_count = config.get(AppConfig.BATCH_COUNT)
         sample_fn, unused_clip_score_fn = create_sample_function(
             self._device,
             self._model,
@@ -76,18 +78,18 @@ class LocalDeviceController(BaseInpaintController):
             self._normalize,
             image=None,  # Inpainting uses edit instead of this param
             mask=mask,
-            prompt=self._config.get(AppConfig.PROMPT),
-            negative=self._config.get(AppConfig.NEGATIVE_PROMPT),
-            guidance_scale=self._config.get(AppConfig.GUIDANCE_SCALE),
+            prompt=config.get(AppConfig.PROMPT),
+            negative=config.get(AppConfig.NEGATIVE_PROMPT),
+            guidance_scale=config.get(AppConfig.GUIDANCE_SCALE),
             batch_size=batch_size,
             edit=selection,
             width=selection.width,
             height=selection.height,
             edit_width=selection.width,
             edit_height=selection.height,
-            cutn=self._config.get(AppConfig.CUTN),
+            cutn=config.get(AppConfig.CUTN),
             clip_guidance=self._clip_guidance,
-            skip_timesteps=self._config.get(AppConfig.SKIP_STEPS),
+            skip_timesteps=config.get(AppConfig.SKIP_STEPS),
             ddpm=self._ddpm,
             ddim=self._ddim)
 

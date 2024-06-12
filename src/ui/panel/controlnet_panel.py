@@ -70,7 +70,6 @@ class ControlnetPanel(CollapsibleBox):
     """ControlnetPanel provides controls for the stable-diffusion ControlNet extension."""
 
     def __init__(self,
-                 config: AppConfig,
                  config_key: str,
                  control_types: Optional[dict],
                  module_detail: dict,
@@ -80,8 +79,6 @@ class ControlnetPanel(CollapsibleBox):
 
         Parameters
         ----------
-        config : AppConfig
-            Shared application configuration object.
         config_key : str, default = Config.CONTROLNET_ARGS_0
             Config key where ControlNet selection will be saved.
         control_types : dict or None
@@ -93,15 +90,14 @@ class ControlnetPanel(CollapsibleBox):
         title : str, default = "ControlNet"
             Title to display at the top of the panel.
         """
-        super().__init__(title=title, scrolling=False, start_closed=len(config.get(config_key)) == 0)
+        super().__init__(title=title, scrolling=False, start_closed=len(AppConfig.instance().get(config_key)) == 0)
         if isinstance(control_types, dict) and len(control_types) == 0:
             control_types = None
         assert_type(model_list, dict)
         if MODEL_LIST_KEY not in model_list:
             raise KeyError(f'Controlnet model list had unexpected structure: {model_list}')
-
+        config = AppConfig.instance()
         initial_control_state = config.get(config_key)
-        self._config = config
         self._saved_state = initial_control_state
 
         # Build layout:
@@ -115,11 +111,10 @@ class ControlnetPanel(CollapsibleBox):
         enabled_checkbox.setText(ENABLE_CONTROLNET_CHECKBOX_LABEL)
         checkbox_row.addWidget(enabled_checkbox)
 
-        vram_checkbox = connected_checkbox(self, config, config_key, text=LOW_VRAM_LABEL,
-                                           inner_key=CONTROL_CONFIG_LOW_VRAM_KEY)
+        vram_checkbox = connected_checkbox(self, config_key, text=LOW_VRAM_LABEL, inner_key=CONTROL_CONFIG_LOW_VRAM_KEY)
         checkbox_row.addWidget(vram_checkbox)
 
-        px_perfect_checkbox = connected_checkbox(self, config, config_key, text=PX_PERFECT_CHECKBOX_LABEL,
+        px_perfect_checkbox = connected_checkbox(self, config_key, text=PX_PERFECT_CHECKBOX_LABEL,
                                                  inner_key=CONTROL_CONFIG_PX_PERFECT_KEY)
         checkbox_row.addWidget(px_perfect_checkbox)
 
@@ -288,8 +283,7 @@ class ControlnetPanel(CollapsibleBox):
                         max_val = int(max_val)
                         step = int(step)
                     config.set(config_key, value, inner_key=key)
-                    slider = ParamSlider(self, slider_title, config, config_key, min_val, max_val, step,
-                                         inner_key=key)
+                    slider = ParamSlider(self, slider_title, config_key, min_val, max_val, step, inner_key=key)
                     if slider_row.count() > 1:
                         options_layout.addLayout(slider_row)
                         slider_row = QHBoxLayout()

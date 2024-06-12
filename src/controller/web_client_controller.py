@@ -39,7 +39,7 @@ class WebClientController(BaseInpaintController):
 
     def window_init(self) -> None:
         """Initialize and show the main application window."""
-        self._window = MainWindow(self._config, self._layer_stack, self)
+        self._window = MainWindow(self._layer_stack, self)
         size = get_screen_size(self._window)
         self._window.setGeometry(0, 0, size.width(), size.height())
         self._window.show()
@@ -80,17 +80,18 @@ class WebClientController(BaseInpaintController):
             Signal to emit when status updates are available.
         """
         assert selection is not None and mask is not None, "GLID-3-XL only supports inpainting"
-        batch_size = self._config.get(AppConfig.BATCH_SIZE)
-        batch_count = self._config.get(AppConfig.BATCH_COUNT)
+        config = AppConfig.instance()
+        batch_size = config.get(AppConfig.BATCH_SIZE)
+        batch_count = config.get(AppConfig.BATCH_COUNT)
         body = {
             'batch_size': batch_size,
             'num_batches': batch_count,
             'edit': image_to_base64(selection),
             'mask': image_to_base64(mask),
-            'prompt': self._config.get(AppConfig.PROMPT),
-            'negative': self._config.get(AppConfig.NEGATIVE_PROMPT),
-            'guidanceScale': self._config.get(AppConfig.GUIDANCE_SCALE),
-            'skipSteps': self._config.get(AppConfig.SKIP_STEPS),
+            'prompt': config.get(AppConfig.PROMPT),
+            'negative': config.get(AppConfig.NEGATIVE_PROMPT),
+            'guidanceScale': config.get(AppConfig.GUIDANCE_SCALE),
+            'skipSteps': config.get(AppConfig.SKIP_STEPS),
             'width': selection.width,
             'height': selection.height
         }

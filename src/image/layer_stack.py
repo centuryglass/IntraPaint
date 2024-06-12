@@ -36,15 +36,13 @@ class LayerStack(QObject):
                  image_size: QSize,
                  selection_size: QSize,
                  min_selection_size: QSize,
-                 max_selection_size: QSize,
-                 config: AppConfig):
+                 max_selection_size: QSize):
         """Initializes the layer stack with an empty initial layer."""
         super().__init__()
         self._size = image_size
         self._min_selection_size = min_selection_size
         self._max_selection_size = max_selection_size
         self._selection = QRect(0, 0, selection_size.width(), selection_size.height())
-        self._config = config
         self._copy_buffer: Optional[QImage] = None
         self.selection = self._selection
 
@@ -56,7 +54,7 @@ class LayerStack(QObject):
         self._active_layer_id: Optional[int] = None
 
         # Create mask layer:
-        self._mask_layer = MaskLayer(image_size, config, self.selection_bounds_changed)
+        self._mask_layer = MaskLayer(image_size, self.selection_bounds_changed)
         self._mask_layer.update_selection(self._selection)
 
         def handle_mask_layer_update():
@@ -231,7 +229,7 @@ class LayerStack(QObject):
                     self._selection = next_bounds
                     self.selection_bounds_changed.emit(next_bounds, prev_bounds)
                     if next_bounds.size() != prev_bounds.size():
-                        self._config.set(AppConfig.EDIT_SIZE, self._selection.size())
+                        AppConfig.instance().set(AppConfig.EDIT_SIZE, self._selection.size())
 
             action_type = 'layer_stack.selection'
             with last_action() as prev_action:
@@ -375,8 +373,7 @@ class LayerStack(QObject):
             for i in range(self.count):
                 if self._layers[i].id == layer:
                     return i
-            return None
-        raise TypeError(f'Invalid layer parameter {layer}')
+        return None
 
     def create_layer(self,
                      layer_name: Optional[str] = None,
@@ -758,6 +755,7 @@ class LayerStack(QObject):
         self._size.setWidth(new_size.width())
         self._size.setHeight(new_size.height())
         self._set_selection_internal(self._selection)
+        self.mask_layer.size = new_size
 
     def _has_unsaved(self) -> bool:
         """Returns whether any layers are present that should not be saved."""
@@ -793,6 +791,7 @@ class LayerStack(QObject):
             else:
                 self._invalidate_all_cached()
             self.visible_content_changed.emit()
+
 
     def _layer_visibility_change_slot(self, layer: ImageLayer, _) -> None:
         if layer in self._layers:
@@ -921,4 +920,4 @@ class LayerStack(QObject):
             self._selection = bounds_rect
             self.selection_bounds_changed.emit(last_bounds, bounds_rect)
             if bounds_rect.size() != last_bounds.size():
-                self._config.set(AppConfig.EDIT_SIZE, bounds_rect.size())
+                AppConfig.instance().set(AppConfig.EDIT_SIZE, bounds_rect.size())

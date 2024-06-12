@@ -294,10 +294,7 @@ class ImageLayer(QObject):
         """
         assert_type(image_data, (QImage, QPixmap, Image.Image))
         assert_type(bounds_rect, QRect)
-        try:
-            self._validate_bounds(bounds_rect)
-        except ValueError:
-            return
+        self._validate_bounds(bounds_rect)
         with self.borrow_image() as layer_image:
             painter = QPainter(layer_image)
             painter.setCompositionMode(composition_mode)
@@ -306,6 +303,7 @@ class ImageLayer(QObject):
             elif isinstance(image_data, (Image.Image, QImage)):
                 qimage = image_data if isinstance(image_data, QImage) else pil_image_to_qimage(image_data)
                 painter.drawImage(bounds_rect, qimage)
+            painter.end()
 
     def clear(self):
         """Replaces all image content with transparency."""

@@ -1,4 +1,4 @@
-"""Animated selection outline from polygons."""
+"""Displays polygon outlines as animated dashes with subtle color changes."""
 from typing import Optional, List
 
 from PyQt5.QtCore import Qt, pyqtProperty, QPropertyAnimation, QObject
@@ -10,9 +10,9 @@ PEN_WIDTH = 3
 MAX_DASH_OFFSET = 560
 ANIM_DURATION = 36000
 
+
 class PolygonOutline(QGraphicsItemGroup):
-    """Displays polygons with animation.
-    """
+    """Displays polygon outlines as animated dashes with subtle color changes."""
 
     def __init__(self,
                  view: QGraphicsView,
@@ -36,10 +36,12 @@ class PolygonOutline(QGraphicsItemGroup):
 
             @property
             def animation(self) -> QPropertyAnimation:
+                """Access the wrapped PropertyAnimation."""
                 return self._anim
 
             @pyqtProperty(int)
             def dash_offset(self) -> int:
+                """Access the animation offset value."""
                 return self._parent.dash_offset
 
             @dash_offset.setter
@@ -71,7 +73,8 @@ class PolygonOutline(QGraphicsItemGroup):
         self._pen.setColor(self._color)
         return self._pen
 
-    def load_polygons(self, polygons: List[QPolygon]):
+    def load_polygons(self, polygons: List[QPolygonF]):
+        """Replace the current outline polygons with new ones."""
         scene = self._view.scene()
         assert scene is not None
         for polygon_item in self._polygons:

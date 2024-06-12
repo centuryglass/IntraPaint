@@ -201,9 +201,8 @@ class StableDiffusionController(BaseInpaintController):
             prompt_ready = pyqtSignal(str)
             error_signal = pyqtSignal(Exception)
 
-            def __init__(self, config, layer_stack, webservice):
+            def __init__(self, layer_stack, webservice):
                 super().__init__()
-                self._config = config
                 self._layer_stack = layer_stack
                 self._webservice = webservice
 
@@ -211,17 +210,17 @@ class StableDiffusionController(BaseInpaintController):
                 """Run interrogation in the child thread, emit a signal and exit when finished."""
                 try:
                     image = self._layer_stack.pil_image_selection_content()
-                    self.prompt_ready.emit(self._webservice.interrogate(self._config, image))
+                    self.prompt_ready.emit(self._webservice.interrogate(image))
                 except RuntimeError as err:
                     logger.error(f'err:{err}')
                     self.error_signal.emit(err)
                 self.finished.emit()
 
-        worker = InterrogateWorker(self._config, self._layer_stack, self._webservice)
+        worker = InterrogateWorker(self._layer_stack, self._webservice)
 
         def set_prompt(prompt_text: str) -> None:
             """Update the image prompt in config with the interrogate results."""
-            self._config.set(AppConfig.PROMPT, prompt_text)
+            AppConfig.instance().set(AppConfig.PROMPT, prompt_text)
 
         worker.prompt_ready.connect(set_prompt)
 
@@ -253,9 +252,9 @@ class StableDiffusionController(BaseInpaintController):
         # Check connection:
         while not StableDiffusionController.health_check(webservice=self._webservice):
             prompt_for_url(URL_REQUEST_RETRY_MESSAGE)
-
+        config = AppConfig.instance()
         try:
-            self._config.set(AppConfig.CONTROLNET_VERSION, float(self._webservice.get_controlnet_version()))
+            config.set(AppConfig.CONTROLNET_VERSION, float(self._webservice.get_controlnet_version()))
         except RuntimeError:
             # The webui fork at lllyasviel/stable-diffusion-webui-forge is mostly compatible with the A1111 API, but
             # it doesn't have the ControlNet version endpoint. Before assuming ControlNet isn't installed, check if
@@ -264,12 +263,12 @@ class StableDiffusionController(BaseInpaintController):
                 model_list = self._webservice.get_controlnet_models()
                 if model_list is not None and CONTROLNET_MODEL_LIST_KEY in model_list and len(
                         model_list[CONTROLNET_MODEL_LIST_KEY]) > 0:
-                    self._config.set(AppConfig.CONTROLNET_VERSION, 1.0)
+                    config.set(AppConfig.CONTROLNET_VERSION, 1.0)
                 else:
-                    self._config.set(AppConfig.CONTROLNET_VERSION, -1.0)
+                    config.set(AppConfig.CONTROLNET_VERSION, -1.0)
             except RuntimeError as err:
                 logger.error(f'Loading controlnet config failed: {err}')
-                self._config.set(AppConfig.CONTROLNET_VERSION, -1.0)
+                config.set(AppConfig.CONTROLNET_VERSION, -1.0)
 
         option_loading_params = (
             (AppConfig.STYLES, self._webservice.get_styles),
@@ -282,7 +281,7 @@ class StableDiffusionController(BaseInpaintController):
             try:
                 options = option_loading_fn()
                 if options is not None and len(options) > 0:
-                    self._config.update_options(config_key, options)
+                    config.update_options(config_key, options)
             except (KeyError, RuntimeError) as err:
                 logger.error(f'error loading {config_key} from {self._server_url}: {err}')
 
@@ -296,13 +295,13 @@ class StableDiffusionController(BaseInpaintController):
             try:
                 value = data_loading_fn()
                 if value is not None and len(value) > 0:
-                    self._config.set(config_key, value)
+                    config.set(config_key, value)
             except (KeyError, RuntimeError) as err:
                 logger.error(f'error loading {config_key} from {self._server_url}: {err}')
 
         # initialize remote options modal:
         # Handle final window init now that data is loaded from the API:
-        self._window = StableDiffusionMainWindow(self._config, self._layer_stack, self)
+        self._window = StableDiffusionMainWindow(self._layer_stack, self)
         if self._fixed_window_size is not None:
             size = self._fixed_window_size
             self._window.setGeometry(0, 0, size.width(), size.height())
@@ -335,19 +334,16 @@ class StableDiffusionController(BaseInpaintController):
             status_signal = pyqtSignal(dict)
             error_signal = pyqtSignal(Exception)
 
-            def __init__(self, config: AppConfig, layer_stack: LayerStack, webservice: A1111Webservice) -> None:
+            def __init__(self, layer_stack: LayerStack, webservice: A1111Webservice) -> None:
                 super().__init__()
-                self._config = config
                 self._layer_stack = layer_stack
                 self._webservice = webservice
 
             def run(self):
                 """Handle the upscaling request, then emit a signal and exit when finished."""
                 try:
-                    images, info = self._webservice.upscale(self._layer_stack.pil_image(),
-                                                            new_size.width(),
-                                                            new_size.height(),
-                                                            self._config)
+                    images, info = self._webservice.upscale(self._layer_stack.pil_image(), new_size.width(),
+                                                            new_size.height())
                     if info is not None:
                         logger.debug(f'Upscaling result info: {info}')
                     self.image_ready.emit(images[-1])
@@ -355,7 +351,7 @@ class StableDiffusionController(BaseInpaintController):
                     self.error_signal.emit(err)
                 self.finished.emit()
 
-        worker = UpscaleWorker(self._config, self._layer_stack, self._webservice)
+        worker = UpscaleWorker(self._layer_stack, self._webservice)
 
         def handle_error(err: IOError) -> None:
             """Show an error dialog if upscaling fails."""
@@ -388,7 +384,7 @@ class StableDiffusionController(BaseInpaintController):
         status_signal : pyqtSignal
             Signal to emit when status updates are available.
         """
-        edit_mode = self._config.get(AppConfig.EDIT_MODE)
+        edit_mode = AppConfig.instance().get(AppConfig.EDIT_MODE)
         if edit_mode != MODE_INPAINT:
             mask = None
         elif self._layer_stack.mask_layer.selection_is_empty():
@@ -397,8 +393,8 @@ class StableDiffusionController(BaseInpaintController):
         def generate_images() -> tuple[list[Image], dict | None]:
             """Call the appropriate image generation endpoint and return generated images."""
             if edit_mode == MODE_TXT2IMG:
-                return self._webservice.txt2img(self._config, selection.width, selection.height, image=selection)
-            return self._webservice.img2img(selection, self._config, mask=mask)
+                return self._webservice.txt2img(selection.width, selection.height, image=selection)
+            return self._webservice.img2img(selection, mask=mask)
 
         # POST to server_url, check response
         # If invalid or error response, throw Exception
@@ -474,6 +470,6 @@ class StableDiffusionController(BaseInpaintController):
         """Show status updates in the UI."""
         assert self._window is not None
         if 'seed' in status_dict:
-            self._config.set(AppConfig.LAST_SEED, str(status_dict['seed']))
+            AppConfig.instance().set(AppConfig.LAST_SEED, str(status_dict['seed']))
         if 'progress' in status_dict:
             self._window.set_loading_message(status_dict['progress'])

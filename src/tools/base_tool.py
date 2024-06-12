@@ -67,6 +67,7 @@ class BaseTool(QObject):
         super().__init__()
         self._cursor: Optional[QCursor | QPixmap] = None
         self._active = False
+
     @property
     def cursor(self) -> Optional[QCursor | QPixmap]:
         """Returns the active tool cursor or tool pixmap."""

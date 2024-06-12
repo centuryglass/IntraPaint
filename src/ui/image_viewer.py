@@ -25,12 +25,12 @@ SELECTION_BORDER_COLOR = Qt.GlobalColor.black
 class ImageViewer(ImageGraphicsView):
     """Shows the image being edited, and allows the user to select sections."""
 
-    def __init__(self, parent: Optional[QWidget], layer_stack: LayerStack, config: AppConfig) -> None:
-        super().__init__(config, parent)
+    def __init__(self, parent: Optional[QWidget], layer_stack: LayerStack) -> None:
+        super().__init__(parent)
         HotkeyFilter.instance().set_default_focus(self)
+        config = AppConfig.instance()
 
         self._layer_stack = layer_stack
-        self._config = config
         self._selection = layer_stack.selection
         self._layer_items: Dict[int, '_LayerItem'] = {}
         self.content_size = layer_stack.size
@@ -123,7 +123,7 @@ class ImageViewer(ImageGraphicsView):
         """Sets whether the view should follow the image generation area. Setting to true updates the view, setting to
            false does not."""
         self._follow_selection = should_follow
-        self._selection_outline.animated = not should_follow and self._config.get(AppConfig.ANIMATE_OUTLINES)
+        self._selection_outline.animated = not should_follow and AppConfig.instance().get(AppConfig.ANIMATE_OUTLINES)
         self._border.setVisible(should_follow)
         if should_follow:
             self.zoom_to_selection()
@@ -174,7 +174,7 @@ class ImageViewer(ImageGraphicsView):
         self._selection_outline.outlined_region = selection
         self._border.windowed_area = selection.toAlignedRect()
         self._selection_outline.setVisible(image_loaded)
-        self._masked_selection_outline.setVisible(image_loaded and self._config.get(AppConfig.INPAINT_FULL_RES))
+        self._masked_selection_outline.setVisible(image_loaded and AppConfig.instance().get(AppConfig.INPAINT_FULL_RES))
         if self._layer_stack.active_layer is not None:
             self._active_layer_outline.setVisible(True)
             self._active_layer_outline.outlined_region = QRectF(QPointF(self._layer_stack.active_layer.position),

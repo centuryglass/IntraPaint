@@ -31,11 +31,10 @@ SCALE_ZOOM_BUTTON_TOOLTIP = 'Zoom in on the area selected for image generation'
 class SelectionTool(BaseTool):
     """An image editing tool that moves the selected editing region."""
 
-    def __init__(self, layer_stack: LayerStack, image_viewer: ImageViewer, config: AppConfig) -> None:
+    def __init__(self, layer_stack: LayerStack, image_viewer: ImageViewer) -> None:
         super().__init__()
         self._layer_stack = layer_stack
         self._image_viewer = image_viewer
-        self._config = config
         self._icon = QIcon(RESOURCES_SELECTION_ICON)
         self._resizing = False
         self.cursor = QCursor(Qt.CursorShape.CrossCursor)
@@ -44,7 +43,7 @@ class SelectionTool(BaseTool):
 
     def get_hotkey(self) -> QKeySequence:
         """Returns the hotkey(s) that should activate this tool."""
-        return self._config.get_keycodes(AppConfig.GENERATION_AREA_SELECTION_TOOL_KEY)
+        return AppConfig.instance().get_keycodes(AppConfig.GENERATION_AREA_SELECTION_TOOL_KEY)
 
     def get_icon(self) -> QIcon:
         """Returns an icon used to represent this tool."""
@@ -115,7 +114,7 @@ class SelectionTool(BaseTool):
             signal.connect(on_scale_change)
 
         # wire x/y coordinate boxes to set selection coordinates:
-        coordinate_controls = get_selection_control_boxes(self._config, self._layer_stack, True)
+        coordinate_controls = get_selection_control_boxes(self._layer_stack, True)
         for control_widget in coordinate_controls:
             row = self._control_layout.rowCount()
             ctrl_label, ctrl_slider, ctrl_box = (cast(QWidget, child) for child in control_widget.children()

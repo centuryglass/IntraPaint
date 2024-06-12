@@ -20,7 +20,6 @@ class ParamSlider(QWidget):
     def __init__(self,
                  parent: Optional[QWidget],
                  label_text: str,
-                 config: AppConfig,
                  key: str,
                  min_val: Optional[int | float] = None,
                  max_val: Optional[int | float] = None,
@@ -36,8 +35,6 @@ class ParamSlider(QWidget):
             Parent widget.
         label_text : str
             Displayed label text.
-        config : AppConfig
-            Config object used to connect a property to the slider.
         key : str
             Initial config value key.
         min_val : int or float, optional
@@ -59,9 +56,9 @@ class ParamSlider(QWidget):
         self._float_mode: Optional[bool] = None
         self._orientation: Optional[Qt.Orientation] = None
         self._step_box: Optional[BigIntSpinbox | QDoubleSpinBox] = None
-        self._config = config
+        config = AppConfig.instance()
 
-        self._label = Label(label_text, config, self, size=vertical_text_pt, orientation=orientation)
+        self._label = Label(label_text, self, size=vertical_text_pt, orientation=orientation)
         self._horizontal_slider = QSlider(Qt.Orientation.Horizontal, self)
         self._vertical_slider = QSlider(Qt.Orientation.Vertical, self)
 
@@ -81,13 +78,13 @@ class ParamSlider(QWidget):
         """Disconnects the slider from any config values."""
         if self._key is not None:
             try:
-                self._config.disconnect(self, self._key)
+                AppConfig.instance().disconnect(self, self._key)
             except KeyError as err:
                 logger.error(f"Disconnecting slider from {self._key} failed: {err}")
             if self._step_box is not None:
                 step_box = self._step_box
                 try:
-                    self._config.disconnect(step_box, self._key)
+                    AppConfig.instance().disconnect(step_box, self._key)
                 except KeyError as err:
                     logger.error(f"Disconnecting step box from {self._key} failed: {err}")
                 step_box.valueChanged.disconnect()
@@ -122,19 +119,20 @@ class ParamSlider(QWidget):
         self.disconnect_config()
         self._key = key
         self._inner_key = inner_key
+        config = AppConfig.instance()
         if inner_key is None:
-            self._label.setText(self._config.get_label(key))
-            self.setToolTip(self._config.get_tooltip(key))
-        initial_value = self._config.get(key, inner_key)
+            self._label.setText(config.get_label(key))
+            self.setToolTip(config.get_tooltip(key))
+        initial_value = config.get(key, inner_key)
         self._float_mode = isinstance(initial_value, float)
-        min_val = self._config.get(key, inner_key="min") if min_val is None else min_val
-        max_val = self._config.get(key, inner_key="max") if max_val is None else max_val
+        min_val = config.get(key, inner_key="min") if min_val is None else min_val
+        max_val = config.get(key, inner_key="max") if max_val is None else max_val
 
         full_range = max_val - min_val
         tick_interval = 1 if (full_range < 20) else (5 if full_range < 50 else 10)
         if self._float_mode:
             tick_interval *= 100
-        step = self._config.get(key, inner_key="step") if step_val is None else step_val
+        step = config.get(key, inner_key="step") if step_val is None else step_val
         for slider in (self._horizontal_slider, self._vertical_slider):
             slider.setMinimum(int(min_val * 100) if self._float_mode else int(min_val))
             slider.setMaximum(int(max_val * 100) if self._float_mode else int(max_val))
@@ -152,9 +150,9 @@ class ParamSlider(QWidget):
             if value != self._vertical_slider.value():
                 self._vertical_slider.setValue(value)
 
-        self._config.connect(self, key, on_config_change, inner_key)
-        self._step_box = connected_spinbox(self, self._config, self._key, min_val=min_val, max_val=max_val,
-                                           step_val=step, dict_key=inner_key)
+        AppConfig.instance().connect(self, key, on_config_change, inner_key)
+        self._step_box = connected_spinbox(self, self._key, min_val=min_val, max_val=max_val, step_val=step,
+                                           dict_key=inner_key)
         self.resizeEvent(None)
         self._step_box.show()
 
@@ -212,6 +210,6 @@ class ParamSlider(QWidget):
         """Handle slider value changes."""
         if self._key is None:
             return
-        self._config.set(self._key, (float(new_value) / 100) if self._float_mode else new_value,
-                         inner_key=self._inner_key)
+        AppConfig.instance().set(self._key, (float(new_value) / 100) if self._float_mode else new_value,
+                                 inner_key=self._inner_key)
         self.resizeEvent(None)

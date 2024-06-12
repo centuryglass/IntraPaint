@@ -32,9 +32,8 @@ COLOR_BUTTON_TOOLTIP = 'Select sketch brush color'
 class BrushTool(CanvasTool):
     """Implements brush controls using a MyPaint surface."""
 
-    def __init__(self, layer_stack: LayerStack, image_viewer: ImageViewer, config: AppConfig) -> None:
-        super().__init__(layer_stack, image_viewer, MyPaintLayerCanvas(image_viewer.scene()), config)
-        self._config = config
+    def __init__(self, layer_stack: LayerStack, image_viewer: ImageViewer) -> None:
+        super().__init__(layer_stack, image_viewer, MyPaintLayerCanvas(image_viewer.scene()))
         self._last_click = None
         self._control_layout = None
         self._active = False
@@ -43,6 +42,7 @@ class BrushTool(CanvasTool):
         self._icon = QIcon(RESOURCES_BRUSH_ICON)
 
         # Load brush and size from config
+        config = AppConfig.instance()
         self.brush_path = config.get(AppConfig.MYPAINT_BRUSH)
         self.brush_size = config.get(AppConfig.SKETCH_BRUSH_SIZE)
 
@@ -58,7 +58,7 @@ class BrushTool(CanvasTool):
 
     def get_hotkey(self) -> QKeySequence:
         """Returns the hotkey(s) that should activate this tool."""
-        return self._config.get_keycodes(AppConfig.BRUSH_TOOL_KEY)
+        return AppConfig.instance().get_keycodes(AppConfig.BRUSH_TOOL_KEY)
 
     def get_icon(self) -> QIcon:
         """Returns an icon used to represent this tool."""
@@ -81,8 +81,9 @@ class BrushTool(CanvasTool):
         self._control_layout = control_layout
 
         # Size slider:
-        brush_size_slider = ParamSlider(self._control_panel, self._config.get_label(AppConfig.SKETCH_BRUSH_SIZE),
-                                        self._config, AppConfig.SKETCH_BRUSH_SIZE)
+        brush_size_slider = ParamSlider(self._control_panel,
+                                        AppConfig.instance().get_label(AppConfig.SKETCH_BRUSH_SIZE),
+                                        AppConfig.SKETCH_BRUSH_SIZE)
         control_layout.addWidget(brush_size_slider)
 
         def update_brush_size(size: int) -> None:
@@ -90,7 +91,7 @@ class BrushTool(CanvasTool):
             self._canvas.brush_size = size
             self.update_brush_cursor()
 
-        self._config.connect(self, AppConfig.SKETCH_BRUSH_SIZE, update_brush_size)
+        AppConfig.instance().connect(self, AppConfig.SKETCH_BRUSH_SIZE, update_brush_size)
         control_layout.addWidget(brush_size_slider, stretch=2)
         color_picker_button = QPushButton()
         color_picker_button.setText(COLOR_BUTTON_LABEL)
@@ -105,18 +106,18 @@ class BrushTool(CanvasTool):
             icon = QPixmap(QSize(64, 64))
             icon.fill(color)
             color_picker_button.setIcon(QIcon(icon))
-            self._config.set(AppConfig.LAST_BRUSH_COLOR, color.name(QColor.HexArgb))
+            AppConfig.instance().set(AppConfig.LAST_BRUSH_COLOR, color.name(QColor.HexArgb))
 
         color_dialog = QColorDialog()
         color_dialog.setOption(QColorDialog.ColorDialogOption.ShowAlphaChannel, True)
         color_picker_button.clicked.connect(lambda: set_brush_color(color_dialog.getColor()))
-        self._config.connect(color_picker_button, AppConfig.LAST_BRUSH_COLOR,
-                             lambda color_str: set_brush_color(QColor(color_str)))
+        AppConfig.instance().connect(color_picker_button, AppConfig.LAST_BRUSH_COLOR,
+                                     lambda color_str: set_brush_color(QColor(color_str)))
         set_brush_color(self.brush_color)
         control_layout.addWidget(color_picker_button, stretch=2)
 
         # Brush selection:
-        brush_panel = BrushPanel(self._config, self._canvas.brush)
+        brush_panel = BrushPanel(self._canvas.brush)
         control_layout.addWidget(brush_panel, stretch=8)
         return self._control_panel
 
@@ -124,4 +125,4 @@ class BrushTool(CanvasTool):
         """Change brush size by some offset amount, multiplying offset by 10 if shift is held."""
         if QApplication.keyboardModifiers() == Qt.ShiftModifier:
             offset *= 10
-        self._config.set(AppConfig.SKETCH_BRUSH_SIZE, max(1, self._canvas.brush_size + offset))
+        AppConfig.instance().set(AppConfig.SKETCH_BRUSH_SIZE, max(1, self._canvas.brush_size + offset))

@@ -91,15 +91,12 @@ class BaseInpaintController:
         for s in self._app.screens():
             if screen_area(s) > screen_area(screen):
                 screen = s
-        self._config = AppConfig()
+        config = AppConfig.instance()
         self._adjust_config_defaults()
-        self._config.apply_args(args)
+        config.apply_args(args)
 
-        self._layer_stack = LayerStack(self._config.get(AppConfig.DEFAULT_IMAGE_SIZE),
-                                       self._config.get(AppConfig.EDIT_SIZE),
-                                       self._config.get(AppConfig.MIN_EDIT_SIZE),
-                                       self._config.get(AppConfig.MAX_EDIT_SIZE),
-                                       self._config)
+        self._layer_stack = LayerStack(config.get(AppConfig.DEFAULT_IMAGE_SIZE), config.get(AppConfig.EDIT_SIZE),
+                                       config.get(AppConfig.MIN_EDIT_SIZE), config.get(AppConfig.MAX_EDIT_SIZE))
         self._init_image = args.init_image
 
         self._window: Optional[QMainWindow] = None
@@ -147,7 +144,7 @@ class BaseInpaintController:
 
     def window_init(self):
         """Initialize and show the main application window."""
-        self._window = MainWindow(self._config, self._layer_stack, self)
+        self._window = MainWindow(self._layer_stack, self)
         if self._fixed_window_size is not None:
             size = self._fixed_window_size
             self._window.setGeometry(0, 0, size.width(), size.height())
@@ -165,8 +162,9 @@ class BaseInpaintController:
 
     def fix_styles(self) -> None:
         """Update application styling based on theme configuration, UI configuration, and available theme modules."""
-        self._app.setStyle(self._config.get('style'))
-        theme = self._config.get(AppConfig.THEME)
+        config = AppConfig.instance()
+        self._app.setStyle(config.get('style'))
+        theme = config.get(AppConfig.THEME)
         if theme.startswith('qdarktheme_') and qdarktheme is not None and hasattr(qdarktheme, 'setup_theme'):
             if theme.endswith('_light'):
                 qdarktheme.setup_theme('light')
@@ -180,7 +178,7 @@ class BaseInpaintController:
         elif theme != 'None':
             logger.error(f'Failed to load theme {theme}')
         font = self._app.font()
-        font.setPointSize(self._config.get(AppConfig.FONT_POINT_SIZE))
+        font.setPointSize(config.get(AppConfig.FONT_POINT_SIZE))
         self._app.setFont(font)
 
     def start_app(self) -> None:
@@ -200,7 +198,7 @@ class BaseInpaintController:
     def new_image(self) -> None:
         """Open a new image creation modal."""
         assert self._window is not None
-        default_size = self._config.get(AppConfig.DEFAULT_IMAGE_SIZE)
+        default_size = AppConfig.instance().get(AppConfig.DEFAULT_IMAGE_SIZE)
         image_modal = NewImageModal(default_size.width(), default_size.height())
         image_size = image_modal.show_image_modal()
         if image_size and (not self._layer_stack.has_image or request_confirmation(self._window,
@@ -215,13 +213,14 @@ class BaseInpaintController:
     def save_image(self, file_path: Optional[str] = None) -> None:
         """Open a save dialog, and save the edited image to disk, preserving any metadata."""
         assert self._window is not None
+        config = AppConfig.instance()
         if not self._layer_stack.has_image:
             show_error_dialog(self._window, SAVE_ERROR_TITLE, SAVE_ERROR_MESSAGE_NO_IMAGE)
             return
         try:
             if not isinstance(file_path, str):
                 file_path, file_selected = open_image_file(self._window, mode='save',
-                                                           selected_file=self._config.get(AppConfig.LAST_FILE_PATH))
+                                                           selected_file=config.get(AppConfig.LAST_FILE_PATH))
                 if not file_path or not file_selected:
                     return
             assert_type(file_path, str)
@@ -243,7 +242,7 @@ class BaseInpaintController:
                     image.save(file_path, 'PNG', pnginfo=info)
                 else:
                     image.save(file_path, 'PNG')
-            self._config.set(AppConfig.LAST_FILE_PATH, file_path)
+            config.set(AppConfig.LAST_FILE_PATH, file_path)
         except (IOError, TypeError) as save_err:
             show_error_dialog(self._window, SAVE_ERROR_TITLE, str(save_err))
             raise save_err
@@ -251,6 +250,7 @@ class BaseInpaintController:
     def load_image(self, file_path: Optional[str] = None) -> None:
         """Open a loading dialog, then load the selected image for editing."""
         assert self._window is not None
+        config = AppConfig.instance()
         if file_path is None:
             file_path, file_selected = open_image_file(self._window)
             if not file_path or not file_selected:
@@ -267,7 +267,7 @@ class BaseInpaintController:
                 else:
                     self._metadata = None
                 self._layer_stack.set_image(QImage(file_path))
-            self._config.set(AppConfig.LAST_FILE_PATH, file_path)
+            config.set(AppConfig.LAST_FILE_PATH, file_path)
 
             # File loaded, attempt to apply metadata:
             if self._metadata is not None and METADATA_PARAMETER_KEY in self._metadata:
@@ -287,12 +287,12 @@ class BaseInpaintController:
                         negative = divider_match.group(2)
                     logger.info('Detected saved image gen data, applying to UI')
                     try:
-                        self._config.set(AppConfig.PROMPT, prompt)
-                        self._config.set(AppConfig.NEGATIVE_PROMPT, negative)
-                        self._config.set(AppConfig.SAMPLING_STEPS, steps)
-                        self._config.set(AppConfig.SAMPLING_METHOD, sampler)
-                        self._config.set(AppConfig.GUIDANCE_SCALE, cfg_scale)
-                        self._config.set(AppConfig.SEED, seed)
+                        config.set(AppConfig.PROMPT, prompt)
+                        config.set(AppConfig.NEGATIVE_PROMPT, negative)
+                        config.set(AppConfig.SAMPLING_STEPS, steps)
+                        config.set(AppConfig.SAMPLING_METHOD, sampler)
+                        config.set(AppConfig.GUIDANCE_SCALE, cfg_scale)
+                        config.set(AppConfig.SEED, seed)
                     except (TypeError, RuntimeError) as err:
                         logger.error(f'Failed to load image gen data from metadata: {err}')
                 else:
@@ -305,7 +305,7 @@ class BaseInpaintController:
     def reload_image(self) -> None:
         """Reload the edited image from disk after getting confirmation from a confirmation dialog."""
         assert self._window is not None
-        file_path = self._config.get(AppConfig.LAST_FILE_PATH)
+        file_path = AppConfig.instance().get(AppConfig.LAST_FILE_PATH)
         if file_path == '':
             show_error_dialog(self._window, RELOAD_ERROR_TITLE, RELOAD_ERROR_MESSAGE_NO_IMAGE)
             return
@@ -328,12 +328,13 @@ class BaseInpaintController:
             If true, show a messagebox after the update to let the user know what happened.
         """
         assert self._window is not None
-        prompt = self._config.get(AppConfig.PROMPT)
-        negative = self._config.get(AppConfig.NEGATIVE_PROMPT)
-        steps = self._config.get(AppConfig.SAMPLING_STEPS)
-        sampler = self._config.get(AppConfig.SAMPLING_METHOD)
-        cfg_scale = self._config.get(AppConfig.GUIDANCE_SCALE)
-        seed = self._config.get(AppConfig.SEED)
+        config = AppConfig.instance()
+        prompt = config.get(AppConfig.PROMPT)
+        negative = config.get(AppConfig.NEGATIVE_PROMPT)
+        steps = config.get(AppConfig.SAMPLING_STEPS)
+        sampler = config.get(AppConfig.SAMPLING_METHOD)
+        cfg_scale = config.get(AppConfig.GUIDANCE_SCALE)
+        seed = config.get(AppConfig.SEED)
         params = f'{prompt}\nNegative prompt: {negative}\nSteps: {steps}, Sampler: {sampler}, CFG scale:' + \
                  f'{cfg_scale}, Seed: {seed}, Size: 512x512'
         if self._metadata is None:
@@ -366,21 +367,22 @@ class BaseInpaintController:
             return
         width = self._layer_stack.width
         height = self._layer_stack.height
-        scale_modal = ImageScaleModal(width, height, self._config)
+        scale_modal = ImageScaleModal(width, height)
         new_size = scale_modal.show_image_modal()
         if new_size is not None:
             self._scale(new_size)
 
     def _scale(self, new_size: QSize) -> None:  # Override to allow alternate or external upscalers:
+        config = AppConfig.instance()
         width = self._layer_stack.width
         height = self._layer_stack.height
         if new_size is None or (new_size.width() == width and new_size.height() == height):
             return
         image = self._layer_stack.pil_image()
         if new_size.width() <= width and new_size.height() <= height:  # downscaling
-            scale_mode = self._config.get(AppConfig.DOWNSCALE_MODE)
+            scale_mode = config.get(AppConfig.DOWNSCALE_MODE)
         else:
-            scale_mode = self._config.get(AppConfig.UPSCALE_MODE)
+            scale_mode = config.get(AppConfig.UPSCALE_MODE)
         scaled_image = image.resize((new_size.width(), new_size.height()), scale_mode)
         self._layer_stack.set_image(scaled_image)
 
@@ -439,14 +441,15 @@ class BaseInpaintController:
     def start_and_manage_inpainting(self) -> None:
         """Start inpainting/image editing based on the current state of the UI."""
         assert self._window is not None
+        config = AppConfig.instance()
         if not self._layer_stack.has_image:
             show_error_dialog(self._window, GENERATE_ERROR_TITLE_NO_IMAGE, GENERATE_ERROR_MESSAGE_NO_IMAGE)
             return
         if self._thread is not None:
             show_error_dialog(self._window, GENERATE_ERROR_TITLE_EXISTING_OP, GENERATE_ERROR_MESSAGE_EXISTING_OP)
             return
-        upscale_mode = self._config.get(AppConfig.UPSCALE_MODE)
-        downscale_mode = self._config.get(AppConfig.DOWNSCALE_MODE)
+        upscale_mode = config.get(AppConfig.UPSCALE_MODE)
+        downscale_mode = config.get(AppConfig.DOWNSCALE_MODE)
 
         def resize_image(pil_image: Image.Image, width: int, height: int) -> Image.Image:
             """Resize a PIL image using the appropriate scaling mode:"""
@@ -463,14 +466,13 @@ class BaseInpaintController:
         inpaint_mask = self._layer_stack.mask_layer.pil_mask_image
 
         # If necessary, scale image and mask to match the image generation size.
-        generation_size = self._config.get(AppConfig.GENERATION_SIZE)
+        generation_size = config.get(AppConfig.GENERATION_SIZE)
         if inpaint_image.width != generation_size.width() or inpaint_image.height != generation_size.height():
             inpaint_image = resize_image(inpaint_image, generation_size.width(), generation_size.height())
         if inpaint_mask.width != generation_size.width() or inpaint_mask.height != generation_size.height():
             inpaint_mask = resize_image(inpaint_mask, generation_size.width(), generation_size.height())
 
         do_inpaint = self._inpaint
-        config = self._config
 
         class InpaintThreadWorker(QObject):
             """Handles inpainting within its own thread."""
@@ -529,7 +531,7 @@ class BaseInpaintController:
                 image = pil_image_to_qimage(sample_image).convertToFormat(QImage.Format.Format_ARGB32_Premultiplied)
             else:
                 image = sample_image.convertToFormat(QImage.Format.Format_ARGB32_Premultiplied)
-            if self._config.get(AppConfig.EDIT_MODE) == "Inpaint":
+            if AppConfig.instance().get(AppConfig.EDIT_MODE) == "Inpaint":
                 inpaint_mask = self._layer_stack.mask_layer.cropped_image_content(self._layer_stack.selection)
                 painter = QPainter(image)
                 painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_DestinationIn)

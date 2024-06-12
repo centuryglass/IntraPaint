@@ -20,10 +20,9 @@ EYEDROPPER_TOOLTIP = "Select a brush color"
 class EyedropperTool(BaseTool):
     """Lets the user select colors from the scene or pick a color."""
 
-    def __init__(self, layer_stack: LayerStack, config: AppConfig) -> None:
+    def __init__(self, layer_stack: LayerStack) -> None:
         super().__init__()
         self._layer_stack = layer_stack
-        self._config = config
         self._control_panel = None
         self._icon = QIcon(RESOURCES_EYEDROPPER_ICON)
         cursor_icon = QIcon(RESOURCES_EYEDROPPER_CURSOR)
@@ -31,7 +30,7 @@ class EyedropperTool(BaseTool):
 
     def get_hotkey(self) -> QKeySequence:
         """Returns the hotkey(s) that should activate this tool."""
-        return self._config.get_keycodes(AppConfig.EYEDROPPER_TOOL_KEY)
+        return AppConfig.instance().get_keycodes(AppConfig.EYEDROPPER_TOOL_KEY)
 
     def get_icon(self) -> QIcon:
         """Returns an icon used to represent this tool."""
@@ -49,22 +48,23 @@ class EyedropperTool(BaseTool):
         """Returns a panel providing controls for customizing tool behavior, or None if no such panel is needed."""
         if self._control_panel is not None:
             return self._control_panel
+        config = AppConfig.instance()
         self._control_panel = QColorDialog()
         self._control_panel.setOption(QColorDialog.ShowAlphaChannel, True)
         self._control_panel.setOption(QColorDialog.NoButtons, True)
         self._control_panel.setOption(QColorDialog.ColorDialogOption.DontUseNativeDialog, True)
-        initial_color = QColor(self._config.get(AppConfig.LAST_BRUSH_COLOR))
+        initial_color = QColor(config.get(AppConfig.LAST_BRUSH_COLOR))
         self._control_panel.setCurrentColor(initial_color)
-        self._config.connect(self._control_panel, AppConfig.LAST_BRUSH_COLOR,
+        config.connect(self._control_panel, AppConfig.LAST_BRUSH_COLOR,
                              lambda color_str: self._control_panel.setCurrentColor(QColor(color_str)))
-        self._control_panel.currentColorChanged.connect(lambda color: self._config.set(AppConfig.LAST_BRUSH_COLOR,
-                                                                                       color.name(QColor.HexArgb)))
+        self._control_panel.currentColorChanged.connect(lambda color: config.set(AppConfig.LAST_BRUSH_COLOR,
+                                                                                 color.name(QColor.HexArgb)))
         return self._control_panel
 
     def mouse_click(self, event: Optional[QMouseEvent], image_coordinates: QPoint) -> bool:
         """Copy the color under the mouse on left-click."""
         if event.buttons() == Qt.LeftButton:
             color = self._layer_stack.get_color_at_point(image_coordinates)
-            self._config.set(AppConfig.LAST_BRUSH_COLOR, color.name(QColor.HexArgb))
+            AppConfig.instance().set(AppConfig.LAST_BRUSH_COLOR, color.name(QColor.HexArgb))
             return True
         return False

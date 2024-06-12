@@ -16,6 +16,10 @@ from src.ui.widget.collapsible_box import CollapsibleBox
 from src.ui.widget.param_slider import ParamSlider
 from src.ui.window.main_window import MainWindow
 
+HEIGHT_BOX_TOOLTIP = 'Resize selection content to this height before inpainting'
+
+WIDTH_BOX_TOOLTIP = 'Resize selection content to this width before inpainting'
+
 EDIT_MODE_INPAINT = 'Inpaint'
 CONTROL_BOX_LABEL = 'Image Generation Controls'
 INTERROGATE_BUTTON_TEXT = 'Interrogate'
@@ -28,22 +32,17 @@ class StableDiffusionMainWindow(MainWindow):
 
     OPEN_PANEL_STRETCH = 80
 
-    def __init__(self,
-                 config: AppConfig,
-                 layer_stack: LayerStack,
-                 controller) -> None:
+    def __init__(self, layer_stack: LayerStack, controller) -> None:
         """Initializes the window and builds the layout.
 
         Parameters
         ----------
-        config : AppConfig
-            Shared application configuration object.
         layer_stack : LayerStack
             Image layers being edited.
         controller : controller.base_controller.stable_diffusion_controller.StableDiffusionController
             Object managing application behavior.
         """
-        super().__init__(config, layer_stack, controller)
+        super().__init__(layer_stack, controller)
         # Decrease imageLayout stretch to make room for additional controls:
         self.layout().setStretch(0, 180)
 
@@ -53,6 +52,7 @@ class StableDiffusionMainWindow(MainWindow):
         control_panel.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Maximum)
         control_layout = QVBoxLayout()
         control_panel.setLayout(control_layout)
+        config = AppConfig.instance()
 
         main_control_box = CollapsibleBox(CONTROL_BOX_LABEL, control_panel)
         main_control_box.set_expanded_size_policy(QSizePolicy.Maximum)
@@ -84,21 +84,20 @@ class StableDiffusionMainWindow(MainWindow):
 
         # First line: prompt, batch size, width
         wide_options_layout.setRowStretch(0, 2)
-        wide_options_layout.addWidget(QLabel(self._config.get_label(AppConfig.PROMPT)), 0, 0)
-        prompt_textbox = connected_textedit(control_panel, self._config, AppConfig.PROMPT, multi_line=True)
+        wide_options_layout.addWidget(QLabel(AppConfig.instance().get_label(AppConfig.PROMPT)), 0, 0)
+        prompt_textbox = connected_textedit(control_panel, AppConfig.PROMPT, multi_line=True)
         prompt_textbox.setMaximumHeight(textbox_height)
         wide_options_layout.addWidget(prompt_textbox, 0, 1)
         # batch size:
-        wide_options_layout.addWidget(QLabel(self._config.get_label(AppConfig.BATCH_SIZE)), 0, 2)
-        batch_size_spinbox = connected_spinbox(control_panel, self._config, AppConfig.BATCH_SIZE)
+        wide_options_layout.addWidget(QLabel(AppConfig.instance().get_label(AppConfig.BATCH_SIZE)), 0, 2)
+        batch_size_spinbox = connected_spinbox(control_panel, AppConfig.BATCH_SIZE)
         wide_options_layout.addWidget(batch_size_spinbox, 0, 3)
         # width:
         wide_options_layout.addWidget(QLabel('W:'), 0, 4)
         width_spinbox = QSpinBox(self)
         width_spinbox.setRange(1, 4096)
-        width_spinbox.setValue(self._config.get(AppConfig.GENERATION_SIZE).width())
-        width_spinbox.setToolTip('Resize selection content to this width before inpainting')
-        config = self._config
+        width_spinbox.setValue(config.get(AppConfig.GENERATION_SIZE).width())
+        width_spinbox.setToolTip(WIDTH_BOX_TOOLTIP)
 
         def set_w(value: int):
             """Adjust edited image generation width when the width box changes."""
@@ -110,22 +109,20 @@ class StableDiffusionMainWindow(MainWindow):
 
         # Second line: negative prompt, batch count, height:
         wide_options_layout.setRowStretch(1, 2)
-        wide_options_layout.addWidget(QLabel(self._config.get_label(AppConfig.NEGATIVE_PROMPT)), 1, 0)
-        negative_prompt_textbox = connected_textedit(control_panel, self._config, AppConfig.NEGATIVE_PROMPT,
-                                                     multi_line=True)
+        wide_options_layout.addWidget(QLabel(config.get_label(AppConfig.NEGATIVE_PROMPT)), 1, 0)
+        negative_prompt_textbox = connected_textedit(control_panel, AppConfig.NEGATIVE_PROMPT, multi_line=True)
         negative_prompt_textbox.setMaximumHeight(textbox_height)
         wide_options_layout.addWidget(negative_prompt_textbox, 1, 1)
         # batch count:
-        wide_options_layout.addWidget(QLabel(self._config.get_label(AppConfig.BATCH_COUNT)), 1, 2)
-        batch_count_spinbox = connected_spinbox(control_panel, self._config, AppConfig.BATCH_COUNT)
+        wide_options_layout.addWidget(QLabel(config.get_label(AppConfig.BATCH_COUNT)), 1, 2)
+        batch_count_spinbox = connected_spinbox(control_panel, AppConfig.BATCH_COUNT)
         wide_options_layout.addWidget(batch_count_spinbox, 1, 3)
         # Height:
         wide_options_layout.addWidget(QLabel('H:'), 1, 4)
         height_spinbox = QSpinBox(self)
         height_spinbox.setRange(1, 4096)
-        height_spinbox.setValue(self._config.get(AppConfig.GENERATION_SIZE).height())
-        height_spinbox.setToolTip('Resize selection content to this height before inpainting')
-        config = self._config
+        height_spinbox.setValue(config.get(AppConfig.GENERATION_SIZE).height())
+        height_spinbox.setToolTip(HEIGHT_BOX_TOOLTIP)
 
         def set_h(value: int):
             """Adjust edited image generation height when the height box changes."""
@@ -137,25 +134,24 @@ class StableDiffusionMainWindow(MainWindow):
 
         # Misc. sliders:
         wide_options_layout.setRowStretch(2, 1)
-        sample_step_slider = ParamSlider(wide_options, self._config.get_label(AppConfig.SAMPLING_STEPS), self._config,
+        sample_step_slider = ParamSlider(wide_options, config.get_label(AppConfig.SAMPLING_STEPS),
                                          AppConfig.SAMPLING_STEPS)
         wide_options_layout.addWidget(sample_step_slider, 2, 0, 1, 6)
         wide_options_layout.setRowStretch(3, 1)
-        cfg_scale_slider = ParamSlider(wide_options, self._config.get_label(AppConfig.GUIDANCE_SCALE), self._config,
+        cfg_scale_slider = ParamSlider(wide_options, config.get_label(AppConfig.GUIDANCE_SCALE),
                                        AppConfig.GUIDANCE_SCALE)
         wide_options_layout.addWidget(cfg_scale_slider, 3, 0, 1, 6)
         wide_options_layout.setRowStretch(4, 1)
-        denoising_slider = ParamSlider(wide_options, self._config.get_label(AppConfig.DENOISING_STRENGTH), self._config,
+        denoising_slider = ParamSlider(wide_options, config.get_label(AppConfig.DENOISING_STRENGTH),
                                        AppConfig.DENOISING_STRENGTH)
         wide_options_layout.addWidget(denoising_slider, 4, 0, 1, 6)
 
         # ControlNet panel, if controlnet is installed:
-        if self._config.get(AppConfig.CONTROLNET_VERSION) > 0:
-            controlnet_panel = ControlnetPanel(self._config,
-                                               AppConfig.CONTROLNET_ARGS_0,
-                                               self._config.get(AppConfig.CONTROLNET_CONTROL_TYPES),
-                                               self._config.get(AppConfig.CONTROLNET_MODULES),
-                                               self._config.get(AppConfig.CONTROLNET_MODELS))
+        if config.get(AppConfig.CONTROLNET_VERSION) > 0:
+            controlnet_panel = ControlnetPanel(AppConfig.CONTROLNET_ARGS_0,
+                                               config.get(AppConfig.CONTROLNET_CONTROL_TYPES),
+                                               config.get(AppConfig.CONTROLNET_MODULES),
+                                               config.get(AppConfig.CONTROLNET_MODELS))
             controlnet_panel.set_expanded_size_policy(QSizePolicy.Maximum)
             if controlnet_panel.is_expanded():
                 self.layout().setStretch(1, self.layout().stretch(1) + StableDiffusionMainWindow.OPEN_PANEL_STRETCH)
@@ -189,11 +185,11 @@ class StableDiffusionMainWindow(MainWindow):
 
         def add_combo_box(config_key: str, inpainting_only: bool, tooltip: Optional[str] = None) -> QHBoxLayout:
             """Handles layout, labels, and config connections when adding a new combo box."""
-            label_text = self._config.get_label(config_key)
-            combobox = connected_combobox(option_list, self._config, config_key)
+            label_text = config.get_label(config_key)
+            combobox = connected_combobox(option_list, config_key)
             if inpainting_only:
-                self._config.connect(combobox, AppConfig.EDIT_MODE,
-                                     lambda new_mode: combobox.setEnabled(new_mode == 'Inpaint'))
+                config.connect(combobox, AppConfig.EDIT_MODE,
+                               lambda new_mode: combobox.setEnabled(new_mode == 'Inpaint'))
             return add_option_line(label_text, combobox, tooltip)
 
         add_combo_box(AppConfig.EDIT_MODE, False)
@@ -201,9 +197,9 @@ class StableDiffusionMainWindow(MainWindow):
         add_combo_box(AppConfig.SAMPLING_METHOD, False)
         padding_line_index = len(option_list_layout.children())
         padding_line = QHBoxLayout()
-        padding_label = QLabel(self._config.get_label(AppConfig.INPAINT_FULL_RES_PADDING))
+        padding_label = QLabel(config.get_label(AppConfig.INPAINT_FULL_RES_PADDING))
         padding_line.addWidget(padding_label, stretch=1)
-        padding_spinbox = connected_spinbox(self, self._config, AppConfig.INPAINT_FULL_RES_PADDING)
+        padding_spinbox = connected_spinbox(self, AppConfig.INPAINT_FULL_RES_PADDING)
         padding_spinbox.setMinimum(0)
         padding_line.addWidget(padding_spinbox, stretch=2)
         option_list_layout.insertLayout(padding_line_index, padding_line)
@@ -213,17 +209,17 @@ class StableDiffusionMainWindow(MainWindow):
             padding_label.setVisible(inpaint_full_res)
             padding_spinbox.setVisible(inpaint_full_res)
 
-        padding_layout_update(self._config.get(AppConfig.INPAINT_FULL_RES))
-        self._config.connect(self, AppConfig.INPAINT_FULL_RES, padding_layout_update)
-        self._config.connect(self, AppConfig.EDIT_MODE, lambda mode: padding_layout_update(mode == EDIT_MODE_INPAINT))
+        padding_layout_update(config.get(AppConfig.INPAINT_FULL_RES))
+        config.connect(self, AppConfig.INPAINT_FULL_RES, padding_layout_update)
+        config.connect(self, AppConfig.EDIT_MODE, lambda mode: padding_layout_update(mode == EDIT_MODE_INPAINT))
 
-        seed_input = connected_spinbox(option_list, self._config, AppConfig.SEED, min_val=-1,
-                                       max_val=BigIntSpinbox.MAXIMUM, step_val=1)
-        add_option_line(self._config.get_label(AppConfig.SEED), seed_input, None)
+        seed_input = connected_spinbox(option_list, AppConfig.SEED, min_val=-1, max_val=BigIntSpinbox.MAXIMUM,
+                                       step_val=1)
+        add_option_line(config.get_label(AppConfig.SEED), seed_input, None)
 
-        last_seed_box = connected_textedit(option_list, self._config, AppConfig.LAST_SEED)
+        last_seed_box = connected_textedit(option_list, AppConfig.LAST_SEED)
         last_seed_box.setReadOnly(True)
-        add_option_line(self._config.get_label(AppConfig.LAST_SEED), last_seed_box, None)
+        add_option_line(config.get_label(AppConfig.LAST_SEED), last_seed_box, None)
 
         # Put action buttons on the bottom:
         button_bar = BorderedWidget(control_panel)

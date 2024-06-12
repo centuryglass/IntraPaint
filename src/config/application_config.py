@@ -32,6 +32,14 @@ DARK_THEME_OPTIONS = ['qdarktheme_dark', 'qdarktheme_light', 'qdarktheme_auto']
 
 
 class AppConfig(Config):
+    _instance: 'AppConfig' = None
+
+    @staticmethod
+    def instance() -> 'AppConfig':
+        """Returns the shared config object instance."""
+        if AppConfig._instance is None:
+            AppConfig._instance = AppConfig()
+        return AppConfig._instance
 
     def __init__(self, json_path: Optional[str] = DEFAULT_CONFIG_PATH) -> None:
         """Load existing config, or initialize from defaults.
@@ -44,6 +52,8 @@ class AppConfig(Config):
             keys will be discarded.
         """
         super().__init__(CONFIG_DEFINITIONS, json_path, AppConfig)
+        if AppConfig._instance is not None:
+            raise RuntimeError('Do not call the AppConfig constructor, access it with AppConfig.instance()')
         self.validate_keybindings()
 
     def validate_keybindings(self) -> None:

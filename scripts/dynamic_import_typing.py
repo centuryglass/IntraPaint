@@ -94,7 +94,7 @@ for class_name, data in class_items.items():
     except Exception as err:
         print(f'{class_name} instantiation failed, this may or may not harm {__file__} functionality')
     for attr_name in dir(class_type):
-        if attr_name.startswith('_') or attr_name in class_text:
+        if attr_name.startswith('_') or f' {attr_name}' in class_text:
             continue
         value = getattr(class_type, attr_name)
         if 'builtin' in str(type(value)):

@@ -69,7 +69,7 @@ class PixmapLayerCanvas(LayerCanvas):
         """Use active settings to draw to the canvas with the given inputs."""
         if self._pixmap_item is None or self.edit_region is None:
             return
-        pixmap = QPixmap(self.edit_region.size())
+        pixmap = QPixmap(self._pixmap_item.pixmap().size())
         pixmap.swap(self._pixmap_item.pixmap())
         painter = QPainter(pixmap)
         if self.eraser:
@@ -117,6 +117,7 @@ class PixmapLayerCanvas(LayerCanvas):
             def reverse():
                 """To undo, copy in the cached previous image data."""
                 layer.insert_image_content(prev_image, edit_region)
+                self._load_layer_content(layer)
 
             self._layer.visibility_changed.disconnect(self._load_layer_content)
             self._layer.content_changed.disconnect(self._load_layer_content)

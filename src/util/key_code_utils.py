@@ -95,8 +95,8 @@ def get_key_display_string(keys: QKeySequence) -> str:
     return text
 
 
-def _speed_modifier_held(config: AppConfig) -> bool:
-    speed_modifier = config.get(AppConfig.SPEED_MODIFIER)
+def _speed_modifier_held() -> bool:
+    speed_modifier = AppConfig.instance().get(AppConfig.SPEED_MODIFIER)
     if speed_modifier == '':
         return False
     speed_modifier = get_modifiers(speed_modifier)

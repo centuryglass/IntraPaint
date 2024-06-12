@@ -34,9 +34,8 @@ TOOL_MODE_ERASE = "Erase"
 class MaskTool(CanvasTool):
     """Implements brush controls using a MyPaint surface."""
 
-    def __init__(self, layer_stack: LayerStack, image_viewer: ImageViewer, config: AppConfig) -> None:
-        super().__init__(layer_stack, image_viewer, PixmapLayerCanvas(image_viewer.scene()), config)
-        self._config = config
+    def __init__(self, layer_stack: LayerStack, image_viewer: ImageViewer) -> None:
+        super().__init__(layer_stack, image_viewer, PixmapLayerCanvas(image_viewer.scene()))
         self._last_click = None
         self._control_layout = None
         self._active = False
@@ -47,13 +46,13 @@ class MaskTool(CanvasTool):
 
         # Setup brush, load size from config
         self.brush_color = Qt.red
-        self.brush_size = config.get(AppConfig.MASK_BRUSH_SIZE)
+        self.brush_size = AppConfig.instance().get(AppConfig.MASK_BRUSH_SIZE)
         self.layer = layer_stack.mask_layer
         self.update_brush_cursor()
 
     def get_hotkey(self) -> QKeySequence:
         """Returns the hotkey(s) that should activate this tool."""
-        return self._config.get_keycodes(AppConfig.MASK_TOOL_KEY)
+        return AppConfig.instance().get_keycodes(AppConfig.MASK_TOOL_KEY)
 
     def get_icon(self) -> QIcon:
         """Returns an icon used to represent this tool."""
@@ -71,26 +70,26 @@ class MaskTool(CanvasTool):
         """Returns the brush control panel."""
         if self._control_layout is not None:
             return self._control_panel
+        config = AppConfig.instance()
         # Initialize control panel on first request:
         control_layout = QVBoxLayout(self._control_panel)
         self._control_layout = control_layout
 
         # Size slider:
-        brush_size_slider = ParamSlider(self._control_panel, self._config.get_label(AppConfig.MASK_BRUSH_SIZE),
-                                        self._config, AppConfig.MASK_BRUSH_SIZE)
+        brush_size_slider = ParamSlider(self._control_panel, config.get_label(AppConfig.MASK_BRUSH_SIZE),
+                                        AppConfig.MASK_BRUSH_SIZE)
         control_layout.addWidget(brush_size_slider)
-
 
         def update_brush_size(size: int) -> None:
             """Updates the active brush size."""
             self._canvas.brush_size = size
             self.update_brush_cursor()
 
-        tool_toggle = DualToggle(self._control_panel, [TOOL_MODE_DRAW, TOOL_MODE_ERASE], self._config)
+        tool_toggle = DualToggle(self._control_panel, [TOOL_MODE_DRAW, TOOL_MODE_ERASE])
         tool_toggle.set_icons(RESOURCES_PEN_PNG, RESOURCES_ERASER_PNG)
         tool_toggle.set_selected(TOOL_MODE_DRAW)
 
-        self._config.connect(self, AppConfig.MASK_BRUSH_SIZE, update_brush_size)
+        config.connect(self, AppConfig.MASK_BRUSH_SIZE, update_brush_size)
         control_layout.addWidget(brush_size_slider)
 
         def set_drawing_tool(selection: str):
@@ -104,18 +103,18 @@ class MaskTool(CanvasTool):
 
         padding_line = QWidget()
         padding_line_layout = QHBoxLayout(padding_line)
-        padding_checkbox_label = QLabel(self._config.get_label(AppConfig.INPAINT_FULL_RES))
+        padding_checkbox_label = QLabel(config.get_label(AppConfig.INPAINT_FULL_RES))
         padding_line_layout.addWidget(padding_checkbox_label)
-        padding_checkbox = connected_checkbox(padding_line, self._config, AppConfig.INPAINT_FULL_RES)
+        padding_checkbox = connected_checkbox(padding_line, AppConfig.INPAINT_FULL_RES)
         padding_line_layout.addWidget(padding_checkbox)
         padding_line_layout.addStretch(100)
-        padding_label = QLabel(self._config.get_label(AppConfig.INPAINT_FULL_RES_PADDING))
+        padding_label = QLabel(config.get_label(AppConfig.INPAINT_FULL_RES_PADDING))
         padding_line_layout.addWidget(padding_label, stretch=1)
-        padding_spinbox = connected_spinbox(padding_line, self._config, AppConfig.INPAINT_FULL_RES_PADDING)
+        padding_spinbox = connected_spinbox(padding_line, AppConfig.INPAINT_FULL_RES_PADDING)
         padding_spinbox.setMinimum(0)
         padding_line_layout.addWidget(padding_spinbox, stretch=2)
-        full_res_tip = self._config.get_tooltip(AppConfig.INPAINT_FULL_RES)
-        full_res_padding_tip = self._config.get_tooltip(AppConfig.INPAINT_FULL_RES_PADDING)
+        full_res_tip = config.get_tooltip(AppConfig.INPAINT_FULL_RES)
+        full_res_padding_tip = config.get_tooltip(AppConfig.INPAINT_FULL_RES_PADDING)
         for full_res_widget in (padding_checkbox_label, padding_checkbox):
             full_res_widget.setToolTip(full_res_tip)
         for padding_widget in (padding_label, padding_spinbox):
@@ -162,7 +161,7 @@ class MaskTool(CanvasTool):
         """Change brush size by some offset amount, multiplying offset by 10 if shift is held."""
         if QApplication.keyboardModifiers() == Qt.ShiftModifier:
             offset *= 10
-        self._config.set(AppConfig.MASK_BRUSH_SIZE, max(1, self._canvas.brush_size + offset))
+        AppConfig.instance().set(AppConfig.MASK_BRUSH_SIZE, max(1, self._canvas.brush_size + offset))
 
     def _on_activate(self) -> None:
         """Override base canvas tool to keep mask layer visible."""

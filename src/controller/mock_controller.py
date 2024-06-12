@@ -20,14 +20,15 @@ class MockController(BaseInpaintController):
         print('Mock inpainting call:')
         print(f'\tselection: {selection}')
         print(f'\tmask: {mask}')
-        config_options = self._config.list()
+        config = AppConfig.instance()
+        config_options = config.list()
         for option_name in config_options:
-            value = self._config.get(option_name)
+            value = config.get(option_name)
             print(f'\t{option_name}: {value}')
         with Image.open(open('mask.png', 'rb')).convert('RGB') as test_sample:
-            for y in range(0, self._config.get(AppConfig.BATCH_COUNT)):
-                for x in range(0, self._config.get(AppConfig.BATCH_SIZE)):
-                    save_image(test_sample, x + y * self._config.get(AppConfig.BATCH_SIZE))
+            for y in range(0, config.get(AppConfig.BATCH_COUNT)):
+                for x in range(0, config.get(AppConfig.BATCH_SIZE)):
+                    save_image(test_sample, x + y * config.get(AppConfig.BATCH_SIZE))
 
     def refresh_settings(self, unused_settings_modal: SettingsModal) -> None:
         """Settings not in scope for mock controller."""
