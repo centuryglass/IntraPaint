@@ -225,12 +225,9 @@ class ImageViewer(ImageGraphicsView):
         if bounds is not None:
             self._masked_selection_outline.setVisible(mask_layer.visible)
             self._masked_selection_outline.outlined_region = QRectF(bounds)
-            self._mask_poly_outline.load_polygons(mask_layer.outline)
-            self._mask_poly_outline.setZValue(2)
-            self._mask_poly_outline.setPos(mask_layer.position)
-        else:
-            self._mask_poly_outline.load_polygons([])
-            self._masked_selection_outline.setVisible(False)
+        self._mask_poly_outline.setZValue(2)
+        self._mask_poly_outline.setPos(mask_layer.position)
+        self._mask_poly_outline.load_polygons(mask_layer.outline)
 
     def _image_size_changed_slot(self, new_size: QSize) -> None:
         """Update bounds and background when the image size changes."""

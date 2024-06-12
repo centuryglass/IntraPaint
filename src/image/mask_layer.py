@@ -129,8 +129,9 @@ class MaskLayer(ImageLayer):
 
         # Update selection bounds, skip extra processing if selection is empty:
         if is_fully_transparent(np_image):
-            self._outline_polygons.clear()
+            self._outline_polygons = []
             return
+        self._update_bounds(np_image)
 
         # Areas under ALPHA_THRESHOLD set to (0, 0, 0, 0), areas within the threshold set to #FF0000 with opacity
         # varying based on the selection bounds:
@@ -144,7 +145,7 @@ class MaskLayer(ImageLayer):
         np_image[masked, 3] = 255
 
         # Find edge polygons:
-        self._outline_polygons.clear()
+        self._outline_polygons = []
         gray = cv2.cvtColor(np_image[:, :, :3], cv2.COLOR_BGR2GRAY)
         contours, _ = cv2.findContours(gray, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
         for contour in contours:
