@@ -1,6 +1,8 @@
 """A layer used to mark masked regions for inpainting."""
 from sys import version_info
 
+from src.image.mypaint.numpy_image_utils import is_fully_transparent
+
 if version_info[1] >= 11:
     from typing import Self, Optional, List
 else:
@@ -126,7 +128,7 @@ class MaskLayer(ImageLayer):
         np_image = np.ndarray(shape=(image.height(), image.width(), 4), dtype=np.uint8, buffer=image_ptr)
 
         # Update selection bounds, skip extra processing if selection is empty:
-        if self.selection_is_empty():
+        if is_fully_transparent(np_image):
             self._outline_polygons.clear()
             return
 
