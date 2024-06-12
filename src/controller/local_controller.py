@@ -50,19 +50,19 @@ class LocalDeviceController(BaseInpaintController):
                                                                  ddim=args.ddim)
 
     def _inpaint(self,
-                 selection: Image.Image,
+                 source_image_section: Image.Image,
                  mask: Image.Image,
                  save_image: Callable[[Image.Image, int], None],
                  status_signal: pyqtSignal) -> None:
-        assert_types((selection, mask), Image.Image)
+        assert_types((source_image_section, mask), Image.Image)
         config = AppConfig.instance()
-        if selection.width != mask.width:
-            raise RuntimeError(f'Selection and mask widths should match, found {selection.width} and {mask.width}')
-        if selection.height != mask.height:
-            raise RuntimeError(f'Selection and mask heights should match, found {selection.height} and {mask.height}')
-        if selection.mode == 'RGBA':
-            selection = selection.convert('RGB')
-        print(f'gen size: {selection.width}x{selection.height}')
+        if source_image_section.width != mask.width:
+            raise RuntimeError(f'Selection and mask widths should match, found {source_image_section.width} and {mask.width}')
+        if source_image_section.height != mask.height:
+            raise RuntimeError(f'Selection and mask heights should match, found {source_image_section.height} and {mask.height}')
+        if source_image_section.mode == 'RGBA':
+            source_image_section = source_image_section.convert('RGB')
+        print(f'gen size: {source_image_section.width}x{source_image_section.height}')
 
         batch_size = config.get(AppConfig.BATCH_SIZE)
         batch_count = config.get(AppConfig.BATCH_COUNT)
@@ -82,11 +82,11 @@ class LocalDeviceController(BaseInpaintController):
             negative=config.get(AppConfig.NEGATIVE_PROMPT),
             guidance_scale=config.get(AppConfig.GUIDANCE_SCALE),
             batch_size=batch_size,
-            edit=selection,
-            width=selection.width,
-            height=selection.height,
-            edit_width=selection.width,
-            edit_height=selection.height,
+            edit=source_image_section,
+            width=source_image_section.width,
+            height=source_image_section.height,
+            edit_width=source_image_section.width,
+            edit_height=source_image_section.height,
             cutn=config.get(AppConfig.CUTN),
             clip_guidance=self._clip_guidance,
             skip_timesteps=config.get(AppConfig.SKIP_STEPS),
@@ -109,8 +109,8 @@ class LocalDeviceController(BaseInpaintController):
             save_sample,
             batch_size,
             batch_count,
-            selection.width,
-            selection.height)
+            source_image_section.width,
+            source_image_section.height)
 
     def refresh_settings(self, settings_modal: SettingsModal) -> None:
         """Settings not in scope for GLID-3-XL controller."""

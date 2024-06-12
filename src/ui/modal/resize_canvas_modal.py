@@ -137,7 +137,7 @@ class ResizeCanvasModal(QDialog):
         center_button.clicked.connect(center)
 
         def on_select(resize: bool) -> None:
-            """Save selection and close on cancel/confirm"""
+            """Save inputs and close on cancel/confirm"""
             self._resize = resize
             self.hide()
 

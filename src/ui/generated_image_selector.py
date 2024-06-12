@@ -51,12 +51,10 @@ class GeneratedImageSelector(QWidget):
 
     def __init__(self,
                  layer_stack: LayerStack,
-                 mask: Image.Image,
                  close_selector: Callable,
                  make_selection: Callable[[Optional[Image.Image]], None]) -> None:
         super().__init__(None)
         self._layer_stack = layer_stack
-        self._mask = mask
         self._close_selector = close_selector
         self._make_selection = make_selection
         self._options: List[_ImageOption] = []
@@ -99,7 +97,7 @@ class GeneratedImageSelector(QWidget):
         self._loading_spinner.visible = False
         self._view.scene().addItem(self._loading_spinner)
 
-        original_image = self._layer_stack.qimage_selection_content()
+        original_image = self._layer_stack.qimage_generation_area_content()
         original_image = original_image.scaled(config.get(AppConfig.GENERATION_SIZE))
         original_option = _ImageOption(original_image, ORIGINAL_CONTENT_LABEL)
         self._view.scene().addItem(original_option)

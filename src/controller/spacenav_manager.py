@@ -18,16 +18,16 @@ from src.image.layer_stack import LayerStack
 
 logger = logging.getLogger(__name__)
 
-# Once the xy offset of sequential spacenav events adds up to this value, the selection window will
+# Once the xy offset of sequential spacenav events adds up to this value, the image generation area will
 # reach max scrolling speed:
 MAX_SPEED_AT_OFFSET = 9000
-# Controls how quickly the selection will move across the entire image at max speed:
+# Controls how quickly the image generation area will move across the entire image at max speed:
 # Values must >= 0.  The higher the value, the slower the max speed will be.
 MAX_SPEED_CONTROL = 1
 
 
 class SpacenavManager:
-    """Tracks spacemouse input and applies it to the edited image selection window."""
+    """Tracks spacemouse input and applies it to the edited image generation area."""
 
     def __init__(self, window: QMainWindow, layer_stack: LayerStack) -> None:
         """Connects the manager to the edited image and the main application window.""
@@ -63,7 +63,7 @@ class SpacenavManager:
 
             @property
             def dimensions_all_nonzero(self) -> bool:
-                """Return whether all image and selection dimensions are not zero."""
+                """Return whether all image and image generation area dimensions are not zero."""
                 return any(dim == 0 for dim in (self.w_image, self.h_image, self.w_sel, self.h_sel))
 
         self._thread_data = ThreadData()
@@ -79,15 +79,15 @@ class SpacenavManager:
 
         self._layer_stack.size_changed.connect(update_image_size)
 
-        def update_selection_size(bounds: QRect, _: QRect):
-            """Keep selection size in sync with the current selection."""
+        def update_generation_area_size(bounds: QRect, _: QRect):
+            """Keep tracked image generation area size in sync with the current image generation area."""
             with self._thread_data.lock:
                 if bounds.width() != self._thread_data.w_sel:
                     self._thread_data.w_sel = bounds.width()
                 if bounds.height() != self._thread_data.h_sel:
                     self._thread_data.h_sel = bounds.height()
 
-        self._layer_stack.selection_bounds_changed.connect(update_selection_size)
+        self._layer_stack.generation_area_bounds_changed.connect(update_generation_area_size)
 
         def stop_loop():
             """Stop the event thread when the application finishes."""
@@ -118,7 +118,7 @@ class SpacenavManager:
                 logger.info('spacenav connection started.')
 
                 def send_nav_signal() -> None:
-                    """Convert spacemouse events to appropriate selection changes, emit results to main thread."""
+                    """Convert spacemouse events to appropriate image generation area changes, emit results to main thread."""
                     with (self._thread_data.lock):
                         if self._thread_data.pending:
                             return
@@ -176,15 +176,14 @@ class SpacenavManager:
         self._worker = SpacenavThreadWorker(self._thread_data)
 
         def handle_nav_event(x_offset: int, y_offset: int) -> None:
-            """Move the selection when the thread worker requests."""
+            """Move the image generation area when the thread worker requests."""
             with self._thread_data.lock:
                 self._thread_data.pending = False
             if self._window is None or self._window.is_sample_selector_visible():
                 return
-            selection = self._layer_stack.selection
-            # print(f"moveTo: {selection.x() + x_offset},{selection.y() + y_offset}")
-            selection.moveTo(selection.x() + x_offset, selection.y() + y_offset)
-            self._layer_stack.selection = selection
+            generation_area = self._layer_stack.generation_area
+            generation_area.moveTo(generation_area.x() + x_offset, generation_area.y() + y_offset)
+            self._layer_stack.generation_area = generation_area
             self._window.repaint()
 
         self._worker.nav_event_signal.connect(handle_nav_event)

@@ -25,8 +25,8 @@
 - Add mask draw/erase hotkey
 - Show hotkeys/inputs in UI
 - Navigation tool
-    - selection to generation size button
-- Mask tool
+    - generation area to generation size button
+- Selection tool
     - Add select by color/fill select
     - Select inverted option
 - Add "shift to draw lines" in brush/mask tools
@@ -54,7 +54,7 @@
 - Add click+drag resizing to CollapsibleBox
 - Add option to pop out CollapsibleBox content as window
 
-# Sample selection widget
+# Generated image selection widget
 - Add context menu for selections:
     * Select
     * Send to new layer
@@ -63,7 +63,7 @@
 - Add mouse navigation hints to bars
 
 # ControlNet
-- Make "use selection as control" the default
+- Make "use generation area as control" the default
     - Don't allow it to be unchecked if no image is selected
     - Automatically uncheck it on image selection
 - Add tabs for up to 3X control layers

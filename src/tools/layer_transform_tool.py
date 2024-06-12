@@ -26,7 +26,7 @@ DEGREE_LABEL = 'Rotation:'
 
 TRANSFORM_LABEL = 'Transform Layers'
 TRANSFORM_TOOLTIP = 'Move, scale, or rotate the active layer.'
-RESOURCES_SELECTION_ICON = 'resources/layer_transform.svg'
+RESOURCES_TRANSFORM_TOOL_ICON = 'resources/layer_transform.svg'
 ASPECT_RATIO_CHECK_LABEL = 'Preserve aspect ratio:'
 RESET_BUTTON_TEXT = 'Reset'
 
@@ -42,7 +42,7 @@ class LayerTransformTool(BaseTool):
         super().__init__()
         self._layer_stack = layer_stack
         self._image_viewer = image_viewer
-        self._icon = QIcon(RESOURCES_SELECTION_ICON)
+        self._icon = QIcon(RESOURCES_TRANSFORM_TOOL_ICON)
         self._transform_pixmap = QGraphicsPixmapItem()
         self._transform_pixmap.setVisible(False)
         self._rotation = 0.0

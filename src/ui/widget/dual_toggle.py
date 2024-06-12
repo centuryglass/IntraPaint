@@ -84,21 +84,21 @@ class DualToggle(QWidget):
         """Returns the current selected option string."""
         return self._selected
 
-    def set_selected(self, selection: Optional[str]) -> None:
-        """Set the selected option string. Raises ValueError if the selection isn't one of the available options."""
-        if selection == self._selected:
+    def set_selected(self, selected_option: Optional[str]) -> None:
+        """Set the selected option string. Raises ValueError if the choice isn't one of the available options."""
+        if selected_option == self._selected:
             return
-        if selection != self.option1 and selection != self.option2 and selection is not None:
-            raise ValueError(f"invalid option {selection}")
-        self._selected = selection
+        if selected_option != self.option1 and selected_option != self.option2 and selected_option is not None:
+            raise ValueError(f"invalid option {selected_option}")
+        self._selected = selected_option
         for label in (self.label1, self.label2):
             label.setFrameStyle(QFrame.StyledPanel | QFrame.Raised)
             label.set_inverted(False)
-        if selection is not None:
-            label = self.label1 if selection == self.option1 else self.label2
+        if selected_option is not None:
+            label = self.label1 if selected_option == self.option1 else self.label2
             label.setFrameStyle(QFrame.StyledPanel | QFrame.Sunken)
             label.set_inverted(True)
-        self.value_changed.emit(selection)
+        self.value_changed.emit(selected_option)
 
     def set_icons(self, icon1: str | QPixmap, icon2: str | QPixmap) -> None:
         """Sets icons for both option buttons, as either pixmaps or image paths."""

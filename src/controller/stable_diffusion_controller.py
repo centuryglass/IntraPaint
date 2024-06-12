@@ -184,7 +184,7 @@ class StableDiffusionController(BaseInpaintController):
     def interrogate(self) -> None:
         """ Calls the "interrogate" endpoint to automatically generate image prompts.
 
-        Sends the edited image selection content to the stable-diffusion-webui API, where an image captioning model
+        Sends the image generation area content to the stable-diffusion-webui API, where an image captioning model
         automatically generates an appropriate prompt. Once returned, that prompt is copied to the appropriate field
         in the UI. Displays an error dialog instead if no image is loaded or another API operation is in-progress.
         """
@@ -209,7 +209,7 @@ class StableDiffusionController(BaseInpaintController):
             def run(self):
                 """Run interrogation in the child thread, emit a signal and exit when finished."""
                 try:
-                    image = self._layer_stack.pil_image_selection_content()
+                    image = self._layer_stack.pil_image_generation_area_content()
                     self.prompt_ready.emit(self._webservice.interrogate(image))
                 except RuntimeError as err:
                     logger.error(f'err:{err}')
@@ -367,7 +367,7 @@ class StableDiffusionController(BaseInpaintController):
         self._start_thread(worker)
 
     def _inpaint(self,
-                 selection: Image.Image,
+                 source_image_section: Image.Image,
                  mask: Image.Image,
                  save_image: Callable[[Image.Image, int], None],
                  status_signal: pyqtSignal) -> None:
@@ -375,7 +375,7 @@ class StableDiffusionController(BaseInpaintController):
 
         Parameters
         ----------
-        selection : PIL Image, optional
+        source_image_section : PIL Image, optional
             Image selection to edit
         mask : PIL Image, optional
             Mask marking edited image region.
@@ -387,14 +387,14 @@ class StableDiffusionController(BaseInpaintController):
         edit_mode = AppConfig.instance().get(AppConfig.EDIT_MODE)
         if edit_mode != MODE_INPAINT:
             mask = None
-        elif self._layer_stack.mask_layer.selection_is_empty():
+        elif self._layer_stack.selection_layer.generation_area_is_empty():
             raise RuntimeError(GENERATE_ERROR_MESSAGE_EMPTY_MASK)
 
         def generate_images() -> tuple[list[Image], dict | None]:
             """Call the appropriate image generation endpoint and return generated images."""
             if edit_mode == MODE_TXT2IMG:
-                return self._webservice.txt2img(selection.width, selection.height, image=selection)
-            return self._webservice.img2img(selection, mask=mask)
+                return self._webservice.txt2img(source_image_section.width, source_image_section.height, image=source_image_section)
+            return self._webservice.img2img(source_image_section, mask=mask)
 
         # POST to server_url, check response
         # If invalid or error response, throw Exception

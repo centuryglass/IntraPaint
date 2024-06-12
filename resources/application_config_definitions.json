@@ -89,10 +89,10 @@
         "default": "256x256",
         "saved": true
     },
-    "mask_brush_size": {
+    "selection_brush_size": {
         "label": "Brush size:",
         "category": "Editing",
-        "description": "Current/initial brush size (in pixels) for the mask selection tool.",
+        "description": "Current/initial brush size (in pixels) for the selection tool.",
         "type": "int",
         "default": 40,
         "saved": true,
@@ -460,7 +460,7 @@
     "upscale_mode": {
         "label": "Upscale mode:",
         "category": "GLID-3-XL",
-        "description": "Upscaling mode used when the inpainting resolution doesn't match the selection size.",
+        "description": "Upscaling mode used when the inpainting resolution doesn't match the image generation area size.",
         "type": "int",
         "default": 1,
         "saved": true
@@ -468,7 +468,7 @@
     "downscale_mode": {
         "label": "Downscale mode:",
         "category": "GLID-3-XL",
-        "description": "Downscaling mode used when the inpainting resolution doesn't match the selection size.",
+        "description": "Downscaling mode used when the inpainting resolution doesn't match the image generation area size.",
         "type": "int",
         "default": 1,
         "saved": true
@@ -624,7 +624,7 @@
     "move_left": {
         "label": "Move left:",
         "category": "Keybindings",
-        "description": "Move the generation selection left",
+        "description": "Move the image generation area left",
         "type": "string",
         "default": "Left,A,H",
         "saved": true
@@ -632,7 +632,7 @@
     "move_right": {
         "label": "Move right:",
         "category": "Keybindings",
-        "description": "Move the generation selection right",
+        "description": "Move the image generation area right",
         "type": "string",
         "default": "Right,D,L",
         "saved": true
@@ -640,7 +640,7 @@
     "move_up": {
         "label": "Move up:",
         "category": "Keybindings",
-        "description": "Move the generation selection up",
+        "description": "Move the image generation area up",
         "type": "string",
         "default": "Up,W,K",
         "saved": true
@@ -648,7 +648,7 @@
     "move_down": {
         "label": "Move down:",
         "category": "Keybindings",
-        "description": "Move the generation selection down",
+        "description": "Move the image generation area down",
         "type": "string",
         "default": "Down,S,J",
         "saved": true
@@ -693,18 +693,18 @@
         "default": "T",
         "saved": true
     },
-    "mask_tool_key": {
-        "label": "Switch to the mask selection tool:",
+    "selection_tool_key": {
+        "label": "Switch to the selection tool:",
         "category": "Keybindings",
-        "description": "Activate the mask selection tool to mark areas for inpainting.",
+        "description": "Activate the selection tool to mark areas for editing.",
         "type": "string",
         "default": "M",
         "saved": true
     },
-    "generation_area_selection_tool_key": {
-        "label": "Switch to the generation selection tool:",
+    "generation_area_tool_key": {
+        "label": "Switch to the image generation area selection tool:",
         "category": "Keybindings",
-        "description": "Activate the selection tool to pick an image area for AI image generation.",
+        "description": "Activate the generation area tool to pick an image area for AI image generation.",
         "type": "string",
         "default": "G",
         "saved": true
@@ -917,10 +917,10 @@
         "default": "Ctrl+Shift+P",
         "saved": true
     },
-    "clear_mask_shortcut": {
+    "clear_selection_shortcut": {
         "label": "Clear mask",
         "category": "Keybindings",
-        "description": "Clear the mask selection layer.",
+        "description": "Clear the selection layer.",
         "type": "string",
         "default": "F8",
         "saved": true

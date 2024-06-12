@@ -18,7 +18,7 @@ ENABLE_CONTROLNET_CHECKBOX_LABEL = 'Enable ControlNet'
 LOW_VRAM_LABEL = 'Low VRAM'
 PX_PERFECT_CHECKBOX_LABEL = 'Pixel Perfect'
 CONTROL_IMAGE_LABEL = 'Set Control Image'
-SELECTION_AS_CONTROL_LABEl = 'Selection as Control'
+GENERATION_AREA_AS_CONTROL = 'Generation Area as Control'
 CONTROL_TYPE_BOX_TITLE = 'Control Type'
 MODULE_BOX_TITLE = 'Control Module'
 MODEL_BOX_TITLE = 'Control Model'
@@ -63,7 +63,7 @@ DEFAULT_CONTROL_TYPE = 'All'
 DEFAULT_MODULE_NAME = 'none'
 DEFAULT_MODEL_NAME = 'none'
 
-REUSE_IMAGE_VALUE = 'SELECTION'  # value to signal that the control image is from selection, not a file
+REUSE_IMAGE_VALUE = 'SELECTION'  # value to signal that the control image is from image generation area, not a file
 
 
 class ControlnetPanel(CollapsibleBox):
@@ -80,7 +80,7 @@ class ControlnetPanel(CollapsibleBox):
         Parameters
         ----------
         config_key : str, default = Config.CONTROLNET_ARGS_0
-            Config key where ControlNet selection will be saved.
+            Config key where ControlNet settings will be saved.
         control_types : dict or None
             API data defining available control types. If none, only the module and model dropdowns are used.
         module_detail : dict
@@ -119,25 +119,25 @@ class ControlnetPanel(CollapsibleBox):
         checkbox_row.addWidget(px_perfect_checkbox)
 
         # Control image row:
-        use_selection = bool(CONTROL_CONFIG_IMAGE_KEY in initial_control_state
+        use_generation_area = bool(CONTROL_CONFIG_IMAGE_KEY in initial_control_state
                              and initial_control_state[CONTROL_CONFIG_IMAGE_KEY] == REUSE_IMAGE_VALUE)
         image_row = QHBoxLayout()
         layout.addLayout(image_row)
 
         load_image_button = QPushButton()
         load_image_button.setText(CONTROL_IMAGE_LABEL)
-        load_image_button.setEnabled(not use_selection)
+        load_image_button.setEnabled(not use_generation_area)
         image_row.addWidget(load_image_button, stretch=10)
 
-        image_path_edit = QLineEdit('' if use_selection or CONTROL_CONFIG_IMAGE_KEY not in initial_control_state
+        image_path_edit = QLineEdit('' if use_generation_area or CONTROL_CONFIG_IMAGE_KEY not in initial_control_state
                                     else initial_control_state[CONTROL_CONFIG_IMAGE_KEY])
-        image_path_edit.setEnabled(not use_selection)
+        image_path_edit.setEnabled(not use_generation_area)
         image_row.addWidget(image_path_edit, stretch=80)
 
         reuse_image_checkbox = QCheckBox()
-        reuse_image_checkbox.setText(SELECTION_AS_CONTROL_LABEl)
+        reuse_image_checkbox.setText(GENERATION_AREA_AS_CONTROL)
         image_row.addWidget(reuse_image_checkbox, stretch=10)
-        reuse_image_checkbox.setChecked(use_selection)
+        reuse_image_checkbox.setChecked(use_generation_area)
 
         def reuse_image_update(checked: bool):
             """Update config, disable/enable appropriate components if the 'reuse image as control' box changes."""
@@ -189,20 +189,20 @@ class ControlnetPanel(CollapsibleBox):
 
         model_combobox.currentIndexChanged.connect(handle_model_change)
 
-        def handle_module_change(selection: str):
+        def handle_module_change(selected_module: str):
             """When the selected module changes, update config and module option controls."""
             details = {}
             if MODULE_DETAIL_KEY in module_detail:
-                if selection not in module_detail[MODULE_DETAIL_KEY]:
+                if selected_module not in module_detail[MODULE_DETAIL_KEY]:
                     for option in module_detail[MODULE_LIST_KEY]:
-                        if selection.startswith(option):
+                        if selected_module.startswith(option):
                             selection = option
                             break
-                if selection not in module_detail[MODULE_DETAIL_KEY]:
-                    logger.warning(f'Warning: invalid selection {selection} not found')
+                if selected_module not in module_detail[MODULE_DETAIL_KEY]:
+                    logger.warning(f'Warning: chosen module {selected_module} not found')
                     return
-                details = module_detail[MODULE_DETAIL_KEY][selection]
-            config.set(config_key, selection, inner_key=CONTROL_MODULE_KEY)
+                details = module_detail[MODULE_DETAIL_KEY][selected_module]
+            config.set(config_key, selected_module, inner_key=CONTROL_MODULE_KEY)
             while options_layout.count() > 0:
                 row = options_layout.itemAt(0)
                 while row.layout().count() > 0:
@@ -222,7 +222,7 @@ class ControlnetPanel(CollapsibleBox):
             for param in current_keys:
                 if param not in DEFAULT_PARAMS:
                     config.set(config_key, None, inner_key=param)
-            if selection != DEFAULT_MODULE_NAME:
+            if selected_module != DEFAULT_MODULE_NAME:
                 sliders = [
                     {
                         SLIDER_TITLE_KEY: CONTROL_WEIGHT_TITLE,

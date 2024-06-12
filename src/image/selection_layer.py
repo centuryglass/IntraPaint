@@ -20,63 +20,64 @@ from src.util.image_utils import qimage_to_pil_image, image_content_bounds
 
 logger = logging.getLogger(__name__)
 
-MASK_LAYER_NAME = "Inpainting Mask"
+SELECTION_LAYER_NAME = "Selection"
+
 MASK_OPACITY_DEFAULT = 0.2
 ALPHA_THRESHOLD = 1
 ALPHA_SELECTED = 180
 ALPHA_UNSELECTED = 150
 
 
-class MaskLayer(ImageLayer):
-    """A layer used to mark masked regions for inpainting.
+class SelectionLayer(ImageLayer):
+    """A layer used to select regions for editing or inpainting.
 
-    The mask layer has the following properties:
+    The selection layer has the following properties:
 
-    - The mask layer is never saved.
-    - Opacity defaults to 0.6
-    - The mask layer cannot be copied.
-    - Mask layer content is always of uniform opacity and color.
-    - When rendered to a pixmap, masked regions are outlined.
-    - When the "inpaint masked only" option is checked, the mask layer pixmap will track the masked area bounds.
-    - Masked areas within the image generation selection are drawn at a higher opacity.
+    - Only one selection layer ever exists, and its size always matches the image size.
+    - Layer data is effectively 1-bit, with all pixels being either ARGB #00000000 or $FFFF0000
+    - The layer cannot be copied.
+    - Selection bounds are available as polygons through the `outline` property
+    - When the "inpaint selected area only" option is checked, the mask layer pixmap will track the masked area bounds.
+    - Functions are provided to adjust the selection area.
 
     The following properties can't be defined within this class itself, but should be enforced by the layer stack:
-    - The mask layer is always above all other layers.
-    - The mask layer cannot be deleted, copied, or moved.
-    - The mask layer can't be set as the active layer.
+    - The selection layer is always above all other layers.
+    - The selection layer cannot be deleted, copied, or moved.
+    - The selection layer can't be set as the active layer.
+    - Contents are not saved unless the image is saved in the .inpt format to preserve layers.
     """
 
-    def __init__(self, size: QSize, selection_signal: pyqtSignal) -> None:
+    def __init__(self, size: QSize, generation_window_signal: pyqtSignal) -> None:
         """
-        Initializes a new mask layer.
+        Initializes a new selection layer.
         """
         self._outline_polygons: List[QPolygonF] = []
-        self._selection = QRect()
-        super().__init__(size, MASK_LAYER_NAME, False)
+        self._generation_area = QRect()
+        super().__init__(size, SELECTION_LAYER_NAME, False)
         self.opacity = MASK_OPACITY_DEFAULT
         self._bounding_box = None
-        selection_signal.connect(self.update_selection)
+        generation_window_signal.connect(self.update_generation_area)
 
-    def update_selection(self, new_selection: QRect) -> None:
+    def update_generation_area(self, new_area: QRect) -> None:
         """Update the area marked for image generation."""
-        self._selection = new_selection
+        self._generation_area = new_area
         self._update_bounds()
         self.content_changed.emit(self)
 
     # Disabling unwanted layer functionality:
     def copy(self) -> Self:
-        """Disallow mask copies."""
-        raise RuntimeError("The mask layer cannot be copied.")
+        """Disallow selection layer copies."""
+        raise RuntimeError("The selection layer cannot be copied.")
 
     @property
     def saved(self) -> bool:
-        """The mask layer is never saved with the image."""
+        """The selection layer is never saved with the image."""
         return False
 
     @saved.setter
     def saved(self, saved: bool):
         """Sets whether this layer is saved when visible and image data is saved."""
-        raise RuntimeError("The mask layer is never saved with the rest of the image.")
+        raise RuntimeError("The selection layer is never saved with the rest of the image.")
 
     @property
     def outline(self) -> List[QPolygonF]:
@@ -87,20 +88,20 @@ class MaskLayer(ImageLayer):
 
     # Enforcing image properties:
     def _update_bounds(self, np_image: Optional[np.ndarray] = None) -> None:
-        """Update saved mask bounds within the selection."""
+        """Update saved selection bounds within the generation window."""
         if np_image is None:
             image = self.qimage
             image_ptr = image.bits()
             image_ptr.setsize(image.byteCount())
             np_image = np.ndarray(shape=(image.height(), image.width(), 4), dtype=np.uint8, buffer=image_ptr)
-        selection = self._selection
-        bounds = image_content_bounds(np_image, selection, ALPHA_THRESHOLD)
+        generation_area = self._generation_area
+        bounds = image_content_bounds(np_image, generation_area, ALPHA_THRESHOLD)
         if bounds.isNull():
             self._bounding_box = None
         else:
             self._bounding_box = bounds
 
-    def selection_is_empty(self) -> bool:
+    def generation_area_is_empty(self) -> bool:
         """Returns whether the current selection mask is empty."""
         self._update_bounds()
         return self._bounding_box is None or self._bounding_box.isEmpty()
@@ -118,7 +119,7 @@ class MaskLayer(ImageLayer):
     @property
     def pil_mask_image(self) -> Image.Image:
         """Gets the selection mask as a PIL image mask."""
-        return qimage_to_pil_image(self.cropped_image_content(self._selection))
+        return qimage_to_pil_image(self.cropped_image_content(self._generation_area))
 
     def _handle_content_change(self, image: QImage) -> None:
         """When the image updates, ensure that it meets requirements, and recalculate bounds."""
@@ -128,13 +129,12 @@ class MaskLayer(ImageLayer):
         np_image = np.ndarray(shape=(image.height(), image.width(), 4), dtype=np.uint8, buffer=image_ptr)
 
         # Update selection bounds, skip extra processing if selection is empty:
+        self._update_bounds(np_image)
         if is_fully_transparent(np_image):
             self._outline_polygons = []
             return
-        self._update_bounds(np_image)
 
-        # Areas under ALPHA_THRESHOLD set to (0, 0, 0, 0), areas within the threshold set to #FF0000 with opacity
-        # varying based on the selection bounds:
+        # Areas under ALPHA_THRESHOLD set to (0, 0, 0, 0), areas within the threshold set to #FF0000:
         masked = np_image[:, :, 3] >= ALPHA_THRESHOLD
         unmasked = ~masked
         for i in range(4):
@@ -154,7 +154,7 @@ class MaskLayer(ImageLayer):
                 polygon.append(QPointF(point[0][0] + 0.5, point[0][1] + 0.5))
             self._outline_polygons.append(polygon)
 
-    def get_masked_area(self, ignore_config: bool = False) -> Optional[QRect]:
+    def get_selection_gen_area(self, ignore_config: bool = False) -> Optional[QRect]:
         """Returns the smallest QRect containing all masked areas, plus padding.
 
         Used for showing the actual area visible to the image model when the Config.INPAINT_FULL_RES config option is
@@ -183,20 +183,20 @@ class MaskLayer(ImageLayer):
             return None  # mask was empty
 
         # Add padding:
-        selection = self._selection
-        selection_left = selection.x()
-        selection_right = selection_left + selection.width() - 1
-        selection_top = selection.y()
-        selection_bottom = selection_top + selection.height() - 1
-        top = max(selection_top, top - padding)
-        bottom = min(selection_bottom, bottom + padding)
-        left = max(selection_left, left - padding)
-        right = min(selection_right, right + padding)
+        generation_area = self._generation_area
+        area_left = generation_area.x()
+        area_right = area_left + generation_area.width() - 1
+        area_top = generation_area.y()
+        area_bottom = area_top + generation_area.height() - 1
+        top = max(area_top, top - padding)
+        bottom = min(area_bottom, bottom + padding)
+        left = max(area_left, left - padding)
+        right = min(area_right, right + padding)
         height = bottom - top
         width = right - left
 
         # Expand to match image section's aspect ratio:
-        image_ratio = selection.width() / selection.height()
+        image_ratio = generation_area.width() / generation_area.height()
         bounds_ratio = width / height
 
         try:
@@ -204,29 +204,29 @@ class MaskLayer(ImageLayer):
                 target_width = int(image_ratio * height)
                 width_to_add = target_width - width
                 assert width_to_add >= 0
-                d_left = min(left - selection_left, width_to_add // 2)
+                d_left = min(left - area_left, width_to_add // 2)
                 width_to_add -= d_left
-                d_right = min(selection_right - right, width_to_add)
+                d_right = min(area_right - right, width_to_add)
                 width_to_add -= d_right
                 if width_to_add > 0:
-                    d_left = min(left - selection_left, d_left + width_to_add)
+                    d_left = min(left - area_left, d_left + width_to_add)
                 left -= d_left
                 right += d_right
             else:
                 target_height = width // image_ratio
                 height_to_add = target_height - height
                 assert height_to_add >= 0
-                d_top = min(top - selection_top, height_to_add // 2)
+                d_top = min(top - area_top, height_to_add // 2)
                 height_to_add -= d_top
-                d_bottom = min(selection_bottom - bottom, height_to_add)
+                d_bottom = min(area_bottom - bottom, height_to_add)
                 height_to_add -= d_bottom
                 if height_to_add > 0:
-                    d_top = min(top - selection_top, d_top + height_to_add)
+                    d_top = min(top - area_top, d_top + height_to_add)
                 top -= d_top
                 bottom += d_bottom
         except AssertionError:
             # Weird edge cases that pop up sometimes when you try to do unreasonable things like change size to 500x8
-            mask_rect = QRect(QPoint(int(left), int(top)), QPoint(int(right), int(bottom)))
-            logger.error(f'Border calc bug: calculated rect was {mask_rect}, ratio was {image_ratio}')
-        mask_rect = QRect(QPoint(int(left), int(top)), QPoint(int(right), int(bottom)))
-        return mask_rect
+            selection_rect = QRect(QPoint(int(left), int(top)), QPoint(int(right), int(bottom)))
+            logger.error(f'Border calc bug: calculated rect was {selection_rect}, ratio was {image_ratio}')
+        selection_rect = QRect(QPoint(int(left), int(top)), QPoint(int(right), int(bottom)))
+        return selection_rect

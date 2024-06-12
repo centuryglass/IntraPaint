@@ -12,8 +12,8 @@ from src.tools.base_tool import BaseTool
 from src.tools.brush_tool import BrushTool
 from src.tools.eyedropper_tool import EyedropperTool
 from src.tools.layer_transform_tool import LayerTransformTool
-from src.tools.mask_tool import MaskTool
 from src.tools.selection_tool import SelectionTool
+from src.tools.generation_area_tool import GenerationAreaTool
 from src.tools.tool_event_handler import ToolEventHandler
 from src.ui.image_viewer import ImageViewer
 from src.ui.panel.layer_panel import LayerPanel
@@ -120,10 +120,10 @@ class ToolPanel(QWidget):
         add_tool(brush_tool)
         eyedropper_tool = EyedropperTool(layer_stack)
         add_tool(eyedropper_tool)
+        generation_area_tool = GenerationAreaTool(layer_stack, image_viewer)
+        add_tool(generation_area_tool)
         selection_tool = SelectionTool(layer_stack, image_viewer)
         add_tool(selection_tool)
-        mask_tool = MaskTool(layer_stack, image_viewer)
-        add_tool(mask_tool)
         transform_tool = LayerTransformTool(layer_stack, image_viewer)
         add_tool(transform_tool)
         self._event_handler.register_tool_delegate(brush_tool, eyedropper_tool, Qt.KeyboardModifier.ControlModifier)

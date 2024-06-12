@@ -416,7 +416,7 @@ class BaseInpaintController:
 
     # Image generation handling:
     def _inpaint(self,
-                 selection: Optional[Image.Image],
+                 source_image_section: Optional[Image.Image],
                  mask: Optional[Image.Image],
                  save_image: Callable[[Image.Image, int], None],
                  status_signal: pyqtSignal) -> None:
@@ -424,7 +424,7 @@ class BaseInpaintController:
 
         Parameters
         ----------
-        selection : PIL Image, optional
+        source_image_section : PIL Image, optional
             Image selection to edit
         mask : PIL Image, optional
             Mask marking edited image region.
@@ -459,11 +459,10 @@ class BaseInpaintController:
                 return pil_image.resize((width, height), upscale_mode)
             return pil_image.resize((width, height), downscale_mode)
 
-        selection = qimage_to_pil_image(self._layer_stack.qimage_selection_content())
+        source_selection = qimage_to_pil_image(self._layer_stack.qimage_generation_area_content())
 
-        # If sketch mode was used, write the sketch onto the image selection:
-        inpaint_image = selection.copy()
-        inpaint_mask = self._layer_stack.mask_layer.pil_mask_image
+        inpaint_image = source_selection.copy()
+        inpaint_mask = self._layer_stack.selection_layer.pil_mask_image
 
         # If necessary, scale image and mask to match the image generation size.
         generation_size = config.get(AppConfig.GENERATION_SIZE)
@@ -510,7 +509,7 @@ class BaseInpaintController:
 
                 mask_alpha = inpaint_mask.convert('L').point(point_fn).filter(ImageFilter.GaussianBlur())
                 mask_alpha = resize_image(mask_alpha, img.width, img.height)
-                base = resize_image(selection, img.width, img.height)
+                base = resize_image(source_selection, img.width, img.height)
                 img = Image.composite(base, img, mask_alpha)
             self._window.load_sample_preview(pil_image_to_qimage(img), idx)
 
@@ -524,7 +523,7 @@ class BaseInpaintController:
         Parameters
         ----------
         sample_image : PIL Image
-            Data to be inserted into the edited image selection bounds.
+            Data to be inserted into the edited image generation area bounds.
         """
         if sample_image is not None:
             if isinstance(sample_image, Image.Image):
@@ -532,12 +531,12 @@ class BaseInpaintController:
             else:
                 image = sample_image.convertToFormat(QImage.Format.Format_ARGB32_Premultiplied)
             if AppConfig.instance().get(AppConfig.EDIT_MODE) == "Inpaint":
-                inpaint_mask = self._layer_stack.mask_layer.cropped_image_content(self._layer_stack.selection)
+                inpaint_mask = self._layer_stack.selection_layer.cropped_image_content(self._layer_stack.generation_area)
                 painter = QPainter(image)
                 painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_DestinationIn)
                 painter.drawImage(QRect(QPoint(0, 0), image.size()), inpaint_mask)
                 painter.end()
-            bounds = self._layer_stack.selection
+            bounds = self._layer_stack.generation_area
             layer = self._layer_stack.active_layer
             if layer is None:
                 self._layer_stack.create_layer(image_data=image)
@@ -546,11 +545,11 @@ class BaseInpaintController:
                 prev_image = layer.cropped_image_content(bounds)
 
                 def apply():
-                    """Inserts the selection into the active layer."""
+                    """Inserts the generated image into the active layer."""
                     layer.insert_image_content(image, QRect(bounds.topLeft() - pos, bounds.size()),
                                                QPainter.CompositionMode.CompositionMode_SourceOver)
 
                 def undo():
-                    """Revert the selection to its previous state."""
+                    """Revert the image generation area to its previous state."""
                     layer.insert_image_content(prev_image, bounds)
                 commit_action(apply, undo)

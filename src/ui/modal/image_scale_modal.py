@@ -92,7 +92,7 @@ class ImageScaleModal(QDialog):
             self._layout.addWidget(self._controlnet_rate_box)
 
         def on_finish(should_scale: bool) -> None:
-            """Cleanup, set choice, and close on 'scale image'/'cancel' selection."""
+            """Cleanup, set choice, and close on 'scale image'/'cancel'."""
             config.disconnect(self._upscale_method_box, AppConfig.UPSCALE_METHOD)
             self._should_scale = should_scale
             self.hide()

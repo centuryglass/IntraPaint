@@ -41,7 +41,7 @@ class Outline(QGraphicsObject):
 
     @pyqtProperty(int)
     def dash_offset(self) -> int:
-        """Animate dash offset to make the selection more visible."""
+        """Animate dash offset to make the image generation area more visible."""
         return self._dash_offset
 
     @dash_offset.setter

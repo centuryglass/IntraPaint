@@ -49,7 +49,7 @@ class ImageGraphicsView(QGraphicsView):
         self.setScene(self._scene)
         self.installEventFilter(self)
 
-        # Bind directional navigation and selection keys:
+        # Bind directional navigation and image generation area keys:
         zoom_key = AppConfig.instance().get_keycodes(AppConfig.ZOOM_TOGGLE)
 
         def _toggle_zoom_if_visible() -> bool:
@@ -74,7 +74,7 @@ class ImageGraphicsView(QGraphicsView):
 
             HotkeyFilter.instance().register_speed_modified_keybinding(_pan, pan_key)
 
-            # Bind selection offset:
+            # Bind image generation area offset:
             def _scroll(mult, x=dx, y=dy) -> bool:
                 if not self.isVisible():
                     return False
@@ -400,7 +400,7 @@ class ImageGraphicsView(QGraphicsView):
 
     def zoom_to_bounds(self, bounds: QRect) -> None:
         """Adjust viewport scale and offset to center a selected area in the view."""
-        self.reset_scale()  # Reset zoom without clearing 'follow_selection' flag.
+        self.reset_scale()  # Reset zoom without clearing 'follow_generation_area' flag.
         margin = max(int(bounds.width() / 20), int(bounds.height() / 20), 10)
         self.offset = QPoint(int(bounds.center().x() - (self.content_size.width() // 2)),
                              int(bounds.center().y() - (self.content_size.height() // 2)))

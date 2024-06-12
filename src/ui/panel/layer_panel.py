@@ -42,12 +42,12 @@ MENU_OPTION_MOVE_DOWN = 'Move down'
 MENU_OPTION_COPY = 'Copy'
 MENU_OPTION_DELETE = 'Delete'
 MENU_OPTION_MERGE_DOWN = 'Merge down'
-MENU_OPTION_CLEAR_SELECTED = 'Clear masked'
-MENU_OPTION_COPY_SELECTED = 'Copy masked to new layer'
+MENU_OPTION_CLEAR_SELECTED = 'Clear selected'
+MENU_OPTION_COPY_SELECTED = 'Copy selected to new layer'
 MENU_OPTION_LAYER_TO_IMAGE_SIZE = 'Layer to image size'
 MENU_OPTION_CROP_TO_CONTENT = 'Crop layer to content'
-MENU_OPTION_CLEAR_SELECTION = 'Clear mask'
-MENU_OPTION_SELECT_ALL = 'Mask all in active layer'
+MENU_OPTION_CLEAR_SELECTION = 'Clear selection'
+MENU_OPTION_SELECT_ALL = 'Select all in active layer'
 MENU_OPTION_INVERT_SELECTION = "Invert selection"
 
 
@@ -98,7 +98,7 @@ class LayerPanel(QWidget):
             self._list_layout.insertWidget(layer_idx + 1, widget)
             self.resizeEvent(None)
         self._layer_stack.layer_added.connect(_add_layer_widget)
-        _add_layer_widget(layer_stack.mask_layer, -1)
+        _add_layer_widget(layer_stack.selection_layer, -1)
         for i in range(self._layer_stack.count):
             _add_layer_widget(self._layer_stack.get_layer_by_index(i), i + 1)
 
@@ -229,7 +229,7 @@ class _LayerItem(BorderedWidget):
         paint_bounds.moveLeft(LIST_SPACING)
         transformation = get_rect_transformation(content_bounds, paint_bounds)
         painter = QPainter(self)
-        if self._layer != self._layer_stack.mask_layer:
+        if self._layer != self._layer_stack.selection_layer:
             painter.drawTiledPixmap(paint_bounds, _LayerItem._layer_transparency_background)
         else:
             painter.fillRect(paint_bounds, Qt.GlobalColor.darkGray)
@@ -271,7 +271,7 @@ class _LayerItem(BorderedWidget):
 
     def mousePressEvent(self, event: Optional[QMouseEvent]) -> None:
         """Activate layer on click."""
-        if self._layer == self._layer_stack.mask_layer:
+        if self._layer == self._layer_stack.selection_layer:
             print('TODO: activate mask tool on mask layer click')
         elif not self.active and event.button() == Qt.MouseButton.LeftButton:
             self._layer_stack.active_layer = self._layer
@@ -288,7 +288,7 @@ class _LayerItem(BorderedWidget):
     def _menu(self, pos: QPoint) -> None:
         menu = QMenu()
         menu.setTitle(self._layer.name)
-        if self._layer != self._layer_stack.mask_layer:
+        if self._layer != self._layer_stack.selection_layer:
             index = self._layer_stack.get_layer_index(self._layer)
 
             if index > 0:
@@ -310,13 +310,13 @@ class _LayerItem(BorderedWidget):
                 merge_option.triggered.connect(lambda: self._layer_stack.merge_layer_down(self.layer))
 
             clear_option = menu.addAction(MENU_OPTION_CLEAR_SELECTED)
-            clear_option.triggered.connect(lambda: self._layer_stack.cut_masked(self.layer))
+            clear_option.triggered.connect(lambda: self._layer_stack.cut_selected(self.layer))
 
             copy_masked_option = menu.addAction(MENU_OPTION_COPY_SELECTED)
 
             def do_copy() -> None:
                 """Make the copy, then add it as a new layer."""
-                masked = self._layer_stack.copy_masked(self.layer)
+                masked = self._layer_stack.copy_selected(self.layer)
                 self._layer_stack.create_layer(self._layer.name + ' content', masked, layer_index=index)
 
             copy_masked_option.triggered.connect(do_copy)
@@ -328,17 +328,17 @@ class _LayerItem(BorderedWidget):
             crop_content_option.triggered.connect(self._layer.crop_to_content)
         else:
             invert_option = menu.addAction(MENU_OPTION_INVERT_SELECTION)
-            invert_option.triggered.connect(self._layer_stack.mask_layer.invert_selection)
+            invert_option.triggered.connect(self._layer_stack.selection_layer.invert_selection)
             clear_mask_option = menu.addAction(MENU_OPTION_CLEAR_SELECTION)
-            clear_mask_option.triggered.connect(self._layer_stack.mask_layer.clear)
+            clear_mask_option.triggered.connect(self._layer_stack.selection_layer.clear)
             if self._layer_stack.active_layer_index is not None:
                 mask_active_option = menu.addAction(MENU_OPTION_SELECT_ALL)
 
                 def mask_active() -> None:
-                    """Draw the layer into the mask, then let MaskLayer automatically convert it to red/transparent."""
+                    """Draw the layer into the mask, then let SelectionLayer automatically convert it to red/transparent."""
                     layer_image = self._layer_stack.get_layer_by_index(
                         self._layer_stack.active_layer_index).qimage
-                    with self._layer_stack.mask_layer.borrow_image() as mask_image:
+                    with self._layer_stack.selection_layer.borrow_image() as mask_image:
                         painter = QPainter(mask_image)
                         painter.setCompositionMode(QPainter.CompositionMode_Source)
                         painter.drawImage(QRect(0, 0, mask_image.width(), mask_image.height()), layer_image)

@@ -16,14 +16,14 @@ from src.ui.widget.collapsible_box import CollapsibleBox
 from src.ui.widget.param_slider import ParamSlider
 from src.ui.window.main_window import MainWindow
 
-HEIGHT_BOX_TOOLTIP = 'Resize selection content to this height before inpainting'
+HEIGHT_BOX_TOOLTIP = 'Resize image generation area content to this height before inpainting'
 
-WIDTH_BOX_TOOLTIP = 'Resize selection content to this width before inpainting'
+WIDTH_BOX_TOOLTIP = 'Resize image generation area content to this width before inpainting'
 
 EDIT_MODE_INPAINT = 'Inpaint'
 CONTROL_BOX_LABEL = 'Image Generation Controls'
 INTERROGATE_BUTTON_TEXT = 'Interrogate'
-INTERROGATE_BUTTON_TOOLTIP = 'Attempt to generate a prompt that describes the current selection'
+INTERROGATE_BUTTON_TOOLTIP = 'Attempt to generate a prompt that describes the current image generation area'
 GENERATE_BUTTON_TEXT = 'Generate'
 
 

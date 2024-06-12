@@ -13,12 +13,12 @@ class MockController(BaseInpaintController):
     """Mock controller for UI testing, performs no real inpainting"""
 
     def _inpaint(self,
-                 selection: Optional[Image.Image],
+                 source_image_section: Optional[Image.Image],
                  mask: Optional[Image.Image],
                  save_image: Callable[[Image.Image, int], None],
                  status_signal: pyqtSignal) -> None:
         print('Mock inpainting call:')
-        print(f'\tselection: {selection}')
+        print(f'\tselection: {source_image_section}')
         print(f'\tmask: {mask}')
         config = AppConfig.instance()
         config_options = config.list()

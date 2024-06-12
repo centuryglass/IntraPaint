@@ -141,8 +141,8 @@ class MainWindow(QMainWindow):
         edit_menu = self._menu.addMenu('Edit')
         add_action(AppConfig.UNDO_SHORTCUT, lambda: if_not_selecting(undo), edit_menu)
         add_action(AppConfig.REDO_SHORTCUT, lambda: if_not_selecting(redo), edit_menu)
-        add_action(AppConfig.CUT_SHORTCUT, lambda: if_not_selecting(layer_stack.cut_masked), edit_menu)
-        add_action(AppConfig.COPY_SHORTCUT, lambda: if_not_selecting(layer_stack.copy_masked), edit_menu)
+        add_action(AppConfig.CUT_SHORTCUT, lambda: if_not_selecting(layer_stack.cut_selected), edit_menu)
+        add_action(AppConfig.COPY_SHORTCUT, lambda: if_not_selecting(layer_stack.copy_selected), edit_menu)
         add_action(AppConfig.PASTE_SHORTCUT, lambda: if_not_selecting(layer_stack.paste), edit_menu)
 
         # Image:
@@ -159,9 +159,9 @@ class MainWindow(QMainWindow):
         add_action(AppConfig.COPY_LAYER_SHORTCUT, lambda: if_not_selecting(layer_stack.copy_layer), layer_menu)
         add_action(AppConfig.DELETE_LAYER_SHORTCUT, lambda: if_not_selecting(layer_stack.remove_layer), layer_menu)
         add_action(AppConfig.SELECT_PREVIOUS_LAYER_SHORTCUT,
-                   lambda: if_not_selecting(lambda: layer_stack.offset_selection(-1)), layer_menu)
+                   lambda: if_not_selecting(lambda: layer_stack.offset_generation_area(-1)), layer_menu)
         add_action(AppConfig.SELECT_NEXT_LAYER_SHORTCUT,
-                   lambda: if_not_selecting(lambda: layer_stack.offset_selection(1)), layer_menu)
+                   lambda: if_not_selecting(lambda: layer_stack.offset_generation_area(1)), layer_menu)
         add_action(AppConfig.MOVE_LAYER_UP_SHORTCUT, lambda: if_not_selecting(lambda: layer_stack.move_layer(-1)),
                    layer_menu)
         add_action(AppConfig.MOVE_LAYER_DOWN_SHORTCUT, lambda: if_not_selecting(lambda: layer_stack.move_layer(1)),
@@ -179,8 +179,7 @@ class MainWindow(QMainWindow):
 
         # Tools:
         tool_menu = self._menu.addMenu('Tools')
-        # add_action('Toggle pen/eraser tool', 'F7', lambda: if_not_selecting(mask_tool_toggle), tool_menu)
-        add_action(AppConfig.CLEAR_MASK_SHORTCUT, lambda: if_not_selecting(layer_stack.mask_layer.clear), tool_menu)
+        add_action(AppConfig.CLEAR_SELECTION_SHORTCUT, lambda: if_not_selecting(layer_stack.selection_layer.clear), tool_menu)
 
         def show_layers() -> None:
             """Show the layer panel."""
@@ -420,12 +419,12 @@ class MainWindow(QMainWindow):
             return
         if visible:
             if AppConfig.instance().get(AppConfig.EDIT_MODE) == 'Inpaint':
-                mask = self._layer_stack.mask_layer.pil_mask_image
+                mask = self._layer_stack.selection_layer.pil_mask_image
             else:
-                mask = QPixmap(self._layer_stack.selection.size())
+                mask = QPixmap(self._layer_stack.generation_area.size())
                 mask.fill(Qt.red)
                 mask = qimage_to_pil_image(mask.toImage())
-            self._image_selector = GeneratedImageSelector(self._layer_stack, mask,
+            self._image_selector = GeneratedImageSelector(self._layer_stack,
                                                           lambda: self.set_image_selector_visible(False),
                                                           self._controller.select_and_apply_sample)
             self._central_widget.addWidget(self._image_selector)

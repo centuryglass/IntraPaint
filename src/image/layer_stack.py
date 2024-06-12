@@ -12,7 +12,7 @@ from PyQt5.QtGui import QPainter, QPixmap, QImage, QColor
 
 from src.config.application_config import AppConfig
 from src.image.image_layer import ImageLayer
-from src.image.mask_layer import MaskLayer
+from src.image.selection_layer import SelectionLayer
 from src.undo_stack import commit_action, last_action
 from src.util.cached_data import CachedData
 from src.util.image_utils import qimage_to_pil_image
@@ -20,13 +20,13 @@ from src.util.validation import assert_type, assert_types, assert_valid_index
 
 LAYER_DATA_FILE_EMBEDDED = 'data.json'
 
-MASK_LAYER_FILE_EMBEDDED = 'mask.png'
+SELECTION_LAYER_FILE_EMBEDDED = 'selection.png'
 
 
 class LayerStack(QObject):
     """Manages an edited image composed of multiple layers."""
     visible_content_changed = pyqtSignal()
-    selection_bounds_changed = pyqtSignal(QRect, QRect)
+    generation_area_bounds_changed = pyqtSignal(QRect, QRect)
     size_changed = pyqtSignal(QSize)
     layer_added = pyqtSignal(ImageLayer, int)
     layer_removed = pyqtSignal(ImageLayer)
@@ -34,17 +34,17 @@ class LayerStack(QObject):
 
     def __init__(self,
                  image_size: QSize,
-                 selection_size: QSize,
-                 min_selection_size: QSize,
-                 max_selection_size: QSize):
+                 generation_area_size: QSize,
+                 min_generation_area_size: QSize,
+                 max_generation_area_size: QSize):
         """Initializes the layer stack with an empty initial layer."""
         super().__init__()
         self._size = image_size
-        self._min_selection_size = min_selection_size
-        self._max_selection_size = max_selection_size
-        self._selection = QRect(0, 0, selection_size.width(), selection_size.height())
+        self._min_generation_area_size = min_generation_area_size
+        self._max_generation_area_size = max_generation_area_size
+        self._generation_area = QRect(0, 0, generation_area_size.width(), generation_area_size.height())
         self._copy_buffer: Optional[QImage] = None
-        self.selection = self._selection
+        self.generation_area = self._generation_area
 
         self._image_cache_saved = CachedData(None)
         self._pixmap_cache_saved = CachedData(None)
@@ -53,25 +53,25 @@ class LayerStack(QObject):
         self._layers: List[ImageLayer] = []
         self._active_layer_id: Optional[int] = None
 
-        # Create mask layer:
-        self._mask_layer = MaskLayer(image_size, self.selection_bounds_changed)
-        self._mask_layer.update_selection(self._selection)
+        # Create selection layer:
+        self._selection_layer = SelectionLayer(image_size, self.generation_area_bounds_changed)
+        self._selection_layer.update_generation_area(self._generation_area)
 
-        def handle_mask_layer_update():
-            """Refresh appropriate caches and send on signals if the mask layer changes."""
-            if self._mask_layer.visible:
+        def handle_selection_layer_update():
+            """Refresh appropriate caches and send on signals if the selection layer changes."""
+            if self._selection_layer.visible:
                 self._image_cache_full.invalidate()
                 self._pixmap_cache_full.invalidate()
                 self.visible_content_changed.emit()
 
-        self._mask_layer.content_changed.connect(handle_mask_layer_update)
+        self._selection_layer.content_changed.connect(handle_selection_layer_update)
 
-        def handle_mask_layer_visibility_change():
-            """Refresh appropriate caches and send on signals if the mask layer is shown or hidden."""
+        def handle_selection_layer_visibility_change():
+            """Refresh appropriate caches and send on signals if the selection layer is shown or hidden."""
             self._image_cache_full.invalidate()
             self._pixmap_cache_full.invalidate()
             self.visible_content_changed.emit()
-        self._mask_layer.content_changed.connect(handle_mask_layer_visibility_change)
+        self._selection_layer.content_changed.connect(handle_selection_layer_visibility_change)
 
     # PROPERTY DEFINITIONS:
 
@@ -127,9 +127,9 @@ class LayerStack(QObject):
                            f'not found in {self.count} layers, actual IDs = {layer_ids}')
 
     @property
-    def mask_layer(self) -> MaskLayer:
-        """Returns the unique MaskLayer used for highlighting image regions."""
-        return self._mask_layer
+    def selection_layer(self) -> SelectionLayer:
+        """Returns the unique SelectionLayer used for highlighting image regions."""
+        return self._selection_layer
 
     @property
     def has_image(self) -> bool:
@@ -165,10 +165,10 @@ class LayerStack(QObject):
         if self.has_image:
             self._invalidate_all_cached()
         # Re-apply bounds to make sure they still fit:
-        if not QRect(QPoint(0, 0), new_size).contains(self._selection):
-            self._set_selection_internal(self._selection)
+        if not QRect(QPoint(0, 0), new_size).contains(self._generation_area):
+            self._set_generation_area_internal(self._generation_area)
         self.size_changed.emit(self.size)
-        self._mask_layer.size = self.size
+        self._selection_layer.size = self.size
         self.visible_content_changed.emit()
 
     @property
@@ -182,56 +182,56 @@ class LayerStack(QObject):
         return self._size.height()
 
     @property
-    def min_selection_size(self) -> QSize:
+    def min_generation_area_size(self) -> QSize:
         """Gets the minimum size allowed for the selected editing region."""
-        return self._min_selection_size
+        return self._min_generation_area_size
 
-    @min_selection_size.setter
-    def min_selection_size(self, new_min: QSize):
+    @min_generation_area_size.setter
+    def min_generation_area_size(self, new_min: QSize):
         """Sets the minimum size allowed for the selected editing region."""
         assert_type(new_min, QSize)
-        self._min_selection_size = new_min
-        if new_min.width() > self._selection.width() or new_min.height() > self._selection.height():
-            self._set_selection_internal(self._selection)
+        self._min_generation_area_size = new_min
+        if new_min.width() > self._generation_area.width() or new_min.height() > self._generation_area.height():
+            self._set_generation_area_internal(self._generation_area)
 
     @property
-    def max_selection_size(self) -> QSize:
+    def max_generation_area_size(self) -> QSize:
         """Gets the maximum size allowed for the selected editing region."""
-        return self._max_selection_size
+        return self._max_generation_area_size
 
-    @max_selection_size.setter
-    def max_selection_size(self, new_max: QSize):
+    @max_generation_area_size.setter
+    def max_generation_area_size(self, new_max: QSize):
         """Sets the maximum size allowed for the selected editing region."""
         assert_type(new_max, QSize)
-        self._max_selection_size = new_max
-        if new_max.width() < self._selection.width() or new_max.height() < self._selection.height():
-            self._set_selection_internal(self._selection)
+        self._max_generation_area_size = new_max
+        if new_max.width() < self._generation_area.width() or new_max.height() < self._generation_area.height():
+            self._set_generation_area_internal(self._generation_area)
 
     @property
-    def selection(self) -> QRect:
+    def generation_area(self) -> QRect:
         """Returns the bounds of the area selected for editing within the image."""
-        return QRect(self._selection.topLeft(), self._selection.size())
+        return QRect(self._generation_area.topLeft(), self._generation_area.size())
 
-    @selection.setter
-    def selection(self, bounds_rect: QRect) -> None:
+    @generation_area.setter
+    def generation_area(self, bounds_rect: QRect) -> None:
         """
-        Updates the bounds of the selected area within the image. If `bounds_rect` exceeds the maximum selection size
+        Updates the bounds of the image generation area within the image. If `bounds_rect` exceeds the maximum  size
         or doesn't fit fully within the image bounds, the closest valid region will be selected.
         """
         assert_type(bounds_rect, QRect)
-        bounds_rect = self._get_closest_valid_selection(bounds_rect)
-        if bounds_rect != self._selection:
-            last_bounds = self._selection
+        bounds_rect = self._get_closest_valid_generation_area(bounds_rect)
+        if bounds_rect != self._generation_area:
+            last_bounds = self._generation_area
 
             def update_fn(prev_bounds: QRect, next_bounds: QRect) -> None:
-                """Apply an arbitrary selection change."""
-                if self._selection != next_bounds:
-                    self._selection = next_bounds
-                    self.selection_bounds_changed.emit(next_bounds, prev_bounds)
+                """Apply an arbitrary image generation area change."""
+                if self._generation_area != next_bounds:
+                    self._generation_area = next_bounds
+                    self.generation_area_bounds_changed.emit(next_bounds, prev_bounds)
                     if next_bounds.size() != prev_bounds.size():
-                        AppConfig.instance().set(AppConfig.EDIT_SIZE, self._selection.size())
+                        AppConfig.instance().set(AppConfig.EDIT_SIZE, self._generation_area.size())
 
-            action_type = 'layer_stack.selection'
+            action_type = 'layer_stack.generation_area'
             with last_action() as prev_action:
                 if prev_action is not None and prev_action.type == action_type and prev_action.action_data is not None:
                     last_bounds = prev_action.action_data['prev_bounds']
@@ -265,13 +265,13 @@ class LayerStack(QObject):
             return
         size_changed = self._size != new_size
         self._set_size(new_size)
-        self.selection = self._selection.translated(x_offset, y_offset)
-        # Reset selection to make sure it's still in bounds:
-        if not QRect(QPoint(0, 0), self.size).contains(self._selection):
-            self.selection = self._selection
+        self.generation_area = self._generation_area.translated(x_offset, y_offset)
+        # Reset image generation area to make sure it's still in bounds:
+        if not QRect(QPoint(0, 0), self.size).contains(self._generation_area):
+            self.generation_area = self._generation_area
         if size_changed:
             self.size_changed.emit(self.size)
-        for layer in [self._mask_layer, *self._layers]:
+        for layer in [self._selection_layer, *self._layers]:
             layer.resize_canvas(self.size, x_offset, y_offset)
         if self.has_image:
             self._invalidate_all_cached()
@@ -285,7 +285,7 @@ class LayerStack(QObject):
         image = QImage(self.size, QImage.Format.Format_ARGB32_Premultiplied)
         image.fill(Qt.transparent)
         painter = QPainter(image)
-        for layer in [*reversed(self._layers), self._mask_layer]:
+        for layer in [*reversed(self._layers), self._selection_layer]:
             if not layer.visible or (saved_only and not layer.saved):
                 continue
             layer_image = layer.qimage
@@ -309,11 +309,11 @@ class LayerStack(QObject):
         """Returns combined visible layer content as a PIL Image object, optionally including unsaved layers."""
         return qimage_to_pil_image(self.qimage(saved_only))
 
-    def get_max_selection_size(self) -> QSize:
+    def get_max_generation_area_size(self) -> QSize:
         """
-        Returns the largest area that can be selected within the image, based on image size and self.max_selection_size
+        Returns the largest area that can be selected within the image, based on image size and self.max_generation_area_size
         """
-        max_size = self.max_selection_size
+        max_size = self.max_generation_area_size
         return QSize(min(max_size.width(), self.width), min(max_size.height(), self.height))
 
     def cropped_qimage_content(self, bounds_rect: QRect) -> QImage:
@@ -330,17 +330,17 @@ class LayerStack(QObject):
         """Returns the contents of a bounding QRect as a PIL Image."""
         return qimage_to_pil_image(self.cropped_qimage_content(bounds_rect))
 
-    def pixmap_selection_content(self) -> QPixmap:
-        """Returns the contents of the selection area as a QPixmap."""
-        return self.cropped_pixmap_content(self.selection)
+    def pixmap_generation_area_content(self) -> QPixmap:
+        """Returns the contents of the image generation area as a QPixmap."""
+        return self.cropped_pixmap_content(self.generation_area)
 
-    def qimage_selection_content(self) -> QImage:
-        """Returns the contents of the selection area as a QImage."""
-        return self.cropped_qimage_content(self.selection)
+    def qimage_generation_area_content(self) -> QImage:
+        """Returns the contents of the image generation area as a QImage."""
+        return self.cropped_qimage_content(self.generation_area)
 
-    def pil_image_selection_content(self) -> Image.Image:
-        """Returns the contents of the selection area as a PIL Image."""
-        return qimage_to_pil_image(self.cropped_qimage_content(self.selection))
+    def pil_image_generation_area_content(self) -> Image.Image:
+        """Returns the contents of the image generation area as a PIL Image."""
+        return qimage_to_pil_image(self.cropped_qimage_content(self.generation_area))
 
     def get_color_at_point(self, image_point: QPoint) -> QColor:
         """Gets the combined color of visible saved layers at a single point, or QColor(0, 0, 0) if out of bounds."""
@@ -449,7 +449,7 @@ class LayerStack(QObject):
             self._insert_layer_internal(img_layer, idx)
         commit_action(_remove, _undo_remove)
 
-    def offset_selection(self, offset: int) -> None:
+    def offset_generation_area(self, offset: int) -> None:
         """Picks a new active layer relative to the index of the previous active layer. Does nothing if no layer is
            inactive or the new index would be out of bounds."""
         if self.active_layer_index is None:
@@ -578,7 +578,7 @@ class LayerStack(QObject):
                 self.visible_content_changed.emit()
         commit_action(_resize, _undo_resize)
 
-    def copy_masked(self, layer: Optional[ImageLayer | int] = None) -> Optional[QImage]:
+    def copy_selected(self, layer: Optional[ImageLayer | int] = None) -> Optional[QImage]:
         """Returns the image content within a layer that's covered by the mask, saving it in the copy buffer.
 
         Parameters
@@ -590,23 +590,23 @@ class LayerStack(QObject):
         layer, _ = self._layer_values_from_layer_or_id_or_active(layer)
         if layer is None:
             return None
-        inpaint_mask = self.mask_layer.qimage
+        selection_mask = self.selection_layer.qimage
         image = layer.cropped_image_content(QRect(-layer.position.x(), -layer.position.y(), self.width, self.height))
         painter = QPainter(image)
         painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_DestinationIn)
-        painter.drawImage(QRect(0, 0, image.width(), image.height()), inpaint_mask)
+        painter.drawImage(QRect(0, 0, image.width(), image.height()), selection_mask)
         painter.end()
         self._copy_buffer = image
         return image
 
-    def cut_masked(self, layer: Optional[ImageLayer | int] = None) -> None:
+    def cut_selected(self, layer: Optional[ImageLayer | int] = None) -> None:
         """Replaces all masked image content in a layer with transparency, saving it in the copy buffer."""
         layer, _ = self._layer_values_from_layer_or_id_or_active(layer)
         if layer is None:
             return
         source_content = layer.qimage
-        inpaint_mask = self.mask_layer.qimage.copy()
-        self._copy_buffer = self.copy_masked(layer)
+        selection_mask = self.selection_layer.qimage.copy()
+        self._copy_buffer = self.copy_selected(layer)
 
         def _make_cut() -> None:
             with layer.borrow_image() as layer_image:
@@ -614,7 +614,7 @@ class LayerStack(QObject):
                 painter = QPainter(layer_image)
                 painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_DestinationOut)
                 painter.drawImage(QRect(-layer.position.x(), -layer.position.y(), layer_image.width(),
-                                        layer_image.height()), inpaint_mask)
+                                        layer_image.height()), selection_mask)
 
         def _undo_cut() -> None:
             with layer.borrow_image() as layer_image:
@@ -631,15 +631,15 @@ class LayerStack(QObject):
             self.create_layer('Paste layer', self._copy_buffer.copy(), layer_index=insert_index)
             self.active_layer = self._layers[insert_index]
 
-    def set_selection_content(self,
-                              image_data: Image.Image | QImage | QPixmap,
-                              layer: Optional[ImageLayer | int] = None,
-                              composition_mode: QPainter.CompositionMode = QPainter.CompositionMode_Source):
-        """Updates selection content within a layer.
+    def set_generation_area_content(self,
+                                    image_data: Image.Image | QImage | QPixmap,
+                                    layer: Optional[ImageLayer | int] = None,
+                                    composition_mode: QPainter.CompositionMode = QPainter.CompositionMode_Source):
+        """Updates image generation area content within a layer.
         Parameters
         ----------
         image_data: PIL Image or QImage or QPixmap
-            Image data to draw into the selection. If the size of the image doesn't match the size of the
+            Image data to draw into the image generation area. If the size of the image doesn't match the size of the
             bounds_rect, it will be scaled to fit.
         layer: ImageLayer | int | None, default=None
             The layer object to copy, or its id. If None, the active layer will be used
@@ -650,7 +650,7 @@ class LayerStack(QObject):
         insert_layer, _ = self._layer_values_from_layer_or_id_or_active(layer)
         if insert_layer is None:
             raise RuntimeError(f'set_selection_content: No layer specified, and no layer is active, layer={layer}')
-        insert_layer.insert_image_content(image_data, self.selection, composition_mode)
+        insert_layer.insert_image_content(image_data, self.generation_area, composition_mode)
 
     def save_layer_stack_file(self, file_path: str, metadata: Optional[Dict[str, Any]]) -> None:
         """Save layers and image metadata to a file that can be opened for future editing."""
@@ -658,7 +658,7 @@ class LayerStack(QObject):
         data: Dict[str, Any] = {'metadata': metadata, 'size': f'{size.width()}x{size.height()}', 'files': []}
         # Create temporary directory tmpdir
         tmpdir = tempfile.mkdtemp()
-        self.mask_layer.qimage.save(os.path.join(tmpdir, MASK_LAYER_FILE_EMBEDDED))
+        self.selection_layer.qimage.save(os.path.join(tmpdir, SELECTION_LAYER_FILE_EMBEDDED))
         for layer in self._layers:
             index = self._layers.index(layer)
             layer.qimage.save(os.path.join(tmpdir, f'{index}.png'))
@@ -678,7 +678,7 @@ class LayerStack(QObject):
         """Load layers and image metadata from a file, returning the metadata."""
         tmpdir = tempfile.mkdtemp()
         shutil.unpack_archive(file_path, tmpdir, format='zip')
-        old_mask_image = self.mask_layer.qimage
+        old_mask_image = self.selection_layer.qimage
         old_layers = self._layers.copy()
         new_layers = []
         old_size = self.size
@@ -686,7 +686,7 @@ class LayerStack(QObject):
             data = json.load(json_file)
         w, h = (int(substr) for substr in data['size'].split('x'))
         new_size = QSize(w, h)
-        new_mask_image = QImage(os.path.join(tmpdir, MASK_LAYER_FILE_EMBEDDED))
+        new_mask_image = QImage(os.path.join(tmpdir, SELECTION_LAYER_FILE_EMBEDDED))
         for i, file_data in enumerate(data['files']):
             image = QImage(os.path.join(tmpdir, f'{i}.png'))
             name = file_data['name']
@@ -701,7 +701,7 @@ class LayerStack(QObject):
             for old_layer in old_layers:
                 self._remove_layer_internal(old_layer)
             self._set_size(new_size)
-            self.mask_layer.qimage = new_mask_image
+            self.selection_layer.qimage = new_mask_image
             for new_layer in new_layers:
                 self._insert_layer_internal(new_layer, self.count)
 
@@ -709,7 +709,7 @@ class LayerStack(QObject):
             for new_layer in new_layers:
                 self._remove_layer_internal(new_layer)
             self._set_size(old_size)
-            self.mask_layer.qimage = old_mask_image
+            self.selection_layer.qimage = old_mask_image
             for old_layer in old_layers:
                 self._insert_layer_internal(old_layer, self.count)
         commit_action(_load, _undo_load)
@@ -728,12 +728,12 @@ class LayerStack(QObject):
         """
         old_layers = self._layers.copy()
         old_size = self.size
-        mask_image = self.mask_layer.qimage.copy()
+        selection_image = self.selection_layer.qimage.copy()
         new_layer = self._create_layer_internal(None, image_data)
         new_size = new_layer.size
 
         def _load():
-            self.mask_layer.clear()
+            self.selection_layer.clear()
             for layer in reversed(old_layers):
                 self._remove_layer_internal(layer, True)
             self.size = new_size
@@ -745,7 +745,7 @@ class LayerStack(QObject):
             self.size = old_size
             for layer in old_layers:
                 self._insert_layer_internal(layer, self.count)
-            self.mask_layer.qimage = mask_image
+            self.selection_layer.qimage = selection_image
         commit_action(_load, _undo_load)
 
     # INTERNAL:
@@ -754,8 +754,8 @@ class LayerStack(QObject):
         """Update the size without replacing the size object."""
         self._size.setWidth(new_size.width())
         self._size.setHeight(new_size.height())
-        self._set_selection_internal(self._selection)
-        self.mask_layer.size = new_size
+        self._set_generation_area_internal(self._generation_area)
+        self.selection_layer.size = new_size
 
     def _has_unsaved(self) -> bool:
         """Returns whether any layers are present that should not be saved."""
@@ -879,13 +879,13 @@ class LayerStack(QObject):
             self._invalidate_all_cached(not layer.saved)
             self.visible_content_changed.emit()
 
-    def _get_closest_valid_selection(self, bounds_rect: QRect) -> QRect:
+    def _get_closest_valid_generation_area(self, bounds_rect: QRect) -> QRect:
         assert_type(bounds_rect, QRect)
         initial_bounds = bounds_rect
         bounds_rect = QRect(initial_bounds.topLeft(), initial_bounds.size())
-        # Make sure that the selection fits within allowed size limits:
-        min_size = self.min_selection_size
-        max_size = self.get_max_selection_size()
+        # Make sure that the image generation area fits within allowed size limits:
+        min_size = self.min_generation_area_size
+        max_size = self.get_max_generation_area_size()
         if bounds_rect.width() > self.width:
             bounds_rect.setWidth(self.width)
         if bounds_rect.width() > max_size.width():
@@ -899,7 +899,7 @@ class LayerStack(QObject):
         if bounds_rect.height() < min_size.height():
             bounds_rect.setHeight(min_size.height())
 
-        # make sure the selection is within the image bounds:
+        # make sure the image generation area is within the image bounds:
         if bounds_rect.left() > (self.width - bounds_rect.width()):
             bounds_rect.moveLeft(self.width - bounds_rect.width())
         if bounds_rect.left() < 0:
@@ -910,14 +910,14 @@ class LayerStack(QObject):
             bounds_rect.moveTop(0)
         return bounds_rect
 
-    def _set_selection_internal(self, bounds_rect: QRect) -> None:
-        """Updates the selection, adjusting as needed based on image bounds, and sending the selection_changed signal
+    def _set_generation_area_internal(self, bounds_rect: QRect) -> None:
+        """Updates the image generation area, adjusting as needed based on image bounds, and sending the selection_changed signal
            if any changes happened. Does not update undo history."""
         assert_type(bounds_rect, QRect)
-        bounds_rect = self._get_closest_valid_selection(bounds_rect)
-        if bounds_rect != self._selection:
-            last_bounds = self._selection
-            self._selection = bounds_rect
-            self.selection_bounds_changed.emit(last_bounds, bounds_rect)
+        bounds_rect = self._get_closest_valid_generation_area(bounds_rect)
+        if bounds_rect != self._generation_area:
+            last_bounds = self._generation_area
+            self._generation_area = bounds_rect
+            self.generation_area_bounds_changed.emit(last_bounds, bounds_rect)
             if bounds_rect.size() != last_bounds.size():
                 AppConfig.instance().set(AppConfig.EDIT_SIZE, bounds_rect.size())

@@ -63,14 +63,14 @@ class WebClientController(BaseInpaintController):
             prompt_for_url('Server connection failed, enter a new URL or click "OK" to retry')
 
     def _inpaint(self,
-                 selection: Optional[Image.Image],
+                 source_image_section: Optional[Image.Image],
                  mask: Optional[Image.Image],
                  save_image: Callable[[Image.Image, int], None],
                  status_signal: pyqtSignal) -> None:
         """Handle image editing operations using the GLID-3-XL API.
         Parameters
         ----------
-        selection : PIL Image, optional
+        source_image_section : PIL Image, optional
             Image selection to edit
         mask : PIL Image, optional
             Mask marking edited image region.
@@ -79,21 +79,21 @@ class WebClientController(BaseInpaintController):
         status_signal : pyqtSignal
             Signal to emit when status updates are available.
         """
-        assert selection is not None and mask is not None, "GLID-3-XL only supports inpainting"
+        assert source_image_section is not None and mask is not None, "GLID-3-XL only supports inpainting"
         config = AppConfig.instance()
         batch_size = config.get(AppConfig.BATCH_SIZE)
         batch_count = config.get(AppConfig.BATCH_COUNT)
         body = {
             'batch_size': batch_size,
             'num_batches': batch_count,
-            'edit': image_to_base64(selection),
+            'edit': image_to_base64(source_image_section),
             'mask': image_to_base64(mask),
             'prompt': config.get(AppConfig.PROMPT),
             'negative': config.get(AppConfig.NEGATIVE_PROMPT),
             'guidanceScale': config.get(AppConfig.GUIDANCE_SCALE),
             'skipSteps': config.get(AppConfig.SKIP_STEPS),
-            'width': selection.width,
-            'height': selection.height
+            'width': source_image_section.width,
+            'height': source_image_section.height
         }
 
         def error_check(server_response: requests.Response, context_str: str):

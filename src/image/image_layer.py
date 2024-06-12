@@ -284,7 +284,7 @@ class ImageLayer(QObject):
         Parameters
         ----------
         image_data: PIL Image or QImage or QPixmap
-            Image data to draw into the selection. If the size of the image doesn't match the size of the
+            Image data to draw into the image generation area. If the size of the image doesn't match the size of the
             bounds_rect, it will be scaled to fit.
         bounds_rect: QRect
             Area where image data will be inserted. This must be within the edited image bounds.

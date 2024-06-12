@@ -156,7 +156,7 @@ class A1111Webservice(WebService):
         Parameters
         ----------
         image : PIL Image
-            Source image, usually contents of the EditedImage selection.
+            Source image, usually contents of the LayerStack image generation area.
         mask : PIL Image, optional
             A 1-bit image mask that's the same size as the image parameter, used to mark which areas should be altered.
             If not provided, the entire image will be altered.

@@ -139,7 +139,7 @@ class AppConfig(Config):
     BRUSH_SIZE_DECREASE: str
     BRUSH_SIZE_INCREASE: str
     BRUSH_TOOL_KEY: str
-    CLEAR_MASK_SHORTCUT: str
+    CLEAR_SELECTION_SHORTCUT: str
     CONTROLNET_ARGS_0: str
     CONTROLNET_ARGS_1: str
     CONTROLNET_ARGS_2: str
@@ -163,7 +163,7 @@ class AppConfig(Config):
     EYEDROPPER_TOOL_KEY: str
     FONT_POINT_SIZE: str
     GENERATE_SHORTCUT: str
-    GENERATION_AREA_SELECTION_TOOL_KEY: str
+    GENERATION_AREA_TOOL_KEY: str
     GENERATION_SIZE: str
     GUIDANCE_SCALE: str
     INPAINT_FULL_RES: str
@@ -179,8 +179,8 @@ class AppConfig(Config):
     LORA_MODELS: str
     MASKED_CONTENT: str
     MASK_BLUR: str
-    MASK_BRUSH_SIZE: str
-    MASK_TOOL_KEY: str
+    SELECTION_BRUSH_SIZE: str
+    SELECTION_TOOL_KEY: str
     MAX_EDIT_SIZE: str
     MAX_GENERATION_SIZE: str
     MAX_UNDO: str
