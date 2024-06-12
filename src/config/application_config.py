@@ -121,122 +121,105 @@ class AppConfig(Config):
             if arg_value:
                 self.set(key, arg_value)
 
-    # I don't like the redundancy, but let's define expected attributes here so that we can get the typechecker to
-    # cooperate.  To regen in one line of node.js:
-    # Object.keys(JSON.parse(require('fs').readFileSync('resources/application_config_definitions.json')))
-    # .map(k => k.toUpperCase() + ': str').forEach(console.log)
-    # UI/Editing:
-    STYLE: str
-    THEME: str
+    # DYNAMIC PROPERTIES:
+    # Generate with `python /home/anthony/Workspace/ML/IntraPaint/scripts/dynamic_import_typing.py src/config/application_config.py`
+
     ANIMATE_OUTLINES: str
-    FONT_POINT_SIZE: str
-    DEFAULT_IMAGE_SIZE: str
-    EDIT_SIZE: str
-    MAX_EDIT_SIZE: str
-    MIN_EDIT_SIZE: str
-    GENERATION_SIZE: str
-    MAX_GENERATION_SIZE: str
-    MIN_GENERATION_SIZE: str
-    MASK_BRUSH_SIZE: str
-    SKETCH_BRUSH_SIZE: str
-    USE_MYPAINT_CANVAS: str
-    MYPAINT_BRUSH: str
     BRUSH_FAVORITES: str
-    MAX_UNDO: str
-    PRESSURE_SIZE: str
-    PRESSURE_OPACITY: str
-    SPEED_MODIFIER_MULTIPLIER: str
-    # Image generation:
-    PROMPT: str
-    NEGATIVE_PROMPT: str
-    GUIDANCE_SCALE: str
-    BATCH_SIZE: str
-    BATCH_COUNT: str
-    SHOW_ORIGINAL_IN_OPTIONS: str
-    EDIT_MODE: str
-    MASKED_CONTENT: str
-    INTERROGATE_MODEL: str
-    SAMPLING_STEPS: str
-    DENOISING_STRENGTH: str
-    SAMPLING_METHOD: str
-    UPSCALE_METHOD: str
-    CONTROLNET_UPSCALING: str
-    CONTROLNET_TILE_MODEL: str
-    CONTROLNET_DOWNSAMPLE_RATE: str
-    MASK_BLUR: str
-    SEED: str
-    INPAINT_FULL_RES: str
-    INPAINT_FULL_RES_PADDING: str
-    RESTORE_FACES: str
-    TILING: str
+    BRUSH_SIZE_DECREASE: str
+    BRUSH_SIZE_INCREASE: str
+    BRUSH_TOOL_KEY: str
+    CLEAR_MASK_SHORTCUT: str
     CONTROLNET_ARGS_0: str
     CONTROLNET_ARGS_1: str
     CONTROLNET_ARGS_2: str
-    CUTN: str
-    SKIP_STEPS: str
-    UPSCALE_MODE: str
-    DOWNSCALE_MODE: str
-    # Cached data:
-    STYLES: str
-    CONTROLNET_VERSION: str
     CONTROLNET_CONTROL_TYPES: str
-    CONTROLNET_MODULES: str
+    CONTROLNET_DOWNSAMPLE_RATE: str
     CONTROLNET_MODELS: str
-    LORA_MODELS: str
-    LAST_SEED: str
-    LAST_FILE_PATH: str
-    LAST_BRUSH_COLOR: str
+    CONTROLNET_MODULES: str
+    CONTROLNET_TILE_MODEL: str
+    CONTROLNET_UPSCALING: str
+    CONTROLNET_VERSION: str
+    COPY_LAYER_SHORTCUT: str
+    COPY_SHORTCUT: str
+    CROP_TO_CONTENT_SHORTCUT: str
+    CUT_SHORTCUT: str
+    DEFAULT_IMAGE_SIZE: str
+    DELETE_LAYER_SHORTCUT: str
+    DENOISING_STRENGTH: str
+    DOWNSCALE_MODE: str
+    EDIT_MODE: str
+    EDIT_SIZE: str
+    EYEDROPPER_TOOL_KEY: str
+    FONT_POINT_SIZE: str
+    GENERATE_SHORTCUT: str
+    GENERATION_AREA_SELECTION_TOOL_KEY: str
+    GENERATION_SIZE: str
+    GUIDANCE_SCALE: str
+    INPAINT_FULL_RES: str
+    INPAINT_FULL_RES_PADDING: str
+    INTERROGATE_MODEL: str
     LAST_ACTIVE_TOOL: str
-    # View/Tool Keybindings
-    SPEED_MODIFIER: str
-    ZOOM_IN: str
-    ZOOM_OUT: str
-    ZOOM_TOGGLE: str
-    PAN_LEFT: str
-    PAN_RIGHT: str
-    PAN_UP: str
-    PAN_DOWN: str
+    LAST_BRUSH_COLOR: str
+    LAST_FILE_PATH: str
+    LAST_SEED: str
+    LAYER_TO_IMAGE_SIZE_SHORTCUT: str
+    LCM_MODE_SHORTCUT: str
+    LOAD_SHORTCUT: str
+    LORA_MODELS: str
+    MASKED_CONTENT: str
+    MASK_BLUR: str
+    MASK_BRUSH_SIZE: str
+    MASK_TOOL_KEY: str
+    MAX_EDIT_SIZE: str
+    MAX_GENERATION_SIZE: str
+    MAX_UNDO: str
+    MERGE_LAYER_DOWN_SHORTCUT: str
+    MIN_EDIT_SIZE: str
+    MIN_GENERATION_SIZE: str
+    MOVE_DOWN: str
+    MOVE_LAYER_DOWN_SHORTCUT: str
+    MOVE_LAYER_UP_SHORTCUT: str
     MOVE_LEFT: str
     MOVE_RIGHT: str
     MOVE_UP: str
-    MOVE_DOWN: str
-    BRUSH_SIZE_INCREASE: str
-    BRUSH_SIZE_DECREASE: str
-    BRUSH_TOOL_KEY: str
-    EYEDROPPER_TOOL_KEY: str
-    TRANSFORM_TOOL_KEY: str
-    MASK_TOOL_KEY: str
-    GENERATION_AREA_SELECTION_TOOL_KEY: str
-    # Transformation Tool keybindings:
+    MYPAINT_BRUSH: str
+    NEW_IMAGE_SHORTCUT: str
+    NEW_LAYER_SHORTCUT: str
+    PAN_DOWN: str
+    PAN_LEFT: str
+    PAN_RIGHT: str
+    PAN_UP: str
+    PASTE_SHORTCUT: str
+    PRESSURE_OPACITY: str
+    PRESSURE_SIZE: str
+    QUIT_SHORTCUT: str
+    REDO_SHORTCUT: str
+    RELOAD_SHORTCUT: str
+    RESIZE_CANVAS_SHORTCUT: str
+    RESTORE_FACES: str
     ROTATE_CCW_KEY: str
     ROTATE_CW_KEY: str
-    # Menu shortcuts:
-    NEW_IMAGE_SHORTCUT: str
+    SAMPLING_METHOD: str
+    SAMPLING_STEPS: str
     SAVE_SHORTCUT: str
-    LOAD_SHORTCUT: str
-    RELOAD_SHORTCUT: str
-    QUIT_SHORTCUT: str
-    UNDO_SHORTCUT: str
-    REDO_SHORTCUT: str
-    CUT_SHORTCUT: str
-    COPY_SHORTCUT: str
-    PASTE_SHORTCUT: str
-    GENERATE_SHORTCUT: str
-    RESIZE_CANVAS_SHORTCUT: str
     SCALE_IMAGE_SHORTCUT: str
-    UPDATE_METADATA_SHORTCUT: str
-    NEW_LAYER_SHORTCUT: str
-    COPY_LAYER_SHORTCUT: str
-    DELETE_LAYER_SHORTCUT: str
-    SELECT_PREVIOUS_LAYER_SHORTCUT: str
+    SEED: str
     SELECT_NEXT_LAYER_SHORTCUT: str
-    MOVE_LAYER_UP_SHORTCUT: str
-    MOVE_LAYER_DOWN_SHORTCUT: str
-    MERGE_LAYER_DOWN_SHORTCUT: str
-    LAYER_TO_IMAGE_SIZE_SHORTCUT: str
-    CROP_TO_CONTENT_SHORTCUT: str
-    CLEAR_MASK_SHORTCUT: str
-    SHOW_LAYER_MENU_SHORTCUT: str
+    SELECT_PREVIOUS_LAYER_SHORTCUT: str
     SETTINGS_SHORTCUT: str
-    LCM_MODE_SHORTCUT: str
-
+    SHOW_LAYER_MENU_SHORTCUT: str
+    SHOW_ORIGINAL_IN_OPTIONS: str
+    SKETCH_BRUSH_SIZE: str
+    SKIP_STEPS: str
+    SPEED_MODIFIER_MULTIPLIER: str
+    STYLES: str
+    TILING: str
+    TRANSFORM_TOOL_KEY: str
+    UNDO_SHORTCUT: str
+    UPDATE_METADATA_SHORTCUT: str
+    UPSCALE_METHOD: str
+    UPSCALE_MODE: str
+    ZOOM_IN: str
+    ZOOM_OUT: str
+    ZOOM_TOGGLE: str

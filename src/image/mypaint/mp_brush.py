@@ -1,7 +1,7 @@
 """Python wrapper for libmypaint brush data."""
 import os
 import sys
-from typing import Optional, Any, List
+from typing import Optional, Any, List, Dict
 import logging
 from ctypes import c_void_p, c_float, c_char_p, c_int
 from multiprocessing import Process, Pipe
@@ -99,17 +99,65 @@ class MPBrush:
                            f'-{setting_info.max_value} for MyPaint brush setting "{setting_info.name}"')
         libmypaint.mypaint_brush_set_base_value(self._brush, c_int(setting), c_float(value))
 
-    # Explicitly list expected dynamic properties so the linter will stop complaining:
-    COLOR_H: int
-    COLOR_S: int
-    COLOR_V: int
-    SNAP_TO_PIXEL: int
-    ANTI_ALIASING: int
-    RADIUS_LOGARITHMIC: int
-    DIRECTION_FILTER: int
-    DABS_PER_ACTUAL_RADIUS: int
+    # DYNAMIC PROPERTIES:
+    # Generate with `python /home/anthony/Workspace/ML/IntraPaint/scripts/dynamic_import_typing.py src/image/mypaint/mp_brush.py`
+    CHANGE_COLOR_H: int
+    CHANGE_COLOR_HSL_S: int
+    CHANGE_COLOR_HSV_S: int
+    CHANGE_COLOR_L: int
+    CHANGE_COLOR_V: int
+    COLORIZE: int
+    CUSTOM_INPUT: int
+    CUSTOM_INPUT_SLOWNESS: int
+    DABS_PER_BASIC_RADIUS: int
+    DABS_PER_SECOND: int
+    ELLIPTICAL_DAB_ANGLE: int
+    ELLIPTICAL_DAB_RATIO: int
     ERASER: int
-    _setting_info: List['BrushSetting']
+    GRIDMAP_SCALE: int
+    GRIDMAP_SCALE_X: int
+    GRIDMAP_SCALE_Y: int
+    HARDNESS: int
+    LOCK_ALPHA: int
+    OFFSET_ANGLE: int
+    OFFSET_ANGLE_2: int
+    OFFSET_ANGLE_2_ASC: int
+    OFFSET_ANGLE_2_VIEW: int
+    OFFSET_ANGLE_ADJ: int
+    OFFSET_ANGLE_ASC: int
+    OFFSET_ANGLE_VIEW: int
+    OFFSET_BY_RANDOM: int
+    OFFSET_BY_SPEED: int
+    OFFSET_BY_SPEED_SLOWNESS: int
+    OFFSET_MULTIPLIER: int
+    OFFSET_X: int
+    OFFSET_Y: int
+    OPAQUE: int
+    OPAQUE_LINEARIZE: int
+    OPAQUE_MULTIPLY: int
+    PAINT_MODE: int
+    POSTERIZE: int
+    POSTERIZE_NUM: int
+    PRESSURE_GAIN_LOG: int
+    RADIUS_BY_RANDOM: int
+    RESTORE_COLOR: int
+    SLOW_TRACKING: int
+    SLOW_TRACKING_PER_DAB: int
+    SMUDGE: int
+    SMUDGE_BUCKET: int
+    SMUDGE_LENGTH: int
+    SMUDGE_LENGTH_LOG: int
+    SMUDGE_RADIUS_LOG: int
+    SMUDGE_TRANSPARENCY: int
+    SPEED1_GAMMA: int
+    SPEED1_SLOWNESS: int
+    SPEED2_GAMMA: int
+    SPEED2_SLOWNESS: int
+    STROKE_DURATION_LOGARITHMIC: int
+    STROKE_HOLDTIME: int
+    STROKE_THRESHOLD: int
+    TRACKING_NOISE: int
+    _setting_info: Dict[str, 'BrushSetting']
 
 
 class BrushSetting:
