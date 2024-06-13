@@ -1,32 +1,55 @@
 {
   "sd_model_checkpoint": {
     "label": "Stable-Diffusion Model:",
-    "category": "Models",
+    "category": "A1111 WebUI",
     "description": "Active image generation model",
     "type": "string",
     "options": []
   },
   "sd_checkpoints_keep_in_cpu": {
     "label": "Only keep one model on GPU/TPU",
-    "category": "Models",
+    "category": "A1111 WebUI",
     "description": "If selected, checkpoints after the first are cached in RAM instead",
     "type": "bool"
   },
   "sd_checkpoints_limit": {
     "label": "Max checkpoints loaded:",
-    "category": "Models",
+    "category": "A1111 WebUI",
     "description": "Number of image generation models to keep in memory.",
     "type": "int",
     "range_options": {
       "min": 1,
       "max": 10,
       "step": 1
-    },
-    "sd_vae": {
-      "label": "Stable-Diffusion VAE model:",
-      "category": "Models",
-      "description": "VAE model used for final image data creation.",
-      "type": "string"
+    }
+  },
+  "sd_vae": {
+    "label": "Stable-Diffusion VAE model:",
+    "category": "A1111 WebUI",
+    "description": "VAE model used for final image data creation.",
+    "options": [],
+    "type": "string"
+  },
+  "sd_vae_checkpoint_cache": {
+    "label": "Stable-Diffusion VAE models cached:",
+    "category": "A1111 WebUI",
+    "description": "Number of VAE models to keep in memory.",
+    "type": "int",
+    "range_options": {
+      "min": 1,
+      "max": 10,
+      "step": 1
+    }
+  },
+  "CLIP_stop_at_last_layers": {
+    "label": "CLIP skip:",
+    "category": "A1111 WebUI",
+    "description": "Number of final image generation steps taken without prompt guidance.",
+    "type": "int",
+    "range_options": {
+      "min": 1,
+      "max": 50,
+      "step": 1
     }
   }
 }

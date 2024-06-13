@@ -3,7 +3,7 @@ Provides image editing functionality through a local instance of GLID-3-XL.
 """
 import logging
 from argparse import Namespace
-from typing import Callable
+from typing import Callable, List
 
 import torch
 from PIL import Image
@@ -17,6 +17,8 @@ from src.glid_3_xl.load_models import load_models
 from src.glid_3_xl.ml_utils import get_device, foreach_image_in_sample
 from src.ui.modal.settings_modal import SettingsModal
 from src.util.validation import assert_types
+
+GLID_CONFIG_CATEGORY = 'GLID-3-XL'
 
 logger = logging.getLogger(__name__)
 
@@ -48,6 +50,12 @@ class LocalDeviceController(BaseInpaintController):
                                                                  cpu=args.cpu,
                                                                  ddpm=args.ddpm,
                                                                  ddim=args.ddim)
+
+    def get_config_categories(self) -> List[str]:
+        """Return the list of AppConfig categories this controller supports."""
+        categories = super().get_config_categories()
+        categories.append(GLID_CONFIG_CATEGORY)
+        return categories
 
     def _inpaint(self,
                  source_image_section: Image.Image,

@@ -54,9 +54,13 @@ class ConfigEntry:
         self._category = category
         self._tooltip = tooltip
         self.save_json = save_json
-        if options is not None and (not isinstance(options, list) or initial_value not in options):
+        if options is not None and (not isinstance(options, list) or (initial_value not in options
+                                                                      and len(options) > 0)):
             raise ValueError(f'Invalid options for key {key} with initial value {initial_value}: {options}')
-        self._options = options
+        elif isinstance(options, list) and len(options) == 0:
+            self._options = [initial_value]  # Entries with empty options lists will load those lists dynamically.
+        else:
+            self._options = options
         if range_options is not None:
             if not isinstance(initial_value, float) and not isinstance(initial_value, int):
                 raise TypeError(f'range_options provided but {key}={initial_value} is not int or float')

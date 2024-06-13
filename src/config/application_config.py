@@ -32,7 +32,7 @@ DARK_THEME_OPTIONS = ['qdarktheme_dark', 'qdarktheme_light', 'qdarktheme_auto']
 
 
 class AppConfig(Config):
-    _instance: 'AppConfig' = None
+    _instance: Optional['AppConfig'] = None
 
     @staticmethod
     def instance() -> 'AppConfig':

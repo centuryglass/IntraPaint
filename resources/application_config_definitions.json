@@ -2,7 +2,7 @@
     "style": {
         "label": "Style:",
         "category": "Interface",
-        "description": "Qt style to use for the user interface",
+        "description": "Qt style to use for the user interface (requires restart)",
         "type": "string",
         "default": "fusion",
         "options": ["fusion"],
@@ -11,7 +11,7 @@
     "theme": {
         "label": "Theme:",
         "category": "Interface",
-        "description": "Theme to use for the user interface",
+        "description": "Theme to use for the user interface (requires restart)",
         "type": "string",
         "default": "None",
         "options": ["None"],
@@ -20,7 +20,7 @@
     "font_point_size": {
         "label": "Font size:",
         "category": "Interface",
-        "description": "Font point size to use for user interface text",
+        "description": "Font point size to use for user interface text (requires restart)",
         "type": "int",
         "default": 10,
         "saved": true
@@ -28,7 +28,7 @@
     "animate_outlines": {
         "label": "Animate outlines and selections:",
         "category": "Interface",
-        "description": "Enable or disable animated outlines",
+        "description": "Enable or disable animated outlines (requires restart)",
         "type": "bool",
         "default": true,
         "saved": true
@@ -90,7 +90,7 @@
         "saved": true
     },
     "selection_brush_size": {
-        "label": "Brush size:",
+        "label": "Selection brush size:",
         "category": "Editing",
         "description": "Current/initial brush size (in pixels) for the selection tool.",
         "type": "int",

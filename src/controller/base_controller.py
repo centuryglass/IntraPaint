@@ -2,11 +2,10 @@
 BaseController coordinates primary application functionality across all operation modes. Each image generation and
 editing method supported by IntraPaint should have its own BaseController subclass.
 """
-import math
 import os
 import sys
 import re
-from typing import Optional, Callable, Any
+from typing import Optional, Callable, Any, List
 from argparse import Namespace
 import logging
 from PIL import Image, ImageFilter, UnidentifiedImageError, PngImagePlugin
@@ -16,20 +15,7 @@ from PyQt5.QtGui import QScreen, QImage, QPainter
 
 from src.ui.panel.layer_panel import LayerPanel
 from src.util.menu_action import MenuBuilder, menu_action
-
-SETTINGS_ERROR_MESSAGE = "Settings not supported in this mode."
-
-SETTINGS_ERROR_TITLE = "Failed to open settings"
-
-try:
-    import qdarktheme
-except ImportError:
-    qdarktheme = None
-try:
-    import qt_material
-except ImportError:
-    qt_material = None
-
+from src.util.optional_import import optional_import
 from src.config.application_config import AppConfig
 from src.image.layer_stack import LayerStack
 
@@ -45,12 +31,17 @@ from src.util.image_utils import pil_image_to_qimage, qimage_to_pil_image
 from src.util.validation import assert_type
 from src.undo_stack import commit_action, undo, redo
 
-# Optional spacenav support:
-try:
-    from src.controller.spacenav_manager import SpacenavManager
-except ImportError as spacenav_err:
-    print(f'spaceMouse support not enabled: {spacenav_err}')
-    SpacenavManager = None
+# Optional spacenav support and extended theming::
+qdarktheme = optional_import('qdarktheme')
+qt_material = optional_import('qt_material')
+SpacenavManager = optional_import('spacenav_manager', 'src.controller', 'SpacenavManager')
+
+IGNORED_APPCONFIG_CATEGORIES = ('Stable-Diffusion', 'GLID-3-XL', 'Cache')
+
+SETTINGS_ERROR_MESSAGE = "Settings not supported in this mode."
+
+SETTINGS_ERROR_TITLE = "Failed to open settings"
+
 logger = logging.getLogger(__name__)
 
 MENU_FILE = "File"
@@ -85,13 +76,6 @@ GENERATE_ERROR_MESSAGE_EXISTING_OP = 'Existing image generation operation not ye
 
 METADATA_PARAMETER_KEY = 'parameters'
 INPAINT_MODE = 'Inpaint'
-
-
-# Menu item conditions:
-def _init_and_check_settings(controller: 'BaseInpaintController') -> bool:
-    assert controller._settings_panel is None
-    controller._settings_panel = SettingsModal(controller._window)
-    return controller.init_settings(controller._settings_panel)
 
 
 class BaseInpaintController(MenuBuilder):
@@ -146,30 +130,39 @@ class BaseInpaintController(MenuBuilder):
             return self._window.is_busy()
         return False
 
-    def init_settings(self, unused_settings_modal: SettingsModal) -> bool:
+    def get_config_categories(self) -> List[str]:
+        """Return the list of AppConfig categories BaseInpaintController manages within the settings modal."""
+        categories = AppConfig.instance().get_categories()
+        for ignored in IGNORED_APPCONFIG_CATEGORIES:
+            categories.remove(ignored)
+        return categories
+
+    def init_settings(self, settings_modal: SettingsModal) -> None:
         """ 
-        Function to override initialize a SettingsModal with implementation-specific settings. 
-        Return
-        ------
-        bool
-            Whether settings were initialized. This will always be False unless overridden.
+        Function to override initialize a SettingsModal with implementation-specific settings. This will initialize all
+        universal settings, subclasses will need to extend this or override get_config_categories to add more.
         """
-        return False
+        settings_modal.load_from_config(AppConfig.instance(), self.get_config_categories())
 
     def refresh_settings(self, settings_modal: SettingsModal):
         """
-        Unimplemented function used to update a SettingsModal to reflect any changes.  This should only be called in
-        a child class instance that previously returned true after init_settings was called.
+        Updates a SettingsModal to reflect any changes.
 
         Parameters
         ----------
         settings_modal : SettingsModal
         """
-        raise NotImplementedError('refresh_settings not implemented!')
+        config = AppConfig.instance()
+        categories = self.get_config_categories()
+        settings = {}
+        for category in categories:
+            for key in config.get_category_keys(category):
+                settings[key] = config.get(key)
+        settings_modal.update_settings(settings)
 
     def update_settings(self, changed_settings: dict):
         """
-        Unimplemented function used to apply changed settings from a SettingsModal.  This should only be called in
+        Apply changed settings from a SettingsModal.  This should only be called in
         a child class instance that previously returned true after init_settings was called.
 
         Parameters
@@ -177,7 +170,12 @@ class BaseInpaintController(MenuBuilder):
         changed_settings : dict
             Set of changes loaded from a SettingsModal.
         """
-        raise NotImplementedError('update_settings not implemented!')
+        config = AppConfig.instance()
+        categories = self.get_config_categories()
+        base_keys = [key for cat in categories for key in config.get_category_keys(cat)]
+        for key, value in changed_settings.items():
+            if key in base_keys:
+                config.set(key, value)
 
     def window_init(self):
         """Initialize and show the main application window."""
@@ -200,23 +198,35 @@ class BaseInpaintController(MenuBuilder):
     def fix_styles(self) -> None:
         """Update application styling based on theme configuration, UI configuration, and available theme modules."""
         config = AppConfig.instance()
-        self._app.setStyle(config.get('style'))
-        theme = config.get(AppConfig.THEME)
-        if theme.startswith('qdarktheme_') and qdarktheme is not None and hasattr(qdarktheme, 'setup_theme'):
-            if theme.endswith('_light'):
-                qdarktheme.setup_theme('light')
-            elif theme.endswith('_auto'):
-                qdarktheme.setup_theme('auto')
-            else:
-                qdarktheme.setup_theme()
-        elif theme.startswith('qt_material_') and qt_material is not None:
-            xml_file = theme[len('qt_material_'):]
-            qt_material.apply_stylesheet(self._app, theme=xml_file)
-        elif theme != 'None':
-            logger.error(f'Failed to load theme {theme}')
-        font = self._app.font()
-        font.setPointSize(config.get(AppConfig.FONT_POINT_SIZE))
-        self._app.setFont(font)
+
+        def _apply_style(new_style: str) -> None:
+            self._app.setStyle(new_style)
+        config.connect(self, AppConfig.STYLES, _apply_style)
+        _apply_style(config.get(AppConfig.STYLES))
+
+        def _apply_theme(theme: str) -> None:
+            if theme.startswith('qdarktheme_') and qdarktheme is not None and hasattr(qdarktheme, 'setup_theme'):
+                if theme.endswith('_light'):
+                    qdarktheme.setup_theme('light')
+                elif theme.endswith('_auto'):
+                    qdarktheme.setup_theme('auto')
+                else:
+                    qdarktheme.setup_theme()
+            elif theme.startswith('qt_material_') and qt_material is not None:
+                xml_file = theme[len('qt_material_'):]
+                qt_material.apply_stylesheet(self._app, theme=xml_file)
+            elif theme != 'None':
+                logger.error(f'Failed to load theme {theme}')
+        config.connect(self, AppConfig.THEME, _apply_theme)
+        _apply_theme(config.get(AppConfig.THEME))
+
+        def _apply_font(font_pt: int) -> None:
+            font = self._app.font()
+            font.setPointSize(font_pt)
+            self._app.setFont(font)
+        config.connect(self, AppConfig.FONT_POINT_SIZE, _apply_font)
+        _apply_font(config.get(AppConfig.FONT_POINT_SIZE))
+
 
     def start_app(self) -> None:
         """Start the application after performing any additional required setup steps."""
@@ -564,16 +574,16 @@ class BaseInpaintController(MenuBuilder):
                 pos = layer.position
                 prev_image = layer.cropped_image_content(bounds)
 
-                def apply():
+                def apply_selection():
                     """Inserts the generated image into the active layer."""
                     layer.insert_image_content(image, QRect(bounds.topLeft() - pos, bounds.size()),
                                                QPainter.CompositionMode.CompositionMode_SourceOver)
 
-                def undo():
+                def undo_selection():
                     """Revert the image generation area to its previous state."""
                     layer.insert_image_content(prev_image, bounds)
 
-                commit_action(apply, undo)
+                commit_action(apply_selection, undo_selection)
 
     # Selection menu:
     @menu_action(MENU_SELECTION, 'select_all_shortcut', 30, True)
@@ -676,16 +686,14 @@ class BaseInpaintController(MenuBuilder):
             self._layer_panel.show()
             self._layer_panel.raise_()
 
-    @menu_action(MENU_TOOLS, 'settings_shortcut', 51, condition_check=_init_and_check_settings)
+    @menu_action(MENU_TOOLS, 'settings_shortcut', 51)
     def show_settings(self) -> None:
         """Show the settings window."""
+        if self._settings_panel is None:
+            self._settings_panel = SettingsModal(self._window)
+            self.init_settings(self._settings_panel)
+            self._settings_panel.changes_saved.connect(self.update_settings)
         self.refresh_settings(self._settings_panel)
-        frame = self._window.frameGeometry()
-        frame.setX(frame.x() + (frame.width() // 8))
-        frame.setY(frame.y() + (frame.height() // 8))
-        frame.setWidth(math.floor(self._window.width() * 0.75))
-        frame.setHeight(math.floor(self._window.height() * 0.75))
-        self._settings_panel.setGeometry(frame)
         self._settings_panel.show_modal()
 
     # Internal/protected:

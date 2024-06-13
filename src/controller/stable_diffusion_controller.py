@@ -7,7 +7,7 @@ import re
 import os
 import datetime
 from argparse import Namespace
-from typing import Optional, Callable, Any, Dict
+from typing import Optional, Callable, Any, Dict, List
 import logging
 
 import requests
@@ -15,6 +15,8 @@ from PIL import Image
 from PyQt5.QtCore import QObject, pyqtSignal, QSize
 from PyQt5.QtWidgets import QInputDialog
 
+from src.config.a1111_config import A1111Config
+from src.config.config_entry import RangeKey
 from src.image.layer_stack import LayerStack
 from src.config.application_config import AppConfig
 from src.ui.modal.settings_modal import SettingsModal
@@ -24,6 +26,8 @@ from src.ui.util.screen_size import get_screen_size
 from src.controller.base_controller import BaseInpaintController, MENU_TOOLS
 from src.api.a1111_webservice import A1111Webservice
 from src.util.menu_action import menu_action
+
+STABLE_DIFFUSION_CONFIG_CATEGORY = 'Stable-Diffusion'
 
 logger = logging.getLogger(__name__)
 
@@ -88,79 +92,40 @@ class StableDiffusionController(BaseInpaintController):
             self._webservice.login(os.environ['SD_UNAME'], os.environ['SD_PASS'])
             self._webservice.set_auth((os.environ['SD_UNAME'], os.environ['SD_PASS']))
 
+    def get_config_categories(self) -> List[str]:
+        """Return the list of AppConfig categories this controller supports."""
+        categories = super().get_config_categories()
+        categories.append(STABLE_DIFFUSION_CONFIG_CATEGORY)
+        return categories
+
     def init_settings(self, settings_modal: SettingsModal) -> bool:
         """Adds relevant stable-diffusion-webui settings to a ui.modal SettingsModal.  """
         if not isinstance(self._webservice, A1111Webservice):
             print('Disabling remote settings: only supported with the A1111 API')
             return False
-        settings = self._webservice.get_config()
-
-        # Model settings:
-        models = list(map(lambda m: m['title'], self._webservice.get_models()))
-        settings_modal.add_combobox_setting('sd_model_checkpoint',
-                                            'Models',
-                                            settings['sd_model_checkpoint'],
-                                            models,
-                                            'Stable-Diffusion Model:')
-        settings_modal.add_checkbox_setting('sd_checkpoints_keep_in_cpu',
-                                            'Models',
-                                            settings['sd_checkpoints_keep_in_cpu'],
-                                            'Only keep one model on GPU/TPU')
-        settings_modal.set_tooltip('sd_checkpoints_keep_in_cpu',
-                                   'If selected, checkpoints after the first are cached in RAM instead.')
-        settings_modal.add_spinbox_setting('sd_checkpoints_limit',
-                                           'Models',
-                                           int(settings['sd_checkpoints_limit']),
-                                           1,
-                                           10,
-                                           'Max checkpoints loaded:')
-        vae_options = list(map(lambda v: v['model_name'], self._webservice.get_vae()))
-        vae_options.insert(0, 'Automatic')
-        vae_options.insert(0, 'None')
-        settings_modal.add_combobox_setting('sd_vae',
-                                            'Models',
-                                            settings['sd_vae'],
-                                            vae_options,
-                                            'Stable-Diffusion VAE:')
-        settings_modal.set_tooltip('sd_vae',
-                                   'Automatic: use VAE with same name as model\nNone: use embedded VAE\n'
-                                   + re.sub(r'<.*?>', '', settings['sd_vae_explanation']))
-        settings_modal.add_spinbox_setting('sd_vae_checkpoint_cache',
-                                           'Models',
-                                           int(settings['sd_vae_checkpoint_cache']),
-                                           1,
-                                           10,
-                                           'VAE models cached:')
-        settings_modal.add_spinbox_setting('CLIP_stop_at_last_layers',
-                                           'Models',
-                                           int(settings['CLIP_stop_at_last_layers']),
-                                           1,
-                                           50,
-                                           'CLIP skip:')
-
-        # Upscaling:
-        settings_modal.add_spinbox_setting('ESRGAN_tile',
-                                           'Upscalers',
-                                           int(settings['ESRGAN_tile']),
-                                           8, 9999, 'ESRGAN tile size')
-        settings_modal.add_spinbox_setting('ESRGAN_tile_overlap',
-                                           'Upscalers',
-                                           int(settings['ESRGAN_tile_overlap']),
-                                           8,
-                                           9999,
-                                           'ESRGAN tile overlap')
-        return True
+        super().init_settings(settings_modal)
+        web_config = A1111Config.instance()
+        web_config.load_all(self._webservice)
+        settings_modal.load_from_config(web_config)
 
     def refresh_settings(self, settings_modal: SettingsModal) -> None:
         """Loads current settings from the webui and applies them to the SettingsModal."""
+        super().refresh_settings(settings_modal)
         settings = self._webservice.get_config()
         settings_modal.update_settings(settings)
 
     def update_settings(self, changed_settings: dict[str, Any]) -> None:
         """Applies changed settings from a SettingsModal to the stable-diffusion-webui."""
+        super().update_settings(changed_settings)
+        web_config = A1111Config.instance()
+        web_categories = web_config.get_categories()
+        web_keys = [key for cat in web_categories for key in web_config.get_category_keys(cat)]
+        web_changes = {}
         for key in changed_settings:
-            print(f'Setting {key} to {changed_settings[key]}')
-        self._webservice.set_config(changed_settings)
+            if key in web_keys:
+                web_changes[key] = changed_settings[key]
+        if len(web_changes) > 0:
+            self._webservice.set_config(changed_settings)
 
     @staticmethod
     def health_check(url: Optional[str] = None, webservice: Optional[A1111Webservice] = None) -> bool:

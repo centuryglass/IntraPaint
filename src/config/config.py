@@ -72,25 +72,45 @@ class Config:
                     if not hasattr(child_class, init_attr_name):
                         setattr(child_class, init_attr_name, key)
                     try:
-                        initial_value = definition[DefinitionKey.DEFAULT]
-                        match definition[DefinitionKey.TYPE]:
-                            case DefinitionType.QSIZE:
-                                initial_value = QSize(*(int(n) for n in initial_value.split('x')))
-                            case DefinitionType.INT:
-                                initial_value = int(initial_value)
-                            case DefinitionType.FLOAT:
-                                initial_value = float(initial_value)
-                            case DefinitionType.STR:
-                                initial_value = str(initial_value)
-                            case DefinitionType.BOOL:
-                                initial_value = bool(initial_value)
-                            case DefinitionType.LIST:
-                                initial_value = list(initial_value)
-                            case DefinitionType.DICT:
-                                initial_value = dict(initial_value)
-                            case _:
-                                raise RuntimeError(f'Config value definition for {key} had invalid data type '
-                                                   f'{definition[DefinitionKey.TYPE]}')
+                        if DefinitionKey.DEFAULT in definition:
+                            initial_value = definition[DefinitionKey.DEFAULT]
+                            match definition[DefinitionKey.TYPE]:
+                                case DefinitionType.QSIZE:
+                                    initial_value = QSize(*(int(n) for n in initial_value.split('x')))
+                                case DefinitionType.INT:
+                                    initial_value = int(initial_value)
+                                case DefinitionType.FLOAT:
+                                    initial_value = float(initial_value)
+                                case DefinitionType.STR:
+                                    initial_value = str(initial_value)
+                                case DefinitionType.BOOL:
+                                    initial_value = bool(initial_value)
+                                case DefinitionType.LIST:
+                                    initial_value = list(initial_value)
+                                case DefinitionType.DICT:
+                                    initial_value = dict(initial_value)
+                                case _:
+                                    raise RuntimeError(f'Config value definition for {key} had invalid data type '
+                                                       f'{definition[DefinitionKey.TYPE]}')
+                        else:  # If no default is provided, use the closest equivalent to an empty value:
+                            match definition[DefinitionKey.TYPE]:
+                                case DefinitionType.QSIZE:
+                                    initial_value = QSize()
+                                case DefinitionType.INT:
+                                    initial_value = 0
+                                case DefinitionType.FLOAT:
+                                    initial_value = 0.0
+                                case DefinitionType.STR:
+                                    initial_value = ''
+                                case DefinitionType.BOOL:
+                                    initial_value = False
+                                case DefinitionType.LIST:
+                                    initial_value = []
+                                case DefinitionType.DICT:
+                                    initial_value = {}
+                                case _:
+                                    raise RuntimeError(f'Config value definition for {key} had invalid data type '
+                                                       f'{definition[DefinitionKey.TYPE]}')
                     except KeyError as err:
                         raise RuntimeError(f'Loading {key} failed: {err}') from err
 
@@ -101,7 +121,10 @@ class Config:
                         else list(definition[DefinitionKey.OPTIONS])
                     range_options = None if DefinitionKey.RANGE not in definition \
                         else dict(definition[DefinitionKey.RANGE])
-                    save_json = definition[DefinitionKey.SAVED]
+                    if DefinitionKey.SAVED in definition:
+                        save_json = definition[DefinitionKey.SAVED]
+                    else:
+                        save_json = False
                     self._add_entry(key, initial_value, label, category, tooltip, options, range_options, save_json)
 
         except json.JSONDecodeError as err:

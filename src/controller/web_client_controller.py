@@ -3,12 +3,13 @@ Provides image editing functionality through the GLID-3-XL API provided through 
 colabFiles/IntraPaint_colab_server.ipynb.
 """
 import sys
-from typing import Optional, Callable, Any, Dict
+from typing import Optional, Callable, Any, Dict, List
 import requests
 from PyQt5.QtCore import QThread, pyqtSignal
 from PyQt5.QtWidgets import QInputDialog
 from PIL import Image
 
+from src.controller.local_controller import GLID_CONFIG_CATEGORY
 from src.ui.window.main_window import MainWindow
 from src.ui.util.screen_size import get_screen_size
 from src.ui.modal.settings_modal import SettingsModal
@@ -36,6 +37,12 @@ class WebClientController(BaseInpaintController):
         except requests.exceptions.RequestException as err:
             print(f'Request error: {err}')
             return False
+
+    def get_config_categories(self) -> List[str]:
+        """Return the list of AppConfig categories this controller supports."""
+        categories = super().get_config_categories()
+        categories.append(GLID_CONFIG_CATEGORY)
+        return categories
 
     def window_init(self) -> None:
         """Initialize and show the main application window."""
