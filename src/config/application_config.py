@@ -4,7 +4,7 @@ from typing import Optional
 
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QKeySequence
-from PyQt5.QtWidgets import QStyleFactory, QMessageBox, QStyle
+from PyQt5.QtWidgets import QStyleFactory, QMessageBox, QStyle, QApplication
 
 from src.util.image_utils import get_standard_qt_icon
 
@@ -96,7 +96,7 @@ class AppConfig(Config):
         for key_binding, config_keys in duplicate_map.items():
             if len(config_keys) > 1:
                 errors.append(f'Key "{key_binding}" is shared between options {config_keys}, some keys may not work.')
-        if len(errors) > 0:
+        if len(errors) > 0 and QApplication.instance() is not None:
             # Error messages can be fairly long, apply HTML to make them a bit more readable.
             lines = ['<li>' + err + '</li>\n' for err in errors]
             error_message = '<b>' + KEY_CONFIG_ERROR_MESSAGE + '</b><br><ul>' + ''.join(lines) + '</ul>'

@@ -201,7 +201,6 @@ class CanvasTool(BaseTool):
                 if self._cached_size is None:
                     self._cached_size = self._canvas.brush_size
                 self.brush_size = 1
-                print(f'1px mode, cached {self._cached_size}')
             self._canvas.start_stroke()
             self._stroke_to(image_coordinates)
             return True

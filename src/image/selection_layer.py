@@ -1,7 +1,7 @@
 """A layer used to mark masked regions for inpainting."""
 from sys import version_info
 
-from src.image.mypaint.numpy_image_utils import is_fully_transparent
+from src.image.mypaint.numpy_image_utils import is_fully_transparent, image_data_as_numpy_8bit
 
 if version_info[1] >= 11:
     from typing import Self, Optional, List
@@ -106,6 +106,12 @@ class SelectionLayer(ImageLayer):
         self._update_bounds()
         return self._bounding_box is None or self._bounding_box.isEmpty()
 
+    def select_all(self) -> None:
+        """Selects the entire image."""
+        full_selection = QImage(self.size, QImage.Format_ARGB32_Premultiplied)
+        full_selection.fill(Qt.red)
+        self.qimage = full_selection
+
     def invert_selection(self) -> None:
         """Select all unselected areas, and unselect all selected areas."""
         inverted = QImage(self.size, QImage.Format_ARGB32_Premultiplied)
@@ -115,6 +121,35 @@ class SelectionLayer(ImageLayer):
         painter.drawImage(QRect(QPoint(), self.size), self.qimage)
         painter.end()
         self.qimage = inverted
+
+    def grow_or_shrink_selection(self, num_pixels: int) -> None:
+        """Expand the selection outwards a given amount, or shrink it if num_pixels is negative."""
+        image = self.qimage
+        image_ptr = image.bits()
+        image_ptr.setsize(image.byteCount())
+        np_image = np.ndarray(shape=(image.height(), image.width(), 4), dtype=np.uint8, buffer=image_ptr)
+
+        masked = np_image[:, :, 3] >= ALPHA_THRESHOLD
+        mask_uint8 = masked.astype(np.uint8) * 255
+        if num_pixels == 0:
+            adjusted_mask = masked
+        else:
+            kernel_size = abs(num_pixels * 3)
+            kernel = np.ones((kernel_size, kernel_size), np.uint8)
+            if num_pixels > 0:
+                adjusted_mask = cv2.dilate(mask_uint8, kernel, iterations=1)
+            else:
+                adjusted_mask = cv2.erode(mask_uint8, kernel, iterations=1)
+        adjusted_mask = adjusted_mask > 0
+        adjusted_image = np.zeros_like(np_image)
+        adjusted_image[adjusted_mask, 0] = 0  # blue
+        adjusted_image[adjusted_mask, 1] = 0  # green
+        adjusted_image[adjusted_mask, 2] = 255  # red
+        adjusted_image[adjusted_mask, 3] = 255
+        qimage = QImage(adjusted_image.data, adjusted_image.shape[1], adjusted_image.shape[0],
+                        QImage.Format_ARGB32)
+        qimage.save('test.png')
+        self.qimage = qimage
 
     @property
     def pil_mask_image(self) -> Image.Image:

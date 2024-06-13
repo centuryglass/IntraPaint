@@ -21,8 +21,9 @@ from src.ui.modal.settings_modal import SettingsModal
 from src.ui.window.stable_diffusion_main_window import StableDiffusionMainWindow
 from src.ui.modal.modal_utils import show_error_dialog
 from src.ui.util.screen_size import get_screen_size
-from src.controller.base_controller import BaseInpaintController
+from src.controller.base_controller import BaseInpaintController, MENU_TOOLS
 from src.api.a1111_webservice import A1111Webservice
+from src.util.menu_action import menu_action
 
 logger = logging.getLogger(__name__)
 
@@ -51,6 +52,17 @@ MODE_TXT2IMG = 'Text to Image'
 MAX_ERROR_COUNT = 10
 MIN_RETRY_US = 300000
 MAX_RETRY_US = 60000000
+
+LCM_SAMPLER = 'LCM'
+LCM_LORA_1_5 = 'lcm-lora-sdv1-5'
+LCM_LORA_XL = 'lcm-lora-sdxl'
+
+
+def _check_lcm_mode_available(controller: 'StableDiffusionController') -> bool:
+    if LCM_SAMPLER not in AppConfig.instance().get_options(AppConfig.SAMPLING_METHOD):
+        return False
+    loras = [lora['name'] for lora in AppConfig.instance().get(AppConfig.LORA_MODELS)]
+    return LCM_LORA_1_5 in loras or LCM_LORA_XL in loras
 
 
 class StableDiffusionController(BaseInpaintController):
@@ -473,3 +485,29 @@ class StableDiffusionController(BaseInpaintController):
             AppConfig.instance().set(AppConfig.LAST_SEED, str(status_dict['seed']))
         if 'progress' in status_dict:
             self._window.set_loading_message(status_dict['progress'])
+
+    @menu_action(MENU_TOOLS, 'lcm_mode_shortcut', 99, False, _check_lcm_mode_available)
+    def set_lcm_mode(self) -> None:
+        """Apply all settings required for using an LCM LoRA module."""
+        config = AppConfig.instance()
+        loras = [lora['name'] for lora in config.get(AppConfig.LORA_MODELS)]
+        if LCM_LORA_1_5 in loras:
+            lora_name = LCM_LORA_1_5
+        else:
+            lora_name = LCM_LORA_XL
+        lora_key = f'<lora:{lora_name}:1>'
+        prompt = config.get(AppConfig.PROMPT)
+        if lora_key not in prompt:
+            config.set(AppConfig.PROMPT, f'{prompt} {lora_key}')
+        config.set(AppConfig.GUIDANCE_SCALE, 1.5)
+        config.set(AppConfig.SAMPLING_STEPS, 8)
+        config.set(AppConfig.SAMPLING_METHOD, 'LCM')
+        config.set(AppConfig.SEED, -1)
+        if config.get(AppConfig.BATCH_SIZE) < 5:
+            config.set(AppConfig.BATCH_SIZE, 5)
+        image_size = self._layer_stack.size
+        if image_size.width() < 1200 and image_size.height() < 1200:
+            config.set(AppConfig.EDIT_SIZE, image_size)
+        else:
+            size = QSize(min(image_size.width(), 1024), min(image_size.height(), 1024))
+            config.set(AppConfig.EDIT_SIZE, size)

@@ -103,139 +103,6 @@ class MainWindow(QMainWindow):
 
         self._tool_panel = ToolPanel(layer_stack, self._image_viewer, config, controller.start_and_manage_inpainting)
 
-        # Set up menu:
-        self._menu = self.menuBar()
-
-        def add_action(config_key: str, on_trigger: Callable, menu: QMenuBar) -> None:
-            """Adds an action to the menu bar."""
-            name = config.get_label(config_key)
-            shortcut = config.get(config_key)
-            action = QAction(name, self)
-            if shortcut != '':
-                action.setShortcut(shortcut)
-            action.setToolTip(config.get_tooltip(config_key))
-            action.triggered.connect(on_trigger)
-            menu.addAction(action)
-
-        # File:
-        file_menu = self._menu.addMenu('File')
-
-        def if_not_selecting(fn: Callable[[], Any]) -> None:
-            """Only run the requested action if the sample selector is closed."""
-            if not self.is_image_selector_visible():
-                fn()
-
-        add_action(AppConfig.NEW_IMAGE_SHORTCUT, lambda: if_not_selecting(controller.new_image), file_menu)
-        add_action(AppConfig.SAVE_SHORTCUT, controller.save_image, file_menu)
-        add_action(AppConfig.LOAD_SHORTCUT, lambda: if_not_selecting(controller.load_image), file_menu)
-        add_action(AppConfig.RELOAD_SHORTCUT, lambda: if_not_selecting(controller.reload_image), file_menu)
-
-        def try_quit() -> None:
-            """Quits the application if the user confirms."""
-            if request_confirmation(self, 'Quit now?', 'All unsaved changes will be lost.'):
-                self.close()
-
-        add_action(AppConfig.QUIT_SHORTCUT, try_quit, file_menu)
-
-        # Edit:
-        edit_menu = self._menu.addMenu('Edit')
-        add_action(AppConfig.UNDO_SHORTCUT, lambda: if_not_selecting(undo), edit_menu)
-        add_action(AppConfig.REDO_SHORTCUT, lambda: if_not_selecting(redo), edit_menu)
-        add_action(AppConfig.CUT_SHORTCUT, lambda: if_not_selecting(layer_stack.cut_selected), edit_menu)
-        add_action(AppConfig.COPY_SHORTCUT, lambda: if_not_selecting(layer_stack.copy_selected), edit_menu)
-        add_action(AppConfig.PASTE_SHORTCUT, lambda: if_not_selecting(layer_stack.paste), edit_menu)
-
-        # Image:
-        image_menu = self._menu.addMenu('Image')
-        add_action(AppConfig.RESIZE_CANVAS_SHORTCUT, lambda: if_not_selecting(controller.resize_canvas), image_menu)
-        add_action(AppConfig.SCALE_IMAGE_SHORTCUT, lambda: if_not_selecting(controller.scale_image), image_menu)
-        add_action(AppConfig.UPDATE_METADATA_SHORTCUT, controller.update_metadata, image_menu)
-        add_action(AppConfig.GENERATE_SHORTCUT, lambda: if_not_selecting(controller.start_and_manage_inpainting),
-                   image_menu)
-
-        # Layer:
-        layer_menu = self._menu.addMenu('Layer')
-        add_action(AppConfig.NEW_LAYER_SHORTCUT, lambda: if_not_selecting(layer_stack.create_layer), layer_menu)
-        add_action(AppConfig.COPY_LAYER_SHORTCUT, lambda: if_not_selecting(layer_stack.copy_layer), layer_menu)
-        add_action(AppConfig.DELETE_LAYER_SHORTCUT, lambda: if_not_selecting(layer_stack.remove_layer), layer_menu)
-        add_action(AppConfig.SELECT_PREVIOUS_LAYER_SHORTCUT,
-                   lambda: if_not_selecting(lambda: layer_stack.offset_generation_area(-1)), layer_menu)
-        add_action(AppConfig.SELECT_NEXT_LAYER_SHORTCUT,
-                   lambda: if_not_selecting(lambda: layer_stack.offset_generation_area(1)), layer_menu)
-        add_action(AppConfig.MOVE_LAYER_UP_SHORTCUT, lambda: if_not_selecting(lambda: layer_stack.move_layer(-1)),
-                   layer_menu)
-        add_action(AppConfig.MOVE_LAYER_DOWN_SHORTCUT, lambda: if_not_selecting(lambda: layer_stack.move_layer(1)),
-                   layer_menu)
-        add_action(AppConfig.MERGE_LAYER_DOWN_SHORTCUT, lambda: if_not_selecting(layer_stack.merge_layer_down),
-                   layer_menu)
-        add_action(AppConfig.LAYER_TO_IMAGE_SIZE_SHORTCUT, lambda: if_not_selecting(layer_stack.layer_to_image_size),
-                   layer_menu)
-
-        def _layer_to_content():
-            if layer_stack.active_layer is not None:
-                layer_stack.active_layer.crop_to_content()
-
-        add_action(AppConfig.CROP_TO_CONTENT_SHORTCUT, lambda: if_not_selecting(_layer_to_content), layer_menu)
-
-        # Tools:
-        tool_menu = self._menu.addMenu('Tools')
-        add_action(AppConfig.CLEAR_SELECTION_SHORTCUT, lambda: if_not_selecting(layer_stack.selection_layer.clear), tool_menu)
-
-        def show_layers() -> None:
-            """Show the layer panel."""
-            if self._layer_panel is None:
-                self._layer_panel = LayerPanel(self._layer_stack)
-            self._layer_panel.show()
-            self._layer_panel.raise_()
-
-        add_action(AppConfig.SHOW_LAYER_MENU_SHORTCUT, show_layers, tool_menu)
-
-        self._settings = SettingsModal(self)
-        if controller.init_settings(self._settings):
-            self._settings.changes_saved.connect(controller.update_settings)
-
-            def show_settings() -> None:
-                """Creates and shows the settings modal."""
-                controller.refresh_settings(self._settings)
-                frame = self.frameGeometry()
-                frame.setX(frame.x() + (frame.width() // 8))
-                frame.setY(frame.y() + (frame.height() // 8))
-                frame.setWidth(math.floor(self.width() * 0.75))
-                frame.setHeight(math.floor(self.height() * 0.75))
-                self._settings.setGeometry(frame)
-                self._settings.show_modal()
-
-            add_action(AppConfig.SETTINGS_SHORTCUT, lambda: if_not_selecting(show_settings), tool_menu)
-
-        # TODO: the following are specific to the A1111 stable-diffusion api and should move to
-        #       stable_diffusion_controller:
-        if 'LCM' in config.get_options(AppConfig.SAMPLING_METHOD):
-            try:
-                loras = [lora['name'] for lora in config.get(AppConfig.LORA_MODELS)]
-                if 'lcm-lora-sdv1-5' in loras:
-                    def set_lcm_mode() -> None:
-                        """Apply all settings you'd want when using the sd1.5 LCM LORA."""
-                        lora_key = '<lora:lcm-lora-sdv1-5:1>'
-                        prompt = config.get(AppConfig.PROMPT)
-                        if lora_key not in prompt:
-                            config.set(AppConfig.PROMPT, f'{prompt} {lora_key}')
-                        config.set(AppConfig.GUIDANCE_SCALE, 1.5)
-                        config.set(AppConfig.SAMPLING_STEPS, 8)
-                        config.set(AppConfig.SAMPLING_METHOD, 'LCM')
-                        config.set(AppConfig.SEED, -1)
-                        if config.get(AppConfig.BATCH_SIZE) < 5:
-                            config.set(AppConfig.BATCH_SIZE, 5)
-                        image_size = self._layer_stack.size
-                        if image_size.width() < 1200 and image_size.height() < 1200:
-                            config.set(AppConfig.EDIT_SIZE, image_size)
-                        else:
-                            size = QSize(min(image_size.width(), 1024), min(image_size.height(), 1024))
-                            config.set(AppConfig.EDIT_SIZE, size)
-
-                    add_action(AppConfig.LCM_MODE_SHORTCUT, set_lcm_mode, tool_menu)
-            except RuntimeError:
-                logger.error('Failed to check loras for lcm lora')
-
         # Build config + control layout (varying based on implementation):
         self._control_panel = self._build_control_panel(controller)
         self._main_widget.addTab(self._control_panel, CONTROL_TAB_NAME)
@@ -460,6 +327,10 @@ class MainWindow(QMainWindow):
             self._is_loading = is_loading
             self.update()
 
+    def is_busy(self) -> bool:
+        """Return whether there is an ongoing operation that should block most actions."""
+        return self.is_image_selector_visible() or self._loading_widget.isVisible()
+
     def set_loading_message(self, message: str) -> None:
         """Sets the loading spinner message text."""
         if self._image_selector is not None:
@@ -486,3 +357,5 @@ class MainWindow(QMainWindow):
     def hideEvent(self, unused_event: Optional[QHideEvent]) -> None:
         """Close the application when the main window is hidden."""
         QApplication.exit()
+
+

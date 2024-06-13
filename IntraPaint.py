@@ -3,9 +3,12 @@ Runs the main IntraPaint inpainting UI.
 Assuming you're running the A1111 stable-diffusion API on the same machine with default settings, running
 `python IntraPaint.py` should be all you need. For more information on options, run `python IntraPaint.py --help`
 """
+import sys
 from typing import Any
 import logging
 import atexit
+
+from PyQt5.QtWidgets import QApplication
 
 from src.ui.modal.modal_utils import show_error_dialog
 

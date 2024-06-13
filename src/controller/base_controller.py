@@ -2,6 +2,7 @@
 BaseController coordinates primary application functionality across all operation modes. Each image generation and
 editing method supported by IntraPaint should have its own BaseController subclass.
 """
+import math
 import os
 import sys
 import re
@@ -12,6 +13,14 @@ from PIL import Image, ImageFilter, UnidentifiedImageError, PngImagePlugin
 from PyQt5.QtWidgets import QApplication, QMessageBox, QMainWindow
 from PyQt5.QtCore import QObject, QRect, QPoint, QThread, QSize, pyqtSignal
 from PyQt5.QtGui import QScreen, QImage, QPainter
+
+from src.ui.panel.layer_panel import LayerPanel
+from src.util.menu_action import MenuBuilder, menu_action
+
+SETTINGS_ERROR_MESSAGE = "Settings not supported in this mode."
+
+SETTINGS_ERROR_TITLE = "Failed to open settings"
+
 try:
     import qdarktheme
 except ImportError:
@@ -34,7 +43,8 @@ from src.ui.util.screen_size import get_screen_size
 from src.util.image_utils import pil_image_to_qimage, qimage_to_pil_image
 
 from src.util.validation import assert_type
-from src.undo_stack import commit_action
+from src.undo_stack import commit_action, undo, redo
+
 # Optional spacenav support:
 try:
     from src.controller.spacenav_manager import SpacenavManager
@@ -43,6 +53,15 @@ except ImportError as spacenav_err:
     SpacenavManager = None
 logger = logging.getLogger(__name__)
 
+MENU_FILE = "File"
+MENU_EDIT = "Edit"
+MENU_IMAGE = "Image"
+MENU_SELECTION = "Selection"
+MENU_LAYERS = "Layers"
+MENU_TOOLS = "Tools"
+
+CONFIRM_QUIT_TITLE = 'Quit now?'
+CONFIRM_QUIT_MESSAGE = 'All unsaved changes will be lost.'
 NEW_IMAGE_CONFIRMATION_TITLE = 'Create new image?'
 NEW_IMAGE_CONFIRMATION_MESSAGE = 'This will discard all unsaved changes.'
 SAVE_ERROR_MESSAGE_NO_IMAGE = 'Open or create an image first before trying to save.'
@@ -68,13 +87,21 @@ METADATA_PARAMETER_KEY = 'parameters'
 INPAINT_MODE = 'Inpaint'
 
 
-class BaseInpaintController:
+# Menu item conditions:
+def _init_and_check_settings(controller: 'BaseInpaintController') -> bool:
+    assert controller._settings_panel is None
+    controller._settings_panel = SettingsModal(controller._window)
+    return controller.init_settings(controller._settings_panel)
+
+
+class BaseInpaintController(MenuBuilder):
     """Shared base class for managing inpainting.
 
     At a bare minimum, subclasses will need to implement self._inpaint.
     """
 
     def __init__(self, args: Namespace) -> None:
+        super().__init__()
         self._app = QApplication(sys.argv)
         screen = self._app.primaryScreen()
         self._fixed_window_size = args.window_size
@@ -100,6 +127,8 @@ class BaseInpaintController:
         self._init_image = args.init_image
 
         self._window: Optional[QMainWindow] = None
+        self._layer_panel: Optional[LayerPanel] = None
+        self._settings_panel: Optional[SettingsModal] = None
         self._nav_manager: Optional[SpacenavManager] = None
         self._worker: Optional[QObject] = None
         self._metadata: Optional[dict[str, Any]] = None
@@ -108,6 +137,14 @@ class BaseInpaintController:
 
     def _adjust_config_defaults(self):
         """no-op, override to adjust config before data initialization."""
+
+    def is_busy(self) -> bool:
+        """Return whether the application is in the middle of something that should not be interrupted."""
+        if self._thread is not None:
+            return True
+        if self._window is not None and hasattr(self._window, 'is_busy'):
+            return self._window.is_busy()
+        return False
 
     def init_settings(self, unused_settings_modal: SettingsModal) -> bool:
         """ 
@@ -190,11 +227,17 @@ class BaseInpaintController:
             self._nav_manager = SpacenavManager(self._window, self._layer_stack)
             self._nav_manager.start_thread()
 
+        # initialize menus:
+        self.build_menus(self._window)
+
         self._app.exec_()
         sys.exit()
 
-    # File IO handling:
+    # Menu action definitions:
 
+    # File menu:
+
+    @menu_action(MENU_FILE, 'new_image_shortcut', 0, True)
     def new_image(self) -> None:
         """Open a new image creation modal."""
         assert self._window is not None
@@ -210,6 +253,7 @@ class BaseInpaintController:
                 self._layer_stack.get_layer_by_index(i).clear()
             self._metadata = None
 
+    @menu_action(MENU_FILE, 'save_shortcut', 1)
     def save_image(self, file_path: Optional[str] = None) -> None:
         """Open a save dialog, and save the edited image to disk, preserving any metadata."""
         assert self._window is not None
@@ -247,6 +291,7 @@ class BaseInpaintController:
             show_error_dialog(self._window, SAVE_ERROR_TITLE, str(save_err))
             raise save_err
 
+    @menu_action(MENU_FILE, 'load_shortcut', 2, True)
     def load_image(self, file_path: Optional[str] = None) -> None:
         """Open a loading dialog, then load the selected image for editing."""
         assert self._window is not None
@@ -302,6 +347,7 @@ class BaseInpaintController:
             show_error_dialog(self._window, LOAD_ERROR_TITLE, err)
             return
 
+    @menu_action(MENU_FILE, 'reload_shortcut', 3, True)
     def reload_image(self) -> None:
         """Reload the edited image from disk after getting confirmation from a confirmation dialog."""
         assert self._window is not None
@@ -315,8 +361,71 @@ class BaseInpaintController:
         if not self._layer_stack.has_image or request_confirmation(self._window,
                                                                    RELOAD_CONFIRMATION_TITLE,
                                                                    RELOAD_CONFIRMATION_MESSAGE):
-            self.load_image(file_path)
+            self.load_image(file_path=file_path)
 
+    @menu_action(MENU_FILE, 'quit_shortcut', 4)
+    def quit(self) -> None:
+        """Quit the application after getting confirmation from the user."""
+        if self._window is not None and request_confirmation(self._window, CONFIRM_QUIT_TITLE, CONFIRM_QUIT_MESSAGE):
+            self._window.close()
+
+    # Edit menu:
+
+    @menu_action(MENU_EDIT, 'undo_shortcut', 10, True)
+    def undo(self) -> None:
+        """Revert the most recent significant change made."""
+        undo()
+
+    @menu_action(MENU_EDIT, 'redo_shortcut', 11, True)
+    def redo(self) -> None:
+        """Restore the most recent reverted change."""
+        redo()
+
+    @menu_action(MENU_EDIT, 'cut_shortcut', 12, True)
+    def cut(self) -> None:
+        """Cut selected content from the active image layer."""
+        self._layer_stack.cut_selected()
+
+    @menu_action(MENU_EDIT, 'copy_shortcut', 13, True)
+    def copy(self) -> None:
+        """Copy selected content from the active image layer."""
+        self._layer_stack.copy_selected()
+
+    @menu_action(MENU_EDIT, 'paste_shortcut', 14, True)
+    def paste(self) -> None:
+        """Paste copied image content into a new layer."""
+        self._layer_stack.paste()
+
+    # Image menu:
+
+    @menu_action(MENU_IMAGE, 'resize_canvas_shortcut', 20, True)
+    def resize_canvas(self) -> None:
+        """Crop or extend the edited image without scaling its contents based on user input into a popup modal."""
+        assert self._window is not None
+        if not self._layer_stack.has_image:
+            show_error_dialog(self._window, RESIZE_ERROR_TITLE, RESIZE_ERROR_MESSAGE_NO_IMAGE)
+            return
+        resize_modal = ResizeCanvasModal(self._layer_stack.qimage())
+        new_size, offset = resize_modal.show_resize_modal()
+        if new_size is None or offset is None:
+            return
+        self._layer_stack.resize_canvas(new_size, offset.x(), offset.y())
+
+    @menu_action(MENU_IMAGE, 'scale_image_shortcut', 21, True)
+    def scale_image(self) -> None:
+        """Scale the edited image based on user input into a popup modal."""
+        assert self._window is not None
+        if not self._layer_stack.has_image:
+            show_error_dialog(self._window, SCALING_ERROR_TITLE, SCALING_ERROR_MESSAGE_NO_IMAGE)
+            return
+        width = self._layer_stack.width
+        height = self._layer_stack.height
+        scale_modal = ImageScaleModal(width, height)
+        new_size = scale_modal.show_image_modal()
+        if new_size is not None:
+            self._scale(new_size)
+
+    @menu_action(MENU_IMAGE, 'update_metadata_shortcut', 22)
     def update_metadata(self, show_messagebox: bool = True) -> None:
         """
         Adds image editing parameters from config to the image metadata, in a format compatible with the A1111
@@ -347,97 +456,7 @@ class BaseInpaintController:
             message_box.setStandardButtons(QMessageBox.Ok)
             message_box.exec()
 
-    def resize_canvas(self) -> None:
-        """Crop or extend the edited image without scaling its contents based on user input into a popup modal."""
-        assert self._window is not None
-        if not self._layer_stack.has_image:
-            show_error_dialog(self._window, RESIZE_ERROR_TITLE, RESIZE_ERROR_MESSAGE_NO_IMAGE)
-            return
-        resize_modal = ResizeCanvasModal(self._layer_stack.qimage())
-        new_size, offset = resize_modal.show_resize_modal()
-        if new_size is None or offset is None:
-            return
-        self._layer_stack.resize_canvas(new_size, offset.x(), offset.y())
-
-    def scale_image(self) -> None:
-        """Scale the edited image based on user input into a popup modal."""
-        assert self._window is not None
-        if not self._layer_stack.has_image:
-            show_error_dialog(self._window, SCALING_ERROR_TITLE, SCALING_ERROR_MESSAGE_NO_IMAGE)
-            return
-        width = self._layer_stack.width
-        height = self._layer_stack.height
-        scale_modal = ImageScaleModal(width, height)
-        new_size = scale_modal.show_image_modal()
-        if new_size is not None:
-            self._scale(new_size)
-
-    def _scale(self, new_size: QSize) -> None:  # Override to allow alternate or external upscalers:
-        config = AppConfig.instance()
-        width = self._layer_stack.width
-        height = self._layer_stack.height
-        if new_size is None or (new_size.width() == width and new_size.height() == height):
-            return
-        image = self._layer_stack.pil_image()
-        if new_size.width() <= width and new_size.height() <= height:  # downscaling
-            scale_mode = config.get(AppConfig.DOWNSCALE_MODE)
-        else:
-            scale_mode = config.get(AppConfig.UPSCALE_MODE)
-        scaled_image = image.resize((new_size.width(), new_size.height()), scale_mode)
-        self._layer_stack.set_image(scaled_image)
-
-    def _start_thread(self, thread_worker: QObject, loading_text: Optional[str] = None) -> None:
-        assert self._window is not None
-        self._window.set_is_loading(True, loading_text)
-        self._thread = QThread()
-        self._worker = thread_worker
-        self._worker.moveToThread(self._thread)
-
-        def clear_worker() -> None:
-            """Clean up thread worker object on finish."""
-            assert self._window is not None and self._worker is not None
-            if self._thread is not None:
-                self._thread.quit()
-            self._window.set_is_loading(False)
-            self._worker.deleteLater()
-            self._worker = None
-
-        self._worker.finished.connect(clear_worker)
-        self._thread.started.connect(self._worker.run)
-
-        def clear_old_thread() -> None:
-            """Cleanup async task thread on finish."""
-            assert self._thread is not None
-            self._thread.deleteLater()
-            self._thread = None
-
-        self._thread.finished.connect(clear_old_thread)
-        self._thread.start()
-
-    # Image generation handling:
-    def _inpaint(self,
-                 source_image_section: Optional[Image.Image],
-                 mask: Optional[Image.Image],
-                 save_image: Callable[[Image.Image, int], None],
-                 status_signal: pyqtSignal) -> None:
-        """Unimplemented method for handling image inpainting.
-
-        Parameters
-        ----------
-        source_image_section : PIL Image, optional
-            Image selection to edit
-        mask : PIL Image, optional
-            Mask marking edited image region.
-        save_image : function (PIL Image, int)
-            Function used to return each image response and its index.
-        status_signal : pyqtSignal
-            Signal to emit when status updates are available.
-        """
-        raise NotImplementedError('_inpaint method not implemented.')
-
-    def _apply_status_update(self, unused_status_dict: dict) -> None:
-        """Optional unimplemented method for handling image editing status updates."""
-
+    @menu_action(MENU_IMAGE, 'generate_shortcut', 23, True)
     def start_and_manage_inpainting(self) -> None:
         """Start inpainting/image editing based on the current state of the UI."""
         assert self._window is not None
@@ -531,7 +550,8 @@ class BaseInpaintController:
             else:
                 image = sample_image.convertToFormat(QImage.Format.Format_ARGB32_Premultiplied)
             if AppConfig.instance().get(AppConfig.EDIT_MODE) == "Inpaint":
-                inpaint_mask = self._layer_stack.selection_layer.cropped_image_content(self._layer_stack.generation_area)
+                inpaint_mask = self._layer_stack.selection_layer.cropped_image_content(
+                    self._layer_stack.generation_area)
                 painter = QPainter(image)
                 painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_DestinationIn)
                 painter.drawImage(QRect(QPoint(0, 0), image.size()), inpaint_mask)
@@ -552,4 +572,186 @@ class BaseInpaintController:
                 def undo():
                     """Revert the image generation area to its previous state."""
                     layer.insert_image_content(prev_image, bounds)
+
                 commit_action(apply, undo)
+
+    # Selection menu:
+    @menu_action(MENU_SELECTION, 'select_all_shortcut', 30, True)
+    def select_all(self) -> None:
+        """Selects the entire image."""
+        if self._layer_stack.has_image:
+            self._layer_stack.selection_layer.select_all()
+
+    @menu_action(MENU_SELECTION, 'select_none_shortcut', 31, True)
+    def select_none(self) -> None:
+        """Clears the selection."""
+        self._layer_stack.selection_layer.clear()
+
+    @menu_action(MENU_SELECTION, 'invert_selection_shortcut', 32, True)
+    def invert_selection(self) -> None:
+        """Swaps selected and unselected areas."""
+        if self._layer_stack.has_image:
+            self._layer_stack.selection_layer.invert_selection()
+
+    @menu_action(MENU_SELECTION, 'select_layer_content_shortcut', 33, True)
+    def select_active_layer_content(self) -> None:
+        """Selects all pixels in the active layer that are not fully transparent."""
+        active_layer = self._layer_stack.active_layer
+        if active_layer is not None:
+            self._layer_stack.selection_layer.qimage = active_layer.qimage
+
+    @menu_action(MENU_SELECTION, 'grow_selection_shortcut', 34, True)
+    def grow_selection(self, num_pixels=1) -> None:
+        """Expand the selection by a given pixel count, 1 by default."""
+        if self._layer_stack.has_image:
+            self._layer_stack.selection_layer.grow_or_shrink_selection(num_pixels)
+
+    @menu_action(MENU_SELECTION, 'shrink_selection_shortcut', 35, True)
+    def shrink_selection(self, num_pixels=1) -> None:
+        """Contract the selection by a given pixel count, 1 by default."""
+        if self._layer_stack.has_image:
+            self._layer_stack.selection_layer.grow_or_shrink_selection(-num_pixels)
+
+    # Layer menu:
+    @menu_action(MENU_LAYERS, 'new_layer_shortcut', 40, True)
+    def new_layer(self) -> None:
+        """Create a new image layer above the active layer."""
+        if self._layer_stack.has_image:
+            self._layer_stack.create_layer()
+
+    @menu_action(MENU_LAYERS, 'copy_layer_shortcut', 41, True)
+    def copy_layer(self) -> None:
+        """Create a copy of the active layer."""
+        if self._layer_stack.has_image:
+            self._layer_stack.copy_layer()
+
+    @menu_action(MENU_LAYERS, 'delete_layer_shortcut', 42, True)
+    def delete_layer(self) -> None:
+        """Delete the active layer."""
+        self._layer_stack.remove_layer()
+
+    @menu_action(MENU_LAYERS, 'select_previous_layer_shortcut', 43, True)
+    def select_previous_layer(self) -> None:
+        """Select the layer above the current active layer."""
+        self._layer_stack.offset_active_selection(-1)
+
+    @menu_action(MENU_LAYERS, 'select_next_layer_shortcut', 44, True)
+    def select_next_layer(self) -> None:
+        """Select the layer below the current active layer."""
+        self._layer_stack.offset_active_selection(1)
+
+    @menu_action(MENU_LAYERS, 'move_layer_up_shortcut', 45, True)
+    def move_layer_up(self) -> None:
+        """Move the active layer up in the image."""
+        self._layer_stack.move_layer(-1)
+
+    @menu_action(MENU_LAYERS, 'move_layer_down_shortcut', 46, True)
+    def move_layer_down(self) -> None:
+        """Move the active layer down in the image."""
+        self._layer_stack.move_layer(1)
+
+    @menu_action(MENU_LAYERS, 'merge_layer_down_shortcut', 47, True)
+    def merge_layer_down(self) -> None:
+        """Merge the active layer with the one beneath it."""
+        self._layer_stack.merge_layer_down()
+
+    @menu_action(MENU_LAYERS, 'layer_to_image_size_shortcut', 48, True)
+    def layer_to_image_size(self) -> None:
+        """Crop or expand the active layer to match the image size."""
+        self._layer_stack.layer_to_image_size()
+
+    @menu_action(MENU_LAYERS, 'crop_to_content_shortcut', 49, True)
+    def crop_layer_to_content(self) -> None:
+        """Crop the active layer to remove fully transparent border pixels."""
+        layer = self._layer_stack.active_layer
+        if layer is not None:
+            layer.crop_to_content()
+
+    # Tool menu:
+    @menu_action(MENU_TOOLS, 'show_layer_menu_shortcut', 50)
+    def show_layer_panel(self) -> None:
+        """Opens the layer panel window"""
+        if self._layer_panel is None:
+            self._layer_panel = LayerPanel(self._layer_stack)
+            self._layer_panel.show()
+            self._layer_panel.raise_()
+
+    @menu_action(MENU_TOOLS, 'settings_shortcut', 51, condition_check=_init_and_check_settings)
+    def show_settings(self) -> None:
+        """Show the settings window."""
+        self.refresh_settings(self._settings_panel)
+        frame = self._window.frameGeometry()
+        frame.setX(frame.x() + (frame.width() // 8))
+        frame.setY(frame.y() + (frame.height() // 8))
+        frame.setWidth(math.floor(self._window.width() * 0.75))
+        frame.setHeight(math.floor(self._window.height() * 0.75))
+        self._settings_panel.setGeometry(frame)
+        self._settings_panel.show_modal()
+
+    # Internal/protected:
+
+    def _scale(self, new_size: QSize) -> None:  # Override to allow alternate or external upscalers:
+        config = AppConfig.instance()
+        width = self._layer_stack.width
+        height = self._layer_stack.height
+        if new_size is None or (new_size.width() == width and new_size.height() == height):
+            return
+        image = self._layer_stack.pil_image()
+        if new_size.width() <= width and new_size.height() <= height:  # downscaling
+            scale_mode = config.get(AppConfig.DOWNSCALE_MODE)
+        else:
+            scale_mode = config.get(AppConfig.UPSCALE_MODE)
+        scaled_image = image.resize((new_size.width(), new_size.height()), scale_mode)
+        self._layer_stack.set_image(scaled_image)
+
+    def _start_thread(self, thread_worker: QObject, loading_text: Optional[str] = None) -> None:
+        assert self._window is not None
+        self._window.set_is_loading(True, loading_text)
+        self._thread = QThread()
+        self._worker = thread_worker
+        self._worker.moveToThread(self._thread)
+
+        def clear_worker() -> None:
+            """Clean up thread worker object on finish."""
+            assert self._window is not None and self._worker is not None
+            if self._thread is not None:
+                self._thread.quit()
+            self._window.set_is_loading(False)
+            self._worker.deleteLater()
+            self._worker = None
+
+        self._worker.finished.connect(clear_worker)
+        self._thread.started.connect(self._worker.run)
+
+        def clear_old_thread() -> None:
+            """Cleanup async task thread on finish."""
+            assert self._thread is not None
+            self._thread.deleteLater()
+            self._thread = None
+
+        self._thread.finished.connect(clear_old_thread)
+        self._thread.start()
+
+    # Image generation handling:
+    def _inpaint(self,
+                 source_image_section: Optional[Image.Image],
+                 mask: Optional[Image.Image],
+                 save_image: Callable[[Image.Image, int], None],
+                 status_signal: pyqtSignal) -> None:
+        """Unimplemented method for handling image inpainting.
+
+        Parameters
+        ----------
+        source_image_section : PIL Image, optional
+            Image selection to edit
+        mask : PIL Image, optional
+            Mask marking edited image region.
+        save_image : function (PIL Image, int)
+            Function used to return each image response and its index.
+        status_signal : pyqtSignal
+            Signal to emit when status updates are available.
+        """
+        raise NotImplementedError('_inpaint method not implemented.')
+
+    def _apply_status_update(self, unused_status_dict: dict) -> None:
+        """Optional unimplemented method for handling image editing status updates."""

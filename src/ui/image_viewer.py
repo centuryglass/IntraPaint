@@ -19,6 +19,7 @@ from src.ui.widget.image_graphics_view import ImageGraphicsView
 from src.util.validation import assert_type
 
 GENERATION_AREA_BORDER_OPACITY = 0.6
+IMAGE_BORDER_OPACITY = 0.2
 GENERATION_AREA_BORDER_COLOR = Qt.GlobalColor.black
 
 
@@ -43,13 +44,18 @@ class ImageViewer(ImageGraphicsView):
 
         # Generation area and border rectangle setup:
         self._scene_outline = Outline(self.scene(), self)
+        self._scene_border = Border(self.scene(), self)
+        self._scene_border.windowed_area = layer_stack.geometry
+        self._scene_border.color = GENERATION_AREA_BORDER_COLOR
+        self._scene_border.setOpacity(IMAGE_BORDER_OPACITY)
+        self._scene_border.setVisible(True)
         self._scene_outline.dash_pattern = [1, 0]  # solid line
         self._generation_area_outline = Outline(self.scene(), self)
         self._generation_area_outline.animated = config.get(AppConfig.ANIMATE_OUTLINES)
 
         # "inpaint selected only" generation area outline:
         self._image_generation_area_outline = Outline(self.scene(), self)
-        self._image_generation_area_outline.setOpacity(0.9)
+        self._image_generation_area_outline.setOpacity(GENERATION_AREA_BORDER_OPACITY)
         self._image_generation_area_outline.animated = config.get(AppConfig.ANIMATE_OUTLINES)
         selection_layer = layer_stack.selection_layer
         selection_layer.content_changed.connect(self._mask_content_change_slot)
@@ -222,7 +228,6 @@ class ImageViewer(ImageGraphicsView):
         """Sync 'inpaint masked only' bounds selection mask layer changes."""
         selection_layer = self._layer_stack.selection_layer
         bounds = selection_layer.get_selection_gen_area()
-        print('gen sub-area: ', bounds)
         if bounds is not None:
             self._image_generation_area_outline.setVisible(selection_layer.visible)
             self._image_generation_area_outline.outlined_region = QRectF(bounds)
@@ -237,6 +242,8 @@ class ImageViewer(ImageGraphicsView):
         if new_size.width() <= 0 or new_size.height() <= 0:
             return
         self.content_size = new_size
+
+        self._scene_border.windowed_area = self._layer_stack.geometry
         self._update_drawn_borders()
         self.resizeEvent(None)
 

@@ -805,14 +805,6 @@
         "default": "Ctrl+V",
         "saved": true
     },
-    "generate_shortcut": {
-        "label": "Generate",
-        "category": "Keybindings",
-        "description": "Start AI image generation.",
-        "type": "string",
-        "default": "F4",
-        "saved": true
-    },
     "resize_canvas_shortcut": {
         "label": "Resize canvas",
         "category": "Keybindings",
@@ -829,12 +821,76 @@
         "default": "F3",
         "saved": true
     },
+    "image_to_layers_shortcut": {
+        "label": "Resize image to content",
+        "category": "Keybindings",
+        "description": "Resize the image to fit all layers",
+        "type": "string",
+        "default": "Ctrl+Alt+R",
+        "saved": true
+    },
     "update_metadata_shortcut": {
         "label": "Update metadata",
         "category": "Keybindings",
         "description": "Update image metadata that will be saved with the file.",
         "type": "string",
+        "default": "Ctrl+Alt+D",
+        "saved": true
+    },
+    "generate_shortcut": {
+        "label": "Generate",
+        "category": "Keybindings",
+        "description": "Start AI image generation.",
+        "type": "string",
+        "default": "F4",
+        "saved": true
+    },
+    "select_all_shortcut": {
+        "label": "Select All",
+        "category": "Keybindings",
+        "description": "Select the entire image",
+        "type": "string",
+        "default": "Ctrl+A",
+        "saved": true
+    },
+    "select_none_shortcut": {
+        "label": "Deselect All",
+        "category": "Keybindings",
+        "description": "Clear the selection",
+        "type": "string",
         "default": "Ctrl+D",
+        "saved": true
+    },
+    "invert_selection_shortcut": {
+        "label": "Invert selection",
+        "category": "Keybindings",
+        "description": "Swap selected and unselected areas",
+        "type": "string",
+        "default": "Ctrl+I",
+        "saved": true
+    },
+    "select_layer_content_shortcut": {
+        "label": "Select layer content",
+        "category": "Keybindings",
+        "description": "Select all non-transparent pixels in the active layer",
+        "type": "string",
+        "default": "Ctrl+Shift+A",
+        "saved": true
+    },
+    "grow_selection_shortcut": {
+        "label": "Expand selection",
+        "category": "Keybindings",
+        "description": "Expand the selection bounds",
+        "type": "string",
+        "default": "Ctrl+=",
+        "saved": true
+    },
+    "shrink_selection_shortcut": {
+        "label": "Shrink selection",
+        "category": "Keybindings",
+        "description": "Shrink the selection bounds",
+        "type": "string",
+        "default": "Ctrl+-",
         "saved": true
     },
     "new_layer_shortcut": {

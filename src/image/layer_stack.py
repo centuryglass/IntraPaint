@@ -449,7 +449,7 @@ class LayerStack(QObject):
             self._insert_layer_internal(img_layer, idx)
         commit_action(_remove, _undo_remove)
 
-    def offset_generation_area(self, offset: int) -> None:
+    def offset_active_selection(self, offset: int) -> None:
         """Picks a new active layer relative to the index of the previous active layer. Does nothing if no layer is
            inactive or the new index would be out of bounds."""
         if self.active_layer_index is None:
