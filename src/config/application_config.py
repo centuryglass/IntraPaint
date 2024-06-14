@@ -69,8 +69,9 @@ class AppConfig(Config):
         for key_str in key_binding_options:
             key_values = self.get(key_str).split(',')
             for key_value in key_values:
-                key_value = key_value.upper()
-                if key_value != '' and QKeySequence(key_value)[0] == Qt.Key_unknown:
+                if len(key_value) == 1:
+                    key_value = key_value.upper()
+                if key_value != '' and key_value not in valid_modifiers and QKeySequence(key_value)[0] == Qt.Key_unknown:
                     errors.append(f'"{key_str}" value "{key_value}" is not a recognized key')
                 elif any(mod_str in key_str for mod_str in speed_modifier_strings) and speed_modifier \
                         in valid_modifiers:

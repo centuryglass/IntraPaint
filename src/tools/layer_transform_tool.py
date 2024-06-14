@@ -7,7 +7,8 @@ from PyQt5.QtGui import QMouseEvent, QCursor, QIcon, QTransform, QVector3D, QPix
 from PyQt5.QtWidgets import QWidget, QApplication, QLabel, QGraphicsPixmapItem, QGraphicsScale, \
     QGraphicsRotation, QGraphicsItem, QSpinBox, QDoubleSpinBox, \
     QCheckBox, QGridLayout, QPushButton
-from imath import INT_MAX
+	
+from src.util.menu_action import INT_MAX
 
 from src.config.application_config import AppConfig
 from src.hotkey_filter import HotkeyFilter

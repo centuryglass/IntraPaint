@@ -1,7 +1,7 @@
 """Low-level wrapper for the libmypaint library."""
 import os
 from typing import Optional, TypeAlias
-from ctypes import CFUNCTYPE, POINTER, Structure, c_int, c_void_p, c_float, c_double, c_char_p, c_uint16, CDLL
+from ctypes import CFUNCTYPE, POINTER, Structure, c_int, c_void_p, c_float, c_double, c_char_p, c_uint16, CDLL, cdll
 from ctypes.util import find_library
 
 # constants and basic typedefs:
@@ -12,9 +12,9 @@ NUM_BBOXES_DEFAULT = 32  # Tiled surface default bounding box count.
 TILE_DIM = 64  # Tiled surface x/y resolution
 LIBRARY_NAME = 'mypaint'  # For the ctypes.util.find_library function
 if os.name == 'nt':
-    DEFAULT_LIBRARY_PATH = './libmypaint.dll'
+    DEFAULT_LIBRARY_PATH = './lib/libmypaint.dll'
 else:
-    DEFAULT_LIBRARY_PATH = './libmypaint.so'
+    DEFAULT_LIBRARY_PATH = './lib/libmypaint.so'
 
 # Rectangles:
 
@@ -138,7 +138,13 @@ def load_libmypaint(default_library_path: Optional[str]) -> CDLL:
     library_path = find_library(LIBRARY_NAME)
     if library_path is None:
         library_path = default_library_path
-    lib = CDLL(library_path)
+    if os.name == 'nt':
+        cdll.LoadLibrary('./lib/libiconv-2.dll')
+        cdll.LoadLibrary('./lib/libintl-8.dll')
+        cdll.LoadLibrary('./lib/libjson-c-2.dll')
+        lib = cdll.LoadLibrary('./lib/libmypaint-1-4-0.dll')
+    else:
+        lib = CDLL(library_path)
     # Brush functions:
     lib.mypaint_brush_new.restype = c_void_p
     lib.mypaint_brush_new.argtypes = []

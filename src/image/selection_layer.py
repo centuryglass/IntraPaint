@@ -6,7 +6,7 @@ from src.image.mypaint.numpy_image_utils import is_fully_transparent, image_data
 if version_info[1] >= 11:
     from typing import Self, Optional, List
 else:
-    from typing import Optional
+    from typing import Optional, List
     from typing_extensions import Self
 import logging
 from PyQt5.QtGui import QImage, QPolygonF, QPainter
