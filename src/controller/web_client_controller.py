@@ -11,7 +11,7 @@ from PIL import Image
 
 from src.controller.local_controller import GLID_CONFIG_CATEGORY
 from src.ui.window.main_window import MainWindow
-from src.ui.util.screen_size import get_screen_size
+from src.util.screen_size import get_screen_size
 from src.ui.modal.settings_modal import SettingsModal
 from src.controller.base_controller import BaseInpaintController
 from src.util.image_utils import load_image_from_base64, image_to_base64

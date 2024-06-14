@@ -7,7 +7,7 @@ from PyQt5.QtCore import QSize, Qt, QRect
 from PyQt5.QtGui import QResizeEvent
 from PyQt5.QtWidgets import QWidget, QGridLayout
 
-from src.ui.util.geometry_utils import get_scaled_placement
+from src.util.geometry_utils import get_scaled_placement
 
 DEFAULT_MAX = 999
 logger = logging.getLogger(__name__)

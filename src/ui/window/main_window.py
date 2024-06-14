@@ -2,35 +2,31 @@
 Base implementation of the primary image editing window. On its own, provides an appropriate interface for GLID-3-XL
 inpainting modes.  Other editing modes should provide subclasses with implementation-specific controls.
 """
-import math
-from typing import Callable, Optional, Any
+from typing import Optional, Any
 import logging
 
 from PIL import Image
 from PyQt5.QtCore import Qt, QRect, QSize
 from PyQt5.QtGui import QIcon, QMouseEvent, QResizeEvent, QHideEvent, QPixmap, QKeySequence
 from PyQt5.QtWidgets import QMainWindow, QGridLayout, QLabel, QWidget, QPushButton, QVBoxLayout, QHBoxLayout, \
-    QComboBox, QStackedWidget, QAction, QMenuBar, QBoxLayout, QApplication, QTabWidget, QSizePolicy
+    QComboBox, QStackedWidget, QBoxLayout, QApplication, QTabWidget, QSizePolicy
 
 from src.config.application_config import AppConfig
 from src.hotkey_filter import HotkeyFilter
 from src.image.layer_stack import LayerStack
 from src.ui.config_control_setup import connected_textedit, connected_spinbox, connected_checkbox
-from src.ui.modal.modal_utils import request_confirmation
-from src.ui.modal.settings_modal import SettingsModal
+from src.ui.panel.image_panel import ImagePanel
 from src.ui.panel.layer_panel import LayerPanel
 from src.ui.panel.tool_panel import ToolPanel
 from src.ui.generated_image_selector import GeneratedImageSelector
 from src.ui.widget.loading_widget import LoadingWidget
-from src.ui.image_viewer import ImageViewer
-from src.undo_stack import undo, redo
 from src.util.image_utils import qimage_to_pil_image
-from src.ui.util.screen_size import get_screen_size
+from src.util.screen_size import get_screen_size
 
 logger = logging.getLogger(__name__)
 
-MAIN_TAB_NAME = "Main"
-CONTROL_TAB_NAME = "Image Generation"
+MAIN_TAB_NAME = 'Main'
+CONTROL_TAB_NAME = 'Image Generation'
 CONTROL_PANEL_STRETCH = 5
 MAX_TABS = 3
 
@@ -50,7 +46,7 @@ class MainWindow(QMainWindow):
         config = AppConfig.instance()
         self.setWindowIcon(QIcon('resources/icon.png'))
         self.setSizePolicy(QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding))
-        self.setMinimumSize(QSize(640, 480))
+        #self.setMinimumSize(QSize(640, 480))
 
         # Initialize UI/editing data model:
         self._controller = controller
@@ -98,10 +94,11 @@ class MainWindow(QMainWindow):
         self._loading_widget.hide()
 
         # Image/Mask editing layout:
-        self._image_viewer = ImageViewer(self, layer_stack)
-        self._layout.addWidget(self._image_viewer)
+        self._image_panel = ImagePanel(layer_stack)
+        self._layout.addWidget(self._image_panel)
 
-        self._tool_panel = ToolPanel(layer_stack, self._image_viewer, config, controller.start_and_manage_inpainting)
+        self._tool_panel = ToolPanel(layer_stack, self._image_panel.image_viewer,
+                                     controller.start_and_manage_inpainting)
 
         # Build config + control layout (varying based on implementation):
         self._control_panel = self._build_control_panel(controller)
@@ -140,7 +137,7 @@ class MainWindow(QMainWindow):
                 else QHBoxLayout(self._reactive_widget)
             self._reactive_layout.setContentsMargins(0, 0, 0, 0)
             self._reactive_layout.setSpacing(0)
-            self._reactive_layout.addWidget(self._image_viewer, stretch=80)
+            self._reactive_layout.addWidget(self._image_panel, stretch=80)
             self._reactive_layout.addWidget(self._tool_panel, stretch=0)
             self._tool_panel.set_orientation(Qt.Orientation.Vertical if orientation == Qt.Orientation.Horizontal
                                              else Qt.Orientation.Horizontal)
@@ -185,7 +182,8 @@ class MainWindow(QMainWindow):
         # Show extra "generate" button only when control panel is tabbed:
         self._tool_panel.show_generate_button(self._control_panel.parent() != self._reactive_widget)
 
-    def _create_scale_mode_selector(self, parent: QWidget, config_key: str) -> QComboBox:
+    @staticmethod
+    def _create_scale_mode_selector(parent: QWidget, config_key: str) -> QComboBox:
         """Returns a combo box that selects between image scaling algorithms."""
         scale_mode_list = QComboBox(parent)
         filter_types = [

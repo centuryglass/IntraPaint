@@ -120,7 +120,7 @@ class ControlnetPanel(CollapsibleBox):
 
         # Control image row:
         use_generation_area = bool(CONTROL_CONFIG_IMAGE_KEY in initial_control_state
-                             and initial_control_state[CONTROL_CONFIG_IMAGE_KEY] == REUSE_IMAGE_VALUE)
+                                   and initial_control_state[CONTROL_CONFIG_IMAGE_KEY] == REUSE_IMAGE_VALUE)
         image_row = QHBoxLayout()
         layout.addLayout(image_row)
 

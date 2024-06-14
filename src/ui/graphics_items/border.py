@@ -29,7 +29,8 @@ class Border(QGraphicsItem):
               unused_option: Optional[QStyleOptionGraphicsItem],
               unused_widget: Optional[QWidget] = None) -> None:
         """Draws the outline within the scene."""
-        bounds = self._view.mapToScene(QRect(QPoint(), self._view.size())).boundingRect().adjusted(-9999, -9999, 9999, 9999)
+        bounds = self._view.mapToScene(QRect(QPoint(), self._view.size())).boundingRect().adjusted(-9999, -9999, 9999,
+                                                                                                   9999)
         if self._rect.isEmpty():
             painter.fillRect(bounds, self._color)
             return
@@ -56,7 +57,6 @@ class Border(QGraphicsItem):
         if self.isVisible():
             self.update()
 
-
     @property
     def windowed_area(self) -> QRectF:
         """Returns the outlined area in the scene."""
@@ -77,4 +77,3 @@ class Border(QGraphicsItem):
         path = QPainterPath()
         path.addRect(QRectF(self.boundingRect()))
         return path
-

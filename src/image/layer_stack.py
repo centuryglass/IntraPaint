@@ -71,6 +71,7 @@ class LayerStack(QObject):
             self._image_cache_full.invalidate()
             self._pixmap_cache_full.invalidate()
             self.visible_content_changed.emit()
+
         self._selection_layer.content_changed.connect(handle_selection_layer_visibility_change)
 
     # PROPERTY DEFINITIONS:
@@ -447,6 +448,7 @@ class LayerStack(QObject):
 
         def _undo_remove(img_layer=removed_layer, idx=removed_layer_index):
             self._insert_layer_internal(img_layer, idx)
+
         commit_action(_remove, _undo_remove)
 
     def offset_active_selection(self, offset: int) -> None:
@@ -539,9 +541,10 @@ class LayerStack(QObject):
             base_layer.qimage = base_layer_image
             base_layer.set_position(base_pos, False)
             self._insert_layer_internal(top_layer, True)
+
         commit_action(_do_merge, _undo_merge)
 
-    def layer_to_image_size(self,  layer: Optional[ImageLayer | int] = None) -> None:
+    def layer_to_image_size(self, layer: Optional[ImageLayer | int] = None) -> None:
         """Resizes a layer to match the image size. Out-of-bounds content is cropped, new content is transparent.
 
         Parameters
@@ -576,6 +579,7 @@ class LayerStack(QObject):
             layer.set_position(layer_position, False)
             if layer.visible and not image_bounds.contains(layer_bounds):
                 self.visible_content_changed.emit()
+
         commit_action(_resize, _undo_resize)
 
     def copy_selected(self, layer: Optional[ImageLayer | int] = None) -> Optional[QImage]:
@@ -622,6 +626,7 @@ class LayerStack(QObject):
                 painter = QPainter(layer_image)
                 painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_Source)
                 painter.drawImage(QRect(0, 0, layer_image.width(), layer_image.height()), source_content)
+
         commit_action(_make_cut, _undo_cut)
 
     def paste(self) -> None:
@@ -712,10 +717,11 @@ class LayerStack(QObject):
             self.selection_layer.qimage = old_mask_image
             for old_layer in old_layers:
                 self._insert_layer_internal(old_layer, self.count)
+
         commit_action(_load, _undo_load)
         metadata = data['metadata']
         return metadata
-        
+
     def set_image(self, image_data: Image.Image | QImage | QPixmap):
         """
         Loads a new image to be edited. This clears all layers, updates the image size, and inserts the image as a new
@@ -746,6 +752,7 @@ class LayerStack(QObject):
             for layer in old_layers:
                 self._insert_layer_internal(layer, self.count)
             self.selection_layer.qimage = selection_image
+
         commit_action(_load, _undo_load)
 
     # INTERNAL:
@@ -770,7 +777,7 @@ class LayerStack(QObject):
         self._pixmap_cache_full.invalidate()
 
     def _layer_values_from_layer_or_id_or_active(self, layer: Optional[ImageLayer | int]) -> Tuple[Optional[ImageLayer],
-                                                                                                   Optional[int]]:
+    Optional[int]]:
         """Returns layer, layer_id, layer_index, given a layer, id, or None. If None, use the active layer."""
         if layer is None:
             if self._active_layer_id is None:
@@ -791,7 +798,6 @@ class LayerStack(QObject):
             else:
                 self._invalidate_all_cached()
             self.visible_content_changed.emit()
-
 
     def _layer_visibility_change_slot(self, layer: ImageLayer, _) -> None:
         if layer in self._layers:

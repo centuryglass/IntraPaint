@@ -7,7 +7,7 @@ from PyQt5.QtGui import QMouseEvent, QCursor, QIcon, QTransform, QVector3D, QPix
 from PyQt5.QtWidgets import QWidget, QApplication, QLabel, QGraphicsPixmapItem, QGraphicsScale, \
     QGraphicsRotation, QGraphicsItem, QSpinBox, QDoubleSpinBox, \
     QCheckBox, QGridLayout, QPushButton
-	
+
 from src.util.menu_action import INT_MAX
 
 from src.config.application_config import AppConfig
@@ -86,6 +86,7 @@ class LayerTransformTool(BaseTool):
             if self._aspect_ratio_checkbox.isChecked() and self._active_layer_id is not None:
                 max_scale = max(self._scale_x, self._scale_y)
                 self.scale(max_scale, max_scale)
+
         self._aspect_ratio_checkbox.clicked.connect(_restore_aspect_ratio)
 
         # Register movement key overrides, tied to control panel visibility:

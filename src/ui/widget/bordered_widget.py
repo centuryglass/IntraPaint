@@ -7,7 +7,7 @@ from PyQt5.QtCore import QMargins
 from PyQt5.QtGui import QColor, QPalette
 from PyQt5.QtWidgets import QFrame, QWidget
 
-from src.ui.util.contrast_color import contrast_color
+from src.util.contrast_color import contrast_color
 
 DEFAULT_MARGIN = 2
 DEFAULT_LINE_MARGIN = 1
@@ -58,12 +58,12 @@ class BorderedWidget(QFrame):
 
     @property
     def line_margin(self) -> int:
-        """Returns the margin around the border line (equal on all sides)."""
+        """Returns the margin around the border (equal on all sides)."""
         return self._line_margin
 
     @line_margin.setter
     def line_margin(self, new_margin: int) -> None:
-        """Updates the margin around the border line (equal on all sides)."""
+        """Updates the margin around the border (equal on all sides)."""
         self._line_margin = new_margin
         self.update()
 

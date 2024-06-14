@@ -86,12 +86,12 @@ for class_name, data in class_items.items():
 
     if (idx := class_text.find(DYNAMIC_PROP_LINE)) != -1:
         class_text = class_text[:idx]
-        insert_index = idx
+        insert_index = idx + data['start']
 
     # Some classes don't load dynamic properties until an instance exists, so try creating object instances:
     try:
         instance = class_type()
-    except Exception as err:
+    except Exception:
         print(f'{class_name} instantiation failed, this may or may not harm {__file__} functionality')
     for attr_name in dir(class_type):
         if attr_name.startswith('_') or f' {attr_name}' in class_text:

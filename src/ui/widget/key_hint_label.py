@@ -6,7 +6,7 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QKeySequence, QResizeEvent
 from PyQt5.QtWidgets import QLabel, QWidget
 
-from src.ui.util.text import max_font_size
+from src.util.font_size import max_font_size
 from src.util.key_code_utils import get_key_display_string
 
 

@@ -17,8 +17,8 @@ from src.tools.generation_area_tool import GenerationAreaTool
 from src.tools.tool_event_handler import ToolEventHandler
 from src.ui.image_viewer import ImageViewer
 from src.ui.panel.layer_panel import LayerPanel
-from src.ui.util.geometry_utils import get_scaled_placement
-from src.ui.util.screen_size import get_screen_size
+from src.util.geometry_utils import get_scaled_placement
+from src.util.screen_size import get_screen_size
 from src.ui.widget.bordered_widget import BorderedWidget
 from src.ui.widget.collapsible_box import CollapsibleBox
 from src.ui.widget.grid_container import GridContainer
@@ -40,8 +40,7 @@ LAYER_PANEL_STRETCH = 3
 class ToolPanel(QWidget):
     """Selects between image editing tools, and controls their settings."""
 
-    def __init__(self, layer_stack: LayerStack, image_viewer: ImageViewer, config: AppConfig,
-                 generate_fn: Callable[[], None]) -> None:
+    def __init__(self, layer_stack: LayerStack, image_viewer: ImageViewer, generate_fn: Callable[[], None]) -> None:
         """Initializes instances of all Tool classes, connects them to image data, and sets up the tool interface.
 
         Parameters:
@@ -50,8 +49,6 @@ class ToolPanel(QWidget):
             Used by tools that need to view or modify the edited image.
         image_viewer: ImageViewer
             Used by tools that interact with the way image data is displayed.
-        config: AppConfig
-            Used by tools to save and load configurable properties.
         generate_fn: Callable
             Connected to the "Generate" button, if one is enabled.
         """
@@ -127,7 +124,7 @@ class ToolPanel(QWidget):
         transform_tool = LayerTransformTool(layer_stack, image_viewer)
         add_tool(transform_tool)
         self._event_handler.register_tool_delegate(brush_tool, eyedropper_tool, Qt.KeyboardModifier.ControlModifier)
-        self._switch_active_tool(config.get(AppConfig.LAST_ACTIVE_TOOL))
+        self._switch_active_tool(AppConfig.instance().get(AppConfig.LAST_ACTIVE_TOOL))
         self.resizeEvent(None)
         self.set_orientation(Qt.Orientation.Vertical)
 

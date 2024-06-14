@@ -14,7 +14,7 @@ from src.image.layer_stack import LayerStack
 from src.ui.graphics_items.border import Border
 from src.ui.graphics_items.outline import Outline
 from src.ui.graphics_items.polygon_outline import PolygonOutline
-from src.ui.util.tile_pattern_fill import get_transparency_tile_pixmap
+from src.util.image_utils import get_transparency_tile_pixmap
 from src.ui.widget.image_graphics_view import ImageGraphicsView
 from src.util.validation import assert_type
 

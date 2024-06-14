@@ -25,31 +25,25 @@ from src.ui.modal.resize_canvas_modal import ResizeCanvasModal
 from src.ui.modal.image_scale_modal import ImageScaleModal
 from src.ui.modal.modal_utils import show_error_dialog, request_confirmation, open_image_file
 from src.ui.modal.settings_modal import SettingsModal
-from src.ui.util.screen_size import get_screen_size
+from src.util.screen_size import get_screen_size
 from src.util.image_utils import pil_image_to_qimage, qimage_to_pil_image
 
 from src.util.validation import assert_type
 from src.undo_stack import commit_action, undo, redo
 
-# Optional spacenav support and extended theming::
+# Optional spacenav support and extended theming:
 qdarktheme = optional_import('qdarktheme')
 qt_material = optional_import('qt_material')
 SpacenavManager = optional_import('spacenav_manager', 'src.controller', 'SpacenavManager')
 
-IGNORED_APPCONFIG_CATEGORIES = ('Stable-Diffusion', 'GLID-3-XL', 'Cache')
-
-SETTINGS_ERROR_MESSAGE = "Settings not supported in this mode."
-
-SETTINGS_ERROR_TITLE = "Failed to open settings"
-
 logger = logging.getLogger(__name__)
 
-MENU_FILE = "File"
-MENU_EDIT = "Edit"
-MENU_IMAGE = "Image"
-MENU_SELECTION = "Selection"
-MENU_LAYERS = "Layers"
-MENU_TOOLS = "Tools"
+MENU_FILE = 'File'
+MENU_EDIT = 'Edit'
+MENU_IMAGE = 'Image'
+MENU_SELECTION = 'Selection'
+MENU_LAYERS = 'Layers'
+MENU_TOOLS = 'Tools'
 
 CONFIRM_QUIT_TITLE = 'Quit now?'
 CONFIRM_QUIT_MESSAGE = 'All unsaved changes will be lost.'
@@ -73,9 +67,12 @@ GENERATE_ERROR_TITLE_NO_IMAGE = 'Save failed'
 GENERATE_ERROR_MESSAGE_NO_IMAGE = 'Open or create an image first before trying to start image generation.'
 GENERATE_ERROR_TITLE_EXISTING_OP = 'Failed'
 GENERATE_ERROR_MESSAGE_EXISTING_OP = 'Existing image generation operation not yet finished, wait a little longer.'
+SETTINGS_ERROR_MESSAGE = 'Settings not supported in this mode.'
+SETTINGS_ERROR_TITLE = 'Failed to open settings'
 
 METADATA_PARAMETER_KEY = 'parameters'
 INPAINT_MODE = 'Inpaint'
+IGNORED_APPCONFIG_CATEGORIES = ('Stable-Diffusion', 'GLID-3-XL', 'Cache')
 
 
 class BaseInpaintController(MenuBuilder):
@@ -192,7 +189,7 @@ class BaseInpaintController(MenuBuilder):
         self.fix_styles()
         if self._init_image is not None:
             logger.info('loading init image:')
-            self.load_image(self._init_image)
+            self.load_image(file_path=self._init_image)
         self._window.show()
 
     def fix_styles(self) -> None:
@@ -201,6 +198,7 @@ class BaseInpaintController(MenuBuilder):
 
         def _apply_style(new_style: str) -> None:
             self._app.setStyle(new_style)
+
         config.connect(self, AppConfig.STYLES, _apply_style)
         _apply_style(config.get(AppConfig.STYLES))
 
@@ -217,6 +215,7 @@ class BaseInpaintController(MenuBuilder):
                 qt_material.apply_stylesheet(self._app, theme=xml_file)
             elif theme != 'None':
                 logger.error(f'Failed to load theme {theme}')
+
         config.connect(self, AppConfig.THEME, _apply_theme)
         _apply_theme(config.get(AppConfig.THEME))
 
@@ -224,9 +223,9 @@ class BaseInpaintController(MenuBuilder):
             font = self._app.font()
             font.setPointSize(font_pt)
             self._app.setFont(font)
+
         config.connect(self, AppConfig.FONT_POINT_SIZE, _apply_font)
         _apply_font(config.get(AppConfig.FONT_POINT_SIZE))
-
 
     def start_app(self) -> None:
         """Start the application after performing any additional required setup steps."""

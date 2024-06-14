@@ -10,11 +10,10 @@ from PyQt5.QtWidgets import QWidget, QLabel, QVBoxLayout, QHBoxLayout, QScrollAr
 
 from src.image.image_layer import ImageLayer
 from src.image.layer_stack import LayerStack
-from src.ui.util.geometry_utils import get_scaled_placement, get_rect_transformation
-from src.ui.util.screen_size import get_screen_size
-from src.ui.util.tile_pattern_fill import get_transparency_tile_pixmap
+from src.util.geometry_utils import get_scaled_placement, get_rect_transformation
+from src.util.screen_size import get_screen_size
 from src.ui.widget.bordered_widget import BorderedWidget
-from src.util.image_utils import get_character_icon
+from src.util.image_utils import get_character_icon, get_transparency_tile_pixmap
 
 LIST_SPACING = 4
 MIN_VISIBLE_LAYERS = 3

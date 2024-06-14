@@ -5,12 +5,9 @@
 
 # intermittent, can't reproduce reliably:
 - Keep size on brush change not working (possibly a pressure issue?)
-- incorrect zLevel issues near bottom layer
 
 1280x800 display issues:
 - Text cut off in some tool panels
-- key hints are unreadable
-- Tool icons weirdly tiny
 - Brush icons stacked in larger lists
 - default icon zoom cuts off labels
 

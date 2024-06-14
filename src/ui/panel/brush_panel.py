@@ -12,8 +12,8 @@ from PyQt5.QtWidgets import QWidget, QTabWidget, QMenu
 
 from src.config.application_config import AppConfig
 from src.image.mypaint.mp_brush import MPBrush
-from src.ui.util.geometry_utils import get_scaled_placement
-from src.ui.util.screen_size import get_screen_size
+from src.util.geometry_utils import get_scaled_placement
+from src.util.screen_size import get_screen_size
 from src.ui.widget.grid_container import GridContainer
 
 MIN_COLUMNS = 2

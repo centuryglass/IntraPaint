@@ -3,7 +3,6 @@ Provides image editing functionality through the A1111/stable-diffusion-webui RE
 """
 import sys
 import threading
-import re
 import os
 import datetime
 from argparse import Namespace
@@ -16,13 +15,12 @@ from PyQt5.QtCore import QObject, pyqtSignal, QSize
 from PyQt5.QtWidgets import QInputDialog
 
 from src.config.a1111_config import A1111Config
-from src.config.config_entry import RangeKey
 from src.image.layer_stack import LayerStack
 from src.config.application_config import AppConfig
 from src.ui.modal.settings_modal import SettingsModal
 from src.ui.window.stable_diffusion_main_window import StableDiffusionMainWindow
 from src.ui.modal.modal_utils import show_error_dialog
-from src.ui.util.screen_size import get_screen_size
+from src.util.screen_size import get_screen_size
 from src.controller.base_controller import BaseInpaintController, MENU_TOOLS
 from src.api.a1111_webservice import A1111Webservice
 from src.util.menu_action import menu_action
@@ -291,7 +289,7 @@ class StableDiffusionController(BaseInpaintController):
         self.fix_styles()
         if self._init_image is not None:
             logger.info('loading init image:')
-            self.load_image(self._init_image)
+            self.load_image(file_path=self._init_image)
         self._window.show()
 
     def _scale(self, new_size: QSize) -> None:

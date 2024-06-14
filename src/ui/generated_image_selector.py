@@ -16,8 +16,8 @@ from src.config.application_config import AppConfig
 from src.image.layer_stack import LayerStack
 from src.ui.graphics_items.loading_spinner import LoadingSpinner
 from src.ui.graphics_items.outline import Outline
-from src.ui.util.geometry_utils import get_scaled_placement
-from src.ui.util.text import max_font_size
+from src.util.geometry_utils import get_scaled_placement
+from src.util.font_size import max_font_size
 from src.ui.widget.image_graphics_view import ImageGraphicsView
 from src.util.image_utils import get_standard_qt_icon
 from src.util.key_code_utils import get_key_display_string

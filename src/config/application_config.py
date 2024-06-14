@@ -7,24 +7,18 @@ from PyQt5.QtGui import QKeySequence
 from PyQt5.QtWidgets import QStyleFactory, QMessageBox, QStyle, QApplication
 
 from src.util.image_utils import get_standard_qt_icon
-
-KEY_CONFIG_ERROR_TITLE = 'Warning'
-
-KEY_CONFIG_ERROR_MESSAGE = 'Errors found in configurable key bindings:\n'
+from src.util.optional_import import optional_import
+from src.config.config import Config
 
 # Optional theme modules:
-try:
-    import qdarktheme
-except ImportError:
-    qdarktheme = None
-try:
-    import qt_material
-except ImportError:
-    qt_material = None
-from src.config.config import Config
+qdarktheme = optional_import('qdarktheme')
+qt_material = optional_import('qt_material')
 
 DEFAULT_CONFIG_PATH = 'config.json'
 CONFIG_DEFINITIONS = 'resources/application_config_definitions.json'
+
+KEY_CONFIG_ERROR_TITLE = 'Warning'
+KEY_CONFIG_ERROR_MESSAGE = 'Errors found in configurable key bindings:\n'
 
 # System-based theme/style init constants
 DEFAULT_THEME_OPTIONS = ['None']

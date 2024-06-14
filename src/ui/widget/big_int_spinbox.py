@@ -25,6 +25,7 @@ class BigIntSpinbox(QAbstractSpinBox):
 
         self._single_step = 1
         self._line_edit = QLineEdit(self)
+        self._line_edit.setText('0')
         self._minimum = BigIntSpinbox.MINIMUM
         self._maximum = BigIntSpinbox.MAXIMUM
 

@@ -25,7 +25,7 @@ _access_lock = Lock()
 def commit_action(action: Callable[[], None], undo_action: Callable[[], None],
                   action_type: Optional[str] = None,
                   action_data: Optional[Dict[str, Any]] = None,
-                  ignore_if_locked = False) -> bool:
+                  ignore_if_locked=False) -> bool:
     """Performs an action, then commits it to the undo stack.
 
     The undo stack is lock-protected.  Make sure that the function parameters provided don't also call commit_action.

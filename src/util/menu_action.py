@@ -1,6 +1,6 @@
 """Defines the @menu_action decorator and the MenuBuilder class for more convenient PyQt5 menu initialization."""
 import functools
-from typing import Callable, Any, Optional
+from typing import Callable, Any, Optional, Dict
 
 from PyQt5.QtWidgets import QMainWindow, QAction
 
@@ -11,7 +11,8 @@ INT_MAX = 2147483647
 
 def menu_action(menu_name: str, config_key: str, priority: int = INT_MAX,
                 ignore_when_busy=False,
-                condition_check: Optional[Callable[[Any], bool]] = None) -> Callable[[Any], None]:
+                condition_check: Optional[Callable[[Any], bool]] = None) -> Callable[
+    [Any], Callable[[{'is_busy'}, dict[str, Any]], Any | None]]:
     """Decorator used to associate a class method with a menu item and optionally disable it when busy.
 
     Parameters
@@ -21,7 +22,7 @@ def menu_action(menu_name: str, config_key: str, priority: int = INT_MAX,
     config_key: str
         AppConfig key for the menu item's label, tooltip, and shortcut.
     priority: int, default=MAX_INT
-        Order to place this item in its menu. Items with lowest values are added first.
+        Order to place this item in its menu. Items with the lowest values are added first.
     ignore_when_busy: bool
         If true, the method will be disabled when the application is busy.
     condition_check: Optional function returning bool
@@ -34,6 +35,7 @@ def menu_action(menu_name: str, config_key: str, priority: int = INT_MAX,
         def _wrapper(self, **kwargs):
             if not ignore_when_busy or not self.is_busy():
                 return func(self, **kwargs)
+            return None
 
         _wrapper.menu_name = menu_name
         _wrapper.config_key = config_key
@@ -73,7 +75,7 @@ class MenuBuilder:
                 title = config.get_label(menu_action_method.config_key)
                 tooltip = config.get_tooltip(menu_action_method.config_key)
                 shortcut = config.get(menu_action_method.config_key)
-            except RuntimeError as err:
+            except RuntimeError:
                 print(f'Warning: could not load menu option {menu_action_method.config_key}, skipping...')
                 continue
             action = QAction(title, window)
@@ -82,4 +84,5 @@ class MenuBuilder:
             if len(shortcut) > 0:
                 action.setShortcut(shortcut)
             action.triggered.connect(menu_action_method)
+            config.connect(self, menu_action_method.config_key, lambda key_str: action.setShortcut(key_str))
             menu.addAction(action)

@@ -5,8 +5,8 @@ from typing import Optional
 from PyQt5.QtWidgets import QWidget
 from PyQt5.QtGui import QPainter, QPen, QColor, QResizeEvent, QMouseEvent, QPaintEvent
 from PyQt5.QtCore import Qt, QPoint, QSize, QRect, pyqtSignal
-from src.ui.util.geometry_utils import get_scaled_placement
-from src.ui.util.contrast_color import contrast_color
+from src.util.geometry_utils import get_scaled_placement
+from src.util.contrast_color import contrast_color
 
 
 class DraggableArrow(QWidget):

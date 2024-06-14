@@ -6,7 +6,7 @@ from PyQt5.QtWidgets import QGraphicsObject, QStyleOptionGraphicsItem, QWidget
 from PyQt5.QtGui import QPainter, QPen, QBrush, QColor, QPainterPath
 from PyQt5.QtCore import Qt, QRect, QRectF, QPointF, pyqtProperty, QPropertyAnimation
 
-from src.ui.util.text import max_font_size
+from src.util.font_size import max_font_size
 
 ANIM_DURATION_MS = 2000
 

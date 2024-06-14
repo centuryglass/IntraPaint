@@ -8,6 +8,7 @@ from src.config.config import Config
 CONFIG_DEFINITIONS = 'resources/a1111_setting_definitions.json'
 logger = logging.getLogger(__name__)
 
+
 class A1111Config(Config):
     _instance: Optional['A1111Config'] = None
 
@@ -58,3 +59,13 @@ class A1111Config(Config):
             for key in self.get_category_keys(category):
                 settings[key] = self.get(key)
         webservice.set_config(settings)
+
+    # DYNAMIC PROPERTIES:
+    # Generate with `python /home/anthony/Workspace/ML/IntraPaint/scripts/dynamic_import_typing.py src/config/a1111_config.py`
+
+    CLIP_STOP_AT_LAST_LAYERS: str
+    SD_CHECKPOINTS_KEEP_IN_CPU: str
+    SD_CHECKPOINTS_LIMIT: str
+    SD_MODEL_CHECKPOINT: str
+    SD_VAE: str
+    SD_VAE_CHECKPOINT_CACHE: str

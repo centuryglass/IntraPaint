@@ -9,8 +9,8 @@ from PyQt5.QtWidgets import QWidget, QGraphicsView, QGraphicsScene, QGraphicsPix
 
 from src.config.application_config import AppConfig
 from src.hotkey_filter import HotkeyFilter
-from src.ui.util.contrast_color import contrast_color
-from src.ui.util.geometry_utils import get_scaled_placement
+from src.util.contrast_color import contrast_color
+from src.util.geometry_utils import get_scaled_placement
 from src.util.validation import assert_type
 
 CURSOR_ITEM_Z_LEVEL = 9999

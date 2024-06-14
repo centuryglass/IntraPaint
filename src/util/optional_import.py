@@ -2,7 +2,8 @@
 import importlib
 from typing import Any, Optional
 
-def optional_import(module_name: str, package_name: Optional[str] = None,  attr_name: Optional[str] = None) -> Any:
+
+def optional_import(module_name: str, package_name: Optional[str] = None, attr_name: Optional[str] = None) -> Any:
     """Attempts to load an optional module, returning None if the module is not found.
 
     Parameters
@@ -21,5 +22,6 @@ def optional_import(module_name: str, package_name: Optional[str] = None,  attr_
         if attr_name is None:
             return module
         return getattr(module, attr_name)
-    except ImportError:
+    except ImportError as err:
+        print(f'Failed to load optional import from {module_name}: {err}')
         return None

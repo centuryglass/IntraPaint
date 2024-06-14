@@ -94,7 +94,6 @@ class SettingsModal(QDialog):
                     print(f"skipping key {key} with unsupported type={type(value)}, value={value}")
                     continue
                 self.set_tooltip(key, tooltip)
-        return True
 
     def show_modal(self):
         """Shows the settings modal."""

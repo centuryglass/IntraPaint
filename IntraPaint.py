@@ -11,35 +11,23 @@ import atexit
 from PyQt5.QtWidgets import QApplication
 
 from src.ui.modal.modal_utils import show_error_dialog
-
-logging.basicConfig(filename='intrapaint.log', format='%(asctime)s : %(levelname)s : %(name)s: %(message)s',
-                    level=logging.INFO)
+from src.util.optional_import import optional_import
 from src.controller.mock_controller import MockController
-
-try:
-    from src.controller.stable_diffusion_controller import StableDiffusionController
-except ImportError as stable_import_error:
-    logging.error(f'Stable-diffusion mode not available: {stable_import_error}')
-    StableDiffusionController = None
-try:
-    from src.controller.web_client_controller import WebClientController
-except ImportError as web_import_error:
-    logging.error(f'Network GLID-3-XL mode not available: {web_import_error}')
-    WebClientController = None
-try:
-    from src.controller.local_controller import LocalDeviceController
-    import torch
-    from src.glid_3_xl.ml_utils import get_device
-except ImportError as local_err:
-    logging.error(f'Local GLID-3-XL mode not available: {local_err}')
-    LocalDeviceController = None
-    torch = None
 from src.util.arg_parser import build_arg_parser
+
+StableDiffusionController = optional_import('src.controller.stable_diffusion_controller',
+                                            attr_name='StableDiffusionController')
+torch = optional_import('torch')
+get_device = optional_import('src.glid_3_xl.ml_utils','get_device')
+WebClientController = optional_import('src.controller.web_client_controller', attr_name='WebClientController')
+LocalDeviceController = optional_import('src.controller.local_controller', attr_name='LocalDeviceController')
 
 DEFAULT_SD_URL = 'http://localhost:7860'
 DEFAULT_GLID_URL = 'http://localhost:5555'
 DEFAULT_GLID_MODEL = 'models/inpaint.pt'
 MIN_GLID_VRAM = 8000000000  # This is just a rough estimate.
+logging.basicConfig(filename='intrapaint.log', format='%(asctime)s : %(levelname)s : %(name)s: %(message)s',
+                    level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
@@ -125,5 +113,7 @@ if __name__ == '__main__':
         parse_args_and_start()
     except Exception as err:
         logger.exception('main crashed, error: %s', err)
+        if QApplication.instance() is None:
+            app = QApplication(sys.argv)
         show_error_dialog(None, title="IntraPaint has crashed.", error=err)
         raise err
