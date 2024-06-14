@@ -1,8 +1,8 @@
 """Low-level wrapper for the libmypaint library."""
 import os
-from typing import Optional, TypeAlias
 from ctypes import CFUNCTYPE, POINTER, Structure, c_int, c_void_p, c_float, c_double, c_char_p, c_uint16, CDLL, cdll
 from ctypes.util import find_library
+from typing import Optional, TypeAlias
 
 # constants and basic typedefs:
 c_float_p = POINTER(c_float)
@@ -15,6 +15,7 @@ if os.name == 'nt':
     DEFAULT_LIBRARY_PATH = './lib/libmypaint.dll'
 else:
     DEFAULT_LIBRARY_PATH = './lib/libmypaint.so'
+
 
 # Rectangles:
 
