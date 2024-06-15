@@ -43,7 +43,7 @@ class MainWindow(QMainWindow):
             Object managing application behavior.
         """
         super().__init__()
-        self.setWindowIcon(QIcon('resources/icon.png'))
+        self.setWindowIcon(QIcon('resources/icons/app_icon.png'))
         self.setSizePolicy(QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding))
 
         # Initialize UI/editing data model:
@@ -95,7 +95,7 @@ class MainWindow(QMainWindow):
         self._image_panel = ImagePanel(layer_stack)
         self._layout.addWidget(self._image_panel)
 
-        self._tool_panel = ToolPanel(layer_stack, self._image_panel.image_viewer,
+        self._tool_panel = ToolPanel(layer_stack, self._image_panel,
                                      controller.start_and_manage_inpainting)
 
         # Build config + control layout (varying based on implementation):

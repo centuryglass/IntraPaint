@@ -12,6 +12,8 @@ from PyQt5.QtCore import QObject, pyqtSignal, QPoint, QEvent
 from PyQt5.QtGui import QCursor, QPixmap, QMouseEvent, QTabletEvent, QWheelEvent, QIcon, QKeySequence
 from PyQt5.QtWidgets import QWidget
 
+DEFAULT_INPUT_HINT = "Ctrl+LMB/MMB and drag:pan view - Scroll wheel:zoom"
+
 
 # noinspection PyMethodMayBeStatic
 class BaseTool(QObject):
@@ -109,6 +111,10 @@ class BaseTool(QObject):
     def get_tooltip_text(self) -> str:
         """Returns tooltip text used to describe this tool."""
         raise NotImplementedError('BaseTool.get_tooltip_text needs to be implemented to return a string.')
+
+    def get_input_hint(self) -> str:
+        """Return text describing different input functionality."""
+        return DEFAULT_INPUT_HINT
 
     @property
     def label(self) -> str:

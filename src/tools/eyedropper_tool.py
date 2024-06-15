@@ -17,6 +17,7 @@ CURSOR_SIZE = 50
 
 EYEDROPPER_LABEL = 'Color Picker'
 EYEDROPPER_TOOLTIP = "Select a brush color"
+EYEDROPPER_CONTROL_HINT = "LMB:pick color -"
 
 
 class EyedropperTool(BaseTool):
@@ -45,6 +46,10 @@ class EyedropperTool(BaseTool):
     def get_tooltip_text(self) -> str:
         """Returns tooltip text used to describe this tool."""
         return EYEDROPPER_TOOLTIP
+
+    def get_input_hint(self) -> str:
+        """Return text describing different input functionality."""
+        return f'{EYEDROPPER_CONTROL_HINT} {super().get_input_hint()}'
 
     def get_control_panel(self) -> Optional[QWidget]:
         """Returns a panel providing controls for customizing tool behavior, or None if no such panel is needed."""

@@ -16,9 +16,9 @@ from src.ui.image_viewer import ImageViewer
 RESOURCES_GENERATION_AREA_ICON = 'resources/icons/gen_area_icon.svg'
 GENERATION_AREA_LABEL = 'Select Image Generation Area'
 GENERATION_AREA_TOOLTIP = 'Select an image region for AI image generation'
-SELECT_LAYER_BUTTON_TEXT = "Full image as generation area"
-SELECT_LAYER_BUTTON_TOOLTIP = "Send the entire image during image generation.."
-
+SELECT_LAYER_BUTTON_TEXT = 'Full image as generation area'
+SELECT_LAYER_BUTTON_TOOLTIP = 'Send the entire image during image generation.'
+GEN_AREA_CONTROL_HINT = 'LMB:move area - RMB:resize area -'
 
 class GenerationAreaTool(BaseTool):
     """An image editing tool that moves the selected editing region."""
@@ -48,6 +48,10 @@ class GenerationAreaTool(BaseTool):
     def get_tooltip_text(self) -> str:
         """Returns tooltip text used to describe this tool."""
         return GENERATION_AREA_TOOLTIP
+
+    def get_input_hint(self) -> str:
+        """Return text describing different input functionality."""
+        return f'{GEN_AREA_CONTROL_HINT} {super().get_input_hint()}'
 
     def get_control_panel(self) -> Optional[QWidget]:
         """Returns a panel providing controls for customizing tool behavior, or None if no such panel is needed."""

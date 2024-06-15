@@ -29,6 +29,7 @@ TRANSFORM_TOOLTIP = 'Move, scale, or rotate the active layer.'
 RESOURCES_TRANSFORM_TOOL_ICON = 'resources/icons/layer_transform_icon.svg'
 ASPECT_RATIO_CHECK_LABEL = 'Preserve aspect ratio:'
 RESET_BUTTON_TEXT = 'Reset'
+TRANSFORM_CONTROL_HINT = 'LMB+drag:move layer -'
 
 SCALE_STEP = 0.05
 FLOAT_MAX = 99999.0
@@ -126,6 +127,10 @@ class LayerTransformTool(BaseTool):
     def get_tooltip_text(self) -> str:
         """Returns tooltip text used to describe this tool."""
         return TRANSFORM_TOOLTIP
+
+    def get_input_hint(self) -> str:
+        """Return text describing different input functionality."""
+        return f'{TRANSFORM_CONTROL_HINT} {super().get_input_hint()}'
 
     def get_control_panel(self) -> Optional[QWidget]:
         """Returns a panel providing controls for customizing tool behavior, or None if no such panel is needed."""

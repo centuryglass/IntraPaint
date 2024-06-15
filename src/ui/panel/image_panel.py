@@ -1,14 +1,20 @@
 """Displays the image panel with zoom controls and input hints."""
+from typing import Optional
+
 from PyQt5.QtCore import Qt
+from PyQt5.QtGui import QResizeEvent
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLabel, QDoubleSpinBox, QSlider, QPushButton
 from src.image.layer_stack import LayerStack
 from src.ui.image_viewer import ImageViewer
 
+MIN_WIDTH_SHOWING_SCALE_SLIDER = 600
 
-SCALE_SLIDER_LABEL = 'Zoom:'
+MIN_WIDTH_SHOWING_HINT_TEXT = 900
+
+SCALE_SLIDER_LABEL = 'Scale:'
 SCALE_RESET_BUTTON_LABEL = 'Reset View'
 SCALE_RESET_BUTTON_TOOLTIP = 'Restore default image zoom and offset'
-SCALE_ZOOM_BUTTON_LABEL = 'Zoom to image generation area'
+SCALE_ZOOM_BUTTON_LABEL = 'Zoom in'
 SCALE_ZOOM_BUTTON_TOOLTIP = 'Zoom in on the area selected for image generation'
 
 
@@ -24,7 +30,9 @@ class ImagePanel(QWidget):
         self._layout.addWidget(self._control_bar, stretch=1)
         self._control_layout = QHBoxLayout(self._control_bar)
         self._control_hint_label = QLabel("")
-
+        self._control_hint_label.setWordWrap(True)
+        self._control_layout.addWidget(self._control_hint_label)
+        self._control_layout.addSpacing(25)
         scale_reset_button = QPushButton()
 
         def toggle_scale():
@@ -42,10 +50,10 @@ class ImagePanel(QWidget):
         scale_reset_button.setText(SCALE_ZOOM_BUTTON_LABEL)
         scale_reset_button.setToolTip(SCALE_ZOOM_BUTTON_TOOLTIP)
         scale_reset_button.clicked.connect(toggle_scale)
-        self._control_layout.addWidget(scale_reset_button)
         # Zoom slider:
         self._control_layout.addWidget(QLabel(SCALE_SLIDER_LABEL))
         image_scale_slider = QSlider(Qt.Orientation.Horizontal)
+        self._image_scale_slider = image_scale_slider
         self._control_layout.addWidget(image_scale_slider)
         image_scale_slider.setRange(1, 4000)
         image_scale_slider.setSingleStep(10)
@@ -55,6 +63,7 @@ class ImagePanel(QWidget):
         image_scale_box.setRange(0.001, 40)
         image_scale_box.setSingleStep(0.1)
         image_scale_box.setValue(self._image_viewer.scene_scale)
+        self._control_layout.addWidget(scale_reset_button)
 
         scale_signals = [
             self._image_viewer.scale_changed,
@@ -98,3 +107,7 @@ class ImagePanel(QWidget):
     def set_control_hint(self, hint_text: str) -> None:
         """Add a message below the image viewer hinting at controls."""
         self._control_hint_label.setText(hint_text)
+
+    def resizeEvent(self, event: Optional[QResizeEvent]) -> None:
+        self._control_hint_label.setVisible(self.width() > MIN_WIDTH_SHOWING_HINT_TEXT)
+        self._image_scale_slider.setVisible(self.width() > MIN_WIDTH_SHOWING_SCALE_SLIDER)

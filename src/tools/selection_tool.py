@@ -17,6 +17,7 @@ from src.ui.widget.param_slider import ParamSlider
 
 SELECTION_TOOL_LABEL = 'Selection'
 SELECTION_TOOL_TOOLTIP = 'Select areas for editing or inpainting.'
+SELECTION_CONTROL_HINT = 'LMB:select - RMB:1px select -'
 
 RESOURCES_PEN_PNG = './resources/icons/pen_small.svg'
 RESOURCES_ERASER_PNG = 'resources/icons/eraser_small.svg'
@@ -61,6 +62,10 @@ class SelectionTool(CanvasTool):
     def get_label_text(self) -> str:
         """Returns label text used to represent this tool."""
         return SELECTION_TOOL_LABEL
+
+    def get_input_hint(self) -> str:
+        """Return text describing different input functionality."""
+        return f'{SELECTION_CONTROL_HINT} {super().get_input_hint()}'
 
     def get_tooltip_text(self) -> str:
         """Returns tooltip text used to describe this tool."""

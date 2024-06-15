@@ -14,7 +14,6 @@
 - default icon zoom cuts off labels
 
 # General interface
-- Set control hint in image panel, tied to active tools and hotkeys
 - Implement QGraphicsItem item handle control with support for translate, scale, rotate
 - Control Panel cleanup with FormLayout
 - Add click+drag resizing to CollapsibleBox

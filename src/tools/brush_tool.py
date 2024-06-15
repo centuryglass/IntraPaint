@@ -21,6 +21,7 @@ BRUSH_LABEL = 'Brush'
 BRUSH_TOOLTIP = 'Paint into the image'
 COLOR_BUTTON_LABEL = 'Color'
 COLOR_BUTTON_TOOLTIP = 'Select sketch brush color'
+BRUSH_CONTROL_HINT = 'LMB:draw - RMB:1px draw - Ctrl:pick color -'
 
 
 class BrushTool(CanvasTool):
@@ -65,6 +66,10 @@ class BrushTool(CanvasTool):
     def get_tooltip_text(self) -> str:
         """Returns tooltip text used to describe this tool."""
         return BRUSH_TOOLTIP
+
+    def get_input_hint(self) -> str:
+        """Return text describing different input functionality."""
+        return f'{BRUSH_CONTROL_HINT} {super().get_input_hint()}'
 
     def get_control_panel(self) -> Optional[QWidget]:
         """Returns the brush control panel."""
