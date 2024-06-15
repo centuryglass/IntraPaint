@@ -19,8 +19,8 @@ LIST_SPACING = 4
 MIN_VISIBLE_LAYERS = 3
 DEFAULT_LIST_ITEM_SIZE = QSize(350, 60)
 DEFAULT_LIST_SIZE = QSize(380, 400)
-ICON_PATH_VISIBLE_LAYER = 'resources/visible.svg'
-ICON_PATH_HIDDEN_LAYER = 'resources/hidden.svg'
+ICON_PATH_VISIBLE_LAYER = 'resources/icons/layer/visible.svg'
+ICON_PATH_HIDDEN_LAYER = 'resources/icons/layer/hidden.svg'
 
 WINDOW_TITLE = 'Image Layers'
 

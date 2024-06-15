@@ -18,7 +18,7 @@ from src.util.arg_parser import build_arg_parser
 StableDiffusionController = optional_import('src.controller.stable_diffusion_controller',
                                             attr_name='StableDiffusionController')
 torch = optional_import('torch')
-get_device = optional_import('src.glid_3_xl.ml_utils','get_device')
+get_device = optional_import('src.glid_3_xl.ml_utils', 'get_device')
 WebClientController = optional_import('src.controller.web_client_controller', attr_name='WebClientController')
 LocalDeviceController = optional_import('src.controller.local_controller', attr_name='LocalDeviceController')
 

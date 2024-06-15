@@ -364,6 +364,10 @@ class Config:
                 keys.append(key)
         return keys
 
+    def get_keys(self) -> List[str]:
+        """Returns all keys defined for a config class."""
+        return list(self._entries.keys())
+
     def _add_entry(self,
                    key: str,
                    initial_value: Any,

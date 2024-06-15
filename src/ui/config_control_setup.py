@@ -11,7 +11,10 @@ from PyQt5.QtWidgets import QDoubleSpinBox, QLineEdit, QCheckBox, QComboBox, QPl
     QWidget, QSpinBox, QSlider
 from PyQt5.QtGui import QFont, QFontMetrics
 
+from src.config.cache import Cache
+from src.config.config import Config
 from src.config.config_entry import RangeKey
+from src.config.key_config import KeyConfig
 from src.image.layer_stack import LayerStack
 from src.ui.widget.big_int_spinbox import BigIntSpinbox
 from src.config.application_config import AppConfig
@@ -52,7 +55,7 @@ def connected_spinbox(parent: Optional[QWidget],
     dict_key : str or None
         If not None, the spinbox will be connected to the inner property of a dict config value.
     """
-    config = AppConfig.instance()
+    config = _get_config(key)
     initial_value = config.get(key, inner_key=dict_key)
     spinbox = QDoubleSpinBox(parent) if isinstance(initial_value, float) else BigIntSpinbox(parent)
     if initial_value < spinbox.minimum() or initial_value > spinbox.maximum():
@@ -124,7 +127,7 @@ def connected_textedit(parent: Optional[QWidget],
     inner_key : str or none
         If not None, the textedit will be connected to the inner property of a dict config value.
     """
-    config = AppConfig.instance()
+    config = _get_config(key)
     textedit = QLineEdit(config.get(key), parent) if not multi_line else QPlainTextEdit(config.get(key), parent)
     if multi_line:
         textedit.textChanged.connect(lambda: config.set(key, textedit.toPlainText(), inner_key=inner_key))
@@ -166,7 +169,7 @@ def connected_checkbox(parent: Optional[QWidget],
     inner_key : str or none
         If not None, the checkbox will be connected to the inner property of a dict config value.
     """
-    config = AppConfig.instance()
+    config = _get_config(key)
     checkbox = QCheckBox(parent)
     checkbox.setChecked(bool(config.get(key, inner_key)))
     checkbox.stateChanged.connect(lambda is_checked: config.set(key, bool(is_checked), inner_key=inner_key))
@@ -192,7 +195,7 @@ def connected_combobox(parent: Optional[QWidget],
     text : str or None
         Optional label text
     """
-    config = AppConfig.instance()
+    config = _get_config(key)
     combobox = QComboBox(parent)
     options = config.get_options(key)
     for option in options:
@@ -350,3 +353,10 @@ def get_generation_area_control_boxes(layer_stack: LayerStack,
 
         h_ctrl.valueChanged.connect(set_h)
     return control_widgets
+
+def _get_config(config_key: str) -> Config:
+    if config_key in Cache.instance().get_keys():
+        return Cache.instance()
+    if config_key in KeyConfig.instance().get_keys():
+        return KeyConfig.instance()
+    return AppConfig.instance()

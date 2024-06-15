@@ -1,18 +1,19 @@
 """Defines the @menu_action decorator and the MenuBuilder class for more convenient PyQt5 menu initialization."""
 import functools
-from typing import Callable, Any, Optional, Dict
+from typing import Callable, Any, Optional
 
 from PyQt5.QtWidgets import QMainWindow, QAction
 
-from src.config.application_config import AppConfig
+from src.config.key_config import KeyConfig
 
 INT_MAX = 2147483647
 
 
 def menu_action(menu_name: str, config_key: str, priority: int = INT_MAX,
                 ignore_when_busy=False,
-                condition_check: Optional[Callable[[Any], bool]] = None) -> Callable[
-    [Any], Callable[[{'is_busy'}, dict[str, Any]], Any | None]]:
+                condition_check: Optional[Callable[[Any], bool]] = None) -> Callable[[Any], Callable[[{'is_busy'},
+                                                                                                      dict[str, Any]],
+                                                                                                      Any | None]]:
     """Decorator used to associate a class method with a menu item and optionally disable it when busy.
 
     Parameters
@@ -70,7 +71,7 @@ class MenuBuilder:
             else:
                 menu = menu_bar.addMenu(menu_name)
                 menus[menu_name] = menu
-            config = AppConfig.instance()
+            config = KeyConfig.instance()
             try:
                 title = config.get_label(menu_action_method.config_key)
                 tooltip = config.get_tooltip(menu_action_method.config_key)

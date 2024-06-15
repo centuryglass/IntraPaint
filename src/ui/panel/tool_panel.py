@@ -7,6 +7,7 @@ from PyQt5.QtWidgets import QWidget, QLabel, QHBoxLayout, QVBoxLayout, QSizePoli
     QStackedLayout
 
 from src.config.application_config import AppConfig
+from src.config.cache import Cache
 from src.image.layer_stack import LayerStack
 from src.tools.base_tool import BaseTool
 from src.tools.brush_tool import BrushTool
@@ -113,18 +114,18 @@ class ToolPanel(QWidget):
             self._event_handler.register_hotkeys(new_tool)
             self._tool_list.add_widget(button)
 
+        selection_tool = SelectionTool(layer_stack, image_viewer)
+        add_tool(selection_tool)
         brush_tool = BrushTool(layer_stack, image_viewer)
         add_tool(brush_tool)
         eyedropper_tool = EyedropperTool(layer_stack)
         add_tool(eyedropper_tool)
-        generation_area_tool = GenerationAreaTool(layer_stack, image_viewer)
-        add_tool(generation_area_tool)
-        selection_tool = SelectionTool(layer_stack, image_viewer)
-        add_tool(selection_tool)
         transform_tool = LayerTransformTool(layer_stack, image_viewer)
         add_tool(transform_tool)
+        generation_area_tool = GenerationAreaTool(layer_stack, image_viewer)
+        add_tool(generation_area_tool)
         self._event_handler.register_tool_delegate(brush_tool, eyedropper_tool, Qt.KeyboardModifier.ControlModifier)
-        self._switch_active_tool(AppConfig.instance().get(AppConfig.LAST_ACTIVE_TOOL))
+        self._switch_active_tool(Cache.instance().get(Cache.LAST_ACTIVE_TOOL))
         self.resizeEvent(None)
         self.set_orientation(Qt.Orientation.Vertical)
 
@@ -213,7 +214,7 @@ class ToolPanel(QWidget):
         """Sets a new tool as the active tool."""
         active_tool = None if tool_label not in self._tools else self._tools[tool_label]
         if active_tool is not None:
-            AppConfig.instance().set(AppConfig.LAST_ACTIVE_TOOL, active_tool.label)
+            Cache.instance().set(Cache.LAST_ACTIVE_TOOL, active_tool.label)
         self._event_handler.active_tool = active_tool
         # Event handler will send a signal to trigger _setup_active_tool
 

@@ -43,10 +43,8 @@ class MainWindow(QMainWindow):
             Object managing application behavior.
         """
         super().__init__()
-        config = AppConfig.instance()
         self.setWindowIcon(QIcon('resources/icon.png'))
         self.setSizePolicy(QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding))
-        #self.setMinimumSize(QSize(640, 480))
 
         # Initialize UI/editing data model:
         self._controller = controller
@@ -283,12 +281,6 @@ class MainWindow(QMainWindow):
         if visible == is_visible:
             return
         if visible:
-            if AppConfig.instance().get(AppConfig.EDIT_MODE) == 'Inpaint':
-                mask = self._layer_stack.selection_layer.pil_mask_image
-            else:
-                mask = QPixmap(self._layer_stack.generation_area.size())
-                mask.fill(Qt.red)
-                mask = qimage_to_pil_image(mask.toImage())
             self._image_selector = GeneratedImageSelector(self._layer_stack,
                                                           lambda: self.set_image_selector_visible(False),
                                                           self._controller.select_and_apply_sample)

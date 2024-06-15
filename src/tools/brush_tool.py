@@ -6,6 +6,8 @@ from PyQt5.QtGui import QPixmap, QColor, QIcon, QKeySequence
 from PyQt5.QtWidgets import QVBoxLayout, QPushButton, QColorDialog, QWidget, QApplication
 
 from src.config.application_config import AppConfig
+from src.config.cache import Cache
+from src.config.key_config import KeyConfig
 from src.image.canvas.mypaint_layer_canvas import MyPaintLayerCanvas
 from src.image.layer_stack import LayerStack
 from src.tools.canvas_tool import CanvasTool
@@ -13,16 +15,8 @@ from src.ui.image_viewer import ImageViewer
 from src.ui.panel.brush_panel import BrushPanel
 from src.ui.widget.param_slider import ParamSlider
 
-TOOL_MODE_DRAW = 'DRAW'
-TOOL_MODE_EYEDROPPER = 'EYEDROPPER'
-TOOL_MODE_1PX = '1PX'
-TOOL_MODE_LINE = 'LINE'
 
-RESOURCES_BRUSH_ICON = 'resources/brush.svg'
-RESOURCES_CURSOR_PNG = './resources/cursor.png'
-RESOURCES_MIN_CURSOR_PNG = './resources/minCursor.png'
-RESOURCES_EYEDROPPER_PNG = './resources/eyedropper.png'
-
+RESOURCES_BRUSH_ICON = 'resources/icons/brush_icon.svg'
 BRUSH_LABEL = 'Brush'
 BRUSH_TOOLTIP = 'Paint into the image'
 COLOR_BUTTON_LABEL = 'Color'
@@ -58,7 +52,7 @@ class BrushTool(CanvasTool):
 
     def get_hotkey(self) -> QKeySequence:
         """Returns the hotkey(s) that should activate this tool."""
-        return AppConfig.instance().get_keycodes(AppConfig.BRUSH_TOOL_KEY)
+        return KeyConfig.instance().get_keycodes(KeyConfig.BRUSH_TOOL_KEY)
 
     def get_icon(self) -> QIcon:
         """Returns an icon used to represent this tool."""
@@ -106,12 +100,12 @@ class BrushTool(CanvasTool):
             icon = QPixmap(QSize(64, 64))
             icon.fill(color)
             color_picker_button.setIcon(QIcon(icon))
-            AppConfig.instance().set(AppConfig.LAST_BRUSH_COLOR, color.name(QColor.HexArgb))
+            Cache.instance().set(Cache.LAST_BRUSH_COLOR, color.name(QColor.HexArgb))
 
         color_dialog = QColorDialog()
         color_dialog.setOption(QColorDialog.ColorDialogOption.ShowAlphaChannel, True)
         color_picker_button.clicked.connect(lambda: set_brush_color(color_dialog.getColor()))
-        AppConfig.instance().connect(color_picker_button, AppConfig.LAST_BRUSH_COLOR,
+        Cache.instance().connect(color_picker_button, Cache.LAST_BRUSH_COLOR,
                                      lambda color_str: set_brush_color(QColor(color_str)))
         set_brush_color(self.brush_color)
         control_layout.addWidget(color_picker_button, stretch=2)

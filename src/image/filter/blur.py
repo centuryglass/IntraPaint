@@ -1,0 +1,1 @@
+"""Define image blurring functions."""

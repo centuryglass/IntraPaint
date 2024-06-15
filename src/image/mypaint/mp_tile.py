@@ -110,7 +110,7 @@ class MPTile(QGraphicsItem):
         self._cache_valid = True
 
     def copy_tile_into_image(self, image: QImage, source: Optional[QRect] = None, destination: Optional[QRect] = None,
-                             skip_if_transparent: bool = True, color_correction_edge_width: int = 0) -> bool:
+                             skip_if_transparent: bool = True, color_correction: bool = False) -> bool:
         """Copy tile data into a QImage at arbitrary (x, y) image coordinates, returning whether data was copied.
         This operation does no scaling; any surface data that does not overlap with the image destination bounds will
         not be copied.
@@ -127,8 +127,8 @@ class MPTile(QGraphicsItem):
             used.
         skip_if_transparent: bool
             If true, skip the operation if the tile's contents are completely transparent.
-        color_correction_edge_width: int, default = 0
-            If non-zero, perform color correction around all tile edges when copying data back into the image.
+        color_correction: bool, default = False
+            Perform corrections for possible color conversion issues.
         """
         self._assert_is_valid()
         if source is None:
@@ -145,37 +145,21 @@ class MPTile(QGraphicsItem):
         if skip_if_transparent and is_fully_transparent(np_pixels):
             return False  # Don't waste time converting and copying transparent pixels into a transparent image.
         np_pixels = numpy_16bit_to_8bit(np_pixels)
+        min_color_difference = 1.8
 
-        if color_correction_edge_width == 0:
-            np.copyto(np_image, np_pixels)
-        else:
-            min_color_difference = 1.8
-            height, width, _ = np_pixels.shape
-            color_correction_edge_width = min(color_correction_edge_width, width // 2 - 1, height // 2 - 1)
-
-            # Copy the central area directly
-            central_region = (slice(color_correction_edge_width, height - color_correction_edge_width),
-                              slice(color_correction_edge_width, width - color_correction_edge_width))
-            np.copyto(np_image[central_region], np_pixels[central_region])
-
-            # Color conversion produces mild artifacts at tile edges if the data is copied directly.  Avoid this by
+        if color_correction:
+            # Color conversion produces artifacts at tile edges if the data is copied directly.  Avoid this by
             # discarding pixel changes that don't exceed the magnitude of error created by color conversion.
-            edge_regions = [
-                (slice(0, color_correction_edge_width), slice(0, width)),  # Top edge
-                (slice(height - color_correction_edge_width, height), slice(0, width)),  # Bottom edge
-                (slice(0, height), slice(0, color_correction_edge_width)),  # Left edge
-                (slice(0, height), slice(width - color_correction_edge_width, width))  # Right edge
-            ]
-
             def color_difference(color1, color2):
                 """Calculate the color difference between two RGB colors."""
                 return np.linalg.norm(color1 - color2)
 
-            for region in edge_regions:
-                for y in range(region[0].start, region[0].stop):
-                    for x in range(region[1].start, region[1].stop):
-                        if color_difference(np_image[y, x], np_pixels[y, x]) > min_color_difference:
-                            np_image[y, x] = np_pixels[y, x]
+            for y in range(np_image.shape[0]):
+                for x in range(np_image.shape[1]):
+                    if color_difference(np_image[y, x], np_pixels[y, x]) > min_color_difference:
+                        np_image[y, x] = np_pixels[y, x]
+        else:
+            np.copyto(np_image, np_pixels)
         return True
 
     @staticmethod

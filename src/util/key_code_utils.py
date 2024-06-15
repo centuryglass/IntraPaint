@@ -5,7 +5,7 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QKeySequence
 from PyQt5.QtWidgets import QApplication
 
-from src.config.application_config import AppConfig
+from src.config.key_config import KeyConfig
 
 _MODIFIERS = {
     Qt.Key_Control: Qt.KeyboardModifier.ControlModifier,
@@ -96,7 +96,7 @@ def get_key_display_string(keys: QKeySequence) -> str:
 
 
 def _speed_modifier_held() -> bool:
-    speed_modifier = AppConfig.instance().get(AppConfig.SPEED_MODIFIER)
+    speed_modifier = KeyConfig.instance().get(KeyConfig.SPEED_MODIFIER)
     if speed_modifier == '':
         return False
     speed_modifier = get_modifiers(speed_modifier)

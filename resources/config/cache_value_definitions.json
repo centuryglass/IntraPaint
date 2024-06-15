@@ -1,0 +1,85 @@
+{
+    "styles": {
+        "label": "styles",
+        "category": "Cache",
+        "description": "Saved style prompts loaded from the webui",
+        "type": "string",
+        "default": "None",
+        "options": [
+            "None"
+        ],
+        "saved": false
+    },
+    "controlnet_version": {
+        "label": "ControlNet version:",
+        "category": "Cache",
+        "description": "ControlNet extension version loaded from the webui",
+        "type": "float",
+        "default": -1.0,
+        "saved": false
+    },
+    "controlnet_control_types": {
+        "label": "ControlNet control types:",
+        "category": "Cache",
+        "description": "ControlNet control type definitions loaded from the webui",
+        "type": "dict",
+        "default": {},
+        "saved": false
+    },
+    "controlnet_modules": {
+        "label": "ControlNet modules:",
+        "category": "Cache",
+        "description": "ControlNet module definitions loaded from the webui",
+        "type": "dict",
+        "default": {},
+        "saved": false
+    },
+    "controlnet_models": {
+        "label": "ControlNet models:",
+        "category": "Cache",
+        "description": "ControlNet model definitions loaded from the webui",
+        "type": "dict",
+        "default": {},
+        "saved": false
+    },
+    "lora_models": {
+        "label": "LoRA models:",
+        "category": "Cache",
+        "description": "LoRA model definitions loaded from the webui",
+        "type": "list",
+        "default": {},
+        "saved": false
+    },
+    "last_seed": {
+        "label": "Last seed:",
+        "category": "Cache",
+        "description": "Last seed used for image generation",
+        "type": "string",
+        "default": "-1",
+        "saved": false
+    },
+    "last_file_path": {
+        "label": "Last file path:",
+        "category": "Cache",
+        "description": "Last image file loaded",
+        "type": "string",
+        "default": "",
+        "saved": false
+    },
+    "last_brush_color": {
+        "label": "Last brush color:",
+        "category": "Cache",
+        "description": "Last brush color",
+        "type": "string",
+        "default": "#ff000000",
+        "saved": false
+    },
+    "last_active_tool": {
+        "label": "Last active tool:",
+        "category": "Cache",
+        "description": "Label of the last active tool, to restore after restart",
+        "type": "string",
+        "default": "brush",
+        "saved": true
+    }
+}

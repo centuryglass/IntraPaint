@@ -4,17 +4,16 @@ from typing import Optional, cast
 
 from PyQt5.QtCore import Qt, QRect, QPoint
 from PyQt5.QtGui import QMouseEvent, QKeyEvent, QCursor, QIcon, QKeySequence
-from PyQt5.QtWidgets import QWidget, QApplication, QLabel, QSlider, QDoubleSpinBox, \
-    QPushButton, QGridLayout
+from PyQt5.QtWidgets import QWidget, QApplication, QPushButton, QGridLayout
 
 from src.config.application_config import AppConfig
+from src.config.key_config import KeyConfig
 from src.image.layer_stack import LayerStack
 from src.tools.base_tool import BaseTool
 from src.ui.config_control_setup import get_generation_area_control_boxes
 from src.ui.image_viewer import ImageViewer
 
-
-RESOURCES_GENERATION_AREA_ICON = 'resources/selection.svg'
+RESOURCES_GENERATION_AREA_ICON = 'resources/icons/gen_area_icon.svg'
 GENERATION_AREA_LABEL = 'Select Image Generation Area'
 GENERATION_AREA_TOOLTIP = 'Select an image region for AI image generation'
 SELECT_LAYER_BUTTON_TEXT = "Full image as generation area"
@@ -36,7 +35,7 @@ class GenerationAreaTool(BaseTool):
 
     def get_hotkey(self) -> QKeySequence:
         """Returns the hotkey(s) that should activate this tool."""
-        return AppConfig.instance().get_keycodes(AppConfig.GENERATION_AREA_TOOL_KEY)
+        return KeyConfig.instance().get_keycodes(KeyConfig.GENERATION_AREA_TOOL_KEY)
 
     def get_icon(self) -> QIcon:
         """Returns an icon used to represent this tool."""
@@ -61,7 +60,6 @@ class GenerationAreaTool(BaseTool):
         for i, stretch in enumerate((1, 8, 1)):
             self._control_layout.setColumnStretch(i, stretch)
 
-
         # wire x/y coordinate boxes to set image generation area coordinates:
         coordinate_controls = get_generation_area_control_boxes(self._layer_stack, True)
         for control_widget in coordinate_controls:
@@ -72,14 +70,13 @@ class GenerationAreaTool(BaseTool):
             self._control_layout.addWidget(ctrl_slider, row, 1)
             self._control_layout.addWidget(ctrl_box, row, 2)
 
-
-
         def select_full_layer():
             """Expand the image generation area to fit the entire active layer."""
             active_layer = self._layer_stack.active_layer
             if active_layer is None:
                 return
             self._layer_stack.generation_area = active_layer.geometry
+
         select_layer_button = QPushButton()
         select_layer_button.setText(SELECT_LAYER_BUTTON_TEXT)
         select_layer_button.setToolTip(SELECT_LAYER_BUTTON_TOOLTIP)
@@ -149,4 +146,3 @@ class GenerationAreaTool(BaseTool):
                 return False
         self._layer_stack.generation_area = self._layer_stack.generation_area.translated(translation)
         return True
-

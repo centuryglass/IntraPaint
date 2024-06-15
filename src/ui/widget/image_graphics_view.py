@@ -7,7 +7,7 @@ from PyQt5.QtGui import QPixmap, QImage, QPainter, QPen, QTransform, QResizeEven
     QEnterEvent
 from PyQt5.QtWidgets import QWidget, QGraphicsView, QGraphicsScene, QGraphicsPixmapItem, QApplication
 
-from src.config.application_config import AppConfig
+from src.config.key_config import KeyConfig
 from src.hotkey_filter import HotkeyFilter
 from src.util.contrast_color import contrast_color
 from src.util.geometry_utils import get_scaled_placement
@@ -50,7 +50,7 @@ class ImageGraphicsView(QGraphicsView):
         self.installEventFilter(self)
 
         # Bind directional navigation and image generation area keys:
-        zoom_key = AppConfig.instance().get_keycodes(AppConfig.ZOOM_TOGGLE)
+        zoom_key = KeyConfig.instance().get_keycodes(KeyConfig.ZOOM_TOGGLE)
 
         def _toggle_zoom_if_visible() -> bool:
             if not self.isVisible():
@@ -58,10 +58,10 @@ class ImageGraphicsView(QGraphicsView):
             self.toggle_zoom()
             return True
         HotkeyFilter.instance().register_keybinding(_toggle_zoom_if_visible, zoom_key)
-        for pan_key, scroll_key, offset in ((AppConfig.PAN_LEFT, AppConfig.MOVE_LEFT, (-1.0, 0.0)),
-                                            (AppConfig.PAN_RIGHT, AppConfig.MOVE_RIGHT, (1.0, 0.0)),
-                                            (AppConfig.PAN_UP, AppConfig.MOVE_UP, (0.0, -1.0)),
-                                            (AppConfig.PAN_DOWN, AppConfig.MOVE_DOWN, (0.0, 1.0))):
+        for pan_key, scroll_key, offset in ((KeyConfig.PAN_LEFT, KeyConfig.MOVE_LEFT, (-1.0, 0.0)),
+                                            (KeyConfig.PAN_RIGHT, KeyConfig.MOVE_RIGHT, (1.0, 0.0)),
+                                            (KeyConfig.PAN_UP, KeyConfig.MOVE_UP, (0.0, -1.0)),
+                                            (KeyConfig.PAN_DOWN, KeyConfig.MOVE_DOWN, (0.0, 1.0))):
             dx, dy = offset
             # Bind view panning:
 
@@ -83,7 +83,7 @@ class ImageGraphicsView(QGraphicsView):
             HotkeyFilter.instance().register_speed_modified_keybinding(_scroll, scroll_key)
 
         # Bind zoom keys:
-        for config_key, direction in ((AppConfig.ZOOM_IN, 1), (AppConfig.ZOOM_OUT, -1)):
+        for config_key, direction in ((KeyConfig.ZOOM_IN, 1), (KeyConfig.ZOOM_OUT, -1)):
             offset = BASE_ZOOM_OFFSET * direction
 
             def _zoom(mult, change=offset) -> bool:

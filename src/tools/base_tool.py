@@ -45,7 +45,7 @@ class BaseTool(QObject):
     2. Use get_icon, get_label_text, and get_tooltip text to represent the tool in the UI.
 
     3. When a tool enters active use, do the following:
-       - Call tool.on_activate()
+       - Set tool.is_active = True
        - Display the widget returned by get_control_panel (if not None) somewhere in the UI.
        - Set the image widget cursor to tool cursor, if not None.
        - Connect to the cursor_change signal to handle cursor updates.
@@ -58,7 +58,7 @@ class BaseTool(QObject):
        whether the cursor is over the image and keep track of when that flag changes. If the event function returns
        True, the image widget shouldn't do anything else with that event.
 
-    6. When a tool exits active use, call tool.on_deactivate() and disconnect from the cursor_changed signal.
+    6. When a tool exits active use, set tool.is_active=False and disconnect from the cursor_changed signal.
     """
 
     cursor_change = pyqtSignal()

@@ -67,7 +67,7 @@ while (match := re.search(pattern, file_text[file_idx:])) is not None:
     if end_match is not None:
         end_idx = class_idx + end_match.start()
     else:
-        end_idx = len(file_text) - 1
+        end_idx = len(file_text)
     class_items[class_name] = {'start': class_idx, 'end': end_idx, 'indent': indent}
     file_idx = end_idx
 

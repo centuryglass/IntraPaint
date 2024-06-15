@@ -1,7 +1,7 @@
 """A layer used to mark masked regions for inpainting."""
 from sys import version_info
 
-from src.image.mypaint.numpy_image_utils import is_fully_transparent, image_data_as_numpy_8bit
+from src.image.mypaint.numpy_image_utils import is_fully_transparent
 
 if version_info[1] >= 11:
     from typing import Self, Optional, List

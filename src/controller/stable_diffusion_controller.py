@@ -15,6 +15,7 @@ from PyQt5.QtCore import QObject, pyqtSignal, QSize
 from PyQt5.QtWidgets import QInputDialog
 
 from src.config.a1111_config import A1111Config
+from src.config.cache import Cache
 from src.image.layer_stack import LayerStack
 from src.config.application_config import AppConfig
 from src.ui.modal.settings_modal import SettingsModal
@@ -63,7 +64,7 @@ LCM_LORA_XL = 'lcm-lora-sdxl'
 def _check_lcm_mode_available(controller: 'StableDiffusionController') -> bool:
     if LCM_SAMPLER not in AppConfig.instance().get_options(AppConfig.SAMPLING_METHOD):
         return False
-    loras = [lora['name'] for lora in AppConfig.instance().get(AppConfig.LORA_MODELS)]
+    loras = [lora['name'] for lora in Cache.instance().get(Cache.LORA_MODELS)]
     return LCM_LORA_1_5 in loras or LCM_LORA_XL in loras
 
 
@@ -227,9 +228,9 @@ class StableDiffusionController(BaseInpaintController):
         # Check connection:
         while not StableDiffusionController.health_check(webservice=self._webservice):
             prompt_for_url(URL_REQUEST_RETRY_MESSAGE)
-        config = AppConfig.instance()
+        cache = Cache.instance()
         try:
-            config.set(AppConfig.CONTROLNET_VERSION, float(self._webservice.get_controlnet_version()))
+            cache.set(Cache.CONTROLNET_VERSION, float(self._webservice.get_controlnet_version()))
         except RuntimeError:
             # The webui fork at lllyasviel/stable-diffusion-webui-forge is mostly compatible with the A1111 API, but
             # it doesn't have the ControlNet version endpoint. Before assuming ControlNet isn't installed, check if
@@ -238,15 +239,15 @@ class StableDiffusionController(BaseInpaintController):
                 model_list = self._webservice.get_controlnet_models()
                 if model_list is not None and CONTROLNET_MODEL_LIST_KEY in model_list and len(
                         model_list[CONTROLNET_MODEL_LIST_KEY]) > 0:
-                    config.set(AppConfig.CONTROLNET_VERSION, 1.0)
+                    cache.set(Cache.CONTROLNET_VERSION, 1.0)
                 else:
-                    config.set(AppConfig.CONTROLNET_VERSION, -1.0)
+                    cache.set(Cache.CONTROLNET_VERSION, -1.0)
             except RuntimeError as err:
                 logger.error(f'Loading controlnet config failed: {err}')
-                config.set(AppConfig.CONTROLNET_VERSION, -1.0)
+                cache.set(Cache.CONTROLNET_VERSION, -1.0)
 
         option_loading_params = (
-            (AppConfig.STYLES, self._webservice.get_styles),
+            (Cache.STYLES, self._webservice.get_styles),
             (AppConfig.SAMPLING_METHOD, self._webservice.get_samplers),
             (AppConfig.UPSCALE_METHOD, self._webservice.get_upscalers)
         )
@@ -256,21 +257,24 @@ class StableDiffusionController(BaseInpaintController):
             try:
                 options = option_loading_fn()
                 if options is not None and len(options) > 0:
-                    config.update_options(config_key, options)
+                    if config_key in cache.get_keys():
+                        cache.update_options(config_key, options)
+                    else:
+                        AppConfig.instance().update_options(config_key, options)
             except (KeyError, RuntimeError) as err:
                 logger.error(f'error loading {config_key} from {self._server_url}: {err}')
 
         data_params = (
-            (AppConfig.CONTROLNET_CONTROL_TYPES, self._webservice.get_controlnet_control_types),
-            (AppConfig.CONTROLNET_MODULES, self._webservice.get_controlnet_modules),
-            (AppConfig.CONTROLNET_MODELS, self._webservice.get_controlnet_models),
-            (AppConfig.LORA_MODELS, self._webservice.get_loras)
+            (Cache.CONTROLNET_CONTROL_TYPES, self._webservice.get_controlnet_control_types),
+            (Cache.CONTROLNET_MODULES, self._webservice.get_controlnet_modules),
+            (Cache.CONTROLNET_MODELS, self._webservice.get_controlnet_models),
+            (Cache.LORA_MODELS, self._webservice.get_loras)
         )
         for config_key, data_loading_fn in data_params:
             try:
                 value = data_loading_fn()
                 if value is not None and len(value) > 0:
-                    config.set(config_key, value)
+                    cache.set(config_key, value)
             except (KeyError, RuntimeError) as err:
                 logger.error(f'error loading {config_key} from {self._server_url}: {err}')
 
@@ -445,7 +449,7 @@ class StableDiffusionController(BaseInpaintController):
         """Show status updates in the UI."""
         assert self._window is not None
         if 'seed' in status_dict:
-            AppConfig.instance().set(AppConfig.LAST_SEED, str(status_dict['seed']))
+            Cache.instance().set(Cache.LAST_SEED, str(status_dict['seed']))
         if 'progress' in status_dict:
             self._window.set_loading_message(status_dict['progress'])
 
@@ -453,7 +457,7 @@ class StableDiffusionController(BaseInpaintController):
     def set_lcm_mode(self) -> None:
         """Apply all settings required for using an LCM LoRA module."""
         config = AppConfig.instance()
-        loras = [lora['name'] for lora in config.get(AppConfig.LORA_MODELS)]
+        loras = [lora['name'] for lora in Cache.instance().get(Cache.LORA_MODELS)]
         if LCM_LORA_1_5 in loras:
             lora_name = LCM_LORA_1_5
         else:

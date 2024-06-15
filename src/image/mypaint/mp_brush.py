@@ -1,12 +1,14 @@
 """Python wrapper for libmypaint brush data."""
+import logging
 import os
 import sys
-from typing import Optional, Any, List, Dict
-import logging
 from ctypes import c_void_p, c_float, c_char_p, c_int
 from multiprocessing import Process, Pipe
-from PyQt5.QtGui import QColor
+from typing import Optional, Any, Dict
+
 from PyQt5.QtCore import Qt, QByteArray, QFile, QIODevice
+from PyQt5.QtGui import QColor
+
 from src.image.mypaint.libmypaint import libmypaint, load_libmypaint, DEFAULT_LIBRARY_PATH
 
 logger = logging.getLogger(__name__)
@@ -166,6 +168,7 @@ class MPBrush:
     STROKE_HOLDTIME: int
     STROKE_THRESHOLD: int
     TRACKING_NOISE: int
+    _setting_info: Dict[int, 'BrushSetting']
 
 
 class BrushSetting:

@@ -5,7 +5,7 @@ import logging
 from src.api.a1111_webservice import A1111Webservice
 from src.config.config import Config
 
-CONFIG_DEFINITIONS = 'resources/a1111_setting_definitions.json'
+CONFIG_DEFINITIONS = 'resources/config/a1111_setting_definitions.json'
 logger = logging.getLogger(__name__)
 
 

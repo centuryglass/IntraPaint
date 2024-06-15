@@ -6,11 +6,13 @@ from PyQt5.QtGui import QIcon, QCursor, QColor, QMouseEvent, QKeySequence
 from PyQt5.QtWidgets import QWidget, QColorDialog
 
 from src.config.application_config import AppConfig
+from src.config.cache import Cache
+from src.config.key_config import KeyConfig
 from src.image.layer_stack import LayerStack
 from src.tools.base_tool import BaseTool
 
-RESOURCES_EYEDROPPER_ICON = 'resources/eyedropper_icon.svg'
-RESOURCES_EYEDROPPER_CURSOR = 'resources/eyedropper_cursor.svg'
+RESOURCES_EYEDROPPER_ICON = 'resources/icons/eyedropper_icon.svg'
+RESOURCES_EYEDROPPER_CURSOR = 'resources/cursors/eyedropper_cursor.svg'
 CURSOR_SIZE = 50
 
 EYEDROPPER_LABEL = 'Color Picker'
@@ -30,7 +32,7 @@ class EyedropperTool(BaseTool):
 
     def get_hotkey(self) -> QKeySequence:
         """Returns the hotkey(s) that should activate this tool."""
-        return AppConfig.instance().get_keycodes(AppConfig.EYEDROPPER_TOOL_KEY)
+        return KeyConfig.instance().get_keycodes(KeyConfig.EYEDROPPER_TOOL_KEY)
 
     def get_icon(self) -> QIcon:
         """Returns an icon used to represent this tool."""
@@ -48,16 +50,16 @@ class EyedropperTool(BaseTool):
         """Returns a panel providing controls for customizing tool behavior, or None if no such panel is needed."""
         if self._control_panel is not None:
             return self._control_panel
-        config = AppConfig.instance()
+        cache = Cache.instance()
         self._control_panel = QColorDialog()
         self._control_panel.setOption(QColorDialog.ShowAlphaChannel, True)
         self._control_panel.setOption(QColorDialog.NoButtons, True)
         self._control_panel.setOption(QColorDialog.ColorDialogOption.DontUseNativeDialog, True)
-        initial_color = QColor(config.get(AppConfig.LAST_BRUSH_COLOR))
+        initial_color = QColor(cache.get(Cache.LAST_BRUSH_COLOR))
         self._control_panel.setCurrentColor(initial_color)
-        config.connect(self._control_panel, AppConfig.LAST_BRUSH_COLOR,
+        cache.connect(self._control_panel, Cache.LAST_BRUSH_COLOR,
                              lambda color_str: self._control_panel.setCurrentColor(QColor(color_str)))
-        self._control_panel.currentColorChanged.connect(lambda color: config.set(AppConfig.LAST_BRUSH_COLOR,
+        self._control_panel.currentColorChanged.connect(lambda color: cache.set(Cache.LAST_BRUSH_COLOR,
                                                                                  color.name(QColor.HexArgb)))
         return self._control_panel
 
@@ -65,6 +67,6 @@ class EyedropperTool(BaseTool):
         """Copy the color under the mouse on left-click."""
         if event.buttons() == Qt.LeftButton:
             color = self._layer_stack.get_color_at_point(image_coordinates)
-            AppConfig.instance().set(AppConfig.LAST_BRUSH_COLOR, color.name(QColor.HexArgb))
+            Cache.instance().set(Cache.LAST_BRUSH_COLOR, color.name(QColor.HexArgb))
             return True
         return False

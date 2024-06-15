@@ -6,6 +6,7 @@ from PyQt5.QtGui import QMouseEvent, QIcon, QPixmap, QPainter, QKeySequence
 from PyQt5.QtWidgets import QVBoxLayout, QHBoxLayout, QWidget, QPushButton, QApplication, QLabel
 
 from src.config.application_config import AppConfig
+from src.config.key_config import KeyConfig
 from src.image.canvas.pixmap_layer_canvas import PixmapLayerCanvas
 from src.image.layer_stack import LayerStack
 from src.tools.canvas_tool import CanvasTool
@@ -17,13 +18,12 @@ from src.ui.widget.param_slider import ParamSlider
 SELECTION_TOOL_LABEL = 'Selection'
 SELECTION_TOOL_TOOLTIP = 'Select areas for editing or inpainting.'
 
-RESOURCES_PEN_PNG = './resources/pen.png'
-RESOURCES_ERASER_PNG = 'resources/eraser.png'
-RESOURCES_CLEAR_PNG = './resources/clear.png'
-RESOURCES_FILL_PNG = './resources/fill.png'
-RESOURCES_MASK_CURSOR = './resources/mask_cursor.svg'
-RESOURCES_MASK_BRUSH = './resources/mask.myb'
-RESOURCES_MASK_ICON = './resources/mask_tool.svg'
+RESOURCES_PEN_PNG = './resources/icons/pen_small.svg'
+RESOURCES_ERASER_PNG = 'resources/icons/eraser_small.svg'
+RESOURCES_CLEAR_PNG = './resources/icons/clear.png'
+RESOURCES_FILL_PNG = './resources/icons/fill.png'
+RESOURCES_SELECTION_CURSOR = './resources/cursors/selection_cursor.svg'
+RESOURCES_SELECTION_ICON = './resources/icons/selection_icon.svg'
 CLEAR_BUTTON_LABEL = 'clear'
 FILL_BUTTON_LABEL = 'fill'
 
@@ -41,8 +41,8 @@ class SelectionTool(CanvasTool):
         self._active = False
         self._drawing = False
         self._cached_size = None
-        self._icon = QIcon(RESOURCES_MASK_ICON)
-        self.set_scaling_icon_cursor(QIcon(RESOURCES_MASK_CURSOR))
+        self._icon = QIcon(RESOURCES_SELECTION_ICON)
+        self.set_scaling_icon_cursor(QIcon(RESOURCES_SELECTION_CURSOR))
 
         # Setup brush, load size from config
         self.brush_color = Qt.red
@@ -52,7 +52,7 @@ class SelectionTool(CanvasTool):
 
     def get_hotkey(self) -> QKeySequence:
         """Returns the hotkey(s) that should activate this tool."""
-        return AppConfig.instance().get_keycodes(AppConfig.SELECTION_TOOL_KEY)
+        return KeyConfig.instance().get_keycodes(KeyConfig.SELECTION_TOOL_KEY)
 
     def get_icon(self) -> QIcon:
         """Returns an icon used to represent this tool."""

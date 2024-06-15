@@ -7,6 +7,7 @@ from PyQt5.QtCore import QSize
 from PyQt5.QtWidgets import QLabel, QHBoxLayout, QVBoxLayout, QGridLayout, QPushButton, QSizePolicy, QSpinBox, QWidget
 
 from src.config.application_config import AppConfig
+from src.config.cache import Cache
 from src.image.layer_stack import LayerStack
 from src.ui.config_control_setup import connected_textedit, connected_spinbox, connected_combobox
 from src.ui.panel.controlnet_panel import ControlnetPanel
@@ -147,11 +148,12 @@ class StableDiffusionMainWindow(MainWindow):
         wide_options_layout.addWidget(denoising_slider, 4, 0, 1, 6)
 
         # ControlNet panel, if controlnet is installed:
-        if config.get(AppConfig.CONTROLNET_VERSION) > 0:
+        cache = Cache.instance()
+        if cache.get(cache.CONTROLNET_VERSION) > 0:
             controlnet_panel = ControlnetPanel(AppConfig.CONTROLNET_ARGS_0,
-                                               config.get(AppConfig.CONTROLNET_CONTROL_TYPES),
-                                               config.get(AppConfig.CONTROLNET_MODULES),
-                                               config.get(AppConfig.CONTROLNET_MODELS))
+                                               cache.get(Cache.CONTROLNET_CONTROL_TYPES),
+                                               cache.get(Cache.CONTROLNET_MODULES),
+                                               cache.get(Cache.CONTROLNET_MODELS))
             controlnet_panel.set_expanded_size_policy(QSizePolicy.Maximum)
             if controlnet_panel.is_expanded():
                 self.layout().setStretch(1, self.layout().stretch(1) + StableDiffusionMainWindow.OPEN_PANEL_STRETCH)
@@ -217,9 +219,9 @@ class StableDiffusionMainWindow(MainWindow):
                                        step_val=1)
         add_option_line(config.get_label(AppConfig.SEED), seed_input, None)
 
-        last_seed_box = connected_textedit(option_list, AppConfig.LAST_SEED)
+        last_seed_box = connected_textedit(option_list, cache.LAST_SEED)
         last_seed_box.setReadOnly(True)
-        add_option_line(config.get_label(AppConfig.LAST_SEED), last_seed_box, None)
+        add_option_line(Cache.instance().get_label(cache.LAST_SEED), last_seed_box, None)
 
         # Put action buttons on the bottom:
         button_bar = BorderedWidget(control_panel)

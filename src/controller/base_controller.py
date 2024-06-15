@@ -13,6 +13,8 @@ from PyQt5.QtWidgets import QApplication, QMessageBox, QMainWindow
 from PyQt5.QtCore import QObject, QRect, QPoint, QThread, QSize, pyqtSignal
 from PyQt5.QtGui import QScreen, QImage, QPainter
 
+from src.config.cache import Cache
+from src.config.key_config import KeyConfig
 from src.ui.panel.layer_panel import LayerPanel
 from src.util.menu_action import MenuBuilder, menu_action
 from src.util.optional_import import optional_import
@@ -72,7 +74,7 @@ SETTINGS_ERROR_TITLE = 'Failed to open settings'
 
 METADATA_PARAMETER_KEY = 'parameters'
 INPAINT_MODE = 'Inpaint'
-IGNORED_APPCONFIG_CATEGORIES = ('Stable-Diffusion', 'GLID-3-XL', 'Cache')
+IGNORED_APPCONFIG_CATEGORIES = ('Stable-Diffusion', 'GLID-3-XL')
 
 
 class BaseInpaintController(MenuBuilder):
@@ -140,6 +142,7 @@ class BaseInpaintController(MenuBuilder):
         universal settings, subclasses will need to extend this or override get_config_categories to add more.
         """
         settings_modal.load_from_config(AppConfig.instance(), self.get_config_categories())
+        settings_modal.load_from_config(KeyConfig.instance())
 
     def refresh_settings(self, settings_modal: SettingsModal):
         """
@@ -167,12 +170,15 @@ class BaseInpaintController(MenuBuilder):
         changed_settings : dict
             Set of changes loaded from a SettingsModal.
         """
-        config = AppConfig.instance()
+        app_config = AppConfig.instance()
         categories = self.get_config_categories()
-        base_keys = [key for cat in categories for key in config.get_category_keys(cat)]
+        base_keys = [key for cat in categories for key in app_config.get_category_keys(cat)]
+        key_keys = KeyConfig.instance().get_keys()
         for key, value in changed_settings.items():
             if key in base_keys:
-                config.set(key, value)
+                app_config.set(key, value)
+            elif key in key_keys:
+                KeyConfig.instance().set(key, value)
 
     def window_init(self):
         """Initialize and show the main application window."""
@@ -199,8 +205,8 @@ class BaseInpaintController(MenuBuilder):
         def _apply_style(new_style: str) -> None:
             self._app.setStyle(new_style)
 
-        config.connect(self, AppConfig.STYLES, _apply_style)
-        _apply_style(config.get(AppConfig.STYLES))
+        config.connect(self, AppConfig.STYLE, _apply_style)
+        _apply_style(config.get(AppConfig.STYLE))
 
         def _apply_theme(theme: str) -> None:
             if theme.startswith('qdarktheme_') and qdarktheme is not None and hasattr(qdarktheme, 'setup_theme'):
@@ -266,14 +272,14 @@ class BaseInpaintController(MenuBuilder):
     def save_image(self, file_path: Optional[str] = None) -> None:
         """Open a save dialog, and save the edited image to disk, preserving any metadata."""
         assert self._window is not None
-        config = AppConfig.instance()
+        cache = Cache.instance()
         if not self._layer_stack.has_image:
             show_error_dialog(self._window, SAVE_ERROR_TITLE, SAVE_ERROR_MESSAGE_NO_IMAGE)
             return
         try:
             if not isinstance(file_path, str):
                 file_path, file_selected = open_image_file(self._window, mode='save',
-                                                           selected_file=config.get(AppConfig.LAST_FILE_PATH))
+                                                           selected_file=cache.get(Cache.LAST_FILE_PATH))
                 if not file_path or not file_selected:
                     return
             assert_type(file_path, str)
@@ -295,7 +301,7 @@ class BaseInpaintController(MenuBuilder):
                     image.save(file_path, 'PNG', pnginfo=info)
                 else:
                     image.save(file_path, 'PNG')
-            config.set(AppConfig.LAST_FILE_PATH, file_path)
+            cache.set(Cache.LAST_FILE_PATH, file_path)
         except (IOError, TypeError) as save_err:
             show_error_dialog(self._window, SAVE_ERROR_TITLE, str(save_err))
             raise save_err
@@ -304,6 +310,7 @@ class BaseInpaintController(MenuBuilder):
     def load_image(self, file_path: Optional[str] = None) -> None:
         """Open a loading dialog, then load the selected image for editing."""
         assert self._window is not None
+        cache = Cache.instance()
         config = AppConfig.instance()
         if file_path is None:
             file_path, file_selected = open_image_file(self._window)
@@ -321,7 +328,7 @@ class BaseInpaintController(MenuBuilder):
                 else:
                     self._metadata = None
                 self._layer_stack.set_image(QImage(file_path))
-            config.set(AppConfig.LAST_FILE_PATH, file_path)
+            cache.set(Cache.LAST_FILE_PATH, file_path)
 
             # File loaded, attempt to apply metadata:
             if self._metadata is not None and METADATA_PARAMETER_KEY in self._metadata:
@@ -360,7 +367,7 @@ class BaseInpaintController(MenuBuilder):
     def reload_image(self) -> None:
         """Reload the edited image from disk after getting confirmation from a confirmation dialog."""
         assert self._window is not None
-        file_path = AppConfig.instance().get(AppConfig.LAST_FILE_PATH)
+        file_path = Cache.instance().get(Cache.LAST_FILE_PATH)
         if file_path == '':
             show_error_dialog(self._window, RELOAD_ERROR_TITLE, RELOAD_ERROR_MESSAGE_NO_IMAGE)
             return

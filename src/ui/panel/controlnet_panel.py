@@ -196,7 +196,7 @@ class ControlnetPanel(CollapsibleBox):
                 if selected_module not in module_detail[MODULE_DETAIL_KEY]:
                     for option in module_detail[MODULE_LIST_KEY]:
                         if selected_module.startswith(option):
-                            selection = option
+                            selected_module = option
                             break
                 if selected_module not in module_detail[MODULE_DETAIL_KEY]:
                     logger.warning(f'Warning: chosen module {selected_module} not found')

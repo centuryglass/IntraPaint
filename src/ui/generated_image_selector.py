@@ -13,6 +13,7 @@ from PyQt5.QtWidgets import QWidget, QGraphicsPixmapItem, QVBoxLayout, QLabel, \
     QStyleOptionGraphicsItem, QHBoxLayout, QPushButton, QStyle, QApplication
 
 from src.config.application_config import AppConfig
+from src.config.key_config import KeyConfig
 from src.image.layer_stack import LayerStack
 from src.ui.graphics_items.loading_spinner import LoadingSpinner
 from src.ui.graphics_items.outline import Outline
@@ -134,28 +135,30 @@ class GeneratedImageSelector(QWidget):
         self._button_bar_layout.addWidget(self._status_label)
         self._button_bar_layout.addStretch(255)
 
+        key_config = KeyConfig.instance()
+
         def _add_key_hint(button, config_key):
-            keys = config.get_keycodes(config_key)
+            keys = key_config.get_keycodes(config_key)
             button.setText(f'{button.text()} [{get_key_display_string(keys)}]')
 
         self._prev_button = QPushButton()
         self._prev_button.setIcon(get_standard_qt_icon(QStyle.SP_ArrowLeft))
         self._prev_button.setText(PREVIOUS_BUTTON_TEXT)
         self._prev_button.clicked.connect(self._zoom_prev)
-        _add_key_hint(self._prev_button, AppConfig.MOVE_LEFT)
+        _add_key_hint(self._prev_button, KeyConfig.MOVE_LEFT)
         self._button_bar_layout.addWidget(self._prev_button)
 
         self._zoom_button = QPushButton()
         self._zoom_button.setText(ZOOM_BUTTON_TEXT)
         self._zoom_button.clicked.connect(self.toggle_zoom)
-        _add_key_hint(self._zoom_button, AppConfig.ZOOM_TOGGLE)
+        _add_key_hint(self._zoom_button, KeyConfig.ZOOM_TOGGLE)
         self._button_bar_layout.addWidget(self._zoom_button)
 
         self._next_button = QPushButton()
         self._next_button.setIcon(get_standard_qt_icon(QStyle.SP_ArrowRight))
         self._next_button.setText(NEXT_BUTTON_TEXT)
         self._next_button.clicked.connect(self._zoom_next)
-        _add_key_hint(self._next_button, AppConfig.MOVE_RIGHT)
+        _add_key_hint(self._next_button, KeyConfig.MOVE_RIGHT)
         self._button_bar_layout.addWidget(self._next_button)
 
     def set_is_loading(self, is_loading: bool, message: Optional[str] = None):

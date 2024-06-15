@@ -45,7 +45,7 @@ class ImageViewer(ImageGraphicsView):
         # Generation area and border rectangle setup:
         self._scene_outline = Outline(self.scene(), self)
         self._scene_border = Border(self.scene(), self)
-        self._scene_border.windowed_area = layer_stack.geometry
+        self._scene_border.windowed_area = layer_stack.geometry if layer_stack.has_image else QRect()
         self._scene_border.color = GENERATION_AREA_BORDER_COLOR
         self._scene_border.setOpacity(IMAGE_BORDER_OPACITY)
         self._scene_border.setVisible(True)
@@ -243,7 +243,7 @@ class ImageViewer(ImageGraphicsView):
             return
         self.content_size = new_size
 
-        self._scene_border.windowed_area = self._layer_stack.geometry
+        self._scene_border.windowed_area = self._layer_stack.geometry if self._layer_stack.has_image else QRect()
         self._update_drawn_borders()
         self.resizeEvent(None)
 
@@ -258,6 +258,8 @@ class ImageViewer(ImageGraphicsView):
 
     def _layer_added_slot(self, new_layer: ImageLayer, index: int) -> None:
         """Adds a new image layer into the view."""
+        if self._scene_border.windowed_area.isEmpty() and self._layer_stack.has_image:
+            self._scene_border.windowed_area = self._layer_stack.geometry if self._layer_stack.has_image else QRect()
         layer_item = _LayerItem(new_layer)
         layer_item.setZValue(-index)
         layer_item.setPos(new_layer.position)
@@ -275,6 +277,8 @@ class ImageViewer(ImageGraphicsView):
 
     def _layer_removed_slot(self, removed_layer: ImageLayer) -> None:
         """Removes an image layer from the view."""
+        if not self._layer_stack.has_image:
+            self._scene_border.windowed_area = QRect()
         layer_item = self._layer_items[removed_layer.id]
         layer_was_visible = layer_item.isVisible()
         self.scene().removeItem(layer_item)

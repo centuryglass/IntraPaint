@@ -2,7 +2,7 @@
 from typing import Optional, List
 
 from PyQt5.QtCore import Qt, pyqtProperty, QPropertyAnimation, QObject
-from PyQt5.QtGui import QPen, QColor, QShowEvent, QHideEvent, QPolygon, QPolygonF
+from PyQt5.QtGui import QPen, QColor, QShowEvent, QHideEvent, QPolygonF
 from PyQt5.QtWidgets import QGraphicsItem, QGraphicsView, QGraphicsItemGroup, QGraphicsPolygonItem
 
 PEN_WIDTH = 3

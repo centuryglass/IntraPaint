@@ -6,6 +6,7 @@ from PyQt5.QtGui import QCursor, QTabletEvent, QMouseEvent, QColor, QIcon, QWhee
 from PyQt5.QtWidgets import QApplication, QWidget
 
 from src.config.application_config import AppConfig
+from src.config.key_config import KeyConfig
 from src.hotkey_filter import HotkeyFilter
 from src.image.canvas.layer_canvas import LayerCanvas
 from src.image.image_layer import ImageLayer
@@ -14,9 +15,9 @@ from src.tools.base_tool import BaseTool
 from src.ui.image_viewer import ImageViewer
 from src.util.key_code_utils import get_modifiers
 
-RESOURCES_BRUSH_ICON = 'resources/brush.svg'
-RESOURCES_CURSOR = './resources/cursor.svg'
-RESOURCES_MIN_CURSOR = './resources/minCursor.svg'
+RESOURCES_BRUSH_ICON = 'resources/icons/brush_icon.svg'
+RESOURCES_CURSOR = './resources/cursors/brush_cursor.svg'
+RESOURCES_MIN_CURSOR = './resources/cursors/min_cursor.svg'
 
 MAX_CURSOR_SIZE = 255
 MIN_CURSOR_SIZE = 20
@@ -63,7 +64,7 @@ class CanvasTool(BaseTool):
             self._canvas.edit_region = QRect(QPoint(0, 0), new_size)
         self._layer_stack.size_changed.connect(update_size)
 
-        for key, sign in ((AppConfig.BRUSH_SIZE_DECREASE, -1), (AppConfig.BRUSH_SIZE_INCREASE, 1)):
+        for key, sign in ((KeyConfig.BRUSH_SIZE_DECREASE, -1), (KeyConfig.BRUSH_SIZE_INCREASE, 1)):
             def _size_change(mult, step=sign) -> bool:
                 if not hasattr(self, 'adjust_brush_size') or not self.is_active:
                     return False
@@ -258,7 +259,7 @@ class CanvasTool(BaseTool):
 
     @staticmethod
     def _speed_modifier_held() -> bool:
-        speed_modifier = AppConfig.instance().get(AppConfig.SPEED_MODIFIER)
+        speed_modifier = KeyConfig.instance().get(KeyConfig.SPEED_MODIFIER)
         if speed_modifier == '':
             return False
         speed_modifier = get_modifiers(speed_modifier)

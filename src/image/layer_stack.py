@@ -777,7 +777,7 @@ class LayerStack(QObject):
         self._pixmap_cache_full.invalidate()
 
     def _layer_values_from_layer_or_id_or_active(self, layer: Optional[ImageLayer | int]) -> Tuple[Optional[ImageLayer],
-    Optional[int]]:
+                                                                                                   Optional[int]]:
         """Returns layer, layer_id, layer_index, given a layer, id, or None. If None, use the active layer."""
         if layer is None:
             if self._active_layer_id is None:

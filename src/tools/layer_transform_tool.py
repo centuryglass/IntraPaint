@@ -8,9 +8,7 @@ from PyQt5.QtWidgets import QWidget, QApplication, QLabel, QGraphicsPixmapItem, 
     QGraphicsRotation, QGraphicsItem, QSpinBox, QDoubleSpinBox, \
     QCheckBox, QGridLayout, QPushButton
 
-from src.util.menu_action import INT_MAX
-
-from src.config.application_config import AppConfig
+from src.config.key_config import KeyConfig
 from src.hotkey_filter import HotkeyFilter
 from src.image.image_layer import ImageLayer
 from src.image.layer_stack import LayerStack
@@ -18,6 +16,7 @@ from src.tools.base_tool import BaseTool
 from src.ui.image_viewer import ImageViewer
 from src.ui.widget.key_hint_label import KeyHintLabel
 from src.undo_stack import commit_action
+from src.util.menu_action import INT_MAX
 
 X_OFFSET_LABEL = "X Offset:"
 Y_OFFSET_LABEL = "Y Offset:"
@@ -27,7 +26,7 @@ DEGREE_LABEL = 'Rotation:'
 
 TRANSFORM_LABEL = 'Transform Layers'
 TRANSFORM_TOOLTIP = 'Move, scale, or rotate the active layer.'
-RESOURCES_TRANSFORM_TOOL_ICON = 'resources/layer_transform.svg'
+RESOURCES_TRANSFORM_TOOL_ICON = 'resources/icons/layer_transform_icon.svg'
 ASPECT_RATIO_CHECK_LABEL = 'Preserve aspect ratio:'
 RESET_BUTTON_TEXT = 'Reset'
 
@@ -90,13 +89,13 @@ class LayerTransformTool(BaseTool):
         self._aspect_ratio_checkbox.clicked.connect(_restore_aspect_ratio)
 
         # Register movement key overrides, tied to control panel visibility:
-        config = AppConfig.instance()
-        for control, up_key_code, down_key_code in ((self._offset_box_x, AppConfig.MOVE_RIGHT, AppConfig.MOVE_LEFT),
-                                                    (self._offset_box_y, AppConfig.MOVE_DOWN, AppConfig.MOVE_UP),
-                                                    (self._scale_box_x, AppConfig.PAN_RIGHT, AppConfig.PAN_LEFT),
-                                                    (self._scale_box_y, AppConfig.PAN_UP, AppConfig.PAN_DOWN),
-                                                    (self._rotate_box, AppConfig.ROTATE_CW_KEY,
-                                                     AppConfig.ROTATE_CCW_KEY)):
+        config = KeyConfig.instance()
+        for control, up_key_code, down_key_code in ((self._offset_box_x, KeyConfig.MOVE_RIGHT, KeyConfig.MOVE_LEFT),
+                                                    (self._offset_box_y, KeyConfig.MOVE_DOWN, KeyConfig.MOVE_UP),
+                                                    (self._scale_box_x, KeyConfig.PAN_RIGHT, KeyConfig.PAN_LEFT),
+                                                    (self._scale_box_y, KeyConfig.PAN_UP, KeyConfig.PAN_DOWN),
+                                                    (self._rotate_box, KeyConfig.ROTATE_CW_KEY,
+                                                     KeyConfig.ROTATE_CCW_KEY)):
             self._up_keys[control] = config.get_keycodes(up_key_code)
             self._down_keys[control] = config.get_keycodes(down_key_code)
 
@@ -114,7 +113,7 @@ class LayerTransformTool(BaseTool):
 
     def get_hotkey(self) -> QKeySequence:
         """Returns the hotkey(s) that should activate this tool."""
-        return AppConfig.instance().get_keycodes(AppConfig.TRANSFORM_TOOL_KEY)
+        return KeyConfig.instance().get_keycodes(KeyConfig.TRANSFORM_TOOL_KEY)
 
     def get_icon(self) -> QIcon:
         """Returns an icon used to represent this tool."""

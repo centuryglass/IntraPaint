@@ -1,0 +1,450 @@
+{
+    "speed_modifier": {
+        "label": "Key Speed Modifier:",
+        "category": "Keybindings",
+        "description": "If this key is held, movement/zoom/pan/scroll/etc. operations will go faster. (avoid changing, Shift and Ctrl are the only other working options and those cause various conflicts.)",
+        "type": "string",
+        "default": "Alt",
+        "saved": true
+    },
+    "zoom_in": {
+        "label": "Zoom in:",
+        "category": "Keybindings",
+        "description": "Zoom in on image content",
+        "type": "string",
+        "default": "PgUp",
+        "saved": true
+    },
+    "zoom_out": {
+        "label": "Zoom out:",
+        "category": "Keybindings",
+        "description": "Zoom out on image content",
+        "type": "string",
+        "default": "PgDown",
+        "saved": true
+    },
+    "zoom_toggle": {
+        "label": "Toggle zoom:",
+        "category": "Keybindings",
+        "description": "Switch between close-up and zoomed out views",
+        "type": "string",
+        "default": "z",
+        "saved": true
+    },
+    "pan_left": {
+        "label": "Pan left:",
+        "category": "Keybindings",
+        "description": "Scroll the image view left",
+        "type": "string",
+        "default": "Ctrl+Left",
+        "saved": true
+    },
+    "pan_right": {
+        "label": "Pan right:",
+        "category": "Keybindings",
+        "description": "Scroll the image view right",
+        "type": "string",
+        "default": "Ctrl+Right",
+        "saved": true
+    },
+    "pan_up": {
+        "label": "Pan up:",
+        "category": "Keybindings",
+        "description": "Scroll the image view up",
+        "type": "string",
+        "default": "Ctrl+Up",
+        "saved": true
+    },
+    "pan_down": {
+        "label": "Pan down:",
+        "category": "Keybindings",
+        "description": "Scroll the image view down",
+        "type": "string",
+        "default": "Ctrl+Down",
+        "saved": true
+    },
+    "move_left": {
+        "label": "Move left:",
+        "category": "Keybindings",
+        "description": "Move the image generation area left",
+        "type": "string",
+        "default": "Left,H",
+        "saved": true
+    },
+    "move_right": {
+        "label": "Move right:",
+        "category": "Keybindings",
+        "description": "Move the image generation area right",
+        "type": "string",
+        "default": "Right,L",
+        "saved": true
+    },
+    "move_up": {
+        "label": "Move up:",
+        "category": "Keybindings",
+        "description": "Move the image generation area up",
+        "type": "string",
+        "default": "Up,K",
+        "saved": true
+    },
+    "move_down": {
+        "label": "Move down:",
+        "category": "Keybindings",
+        "description": "Move the image generation area down",
+        "type": "string",
+        "default": "Down,J",
+        "saved": true
+    },
+    "brush_size_increase": {
+        "label": "Increase brush size:",
+        "category": "Keybindings",
+        "description": "Increase the size of the active brush",
+        "type": "string",
+        "default": "]",
+        "saved": true
+    },
+    "brush_size_decrease": {
+        "label": "Decrease brush size:",
+        "category": "Keybindings",
+        "description": "Increase the size of the active brush",
+        "type": "string",
+        "default": "[",
+        "saved": true
+    },
+    "brush_tool_key": {
+        "label": "Switch to the brush tool:",
+        "category": "Keybindings",
+        "description": "Activate the brush tool to draw into the image.",
+        "type": "string",
+        "default": "B",
+        "saved": true
+    },
+    "eyedropper_tool_key": {
+        "label": "Switch to the color picker tool:",
+        "category": "Keybindings",
+        "description": "Activate the color picker tool to change the brush color.",
+        "type": "string",
+        "default": "C",
+        "saved": true
+    },
+    "transform_tool_key": {
+        "label": "Switch to the layer transformation tool:",
+        "category": "Keybindings",
+        "description": "Activate the layer transformation tool to move, scale, or rotate layers.",
+        "type": "string",
+        "default": "T",
+        "saved": true
+    },
+    "selection_tool_key": {
+        "label": "Switch to the selection tool:",
+        "category": "Keybindings",
+        "description": "Activate the selection tool to mark areas for editing.",
+        "type": "string",
+        "default": "S",
+        "saved": true
+    },
+    "generation_area_tool_key": {
+        "label": "Switch to the image generation area selection tool:",
+        "category": "Keybindings",
+        "description": "Activate the generation area tool to pick an image area for AI image generation.",
+        "type": "string",
+        "default": "G",
+        "saved": true
+    },
+    "rotate_ccw_key": {
+        "label": "Rotate layer counter-clockwise:",
+        "category": "Keybindings",
+        "description": "Rotates the layer when the layer transformation tool is active",
+        "type": "string",
+        "default": "o",
+        "saved": true
+    },
+    "rotate_cw_key": {
+        "label": "Rotate layer clockwise:",
+        "category": "Keybindings",
+        "description": "Rotates the layer when the layer transformation tool is active",
+        "type": "string",
+        "default": "p",
+        "saved": true
+    },
+    "new_image_shortcut": {
+        "label": "New Image",
+        "category": "Keybindings",
+        "description": "Open a new image for editing.",
+        "type": "string",
+        "default": "Ctrl+N",
+        "saved": true
+    },
+    "save_shortcut": {
+        "label": "Save",
+        "category": "Keybindings",
+        "description": "Save current image as .png or .inpt.",
+        "type": "string",
+        "default": "Ctrl+S",
+        "saved": true
+    },
+    "load_shortcut": {
+        "label": "Load Image",
+        "category": "Keybindings",
+        "description": "Open an image file for editing.",
+        "type": "string",
+        "default": "Ctrl+O",
+        "saved": true
+    },
+    "reload_shortcut": {
+        "label": "Reload",
+        "category": "Keybindings",
+        "description": "Reload the image from its file.",
+        "type": "string",
+        "default": "F5",
+        "saved": true
+    },
+    "quit_shortcut": {
+        "label": "Quit",
+        "category": "Keybindings",
+        "description": "Closes the application.",
+        "type": "string",
+        "default": "Ctrl+Q",
+        "saved": true
+    },
+    "undo_shortcut": {
+        "label": "Undo",
+        "category": "Keybindings",
+        "description": "Undo the last action taken",
+        "type": "string",
+        "default": "Ctrl+Z",
+        "saved": true
+    },
+    "redo_shortcut": {
+        "label": "Redo",
+        "category": "Keybindings",
+        "description": "Re-apply the last action reversed with undo.",
+        "type": "string",
+        "default": "Ctrl+Shift+Z",
+        "saved": true
+    },
+    "cut_shortcut": {
+        "label": "Cut",
+        "category": "Keybindings",
+        "description": "Remove masked image content in the active layer.",
+        "type": "string",
+        "default": "Ctrl+X",
+        "saved": true
+    },
+    "copy_shortcut": {
+        "label": "Copy",
+        "category": "Keybindings",
+        "description": "Copy masked image content in the active layer.",
+        "type": "string",
+        "default": "Ctrl+C",
+        "saved": true
+    },
+    "paste_shortcut": {
+        "label": "Paste",
+        "category": "Keybindings",
+        "description": "Insert copied image data into a new layer.",
+        "type": "string",
+        "default": "Ctrl+V",
+        "saved": true
+    },
+    "resize_canvas_shortcut": {
+        "label": "Resize canvas",
+        "category": "Keybindings",
+        "description": "Change the image size without scaling layers.",
+        "type": "string",
+        "default": "F2",
+        "saved": true
+    },
+    "scale_image_shortcut": {
+        "label": "Scale image",
+        "category": "Keybindings",
+        "description": "Scale image content to a new size.",
+        "type": "string",
+        "default": "F3",
+        "saved": true
+    },
+    "image_to_layers_shortcut": {
+        "label": "Resize image to content",
+        "category": "Keybindings",
+        "description": "Resize the image to fit all layers",
+        "type": "string",
+        "default": "Ctrl+Alt+R",
+        "saved": true
+    },
+    "update_metadata_shortcut": {
+        "label": "Update metadata",
+        "category": "Keybindings",
+        "description": "Update image metadata that will be saved with the file.",
+        "type": "string",
+        "default": "Ctrl+Alt+D",
+        "saved": true
+    },
+    "generate_shortcut": {
+        "label": "Generate",
+        "category": "Keybindings",
+        "description": "Start AI image generation.",
+        "type": "string",
+        "default": "F4",
+        "saved": true
+    },
+    "select_all_shortcut": {
+        "label": "Select All",
+        "category": "Keybindings",
+        "description": "Select the entire image",
+        "type": "string",
+        "default": "Ctrl+A",
+        "saved": true
+    },
+    "select_none_shortcut": {
+        "label": "Deselect All",
+        "category": "Keybindings",
+        "description": "Clear the selection",
+        "type": "string",
+        "default": "Ctrl+D",
+        "saved": true
+    },
+    "invert_selection_shortcut": {
+        "label": "Invert selection",
+        "category": "Keybindings",
+        "description": "Swap selected and unselected areas",
+        "type": "string",
+        "default": "Ctrl+I",
+        "saved": true
+    },
+    "select_layer_content_shortcut": {
+        "label": "Select layer content",
+        "category": "Keybindings",
+        "description": "Select all non-transparent pixels in the active layer",
+        "type": "string",
+        "default": "Ctrl+Shift+A",
+        "saved": true
+    },
+    "grow_selection_shortcut": {
+        "label": "Expand selection",
+        "category": "Keybindings",
+        "description": "Expand the selection bounds",
+        "type": "string",
+        "default": "Ctrl+=",
+        "saved": true
+    },
+    "shrink_selection_shortcut": {
+        "label": "Shrink selection",
+        "category": "Keybindings",
+        "description": "Shrink the selection bounds",
+        "type": "string",
+        "default": "Ctrl+-",
+        "saved": true
+    },
+    "new_layer_shortcut": {
+        "label": "New layer",
+        "category": "Keybindings",
+        "description": "Create a new layer above the active layer.",
+        "type": "string",
+        "default": "Ctrl+Shift+N",
+        "saved": true
+    },
+    "copy_layer_shortcut": {
+        "label": "Copy layer",
+        "category": "Keybindings",
+        "description": "Create a copy of the active layer.",
+        "type": "string",
+        "default": "Ctrl+Shift+C",
+        "saved": true
+    },
+    "delete_layer_shortcut": {
+        "label": "Delete layer",
+        "category": "Keybindings",
+        "description": "Delete the active layer.",
+        "type": "string",
+        "default": "Ctrl+Shift+D",
+        "saved": true
+    },
+    "select_previous_layer_shortcut": {
+        "label": "Select previous layer",
+        "category": "Keybindings",
+        "description": "Switch to the next layer up.",
+        "type": "string",
+        "default": "Ctrl+PgUp",
+        "saved": true
+    },
+    "select_next_layer_shortcut": {
+        "label": "Select next layer",
+        "category": "Keybindings",
+        "description": "Switch to the next layer down.",
+        "type": "string",
+        "default": "Ctrl+PgDown",
+        "saved": true
+    },
+    "move_layer_up_shortcut": {
+        "label": "Move layer up",
+        "category": "Keybindings",
+        "description": "Move the active layer up",
+        "type": "string",
+        "default": "Ctrl+Home",
+        "saved": true
+    },
+    "move_layer_down_shortcut": {
+        "label": "Move layer down",
+        "category": "Keybindings",
+        "description": "Move the active layer down",
+        "type": "string",
+        "default": "Ctrl+End",
+        "saved": true
+    },
+    "merge_layer_down_shortcut": {
+        "label": "Merge layer down",
+        "category": "Keybindings",
+        "description": "Merge the active layer with the one below it",
+        "type": "string",
+        "default": "Ctrl+Shift+M",
+        "saved": true
+    },
+    "layer_to_image_size_shortcut": {
+        "label": "Layer to image size",
+        "category": "Keybindings",
+        "description": "Expand or crop the active layer to match the image bounds.",
+        "type": "string",
+        "default": "Ctrl+Shift+I",
+        "saved": true
+    },
+    "crop_to_content_shortcut": {
+        "label": "Crop layer to contents",
+        "category": "Keybindings",
+        "description": "Crop transparent borders in the active layer.",
+        "type": "string",
+        "default": "Ctrl+Shift+P",
+        "saved": true
+    },
+    "clear_selection_shortcut": {
+        "label": "Clear mask",
+        "category": "Keybindings",
+        "description": "Clear the selection layer.",
+        "type": "string",
+        "default": "F8",
+        "saved": true
+    },
+    "show_layer_menu_shortcut": {
+        "label": "Show layer window",
+        "category": "Keybindings",
+        "description": "Open the image layer panel in a new window.",
+        "type": "string",
+        "default": "F7",
+        "saved": true
+    },
+    "settings_shortcut": {
+        "label": "Settings",
+        "category": "Keybindings",
+        "description": "Open the application settings window.",
+        "type": "string",
+        "default": "F9",
+        "saved": true
+    },
+    "lcm_mode_shortcut": {
+        "label": "LCM Mode",
+        "category": "Keybindings",
+        "description": "Apply appropriate settings for the LCM LORA.",
+        "type": "string",
+        "default": "F10",
+        "saved": true
+    }
+}
