@@ -34,6 +34,7 @@ class ImageGraphicsView(QGraphicsView):
         self._cursor_pixmap: Optional[QPixmap] = None
         self._cursor_pixmap_item: Optional[QGraphicsPixmapItem] = None
         self._centered_on = QPoint(self.width() // 2, self.height() // 2)
+        self._mouse_navigation_enabled = True
 
         self._scale = 1.0
         self._scale_adjustment = 0.0
@@ -94,6 +95,15 @@ class ImageGraphicsView(QGraphicsView):
                 return True
 
             HotkeyFilter.instance().register_speed_modified_keybinding(_zoom, config_key)
+
+    @property
+    def mouse_navigation_enabled(self) -> bool:
+        """Returns whether mouse events should pan through the scene or move the image generation area."""
+        return self._mouse_navigation_enabled
+
+    @mouse_navigation_enabled.setter
+    def mouse_navigation_enabled(self, enabled: bool) -> None:
+        self._mouse_navigation_enabled = enabled
 
     def centerOn(self, pos: QPoint | QPointF) -> None:
         """Cache the center point whenever it changes."""
@@ -325,6 +335,7 @@ class ImageGraphicsView(QGraphicsView):
         """Custom mousePress handler to deal with QGraphicsView oddities. Child classes must call this implementation
            first with get_result=True, then exit without further action if it returns true."""
         self.set_cursor_pos(event.pos())
+        super().mousePressEvent(event)
         key_modifiers = QApplication.keyboardModifiers()
         if event.buttons() == Qt.MouseButton.MiddleButton or (event.buttons() == Qt.MouseButton.LeftButton
                                                               and key_modifiers == Qt.ControlModifier):
@@ -338,7 +349,8 @@ class ImageGraphicsView(QGraphicsView):
         """Custom mouseMove handler to deal with QGraphicsView oddities. Child classes must call this implementation
            first with get_result=True, then exit without further action if it returns true."""
         self.set_cursor_pos(event.pos())
-        if self._drag_pt is not None and event is not None:
+        super().mouseMoveEvent(event)
+        if self._mouse_navigation_enabled and self._drag_pt is not None and event is not None:
             key_modifiers = QApplication.keyboardModifiers()
             if event.buttons() == Qt.MouseButton.MiddleButton or (event.buttons() == Qt.MouseButton.LeftButton
                                                                   and key_modifiers == Qt.ControlModifier):
@@ -362,6 +374,7 @@ class ImageGraphicsView(QGraphicsView):
         """Custom mouseRelease handler to deal with QGraphicsView oddities. Child classes must call this implementation
            first with get_result=True, then exit without further action if it returns true."""
         self.set_cursor_pos(event.pos())
+        super().mouseReleaseEvent(event)
         for event_filter in self._event_filters:
             if event_filter.eventFilter(self, event):
                 return True if get_result else None

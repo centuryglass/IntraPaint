@@ -1,39 +1,51 @@
 """An image editing tool that moves the selected editing region."""
 from typing import Optional, Dict
 
-from PyQt5.QtCore import Qt, QPoint, QRect, QRectF
+from PyQt5.QtCore import Qt, QPoint, QRect, QRectF, QPointF
 from PyQt5.QtGui import QMouseEvent, QCursor, QIcon, QTransform, QVector3D, QPixmap, QImage, QPainter, \
     QKeySequence
 from PyQt5.QtWidgets import QWidget, QApplication, QLabel, QGraphicsPixmapItem, QGraphicsScale, \
     QGraphicsRotation, QGraphicsItem, QSpinBox, QDoubleSpinBox, \
     QCheckBox, QGridLayout, QPushButton
 
+from src.config.application_config import AppConfig
 from src.config.key_config import KeyConfig
 from src.hotkey_filter import HotkeyFilter
 from src.image.image_layer import ImageLayer
 from src.image.layer_stack import LayerStack
 from src.tools.base_tool import BaseTool
+from src.ui.graphics_items.transform_outline import TransformOutline
 from src.ui.image_viewer import ImageViewer
 from src.ui.widget.key_hint_label import KeyHintLabel
 from src.undo_stack import commit_action
-from src.util.menu_action import INT_MAX
 
-X_OFFSET_LABEL = "X Offset:"
-Y_OFFSET_LABEL = "Y Offset:"
-WIDTH_SCALE_LABEL = "Width scale:"
-HEIGHT_SCALE_LABEL = "Height scale:"
+Y_SCALE_LABEL = "y-scale:"
+
+X_SCALE_LABEL = "x-scale:"
+
+Y_OFFSET_LABEL = 'y-offset:'
+
+X_OFFSET_LABEL = "x-offset:"
+
+X_LABEL = "X:"
+Y_LABEL = "Y:"
+WIDTH_LABEL = "Width:"
+HEIGHT_LABEL = "Height:"
 DEGREE_LABEL = 'Rotation:'
 
 TRANSFORM_LABEL = 'Transform Layers'
 TRANSFORM_TOOLTIP = 'Move, scale, or rotate the active layer.'
 RESOURCES_TRANSFORM_TOOL_ICON = 'resources/icons/layer_transform_icon.svg'
-ASPECT_RATIO_CHECK_LABEL = 'Preserve aspect ratio:'
+ASPECT_RATIO_CHECK_LABEL = 'Preserve aspect ratio'
 RESET_BUTTON_TEXT = 'Reset'
 TRANSFORM_CONTROL_HINT = 'LMB+drag:move layer -'
 
+FLOAT_MAX = 9999999.0
+FLOAT_MIN = -9999999.0
+MIN_NONZERO = 0.001
+INT_MIN = -2147483646
+INT_MAX = 2147483647
 SCALE_STEP = 0.05
-FLOAT_MAX = 99999.0
-FLOAT_MIN = -99999.0
 
 
 class LayerTransformTool(BaseTool):
@@ -44,13 +56,12 @@ class LayerTransformTool(BaseTool):
         self._layer_stack = layer_stack
         self._image_viewer = image_viewer
         self._icon = QIcon(RESOURCES_TRANSFORM_TOOL_ICON)
-        self._transform_pixmap = QGraphicsPixmapItem()
-        self._transform_pixmap.setVisible(False)
-        self._rotation = 0.0
-        self._offset = QPoint()
-        self._scale_x = 1.0
-        self._scale_y = 1.0
-        image_viewer.scene().addItem(self._transform_pixmap)
+        self._transform_outline = TransformOutline(image_viewer)
+        self._transform_outline.transform_changed.connect(self._transformation_change_slot)
+        self._transform_pixmap = QGraphicsPixmapItem(self._transform_outline)
+        self._transform_pixmap.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIgnoresParentOpacity)
+        self._transform_outline.setVisible(False)
+        image_viewer.scene().addItem(self._transform_outline)
         self.cursor = QCursor(Qt.CursorShape.OpenHandCursor)
         self._dragging = False
         self._last_mouse_pos: Optional[QPoint] = None
@@ -60,41 +71,46 @@ class LayerTransformTool(BaseTool):
         # prepare control panel, wait to fully initialize
         self._control_panel = QWidget()
         self._control_layout: Optional[QGridLayout] = None
-        self._offset_box_x = QSpinBox()
-        self._offset_box_x.valueChanged.connect(self._translate_x)
-        self._offset_box_y = QSpinBox()
-        self._offset_box_y.valueChanged.connect(self._translate_y)
-        self._scale_box_x = QDoubleSpinBox()
-        self._scale_box_x.setValue(1.0)
-        self._scale_box_x.valueChanged.connect(self._set_scale_x)
-        self._scale_box_y = QDoubleSpinBox()
-        self._scale_box_y.setValue(1.0)
-        self._scale_box_y.valueChanged.connect(self._set_scale_y)
-        self._rotate_box = QDoubleSpinBox()
-        self._rotate_box.valueChanged.connect(self.rotate)
-        for float_box in (self._rotate_box, self._scale_box_x, self._scale_box_y):
-            float_box.setRange(FLOAT_MIN, FLOAT_MAX)
-        for scale_box in (self._scale_box_x, self._scale_box_y):
+
+        def _init_control(default_val, min_val, max_val, change_fn):
+            control = QSpinBox() if isinstance(default_val, int) else QDoubleSpinBox()
+            control.setRange(min_val, max_val)
+            control.setValue(default_val)
+            control.valueChanged.connect(change_fn)
+            return control
+
+        self._x_pos_box = _init_control(0, INT_MIN, INT_MAX, self.set_x)
+        self._y_pos_box = _init_control(0, INT_MIN, INT_MAX, self.set_y)
+        self._x_offset_box = _init_control(0, INT_MIN, INT_MAX, self.set_x_offset)
+        self._y_offset_box = _init_control(0, INT_MIN, INT_MAX, self.set_y_offset)
+        self._y_pos_box.valueChanged.connect(self.set_y)
+        edit_size = AppConfig.instance().get(AppConfig.EDIT_SIZE)
+        self._width_box = _init_control(float(edit_size.width()), MIN_NONZERO, FLOAT_MAX, self.set_width)
+        self._height_box = _init_control(float(edit_size.height()), MIN_NONZERO, FLOAT_MAX, self.set_height)
+
+        self._x_scale_box = _init_control(1.0, FLOAT_MIN, FLOAT_MAX, self.set_x_scale)
+        self._y_scale_box = _init_control(1.0, FLOAT_MIN, FLOAT_MAX, self.set_y_scale)
+
+        for scale_box in (self._y_scale_box, self._x_scale_box):
             scale_box.setSingleStep(SCALE_STEP)
-        for int_box in (self._offset_box_x, self._offset_box_y):
-            int_box.setRange(-INT_MAX + 1, INT_MAX)
+        self._height_box = _init_control(float(edit_size.height()), MIN_NONZERO, FLOAT_MAX, self.set_height)
+        self._rotate_box = _init_control(0.0, FLOAT_MIN, FLOAT_MAX, self.set_rotation)
         self._aspect_ratio_checkbox = QCheckBox()
         self._down_keys: Dict[QWidget, QKeySequence] = {}
         self._up_keys: Dict[QWidget, QKeySequence] = {}
 
         def _restore_aspect_ratio() -> None:
             if self._aspect_ratio_checkbox.isChecked() and self._active_layer_id is not None:
-                max_scale = max(self._scale_x, self._scale_y)
-                self.scale(max_scale, max_scale)
+                self.restore_aspect_ratio()
 
         self._aspect_ratio_checkbox.clicked.connect(_restore_aspect_ratio)
 
         # Register movement key overrides, tied to control panel visibility:
         config = KeyConfig.instance()
-        for control, up_key_code, down_key_code in ((self._offset_box_x, KeyConfig.MOVE_RIGHT, KeyConfig.MOVE_LEFT),
-                                                    (self._offset_box_y, KeyConfig.MOVE_DOWN, KeyConfig.MOVE_UP),
-                                                    (self._scale_box_x, KeyConfig.PAN_RIGHT, KeyConfig.PAN_LEFT),
-                                                    (self._scale_box_y, KeyConfig.PAN_UP, KeyConfig.PAN_DOWN),
+        for control, up_key_code, down_key_code in ((self._x_pos_box, KeyConfig.MOVE_RIGHT, KeyConfig.MOVE_LEFT),
+                                                    (self._y_pos_box, KeyConfig.MOVE_DOWN, KeyConfig.MOVE_UP),
+                                                    (self._width_box, KeyConfig.PAN_RIGHT, KeyConfig.PAN_LEFT),
+                                                    (self._height_box, KeyConfig.PAN_UP, KeyConfig.PAN_DOWN),
                                                     (self._rotate_box, KeyConfig.ROTATE_CW_KEY,
                                                      KeyConfig.ROTATE_CCW_KEY)):
             self._up_keys[control] = config.get_keycodes(up_key_code)
@@ -132,6 +148,11 @@ class LayerTransformTool(BaseTool):
         """Return text describing different input functionality."""
         return f'{TRANSFORM_CONTROL_HINT} {super().get_input_hint()}'
 
+    def restore_aspect_ratio(self) -> None:
+        """Ensure that the aspect ratio is constant."""
+        max_scale = max(self._transform_outline.scale)
+        self._transform_outline.scale = (max_scale, max_scale)
+
     def get_control_panel(self) -> Optional[QWidget]:
         """Returns a panel providing controls for customizing tool behavior, or None if no such panel is needed."""
         if self._control_layout is not None:
@@ -154,15 +175,21 @@ class LayerTransformTool(BaseTool):
                 up_hint.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
                 grid.addWidget(up_hint, row, col + 3)
 
-        _add_control(X_OFFSET_LABEL, self._offset_box_x, 0, 0)
-        _add_control(Y_OFFSET_LABEL, self._offset_box_y, 0, 4)
+        _add_control(X_LABEL, self._x_pos_box, 0, 0)
+        _add_control(Y_LABEL, self._y_pos_box, 0, 4)
 
-        _add_control(WIDTH_SCALE_LABEL, self._scale_box_x, 1, 0)
-        _add_control(HEIGHT_SCALE_LABEL, self._scale_box_y, 1, 4)
+        #_add_control(X_OFFSET_LABEL, self._x_offset_box, 1, 0)
+        #_add_control(Y_OFFSET_LABEL, self._y_offset_box, 1, 4)
 
-        _add_control(DEGREE_LABEL, self._rotate_box, 2, 0)
+        _add_control(WIDTH_LABEL, self._width_box, 2, 0)
+        _add_control(HEIGHT_LABEL, self._height_box, 2, 4)
+
+        _add_control(X_SCALE_LABEL, self._x_scale_box, 3, 0)
+        _add_control(Y_SCALE_LABEL, self._y_scale_box, 3, 4)
+
+        _add_control(DEGREE_LABEL, self._rotate_box, 4, 0)
         self._aspect_ratio_checkbox.setText(ASPECT_RATIO_CHECK_LABEL)
-        _add_control('', self._aspect_ratio_checkbox, 3, 0)
+        grid.addWidget(self._aspect_ratio_checkbox, 5, 2, 1, 5)
 
         reset_button = QPushButton()
         reset_button.setText(RESET_BUTTON_TEXT)
@@ -178,68 +205,59 @@ class LayerTransformTool(BaseTool):
         grid.setSpacing(8)
         return self._control_panel
 
-    def mouse_click(self, event: Optional[QMouseEvent], image_coordinates: QPoint) -> bool:
-        if self._active_layer_id is None or event.buttons() != Qt.LeftButton \
-                or QApplication.keyboardModifiers() != Qt.KeyboardModifier.NoModifier:
-            return False
-        self._dragging = True
-        self._last_mouse_pos = image_coordinates
-        self._initial_layer_offset = self._layer_stack.get_layer_by_id(self._active_layer_id).position
-        return True
+    def set_x_offset(self, x_offset: float) -> None:
+        """Sets the x-offset component of the layer transformation."""
+        offset = self._transform_outline.offset
+        offset.setX(x_offset)
+        self._transform_outline.offset = offset
 
-    def mouse_move(self, event: Optional[QMouseEvent], image_coordinates: QPoint) -> bool:
-        if event.buttons() != Qt.LeftButton or not self._dragging or self._last_mouse_pos is None \
-                or self._initial_layer_offset is None:
-            return False
-        mouse_offset = image_coordinates - self._last_mouse_pos
-        self.translate(self._offset + mouse_offset)
-        self._last_mouse_pos = image_coordinates
-        return True
+    def set_y_offset(self, y_offset: float) -> None:
+        """Sets the y-offset component of the layer transformation."""
+        offset = self._transform_outline.offset
+        offset.setY(y_offset)
+        self._transform_outline.offset = offset
 
-    def mouse_release(self, event: Optional[QMouseEvent], image_coordinates: QPoint) -> bool:
-        self._dragging = False
-        self._initial_layer_offset = None
-        self._last_mouse_pos = None
-        return True
+    def set_x(self, x_pos: float | int) -> None:
+        """Sets the post-transformation horizontal position of the layer in pixels."""
+        self._transform_outline.x = float(x_pos)
 
-    def translate(self, offset: QPoint) -> None:
-        """Update the transformation x,y offset."""
-        if self._offset != offset:
-            self._offset = offset
-            self._apply_transformations_to_view()
-            if self._offset_box_x.value() != offset.x():
-                self._offset_box_x.setValue(offset.x())
-            if self._offset_box_y.value() != offset.y():
-                self._offset_box_y.setValue(offset.y())
+    def set_y(self, y_pos: float | int) -> None:
+        """Sets the post-transformation vertical position of the layer in pixels."""
+        self._transform_outline.y = float(y_pos)
 
-    def rotate(self, degrees: float) -> None:
-        """Update the transformation rotation in degrees"""
-        if self._rotation != degrees:
-            self._rotation = degrees
-            self._apply_transformations_to_view()
-            if degrees != self._rotate_box.value():
-                self._rotate_box.setValue(degrees)
+    def set_x_scale(self, x_scale: float) -> None:
+        """Sets the x-scale of the layer transformation, also changing y-scale if aspect ratio is preserved."""
+        _, prev_y_scale = self._transform_outline.scale
+        if self._aspect_ratio_checkbox.isChecked():
+            self._transform_outline.scale = (x_scale, x_scale)
+        else:
+            self._transform_outline.scale = (x_scale, prev_y_scale)
 
-    def scale(self, x_scale: float, y_scale: float) -> None:
-        """Update the transformation scale."""
-        if self._scale_x != x_scale or self._scale_y != y_scale:
-            self._scale_x = x_scale
-            self._scale_y = y_scale
-            self._apply_transformations_to_view()
-            if x_scale != self._scale_box_x.value():
-                self._scale_box_x.setValue(x_scale)
-            if y_scale != self._scale_box_y.value():
-                self._scale_box_y.setValue(y_scale)
+    def set_y_scale(self, y_scale: float) -> None:
+        """Sets the y-scale of the layer transformation, also changing x-scale if aspect ratio is preserved."""
+        prev_x_scale, _ = self._transform_outline.scale
+        if self._aspect_ratio_checkbox.isChecked():
+            self._transform_outline.scale = (y_scale, y_scale)
+        else:
+            self._transform_outline.scale = (prev_x_scale, y_scale)
 
-    def _on_activate(self) -> None:
-        """Connect to the active layer."""
-        self._layer_stack.active_layer_changed.connect(self._active_layer_change_slot)
-        self.set_layer(self._layer_stack.active_layer)
+    def set_width(self, width: float) -> None:
+        """Sets the final width of the layer in pixels."""
+        self._transform_outline.width = width
+        if self._aspect_ratio_checkbox.isChecked():
+            self.restore_aspect_ratio()
 
-    def _on_deactivate(self) -> None:
-        """Disconnect from all layers."""
-        self._layer_stack.active_layer_changed.disconnect(self._active_layer_change_slot)
-        self.set_layer(None)
+    def set_height(self, height: float) -> None:
+        """Sets the final height of the layer in pixels."""
+        self._transform_outline.height = height
+        if self._aspect_ratio_checkbox.isChecked():
+            self.restore_aspect_ratio()
+
+    def set_rotation(self, rotation: float) -> None:
+        """Sets the angle of layer rotation in degrees."""
+        prev_rotation = self._transform_outline.rotation
+        if prev_rotation != rotation:
+            self._transform_outline.rotation = rotation
 
     def set_layer(self, layer: Optional[ImageLayer]) -> None:
         """Connects to a new image layer, or disconnects if the layer parameter is None."""
@@ -259,37 +277,36 @@ class LayerTransformTool(BaseTool):
             layer.visibility_changed.connect(self._layer_visibility_slot)
             layer.bounds_changed.connect(self._layer_bounds_change_slot)
             layer.content_changed.connect(self._layer_content_change_slot)
+            self._transform_outline.setRect(QRectF(layer.geometry))
         else:
             self._transform_pixmap.setPixmap(QPixmap())
-            self._transform_pixmap.setVisible(False)
+            self._transform_outline.setVisible(False)
 
     def apply_transformations_to_layer(self) -> None:
         """Applies all pending transformations to the source layer."""
         layer = self._layer_stack.get_layer_by_id(self._active_layer_id)
         if layer is None:
             return
-        if (self._rotation % 360.0) == 0.0 and self._scale_x == 1.0 and self._scale_y == 1.0 \
-                and self._offset == QPoint():
-            return
-        bounds = self._transform_pixmap.boundingRect()
-        bounds = self._transform_pixmap.mapRectToScene(bounds)
-        if (self._rotation % 360.0) != 0.0 or self._scale_x != 1.0 or self._scale_y != 1.0:
+        initial_bounds = self._transform_outline.rect()
+        bounds = self._transform_outline.mapRectToScene(initial_bounds)
+        print(f'drawing bounds {bounds} from {initial_bounds}')
+        if True: #bounds != initial_bounds:
             transform_image = QImage(bounds.size().toSize(), QImage.Format.Format_ARGB32_Premultiplied)
             transform_image.fill(Qt.GlobalColor.transparent)
             # Temporarily hide everything else in the scene:
-            visibility_map: Dict[QGraphicsItem: bool] = {}
+            opacity_map: Dict[QGraphicsItem: float] = {}
             for item in self._image_viewer.scene().items():
-                visibility_map[item] = item.isVisible()
-                item.setVisible(False)
+                opacity_map[item] = item.opacity()
+                item.setOpacity(0.0)
+            self._transform_pixmap.setOpacity(1.0)
             self._image_viewer.scene().update()
-            self._transform_pixmap.setVisible(True)
             # Render the scene into the image:
             painter = QPainter(transform_image)
             self._image_viewer.scene().render(painter, QRectF(QPoint(), bounds.size()), bounds)
             painter.end()
             # Restore previous scene item visibility:
-            for scene_item, visibility in visibility_map.items():
-                scene_item.setVisible(visibility)
+            for scene_item, opacity in opacity_map.items():
+                scene_item.setOpacity(opacity)
             source_image = layer.qimage
         else:
             source_image = None
@@ -314,85 +331,38 @@ class LayerTransformTool(BaseTool):
 
     def _reload_scene_item(self):
         """Reset all transformations and reload the scene pixmap from the layer."""
-        self._offset = QPoint()
-        self._rotation = 0
-        self._scale_y = 1.0
-        self._scale_x = 1.0
-        self._transform_pixmap.setTransform(QTransform(), False)
-        self._transform_pixmap.setTransformations([])
+        self._transform_outline.clearTransformations()
         layer = self._layer_stack.active_layer
         if layer is None or layer.id != self._active_layer_id:
             self._transform_pixmap.setPixmap(QPixmap())
-            self._transform_pixmap.setVisible(False)
-        self._transform_pixmap.prepareGeometryChange()
+            self._transform_outline.setVisible(False)
+        self._transform_outline.prepareGeometryChange()
         if layer is None:
-            self._transform_pixmap.setPos(0, 0)
+            self._transform_outline.setRect(QRectF())
             self._transform_pixmap.setPixmap(QPixmap())
-            self._transform_pixmap.setVisible(False)
+            self._transform_outline.setVisible(False)
         else:
-            self._transform_pixmap.setPos(layer.position.x(), layer.position.y())
+            self._transform_outline.setRect(QRectF(layer.geometry))
             self._transform_pixmap.setPixmap(layer.pixmap)
-            self._transform_pixmap.setVisible(layer.visible)
-            self._transform_pixmap.setZValue(-self._layer_stack.get_layer_index(layer))
-        self._offset_box_x.setValue(0)
-        self._offset_box_y.setValue(0)
-        self._scale_box_x.setValue(1.0)
-        self._scale_box_y.setValue(1.0)
-        self._rotate_box.setValue(0.0)
+            self._transform_outline.setVisible(layer.visible)
+            self._transform_outline.setZValue(-self._layer_stack.get_layer_index(layer))
 
-    def _translate_x(self, x_offset: int) -> None:
-        self.translate(QPoint(x_offset, self._offset.y()))
+    def _on_activate(self) -> None:
+        """Connect to the active layer."""
+        self._layer_stack.active_layer_changed.connect(self._active_layer_change_slot)
+        self._image_viewer.mouse_navigation_enabled = False
+        self.set_layer(self._layer_stack.active_layer)
 
-    def _translate_y(self, y_offset: int) -> None:
-        self.translate(QPoint(self._offset.x(), y_offset))
-
-    def _set_scale_x(self, x_scale: float) -> None:
-        y_scale = self._scale_y
-        if self._aspect_ratio_checkbox.isChecked():
-            y_scale = x_scale
-        self.scale(x_scale, y_scale)
-
-    def _set_scale_y(self, y_scale: float) -> None:
-        x_scale = self._scale_x
-        if self._aspect_ratio_checkbox.isChecked():
-            x_scale = y_scale
-        self.scale(x_scale, y_scale)
-
-    def _apply_transformations_to_view(self) -> None:
-        layer = self._layer_stack.active_layer
-        if layer is None or layer.id != self._active_layer_id:
-            return
-        self._transform_pixmap.setTransform(QTransform(), False)
-        self._transform_pixmap.setTransformations([])
-
-        x0 = int(self._transform_pixmap.pos().x())
-        y0 = int(self._transform_pixmap.pos().y())
-        width = int(self._transform_pixmap.pixmap().size().width())
-        height = int(self._transform_pixmap.pixmap().size().height())
-
-        offset = QTransform()
-        offset.translate(self._offset.x(), self._offset.y())
-        self._transform_pixmap.setTransform(offset, False)
-
-        graphics_transforms = []
-        center = QVector3D(QPoint(x0 + self._offset.x() + width // 2, y0 + self._offset.y() + height // 2))
-
-        rotation = QGraphicsRotation()
-        rotation.setOrigin(center)
-        rotation.setAngle(self._rotation)
-        graphics_transforms.append(rotation)
-        scale_transform = QGraphicsScale()
-        scale_transform.setOrigin(center)
-        scale_transform.setXScale(self._scale_x)
-        scale_transform.setYScale(self._scale_y)
-        graphics_transforms.append(scale_transform)
-
-        self._transform_pixmap.setTransformations(graphics_transforms)
+    def _on_deactivate(self) -> None:
+        """Disconnect from all layers."""
+        self._layer_stack.active_layer_changed.disconnect(self._active_layer_change_slot)
+        self._image_viewer.mouse_navigation_enabled = True
+        self.set_layer(None)
 
     def _active_layer_change_slot(self, layer_id: int, layer_index: int) -> None:
         print(f'active layer now {layer_id}')
         if layer_id == self._active_layer_id:
-            self._transform_pixmap.setZValue(-layer_index)
+            self._transform_outline.setZValue(-layer_index)
         else:
             self.set_layer(self._layer_stack.get_layer_by_id(layer_id))
 
@@ -400,16 +370,39 @@ class LayerTransformTool(BaseTool):
         if layer != self._layer_stack.get_layer_by_id(self._active_layer_id):
             layer.visibility_changed.disconnect(self._layer_visibility_slot)
             return
-        self._transform_pixmap.setVisible(visible)
+        self._transform_outline.setVisible(visible)
 
     def _layer_bounds_change_slot(self, layer: ImageLayer, bounds: QRect) -> None:
         if layer != self._layer_stack.get_layer_by_id(self._active_layer_id):
             layer.visibility_changed.disconnect(self._layer_visibility_slot)
             return
-        self._transform_pixmap.setPos(bounds.topLeft())
+        self._transform_outline.setPos(bounds.topLeft())
 
     def _layer_content_change_slot(self, layer: ImageLayer) -> None:
         if layer != self._layer_stack.get_layer_by_id(self._active_layer_id):
             layer.visibility_changed.disconnect(self._layer_visibility_slot)
             return
         self._reload_scene_item()
+
+    def _transformation_change_slot(self, offset: QPointF, x_scale: float, y_scale: float, rotation: float) -> None:
+        layer = self._layer_stack.get_layer_by_id(self._active_layer_id)
+        if layer is None:
+            return
+        controls = (
+            (self._x_pos_box, self._transform_outline.x, self.set_x),
+            (self._y_pos_box, self._transform_outline.y, self.set_y),
+            (self._x_offset_box, offset.x(), self.set_x_offset),
+            (self._y_offset_box, offset.y(), self.set_y_offset),
+            (self._width_box, self._transform_outline.width, self.set_width),
+            (self._height_box, self._transform_outline.height, self.set_height),
+            (self._x_scale_box, x_scale, self.set_x_scale),
+            (self._y_scale_box, y_scale, self.set_y_scale),
+            (self._rotate_box, rotation, self.set_rotation)
+        )
+        for field, value, change_handler in (controls):
+            if field.value() != value:
+                field.valueChanged.disconnect(change_handler)
+                field.setValue(float(value) if isinstance(field, QDoubleSpinBox) else int(value))
+                field.valueChanged.connect(change_handler)
+
+

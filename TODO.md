@@ -48,7 +48,7 @@
 - Crop image to content
 - open mypaint brush panel
 - open mypaint brush file
-- Filters: just throw in whatever fun stuff CV2 has to offer
+- Filters: just throw in whatever fun stuff PIL/CV2 has to offer
 
 # Config
 - Hide startup warnings
@@ -62,8 +62,6 @@
 - generation size controls
 
 ## Selection tool
-- Redo icon
-- Change default hotkey
 - Add mask draw/erase hotkey
 - Add select by color/fill select
 - Allow selection outside of image bounds

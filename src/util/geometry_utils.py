@@ -1,7 +1,9 @@
 """Provides a utility function for handling image or widget placement."""
+import math
 
-from PyQt5.QtCore import QRect, QSize
-from PyQt5.QtGui import QTransform
+import numpy as np
+from PyQt5.QtCore import QRect, QSize, QRectF, QSizeF
+from PyQt5.QtGui import QTransform, QPolygonF
 
 
 def get_scaled_placement(container_rect: QRect,
@@ -33,19 +35,17 @@ def get_scaled_placement(container_rect: QRect,
     return QRect(int(x), int(y), int(inner_size.width() * scale), int(inner_size.height() * scale))
 
 
-def get_rect_transformation(source: QRect | QSize, destination: QRect | QSize) -> QTransform:
+def get_rect_transformation(source: QRect | QRectF | QSize, destination: QRect | QRectF | QSize) -> QTransform:
     """Gets the transformation required to transform source into destination. Parameters may be either QRect or QSize,
        if QSize is used they will be treated as a rectangle of that size at the origin."""
+    def _as_rectf(param):
+        if isinstance(param, (QSize, QSizeF)):
+            return QRectF(0.0, 0.0, param.width(), param.height())
+        return QRectF(param)
+    source, destination = (_as_rectf(param) for param in (source, destination))
+    # Extract points from the original rectangle
+    orig_points, trans_points = (QPolygonF([rect.topLeft(), rect.topRight(), rect.bottomLeft(), rect.bottomRight()])
+                                 for rect in (source, destination))
     transform = QTransform()
-    if isinstance(source, QSize):
-        source = QRect(0, 0, source.width(), source.height())
-    if isinstance(destination, QSize):
-        destination = QRect(0, 0, destination.width(), destination.height())
-    scale_x = destination.width() / source.width()
-    scale_y = destination.height() / source.height()
-    transform = transform.scale(scale_x, scale_y)
-    # Translate back to destination coordinates:
-    transform = transform.translate(destination.x() / scale_x - source.x(), destination.y() / scale_y - source.y())
-    test = transform.mapRect(source)
-    assert test == destination, f'{source} => {test} != {destination}'
+    assert QTransform.quadToQuad(orig_points, trans_points, transform), f'Failed transformation: {source} -> {destination}'
     return transform

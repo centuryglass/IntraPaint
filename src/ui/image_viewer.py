@@ -14,6 +14,7 @@ from src.image.layer_stack import LayerStack
 from src.ui.graphics_items.border import Border
 from src.ui.graphics_items.outline import Outline
 from src.ui.graphics_items.polygon_outline import PolygonOutline
+from src.ui.graphics_items.transform_outline import TransformOutline
 from src.util.image_utils import get_transparency_tile_pixmap
 from src.ui.widget.image_graphics_view import ImageGraphicsView
 from src.util.validation import assert_type
@@ -53,6 +54,9 @@ class ImageViewer(ImageGraphicsView):
         self._generation_area_outline = Outline(self.scene(), self)
         self._generation_area_outline.animated = config.get(AppConfig.ANIMATE_OUTLINES)
 
+        # TESTING CODE
+        self._mouse_navigation_enabled = False
+
         # "inpaint selected only" generation area outline:
         self._image_generation_area_outline = Outline(self.scene(), self)
         self._image_generation_area_outline.setOpacity(GENERATION_AREA_BORDER_OPACITY)
@@ -88,6 +92,7 @@ class ImageViewer(ImageGraphicsView):
             self._layer_added_slot(layer_stack.get_layer_by_index(i), i)
         self._image_generation_area_change_slot(layer_stack.generation_area, None)
         self.resizeEvent(None)
+
 
     def zoom_to_generation_area(self) -> None:
         """Adjust viewport scale and offset to center the selected editing area in the view."""
@@ -145,7 +150,7 @@ class ImageViewer(ImageGraphicsView):
             return
         if not self._layer_stack.has_image or event is None:
             return
-        if event.button() == Qt.LeftButton:
+        if event.button() == Qt.LeftButton and self.mouse_navigation_enabled:
             image_coordinates = self.widget_to_scene_coordinates(event.pos())
             generation_area = self._layer_stack.generation_area
             generation_area.moveTopLeft(image_coordinates.toPoint())
@@ -156,6 +161,9 @@ class ImageViewer(ImageGraphicsView):
         """Adjust the offset when the widget is dragged with ctrl+LMB or MMB."""
         if super().mouseMoveEvent(event, True):
             return
+
+    def mouseReleaseEvent(self, event: Optional[QMouseEvent]) -> None:
+        super().mouseReleaseEvent(event)
 
     def drawBackground(self, painter: QPainter, rect: QRectF) -> None:
         """Draw the background as a fixed size tiling image."""

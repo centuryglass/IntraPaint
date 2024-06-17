@@ -83,12 +83,13 @@ def parse_args_and_start() -> None:
     match controller_mode:
         case 'local':
             if torch is None or LocalDeviceController is None:
-                raise RuntimeError('Missing required dependencies for local GLID-3-XL mode.')
+                raise RuntimeError('No web service found, and required dependencies for local GLID-3-XL mode are'
+                                   ' missing.')
             device = get_device()
             (mem_free, mem_total) = torch.cuda.mem_get_info(device)
             if mem_free < MIN_GLID_VRAM:
-                raise RuntimeError(f'Not enough VRAM to run local, expected >= {MIN_GLID_VRAM}, found '
-                                   f'{mem_free} of {mem_total}')
+                raise RuntimeError(f'No web service found and Not enough VRAM to run GLID-3-XL local, expected >='
+                                   f' {MIN_GLID_VRAM}, found {mem_free} of {mem_total}')
             controller = LocalDeviceController(args)
         case 'stable' if health_check(StableDiffusionController, args.server_url):
             controller = StableDiffusionController(args)
