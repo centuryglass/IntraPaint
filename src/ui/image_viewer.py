@@ -14,9 +14,8 @@ from src.image.layer_stack import LayerStack
 from src.ui.graphics_items.border import Border
 from src.ui.graphics_items.outline import Outline
 from src.ui.graphics_items.polygon_outline import PolygonOutline
-from src.ui.graphics_items.transform_outline import TransformOutline
-from src.util.image_utils import get_transparency_tile_pixmap
 from src.ui.widget.image_graphics_view import ImageGraphicsView
+from src.util.image_utils import get_transparency_tile_pixmap
 from src.util.validation import assert_type
 
 GENERATION_AREA_BORDER_OPACITY = 0.6
@@ -39,6 +38,7 @@ class ImageViewer(ImageGraphicsView):
         self.background = get_transparency_tile_pixmap()
         self.setSizePolicy(QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding))
         self._follow_generation_area = False
+        self._mouse_moves_generation_area = True
         self._hidden = set()
         self._selection_poly_outline = PolygonOutline(self)
         self._selection_poly_outline.animated = config.get(AppConfig.ANIMATE_OUTLINES)
@@ -53,9 +53,6 @@ class ImageViewer(ImageGraphicsView):
         self._scene_outline.dash_pattern = [1, 0]  # solid line
         self._generation_area_outline = Outline(self.scene(), self)
         self._generation_area_outline.animated = config.get(AppConfig.ANIMATE_OUTLINES)
-
-        # TESTING CODE
-        self._mouse_navigation_enabled = False
 
         # "inpaint selected only" generation area outline:
         self._image_generation_area_outline = Outline(self.scene(), self)
@@ -93,6 +90,14 @@ class ImageViewer(ImageGraphicsView):
         self._image_generation_area_change_slot(layer_stack.generation_area, None)
         self.resizeEvent(None)
 
+    @property
+    def mouse_moves_generation_area(self) -> bool:
+        """Returns whether the viewer will use mouse events to move the image generation area."""
+        return self._mouse_moves_generation_area
+
+    @mouse_moves_generation_area.setter
+    def mouse_moves_generation_area(self, should_move: bool) -> None:
+        self._mouse_moves_generation_area = should_move
 
     def zoom_to_generation_area(self) -> None:
         """Adjust viewport scale and offset to center the selected editing area in the view."""
@@ -134,7 +139,8 @@ class ImageViewer(ImageGraphicsView):
         """Sets whether the view should follow the image generation area. Setting to true updates the view, setting to
            false does not."""
         self._follow_generation_area = should_follow
-        self._generation_area_outline.animated = not should_follow and AppConfig.instance().get(AppConfig.ANIMATE_OUTLINES)
+        self._generation_area_outline.animated = not should_follow and AppConfig.instance().get(
+            AppConfig.ANIMATE_OUTLINES)
         self._generation_area_border.setVisible(should_follow)
         if should_follow:
             self.zoom_to_generation_area()
@@ -150,20 +156,11 @@ class ImageViewer(ImageGraphicsView):
             return
         if not self._layer_stack.has_image or event is None:
             return
-        if event.button() == Qt.LeftButton and self.mouse_navigation_enabled:
+        if event.button() == Qt.LeftButton and self.mouse_navigation_enabled and self._mouse_moves_generation_area:
             image_coordinates = self.widget_to_scene_coordinates(event.pos())
             generation_area = self._layer_stack.generation_area
             generation_area.moveTopLeft(image_coordinates.toPoint())
             self._layer_stack.generation_area = generation_area
-
-    # noinspection PyMethodOverriding
-    def mouseMoveEvent(self, event: Optional[QMouseEvent]) -> None:
-        """Adjust the offset when the widget is dragged with ctrl+LMB or MMB."""
-        if super().mouseMoveEvent(event, True):
-            return
-
-    def mouseReleaseEvent(self, event: Optional[QMouseEvent]) -> None:
-        super().mouseReleaseEvent(event)
 
     def drawBackground(self, painter: QPainter, rect: QRectF) -> None:
         """Draw the background as a fixed size tiling image."""
@@ -181,14 +178,16 @@ class ImageViewer(ImageGraphicsView):
     def _update_drawn_borders(self):
         """Make sure that the image generation area and image borders are in the right place in the scene."""
         scene_rect = QRectF(0.0, 0.0, float(self.content_size.width()), float(self.content_size.height()))
-        generation_area = QRectF(self._generation_area.x(), self._generation_area.y(), self._generation_area.width(), self._generation_area.height())
+        generation_area = QRectF(self._generation_area.x(), self._generation_area.y(), self._generation_area.width(),
+                                 self._generation_area.height())
         self._scene_outline.outlined_region = scene_rect
         image_loaded = self._layer_stack.has_image
         self._scene_outline.setVisible(image_loaded)
         self._generation_area_outline.outlined_region = generation_area
         self._generation_area_border.windowed_area = generation_area.toAlignedRect()
         self._generation_area_outline.setVisible(image_loaded)
-        self._image_generation_area_outline.setVisible(image_loaded and AppConfig.instance().get(AppConfig.INPAINT_FULL_RES))
+        self._image_generation_area_outline.setVisible(
+            image_loaded and AppConfig.instance().get(AppConfig.INPAINT_FULL_RES))
         if self._layer_stack.active_layer is not None:
             self._active_layer_outline.setVisible(True)
             self._active_layer_outline.outlined_region = QRectF(QPointF(self._layer_stack.active_layer.position),

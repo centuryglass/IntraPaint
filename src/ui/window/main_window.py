@@ -2,12 +2,12 @@
 Base implementation of the primary image editing window. On its own, provides an appropriate interface for GLID-3-XL
 inpainting modes.  Other editing modes should provide subclasses with implementation-specific controls.
 """
-from typing import Optional, Any
 import logging
+from typing import Optional, Any
 
 from PIL import Image
 from PyQt5.QtCore import Qt, QRect, QSize
-from PyQt5.QtGui import QIcon, QMouseEvent, QResizeEvent, QHideEvent, QPixmap, QKeySequence
+from PyQt5.QtGui import QIcon, QMouseEvent, QResizeEvent, QHideEvent, QKeySequence
 from PyQt5.QtWidgets import QMainWindow, QGridLayout, QLabel, QWidget, QPushButton, QVBoxLayout, QHBoxLayout, \
     QComboBox, QStackedWidget, QBoxLayout, QApplication, QTabWidget, QSizePolicy
 
@@ -15,12 +15,11 @@ from src.config.application_config import AppConfig
 from src.hotkey_filter import HotkeyFilter
 from src.image.layer_stack import LayerStack
 from src.ui.config_control_setup import connected_textedit, connected_spinbox, connected_checkbox
+from src.ui.generated_image_selector import GeneratedImageSelector
 from src.ui.panel.image_panel import ImagePanel
 from src.ui.panel.layer_panel import LayerPanel
 from src.ui.panel.tool_panel import ToolPanel
-from src.ui.generated_image_selector import GeneratedImageSelector
 from src.ui.widget.loading_widget import LoadingWidget
-from src.util.image_utils import qimage_to_pil_image
 from src.util.screen_size import get_screen_size
 
 logger = logging.getLogger(__name__)

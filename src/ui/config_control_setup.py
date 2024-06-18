@@ -248,9 +248,10 @@ def get_generation_area_control_boxes(layer_stack: LayerStack,
     control_widgets = []
     sliders = []
     spin_boxes = []
-    for label_text, tooltip in ((GENERATION_AREA_X_LABEL, GENERATION_AREA_X_TOOLTIP), (GENERATION_AREA_Y_LABEL, GENERATION_AREA_Y_TOOLTIP),
-                                (GENERATION_AREA_WIDTH_LABEL, GENERATION_AREA_WIDTH_TOOLTIP),
-                                (GENERATION_AREA_HEIGHT_LABEL, GENERATION_AREA_HEIGHT_TOOLTIP)):
+    for label_text, tooltip in (
+            (GENERATION_AREA_X_LABEL, GENERATION_AREA_X_TOOLTIP), (GENERATION_AREA_Y_LABEL, GENERATION_AREA_Y_TOOLTIP),
+            (GENERATION_AREA_WIDTH_LABEL, GENERATION_AREA_WIDTH_TOOLTIP),
+            (GENERATION_AREA_HEIGHT_LABEL, GENERATION_AREA_HEIGHT_TOOLTIP)):
         widget = QWidget()
         widget.setToolTip(tooltip)
         layout = QHBoxLayout(widget)
@@ -353,6 +354,7 @@ def get_generation_area_control_boxes(layer_stack: LayerStack,
 
         h_ctrl.valueChanged.connect(set_h)
     return control_widgets
+
 
 def _get_config(config_key: str) -> Config:
     if config_key in Cache.instance().get_keys():

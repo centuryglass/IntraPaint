@@ -5,7 +5,6 @@ from PyQt5.QtCore import Qt, QPoint
 from PyQt5.QtGui import QIcon, QCursor, QColor, QMouseEvent, QKeySequence
 from PyQt5.QtWidgets import QWidget, QColorDialog
 
-from src.config.application_config import AppConfig
 from src.config.cache import Cache
 from src.config.key_config import KeyConfig
 from src.image.layer_stack import LayerStack

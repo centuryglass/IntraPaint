@@ -6,7 +6,6 @@ from PyQt5.QtCore import Qt, QRect, QPoint
 from PyQt5.QtGui import QMouseEvent, QKeyEvent, QCursor, QIcon, QKeySequence
 from PyQt5.QtWidgets import QWidget, QApplication, QPushButton, QGridLayout
 
-from src.config.application_config import AppConfig
 from src.config.key_config import KeyConfig
 from src.image.layer_stack import LayerStack
 from src.tools.base_tool import BaseTool
@@ -19,6 +18,7 @@ GENERATION_AREA_TOOLTIP = 'Select an image region for AI image generation'
 SELECT_LAYER_BUTTON_TEXT = 'Full image as generation area'
 SELECT_LAYER_BUTTON_TOOLTIP = 'Send the entire image during image generation.'
 GEN_AREA_CONTROL_HINT = 'LMB:move area - RMB:resize area -'
+
 
 class GenerationAreaTool(BaseTool):
     """An image editing tool that moves the selected editing region."""

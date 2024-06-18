@@ -37,7 +37,7 @@ class KeyConfig(Config):
         """
         super().__init__(CONFIG_DEFINITIONS, json_path, KeyConfig)
         if KeyConfig._instance is not None:
-            raise RuntimeError('Do not call the ApKeyConfigpConfig constructor, access it with KeyConfig.instance()')
+            raise RuntimeError('Do not call the KeyConfig constructor, access it with KeyConfig.instance()')
         self.validate_keybindings()
 
     def validate_keybindings(self) -> None:
@@ -45,21 +45,20 @@ class KeyConfig(Config):
         key_binding_options = self.get_category_keys("Keybindings")
         duplicate_map = {}
         errors = []
-        valid_modifiers = ('Ctrl', 'Alt', 'Shift')
+        modifiers = ('Ctrl', 'Alt', 'Shift')
         speed_modifier_strings = ('zoom_in', 'zoom_out', 'pan', 'move', 'brush_size')
         speed_modifier = self.get(KeyConfig.SPEED_MODIFIER)
-        if speed_modifier != '' and speed_modifier not in valid_modifiers:
-            errors.append(f'Invalid key for speed_modifier option: found {speed_modifier}, expected {valid_modifiers}')
+        if speed_modifier != '' and speed_modifier not in modifiers:
+            errors.append(f'Invalid key for speed_modifier option: found {speed_modifier}, expected {modifiers}')
         for key_str in key_binding_options:
             key_values = self.get(key_str).split(',')
             for key_value in key_values:
                 if len(key_value) == 1:
                     key_value = key_value.upper()
-                if key_value != '' and key_value not in valid_modifiers and QKeySequence(key_value)[
-                    0] == Qt.Key_unknown:
+                if key_value != '' and key_value not in modifiers and QKeySequence(key_value)[0] == Qt.Key_unknown:
                     errors.append(f'"{key_str}" value "{key_value}" is not a recognized key')
                 elif any(mod_str in key_str for mod_str in speed_modifier_strings) and speed_modifier \
-                        in valid_modifiers:
+                        in modifiers:
                     if speed_modifier in key_value:
                         errors.append(f'"{key_str}" is set to {key_value}, but {speed_modifier} is the speed modifier'
                                       f' key. This will cause {key_str} to always operate at 10x speed.')

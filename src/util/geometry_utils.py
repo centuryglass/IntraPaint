@@ -1,7 +1,5 @@
 """Provides a utility function for handling image or widget placement."""
-import math
 
-import numpy as np
 from PyQt5.QtCore import QRect, QSize, QRectF, QSizeF
 from PyQt5.QtGui import QTransform, QPolygonF
 
@@ -38,14 +36,37 @@ def get_scaled_placement(container_rect: QRect,
 def get_rect_transformation(source: QRect | QRectF | QSize, destination: QRect | QRectF | QSize) -> QTransform:
     """Gets the transformation required to transform source into destination. Parameters may be either QRect or QSize,
        if QSize is used they will be treated as a rectangle of that size at the origin."""
-    def _as_rectf(param):
+
+    def _as_rect_f(param):
         if isinstance(param, (QSize, QSizeF)):
             return QRectF(0.0, 0.0, param.width(), param.height())
         return QRectF(param)
-    source, destination = (_as_rectf(param) for param in (source, destination))
+
+    source, destination = (_as_rect_f(param) for param in (source, destination))
     # Extract points from the original rectangle
     orig_points, trans_points = (QPolygonF([rect.topLeft(), rect.topRight(), rect.bottomLeft(), rect.bottomRight()])
                                  for rect in (source, destination))
     transform = QTransform()
-    assert QTransform.quadToQuad(orig_points, trans_points, transform), f'Failed transformation: {source} -> {destination}'
+    assert QTransform.quadToQuad(orig_points, trans_points,
+                                 transform), f'Failed transformation: {source} -> {destination}'
     return transform
+
+
+def transform_str(transformation: QTransform) -> str:
+    """Return a string representation of a transformation matrix for debugging."""
+    return (f'\n\t[{transformation.m11()}, {transformation.m12()}, {transformation.m13()}]'
+            f'\n\t[{transformation.m21()}, {transformation.m22()}, {transformation.m23()}]'
+            f'\n\t[{transformation.m31()}, {transformation.m32()}, {transformation.m33()}]\n')
+
+
+def transforms_approx_equal(m1: QTransform, m2: QTransform, precision: int) -> bool:
+    """Return whether two transformation matrices are approximately equal when rounded to a given precision."""
+    return round(m1.m11(), precision) == round(m2.m11(), precision) \
+        and round(m1.m12(), precision) == round(m2.m12(), precision) \
+        and round(m1.m13(), precision) == round(m2.m13(), precision) \
+        and round(m1.m21(), precision) == round(m2.m21(), precision) \
+        and round(m1.m22(), precision) == round(m2.m22(), precision) \
+        and round(m1.m23(), precision) == round(m2.m23(), precision) \
+        and round(m1.m31(), precision) == round(m2.m31(), precision) \
+        and round(m1.m32(), precision) == round(m2.m32(), precision) \
+        and round(m1.m33(), precision) == round(m2.m33(), precision)

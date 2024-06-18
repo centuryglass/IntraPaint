@@ -6,25 +6,23 @@ from PyQt5.QtGui import QMouseEvent, QPaintEvent, QPainter, QPen, QResizeEvent
 from PyQt5.QtWidgets import QWidget, QLabel, QHBoxLayout, QVBoxLayout, QSizePolicy, QScrollArea, QPushButton, \
     QStackedLayout
 
-from src.config.application_config import AppConfig
 from src.config.cache import Cache
 from src.image.layer_stack import LayerStack
 from src.tools.base_tool import BaseTool
 from src.tools.brush_tool import BrushTool
 from src.tools.eyedropper_tool import EyedropperTool
+from src.tools.generation_area_tool import GenerationAreaTool
 from src.tools.layer_transform_tool import LayerTransformTool
 from src.tools.selection_tool import SelectionTool
-from src.tools.generation_area_tool import GenerationAreaTool
 from src.tools.tool_event_handler import ToolEventHandler
-from src.ui.image_viewer import ImageViewer
 from src.ui.panel.image_panel import ImagePanel
 from src.ui.panel.layer_panel import LayerPanel
-from src.util.geometry_utils import get_scaled_placement
-from src.util.screen_size import get_screen_size
 from src.ui.widget.bordered_widget import BorderedWidget
 from src.ui.widget.collapsible_box import CollapsibleBox
 from src.ui.widget.grid_container import GridContainer
 from src.ui.widget.key_hint_label import KeyHintLabel
+from src.util.geometry_utils import get_scaled_placement
+from src.util.screen_size import get_screen_size
 
 TOOL_PANEL_TITLE = 'Tools'
 LIST_SPACING = 10

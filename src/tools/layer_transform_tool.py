@@ -2,10 +2,9 @@
 from typing import Optional, Dict
 
 from PyQt5.QtCore import Qt, QPoint, QRect, QRectF, QPointF
-from PyQt5.QtGui import QMouseEvent, QCursor, QIcon, QTransform, QVector3D, QPixmap, QImage, QPainter, \
+from PyQt5.QtGui import QCursor, QIcon, QPixmap, QImage, QPainter, \
     QKeySequence
-from PyQt5.QtWidgets import QWidget, QApplication, QLabel, QGraphicsPixmapItem, QGraphicsScale, \
-    QGraphicsRotation, QGraphicsItem, QSpinBox, QDoubleSpinBox, \
+from PyQt5.QtWidgets import QWidget, QLabel, QGraphicsPixmapItem, QGraphicsItem, QSpinBox, QDoubleSpinBox, \
     QCheckBox, QGridLayout, QPushButton
 
 from src.config.application_config import AppConfig
@@ -19,16 +18,10 @@ from src.ui.image_viewer import ImageViewer
 from src.ui.widget.key_hint_label import KeyHintLabel
 from src.undo_stack import commit_action
 
-Y_SCALE_LABEL = "y-scale:"
-
-X_SCALE_LABEL = "x-scale:"
-
-Y_OFFSET_LABEL = 'y-offset:'
-
-X_OFFSET_LABEL = "x-offset:"
-
 X_LABEL = "X:"
 Y_LABEL = "Y:"
+X_SCALE_LABEL = "X-Scale:"
+Y_SCALE_LABEL = "Y-Scale:"
 WIDTH_LABEL = "Width:"
 HEIGHT_LABEL = "Height:"
 DEGREE_LABEL = 'Rotation:'
@@ -56,7 +49,7 @@ class LayerTransformTool(BaseTool):
         self._layer_stack = layer_stack
         self._image_viewer = image_viewer
         self._icon = QIcon(RESOURCES_TRANSFORM_TOOL_ICON)
-        self._transform_outline = TransformOutline(image_viewer)
+        self._transform_outline = TransformOutline()
         self._transform_outline.transform_changed.connect(self._transformation_change_slot)
         self._transform_pixmap = QGraphicsPixmapItem(self._transform_outline)
         self._transform_pixmap.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIgnoresParentOpacity)
@@ -73,17 +66,14 @@ class LayerTransformTool(BaseTool):
         self._control_layout: Optional[QGridLayout] = None
 
         def _init_control(default_val, min_val, max_val, change_fn):
-            control = QSpinBox() if isinstance(default_val, int) else QDoubleSpinBox()
-            control.setRange(min_val, max_val)
-            control.setValue(default_val)
-            control.valueChanged.connect(change_fn)
-            return control
+            new_control = QSpinBox() if isinstance(default_val, int) else QDoubleSpinBox()
+            new_control.setRange(min_val, max_val)
+            new_control.setValue(default_val)
+            new_control.valueChanged.connect(change_fn)
+            return new_control
 
-        self._x_pos_box = _init_control(0, INT_MIN, INT_MAX, self.set_x)
-        self._y_pos_box = _init_control(0, INT_MIN, INT_MAX, self.set_y)
-        self._x_offset_box = _init_control(0, INT_MIN, INT_MAX, self.set_x_offset)
-        self._y_offset_box = _init_control(0, INT_MIN, INT_MAX, self.set_y_offset)
-        self._y_pos_box.valueChanged.connect(self.set_y)
+        self._x_pos_box = _init_control(0.0, FLOAT_MIN, FLOAT_MAX, self.set_x)
+        self._y_pos_box = _init_control(0.0, FLOAT_MIN, FLOAT_MAX, self.set_y)
         edit_size = AppConfig.instance().get(AppConfig.EDIT_SIZE)
         self._width_box = _init_control(float(edit_size.width()), MIN_NONZERO, FLOAT_MAX, self.set_width)
         self._height_box = _init_control(float(edit_size.height()), MIN_NONZERO, FLOAT_MAX, self.set_height)
@@ -100,8 +90,7 @@ class LayerTransformTool(BaseTool):
         self._up_keys: Dict[QWidget, QKeySequence] = {}
 
         def _restore_aspect_ratio() -> None:
-            if self._aspect_ratio_checkbox.isChecked() and self._active_layer_id is not None:
-                self.restore_aspect_ratio()
+            self._transform_outline.preserve_aspect_ratio = self._aspect_ratio_checkbox.isChecked()
 
         self._aspect_ratio_checkbox.clicked.connect(_restore_aspect_ratio)
 
@@ -178,9 +167,6 @@ class LayerTransformTool(BaseTool):
         _add_control(X_LABEL, self._x_pos_box, 0, 0)
         _add_control(Y_LABEL, self._y_pos_box, 0, 4)
 
-        #_add_control(X_OFFSET_LABEL, self._x_offset_box, 1, 0)
-        #_add_control(Y_OFFSET_LABEL, self._y_offset_box, 1, 4)
-
         _add_control(WIDTH_LABEL, self._width_box, 2, 0)
         _add_control(HEIGHT_LABEL, self._height_box, 2, 4)
 
@@ -236,22 +222,15 @@ class LayerTransformTool(BaseTool):
     def set_y_scale(self, y_scale: float) -> None:
         """Sets the y-scale of the layer transformation, also changing x-scale if aspect ratio is preserved."""
         prev_x_scale, _ = self._transform_outline.scale
-        if self._aspect_ratio_checkbox.isChecked():
-            self._transform_outline.scale = (y_scale, y_scale)
-        else:
-            self._transform_outline.scale = (prev_x_scale, y_scale)
+        self._transform_outline.scale = (prev_x_scale, y_scale)
 
     def set_width(self, width: float) -> None:
         """Sets the final width of the layer in pixels."""
         self._transform_outline.width = width
-        if self._aspect_ratio_checkbox.isChecked():
-            self.restore_aspect_ratio()
 
     def set_height(self, height: float) -> None:
         """Sets the final height of the layer in pixels."""
         self._transform_outline.height = height
-        if self._aspect_ratio_checkbox.isChecked():
-            self.restore_aspect_ratio()
 
     def set_rotation(self, rotation: float) -> None:
         """Sets the angle of layer rotation in degrees."""
@@ -290,27 +269,23 @@ class LayerTransformTool(BaseTool):
         initial_bounds = self._transform_outline.rect()
         bounds = self._transform_outline.mapRectToScene(initial_bounds)
         print(f'drawing bounds {bounds} from {initial_bounds}')
-        if True: #bounds != initial_bounds:
-            transform_image = QImage(bounds.size().toSize(), QImage.Format.Format_ARGB32_Premultiplied)
-            transform_image.fill(Qt.GlobalColor.transparent)
-            # Temporarily hide everything else in the scene:
-            opacity_map: Dict[QGraphicsItem: float] = {}
-            for item in self._image_viewer.scene().items():
-                opacity_map[item] = item.opacity()
-                item.setOpacity(0.0)
-            self._transform_pixmap.setOpacity(1.0)
-            self._image_viewer.scene().update()
-            # Render the scene into the image:
-            painter = QPainter(transform_image)
-            self._image_viewer.scene().render(painter, QRectF(QPoint(), bounds.size()), bounds)
-            painter.end()
-            # Restore previous scene item visibility:
-            for scene_item, opacity in opacity_map.items():
-                scene_item.setOpacity(opacity)
-            source_image = layer.qimage
-        else:
-            source_image = None
-            transform_image = None
+        transform_image = QImage(bounds.size().toSize(), QImage.Format.Format_ARGB32_Premultiplied)
+        transform_image.fill(Qt.GlobalColor.transparent)
+        # Temporarily hide everything else in the scene:
+        opacity_map: Dict[QGraphicsItem: float] = {}
+        for item in self._image_viewer.scene().items():
+            opacity_map[item] = item.opacity()
+            item.setOpacity(0.0)
+        self._transform_pixmap.setOpacity(1.0)
+        self._image_viewer.scene().update()
+        # Render the scene into the image:
+        painter = QPainter(transform_image)
+        self._image_viewer.scene().render(painter, QRectF(QPoint(), bounds.size()), bounds)
+        painter.end()
+        # Restore previous scene item visibility:
+        for scene_item, opacity in opacity_map.items():
+            scene_item.setOpacity(opacity)
+        source_image = layer.qimage
         source_pos = layer.position
         transform_pos = bounds.topLeft().toPoint()
 
@@ -350,13 +325,13 @@ class LayerTransformTool(BaseTool):
     def _on_activate(self) -> None:
         """Connect to the active layer."""
         self._layer_stack.active_layer_changed.connect(self._active_layer_change_slot)
-        self._image_viewer.mouse_navigation_enabled = False
+        self._image_viewer.mouse_moves_generation_area = False
         self.set_layer(self._layer_stack.active_layer)
 
     def _on_deactivate(self) -> None:
         """Disconnect from all layers."""
         self._layer_stack.active_layer_changed.disconnect(self._active_layer_change_slot)
-        self._image_viewer.mouse_navigation_enabled = True
+        self._image_viewer.mouse_moves_generation_area = True
         self.set_layer(None)
 
     def _active_layer_change_slot(self, layer_id: int, layer_index: int) -> None:
@@ -391,18 +366,20 @@ class LayerTransformTool(BaseTool):
         controls = (
             (self._x_pos_box, self._transform_outline.x, self.set_x),
             (self._y_pos_box, self._transform_outline.y, self.set_y),
-            (self._x_offset_box, offset.x(), self.set_x_offset),
-            (self._y_offset_box, offset.y(), self.set_y_offset),
             (self._width_box, self._transform_outline.width, self.set_width),
             (self._height_box, self._transform_outline.height, self.set_height),
             (self._x_scale_box, x_scale, self.set_x_scale),
             (self._y_scale_box, y_scale, self.set_y_scale),
             (self._rotate_box, rotation, self.set_rotation)
         )
-        for field, value, change_handler in (controls):
+        for field, _, change_handler in controls:
+            field.valueChanged.disconnect(change_handler)
+
+        for field, value, _ in controls:
             if field.value() != value:
-                field.valueChanged.disconnect(change_handler)
                 field.setValue(float(value) if isinstance(field, QDoubleSpinBox) else int(value))
-                field.valueChanged.connect(change_handler)
+
+        for field, _, change_handler in controls:
+            field.valueChanged.connect(change_handler)
 
 
