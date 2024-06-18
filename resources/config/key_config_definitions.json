@@ -415,14 +415,6 @@
         "default": "Ctrl+Shift+P",
         "saved": true
     },
-    "clear_selection_shortcut": {
-        "label": "Clear mask",
-        "category": "Keybindings",
-        "description": "Clear the selection layer.",
-        "type": "string",
-        "default": "F8",
-        "saved": true
-    },
     "show_layer_menu_shortcut": {
         "label": "Show layer window",
         "category": "Keybindings",

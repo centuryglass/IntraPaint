@@ -33,6 +33,30 @@
         "default": true,
         "saved": true
     },
+    "show_selections_in_generation_options": {
+        "label": "Show selections in generated image options:",
+        "category": "Interface",
+        "description": "Draw the selection borders when choosing inpainted image options.",
+        "type": "bool",
+        "default": true,
+        "saved": true
+    },
+    "selection_screen_zooms_to_changed": {
+        "label": "Show generated images zoomed to changes:",
+        "category": "Interface",
+        "description": "When zooming in on individual inpainting options, focus the change region.",
+        "type": "bool",
+        "default": false,
+        "saved": true
+    },
+    "show_options_full_resolution": {
+        "label": "Show generated image options at original size",
+        "category": "Interface",
+        "description": "When the selected image size doesn't match the image generation resolution, preview options using the generated size.",
+        "type": "bool",
+        "default": false,
+        "saved": true
+    },
     "default_image_size": {
         "label": "Default image size:",
         "category": "Editing",

@@ -16,16 +16,13 @@ from src.ui.widget.bordered_widget import BorderedWidget
 from src.ui.widget.collapsible_box import CollapsibleBox
 from src.ui.widget.param_slider import ParamSlider
 from src.ui.window.main_window import MainWindow
+from src.util.shared_constants import GENERATE_BUTTON_TEXT, EDIT_MODE_INPAINT
 
-HEIGHT_BOX_TOOLTIP = 'Resize image generation area content to this height before inpainting'
-
-WIDTH_BOX_TOOLTIP = 'Resize image generation area content to this width before inpainting'
-
-EDIT_MODE_INPAINT = 'Inpaint'
 CONTROL_BOX_LABEL = 'Image Generation Controls'
 INTERROGATE_BUTTON_TEXT = 'Interrogate'
 INTERROGATE_BUTTON_TOOLTIP = 'Attempt to generate a prompt that describes the current image generation area'
-GENERATE_BUTTON_TEXT = 'Generate'
+WIDTH_BOX_TOOLTIP = 'Resize image generation area content to this width before inpainting'
+HEIGHT_BOX_TOOLTIP = 'Resize image generation area content to this height before inpainting'
 
 
 class StableDiffusionMainWindow(MainWindow):

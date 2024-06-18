@@ -25,6 +25,7 @@ from src.util.screen_size import get_screen_size
 from src.controller.base_controller import BaseInpaintController, MENU_TOOLS
 from src.api.a1111_webservice import A1111Webservice
 from src.util.menu_action import menu_action
+from src.util.shared_constants import EDIT_MODE_INPAINT, EDIT_MODE_TXT2IMG
 
 STABLE_DIFFUSION_CONFIG_CATEGORY = 'Stable-Diffusion'
 
@@ -48,9 +49,6 @@ PROGRESS_KEY_ETA_RELATIVE = 'eta_relative'
 GENERATE_ERROR_TITLE = "Image generation failed"
 GENERATE_ERROR_MESSAGE_EMPTY_MASK = ("Selection mask was empty. Either use the mask tool to mark part of the image"
                                      " generation area for inpainting, or switch to another image generation mode.")
-
-MODE_INPAINT = 'Inpaint'
-MODE_TXT2IMG = 'Text to Image'
 
 MAX_ERROR_COUNT = 10
 MIN_RETRY_US = 300000
@@ -364,14 +362,14 @@ class StableDiffusionController(BaseInpaintController):
             Signal to emit when status updates are available.
         """
         edit_mode = AppConfig.instance().get(AppConfig.EDIT_MODE)
-        if edit_mode != MODE_INPAINT:
+        if edit_mode != EDIT_MODE_INPAINT:
             mask = None
         elif self._layer_stack.selection_layer.generation_area_is_empty():
             raise RuntimeError(GENERATE_ERROR_MESSAGE_EMPTY_MASK)
 
         def generate_images() -> tuple[list[Image], dict | None]:
             """Call the appropriate image generation endpoint and return generated images."""
-            if edit_mode == MODE_TXT2IMG:
+            if edit_mode == EDIT_MODE_TXT2IMG:
                 return self._webservice.txt2img(source_image_section.width, source_image_section.height, image=source_image_section)
             return self._webservice.img2img(source_image_section, mask=mask)
 

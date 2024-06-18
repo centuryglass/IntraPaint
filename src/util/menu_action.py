@@ -5,8 +5,7 @@ from typing import Callable, Any, Optional
 from PyQt5.QtWidgets import QMainWindow, QAction
 
 from src.config.key_config import KeyConfig
-
-INT_MAX = 2147483647
+from src.util.shared_constants import INT_MAX
 
 
 def menu_action(menu_name: str, config_key: str, priority: int = INT_MAX,

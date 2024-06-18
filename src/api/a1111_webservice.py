@@ -16,6 +16,7 @@ from src.api.webservice import WebService
 from src.util.image_utils import load_image_from_base64, image_to_base64
 from src.config.application_config import AppConfig
 from src.ui.modal.login_modal import LoginModal
+from src.util.shared_constants import CONTROLNET_REUSE_IMAGE_CODE
 
 logger = logging.getLogger(__name__)
 
@@ -345,7 +346,7 @@ class A1111Webservice(WebService):
         controlnet = dict(config.get(AppConfig.CONTROLNET_ARGS_0))
         if len(controlnet) > 0 and 'model' in controlnet:
             if 'image' in controlnet:
-                if controlnet['image'] == 'SELECTION' and image is not None:
+                if controlnet['image'] == CONTROLNET_REUSE_IMAGE_CODE and image is not None:
                     controlnet['image'] = image_to_base64(image, include_prefix=True)
                 elif os.path.exists(controlnet['image']):
                     try:

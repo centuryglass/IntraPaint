@@ -13,9 +13,8 @@ from src.config.config_entry import RangeKey
 from src.ui.widget.bordered_widget import BorderedWidget
 from src.ui.widget.big_int_spinbox import BigIntSpinbox
 
-HEIGHT_LABEL = "H:"
-
 WIDTH_LABEL = "W:"
+HEIGHT_LABEL = "H:"
 
 
 class SettingsModal(QDialog):

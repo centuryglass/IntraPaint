@@ -29,6 +29,7 @@ from src.ui.modal.modal_utils import show_error_dialog, request_confirmation, op
 from src.ui.modal.settings_modal import SettingsModal
 from src.util.screen_size import get_screen_size
 from src.util.image_utils import pil_image_to_qimage, qimage_to_pil_image
+from src.util.shared_constants import EDIT_MODE_INPAINT
 
 from src.util.validation import assert_type
 from src.undo_stack import commit_action, undo, redo
@@ -73,7 +74,6 @@ SETTINGS_ERROR_MESSAGE = 'Settings not supported in this mode.'
 SETTINGS_ERROR_TITLE = 'Failed to open settings'
 
 METADATA_PARAMETER_KEY = 'parameters'
-INPAINT_MODE = 'Inpaint'
 IGNORED_APPCONFIG_CATEGORIES = ('Stable-Diffusion', 'GLID-3-XL')
 
 
@@ -537,7 +537,7 @@ class BaseInpaintController(MenuBuilder):
         def load_sample_preview(img: Image.Image, idx: int) -> None:
             """Apply image mask to inpainting results."""
             assert self._window is not None
-            if config.get(AppConfig.EDIT_MODE) == INPAINT_MODE:
+            if config.get(AppConfig.EDIT_MODE) == EDIT_MODE_INPAINT:
                 def point_fn(p: int) -> int:
                     """Convert pixel to 1-bit."""
                     return 255 if p < 1 else 0

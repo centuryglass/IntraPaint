@@ -1,15 +1,14 @@
 """Provides controls for transforming a graphics item."""
 import math
-from typing import Optional, Dict, Tuple, List, Any, Generator
+from typing import Optional, Dict, Tuple, Any, Generator
 
 from PyQt5.QtCore import Qt, QRectF, QPointF, QSizeF, pyqtSignal, QLineF
 from PyQt5.QtGui import QPainter, QPen, QTransform, QIcon, QPainterPath
 from PyQt5.QtWidgets import QWidget, QGraphicsItem, QStyleOptionGraphicsItem, \
-    QGraphicsRectItem, QGraphicsSceneMouseEvent, QApplication, QGraphicsTransform, \
+    QGraphicsRectItem, QGraphicsSceneMouseEvent, QGraphicsTransform, \
     QGraphicsObject
 
-from src.ui.widget.image_graphics_view import ImageGraphicsView
-from src.util.geometry_utils import transform_str, transforms_approx_equal
+from src.util.shared_constants import MIN_NONZERO
 
 MIN_SCENE_DIM = 5
 
@@ -25,8 +24,6 @@ LINE_WIDTH = 3
 
 CORNER_SCALE_ARROW_FILE = 'resources/arrow_corner.svg'
 CORNER_ROTATE_ARROW_FILE = 'resources/arrow_corner_rot.svg'
-
-MIN_NONZERO = 0.001
 
 MODE_SCALE = 'scale'
 MODE_ROTATE = 'rotate'

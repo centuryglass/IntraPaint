@@ -115,7 +115,7 @@ class LoadingSpinner(QGraphicsObject):
                             int(scene.width()), ellipse_radius // 4)
         font = painter.font()
         if self._font_size is None:
-            self._font_size = min(font.pointSize(), max_font_size(self._message, font, text_bounds))
+            self._font_size = max(1, min(font.pointSize(), max_font_size(self._message, font, text_bounds)))
         font.setPointSize(self._font_size)
         painter.setFont(font)
         painter.drawText(text_bounds, Qt.AlignmentFlag.AlignCenter, self._message)

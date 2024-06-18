@@ -17,6 +17,7 @@ from src.ui.graphics_items.transform_outline import TransformOutline
 from src.ui.image_viewer import ImageViewer
 from src.ui.widget.key_hint_label import KeyHintLabel
 from src.undo_stack import commit_action
+from src.util.shared_constants import FLOAT_MIN, FLOAT_MAX, MIN_NONZERO
 
 X_LABEL = "X:"
 Y_LABEL = "Y:"
@@ -33,12 +34,8 @@ ASPECT_RATIO_CHECK_LABEL = 'Preserve aspect ratio'
 RESET_BUTTON_TEXT = 'Reset'
 TRANSFORM_CONTROL_HINT = 'LMB+drag:move layer -'
 
-FLOAT_MAX = 9999999.0
-FLOAT_MIN = -9999999.0
-MIN_NONZERO = 0.001
-INT_MIN = -2147483646
-INT_MAX = 2147483647
 SCALE_STEP = 0.05
+
 
 
 class LayerTransformTool(BaseTool):

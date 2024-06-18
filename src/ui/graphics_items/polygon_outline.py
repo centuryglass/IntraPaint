@@ -1,8 +1,8 @@
 """Displays polygon outlines as animated dashes with subtle color changes."""
 from typing import Optional, List
 
-from PyQt5.QtCore import Qt, pyqtProperty, QPropertyAnimation, QObject
-from PyQt5.QtGui import QPen, QColor, QShowEvent, QHideEvent, QPolygonF
+from PyQt5.QtCore import Qt, pyqtProperty, QPropertyAnimation, QObject, QPointF
+from PyQt5.QtGui import QPen, QColor, QShowEvent, QHideEvent, QPolygonF, QTransform
 from PyQt5.QtWidgets import QGraphicsItem, QGraphicsView, QGraphicsItemGroup, QGraphicsPolygonItem
 
 PEN_WIDTH = 3
@@ -20,6 +20,7 @@ class PolygonOutline(QGraphicsItemGroup):
                  parent: Optional[QGraphicsItem] = None):
         super().__init__(parent)
         self._polygons: List[QGraphicsPolygonItem] = []
+        self._offset = QPointF()
         self._view = view
         self._animated = True
         self._dash_offset = 0
@@ -72,6 +73,13 @@ class PolygonOutline(QGraphicsItemGroup):
         self._pen.setDashOffset(self._dash_offset)
         self._pen.setColor(self._color)
         return self._pen
+
+    def move_to(self, pos: QPointF) -> None:
+        transform = QTransform()
+        offset = pos + self.pos()
+        transform.translate(offset.x(), offset.y())
+        for poly in self._polygons:
+            poly.setTransform(transform)
 
     def load_polygons(self, polygons: List[QPolygonF]):
         """Replace the current outline polygons with new ones."""

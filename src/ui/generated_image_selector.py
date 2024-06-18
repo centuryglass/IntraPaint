@@ -6,17 +6,19 @@ import time
 from typing import Callable, Optional, cast, List
 
 from PIL import Image
-from PyQt5.QtCore import Qt, QRect, QSize, QPoint, QSizeF, QRectF, QEvent, pyqtSignal
+from PyQt5.QtCore import Qt, QRect, QSize, QPoint, QSizeF, QRectF, QEvent, pyqtSignal, QPointF
 from PyQt5.QtGui import QImage, QResizeEvent, QPixmap, QPainter, QWheelEvent, QMouseEvent, \
-    QPainterPath, QKeyEvent
+    QPainterPath, QKeyEvent, QPolygonF, QTransform
 from PyQt5.QtWidgets import QWidget, QGraphicsPixmapItem, QVBoxLayout, QLabel, \
-    QStyleOptionGraphicsItem, QHBoxLayout, QPushButton, QStyle, QApplication
+    QStyleOptionGraphicsItem, QHBoxLayout, QPushButton, QStyle, QApplication, QCheckBox
 
 from src.config.application_config import AppConfig
 from src.config.key_config import KeyConfig
 from src.image.layer_stack import LayerStack
+from src.ui.config_control_setup import connected_checkbox
 from src.ui.graphics_items.loading_spinner import LoadingSpinner
 from src.ui.graphics_items.outline import Outline
+from src.ui.graphics_items.polygon_outline import PolygonOutline
 from src.util.geometry_utils import get_scaled_placement
 from src.util.font_size import max_font_size
 from src.ui.widget.image_graphics_view import ImageGraphicsView
@@ -24,6 +26,11 @@ from src.util.image_utils import get_standard_qt_icon
 from src.util.key_code_utils import get_key_display_string
 from src.util.validation import assert_valid_index
 
+CHANGE_ZOOM_CHECKBOX_LABEL = 'Zoom to changes'
+
+SHOW_SELECTION_OUTLINES_LABEL = "Show selection"
+
+MODE_INPAINT = 'Inpaint'
 
 CANCEL_BUTTON_TEXT = 'Cancel'
 CANCEL_BUTTON_TOOLTIP = 'This will discard all generated images.'
@@ -60,7 +67,10 @@ class GeneratedImageSelector(QWidget):
         self._make_selection = make_selection
         self._options: List[_ImageOption] = []
         self._outlines: List[Outline] = []
+        self._selections: List[PolygonOutline] = []
         self._zoomed_in = False
+        self._zoom_to_changes = AppConfig.instance().get(AppConfig.SELECTION_SCREEN_ZOOMS_TO_CHANGED)
+        self._change_bounds = None
         self._zoom_index = 0
         self._last_scroll_time = time.time() * 1000
 
@@ -70,9 +80,12 @@ class GeneratedImageSelector(QWidget):
         self._option_pos_offset = QPoint(0, 0)
 
         self._layout = QVBoxLayout(self)
+        self._page_top_bar = QWidget()
+        self._page_top_layout = QHBoxLayout(self._page_top_bar)
         self._page_top_label = QLabel(SELECTION_TITLE)
         self._page_top_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self._layout.addWidget(self._page_top_label)
+        self._page_top_layout.addWidget(self._page_top_label, stretch = 255)
+        self._layout.addWidget(self._page_top_bar)
 
         # Setup main option view widget:
         self._view = _SelectionView()
@@ -99,12 +112,13 @@ class GeneratedImageSelector(QWidget):
         self._view.scene().addItem(self._loading_spinner)
 
         original_image = self._layer_stack.qimage_generation_area_content()
-        original_image = original_image.scaled(config.get(AppConfig.GENERATION_SIZE))
         original_option = _ImageOption(original_image, ORIGINAL_CONTENT_LABEL)
         self._view.scene().addItem(original_option)
         self._options.append(original_option)
         self._outlines.append(Outline(self._view.scene(), self._view))
         self._outlines[0].outlined_region = self._options[0].bounds
+        if config.get(AppConfig.EDIT_MODE) == MODE_INPAINT:
+            self._add_option_selection_outline(0)
 
         # Add initial images, placeholders for expected images:
         self._loading_image = QImage(original_image.size(), QImage.Format_ARGB32_Premultiplied)
@@ -117,6 +131,26 @@ class GeneratedImageSelector(QWidget):
         expected_count = config.get(AppConfig.BATCH_SIZE) * config.get(AppConfig.BATCH_COUNT)
         for i in range(expected_count):
             self.add_image_option(self._loading_image, i)
+
+        # Add extra checkboxes when inpainting:
+        if config.get(AppConfig.EDIT_MODE) == MODE_INPAINT:
+            # show/hide selection outlines:
+            self._selection_outline_checkbox = connected_checkbox(None,
+                                                                  AppConfig.SHOW_SELECTIONS_IN_GENERATION_OPTIONS,
+                                                                  SHOW_SELECTION_OUTLINES_LABEL)
+            self._selection_outline_checkbox.toggled.connect(self.set_selection_outline_visibility)
+            self._page_top_layout.addWidget(self._selection_outline_checkbox)
+            # zoom to changed area:
+            change_bounds = layer_stack.selection_layer.get_selection_gen_area(True)
+            if change_bounds != layer_stack.generation_area:
+                change_bounds.translate(-layer_stack.generation_area.x(), -layer_stack.generation_area.y())
+                self._change_bounds = change_bounds
+                self._change_zoom_checkbox = connected_checkbox(None, AppConfig.SELECTION_SCREEN_ZOOMS_TO_CHANGED,
+                                                                CHANGE_ZOOM_CHECKBOX_LABEL)
+                self._change_zoom_checkbox.toggled.connect(self.zoom_to_changes)
+                self._page_top_layout.addWidget(self._change_zoom_checkbox)
+
+        # Add selections if inpainting:
 
         self._button_bar = QWidget()
         self._layout.addWidget(self._button_bar)
@@ -171,6 +205,21 @@ class GeneratedImageSelector(QWidget):
         """Changes the loading spinner message."""
         self._loading_spinner.message = message
 
+    def _add_option_selection_outline(self, idx: int) -> None:
+        if len(self._options) <= idx:
+            raise IndexError(f'Invalid option index {idx}')
+        if len(self._selections) != idx:
+            raise RuntimeError(f'Generating selection outline {idx}, unexpected outline count {len(self._selections)}'
+                               f' found.')
+        selection_crop = QPolygonF(QRectF(self._layer_stack.generation_area))
+        selection_polys = (poly.intersected(selection_crop) for poly in self._layer_stack.selection_layer.outline)
+        polys = [QPolygonF(poly) for poly in selection_polys]
+        outline = PolygonOutline(self._view, polys)
+        outline.animated = AppConfig.instance().get(AppConfig.ANIMATE_OUTLINES)
+        outline.setScale(self._layer_stack.width / self._layer_stack.generation_area.width())
+        outline.setVisible(AppConfig.instance().get(AppConfig.SHOW_SELECTIONS_IN_GENERATION_OPTIONS))
+        self._selections.append(outline)
+
     def add_image_option(self, image: QImage, idx: int) -> None:
         """Add an image to the list of generated image options."""
         if not 0 <= idx < len(self._options):
@@ -180,14 +229,13 @@ class GeneratedImageSelector(QWidget):
             self._options.append(_ImageOption(image, f'Option {idx}'))
             self._view.scene().addItem(self._options[-1])
             self._outlines.append(Outline(self._view.scene(), self._view))
+            # Add selections if inpainting:
+            if AppConfig.instance().get(AppConfig.EDIT_MODE) == MODE_INPAINT:
+                self._add_option_selection_outline(idx)
         else:
             self._options[idx].image = image
-        # Image options might come back at a different size if generation size doesn't match edit size, make
-        # sure they're all displayed the same:
-        size = self._options[idx].size
-        original_size = self._options[0].size
-        assert size == original_size, f'Expected images to be {original_size}, got {size}'
         self._outlines[idx].outlined_region = self._options[idx].bounds
+
         self.resizeEvent(None)
 
     def toggle_zoom(self, zoom_index: Optional[int] = None) -> None:
@@ -196,7 +244,7 @@ class GeneratedImageSelector(QWidget):
             self._zoom_index = zoom_index
         self._zoomed_in = not self._zoomed_in
         if self._zoomed_in:
-            self._zoom_to_option(self._zoom_index)
+            self._zoom_to_option(self._zoom_index, True)
         else:
             if not self._scroll_debounce_finished():
                 return
@@ -208,6 +256,21 @@ class GeneratedImageSelector(QWidget):
             self._status_label.setText(DEFAULT_CONTROL_HINT)
             self._page_top_label.setText(SELECTION_TITLE)
         self.resizeEvent(None)
+
+    def zoom_to_changes(self, should_zoom: bool) -> None:
+        """Zoom in to the updated area when inpainting small sections."""
+        self._zoom_to_changes = should_zoom
+        if self._zoom_to_changes:
+            if not self._zoomed_in:
+                self.toggle_zoom()
+            self._zoom_to_option(self._zoom_index, True)
+        elif self._zoomed_in:
+            self._zoom_to_option(self._zoom_index, True)
+
+    def set_selection_outline_visibility(self, show_selections: bool) -> None:
+        """Set whether selection outlines are drawn."""
+        for selection_outline in self._selections:
+            selection_outline.setVisible(show_selections)
 
     def resizeEvent(self, unused_event: Optional[QResizeEvent]):
         """Recalculate all bounds on resize and update view scale."""
@@ -274,16 +337,23 @@ class GeneratedImageSelector(QWidget):
             return True
         return False
 
-    def _zoom_to_option(self, option_index: int) -> None:
+    def _zoom_to_option(self, option_index: Optional[int] = None, ignore_debounce: bool = False) -> None:
         assert_valid_index(option_index, self._options)
-        if not self._scroll_debounce_finished():
+        if not ignore_debounce and not self._scroll_debounce_finished():
             return
         if not self._zoomed_in:
             self._zoomed_in = True
-        self._zoom_index = option_index
+        if option_index is not None:
+            self._zoom_index = option_index
         self._view.scale_changed.disconnect(self._scale_change_slot)
         self._view.offset_changed.disconnect(self._offset_change_slot)
-        self._view.zoom_to_bounds(self._options[self._zoom_index].bounds)
+        if self._zoom_to_changes and self._change_bounds is not None:
+            bounds = QRect(self._change_bounds)
+            offset = self._options[self._zoom_index].bounds.topLeft()
+            bounds.translate(offset.x(), offset.y())
+        else:
+            bounds = self._options[self._zoom_index].bounds
+        self._view.zoom_to_bounds(bounds)
         self._base_option_offset = self._view.offset
         self._base_option_scale = self._view.scene_scale
         self._view.offset = self._view.offset + self._option_pos_offset
@@ -355,6 +425,12 @@ class GeneratedImageSelector(QWidget):
             y = scene_y0 + (image_size.height() + image_margin) * row
             self._options[idx].setPos(x, y)
             self._outlines[idx].outlined_region = self._options[idx].bounds
+            if len(self._selections) > idx:
+                selection = self._selections[idx]
+                selection.setZValue(self._options[idx].zValue() + 1)
+                scale = self._options[idx].bounds.width() / self._layer_stack.generation_area.width()
+                selection.setScale(scale)
+                selection.move_to(QPointF(x / selection.scale(), y / selection.scale()))
 
 
 class _ImageOption(QGraphicsPixmapItem):
@@ -362,9 +438,10 @@ class _ImageOption(QGraphicsPixmapItem):
 
     def __init__(self, image: QImage, label_text: str) -> None:
         super().__init__()
-        self._image = image
+        self._full_image = image
+        self._scaled_image = image
         self._label_text = label_text
-        self.setPixmap(QPixmap.fromImage(image))
+        self.image = image
 
     @property
     def text(self) -> str:
@@ -374,12 +451,23 @@ class _ImageOption(QGraphicsPixmapItem):
     @property
     def image(self) -> QImage:
         """Access the generated image option."""
-        return self._image
+        return self._scaled_image
 
     @image.setter
     def image(self, new_image: QImage) -> None:
-        self._image = new_image
-        self.setPixmap(QPixmap.fromImage(new_image))
+        config = AppConfig.instance()
+        full_size = config.get(AppConfig.GENERATION_SIZE)
+        final_size = config.get(AppConfig.EDIT_SIZE)
+        if new_image.size() == full_size:
+            self._full_image = new_image
+            self._scaled_image = new_image.scaled(final_size.width(), final_size.height(),
+                                              transformMode=Qt.TransformationMode.SmoothTransformation)
+        elif new_image.size() == final_size:
+            self._full_image = new_image.scaled(full_size.width(), full_size.height(),
+                                            transformMode=Qt.TransformationMode.SmoothTransformation)
+            self._scaled_image = new_image
+        self.setPixmap(QPixmap.fromImage(self._full_image if config.get(AppConfig.SHOW_OPTIONS_FULL_RESOLUTION)
+                                         else self._scaled_image))
         self.update()
 
     @property
@@ -434,7 +522,7 @@ class _ImageOption(QGraphicsPixmapItem):
         painter.fillPath(text_background, Qt.black)
         painter.setPen(Qt.white)
         font = painter.font()
-        font_size = min(font.pointSize(), max_font_size(self._label_text, font, text_bounds))
+        font_size = max(1, min(font.pointSize(), max_font_size(self._label_text, font, text_bounds)))
         font.setPointSize(font_size)
         painter.setFont(font)
         painter.drawText(text_bounds, Qt.AlignCenter, self._label_text)

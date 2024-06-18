@@ -9,6 +9,7 @@ from src.ui.widget.label_wrapper import LabelWrapper
 from src.ui.widget.param_slider import ParamSlider
 from src.ui.config_control_setup import connected_checkbox
 from src.config.application_config import AppConfig
+from src.util.shared_constants import CONTROLNET_REUSE_IMAGE_CODE
 from src.util.validation import assert_type
 
 logger = logging.getLogger(__name__)
@@ -63,7 +64,6 @@ DEFAULT_CONTROL_TYPE = 'All'
 DEFAULT_MODULE_NAME = 'none'
 DEFAULT_MODEL_NAME = 'none'
 
-REUSE_IMAGE_VALUE = 'SELECTION'  # value to signal that the control image is from image generation area, not a file
 
 
 class ControlnetPanel(CollapsibleBox):
@@ -120,7 +120,7 @@ class ControlnetPanel(CollapsibleBox):
 
         # Control image row:
         use_generation_area = bool(CONTROL_CONFIG_IMAGE_KEY in initial_control_state
-                                   and initial_control_state[CONTROL_CONFIG_IMAGE_KEY] == REUSE_IMAGE_VALUE)
+                                   and initial_control_state[CONTROL_CONFIG_IMAGE_KEY] == CONTROLNET_REUSE_IMAGE_CODE)
         image_row = QHBoxLayout()
         layout.addLayout(image_row)
 
@@ -141,7 +141,7 @@ class ControlnetPanel(CollapsibleBox):
 
         def reuse_image_update(checked: bool):
             """Update config, disable/enable appropriate components if the 'reuse image as control' box changes."""
-            value = REUSE_IMAGE_VALUE if checked else image_path_edit.text()
+            value = CONTROLNET_REUSE_IMAGE_CODE if checked else image_path_edit.text()
             load_image_button.setEnabled(not checked)
             image_path_edit.setEnabled(not checked)
             if checked:

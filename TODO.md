@@ -11,10 +11,8 @@
 ## 1280x800 display issues:
 - Text cut off in some tool panels
 - Brush icons stacked in larger lists
-- default icon zoom cuts off labels
 
 # General interface
-- Implement QGraphicsItem item handle control with support for translate, scale, rotate
 - Control Panel cleanup with FormLayout
 - Add click+drag resizing to CollapsibleBox
 - Add option to pop out CollapsibleBox content as window
