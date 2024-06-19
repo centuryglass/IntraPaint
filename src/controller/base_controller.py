@@ -112,7 +112,7 @@ class BaseInpaintController(MenuBuilder):
         self._window: Optional[QMainWindow] = None
         self._layer_panel: Optional[LayerPanel] = None
         self._settings_panel: Optional[SettingsModal] = None
-        self._nav_manager: Optional[SpacenavManager] = None
+        self._nav_manager: Optional['SpacenavManager'] = None
         self._worker: Optional[QObject] = None
         self._metadata: Optional[dict[str, Any]] = None
 
@@ -236,6 +236,7 @@ class BaseInpaintController(MenuBuilder):
     def start_app(self) -> None:
         """Start the application after performing any additional required setup steps."""
         self.window_init()
+        assert self._window is not None
 
         # Configure support for spacemouse panning, if relevant:
         if SpacenavManager is not None and self._window is not None:
@@ -268,8 +269,16 @@ class BaseInpaintController(MenuBuilder):
                 self._layer_stack.get_layer_by_index(i).clear()
             self._metadata = None
 
-    @menu_action(MENU_FILE, 'save_shortcut', 1)
-    def save_image(self, file_path: Optional[str] = None) -> None:
+    @menu_action(MENU_FILE, 'save_shortcut', priority=1)
+    def save_image(self) -> None:
+        """Saves the edited image, only opening the save dialog if no previous image path is cached."""
+        image_path = Cache.instance().get(Cache.LAST_FILE_PATH)
+        if not os.path.isfile(image_path):
+            image_path = None
+        self.save_image_as(file_path=image_path)
+
+    @menu_action(MENU_FILE, 'save_as_shortcut', 2)
+    def save_image_as(self, file_path: Optional[str] = None) -> None:
         """Open a save dialog, and save the edited image to disk, preserving any metadata."""
         assert self._window is not None
         cache = Cache.instance()
@@ -306,7 +315,7 @@ class BaseInpaintController(MenuBuilder):
             show_error_dialog(self._window, SAVE_ERROR_TITLE, str(save_err))
             raise save_err
 
-    @menu_action(MENU_FILE, 'load_shortcut', 2, True)
+    @menu_action(MENU_FILE, 'load_shortcut', 3, True)
     def load_image(self, file_path: Optional[str] = None) -> None:
         """Open a loading dialog, then load the selected image for editing."""
         assert self._window is not None
@@ -363,7 +372,7 @@ class BaseInpaintController(MenuBuilder):
             show_error_dialog(self._window, LOAD_ERROR_TITLE, err)
             return
 
-    @menu_action(MENU_FILE, 'reload_shortcut', 3, True)
+    @menu_action(MENU_FILE, 'reload_shortcut', 4, True)
     def reload_image(self) -> None:
         """Reload the edited image from disk after getting confirmation from a confirmation dialog."""
         assert self._window is not None
@@ -379,7 +388,7 @@ class BaseInpaintController(MenuBuilder):
                                                                    RELOAD_CONFIRMATION_MESSAGE):
             self.load_image(file_path=file_path)
 
-    @menu_action(MENU_FILE, 'quit_shortcut', 4)
+    @menu_action(MENU_FILE, 'quit_shortcut', 5)
     def quit(self) -> None:
         """Quit the application after getting confirmation from the user."""
         if self._window is not None and request_confirmation(self._window, CONFIRM_QUIT_TITLE, CONFIRM_QUIT_MESSAGE):
@@ -696,6 +705,7 @@ class BaseInpaintController(MenuBuilder):
     def show_settings(self) -> None:
         """Show the settings window."""
         if self._settings_panel is None:
+            assert self._window is not None
             self._settings_panel = SettingsModal(self._window)
             self.init_settings(self._settings_panel)
             self._settings_panel.changes_saved.connect(self.update_settings)

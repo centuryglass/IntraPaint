@@ -1,5 +1,5 @@
 """Implements brush controls using a MyPaint surface."""
-from typing import Optional
+from typing import Optional, cast
 
 from PyQt5.QtCore import Qt, QSize
 from PyQt5.QtGui import QPixmap, QColor, QIcon, QKeySequence
@@ -28,9 +28,11 @@ class BrushTool(CanvasTool):
     """Implements brush controls using a MyPaint surface."""
 
     def __init__(self, layer_stack: LayerStack, image_viewer: ImageViewer) -> None:
-        super().__init__(layer_stack, image_viewer, MyPaintLayerCanvas(image_viewer.scene()))
+        scene = image_viewer.scene()
+        assert scene is not None
+        super().__init__(layer_stack, image_viewer, MyPaintLayerCanvas(scene))
         self._last_click = None
-        self._control_layout = None
+        self._control_layout: Optional[QVBoxLayout] = None
         self._active = False
         self._drawing = False
         self._cached_size = None
@@ -41,9 +43,10 @@ class BrushTool(CanvasTool):
         self.brush_path = config.get(AppConfig.MYPAINT_BRUSH)
         self.brush_size = config.get(AppConfig.SKETCH_BRUSH_SIZE)
 
-        def _active_layer_update(layer_id: Optional[int], layer_idx: Optional[int]) -> None:
+        def _active_layer_update(_: Optional[int], layer_idx: Optional[int]) -> None:
             self.layer = layer_stack.active_layer
-            self._canvas.z_value = -layer_idx
+            if layer_idx is not None:
+                self._canvas.z_value = -layer_idx
 
         layer_stack.active_layer_changed.connect(_active_layer_update)
         if layer_stack.active_layer is not None:
@@ -117,7 +120,8 @@ class BrushTool(CanvasTool):
         control_layout.addWidget(color_picker_button, stretch=2)
 
         # Brush selection:
-        brush_panel = BrushPanel(self._canvas.brush)
+        canvas = cast(MyPaintLayerCanvas, self._canvas)
+        brush_panel = BrushPanel(canvas.brush)
         control_layout.addWidget(brush_panel, stretch=8)
         return self._control_panel
 
@@ -125,4 +129,5 @@ class BrushTool(CanvasTool):
         """Change brush size by some offset amount, multiplying offset by 10 if shift is held."""
         if QApplication.keyboardModifiers() == Qt.ShiftModifier:
             offset *= 10
-        AppConfig.instance().set(AppConfig.SKETCH_BRUSH_SIZE, max(1, self._canvas.brush_size + offset))
+        canvas = cast(MyPaintLayerCanvas, self._canvas)
+        AppConfig.instance().set(AppConfig.SKETCH_BRUSH_SIZE, max(1, canvas.brush_size + offset))

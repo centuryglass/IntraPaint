@@ -9,7 +9,7 @@ MAX_UNDO = 50
 class _UndoAction:
     def __init__(self, undo_action: Callable[[], None],
                  redo_action: Callable[[], None],
-                 action_type: str,
+                 action_type: Optional[str],
                  action_data: Optional[Dict[str, Any]]) -> None:
         self.undo = undo_action
         self.redo = redo_action

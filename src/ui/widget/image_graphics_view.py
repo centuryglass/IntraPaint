@@ -85,9 +85,9 @@ class ImageGraphicsView(QGraphicsView):
 
         # Bind zoom keys:
         for config_key, direction in ((KeyConfig.ZOOM_IN, 1), (KeyConfig.ZOOM_OUT, -1)):
-            offset = BASE_ZOOM_OFFSET * direction
+            zoom_offset = BASE_ZOOM_OFFSET * direction
 
-            def _zoom(mult, change=offset) -> bool:
+            def _zoom(mult, change=zoom_offset) -> bool:
                 if not self.isVisible():
                     return False
                 self.scene_scale = self.scene_scale + change * mult
@@ -105,7 +105,7 @@ class ImageGraphicsView(QGraphicsView):
     def mouse_navigation_enabled(self, enabled: bool) -> None:
         self._mouse_navigation_enabled = enabled
 
-    def centerOn(self, pos: QPoint | QPointF) -> None:
+    def centerOn(self, pos: QPointF | QPoint) -> None:
         """Cache the center point whenever it changes."""
         super().centerOn(pos)
         self._centered_on.setX(int(pos.x()))
@@ -122,6 +122,8 @@ class ImageGraphicsView(QGraphicsView):
             last mouse coordinates, centered on the mouse pointer. This allows extra large cursors to be used, which
             can cause problems with some windowing systems if applied normally.
         """
+        scene = self.scene()
+        assert scene is not None
         if isinstance(new_cursor, QPixmap):
             if self._cursor_pixmap_item is None:
                 self._cursor_pixmap_item = QGraphicsPixmapItem(new_cursor)
@@ -129,7 +131,7 @@ class ImageGraphicsView(QGraphicsView):
             else:
                 self._cursor_pixmap_item.setPixmap(new_cursor)
             if self._cursor_pixmap_item.scene() is None:
-                self.scene().addItem(self._cursor_pixmap_item)
+                scene.addItem(self._cursor_pixmap_item)
             self._cursor_pixmap_item.setScale(1 / self.scene_scale)
             self._cursor_pixmap_item.setVisible(self._last_cursor_pos is not None)
             if self._last_cursor_pos is not None:
@@ -137,7 +139,7 @@ class ImageGraphicsView(QGraphicsView):
             self.setCursor(QCursor(Qt.CursorShape.CrossCursor))
         else:
             if self._cursor_pixmap_item is not None and self._cursor_pixmap_item.scene() is not None:
-                self.scene().removeItem(self._cursor_pixmap_item)
+                scene.removeItem(self._cursor_pixmap_item)
                 self._cursor_pixmap_item.setVisible(False)
             if new_cursor is None:
                 new_cursor = QCursor()
@@ -286,15 +288,19 @@ class ImageGraphicsView(QGraphicsView):
 
         # Handle scale adjustments when the widget size changes:
         border_size = self._border_size()
-        self._content_rect = get_scaled_placement(QRect(QPoint(0, 0), self.size()), self.content_size, border_size)
-        new_scale = self.displayed_content_size.width() / self.content_size.width()
+        content_size = self._content_size
+        if content_size is None:
+            return
+        self._content_rect = get_scaled_placement(QRect(QPoint(0, 0), self.size()), content_size, border_size)
+        displayed_content_size = self._content_rect.size()
+        new_scale = displayed_content_size.width() / content_size.width()
         scale_changed = new_scale != self._scale
         self._scale = new_scale
         adjusted_scale = self._scale + self._scale_adjustment
 
         # Adjust the scene viewpoint/scrolling based on scale and offset:
-        scene_window_width = self.displayed_content_size.width() / adjusted_scale
-        scene_window_height = self.displayed_content_size.height() / adjusted_scale
+        scene_window_width = displayed_content_size.width() / adjusted_scale
+        scene_window_height = displayed_content_size.height() / adjusted_scale
         content_rect_f = QRectF(self._centered_on.x() - scene_window_width / 2,
                                 self._centered_on.y() - scene_window_height // 2,
                                 scene_window_width, scene_window_height)
@@ -312,13 +318,13 @@ class ImageGraphicsView(QGraphicsView):
     def _border_size(self) -> int:
         return (min(self.width(), self.height()) // 40) + 1
 
-    def installEventFilter(self, event_filter: QObject) -> None:
+    def installEventFilter(self, event_filter: Optional[QObject]) -> None:
         """Extend default event filter management to deal with QGraphicsView mouse event oddities."""
-        if event_filter not in self._event_filters:
+        if event_filter is not None and event_filter not in self._event_filters:
             self._event_filters.append(event_filter)
         super().installEventFilter(event_filter)
 
-    def removeEventFilter(self, event_filter: QObject) -> None:
+    def removeEventFilter(self, event_filter: Optional[QObject]) -> None:
         """Extend default event filter management to deal with QGraphicsView mouse event oddities."""
         if event_filter in self._event_filters:
             self._event_filters.remove(event_filter)
@@ -331,9 +337,10 @@ class ImageGraphicsView(QGraphicsView):
         if self._cursor_pixmap is not None:
             self.update()
 
-    def mousePressEvent(self, event: Optional[QMouseEvent], get_result=False) -> bool:
+    def mousePressEvent(self, event: Optional[QMouseEvent], get_result=False) -> Optional[bool]:
         """Custom mousePress handler to deal with QGraphicsView oddities. Child classes must call this implementation
            first with get_result=True, then exit without further action if it returns true."""
+        assert event is not None
         self.set_cursor_pos(event.pos())
         super().mousePressEvent(event)
         key_modifiers = QApplication.keyboardModifiers()
@@ -345,9 +352,10 @@ class ImageGraphicsView(QGraphicsView):
                 return True if get_result else None
         return False if get_result else None
 
-    def mouseMoveEvent(self, event: Optional[QMouseEvent], get_result=False) -> None:
+    def mouseMoveEvent(self, event: Optional[QMouseEvent], get_result=False) -> Optional[bool]:
         """Custom mouseMove handler to deal with QGraphicsView oddities. Child classes must call this implementation
            first with get_result=True, then exit without further action if it returns true."""
+        assert event is not None
         self.set_cursor_pos(event.pos())
         super().mouseMoveEvent(event)
         if self._mouse_navigation_enabled and self._drag_pt is not None and event is not None:
@@ -360,7 +368,7 @@ class ImageGraphicsView(QGraphicsView):
                 y_off = (self._drag_pt.y() - mouse_pt.y()) / scale
                 distance = math.sqrt(x_off**2 + y_off**2)
                 if distance < 1:
-                    return
+                    return None
                 self.offset = QPointF(self.offset.x() + x_off, self.offset.y() + y_off)
                 self._drag_pt = mouse_pt
             else:
@@ -370,9 +378,10 @@ class ImageGraphicsView(QGraphicsView):
                 return True if get_result else None
         return False if get_result else None
 
-    def mouseReleaseEvent(self, event: Optional[QMouseEvent], get_result=False) -> None:
+    def mouseReleaseEvent(self, event: Optional[QMouseEvent], get_result=False) -> Optional[bool]:
         """Custom mouseRelease handler to deal with QGraphicsView oddities. Child classes must call this implementation
            first with get_result=True, then exit without further action if it returns true."""
+        assert event is not None
         self.set_cursor_pos(event.pos())
         super().mouseReleaseEvent(event)
         for event_filter in self._event_filters:
@@ -415,8 +424,10 @@ class ImageGraphicsView(QGraphicsView):
         """Adjust viewport scale and offset to center a selected area in the view."""
         self.reset_scale()  # Reset zoom without clearing 'follow_generation_area' flag.
         margin = max(int(bounds.width() / 20), int(bounds.height() / 20), 10)
-        self.offset = QPoint(int(bounds.center().x() - (self.content_size.width() // 2)),
-                             int(bounds.center().y() - (self.content_size.height() // 2)))
+        content_size = self.content_size
+        assert content_size is not None
+        self.offset = QPoint(int(bounds.center().x() - (content_size.width() // 2)),
+                             int(bounds.center().y() - (content_size.height() // 2)))
         self.scene_scale = get_scaled_placement(QRect(QPoint(0, 0), self.size()),
                                                 bounds.size(), 0).width() / (bounds.width() + margin)
         self.resizeEvent(None)

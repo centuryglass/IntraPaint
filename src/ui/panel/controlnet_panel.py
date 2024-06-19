@@ -3,7 +3,7 @@ Panel providing controls for the stable-diffusion ControlNet extension. Only sup
 """
 from typing import Optional
 import logging
-from PyQt5.QtWidgets import QVBoxLayout, QHBoxLayout, QCheckBox, QPushButton, QLineEdit, QComboBox, QSizePolicy
+from PyQt5.QtWidgets import QVBoxLayout, QHBoxLayout, QCheckBox, QPushButton, QLineEdit, QComboBox, QSizePolicy, QWidget
 from src.ui.widget.collapsible_box import CollapsibleBox
 from src.ui.widget.label_wrapper import LabelWrapper
 from src.ui.widget.param_slider import ParamSlider
@@ -63,7 +63,6 @@ DEFAULT_PARAMS = ['module', 'model', 'low_vram', 'pixel_perfect', 'image', 'weig
 DEFAULT_CONTROL_TYPE = 'All'
 DEFAULT_MODULE_NAME = 'none'
 DEFAULT_MODEL_NAME = 'none'
-
 
 
 class ControlnetPanel(CollapsibleBox):
@@ -205,11 +204,16 @@ class ControlnetPanel(CollapsibleBox):
             config.set(config_key, selected_module, inner_key=CONTROL_MODULE_KEY)
             while options_layout.count() > 0:
                 row = options_layout.itemAt(0)
-                while row.layout().count() > 0:
-                    item = row.layout().itemAt(0)
-                    row.layout().removeItem(item)
+                assert row is not None
+                row_layout = row.layout()
+                assert row_layout is not None
+                while row_layout.count() > 0:
+                    item = row_layout.itemAt(0)
+                    assert item is not None
+                    row_layout.removeItem(item)
                     if item.widget():
                         widget = item.widget()
+                        assert widget is not None
                         config.disconnect(widget, config_key)
                         if hasattr(widget, 'disconnect_config'):
                             widget.disconnect_config()
@@ -217,7 +221,7 @@ class ControlnetPanel(CollapsibleBox):
                             config.disconnect(widget, config_key)
                         widget.deleteLater()
                 options_layout.removeItem(row)
-                row.layout().deleteLater()
+                row_layout.deleteLater()
             current_keys = list(config.get(config_key).keys())
             for param in current_keys:
                 if param not in DEFAULT_PARAMS:

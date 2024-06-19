@@ -37,7 +37,7 @@ class MPBrush:
         libmypaint.mypaint_brush_unref(self._brush)
 
     @property
-    def path(self) -> str:
+    def path(self) -> Optional[str]:
         """Returns the path to the last brush file loaded, if any."""
         return self._path
 
@@ -46,7 +46,7 @@ class MPBrush:
         """Returns the internal brush pointer."""
         return self._brush
 
-    def load_file(self, file_path: str, preserve_size: bool = False) -> None:
+    def load_file(self, file_path: str, preserve_size: bool = True) -> None:
         """Load a brush from a .myb file, optionally preserving brush size."""
         logger.info(f'loading brush file {file_path}')
         file = QFile(file_path)
@@ -57,7 +57,7 @@ class MPBrush:
         self.load(byte_array, preserve_size)
         self._path = file_path
 
-    def load(self, content: QByteArray, preserve_size: False) -> None:
+    def load(self, content: QByteArray, preserve_size: bool = True) -> None:
         """Load a brush from a byte array, optionally preserving brush size."""
         size = -1.0 if not preserve_size else self.get_value(MPBrush.RADIUS_LOGARITHMIC)
 

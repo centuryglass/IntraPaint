@@ -1,7 +1,7 @@
 """A layer used to mark masked regions for inpainting."""
 from sys import version_info
 
-from src.image.mypaint.numpy_image_utils import is_fully_transparent
+from src.image.mypaint.numpy_image_utils import is_fully_transparent, AnyNpArray
 
 if version_info[1] >= 11:
     from typing import Self, Optional, List
@@ -10,7 +10,7 @@ else:
     from typing_extensions import Self
 import logging
 from PyQt5.QtGui import QImage, QPolygonF, QPainter
-from PyQt5.QtCore import QRect, QPoint, QSize, pyqtSignal, QPointF, Qt, QRectF
+from PyQt5.QtCore import QRect, QPoint, QSize, pyqtSignal, QPointF, Qt
 import numpy as np
 import cv2
 from PIL import Image
@@ -20,7 +20,7 @@ from src.util.image_utils import qimage_to_pil_image, image_content_bounds
 
 logger = logging.getLogger(__name__)
 
-SELECTION_LAYER_NAME = "Selection"
+SELECTION_LAYER_NAME = 'Selection'
 
 MASK_OPACITY_DEFAULT = 0.2
 ALPHA_THRESHOLD = 1
@@ -55,7 +55,7 @@ class SelectionLayer(ImageLayer):
         self._generation_area = QRect()
         super().__init__(size, SELECTION_LAYER_NAME, False)
         self.opacity = MASK_OPACITY_DEFAULT
-        self._bounding_box = None
+        self._bounding_box: Optional[QRect] = None
         generation_window_signal.connect(self.update_generation_area)
 
     def update_generation_area(self, new_area: QRect) -> None:
@@ -65,9 +65,9 @@ class SelectionLayer(ImageLayer):
         self.content_changed.emit(self)
 
     # Disabling unwanted layer functionality:
-    def copy(self) -> Self:
+    def copy(self) -> 'SelectionLayer':
         """Disallow selection layer copies."""
-        raise RuntimeError("The selection layer cannot be copied.")
+        raise RuntimeError('The selection layer cannot be copied.')
 
     @property
     def saved(self) -> bool:
@@ -77,7 +77,7 @@ class SelectionLayer(ImageLayer):
     @saved.setter
     def saved(self, saved: bool):
         """Sets whether this layer is saved when visible and image data is saved."""
-        raise RuntimeError("The selection layer is never saved with the rest of the image.")
+        raise RuntimeError('The selection layer is never saved with the rest of the image.')
 
     @property
     def outline(self) -> List[QPolygonF]:
@@ -92,6 +92,7 @@ class SelectionLayer(ImageLayer):
         if np_image is None:
             image = self.qimage
             image_ptr = image.bits()
+            assert image_ptr is not None, 'Selection layer image was invalid'
             image_ptr.setsize(image.byteCount())
             np_image = np.ndarray(shape=(image.height(), image.width(), 4), dtype=np.uint8, buffer=image_ptr)
         generation_area = self._generation_area
@@ -126,8 +127,9 @@ class SelectionLayer(ImageLayer):
         """Expand the selection outwards a given amount, or shrink it if num_pixels is negative."""
         image = self.qimage
         image_ptr = image.bits()
+        assert image_ptr is not None, 'Selection layer image was invalid'
         image_ptr.setsize(image.byteCount())
-        np_image = np.ndarray(shape=(image.height(), image.width(), 4), dtype=np.uint8, buffer=image_ptr)
+        np_image: AnyNpArray = np.ndarray(shape=(image.height(), image.width(), 4), dtype=np.uint8, buffer=image_ptr)
 
         masked = np_image[:, :, 3] >= ALPHA_THRESHOLD
         mask_uint8 = masked.astype(np.uint8) * 255
@@ -160,8 +162,9 @@ class SelectionLayer(ImageLayer):
         """When the image updates, ensure that it meets requirements, and recalculate bounds."""
         # Enforce fixed colors, alpha thresholds:
         image_ptr = image.bits()
+        assert image_ptr is not None, 'Selection layer image was invalid'
         image_ptr.setsize(image.byteCount())
-        np_image = np.ndarray(shape=(image.height(), image.width(), 4), dtype=np.uint8, buffer=image_ptr)
+        np_image: AnyNpArray = np.ndarray(shape=(image.height(), image.width(), 4), dtype=np.uint8, buffer=image_ptr)
 
         # Update selection bounds, skip extra processing if selection is empty:
         self._update_bounds(np_image)
@@ -185,7 +188,6 @@ class SelectionLayer(ImageLayer):
         cropped_image[masked, 1] = 0  # green
         cropped_image[masked, 2] = 255  # red
         cropped_image[masked, 3] = 255
-
 
         # Find edge polygons:
         if change_bounds is not None:
@@ -283,8 +285,8 @@ class SelectionLayer(ImageLayer):
                 height_to_add -= d_bottom
                 if height_to_add > 0:
                     d_top = min(top - area_top, d_top + height_to_add)
-                top -= d_top
-                bottom += d_bottom
+                top -= int(d_top)
+                bottom += int(d_bottom)
         except AssertionError:
             # Weird edge cases that pop up sometimes when you try to do unreasonable things like change size to 500x8
             selection_rect = QRect(QPoint(int(left), int(top)), QPoint(int(right), int(bottom)))

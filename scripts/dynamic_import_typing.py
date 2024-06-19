@@ -7,6 +7,8 @@ import sys
 import os
 import importlib.util
 import re
+from typing import Dict, Tuple, Any, TypeAlias
+
 from PyQt5.QtWidgets import QApplication
 
 app = QApplication(sys.argv)
@@ -18,7 +20,11 @@ DYNAMIC_PROP_LINE = f'\n\n    # DYNAMIC PROPERTIES:\n    # Generate with `python
 assert module_path.endswith('.py') and os.path.isfile(module_path),  f'Expected Python file argument, got {module_path}'
 module_name = os.path.basename(module_path)[:-3]
 spec = importlib.util.spec_from_file_location(module_name, module_path)
+if spec is None:
+    raise RuntimeError(f'Failed to load {module_name} from {module_path}')
 module = importlib.util.module_from_spec(spec)
+if module is None or spec.loader is None:
+    raise RuntimeError(f'Failed to load {module_name} from {module_path}')
 spec.loader.exec_module(module)
 
 altered_text = ''
@@ -53,7 +59,8 @@ with open(module_path, 'r', encoding='utf-8') as file:
     file_text = file.read()
 
 pattern = re.compile(r'(:?^|\n)[ \t]*class (?P<class_name>[a-zA-Z0-9_]*)(?:\:|\()[^\n]*\n+(?P<indent>[ \t]*)')
-class_items = {}
+DataDict: TypeAlias = Dict[str, str | int]
+class_items: Dict[str, DataDict] = {}
 search_text = file_text
 file_idx = 0
 while (match := re.search(pattern, file_text[file_idx:])) is not None:
@@ -71,12 +78,14 @@ while (match := re.search(pattern, file_text[file_idx:])) is not None:
     class_items[class_name] = {'start': class_idx, 'end': end_idx, 'indent': indent}
     file_idx = end_idx
 
-insertions = {}
+insertions: Dict[int, Tuple[str, DataDict]] = {}
 
 
 for class_name, data in class_items.items():
-    class_text = file_text[data['start']:data['end']]
-    insert_index = data['end']
+    start = int(data['start'])
+    end = int(data['end'])
+    class_text = file_text[start:end]
+    insert_index = end
     indent = data['indent']
     if class_name not in dir(module):
         print(f'Couldn\'t find {class_name} in {module_name}, it\'s probably a nested class.  Skipping it.')
@@ -86,7 +95,7 @@ for class_name, data in class_items.items():
 
     if (idx := class_text.find(DYNAMIC_PROP_LINE)) != -1:
         class_text = class_text[:idx]
-        insert_index = idx + data['start']
+        insert_index = idx + start
 
     # Some classes don't load dynamic properties until an instance exists, so try creating object instances:
     try:
@@ -110,7 +119,7 @@ indexes = list(insertions.keys())
 indexes.sort()
 for idx in reversed(indexes):
     text, data = insertions[idx]
-    file_text = file_text[:idx] + text + file_text[data['end']:]
+    file_text = file_text[:idx] + text + file_text[end:]
 
 with open(module_path, 'w', encoding='utf-8') as file:
     file.write(file_text)

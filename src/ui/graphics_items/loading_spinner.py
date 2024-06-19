@@ -27,7 +27,7 @@ class LoadingSpinner(QGraphicsObject):
         super().__init__()
         self._message = message
         self._rotation = 0
-        self._font_size = None
+        self._font_size: Optional[int] = None
         self._anim = QPropertyAnimation(self, b"rotation")
         self._anim.setLoopCount(-1)
         self._anim.setStartValue(0)
@@ -73,9 +73,10 @@ class LoadingSpinner(QGraphicsObject):
 
     def boundingRect(self) -> QRectF:
         """Returns the scene boundaries as the loading spinner bounds."""
-        if self.scene() is None:
+        scene = self.scene()
+        if scene is None:
             return QRectF()
-        return self.scene().sceneRect()
+        return scene.sceneRect()
 
     def shape(self) -> QPainterPath:
         """Returns the outline's bounds as a shape."""

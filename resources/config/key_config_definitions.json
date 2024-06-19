@@ -183,6 +183,14 @@
         "default": "Ctrl+S",
         "saved": true
     },
+    "save_as_shortcut": {
+        "label": "Save as",
+        "category": "Keybindings",
+        "description": "Save current image as .png or .inpt at a new file path.",
+        "type": "string",
+        "default": "Ctrl+Alt+S",
+        "saved": true
+    },
     "load_shortcut": {
         "label": "Load Image",
         "category": "Keybindings",

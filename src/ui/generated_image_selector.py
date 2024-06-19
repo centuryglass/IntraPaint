@@ -6,11 +6,11 @@ import time
 from typing import Callable, Optional, cast, List
 
 from PIL import Image
-from PyQt5.QtCore import Qt, QRect, QSize, QPoint, QSizeF, QRectF, QEvent, pyqtSignal, QPointF
+from PyQt5.QtCore import Qt, QRect, QSize, QPoint, QSizeF, QRectF, QEvent, pyqtSignal, QPointF, QObject
 from PyQt5.QtGui import QImage, QResizeEvent, QPixmap, QPainter, QWheelEvent, QMouseEvent, \
-    QPainterPath, QKeyEvent, QPolygonF, QTransform
+    QPainterPath, QKeyEvent, QPolygonF
 from PyQt5.QtWidgets import QWidget, QGraphicsPixmapItem, QVBoxLayout, QLabel, \
-    QStyleOptionGraphicsItem, QHBoxLayout, QPushButton, QStyle, QApplication, QCheckBox
+    QStyleOptionGraphicsItem, QHBoxLayout, QPushButton, QStyle, QApplication
 
 from src.config.application_config import AppConfig
 from src.config.key_config import KeyConfig
@@ -19,9 +19,9 @@ from src.ui.config_control_setup import connected_checkbox
 from src.ui.graphics_items.loading_spinner import LoadingSpinner
 from src.ui.graphics_items.outline import Outline
 from src.ui.graphics_items.polygon_outline import PolygonOutline
-from src.util.geometry_utils import get_scaled_placement
-from src.util.font_size import max_font_size
 from src.ui.widget.image_graphics_view import ImageGraphicsView
+from src.util.font_size import max_font_size
+from src.util.geometry_utils import get_scaled_placement
 from src.util.image_utils import get_standard_qt_icon
 from src.util.key_code_utils import get_key_display_string
 from src.util.validation import assert_valid_index
@@ -38,13 +38,12 @@ PREVIOUS_BUTTON_TEXT = 'Previous'
 ZOOM_BUTTON_TEXT = 'Toggle zoom'
 NEXT_BUTTON_TEXT = 'Next'
 
-
 ORIGINAL_CONTENT_LABEL = "Original image content"
 LOADING_IMG_TEXT = 'Loading...'
 
 SELECTION_TITLE = 'Select from generated image options.'
 VIEW_MARGIN = 6
-IMAGE_MARGIN_FRACTION = 1/6
+IMAGE_MARGIN_FRACTION = 1 / 6
 SCROLL_DEBOUNCE_MS = 100
 
 DEFAULT_CONTROL_HINT = 'Ctrl+LMB or MMB and drag: pan view, mouse wheel: zoom, Esc: discard all options'
@@ -84,7 +83,7 @@ class GeneratedImageSelector(QWidget):
         self._page_top_layout = QHBoxLayout(self._page_top_bar)
         self._page_top_label = QLabel(SELECTION_TITLE)
         self._page_top_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self._page_top_layout.addWidget(self._page_top_label, stretch = 255)
+        self._page_top_layout.addWidget(self._page_top_label, stretch=255)
         self._layout.addWidget(self._page_top_bar)
 
         # Setup main option view widget:
@@ -102,6 +101,7 @@ class GeneratedImageSelector(QWidget):
                 self._zoom_prev()
             if dy != 0 and (dy > 0) == self._zoomed_in:
                 self.toggle_zoom()
+
         self._view.content_scrolled.connect(_selection_scroll)
         self._view.zoom_toggled.connect(self.toggle_zoom)
 
@@ -109,13 +109,15 @@ class GeneratedImageSelector(QWidget):
         self._loading_spinner = LoadingSpinner()
         self._loading_spinner.setZValue(1)
         self._loading_spinner.visible = False
-        self._view.scene().addItem(self._loading_spinner)
+        scene = self._view.scene()
+        assert scene is not None, 'Scene should have been created automatically and never cleared'
+        scene.addItem(self._loading_spinner)
 
         original_image = self._layer_stack.qimage_generation_area_content()
         original_option = _ImageOption(original_image, ORIGINAL_CONTENT_LABEL)
-        self._view.scene().addItem(original_option)
+        scene.addItem(original_option)
         self._options.append(original_option)
-        self._outlines.append(Outline(self._view.scene(), self._view))
+        self._outlines.append(Outline(scene, self._view))
         self._outlines[0].outlined_region = self._options[0].bounds
         if config.get(AppConfig.EDIT_MODE) == MODE_INPAINT:
             self._add_option_selection_outline(0)
@@ -229,8 +231,10 @@ class GeneratedImageSelector(QWidget):
         idx += 1  # Original image gets index zero
         if idx == len(self._options):
             self._options.append(_ImageOption(image, f'Option {idx}'))
-            self._view.scene().addItem(self._options[-1])
-            self._outlines.append(Outline(self._view.scene(), self._view))
+            scene = self._view.scene()
+            assert scene is not None, 'Scene should have been created automatically and never cleared'
+            scene.addItem(self._options[-1])
+            self._outlines.append(Outline(scene, self._view))
             # Add selections if inpainting:
             if AppConfig.instance().get(AppConfig.EDIT_MODE) == MODE_INPAINT:
                 self._add_option_selection_outline(idx)
@@ -278,8 +282,9 @@ class GeneratedImageSelector(QWidget):
         """Recalculate all bounds on resize and update view scale."""
         self._apply_ideal_image_arrangement()
 
-    def eventFilter(self, source, event: QEvent):
+    def eventFilter(self, source: Optional[QObject], event: Optional[QEvent]):
         """Use horizontal scroll to move through selections, select items when clicked."""
+        assert event is not None
         if event.type() == QEvent.Wheel:
             event = cast(QWheelEvent, event)
             if event.angleDelta().x() > 0:
@@ -364,7 +369,8 @@ class GeneratedImageSelector(QWidget):
         self._view.offset_changed.connect(self._offset_change_slot)
         for i, option in enumerate(self._options):
             option.setOpacity(1.0 if not self._zoomed_in or i == self._zoom_index else 0.5)
-        self._page_top_label.setText(self._options[option_index].text)
+        if option_index is not None:
+            self._page_top_label.setText(self._options[option_index].text)
         self._status_label.setText(ZOOM_CONTROL_HINT)
 
     def _zoom_prev(self):
@@ -412,11 +418,11 @@ class GeneratedImageSelector(QWidget):
         scene_y0 = VIEW_MARGIN
         if scene_ratio < view_ratio:
             new_width = int(view_ratio * scene_size.height())
-            scene_x0 += (new_width - scene_size.width()) / 2
+            scene_x0 += int((new_width - scene_size.width()) / 2)
             scene_size.setWidth(new_width)
         elif scene_ratio > view_ratio:
             new_height = scene_size.width() // view_ratio
-            scene_y0 += (new_height - scene_size.height()) / 2
+            scene_y0 += int((new_height - scene_size.height()) / 2)
             scene_size.setHeight(new_height)
 
         self._view.content_size = scene_size.toSize()
@@ -463,10 +469,10 @@ class _ImageOption(QGraphicsPixmapItem):
         if new_image.size() == full_size:
             self._full_image = new_image
             self._scaled_image = new_image.scaled(final_size.width(), final_size.height(),
-                                              transformMode=Qt.TransformationMode.SmoothTransformation)
+                                                  transformMode=Qt.TransformationMode.SmoothTransformation)
         elif new_image.size() == final_size:
             self._full_image = new_image.scaled(full_size.width(), full_size.height(),
-                                            transformMode=Qt.TransformationMode.SmoothTransformation)
+                                                transformMode=Qt.TransformationMode.SmoothTransformation)
             self._scaled_image = new_image
         self.setPixmap(QPixmap.fromImage(self._full_image if config.get(AppConfig.SHOW_OPTIONS_FULL_RESOLUTION)
                                          else self._scaled_image))
@@ -498,22 +504,13 @@ class _ImageOption(QGraphicsPixmapItem):
         """Returns the image height."""
         return self.size.height()
 
-    @property
-    def x(self) -> float:
-        """Returns the item's x-coordinate in the scene."""
-        return self.pos().x()
-
-    @property
-    def y(self) -> float:
-        """Returns the item's y-coordinate in the scene."""
-        return self.pos().y()
-
     def paint(self,
               painter: Optional[QPainter],
               option: Optional[QStyleOptionGraphicsItem],
               widget: Optional[QWidget] = None) -> None:
         """Draw the label above the image."""
         super().paint(painter, option, widget)
+        assert painter is not None
         painter.save()
         image_margin = int(min(self.width, self.height) * IMAGE_MARGIN_FRACTION)
         text_height = image_margin // 2
@@ -558,7 +555,9 @@ class _SelectionView(ImageGraphicsView):
         """
         if super().mousePressEvent(event, True):
             return
-        self.parent().eventFilter(self, event)
+        parent = self.parent()
+        assert parent is not None
+        parent.eventFilter(self, event)
 
     def drawBackground(self, painter: Optional[QPainter], rect: QRectF) -> None:
         """Fill with solid black to increase visibility."""

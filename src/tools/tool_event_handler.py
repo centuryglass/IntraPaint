@@ -21,7 +21,7 @@ class ToolEventHandler(QObject):
         self._image_viewer = image_viewer
         self._active_tool: Optional[BaseTool] = None
         self._active_delegate: Optional[BaseTool] = None
-        self._tool_modifier_delegates: Dict[BaseTool, Dict[Qt.KeyboardModifiers, BaseTool]] = {}
+        self._tool_modifier_delegates: Dict[BaseTool, Dict[Qt.KeyboardModifier | Qt.KeyboardModifiers, BaseTool]] = {}
         self._last_modifier_state = QApplication.keyboardModifiers()
         self._mouse_in_bounds = False
         image_viewer.setMouseTracking(True)
@@ -76,7 +76,7 @@ class ToolEventHandler(QObject):
             self.tool_changed.emit(self._active_delegate.label)
 
     @property
-    def active_tool(self) -> BaseTool:
+    def active_tool(self) -> Optional[BaseTool]:
         """Returns the active tool, if any."""
         return self._active_tool
 
@@ -97,24 +97,27 @@ class ToolEventHandler(QObject):
         if new_tool is not None:
             self.tool_changed.emit(new_tool.label)
 
-    def eventFilter(self, source: QObject, event: QEvent):
+    def eventFilter(self, source: Optional[QObject], event: Optional[QEvent]):
         """Allow the active tool to intercept and handle events."""
+        assert event is not None
         if self._active_tool is None:
             return super().eventFilter(source, event)
         self._check_modifiers()
         active_tool = self._active_delegate if self._active_delegate is not None else self._active_tool
 
-        def find_image_coordinates(typed_event: QMouseEvent | QTabletEvent) -> Optional[QPoint]:
+        def find_image_coordinates(typed_event: QMouseEvent | QTabletEvent) -> QPoint:
             """Find event image coordinates and detect mouse enter/exit."""
             self._image_viewer.set_cursor_pos(typed_event.pos())
+            image_size = self._image_viewer.content_size
+            assert image_size is not None
             image_coordinates = self._image_viewer.widget_to_scene_coordinates(typed_event.pos()).toPoint()
-            point_in_image = QRect(QPoint(0, 0), self._image_viewer.content_size).contains(image_coordinates)
+            point_in_image = QRect(QPoint(0, 0), image_size).contains(image_coordinates)
             if point_in_image and not self._mouse_in_bounds:
                 self._mouse_in_bounds = True
-                active_tool.mouse_enter(typed_event, point_in_image)
+                active_tool.mouse_enter(typed_event, image_coordinates)
             elif not point_in_image and self._mouse_in_bounds:
                 self._mouse_in_bounds = False
-                active_tool.mouse_exit(typed_event, point_in_image)
+                active_tool.mouse_exit(typed_event, image_coordinates)
             return image_coordinates
 
         # Handle expected event types:

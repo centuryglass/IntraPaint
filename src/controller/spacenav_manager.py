@@ -159,7 +159,9 @@ class SpacenavManager:
                             self._thread_data.y = 0
                             self._thread_data.speed = 1
                     if event is None or not hasattr(event, 'x') or not hasattr(event, 'z'):
-                        QThread.currentThread().usleep(100)
+                        thread = QThread.currentThread()
+                        assert thread is not None, 'No active Qt thread'
+                        thread.usleep(100)
                         continue
                     last = now
 
@@ -170,8 +172,10 @@ class SpacenavManager:
                     # print(f"{change} ms: scroll x={manager._thread_data.x} y={manager._thread_data.y}")
 
                     send_nav_signal()
-                    QThread.currentThread().usleep(100)
-                    QThread.currentThread().yieldCurrentThread()
+                    thread = QThread.currentThread()
+                    assert thread is not None, 'No active Qt thread'
+                    thread.usleep(100)
+                    thread.yieldCurrentThread()
 
         self._worker = SpacenavThreadWorker(self._thread_data)
 

@@ -36,12 +36,14 @@ class SelectionTool(CanvasTool):
     """Selects image content for image generation or editing."""
 
     def __init__(self, layer_stack: LayerStack, image_viewer: ImageViewer) -> None:
-        super().__init__(layer_stack, image_viewer, PixmapLayerCanvas(image_viewer.scene()))
+        scene = image_viewer.scene()
+        assert scene is not None
+        super().__init__(layer_stack, image_viewer, PixmapLayerCanvas(scene))
         self._last_click = None
-        self._control_layout = None
+        self._control_layout: Optional[QVBoxLayout] = None
         self._active = False
         self._drawing = False
-        self._cached_size = None
+        self._cached_size: Optional[int] = None
         self._icon = QIcon(RESOURCES_SELECTION_ICON)
         self.set_scaling_icon_cursor(QIcon(RESOURCES_SELECTION_CURSOR))
 
@@ -170,16 +172,23 @@ class SelectionTool(CanvasTool):
     def _on_activate(self) -> None:
         """Override base canvas tool to keep mask layer visible."""
         super()._on_activate()
-        self._image_viewer.resume_rendering_layer(self.layer)
+        layer = self.layer
+        if layer is not None:
+            self._image_viewer.resume_rendering_layer(layer)
 
     def mouse_click(self, event: Optional[QMouseEvent], image_coordinates: QPoint) -> bool:
         """Hide the mask layer while actively drawing."""
-        if event.buttons() == Qt.LeftButton or event.buttons() == Qt.RightButton:
-            self._image_viewer.stop_rendering_layer(self.layer)
+        assert event is not None
+        layer = self.layer
+        if layer is not None and (event.buttons() == Qt.LeftButton or event.buttons() == Qt.RightButton):
+            self._image_viewer.stop_rendering_layer(layer)
             self._canvas.z_value = 1
         return super().mouse_click(event, image_coordinates)
 
     def mouse_release(self, event: Optional[QMouseEvent], image_coordinates: QPoint) -> bool:
         """Stop hiding the mask layer when done drawing."""
-        self._image_viewer.resume_rendering_layer(self.layer)
+        assert event is not None
+        layer = self.layer
+        if layer is not None:
+            self._image_viewer.resume_rendering_layer(layer)
         return super().mouse_release(event, image_coordinates)

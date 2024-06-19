@@ -356,8 +356,10 @@ class LayerStack(QObject):
         assert_valid_index(index, self._layers)
         return self._layers[index]
 
-    def get_layer_by_id(self, layer_id: int) -> Optional[ImageLayer]:
+    def get_layer_by_id(self, layer_id: Optional[int]) -> Optional[ImageLayer]:
         """Returns a layer from the stack, or None if no matching layer was found."""
+        if layer_id is None:
+            return None
         for layer in self._layers:
             if layer.id == layer_id:
                 return layer
@@ -405,8 +407,14 @@ class LayerStack(QObject):
             layer_index = len(self._layers) if active_index is None else active_index
         assert_valid_index(layer_index, self._layers, allow_end=True)
         layer = self._create_layer_internal(layer_name, image_data, saved)
-        commit_action(lambda new_layer=layer, i=layer_index: self._insert_layer_internal(new_layer, i, True),
-                      lambda new_layer=layer: self._remove_layer_internal(new_layer, True))
+
+        def _create_new(new_layer=layer, i=layer_index) -> None:
+            self._insert_layer_internal(new_layer, i, True)
+
+        def _remove_new(new_layer=layer):
+            self._remove_layer_internal(new_layer, True)
+
+        commit_action(_create_new, _remove_new)
 
     def copy_layer(self, layer: Optional[ImageLayer | int] = None) -> None:
         """Copies a layer, inserting the copy below the original.
@@ -495,8 +503,13 @@ class LayerStack(QObject):
                 self._active_layer_id = moving_layer.id
                 self.active_layer_changed.emit(moving_layer.id, new_index)
 
-        commit_action(lambda i=moved_layer_index: _move(i, insert_index),
-                      lambda i=moved_layer_index: _move(insert_index, i))
+        def _make_move(from_idx=moved_layer_index, to_idx=insert_index):
+            _move(from_idx, to_idx)
+
+        def _move_back(to_idx=moved_layer_index, from_idx=insert_index):
+            _move(from_idx, to_idx)
+
+        commit_action(_make_move, _move_back)
 
     def merge_layer_down(self, layer: Optional[ImageLayer | int] = None) -> None:
         """Merges a layer with the one beneath it on the stack.
@@ -632,7 +645,7 @@ class LayerStack(QObject):
     def paste(self) -> None:
         """If the copy buffer contains image data, paste it into a new layer."""
         if self._copy_buffer is not None:
-            insert_index = 0 if self.active_layer is None else self.active_layer_index
+            insert_index = 0 if self.active_layer_index is None else self.active_layer_index
             self.create_layer('Paste layer', self._copy_buffer.copy(), layer_index=insert_index)
             self.active_layer = self._layers[insert_index]
 
@@ -782,7 +795,7 @@ class LayerStack(QObject):
         self._pixmap_cache_full.invalidate()
 
     def _layer_values_from_layer_or_id_or_active(self, layer: Optional[ImageLayer | int]) -> Tuple[Optional[ImageLayer],
-                                                                                                   Optional[int]]:
+    Optional[int]]:
         """Returns layer, layer_id, layer_index, given a layer, id, or None. If None, use the active layer."""
         if layer is None:
             if self._active_layer_id is None:
@@ -842,11 +855,13 @@ class LayerStack(QObject):
             layer.visibility_changed.connect(self._layer_visibility_change_slot)
         self._layers.insert(index, layer)
         self.layer_added.emit(layer, index)
-        if self._active_layer_id is None:
+        active_id = self.active_layer_id
+        active_index = self.active_layer_index
+        if active_index is None or active_id is None:
             self._active_layer_id = layer.id
             self.active_layer_changed.emit(layer.id, index)
-        elif self.active_layer_index >= index:
-            self.active_layer_changed.emit(self._active_layer_id, self.active_layer_index)
+        elif active_index >= index:
+            self.active_layer_changed.emit(active_id, active_index)
         if layer.visible and not empty_image:
             self._invalidate_all_cached(not layer.saved)
             self.visible_content_changed.emit()
@@ -863,10 +878,10 @@ class LayerStack(QObject):
         active_layer_index = self.active_layer_index
         assert active_layer is not None and active_layer_index is not None
 
-        next_active_layer = active_layer
-        next_active_layer_index = self.active_layer_index
+        next_active_layer: Optional[ImageLayer] = active_layer
+        next_active_layer_index: Optional[int] = self.active_layer_index
         index = self.get_layer_index(layer)
-        assert index is not None
+        assert index is not None and next_active_layer_index is not None
 
         if active_layer == layer:  # index stays the same, but active layer changes
             if active_layer_index < self.count - 1:  # Switch to layer below if possible

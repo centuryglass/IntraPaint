@@ -9,7 +9,7 @@ from PIL import Image
 from PyQt5.QtCore import Qt, QRect, QSize
 from PyQt5.QtGui import QIcon, QMouseEvent, QResizeEvent, QHideEvent, QKeySequence
 from PyQt5.QtWidgets import QMainWindow, QGridLayout, QLabel, QWidget, QPushButton, QVBoxLayout, QHBoxLayout, \
-    QComboBox, QStackedWidget, QBoxLayout, QApplication, QTabWidget, QSizePolicy
+    QComboBox, QStackedWidget, QBoxLayout, QApplication, QTabWidget, QSizePolicy, QLayout
 
 from src.config.application_config import AppConfig
 from src.hotkey_filter import HotkeyFilter
@@ -48,9 +48,9 @@ class MainWindow(QMainWindow):
         # Initialize UI/editing data model:
         self._controller = controller
         self._layer_stack = layer_stack
-        self._image_selector = None
+        self._image_selector: Optional[GeneratedImageSelector] = None
         self._layout_mode = 'horizontal'
-        self._orientation = None
+        self._orientation: Optional[Qt.Orientation] = None
 
         self._layer_panel: Optional[LayerPanel] = None
 
@@ -67,8 +67,8 @@ class MainWindow(QMainWindow):
         self._main_page_tab = QWidget()
         self._main_widget.addTab(self._main_page_tab, MAIN_TAB_NAME)
         self._layout = QVBoxLayout(self._main_page_tab)
-        self._reactive_widget = None
-        self._reactive_layout = None
+        self._reactive_widget: Optional[QWidget] = None
+        self._reactive_layout: Optional[QLayout] = None
         self._central_widget = QStackedWidget(self)
         self._central_widget.addWidget(self._main_widget)
         self.setCentralWidget(self._central_widget)
@@ -130,12 +130,13 @@ class MainWindow(QMainWindow):
                 for item in self._reactive_layout.children():
                     self._reactive_layout.removeItem(item)
             self._reactive_widget = QWidget(self)
-            self._reactive_layout = QVBoxLayout(self._reactive_widget) if orientation == Qt.Orientation.Vertical \
-                else QHBoxLayout(self._reactive_widget)
-            self._reactive_layout.setContentsMargins(0, 0, 0, 0)
-            self._reactive_layout.setSpacing(0)
-            self._reactive_layout.addWidget(self._image_panel, stretch=80)
-            self._reactive_layout.addWidget(self._tool_panel, stretch=0)
+            reactive_layout = QVBoxLayout(self._reactive_widget) if orientation == Qt.Orientation.Vertical \
+                             else QHBoxLayout(self._reactive_widget)
+            self._reactive_layout = reactive_layout
+            reactive_layout.setContentsMargins(0, 0, 0, 0)
+            reactive_layout.setSpacing(0)
+            reactive_layout.addWidget(self._image_panel, stretch=80)
+            reactive_layout.addWidget(self._tool_panel, stretch=0)
             self._tool_panel.set_orientation(Qt.Orientation.Vertical if orientation == Qt.Orientation.Horizontal
                                              else Qt.Orientation.Horizontal)
             self._tool_panel.show()

@@ -25,7 +25,7 @@ class EyedropperTool(BaseTool):
     def __init__(self, layer_stack: LayerStack) -> None:
         super().__init__()
         self._layer_stack = layer_stack
-        self._control_panel = None
+        self._control_panel: Optional[QColorDialog] = None
         self._icon = QIcon(RESOURCES_EYEDROPPER_ICON)
         cursor_icon = QIcon(RESOURCES_EYEDROPPER_CURSOR)
         self.cursor = QCursor(cursor_icon.pixmap(CURSOR_SIZE, CURSOR_SIZE), 0, CURSOR_SIZE)
@@ -55,20 +55,22 @@ class EyedropperTool(BaseTool):
         if self._control_panel is not None:
             return self._control_panel
         cache = Cache.instance()
-        self._control_panel = QColorDialog()
-        self._control_panel.setOption(QColorDialog.ShowAlphaChannel, True)
-        self._control_panel.setOption(QColorDialog.NoButtons, True)
-        self._control_panel.setOption(QColorDialog.ColorDialogOption.DontUseNativeDialog, True)
+        color_dialog = QColorDialog()
+        self._control_panel = color_dialog
+        color_dialog.setOption(QColorDialog.ShowAlphaChannel, True)
+        color_dialog.setOption(QColorDialog.NoButtons, True)
+        color_dialog.setOption(QColorDialog.ColorDialogOption.DontUseNativeDialog, True)
         initial_color = QColor(cache.get(Cache.LAST_BRUSH_COLOR))
-        self._control_panel.setCurrentColor(initial_color)
-        cache.connect(self._control_panel, Cache.LAST_BRUSH_COLOR,
-                             lambda color_str: self._control_panel.setCurrentColor(QColor(color_str)))
-        self._control_panel.currentColorChanged.connect(lambda color: cache.set(Cache.LAST_BRUSH_COLOR,
-                                                                                 color.name(QColor.HexArgb)))
+        color_dialog.setCurrentColor(initial_color)
+        cache.connect(color_dialog, Cache.LAST_BRUSH_COLOR,
+                             lambda color_str: color_dialog.setCurrentColor(QColor(color_str)))
+        color_dialog.currentColorChanged.connect(lambda color: cache.set(Cache.LAST_BRUSH_COLOR,
+                                                                         color.name(QColor.HexArgb)))
         return self._control_panel
 
     def mouse_click(self, event: Optional[QMouseEvent], image_coordinates: QPoint) -> bool:
         """Copy the color under the mouse on left-click."""
+        assert event is not None
         if event.buttons() == Qt.LeftButton:
             color = self._layer_stack.get_color_at_point(image_coordinates)
             Cache.instance().set(Cache.LAST_BRUSH_COLOR, color.name(QColor.HexArgb))

@@ -1,14 +1,16 @@
 """A Python wrapper for libmypaint image tile data."""
-from typing import Optional
 from ctypes import sizeof, memset
+from typing import Optional
+
 import numpy as np
-from PyQt5.QtWidgets import QWidget, QGraphicsItem, QStyleOptionGraphicsItem
-from PyQt5.QtGui import QImage, QPainter, QPainterPath
 from PyQt5.QtCore import Qt, QRectF, QRect, QSize, QPoint
+from PyQt5.QtGui import QImage, QPainter, QPainterPath
+from PyQt5.QtWidgets import QWidget, QGraphicsItem, QStyleOptionGraphicsItem
+
 from src.image.mypaint.libmypaint import TILE_DIM, TilePixelBuffer
 from src.image.mypaint.numpy_image_utils import pixel_data_as_numpy_16bit, image_data_as_numpy_8bit, \
     numpy_8bit_to_16bit, numpy_16bit_to_8bit, numpy_intersect, \
-    is_fully_transparent
+    is_fully_transparent, AnyNpArray
 
 RED = 0
 GREEN = 1
@@ -36,8 +38,9 @@ class MPTile(QGraphicsItem):
 
     def invalidate(self) -> None:
         """Removes the tile from any scene, discards all cached data, and makes all other methods throw RuntimeError."""
-        if self.scene() is not None:
-            self.scene().removeItem(self)
+        scene = self.scene()
+        if scene is not None:
+            scene.removeItem(self)
         self._pixels = None
         self._cache_image = None
 
@@ -60,11 +63,13 @@ class MPTile(QGraphicsItem):
     def boundingRect(self) -> QRectF:
         """Returns the tile's bounds."""
         self._assert_is_valid()
+        assert self._cache_image is not None
         return QRectF(self._cache_image.rect())
 
     def shape(self) -> QPainterPath:
         """Returns the tile's bounds as a shape."""
         self._assert_is_valid()
+        assert self._cache_image is not None
         path = QPainterPath()
         path.addRect(QRectF(self._cache_image.rect()))
         return path
@@ -75,6 +80,7 @@ class MPTile(QGraphicsItem):
               unused_widget: Optional[QWidget] = None) -> None:
         """Draw the tile to the graphics view."""
         self._assert_is_valid()
+        assert self._cache_image is not None
         if painter is None:
             return
         if not self._cache_valid:
@@ -84,6 +90,7 @@ class MPTile(QGraphicsItem):
     def get_bits(self, read_only: bool) -> TilePixelBuffer:
         """Access the image data array."""
         self._assert_is_valid()
+        assert self._pixels is not None
         if read_only:
             self._cache_valid = False
         return self._pixels
@@ -91,6 +98,7 @@ class MPTile(QGraphicsItem):
     def draw_point(self, x: int, y: int, r: int, g: int, b: int, a: int) -> None:
         """Draw a single point into the image data."""
         self._assert_is_valid()
+        assert self._pixels is not None
         self._cache_valid = False
         self._pixels[y][x][RED] = r
         self._pixels[y][x][GREEN] = g
@@ -100,6 +108,7 @@ class MPTile(QGraphicsItem):
     def update_cache(self) -> None:
         """Copy data into the QImage cache."""
         self._assert_is_valid()
+        assert self._cache_image is not None
         self.copy_tile_into_image(self._cache_image, skip_if_transparent=False)
         self._cache_valid = True
 
@@ -135,13 +144,16 @@ class MPTile(QGraphicsItem):
             source = QRect(0, 0, self.size.width(), self.size.height())
         if destination is None:
             destination = QRect(0, 0, image.width(), image.height())
+        assert self._pixels is not None
         np_pixels = pixel_data_as_numpy_16bit(self._pixels)[source.y():source.y() + source.height(),
-                                                            source.x():source.x() + source.width()]
-        np_image = image_data_as_numpy_8bit(image)[destination.y():destination.y() + destination.height(),
-                                                   destination.x():destination.x() + destination.width()]
-        np_image, np_pixels = numpy_intersect(np_image, np_pixels, 0, 0)
-        if np_image is None:
+                                                                             source.x():source.x() + source.width()]
+        np_image = image_data_as_numpy_8bit(image)[
+                                    destination.y():destination.y() + destination.height(),
+                                    destination.x():destination.x() + destination.width()]
+        intersect = numpy_intersect(np_image, np_pixels, 0, 0)
+        if intersect[0] is None or intersect[1] is None:
             return False  # No intersection.
+        np_image, np_pixels = intersect
         if skip_if_transparent and is_fully_transparent(np_pixels):
             return False  # Don't waste time converting and copying transparent pixels into a transparent image.
         np_pixels = numpy_16bit_to_8bit(np_pixels)
@@ -167,9 +179,10 @@ class MPTile(QGraphicsItem):
         """Copy tile data from a QImage at arbitrary (x, y) image coordinates, returning whether data was copied."""
         np_pixels = pixel_data_as_numpy_16bit(pixels)
         np_image = image_data_as_numpy_8bit(image)
-        np_image, np_pixels = numpy_intersect(np_image, np_pixels, x, y)
-        if np_image is None:
+        intersect = numpy_intersect(np_image, np_pixels, x, y)
+        if intersect[0] is None or intersect[1] is None:
             return False  # No intersection.
+        np_image, np_pixels = intersect
         if skip_if_transparent and is_fully_transparent(np_image):
             return False  # Don't waste time converting and copying transparent pixels into a transparent tile.
         np_image = numpy_8bit_to_16bit(np_image)
@@ -190,6 +203,7 @@ class MPTile(QGraphicsItem):
     def clear(self) -> None:
         """Clear all image data."""
         self._assert_is_valid()
+        assert self._pixels is not None and self._cache_image is not None
         memset(self._pixels, 0, sizeof(self._pixels))
         self._cache_image.fill(Qt.transparent)
         self._cache_valid = True
@@ -197,6 +211,7 @@ class MPTile(QGraphicsItem):
     def save(self, path: str) -> None:
         """Save the tile's contents as an image."""
         self._assert_is_valid()
+        assert self._cache_image is not None
         if not self._cache_valid:
             self.update_cache()
         self._cache_image.save(path)
@@ -211,8 +226,9 @@ class MPTile(QGraphicsItem):
             image = image.convertToFormat(QImage.Format_ARGB32_Premultiplied)
         self._cache_image = image.scaled(tile_size)
         image_ptr = image.bits()
+        assert image_ptr is not None, 'Invalid image given'
         image_ptr.setsize(image.byteCount())
-        np_image = np.ndarray(shape=(TILE_DIM, TILE_DIM, 4), dtype=np.uint8, buffer=image_ptr)
+        np_image: AnyNpArray = np.ndarray(shape=(TILE_DIM, TILE_DIM, 4), dtype=np.uint8, buffer=image_ptr)
         np_pixels = (np_image.astype(np.float32) / 255 * (1 << 15)).astype(np.uint16)
         np.ctypeslib.as_array(self._pixels, shape=(TILE_DIM, TILE_DIM, 4))[:] = np_pixels
         self._cache_valid = True

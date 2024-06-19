@@ -1,9 +1,8 @@
 """An image editing tool that moves the selected editing region."""
-from typing import Optional, Dict
+from typing import Optional, Dict, cast
 
-from PyQt5.QtCore import Qt, QPoint, QRect, QRectF, QPointF, QSizeF
-from PyQt5.QtGui import QCursor, QIcon, QPixmap, QImage, QPainter, \
-    QKeySequence
+from PyQt5.QtCore import Qt, QRect, QRectF, QPointF
+from PyQt5.QtGui import QCursor, QIcon, QPixmap, QKeySequence
 from PyQt5.QtWidgets import QWidget, QLabel, QGraphicsPixmapItem, QGraphicsItem, QSpinBox, QDoubleSpinBox, \
     QCheckBox, QGridLayout, QPushButton
 
@@ -37,7 +36,6 @@ TRANSFORM_CONTROL_HINT = 'LMB+drag:move layer -'
 SCALE_STEP = 0.05
 
 
-
 class LayerTransformTool(BaseTool):
     """Applies transformations to the active layer."""
 
@@ -50,7 +48,9 @@ class LayerTransformTool(BaseTool):
         self._transform_outline.transform_changed.connect(self._transformation_change_slot)
         self._transform_outline.setVisible(False)
         self._transform_pixmap = QGraphicsPixmapItem(self._transform_outline)
-        image_viewer.scene().addItem(self._transform_outline)
+        scene = image_viewer.scene()
+        assert scene is not None
+        scene.addItem(self._transform_outline)
         self.cursor = QCursor(Qt.CursorShape.CrossCursor)
         self._active_layer_id = None if layer_stack.active_layer is None else layer_stack.active_layer.id
 
@@ -132,8 +132,8 @@ class LayerTransformTool(BaseTool):
 
     def restore_aspect_ratio(self) -> None:
         """Ensure that the aspect ratio is constant."""
-        max_scale = max(self._transform_outline.scale)
-        self._transform_outline.scale = (max_scale, max_scale)
+        max_scale = max(self._transform_outline.transform_scale)
+        self._transform_outline.transform_scale = (max_scale, max_scale)
 
     def get_control_panel(self) -> Optional[QWidget]:
         """Returns a panel providing controls for customizing tool behavior, or None if no such panel is needed."""
@@ -145,16 +145,16 @@ class LayerTransformTool(BaseTool):
 
         def _add_control(label: str, widget: QWidget, row: int, col: int) -> None:
             label = QLabel(label)
-            label.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+            label.setAlignment(cast(Qt.Alignment, Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter))
             grid.addWidget(label, row, col)
             if widget in self._down_keys:
                 down_hint = KeyHintLabel(self._down_keys[widget], self._control_panel)
-                down_hint.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+                down_hint.setAlignment(cast(Qt.Alignment, Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter))
                 grid.addWidget(down_hint, row, col + 1)
             grid.addWidget(widget, row, col + 2)
             if widget in self._up_keys:
                 up_hint = KeyHintLabel(self._up_keys[widget], self._control_panel)
-                up_hint.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
+                up_hint.setAlignment(cast(Qt.Alignment, Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter))
                 grid.addWidget(up_hint, row, col + 3)
 
         _add_control(X_LABEL, self._x_pos_box, 0, 0)
@@ -198,24 +198,24 @@ class LayerTransformTool(BaseTool):
 
     def set_x(self, x_pos: float | int) -> None:
         """Sets the post-transformation horizontal position of the layer in pixels."""
-        self._transform_outline.x = float(x_pos)
+        self._transform_outline.x_pos = float(x_pos)
 
     def set_y(self, y_pos: float | int) -> None:
         """Sets the post-transformation vertical position of the layer in pixels."""
-        self._transform_outline.y = float(y_pos)
+        self._transform_outline.y_pos = float(y_pos)
 
     def set_x_scale(self, x_scale: float) -> None:
         """Sets the x-scale of the layer transformation, also changing y-scale if aspect ratio is preserved."""
-        _, prev_y_scale = self._transform_outline.scale
+        _, prev_y_scale = self._transform_outline.transform_scale
         if self._aspect_ratio_checkbox.isChecked():
-            self._transform_outline.scale = (x_scale, x_scale)
+            self._transform_outline.transform_scale = (x_scale, x_scale)
         else:
-            self._transform_outline.scale = (x_scale, prev_y_scale)
+            self._transform_outline.transform_scale = (x_scale, prev_y_scale)
 
     def set_y_scale(self, y_scale: float) -> None:
         """Sets the y-scale of the layer transformation, also changing x-scale if aspect ratio is preserved."""
-        prev_x_scale, _ = self._transform_outline.scale
-        self._transform_outline.scale = (prev_x_scale, y_scale)
+        prev_x_scale, _ = self._transform_outline.transform_scale
+        self._transform_outline.transform_scale = (prev_x_scale, y_scale)
 
     def set_width(self, width: float) -> None:
         """Sets the final width of the layer in pixels."""
@@ -227,9 +227,9 @@ class LayerTransformTool(BaseTool):
 
     def set_rotation(self, rotation: float) -> None:
         """Sets the angle of layer rotation in degrees."""
-        prev_rotation = self._transform_outline.rotation
+        prev_rotation = self._transform_outline.rotation_angle
         if prev_rotation != rotation:
-            self._transform_outline.rotation = rotation
+            self._transform_outline.rotation_angle = rotation
 
     def set_layer(self, layer: Optional[ImageLayer]) -> None:
         """Connects to a new image layer, or disconnects if the layer parameter is None."""
@@ -353,8 +353,8 @@ class LayerTransformTool(BaseTool):
         if layer is None:
             return
         controls = (
-            (self._x_pos_box, self._transform_outline.x, self.set_x),
-            (self._y_pos_box, self._transform_outline.y, self.set_y),
+            (self._x_pos_box, self._transform_outline.x_pos, self.set_x),
+            (self._y_pos_box, self._transform_outline.y_pos, self.set_y),
             (self._width_box, self._transform_outline.width, self.set_width),
             (self._height_box, self._transform_outline.height, self.set_height),
             (self._x_scale_box, x_scale, self.set_x_scale),
@@ -370,5 +370,3 @@ class LayerTransformTool(BaseTool):
 
         for field, _, change_handler in controls:
             field.valueChanged.connect(change_handler)
-
-

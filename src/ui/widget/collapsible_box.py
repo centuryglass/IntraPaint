@@ -59,15 +59,17 @@ class CollapsibleBox(BorderedWidget):
             self._toggle_button.setSizePolicy(QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed))
             self._button_bar.setSizePolicy(QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Maximum))
             self._button_bar_layout = QHBoxLayout(self._button_bar)
-            self._button_bar_layout.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
+            alignment = cast(Qt.Alignment, Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
+            self._button_bar_layout.setAlignment(alignment)
             self._button_bar_layout.addWidget(self._toggle_button, stretch=1)
         else:
             self._toggle_label = Label(title)
-            self._toggle_label.setAlignment(Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignHCenter)
+            alignment = cast(Qt.Alignment, Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignHCenter)
+            self._toggle_label.setAlignment(alignment)
             self._toggle_button.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonIconOnly)
             self._button_bar.setSizePolicy(QSizePolicy(QSizePolicy.Maximum, QSizePolicy.Expanding))
             self._button_bar_layout = QVBoxLayout(self._button_bar)
-            self._button_bar_layout.setAlignment(Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignHCenter)
+            self._button_bar_layout.setAlignment(alignment)
             self._button_bar_layout.addWidget(self._toggle_button)
             self._button_bar_layout.addWidget(self._toggle_label)
             self._button_bar_layout.setContentsMargins(0, 0, 0, 0)
@@ -151,7 +153,7 @@ class CollapsibleBox(BorderedWidget):
             else:
                 self.setSizePolicy(self._expanded_size_policy, QSizePolicy.Expanding)
 
-    def toggled(self) -> pyqtSignal | pyqtSignal | Callable[[tuple[Any, ...], dict[str, Any]], Any]:
+    def toggled(self) -> pyqtSignal:
         """Returns the internal pyqtSignal emitted when the box is expanded or collapsed."""
         return self._toggle_button.toggled
 
@@ -174,9 +176,12 @@ class CollapsibleBox(BorderedWidget):
             button_bar.setMaximumHeight(self.height() if show_bar else 0)
         else:
             button_bar.setMaximumWidth(self.width() if show_bar else 0)
-            min_width = (self._toggle_label.image_size().width() + 2) if show_bar else 0
+            min_width = 0
+            if show_bar and self._toggle_label is not None:
+                min_width = self._toggle_label.image_size().width() + 2
             for widget in [button_bar, self._toggle_label, self._toggle_button]:
-                widget.setMinimumWidth(min_width)
+                if hasattr(widget, 'setMinimumWidth'):
+                    widget.setMinimumWidth(min_width)
         if not show_bar:
             self.set_expanded(True)
 

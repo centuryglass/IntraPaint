@@ -14,7 +14,7 @@ _MODIFIERS = {
 }
 
 
-def get_key_code(key_string: str) -> Qt.Key:
+def get_key_code(key_string: str) -> int:
     """Get a key code for a given key string, or throw ValueError if the key string was invalid."""
     key = QKeySequence(key_string)
     if key.count() != 1 or key[0] == Qt.Key_unknown:
@@ -27,9 +27,9 @@ def get_key_string(key: Qt.Key) -> str:
     return QKeySequence(key).toString()
 
 
-def get_key_with_modifiers(key_string: str) -> Tuple[Qt.Key, Qt.KeyboardModifiers]:
+def get_key_with_modifiers(key_string: str) -> Tuple[int, int]:
     """Converts a key string to a key code and a set of key modifiers."""
-    modifiers = Qt.KeyboardModifier.NoModifier
+    modifiers = int(Qt.KeyboardModifier.NoModifier)
     keys = QKeySequence(key_string)
     for i in range(keys.count() - 1):
         key = keys[i]
@@ -41,9 +41,9 @@ def get_key_with_modifiers(key_string: str) -> Tuple[Qt.Key, Qt.KeyboardModifier
     return keys[-1], modifiers
 
 
-def get_modifiers(modifier_str: str | List[str]) -> Qt.KeyboardModifier | Qt.KeyboardModifiers:
+def get_modifiers(modifier_str: str | List[str]) -> int:
     """Return the modifiers represented by a string."""
-    modifiers = Qt.KeyboardModifier.NoModifier
+    modifiers = int(Qt.KeyboardModifier.NoModifier)
     if not isinstance(modifier_str, list):
         modifier_str = modifier_str.split('+')
     for mod_str in modifier_str:

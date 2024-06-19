@@ -30,8 +30,8 @@ class GenerationAreaTool(BaseTool):
         self._icon = QIcon(RESOURCES_GENERATION_AREA_ICON)
         self._resizing = False
         self.cursor = QCursor(Qt.CursorShape.CrossCursor)
-        self._control_panel = None
-        self._control_layout = None
+        self._control_panel: Optional[QWidget] = None
+        self._control_layout: Optional[QGridLayout] = None
 
     def get_hotkey(self) -> QKeySequence:
         """Returns the hotkey(s) that should activate this tool."""
@@ -107,6 +107,7 @@ class GenerationAreaTool(BaseTool):
 
     def mouse_click(self, event: Optional[QMouseEvent], image_coordinates: QPoint) -> bool:
         """Move the image generation area on left-click, start resizing on right-click."""
+        assert event is not None
         if event.buttons() == Qt.LeftButton:
             if QApplication.keyboardModifiers() != Qt.KeyboardModifier.NoModifier:
                 return False
@@ -121,6 +122,7 @@ class GenerationAreaTool(BaseTool):
 
     def mouse_move(self, event: Optional[QMouseEvent], image_coordinates: QPoint) -> bool:
         """If resizing, dynamically adjust the image generation area if the new size would be non-empty."""
+        assert event is not None
         if event.buttons() == Qt.LeftButton:
             return self.mouse_click(event, image_coordinates)
         if event.buttons() == Qt.RightButton and self._resizing:
@@ -135,6 +137,7 @@ class GenerationAreaTool(BaseTool):
 
     def key_event(self, event: Optional[QKeyEvent]) -> bool:
         """Move image generation area with arrow keys."""
+        assert event is not None
         translation = QPoint(0, 0)
         multiplier = 10 if QApplication.keyboardModifiers() == Qt.ShiftModifier else 1
         match event.key():

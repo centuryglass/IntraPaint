@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 class HotkeyFilter(QObject):
     """Registers and handles window-level hotkeys."""
 
-    shared_instance = None
+    shared_instance: Optional['HotkeyFilter'] = None
 
     @staticmethod
     def instance() -> 'HotkeyFilter':
@@ -42,15 +42,17 @@ class HotkeyFilter(QObject):
             self.key = key
             self.modifiers = modifiers
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Registers and handles application-level hotkeys."""
         super().__init__()
         if HotkeyFilter.shared_instance is not None:
             raise RuntimeError("HotkeyFilter shouldn't be initialized directly; use HotkeyFilter.instance()")
         HotkeyFilter.shared_instance = self
-        self._bindings: Dict[Qt.Key: List[HotkeyFilter.KeyBinding]] = {}
-        QApplication.instance().installEventFilter(self)
-        self._default_focus = None
+        self._bindings: Dict[Qt.Key | int, List[HotkeyFilter.KeyBinding]] = {}
+        app = QApplication.instance()
+        assert app is not None, 'No QApplication initialized'
+        app.installEventFilter(self)
+        self._default_focus: Optional[QWidget] = None
 
     def set_default_focus(self, focus_widget: Optional[QWidget]) -> None:
         """Sets or clears the default focus widget. If a focus widget is set, pressing escape within a text input
@@ -80,9 +82,9 @@ class HotkeyFilter(QObject):
             if '+' in key_string:  # Divide out any modifiers passed in via the key parameter
                 if key_modifiers is None:
                     key_modifiers = Qt.KeyboardModifier.NoModifier
-                keys = key_string.split('+')
-                key_modifiers = key_modifiers | get_modifiers(keys[:-1])
-                key = QKeySequence(keys[-1])[0]
+                key_strings = key_string.split('+')
+                key_modifiers = key_modifiers | get_modifiers(key_strings[:-1])
+                key = QKeySequence(key_strings[-1])[0]
 
             keybinding = HotkeyFilter.KeyBinding(action, key, key_modifiers)
             if key not in self._bindings:
@@ -159,7 +161,6 @@ class HotkeyFilter(QObject):
             if event_handled:
                 logger.debug(f'{event.text()}: claimed by handler {i} of {len(self._bindings[event.key()])}')
                 break
-            else:
-                logger.debug(
-                    f'{event.text()}: not claimed by handler {i} of {len(self._bindings[event.key()])}: got {event_handled}')
+            logger.debug(
+                f'{event.text()}: not claimed by handler {i} of {len(self._bindings[event.key()])}: got {event_handled}')
         return event_handled

@@ -1,12 +1,12 @@
 """Shows image layers, and allows the user to manipulate them."""
 
-from typing import Optional, List, Callable
+from typing import Optional, List, Callable, cast
 
 from PyQt5.QtCore import Qt, QRect, QSize, QPoint
-from PyQt5.QtGui import QPainter, QColor, QPaintEvent, QMouseEvent, QIcon
+from PyQt5.QtGui import QPainter, QColor, QPaintEvent, QMouseEvent, QIcon, QPixmap
 from PyQt5.QtSvg import QSvgWidget
 from PyQt5.QtWidgets import QWidget, QLabel, QVBoxLayout, QHBoxLayout, QScrollArea, QSizePolicy, QPushButton, QMenu, \
-    QToolButton
+    QToolButton, QAction
 
 from src.config.cache import Cache
 from src.image.image_layer import ImageLayer
@@ -82,12 +82,12 @@ class LayerPanel(QWidget):
         self._layer_list = BorderedWidget(self)
         self._list_layout = QVBoxLayout(self._layer_list)
         self._list_layout.setSpacing(LIST_SPACING)
-        self._list_layout.setAlignment(Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignTop)
+        self._list_layout.setAlignment(cast(Qt.Alignment, Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignTop))
 
         self._scroll_area = QScrollArea(self)
         self._scroll_area.setWidgetResizable(True)
         self._scroll_area.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
-        self._scroll_area.setAlignment(Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignTop)
+        self._scroll_area.setAlignment(cast(Qt.Alignment, Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignTop))
         self._scroll_area.setWidget(self._layer_list)
 
         self._layer_list.setSizePolicy(QSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding))
@@ -176,7 +176,7 @@ class _LayerItem(BorderedWidget):
 
     # Shared transparency background pixmap. The first _LayerItem created initializes it, after that access is strictly
     # read-only.
-    _layer_transparency_background = None
+    _layer_transparency_background: Optional[QPixmap] = None
 
     def __init__(self, layer: ImageLayer, layer_stack: LayerStack, parent: QWidget) -> None:
         super().__init__(parent)
@@ -241,6 +241,7 @@ class _LayerItem(BorderedWidget):
         transformation = get_rect_transformation(content_bounds, paint_bounds)
         painter = QPainter(self)
         if self._layer != self._layer_stack.selection_layer:
+            assert _LayerItem._layer_transparency_background is not None
             painter.drawTiledPixmap(paint_bounds, _LayerItem._layer_transparency_background)
         else:
             painter.fillRect(paint_bounds, Qt.GlobalColor.darkGray)
@@ -286,6 +287,7 @@ class _LayerItem(BorderedWidget):
 
     def mousePressEvent(self, event: Optional[QMouseEvent]) -> None:
         """Activate layer on click."""
+        assert event is not None
         if self._layer == self._layer_stack.selection_layer:
             Cache.instance().set(Cache.LAST_ACTIVE_TOOL, SELECTION_TOOL_LABEL)
         elif not self.active and event.button() == Qt.MouseButton.LeftButton:
@@ -303,31 +305,37 @@ class _LayerItem(BorderedWidget):
     def _menu(self, pos: QPoint) -> None:
         menu = QMenu()
         menu.setTitle(self._layer.name)
+
+        def _new_action(name: str) -> QAction:
+            action = menu.addAction(name)
+            assert action is not None
+            return action
+
         if self._layer != self._layer_stack.selection_layer:
             index = self._layer_stack.get_layer_index(self._layer)
 
-            if index > 0:
-                up_option = menu.addAction(MENU_OPTION_MOVE_UP)
+            if index is not None:
+                up_option = _new_action(MENU_OPTION_MOVE_UP)
                 up_option.triggered.connect(lambda: self._layer_stack.move_layer(-1, self.layer))
 
-            if index < self._layer_stack.count - 1:
-                down_option = menu.addAction(MENU_OPTION_MOVE_DOWN)
-                down_option.triggered.connect(lambda: self._layer_stack.move_layer(1, self.layer))
+                if index < self._layer_stack.count - 1:
+                    down_option = _new_action(MENU_OPTION_MOVE_DOWN)
+                    down_option.triggered.connect(lambda: self._layer_stack.move_layer(1, self.layer))
 
-            copy_option = menu.addAction(MENU_OPTION_COPY)
+            copy_option = _new_action(MENU_OPTION_COPY)
             copy_option.triggered.connect(lambda: self._layer_stack.copy_layer(self.layer))
 
-            delete_option = menu.addAction(MENU_OPTION_DELETE)
+            delete_option = _new_action(MENU_OPTION_DELETE)
             delete_option.triggered.connect(lambda: self._layer_stack.remove_layer(self.layer))
 
-            if index < self._layer_stack.count - 1:
-                merge_option = menu.addAction(MENU_OPTION_MERGE_DOWN)
+            if index is not None and index < self._layer_stack.count - 1:
+                merge_option = _new_action(MENU_OPTION_MERGE_DOWN)
                 merge_option.triggered.connect(lambda: self._layer_stack.merge_layer_down(self.layer))
 
-            clear_option = menu.addAction(MENU_OPTION_CLEAR_SELECTED)
+            clear_option = _new_action(MENU_OPTION_CLEAR_SELECTED)
             clear_option.triggered.connect(lambda: self._layer_stack.cut_selected(self.layer))
 
-            copy_masked_option = menu.addAction(MENU_OPTION_COPY_SELECTED)
+            copy_masked_option = _new_action(MENU_OPTION_COPY_SELECTED)
 
             def do_copy() -> None:
                 """Make the copy, then add it as a new layer."""
@@ -336,24 +344,27 @@ class _LayerItem(BorderedWidget):
 
             copy_masked_option.triggered.connect(do_copy)
 
-            resize_option = menu.addAction(MENU_OPTION_LAYER_TO_IMAGE_SIZE)
+            resize_option = _new_action(MENU_OPTION_LAYER_TO_IMAGE_SIZE)
             resize_option.triggered.connect(lambda: self._layer_stack.layer_to_image_size(self.layer))
 
-            crop_content_option = menu.addAction(MENU_OPTION_CROP_TO_CONTENT)
+            crop_content_option = _new_action(MENU_OPTION_CROP_TO_CONTENT)
             crop_content_option.triggered.connect(self._layer.crop_to_content)
         else:
-            invert_option = menu.addAction(MENU_OPTION_INVERT_SELECTION)
+            invert_option = _new_action(MENU_OPTION_INVERT_SELECTION)
             invert_option.triggered.connect(self._layer_stack.selection_layer.invert_selection)
-            clear_mask_option = menu.addAction(MENU_OPTION_CLEAR_SELECTION)
+            clear_mask_option = _new_action(MENU_OPTION_CLEAR_SELECTION)
             clear_mask_option.triggered.connect(self._layer_stack.selection_layer.clear)
             if self._layer_stack.active_layer_index is not None:
-                mask_active_option = menu.addAction(MENU_OPTION_SELECT_ALL)
+                mask_active_option = _new_action(MENU_OPTION_SELECT_ALL)
 
                 def mask_active() -> None:
-                    """Draw the layer into the mask, then let SelectionLayer automatically convert it to red/transparent."""
-                    layer_image = self._layer_stack.get_layer_by_index(
-                        self._layer_stack.active_layer_index).qimage
+                    """Draw the layer into the mask, then let SelectionLayer automatically convert it to
+                       red/transparent."""
+                    layer_index = self._layer_stack.active_layer_index
+                    assert layer_index is not None
+                    layer_image = self._layer_stack.get_layer_by_index(layer_index).qimage
                     with self._layer_stack.selection_layer.borrow_image() as mask_image:
+                        assert mask_image is not None
                         painter = QPainter(mask_image)
                         painter.setCompositionMode(QPainter.CompositionMode_Source)
                         painter.drawImage(QRect(0, 0, mask_image.width(), mask_image.height()), layer_image)
@@ -361,10 +372,10 @@ class _LayerItem(BorderedWidget):
 
                 mask_active_option.triggered.connect(mask_active)
 
-        mirror_horiz_option = menu.addAction('Mirror horizontally')
-        mirror_horiz_option.triggered.connect(self.layer.flip_horizontal)
+        mirror_horizontal_option = _new_action('Mirror horizontally')
+        mirror_horizontal_option.triggered.connect(self.layer.flip_horizontal)
 
-        mirror_vert_option = menu.addAction('Mirror vertically')
+        mirror_vert_option = _new_action('Mirror vertically')
         mirror_vert_option.triggered.connect(self.layer.flip_vertical)
 
         menu.exec_(self.mapToGlobal(pos))

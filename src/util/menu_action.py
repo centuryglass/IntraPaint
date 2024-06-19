@@ -1,18 +1,18 @@
 """Defines the @menu_action decorator and the MenuBuilder class for more convenient PyQt5 menu initialization."""
 import functools
-from typing import Callable, Any, Optional
+from typing import Callable, Any, Optional, TypeVar, Dict
 
-from PyQt5.QtWidgets import QMainWindow, QAction
+from PyQt5.QtWidgets import QMainWindow, QAction, QMenu
 
 from src.config.key_config import KeyConfig
 from src.util.shared_constants import INT_MAX
 
+GenericFn = TypeVar('GenericFn', bound=Callable[..., Any])
+
 
 def menu_action(menu_name: str, config_key: str, priority: int = INT_MAX,
                 ignore_when_busy=False,
-                condition_check: Optional[Callable[[Any], bool]] = None) -> Callable[[Any], Callable[[{'is_busy'},
-                                                                                                      dict[str, Any]],
-                                                                                                      Any | None]]:
+                condition_check: Optional[Callable[[Any], bool]] = None) -> Callable[[GenericFn], GenericFn]:
     """Decorator used to associate a class method with a menu item and optionally disable it when busy.
 
     Parameters
@@ -60,7 +60,8 @@ class MenuBuilder:
         menu_actions.sort(key=lambda method: method.priority)
 
         menu_bar = window.menuBar()
-        menus = {}
+        assert menu_bar is not None
+        menus: Dict[str, QMenu] = {}
         for menu_action_method in menu_actions:
             if menu_action_method.condition_check is not None and menu_action_method.condition_check(self) is False:
                 continue

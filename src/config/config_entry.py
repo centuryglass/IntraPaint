@@ -45,7 +45,7 @@ class ConfigEntry:
                  label: str,
                  category: str,
                  tooltip: str,
-                 options: Optional[list[str]] = None,
+                 options: Optional[list[Any]] = None,
                  range_options: Optional[dict[str, int | float]] = None,
                  save_json: bool = True) -> None:
         self._key = key
@@ -54,13 +54,15 @@ class ConfigEntry:
         self._category = category
         self._tooltip = tooltip
         self.save_json = save_json
+        self._options: Optional[List[Any]] = None
         if options is not None and (not isinstance(options, list) or (initial_value not in options
                                                                       and len(options) > 0)):
             raise ValueError(f'Invalid options for key {key} with initial value {initial_value}: {options}')
-        elif isinstance(options, list) and len(options) == 0:
-            self._options = [initial_value]  # Entries with empty options lists will load those lists dynamically.
-        else:
-            self._options = options
+        elif options is not None and isinstance(options, list):
+            if len(options) == 0:
+                self._options = [initial_value]  # Entries with empty options lists will load those lists dynamically.
+            else:
+                self._options = options
         if range_options is not None:
             if not isinstance(initial_value, float) and not isinstance(initial_value, int):
                 raise TypeError(f'range_options provided but {key}={initial_value} is not int or float')
@@ -159,14 +161,14 @@ class ConfigEntry:
         return self._options.index(self._value)
 
     @property
-    def options(self) -> list:
+    def options(self) -> List[Any]:
         """Returns all valid options accepted."""
         if self._options is None:
             raise RuntimeError(f'Config value "{self._key}" does not have an associated options list')
         return self._options.copy()
 
     @options.setter
-    def options(self, options_list: List[str]) -> None:
+    def options(self, options_list: List[Any]) -> None:
         """Replaces the list of accepted options."""
         if self._options is None:
             raise RuntimeError(f'Config value "{self._key}" does not have an associated options list')
@@ -176,7 +178,7 @@ class ConfigEntry:
         if self._value not in options_list:
             self.set_value(options_list[0], False)
 
-    def add_option(self, option: str) -> None:
+    def add_option(self, option: Any) -> None:
         """Adds a new item to the list of accepted options."""
         if self._options is None:
             raise RuntimeError(f'Config value "{self._key}" does not have an associated options list')

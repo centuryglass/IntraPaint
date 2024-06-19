@@ -29,6 +29,7 @@ class Border(QGraphicsItem):
               unused_option: Optional[QStyleOptionGraphicsItem],
               unused_widget: Optional[QWidget] = None) -> None:
         """Draws the outline within the scene."""
+        assert painter is not None
         bounds = self._view.mapToScene(QRect(QPoint(), self._view.size())).boundingRect().adjusted(-9999, -9999, 9999,
                                                                                                    9999)
         if self._rect.isEmpty():
@@ -70,7 +71,9 @@ class Border(QGraphicsItem):
 
     def boundingRect(self) -> QRectF:
         """Returns the rectangle within the scene containing all pixels drawn by the outline."""
-        return self.scene().sceneRect()
+        bounds = self._view.mapToScene(QRect(QPoint(), self._view.size())).boundingRect().adjusted(-9999, -9999, 9999,
+                                                                                                   9999)
+        return bounds
 
     def shape(self) -> QPainterPath:
         """Returns the outline's bounds as a shape."""

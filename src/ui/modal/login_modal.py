@@ -56,6 +56,7 @@ class LoginModal(QDialog):
                 self._status.setText(ERROR_MISSING_INFO)
                 return
             self._res = try_login(self._name_input.text(), self._password_input.text())
+            assert self._res is not None
             if self._res.status_code == 200:
                 self.user = self._name_input.text()
                 self.pw = self._password_input.text()

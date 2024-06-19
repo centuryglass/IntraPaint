@@ -260,10 +260,10 @@ def get_generation_area_control_boxes(layer_stack: LayerStack,
         label = QLabel(label_text)
         layout.addWidget(label, stretch=1)
         if include_sliders:
-            slider = QSlider(Qt.Orientation.Horizontal)
-            slider.setContentsMargins(1, 1, 1, 1)
-            sliders.append(slider)
-            layout.addWidget(slider, stretch=2)
+            new_slider = QSlider(Qt.Orientation.Horizontal)
+            new_slider.setContentsMargins(1, 1, 1, 1)
+            sliders.append(new_slider)
+            layout.addWidget(new_slider, stretch=2)
         spin_box = QSpinBox()
         spin_boxes.append(spin_box)
         layout.addWidget(spin_box)
@@ -277,9 +277,10 @@ def get_generation_area_control_boxes(layer_stack: LayerStack,
     max_edit_size = config.get(AppConfig.MAX_EDIT_SIZE)
     for box, slider, min_val, max_val in ((w_box, w_slider, min_edit_size.width(), max_edit_size.width()),
                                           (h_box, h_slider, min_edit_size.height(), max_edit_size.height())):
-        for control in filter(lambda ctrl_widget: ctrl_widget is not None, (box, slider)):
-            control.setRange(min_val, max_val)
-            control.setSingleStep(1)
+        for control in (box, slider):
+            if control is not None:
+                control.setRange(min_val, max_val)
+                control.setSingleStep(1)
     for coord_widget in x_box, x_slider, y_box, y_slider:
         if coord_widget is not None:
             coord_widget.setMinimum(0)

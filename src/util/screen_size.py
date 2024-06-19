@@ -17,10 +17,12 @@ def get_screen_size(window: Optional[QMainWindow] = None) -> QSize:
         width, height = args[idx + 1].split("x")
         return QSize(int(width), int(height))
     display = None
+    app = QApplication.instance()
+    assert app is not None
     if window is not None:
-        display = QApplication.instance().screenAt(window.pos())
+        display = app.screenAt(window.pos())
     if display is None:
-        display = QApplication.primaryScreen()
+        display = app.primaryScreen()
     if display is None:
         return QSize(0, 0)
     return display.size()

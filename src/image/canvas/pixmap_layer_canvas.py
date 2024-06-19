@@ -104,7 +104,7 @@ class PixmapLayerCanvas(LayerCanvas):
         if self._pixmap_item is None:
             return
         if layer is not None and layer.visible:
-            pixmap = QPixmap.fromImage(self._layer.cropped_image_content(self._edit_region))
+            pixmap = QPixmap.fromImage(layer.cropped_image_content(self._edit_region))
         else:
             pixmap = QPixmap(self._edit_region.size())
             pixmap.fill(Qt.GlobalColor.transparent)
@@ -114,7 +114,9 @@ class PixmapLayerCanvas(LayerCanvas):
         """Copies content back to the connected layer."""
         if self._layer is not None and self._layer.visible and self._pixmap_item is not None \
                 and self._edit_region is not None and not self._edit_region.isEmpty():
-            change_bounds = self._change_bounds.toAlignedRect()
+            change_bounds = self._change_bounds.toAlignedRect().intersected(self._edit_region)
+            if change_bounds.isEmpty():
+                return
             image = self._pixmap_item.pixmap().toImage().copy(change_bounds)
             prev_image = self._layer.cropped_image_content(change_bounds)
             layer = self._layer

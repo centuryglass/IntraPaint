@@ -38,18 +38,18 @@ class CanvasTool(BaseTool):
 
     def __init__(self, layer_stack: LayerStack, image_viewer: ImageViewer, canvas: LayerCanvas) -> None:
         super().__init__()
-        self._layer = None
+        self._layer: Optional[ImageLayer] = None
         self._drawing = False
-        self._cached_size = None
-        self._tablet_pressure = None
-        self._tablet_x_tilt = None
-        self._tablet_y_tilt = None
-        self._tablet_input = None
+        self._cached_size: Optional[int] = None
+        self._tablet_pressure: Optional[float] = None
+        self._tablet_x_tilt: Optional[float] = None
+        self._tablet_y_tilt: Optional[float] = None
+        self._tablet_input: Optional[QTabletEvent.PointerType] = None
 
         small_brush_icon = QIcon(RESOURCES_MIN_CURSOR)
         self._small_brush_cursor = QCursor(small_brush_icon.pixmap(MIN_CURSOR_SIZE, MIN_CURSOR_SIZE))
         self._default_scaled_cursor_icon = QIcon(RESOURCES_CURSOR)
-        self._scaled_icon_cursor = self._default_scaled_cursor_icon
+        self._scaled_icon_cursor: Optional[QIcon] = self._default_scaled_cursor_icon
         self._scaling_cursor = True
         image_viewer.scale_changed.connect(self.update_brush_cursor)
 
@@ -111,7 +111,7 @@ class CanvasTool(BaseTool):
             self._canvas.connect_to_layer(None)
             self._image_viewer.hide_active_layer = False
         else:
-            layer_index = self._layer_stack.get_layer_index(self._layer)
+            layer_index = self._layer_stack.get_layer_index(layer)
             if layer_index is not None:
                 self._canvas.z_value = -layer_index
             self._canvas.connect_to_layer(layer)
@@ -151,7 +151,7 @@ class CanvasTool(BaseTool):
     @brush_color.setter
     def brush_color(self, new_color: QColor | Qt.GlobalColor) -> None:
         """Updates the active brush color."""
-        self._canvas.brush_color = new_color
+        self._canvas.brush_color = QColor(new_color)
 
     def _on_activate(self) -> None:
         """Connect the canvas to the active layer."""
@@ -189,7 +189,7 @@ class CanvasTool(BaseTool):
 
     def mouse_click(self, event: Optional[QMouseEvent], image_coordinates: QPoint) -> bool:
         """Starts drawing when the mouse is clicked in the scene."""
-        if self._layer is None or not self._layer_stack.has_image:
+        if self._layer is None or event is None or not self._layer_stack.has_image:
             return False
         if event.buttons() == Qt.LeftButton or event.buttons() == Qt.RightButton:
             if self._drawing:
@@ -209,7 +209,7 @@ class CanvasTool(BaseTool):
 
     def mouse_move(self, event: Optional[QMouseEvent], image_coordinates: QPoint) -> bool:
         """Receives a mouse move event, returning whether the tool consumed the event."""
-        if self._layer is None or not self._layer_stack.has_image:
+        if self._layer is None or event is None or not self._layer_stack.has_image:
             return False
         if event.buttons() == Qt.LeftButton or event.buttons() == Qt.RightButton and self._drawing:
             self._stroke_to(image_coordinates)
@@ -218,7 +218,7 @@ class CanvasTool(BaseTool):
 
     def mouse_release(self, event: Optional[QMouseEvent], image_coordinates: QPoint) -> bool:
         """Receives a mouse release event, returning whether the tool consumed the event."""
-        if self._layer is None or not self._layer_stack.has_image:
+        if self._layer is None or event is None or not self._layer_stack.has_image:
             return False
         if self._drawing:
             self._drawing = False
@@ -236,6 +236,7 @@ class CanvasTool(BaseTool):
 
     def tablet_event(self, event: Optional[QTabletEvent], image_coordinates: QPoint) -> bool:
         """Cache tablet data when received."""
+        assert event is not None
         if event.pointerType() is not None:
             self._tablet_input = event.pointerType()
         self._tablet_pressure = event.pressure()
@@ -267,6 +268,7 @@ class CanvasTool(BaseTool):
 
     def wheel_event(self, event: Optional[QWheelEvent]) -> bool:
         """Adjust brush size if scrolling horizontal."""
+        assert event is not None
         if not hasattr(self, 'adjust_brush_size'):
             return False
         offset = 0

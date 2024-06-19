@@ -4,7 +4,7 @@ Interact with edited image layers through the PyQt5 2D graphics engine.
 from typing import Optional, Dict
 
 from PyQt5.QtCore import Qt, QRect, QRectF, QSize, QPointF, QSizeF
-from PyQt5.QtGui import QPainter, QMouseEvent
+from PyQt5.QtGui import QPainter, QMouseEvent, QColor
 from PyQt5.QtWidgets import QWidget, QSizePolicy, QGraphicsPixmapItem
 
 from src.config.application_config import AppConfig
@@ -39,23 +39,25 @@ class ImageViewer(ImageGraphicsView):
         self.setSizePolicy(QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding))
         self._follow_generation_area = False
         self._mouse_moves_generation_area = True
-        self._hidden = set()
+        self._hidden: set[int] = set()
         self._selection_poly_outline = PolygonOutline(self)
         self._selection_poly_outline.animated = config.get(AppConfig.ANIMATE_OUTLINES)
 
         # Generation area and border rectangle setup:
-        self._scene_outline = Outline(self.scene(), self)
-        self._scene_border = Border(self.scene(), self)
+        scene = self.scene()
+        assert scene is not None
+        self._scene_outline = Outline(scene, self)
+        self._scene_border = Border(scene, self)
         self._scene_border.windowed_area = layer_stack.geometry if layer_stack.has_image else QRect()
-        self._scene_border.color = GENERATION_AREA_BORDER_COLOR
+        self._scene_border.color = QColor(GENERATION_AREA_BORDER_COLOR)
         self._scene_border.setOpacity(IMAGE_BORDER_OPACITY)
         self._scene_border.setVisible(True)
         self._scene_outline.dash_pattern = [1, 0]  # solid line
-        self._generation_area_outline = Outline(self.scene(), self)
+        self._generation_area_outline = Outline(scene, self)
         self._generation_area_outline.animated = config.get(AppConfig.ANIMATE_OUTLINES)
 
         # "inpaint selected only" generation area outline:
-        self._image_generation_area_outline = Outline(self.scene(), self)
+        self._image_generation_area_outline = Outline(scene, self)
         self._image_generation_area_outline.setOpacity(GENERATION_AREA_BORDER_OPACITY)
         self._image_generation_area_outline.animated = config.get(AppConfig.ANIMATE_OUTLINES)
         selection_layer = layer_stack.selection_layer
@@ -65,13 +67,13 @@ class ImageViewer(ImageGraphicsView):
 
         # active layer outline:
         self._active_layer_id = -1
-        self._active_layer_outline = Outline(self.scene(), self)
+        self._active_layer_outline = Outline(scene, self)
         self._active_layer_outline.dash_pattern = [5, 1]  # nearly solid line
         layer_stack.active_layer_changed.connect(self._active_layer_change_slot)
 
         # border drawn when zoomed to image generation area:
-        self._generation_area_border = Border(self.scene(), self)
-        self._generation_area_border.color = GENERATION_AREA_BORDER_COLOR
+        self._generation_area_border = Border(scene, self)
+        self._generation_area_border.color = QColor(GENERATION_AREA_BORDER_COLOR)
         self._generation_area_border.setOpacity(GENERATION_AREA_BORDER_OPACITY)
         self._generation_area_border.setVisible(False)
 
@@ -147,7 +149,9 @@ class ImageViewer(ImageGraphicsView):
 
     def sizeHint(self) -> QSize:
         """Returns image size as ideal widget size."""
-        return self.content_size
+        size = self.content_size
+        assert size is not None
+        return size
 
     # noinspection PyMethodOverriding
     def mousePressEvent(self, event: Optional[QMouseEvent]) -> None:
@@ -162,11 +166,11 @@ class ImageViewer(ImageGraphicsView):
             generation_area.moveTopLeft(image_coordinates.toPoint())
             self._layer_stack.generation_area = generation_area
 
-    def drawBackground(self, painter: QPainter, rect: QRectF) -> None:
+    def drawBackground(self, painter: Optional[QPainter], rect: QRectF) -> None:
         """Draw the background as a fixed size tiling image."""
-        if painter is None:
-            return
-        painter.drawTiledPixmap(rect, self.background)
+        background = self.background
+        assert painter is not None and background is not None
+        painter.drawTiledPixmap(rect, background)
 
     def scroll_content(self, dx: int | float, dy: int | float) -> bool:
         """Scroll the image generation area by the given offset, returning whether it was able to move."""
@@ -270,8 +274,10 @@ class ImageViewer(ImageGraphicsView):
         layer_item = _LayerItem(new_layer)
         layer_item.setZValue(-index)
         layer_item.setPos(new_layer.position)
+        scene = self.scene()
+        assert scene is not None
         self._layer_items[new_layer.id] = layer_item
-        self.scene().addItem(layer_item)
+        scene.addItem(layer_item)
         for outline in (self._generation_area_outline, self._image_generation_area_outline, self._active_layer_outline,
                         self._generation_area_border):
             outline.setZValue(max(self._generation_area_outline.zValue(), index + 1))
@@ -288,7 +294,9 @@ class ImageViewer(ImageGraphicsView):
             self._scene_border.windowed_area = QRect()
         layer_item = self._layer_items[removed_layer.id]
         layer_was_visible = layer_item.isVisible()
-        self.scene().removeItem(layer_item)
+        scene = self.scene()
+        assert scene is not None
+        scene.removeItem(layer_item)
         del self._layer_items[removed_layer.id]
         self._update_layer_z_values()
         if layer_was_visible:

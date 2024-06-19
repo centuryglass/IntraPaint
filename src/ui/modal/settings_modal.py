@@ -294,7 +294,7 @@ class SettingsModal(QDialog):
         width_box.valueChanged.connect(_update_width)
 
         def _update_height(new_height: str) -> None:
-            self._add_change(setting_name, QSize(width_box.value(), new_height))
+            self._add_change(setting_name, QSize(width_box.value(), int(new_height)))
         height_box.valueChanged.connect(_update_height)
         setattr(size_bar, 'width_box', width_box)
         setattr(size_bar, 'height_box', height_box)

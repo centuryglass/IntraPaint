@@ -54,8 +54,7 @@ class Config:
             Child class where definition keys should be written as properties when first initialized.
         """
         self._entries: dict[str, ConfigEntry] = {}
-        self._connected: dict[str, dict[Any, Callable[[], None] | Callable[[Any], None] | Callable[[Any, Any], None]]] \
-            = {}
+        self._connected: dict[str, dict[Any, Callable[..., None]]] = {}
         self._json_path = saved_value_path
         self._lock = Lock()
         self._save_timer = QTimer()
@@ -252,7 +251,7 @@ class Config:
     def connect(self,
                 connected_object: Any,
                 key: str,
-                on_change_fn: Callable[[], None] | Callable[[Any], None] | Callable[[Any, Any], None],
+                on_change_fn: Callable[..., None],
                 inner_key: Optional[str] = None) -> None:
         """
         Registers a callback function that should run when a particular key is changed.

@@ -1,6 +1,6 @@
 """Popup modal window used for scaling the edited image."""
 from typing import Optional
-from PyQt5.QtWidgets import QDialog, QLabel, QVBoxLayout, QPushButton
+from PyQt5.QtWidgets import QDialog, QLabel, QVBoxLayout, QPushButton, QComboBox, QBoxLayout
 from PyQt5.QtCore import QSize
 
 from src.config.cache import Cache
@@ -54,8 +54,9 @@ class ImageScaleModal(QDialog):
         self._y_mult_box = LabeledSpinbox(self, HEIGHT_MULT_BOX_LABEL, HEIGHT_MULT_BOX_TOOLTIP, 0.0, 1.0,
                                           999.0)
         self._layout.addWidget(self._y_mult_box)
-        self._upscale_method_box, self._upscale_layout = connected_combobox(self, AppConfig.UPSCALE_METHOD,
-                                                                            text=UPSCALE_METHOD_LABEL)
+        upscale_box, upscale_layout = connected_combobox(self, AppConfig.UPSCALE_METHOD, text=UPSCALE_METHOD_LABEL)
+        self._upscale_method_box: QComboBox = upscale_box
+        self._upscale_layout: QBoxLayout = upscale_layout
         self._layout.addLayout(self._upscale_layout)
 
         def set_scale_on_px_change(pixel_size: int, base_value: int, scale_box: LabeledSpinbox):

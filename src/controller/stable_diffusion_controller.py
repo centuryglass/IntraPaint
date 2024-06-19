@@ -59,7 +59,7 @@ LCM_LORA_1_5 = 'lcm-lora-sdv1-5'
 LCM_LORA_XL = 'lcm-lora-sdxl'
 
 
-def _check_lcm_mode_available(controller: 'StableDiffusionController') -> bool:
+def _check_lcm_mode_available(_) -> bool:
     if LCM_SAMPLER not in AppConfig.instance().get_options(AppConfig.SAMPLING_METHOD):
         return False
     loras = [lora['name'] for lora in Cache.instance().get(Cache.LORA_MODELS)]
@@ -95,12 +95,12 @@ class StableDiffusionController(BaseInpaintController):
         categories.append(STABLE_DIFFUSION_CONFIG_CATEGORY)
         return categories
 
-    def init_settings(self, settings_modal: SettingsModal) -> bool:
+    def init_settings(self, settings_modal: SettingsModal) -> None:
         """Adds relevant stable-diffusion-webui settings to a ui.modal SettingsModal.  """
+        super().init_settings(settings_modal)
         if not isinstance(self._webservice, A1111Webservice):
             print('Disabling remote settings: only supported with the A1111 API')
-            return False
-        super().init_settings(settings_modal)
+            return
         web_config = A1111Config.instance()
         web_config.load_all(self._webservice)
         settings_modal.load_from_config(web_config)
@@ -470,4 +470,3 @@ class StableDiffusionController(BaseInpaintController):
         config.set(AppConfig.SEED, -1)
         if config.get(AppConfig.BATCH_SIZE) < 5:
             config.set(AppConfig.BATCH_SIZE, 5)
-        image_size = self._layer_stack.size

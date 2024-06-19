@@ -49,7 +49,7 @@ class LayerCanvas:
                 self.edit_region = QRect(0, 0, self._layer.width, self._layer.height)
                 self._update_canvas_position(self._layer, self._layer.position)
             else:
-                self._handle_bounds_change(new_layer, new_layer.geometry)
+                self._handle_bounds_change(self._layer, self._layer.geometry)
         self._load_layer_content(self._layer)
 
     @property

@@ -42,7 +42,7 @@ class MyPaintRectangles(Structure):
 
 
 # Surface:
-surface_ptr = c_void_p
+surface_ptr: TypeAlias = c_void_p
 
 MyPaintSurfaceDrawDabFunction = CFUNCTYPE(c_int, surface_ptr, c_float, c_float,  # (self, x, y
                                           c_float, c_float, c_float, c_float,  # radius, r, g, b
@@ -116,8 +116,7 @@ class MyPaintTiledSurface(Structure):
     ]
 
 
-# noinspection PyTypeChecker
-TilePixelBuffer: TypeAlias = c_uint16 * 4 * TILE_DIM * TILE_DIM
+TilePixelBuffer = c_uint16 * 4 * TILE_DIM * TILE_DIM
 
 
 # Brush settings:

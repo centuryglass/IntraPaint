@@ -1,10 +1,10 @@
 """Selects between image editing tools, and controls their settings."""
-from typing import Optional, Dict, Callable
+from typing import Optional, Dict, Callable, cast
 
 from PyQt5.QtCore import Qt, pyqtSignal, QRect, QSize, QMargins
 from PyQt5.QtGui import QMouseEvent, QPaintEvent, QPainter, QPen, QResizeEvent
 from PyQt5.QtWidgets import QWidget, QLabel, QHBoxLayout, QVBoxLayout, QSizePolicy, QScrollArea, QPushButton, \
-    QStackedLayout
+    QStackedLayout, QBoxLayout
 
 from src.config.cache import Cache
 from src.image.layer_stack import LayerStack
@@ -17,7 +17,6 @@ from src.tools.selection_tool import SelectionTool
 from src.tools.tool_event_handler import ToolEventHandler
 from src.ui.panel.image_panel import ImagePanel
 from src.ui.panel.layer_panel import LayerPanel
-from src.ui.widget.bordered_widget import BorderedWidget
 from src.ui.widget.collapsible_box import CollapsibleBox
 from src.ui.widget.grid_container import GridContainer
 from src.ui.widget.key_hint_label import KeyHintLabel
@@ -63,8 +62,10 @@ class ToolPanel(QWidget):
         self._event_handler = ToolEventHandler(image_panel.image_viewer)
         self._event_handler.tool_changed.connect(self._setup_active_tool)
         self._layout = QStackedLayout(self)
-        self._orientation = None
-        self._panel_box_layout = None
+        # Initial orientation is Vertical, set at the end of init, defined here as Horizontal so the orientation setup
+        # doesn't ignore the change.
+        self._orientation = Qt.Orientation.Horizontal
+        self._panel_box_layout: Optional[QBoxLayout] = None
         self._panel_box = CollapsibleBox(TOOL_PANEL_TITLE,
                                          parent=self,
                                          scrolling=False,
@@ -72,7 +73,7 @@ class ToolPanel(QWidget):
         self._panel_box.set_expanded_size_policy(QSizePolicy.Ignored)
         self._panel_box.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
 
-        self._layer_panel = LayerPanel(layer_stack)
+        self._layer_panel: Optional[LayerPanel] = LayerPanel(layer_stack)
 
         self._generate_button = QPushButton(GENERATE_BUTTON_TEXT)
         self._generate_button.clicked.connect(generate_fn)
@@ -91,8 +92,9 @@ class ToolPanel(QWidget):
         self._tool_control_layout = QVBoxLayout(self._tool_control_box)
         self._tool_control_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self._tool_control_label = QLabel()
-        self._tool_control_label.setStyleSheet("text-decoration: bold;")
-        self._tool_control_label.setAlignment(Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignTop)
+        self._tool_control_label.setStyleSheet('text-decoration: bold;')
+        self._tool_control_label.setAlignment(cast(Qt.Alignment,
+                                                   Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignTop))
         self._tool_control_layout.addWidget(self._tool_control_label, stretch=0)
         self._tool_control_box.add_visibility_limit(self._tool_control_label, MIN_SIZE_FOR_TOOL_LABEL)
         
@@ -174,25 +176,28 @@ class ToolPanel(QWidget):
         self._panel_box.box_toggled.connect(self._handle_panel_toggle)
         if prev_panel_box is not None:
             self._panel_box.set_expanded(prev_panel_box.is_expanded())
-        self._panel_box_layout = QVBoxLayout() if orientation == Qt.Orientation.Vertical else QHBoxLayout()
-        self._panel_box.set_content_layout(self._panel_box_layout)
-        self._panel_box_layout.setContentsMargins(QMargins(2, 2, 2, 2))
+        box_layout = QVBoxLayout() if orientation == Qt.Orientation.Vertical else QHBoxLayout()
+        self._panel_box_layout = box_layout
+        self._panel_box.set_content_layout(box_layout)
+        box_layout.setContentsMargins(QMargins(2, 2, 2, 2))
         self._layout.addWidget(self._panel_box)
         self._layout.setCurrentWidget(self._panel_box)
-        self._panel_box_layout.addWidget(self._tool_list, stretch=TOOL_LIST_STRETCH)
-        self._panel_box_layout.addWidget(self._tool_scroll_area, stretch=TOOL_PANEL_STRETCH)
+        box_layout.addWidget(self._tool_list, stretch=TOOL_LIST_STRETCH)
+        box_layout.addWidget(self._tool_scroll_area, stretch=TOOL_PANEL_STRETCH)
         if self._layer_panel is not None:
-            self._panel_box_layout.addWidget(self._layer_panel, stretch=LAYER_PANEL_STRETCH)
-        self._panel_box_layout.addWidget(self._generate_button)
+            box_layout.addWidget(self._layer_panel, stretch=LAYER_PANEL_STRETCH)
+        box_layout.addWidget(self._generate_button)
         self._generate_button.setVisible(show_generate_button)
+        tool_list_layout = self._tool_list.layout()
+        assert tool_list_layout is not None
         if orientation == Qt.Orientation.Horizontal:
             generate_label = "\n".join(GENERATE_BUTTON_TEXT)
             self._tool_list.fill_vertical = True
-            self._tool_list.layout().setAlignment(Qt.AlignmentFlag.AlignLeft)
+            tool_list_layout.setAlignment(Qt.AlignmentFlag.AlignLeft)
         else:
             generate_label = GENERATE_BUTTON_TEXT
             self._tool_list.fill_horizontal = True
-            self._tool_list.layout().setAlignment(Qt.AlignmentFlag.AlignTop)
+            tool_list_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
         self._generate_button.setText(generate_label)
         if prev_panel_box is not None:
             prev_panel_box.setParent(None)
@@ -239,9 +244,9 @@ class ToolPanel(QWidget):
             self._update_cursor()
             active_tool.cursor_change.connect(self._update_cursor)
             tool_panel = active_tool.get_control_panel()
-            tool_panel.setToolTip(active_tool.get_tooltip_text())
             self._image_panel.set_control_hint(active_tool.get_input_hint())
             if tool_panel is not None:
+                tool_panel.setToolTip(active_tool.get_tooltip_text())
                 self._active_tool_panel = tool_panel
                 self._tool_control_layout.addWidget(tool_panel, stretch=1)
                 tool_panel.show()
@@ -259,9 +264,11 @@ class ToolPanel(QWidget):
 
     def resizeEvent(self, event: Optional[QResizeEvent]) -> None:
         """Keep tool list sized correctly within the panel."""
-        self._tool_control_box.setMaximumWidth(self._tool_scroll_area.width()
-                                               - self._tool_scroll_area.contentsMargins().left() * 2
-                                               - self._tool_scroll_area.verticalScrollBar().sizeHint().width() * 2)
+        max_width = self._tool_scroll_area.width() - self._tool_scroll_area.contentsMargins().left() * 2
+        scroll_bar = self._tool_scroll_area.verticalScrollBar()
+        if scroll_bar is not None:
+            max_width -= scroll_bar.sizeHint().width()
+        self._tool_control_box.setMaximumWidth(max_width)
         show_layer_panel = ((self._orientation == Qt.Orientation.Horizontal and self.width() >= LAYER_PANEL_MIN_WIDTH)
                             or (self._orientation == Qt.Orientation.Vertical
                                 and self.height() >= LAYER_PANEL_MIN_HEIGHT))
@@ -277,6 +284,7 @@ class ToolPanel(QWidget):
             self._layer_panel = None
 
 
+
 class _ToolButton(QWidget):
     """Displays a tool icon and label, indicates if the tool is selected."""
 
@@ -289,7 +297,7 @@ class _ToolButton(QWidget):
         self.setSizePolicy(QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed))
         label_text = connected_tool.label
         if connected_tool.get_hotkey() is not None:
-            self._key_hint = KeyHintLabel(connected_tool.get_hotkey(), self)
+            self._key_hint: Optional[KeyHintLabel] = KeyHintLabel(connected_tool.get_hotkey(), self)
             self._key_hint.setAlignment(Qt.AlignmentFlag.AlignRight)
         else:
             self._key_hint = None
@@ -297,7 +305,7 @@ class _ToolButton(QWidget):
         self._icon_bounds = QRect()
         self._active = False
 
-    def sizeHint(self) -> QSize():
+    def sizeHint(self) -> QSize:
         """Returns ideal size as TOOL_ICON_SIZExTOOL_ICON_SIZE."""
         screen = get_screen_size(self)
         if screen is None:

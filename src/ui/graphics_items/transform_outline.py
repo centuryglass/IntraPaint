@@ -6,7 +6,7 @@ from PyQt5.QtCore import Qt, QRectF, QPointF, QSizeF, pyqtSignal, QLineF
 from PyQt5.QtGui import QPainter, QPen, QTransform, QIcon, QPainterPath, QPolygonF, QImage
 from PyQt5.QtWidgets import QWidget, QGraphicsItem, QStyleOptionGraphicsItem, \
     QGraphicsSceneMouseEvent, QGraphicsTransform, \
-    QGraphicsObject
+    QGraphicsObject, QGraphicsView
 
 from src.util.shared_constants import MIN_NONZERO
 
@@ -79,43 +79,43 @@ class TransformOutline(QGraphicsObject):
     def preserve_aspect_ratio(self, should_preserve: bool) -> None:
         self._preserve_aspect_ratio = should_preserve
         if should_preserve:
-            x_scale, y_scale = self.scale
+            x_scale, y_scale = self.transform_scale
             scale = max(abs(x_scale), abs(y_scale))
             x_scale = math.copysign(scale, x_scale)
             y_scale = math.copysign(scale, y_scale)
-            self.scale = (x_scale, y_scale)
+            self.transform_scale = (x_scale, y_scale)
 
     @property
-    def x(self) -> float:
+    def x_pos(self) -> float:
         """The minimum x-position within the scene, after all transformations are applied."""
         return min(pt.x() for pt in self._corner_points_in_scene())
 
-    @x.setter
-    def x(self, new_x: float) -> None:
+    @x_pos.setter
+    def x_pos(self, new_x: float) -> None:
         """Set the minimum x-position within the scene, without changing rotation or scale."""
-        self._move_to(new_x, self.y)
+        self._move_to(new_x, self.y_pos)
         self._send_transform_signal()
 
     @property
-    def y(self) -> float:
+    def y_pos(self) -> float:
         """The minimum y-position within the scene, after all transformations are applied."""
         return min(pt.y() for pt in self._corner_points_in_scene())
 
-    @y.setter
-    def y(self, new_y: float) -> None:
+    @y_pos.setter
+    def y_pos(self, new_y: float) -> None:
         """Set the minimum x-position within the scene, without changing rotation or scale."""
-        self._move_to(self.x, new_y)
+        self._move_to(self.x_pos, new_y)
         self._send_transform_signal()
 
     @property
     def width(self) -> float:
         """The full width within the scene, ignoring rotations."""
-        x_scale, _ = self.scale
+        x_scale, _ = self.transform_scale
         return abs(self.rect().width() * x_scale)
 
     @width.setter
     def width(self, new_width) -> None:
-        _, y_scale = self.scale
+        _, y_scale = self.transform_scale
         x_scale = new_width / self.rect().width()
         if self._preserve_aspect_ratio:
             y_scale = math.copysign(x_scale, y_scale)
@@ -125,12 +125,12 @@ class TransformOutline(QGraphicsObject):
     @property
     def height(self) -> float:
         """The full height within the scene, ignoring rotations."""
-        _, y_scale = self.scale
+        _, y_scale = self.transform_scale
         return abs(self.rect().height() * y_scale)
 
     @height.setter
     def height(self, new_height: float) -> None:
-        x_scale, _ = self.scale
+        x_scale, _ = self.transform_scale
         y_scale = new_height / self.rect().height()
         if self._preserve_aspect_ratio:
             x_scale = math.copysign(y_scale, x_scale)
@@ -149,7 +149,7 @@ class TransformOutline(QGraphicsObject):
         self._send_transform_signal()
 
     @property
-    def scale(self) -> Tuple[float, float]:
+    def transform_scale(self) -> Tuple[float, float]:
         """Get the width and height scale factors."""
         if self.rect().isEmpty():
             return 1.0, 1.0
@@ -163,17 +163,17 @@ class TransformOutline(QGraphicsObject):
         height_final = math.copysign(QLineF(top_left, bottom_left).length(), transform.m22())
         scale_x = width_final / width_init
         scale_y = height_final / height_init
-        angle = self.rotation
+        angle = self.rotation_angle
         if 90 <= angle <= 270:
             scale_x *= -1
             scale_y *= -1
         return scale_x, scale_y
 
-    @scale.setter
-    def scale(self, scale_factors: Tuple[float, float]) -> None:
+    @transform_scale.setter
+    def transform_scale(self, scale_factors: Tuple[float, float]) -> None:
         scale_x, scale_y = scale_factors
         if self._preserve_aspect_ratio:
-            prev_x, prev_y = self.scale
+            prev_x, prev_y = self.transform_scale
             x_change = scale_x - prev_x
             y_change = scale_y - prev_y
             if abs(x_change) > abs(y_change):
@@ -188,7 +188,7 @@ class TransformOutline(QGraphicsObject):
         self._send_transform_signal()
 
     @property
-    def rotation(self) -> float:
+    def rotation_angle(self) -> float:
         """Gets the rotation in degrees."""
         rotation_pt = self.mapToScene(QPointF(1.0, 0.0)) - self.mapToScene(QPointF(0.0, 0.0))
         angle = math.degrees(math.atan2(rotation_pt.y(), rotation_pt.x()))
@@ -196,8 +196,8 @@ class TransformOutline(QGraphicsObject):
             angle += 360.0
         return angle
 
-    @rotation.setter
-    def rotation(self, angle: float) -> None:
+    @rotation_angle.setter
+    def rotation_angle(self, angle: float) -> None:
         self._set_rotation(angle)
         self._send_transform_signal()
 
@@ -245,7 +245,7 @@ class TransformOutline(QGraphicsObject):
                 add_children.append(child)
 
         # Temporarily hide everything else in the scene:
-        opacity_map: Dict[QGraphicsItem: float] = {}
+        opacity_map: Dict[QGraphicsItem, float] = {}
         for item in scene.items():
             if item not in children:
                 opacity_map[item] = item.opacity()
@@ -266,12 +266,13 @@ class TransformOutline(QGraphicsObject):
         scene.update()
         return image
 
-    def mousePressEvent(self, event: QGraphicsSceneMouseEvent) -> None:
+    def mousePressEvent(self, event: Optional[QGraphicsSceneMouseEvent]) -> None:
         """Start dragging the layer."""
+        assert event is not None
         for handle in self._handles.values():
             # Ensure handles can still be selected during extreme transformations by passing off input to any handle
             # within approx. 10px of the click event:
-            view = self.scene().views()[0]
+            view = _get_view(self)
             handle_pos = _map_to_view(handle.rect().center(), handle)
             click_pos = view.mapFromGlobal(event.screenPos())
             distance = (click_pos - handle_pos).manhattanLength()
@@ -282,8 +283,9 @@ class TransformOutline(QGraphicsObject):
         super().mousePressEvent(event)
         self.setSelected(True)
 
-    def mouseDoubleClickEvent(self, event: QGraphicsSceneMouseEvent) -> None:
+    def mouseDoubleClickEvent(self, event: Optional[QGraphicsSceneMouseEvent]) -> None:
         """Change drag mode on double-click."""
+        assert event is not None
         if self._mode == MODE_SCALE:
             self._mode = MODE_ROTATE
         else:
@@ -291,8 +293,9 @@ class TransformOutline(QGraphicsObject):
         for handle in self._handles.values():
             handle.set_mode_icon(self._mode)
 
-    def mouseMoveEvent(self, event: QGraphicsSceneMouseEvent) -> None:
+    def mouseMoveEvent(self, event: Optional[QGraphicsSceneMouseEvent]) -> None:
         """Translate the layer, following the cursor."""
+        assert event is not None
         super().mouseMoveEvent(event)
         for handle in self._handles.values():
             if handle.isSelected():
@@ -301,8 +304,9 @@ class TransformOutline(QGraphicsObject):
         change = event.scenePos() - event.lastScenePos()
         self.offset = change + self.offset
 
-    def mouseReleaseEvent(self, event: QGraphicsSceneMouseEvent) -> None:
+    def mouseReleaseEvent(self, event: Optional[QGraphicsSceneMouseEvent]) -> None:
         """Stop dragging the layer."""
+        assert event is not None
         super().mouseReleaseEvent(event)
         for handle in self._handles.values():
             if handle.isSelected():
@@ -342,7 +346,7 @@ class TransformOutline(QGraphicsObject):
                 final_rect.setHeight(MIN_NONZERO)
             x_scale = final_rect.width() / initial_rect.width()
             y_scale = final_rect.height() / initial_rect.height()
-            current_x_scale, current_y_scale = self.scale
+            current_x_scale, current_y_scale = self.transform_scale
             final_x_scale = x_scale * current_x_scale
             final_y_scale = y_scale * current_y_scale
             if self._preserve_aspect_ratio:
@@ -380,7 +384,7 @@ class TransformOutline(QGraphicsObject):
             init_angle = math.degrees(math.atan2(init_vector.y(), init_vector.x()))
             final_angle = math.degrees(math.atan2(target_vector.y(), target_vector.x()))
             angle_offset = final_angle - init_angle
-            self._set_rotation(self.rotation + angle_offset)
+            self._set_rotation(self.rotation_angle + angle_offset)
         self._send_transform_signal()
 
     def paint(self,
@@ -388,6 +392,7 @@ class TransformOutline(QGraphicsObject):
               unused_option: Optional[QStyleOptionGraphicsItem],
               unused_widget: Optional[QWidget] = None) -> None:
         """Draw a simple rectangle."""
+        assert painter is not None
         painter.save()
         painter.setPen(self._pen)
         painter.drawRect(self._rect)
@@ -437,7 +442,7 @@ class TransformOutline(QGraphicsObject):
         self._send_transform_signal()
 
     def _set_transform(self, matrix: QTransform, combine: bool = False) -> None:
-        """Update transformations without immediately notifying listeners.."""
+        """Update transformations without immediately notifying listeners."""
         if combine is False:
             super().setTransformations([])
             self.resetTransform()
@@ -472,13 +477,13 @@ class TransformOutline(QGraphicsObject):
 
     def _send_transform_signal(self) -> None:
         offset = self.offset
-        scale_x, scale_y = self.scale
-        rotation = self.rotation
+        scale_x, scale_y = self.transform_scale
+        rotation = self.rotation_angle
         self.transform_changed.emit(offset, scale_x, scale_y, rotation)
 
     def _move_to(self, x: float, y: float) -> None:
-        x_off = x - self.x
-        y_off = y - self.y
+        x_off = x - self.x_pos
+        y_off = y - self.y_pos
         if x_off != 0 or y_off != 0:
             offset = self.offset + QPointF(x_off, y_off)
             self._set_offset(offset)
@@ -493,7 +498,7 @@ class TransformOutline(QGraphicsObject):
 
     def _set_scale(self, x_scale: float, y_scale: float) -> None:
         scale_x, scale_y = (_avoiding_zero(scale) for scale in (x_scale, y_scale))
-        prev_x, prev_y = self.scale
+        prev_x, prev_y = self.transform_scale
         origin = self.transformation_origin
         scale = QTransform()
         scale.translate(origin.x(), origin.y())
@@ -510,7 +515,7 @@ class TransformOutline(QGraphicsObject):
         prev_transform = self.sceneTransform()
         rotation = QTransform()
         rotation.translate(origin.x(), origin.y())
-        rotation.rotate(angle - self.rotation)
+        rotation.rotate(angle - self.rotation_angle)
         rotation.translate(-origin.x(), -origin.y())
         self._set_transform(rotation, False)
         self._set_transform(prev_transform, True)
@@ -562,13 +567,15 @@ class _Handle(QGraphicsItem):
     def boundingRect(self) -> QRectF:
         """Ensure handle bounds within the scene are large enough for the handle to remain clickable within extreme
            transforms."""
-        return self._adjusted_bounds().united(self._arrow_bounds())
+        bounds = self._adjusted_bounds()
+        return bounds.united(self._arrow_bounds(bounds))
 
     def shape(self) -> QPainterPath:
         """Returns the outline's bounds as a shape."""
         path = QPainterPath()
-        path.addRect(QRectF(self._adjusted_bounds()))
-        path.addRect(QRectF(self._arrow_bounds()))
+        bounds = self._adjusted_bounds()
+        path.addRect(QRectF(bounds))
+        path.addRect(QRectF(self._arrow_bounds(bounds)))
         return path
 
     def paint(self,
@@ -576,6 +583,7 @@ class _Handle(QGraphicsItem):
               unused_option: Optional[QStyleOptionGraphicsItem],
               unused_widget: Optional[QWidget] = None) -> None:
         """When painting, ignore all transformations besides center point translation."""
+        assert painter is not None
         painter.save()
         transform = painter.transform()
         inverse = transform.inverted()[0]
@@ -591,9 +599,9 @@ class _Handle(QGraphicsItem):
             arrow_pixmap = self._icon.pixmap(rect.size().toSize())
             arrow_bounds = QRectF(rect.topLeft() - QPointF(rect.width(), rect.height()), rect.size())
             # get base rotation:
-            angle = self._parent.rotation
+            angle = self._parent.rotation_angle
 
-            scale_x, scale_y = self._parent.scale
+            scale_x, scale_y = self._parent.transform_scale
             mirrored = (scale_y < 0 < scale_x) or (scale_x < 0 < scale_y)
 
             if mirrored:
@@ -627,8 +635,9 @@ class _Handle(QGraphicsItem):
         adjusted_rect = _map_rect_from_view(view_rect, self)
         return adjusted_rect
 
-    def _arrow_bounds(self) -> QRectF:
-        bounds = self._adjusted_bounds()
+    def _arrow_bounds(self, bounds: Optional[QRectF] = None) -> QRectF:
+        if bounds is None:
+            bounds = self._adjusted_bounds()
         if self._handle_id == TL_HANDLE_ID:
             bounds.translate(-bounds.width(), -bounds.height())
         elif self._handle_id == TR_HANDLE_ID:
@@ -639,23 +648,24 @@ class _Handle(QGraphicsItem):
             bounds.translate(bounds.width(), bounds.height())
         return bounds
 
-
     def _update_and_send_pos(self, pos: QPointF) -> None:
         self._parent.move_transformation_handle(self._handle_id, pos)
-        self._last_pos = QPointF(pos)
 
-    def mousePressEvent(self, event: QGraphicsSceneMouseEvent) -> None:
+    def mousePressEvent(self, event: Optional[QGraphicsSceneMouseEvent]) -> None:
         """Select the clicked handle, start sending handle position changes back to the transformation outline."""
+        assert event is not None
         super().mousePressEvent(event)
         self.setSelected(True)
         self._update_and_send_pos(event.pos())
 
-    def mouseMoveEvent(self, event: QGraphicsSceneMouseEvent) -> None:
+    def mouseMoveEvent(self, event: Optional[QGraphicsSceneMouseEvent]) -> None:
         """Continue sending handle position changes to the transformation outline."""
+        assert event is not None
         self._update_and_send_pos(event.pos())
 
-    def mouseReleaseEvent(self, event: QGraphicsSceneMouseEvent) -> None:
+    def mouseReleaseEvent(self, event: Optional[QGraphicsSceneMouseEvent]) -> None:
         """Send the final handle position change to the transformation outline, and de-select the handle."""
+        assert event is not None
         self._update_and_send_pos(event.pos())
         self.setSelected(False)
 
@@ -665,18 +675,27 @@ def _avoiding_zero(value: float) -> float:
         return value
     return math.copysign(MIN_NONZERO, value)
 
+
+def _get_view(item: QGraphicsItem) -> QGraphicsView:
+    scene = item.scene()
+    assert scene is not None
+    views = scene.views()
+    assert len(views) > 0
+    return views[0]
+
+
 def _get_handle_rect(pos: QPointF) -> QRectF:
     return QRectF(pos - QPointF(HANDLE_SIZE / 2, HANDLE_SIZE / 2), QSizeF(HANDLE_SIZE, HANDLE_SIZE))
 
 
 def _map_to_view(local_pt: QPointF, item: QGraphicsItem) -> QPointF:
     scene_pt = item.mapToScene(local_pt)
-    view = item.scene().views()[0]
+    view = _get_view(item)
     return QPointF(view.mapFromScene(scene_pt.toPoint()))
 
 
 def _map_from_view(view_pt: QPointF, item: QGraphicsItem) -> QPointF:
-    view = item.scene().views()[0]
+    view = _get_view(item)
     scene_pt = QPointF(view.mapToScene(view_pt.toPoint()))
     return item.mapFromScene(scene_pt)
 
@@ -690,6 +709,6 @@ def _map_rect_to_view(local_rect: QRectF, item: QGraphicsItem) -> QRectF:
 
 def _map_rect_from_view(view_rect: QRectF, item: QGraphicsItem) -> QRectF:
     corners = (_map_from_view(pt, item) for pt in (view_rect.topLeft(), view_rect.bottomLeft(),
-                                                 view_rect.topRight(), view_rect.bottomRight()))
+                                                   view_rect.topRight(), view_rect.bottomRight()))
     poly = QPolygonF(corners)
     return poly.boundingRect()

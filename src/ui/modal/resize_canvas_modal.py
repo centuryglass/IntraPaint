@@ -104,9 +104,10 @@ class ResizeCanvasModal(QDialog):
                                 Qt.PenJoinStyle.RoundJoin)
                 painter.setPen(line_pen)
                 painter.fillRect(self._canvas_bounds, Qt.GlobalColor.darkGray)
-                painter.drawImage(self._image_bounds, qimage)
-                painter.drawRect(self._canvas_bounds)
-                painter.drawRect(self._image_bounds)
+                if self._image_bounds is not None:
+                    painter.drawImage(self._image_bounds, qimage)
+                    painter.drawRect(self._canvas_bounds)
+                    painter.drawRect(self._image_bounds)
 
         self._preview = _PreviewWidget(self, self._width_box, self._height_box, self._x_offset_box, self._y_offset_box)
 

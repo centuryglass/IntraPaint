@@ -15,7 +15,7 @@ class ReactiveLayoutWidget(QWidget):
         super().__init__(parent)
         self._visibility_limits: Dict[QWidget, QSize] = {}
         self._layout_modes: List[_LayoutMode] = []
-        self._active_mode = None
+        self._active_mode: Optional[str] = None
 
     def add_visibility_limit(self, widget: QWidget, min_size: QSize) -> None:
         """Set a threshold, below which a given child widget shouldn't be shown."""
@@ -82,6 +82,7 @@ class _LayoutMode:
             and self.max_size.height() <= size.height() <= self.max_size.height()
 
     def activate(self) -> None:
+        """Apply the mode setup function after confirming bounds are in range."""
         if not self.in_range():
             raise RuntimeError(f'Mode {self.name} not supported at {self._widget.size()}')
         self.setup()

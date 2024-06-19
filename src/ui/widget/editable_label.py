@@ -1,3 +1,4 @@
+"""A label that can be double-clicked for editing."""
 from typing import Optional
 
 from PyQt5.QtCore import pyqtSignal, Qt

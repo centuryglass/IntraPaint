@@ -9,6 +9,8 @@ from PIL import Image
 from PyQt5.QtCore import QBuffer, QRect, QSize, Qt, QPoint
 from PyQt5.QtGui import QImage, QIcon, QPixmap, QPainter, QColor
 from PyQt5.QtWidgets import QStyle, QWidget, QApplication
+
+from src.image.mypaint.numpy_image_utils import AnyNpArray
 from src.util.font_size import max_font_size
 
 logger = logging.getLogger(__name__)
@@ -74,8 +76,9 @@ def image_content_bounds(image: QImage | np.ndarray, search_bounds: Optional[QRe
     """
     if isinstance(image, QImage):
         image_ptr = image.bits()
+        assert image_ptr is not None
         image_ptr.setsize(image.byteCount())
-        np_image = np.ndarray(shape=(image.height(), image.width(), 4), dtype=np.uint8, buffer=image_ptr)
+        np_image: AnyNpArray = np.ndarray(shape=(image.height(), image.width(), 4), dtype=np.uint8, buffer=image_ptr)
     else:
         np_image = image
     if search_bounds is not None:
@@ -101,8 +104,8 @@ def image_content_bounds(image: QImage | np.ndarray, search_bounds: Optional[QRe
     max_content_column = x_max - np.argmax(np.flip(content_columns)) - 1
     if search_bounds is None:
         search_bounds = QRect(0, 0, np_image.shape[1], np_image.shape[0])
-    left = min_content_column
-    top = min_content_row
+    left = int(min_content_column)
+    top = int(min_content_row)
     width = max_content_column - min_content_column + 1
     height = max_content_row - min_content_row + 1
     logger.debug(f'image_content_bounds: searched {search_bounds.width()}x{search_bounds.height()} region at '
@@ -121,6 +124,7 @@ def get_standard_qt_icon(icon_code: QStyle.StandardPixmap, style_source: Optiona
         style = QApplication.style()
     else:
         style = style_source.style()
+    assert style is not None
     return style.standardIcon(icon_code)
 
 

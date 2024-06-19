@@ -57,7 +57,9 @@ class PolygonOutline(QGraphicsItemGroup):
         self._color = QColor(Qt.GlobalColor.black)
         if polygons is not None:
             self.load_polygons(polygons)
-        view.scene().addItem(self)
+        scene = view.scene()
+        assert scene is not None
+        scene.addItem(self)
 
     def _get_pen(self) -> QPen:
         offset = self._dash_offset
@@ -75,6 +77,7 @@ class PolygonOutline(QGraphicsItemGroup):
         return self._pen
 
     def move_to(self, pos: QPointF) -> None:
+        """Updates the group position, ensuring the offset is applied to all polygons."""
         transform = QTransform()
         offset = pos + self.pos()
         transform.translate(offset.x(), offset.y())

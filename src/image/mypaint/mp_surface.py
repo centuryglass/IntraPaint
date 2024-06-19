@@ -1,16 +1,18 @@
 """A Python wrapper for libmypaint image surface data."""
 import math
+from ctypes import sizeof, pointer, byref, c_float, c_double, c_int, POINTER, c_void_p
 from time import time
 from typing import Any, Optional
-from ctypes import sizeof, POINTER, pointer, byref, c_float, c_double, c_int
+
 from PyQt5.QtCore import Qt, QObject, QPoint, QSize, QRect, pyqtSignal
 from PyQt5.QtGui import QImage, QColor
-from src.image.mypaint.mp_brush import MPBrush
-from src.image.mypaint.mp_tile import MPTile
+
 from src.image.mypaint.libmypaint import libmypaint, MyPaintTiledSurface, MyPaintTileRequestStartFunction, \
     MyPaintTileRequestEndFunction, MyPaintSurfaceDestroyFunction, \
     MyPaintTileRequest, TilePixelBuffer, TILE_DIM, \
     RectangleBuffer, MyPaintRectangles, RECTANGLE_BUF_SIZE, c_uint16_p
+from src.image.mypaint.mp_brush import MPBrush
+from src.image.mypaint.mp_tile import MPTile
 
 
 class MPSurface(QObject):
@@ -59,7 +61,7 @@ class MPSurface(QObject):
         if size is not None and not size.isEmpty():
             self.reset_surface(size)
 
-        def on_tile_request_start(_, request: POINTER(MyPaintTileRequest)) -> None:
+        def on_tile_request_start(_, request: c_void_p) -> None:
             """Locate or create the required tile and pass it back to libmypaint when a tile operation starts."""
             tx = request[0].tx
             ty = request[0].ty
@@ -69,8 +71,7 @@ class MPSurface(QObject):
                 tile = self.get_tile_from_idx(tx, ty, True)
             request[0].buffer = c_uint16_p(tile.get_bits(False))
 
-        def on_tile_request_end(_: POINTER(MyPaintTiledSurface),
-                                request: POINTER(MyPaintTileRequest)) -> None:
+        def on_tile_request_end(_, request: c_void_p) -> None:
             """Update tile cache and send an update signal when a tile painting operation finishes."""
             tx = request[0].tx
             ty = request[0].ty
@@ -251,8 +252,8 @@ class MPSurface(QObject):
         tile_buffer_type = TilePixelBuffer * num_tiles
         self._tile_buffer = tile_buffer_type()
 
-    def render_image(self, destination_image: Optional[QImage] = None, source: QRect = None,
-                     destination: QRect = None) -> QImage:
+    def render_image(self, destination_image: Optional[QImage] = None, source: Optional[QRect] = None,
+                     destination: Optional[QRect] = None) -> QImage:
         """Combines all tiles into a single QImage. This operation does no scaling; any surface data that does not 
         overlap with the image bounds will not be copied.
         
