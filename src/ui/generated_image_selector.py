@@ -142,7 +142,7 @@ class GeneratedImageSelector(QWidget):
             self._page_top_layout.addWidget(self._selection_outline_checkbox)
             # zoom to changed area:
             change_bounds = layer_stack.selection_layer.get_selection_gen_area(True)
-            if change_bounds != layer_stack.generation_area:
+            if change_bounds != layer_stack.generation_area and change_bounds is not None:
                 change_bounds.translate(-layer_stack.generation_area.x(), -layer_stack.generation_area.y())
                 self._change_bounds = change_bounds
                 self._change_zoom_checkbox = connected_checkbox(None, AppConfig.SELECTION_SCREEN_ZOOMS_TO_CHANGED,
