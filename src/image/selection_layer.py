@@ -56,6 +56,7 @@ class SelectionLayer(ImageLayer):
         super().__init__(size, SELECTION_LAYER_NAME, False)
         self.opacity = MASK_OPACITY_DEFAULT
         self._bounding_box = None
+        self._outer_bounds = QRect()
         generation_window_signal.connect(self.update_generation_area)
 
     def update_generation_area(self, new_area: QRect) -> None:
@@ -95,6 +96,7 @@ class SelectionLayer(ImageLayer):
             image_ptr.setsize(image.byteCount())
             np_image = np.ndarray(shape=(image.height(), image.width(), 4), dtype=np.uint8, buffer=image_ptr)
         generation_area = self._generation_area
+        self._outer_bounds = image_content_bounds(np_image, QRect(QPoint(), self.size), ALPHA_THRESHOLD)
         bounds = image_content_bounds(np_image, generation_area, ALPHA_THRESHOLD)
         if bounds.isNull():
             self._bounding_box = None
@@ -179,14 +181,17 @@ class SelectionLayer(ImageLayer):
         np_image[masked, 2] = 255  # red
         np_image[masked, 3] = 255
 
+        cropped = np_image[self._outer_bounds.y():self._outer_bounds.height() + self._outer_bounds.y(),
+                           self._outer_bounds.x():self._outer_bounds.width() + self._outer_bounds.x(), :]
         # Find edge polygons:
         self._outline_polygons = []
-        gray = cv2.cvtColor(np_image[:, :, :3], cv2.COLOR_BGR2GRAY)
+        gray = cv2.cvtColor(cropped[:, :, :3], cv2.COLOR_BGR2GRAY)
         contours, _ = cv2.findContours(gray, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
         for contour in contours:
             polygon = QPolygonF()
             for point in contour:
-                polygon.append(QPointF(point[0][0] + 0.5, point[0][1] + 0.5))
+                polygon.append(QPointF(point[0][0] + 0.5 + self._outer_bounds.x(),
+                                       point[0][1] + 0.5 + self._outer_bounds.y()))
             self._outline_polygons.append(polygon)
 
     def get_selection_gen_area(self, ignore_config: bool = False) -> Optional[QRect]:

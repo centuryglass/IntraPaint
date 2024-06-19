@@ -471,8 +471,3 @@ class StableDiffusionController(BaseInpaintController):
         if config.get(AppConfig.BATCH_SIZE) < 5:
             config.set(AppConfig.BATCH_SIZE, 5)
         image_size = self._layer_stack.size
-        if image_size.width() < 1200 and image_size.height() < 1200:
-            config.set(AppConfig.EDIT_SIZE, image_size)
-        else:
-            size = QSize(min(image_size.width(), 1024), min(image_size.height(), 1024))
-            config.set(AppConfig.EDIT_SIZE, size)

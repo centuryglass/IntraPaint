@@ -132,6 +132,8 @@ class ConfigEntry:
             if isinstance(self._value, dict):
                 return None if inner_key not in self._value else self._value[inner_key]
             raise TypeError(f'Tried to read {self._key}.{inner_key} from type {type(self._value)}')
+        if isinstance(self._value, QSize):
+            return QSize(self._value)
         return self._value
 
     @property

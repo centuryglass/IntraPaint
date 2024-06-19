@@ -230,7 +230,7 @@ class LayerStack(QObject):
                     self._generation_area = next_bounds
                     self.generation_area_bounds_changed.emit(next_bounds)
                     if next_bounds.size() != prev_bounds.size():
-                        AppConfig.instance().set(AppConfig.EDIT_SIZE, self._generation_area.size())
+                        AppConfig.instance().set(AppConfig.EDIT_SIZE, QSize(self._generation_area.size()))
 
             action_type = 'layer_stack.generation_area'
             with last_action() as prev_action:
@@ -930,5 +930,5 @@ class LayerStack(QObject):
             last_bounds = self._generation_area
             self._generation_area = bounds_rect
             if bounds_rect.size() != last_bounds.size():
-                AppConfig.instance().set(AppConfig.EDIT_SIZE, bounds_rect.size())
+                AppConfig.instance().set(AppConfig.EDIT_SIZE, QSize(bounds_rect.size()))
             self.generation_area_bounds_changed.emit(bounds_rect)
