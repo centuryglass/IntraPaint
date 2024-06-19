@@ -180,10 +180,11 @@ class GridContainer(QWidget):
 
         if self._fill_vertical:
             row_count = max(self.height() // self._children[-1].sizeHint().height(), 1)
-            column_count = max(min(math.ceil(len(self._children) / row_count), max_cols), min_cols)
+            column_count = max(min_cols, min(max_cols, math.ceil(len(self._children) / row_count)))
         elif self._fill_horizontal:
-            column_count = max(min(self.width() // self._children[-1].sizeHint().width(), max_cols), min_cols)
-            while (self._children[-1].sizeHint().width() * column_count) >= self.width() and column_count > min_cols:
+            child_width = max(self._children[-1].sizeHint().width(), self._children[-1].width())
+            column_count = max(min_cols, min(max_cols, self.width() // child_width))
+            while (child_width * column_count) >= self.width() and column_count > min_cols:
                 column_count -= 1
         else:
             full_area = self.width() * self.height()
@@ -203,6 +204,10 @@ class GridContainer(QWidget):
             logger.error(f'{self._min_columns}-{self._max_columns} columns and {self._min_rows}-{self._max_rows} cannot'
                          f' fit {len(self._children)} with size {self._children[-1].sizeHint()} within {self.size()}')
             column_count = min_cols
+
+        row_count = math.ceil(len(self._children) / column_count)
+        child_bounds = QRect(0, 0, self.width() // column_count, self.height() // row_count)
+        exact_child_bounds = get_scaled_placement(child_bounds, self._children[-1].size(), 0)
         for i, child in enumerate(self._children):
             row = i // column_count
             col = i % column_count

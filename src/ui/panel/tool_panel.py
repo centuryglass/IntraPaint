@@ -21,6 +21,7 @@ from src.ui.widget.bordered_widget import BorderedWidget
 from src.ui.widget.collapsible_box import CollapsibleBox
 from src.ui.widget.grid_container import GridContainer
 from src.ui.widget.key_hint_label import KeyHintLabel
+from src.ui.widget.reactive_layout_widget import ReactiveLayoutWidget
 from src.util.geometry_utils import get_scaled_placement
 from src.util.screen_size import get_screen_size
 
@@ -35,6 +36,8 @@ LAYER_PANEL_MIN_HEIGHT = 0
 TOOL_LIST_STRETCH = 2
 TOOL_PANEL_STRETCH = 30
 LAYER_PANEL_STRETCH = 3
+
+MIN_SIZE_FOR_TOOL_LABEL = QSize(600, 600)
 
 
 class ToolPanel(QWidget):
@@ -83,7 +86,7 @@ class ToolPanel(QWidget):
         self._active_tool: Optional[BaseTool] = None
         self._active_tool_panel: Optional[QWidget] = None
 
-        self._tool_control_box = BorderedWidget()
+        self._tool_control_box = ReactiveLayoutWidget()
         self._tool_control_box.contents_margin = 0
         self._tool_control_layout = QVBoxLayout(self._tool_control_box)
         self._tool_control_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -91,6 +94,7 @@ class ToolPanel(QWidget):
         self._tool_control_label.setStyleSheet("text-decoration: bold;")
         self._tool_control_label.setAlignment(Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignTop)
         self._tool_control_layout.addWidget(self._tool_control_label, stretch=0)
+        self._tool_control_box.add_visibility_limit(self._tool_control_label, MIN_SIZE_FOR_TOOL_LABEL)
         
         self._tool_control_box.setSizePolicy(QSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding))
 
@@ -126,6 +130,7 @@ class ToolPanel(QWidget):
         add_tool(generation_area_tool)
         self._event_handler.register_tool_delegate(brush_tool, eyedropper_tool, Qt.KeyboardModifier.ControlModifier)
         self._switch_active_tool(Cache.instance().get(Cache.LAST_ACTIVE_TOOL))
+        Cache.instance().connect(self, Cache.LAST_ACTIVE_TOOL, self._switch_active_tool)
         self.resizeEvent(None)
         self.set_orientation(Qt.Orientation.Vertical)
 

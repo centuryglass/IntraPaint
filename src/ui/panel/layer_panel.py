@@ -3,17 +3,20 @@
 from typing import Optional, List, Callable
 
 from PyQt5.QtCore import Qt, QRect, QSize, QPoint
-from PyQt5.QtGui import QPainter, QColor, QPaintEvent, QMouseEvent
+from PyQt5.QtGui import QPainter, QColor, QPaintEvent, QMouseEvent, QIcon
 from PyQt5.QtSvg import QSvgWidget
 from PyQt5.QtWidgets import QWidget, QLabel, QVBoxLayout, QHBoxLayout, QScrollArea, QSizePolicy, QPushButton, QMenu, \
     QToolButton
 
+from src.config.cache import Cache
 from src.image.image_layer import ImageLayer
 from src.image.layer_stack import LayerStack
-from src.util.geometry_utils import get_scaled_placement, get_rect_transformation
-from src.util.screen_size import get_screen_size
+from src.tools.selection_tool import SELECTION_TOOL_LABEL
 from src.ui.widget.bordered_widget import BorderedWidget
-from src.util.image_utils import get_character_icon, get_transparency_tile_pixmap
+from src.ui.widget.editable_label import EditableLabel
+from src.util.geometry_utils import get_scaled_placement, get_rect_transformation
+from src.util.image_utils import get_transparency_tile_pixmap
+from src.util.screen_size import get_screen_size
 
 LIST_SPACING = 4
 MIN_VISIBLE_LAYERS = 3
@@ -24,15 +27,15 @@ ICON_PATH_HIDDEN_LAYER = 'resources/icons/layer/hidden.svg'
 
 WINDOW_TITLE = 'Image Layers'
 
-ADD_BUTTON_LABEL = '+'
+ADD_BUTTON_ICON = 'resources/icons/layer/plus_icon.svg'
 ADD_BUTTON_TOOLTIP = 'Create a new layer above the current active layer.'
-DELETE_BUTTON_LABEL = '-'
+DELETE_BUTTON_ICON = 'resources/icons/layer/minus_icon.svg'
 DELETE_BUTTON_TOOLTIP = 'Delete the active layer.'
-LAYER_UP_BUTTON_LABEL = '↑'
+LAYER_UP_BUTTON_ICON = 'resources/icons/layer/up_icon.svg'
 LAYER_UP_BUTTON_TOOLTIP = 'Move the active layer up.'
-LAYER_DOWN_BUTTON_LABEL = '↓'
+LAYER_DOWN_BUTTON_ICON = 'resources/icons/layer/down_icon.svg'
 LAYER_DOWN_BUTTON_TOOLTIP = 'Move the active layer down.'
-MERGE_DOWN_BUTTON_LABEL = '⇓'
+MERGE_DOWN_BUTTON_ICON = 'resources/icons/layer/merge_down_icon.svg'
 MERGE_DOWN_BUTTON_TOOLTIP = 'Merge the active layer with the one below it.'
 MERGE_BUTTON_LABEL = 'Merge Down'
 
@@ -121,24 +124,27 @@ class LayerPanel(QWidget):
         self._button_bar = QWidget()
         self._layout.addWidget(self._button_bar)
         self._button_bar_layout = QHBoxLayout(self._button_bar)
+        self._button_bar_layout.setSpacing(2)
+        self._button_bar_layout.setContentsMargins(2, 2, 2, 2)
 
-        def _create_button(text: str, tooltip: str, action: Callable[[], None]) -> QPushButton:
+        def _create_button(icon_path: str, tooltip: str, action: Callable[[], None]) -> QPushButton:
             button = QToolButton()
-            button.setText(text)
             button.setToolTip(tooltip)
-            button.setIcon(get_character_icon(text, self.palette().color(self.foregroundRole())))
+            icon = QIcon(icon_path)
+            button.setIcon(icon)
+            button.setToolButtonStyle(Qt.ToolButtonIconOnly)
             button.clicked.connect(lambda: action())
             self._button_bar_layout.addWidget(button)
             return button
 
-        self._add_button = _create_button(ADD_BUTTON_LABEL, ADD_BUTTON_TOOLTIP, self._layer_stack.create_layer)
-        self._delete_button = _create_button(DELETE_BUTTON_LABEL, DELETE_BUTTON_TOOLTIP, self._layer_stack.remove_layer)
-        self._move_up_button = _create_button(LAYER_UP_BUTTON_LABEL, LAYER_UP_BUTTON_TOOLTIP,
+        self._add_button = _create_button(ADD_BUTTON_ICON, ADD_BUTTON_TOOLTIP, self._layer_stack.create_layer)
+        self._delete_button = _create_button(DELETE_BUTTON_ICON, DELETE_BUTTON_TOOLTIP, self._layer_stack.remove_layer)
+        self._move_up_button = _create_button(LAYER_UP_BUTTON_ICON, LAYER_UP_BUTTON_TOOLTIP,
                                               lambda: self._layer_stack.move_layer(-1))
-        self._move_up_button = _create_button(LAYER_DOWN_BUTTON_LABEL, LAYER_DOWN_BUTTON_TOOLTIP,
+        self._move_up_button = _create_button(LAYER_DOWN_BUTTON_ICON, LAYER_DOWN_BUTTON_TOOLTIP,
                                               lambda: self._layer_stack.move_layer(1))
 
-        self._merge_down_button = _create_button(MERGE_DOWN_BUTTON_LABEL, MERGE_DOWN_BUTTON_TOOLTIP,
+        self._merge_down_button = _create_button(MERGE_DOWN_BUTTON_ICON, MERGE_DOWN_BUTTON_TOOLTIP,
                                                  self._layer_stack.merge_layer_down)
 
     def resizeEvent(self, event):
@@ -178,8 +184,14 @@ class _LayerItem(BorderedWidget):
         self._layer_stack = layer_stack
         self._layout = QHBoxLayout(self)
         self._layout.addStretch(40)
-        self._label = QLabel(layer.name, self)
-        self._label.setAlignment(Qt.AlignmentFlag.AlignLeft)
+        if layer == layer_stack.selection_layer:
+            self._label = QLabel(layer.name, self)
+            self._label.setAlignment(Qt.AlignmentFlag.AlignLeft)
+        else:
+            self._label = EditableLabel(layer.name, self)
+            self._label.text_changed.connect(self.rename_layer)
+            self._label.set_alignment(Qt.AlignmentFlag.AlignLeft)
+
         self._layout.addWidget(self._label, stretch=40)
         self._layer.content_changed.connect(self.update)
         self._layer.visibility_changed.connect(self.update)
@@ -241,6 +253,10 @@ class _LayerItem(BorderedWidget):
             painter.fillRect(paint_bounds, QColor.fromRgb(0, 0, 0, 100))
         super().paintEvent(event)
 
+    def rename_layer(self, new_name: str) -> None:
+        """Update the layer name."""
+        self._layer.name = new_name
+
     def sizeHint(self) -> QSize:
         """Returns a reasonable default size."""
         width = DEFAULT_LIST_SIZE.width()
@@ -271,7 +287,7 @@ class _LayerItem(BorderedWidget):
     def mousePressEvent(self, event: Optional[QMouseEvent]) -> None:
         """Activate layer on click."""
         if self._layer == self._layer_stack.selection_layer:
-            print('TODO: activate mask tool on mask layer click')
+            Cache.instance().set(Cache.LAST_ACTIVE_TOOL, SELECTION_TOOL_LABEL)
         elif not self.active and event.button() == Qt.MouseButton.LeftButton:
             self._layer_stack.active_layer = self._layer
             self.active = True

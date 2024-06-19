@@ -1,7 +1,7 @@
 """An image editing tool that moves the selected editing region."""
 from typing import Optional, Dict
 
-from PyQt5.QtCore import Qt, QPoint, QRect, QRectF, QPointF
+from PyQt5.QtCore import Qt, QPoint, QRect, QRectF, QPointF, QSizeF
 from PyQt5.QtGui import QCursor, QIcon, QPixmap, QImage, QPainter, \
     QKeySequence
 from PyQt5.QtWidgets import QWidget, QLabel, QGraphicsPixmapItem, QGraphicsItem, QSpinBox, QDoubleSpinBox, \
@@ -46,16 +46,11 @@ class LayerTransformTool(BaseTool):
         self._layer_stack = layer_stack
         self._image_viewer = image_viewer
         self._icon = QIcon(RESOURCES_TRANSFORM_TOOL_ICON)
-        self._transform_outline = TransformOutline()
+        self._transform_outline = TransformOutline(QRect())
         self._transform_outline.transform_changed.connect(self._transformation_change_slot)
         self._transform_pixmap = QGraphicsPixmapItem(self._transform_outline)
-        self._transform_pixmap.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIgnoresParentOpacity)
-        self._transform_outline.setVisible(False)
         image_viewer.scene().addItem(self._transform_outline)
-        self.cursor = QCursor(Qt.CursorShape.OpenHandCursor)
-        self._dragging = False
-        self._last_mouse_pos: Optional[QPoint] = None
-        self._initial_layer_offset: Optional[QPoint] = None
+        self.cursor = QCursor(Qt.CursorShape.CrossCursor)
         self._active_layer_id = None if layer_stack.active_layer is None else layer_stack.active_layer.id
 
         # prepare control panel, wait to fully initialize
@@ -253,7 +248,6 @@ class LayerTransformTool(BaseTool):
             layer.visibility_changed.connect(self._layer_visibility_slot)
             layer.bounds_changed.connect(self._layer_bounds_change_slot)
             layer.content_changed.connect(self._layer_content_change_slot)
-            self._transform_outline.setRect(QRectF(layer.geometry))
         else:
             self._transform_pixmap.setPixmap(QPixmap())
             self._transform_outline.setVisible(False)
@@ -263,28 +257,11 @@ class LayerTransformTool(BaseTool):
         layer = self._layer_stack.get_layer_by_id(self._active_layer_id)
         if layer is None:
             return
-        initial_bounds = self._transform_outline.rect()
-        bounds = self._transform_outline.mapRectToScene(initial_bounds)
-        print(f'drawing bounds {bounds} from {initial_bounds}')
-        transform_image = QImage(bounds.size().toSize(), QImage.Format.Format_ARGB32_Premultiplied)
-        transform_image.fill(Qt.GlobalColor.transparent)
-        # Temporarily hide everything else in the scene:
-        opacity_map: Dict[QGraphicsItem: float] = {}
-        for item in self._image_viewer.scene().items():
-            opacity_map[item] = item.opacity()
-            item.setOpacity(0.0)
-        self._transform_pixmap.setOpacity(1.0)
-        self._image_viewer.scene().update()
-        # Render the scene into the image:
-        painter = QPainter(transform_image)
-        self._image_viewer.scene().render(painter, QRectF(QPoint(), bounds.size()), bounds)
-        painter.end()
-        # Restore previous scene item visibility:
-        for scene_item, opacity in opacity_map.items():
-            scene_item.setOpacity(opacity)
         source_image = layer.qimage
         source_pos = layer.position
-        transform_pos = bounds.topLeft().toPoint()
+        transform_image = self._transform_outline.render()
+        transform_pos = self._transform_outline.mapToScene(
+            self._transform_outline.rect()).boundingRect().topLeft().toPoint()
 
         def _transform(pos=transform_pos, img=transform_image) -> None:
             if img is not None:
@@ -303,8 +280,23 @@ class LayerTransformTool(BaseTool):
 
     def _reload_scene_item(self):
         """Reset all transformations and reload the scene pixmap from the layer."""
-        self._transform_outline.clearTransformations()
         layer = self._layer_stack.active_layer
+
+        # Clear old transform outline:
+        self._transform_outline.transform_changed.disconnect(self._transformation_change_slot)
+        scene = self._transform_outline.scene()
+        if scene is not None:
+            scene.removeItem(self._transform_outline)
+
+        # Re-create for new layer:
+        self._transform_outline = TransformOutline(QRectF() if layer is None else layer.geometry)
+        self._transform_outline.transform_changed.connect(self._transformation_change_slot)
+        self._transform_pixmap = QGraphicsPixmapItem(self._transform_outline)
+        self._transform_pixmap.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIgnoresParentOpacity)
+        self._transform_outline.setVisible(False)
+        self._image_viewer.scene().addItem(self._transform_outline)
+
+        # Load layer image, set visibility and zValues:
         if layer is None or layer.id != self._active_layer_id:
             self._transform_pixmap.setPixmap(QPixmap())
             self._transform_outline.setVisible(False)
@@ -314,8 +306,8 @@ class LayerTransformTool(BaseTool):
             self._transform_pixmap.setPixmap(QPixmap())
             self._transform_outline.setVisible(False)
         else:
-            self._transform_outline.setRect(QRectF(layer.geometry))
             self._transform_pixmap.setPixmap(layer.pixmap)
+            self._transform_pixmap.setPos(layer.position)
             self._transform_outline.setVisible(layer.visible)
             self._transform_outline.setZValue(-self._layer_stack.get_layer_index(layer))
 
@@ -332,7 +324,6 @@ class LayerTransformTool(BaseTool):
         self.set_layer(None)
 
     def _active_layer_change_slot(self, layer_id: int, layer_index: int) -> None:
-        print(f'active layer now {layer_id}')
         if layer_id == self._active_layer_id:
             self._transform_outline.setZValue(-layer_index)
         else:

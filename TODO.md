@@ -10,7 +10,6 @@
 
 ## 1280x800 display issues:
 - Text cut off in some tool panels
-- Brush icons stacked in larger lists
 
 # General interface
 - Control Panel cleanup with FormLayout
@@ -24,8 +23,6 @@
     * Improve controls for login and setting server URL
 
 # Layers
-- New layer panel button icons
-- Double click/right click+"rename" to change layer names
 - variable layer opacity support
 - Alternate layer composition modes
 - Layer locking
@@ -37,6 +34,7 @@
 # Stability
 - Unit testing for critical modules
 - Crash handling: have a parent process monitor for crashes, cache data, save as .inpt on crash
+- Eliminate lambdas and clean up connections to fix segfaults on exit.
 
 # Menus
 - Separate "Save" and "Save as"
