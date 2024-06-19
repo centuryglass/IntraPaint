@@ -121,7 +121,7 @@ class BrushPanel(QTabWidget):
     def _add_favorite(self, icon_button: QWidget) -> None:
         if icon_button.saved_name() in AppConfig.instance().get(BrushPanel.FAV_CONFIG_KEY):
             return
-        if BrushPanel.FAV_KEY not in self._layouts:
+        if BrushPanel.FAV_KEY not in self._pages:
             self._create_tab(BrushPanel.FAV_KEY, index=0)
 
         brush_copy = icon_button.copy(True)

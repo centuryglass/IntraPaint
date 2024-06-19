@@ -3,7 +3,7 @@ Draws content to an image layer using basic Qt drawing operations.
 """
 from typing import Optional
 
-from PyQt5.QtCore import QRect, Qt, QPoint, QPointF
+from PyQt5.QtCore import QRect, Qt, QPoint, QPointF, QRectF
 from PyQt5.QtGui import QPainter, QPixmap, QPen
 from PyQt5.QtWidgets import QGraphicsScene, QGraphicsPixmapItem
 
@@ -27,8 +27,10 @@ class PixmapLayerCanvas(LayerCanvas):
         self._last_point: Optional[QPoint] = None
         self._scene = scene
         self.edit_region = edit_region
+        self._change_bounds = QRectF()
 
     def start_stroke(self) -> None:
+        self._change_bounds = QRectF()
         super().start_stroke()
         if self._pixmap_item is not None:
             self._pixmap_item.setOpacity(ACTIVE_PIXMAP_OPACITY)
@@ -37,6 +39,7 @@ class PixmapLayerCanvas(LayerCanvas):
         """Finishes a brush stroke, copying it back to the layer."""
         super().end_stroke()
         self._last_point = None
+        self._change_bounds = QRectF()
         if self._pixmap_item is not None:
             self._pixmap_item.setOpacity(INACTIVE_PIXMAP_OPACITY)
 
@@ -79,12 +82,18 @@ class PixmapLayerCanvas(LayerCanvas):
             size = max(int(size * pressure), 1)
         pen = QPen(self.brush_color, size, Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin)
         painter.setPen(pen)
-        if self._last_point is None:
-            painter.drawPoint(QPointF(x - self.edit_region.x(), y - self.edit_region.y()))
+        change_pt = QPointF(x - self.edit_region.x(), y - self.edit_region.y())
+        last_pt = None if self._last_point is None else QPointF(self._last_point.x() - self.edit_region.x(),
+                                                                self._last_point.y() - self.edit_region.y())
+        if last_pt is None:
+            painter.drawPoint(change_pt)
         else:
-            painter.drawLine(QPointF(self._last_point.x() - self.edit_region.x(),
-                                     self._last_point.y() - self.edit_region.y()),
-                             QPointF(x - self.edit_region.x(), y - self.edit_region.y()))
+            painter.drawLine(last_pt, change_pt)
+        change_bounds = QRectF(change_pt.x() - size, change_pt.y() - size, size * 2, size * 2)
+        if self._change_bounds.isEmpty():
+            self._change_bounds = change_bounds
+        else:
+            self._change_bounds = self._change_bounds.united(change_bounds)
         painter.end()
         self._last_point = QPoint(int(x), int(y))
         self._pixmap_item.setPixmap(pixmap)
@@ -105,18 +114,18 @@ class PixmapLayerCanvas(LayerCanvas):
         """Copies content back to the connected layer."""
         if self._layer is not None and self._layer.visible and self._pixmap_item is not None \
                 and self._edit_region is not None and not self._edit_region.isEmpty():
-            image = self._pixmap_item.pixmap().toImage()
-            prev_image = self._layer.cropped_image_content(self._edit_region)
-            edit_region = self.edit_region
+            change_bounds = self._change_bounds.toAlignedRect()
+            image = self._pixmap_item.pixmap().toImage().copy(change_bounds)
+            prev_image = self._layer.cropped_image_content(change_bounds)
             layer = self._layer
 
             def apply():
                 """Copy the change into the image."""
-                layer.insert_image_content(image, edit_region)
+                layer.insert_image_content(image, change_bounds)
 
             def reverse():
                 """To undo, copy in the cached previous image data."""
-                layer.insert_image_content(prev_image, edit_region)
+                layer.insert_image_content(prev_image, change_bounds)
                 self._load_layer_content(layer)
 
             self._layer.visibility_changed.disconnect(self._load_layer_content)

@@ -295,15 +295,17 @@ class ImageLayer(QObject):
         assert_type(image_data, (QImage, QPixmap, Image.Image))
         assert_type(bounds_rect, QRect)
         self._validate_bounds(bounds_rect)
-        with self.borrow_image() as layer_image:
-            painter = QPainter(layer_image)
-            painter.setCompositionMode(composition_mode)
-            if isinstance(image_data, QPixmap):
-                painter.drawPixmap(bounds_rect, image_data)
-            elif isinstance(image_data, (Image.Image, QImage)):
-                qimage = image_data if isinstance(image_data, QImage) else pil_image_to_qimage(image_data)
-                painter.drawImage(bounds_rect, qimage)
-            painter.end()
+        painter = QPainter(self._image)
+        painter.setCompositionMode(composition_mode)
+        if isinstance(image_data, QPixmap):
+            painter.drawPixmap(bounds_rect, image_data)
+        elif isinstance(image_data, (Image.Image, QImage)):
+            qimage = image_data if isinstance(image_data, QImage) else pil_image_to_qimage(image_data)
+            painter.drawImage(bounds_rect, qimage)
+        painter.end()
+        self._pixmap.invalidate()
+        self._handle_content_change(self._image, bounds_rect)
+        self.content_changed.emit(self)
 
     def clear(self):
         """Replaces all image content with transparency."""
@@ -324,7 +326,7 @@ class ImageLayer(QObject):
             self.qimage = self._image.mirrored(horizontal=False, vertical=True)
         commit_action(_flip, _flip)
 
-    def _handle_content_change(self, image: QImage) -> None:
+    def _handle_content_change(self, image: QImage, change_bounds: Optional[QRect] = None) -> None:
         """Child classes should override to handle changes that they need to make before sending update signals."""
 
     def crop_to_content(self):

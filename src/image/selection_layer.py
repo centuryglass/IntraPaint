@@ -10,7 +10,7 @@ else:
     from typing_extensions import Self
 import logging
 from PyQt5.QtGui import QImage, QPolygonF, QPainter
-from PyQt5.QtCore import QRect, QPoint, QSize, pyqtSignal, QPointF, Qt
+from PyQt5.QtCore import QRect, QPoint, QSize, pyqtSignal, QPointF, Qt, QRectF
 import numpy as np
 import cv2
 from PIL import Image
@@ -156,7 +156,7 @@ class SelectionLayer(ImageLayer):
         """Gets the selection mask as a PIL image mask."""
         return qimage_to_pil_image(self.cropped_image_content(self._generation_area))
 
-    def _handle_content_change(self, image: QImage) -> None:
+    def _handle_content_change(self, image: QImage, change_bounds: Optional[QRect] = None) -> None:
         """When the image updates, ensure that it meets requirements, and recalculate bounds."""
         # Enforce fixed colors, alpha thresholds:
         image_ptr = image.bits()
@@ -169,24 +169,50 @@ class SelectionLayer(ImageLayer):
             self._outline_polygons = []
             return
 
+        if change_bounds is not None:
+            change_bounds.moveTo(change_bounds.x() - self.position.x(), change_bounds.y() - self.position.y())
+            cropped_image = np_image[change_bounds.y():change_bounds.y() + change_bounds.height(),
+                                     change_bounds.x():change_bounds.x() + change_bounds.width(), :]
+        else:
+            cropped_image = np_image
+
         # Areas under ALPHA_THRESHOLD set to (0, 0, 0, 0), areas within the threshold set to #FF0000:
-        masked = np_image[:, :, 3] >= ALPHA_THRESHOLD
+        masked = cropped_image[:, :, 3] >= ALPHA_THRESHOLD
         unmasked = ~masked
         for i in range(4):
-            np_image[unmasked, i] = 0
-        np_image[masked, 0] = 0  # blue
-        np_image[masked, 1] = 0  # green
-        np_image[masked, 2] = 255  # red
-        np_image[masked, 3] = 255
+            cropped_image[unmasked, i] = 0
+        cropped_image[masked, 0] = 0  # blue
+        cropped_image[masked, 1] = 0  # green
+        cropped_image[masked, 2] = 255  # red
+        cropped_image[masked, 3] = 255
+
 
         # Find edge polygons:
-        self._outline_polygons = []
-        gray = cv2.cvtColor(np_image[:, :, :3], cv2.COLOR_BGR2GRAY)
+        if change_bounds is not None:
+            final_bounds = change_bounds
+            polys_to_remove = []
+            for poly in self._outline_polygons:
+                if poly.boundingRect().toAlignedRect().intersects(change_bounds):
+                    final_bounds = final_bounds.united(poly.boundingRect().toAlignedRect().adjusted(-1, -1, 1, 1))
+                    polys_to_remove.append(poly)
+            for poly in polys_to_remove:
+                self._outline_polygons.remove(poly)
+            final_bounds = final_bounds.intersected(QRect(0, 0, self.width, self.height))
+            cropped_image = np_image[final_bounds.y():final_bounds.y() + final_bounds.height(),
+                                     final_bounds.x():final_bounds.x() + final_bounds.width(), :]
+            x_offset = 0.5 + final_bounds.x()
+            y_offset = 0.5 + final_bounds.y()
+        else:
+            self._outline_polygons = []
+            x_offset = 0.5
+            y_offset = 0.5
+        # Extra 0.5 offset puts lines through the center of pixels instead of on left edges.
+        gray = cv2.cvtColor(cropped_image[:, :, :3], cv2.COLOR_BGR2GRAY)
         contours, _ = cv2.findContours(gray, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
         for contour in contours:
             polygon = QPolygonF()
             for point in contour:
-                polygon.append(QPointF(point[0][0] + 0.5, point[0][1] + 0.5))
+                polygon.append(QPointF(point[0][0] + x_offset, point[0][1] + y_offset))
             self._outline_polygons.append(polygon)
 
     def get_selection_gen_area(self, ignore_config: bool = False) -> Optional[QRect]:
