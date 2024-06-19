@@ -1,15 +1,17 @@
 # Development tasks
 
 # Bugs
-- Transparent layers show up in generated images
-- system color picker issues on xfce
+- copy/paste issues in small layers
+- disconnect between EDIT_SIZE in config and layer stack gen area
+- Selection polygons recalculate over entire layer despite actual change bounds being minute
+- frequent segfaults on program termination
 
 ## intermittent, can't reproduce reliably:
 - Keep size on brush change not working (possibly a pressure issue?)
-- Selection tool reverts to 1px
+- Selection tool reverts to 1px, usually after picking image option
 
 ## 1280x800 display issues:
-- Text cut off in some tool panels
+- Text cut off in some tool panels, mainly transform
 
 # General interface
 - Control Panel cleanup with FormLayout
@@ -23,11 +25,12 @@
     * Improve controls for login and setting server URL
 
 # Layers
+- Drag and drop reordering
+- layer name changes should save on layer change
 - variable layer opacity support
 - Alternate layer composition modes
 - Layer locking
 - Transparency locking
-- Drag and drop reordering
 - Rework selection layer panel item
 - Support for extended un-rastered states as GraphicsItems
 
@@ -47,30 +50,36 @@
 - Filters: just throw in whatever fun stuff PIL/CV2 has to offer
 
 # Config
-- Hide startup warnings
-- Preview at final resolution
-- Show selection in previews
+- Hide startup warnings option
 - Automatic metadata updates
 
 # Tools
 ## Image gen area tool
 - generation area to generation size button
 - generation size controls
+- fix ctrl-click panning
 
 ## Selection tool
 - Add mask draw/erase hotkey
 - Add select by color/fill select
 - Allow selection outside of image bounds
+- Optimize outline detection: pixmap canvas should be able to track outlines,
+  only use CV2 for dynamic changes
 
 ## Transform tool
-- List transformations as pixel widths and positions, not as offsets
-- Fix rotation center point issues
+- Misc. edge cases causing transforms to be discarded
+- Add "apply changes" button
+- Better rotation arrows
+- Unique look for origin point
+- Toggle switch for scale/rotate modes
 
 ## Pencil tool
 - Hard-edged drawing via PixmapCanvas
+- Variable opacity/hardness sliders
+- Pressure controls
   
 ## Fill tool
-cv2 probably has good support for this.
+cv2 or PIL probably have good support for this.
 - Color control syncs with brush color
 - Adjustable threshold
 - Toggle: active layer only/all layers
@@ -98,6 +107,7 @@ Alternate brush tools that filter for certain brush types
     * Select
     * Send to new layer
     * Save as file
+- Non-transitory selection tab?
 
 # ControlNet
 - Make "use generation area as control" the default
