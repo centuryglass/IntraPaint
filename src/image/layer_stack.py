@@ -26,7 +26,7 @@ SELECTION_LAYER_FILE_EMBEDDED = 'selection.png'
 class LayerStack(QObject):
     """Manages an edited image composed of multiple layers."""
     visible_content_changed = pyqtSignal()
-    generation_area_bounds_changed = pyqtSignal(QRect, QRect)
+    generation_area_bounds_changed = pyqtSignal(QRect)
     size_changed = pyqtSignal(QSize)
     layer_added = pyqtSignal(ImageLayer, int)
     layer_removed = pyqtSignal(ImageLayer)
@@ -228,7 +228,7 @@ class LayerStack(QObject):
                 """Apply an arbitrary image generation area change."""
                 if self._generation_area != next_bounds:
                     self._generation_area = next_bounds
-                    self.generation_area_bounds_changed.emit(next_bounds, prev_bounds)
+                    self.generation_area_bounds_changed.emit(next_bounds)
                     if next_bounds.size() != prev_bounds.size():
                         AppConfig.instance().set(AppConfig.EDIT_SIZE, self._generation_area.size())
 
@@ -737,6 +737,8 @@ class LayerStack(QObject):
         selection_image = self.selection_layer.qimage.copy()
         new_layer = self._create_layer_internal(None, image_data)
         new_size = new_layer.size
+        gen_area = QRect(self._generation_area)
+        new_gen_area = gen_area.intersected(new_layer.geometry)
 
         def _load():
             self.selection_layer.clear()
@@ -744,6 +746,8 @@ class LayerStack(QObject):
                 self._remove_layer_internal(layer, True)
             self.size = new_size
             self._insert_layer_internal(new_layer, self.count)
+            self._set_generation_area_internal(new_gen_area)
+            print(f'set {new_gen_area}, got {self.generation_area}')
 
         def _undo_load():
             assert self.count == 1, f'Unexpected layer count {self.count} when reversing image load!'
@@ -752,6 +756,7 @@ class LayerStack(QObject):
             for layer in old_layers:
                 self._insert_layer_internal(layer, self.count)
             self.selection_layer.qimage = selection_image
+            self._set_generation_area_internal(gen_area)
 
         commit_action(_load, _undo_load)
 
@@ -924,6 +929,6 @@ class LayerStack(QObject):
         if bounds_rect != self._generation_area:
             last_bounds = self._generation_area
             self._generation_area = bounds_rect
-            self.generation_area_bounds_changed.emit(last_bounds, bounds_rect)
             if bounds_rect.size() != last_bounds.size():
                 AppConfig.instance().set(AppConfig.EDIT_SIZE, bounds_rect.size())
+            self.generation_area_bounds_changed.emit(bounds_rect)

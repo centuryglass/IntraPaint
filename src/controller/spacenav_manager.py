@@ -79,7 +79,7 @@ class SpacenavManager:
 
         self._layer_stack.size_changed.connect(update_image_size)
 
-        def update_generation_area_size(bounds: QRect, _: QRect):
+        def update_generation_area_size(bounds: QRect):
             """Keep tracked image generation area size in sync with the current image generation area."""
             with self._thread_data.lock:
                 if bounds.width() != self._thread_data.w_sel:

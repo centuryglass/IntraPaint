@@ -48,6 +48,7 @@ class LayerTransformTool(BaseTool):
         self._icon = QIcon(RESOURCES_TRANSFORM_TOOL_ICON)
         self._transform_outline = TransformOutline(QRect())
         self._transform_outline.transform_changed.connect(self._transformation_change_slot)
+        self._transform_outline.setVisible(False)
         self._transform_pixmap = QGraphicsPixmapItem(self._transform_outline)
         image_viewer.scene().addItem(self._transform_outline)
         self.cursor = QCursor(Qt.CursorShape.CrossCursor)
