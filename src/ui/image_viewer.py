@@ -87,7 +87,7 @@ class ImageViewer(ImageGraphicsView):
         self._layer_added_slot(layer_stack.selection_layer, -1)
         for i in range(layer_stack.count):
             self._layer_added_slot(layer_stack.get_layer_by_index(i), i)
-        self._image_generation_area_change_slot(layer_stack.generation_area, None)
+        self._image_generation_area_change_slot(layer_stack.generation_area)
         self.resizeEvent(None)
 
     @property
@@ -254,7 +254,7 @@ class ImageViewer(ImageGraphicsView):
         self._update_drawn_borders()
         self.resizeEvent(None)
 
-    def _image_generation_area_change_slot(self, new_rect: QRect, _: Optional[QRect]) -> None:
+    def _image_generation_area_change_slot(self, new_rect: QRect) -> None:
         """Update the viewer content when the image generation area changes."""
         self._generation_area = new_rect
         self._update_drawn_borders()
