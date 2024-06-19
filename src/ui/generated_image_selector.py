@@ -212,7 +212,9 @@ class GeneratedImageSelector(QWidget):
             raise RuntimeError(f'Generating selection outline {idx}, unexpected outline count {len(self._selections)}'
                                f' found.')
         selection_crop = QPolygonF(QRectF(self._layer_stack.generation_area))
-        selection_polys = (poly.intersected(selection_crop) for poly in self._layer_stack.selection_layer.outline)
+        origin = self._layer_stack.generation_area.topLeft()
+        selection_polys = (poly.intersected(selection_crop).translated(-origin.x(), -origin.y())
+                           for poly in self._layer_stack.selection_layer.outline)
         polys = [QPolygonF(poly) for poly in selection_polys]
         outline = PolygonOutline(self._view, polys)
         outline.animated = AppConfig.instance().get(AppConfig.ANIMATE_OUTLINES)
