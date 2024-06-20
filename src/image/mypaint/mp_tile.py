@@ -157,18 +157,24 @@ class MPTile(QGraphicsItem):
         if skip_if_transparent and is_fully_transparent(np_pixels):
             return False  # Don't waste time converting and copying transparent pixels into a transparent image.
         np_pixels = numpy_16bit_to_8bit(np_pixels)
-        min_color_difference = 1.8
 
         if color_correction:
             # Color conversion produces artifacts at tile edges if the data is copied directly.  Avoid this by
             # discarding pixel changes that don't exceed the magnitude of error created by color conversion.
+            min_color_difference = 3.0
+
             def color_difference(color1, color2):
                 """Calculate the color difference between two RGB colors."""
                 return np.linalg.norm(color1 - color2)
 
             for y in range(np_image.shape[0]):
                 for x in range(np_image.shape[1]):
-                    if color_difference(np_image[y, x], np_pixels[y, x]) > min_color_difference:
+                    if np_image[y, x, ALPHA] == 0:
+                        # Don't filter out changes to transparent pixels:
+                        np_image[y, x] = np_pixels[y, x]
+                        continue
+                    color_diff = color_difference(np_image[y, x], np_pixels[y, x])
+                    if color_diff > min_color_difference:
                         np_image[y, x] = np_pixels[y, x]
         else:
             np.copyto(np_image, np_pixels)

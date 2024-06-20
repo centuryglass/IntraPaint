@@ -38,6 +38,7 @@ class ResizeCanvasModal(QDialog):
         title.setText(WINDOW_TITLE)
 
         # Main controls:
+        self._image = qimage
         current_width = qimage.width()
         current_height = qimage.height()
 
@@ -50,66 +51,8 @@ class ResizeCanvasModal(QDialog):
         self._y_offset_box = LabeledSpinbox(self, Y_OFFSET_LABEL, Y_OFFSET_TOOLTIP, -current_height, 0,
                                             current_height)
 
-        class _PreviewWidget(QWidget):
-            """Shows a preview of how the image will look after the canvas is resized."""
-
-            def __init__(self,
-                         parent: Optional[QWidget],
-                         width_box: LabeledSpinbox,
-                         height_box: LabeledSpinbox,
-                         x_offset_box: LabeledSpinbox,
-                         y_offset_box: LabeledSpinbox) -> None:
-                super().__init__(parent)
-                self._image_bounds: Optional[QRect] = None
-                self._canvas_bounds: Optional[QRect] = None
-                self._width_box = width_box
-                self._height_box = height_box
-                self._x_offset_box = x_offset_box
-                self._y_offset_box = y_offset_box
-                self.resizeEvent(None)
-
-            def resizeEvent(self, unused_event: Optional[QResizeEvent]) -> None:
-                """Recalculate bounds on widget size update."""
-                width = self._width_box.spinbox.value()
-                height = self._height_box.spinbox.value()
-                x_off = self._x_offset_box.spinbox.value()
-                y_off = self._y_offset_box.spinbox.value()
-                image_rect = QRect(0, 0, current_width, current_height)
-                canvas_rect = QRect(-x_off, -y_off, width, height)
-                full_rect = image_rect.united(canvas_rect)
-                if (full_rect.x() != 0) or (full_rect.y() != 0):
-                    rect_offset = QPoint(-full_rect.x(), -full_rect.y())
-                    for r in [full_rect, image_rect, canvas_rect]:
-                        r.translate(rect_offset)
-                draw_area = get_scaled_placement(QRect(0, 0, self.width(), self.height()), full_rect.size())
-                scale = draw_area.width() / full_rect.width()
-
-                def get_draw_rect(src: QRect) -> QRect:
-                    """Converts full image coordinates to preview drawing coordinates."""
-                    return QRect(draw_area.x() + int(src.x() * scale),
-                                 draw_area.y() + int(src.y() * scale),
-                                 int(src.width() * scale),
-                                 int(src.height() * scale))
-
-                self._image_bounds = get_draw_rect(image_rect)
-                self._canvas_bounds = get_draw_rect(canvas_rect)
-                self.update()
-
-            def paintEvent(self, unused_event: Optional[QPaintEvent]) -> None:
-                """Draw image with proposed changes to canvas bounds."""
-                if self._canvas_bounds is None:
-                    return
-                painter = QPainter(self)
-                line_pen = QPen(Qt.GlobalColor.black, 2, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap,
-                                Qt.PenJoinStyle.RoundJoin)
-                painter.setPen(line_pen)
-                painter.fillRect(self._canvas_bounds, Qt.GlobalColor.darkGray)
-                if self._image_bounds is not None:
-                    painter.drawImage(self._image_bounds, qimage)
-                    painter.drawRect(self._canvas_bounds)
-                    painter.drawRect(self._image_bounds)
-
-        self._preview = _PreviewWidget(self, self._width_box, self._height_box, self._x_offset_box, self._y_offset_box)
+        self._preview = _PreviewWidget(self, qimage, self._width_box, self._height_box, self._x_offset_box,
+                                       self._y_offset_box)
 
         def _on_dim_change(old_value: int | float,
                            new_value: int | float,
@@ -137,18 +80,13 @@ class ResizeCanvasModal(QDialog):
 
         center_button.clicked.connect(center)
 
-        def on_select(resize: bool) -> None:
-            """Save inputs and close on cancel/confirm"""
-            self._resize = resize
-            self.hide()
-
         self._resize_button = QPushButton(self)
         self._resize_button.setText(RESIZE_BUTTON_LABEL)
-        self._resize_button.clicked.connect(lambda: on_select(True))
+        self._resize_button.clicked.connect(self._confirm)
 
         self._cancel_button = QPushButton(self)
         self._cancel_button.setText(CANCEL_BUTTON_LABEL)
-        self._cancel_button.clicked.connect(lambda: on_select(False))
+        self._cancel_button.clicked.connect(self._cancel)
 
         option_bar = QWidget(self)
         layout = QHBoxLayout(option_bar)
@@ -172,6 +110,25 @@ class ResizeCanvasModal(QDialog):
         self.setLayout(self._layout)
         self.resizeEvent(None)
 
+    def _confirm(self) -> None:
+        self._resize = True
+        self.hide()
+
+    def _cancel(self) -> None:
+        self._resize = False
+        self.hide()
+
+    def _center(self) -> None:
+        """Adjust offsets to center existing image content in the canvas."""
+        current_width = self._qimage.width()
+        current_height = self._qimage.height()
+        width = self._width_box.spinbox.value()
+        height = self._height_box.spinbox.value()
+        x_off = (width // 2) - (current_width // 2)
+        y_off = (height // 2) - (current_height // 2)
+        self._x_offset_box.spinbox.setValue(x_off)
+        self._y_offset_box.spinbox.setValue(y_off)
+
     def resizeEvent(self, unused_event: Optional[QResizeEvent]) -> None:
         """Recalculate preview bounds on resize."""
         min_preview = math.ceil(min(self.width(), self.height()) * 0.8)
@@ -185,3 +142,67 @@ class ResizeCanvasModal(QDialog):
             offset = QPoint(self._x_offset_box.spinbox.value(), self._y_offset_box.spinbox.value())
             return new_size, offset
         return None, None
+
+
+class _PreviewWidget(QWidget):
+    """Shows a preview of how the image will look after the canvas is resized."""
+
+    def __init__(self,
+                 parent: Optional[QWidget],
+                 image: QImage,
+                 width_box: LabeledSpinbox,
+                 height_box: LabeledSpinbox,
+                 x_offset_box: LabeledSpinbox,
+                 y_offset_box: LabeledSpinbox) -> None:
+        super().__init__(parent)
+        self._qimage = image
+        self._image_bounds: Optional[QRect] = None
+        self._canvas_bounds: Optional[QRect] = None
+        self._width_box = width_box
+        self._height_box = height_box
+        self._x_offset_box = x_offset_box
+        self._y_offset_box = y_offset_box
+        self.resizeEvent(None)
+
+    def resizeEvent(self, unused_event: Optional[QResizeEvent]) -> None:
+        """Recalculate bounds on widget size update."""
+        width = self._width_box.spinbox.value()
+        height = self._height_box.spinbox.value()
+        x_off = self._x_offset_box.spinbox.value()
+        y_off = self._y_offset_box.spinbox.value()
+        current_width = self._qimage.width()
+        current_height = self._qimage.height()
+        image_rect = QRect(0, 0, current_width, current_height)
+        canvas_rect = QRect(-x_off, -y_off, width, height)
+        full_rect = image_rect.united(canvas_rect)
+        if (full_rect.x() != 0) or (full_rect.y() != 0):
+            rect_offset = QPoint(-full_rect.x(), -full_rect.y())
+            for r in [full_rect, image_rect, canvas_rect]:
+                r.translate(rect_offset)
+        draw_area = get_scaled_placement(QRect(0, 0, self.width(), self.height()), full_rect.size())
+        scale = draw_area.width() / full_rect.width()
+
+        def get_draw_rect(src: QRect) -> QRect:
+            """Converts full image coordinates to preview drawing coordinates."""
+            return QRect(draw_area.x() + int(src.x() * scale),
+                         draw_area.y() + int(src.y() * scale),
+                         int(src.width() * scale),
+                         int(src.height() * scale))
+
+        self._image_bounds = get_draw_rect(image_rect)
+        self._canvas_bounds = get_draw_rect(canvas_rect)
+        self.update()
+
+    def paintEvent(self, unused_event: Optional[QPaintEvent]) -> None:
+        """Draw image with proposed changes to canvas bounds."""
+        if self._canvas_bounds is None:
+            return
+        painter = QPainter(self)
+        line_pen = QPen(Qt.GlobalColor.black, 2, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap,
+                        Qt.PenJoinStyle.RoundJoin)
+        painter.setPen(line_pen)
+        painter.fillRect(self._canvas_bounds, Qt.GlobalColor.darkGray)
+        if self._image_bounds is not None:
+            painter.drawImage(self._image_bounds, self._qimage)
+            painter.drawRect(self._canvas_bounds)
+            painter.drawRect(self._image_bounds)

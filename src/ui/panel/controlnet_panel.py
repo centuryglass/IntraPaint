@@ -7,7 +7,7 @@ from PyQt5.QtWidgets import QVBoxLayout, QHBoxLayout, QCheckBox, QPushButton, QL
 from src.ui.widget.collapsible_box import CollapsibleBox
 from src.ui.widget.label_wrapper import LabelWrapper
 from src.ui.widget.param_slider import ParamSlider
-from src.ui.config_control_setup import connected_checkbox
+from src.ui.config_control_setup import ConnectedCheckbox
 from src.config.application_config import AppConfig
 from src.util.shared_constants import CONTROLNET_REUSE_IMAGE_CODE
 from src.util.validation import assert_type
@@ -110,10 +110,11 @@ class ControlnetPanel(CollapsibleBox):
         enabled_checkbox.setText(ENABLE_CONTROLNET_CHECKBOX_LABEL)
         checkbox_row.addWidget(enabled_checkbox)
 
-        vram_checkbox = connected_checkbox(self, config_key, text=LOW_VRAM_LABEL, inner_key=CONTROL_CONFIG_LOW_VRAM_KEY)
+        vram_checkbox = ConnectedCheckbox(config_key, parent=self, label_text=LOW_VRAM_LABEL,
+                                          inner_key=CONTROL_CONFIG_LOW_VRAM_KEY)
         checkbox_row.addWidget(vram_checkbox)
 
-        px_perfect_checkbox = connected_checkbox(self, config_key, text=PX_PERFECT_CHECKBOX_LABEL,
+        px_perfect_checkbox = ConnectedCheckbox(config_key, parent=self, label_text=PX_PERFECT_CHECKBOX_LABEL,
                                                  inner_key=CONTROL_CONFIG_PX_PERFECT_KEY)
         checkbox_row.addWidget(px_perfect_checkbox)
 

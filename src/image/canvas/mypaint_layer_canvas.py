@@ -167,8 +167,10 @@ class MyPaintLayerCanvas(LayerCanvas):
                     continue
                 destination_x = int(tile.x() - self._mp_surface.scene_position.x() - change_x)
                 destination_y = int(tile.y() - self._mp_surface.scene_position.y() - change_y)
-                tile.copy_tile_into_image(tile_change_image, destination=QRect(destination_x, destination_y,
-                                                                               tile.size.width(), tile.size.height()))
+                tile.copy_tile_into_image(tile_change_image,
+                                          destination=QRect(destination_x, destination_y,
+                                                            tile.size.width(), tile.size.height()),
+                                          color_correction=True)
             reverse_image = self._layer.cropped_image_content(self._last_stroke_bounds)
             layer = self._layer
 

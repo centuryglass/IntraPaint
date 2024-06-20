@@ -14,7 +14,7 @@ from PyQt5.QtWidgets import QMainWindow, QGridLayout, QLabel, QWidget, QPushButt
 from src.config.application_config import AppConfig
 from src.hotkey_filter import HotkeyFilter
 from src.image.layer_stack import LayerStack
-from src.ui.config_control_setup import connected_textedit, connected_spinbox, connected_checkbox
+from src.ui.config_control_setup import connected_textedit, connected_spinbox, ConnectedCheckbox
 from src.ui.generated_image_selector import GeneratedImageSelector
 from src.ui.panel.image_panel import ImagePanel
 from src.ui.panel.layer_panel import LayerPanel
@@ -226,7 +226,7 @@ class MainWindow(QMainWindow):
 
         skip_steps_spinbox = connected_spinbox(inpaint_panel, AppConfig.SKIP_STEPS)
 
-        enable_scale_checkbox = connected_checkbox(inpaint_panel, AppConfig.INPAINT_FULL_RES)
+        enable_scale_checkbox = ConnectedCheckbox(AppConfig.INPAINT_FULL_RES, parent=inpaint_panel)
         enable_scale_checkbox.setText(config.get_label(AppConfig.INPAINT_FULL_RES))
 
         upscale_mode_label = QLabel(inpaint_panel)

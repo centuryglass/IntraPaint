@@ -10,7 +10,7 @@ from src.config.key_config import KeyConfig
 from src.image.canvas.pixmap_layer_canvas import PixmapLayerCanvas
 from src.image.layer_stack import LayerStack
 from src.tools.canvas_tool import CanvasTool
-from src.ui.config_control_setup import connected_spinbox, connected_checkbox
+from src.ui.config_control_setup import connected_spinbox, ConnectedCheckbox
 from src.ui.image_viewer import ImageViewer
 from src.ui.widget.dual_toggle import DualToggle
 from src.ui.widget.param_slider import ParamSlider
@@ -111,7 +111,7 @@ class SelectionTool(CanvasTool):
         padding_line_layout = QHBoxLayout(padding_line)
         padding_checkbox_label = QLabel(config.get_label(AppConfig.INPAINT_FULL_RES))
         padding_line_layout.addWidget(padding_checkbox_label)
-        padding_checkbox = connected_checkbox(padding_line, AppConfig.INPAINT_FULL_RES)
+        padding_checkbox = ConnectedCheckbox(AppConfig.INPAINT_FULL_RES, padding_line)
         padding_line_layout.addWidget(padding_checkbox)
         padding_line_layout.addStretch(100)
         padding_label = QLabel(config.get_label(AppConfig.INPAINT_FULL_RES_PADDING))

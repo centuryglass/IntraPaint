@@ -4,7 +4,7 @@ from PyQt5.QtWidgets import QDialog, QLabel, QVBoxLayout, QPushButton, QComboBox
 from PyQt5.QtCore import QSize
 
 from src.config.cache import Cache
-from src.ui.config_control_setup import connected_combobox, connected_checkbox, connected_spinbox
+from src.ui.config_control_setup import connected_combobox, connected_spinbox, ConnectedCheckbox
 from src.ui.widget.labeled_spinbox import LabeledSpinbox
 from src.config.application_config import AppConfig
 
@@ -86,8 +86,9 @@ class ImageScaleModal(QDialog):
 
         # Add controlnet upscale option:
         if Cache.instance().get(Cache.CONTROLNET_VERSION) > 0:
-            self._controlnet_checkbox = connected_checkbox(self, AppConfig.CONTROLNET_UPSCALING,
-                                                           text=CONTROLNET_TILE_LABEL)
+            self._controlnet_checkbox = ConnectedCheckbox(AppConfig.CONTROLNET_UPSCALING,
+                                                          parent=self,
+                                                          label_text=CONTROLNET_TILE_LABEL)
             self._controlnet_rate_box = connected_spinbox(self, AppConfig.CONTROLNET_DOWNSAMPLE_RATE)
             self._controlnet_rate_box.setEnabled(config.get(AppConfig.CONTROLNET_UPSCALING))
             self._controlnet_checkbox.stateChanged.connect(self._controlnet_rate_box.setEnabled)

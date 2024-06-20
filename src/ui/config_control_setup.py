@@ -152,33 +152,30 @@ def connected_textedit(parent: Optional[QWidget],
     return textedit
 
 
-def connected_checkbox(parent: Optional[QWidget],
-                       key: str,
-                       text: Optional[str] = None,
-                       inner_key: Optional[str] = None) -> QCheckBox:
-    """Creates a checkbox widget connected to a boolean config property.
+class ConnectedCheckbox(QCheckBox):
+    """A checkbox directly connected to a config property."""
 
-    Parameters
-    ----------
-    parent : QWidget or None
-        Optional parent widget.
-    key : str
-        Boolean config value to connect to the checkbox.
-    text : str or None
-        Optional label text
-    inner_key : str or none
-        If not None, the checkbox will be connected to the inner property of a dict config value.
-    """
-    config = _get_config(key)
-    checkbox = QCheckBox(parent)
-    checkbox.setChecked(bool(config.get(key, inner_key)))
-    checkbox.stateChanged.connect(lambda is_checked: config.set(key, bool(is_checked), inner_key=inner_key))
-    config.connect(checkbox, key, lambda is_checked: checkbox.setChecked(bool(is_checked)), inner_key=inner_key)
-    if text is not None:
-        checkbox.setText(text)
-    if inner_key is None:
-        checkbox.setToolTip(config.get_tooltip(key))
-    return checkbox
+    def __init__(self, config_key: str, parent: Optional[QWidget] = None, label_text: Optional[str] = None,
+                 inner_key: Optional[str] = None) -> None:
+        super().__init__(parent)
+        self._key = config_key
+        self._inner_key = inner_key
+        self._config = _get_config(config_key)
+        self.setChecked(bool(self._config.get(config_key, inner_key=inner_key)))
+        self._config.connect(self, config_key, self._on_config_change, inner_key=inner_key)
+        self.stateChanged.connect(self._on_check_state_change)
+        if label_text is not None:
+            self.setText(label_text)
+        if inner_key is None:
+            self.setToolTip(self._config.get_tooltip(config_key))
+
+    def _on_config_change(self, bool_property_value: bool) -> None:
+        if self.isChecked() != bool_property_value:
+            self.setChecked(bool_property_value)
+
+    def _on_check_state_change(self, is_checked: bool) -> None:
+        if self._config.get(self._key, inner_key=self._inner_key) != is_checked:
+            self._config.set(self._key, is_checked, inner_key=self._inner_key)
 
 
 def connected_combobox(parent: Optional[QWidget],

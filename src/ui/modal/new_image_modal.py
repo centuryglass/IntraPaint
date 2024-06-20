@@ -31,24 +31,27 @@ class NewImageModal(QDialog):
         self._height_box = LabeledSpinbox(self, HEIGHT_LABEL, HEIGHT_TOOLTIP, MIN_PX_VALUE, default_height,
                                           MAX_PX_VALUE)
 
-        def on_select(create_new: bool) -> None:
-            """Set selected option and close on cancel/confirm"""
-            self._create = create_new
-            self.hide()
-
         self._create_button = QPushButton(self)
         self._create_button.setText(CREATE_BUTTON_TEXT)
-        self._create_button.clicked.connect(lambda: on_select(True))
+        self._create_button.clicked.connect(self._confirm)
 
         self._cancel_button = QPushButton(self)
         self._cancel_button.setText(CANCEL_BUTTON_TEXT)
-        self._cancel_button.clicked.connect(lambda: on_select(False))
+        self._cancel_button.clicked.connect(self._cancel)
 
         self._layout = QVBoxLayout()
         for widget in [self._title, self._width_box, self._height_box, self._create_button, self._cancel_button]:
             self._layout.addWidget(widget)
 
         self.setLayout(self._layout)
+
+    def _confirm(self) -> None:
+        self._create = True
+        self.hide()
+
+    def _cancel(self) -> None:
+        self._create = False
+        self.hide()
 
     def show_image_modal(self) -> Optional[QSize]:
         """Shows the modal, then returns the user-entered size when closed."""

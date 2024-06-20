@@ -15,7 +15,7 @@ from PyQt5.QtWidgets import QWidget, QGraphicsPixmapItem, QVBoxLayout, QLabel, \
 from src.config.application_config import AppConfig
 from src.config.key_config import KeyConfig
 from src.image.layer_stack import LayerStack
-from src.ui.config_control_setup import connected_checkbox
+from src.ui.config_control_setup import ConnectedCheckbox
 from src.ui.graphics_items.loading_spinner import LoadingSpinner
 from src.ui.graphics_items.outline import Outline
 from src.ui.graphics_items.polygon_outline import PolygonOutline
@@ -137,9 +137,8 @@ class GeneratedImageSelector(QWidget):
         # Add extra checkboxes when inpainting:
         if config.get(AppConfig.EDIT_MODE) == MODE_INPAINT:
             # show/hide selection outlines:
-            self._selection_outline_checkbox = connected_checkbox(None,
-                                                                  AppConfig.SHOW_SELECTIONS_IN_GENERATION_OPTIONS,
-                                                                  SHOW_SELECTION_OUTLINES_LABEL)
+            self._selection_outline_checkbox = ConnectedCheckbox(AppConfig.SHOW_SELECTIONS_IN_GENERATION_OPTIONS,
+                                                                  label_text=SHOW_SELECTION_OUTLINES_LABEL)
             self._selection_outline_checkbox.toggled.connect(self.set_selection_outline_visibility)
             self._page_top_layout.addWidget(self._selection_outline_checkbox)
             # zoom to changed area:
@@ -147,8 +146,8 @@ class GeneratedImageSelector(QWidget):
             if change_bounds != layer_stack.generation_area and change_bounds is not None:
                 change_bounds.translate(-layer_stack.generation_area.x(), -layer_stack.generation_area.y())
                 self._change_bounds = change_bounds
-                self._change_zoom_checkbox = connected_checkbox(None, AppConfig.SELECTION_SCREEN_ZOOMS_TO_CHANGED,
-                                                                CHANGE_ZOOM_CHECKBOX_LABEL)
+                self._change_zoom_checkbox = ConnectedCheckbox(AppConfig.SELECTION_SCREEN_ZOOMS_TO_CHANGED,
+                                                               label_text=CHANGE_ZOOM_CHECKBOX_LABEL)
                 self._change_zoom_checkbox.toggled.connect(self.zoom_to_changes)
                 self._page_top_layout.addWidget(self._change_zoom_checkbox)
 
