@@ -11,7 +11,7 @@ from PyQt5.QtGui import QImage, QIcon, QPixmap, QPainter, QColor
 from PyQt5.QtWidgets import QStyle, QWidget, QApplication
 
 from src.image.mypaint.numpy_image_utils import AnyNpArray
-from src.util.font_size import max_font_size
+from src.util.display_size import max_font_size
 
 logger = logging.getLogger(__name__)
 DEFAULT_ICON_SIZE = QSize(64, 64)

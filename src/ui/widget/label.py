@@ -8,7 +8,7 @@ from PyQt5.QtGui import QPainter, QPixmap, QPainterPath, QTransform, QFont, QCol
 from PyQt5.QtWidgets import QLabel, QSizePolicy, QWidget
 
 from src.config.application_config import AppConfig
-from src.util.font_size import find_text_size
+from src.util.display_size import find_text_size
 
 
 class Label(QLabel):

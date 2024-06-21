@@ -19,7 +19,7 @@ class ParamSlider(QWidget):
 
     def __init__(self,
                  parent: Optional[QWidget],
-                 label_text: str,
+                 label_text: Optional[str],
                  key: str,
                  min_val: Optional[int | float] = None,
                  max_val: Optional[int | float] = None,
@@ -58,7 +58,13 @@ class ParamSlider(QWidget):
         self._step_box: Optional[BigIntSpinbox | QDoubleSpinBox] = None
         config = AppConfig.instance()
 
-        self._label = Label(label_text, self, size=vertical_text_pt, orientation=orientation)
+        self._label_text = None
+        if label_text is not None:
+            self._label = Label(label_text, self, size=vertical_text_pt, orientation=orientation)
+            if label_text != config.get_label(key):
+                self._label_text = label_text
+        else:
+            self._label = None
         self._horizontal_slider = QSlider(Qt.Orientation.Horizontal, self)
         self._vertical_slider = QSlider(Qt.Orientation.Vertical, self)
 
@@ -121,7 +127,8 @@ class ParamSlider(QWidget):
         self._inner_key = inner_key
         config = AppConfig.instance()
         if inner_key is None:
-            self._label.setText(config.get_label(key))
+            if self._label is not None and self._label_text is None:
+                self._label.setText(config.get_label(key))
             self.setToolTip(config.get_tooltip(key))
         initial_value = config.get(key, inner_key)
         self._float_mode = isinstance(initial_value, float)
@@ -158,17 +165,14 @@ class ParamSlider(QWidget):
 
     def sizeHint(self) -> QSize:
         """Returns ideal widget size based on contents."""
+        label_height = 0 if self._label is None else self._label.sizeHint().height()
+        label_width = 0 if self._label is None else self._label.sizeHint().width()
         if self._orientation == Qt.Orientation.Vertical:
-            return QSize(max(self._vertical_slider.sizeHint().width(),
-                             self._label.sizeHint().width(),
-                             self._spinbox_measurements.width()),
-                         self._vertical_slider.sizeHint().height() + self._label.sizeHint().height() +
-                         self._spinbox_measurements.height())
+            return QSize(max(self._vertical_slider.sizeHint().width(), label_width, self._spinbox_measurements.width()),
+                         self._vertical_slider.sizeHint().height() + label_height + self._spinbox_measurements.height())
         # horizontal
-        return QSize(self._horizontal_slider.sizeHint().width() + self._label.sizeHint().width() +
-                     self._spinbox_measurements.width(),
-                     max(self._horizontal_slider.sizeHint().height(),
-                         self._label.sizeHint().height(),
+        return QSize(self._horizontal_slider.sizeHint().width() + label_width + self._spinbox_measurements.width(),
+                     max(self._horizontal_slider.sizeHint().height(), label_height,
                          self._spinbox_measurements.height()))
 
     def resizeEvent(self, unused_event: Optional[QEvent]) -> None:
@@ -176,16 +180,18 @@ class ParamSlider(QWidget):
         if self._step_box is None:
             return
         if self._orientation == Qt.Orientation.Vertical:
-            label_height = self._label.sizeHint().height()
+            label_height = 0 if self._label is None else self._label.sizeHint().height()
             number_height = self._step_box.sizeHint().height()
-            self._label.setGeometry(0, 0, self.width(), label_height)
+            if self._label is not None:
+                self._label.setGeometry(0, 0, self.width(), label_height)
             self._step_box.setGeometry(0, self.height() - number_height, self.width(), number_height)
             self._vertical_slider.setGeometry(0, label_height, self.width(),
                                               self.height() - label_height - number_height - 5)
         else:  # horizontal
-            label_width = self._label.sizeHint().width()
+            label_width = 0 if self._label is None else self._label.sizeHint().width()
             number_width = self._spinbox_measurements.width()
-            self._label.setGeometry(0, 0, label_width, self.height())
+            if self._label is not None:
+                self._label.setGeometry(0, 0, label_width, self.height())
             self._step_box.setGeometry(self.width() - number_width, 0, number_width, self.height())
             self._horizontal_slider.setGeometry(label_width, 0, self.width() - label_width - number_width - 5,
                                                 self.height())
@@ -203,7 +209,8 @@ class ParamSlider(QWidget):
             self._horizontal_slider.setVisible(True)
             self._vertical_slider.setVisible(False)
             self.setSizePolicy(QSizePolicy(QSizePolicy.Ignored, QSizePolicy.Fixed))
-        self._label.set_orientation(orientation)
+        if self._label is not None:
+            self._label.set_orientation(orientation)
         self.update()
 
     def _on_slider_change(self, new_value: int) -> None:

@@ -21,7 +21,7 @@ from src.config.application_config import AppConfig
 from src.ui.modal.settings_modal import SettingsModal
 from src.ui.window.stable_diffusion_main_window import StableDiffusionMainWindow
 from src.ui.modal.modal_utils import show_error_dialog
-from src.util.screen_size import get_screen_size
+from src.util.display_size import get_screen_size
 from src.controller.base_controller import BaseInpaintController, MENU_TOOLS
 from src.api.a1111_webservice import A1111Webservice
 from src.util.menu_action import menu_action

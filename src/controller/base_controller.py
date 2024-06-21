@@ -27,7 +27,7 @@ from src.ui.modal.resize_canvas_modal import ResizeCanvasModal
 from src.ui.modal.image_scale_modal import ImageScaleModal
 from src.ui.modal.modal_utils import show_error_dialog, request_confirmation, open_image_file
 from src.ui.modal.settings_modal import SettingsModal
-from src.util.screen_size import get_screen_size
+from src.util.display_size import get_screen_size
 from src.util.image_utils import pil_image_to_qimage, qimage_to_pil_image
 from src.util.shared_constants import EDIT_MODE_INPAINT
 

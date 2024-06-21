@@ -22,7 +22,7 @@ from src.ui.widget.grid_container import GridContainer
 from src.ui.widget.key_hint_label import KeyHintLabel
 from src.ui.widget.reactive_layout_widget import ReactiveLayoutWidget
 from src.util.geometry_utils import get_scaled_placement
-from src.util.screen_size import get_screen_size
+from src.util.display_size import get_window_size
 
 TOOL_PANEL_TITLE = 'Tools'
 LIST_SPACING = 10
@@ -36,7 +36,7 @@ TOOL_LIST_STRETCH = 2
 TOOL_PANEL_STRETCH = 30
 LAYER_PANEL_STRETCH = 3
 
-MIN_SIZE_FOR_TOOL_LABEL = QSize(600, 600)
+MIN_SIZE_FOR_TOOL_LABEL = QSize(600, 500)
 
 
 class ToolPanel(QWidget):
@@ -238,7 +238,7 @@ class ToolPanel(QWidget):
         active_tool = None if tool_label not in self._tools else self._tools[tool_label]
         self._active_tool = active_tool
         if active_tool is not None:
-            self._tool_control_label.setText(f'{active_tool.label}\n{active_tool.get_tooltip_text()}')
+            self._tool_control_label.setText(f'{active_tool.label} - {active_tool.get_tooltip_text()}')
             for label, widget in [*self._tool_widgets.items(), *self._toolbar_tool_widgets.items()]:
                 widget.is_active = label == tool_label
             self._update_cursor()
@@ -307,10 +307,10 @@ class _ToolButton(QWidget):
 
     def sizeHint(self) -> QSize:
         """Returns ideal size as TOOL_ICON_SIZExTOOL_ICON_SIZE."""
-        screen = get_screen_size(self)
-        if screen is None:
+        window_size = get_window_size()
+        if window_size.isEmpty():
             return QSize(TOOL_ICON_SIZE, TOOL_ICON_SIZE)
-        size = max(min(screen.width() // 30, screen.height() // 30), TOOL_ICON_SIZE)
+        size = max(min(window_size.width() // 30, window_size.height() // 30), TOOL_ICON_SIZE)
         return QSize(int(size * 1.5), size)
 
     def resizeEvent(self, event: Optional[QResizeEvent]):

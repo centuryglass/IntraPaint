@@ -14,14 +14,15 @@ from src.image.layer_stack import LayerStack
 from src.tools.selection_tool import SELECTION_TOOL_LABEL
 from src.ui.widget.bordered_widget import BorderedWidget
 from src.ui.widget.editable_label import EditableLabel
+from src.util.display_size import find_text_size
 from src.util.geometry_utils import get_scaled_placement, get_rect_transformation
 from src.util.image_utils import get_transparency_tile_pixmap
-from src.util.screen_size import get_screen_size
-
 LIST_SPACING = 4
 MIN_VISIBLE_LAYERS = 3
-DEFAULT_LIST_ITEM_SIZE = QSize(350, 60)
-DEFAULT_LIST_SIZE = QSize(380, 400)
+PREVIEW_SIZE = QSize(80, 80)
+ICON_SIZE = QSize(32, 32)
+LAYER_PADDING = 10
+MAX_WIDTH = PREVIEW_SIZE.width() + ICON_SIZE.width() + LAYER_PADDING * 2 + 400
 ICON_PATH_VISIBLE_LAYER = 'resources/icons/layer/visible.svg'
 ICON_PATH_HIDDEN_LAYER = 'resources/icons/layer/hidden.svg'
 
@@ -82,11 +83,16 @@ class LayerPanel(QWidget):
         self._layer_list = BorderedWidget(self)
         self._list_layout = QVBoxLayout(self._layer_list)
         self._list_layout.setSpacing(LIST_SPACING)
+        self._layer_list.contents_margin = LAYER_PADDING
         self._list_layout.setAlignment(cast(Qt.Alignment, Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignTop))
 
         self._scroll_area = QScrollArea(self)
         self._scroll_area.setWidgetResizable(True)
+        self._scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self._scroll_area.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
+        self._scroll_area.horizontalScrollBar().rangeChanged.connect(self.resizeEvent)
+        self._scroll_area.horizontalScrollBar().setMinimum(0)
+        self._scroll_area.horizontalScrollBar().setMaximum(0)
         self._scroll_area.setAlignment(cast(Qt.Alignment, Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignTop))
         self._scroll_area.setWidget(self._layer_list)
 
@@ -124,12 +130,13 @@ class LayerPanel(QWidget):
         self._button_bar = QWidget()
         self._layout.addWidget(self._button_bar)
         self._button_bar_layout = QHBoxLayout(self._button_bar)
-        self._button_bar_layout.setSpacing(2)
-        self._button_bar_layout.setContentsMargins(2, 2, 2, 2)
+        self._button_bar_layout.setSpacing(0)
+        self._button_bar_layout.setContentsMargins(0, 0, 0, 0)
 
         def _create_button(icon_path: str, tooltip: str, action: Callable[[], None]) -> QPushButton:
             button = QToolButton()
             button.setToolTip(tooltip)
+            button.setContentsMargins(0, 0, 0, 0)
             icon = QIcon(icon_path)
             button.setIcon(icon)
             button.setToolButtonStyle(Qt.ToolButtonIconOnly)
@@ -152,15 +159,34 @@ class LayerPanel(QWidget):
         if len(self._layer_widgets) > 0:
             self._scroll_area.setMinimumHeight((self._layer_widgets[0].height() + LIST_SPACING)
                                                * min(MIN_VISIBLE_LAYERS, len(self._layer_widgets)))
+        min_scroll_width = self._layer_list.width()
+        vertical_scrollbar = self._scroll_area.verticalScrollBar()
+        if vertical_scrollbar is not None:
+            min_scroll_width += vertical_scrollbar.sizeHint().width()
+        horizontal_scrollbar = self._scroll_area.horizontalScrollBar()
+        if horizontal_scrollbar is not None:
+            horizontal_scrollbar.setRange(0, 0)
+        self._scroll_area.setMinimumWidth(min_scroll_width)
 
     def sizeHint(self) -> QSize:
         """Returns a reasonable default size."""
-        width = DEFAULT_LIST_SIZE.width()
-        height = DEFAULT_LIST_SIZE.height()
-        screen = get_screen_size(self)
-        if screen is not None:
-            width = min(width, screen.width() // 20)
-            height = min(height, screen.height() // 16)
+        layer_width = 0
+        layer_height = 0
+        for layer_widget in self._layer_widgets:
+            size = find_text_size(layer_widget.layer.name)
+            layer_width = max(layer_width, size.width())
+            layer_height = max(layer_height, size.height())
+        layer_width += PREVIEW_SIZE.width() + ICON_SIZE.width() + 2 * LAYER_PADDING
+        layer_height = max(layer_height, ICON_SIZE.height(), PREVIEW_SIZE.height())
+        width = min(MAX_WIDTH, layer_width + LAYER_PADDING)
+        height = layer_height * min(MIN_VISIBLE_LAYERS, len(self._layer_widgets)) + LAYER_PADDING
+        scrollbar = self._scroll_area.verticalScrollBar()
+        if scrollbar is not None:
+            width += scrollbar.sizeHint().width()
+
+        bar_size = self._button_bar.sizeHint()
+        height += bar_size.height() + LAYER_PADDING * 2
+        width = max(bar_size.width(), width)
         return QSize(width, height)
 
     def _layer_widget(self, layer: ImageLayer) -> '_LayerItem':
@@ -183,14 +209,16 @@ class _LayerItem(BorderedWidget):
         self._layer = layer
         self._layer_stack = layer_stack
         self._layout = QHBoxLayout(self)
-        self._layout.addStretch(40)
+        self._layout.addSpacing(PREVIEW_SIZE.width())
+        self.setMaximumWidth(MAX_WIDTH)
         if layer == layer_stack.selection_layer:
             self._label = QLabel(layer.name, self)
-            self._label.setAlignment(Qt.AlignmentFlag.AlignLeft)
         else:
             self._label = EditableLabel(layer.name, self)
             self._label.text_changed.connect(self.rename_layer)
-            self._label.set_alignment(Qt.AlignmentFlag.AlignLeft)
+        text_alignment = Qt.AlignmentFlag.AlignCenter
+        self._label.setAlignment(text_alignment)
+        self._label.setWordWrap(True)
 
         self._layout.addWidget(self._label, stretch=40)
         self._layer.content_changed.connect(self.update)
@@ -200,7 +228,7 @@ class _LayerItem(BorderedWidget):
         self._active_color = self.color
         self._inactive_color = self._active_color.darker() if self._active_color.lightness() > 100 \
             else self._active_color.lighter()
-        self.setSizePolicy(QSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.Fixed))
+        self.setSizePolicy(QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Maximum))
         if _LayerItem._layer_transparency_background is None:
             _LayerItem._layer_transparency_background = get_transparency_tile_pixmap(QSize(64, 64))
         self.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
@@ -212,9 +240,14 @@ class _LayerItem(BorderedWidget):
             def __init__(self, connected_layer: ImageLayer) -> None:
                 """Connect to the layer and load the initial icon."""
                 super().__init__()
+                self.setSizePolicy(QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed))
                 self._layer = connected_layer
                 layer.visibility_changed.connect(self._update_icon)
                 self._update_icon()
+
+            def sizeHint(self):
+                """Use a fixed size for icons."""
+                return ICON_SIZE
 
             def _update_icon(self):
                 """Loads the open eye icon if the layer is visible, the closed eye icon otherwise."""
@@ -235,9 +268,9 @@ class _LayerItem(BorderedWidget):
         image_bounds = self._layer_stack.geometry
         layer_bounds = self._layer.geometry
         pixmap = self._layer.pixmap
-        paint_bounds = QRect(0, 0, self._label.x(), self.height())
+        paint_bounds = QRect(LAYER_PADDING, LAYER_PADDING, self._label.x() - LAYER_PADDING * 2,
+                             self.height() - LAYER_PADDING * 2)
         paint_bounds = get_scaled_placement(paint_bounds, content_bounds.size(), 2)
-        paint_bounds.moveLeft(LIST_SPACING)
         transformation = get_rect_transformation(content_bounds, paint_bounds)
         painter = QPainter(self)
         if self._layer != self._layer_stack.selection_layer:
@@ -260,13 +293,13 @@ class _LayerItem(BorderedWidget):
 
     def sizeHint(self) -> QSize:
         """Returns a reasonable default size."""
-        width = DEFAULT_LIST_SIZE.width()
-        height = min(DEFAULT_LIST_SIZE.height(), self._label.sizeHint().height() * 3)
-        screen = get_screen_size(self)
-        if screen is not None:
-            width = min(width, screen.width() // 6)
-            height = min(height, screen.height() // 16)
-        return QSize(width, height)
+        text_size = find_text_size(self.layer.name)
+        layer_width = text_size.width()
+        layer_height = text_size.height()
+        layer_width += PREVIEW_SIZE.width() + ICON_SIZE.width()
+        layer_width = min(layer_width, MAX_WIDTH)
+        layer_height = max(layer_height, ICON_SIZE.height(), PREVIEW_SIZE.height())
+        return QSize(layer_width, layer_height)
 
     @property
     def layer(self) -> ImageLayer:

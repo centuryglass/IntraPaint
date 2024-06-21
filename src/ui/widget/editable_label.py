@@ -37,10 +37,14 @@ class EditableLabel(QWidget):
         self._label.setText(text)
         self._field.setText(text)
 
-    def set_alignment(self, alignment: Qt.AlignmentFlag) -> None:
+    def setAlignment(self, alignment: Qt.AlignmentFlag) -> None:
         """Set the text alignment."""
         self._label.setAlignment(alignment)
         self._field.setAlignment(alignment)
+
+    def setWordWrap(self, enable_word_wrap: bool) -> None:
+        """Enable or disable word wrap (outside of editing mode)."""
+        self._label.setWordWrap(enable_word_wrap)
 
     def is_requesting_input(self) -> bool:
         """Returns whether the label is in input mode."""
@@ -54,6 +58,9 @@ class EditableLabel(QWidget):
             self._label.setText(self._field.text())
             self.text_changed.emit(self._label.text())
         self._switch_to_display_mode()
+        parent = self.parent()
+        if parent is not None:
+            parent.update()
 
     def discard_changes(self) -> None:
         """Stop editing the label and restore the previous text."""

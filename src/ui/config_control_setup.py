@@ -173,9 +173,9 @@ class ConnectedCheckbox(QCheckBox):
         if self.isChecked() != bool_property_value:
             self.setChecked(bool_property_value)
 
-    def _on_check_state_change(self, is_checked: bool) -> None:
+    def _on_check_state_change(self, is_checked: int) -> None:
         if self._config.get(self._key, inner_key=self._inner_key) != is_checked:
-            self._config.set(self._key, is_checked, inner_key=self._inner_key)
+            self._config.set(self._key, bool(is_checked), inner_key=self._inner_key)
 
 
 def connected_combobox(parent: Optional[QWidget],

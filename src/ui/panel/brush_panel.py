@@ -12,9 +12,9 @@ from PyQt5.QtWidgets import QWidget, QTabWidget, QMenu
 
 from src.config.application_config import AppConfig
 from src.image.mypaint.mp_brush import MPBrush
-from src.util.geometry_utils import get_scaled_placement
-from src.util.screen_size import get_screen_size
 from src.ui.widget.grid_container import GridContainer
+from src.util.display_size import get_window_size
+from src.util.geometry_utils import get_scaled_placement
 
 MIN_COLUMNS = 2
 MAX_COLUMNS = 10
@@ -202,13 +202,13 @@ class _IconButton(QWidget):
         self._image_rect = get_scaled_placement(QRect(0, 0, self.width(), self.height()), self._image.size())
 
     def sizeHint(self):
-        """Define suggested button size based on screen size."""
+        """Define suggested button size based on window size."""
         width = self._image.width()
         height = self._image.height()
-        screen = get_screen_size(self)
-        if screen is not None:
-            width = min(width, screen.width() // 30)
-            height = min(height, screen.height() // 30)
+        window_size = get_window_size()
+        if not window_size.isEmpty():
+            width = min(width, window_size.width() // 30)
+            height = min(height, window_size.height() // 30)
             if width < height:
                 height = int(width * self._image.height() / self._image.width())
             else:

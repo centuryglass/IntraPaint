@@ -20,7 +20,7 @@ from src.ui.panel.image_panel import ImagePanel
 from src.ui.panel.layer_panel import LayerPanel
 from src.ui.panel.tool_panel import ToolPanel
 from src.ui.widget.loading_widget import LoadingWidget
-from src.util.screen_size import get_screen_size
+from src.util.display_size import get_screen_size
 
 logger = logging.getLogger(__name__)
 
@@ -44,6 +44,7 @@ class MainWindow(QMainWindow):
         super().__init__()
         self.setWindowIcon(QIcon('resources/icons/app_icon.png'))
         self.setSizePolicy(QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding))
+        self.setMinimumSize(QSize(0, 0))
 
         # Initialize UI/editing data model:
         self._controller = controller

@@ -47,7 +47,10 @@ class ReactiveLayoutWidget(QWidget):
             if not self._is_descendant(widget):
                 continue
             should_show = self.width() >= size.width() and self.height() >= size.height()
-            widget.setVisible(should_show)
+            if should_show:
+                widget.show()
+            else:
+                widget.hide()
 
     def _is_descendant(self, widget: Optional[QWidget]) -> bool:
         widget_iter = widget

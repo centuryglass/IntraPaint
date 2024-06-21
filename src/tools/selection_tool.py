@@ -15,6 +15,10 @@ from src.ui.image_viewer import ImageViewer
 from src.ui.widget.dual_toggle import DualToggle
 from src.ui.widget.param_slider import ParamSlider
 
+SELECTION_CONTROL_LAYOUT_SPACING = 4
+
+SELECTION_SIZE_SHORT_LABEL = 'Size:'
+
 SELECTION_TOOL_LABEL = 'Selection'
 SELECTION_TOOL_TOOLTIP = 'Select areas for editing or inpainting.'
 SELECTION_CONTROL_HINT = 'LMB:select - RMB:1px select -'
@@ -80,11 +84,12 @@ class SelectionTool(CanvasTool):
         config = AppConfig.instance()
         # Initialize control panel on first request:
         control_layout = QVBoxLayout(self._control_panel)
+        control_layout.setSpacing(SELECTION_CONTROL_LAYOUT_SPACING)
+        control_layout.setContentsMargins(0, 0, 0, 0)
         self._control_layout = control_layout
 
         # Size slider:
-        brush_size_slider = ParamSlider(self._control_panel, config.get_label(AppConfig.SELECTION_BRUSH_SIZE),
-                                        AppConfig.SELECTION_BRUSH_SIZE)
+        brush_size_slider = ParamSlider(self._control_panel, SELECTION_SIZE_SHORT_LABEL, AppConfig.SELECTION_BRUSH_SIZE)
         control_layout.addWidget(brush_size_slider)
 
         def update_brush_size(size: int) -> None:
@@ -105,28 +110,34 @@ class SelectionTool(CanvasTool):
 
         tool_toggle.value_changed.connect(set_drawing_tool)
         control_layout.addWidget(tool_toggle)
-        control_layout.addStretch(2)
 
-        padding_line = QWidget()
-        padding_line_layout = QHBoxLayout(padding_line)
-        padding_checkbox_label = QLabel(config.get_label(AppConfig.INPAINT_FULL_RES))
-        padding_line_layout.addWidget(padding_checkbox_label)
-        padding_checkbox = ConnectedCheckbox(AppConfig.INPAINT_FULL_RES, padding_line)
-        padding_line_layout.addWidget(padding_checkbox)
-        padding_line_layout.addStretch(100)
+        padding_checkbox = ConnectedCheckbox(AppConfig.INPAINT_FULL_RES,
+                                             label_text=config.get_label(AppConfig.INPAINT_FULL_RES))
+        control_layout.addWidget(padding_checkbox)
+        padding_line_layout = QHBoxLayout()
+        padding_line_layout.setContentsMargins(0, 0, 0, 0)
+        padding_line_layout.setSpacing(0)
+        padding_line_layout.setAlignment(Qt.AlignmentFlag.AlignLeft)
+
         padding_label = QLabel(config.get_label(AppConfig.INPAINT_FULL_RES_PADDING))
-        padding_line_layout.addWidget(padding_label, stretch=1)
-        padding_spinbox = connected_spinbox(padding_line, AppConfig.INPAINT_FULL_RES_PADDING)
+        padding_line_layout.addWidget(padding_label)
+        padding_spinbox = connected_spinbox(None, AppConfig.INPAINT_FULL_RES_PADDING)
         padding_spinbox.setMinimum(0)
-        padding_line_layout.addWidget(padding_spinbox, stretch=2)
-        full_res_tip = config.get_tooltip(AppConfig.INPAINT_FULL_RES)
+        padding_line_layout.addWidget(padding_spinbox)
+
+        def _show_hide_padding(should_show: bool) -> None:
+            if should_show:
+                padding_label.show()
+                padding_spinbox.show()
+            else:
+                padding_label.hide()
+                padding_spinbox.hide()
+        padding_checkbox.stateChanged.connect(lambda state: _show_hide_padding(bool(state)))
         full_res_padding_tip = config.get_tooltip(AppConfig.INPAINT_FULL_RES_PADDING)
-        for full_res_widget in (padding_checkbox_label, padding_checkbox):
-            full_res_widget.setToolTip(full_res_tip)
         for padding_widget in (padding_label, padding_spinbox):
             padding_widget.setToolTip(full_res_padding_tip)
-        control_layout.addWidget(padding_line)
-        control_layout.addStretch(10)
+        control_layout.addLayout(padding_line_layout)
+        _show_hide_padding(padding_checkbox.isChecked())
 
         clear_selection_button = QPushButton()
         clear_selection_button.setText(CLEAR_BUTTON_LABEL)
@@ -154,12 +165,13 @@ class SelectionTool(CanvasTool):
 
         fill_selection_button.clicked.connect(fill_mask)
 
-        clear_fill_line = QWidget()
-        clear_fill_line_layout = QHBoxLayout(clear_fill_line)
+        clear_fill_line_layout = QHBoxLayout()
+        clear_fill_line_layout.setContentsMargins(0, 0, 0, 0)
+        clear_fill_line_layout.setSpacing(0)
         clear_fill_line_layout.addWidget(clear_selection_button)
         clear_fill_line_layout.addSpacing(10)
         clear_fill_line_layout.addWidget(fill_selection_button)
-        control_layout.addWidget(clear_fill_line)
+        control_layout.addLayout(clear_fill_line_layout)
 
         return self._control_panel
 
