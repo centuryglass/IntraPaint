@@ -21,6 +21,7 @@ from src.ui.panel.layer_panel import LayerPanel
 from src.ui.panel.tool_panel import ToolPanel
 from src.ui.widget.loading_widget import LoadingWidget
 from src.util.display_size import get_screen_size
+from src.util.image_utils import pil_image_to_qimage
 
 logger = logging.getLogger(__name__)
 
@@ -181,6 +182,12 @@ class MainWindow(QMainWindow):
         # Show extra "generate" button only when control panel is tabbed:
         self._tool_panel.show_generate_button(self._control_panel.parent() != self._reactive_widget)
 
+        # Restrict the tool panel to a reasonable portion of the screen:
+        if self._orientation == Qt.Orientation.Vertical:
+            self._tool_panel.setMaximumSize(self.width(), self.height() // 3)
+        else:
+            self._tool_panel.setMaximumSize(self.width() // 2, self.height())
+
     @staticmethod
     def _create_scale_mode_selector(parent: QWidget, config_key: str) -> QComboBox:
         """Returns a combo box that selects between image scaling algorithms."""
@@ -300,7 +307,7 @@ class MainWindow(QMainWindow):
         if self._image_selector is None:
             logger.error(f'Tried to load sample {idx} after sampleSelector was closed')
         else:
-            self._image_selector.add_image_option(image, idx)
+            self._image_selector.add_image_option(pil_image_to_qimage(image), idx)
 
     def set_is_loading(self, is_loading: bool, message: Optional[str] = None) -> None:
         """Sets whether the loading spinner is shown, optionally setting loading spinner message text."""

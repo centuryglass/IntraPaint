@@ -90,7 +90,6 @@ class SelectionTool(CanvasTool):
 
         # Size slider:
         brush_size_slider = ParamSlider(self._control_panel, SELECTION_SIZE_SHORT_LABEL, AppConfig.SELECTION_BRUSH_SIZE)
-        control_layout.addWidget(brush_size_slider)
 
         def update_brush_size(size: int) -> None:
             """Updates the active brush size."""
@@ -102,42 +101,16 @@ class SelectionTool(CanvasTool):
         tool_toggle.set_selected(TOOL_MODE_DRAW)
 
         config.connect(self, AppConfig.SELECTION_BRUSH_SIZE, update_brush_size)
-        control_layout.addWidget(brush_size_slider)
+        control_layout.addWidget(brush_size_slider, stretch=1)
+        control_layout.addStretch(2)
 
         def set_drawing_tool(selected_tool_label: str):
             """Switches the mask tool between draw and erase modes."""
             self._canvas.eraser = selected_tool_label == TOOL_MODE_ERASE
 
         tool_toggle.value_changed.connect(set_drawing_tool)
-        control_layout.addWidget(tool_toggle)
-
-        padding_checkbox = ConnectedCheckbox(AppConfig.INPAINT_FULL_RES,
-                                             label_text=config.get_label(AppConfig.INPAINT_FULL_RES))
-        control_layout.addWidget(padding_checkbox)
-        padding_line_layout = QHBoxLayout()
-        padding_line_layout.setContentsMargins(0, 0, 0, 0)
-        padding_line_layout.setSpacing(0)
-        padding_line_layout.setAlignment(Qt.AlignmentFlag.AlignLeft)
-
-        padding_label = QLabel(config.get_label(AppConfig.INPAINT_FULL_RES_PADDING))
-        padding_line_layout.addWidget(padding_label)
-        padding_spinbox = connected_spinbox(None, AppConfig.INPAINT_FULL_RES_PADDING)
-        padding_spinbox.setMinimum(0)
-        padding_line_layout.addWidget(padding_spinbox)
-
-        def _show_hide_padding(should_show: bool) -> None:
-            if should_show:
-                padding_label.show()
-                padding_spinbox.show()
-            else:
-                padding_label.hide()
-                padding_spinbox.hide()
-        padding_checkbox.stateChanged.connect(lambda state: _show_hide_padding(bool(state)))
-        full_res_padding_tip = config.get_tooltip(AppConfig.INPAINT_FULL_RES_PADDING)
-        for padding_widget in (padding_label, padding_spinbox):
-            padding_widget.setToolTip(full_res_padding_tip)
-        control_layout.addLayout(padding_line_layout)
-        _show_hide_padding(padding_checkbox.isChecked())
+        control_layout.addWidget(tool_toggle, stretch=1)
+        control_layout.addStretch(1)
 
         clear_selection_button = QPushButton()
         clear_selection_button.setText(CLEAR_BUTTON_LABEL)
@@ -171,7 +144,37 @@ class SelectionTool(CanvasTool):
         clear_fill_line_layout.addWidget(clear_selection_button)
         clear_fill_line_layout.addSpacing(10)
         clear_fill_line_layout.addWidget(fill_selection_button)
-        control_layout.addLayout(clear_fill_line_layout)
+        control_layout.addLayout(clear_fill_line_layout, stretch=1)
+
+        padding_checkbox = ConnectedCheckbox(AppConfig.INPAINT_FULL_RES,
+                                             label_text=config.get_label(AppConfig.INPAINT_FULL_RES))
+        control_layout.addWidget(padding_checkbox)
+        padding_line_layout = QHBoxLayout()
+        padding_line_layout.setContentsMargins(0, 0, 0, 0)
+        padding_line_layout.setSpacing(0)
+        padding_line_layout.setAlignment(Qt.AlignmentFlag.AlignLeft)
+
+        padding_label = QLabel(config.get_label(AppConfig.INPAINT_FULL_RES_PADDING))
+        padding_line_layout.addWidget(padding_label)
+        padding_spinbox = connected_spinbox(None, AppConfig.INPAINT_FULL_RES_PADDING)
+        padding_spinbox.setMinimum(0)
+        padding_line_layout.addWidget(padding_spinbox)
+
+        def _show_hide_padding(should_show: bool) -> None:
+            if should_show:
+                padding_label.show()
+                padding_spinbox.show()
+            else:
+                padding_label.hide()
+                padding_spinbox.hide()
+        padding_checkbox.stateChanged.connect(lambda state: _show_hide_padding(bool(state)))
+        full_res_padding_tip = config.get_tooltip(AppConfig.INPAINT_FULL_RES_PADDING)
+        for padding_widget in (padding_label, padding_spinbox):
+            padding_widget.setToolTip(full_res_padding_tip)
+        control_layout.addLayout(padding_line_layout)
+        _show_hide_padding(padding_checkbox.isChecked())
+
+        control_layout.addStretch(5)
 
         return self._control_panel
 

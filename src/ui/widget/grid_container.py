@@ -25,6 +25,8 @@ class GridContainer(QWidget):
         self._max_columns = DEFAULT_MAX
         self._min_rows = 1
         self._min_columns = 1
+        self._rows = DEFAULT_MAX
+        self._columns = DEFAULT_MAX
         self._fill_horizontal = False
         self._fill_vertical = False
 
@@ -116,6 +118,14 @@ class GridContainer(QWidget):
         if self._max_columns < self._min_columns:
             raise ValueError(f'new min {new_min} is less than maximum {self._max_columns}')
         self._update_grid_flow()
+
+    def actual_content_size(self) -> QSize:
+        """Get the size taken by all grid items in their current arrangement."""
+        if len(self._children) == 0:
+            return QSize(0, 0)
+        base_size = self._children[-1].sizeHint()
+        base_size = base_size + QSize(self._layout.spacing(), self._layout.spacing())
+        return QSize(base_size.width() * self._rows, base_size.height() * self._columns)
 
     def resizeEvent(self, event: Optional[QResizeEvent]) -> None:
         """Update grid flow on resize."""
@@ -210,4 +220,8 @@ class GridContainer(QWidget):
             row = i // column_count
             col = i % column_count
             self._layout.addWidget(child, row, col)
+        self._rows = row_count
+        self._columns = column_count
+        content_height = (self._children[-1].sizeHint().height() + self._layout.spacing() * 2) * (row_count + 1)
+        self.setMinimumHeight(content_height)
         self.update()

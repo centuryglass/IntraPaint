@@ -90,9 +90,11 @@ class LayerPanel(QWidget):
         self._scroll_area.setWidgetResizable(True)
         self._scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self._scroll_area.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
-        self._scroll_area.horizontalScrollBar().rangeChanged.connect(self.resizeEvent)
-        self._scroll_area.horizontalScrollBar().setMinimum(0)
-        self._scroll_area.horizontalScrollBar().setMaximum(0)
+        horizontal_scroll_bar = self._scroll_area.horizontalScrollBar()
+        assert horizontal_scroll_bar is not None
+        horizontal_scroll_bar.rangeChanged.connect(self.resizeEvent)
+        horizontal_scroll_bar.setMinimum(0)
+        horizontal_scroll_bar.setMaximum(0)
         self._scroll_area.setAlignment(cast(Qt.Alignment, Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignTop))
         self._scroll_area.setWidget(self._layer_list)
 
@@ -159,7 +161,7 @@ class LayerPanel(QWidget):
         if len(self._layer_widgets) > 0:
             self._scroll_area.setMinimumHeight((self._layer_widgets[0].height() + LIST_SPACING)
                                                * min(MIN_VISIBLE_LAYERS, len(self._layer_widgets)))
-        min_scroll_width = self._layer_list.width()
+        min_scroll_width = self._layer_list.sizeHint().width()
         vertical_scrollbar = self._scroll_area.verticalScrollBar()
         if vertical_scrollbar is not None:
             min_scroll_width += vertical_scrollbar.sizeHint().width()
@@ -179,7 +181,7 @@ class LayerPanel(QWidget):
         layer_width += PREVIEW_SIZE.width() + ICON_SIZE.width() + 2 * LAYER_PADDING
         layer_height = max(layer_height, ICON_SIZE.height(), PREVIEW_SIZE.height())
         width = min(MAX_WIDTH, layer_width + LAYER_PADDING)
-        height = layer_height * min(MIN_VISIBLE_LAYERS, len(self._layer_widgets)) + LAYER_PADDING
+        height = layer_height * max(MIN_VISIBLE_LAYERS, len(self._layer_widgets)) + LAYER_PADDING
         scrollbar = self._scroll_area.verticalScrollBar()
         if scrollbar is not None:
             width += scrollbar.sizeHint().width()
@@ -210,7 +212,6 @@ class _LayerItem(BorderedWidget):
         self._layer_stack = layer_stack
         self._layout = QHBoxLayout(self)
         self._layout.addSpacing(PREVIEW_SIZE.width())
-        self.setMaximumWidth(MAX_WIDTH)
         if layer == layer_stack.selection_layer:
             self._label = QLabel(layer.name, self)
         else:

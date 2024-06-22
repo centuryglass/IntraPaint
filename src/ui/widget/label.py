@@ -1,7 +1,7 @@
 """
 An extended QLabel implementation that supports vertical text.
 """
-from typing import Optional
+from typing import Optional, cast
 
 from PyQt5.QtCore import Qt, QSize, QPointF
 from PyQt5.QtGui import QPainter, QPixmap, QPainterPath, QTransform, QFont, QColor
@@ -68,9 +68,9 @@ class Label(QLabel):
             return
         self._orientation = orientation
         if self._orientation == Qt.Orientation.Vertical:
-            self.setAlignment(Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignHCenter)
+            self.setAlignment(cast(Qt.Alignment, Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignHCenter))
         else:
-            self.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
+            self.setAlignment(cast(Qt.Alignment, Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter))
         if self._text is not None and self._image is not None:
             self._image, self._image_inverted = self._draw_text_pixmaps()
             self._merge_text_and_icon()

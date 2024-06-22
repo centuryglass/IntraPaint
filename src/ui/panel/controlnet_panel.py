@@ -1,14 +1,16 @@
 """
 Panel providing controls for the stable-diffusion ControlNet extension. Only supported by stable_diffusion_controller.
 """
-from typing import Optional
 import logging
-from PyQt5.QtWidgets import QVBoxLayout, QHBoxLayout, QCheckBox, QPushButton, QLineEdit, QComboBox, QSizePolicy, QWidget
+from typing import Optional
+
+from PyQt5.QtWidgets import QVBoxLayout, QHBoxLayout, QCheckBox, QPushButton, QLineEdit, QComboBox, QSizePolicy
+
+from src.config.application_config import AppConfig
+from src.ui.config_control_setup import ConnectedCheckbox
 from src.ui.widget.collapsible_box import CollapsibleBox
 from src.ui.widget.label_wrapper import LabelWrapper
 from src.ui.widget.param_slider import ParamSlider
-from src.ui.config_control_setup import ConnectedCheckbox
-from src.config.application_config import AppConfig
 from src.util.shared_constants import CONTROLNET_REUSE_IMAGE_CODE
 from src.util.validation import assert_type
 

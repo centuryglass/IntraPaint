@@ -60,7 +60,7 @@ class ParamSlider(QWidget):
 
         self._label_text = None
         if label_text is not None:
-            self._label = Label(label_text, self, size=vertical_text_pt, orientation=orientation)
+            self._label: Optional[Label] = Label(label_text, self, size=vertical_text_pt, orientation=orientation)
             if label_text != config.get_label(key):
                 self._label_text = label_text
         else:

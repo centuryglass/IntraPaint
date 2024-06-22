@@ -36,7 +36,7 @@ TOOL_LIST_STRETCH = 2
 TOOL_PANEL_STRETCH = 30
 LAYER_PANEL_STRETCH = 3
 
-MIN_SIZE_FOR_TOOL_LABEL = QSize(600, 500)
+MIN_SIZE_FOR_TOOL_LABEL = QSize(600, 300)
 
 
 class ToolPanel(QWidget):
@@ -95,7 +95,8 @@ class ToolPanel(QWidget):
         self._tool_control_label.setStyleSheet('text-decoration: bold;')
         self._tool_control_label.setAlignment(cast(Qt.Alignment,
                                                    Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignTop))
-        self._tool_control_layout.addWidget(self._tool_control_label, stretch=0)
+        self._tool_control_layout.addWidget(self._tool_control_label, stretch=2)
+        self._tool_control_layout.addStretch(2)
         self._tool_control_box.add_visibility_limit(self._tool_control_label, MIN_SIZE_FOR_TOOL_LABEL)
         
         self._tool_control_box.setSizePolicy(QSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding))
@@ -201,6 +202,8 @@ class ToolPanel(QWidget):
         self._generate_button.setText(generate_label)
         if prev_panel_box is not None:
             prev_panel_box.setParent(None)
+        if self._active_tool_panel is not None and hasattr(self._active_tool_panel, 'set_orientation'):
+            self._active_tool_panel.set_orientation(self._orientation)
         self.updateGeometry()
         self.resizeEvent(None)
 
@@ -248,7 +251,9 @@ class ToolPanel(QWidget):
             if tool_panel is not None:
                 tool_panel.setToolTip(active_tool.get_tooltip_text())
                 self._active_tool_panel = tool_panel
-                self._tool_control_layout.addWidget(tool_panel, stretch=1)
+                self._tool_control_layout.insertWidget(1, tool_panel, stretch=10)
+                if hasattr(tool_panel, 'set_orientation'):
+                    tool_panel.set_orientation(self._orientation)
                 tool_panel.show()
         else:
             self._update_cursor()
@@ -268,7 +273,8 @@ class ToolPanel(QWidget):
         scroll_bar = self._tool_scroll_area.verticalScrollBar()
         if scroll_bar is not None:
             max_width -= scroll_bar.sizeHint().width()
-        self._tool_control_box.setMaximumWidth(max_width)
+        if max_width > 0:
+            self._tool_control_box.setMaximumWidth(max_width)
         show_layer_panel = ((self._orientation == Qt.Orientation.Horizontal and self.width() >= LAYER_PANEL_MIN_WIDTH)
                             or (self._orientation == Qt.Orientation.Vertical
                                 and self.height() >= LAYER_PANEL_MIN_HEIGHT))
@@ -283,6 +289,8 @@ class ToolPanel(QWidget):
             self._layer_panel.setParent(None)
             self._layer_panel = None
 
+        if self._active_tool_panel is not None and hasattr(self._active_tool_panel, 'set_orientation'):
+            self._active_tool_panel.set_orientation(self._orientation)
 
 
 class _ToolButton(QWidget):

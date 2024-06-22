@@ -8,7 +8,7 @@ from typing import Optional, List, Dict
 
 from PyQt5.QtCore import Qt, QRect, QPoint, pyqtSignal, QSize
 from PyQt5.QtGui import QPixmap, QImage, QPainter, QPaintEvent, QMouseEvent, QResizeEvent
-from PyQt5.QtWidgets import QWidget, QTabWidget, QMenu
+from PyQt5.QtWidgets import QWidget, QTabWidget, QMenu, QSizePolicy
 
 from src.config.application_config import AppConfig
 from src.image.mypaint.mp_brush import MPBrush
@@ -50,6 +50,17 @@ class BrushPanel(QTabWidget):
         self._read_order_file(os.path.join(BrushPanel.BRUSH_DIR, BrushPanel.BRUSH_CONF_FILE))
         self._setup_brush_tabs()
         self._setup_favorites_tab()
+
+    def resizeEvent(self, event: Optional[QResizeEvent]) -> None:
+        """Keep the height from extending beyond tab height hints."""
+        max_height = 0
+        for page in self._pages.values():
+            page.resizeEvent(None)
+            max_height = max(max_height, page.actual_content_size().height())
+        tab_bar = self.tabBar()
+        if tab_bar is not None:
+            max_height += tab_bar.sizeHint().height()
+        self.setMaximumHeight(max_height)
 
     def _setup_brush_tabs(self) -> None:
         """Reads in brush files, organizes them into tabs."""
@@ -109,6 +120,7 @@ class BrushPanel(QTabWidget):
             self.addTab(content, tab_name)
         else:
             self.insertTab(index, content, tab_name)
+        content.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Maximum)
 
     def _save_favorite_brushes(self) -> None:
         """Saves favorite brushes to config whenever a favorite is added or removed."""

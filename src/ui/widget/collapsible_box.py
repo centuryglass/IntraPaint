@@ -2,7 +2,7 @@
 A container widget that can be expanded or collapsed.
 Originally adapted from https://stackoverflow.com/a/52617714
 """
-from typing import Optional, Callable, Any, cast
+from typing import Optional, cast
 
 from PyQt5.QtCore import Qt, QSize, pyqtSignal
 from PyQt5.QtGui import QResizeEvent
@@ -180,7 +180,7 @@ class CollapsibleBox(BorderedWidget):
             if show_bar and self._toggle_label is not None:
                 min_width = self._toggle_label.image_size().width() + 2
             for widget in [button_bar, self._toggle_label, self._toggle_button]:
-                if hasattr(widget, 'setMinimumWidth'):
+                if widget is not None and hasattr(widget, 'setMinimumWidth'):
                     widget.setMinimumWidth(min_width)
         if not show_bar:
             self.set_expanded(True)

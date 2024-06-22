@@ -2,13 +2,15 @@
 from typing import Optional
 
 from PyQt5.QtCore import Qt, QPoint
-from PyQt5.QtGui import QIcon, QCursor, QColor, QMouseEvent, QKeySequence
+from PyQt5.QtGui import QIcon, QCursor, QColor, QMouseEvent, QKeySequence, QResizeEvent, QShowEvent
 from PyQt5.QtWidgets import QWidget, QColorDialog
 
 from src.config.cache import Cache
 from src.config.key_config import KeyConfig
 from src.image.layer_stack import LayerStack
 from src.tools.base_tool import BaseTool
+from src.ui.widget.color_picker import ColorPicker
+from src.util.display_size import get_window_size
 
 RESOURCES_EYEDROPPER_ICON = 'resources/icons/eyedropper_icon.svg'
 RESOURCES_EYEDROPPER_CURSOR = 'resources/cursors/eyedropper_cursor.svg'
@@ -54,18 +56,7 @@ class EyedropperTool(BaseTool):
         """Returns a panel providing controls for customizing tool behavior, or None if no such panel is needed."""
         if self._control_panel is not None:
             return self._control_panel
-        cache = Cache.instance()
-        color_dialog = QColorDialog()
-        self._control_panel = color_dialog
-        color_dialog.setOption(QColorDialog.ShowAlphaChannel, True)
-        color_dialog.setOption(QColorDialog.NoButtons, True)
-        color_dialog.setOption(QColorDialog.ColorDialogOption.DontUseNativeDialog, True)
-        initial_color = QColor(cache.get(Cache.LAST_BRUSH_COLOR))
-        color_dialog.setCurrentColor(initial_color)
-        cache.connect(color_dialog, Cache.LAST_BRUSH_COLOR,
-                             lambda color_str: color_dialog.setCurrentColor(QColor(color_str)))
-        color_dialog.currentColorChanged.connect(lambda color: cache.set(Cache.LAST_BRUSH_COLOR,
-                                                                         color.name(QColor.HexArgb)))
+        self._control_panel = _ControlPanel()
         return self._control_panel
 
     def mouse_click(self, event: Optional[QMouseEvent], image_coordinates: QPoint) -> bool:
@@ -76,3 +67,52 @@ class EyedropperTool(BaseTool):
             Cache.instance().set(Cache.LAST_BRUSH_COLOR, color.name(QColor.HexArgb))
             return True
         return False
+
+
+class _ControlPanel(ColorPicker):
+
+    def __init__(self) -> None:
+        super().__init__()
+        self._orientation = Qt.Orientation.Horizontal
+        cache = Cache.instance()
+
+        initial_color = QColor(cache.get(Cache.LAST_BRUSH_COLOR))
+        self.setCurrentColor(initial_color)
+        cache.connect(self, Cache.LAST_BRUSH_COLOR, self._apply_config_color)
+        self.currentColorChanged.connect(_update_config_color)
+
+    def _apply_config_color(self, color_str: str) -> None:
+        self.setCurrentColor(QColor(color_str))
+
+    def set_orientation(self, orientation: Qt.Orientation):
+        """Update the panel layout based on window size and requested orientation."""
+        self._orientation = orientation
+        window_size = get_window_size()
+        panel_size = self.panel_size()
+        if orientation == Qt.Orientation.Vertical:
+            if window_size.height() > panel_size.height() * 6:
+                self.set_vertical_mode()
+            elif window_size.height() > panel_size.height() * 4:
+                self.set_vertical_two_tab_mode()
+            else:
+                self.set_four_tab_mode()
+        elif orientation == Qt.Orientation.Horizontal:
+            if window_size.width() > panel_size.width() * 6:
+                self.set_horizontal_mode()
+            elif window_size.width() > panel_size.width() * 4:
+                self.set_horizontal_two_tab_mode()
+            else:
+                self.set_four_tab_mode()
+
+    def resizeEvent(self, event: Optional[QResizeEvent]) -> None:
+        """Re-apply layout on size change."""
+        self.set_orientation(self._orientation)
+
+    def showEvent(self, event: Optional[QShowEvent]) -> None:
+        """Re-apply layout whenever the panel is shown."""
+        self.set_orientation(self._orientation)
+
+
+def _update_config_color(color: QColor) -> None:
+    cache = Cache.instance()
+    cache.set(Cache.LAST_BRUSH_COLOR, color.name(QColor.HexArgb))

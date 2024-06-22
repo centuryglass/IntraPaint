@@ -1,6 +1,6 @@
 """A Python wrapper for libmypaint image surface data."""
 import math
-from ctypes import sizeof, pointer, byref, c_float, c_double, c_int, POINTER, c_void_p
+from ctypes import sizeof, pointer, byref, c_float, c_double, c_int, c_void_p
 from time import time
 from typing import Any, Optional
 
@@ -9,7 +9,7 @@ from PyQt5.QtGui import QImage, QColor
 
 from src.image.mypaint.libmypaint import libmypaint, MyPaintTiledSurface, MyPaintTileRequestStartFunction, \
     MyPaintTileRequestEndFunction, MyPaintSurfaceDestroyFunction, \
-    MyPaintTileRequest, TilePixelBuffer, TILE_DIM, \
+    TilePixelBuffer, TILE_DIM, \
     RectangleBuffer, MyPaintRectangles, RECTANGLE_BUF_SIZE, c_uint16_p
 from src.image.mypaint.mp_brush import MPBrush
 from src.image.mypaint.mp_tile import MPTile

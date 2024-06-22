@@ -15,7 +15,6 @@ from src.ui.image_viewer import ImageViewer
 from src.ui.panel.brush_panel import BrushPanel
 from src.ui.widget.param_slider import ParamSlider
 
-
 RESOURCES_BRUSH_ICON = 'resources/icons/brush_icon.svg'
 BRUSH_LABEL = 'Brush'
 BRUSH_TOOLTIP = 'Paint into the image'
@@ -123,6 +122,7 @@ class BrushTool(CanvasTool):
         canvas = cast(MyPaintLayerCanvas, self._canvas)
         brush_panel = BrushPanel(canvas.brush)
         control_layout.addWidget(brush_panel, stretch=8)
+        control_layout.addStretch(255)
         return self._control_panel
 
     def adjust_brush_size(self, offset: int) -> None:

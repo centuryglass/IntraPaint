@@ -357,9 +357,9 @@ class TransformOutline(QGraphicsObject):
                         y_scale = math.copysign(y_scale * final_x_scale / final_y_scale, y_scale)
             origin = get_fixed_corner()
 
-            def _avoid_minimums(scale, current_scale, final_scale):
+            def _avoid_minimums(scale_change, current_scale, final_scale):
                 if abs(final_scale) >= MIN_NONZERO:
-                    return scale
+                    return scale_change
                 return MIN_NONZERO / current_scale
             x_scale = _avoid_minimums(x_scale, current_x_scale, final_x_scale)
             y_scale = _avoid_minimums(y_scale, current_y_scale, final_y_scale)

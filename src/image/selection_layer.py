@@ -4,10 +4,9 @@ from sys import version_info
 from src.image.mypaint.numpy_image_utils import is_fully_transparent, AnyNpArray
 
 if version_info[1] >= 11:
-    from typing import Self, Optional, List
+    from typing import Optional, List
 else:
     from typing import Optional, List
-    from typing_extensions import Self
 import logging
 from PyQt5.QtGui import QImage, QPolygonF, QPainter
 from PyQt5.QtCore import QRect, QPoint, QSize, pyqtSignal, QPointF, Qt
