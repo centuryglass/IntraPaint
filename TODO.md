@@ -3,15 +3,11 @@
 # Bugs
 - copy/paste issues in small layers
 - disconnect between EDIT_SIZE in config and layer stack gen area
-- Selection polygons recalculate over entire layer despite actual change bounds being minute
-- frequent segfaults on program termination
 
 ## intermittent, can't reproduce reliably:
 - Keep size on brush change not working (possibly a pressure issue?)
 - Selection tool reverts to 1px, usually after picking image option
 
-## 1280x800 display issues:
-- Text cut off in some tool panels, mainly transform
 
 # General interface
 - Control Panel cleanup with FormLayout
@@ -37,10 +33,8 @@
 # Stability
 - Unit testing for critical modules
 - Crash handling: have a parent process monitor for crashes, cache data, save as .inpt on crash
-- Eliminate lambdas and clean up connections to fix segfaults on exit.
 
 # Menus
-- Separate "Save" and "Save as"
 - Open as layers
 - Find some way to explicitly list .inpt as a file option
 - Support saving in formats other than .png (metadata fixes?)

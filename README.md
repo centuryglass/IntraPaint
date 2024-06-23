@@ -2,6 +2,21 @@
 
 Collaborate with AI to make art.
 
+Official documentation is still in-progress, but here's the short version:
+
+1. To get this to work, you'll need a stable-diffusion API running before you start Intrapaint. The [Forge WebUI](https://github.com/lllyasviel/stable-diffusion-webui-forge) and the [Automatic1111 WebUI](https://github.com/AUTOMATIC1111/stable-diffusion-webui) will both work. Once you have one of those running normally, you can use [these instructions](https://github.com/AUTOMATIC1111/stable-diffusion-webui/wiki/API) to run either version as an API.
+2. Clone this repo, and install the dependencies from requirements.txt normally. I'll post pre-packaged files for download later.
+3. The digital painting system relies on pre-built (libmypaint)[https://github.com/mypaint/libmypaint] binaries. I've included versions for x86 Linux and Windows, but if you're using anything else you'll need to find and add your own.
+4. Once those things are taken care of, you should be able to run IntraPaint.py and have everything work normally. If you're running the API from another computer or from a non-default port, you'll need to specify that when you run IntraPaint, using the --server_url command line option.
+
+
+Everything below this point is from a much older iteration of IntraPaint, and may or may not still be relevant.
+
+-----
+
+
+
+
 |                   ![example-1.png](./examples/example-1.png)                   | 
 |:------------------------------------------------------------------------------:| 
 | *1. Draw over the area you want to change, provide a text prompt for guidance* |
