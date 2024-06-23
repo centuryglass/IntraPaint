@@ -197,8 +197,8 @@ class ImageLayer(QObject):
 
     @property
     def saved(self) -> bool:
-        """Returns whether layer content is included when saving image data.  Non-visible layers are never saved."""
-        return self._saved and self.visible
+        """Returns whether layer content is included when saving image data."""
+        return self._saved
 
     @saved.setter
     def saved(self, saved: bool):

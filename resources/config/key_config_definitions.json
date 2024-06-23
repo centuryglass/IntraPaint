@@ -446,5 +446,13 @@
         "type": "string",
         "default": "F10",
         "saved": true
+    },
+    "image_window_shortcut": {
+        "label": "Show Image Window",
+        "category": "Keybindings",
+        "description": "Open a new window showing the edited image.",
+        "type": "string",
+        "default": "Ctrl+Alt+W",
+        "saved": true
     }
 }

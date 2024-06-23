@@ -497,8 +497,8 @@ class LayerStack(QObject):
         def _move(last_index, new_index):
             moving_layer = self._layers[last_index]
             is_active = moving_layer.id == self._active_layer_id
-            self._remove_layer_internal(moving_layer, False)
-            self._insert_layer_internal(moving_layer, new_index, False)
+            self._remove_layer_internal(moving_layer)
+            self._insert_layer_internal(moving_layer, new_index)
             if is_active:
                 self._active_layer_id = moving_layer.id
                 self.active_layer_changed.emit(moving_layer.id, new_index)

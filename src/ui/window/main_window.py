@@ -21,6 +21,7 @@ from src.ui.panel.image_panel import ImagePanel
 from src.ui.panel.layer_panel import LayerPanel
 from src.ui.panel.tool_panel import ToolPanel
 from src.ui.widget.loading_widget import LoadingWidget
+from src.ui.window.image_window import ImageWindow
 from src.util.display_size import get_screen_size
 from src.util.image_utils import pil_image_to_qimage
 from src.util.shared_constants import TIMELAPSE_MODE_FLAG
@@ -59,6 +60,7 @@ class MainWindow(QMainWindow):
         self._orientation: Optional[Qt.Orientation] = None
 
         self._layer_panel: Optional[LayerPanel] = None
+        self._image_window = ImageWindow(layer_stack)
 
         # Size thresholds for reactive layout changes:
         # Real values will be populated with sizeHints when available.
@@ -119,6 +121,11 @@ class MainWindow(QMainWindow):
     def _get_appropriate_orientation(self) -> Qt.Orientation:
         """Returns whether the window's image and tool layout should be vertical or horizontal."""
         return Qt.Orientation.Vertical if self.height() > (self.width() * 1.2) else Qt.Orientation.Horizontal
+
+    def show_image_window(self) -> None:
+        """Show or raise the image window."""
+        self._image_window.show()
+        self._image_window.raise_()
 
     def refresh_layout(self) -> None:
         """Update orientation and layout based on window dimensions."""

@@ -712,6 +712,12 @@ class BaseInpaintController(MenuBuilder):
         self.refresh_settings(self._settings_panel)
         self._settings_panel.show_modal()
 
+    @menu_action(MENU_TOOLS, 'image_window_shortcut', 52)
+    def show_image_window(self) -> None:
+        """Show the image preview window."""
+        assert self._window is not None
+        self._window.show_image_window()
+
     # Internal/protected:
 
     def _scale(self, new_size: QSize) -> None:  # Override to allow alternate or external upscalers:
