@@ -3,11 +3,12 @@ Base implementation of the primary image editing window. On its own, provides an
 inpainting modes.  Other editing modes should provide subclasses with implementation-specific controls.
 """
 import logging
+import sys
 from typing import Optional, Any
 
 from PIL import Image
 from PyQt5.QtCore import Qt, QRect, QSize
-from PyQt5.QtGui import QIcon, QMouseEvent, QResizeEvent, QHideEvent, QKeySequence
+from PyQt5.QtGui import QIcon, QMouseEvent, QResizeEvent, QHideEvent, QKeySequence, QCloseEvent
 from PyQt5.QtWidgets import QMainWindow, QGridLayout, QLabel, QWidget, QPushButton, QVBoxLayout, QHBoxLayout, \
     QComboBox, QStackedWidget, QBoxLayout, QApplication, QTabWidget, QSizePolicy, QLayout
 
@@ -22,6 +23,9 @@ from src.ui.panel.tool_panel import ToolPanel
 from src.ui.widget.loading_widget import LoadingWidget
 from src.util.display_size import get_screen_size
 from src.util.image_utils import pil_image_to_qimage
+from src.util.shared_constants import TIMELAPSE_MODE_FLAG
+
+DEFAULT_LOADING_MESSAGE = 'Loading...'
 
 logger = logging.getLogger(__name__)
 
@@ -88,9 +92,16 @@ class MainWindow(QMainWindow):
         # Loading widget (for interrogate):
         self._is_loading = False
         self._loading_widget = LoadingWidget()
-        self._loading_widget.setParent(self)
-        self._loading_widget.setGeometry(self.frameGeometry())
-        self._loading_widget.hide()
+        if TIMELAPSE_MODE_FLAG in sys.argv:
+            # Show spinner in a new window so timelapse footage isn't mostly loading screens:
+            screen_size = get_screen_size(self)
+            self._loading_widget.setGeometry(50, screen_size.height() - 350, 300, 300)
+            self._loading_widget.show()
+            self._loading_widget.paused = True
+        else:
+            self._loading_widget.setParent(self)
+            self._loading_widget.setGeometry(self.frameGeometry())
+            self._loading_widget.hide()
 
         # Image/Mask editing layout:
         self._image_panel = ImagePanel(layer_stack)
@@ -307,7 +318,7 @@ class MainWindow(QMainWindow):
         if self._image_selector is None:
             logger.error(f'Tried to load sample {idx} after sampleSelector was closed')
         else:
-            self._image_selector.add_image_option(pil_image_to_qimage(image), idx)
+            self._image_selector.add_image_option(image, idx)
 
     def set_is_loading(self, is_loading: bool, message: Optional[str] = None) -> None:
         """Sets whether the loading spinner is shown, optionally setting loading spinner message text."""
@@ -316,18 +327,19 @@ class MainWindow(QMainWindow):
         else:
             if is_loading:
                 self._loading_widget.show()
-                if message:
-                    self._loading_widget.set_message(message)
-                else:
-                    self._loading_widget.set_message('Loading...')
+                self._loading_widget.message = message if message is not None else DEFAULT_LOADING_MESSAGE
             else:
-                self._loading_widget.hide()
+                if TIMELAPSE_MODE_FLAG in sys.argv:
+                    self._loading_widget.paused = True
+                else:
+                    self._loading_widget.hide()
             self._is_loading = is_loading
             self.update()
 
     def is_busy(self) -> bool:
         """Return whether there is an ongoing operation that should block most actions."""
-        return self.is_image_selector_visible() or self._loading_widget.isVisible()
+        return self.is_image_selector_visible() or (self._loading_widget.isVisible()
+                                                    and not self._loading_widget.paused)
 
     def set_loading_message(self, message: str) -> None:
         """Sets the loading spinner message text."""
@@ -336,7 +348,7 @@ class MainWindow(QMainWindow):
 
     def resizeEvent(self, unused_event: Optional[QResizeEvent]) -> None:
         """Applies the most appropriate layout when the window size changes."""
-        if hasattr(self, '_loading_widget'):
+        if hasattr(self, '_loading_widget') and not TIMELAPSE_MODE_FLAG in sys.argv:
             loading_widget_size = int(self.height() / 8)
             loading_bounds = QRect(self.width() // 2 - loading_widget_size // 2, loading_widget_size * 3,
                                    loading_widget_size, loading_widget_size)
@@ -352,8 +364,8 @@ class MainWindow(QMainWindow):
         """Gets the window's layout as QBoxLayout."""
         return self._layout
 
-    def hideEvent(self, unused_event: Optional[QHideEvent]) -> None:
-        """Close the application when the main window is hidden."""
+    def closeEvent(self, unused_event: Optional[QCloseEvent]) -> None:
+        """Close the application when the main window is closed."""
         QApplication.exit()
 
 

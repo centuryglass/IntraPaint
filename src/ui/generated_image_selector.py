@@ -2,6 +2,7 @@
 Provides an interface for choosing between AI-generated changes to selected image content.
 """
 import math
+import sys
 import time
 from typing import Callable, Optional, cast, List
 
@@ -20,10 +21,12 @@ from src.ui.graphics_items.loading_spinner import LoadingSpinner
 from src.ui.graphics_items.outline import Outline
 from src.ui.graphics_items.polygon_outline import PolygonOutline
 from src.ui.widget.image_graphics_view import ImageGraphicsView
+from src.ui.widget.loading_widget import LoadingWidget
 from src.util.display_size import max_font_size
 from src.util.geometry_utils import get_scaled_placement
 from src.util.image_utils import get_standard_qt_icon
 from src.util.key_code_utils import get_key_display_string
+from src.util.shared_constants import TIMELAPSE_MODE_FLAG
 from src.util.validation import assert_valid_index
 
 CHANGE_ZOOM_CHECKBOX_LABEL = 'Zoom to changes'
@@ -106,12 +109,18 @@ class GeneratedImageSelector(QWidget):
         self._view.zoom_toggled.connect(self.toggle_zoom)
 
         self._layout.addWidget(self._view, stretch=255)
-        self._loading_spinner = LoadingSpinner()
-        self._loading_spinner.setZValue(1)
-        self._loading_spinner.visible = False
         scene = self._view.scene()
         assert scene is not None, 'Scene should have been created automatically and never cleared'
-        scene.addItem(self._loading_spinner)
+        if TIMELAPSE_MODE_FLAG not in sys.argv:
+            self._loading_spinner: LoadingSpinner | LoadingWidget = LoadingSpinner()
+            self._loading_spinner.setZValue(1)
+            self._loading_spinner.visible = False
+            scene.addItem(self._loading_spinner)
+        else:
+            app = QApplication.instance()
+            assert app is not None
+            self._loading_spinner = cast(LoadingWidget, next(win for win in app.topLevelWidgets()
+                                                             if isinstance(win, LoadingWidget)))
 
         original_image = self._layer_stack.qimage_generation_area_content()
         original_option = _ImageOption(original_image, ORIGINAL_CONTENT_LABEL)
@@ -195,12 +204,18 @@ class GeneratedImageSelector(QWidget):
         self._next_button.clicked.connect(self._zoom_next)
         _add_key_hint(self._next_button, KeyConfig.MOVE_RIGHT)
         self._button_bar_layout.addWidget(self._next_button)
+        self.resizeEvent(None)
+        if TIMELAPSE_MODE_FLAG in sys.argv:
+            self.toggle_zoom()
 
     def set_is_loading(self, is_loading: bool, message: Optional[str] = None):
         """Show or hide the loading indicator"""
         if message is not None:
             self._loading_spinner.message = message
-        self._loading_spinner.visible = is_loading
+        if isinstance(self._loading_spinner, LoadingSpinner):
+            self._loading_spinner.visible = is_loading
+        else:  # LoadingWidget
+            self._loading_spinner.paused = not is_loading
 
     def set_loading_message(self, message: str) -> None:
         """Changes the loading spinner message."""
@@ -280,6 +295,8 @@ class GeneratedImageSelector(QWidget):
     def resizeEvent(self, unused_event: Optional[QResizeEvent]):
         """Recalculate all bounds on resize and update view scale."""
         self._apply_ideal_image_arrangement()
+        if self._zoomed_in:
+            self._zoom_to_option(self._zoom_index, True)
 
     def eventFilter(self, source: Optional[QObject], event: Optional[QEvent]):
         """Use horizontal scroll to move through selections, select items when clicked."""
@@ -307,7 +324,7 @@ class GeneratedImageSelector(QWidget):
             if QApplication.keyboardModifiers() == Qt.ControlModifier:
                 return False  # Ctrl+click is for panning, don't select options
             event = cast(QMouseEvent, event)
-            if event.button() != Qt.LeftButton or self._loading_spinner.visible:
+            if event.button() != Qt.LeftButton or (self._loading_spinner.visible and not self._loading_spinner.paused):
                 return False
             if source == self._view:
                 view_pos = event.pos()

@@ -220,6 +220,8 @@ class StableDiffusionMainWindow(MainWindow):
         last_seed_box.setReadOnly(True)
         add_option_line(Cache.instance().get_label(cache.LAST_SEED), last_seed_box, None)
 
+        control_layout.addStretch(255)
+
         # Put action buttons on the bottom:
         button_bar = BorderedWidget(control_panel)
         button_bar_layout = QHBoxLayout()

@@ -51,16 +51,18 @@ class BrushPanel(QTabWidget):
         self._setup_brush_tabs()
         self._setup_favorites_tab()
 
-    def resizeEvent(self, event: Optional[QResizeEvent]) -> None:
-        """Keep the height from extending beyond tab height hints."""
-        max_height = 0
-        for page in self._pages.values():
-            page.resizeEvent(None)
-            max_height = max(max_height, page.actual_content_size().height())
-        tab_bar = self.tabBar()
-        if tab_bar is not None:
-            max_height += tab_bar.sizeHint().height()
-        self.setMaximumHeight(max_height)
+    # def resizeEvent(self, event: Optional[QResizeEvent]) -> None:
+    #     """Keep the height from extending beyond tab height hints."""
+    #     max_height = 0
+    #     for page in self._pages.values():
+    #         page.resizeEvent(None)
+    #         max_height = max(max_height, page.actual_content_size().height())
+    #     tab_bar = self.tabBar()
+    #     if tab_bar is not None:
+    #         max_height += tab_bar.sizeHint().height()
+    #     print(f'final height: {max_height}')
+    #     self.setMinimumHeight(max_height)
+    #     # self.setMaximumHeight(max_height)
 
     def _setup_brush_tabs(self) -> None:
         """Reads in brush files, organizes them into tabs."""
@@ -120,7 +122,7 @@ class BrushPanel(QTabWidget):
             self.addTab(content, tab_name)
         else:
             self.insertTab(index, content, tab_name)
-        content.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Maximum)
+        content.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
 
     def _save_favorite_brushes(self) -> None:
         """Saves favorite brushes to config whenever a favorite is added or removed."""

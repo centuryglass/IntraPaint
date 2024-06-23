@@ -1,9 +1,12 @@
 """Displays polygon outlines as animated dashes with subtle color changes."""
+import sys
 from typing import Optional, List
 
 from PyQt5.QtCore import Qt, pyqtProperty, QPropertyAnimation, QObject, QPointF
 from PyQt5.QtGui import QPen, QColor, QShowEvent, QHideEvent, QPolygonF, QTransform
 from PyQt5.QtWidgets import QGraphicsItem, QGraphicsView, QGraphicsItemGroup, QGraphicsPolygonItem
+
+from src.util.shared_constants import TIMELAPSE_MODE_FLAG
 
 PEN_WIDTH = 3
 
@@ -60,6 +63,9 @@ class PolygonOutline(QGraphicsItemGroup):
         scene = view.scene()
         assert scene is not None
         scene.addItem(self)
+        if TIMELAPSE_MODE_FLAG in sys.argv:
+            self._animator.animation.stop()
+            self._animated = False
 
     def _get_pen(self) -> QPen:
         offset = self._dash_offset
@@ -124,6 +130,8 @@ class PolygonOutline(QGraphicsItemGroup):
     @animated.setter
     def animated(self, should_animate: bool) -> None:
         """Sets whether dotted lines are animated."""
+        if TIMELAPSE_MODE_FLAG in sys.argv:
+            return
         self._animated = should_animate
         if self._animated and self.isVisible():
             self._animator.animation.start()

@@ -19,3 +19,6 @@ CONTROLNET_REUSE_IMAGE_CODE = 'SELECTION'
 
 # Display text:
 GENERATE_BUTTON_TEXT = 'Generate'
+
+# Argument used to disable or alter certain UI elements for better use in timelapse footage:
+TIMELAPSE_MODE_FLAG = '--timelapse_mode'

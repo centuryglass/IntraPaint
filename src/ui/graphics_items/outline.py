@@ -1,10 +1,13 @@
 """Outlines a region in a variable QGraphicsView, adjusting line width based on view scale."""
+import sys
 from typing import Optional, List
 
 from PyQt5.QtCore import Qt, pyqtProperty, QPropertyAnimation, QRectF, QRect
 from PyQt5.QtGui import QPainter, QPen, QPainterPath, QColor, QShowEvent, QHideEvent
 from PyQt5.QtWidgets import QWidget, QGraphicsItem, QGraphicsView, QGraphicsScene, QStyleOptionGraphicsItem, \
     QGraphicsObject
+
+from src.util.shared_constants import TIMELAPSE_MODE_FLAG
 
 
 class Outline(QGraphicsObject):
@@ -70,6 +73,8 @@ class Outline(QGraphicsObject):
     @animated.setter
     def animated(self, should_animate: bool) -> None:
         """Sets whether dotted lines are animated."""
+        if TIMELAPSE_MODE_FLAG in sys.argv:
+            return
         self._animated = should_animate
         if self._animated and self.isVisible():
             self._anim.start()

@@ -14,6 +14,7 @@ from src.ui.modal.modal_utils import show_error_dialog
 from src.util.optional_import import optional_import
 from src.controller.mock_controller import MockController
 from src.util.arg_parser import build_arg_parser
+from src.util.shared_constants import TIMELAPSE_MODE_FLAG
 
 StableDiffusionController = optional_import('src.controller.stable_diffusion_controller',
                                             attr_name='StableDiffusionController')
@@ -49,14 +50,15 @@ def parse_args_and_start() -> None:
 
     parser.add_argument('--edit_height', type=int, required=False, default=256,
                         help='height of the edit image in the generation frame (need to be multiple of 8)')
-    parser.add_argument('--timelapse_path', type=str, required=False,
-                        help='subdirectory to store snapshots for creating a timelapse of all editing operations')
+    parser.add_argument(TIMELAPSE_MODE_FLAG, action='store_true',
+                        help='makes minor changes to UI to simplify recording smooth timelapse editing footage')
     parser.add_argument('--server_url', type=str, required=False, default='',
                         help='Image generation server URL (web mode only. If not provided and mode=web or stable, you'
                              ' will be prompted for a URL on launch.')
     parser.add_argument('--fast_ngrok_connection', type=str, required=False, default='',
                         help='If true, connection rates will not be limited when using ngrok. This may cause rate '
                              'limiting if running in web mode without a paid account.')
+    parser.set_defaults(timelapse_mode=False)
     args = parser.parse_args()
 
     controller_mode = str(args.mode)

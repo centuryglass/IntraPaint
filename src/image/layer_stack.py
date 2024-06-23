@@ -760,7 +760,6 @@ class LayerStack(QObject):
             self.size = new_size
             self._insert_layer_internal(new_layer, self.count)
             self._set_generation_area_internal(new_gen_area)
-            print(f'set {new_gen_area}, got {self.generation_area}')
 
         def _undo_load():
             assert self.count == 1, f'Unexpected layer count {self.count} when reversing image load!'

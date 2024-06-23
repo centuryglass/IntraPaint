@@ -35,6 +35,20 @@ class LoadingSpinner(QGraphicsObject):
         self._anim.setDuration(ANIM_DURATION_MS)
 
     @property
+    def paused(self) -> bool:
+        """Whether the loading animation is currently paused."""
+        return self._anim.state() == QPropertyAnimation.Paused
+
+    @paused.setter
+    def paused(self, should_pause: bool) -> None:
+        if should_pause == self.paused:
+            return
+        if should_pause:
+            self._anim.pause()
+        else:
+            self._anim.resume()
+
+    @property
     def message(self) -> str:
         """Returns the current loading message."""
         return self._message
@@ -44,6 +58,7 @@ class LoadingSpinner(QGraphicsObject):
         """Sets the loading message displayed."""
         self._message = message
         self._font_size = None
+        self.paused = False
         self.update()
 
     @pyqtProperty(int)

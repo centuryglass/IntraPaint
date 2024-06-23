@@ -46,13 +46,13 @@ class ImageViewer(ImageGraphicsView):
         # Generation area and border rectangle setup:
         scene = self.scene()
         assert scene is not None
-        self._scene_outline = Outline(scene, self)
-        self._scene_border = Border(scene, self)
-        self._scene_border.windowed_area = layer_stack.geometry if layer_stack.has_image else QRect()
-        self._scene_border.color = QColor(GENERATION_AREA_BORDER_COLOR)
-        self._scene_border.setOpacity(IMAGE_BORDER_OPACITY)
-        self._scene_border.setVisible(True)
-        self._scene_outline.dash_pattern = [1, 0]  # solid line
+        self._image_outline = Outline(scene, self)
+        self._image_border = Border(scene, self)
+        self._image_border.windowed_area = layer_stack.geometry if layer_stack.has_image else QRect()
+        self._image_border.color = QColor(GENERATION_AREA_BORDER_COLOR)
+        self._image_border.setOpacity(IMAGE_BORDER_OPACITY)
+        self._image_border.setVisible(True)
+        self._image_outline.dash_pattern = [1, 0]  # solid line
         self._generation_area_outline = Outline(scene, self)
         self._generation_area_outline.animated = config.get(AppConfig.ANIMATE_OUTLINES)
 
@@ -180,13 +180,11 @@ class ImageViewer(ImageGraphicsView):
         return self._layer_stack.generation_area != generation_area
 
     def _update_drawn_borders(self):
-        """Make sure that the image generation area and image borders are in the right place in the scene."""
-        scene_rect = QRectF(0.0, 0.0, float(self.content_size.width()), float(self.content_size.height()))
+        """Make sure that the image generation area and layer borders are in the right place in the scene."""
         generation_area = QRectF(self._generation_area.x(), self._generation_area.y(), self._generation_area.width(),
                                  self._generation_area.height())
-        self._scene_outline.outlined_region = scene_rect
         image_loaded = self._layer_stack.has_image
-        self._scene_outline.setVisible(image_loaded)
+        self._image_outline.setVisible(image_loaded)
         self._generation_area_outline.outlined_region = generation_area
         self._generation_area_border.windowed_area = generation_area.toAlignedRect()
         self._generation_area_outline.setVisible(image_loaded)
@@ -254,8 +252,9 @@ class ImageViewer(ImageGraphicsView):
             return
         self.content_size = new_size
 
-        self._scene_border.windowed_area = self._layer_stack.geometry if self._layer_stack.has_image else QRect()
         self._update_drawn_borders()
+        self._image_border.windowed_area = self._layer_stack.geometry if self._layer_stack.has_image else QRect()
+        self._image_outline.outlined_region = self._image_border.windowed_area
         self.resizeEvent(None)
 
     def _image_generation_area_change_slot(self, new_rect: QRect) -> None:
@@ -269,8 +268,9 @@ class ImageViewer(ImageGraphicsView):
 
     def _layer_added_slot(self, new_layer: ImageLayer, index: int) -> None:
         """Adds a new image layer into the view."""
-        if self._scene_border.windowed_area.isEmpty() and self._layer_stack.has_image:
-            self._scene_border.windowed_area = self._layer_stack.geometry if self._layer_stack.has_image else QRect()
+        if self._image_border.windowed_area.isEmpty() and self._layer_stack.has_image:
+            self._image_border.windowed_area = self._layer_stack.geometry if self._layer_stack.has_image else QRect()
+            self._image_outline.outlined_region = self._image_border.windowed_area
         layer_item = _LayerItem(new_layer)
         layer_item.setZValue(-index)
         layer_item.setPos(new_layer.position)
@@ -291,7 +291,7 @@ class ImageViewer(ImageGraphicsView):
     def _layer_removed_slot(self, removed_layer: ImageLayer) -> None:
         """Removes an image layer from the view."""
         if not self._layer_stack.has_image:
-            self._scene_border.windowed_area = QRect()
+            self._image_border.windowed_area = QRect()
         layer_item = self._layer_items[removed_layer.id]
         layer_was_visible = layer_item.isVisible()
         scene = self.scene()

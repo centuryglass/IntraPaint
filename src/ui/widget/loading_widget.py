@@ -21,9 +21,42 @@ class LoadingWidget(QWidget):
         self._anim.setEndValue(359)
         self._anim.setDuration(2000)
 
-    def set_message(self, message: str) -> None:
+
+    @property
+    def paused(self) -> bool:
+        """Whether the loading animation is currently paused."""
+        return self._anim.state() == QPropertyAnimation.Paused
+
+    @paused.setter
+    def paused(self, should_pause: bool) -> None:
+        if should_pause == self.paused:
+            return
+        if should_pause:
+            self._anim.pause()
+        else:
+            self._anim.resume()
+
+    def pause_animation(self) -> None:
+        """Pauses animation and clears the message. Setting a new message will resume the animation."""
+        self._message = ''
+        self._anim.pause()
+        self.update()
+
+    @property
+    def visible(self) -> bool:
+        """Exposes isVisible() as a property."""
+        return self.isVisible()
+
+    @property
+    def message(self) -> str:
+        """Returns the current loading message."""
+        return self._message
+
+    @message.setter
+    def message(self, message: str) -> None:
         """Sets the loading message displayed."""
         self._message = message
+        self.paused = False
         self.update()
 
     @pyqtProperty(int)
