@@ -17,6 +17,7 @@ GREEN = 1
 BLUE = 2
 ALPHA = 3
 
+tile_id = 0
 
 class MPTile(QGraphicsItem):
     """A Python wrapper for libmypaint image tile data."""
@@ -27,11 +28,15 @@ class MPTile(QGraphicsItem):
                  size: QSize = QSize(TILE_DIM, TILE_DIM),
                  parent: Optional[QGraphicsItem] = None):
         """Initialize tile data."""
+        global tile_id
         super().__init__(parent)
+        self._id = tile_id
+        tile_id += 1
         self._pixels: Optional[TilePixelBuffer] = tile_buffer
         self._size = size
         self._cache_image: Optional[QImage] = QImage(size, QImage.Format_ARGB32_Premultiplied)
         self._cache_valid = False
+        self._composition_mode = QPainter.CompositionMode_SourceOver
         self.setCacheMode(QGraphicsItem.NoCache)
         if clear_buffer:
             self.clear()
@@ -43,6 +48,17 @@ class MPTile(QGraphicsItem):
             scene.removeItem(self)
         self._pixels = None
         self._cache_image = None
+
+    @property
+    def composition_mode(self) -> QPainter.CompositionMode:
+        """Access the painting mode used to render the tile into a QGraphicsScene."""
+        return self._composition_mode
+
+    @composition_mode.setter
+    def composition_mode(self, new_mode: QPainter.CompositionMode) -> None:
+        if new_mode != self._composition_mode:
+            self._composition_mode = QPainter.CompositionMode(new_mode)
+            self.update()
 
     @property
     def is_valid(self) -> bool:
@@ -85,7 +101,10 @@ class MPTile(QGraphicsItem):
             return
         if not self._cache_valid:
             self.update_cache()
+        painter.save()
+        painter.setCompositionMode(self._composition_mode)
         painter.drawImage(QPoint(0, 0), self._cache_image, self._cache_image.rect())
+        painter.restore()
 
     def get_bits(self, read_only: bool) -> TilePixelBuffer:
         """Access the image data array."""

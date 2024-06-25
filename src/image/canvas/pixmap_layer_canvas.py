@@ -1,14 +1,15 @@
 """
 Draws content to an image layer using basic Qt drawing operations.
 """
-from typing import Optional
+from typing import Optional, List
 
 from PyQt5.QtCore import QRect, Qt, QPoint, QPointF, QRectF
 from PyQt5.QtGui import QPainter, QPixmap, QPen
-from PyQt5.QtWidgets import QGraphicsScene, QGraphicsPixmapItem
+from PyQt5.QtWidgets import QGraphicsScene, QGraphicsPixmapItem, QGraphicsItem
 
 from src.image.canvas.layer_canvas import LayerCanvas
 from src.image.image_layer import ImageLayer
+from src.ui.graphics_items.pixmap_item import PixmapItem
 from src.undo_stack import commit_action
 
 ACTIVE_PIXMAP_OPACITY = 0.4
@@ -23,7 +24,7 @@ class PixmapLayerCanvas(LayerCanvas):
                  edit_region: Optional[QRect] = None) -> None:
         """Initialize a MyPaint surface, and connect to the image layer."""
         super().__init__(scene, layer, edit_region)
-        self._pixmap_item: Optional[QGraphicsPixmapItem] = None
+        self._pixmap_item: Optional[PixmapItem] = None
         self._last_point: Optional[QPoint] = None
         self._scene = scene
         self.edit_region = edit_region
@@ -43,6 +44,10 @@ class PixmapLayerCanvas(LayerCanvas):
         if self._pixmap_item is not None:
             self._pixmap_item.setOpacity(INACTIVE_PIXMAP_OPACITY)
 
+    def scene_items(self) -> List[QGraphicsItem]:
+        """Returns all graphics items present in the scene that belong to the canvas."""
+        return [self._pixmap_item] if self._pixmap_item is not None else []
+
     def _update_canvas_position(self, _, new_position: QPoint) -> None:
         """Updates the canvas position within the graphics scene."""
         assert self._pixmap_item is not None
@@ -60,7 +65,7 @@ class PixmapLayerCanvas(LayerCanvas):
         pixmap = QPixmap(new_bounds.size())
         pixmap.fill(Qt.GlobalColor.transparent)
         if self._pixmap_item is None:
-            self._pixmap_item = QGraphicsPixmapItem(pixmap)
+            self._pixmap_item = PixmapItem(pixmap)
             self._pixmap_item.setZValue(self.z_value)
             self._pixmap_item.setOpacity(INACTIVE_PIXMAP_OPACITY)
             self._scene.addItem(self._pixmap_item)
@@ -98,7 +103,7 @@ class PixmapLayerCanvas(LayerCanvas):
         self._last_point = QPoint(int(x), int(y))
         self._pixmap_item.setPixmap(pixmap)
 
-    def _load_layer_content(self, layer: Optional[ImageLayer]) -> None:
+    def _layer_content_change_slot(self, layer: Optional[ImageLayer]) -> None:
         """Refreshes the layer content within the canvas, or clears it if the layer is hidden."""
         assert self._layer == layer and self._edit_region is not None
         if self._pixmap_item is None:
@@ -109,6 +114,11 @@ class PixmapLayerCanvas(LayerCanvas):
             pixmap = QPixmap(self._edit_region.size())
             pixmap.fill(Qt.GlobalColor.transparent)
         self._pixmap_item.setPixmap(pixmap)
+
+    def _layer_composition_mode_change_slot(self, layer: ImageLayer, mode: QPainter.CompositionMode) -> None:
+        assert layer == self._layer
+        assert self._pixmap_item is not None
+        self._pixmap_item.composition_mode = mode
 
     def _copy_changes_to_layer(self, use_stroke_bounds: bool = False):
         """Copies content back to the connected layer."""
@@ -121,17 +131,21 @@ class PixmapLayerCanvas(LayerCanvas):
             prev_image = self._layer.cropped_image_content(change_bounds)
             layer = self._layer
 
-            def apply():
+            def apply(img=image, bounds=change_bounds, img_layer=layer):
                 """Copy the change into the image."""
-                layer.insert_image_content(image, change_bounds)
+                if img_layer == self._layer:
+                    self.disconnect_layer_signals()
+                img_layer.insert_image_content(img, bounds)
+                if img_layer == self._layer:
+                    self.connect_layer_signals()
 
-            def reverse():
+            def reverse(img=prev_image, bounds=change_bounds, img_layer=layer):
                 """To undo, copy in the cached previous image data."""
-                layer.insert_image_content(prev_image, change_bounds)
-                self._load_layer_content(layer)
+                if img_layer == self._layer:
+                    self.disconnect_layer_signals()
+                img_layer.insert_image_content(img, bounds)
+                self._layer_content_change_slot(img_layer)
+                if img_layer == self._layer:
+                    self.connect_layer_signals()
 
-            self._layer.visibility_changed.disconnect(self._load_layer_content)
-            self._layer.content_changed.disconnect(self._load_layer_content)
             commit_action(apply, reverse)
-            self._layer.visibility_changed.connect(self._load_layer_content)
-            self._layer.content_changed.connect(self._load_layer_content)

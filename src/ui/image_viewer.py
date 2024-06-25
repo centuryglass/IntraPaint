@@ -5,7 +5,7 @@ from typing import Optional, Dict
 
 from PyQt5.QtCore import Qt, QRect, QRectF, QSize, QPointF, QSizeF
 from PyQt5.QtGui import QPainter, QMouseEvent, QColor
-from PyQt5.QtWidgets import QWidget, QSizePolicy, QGraphicsPixmapItem
+from PyQt5.QtWidgets import QWidget, QSizePolicy, QGraphicsPixmapItem, QStyleOptionGraphicsItem
 
 from src.config.application_config import AppConfig
 from src.hotkey_filter import HotkeyFilter
@@ -13,6 +13,7 @@ from src.image.image_layer import ImageLayer
 from src.image.layer_stack import LayerStack
 from src.ui.graphics_items.border import Border
 from src.ui.graphics_items.outline import Outline
+from src.ui.graphics_items.pixmap_item import PixmapItem
 from src.ui.graphics_items.polygon_outline import PolygonOutline
 from src.ui.widget.image_graphics_view import ImageGraphicsView
 from src.util.image_utils import get_transparency_tile_pixmap
@@ -303,7 +304,7 @@ class ImageViewer(ImageGraphicsView):
             self.update()
 
 
-class _LayerItem(QGraphicsPixmapItem):
+class _LayerItem(PixmapItem):
     """Renders an image layer into a QGraphicsScene."""
 
     def __init__(self, layer: ImageLayer):
@@ -311,11 +312,13 @@ class _LayerItem(QGraphicsPixmapItem):
         assert_type(layer, ImageLayer)
         self._layer = layer
         self._hidden = False
+        self.composition_mode = layer.composition_mode
 
         layer.visibility_changed.connect(self._update_visibility)
         layer.content_changed.connect(self._update_pixmap)
-        layer.opacity_changed.connect(self.setOpacity)
+        layer.opacity_changed.connect(self._update_opacity)
         layer.bounds_changed.connect(self._update_position)
+        layer.composition_mode_changed.connect(self._update_mode)
         self.setOpacity(layer.opacity)
         self.setVisible(layer.visible)
         self._update_pixmap(layer)
@@ -323,8 +326,9 @@ class _LayerItem(QGraphicsPixmapItem):
     def __del__(self):
         self._layer.visibility_changed.disconnect(self._update_visibility)
         self._layer.content_changed.disconnect(self._update_pixmap)
-        self._layer.opacity_changed.disconnect(self.setOpacity)
+        self._layer.opacity_changed.disconnect(self._update_opacity)
         self._layer.bounds_changed.disconnect(self._update_position)
+        self._layer.composition_mode_changed.disconnect(self._update_mode)
 
     @property
     def hidden(self) -> bool:
@@ -339,6 +343,7 @@ class _LayerItem(QGraphicsPixmapItem):
 
     def _update_pixmap(self, _) -> None:
         self.setPixmap(self._layer.pixmap)
+        self.composition_mode = self._layer.composition_mode
         self.update()
 
     def _update_visibility(self, _, visible: bool) -> None:
@@ -346,3 +351,9 @@ class _LayerItem(QGraphicsPixmapItem):
 
     def _update_position(self, _, new_bounds: QRect) -> None:
         self.setPos(new_bounds.topLeft())
+
+    def _update_opacity(self, _, opacity: float) -> None:
+        self.setOpacity(opacity)
+
+    def _update_mode(self, _, mode: QPainter.CompositionMode) -> None:
+        self.composition_mode = mode

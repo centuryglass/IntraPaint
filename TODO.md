@@ -23,8 +23,6 @@
 # Layers
 - Drag and drop reordering
 - layer name changes should save on layer change
-- variable layer opacity support
-- Alternate layer composition modes
 - Layer locking
 - Transparency locking
 - Rework selection layer panel item

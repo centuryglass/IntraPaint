@@ -13,6 +13,7 @@ from src.hotkey_filter import HotkeyFilter
 from src.image.image_layer import ImageLayer
 from src.image.layer_stack import LayerStack
 from src.tools.base_tool import BaseTool
+from src.ui.graphics_items.pixmap_item import PixmapItem
 from src.ui.graphics_items.transform_outline import TransformOutline
 from src.ui.image_viewer import ImageViewer
 from src.ui.widget.key_hint_label import KeyHintLabel
@@ -55,7 +56,7 @@ class LayerTransformTool(BaseTool):
         self._transform_outline = TransformOutline(QRect())
         self._transform_outline.transform_changed.connect(self._transformation_change_slot)
         self._transform_outline.setVisible(False)
-        self._transform_pixmap = QGraphicsPixmapItem(self._transform_outline)
+        self._transform_pixmap = PixmapItem(parent=self._transform_outline)
         scene = image_viewer.scene()
         assert scene is not None
         scene.addItem(self._transform_outline)
@@ -443,6 +444,8 @@ class LayerTransformTool(BaseTool):
             last_layer.visibility_changed.disconnect(self._layer_visibility_slot)
             last_layer.bounds_changed.disconnect(self._layer_bounds_change_slot)
             last_layer.content_changed.disconnect(self._layer_content_change_slot)
+            last_layer.opacity_changed.disconnect(self._layer_opacity_change_slot)
+            last_layer.composition_mode_changed.disconnect(self._layer_mode_change_slot)
             self._image_viewer.resume_rendering_layer(last_layer)
         self._active_layer_id = None if layer is None else layer.id
         self._reload_scene_item()
@@ -453,6 +456,8 @@ class LayerTransformTool(BaseTool):
             layer.visibility_changed.connect(self._layer_visibility_slot)
             layer.bounds_changed.connect(self._layer_bounds_change_slot)
             layer.content_changed.connect(self._layer_content_change_slot)
+            layer.opacity_changed.connect(self._layer_opacity_change_slot)
+            layer.composition_mode_changed.connect(self._layer_mode_change_slot)
         else:
             self._preview.set_layer_bounds(QRect())
             self._transform_pixmap.setPixmap(QPixmap())
@@ -497,7 +502,7 @@ class LayerTransformTool(BaseTool):
         # Re-create for new layer:
         self._transform_outline = TransformOutline(QRectF() if layer is None else layer.geometry)
         self._transform_outline.transform_changed.connect(self._transformation_change_slot)
-        self._transform_pixmap = QGraphicsPixmapItem(self._transform_outline)
+        self._transform_pixmap = PixmapItem(parent=self._transform_outline)
         self._transform_pixmap.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIgnoresParentOpacity)
         self._transform_outline.setVisible(False)
         self._image_viewer.scene().addItem(self._transform_outline)
@@ -516,6 +521,8 @@ class LayerTransformTool(BaseTool):
             self._transform_pixmap.setPixmap(layer.pixmap)
             self._transform_pixmap.setPos(layer.position)
             self._transform_outline.setVisible(layer.visible)
+            self._transform_pixmap.setOpacity(layer.opacity)
+            self._transform_pixmap.composition_mode = layer.composition_mode
             self._transform_outline.setZValue(-self._layer_stack.get_layer_index(layer))
 
     def _on_activate(self) -> None:
@@ -544,16 +551,30 @@ class LayerTransformTool(BaseTool):
 
     def _layer_bounds_change_slot(self, layer: ImageLayer, bounds: QRect) -> None:
         if layer != self._layer_stack.get_layer_by_id(self._active_layer_id):
-            layer.visibility_changed.disconnect(self._layer_visibility_slot)
+            layer.bounds_changed.disconnect(self._layer_bounds_change_slot)
             return
         self._transform_outline.setPos(bounds.topLeft())
         self._preview.set_layer_bounds(bounds)
 
     def _layer_content_change_slot(self, layer: ImageLayer) -> None:
         if layer != self._layer_stack.get_layer_by_id(self._active_layer_id):
-            layer.visibility_changed.disconnect(self._layer_visibility_slot)
+            layer.content_changed.disconnect(self._layer_content_change_slot)
             return
         self._reload_scene_item()
+
+    def _layer_opacity_change_slot(self, layer: ImageLayer, opacity: float) -> None:
+        if layer != self._layer_stack.get_layer_by_id(self._active_layer_id):
+            layer.opacity_changed.disconnect(self._layer_opacity_change_slot)
+            return
+        if self._transform_pixmap is not None:
+            self._transform_pixmap.setOpacity(opacity)
+
+    def _layer_mode_change_slot(self, layer: ImageLayer, mode: QPainter.CompositionMode) -> None:
+        if layer != self._layer_stack.get_layer_by_id(self._active_layer_id):
+            layer.composition_mode_changed.disconnect(self._layer_mode_change_slot)
+            return
+        if self._transform_pixmap is not None:
+            self._transform_pixmap.composition_mode = mode
 
     def _transformation_change_slot(self, offset: QPointF, x_scale: float, y_scale: float, rotation: float) -> None:
         self._preview.set_transform(self._transform_outline.sceneTransform())

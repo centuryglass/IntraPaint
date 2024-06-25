@@ -1,11 +1,11 @@
 """
 Draws content to an image layer.
 """
-from typing import Optional
+from typing import Optional, List
 
 from PyQt5.QtCore import QRect, QPoint
-from PyQt5.QtGui import QColor
-from PyQt5.QtWidgets import QGraphicsScene
+from PyQt5.QtGui import QColor, QPainter
+from PyQt5.QtWidgets import QGraphicsScene, QGraphicsItem
 
 from src.image.image_layer import ImageLayer
 
@@ -37,20 +37,21 @@ class LayerCanvas:
         if self._layer is not None:
             if self._drawing:
                 self.end_stroke()
-            self._layer.visibility_changed.disconnect(self._load_layer_content)
-            self._layer.content_changed.disconnect(self._load_layer_content)
-            self._layer.bounds_changed.disconnect(self._handle_bounds_change)
+            self.disconnect_layer_signals()
         self._layer = new_layer
         if self._layer is not None:
-            self._layer.visibility_changed.connect(self._load_layer_content)
-            self._layer.content_changed.connect(self._load_layer_content)
-            self._layer.bounds_changed.connect(self._handle_bounds_change)
+            self.connect_layer_signals()
             if self._edit_region is None:
                 self.edit_region = QRect(0, 0, self._layer.width, self._layer.height)
                 self._update_canvas_position(self._layer, self._layer.position)
             else:
-                self._handle_bounds_change(self._layer, self._layer.geometry)
-        self._load_layer_content(self._layer)
+                self._layer_bounds_change_slot(self._layer, self._layer.geometry)
+        self._layer_content_change_slot(self._layer)
+
+    @property
+    def scene(self) -> QGraphicsScene:
+        """Access the scene rendering the canvas."""
+        return self._scene
 
     @property
     def eraser(self) -> bool:
@@ -110,7 +111,7 @@ class LayerCanvas:
         if new_region is not None:
             self._update_scene_content_bounds(new_region)
             if self._layer is not None:
-                self._load_layer_content(self._layer)
+                self._layer_content_change_slot(self._layer)
 
     def start_stroke(self) -> None:
         """Signals the start of a brush stroke, to be called once whenever user input starts or resumes."""
@@ -135,6 +136,27 @@ class LayerCanvas:
         if self._layer is not None:
             self._copy_changes_to_layer(self._layer)
 
+    def scene_items(self) -> List[QGraphicsItem]:
+        """Returns all graphics items present in the scene that belong to the canvas."""
+        raise NotImplementedError('Implement scene_items to return all canvas graphics items in the scene')
+
+    def disconnect_layer_signals(self) -> None:
+        """Disconnect signal handlers for the connected layer."""
+        self._layer.visibility_changed.disconnect(self._layer_content_change_slot)
+        self._layer.content_changed.disconnect(self._layer_content_change_slot)
+        self._layer.bounds_changed.disconnect(self._layer_bounds_change_slot)
+        self._layer.opacity_changed.disconnect(self._layer_opacity_change_slot)
+        self._layer.composition_mode_changed.disconnect(self._layer_composition_mode_change_slot)
+
+    def connect_layer_signals(self) -> None:
+        """Reconnect signal handlers for the connected layer. Only call after disconnect_layer_signals, or within
+           connect_to_layer."""
+        self._layer.visibility_changed.connect(self._layer_content_change_slot)
+        self._layer.content_changed.connect(self._layer_content_change_slot)
+        self._layer.bounds_changed.connect(self._layer_bounds_change_slot)
+        self._layer.opacity_changed.connect(self._layer_opacity_change_slot)
+        self._layer.composition_mode_changed.connect(self._layer_composition_mode_change_slot)
+
     def _set_brush_size(self, new_size: int) -> None:
         self._brush_size = new_size
 
@@ -151,13 +173,6 @@ class LayerCanvas:
         if self._z_value != z_value:
             self._z_value = z_value
 
-    def _handle_bounds_change(self, layer: ImageLayer, new_bounds: QRect) -> None:
-        assert self._edit_region is not None
-        if new_bounds.size() != self._edit_region.size():
-            self._update_scene_content_bounds(QRect(self._edit_region.topLeft(), new_bounds.size()))
-        self._update_canvas_position(layer, new_bounds.topLeft())
-        self._edit_region = new_bounds
-
     def _update_canvas_position(self, layer: ImageLayer, new_position: QPoint) -> None:
         """Updates the canvas position within the graphics scene."""
         raise NotImplementedError('Implement _update_canvas_position to adjust canvas placement in the scene.')
@@ -171,9 +186,24 @@ class LayerCanvas:
         """Use active settings to draw to the canvas with the given inputs."""
         raise NotImplementedError('implement _draw to update the canvas image.')
 
-    def _load_layer_content(self, layer: Optional[ImageLayer]) -> None:
+    def _layer_content_change_slot(self, layer: Optional[ImageLayer]) -> None:
         """Refreshes the layer content within the canvas, or clears it if the layer is hidden."""
         raise NotImplementedError('implement _load_layer_content to copy layer content to the canvas.')
+
+    def _layer_composition_mode_change_slot(self, layer: ImageLayer, mode: QPainter.CompositionMode) -> None:
+        raise NotImplementedError('Implement _layer_composition_mode_change_slot to change the canvas rendering mode.')
+
+    def _layer_bounds_change_slot(self, layer: ImageLayer, new_bounds: QRect) -> None:
+        assert self._edit_region is not None
+        if new_bounds.size() != self._edit_region.size():
+            self._update_scene_content_bounds(QRect(self._edit_region.topLeft(), new_bounds.size()))
+        self._update_canvas_position(layer, new_bounds.topLeft())
+        self._edit_region = new_bounds
+
+    def _layer_opacity_change_slot(self, _, opacity: float) -> None:
+        for item in self.scene_items():
+            item.setOpacity(opacity)
+            item.update()
 
     def _copy_changes_to_layer(self, layer: ImageLayer):
         """Copies content back to the connected layer."""

@@ -16,6 +16,7 @@ from src.image.selection_layer import SelectionLayer
 from src.undo_stack import commit_action, last_action
 from src.util.cached_data import CachedData
 from src.util.image_utils import qimage_to_pil_image
+from src.util.shared_constants import COMPOSITION_MODES
 from src.util.validation import assert_type, assert_types, assert_valid_index
 
 LAYER_DATA_FILE_EMBEDDED = 'data.json'
@@ -291,6 +292,8 @@ class LayerStack(QObject):
                 continue
             layer_image = layer.qimage
             if layer_image is not None:
+                painter.setOpacity(layer.opacity)
+                painter.setCompositionMode(layer.composition_mode)
                 painter.drawImage(layer.position, layer_image)
         painter.end()
         cache.data = image
@@ -680,10 +683,17 @@ class LayerStack(QObject):
         for layer in self._layers:
             index = self._layers.index(layer)
             layer.qimage.save(os.path.join(tmpdir, f'{index}.png'))
+            composition_mode = ''
+            for mode_name, mode_type in COMPOSITION_MODES.items():
+                if mode_type == layer.composition_mode:
+                    composition_mode = mode_name
+                    break
             data['files'].append({
                 'name': layer.name,
                 'pos': f'{layer.position.x()},{layer.position.y()}',
-                'visible': layer.visible
+                'visible': layer.visible,
+                'opacity': layer.opacity,
+                'mode': composition_mode
             })
         json_path = os.path.join(tmpdir, LAYER_DATA_FILE_EMBEDDED)
         with open(json_path, 'w', encoding='utf-8') as file:
@@ -707,11 +717,21 @@ class LayerStack(QObject):
         new_mask_image = QImage(os.path.join(tmpdir, SELECTION_LAYER_FILE_EMBEDDED))
         for i, file_data in enumerate(data['files']):
             image = QImage(os.path.join(tmpdir, f'{i}.png'))
-            name = file_data['name']
-            x, y = (int(substr) for substr in file_data['pos'].split(','))
+            name = None
+            if 'name' in file_data:
+                name = file_data['name']
             layer = self._create_layer_internal(name, image)
-            layer.position = QPoint(x, y)
-            layer.visible = file_data['visible']
+            if 'pos' in file_data:
+                x, y = (int(substr) for substr in file_data['pos'].split(','))
+                layer.position = QPoint(x, y)
+            if 'visible' in file_data:
+                layer.visible = file_data['visible']
+            if 'opacity' in file_data:
+                layer.opacity = file_data['opacity']
+            if 'mode' in file_data:
+                mode_name = file_data['mode']
+                if mode_name in COMPOSITION_MODES:
+                    layer.composition_mode = COMPOSITION_MODES[mode_name]
             new_layers.append(layer)
         shutil.rmtree(tmpdir)
 
@@ -807,7 +827,7 @@ class LayerStack(QObject):
         layer_index = None if layer is None else self.get_layer_index(layer)
         return layer, layer_index
 
-    def _layer_content_change_slot(self, layer: ImageLayer) -> None:
+    def _layer_content_change_slot(self, layer: ImageLayer, _=None) -> None:
         if layer.visible and layer in self._layers:
             if not layer.saved:
                 self._image_cache_full.invalidate()
@@ -851,6 +871,8 @@ class LayerStack(QObject):
         assert_valid_index(index, self._layers, allow_end=True)
         if connect_signals:
             layer.content_changed.connect(self._layer_content_change_slot)
+            layer.opacity_changed.connect(self._layer_content_change_slot)
+            layer.composition_mode_changed.connect(self._layer_content_change_slot)
             layer.visibility_changed.connect(self._layer_visibility_change_slot)
         self._layers.insert(index, layer)
         self.layer_added.emit(layer, index)
@@ -871,6 +893,8 @@ class LayerStack(QObject):
         assert layer in self._layers, f'layer {layer.name} is not in the stack.'
         if disconnect_signals:
             layer.content_changed.disconnect(self._layer_content_change_slot)
+            layer.opacity_changed.disconnect(self._layer_content_change_slot)
+            layer.composition_mode_changed.disconnect(self._layer_content_change_slot)
             layer.visibility_changed.disconnect(self._layer_visibility_change_slot)
 
         active_layer = self.active_layer

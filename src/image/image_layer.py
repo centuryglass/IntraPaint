@@ -28,6 +28,7 @@ class ImageLayer(QObject):
     content_changed = pyqtSignal(QObject)
     opacity_changed = pyqtSignal(QObject, float)
     bounds_changed = pyqtSignal(QObject, QRect)
+    composition_mode_changed = pyqtSignal(QObject, QPainter.CompositionMode)
 
     _next_layer_id = 0
 
@@ -56,6 +57,7 @@ class ImageLayer(QObject):
         self._opacity = 1.0
         self._pixmap = CachedData(None)
         self._position = QPoint(0, 0)
+        self._mode = QPainter.CompositionMode.CompositionMode_SourceOver
         self._id = ImageLayer._next_layer_id
         ImageLayer._next_layer_id += 1
         if isinstance(image_data, Image.Image):
@@ -85,6 +87,18 @@ class ImageLayer(QObject):
         """Updates the layer opacity."""
         self._opacity = new_opacity
         self.opacity_changed.emit(self, new_opacity)
+
+    @property
+    def composition_mode(self) -> QPainter.CompositionMode:
+        """Access the layer's rendering mode."""
+        return self._mode
+
+    @composition_mode.setter
+    def composition_mode(self, new_mode: QPainter.CompositionMode) -> None:
+        assert isinstance(new_mode, QPainter.CompositionMode)
+        if self._mode != new_mode:
+            self._mode = new_mode
+            self.composition_mode_changed.emit(self, new_mode)
 
     @property
     def position(self) -> QPoint:

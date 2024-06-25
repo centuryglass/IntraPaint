@@ -6,7 +6,7 @@ from PyQt5.QtCore import Qt, QRect, QSize, QPoint
 from PyQt5.QtGui import QPainter, QColor, QPaintEvent, QMouseEvent, QIcon, QPixmap
 from PyQt5.QtSvg import QSvgWidget
 from PyQt5.QtWidgets import QWidget, QLabel, QVBoxLayout, QHBoxLayout, QScrollArea, QSizePolicy, QPushButton, QMenu, \
-    QToolButton, QAction
+    QToolButton, QAction, QSlider, QDoubleSpinBox, QComboBox
 
 from src.config.cache import Cache
 from src.image.image_layer import ImageLayer
@@ -17,6 +17,8 @@ from src.ui.widget.editable_label import EditableLabel
 from src.util.display_size import find_text_size
 from src.util.geometry_utils import get_scaled_placement, get_rect_transformation
 from src.util.image_utils import get_transparency_tile_pixmap
+from src.util.shared_constants import COMPOSITION_MODES
+
 LIST_SPACING = 4
 MIN_VISIBLE_LAYERS = 3
 PREVIEW_SIZE = QSize(80, 80)
@@ -39,6 +41,9 @@ LAYER_DOWN_BUTTON_TOOLTIP = 'Move the active layer down.'
 MERGE_DOWN_BUTTON_ICON = 'resources/icons/layer/merge_down_icon.svg'
 MERGE_DOWN_BUTTON_TOOLTIP = 'Merge the active layer with the one below it.'
 MERGE_BUTTON_LABEL = 'Merge Down'
+
+OPACITY_LABEL_TEXT = 'Opacity:'
+MODE_LABEL_TEXT = 'Layer mode:'
 
 MENU_OPTION_MOVE_UP = 'Move up'
 MENU_OPTION_MOVE_DOWN = 'Move down'
@@ -78,6 +83,37 @@ class LayerPanel(QWidget):
         self._layout = QVBoxLayout(self)
         self._layer_stack = layer_stack
         self._layer_widgets: List[_LayerItem] = []
+
+        # Layer opacity slider:
+        self._opacity_layout = QHBoxLayout()
+        self._opacity_layout.setSpacing(0)
+        self._opacity_layout.setContentsMargins(0, 0, 0, 0)
+        self._opacity_layout.addWidget(QLabel(OPACITY_LABEL_TEXT))
+        self._opacity_slider = QSlider(Qt.Orientation.Horizontal)
+        self._opacity_layout.addWidget(self._opacity_slider)
+        self._opacity_spinbox = QDoubleSpinBox()
+        self._opacity_layout.addWidget(self._opacity_spinbox)
+        self._layout.addLayout(self._opacity_layout)
+        self._opacity_slider.setRange(0, 100)
+        self._opacity_spinbox.setRange(0.0, 1.0)
+        active_layer = layer_stack.active_layer
+        if active_layer is not None:
+            self._opacity_slider.setValue(int(active_layer.opacity * 100))
+            self._opacity_spinbox.setValue(active_layer.opacity)
+
+        self._opacity_slider.valueChanged.connect(self._update_opacity_slot)
+        self._opacity_spinbox.valueChanged.connect(self._update_opacity_slot)
+
+        self._mode_layout = QHBoxLayout()
+        self._mode_layout.setSpacing(0)
+        self._mode_layout.setContentsMargins(0, 0, 0, 0)
+        self._layout.addLayout(self._mode_layout)
+        self._mode_layout.addWidget((QLabel(MODE_LABEL_TEXT)))
+        self._mode_box = QComboBox()
+        self._mode_layout.addWidget(self._mode_box)
+        for mode_name, mode in COMPOSITION_MODES.items():
+            self._mode_box.addItem(mode_name, mode)
+        self._mode_box.currentIndexChanged.connect(self._mode_change_slot)
 
         # Build the scrolling layer list:
         self._layer_list = BorderedWidget(self)
@@ -124,6 +160,13 @@ class LayerPanel(QWidget):
         def _activate_layer(layer_id: Optional[int], _=None) -> None:
             for widget in self._layer_widgets:
                 widget.active = layer_id == widget.layer.id
+            new_active_layer = layer_stack.active_layer
+            if new_active_layer is not None:
+                self._update_opacity_slot(new_active_layer.opacity)
+                image_mode = new_active_layer.composition_mode
+                mode_index = self._mode_box.findData(image_mode)
+                if mode_index >= 0:
+                    self._mode_box.setCurrentIndex(mode_index)
         self._layer_stack.active_layer_changed.connect(_activate_layer)
         if self._layer_stack.active_layer is not None:
             _activate_layer(self._layer_stack.active_layer.id)
@@ -197,6 +240,31 @@ class LayerPanel(QWidget):
             if widget.layer == layer:
                 return widget
         return _LayerItem(layer, self._layer_stack, self)
+
+    def _update_opacity_slot(self, opacity: int | float) -> None:
+        if isinstance(opacity, int):
+            opacity_percent = opacity
+            opacity_fraction = opacity / 100
+        else:
+            opacity_percent = int(opacity * 100)
+            opacity_fraction = opacity
+        active_layer = self._layer_stack.active_layer
+        if active_layer is not None and active_layer.opacity != opacity_fraction:
+            active_layer.opacity = opacity_fraction
+        for input_widget, value in ((self._opacity_slider, opacity_percent),
+                                    (self._opacity_spinbox, opacity_fraction)):
+            if input_widget.value() != value:
+                input_widget.valueChanged.disconnect(self._update_opacity_slot)
+                input_widget.setValue(value)
+                input_widget.valueChanged.connect(self._update_opacity_slot)
+
+    def _mode_change_slot(self, _) -> None:
+        mode_text = self._mode_box.currentText()
+        assert mode_text in COMPOSITION_MODES
+        mode = COMPOSITION_MODES[mode_text]
+        active_layer = self._layer_stack.active_layer
+        if active_layer is not None and active_layer.composition_mode != mode:
+            active_layer.composition_mode = mode
 
 
 class _LayerItem(BorderedWidget):
@@ -281,7 +349,11 @@ class _LayerItem(BorderedWidget):
             painter.fillRect(paint_bounds, Qt.GlobalColor.darkGray)
         painter.setPen(Qt.black)
         painter.drawRect(paint_bounds)
+        painter.save()
+        painter.setOpacity(self._layer.opacity)
+        painter.setCompositionMode(self._layer.composition_mode)
         painter.drawPixmap(transformation.mapRect(layer_bounds), pixmap)
+        painter.restore()
         painter.drawRect(transformation.mapRect(image_bounds))
         painter.drawRect(transformation.mapRect(layer_bounds))
         if not self._layer.visible:

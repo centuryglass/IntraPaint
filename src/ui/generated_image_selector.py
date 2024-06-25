@@ -315,10 +315,17 @@ class GeneratedImageSelector(QWidget):
                     self.toggle_zoom()
                 else:
                     self._close_selector()
-            elif event.key() == Qt.Key_Enter and self._zoomed_in:
+            elif (event.key() == Qt.Key_Enter or event.key() == Qt.Key_Return) and self._zoomed_in:
                 self._select_option(self._zoom_index)
             else:
-                return False
+                try:
+                    num_value = int(event.text())
+                    if 0 <= num_value < len(self._options):
+                        self._zoom_to_option(num_value, True)
+                        return True
+                    return False
+                except ValueError:
+                    return False
             return True
         elif event.type() == QEvent.MouseButtonPress:
             if QApplication.keyboardModifiers() == Qt.ControlModifier:

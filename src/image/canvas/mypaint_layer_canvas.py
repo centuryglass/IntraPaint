@@ -2,11 +2,11 @@
 Draws content to an image layer.
 """
 import math
-from typing import Optional, Set
+from typing import Optional, Set, List, cast
 
 from PyQt5.QtCore import QRect, QPoint, QSize
 from PyQt5.QtGui import QColor, QPainter
-from PyQt5.QtWidgets import QGraphicsScene
+from PyQt5.QtWidgets import QGraphicsScene, QGraphicsItem
 
 from src.image.canvas.layer_canvas import LayerCanvas
 from src.image.image_layer import ImageLayer
@@ -55,6 +55,11 @@ class MyPaintLayerCanvas(LayerCanvas):
         self._last_stroke_tiles.clear()
         self._mp_surface.start_stroke()
 
+    def scene_items(self) -> List[QGraphicsItem]:
+        """Returns all graphics items present in the scene that belong to the canvas."""
+        return [item for item in self.scene.items() if isinstance(item, MPTile)]
+
+
     @property
     def _bounds_x(self):
         """Returns last stroke bounding box x-coordinate."""
@@ -86,6 +91,8 @@ class MyPaintLayerCanvas(LayerCanvas):
         if tile.scene() is None:
             self._scene.addItem(tile)
         tile.setZValue(self._z_value)
+        if self._layer is not None:
+            tile.setOpacity(self._layer.opacity)
         tile.update()
         # If currently drawing, use tiles to track the stroke bounds:
         if self._drawing:
@@ -131,7 +138,7 @@ class MyPaintLayerCanvas(LayerCanvas):
         if self._mp_surface.size != new_bounds.size():
             self._mp_surface.reset_surface(new_bounds.size())
             if self._layer is not None:
-                self._load_layer_content(self._layer)
+                self._layer_content_change_slot(self._layer)
 
     def _draw(self, x: float, y: float, pressure: Optional[float], x_tilt: Optional[float],
               y_tilt: Optional[float]) -> None:
@@ -144,7 +151,7 @@ class MyPaintLayerCanvas(LayerCanvas):
         else:
             self._mp_surface.basic_stroke_to(x, y)
 
-    def _load_layer_content(self, layer: Optional[ImageLayer]) -> None:
+    def _layer_content_change_slot(self, layer: Optional[ImageLayer]) -> None:
         """Refreshes the layer content within the canvas, or clears it if the layer is hidden."""
         assert layer == self._layer
         if layer is None or not layer.visible or self._edit_region is None or self._edit_region.isEmpty():
@@ -152,6 +159,12 @@ class MyPaintLayerCanvas(LayerCanvas):
         else:
             image = layer.cropped_image_content(self._edit_region)
             self._mp_surface.load_image(image)
+
+    def _layer_composition_mode_change_slot(self, layer: ImageLayer, mode: QPainter.CompositionMode) -> None:
+        assert layer == self._layer
+        for tile in self.scene_items():
+            tile = cast(MPTile, tile)
+            tile.composition_mode = mode
 
     def _copy_changes_to_layer(self, use_stroke_bounds: bool = False):
         """Copies content back to the connected layer."""
@@ -177,20 +190,24 @@ class MyPaintLayerCanvas(LayerCanvas):
 
             def apply():
                 """Copy the combined tile changes into the image."""
+                if layer == self._layer:
+                    self.disconnect_layer_signals()
                 with layer.borrow_image() as layer_image:
                     layer_painter = QPainter(layer_image)
                     layer_painter.setCompositionMode(QPainter.CompositionMode_Source)
                     layer_painter.drawImage(change_x, change_y, tile_change_image)
+                if layer == self._layer:
+                    self.connect_layer_signals()
 
             def reverse():
                 """To undo, copy in the cached previous image data."""
+                if layer == self._layer:
+                    self.disconnect_layer_signals()
                 with layer.borrow_image() as layer_image:
                     layer_painter = QPainter(layer_image)
                     layer_painter.setCompositionMode(QPainter.CompositionMode_Source)
                     layer_painter.drawImage(change_x, change_y, reverse_image)
+                if layer == self._layer:
+                    self.connect_layer_signals()
 
-            self._layer.visibility_changed.disconnect(self._load_layer_content)
-            self._layer.content_changed.disconnect(self._load_layer_content)
             commit_action(apply, reverse)
-            self._layer.visibility_changed.connect(self._load_layer_content)
-            self._layer.content_changed.connect(self._load_layer_content)
