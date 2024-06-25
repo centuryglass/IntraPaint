@@ -1,0 +1,109 @@
+{
+    "style": "Fusion",
+    "theme": "None",
+    "font_point_size": 10,
+    "animate_outlines": true,
+    "show_selections_in_generation_options": true,
+    "selection_screen_zooms_to_changed": true,
+    "show_options_full_resolution": false,
+    "default_image_size": "640x960",
+    "edit_size": "640x500",
+    "max_edit_size": "10240x10240",
+    "min_edit_size": "8x8",
+    "generation_size": "640x640",
+    "max_generation_size": "2048x2048",
+    "min_generation_size": "256x256",
+    "selection_brush_size": {
+        "min": 1,
+        "max": 300,
+        "step": 1,
+        "value": 27
+    },
+    "sketch_brush_size": {
+        "min": 1,
+        "max": 300,
+        "step": 1,
+        "value": 22
+    },
+    "mypaint_brush": "./resources/brushes/deevad/pen-note.myb",
+    "brush_favorites": [
+        "deevad/thin_watercolor",
+        "classic/smudge",
+        "classic/blur",
+        "classic/ink_eraser",
+        "deevad/pen-note",
+        "tanda/acrylic-03-with-water",
+        "tanda/acrylic-05-paint",
+        "deevad/basic_digital_brush_smudging",
+        "experimental/basic",
+        "tanda/watercolor-02-paint",
+        "tanda/acrylic-04-with-water",
+        "tanda/acrylic-04-paint",
+        "tanda/acrylic-04-only-water",
+        "deevad/kneaded_eraser"
+    ],
+    "max_undo": 30,
+    "pressure_size": true,
+    "pressure_opacity": false,
+    "speed_modifier_multiplier": 5,
+    "guidance_scale": {
+        "min": 0.0,
+        "max": 20.0,
+        "step": 0.1,
+        "value": 1.5
+    },
+    "batch_size": {
+        "min": 1,
+        "max": 20,
+        "step": 1,
+        "value": 5
+    },
+    "batch_count": {
+        "min": 1,
+        "max": 99,
+        "step": 1,
+        "value": 1
+    },
+    "show_original_in_options": true,
+    "edit_mode": "Inpaint",
+    "masked_content": "original",
+    "interrogate_model": "clip",
+    "sampling_method": "LCM",
+    "upscale_method": "SwinIR_4x",
+    "controlnet_upscaling": true,
+    "controlnet_tile_model": "control_v11f1e_sd15_tile [a371b31b]",
+    "controlnet_downsample_rate": {
+        "min": 1.0,
+        "max": 4.0,
+        "step": 0.1,
+        "value": 1.0
+    },
+    "mask_blur": {
+        "min": 0,
+        "max": 64,
+        "step": 1,
+        "value": 4
+    },
+    "seed": -1,
+    "inpaint_full_res": true,
+    "inpaint_full_res_padding": {
+        "min": 0,
+        "max": 1024,
+        "step": 1,
+        "value": 25
+    },
+    "restore_faces": false,
+    "tiling": false,
+    "controlnet_args_0": {},
+    "controlnet_args_1": {},
+    "controlnet_args_2": {},
+    "cutn": 16,
+    "skip_steps": {
+        "min": 0,
+        "max": 27,
+        "step": 1,
+        "value": 0
+    },
+    "upscale_mode": 1,
+    "downscale_mode": 1
+}

@@ -17,9 +17,9 @@ class Cache(Config):
             Cache._instance = Cache()
         return Cache._instance
 
-    def __init__(self) -> None:
+    def __init__(self, json_path: str = DEFAULT_FILE_PATH) -> None:
         """Initialize the cache, registering expected value types."""
-        super().__init__(CONFIG_DEFINITIONS, DEFAULT_FILE_PATH, Cache)
+        super().__init__(CONFIG_DEFINITIONS, json_path, Cache)
         if Cache._instance is not None:
             raise RuntimeError('Do not call the Cache constructor, access it with Cache.instance()')
 

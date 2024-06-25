@@ -23,7 +23,6 @@ from src.ui.panel.tool_panel import ToolPanel
 from src.ui.widget.loading_widget import LoadingWidget
 from src.ui.window.image_window import ImageWindow
 from src.util.display_size import get_screen_size
-from src.util.image_utils import pil_image_to_qimage
 from src.util.shared_constants import TIMELAPSE_MODE_FLAG
 
 DEFAULT_LOADING_MESSAGE = 'Loading...'
@@ -33,7 +32,7 @@ logger = logging.getLogger(__name__)
 MAIN_TAB_NAME = 'Main'
 CONTROL_TAB_NAME = 'Image Generation'
 CONTROL_PANEL_STRETCH = 5
-MAX_TABS = 3
+MAX_TABS = 2
 
 
 class MainWindow(QMainWindow):
@@ -90,6 +89,7 @@ class MainWindow(QMainWindow):
                 if not self._central_widget.isVisible():
                     return False
                 return self.focus_tab(idx)
+
             HotkeyFilter.instance().register_keybinding(_try_tab_focus, tab_index_key, Qt.KeyboardModifier.NoModifier)
         # Loading widget (for interrogate):
         self._is_loading = False
@@ -151,7 +151,7 @@ class MainWindow(QMainWindow):
                     self._reactive_layout.removeItem(item)
             self._reactive_widget = QWidget(self)
             reactive_layout = QVBoxLayout(self._reactive_widget) if orientation == Qt.Orientation.Vertical \
-                             else QHBoxLayout(self._reactive_widget)
+                else QHBoxLayout(self._reactive_widget)
             self._reactive_layout = reactive_layout
             reactive_layout.setContentsMargins(0, 0, 0, 0)
             reactive_layout.setSpacing(0)
@@ -185,20 +185,19 @@ class MainWindow(QMainWindow):
         w_hide_ctrl_panel = min_w_ctrl_panel + width_buffer
         h_hide_ctrl_panel = min_h_ctrl_panel + height_buffer
 
-        if self.width() > w_show_ctrl_panel and self.height() > h_show_ctrl_panel:
+        if self.width() >= w_show_ctrl_panel and self.height() >= h_show_ctrl_panel:
             if CONTROL_TAB_NAME in tab_names:
                 self._main_widget.removeTab(tab_names.index(CONTROL_TAB_NAME))
-            if self._control_panel.parent() != self._main_page_tab:
+            if self._control_panel not in self._layout.children():
                 self._layout.addWidget(self._control_panel)
-                self._control_panel.show()
+                self._control_panel.setVisible(True)
+            self._tool_panel.show_generate_button(False)
         elif self.width() < w_hide_ctrl_panel or self.height() < h_hide_ctrl_panel:
-            if self._control_panel.parent() == self._main_page_tab:
+            if self._control_panel in self._layout.children():
                 self._layout.removeWidget(self._control_panel)
             if CONTROL_TAB_NAME not in tab_names:
                 self._main_widget.addTab(self._control_panel, CONTROL_TAB_NAME)
-
-        # Show extra "generate" button only when control panel is tabbed:
-        self._tool_panel.show_generate_button(self._control_panel.parent() != self._reactive_widget)
+            self._tool_panel.show_generate_button(True)
 
         # Restrict the tool panel to a reasonable portion of the screen:
         if self._orientation == Qt.Orientation.Vertical:
@@ -355,7 +354,7 @@ class MainWindow(QMainWindow):
 
     def resizeEvent(self, unused_event: Optional[QResizeEvent]) -> None:
         """Applies the most appropriate layout when the window size changes."""
-        if hasattr(self, '_loading_widget') and not TIMELAPSE_MODE_FLAG in sys.argv:
+        if hasattr(self, '_loading_widget') and TIMELAPSE_MODE_FLAG not in sys.argv:
             loading_widget_size = int(self.height() / 8)
             loading_bounds = QRect(self.width() // 2 - loading_widget_size // 2, loading_widget_size * 3,
                                    loading_widget_size, loading_widget_size)
@@ -374,5 +373,3 @@ class MainWindow(QMainWindow):
     def closeEvent(self, unused_event: Optional[QCloseEvent]) -> None:
         """Close the application when the main window is closed."""
         QApplication.exit()
-
-

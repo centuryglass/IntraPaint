@@ -214,14 +214,15 @@ class ToolPanel(QWidget):
 
     def show_generate_button(self, should_show: bool) -> None:
         """Shows or hides the image generation button."""
-        if not should_show and self._generate_button.isVisible():
-            if self._panel_box_layout is not None:
-                self._panel_box_layout.removeWidget(self._generate_button)
-            self._generate_button.setVisible(False)
-        elif should_show and not self._generate_button.isVisible():
-            if self._panel_box_layout is not None:
+        self._generate_button.setVisible(should_show)
+        self._generate_button.setEnabled(should_show)
+        if should_show:
+            if self._panel_box_layout is not None and self._generate_button not in self._panel_box_layout.children():
                 self._panel_box_layout.addWidget(self._generate_button)
             self._generate_button.show()
+        else:
+            if self._panel_box_layout is not None and self._generate_button in self._panel_box_layout.children():
+                self._panel_box_layout.removeWidget(self._generate_button)
 
     def _switch_active_tool(self, tool_label: Optional[str]) -> None:
         """Sets a new tool as the active tool."""
