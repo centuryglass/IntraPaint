@@ -179,7 +179,7 @@ class _PreviewWidget(QWidget):
             rect_offset = QPoint(-full_rect.x(), -full_rect.y())
             for r in [full_rect, image_rect, canvas_rect]:
                 r.translate(rect_offset)
-        draw_area = get_scaled_placement(QRect(0, 0, self.width(), self.height()), full_rect.size())
+        draw_area = get_scaled_placement(self.size(), full_rect.size())
         scale = draw_area.width() / full_rect.width()
 
         def get_draw_rect(src: QRect) -> QRect:

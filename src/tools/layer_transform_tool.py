@@ -524,6 +524,7 @@ class LayerTransformTool(BaseTool):
             self._transform_pixmap.setOpacity(layer.opacity)
             self._transform_pixmap.composition_mode = layer.composition_mode
             self._transform_outline.setZValue(-self._layer_stack.get_layer_index(layer))
+            self._transformation_change_slot(QPointF(0, 0), 1.0, 1.0, 0.0)
 
     def _on_activate(self) -> None:
         """Connect to the active layer."""
@@ -640,7 +641,7 @@ class _TransformPreview(QWidget):
         image_bounds = QRect(QPoint(), self._size)
         final_image_poly = self._transform.map(QPolygon(self._bounds))
         full_bounds = image_bounds.united(final_image_poly.boundingRect())
-        scaled_full_bounds = get_scaled_placement(QRect(QPoint(), self.size()), full_bounds.size(), 4)
+        scaled_full_bounds = get_scaled_placement(self.size(), full_bounds.size(), 4)
         initial_transform = get_rect_transformation(full_bounds, scaled_full_bounds)
         image_bounds_color = QColor(Qt.black)
         image_bounds_color.setAlphaF(0.3)

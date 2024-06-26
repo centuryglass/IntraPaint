@@ -43,8 +43,7 @@ class DraggableArrow(QWidget):
     def resizeEvent(self, unused_event: Optional[QResizeEvent]) -> None:
         """Recalculate arrow placement when widget bounds change."""
         min_size = min(self.width(), self.height())
-        self._center_box = get_scaled_placement(QRect(0, 0, self.width(), self.height()),
-                                                QSize(min_size, min_size // 2))
+        self._center_box = get_scaled_placement(self.size(), QSize(min_size, min_size // 2))
 
     def paintEvent(self, unused_event: Optional[QPaintEvent]) -> None:
         """Draws the arrow in the chosen orientation."""

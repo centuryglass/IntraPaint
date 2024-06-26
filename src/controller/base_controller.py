@@ -5,16 +5,19 @@ editing method supported by IntraPaint should have its own BaseController subcla
 import os
 import sys
 import re
-from typing import Optional, Callable, Any, List
+from typing import Optional, Callable, Any, List, Tuple
 from argparse import Namespace
 import logging
 from PIL import Image, ImageFilter, UnidentifiedImageError, PngImagePlugin
 from PyQt5.QtWidgets import QApplication, QMessageBox, QMainWindow
-from PyQt5.QtCore import QObject, QRect, QPoint, QThread, QSize, pyqtSignal
+from PyQt5.QtCore import QObject, QRect, QPoint, QThread, QSize, pyqtSignal, Qt
 from PyQt5.QtGui import QScreen, QImage, QPainter
 
 from src.config.cache import Cache
 from src.config.key_config import KeyConfig
+from src.image.filter.posterize import posterize, POSTERIZE_FILTER_TITLE, POSTERIZE_FILTER_DESCRIPTION, \
+    get_posterize_params
+from src.ui.modal.filter_modal import ImageFilterModal
 from src.ui.panel.layer_panel import LayerPanel
 from src.util.menu_action import MenuBuilder, menu_action
 from src.util.optional_import import optional_import
@@ -25,7 +28,7 @@ from src.ui.window.main_window import MainWindow
 from src.ui.modal.new_image_modal import NewImageModal
 from src.ui.modal.resize_canvas_modal import ResizeCanvasModal
 from src.ui.modal.image_scale_modal import ImageScaleModal
-from src.ui.modal.modal_utils import show_error_dialog, request_confirmation, open_image_file
+from src.ui.modal.modal_utils import show_error_dialog, request_confirmation, open_image_file, open_image_layers
 from src.ui.modal.settings_modal import SettingsModal
 from src.util.display_size import get_screen_size
 from src.util.image_utils import pil_image_to_qimage, qimage_to_pil_image
@@ -47,6 +50,7 @@ MENU_IMAGE = 'Image'
 MENU_SELECTION = 'Selection'
 MENU_LAYERS = 'Layers'
 MENU_TOOLS = 'Tools'
+MENU_FILTERS = 'Filters'
 
 CONFIRM_QUIT_TITLE = 'Quit now?'
 CONFIRM_QUIT_MESSAGE = 'All unsaved changes will be lost.'
@@ -72,6 +76,8 @@ GENERATE_ERROR_TITLE_EXISTING_OP = 'Failed'
 GENERATE_ERROR_MESSAGE_EXISTING_OP = 'Existing image generation operation not yet finished, wait a little longer.'
 SETTINGS_ERROR_MESSAGE = 'Settings not supported in this mode.'
 SETTINGS_ERROR_TITLE = 'Failed to open settings'
+LOAD_LAYER_ERROR_TITLE = 'Opening layers failed'
+LOAD_LAYER_ERROR_MESSAGE = 'Could not open the following images: '
 
 METADATA_PARAMETER_KEY = 'parameters'
 IGNORED_APPCONFIG_CATEGORIES = ('Stable-Diffusion', 'GLID-3-XL')
@@ -325,6 +331,9 @@ class BaseInpaintController(MenuBuilder):
             file_path, file_selected = open_image_file(self._window)
             if not file_path or not file_selected:
                 return
+        if isinstance(file_path, list):
+            logger.warning(f'Expected single image, got list with length {len(file_path)}')
+            file_path = file_path[0]
         assert_type(file_path, str)
         try:
             if file_path.endswith('.inpt'):
@@ -372,7 +381,37 @@ class BaseInpaintController(MenuBuilder):
             show_error_dialog(self._window, LOAD_ERROR_TITLE, err)
             return
 
-    @menu_action(MENU_FILE, 'reload_shortcut', 4, True)
+    @menu_action(MENU_FILE, 'load_layers_shortcut', 4, True)
+    def load_image_layers(self) -> None:
+        """Open one or more images as layers."""
+        assert self._window is not None
+        layer_paths, layers_selected = open_image_layers(self._window)
+        if not layers_selected or not layer_paths or len(layer_paths) == 0:
+            return
+        layers: List[Tuple[QImage, str]] = []
+        errors: List[str] = []
+        for layer_path in layer_paths:
+            try:
+                image = QImage(layer_path)
+                layers.append((image, layer_path))
+            except IOError:
+                errors.append(layer_path)
+        if not self._layer_stack.has_image:
+            width = 0
+            height = 0
+            for image, _ in layers:
+                width = max(width, image.width())
+                height = max(height, image.height())
+            base_layer = QImage(QSize(width, height), QImage.Format_ARGB32_Premultiplied)
+            base_layer.fill(Qt.GlobalColor.transparent)
+            self._layer_stack.set_image(base_layer)
+        for image, image_path in layers:
+            name = os.path.basename(image_path)
+            self._layer_stack.create_layer(name, image)
+        if len(errors) > 0:
+            show_error_dialog(self._window, LOAD_LAYER_ERROR_TITLE, LOAD_LAYER_ERROR_MESSAGE + ','.join(errors))
+
+    @menu_action(MENU_FILE, 'reload_shortcut', 5, True)
     def reload_image(self) -> None:
         """Reload the edited image from disk after getting confirmation from a confirmation dialog."""
         assert self._window is not None
@@ -388,7 +427,7 @@ class BaseInpaintController(MenuBuilder):
                                                                    RELOAD_CONFIRMATION_MESSAGE):
             self.load_image(file_path=file_path)
 
-    @menu_action(MENU_FILE, 'quit_shortcut', 5)
+    @menu_action(MENU_FILE, 'quit_shortcut', 6)
     def quit(self) -> None:
         """Quit the application after getting confirmation from the user."""
         if self._window is not None and request_confirmation(self._window, CONFIRM_QUIT_TITLE, CONFIRM_QUIT_MESSAGE):
@@ -717,6 +756,15 @@ class BaseInpaintController(MenuBuilder):
         """Show the image preview window."""
         assert self._window is not None
         self._window.show_image_window()
+
+    @menu_action(MENU_FILTERS, 'posterize_shortcut', 62, ignore_when_busy=True)
+    def posterize_layer(self) -> None:
+        """Posterize the image."""
+        if not self._layer_stack.has_image:
+            return
+        filter_modal = ImageFilterModal(POSTERIZE_FILTER_TITLE, POSTERIZE_FILTER_DESCRIPTION, get_posterize_params(),
+                                        posterize, self._layer_stack)
+        filter_modal.exec_()
 
     # Internal/protected:
 

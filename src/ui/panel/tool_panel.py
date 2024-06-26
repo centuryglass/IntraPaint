@@ -324,7 +324,7 @@ class _ToolButton(QWidget):
 
     def resizeEvent(self, event: Optional[QResizeEvent]):
         """Recalculate and cache icon bounds on size change."""
-        self._icon_bounds = get_scaled_placement(QRect(0, 0, self.width(), self.height()), QSize(10, 10), 8)
+        self._icon_bounds = get_scaled_placement(self.size(), QSize(10, 10), 8)
         if self._key_hint is not None:
             self._key_hint.setGeometry(QRect(self._icon_bounds.right() + 1,
                                              self._icon_bounds.center().y() - self._icon_bounds.height() // 4,

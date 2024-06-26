@@ -213,7 +213,7 @@ class _IconButton(QWidget):
 
     def resizeEvent(self, unused_event: Optional[QResizeEvent]) -> None:
         """Recalculates icon bounds when the widget size changes."""
-        self._image_rect = get_scaled_placement(QRect(0, 0, self.width(), self.height()), self._image.size())
+        self._image_rect = get_scaled_placement(self.size(), self._image.size())
 
     def sizeHint(self):
         """Define suggested button size based on window size."""

@@ -1,17 +1,17 @@
 """Provides a utility function for handling image or widget placement."""
 
-from PyQt5.QtCore import QRect, QSize, QRectF, QSizeF
+from PyQt5.QtCore import QRect, QSize, QRectF, QSizeF, QPoint
 from PyQt5.QtGui import QTransform, QPolygonF
 
 
-def get_scaled_placement(container_rect: QRect,
+def get_scaled_placement(container_rect: QRect | QSize,
                          inner_size: QSize, margin_width: int = 0) -> QRect:
     """
     Calculate the most appropriate placement of a scaled rectangle within a container, without changing aspect ratio.
     Parameters:
     -----------
     container_rect : QRect
-        Bounds of the container where the scaled rectangle will be placed.        
+        Bounds of the container where the scaled rectangle will be placed. If QSize, it is assumed to be at (0, 0).
     inner_size : QSize
         S of the rectangle to be scaled and placed within the container.
     margin_width : int
@@ -21,6 +21,8 @@ def get_scaled_placement(container_rect: QRect,
     placement : QRect
         Size and position of the scaled rectangle within container_rect.
     """
+    if isinstance(container_rect, QSize):
+        container_rect = QRect(QPoint(), container_rect)
     container_size = container_rect.size() - QSize(margin_width * 2, margin_width * 2)
     scale = min(container_size.width() / max(inner_size.width(), 1),
                 container_size.height() / max(inner_size.height(), 1))

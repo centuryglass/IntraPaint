@@ -291,7 +291,7 @@ class ImageGraphicsView(QGraphicsView):
         content_size = self._content_size
         if content_size is None:
             return
-        self._content_rect = get_scaled_placement(QRect(QPoint(0, 0), self.size()), content_size, border_size)
+        self._content_rect = get_scaled_placement(self.size(), content_size, border_size)
         displayed_content_size = self._content_rect.size()
         new_scale = displayed_content_size.width() / content_size.width()
         scale_changed = new_scale != self._scale
@@ -428,6 +428,6 @@ class ImageGraphicsView(QGraphicsView):
         assert content_size is not None
         self.offset = QPoint(int(bounds.center().x() - (content_size.width() // 2)),
                              int(bounds.center().y() - (content_size.height() // 2)))
-        self.scene_scale = get_scaled_placement(QRect(QPoint(0, 0), self.size()),
-                                                bounds.size(), 0).width() / (bounds.width() + margin)
+        self.scene_scale = (get_scaled_placement(self.size(), bounds.size(), 0).width()
+                            / (bounds.width() + margin))
         self.resizeEvent(None)

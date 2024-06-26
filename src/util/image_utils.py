@@ -20,11 +20,12 @@ DEFAULT_ICON_SIZE = QSize(64, 64)
 def pil_image_to_qimage(pil_image: Image.Image) -> QImage:
     """Convert a PIL Image to a RGB888 formatted PyQt5 QImage."""
     if isinstance(pil_image, Image.Image):
-        return QImage(pil_image.tobytes("raw", "RGB"),
-                      pil_image.width,
-                      pil_image.height,
-                      pil_image.width * 3,
-                      QImage.Format_RGB888)
+        image = QImage(pil_image.tobytes("raw", "RGB"),
+                       pil_image.width,
+                       pil_image.height,
+                       pil_image.width * 3,
+                       QImage.Format_RGB888)
+        return image.convertToFormat(QImage.Format_ARGB32_Premultiplied)
     raise TypeError("Invalid PIL Image parameter.")
 
 

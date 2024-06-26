@@ -1,5 +1,8 @@
 """Manages an edited image layer."""
 from sys import version_info
+
+from src.image.mypaint.numpy_image_utils import image_data_as_numpy_8bit, is_fully_transparent
+
 if version_info[1] >= 11:
     from typing import Self, Optional
 else:
@@ -199,6 +202,12 @@ class ImageLayer(QObject):
             self.visibility_changed.emit(self, self._visible)
 
     @property
+    def empty(self) -> bool:
+        """Returns whether this layer contains only fully transparent pixels."""
+        image_array = image_data_as_numpy_8bit(self._image)
+        return is_fully_transparent(image_array)
+
+    @property
     def name(self) -> str:
         """Returns the layer's name string."""
         return self._name
@@ -234,6 +243,18 @@ class ImageLayer(QObject):
         else:
             self._position = position
             self.bounds_changed.emit(self, self.geometry)
+
+    def set_image(self, new_image: QImage) -> None:
+        """Updates image content, saving the change to the undo stack"""
+        last_image = self.qimage
+
+        def _update(img=new_image):
+            self.qimage = img
+
+        def _undo(img=last_image):
+            self.qimage = img
+
+        commit_action(_update, _undo)
 
     @contextmanager
     def borrow_image(self) -> Generator[Optional[QImage], None, None]:

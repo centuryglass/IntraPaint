@@ -5,17 +5,14 @@ stable_diffusion_controller.
 import sys
 from typing import Any, Dict, List, Optional
 from PyQt5.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QPushButton, QLineEdit, QComboBox, QDoubleSpinBox, \
-    QCheckBox, QWidget, QTabWidget, QFormLayout, QLabel, QScrollArea
+    QCheckBox, QWidget, QTabWidget, QFormLayout, QScrollArea
 from PyQt5.QtCore import pyqtSignal, QSize
 
 from src.config.config import Config
 from src.config.config_entry import RangeKey
 from src.ui.widget.bordered_widget import BorderedWidget
 from src.ui.widget.big_int_spinbox import BigIntSpinbox
-
-WIDTH_LABEL = "W:"
-HEIGHT_LABEL = "H:"
-
+from src.ui.widget.size_field import SizeField
 
 class SettingsModal(QDialog):
     """Manage remote settings."""
@@ -124,9 +121,8 @@ class SettingsModal(QDialog):
             if key not in self._inputs:
                 continue
             widget = self._inputs[key]
-            if isinstance(settings[key], QSize):
-                widget.width_box.setValue(settings[key].width())
-                widget.height_box.setValue(settings[key].height())
+            if isinstance(widget, SizeField):
+                widget.value = QSize(settings[key])
             elif isinstance(widget, QLineEdit):
                 widget.setText(settings[key])
             elif isinstance(widget, QComboBox):
@@ -278,27 +274,14 @@ class SettingsModal(QDialog):
         label_text : str
             Setting display name to show in the UI.
         """
-        size_bar = QWidget()
-        bar_layout = QHBoxLayout(size_bar)
-        bar_layout.addWidget(QLabel(WIDTH_LABEL))
-        width_box = BigIntSpinbox(size_bar)
-        width_box.setValue(initial_value.width())
-        bar_layout.addWidget(width_box)
-        bar_layout.addWidget(QLabel(HEIGHT_LABEL))
-        height_box = BigIntSpinbox(size_bar)
-        height_box.setValue(initial_value.height())
-        bar_layout.addWidget(height_box)
+        size_field = SizeField()
+        size_field.value = initial_value
 
-        def _update_width(new_width: str) -> None:
-            self._add_change(setting_name, QSize(int(new_width), height_box.value()))
-        width_box.valueChanged.connect(_update_width)
+        def _update_size(new_size: QSize) -> None:
+            self._add_change(setting_name, new_size)
+        size_field.value_changed.connect(_update_size)
 
-        def _update_height(new_height: str) -> None:
-            self._add_change(setting_name, QSize(width_box.value(), int(new_height)))
-        height_box.valueChanged.connect(_update_height)
-        setattr(size_bar, 'width_box', width_box)
-        setattr(size_bar, 'height_box', height_box)
-        self._add_setting(setting_name, panel_name, size_bar, label_text)
+        self._add_setting(setting_name, panel_name, size_field, label_text)
 
     def _add_change(self, setting: str, new_value: Any):
         self._changes[setting] = new_value

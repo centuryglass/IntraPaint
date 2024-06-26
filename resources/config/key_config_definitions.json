@@ -199,6 +199,14 @@
         "default": "Ctrl+O",
         "saved": true
     },
+    "load_layers_shortcut": {
+        "label": "Open as Layers",
+        "category": "Keybindings",
+        "description": "Open images as new layers.",
+        "type": "string",
+        "default": "Ctrl+Shift+O",
+        "saved": true
+    },
     "reload_shortcut": {
         "label": "Reload",
         "category": "Keybindings",
@@ -453,6 +461,14 @@
         "description": "Open a new window showing the edited image.",
         "type": "string",
         "default": "Ctrl+Alt+W",
+        "saved": true
+    },
+    "posterize_shortcut": {
+        "label": "Posterize",
+        "category": "Keybindings",
+        "description": "Simplify layer color palette",
+        "type": "string",
+        "default": "Ctrl+F1",
         "saved": true
     }
 }
