@@ -17,6 +17,8 @@ from src.config.cache import Cache
 from src.config.key_config import KeyConfig
 from src.image.filter.posterize import posterize, POSTERIZE_FILTER_TITLE, POSTERIZE_FILTER_DESCRIPTION, \
     get_posterize_params
+from src.image.filter.blur import blur, BLUR_FILTER_TITLE, BLUR_FILTER_DESCRIPTION, \
+    get_blur_params
 from src.ui.modal.image_filter_modal import ImageFilterModal
 from src.ui.panel.layer_panel import LayerPanel
 from src.util.menu_action import MenuBuilder, menu_action
@@ -757,8 +759,17 @@ class BaseInpaintController(MenuBuilder):
         assert self._window is not None
         self._window.show_image_window()
 
+    @menu_action(MENU_FILTERS, 'blur_shortcut', 61, ignore_when_busy=True)
+    def blur_filter(self) -> None:
+        """Blur the image."""
+        if not self._layer_stack.has_image:
+            return
+        filter_modal = ImageFilterModal(BLUR_FILTER_TITLE, BLUR_FILTER_DESCRIPTION, get_blur_params(),
+                                        blur, self._layer_stack)
+        filter_modal.exec_()
+
     @menu_action(MENU_FILTERS, 'posterize_shortcut', 62, ignore_when_busy=True)
-    def posterize_layer(self) -> None:
+    def posterize_filter(self) -> None:
         """Posterize the image."""
         if not self._layer_stack.has_image:
             return

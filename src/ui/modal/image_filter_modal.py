@@ -39,7 +39,7 @@ class ImageFilterModal(QDialog):
             field_widget = param.get_input_widget()
             self._param_inputs.append(field_widget)
             self._layout.addRow(param.name, field_widget)
-            param.connect_widget_change_handler(field_widget, self._update_preview)
+            field_widget.valueChanged.connect(self._update_preview)
 
         self._selected_only_checkbox = QCheckBox()
         self._layout.addRow(self._selected_only_checkbox)
@@ -69,8 +69,8 @@ class ImageFilterModal(QDialog):
 
     def _get_filtered_image(self, image: QImage, selection: Optional[QImage], selection_offset: QPoint) -> QImage:
         arg_list = [image]
-        for param, input_widget in zip(self._params, self._param_inputs):
-            arg_list.append(param.get_widget_param_value(input_widget))
+        for input_widget in self._param_inputs:
+            arg_list.append(input_widget.value())
         filtered_image = self._filter(*arg_list)
         if selection is None:
             return filtered_image

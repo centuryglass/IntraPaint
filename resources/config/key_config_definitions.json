@@ -463,12 +463,20 @@
         "default": "Ctrl+Alt+W",
         "saved": true
     },
+    "blur_shortcut": {
+        "label": "Blur",
+        "category": "Keybindings",
+        "description": "Image blurring",
+        "type": "string",
+        "default": "Ctrl+1",
+        "saved": true
+    },
     "posterize_shortcut": {
         "label": "Posterize",
         "category": "Keybindings",
         "description": "Simplify layer color palette",
         "type": "string",
-        "default": "Ctrl+F1",
+        "default": "Ctrl+2",
         "saved": true
     }
 }

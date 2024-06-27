@@ -6,7 +6,7 @@ from PyQt5.QtWidgets import QStyleFactory
 
 from src.config.config import Config
 from src.util.optional_import import optional_import
-from src.util.pil_scaling import PIL_SCALING_MODES
+from src.util.shared_constants import PIL_SCALING_MODES
 
 # Optional theme modules:
 qdarktheme = optional_import('qdarktheme')

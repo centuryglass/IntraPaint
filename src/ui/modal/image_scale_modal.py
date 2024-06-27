@@ -2,12 +2,10 @@
 from typing import Optional
 
 from PyQt5.QtCore import QSize
-from PyQt5.QtWidgets import QDialog, QLabel, QVBoxLayout, QPushButton, QComboBox, QBoxLayout
+from PyQt5.QtWidgets import QDialog, QLabel, QFormLayout, QPushButton, QComboBox, QSpinBox
 
 from src.config.application_config import AppConfig
 from src.config.cache import Cache
-from src.ui.config_control_setup import connected_combobox
-from src.ui.widget.labeled_spinbox import LabeledSpinbox
 
 WIDTH_PX_BOX_LABEL = 'Width:'
 WIDTH_PX_BOX_TOOLTIP = 'New image width in pixels'
@@ -34,27 +32,25 @@ class ImageScaleModal(QDialog):
         config = AppConfig.instance()
         self._should_scale = False
         self.setModal(True)
-        self._layout = QVBoxLayout()
+        self._layout = QFormLayout(self)
 
         self._title = QLabel(self)
         self._title.setText('Scale image')
-        self._layout.addWidget(self._title)
+        self._layout.addRow(self._title)
+        
+        def _add_input(default_value, min_val, max_val, title, tooltip) -> QSpinBox:
+            box = QSpinBox() if isinstance(default_value, int) else QDoubleSpinBox()
+            box.setValue(default_value)
+            box.setRange(min_val, max_val)
+            box.setToolTip(tooltip)
+            self._layout.addRow(title, box)
+            return box
 
-        min_val = MIN_PX_VALUE
-        max_val = MAX_PX_VALUE
-        self._width_box = LabeledSpinbox(self, WIDTH_PX_BOX_LABEL, WIDTH_PX_BOX_TOOLTIP, min_val,
-                                         default_width, max_val)
-        self._layout.addWidget(self._width_box)
-        self._height_box = LabeledSpinbox(self, HEIGHT_PX_BOX_LABEL, HEIGHT_PX_BOX_TOOLTIP, min_val,
-                                          default_height, max_val)
-        self._layout.addWidget(self._height_box)
-        self._x_mult_box = LabeledSpinbox(self, WIDTH_MULT_BOX_LABEL, WIDTH_MULT_BOX_TOOLTIP, 0.0, 1.0,
-                                          999.0)
-        self._layout.addWidget(self._x_mult_box)
-        self._y_mult_box = LabeledSpinbox(self, HEIGHT_MULT_BOX_LABEL, HEIGHT_MULT_BOX_TOOLTIP, 0.0, 1.0,
-                                          999.0)
-        self._layout.addWidget(self._y_mult_box)
-        upscale_box, upscale_layout = connected_combobox(self, AppConfig.UPSCALE_METHOD, text=UPSCALE_METHOD_LABEL)
+        self._width_box = _add_input(default_width, MIN_PX_VALUE, MAX_PX_VALUE, WIDTH_PX_BOX_LABEL, WIDTH_PX_BOX_TOOLTIP)
+        self._height_box = _add_input(default_height, MIN_PX_VALUE, MAX_PX_VALUE, HEIGHT_PX_BOX_LABEL, HEIGHT_PX_BOX_TOOLTIP)
+        self._x_mult_box = _add_input(1.0, 0.0, 999.0, WIDTH_MULT_BOX_LABEL, WIDTH_MULT_BOX_TOOLTIP)
+        self._y_mult_box = _add_input(1.0, 0.0, 999.0, HEIGHT_MULT_BOX_LABEL, HEIGHT_MULT_BOX_TOOLTIP)
+        upscale_box = config.get_control_widget(self, AppConfig.UPSCALE_METHOD, text=UPSCALE_METHOD_LABEL)
         self._upscale_method_box: QComboBox = upscale_box
         self._upscale_layout: QBoxLayout = upscale_layout
         self._layout.addLayout(self._upscale_layout)
