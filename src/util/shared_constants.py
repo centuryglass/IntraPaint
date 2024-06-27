@@ -1,5 +1,6 @@
 """Assorted constants required in multiple areas."""
 from PyQt5.QtGui import QPainter
+from PIL import Image
 
 # Numeric:
 INT_MIN = -2147483647
@@ -49,4 +50,13 @@ COMPOSITION_MODES = {
     'Source atop': QPainter.CompositionMode.CompositionMode_SourceAtop,
     'Destination atop': QPainter.CompositionMode.CompositionMode_DestinationAtop,
     'Xor': QPainter.CompositionMode.CompositionMode_Xor
+}
+
+PIL_SCALING_MODES = {
+    'Bilinear': Image.Resampling.BILINEAR,
+    'Nearest': Image.Resampling.NEAREST,
+    'Hamming': Image.Resampling.HAMMING,
+    'Bicubic': Image.Resampling.BICUBIC,
+    'Lanczos': Image.Resampling.LANCZOS,
+    'Box': Image.Resampling.BOX
 }

@@ -163,22 +163,6 @@
         "default": 30,
         "saved": true
     },
-    "pressure_size": {
-        "label": "pressure=size",
-        "category": "Editing",
-        "description": "Whether tablet pen pressure should affect the size of lines drawn. This has no effect when using sketch mode and the MyPaint canvas.",
-        "type": "bool",
-        "default": true,
-        "saved": true
-    },
-    "pressure_opacity": {
-        "label": "pressure=opacity",
-        "category": "Editing",
-        "description": "Whether tablet pen pressure should affect the opacity of lines drawn. This has no effect when using mask mode or using sketch mode with the MyPaint canvas.",
-        "type": "bool",
-        "default": false,
-        "saved": true
-    },
     "speed_modifier_multiplier": {
         "label": "'Speed modifier' key multiplier:",
         "category": "Editing",
@@ -187,8 +171,6 @@
         "default": 5,
         "saved": true
     },
-
-
     "prompt": {
         "label": "Prompt:",
         "category": "Image generation",
@@ -244,15 +226,6 @@
             "step": 1
         }
     },
-    "show_original_in_options": {
-        "label": "Include original in options:",
-        "category": "Image generation",
-        "description": "When the user is choosing between generated images, include the source image in the options. This makes it easier to tell when none of the generated images are better than the original.",
-        "type": "bool",
-        "default": true,
-        "saved": true
-    },
-
     "edit_mode": {
         "label": "Edit mode:",
         "category": "Stable-Diffusion",
@@ -320,19 +293,7 @@
         "description": "Mathematical technique used to transform image data during the generation process. 'Euler a' works well in most cases, but certain models or extensions might perform better with other options.",
         "type": "string",
         "default": "Euler a",
-        "options": [
-            "Euler a",
-            "Euler",
-            "LMS",
-            "Heun",
-            "DPM2",
-            "DPM2 a",
-            "LMS Karras", 
-            "DPM2 Karras",
-            "DPM2 a Karras",
-            "DDIM",
-            "PLMS"
-        ],
+        "options": [],
         "saved": true
     },
     "upscale_method": {
@@ -341,9 +302,7 @@
         "description": "Method to use when increasing image resolution. Available options will be loaded from the stable-diffusion-webui on launch.",
         "type": "string",
         "default": "None",
-        "options": [
-            "None"
-        ],
+        "options": [],
         "saved": true
     },
     "controlnet_upscaling": {
@@ -394,6 +353,11 @@
         "description": "Number used to control pseudo-random aspects of image generation, in most cases using the same seed with the same settings and inputs will always produce the same results. If set to -1, a different random seed will be used for each image generation. ",
         "type": "int",
         "default": -1,
+        "range_options": {
+            "min": -18446744073709551616,
+            "max": 18446744073709551615,
+            "step": 1
+        },
         "saved": true
     },
     "inpaint_full_res": {
@@ -485,16 +449,18 @@
         "label": "Upscale mode:",
         "category": "GLID-3-XL",
         "description": "Upscaling mode used when the inpainting resolution doesn't match the image generation area size.",
-        "type": "int",
-        "default": 1,
+        "type": "string",
+        "default": "Lanczos",
+        "options":  [],
         "saved": true
     },
     "downscale_mode": {
         "label": "Downscale mode:",
         "category": "GLID-3-XL",
         "description": "Downscaling mode used when the inpainting resolution doesn't match the image generation area size.",
-        "type": "int",
-        "default": 1,
+        "type": "string",
+        "default": "Lanczos",
+        "options": [],
         "saved": true
     }
 }

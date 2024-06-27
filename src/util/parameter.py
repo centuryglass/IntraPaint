@@ -2,18 +2,22 @@
 from typing import Any, Optional, TypeAlias, List, cast, Callable
 
 from PyQt5.QtCore import QSize
-from PyQt5.QtWidgets import QWidget, QComboBox, QDoubleSpinBox, QLineEdit, QCheckBox, QHBoxLayout, QLabel
+from PyQt5.QtWidgets import QWidget
 
-from src.ui.widget.big_int_spinbox import BigIntSpinbox
-from src.ui.widget.size_field import SizeField
-from src.ui.widget.slider_spinbox import IntSliderSpinbox, FloatSliderSpinbox
+from src.ui.input_fields.big_int_spinbox import BigIntSpinbox
+from src.ui.input_fields.check_box import CheckBox
+from src.ui.input_fields.combo_box import ComboBox
+from src.ui.input_fields.line_edit import LineEdit
+from src.ui.input_fields.plain_text_edit import PlainTextEdit
+from src.ui.input_fields.size_field import SizeField
+from src.ui.input_fields.slider_spinbox import IntSliderSpinbox, FloatSliderSpinbox
 from src.util.shared_constants import INT_MIN, INT_MAX, FLOAT_MIN, FLOAT_MAX
 
 # Accepted parameter types:
+TYPE_BOOL = 'bool'
 TYPE_INT = 'int'
 TYPE_FLOAT = 'float'
 TYPE_STR = 'str'
-TYPE_BOOL = 'bool'
 TYPE_QSIZE = 'Size'
 TYPE_LIST = 'list'
 TYPE_DICT = 'dict'
@@ -26,14 +30,14 @@ PARAMETER_TYPES = [TYPE_INT, TYPE_FLOAT, TYPE_STR, TYPE_BOOL, TYPE_QSIZE, TYPE_L
 
 def get_parameter_type(value: Any) -> str:
     """Returns a values parameter type, or throws TypeError if it isn't one of the expected types."""
+    if isinstance(value, bool):
+        return TYPE_BOOL
     if isinstance(value, int):
         return TYPE_INT
     if isinstance(value, float):
         return TYPE_FLOAT
     if isinstance(value, str):
         return TYPE_STR
-    if isinstance(value, bool):
-        return TYPE_BOOL
     if isinstance(value, QSize):
         return TYPE_QSIZE
     if isinstance(value, list):
@@ -63,7 +67,7 @@ class Parameter:
             raise ValueError(f'Invalid parameter type for {name}: {value_type}')
         self._type = value_type
         self._default_value = default_value
-        self._options = []
+        self._options: Optional[List[ParamType]] = None
         if default_value is not None:
             default_type = get_parameter_type(default_value)
             if default_type != value_type:
@@ -76,17 +80,12 @@ class Parameter:
         if minimum is not None or maximum is not None or single_step is not None:
             if value_type not in (TYPE_INT, TYPE_FLOAT, TYPE_QSIZE):
                 raise TypeError(f'Param {name}: range parameter found for invalid type {value_type}')
-            for range_param in (minimum, maximum, single_step):
-                if range_param is None:
-                    continue
-                range_param_type = get_parameter_type(range_param)
-                if value_type == TYPE_QSIZE:
-                    if range_param_type != TYPE_INT:
-                        raise TypeError(f'Param {name}: size parameter step values must be int or None, found'
-                                        f' {range_param_type}')
-                elif range_param_type != value_type:
-                    raise TypeError(f'Param {name}: range parameter type {range_param_type} does not match value type'
-                                    f' {value_type}')
+            if minimum is not None:
+                self.minimum = minimum
+            if maximum is not None:
+                self.maximum = maximum
+            if single_step is not None:
+                self.single_step = single_step
 
     def set_valid_options(self, valid_options: List[ParamType]) -> None:
         """Set a restricted list of valid options to accept."""
@@ -99,9 +98,16 @@ class Parameter:
                                                                                           self._maximum):
 
                 raise ValueError(f'Param {self.name}: Option {option} is not in range {self._minimum}-{self._maximum}')
-        if self._default_value is not None and self._default_value not in valid_options:
-            raise ValueError(f'Param {self.name}: options list excludes default value {self._default_value}')
+        if self._default_value is not None and self._default_value not in valid_options and len(valid_options) > 0:
+            self._default_value = valid_options[0]
         self._options = [*valid_options]
+
+    @property
+    def options(self) -> Optional[List[ParamType]]:
+        """Accesses the list of accepted options, if any."""
+        if self._options is None:
+            return None
+        return [*self._options]
 
     @property
     def name(self) -> str:
@@ -128,51 +134,93 @@ class Parameter:
         """Returns the parameter's minimum value, or None if ranges are unspecified or not applicable."""
         return self._minimum
 
+    @minimum.setter
+    def minimum(self, new_minimum: Any) -> None:
+        min_type = get_parameter_type(new_minimum)
+        if min_type != self.type_name:
+            raise TypeError(f'Param {self.name}: minimum type {min_type} does not match value type'
+                            f' {self.type_name}')
+        self._minimum = new_minimum
+
     @property
     def maximum(self) -> Optional[int | float]:
         """Returns the parameter's maximum value, or None if ranges are unspecified or not applicable."""
         return self._maximum
+
+    @maximum.setter
+    def maximum(self, new_maximum: Any) -> None:
+        max_type = get_parameter_type(new_maximum)
+        if max_type != self.type_name:
+            raise TypeError(f'Param {self.name}: maximum type {max_type} does not match value type'
+                            f' {self.type_name}')
+        self._maximum = new_maximum
 
     @property
     def single_step(self) -> Optional[int | float]:
         """Returns the parameter's step value, or None if ranges are unspecified or not applicable."""
         return self._step
 
-    def validate(self, test_value: Any) -> bool:
+    @single_step.setter
+    def single_step(self, single_step: int | float) -> None:
+        if (self.type_name == TYPE_FLOAT and not isinstance(single_step, float)) \
+                or (self.type_name != TYPE_FLOAT and not isinstance(single_step, int)):
+            raise TypeError(f'Param {self.name}: invalid step value {single_step} for type {self.type_name}')
+        self._step = single_step
+
+    def validate(self, test_value: Any, raise_on_failure=False) -> bool:
         """Returns whether a test value is acceptable for this parameter"""
         try:
             test_type = get_parameter_type(test_value)
             if test_type != self._type:
+                if raise_on_failure:
+                    raise TypeError(f'{self.name} parameter: expected {self._type}, got {test_type}')
                 return False
         except TypeError:
+            if raise_on_failure:
+                raise TypeError(f'{self.name} parameter: expected {self._type}, got {test_value}')
             return False
         if (self._maximum is not None or self._minimum is not None) and not _in_range(test_value, self._minimum,
                                                                                       self._maximum):
+            if raise_on_failure:
+                raise ValueError(f'{self.name} parameter: {test_value} not in range {self._minimum}-{self.maximum}')
             return False
-        if len(self._options) > 0:
-            return test_value in self._options
+        if self._options is not None and len(self._options) > 0 and test_value not in self._options:
+            if raise_on_failure:
+                raise ValueError(f'{self.name} parameter: {test_value} not found in {len(self._options)} available'
+                                 f' options {self._options}')
+            return False
         return True
 
-    def get_input_widget(self) -> QWidget:
+    def get_input_widget(self, multi_line=False) -> QWidget:
         """Creates a widget that can be used to set this parameter."""
+        if multi_line and self._type != TYPE_STR:
+            raise ValueError(f'multi_line=True is only valid for text parameters, value {self.name}'
+                             f' is {self.type_name}')
         input_field = None
-        if len(self._options) > 0:
-            combo_box = QComboBox()
+        if self._options is not None and len(self._options) > 0:
+            if multi_line:
+                raise ValueError('multi_line=True is not valid for parameters with fixed option lists')
+            assert self.type_name == TYPE_STR
+            combo_box = ComboBox()
             for option in self._options:
                 combo_box.addItem(str(option), userData=option)
             if self._default_value is not None:
-                index = combo_box.find(str(self._default_value))
+                index = combo_box.findText(str(self._default_value))
                 assert index >= 0
                 combo_box.setCurrentIndex(index)
             input_field = cast(QWidget, combo_box)
         elif self._type == TYPE_INT:
-            spin_box = IntSliderSpinbox()
+            if (self._maximum is not None and self._maximum > INT_MAX) or (self._minimum is not None
+                                                                           and self._minimum < INT_MIN):
+                spin_box = BigIntSpinbox()
+            else:
+                spin_box = IntSliderSpinbox()
             spin_box.setMinimum(self._minimum if self._minimum is not None else INT_MIN)
             spin_box.setMaximum(self._maximum if self._maximum is not None else INT_MAX)
             if self._step is not None:
                 spin_box.setSingleStep(self._step)
             spin_box.setValue(self._default_value if self._default_value is not None else max(0, spin_box.minimum()))
-            if self._minimum is None or self._maximum is None:
+            if isinstance(spin_box, IntSliderSpinbox) and (self._minimum is None or self._maximum is None):
                 spin_box.set_slider_included(False)
             input_field = cast(QWidget, spin_box)
         elif self._type == TYPE_FLOAT:
@@ -186,12 +234,12 @@ class Parameter:
                 spin_box.set_slider_included(False)
             input_field = cast(QWidget, spin_box)
         elif self._type == TYPE_STR:
-            text_box = QLineEdit()
+            text_box = PlainTextEdit() if multi_line else LineEdit()
             if self._default_value is not None:
-                text_box.setText(self._default_value)
+                text_box.setValue(self._default_value)
             input_field = cast(QWidget, text_box)
         elif self._type == TYPE_BOOL:
-            check_box = QCheckBox()
+            check_box = CheckBox()
             if self._default_value is not None:
                 check_box.setChecked(self._default_value)
             input_field = cast(QWidget, check_box)
@@ -204,52 +252,14 @@ class Parameter:
             if self._step is not None:
                 size_field.set_single_step(self._step)
             if self._default_value is not None:
-                size_field.value = self._default_value
+                size_field.setValue(self._default_value)
             input_field = cast(QWidget, size_field)
         else:
             RuntimeError(f'get_input_widget not supported for type {self._type}')
-        assert input_field is not None
+        assert input_field is not None, f'{self.name} failed to init input for type {self.type_name}'
         if len(self._description) > 0:
             input_field.setToolTip(self._description)
         return input_field
-
-    def get_widget_param_value(self, input_widget: QWidget) -> ParamType:
-        """Return the parameter value from a field provided by get_input_widget."""
-        if isinstance(input_widget, QComboBox):
-            input_widget = cast(QComboBox, input_widget)
-            value = input_widget.currentData()
-            assert value in self._options
-            return value
-        if isinstance(input_widget, QCheckBox):
-            assert self._type == TYPE_BOOL
-            return input_widget.isChecked()
-        if isinstance(input_widget, QLineEdit):
-            assert self._type == TYPE_STR
-            return input_widget.text()
-        if hasattr(input_widget, 'value'):
-            return input_widget.value()
-        raise ValueError(f'Expected valid input widget, got {input_widget}')
-
-    def connect_widget_change_handler(self, input_widget: QWidget, change_slot: Callable[[Any], None]) -> None:
-        """Connect a change signal to a field provided by get_input_widget"""
-        if isinstance(input_widget, QComboBox):
-            assert len(self._options) > 0
-            input_widget = cast(QComboBox, input_widget)
-            input_widget.currentIndexChanged.connect(change_slot)
-        elif isinstance(input_widget, QCheckBox):
-            assert self._type == TYPE_BOOL
-            input_widget = cast(QCheckBox, input_widget)
-            input_widget.stateChanged.connect(change_slot)
-        elif isinstance(input_widget, QLineEdit):
-            assert self._type == TYPE_STR
-            input_widget.textChanged.connect(change_slot)
-        elif isinstance(input_widget, SizeField):
-            assert self._type == TYPE_QSIZE
-            input_widget.value_changed.connect(change_slot)
-        elif hasattr(input_widget, 'valueChanged'):
-            input_widget.valueChanged.connect(change_slot)
-        else:
-            raise ValueError(f'Expected valid input widget, got {input_widget}')
 
 
 def _in_range(value: int | float | QSize,

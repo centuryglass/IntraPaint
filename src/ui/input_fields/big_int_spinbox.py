@@ -11,8 +11,7 @@ from PyQt5.QtGui import QRegExpValidator
 class BigIntSpinbox(QAbstractSpinBox):
     """BigIntSpinbox is a QSpinBox supporting integers between -18446744073709551616 and 18446744073709551615."""
 
-    # I believe pyqtSignal converts to C integers internally, because if the signal emits an int it is vulnerable
-    # to overflow.
+    # Because pyqtSignal converts numeric values to C types, the signal needs to be a string to avoid overflow.
     valueChanged = pyqtSignal(str)
 
     MINIMUM = -18446744073709551616
@@ -37,6 +36,12 @@ class BigIntSpinbox(QAbstractSpinBox):
         def on_change(value: str) -> None:
             """Make sure we're not emitting change signals on clear/while typing a new negative number"""
             if len(value) > 0 and value != "-":
+                try:
+                    int_value = int(value)
+                    if int_value < self._minimum or int_value > self._maximum:
+                        return
+                except ValueError:
+                    return  # Ignore non-numeric
                 self.valueChanged.emit(value)
 
         self._line_edit.textChanged.connect(on_change)

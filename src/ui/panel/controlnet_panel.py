@@ -7,10 +7,10 @@ from typing import Optional
 from PyQt5.QtWidgets import QVBoxLayout, QHBoxLayout, QCheckBox, QPushButton, QLineEdit, QComboBox, QSizePolicy
 
 from src.config.application_config import AppConfig
-from src.ui.config_control_setup import ConnectedCheckbox
+from src.ui.input_fields.check_box import CheckBox
 from src.ui.widget.collapsible_box import CollapsibleBox
 from src.ui.widget.label_wrapper import LabelWrapper
-from src.ui.widget.param_slider import ParamSlider
+from src.util.parameter import Parameter, TYPE_FLOAT, TYPE_INT
 from src.util.shared_constants import CONTROLNET_REUSE_IMAGE_CODE
 from src.util.validation import assert_type
 
@@ -108,16 +108,14 @@ class ControlnetPanel(CollapsibleBox):
         # Basic checkboxes:
         checkbox_row = QHBoxLayout()
         layout.addLayout(checkbox_row)
-        enabled_checkbox = QCheckBox()
+        enabled_checkbox = CheckBox()
         enabled_checkbox.setText(ENABLE_CONTROLNET_CHECKBOX_LABEL)
         checkbox_row.addWidget(enabled_checkbox)
 
-        vram_checkbox = ConnectedCheckbox(config_key, parent=self, label_text=LOW_VRAM_LABEL,
-                                          inner_key=CONTROL_CONFIG_LOW_VRAM_KEY)
+        vram_checkbox = _ControlnetCheckbox(config_key, CONTROL_CONFIG_LOW_VRAM_KEY, LOW_VRAM_LABEL)
         checkbox_row.addWidget(vram_checkbox)
 
-        px_perfect_checkbox = ConnectedCheckbox(config_key, parent=self, label_text=PX_PERFECT_CHECKBOX_LABEL,
-                                                 inner_key=CONTROL_CONFIG_PX_PERFECT_KEY)
+        px_perfect_checkbox = _ControlnetCheckbox(config_key, CONTROL_CONFIG_PX_PERFECT_KEY, PX_PERFECT_CHECKBOX_LABEL)
         checkbox_row.addWidget(px_perfect_checkbox)
 
         # Control image row:
@@ -290,7 +288,17 @@ class ControlnetPanel(CollapsibleBox):
                         max_val = int(max_val)
                         step = int(step)
                     config.set(config_key, value, inner_key=key)
-                    slider = ParamSlider(self, slider_title, config_key, min_val, max_val, step, inner_key=key)
+                    control_param = Parameter(slider_title,
+                                              TYPE_FLOAT if float_mode else TYPE_INT,
+                                              value,
+                                              minimum=min_val,
+                                              maximum=max_val,
+                                              single_step=step)
+                    slider = control_param.get_input_widget()
+
+                    def _update_value(new_value):
+                        config.set(config_key, new_value, inner_key=key)
+                    slider.valueChanged.connect(_update_value)
                     if slider_row.count() > 1:
                         options_layout.addLayout(slider_row)
                         slider_row = QHBoxLayout()
@@ -377,3 +385,22 @@ class ControlnetPanel(CollapsibleBox):
         set_enabled(CONTROL_MODEL_KEY in initial_control_state)
         enabled_checkbox.stateChanged.connect(set_enabled)
         self.show_button_bar(True)
+
+
+class _ControlnetCheckbox(CheckBox):
+    """Connects to a boolean parameter in a controlnet JSON body."""
+
+    def __init__(self, config_key: str, inner_key: str, label_text: Optional[str] = None) -> None:
+        super().__init__(None)
+        self._key = config_key
+        self._inner_key = inner_key
+        config = AppConfig.instance()
+        value = config.get(config_key, inner_key=inner_key)
+        self.setValue(bool(value))
+        self.valueChanged.connect(self._update_config)
+        if label_text is not None:
+            self.setText(label_text)
+        config.connect(self, config_key, self.setValue, inner_key=inner_key)
+
+    def _update_config(self, new_value: bool) -> None:
+        AppConfig.instance().set(self._key, new_value, inner_key=self._inner_key)

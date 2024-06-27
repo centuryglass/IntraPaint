@@ -21,8 +21,9 @@ class _SliderSpinbox(QWidget):
             self._label.setEnabled(False)
         self._slider = QSlider(Qt.Orientation.Horizontal)
         layout.addWidget(self._slider)
-        self._slider.setValue(initial_value if isinstance(initial_value, int) else float(initial_value * 100))
+        self._slider.setValue(initial_value if isinstance(initial_value, int) else int(initial_value * 100))
         self._slider.valueChanged.connect(self.setValue)
+        self._slider.setTickPosition(QSlider.TickPosition.TicksAbove)
         if isinstance(initial_value, float):
             self._spinbox = QDoubleSpinBox()
         else:
@@ -31,6 +32,13 @@ class _SliderSpinbox(QWidget):
         self._spinbox.setValue(initial_value)
         self._spinbox.valueChanged.connect(self.setValue)
         self._label.setBuddy(self._spinbox)
+
+    def _update_slider_ticks(self) -> None:
+        full_range = self._slider.maximum() - self._slider.minimum()
+        tick_interval = 1 if (full_range < 20) else (5 if full_range < 50 else 10)
+        if isinstance(self._spinbox, QDoubleSpinBox):
+            tick_interval *= 100
+        self._slider.setTickInterval(tick_interval)
 
     def value(self) -> int | float:
         """Returns the input field's current value."""
@@ -45,7 +53,8 @@ class _SliderSpinbox(QWidget):
             slider_int_value = int(new_value * 100)
             spinbox_value = new_value
         else:
-            assert isinstance(new_value, int)
+            if not isinstance(new_value, int):
+                raise TypeError(f'expected int value, got {new_value}')
             slider_int_value = new_value
             spinbox_value = new_value
         if self._spinbox.value() != spinbox_value:
@@ -60,11 +69,13 @@ class _SliderSpinbox(QWidget):
         """Sets a new minimum accepted value."""
         self._spinbox.setMinimum(new_minimum)
         self._slider.setMinimum(int(new_minimum * 100) if isinstance(self._spinbox, QDoubleSpinBox) else new_minimum)
+        self._update_slider_ticks()
 
     def setMaximum(self, new_maximum: int | float) -> None:
         """Sets a new maximum accepted value."""
         self._spinbox.setMaximum(new_maximum)
         self._slider.setMaximum(int(new_maximum * 100) if isinstance(self._spinbox, QDoubleSpinBox) else new_maximum)
+        self._update_slider_ticks()
 
     def setRange(self, new_minimum: int | float, new_maximum: int | float) -> None:
         """Sets a new range of accepted values."""
@@ -73,7 +84,7 @@ class _SliderSpinbox(QWidget):
 
     def setSingleStep(self, step_size: int | float) -> None:
         """Set the amount the value changes from a single key/button input."""
-        self._slider.setSingleStep(step_size * 100 if isinstance(self._spinbox, QDoubleSpinBox) else step_size)
+        self._slider.setSingleStep(int(step_size * 100) if isinstance(self._spinbox, QDoubleSpinBox) else step_size)
         self._spinbox.setSingleStep(step_size)
 
     def text(self) -> str:

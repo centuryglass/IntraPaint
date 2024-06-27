@@ -1,5 +1,5 @@
 """Selects image content for image generation or editing."""
-from typing import Optional
+from typing import Optional, cast
 
 from PyQt5.QtCore import Qt, QPoint
 from PyQt5.QtGui import QMouseEvent, QIcon, QPixmap, QPainter, QKeySequence
@@ -10,10 +10,9 @@ from src.config.key_config import KeyConfig
 from src.image.canvas.pixmap_layer_canvas import PixmapLayerCanvas
 from src.image.layer_stack import LayerStack
 from src.tools.canvas_tool import CanvasTool
-from src.ui.config_control_setup import connected_spinbox, ConnectedCheckbox
 from src.ui.image_viewer import ImageViewer
+from src.ui.input_fields.slider_spinbox import IntSliderSpinbox
 from src.ui.widget.dual_toggle import DualToggle
-from src.ui.widget.param_slider import ParamSlider
 
 SELECTION_CONTROL_LAYOUT_SPACING = 4
 
@@ -89,7 +88,8 @@ class SelectionTool(CanvasTool):
         self._control_layout = control_layout
 
         # Size slider:
-        brush_size_slider = ParamSlider(self._control_panel, SELECTION_SIZE_SHORT_LABEL, AppConfig.SELECTION_BRUSH_SIZE)
+        brush_size_slider = cast(IntSliderSpinbox, config.get_control_widget(AppConfig.SELECTION_BRUSH_SIZE))
+        brush_size_slider.setText(SELECTION_SIZE_SHORT_LABEL)
 
         def update_brush_size(size: int) -> None:
             """Updates the active brush size."""
@@ -146,8 +146,7 @@ class SelectionTool(CanvasTool):
         clear_fill_line_layout.addWidget(fill_selection_button)
         control_layout.addLayout(clear_fill_line_layout, stretch=1)
 
-        padding_checkbox = ConnectedCheckbox(AppConfig.INPAINT_FULL_RES,
-                                             label_text=config.get_label(AppConfig.INPAINT_FULL_RES))
+        padding_checkbox = config.get_control_widget(AppConfig.INPAINT_FULL_RES)
         control_layout.addWidget(padding_checkbox)
         padding_line_layout = QHBoxLayout()
         padding_line_layout.setContentsMargins(0, 0, 0, 0)
@@ -156,8 +155,7 @@ class SelectionTool(CanvasTool):
 
         padding_label = QLabel(config.get_label(AppConfig.INPAINT_FULL_RES_PADDING))
         padding_line_layout.addWidget(padding_label)
-        padding_spinbox = connected_spinbox(None, AppConfig.INPAINT_FULL_RES_PADDING)
-        padding_spinbox.setMinimum(0)
+        padding_spinbox = config.get_control_widget(AppConfig.INPAINT_FULL_RES_PADDING)
         padding_line_layout.addWidget(padding_spinbox)
 
         def _show_hide_padding(should_show: bool) -> None:

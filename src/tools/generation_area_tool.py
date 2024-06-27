@@ -1,15 +1,15 @@
 """An image editing tool that moves the selected editing region."""
 
-from typing import Optional, cast
+from typing import Optional, cast, List
 
-from PyQt5.QtCore import Qt, QRect, QPoint
+from PyQt5.QtCore import Qt, QRect, QPoint, QSize
 from PyQt5.QtGui import QMouseEvent, QKeyEvent, QCursor, QIcon, QKeySequence
-from PyQt5.QtWidgets import QWidget, QApplication, QPushButton, QGridLayout
+from PyQt5.QtWidgets import QWidget, QApplication, QPushButton, QGridLayout, QHBoxLayout, QLabel, QSlider, QSpinBox
 
+from src.config.application_config import AppConfig
 from src.config.key_config import KeyConfig
 from src.image.layer_stack import LayerStack
 from src.tools.base_tool import BaseTool
-from src.ui.config_control_setup import get_generation_area_control_boxes
 from src.ui.image_viewer import ImageViewer
 
 RESOURCES_GENERATION_AREA_ICON = 'resources/icons/gen_area_icon.svg'
@@ -18,6 +18,15 @@ GENERATION_AREA_TOOLTIP = 'Select an image region for AI image generation'
 SELECT_LAYER_BUTTON_TEXT = 'Full image as generation area'
 SELECT_LAYER_BUTTON_TOOLTIP = 'Send the entire image during image generation.'
 GEN_AREA_CONTROL_HINT = 'LMB:move area - RMB:resize area -'
+
+GENERATION_AREA_X_LABEL = 'X:'
+GENERATION_AREA_Y_LABEL = 'Y:'
+GENERATION_AREA_WIDTH_LABEL = 'W:'
+GENERATION_AREA_HEIGHT_LABEL = 'H:'
+GENERATION_AREA_X_TOOLTIP = 'Set the left edge position of the image generation area.'
+GENERATION_AREA_Y_TOOLTIP = 'Set the top edge position of the image generation area.'
+GENERATION_AREA_WIDTH_TOOLTIP = 'Set the width of the image generation area.'
+GENERATION_AREA_HEIGHT_TOOLTIP = 'Set the top edge position of the image generation area.'
 
 
 class GenerationAreaTool(BaseTool):
@@ -153,3 +162,140 @@ class GenerationAreaTool(BaseTool):
                 return False
         self._layer_stack.generation_area = self._layer_stack.generation_area.translated(translation)
         return True
+
+
+def get_generation_area_control_boxes(layer_stack: LayerStack,
+                                      include_sliders: bool = False) -> List[QWidget]:
+    """
+    Creates and returns labeled widgets for controlling the image generation area.
+    Parameters
+    ----------
+        layer_stack: LayerStack
+            Edited image object responsible for maintaining the selected image generation area
+        include_sliders: bool, default=False
+            Whether the returned widgets should also contain sliders.
+    Returns
+    -------
+        x_widget: QWidget
+            Control for setting the area's x-coordinate.
+        y_widget: QWidget
+            Control for setting the area's y-coordinate.
+        width: QWidget
+            Control for setting the area's width.
+        width: QWidget
+            Control for setting the area's width.
+        height: QWidget
+            Control for setting the area's height.
+    """
+    config = AppConfig.instance()
+    # Create widgets:
+    control_widgets = []
+    sliders = []
+    spin_boxes = []
+    for label_text, tooltip in (
+            (GENERATION_AREA_X_LABEL, GENERATION_AREA_X_TOOLTIP), (GENERATION_AREA_Y_LABEL, GENERATION_AREA_Y_TOOLTIP),
+            (GENERATION_AREA_WIDTH_LABEL, GENERATION_AREA_WIDTH_TOOLTIP),
+            (GENERATION_AREA_HEIGHT_LABEL, GENERATION_AREA_HEIGHT_TOOLTIP)):
+        widget = QWidget()
+        widget.setToolTip(tooltip)
+        layout = QHBoxLayout(widget)
+        layout.setSpacing(0)
+        layout.setContentsMargins(0, 0, 0, 0)
+        label = QLabel(label_text)
+        layout.addWidget(label, stretch=1)
+        if include_sliders:
+            new_slider = QSlider(Qt.Orientation.Horizontal)
+            new_slider.setContentsMargins(1, 1, 1, 1)
+            sliders.append(new_slider)
+            layout.addWidget(new_slider, stretch=2)
+        spin_box = QSpinBox()
+        spin_boxes.append(spin_box)
+        layout.addWidget(spin_box)
+        control_widgets.append(widget)
+
+    x_box, y_box, w_box, h_box = spin_boxes
+    x_slider, y_slider, w_slider, h_slider = sliders if include_sliders else (None, None, None, None)
+
+    # Set fixed ranges:
+    min_edit_size = config.get(AppConfig.MIN_EDIT_SIZE)
+    max_edit_size = config.get(AppConfig.MAX_EDIT_SIZE)
+    for box, slider, min_val, max_val in ((w_box, w_slider, min_edit_size.width(), max_edit_size.width()),
+                                          (h_box, h_slider, min_edit_size.height(), max_edit_size.height())):
+        for control in (box, slider):
+            if control is not None:
+                control.setRange(min_val, max_val)
+                control.setSingleStep(1)
+    for coord_widget in x_box, x_slider, y_box, y_slider:
+        if coord_widget is not None:
+            coord_widget.setMinimum(0)
+
+    # Apply image generation area changes to controls:
+    control_sets = [spin_boxes]
+    if include_sliders:
+        control_sets.append(sliders)
+
+    def set_coordinates(new_area: QRect):
+        """Use image generation area bounds and the LayerStack size to set all values and dynamic ranges."""
+        for x_widget, y_widget, w_widget, h_widget in control_sets:
+            for ctrl, value, maximum in ((x_widget, new_area.x(), layer_stack.width - new_area.width()),
+                                         (y_widget, new_area.y(), layer_stack.height - new_area.height()),
+                                         (w_widget, new_area.width(), min(max_edit_size.width(), layer_stack.width)),
+                                         (h_widget, new_area.height(),
+                                          min(max_edit_size.height(), layer_stack.height))):
+                if value != ctrl.value():
+                    ctrl.setValue(value)
+                ctrl.setMaximum(maximum)
+
+    set_coordinates(layer_stack.generation_area)
+    layer_stack.generation_area_bounds_changed.connect(set_coordinates)
+
+    def update_size_bounds(size: QSize):
+        """Update the control bounds when the image size changes."""
+        generation_area = layer_stack.generation_area
+        for x_widget, y_widget, w_widget, h_widget in control_sets:
+            for ctrl, maximum in ((x_widget, size.width() - generation_area.width()),
+                                  (y_widget, size.height() - generation_area.height()),
+                                  (w_widget, min(max_edit_size.width(), size.width())),
+                                  (h_widget, min(max_edit_size.height(), size.height()))):
+                ctrl.setMaximum(maximum)
+
+    layer_stack.size_changed.connect(update_size_bounds)
+
+    # Apply control changes to image generation area:
+    for x_ctrl, y_ctrl, w_ctrl, h_ctrl in control_sets:
+        def set_x(value: int):
+            """Handle image generation area x-coordinate changes."""
+            last_selected = layer_stack.generation_area
+            if value != last_selected.x():
+                last_selected.moveLeft(min(value, layer_stack.width - last_selected.width()))
+                layer_stack.generation_area = last_selected
+
+        x_ctrl.valueChanged.connect(set_x)
+
+        def set_y(value: int):
+            """Handle image generation area y-coordinate changes."""
+            last_area = layer_stack.generation_area
+            if value != last_area.y():
+                last_area.moveTop(min(value, layer_stack.height - last_area.height()))
+                layer_stack.generation_area = last_area
+
+        y_ctrl.valueChanged.connect(set_y)
+
+        def set_w(value: int):
+            """Handle image generation area width changes."""
+            generation_area = layer_stack.generation_area
+            if generation_area.width() != value:
+                generation_area.setWidth(value)
+                layer_stack.generation_area = generation_area
+
+        w_ctrl.valueChanged.connect(set_w)
+
+        def set_h(value: int):
+            """Handle image generation area height changes."""
+            generation_area = layer_stack.generation_area
+            if generation_area.height() != value:
+                generation_area.setHeight(value)
+                layer_stack.generation_area = generation_area
+
+        h_ctrl.valueChanged.connect(set_h)
+    return control_widgets

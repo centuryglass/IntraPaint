@@ -23,7 +23,6 @@ def posterize(image: QImage, bits: int) -> QImage:
         Source image to adjust.
     bits: int
         The color channel bit count to keep. must be 1-8 inclusive.
-    preserve_transparency: Whether transparency from the source image should be preserved.
     """
     assert 0 < bits <= 8, f'Invalid bit count {bits}'
     pil_image = qimage_to_pil_image(image).convert('RGB')

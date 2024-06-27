@@ -2,17 +2,16 @@
 Popup modal providing a dynamic settings interface, to be populated by the controller. Currently only used with
 stable_diffusion_controller.
 """
-import sys
 from typing import Any, Dict, List, Optional
 from PyQt5.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QPushButton, QLineEdit, QComboBox, QDoubleSpinBox, \
     QCheckBox, QWidget, QTabWidget, QFormLayout, QScrollArea
 from PyQt5.QtCore import pyqtSignal, QSize
 
 from src.config.config import Config
-from src.config.config_entry import RangeKey
 from src.ui.widget.bordered_widget import BorderedWidget
-from src.ui.widget.big_int_spinbox import BigIntSpinbox
-from src.ui.widget.size_field import SizeField
+from src.ui.input_fields.big_int_spinbox import BigIntSpinbox
+from src.ui.input_fields.size_field import SizeField
+
 
 class SettingsModal(QDialog):
     """Manage remote settings."""
@@ -63,33 +62,17 @@ class SettingsModal(QDialog):
             for key in config.get_category_keys(category):
                 if key in self._inputs:
                     continue
-                value = config.get(key)
                 label = config.get_label(key)
-                tooltip = config.get_tooltip(key)
-                if isinstance(value, bool):
-                    self.add_checkbox_setting(key, category, value, label)
-                elif isinstance(value, QSize):
-                    self.add_size_setting(key, category, value, label)
-                elif isinstance(value, (int, float)):
-                    try:
-                        min_val = config.get(key, RangeKey.MIN)
-                        max_val = config.get(key, RangeKey.MAX)
-                        step = config.get(key, RangeKey.STEP)
-                    except TypeError:  # No explicit bounds, just use maximums:
-                        min_val = BigIntSpinbox.MINIMUM if isinstance(value, int) else sys.float_info.min
-                        max_val = BigIntSpinbox.MAXIMUM if isinstance(value, int) else sys.float_info.max
-                        step = 1 if isinstance(value, int) else 1.0
-                    self.add_spinbox_setting(key, category, value, min_val, max_val, step, label)
-                elif isinstance(value, str):
-                    try:
-                        options = config.get_options(key)
-                        self.add_combobox_setting(key, category, value, options, label)
-                    except RuntimeError:
-                        self.add_text_setting(key, category, value, label)
-                else:
-                    print(f"skipping key {key} with unsupported type={type(value)}, value={value}")
+                try:
+                    control_widget = config.get_control_widget(key, False)
+                except AssertionError:
                     continue
-                self.set_tooltip(key, tooltip)
+                assert hasattr(control_widget, 'valueChanged')
+
+                def _add_change(new_value: Any, name=key):
+                    self._add_change(name, new_value)
+                control_widget.valueChanged.connect(_add_change)
+                self._add_setting(key, category, control_widget, label)
 
     def show_modal(self):
         """Shows the settings modal."""
@@ -121,18 +104,15 @@ class SettingsModal(QDialog):
             if key not in self._inputs:
                 continue
             widget = self._inputs[key]
-            if isinstance(widget, SizeField):
-                widget.value = QSize(settings[key])
-            elif isinstance(widget, QLineEdit):
-                widget.setText(settings[key])
-            elif isinstance(widget, QComboBox):
-                widget.setCurrentIndex(widget.findText(settings[key]))
-            elif isinstance(widget, QDoubleSpinBox):
-                widget.setValue(float(settings[key]))
-            elif isinstance(widget, BigIntSpinbox):
-                widget.setValue(int(settings[key]))
-            elif isinstance(widget, QCheckBox):
-                widget.setChecked(settings[key])
+            assert hasattr(widget, 'setValue')
+            new_value = settings[key]
+            if isinstance(new_value, float):
+                try:
+                    widget.setValue(new_value)
+                except TypeError:
+                    widget.setValue(int(new_value))
+            else:
+                widget.setValue(new_value)
             if key in self._changes:
                 del self._changes[key]
 
@@ -275,11 +255,11 @@ class SettingsModal(QDialog):
             Setting display name to show in the UI.
         """
         size_field = SizeField()
-        size_field.value = initial_value
+        size_field.setValue(initial_value)
 
         def _update_size(new_size: QSize) -> None:
             self._add_change(setting_name, new_size)
-        size_field.value_changed.connect(_update_size)
+        size_field.valueChanged.connect(_update_size)
 
         self._add_setting(setting_name, panel_name, size_field, label_text)
 

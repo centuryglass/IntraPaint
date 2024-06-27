@@ -8,14 +8,13 @@ from typing import Optional, Any
 
 from PIL import Image
 from PyQt5.QtCore import Qt, QRect, QSize
-from PyQt5.QtGui import QIcon, QMouseEvent, QResizeEvent, QHideEvent, QKeySequence, QCloseEvent
+from PyQt5.QtGui import QIcon, QMouseEvent, QResizeEvent, QKeySequence, QCloseEvent
 from PyQt5.QtWidgets import QMainWindow, QGridLayout, QLabel, QWidget, QPushButton, QVBoxLayout, QHBoxLayout, \
-    QComboBox, QStackedWidget, QBoxLayout, QApplication, QTabWidget, QSizePolicy, QLayout
+    QStackedWidget, QBoxLayout, QApplication, QTabWidget, QSizePolicy, QLayout
 
 from src.config.application_config import AppConfig
 from src.hotkey_filter import HotkeyFilter
 from src.image.layer_stack import LayerStack
-from src.ui.config_control_setup import connected_textedit, connected_spinbox, ConnectedCheckbox
 from src.ui.generated_image_selector import GeneratedImageSelector
 from src.ui.panel.image_panel import ImagePanel
 from src.ui.panel.layer_panel import LayerPanel
@@ -25,7 +24,6 @@ from src.ui.window.image_window import ImageWindow
 from src.util.display_size import get_screen_size
 from src.util.shared_constants import TIMELAPSE_MODE_FLAG
 
-DEFAULT_LOADING_MESSAGE = 'Loading...'
 
 logger = logging.getLogger(__name__)
 
@@ -33,6 +31,7 @@ MAIN_TAB_NAME = 'Main'
 CONTROL_TAB_NAME = 'Image Generation'
 CONTROL_PANEL_STRETCH = 5
 MAX_TABS = 2
+DEFAULT_LOADING_MESSAGE = 'Loading...'
 
 
 class MainWindow(QMainWindow):
@@ -55,7 +54,6 @@ class MainWindow(QMainWindow):
         self._controller = controller
         self._layer_stack = layer_stack
         self._image_selector: Optional[GeneratedImageSelector] = None
-        self._layout_mode = 'horizontal'
         self._orientation: Optional[Qt.Orientation] = None
 
         self._layer_panel: Optional[LayerPanel] = None
@@ -205,61 +203,33 @@ class MainWindow(QMainWindow):
         else:
             self._tool_panel.setMaximumSize(self.width() // 2, self.height())
 
-    @staticmethod
-    def _create_scale_mode_selector(parent: QWidget, config_key: str) -> QComboBox:
-        """Returns a combo box that selects between image scaling algorithms."""
-        scale_mode_list = QComboBox(parent)
-        filter_types = [
-            ('Bilinear', Image.BILINEAR),
-            ('Nearest', Image.NEAREST),
-            ('Hamming', Image.HAMMING),
-            ('Bicubic', Image.BICUBIC),
-            ('Lanczos', Image.LANCZOS),
-            ('Box', Image.BOX)
-        ]
-        for name, image_filter in filter_types:
-            scale_mode_list.addItem(name, image_filter)
-        scale_mode_list.setCurrentIndex(scale_mode_list.findData(AppConfig.instance().get(config_key)))
-
-        def set_scale_mode(mode_index: int):
-            """Applies the selected scaling mode to config."""
-            mode = scale_mode_list.itemData(mode_index)
-            if mode:
-                AppConfig.instance().set(config_key, mode)
-
-        scale_mode_list.currentIndexChanged.connect(set_scale_mode)
-        scale_mode_list.setToolTip(AppConfig.instance().get_tooltip(config_key))
-        return scale_mode_list
-
     def _build_control_panel(self, controller) -> QWidget:
         """Adds image editing controls to the layout."""
         config = AppConfig.instance()
         inpaint_panel = QWidget(self)
-        text_prompt_textbox = connected_textedit(inpaint_panel, AppConfig.PROMPT)
-        negative_prompt_textbox = connected_textedit(inpaint_panel, AppConfig.NEGATIVE_PROMPT)
+        text_prompt_textbox = config.get_control_widget(AppConfig.PROMPT, multi_line=False)
+        negative_prompt_textbox = config.get_control_widget(AppConfig.NEGATIVE_PROMPT, multi_line=False)
 
-        batch_size_spinbox = connected_spinbox(inpaint_panel, AppConfig.BATCH_SIZE)
+        batch_size_spinbox = config.get_control_widget(AppConfig.BATCH_SIZE)
 
-        batch_count_spinbox = connected_spinbox(inpaint_panel, AppConfig.BATCH_COUNT)
+        batch_count_spinbox = config.get_control_widget(AppConfig.BATCH_COUNT)
 
         inpaint_button = QPushButton()
         inpaint_button.setText('Start inpainting')
         inpaint_button.clicked.connect(controller.start_and_manage_inpainting)
 
         more_options_bar = QHBoxLayout()
-        guidance_scale_spinbox = connected_spinbox(inpaint_panel, AppConfig.GUIDANCE_SCALE)
+        guidance_scale_spinbox = config.get_control_widget(AppConfig.GUIDANCE_SCALE)
 
-        skip_steps_spinbox = connected_spinbox(inpaint_panel, AppConfig.SKIP_STEPS)
+        skip_steps_spinbox = config.get_control_widget(AppConfig.SKIP_STEPS)
 
-        enable_scale_checkbox = ConnectedCheckbox(AppConfig.INPAINT_FULL_RES, parent=inpaint_panel)
+        enable_scale_checkbox = config.get_control_widget(AppConfig.INPAINT_FULL_RES)
         enable_scale_checkbox.setText(config.get_label(AppConfig.INPAINT_FULL_RES))
 
-        upscale_mode_label = QLabel(inpaint_panel)
-        upscale_mode_label.setText(config.get_label(AppConfig.UPSCALE_MODE))
-        upscale_mode_list = self._create_scale_mode_selector(inpaint_panel, AppConfig.UPSCALE_MODE)
-        downscale_mode_label = QLabel(inpaint_panel)
-        downscale_mode_label.setText(config.get_label(AppConfig.DOWNSCALE_MODE))
-        downscale_mode_list = self._create_scale_mode_selector(inpaint_panel, AppConfig.DOWNSCALE_MODE)
+        upscale_mode_label = QLabel(config.get_label(AppConfig.UPSCALE_MODE), inpaint_panel)
+        upscale_mode_list = config.get_control_widget(AppConfig.UPSCALE_MODE)
+        downscale_mode_label = QLabel(config.get_label(AppConfig.DOWNSCALE_MODE), inpaint_panel)
+        downscale_mode_list = config.get_control_widget(AppConfig.DOWNSCALE_MODE)
 
         more_options_bar.addWidget(QLabel(config.get_label(AppConfig.GUIDANCE_SCALE), inpaint_panel), stretch=0)
         more_options_bar.addWidget(guidance_scale_spinbox, stretch=20)

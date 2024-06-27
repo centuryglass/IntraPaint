@@ -20,7 +20,7 @@ class ImageWidget(QWidget):
         if self._image is None:
             return QSize(0, 0)
         elif isinstance(self._image, QIcon):
-            return self._image.pixmap().size()
+            return self._image.availableSizes()[0]
         return self._image.size()
 
     @property
@@ -44,6 +44,6 @@ class ImageWidget(QWidget):
         elif isinstance(self._image, QPixmap):
             painter.drawPixmap(paint_bounds, self._image)
         elif isinstance(self._image, QIcon):
-            painter.drawPixmap(paint_bounds, self._image.pixmap())
+            self._image.paint(painter, paint_bounds)
         painter.end()
 

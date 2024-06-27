@@ -13,7 +13,7 @@ from src.image.image_layer import ImageLayer
 from src.image.layer_stack import LayerStack
 from src.tools.selection_tool import SELECTION_TOOL_LABEL
 from src.ui.widget.bordered_widget import BorderedWidget
-from src.ui.widget.editable_label import EditableLabel
+from src.ui.input_fields.editable_label import EditableLabel
 from src.util.display_size import find_text_size
 from src.util.geometry_utils import get_scaled_placement, get_rect_transformation
 from src.util.image_utils import get_transparency_tile_pixmap

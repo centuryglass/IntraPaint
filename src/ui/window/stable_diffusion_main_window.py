@@ -1,20 +1,17 @@
 """
 A MainWindow implementation providing controls specific to stable-diffusion inpainting.
 """
-from typing import Optional
+from typing import Optional, cast
 
-from PyQt5.QtCore import QSize
-from PyQt5.QtWidgets import QLabel, QHBoxLayout, QVBoxLayout, QGridLayout, QPushButton, QSizePolicy, QSpinBox, QWidget
+from PyQt5.QtCore import Qt
+from PyQt5.QtWidgets import QLabel, QHBoxLayout, QVBoxLayout, QGridLayout, QPushButton, QSizePolicy, QWidget
 
 from src.config.application_config import AppConfig
 from src.config.cache import Cache
 from src.image.layer_stack import LayerStack
-from src.ui.config_control_setup import connected_textedit, connected_spinbox, connected_combobox
 from src.ui.panel.controlnet_panel import ControlnetPanel
-from src.ui.widget.big_int_spinbox import BigIntSpinbox
 from src.ui.widget.bordered_widget import BorderedWidget
 from src.ui.widget.collapsible_box import CollapsibleBox
-from src.ui.widget.param_slider import ParamSlider
 from src.ui.window.main_window import MainWindow
 from src.util.shared_constants import GENERATE_BUTTON_TEXT, EDIT_MODE_INPAINT
 
@@ -80,69 +77,51 @@ class StableDiffusionMainWindow(MainWindow):
         if textbox_height < 0:  # font uses pt, not px
             textbox_height = self.font().pointSize() * 6
 
-        # First line: prompt, batch size, width
+        # First column: prompt,negative:
         wide_options_layout.setRowStretch(0, 2)
-        wide_options_layout.addWidget(QLabel(AppConfig.instance().get_label(AppConfig.PROMPT)), 0, 0)
-        prompt_textbox = connected_textedit(control_panel, AppConfig.PROMPT, multi_line=True)
+        wide_options_layout.addWidget(QLabel(config.get_label(AppConfig.PROMPT)), 0, 0)
+        prompt_textbox = config.get_control_widget(AppConfig.PROMPT, multi_line=True)
         prompt_textbox.setMaximumHeight(textbox_height)
         wide_options_layout.addWidget(prompt_textbox, 0, 1)
-        # batch size:
-        wide_options_layout.addWidget(QLabel(AppConfig.instance().get_label(AppConfig.BATCH_SIZE)), 0, 2)
-        batch_size_spinbox = connected_spinbox(control_panel, AppConfig.BATCH_SIZE)
-        wide_options_layout.addWidget(batch_size_spinbox, 0, 3)
-        # width:
-        wide_options_layout.addWidget(QLabel('W:'), 0, 4)
-        width_spinbox = QSpinBox(self)
-        width_spinbox.setRange(1, 4096)
-        width_spinbox.setValue(config.get(AppConfig.GENERATION_SIZE).width())
-        width_spinbox.setToolTip(WIDTH_BOX_TOOLTIP)
 
-        def set_w(value: int):
-            """Adjust edited image generation width when the width box changes."""
-            size = config.get(AppConfig.GENERATION_SIZE)
-            config.set(AppConfig.GENERATION_SIZE, QSize(value, size.height()))
-
-        width_spinbox.valueChanged.connect(set_w)
-        wide_options_layout.addWidget(width_spinbox, 0, 5)
-
-        # Second line: negative prompt, batch count, height:
         wide_options_layout.setRowStretch(1, 2)
         wide_options_layout.addWidget(QLabel(config.get_label(AppConfig.NEGATIVE_PROMPT)), 1, 0)
-        negative_prompt_textbox = connected_textedit(control_panel, AppConfig.NEGATIVE_PROMPT, multi_line=True)
+        negative_prompt_textbox = config.get_control_widget(AppConfig.NEGATIVE_PROMPT, multi_line=True)
         negative_prompt_textbox.setMaximumHeight(textbox_height)
         wide_options_layout.addWidget(negative_prompt_textbox, 1, 1)
+
+        # width and height:
+        gen_size_input = config.get_control_widget(AppConfig.GENERATION_SIZE)
+        gen_size_input.orientation = Qt.Orientation.Vertical
+        wide_options_layout.addWidget(gen_size_input, 0, 2, 2, 4)
+
+        # batch size, count:
+        # NOTE: I'm sneaking these in to the gen_size layout to make sure the alignment is correct.
+        #       This is obviously not ideal, but is safe enough as long as the size field orientation
+        #       doesn't need to change.
+        spinbox_grid_layout = cast(QGridLayout, gen_size_input.layout())
+        spinbox_grid_layout.setColumnStretch(3, 1)
+        spinbox_grid_layout.setColumnStretch(4, 1)
+        spinbox_grid_layout.addWidget(QLabel(config.get_label(AppConfig.BATCH_SIZE)), 0, 3)
+        batch_size_spinbox = config.get_control_widget(AppConfig.BATCH_SIZE)
+        batch_size_spinbox.set_slider_included(False)
+        spinbox_grid_layout.addWidget(batch_size_spinbox, 0, 4)
+
         # batch count:
-        wide_options_layout.addWidget(QLabel(config.get_label(AppConfig.BATCH_COUNT)), 1, 2)
-        batch_count_spinbox = connected_spinbox(control_panel, AppConfig.BATCH_COUNT)
-        wide_options_layout.addWidget(batch_count_spinbox, 1, 3)
-        # Height:
-        wide_options_layout.addWidget(QLabel('H:'), 1, 4)
-        height_spinbox = QSpinBox(self)
-        height_spinbox.setRange(1, 4096)
-        height_spinbox.setValue(config.get(AppConfig.GENERATION_SIZE).height())
-        height_spinbox.setToolTip(HEIGHT_BOX_TOOLTIP)
-
-        def set_h(value: int):
-            """Adjust edited image generation height when the height box changes."""
-            size = config.get(AppConfig.GENERATION_SIZE)
-            config.set(AppConfig.GENERATION_SIZE, QSize(size.width(), value))
-
-        height_spinbox.valueChanged.connect(set_h)
-        wide_options_layout.addWidget(height_spinbox, 1, 5)
+        spinbox_grid_layout.addWidget(QLabel(config.get_label(AppConfig.BATCH_COUNT)), 1, 3)
+        batch_count_spinbox = config.get_control_widget(AppConfig.BATCH_COUNT)
+        batch_count_spinbox.set_slider_included(False)
+        spinbox_grid_layout.addWidget(batch_count_spinbox, 1, 4)
 
         # Misc. sliders:
-        wide_options_layout.setRowStretch(2, 1)
-        sample_step_slider = ParamSlider(wide_options, config.get_label(AppConfig.SAMPLING_STEPS),
-                                         AppConfig.SAMPLING_STEPS)
-        wide_options_layout.addWidget(sample_step_slider, 2, 0, 1, 6)
-        wide_options_layout.setRowStretch(3, 1)
-        cfg_scale_slider = ParamSlider(wide_options, config.get_label(AppConfig.GUIDANCE_SCALE),
-                                       AppConfig.GUIDANCE_SCALE)
-        wide_options_layout.addWidget(cfg_scale_slider, 3, 0, 1, 6)
-        wide_options_layout.setRowStretch(4, 1)
-        denoising_slider = ParamSlider(wide_options, config.get_label(AppConfig.DENOISING_STRENGTH),
-                                       AppConfig.DENOISING_STRENGTH)
-        wide_options_layout.addWidget(denoising_slider, 4, 0, 1, 6)
+        for i, slider_key in enumerate((AppConfig.SAMPLING_STEPS, AppConfig.GUIDANCE_SCALE,
+                                        AppConfig.DENOISING_STRENGTH)):
+            row_num = i + 2
+            wide_options_layout.setRowStretch(row_num, 1)
+            slider = config.get_control_widget(slider_key)
+            assert hasattr(slider, 'setText')
+            slider.setText(config.get_label(slider_key))
+            wide_options_layout.addWidget(slider, row_num, 0, 1, 6)
 
         # ControlNet panel, if controlnet is installed:
         cache = Cache.instance()
@@ -152,17 +131,6 @@ class StableDiffusionMainWindow(MainWindow):
                                                cache.get(Cache.CONTROLNET_MODULES),
                                                cache.get(Cache.CONTROLNET_MODELS))
             controlnet_panel.set_expanded_size_policy(QSizePolicy.Maximum)
-            if controlnet_panel.is_expanded():
-                self.layout().setStretch(1, self.layout().stretch(1) + StableDiffusionMainWindow.OPEN_PANEL_STRETCH)
-
-            def on_controlnet_expanded(expanded: bool):
-                """Adjust layout stretch values to make room when the ControlNet panel is opened."""
-                stretch = self.layout().stretch(1) + (StableDiffusionMainWindow.OPEN_PANEL_STRETCH if expanded
-                                                      else -StableDiffusionMainWindow.OPEN_PANEL_STRETCH)
-                stretch = max(stretch, 1)
-                self.layout().setStretch(1, stretch)
-
-            controlnet_panel.toggled().connect(on_controlnet_expanded)
             control_layout.addWidget(controlnet_panel, stretch=20)
 
         # Right side: box of dropdown/checkbox options:
@@ -185,7 +153,7 @@ class StableDiffusionMainWindow(MainWindow):
         def add_combo_box(config_key: str, inpainting_only: bool, tooltip: Optional[str] = None) -> QHBoxLayout:
             """Handles layout, labels, and config connections when adding a new combo box."""
             label_text = config.get_label(config_key)
-            combobox = connected_combobox(option_list, config_key)
+            combobox = config.get_control_widget(config_key)
             if inpainting_only:
                 config.connect(combobox, AppConfig.EDIT_MODE,
                                lambda new_mode: combobox.setEnabled(new_mode == 'Inpaint'))
@@ -198,8 +166,7 @@ class StableDiffusionMainWindow(MainWindow):
         padding_line = QHBoxLayout()
         padding_label = QLabel(config.get_label(AppConfig.INPAINT_FULL_RES_PADDING))
         padding_line.addWidget(padding_label, stretch=1)
-        padding_spinbox = connected_spinbox(self, AppConfig.INPAINT_FULL_RES_PADDING)
-        padding_spinbox.setMinimum(0)
+        padding_spinbox = config.get_control_widget(AppConfig.INPAINT_FULL_RES_PADDING)
         padding_line.addWidget(padding_spinbox, stretch=2)
         option_list_layout.insertLayout(padding_line_index, padding_line)
 
@@ -212,11 +179,10 @@ class StableDiffusionMainWindow(MainWindow):
         config.connect(self, AppConfig.INPAINT_FULL_RES, padding_layout_update)
         config.connect(self, AppConfig.EDIT_MODE, lambda mode: padding_layout_update(mode == EDIT_MODE_INPAINT))
 
-        seed_input = connected_spinbox(option_list, AppConfig.SEED, min_val=-1, max_val=BigIntSpinbox.MAXIMUM,
-                                       step_val=1)
+        seed_input = config.get_control_widget(AppConfig.SEED)
         add_option_line(config.get_label(AppConfig.SEED), seed_input, None)
 
-        last_seed_box = connected_textedit(option_list, cache.LAST_SEED)
+        last_seed_box = cache.get_control_widget(cache.LAST_SEED)
         last_seed_box.setReadOnly(True)
         add_option_line(Cache.instance().get_label(cache.LAST_SEED), last_seed_box, None)
 

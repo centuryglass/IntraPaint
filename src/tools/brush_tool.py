@@ -12,8 +12,8 @@ from src.image.canvas.mypaint_layer_canvas import MyPaintLayerCanvas
 from src.image.layer_stack import LayerStack
 from src.tools.canvas_tool import CanvasTool
 from src.ui.image_viewer import ImageViewer
+from src.ui.input_fields.slider_spinbox import IntSliderSpinbox
 from src.ui.panel.brush_panel import BrushPanel
-from src.ui.widget.param_slider import ParamSlider
 
 RESOURCES_BRUSH_ICON = 'resources/icons/brush_icon.svg'
 BRUSH_LABEL = 'Brush'
@@ -77,14 +77,15 @@ class BrushTool(CanvasTool):
         """Returns the brush control panel."""
         if self._control_layout is not None:
             return self._control_panel
+        config = AppConfig.instance()
         # Initialize control panel on first request:
         control_layout = QVBoxLayout(self._control_panel)
         self._control_layout = control_layout
 
         # Size slider:
-        brush_size_slider = ParamSlider(self._control_panel,
-                                        AppConfig.instance().get_label(AppConfig.SKETCH_BRUSH_SIZE),
-                                        AppConfig.SKETCH_BRUSH_SIZE)
+
+        brush_size_slider = cast(IntSliderSpinbox, config.get_control_widget(AppConfig.SKETCH_BRUSH_SIZE))
+        brush_size_slider.setText(config.get_label(AppConfig.SKETCH_BRUSH_SIZE))
         control_layout.addWidget(brush_size_slider)
 
         def update_brush_size(size: int) -> None:

@@ -1,13 +1,13 @@
 """Popup modal window used for scaling the edited image."""
 from typing import Optional
-from PyQt5.QtWidgets import QDialog, QLabel, QVBoxLayout, QPushButton, QComboBox, QBoxLayout
+
 from PyQt5.QtCore import QSize
+from PyQt5.QtWidgets import QDialog, QLabel, QVBoxLayout, QPushButton, QComboBox, QBoxLayout
 
-from src.config.cache import Cache
-from src.ui.config_control_setup import connected_combobox, connected_spinbox, ConnectedCheckbox
-from src.ui.widget.labeled_spinbox import LabeledSpinbox
 from src.config.application_config import AppConfig
-
+from src.config.cache import Cache
+from src.ui.config_control_setup import connected_combobox
+from src.ui.widget.labeled_spinbox import LabeledSpinbox
 
 WIDTH_PX_BOX_LABEL = 'Width:'
 WIDTH_PX_BOX_TOOLTIP = 'New image width in pixels'
@@ -86,10 +86,8 @@ class ImageScaleModal(QDialog):
 
         # Add controlnet upscale option:
         if Cache.instance().get(Cache.CONTROLNET_VERSION) > 0:
-            self._controlnet_checkbox = ConnectedCheckbox(AppConfig.CONTROLNET_UPSCALING,
-                                                          parent=self,
-                                                          label_text=CONTROLNET_TILE_LABEL)
-            self._controlnet_rate_box = connected_spinbox(self, AppConfig.CONTROLNET_DOWNSAMPLE_RATE)
+            self._controlnet_checkbox = config.get_control_widget(AppConfig.CONTROLNET_UPSCALING)
+            self._controlnet_rate_box = config.get_control_widget(AppConfig.CONTROLNET_DOWNSAMPLE_RATE)
             self._controlnet_rate_box.setEnabled(config.get(AppConfig.CONTROLNET_UPSCALING))
             self._controlnet_checkbox.stateChanged.connect(self._controlnet_rate_box.setEnabled)
             self._layout.addWidget(self._controlnet_checkbox)

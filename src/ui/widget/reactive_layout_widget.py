@@ -98,7 +98,6 @@ class _LayoutMode:
 
     def activate(self) -> None:
         """Apply the mode setup function after confirming bounds are in range."""
-        # print('activating mode ' + self.name)
         if not self.in_range():
             raise RuntimeError(f'Mode {self.name} not supported at {self._widget.size()}')
         self.setup()

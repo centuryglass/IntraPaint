@@ -17,7 +17,7 @@ from src.config.cache import Cache
 from src.config.key_config import KeyConfig
 from src.image.filter.posterize import posterize, POSTERIZE_FILTER_TITLE, POSTERIZE_FILTER_DESCRIPTION, \
     get_posterize_params
-from src.ui.modal.filter_modal import ImageFilterModal
+from src.ui.modal.image_filter_modal import ImageFilterModal
 from src.ui.panel.layer_panel import LayerPanel
 from src.util.menu_action import MenuBuilder, menu_action
 from src.util.optional_import import optional_import
@@ -32,7 +32,7 @@ from src.ui.modal.modal_utils import show_error_dialog, request_confirmation, op
 from src.ui.modal.settings_modal import SettingsModal
 from src.util.display_size import get_screen_size
 from src.util.image_utils import pil_image_to_qimage, qimage_to_pil_image
-from src.util.shared_constants import EDIT_MODE_INPAINT
+from src.util.shared_constants import EDIT_MODE_INPAINT, PIL_SCALING_MODES
 
 from src.util.validation import assert_type
 from src.undo_stack import commit_action, undo, redo
@@ -531,8 +531,8 @@ class BaseInpaintController(MenuBuilder):
         if self._thread is not None:
             show_error_dialog(self._window, GENERATE_ERROR_TITLE_EXISTING_OP, GENERATE_ERROR_MESSAGE_EXISTING_OP)
             return
-        upscale_mode = config.get(AppConfig.UPSCALE_MODE)
-        downscale_mode = config.get(AppConfig.DOWNSCALE_MODE)
+        upscale_mode = PIL_SCALING_MODES[config.get(AppConfig.UPSCALE_MODE)]
+        downscale_mode = PIL_SCALING_MODES[config.get(AppConfig.DOWNSCALE_MODE)]
 
         def resize_image(pil_image: Image.Image, width: int, height: int) -> Image.Image:
             """Resize a PIL image using the appropriate scaling mode:"""
@@ -776,9 +776,9 @@ class BaseInpaintController(MenuBuilder):
             return
         image = self._layer_stack.pil_image()
         if new_size.width() <= width and new_size.height() <= height:  # downscaling
-            scale_mode = config.get(AppConfig.DOWNSCALE_MODE)
+            scale_mode = PIL_SCALING_MODES[config.get(AppConfig.DOWNSCALE_MODE)]
         else:
-            scale_mode = config.get(AppConfig.UPSCALE_MODE)
+            scale_mode = PIL_SCALING_MODES[config.get(AppConfig.UPSCALE_MODE)]
         scaled_image = image.resize((new_size.width(), new_size.height()), scale_mode)
         self._layer_stack.set_image(scaled_image)
 

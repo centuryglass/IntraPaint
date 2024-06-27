@@ -12,13 +12,15 @@ import json
 import os.path
 from inspect import signature
 from threading import Lock
-from typing import Optional, Any, Callable, List, Dict
+from typing import Optional, Any, Callable, List, Dict, cast
 import logging
 
 from PyQt5.QtCore import QSize, QTimer, Qt
 from PyQt5.QtGui import QKeySequence
+from PyQt5.QtWidgets import QWidget, QComboBox
 
 from src.config.config_entry import ConfigEntry, DefinitionKey, DefinitionType
+from src.util.parameter import TYPE_QSIZE
 from src.util.validation import assert_type
 
 logger = logging.getLogger(__name__)
@@ -162,6 +164,25 @@ class Config:
         with self._lock:
             return self._entries[key].get_value(inner_key)
 
+    def get_control_widget(self, key: str, connect_to_config: bool = True, multi_line=False) -> QWidget:
+        """Returns a QWidget capable of adjusting the chosen config value. Unless connect_to_config is false, changes
+        will immediately propagate to the underlying config file."""
+        with self._lock:
+            entry = self._entries[key]
+            control_widget = entry.get_input_widget(multi_line)
+            control_widget.setValue(entry.get_value())
+            if connect_to_config:
+                def _update_config(new_value: Any, config_key=key) -> None:
+                    self.set(config_key, new_value)
+
+                def _update_control(new_value: Any) -> None:
+                    control_widget.setValue(new_value)
+
+                assert hasattr(control_widget, 'valueChanged')
+                control_widget.valueChanged.connect(_update_config)
+                self.connect(control_widget, key, _update_control)
+            return  control_widget
+
     def get_keycodes(self, key: str) -> QKeySequence:
         """Returns a config value as a key sequence, throws RuntimeError if the value isn't a keycode."""
         code_string = self.get(key)
@@ -176,13 +197,13 @@ class Config:
         """Gets the label text assigned to a config value."""
         if key not in self._entries:
             raise KeyError(f'Tried to get label for unknown config value "{key}"')
-        return self._entries[key].label
+        return self._entries[key].name
 
     def get_tooltip(self, key: str) -> str:
         """Gets the tooltip text assigned to a config value."""
         if key not in self._entries:
             raise KeyError(f'Tried to get tooltip for unknown config value "{key}"')
-        return self._entries[key].tooltip
+        return self._entries[key].description
 
     def set(self,
             key: str,
@@ -332,7 +353,10 @@ class Config:
         """
         if key not in self._entries:
             raise KeyError(f'Tried to get unknown config value "{key}"')
-        self._entries[key].options = options_list
+        last_value = self.get(key)
+        self._entries[key].set_valid_options(options_list)
+        if last_value not in options_list:
+            self.set(key, options_list[0])
 
     def add_option(self, key: str, option: str) -> None:
         """
@@ -395,11 +419,15 @@ class Config:
     def _read_from_json(self) -> None:
         if self._json_path is None:
             return
+        json_data = None
         try:
             with open(self._json_path, encoding='utf-8') as file:
                 json_data = json.load(file)
         except json.JSONDecodeError as err:
             logger.error(f'Reading JSON config failed: {err}')
+        if json_data is None:   # Invalid JSON, replace it with defaults
+            self._write_to_json()
+            return
         with self._lock:
             for entry in self._entries.values():
                 entry.load_from_json_dict(json_data)

@@ -6,6 +6,7 @@ from PyQt5.QtWidgets import QStyleFactory
 
 from src.config.config import Config
 from src.util.optional_import import optional_import
+from src.util.pil_scaling import PIL_SCALING_MODES
 
 # Optional theme modules:
 qdarktheme = optional_import('qdarktheme')
@@ -56,6 +57,10 @@ class AppConfig(Config):
         self.update_options(AppConfig.THEME, theme_options)
         self.update_options(AppConfig.STYLE, list(QStyleFactory.keys()))
 
+        scaling_options = PIL_SCALING_MODES.keys()
+        self.update_options(AppConfig.UPSCALE_MODE, scaling_options)
+        self.update_options(AppConfig.DOWNSCALE_MODE, scaling_options)
+
     def apply_args(self, args: Namespace) -> None:
         """Loads expected parameters from command line arguments"""
         expected = {
@@ -103,8 +108,6 @@ class AppConfig(Config):
     MIN_GENERATION_SIZE: str
     MYPAINT_BRUSH: str
     NEGATIVE_PROMPT: str
-    PRESSURE_OPACITY: str
-    PRESSURE_SIZE: str
     PROMPT: str
     RESTORE_FACES: str
     SAMPLING_METHOD: str
@@ -113,7 +116,6 @@ class AppConfig(Config):
     SELECTION_BRUSH_SIZE: str
     SELECTION_SCREEN_ZOOMS_TO_CHANGED: str
     SHOW_OPTIONS_FULL_RESOLUTION: str
-    SHOW_ORIGINAL_IN_OPTIONS: str
     SHOW_SELECTIONS_IN_GENERATION_OPTIONS: str
     SKETCH_BRUSH_SIZE: str
     SKIP_STEPS: str

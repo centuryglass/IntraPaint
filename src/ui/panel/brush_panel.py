@@ -51,19 +51,6 @@ class BrushPanel(QTabWidget):
         self._setup_brush_tabs()
         self._setup_favorites_tab()
 
-    # def resizeEvent(self, event: Optional[QResizeEvent]) -> None:
-    #     """Keep the height from extending beyond tab height hints."""
-    #     max_height = 0
-    #     for page in self._pages.values():
-    #         page.resizeEvent(None)
-    #         max_height = max(max_height, page.actual_content_size().height())
-    #     tab_bar = self.tabBar()
-    #     if tab_bar is not None:
-    #         max_height += tab_bar.sizeHint().height()
-    #     print(f'final height: {max_height}')
-    #     self.setMinimumHeight(max_height)
-    #     # self.setMaximumHeight(max_height)
-
     def _setup_brush_tabs(self) -> None:
         """Reads in brush files, organizes them into tabs."""
         for group in os.listdir(BrushPanel.BRUSH_DIR):
