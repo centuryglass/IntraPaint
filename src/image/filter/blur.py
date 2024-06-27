@@ -32,7 +32,7 @@ def blur(image: QImage, mode: str, radius: float) -> QImage:
     return pil_image_to_qimage(pil_image.filter(image_filter))
 
 def get_blur_params() -> List[Parameter]:
-    """Return parameter definitions for the posterize filter."""
+    """Return parameter definitions for the blur filter."""
     mode_parameter = Parameter(MODE_LABEL, TYPE_STR, MODE_BOX, MODE_DESCRIPTION)
     mode_parameter.set_valid_options([MODE_BOX, MODE_GAUSSIAN, MODE_SIMPLE])
     return [

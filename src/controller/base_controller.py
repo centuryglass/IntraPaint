@@ -19,6 +19,8 @@ from src.image.filter.posterize import posterize, POSTERIZE_FILTER_TITLE, POSTER
     get_posterize_params
 from src.image.filter.blur import blur, BLUR_FILTER_TITLE, BLUR_FILTER_DESCRIPTION, \
     get_blur_params
+from src.image.filter.sharpen import sharpen, SHARPEN_FILTER_TITLE, SHARPEN_FILTER_DESCRIPTION, \
+    get_sharpen_params
 from src.ui.modal.image_filter_modal import ImageFilterModal
 from src.ui.panel.layer_panel import LayerPanel
 from src.util.menu_action import MenuBuilder, menu_action
@@ -768,7 +770,16 @@ class BaseInpaintController(MenuBuilder):
                                         blur, self._layer_stack)
         filter_modal.exec_()
 
-    @menu_action(MENU_FILTERS, 'posterize_shortcut', 62, ignore_when_busy=True)
+    @menu_action(MENU_FILTERS, 'sharpen_shortcut', 62, ignore_when_busy=True)
+    def sharpen_filter(self) -> None:
+        """Sharpen the image."""
+        if not self._layer_stack.has_image:
+            return
+        filter_modal = ImageFilterModal(SHARPEN_FILTER_TITLE, SHARPEN_FILTER_DESCRIPTION, get_sharpen_params(),
+                                        sharpen, self._layer_stack)
+        filter_modal.exec_()
+
+    @menu_action(MENU_FILTERS, 'posterize_shortcut', 63, ignore_when_busy=True)
     def posterize_filter(self) -> None:
         """Posterize the image."""
         if not self._layer_stack.has_image:
