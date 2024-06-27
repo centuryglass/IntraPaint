@@ -21,6 +21,8 @@ from src.image.filter.blur import blur, BLUR_FILTER_TITLE, BLUR_FILTER_DESCRIPTI
     get_blur_params
 from src.image.filter.sharpen import sharpen, SHARPEN_FILTER_TITLE, SHARPEN_FILTER_DESCRIPTION, \
     get_sharpen_params
+from src.image.filter.contrast import contrast, BRIGHTNESS_CONTRAST_FILTER_TITLE, BRIGHTNESS_CONTRAST_FILTER_DESCRIPTION, \
+    get_contrast_params
 from src.ui.modal.image_filter_modal import ImageFilterModal
 from src.ui.panel.layer_panel import LayerPanel
 from src.util.menu_action import MenuBuilder, menu_action
@@ -777,6 +779,15 @@ class BaseInpaintController(MenuBuilder):
             return
         filter_modal = ImageFilterModal(SHARPEN_FILTER_TITLE, SHARPEN_FILTER_DESCRIPTION, get_sharpen_params(),
                                         sharpen, self._layer_stack)
+        filter_modal.exec_()
+
+    @menu_action(MENU_FILTERS, 'brightness_contrast_shortcut', 63, ignore_when_busy=True)
+    def brightness_contrast_filter(self) -> None:
+        """Adjust brightness/contrast."""
+        if not self._layer_stack.has_image:
+            return
+        filter_modal = ImageFilterModal(BRIGHTNESS_CONTRAST_FILTER_TITLE, BRIGHTNESS_CONTRAST_FILTER_DESCRIPTION, get_contrast_params(),
+                                        contrast, self._layer_stack)
         filter_modal.exec_()
 
     @menu_action(MENU_FILTERS, 'posterize_shortcut', 63, ignore_when_busy=True)

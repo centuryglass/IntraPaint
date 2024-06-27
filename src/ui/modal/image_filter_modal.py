@@ -14,6 +14,7 @@ from src.util.parameter import Parameter
 SELECTED_ONLY_LABEL = 'Change selected areas only'
 ACTIVE_ONLY_LABEL = 'Change active layer only'
 MIN_PREVIEW_SIZE = 450
+MAX_PREVIEW_SIZE = 800
 CANCEL_BUTTON_TEXT = 'Cancel'
 APPLY_BUTTON_TEXT = 'Apply'
 
@@ -83,15 +84,25 @@ class ImageFilterModal(QDialog):
         painter.drawImage(QRect(0, 0, image.width(), image.height()), filtered_image)
         return final_image
 
-    def _get_layer_images(self, changed_only: bool) -> Dict[int, QImage]:
-        images: Dict[int, QImage] = {}
+    def _bounds(self, scale = 1.0) -> QRect:
         bounds = self._layer_stack.merged_layer_geometry
+        if scale != 1.0:
+            bounds.setX(int(bounds.x() * scale))
+            bounds.setY(int(bounds.y() * scale))
+            bounds.setWidth(int(bounds.width() * scale))
+            bounds.setHeight(int(bounds.height() * scale))
+        return bounds
+
+    def _get_layer_images(self, changed_only: bool, scale: float = 1.0) -> Dict[int, QImage]:
+        images: Dict[int, QImage] = {}
+        bounds = self._bounds(scale)
         if self._selected_only_checkbox.isChecked():
             selection_layer = self._layer_stack.selection_layer
             selection: Optional[QImage] = QImage(bounds.size(), QImage.Format_ARGB32_Premultiplied)
             selection.fill(Qt.GlobalColor.transparent)
             painter = QPainter(selection)
-            painter.drawPixmap(QRect(-bounds.topLeft(), selection_layer.size), selection_layer.pixmap)
+            scaled_image_size = QSize(int(selection_layer.width * scale), int(selection_layer.height * scale))
+            painter.drawPixmap(QRect(-bounds.topLeft(), bounds.size()), selection_layer.pixmap, QRect(QPoint(), scaled_image_size))
             painter.end()
         else:
             selection = None
@@ -99,16 +110,21 @@ class ImageFilterModal(QDialog):
             layer = self._layer_stack.get_layer_by_index(i)
             if not layer.visible:
                 continue
-            offset = layer.position - bounds.topLeft()
+            position = QPoint(int(layer.position.x() * scale), int(layer.position.y() * scale))
+            offset = position - bounds.topLeft()
+            layer_image = layer.qimage
+            if scale != 1.0:
+                layer_image = layer_image.scaled(QSize(int(layer_image.width() * scale), int(layer_image.height() * scale)))
             if not self._active_only_checkbox.isChecked() or layer.id == self._layer_stack.active_layer_id:
-                images[layer.id] = self._get_filtered_image(layer.qimage, selection, offset)
+                images[layer.id] = self._get_filtered_image(layer_image, selection, offset)
             elif not changed_only:
-                images[layer.id] = layer.qimage
+                images[layer.id] = layer_image
         return images
 
     def _update_preview(self, _ = None) -> None:
-        layer_images = self._get_layer_images(False)
-        bounds = self._layer_stack.merged_layer_geometry
+        scale = MAX_PREVIEW_SIZE / self._layer_stack.width
+        layer_images = self._get_layer_images(False, scale)
+        bounds = self._bounds(scale)
         preview_image = QImage(bounds.size(), QImage.Format.Format_ARGB32_Premultiplied)
         painter = QPainter(preview_image)
         transparency_pattern = get_transparency_tile_pixmap()
@@ -118,10 +134,11 @@ class ImageFilterModal(QDialog):
             if not layer.visible:
                 continue
             assert layer.id in layer_images
-            offset = layer.position - bounds.topLeft()
+            position = QPoint(int(layer.position.x() * scale), int(layer.position.y() * scale))
+            offset = position - bounds.topLeft()
             painter.setOpacity(layer.opacity)
             painter.setCompositionMode(layer.composition_mode)
-            painter.drawImage(QRect(offset, layer.size), layer_images[layer.id])
+            painter.drawImage(QRect(offset, layer_images[layer.id].size()), layer_images[layer.id])
         painter.end()
         self._preview.image = preview_image
 

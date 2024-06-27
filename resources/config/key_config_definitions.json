@@ -479,12 +479,20 @@
         "default": "Ctrl+2",
         "saved": true
     },
+    "brightness_contrast_shortcut": {
+        "label": "Brightness/Contrast",
+        "category": "Keybindings",
+        "description": "Adjust image brightness/contrast",
+        "type": "string",
+        "default": "Ctrl+3",
+        "saved": true
+    },
     "posterize_shortcut": {
         "label": "Posterize",
         "category": "Keybindings",
         "description": "Simplify layer color palette",
         "type": "string",
-        "default": "Ctrl+3",
+        "default": "Ctrl+4",
         "saved": true
     }
 }
