@@ -1,5 +1,6 @@
 # Development tasks
 
+- ORA file format: https://www.openraster.org/baseline/file-layout-spec.html
 # Bugs
 - copy/paste issues in small layers
 - disconnect between EDIT_SIZE in config and layer stack gen area
