@@ -12,7 +12,7 @@ from src.image.layer_stack import LayerStack
 from src.tools.canvas_tool import CanvasTool
 from src.ui.image_viewer import ImageViewer
 from src.ui.input_fields.slider_spinbox import IntSliderSpinbox
-from src.ui.widget.dual_toggle import DualToggle
+from src.ui.input_fields.dual_toggle import DualToggle
 
 SELECTION_CONTROL_LAYOUT_SPACING = 4
 
@@ -98,7 +98,7 @@ class SelectionTool(CanvasTool):
 
         tool_toggle = DualToggle(self._control_panel, [TOOL_MODE_DRAW, TOOL_MODE_ERASE])
         tool_toggle.set_icons(RESOURCES_PEN_PNG, RESOURCES_ERASER_PNG)
-        tool_toggle.set_selected(TOOL_MODE_DRAW)
+        tool_toggle.setValue(TOOL_MODE_DRAW)
 
         config.connect(self, AppConfig.SELECTION_BRUSH_SIZE, update_brush_size)
         control_layout.addWidget(brush_size_slider, stretch=1)
@@ -108,7 +108,7 @@ class SelectionTool(CanvasTool):
             """Switches the mask tool between draw and erase modes."""
             self._canvas.eraser = selected_tool_label == TOOL_MODE_ERASE
 
-        tool_toggle.value_changed.connect(set_drawing_tool)
+        tool_toggle.valueChanged.connect(set_drawing_tool)
         control_layout.addWidget(tool_toggle, stretch=1)
         control_layout.addStretch(1)
 
@@ -120,7 +120,7 @@ class SelectionTool(CanvasTool):
             """Switch from eraser back to pen after clearing the mask canvas."""
             if self.layer is not None:
                 self.layer.clear()
-            tool_toggle.set_selected(TOOL_MODE_DRAW)
+            tool_toggle.setValue(TOOL_MODE_DRAW)
 
         clear_selection_button.clicked.connect(clear_mask)
 

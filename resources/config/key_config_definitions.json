@@ -143,6 +143,14 @@
         "default": "S",
         "saved": true
     },
+    "fill_tool_key": {
+        "label": "Switch to the fill tool:",
+        "category": "Keybindings",
+        "description": "Activate the fill tool to fill areas with solid colors.",
+        "type": "string",
+        "default": "F",
+        "saved": true
+    },
     "generation_area_tool_key": {
         "label": "Switch to the image generation area selection tool:",
         "category": "Keybindings",
@@ -463,20 +471,12 @@
         "default": "Ctrl+Alt+W",
         "saved": true
     },
-    "blur_shortcut": {
-        "label": "Blur",
+    "color_balance_shortcut": {
+        "label": "RGBA Color Balance",
         "category": "Keybindings",
-        "description": "Image blurring",
+        "description": "Adjust RGBA color channels",
         "type": "string",
         "default": "Ctrl+1",
-        "saved": true
-    },
-    "sharpen_shortcut": {
-        "label": "Sharpen",
-        "category": "Keybindings",
-        "description": "Sharpen image details",
-        "type": "string",
-        "default": "Ctrl+2",
         "saved": true
     },
     "brightness_contrast_shortcut": {
@@ -484,7 +484,23 @@
         "category": "Keybindings",
         "description": "Adjust image brightness/contrast",
         "type": "string",
+        "default": "Ctrl+2",
+        "saved": true
+    },
+    "blur_shortcut": {
+        "label": "Blur",
+        "category": "Keybindings",
+        "description": "Image blurring",
+        "type": "string",
         "default": "Ctrl+3",
+        "saved": true
+    },
+    "sharpen_shortcut": {
+        "label": "Sharpen",
+        "category": "Keybindings",
+        "description": "Sharpen image details",
+        "type": "string",
+        "default": "Ctrl+4",
         "saved": true
     },
     "posterize_shortcut": {
@@ -492,7 +508,7 @@
         "category": "Keybindings",
         "description": "Simplify layer color palette",
         "type": "string",
-        "default": "Ctrl+4",
+        "default": "Ctrl+5",
         "saved": true
     }
 }

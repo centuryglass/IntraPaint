@@ -38,7 +38,7 @@ class BigIntSpinbox(QAbstractSpinBox):
             if len(value) > 0 and value != "-":
                 try:
                     int_value = int(value)
-                    if int_value < self._minimum or int_value > self._maximum:
+                    if not self._value_in_range(int_value):
                         return
                 except ValueError:
                     return  # Ignore non-numeric
@@ -55,8 +55,6 @@ class BigIntSpinbox(QAbstractSpinBox):
         """Sets a new integer value if within the accepted range."""
         if self._value_in_range(value):
             self._line_edit.setText(str(value))
-        else:
-            pass
 
     def setSingleStep(self, single_step: int) -> None:
         """Sets the amount the spinbox value should change when the controls are used to change the value once."""

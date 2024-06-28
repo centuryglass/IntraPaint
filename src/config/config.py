@@ -20,6 +20,7 @@ from PyQt5.QtGui import QKeySequence
 from PyQt5.QtWidgets import QWidget, QComboBox
 
 from src.config.config_entry import ConfigEntry, DefinitionKey, DefinitionType
+from src.ui.input_fields.check_box import CheckBox
 from src.util.parameter import TYPE_QSIZE
 from src.util.validation import assert_type
 
@@ -171,12 +172,15 @@ class Config:
             entry = self._entries[key]
             control_widget = entry.get_input_widget(multi_line)
             control_widget.setValue(entry.get_value())
+            if isinstance(control_widget, CheckBox):
+                control_widget.setText(entry.name)
             if connect_to_config:
                 def _update_config(new_value: Any, config_key=key) -> None:
                     self.set(config_key, new_value)
 
                 def _update_control(new_value: Any) -> None:
-                    control_widget.setValue(new_value)
+                    if control_widget.value() != new_value:
+                        control_widget.setValue(new_value)
 
                 assert hasattr(control_widget, 'valueChanged')
                 control_widget.valueChanged.connect(_update_config)

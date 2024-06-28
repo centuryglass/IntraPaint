@@ -14,6 +14,7 @@ from src.config.application_config import AppConfig
 from src.image.image_layer import ImageLayer
 from src.image.selection_layer import SelectionLayer
 from src.undo_stack import commit_action, last_action
+from src.util.application_state import AppStateTracker, APP_STATE_NO_IMAGE, APP_STATE_EDITING
 from src.util.cached_data import CachedData
 from src.util.image_utils import qimage_to_pil_image
 from src.util.shared_constants import COMPOSITION_MODES
@@ -279,12 +280,16 @@ class LayerStack(QObject):
             self._invalidate_all_cached()
             self.visible_content_changed.emit()
 
-    def qimage(self, saved_only: bool = True) -> QImage:
+    def qimage(self, saved_only: bool = True, crop_to_bounds: bool = True) -> QImage:
         """Returns combined visible layer content as a QImage object, optionally including unsaved layers."""
         cache = self._image_cache_saved if saved_only else self._image_cache_full
-        if cache.valid:
+        if cache.valid and not crop_to_bounds:
             return cache.data
-        image = QImage(self.size, QImage.Format.Format_ARGB32_Premultiplied)
+        if crop_to_bounds:
+            image_bounds = QRect(QPoint(), self.size)
+        else:
+            image_bounds = self.merged_layer_geometry
+        image = QImage(image_bounds.size(), QImage.Format.Format_ARGB32_Premultiplied)
         image.fill(Qt.transparent)
         painter = QPainter(image)
         for layer in [*reversed(self._layers), self._selection_layer]:
@@ -294,9 +299,10 @@ class LayerStack(QObject):
             if layer_image is not None:
                 painter.setOpacity(layer.opacity)
                 painter.setCompositionMode(layer.composition_mode)
-                painter.drawImage(layer.position, layer_image)
+                painter.drawImage(layer.position - image_bounds.topLeft(), layer_image)
         painter.end()
-        cache.data = image
+        if crop_to_bounds:
+            cache.data = image
         return image
 
     def pixmap(self, saved_only: bool = True) -> QPixmap:
@@ -878,6 +884,8 @@ class LayerStack(QObject):
         self.layer_added.emit(layer, index)
         active_id = self.active_layer_id
         active_index = self.active_layer_index
+        if len(self._layers) == 1 and AppStateTracker.app_state() == APP_STATE_NO_IMAGE:
+            AppStateTracker.set_app_state(APP_STATE_EDITING)
         if active_index is None or active_id is None:
             self._active_layer_id = layer.id
             self.active_layer_changed.emit(layer.id, index)
@@ -922,6 +930,8 @@ class LayerStack(QObject):
             self.active_layer_changed.emit(self._active_layer_id, self.active_layer_index)
         self._layers.pop(index)
         self.layer_removed.emit(layer)
+        if len(self._layers) == 0:
+            AppStateTracker.set_app_state(APP_STATE_NO_IMAGE)
         if next_active_layer_index is not None and next_active_layer_index != active_layer_index:
             self.active_layer_changed.emit(self._active_layer_id, next_active_layer_index)
         if layer.visible:

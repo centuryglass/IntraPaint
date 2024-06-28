@@ -21,6 +21,7 @@ from src.ui.graphics_items.outline import Outline
 from src.ui.graphics_items.polygon_outline import PolygonOutline
 from src.ui.widget.image_graphics_view import ImageGraphicsView
 from src.ui.widget.loading_widget import LoadingWidget
+from src.util.application_state import APP_STATE_SELECTION, AppStateTracker
 from src.util.display_size import max_font_size
 from src.util.geometry_utils import get_scaled_placement
 from src.util.image_utils import get_standard_qt_icon
@@ -215,6 +216,8 @@ class GeneratedImageSelector(QWidget):
             self._loading_spinner.setVisible(is_loading)
         else:  # LoadingWidget
             self._loading_spinner.paused = not is_loading
+        if not is_loading:
+            AppStateTracker.set_app_state(APP_STATE_SELECTION)
 
     def set_loading_message(self, message: str) -> None:
         """Changes the loading spinner message."""

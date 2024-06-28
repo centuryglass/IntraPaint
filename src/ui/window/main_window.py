@@ -21,6 +21,7 @@ from src.ui.panel.layer_panel import LayerPanel
 from src.ui.panel.tool_panel import ToolPanel
 from src.ui.widget.loading_widget import LoadingWidget
 from src.ui.window.image_window import ImageWindow
+from src.util.application_state import AppStateTracker, APP_STATE_LOADING, APP_STATE_NO_IMAGE, APP_STATE_EDITING
 from src.util.display_size import get_screen_size
 from src.util.shared_constants import TIMELAPSE_MODE_FLAG
 
@@ -114,6 +115,9 @@ class MainWindow(QMainWindow):
         self._control_panel = self._build_control_panel(controller)
         self._main_widget.addTab(self._control_panel, CONTROL_TAB_NAME)
         self._layout.addWidget(self._control_panel, stretch=CONTROL_PANEL_STRETCH)
+
+        for panel in (self._image_panel, self._tool_panel, self._control_panel):
+            AppStateTracker.set_enabled_states(panel, [APP_STATE_EDITING])
         self.resizeEvent(None)
 
     def _get_appropriate_orientation(self) -> Qt.Orientation:
@@ -302,9 +306,11 @@ class MainWindow(QMainWindow):
             self._image_selector.set_is_loading(is_loading, message)
         else:
             if is_loading:
+                AppStateTracker.set_app_state(APP_STATE_LOADING)
                 self._loading_widget.show()
                 self._loading_widget.message = message if message is not None else DEFAULT_LOADING_MESSAGE
             else:
+                AppStateTracker.set_app_state(APP_STATE_EDITING if self._layer_stack.has_image else APP_STATE_NO_IMAGE)
                 if TIMELAPSE_MODE_FLAG in sys.argv:
                     self._loading_widget.paused = True
                 else:

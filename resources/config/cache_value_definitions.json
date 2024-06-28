@@ -81,5 +81,26 @@
         "type": "string",
         "default": "brush",
         "saved": true
+    },
+    "fill_threshold": {
+        "label": "Color threshold:",
+        "category": "Cache",
+        "description": "Sets how closely colors need to match the clicked color to be selected. 0.0 only changes exact matching colors, higher values are more permissive.",
+        "type": "float",
+        "default": 0.0,
+        "range_options": {
+            "min": 0.0,
+            "max": 30.0,
+            "step": 10.0
+        },
+        "saved": true
+    },
+    "sample_merged": {
+        "label": "Sample Merged:",
+        "category": "Cache",
+        "description": "If checked, fill based on the entire image contents, not just the current layer",
+        "type": "bool",
+        "default": false,
+        "saved": true
     }
 }

@@ -30,9 +30,11 @@ class Cache(Config):
     CONTROLNET_MODELS: str
     CONTROLNET_MODULES: str
     CONTROLNET_VERSION: str
+    FILL_THRESHOLD: str
     LAST_ACTIVE_TOOL: str
     LAST_BRUSH_COLOR: str
     LAST_FILE_PATH: str
     LAST_SEED: str
     LORA_MODELS: str
+    SAMPLE_MERGED: str
     STYLES: str

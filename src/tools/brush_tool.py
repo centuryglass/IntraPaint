@@ -113,7 +113,7 @@ class BrushTool(CanvasTool):
         color_dialog = QColorDialog()
         color_dialog.setOption(QColorDialog.ColorDialogOption.ShowAlphaChannel, True)
         color_dialog.setOption(QColorDialog.ColorDialogOption.DontUseNativeDialog, True)
-        color_picker_button.clicked.connect(lambda: set_brush_color(color_dialog.getColor()))
+        color_picker_button.clicked.connect(lambda: set_brush_color(color_dialog.getColor(self.brush_color)))
         Cache.instance().connect(color_picker_button, Cache.LAST_BRUSH_COLOR,
                                      lambda color_str: set_brush_color(QColor(color_str)))
         set_brush_color(self.brush_color)

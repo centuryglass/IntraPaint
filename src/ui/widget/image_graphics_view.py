@@ -322,13 +322,13 @@ class ImageGraphicsView(QGraphicsView):
         """Extend default event filter management to deal with QGraphicsView mouse event oddities."""
         if event_filter is not None and event_filter not in self._event_filters:
             self._event_filters.append(event_filter)
-        super().installEventFilter(event_filter)
+        # super().installEventFilter(event_filter)
 
     def removeEventFilter(self, event_filter: Optional[QObject]) -> None:
         """Extend default event filter management to deal with QGraphicsView mouse event oddities."""
         if event_filter in self._event_filters:
             self._event_filters.remove(event_filter)
-        super().removeEventFilter(event_filter)
+        # super().removeEventFilter(event_filter)
 
     def _pixmap_cursor_update(self, cursor_point: QPoint) -> None:
         """If a pixmap cursor is in use, keep last cursor point updated and force a redraw when the mouse moves."""

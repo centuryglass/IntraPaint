@@ -7,7 +7,6 @@ from PyQt5.QtCore import Qt, QSize, QPointF
 from PyQt5.QtGui import QPainter, QPixmap, QPainterPath, QTransform, QFont, QColor
 from PyQt5.QtWidgets import QLabel, QSizePolicy, QWidget
 
-from src.config.application_config import AppConfig
 from src.util.display_size import find_text_size
 
 
@@ -37,7 +36,6 @@ class Label(QLabel):
             Initial orientation.
         """
         super().__init__(parent)
-        config = AppConfig.instance()
         self._size = size
         self._font = QFont()
         self._inverted: Optional[bool] = False
@@ -56,9 +54,6 @@ class Label(QLabel):
         self.setStyleSheet(self._base_style)
         if size is not None:
             self._font.setPointSize(size)
-        else:
-            font_size = config.get(AppConfig.FONT_POINT_SIZE)
-            self._font.setPointSize(font_size)
         self.set_orientation(orientation)
         self.setText(text)
 

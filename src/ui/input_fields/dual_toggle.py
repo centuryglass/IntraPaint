@@ -11,7 +11,7 @@ from src.ui.widget.label import Label
 class DualToggle(QWidget):
     """A fancier Qt toggle button implementation that allows selecting between two options."""
 
-    value_changed = pyqtSignal(str)
+    valueChanged = pyqtSignal(str)
 
     def __init__(self,
                  parent: QWidget,
@@ -76,15 +76,15 @@ class DualToggle(QWidget):
     def toggle(self) -> None:
         """Selects whatever option isn't currently selected."""
         if self._selected == self.option1:
-            self.set_selected(self.option2)
+            self.setValue(self.option2)
         elif self._selected == self.option2:
-            self.set_selected(self.option1)
+            self.setValue(self.option1)
 
-    def selected(self) -> str | None:
+    def value(self) -> str | None:
         """Returns the current selected option string."""
         return self._selected
 
-    def set_selected(self, selected_option: Optional[str]) -> None:
+    def setValue(self, selected_option: Optional[str]) -> None:
         """Set the selected option string. Raises ValueError if the choice isn't one of the available options."""
         if selected_option == self._selected:
             return
@@ -98,7 +98,7 @@ class DualToggle(QWidget):
             label = self.label1 if selected_option == self.option1 else self.label2
             label.setFrameStyle(QFrame.StyledPanel | QFrame.Sunken)
             label.set_inverted(True)
-        self.value_changed.emit(selected_option)
+        self.valueChanged.emit(selected_option)
 
     def set_icons(self, icon1: str | QPixmap, icon2: str | QPixmap) -> None:
         """Sets icons for both option buttons, as either pixmaps or image paths."""
@@ -117,6 +117,6 @@ class DualToggle(QWidget):
         if event.button() == Qt.MouseButton.LeftButton:
             pt = event.pos()
             if self._orientation == Qt.Orientation.Vertical:
-                self.set_selected(self.option1 if pt.y() < (self.height() // 2) else self.option2)
+                self.setValue(self.option1 if pt.y() < (self.height() // 2) else self.option2)
             else:
-                self.set_selected(self.option1 if pt.x() < (self.width() // 2) else self.option2)
+                self.setValue(self.option1 if pt.x() < (self.width() // 2) else self.option2)

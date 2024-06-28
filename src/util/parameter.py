@@ -7,6 +7,7 @@ from PyQt5.QtWidgets import QWidget
 from src.ui.input_fields.big_int_spinbox import BigIntSpinbox
 from src.ui.input_fields.check_box import CheckBox
 from src.ui.input_fields.combo_box import ComboBox
+from src.ui.input_fields.dual_toggle import DualToggle
 from src.ui.input_fields.line_edit import LineEdit
 from src.ui.input_fields.plain_text_edit import PlainTextEdit
 from src.ui.input_fields.size_field import SizeField
@@ -170,6 +171,9 @@ class Parameter:
     def validate(self, test_value: Any, raise_on_failure=False) -> bool:
         """Returns whether a test value is acceptable for this parameter"""
         try:
+            if self.type_name == TYPE_INT and ((self.minimum is not None and self.minimum < INT_MIN) or
+                                               (self.maximum is not None and self.maximum > INT_MAX)):
+                test_value = int(test_value)  # BigIntSpinbox needs to emit as str, so convert before validating.
             test_type = get_parameter_type(test_value)
             if test_type != self._type:
                 if raise_on_failure:
@@ -177,7 +181,7 @@ class Parameter:
                 return False
         except TypeError:
             if raise_on_failure:
-                raise TypeError(f'{self.name} parameter: expected {self._type}, got {test_value}')
+                raise TypeError(f'{self.name} parameter: expected {self._type}, got {test_value} {type(test_value)}')
             return False
         if (self._maximum is not None or self._minimum is not None) and not _in_range(test_value, self._minimum,
                                                                                       self._maximum):
@@ -201,14 +205,19 @@ class Parameter:
             if multi_line:
                 raise ValueError('multi_line=True is not valid for parameters with fixed option lists')
             assert self.type_name == TYPE_STR
-            combo_box = ComboBox()
-            for option in self._options:
-                combo_box.addItem(str(option), userData=option)
-            if self._default_value is not None:
-                index = combo_box.findText(str(self._default_value))
-                assert index >= 0
-                combo_box.setCurrentIndex(index)
-            input_field = cast(QWidget, combo_box)
+            if len(self._options) == 2:
+                toggle = DualToggle(parent=None, options = self.options)
+                toggle.setValue(self._default_value)
+                input_field = cast(QWidget, toggle)
+            else:
+                combo_box = ComboBox()
+                for option in self._options:
+                    combo_box.addItem(str(option), userData=option)
+                if self._default_value is not None:
+                    index = combo_box.findText(str(self._default_value))
+                    assert index >= 0
+                    combo_box.setCurrentIndex(index)
+                input_field = cast(QWidget, combo_box)
         elif self._type == TYPE_INT:
             if (self._maximum is not None and self._maximum > INT_MAX) or (self._minimum is not None
                                                                            and self._minimum < INT_MIN):

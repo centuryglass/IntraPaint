@@ -96,9 +96,12 @@ class KeyConfig(Config):
     # DYNAMIC PROPERTIES:
     # Generate with `python /home/anthony/Workspace/ML/IntraPaint/scripts/dynamic_import_typing.py src/config/key_config.py`
 
+    BLUR_SHORTCUT: str
+    BRIGHTNESS_CONTRAST_SHORTCUT: str
     BRUSH_SIZE_DECREASE: str
     BRUSH_SIZE_INCREASE: str
     BRUSH_TOOL_KEY: str
+    COLOR_BALANCE_SHORTCUT: str
     COPY_LAYER_SHORTCUT: str
     COPY_SHORTCUT: str
     CROP_TO_CONTENT_SHORTCUT: str
@@ -129,6 +132,7 @@ class KeyConfig(Config):
     PAN_RIGHT: str
     PAN_UP: str
     PASTE_SHORTCUT: str
+    POSTERIZE_SHORTCUT: str
     QUIT_SHORTCUT: str
     REDO_SHORTCUT: str
     RELOAD_SHORTCUT: str
@@ -145,6 +149,7 @@ class KeyConfig(Config):
     SELECT_NONE_SHORTCUT: str
     SELECT_PREVIOUS_LAYER_SHORTCUT: str
     SETTINGS_SHORTCUT: str
+    SHARPEN_SHORTCUT: str
     SHOW_LAYER_MENU_SHORTCUT: str
     SHRINK_SELECTION_SHORTCUT: str
     SPEED_MODIFIER: str

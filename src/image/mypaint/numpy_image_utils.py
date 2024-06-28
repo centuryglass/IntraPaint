@@ -26,6 +26,13 @@ def image_data_as_numpy_8bit(image: QImage) -> AnyNpArray:
     return np.ndarray(shape=(image.height(), image.width(), 4), dtype=np.uint8, buffer=image_ptr)
 
 
+def numpy_8bit_to_qimage(np_image: AnyNpArray) -> QImage:
+    """Create a new QImage from numpy image data."""
+    height, width, channel = np_image.shape
+    assert channel == 4, f'Expected ARGB32 image, but found {channel} channels'
+    return QImage(np_image.data, width, height, QImage.Format_ARGB32_Premultiplied)
+
+
 def numpy_8bit_to_16bit(np_image: AnyNpArray) -> AnyNpArray:
     """Converts a numpy image array with 8-bit image color data to 16-bit color image data."""
     img_arr = (np_image.astype(np.float32) / 255 * (1 << 15)).astype(np.uint16)

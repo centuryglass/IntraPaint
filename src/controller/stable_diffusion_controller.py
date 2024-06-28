@@ -24,7 +24,7 @@ from src.ui.modal.modal_utils import show_error_dialog
 from src.util.display_size import get_screen_size
 from src.controller.base_controller import BaseInpaintController, MENU_TOOLS
 from src.api.a1111_webservice import A1111Webservice
-from src.util.menu_action import menu_action
+from src.util.menu_builder import menu_action
 from src.util.shared_constants import EDIT_MODE_INPAINT, EDIT_MODE_TXT2IMG
 
 STABLE_DIFFUSION_CONFIG_CATEGORY = 'Stable-Diffusion'
@@ -451,7 +451,7 @@ class StableDiffusionController(BaseInpaintController):
         if 'progress' in status_dict:
             self._window.set_loading_message(status_dict['progress'])
 
-    @menu_action(MENU_TOOLS, 'lcm_mode_shortcut', 99, False, _check_lcm_mode_available)
+    @menu_action(MENU_TOOLS, 'lcm_mode_shortcut', 99, condition_check=_check_lcm_mode_available)
     def set_lcm_mode(self) -> None:
         """Apply all settings required for using an LCM LoRA module."""
         config = AppConfig.instance()
