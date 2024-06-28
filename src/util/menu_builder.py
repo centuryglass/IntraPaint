@@ -1,5 +1,6 @@
 """Defines the @menu_action decorator and the MenuBuilder class for more convenient PyQt5 menu initialization."""
 from functools import wraps
+from inspect import signature
 from typing import Callable, Any, Optional, TypeVar, Dict, List
 
 from PyQt5.QtWidgets import QMainWindow, QAction, QMenu
@@ -33,8 +34,11 @@ def menu_action(menu_name: str, config_key: str, priority: int = INT_MAX,
 
     def _decorator(func):
         @wraps(func)
-        def _wrapper(self, *args, **kwargs):
-            return func(self, *args, **kwargs)
+        def _wrapper(*args, **kwargs):
+            # Discard any unwanted signal parameters that the function won't accept:
+            num_args = len(signature(func).parameters)
+            args = args[:num_args]
+            return func(*args[:num_args], **kwargs)
         setattr(_wrapper, 'menu_name', menu_name)
         setattr(_wrapper, 'config_key', config_key)
         setattr(_wrapper, 'valid_app_states', valid_app_states)
@@ -106,7 +110,7 @@ class MenuBuilder:
             action.setToolTip(tooltip)
         if keybinding is not None and keybinding != '':
             action.setShortcut(keybinding)
-        action.triggered.connect(lambda _: new_action())
+        action.triggered.connect(new_action)
         if config_key is not None and config_key != '':
             KeyConfig.instance().connect(self, config_key, lambda key_str: action.setShortcut(key_str))
 

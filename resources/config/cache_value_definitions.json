@@ -8,7 +8,7 @@
         "options": [
             "None"
         ],
-        "saved": false
+        "saved": true
     },
     "controlnet_version": {
         "label": "ControlNet version:",

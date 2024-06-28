@@ -154,19 +154,6 @@ class ImageViewer(ImageGraphicsView):
         assert size is not None
         return size
 
-    # noinspection PyMethodOverriding
-    def mousePressEvent(self, event: Optional[QMouseEvent]) -> None:
-        """Select the area in the image to be edited."""
-        if super().mousePressEvent(event, True):
-            return
-        if not self._layer_stack.has_image or event is None:
-            return
-        if event.button() == Qt.LeftButton and self.mouse_navigation_enabled and self._mouse_moves_generation_area:
-            image_coordinates = self.widget_to_scene_coordinates(event.pos())
-            generation_area = self._layer_stack.generation_area
-            generation_area.moveTopLeft(image_coordinates.toPoint())
-            self._layer_stack.generation_area = generation_area
-
     def drawBackground(self, painter: Optional[QPainter], rect: QRectF) -> None:
         """Draw the background as a fixed size tiling image."""
         background = self.background

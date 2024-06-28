@@ -118,5 +118,5 @@ if __name__ == '__main__':
         logger.exception('main crashed, error: %s', err)
         if QApplication.instance() is None:
             app = QApplication(sys.argv)
-        show_error_dialog(None, title="IntraPaint has crashed.", error=err)
+        show_error_dialog(None, title="IntraPaint failed to start", error=err)
         raise err

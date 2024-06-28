@@ -36,6 +36,7 @@ from src.ui.modal.modal_utils import show_error_dialog, request_confirmation, op
 from src.ui.modal.settings_modal import SettingsModal
 from src.util.display_size import get_screen_size
 from src.util.image_utils import pil_image_to_qimage, qimage_to_pil_image
+from src.util.qtexcepthook import QtExceptHook
 from src.util.shared_constants import EDIT_MODE_INPAINT, PIL_SCALING_MODES
 
 from src.util.validation import assert_type
@@ -274,7 +275,7 @@ class BaseInpaintController(MenuBuilder):
             AppStateTracker.set_enabled_states(action, [APP_STATE_EDITING])
 
         AppStateTracker.set_app_state(APP_STATE_EDITING if self._layer_stack.has_image else APP_STATE_NO_IMAGE)
-
+        QtExceptHook().enable()
         self._app.exec_()
         sys.exit()
 
