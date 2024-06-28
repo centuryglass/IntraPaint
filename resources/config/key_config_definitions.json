@@ -143,6 +143,14 @@
         "default": "S",
         "saved": true
     },
+    "selection_fill_tool_key": {
+        "label": "Switch to the area selection tool:",
+        "category": "Keybindings",
+        "description": "Activate the area selection tool to mark areas for editing.",
+        "type": "string",
+        "default": "E",
+        "saved": true
+    },
     "fill_tool_key": {
         "label": "Switch to the fill tool:",
         "category": "Keybindings",

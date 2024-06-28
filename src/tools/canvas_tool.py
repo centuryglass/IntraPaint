@@ -191,6 +191,8 @@ class CanvasTool(BaseTool):
         """Starts drawing when the mouse is clicked in the scene."""
         if self._layer is None or event is None or not self._layer_stack.has_image:
             return False
+        if QApplication.keyboardModifiers() == Qt.ControlModifier:
+            return True
         if event.buttons() == Qt.LeftButton or event.buttons() == Qt.RightButton:
             if self._drawing:
                 self._canvas.end_stroke()
@@ -211,6 +213,8 @@ class CanvasTool(BaseTool):
         """Receives a mouse move event, returning whether the tool consumed the event."""
         if self._layer is None or event is None or not self._layer_stack.has_image:
             return False
+        if QApplication.keyboardModifiers() == Qt.ControlModifier:
+            return False
         if event.buttons() == Qt.LeftButton or event.buttons() == Qt.RightButton and self._drawing:
             self._stroke_to(image_coordinates)
             return True
@@ -220,6 +224,8 @@ class CanvasTool(BaseTool):
         """Receives a mouse release event, returning whether the tool consumed the event."""
         if self._layer is None or event is None or not self._layer_stack.has_image:
             return False
+        if QApplication.keyboardModifiers() == Qt.ControlModifier:
+            return True
         if self._drawing:
             self._drawing = False
             self._stroke_to(image_coordinates)

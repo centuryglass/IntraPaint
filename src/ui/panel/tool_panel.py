@@ -11,6 +11,7 @@ from src.image.layer_stack import LayerStack
 from src.tools.base_tool import BaseTool
 from src.tools.brush_tool import BrushTool
 from src.tools.eyedropper_tool import EyedropperTool
+from src.tools.selection_fill_tool import SelectionFillTool
 from src.tools.fill_tool import FillTool
 from src.tools.generation_area_tool import GenerationAreaTool
 from src.tools.layer_transform_tool import LayerTransformTool
@@ -124,6 +125,8 @@ class ToolPanel(QWidget):
 
         selection_tool = SelectionTool(layer_stack, image_panel.image_viewer)
         add_tool(selection_tool)
+        selection_fill_tool = SelectionFillTool(layer_stack)
+        add_tool(selection_fill_tool)
         brush_tool = BrushTool(layer_stack, image_panel.image_viewer)
         add_tool(brush_tool)
         eyedropper_tool = EyedropperTool(layer_stack)
