@@ -322,13 +322,13 @@ class ImageGraphicsView(QGraphicsView):
         """Extend default event filter management to deal with QGraphicsView mouse event oddities."""
         if event_filter is not None and event_filter not in self._event_filters:
             self._event_filters.append(event_filter)
-        # super().installEventFilter(event_filter)
+        super().installEventFilter(event_filter)
 
     def removeEventFilter(self, event_filter: Optional[QObject]) -> None:
         """Extend default event filter management to deal with QGraphicsView mouse event oddities."""
         if event_filter in self._event_filters:
             self._event_filters.remove(event_filter)
-        # super().removeEventFilter(event_filter)
+        super().removeEventFilter(event_filter)
 
     def _pixmap_cursor_update(self, cursor_point: QPoint) -> None:
         """If a pixmap cursor is in use, keep last cursor point updated and force a redraw when the mouse moves."""
@@ -347,9 +347,9 @@ class ImageGraphicsView(QGraphicsView):
         if event.buttons() == Qt.MouseButton.MiddleButton or (event.buttons() == Qt.MouseButton.LeftButton
                                                               and key_modifiers == Qt.ControlModifier):
             self._drag_pt = event.pos()
-        for event_filter in self._event_filters:
-            if event_filter.eventFilter(self, event):
-                return True if get_result else None
+        # for event_filter in self._event_filters:
+        #     if event_filter.eventFilter(self, event):
+        #         return True if get_result else None
         return False if get_result else None
 
     def mouseMoveEvent(self, event: Optional[QMouseEvent], get_result=False) -> Optional[bool]:

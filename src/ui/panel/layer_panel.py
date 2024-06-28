@@ -134,8 +134,8 @@ class LayerPanel(QWidget):
         self._scroll_area.setAlignment(cast(Qt.Alignment, Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignTop))
         self._scroll_area.setWidget(self._layer_list)
 
-        self._layer_list.setSizePolicy(QSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding))
-        self._scroll_area.setSizePolicy(QSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.Expanding))
+        self._layer_list.setSizePolicy(QSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.Preferred))
+        self._scroll_area.setSizePolicy(QSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.Preferred))
         self._layout.addWidget(self._scroll_area, stretch=10)
 
         def _add_layer_widget(layer: ImageLayer, layer_idx: int) -> None:
@@ -224,7 +224,7 @@ class LayerPanel(QWidget):
         layer_width += PREVIEW_SIZE.width() + ICON_SIZE.width() + 2 * LAYER_PADDING
         layer_height = max(layer_height, ICON_SIZE.height(), PREVIEW_SIZE.height())
         width = min(MAX_WIDTH, layer_width + LAYER_PADDING)
-        height = layer_height * max(MIN_VISIBLE_LAYERS, len(self._layer_widgets)) + LAYER_PADDING
+        height = layer_height * min(MIN_VISIBLE_LAYERS, len(self._layer_widgets)) + LAYER_PADDING
         scrollbar = self._scroll_area.verticalScrollBar()
         if scrollbar is not None:
             width += scrollbar.sizeHint().width()
