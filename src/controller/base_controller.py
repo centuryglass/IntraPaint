@@ -261,10 +261,10 @@ class BaseInpaintController(MenuBuilder):
                              BlurFilter,
                              SharpenFilter,
                              PosterizeFilter):
-            image_filter = filter_class()
+            image_filter = filter_class(self._layer_stack)
 
             def _open_filter_modal(filter_instance=image_filter) -> None:
-                modal = filter_instance.get_filter_modal(self._layer_stack)
+                modal = filter_instance.get_filter_modal()
                 modal.exec_()
 
             config_key = image_filter.get_config_key()

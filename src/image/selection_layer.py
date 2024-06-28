@@ -216,6 +216,18 @@ class SelectionLayer(ImageLayer):
                 polygon.append(QPointF(point[0][0] + x_offset, point[0][1] + y_offset))
             self._outline_polygons.append(polygon)
 
+    def get_content_bounds(self) -> QRect:
+        """Returns a rectangle containing all selected content within the image."""
+        bounds = QRect()
+        for polygon in self._outline_polygons:
+            polygon_bounds = polygon.boundingRect().toAlignedRect()
+            if bounds.isNull():
+                bounds = polygon_bounds
+            else:
+                bounds = bounds.intersected(polygon_bounds)
+        return bounds
+
+
     def get_selection_gen_area(self, ignore_config: bool = False) -> Optional[QRect]:
         """Returns the smallest QRect containing all masked areas, plus padding.
 

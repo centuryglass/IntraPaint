@@ -1,38 +1,42 @@
 """Popup modal window that applies an arbitrary image filtering action."""
-from typing import List, Callable, Optional, Dict
+from typing import List, Callable, Optional, TypeAlias, Any
 
-from PyQt5.QtCore import QPoint, QRect, QSize, Qt
-from PyQt5.QtGui import QPainter, QImage
+from PyQt5.QtCore import QSize
+from PyQt5.QtGui import QImage
 from PyQt5.QtWidgets import QDialog, QFormLayout, QLabel, QWidget, QCheckBox, QHBoxLayout, QPushButton
 
-from src.image.layer_stack import LayerStack
 from src.ui.widget.image_widget import ImageWidget
-from src.undo_stack import commit_action
-from src.util.image_utils import get_transparency_tile_pixmap
 from src.util.parameter import Parameter
 
 SELECTED_ONLY_LABEL = 'Change selected areas only'
 ACTIVE_ONLY_LABEL = 'Change active layer only'
 MIN_PREVIEW_SIZE = 450
-MAX_PREVIEW_SIZE = 800
 CANCEL_BUTTON_TEXT = 'Cancel'
 APPLY_BUTTON_TEXT = 'Apply'
+
+# parameters: filter_param_values: list, filter_selection_only: bool, filter_active_layer_only: bool
+FilterFunction: TypeAlias = Callable[[List[Any], bool, bool], Optional[QImage]]
 
 
 class ImageFilterModal(QDialog):
     """Popup modal window that applies an arbitrary image filtering action."""
 
-    def __init__(self, title: str, description: str, parameters: List[Parameter],
-                 filter_action: Callable[[...], QImage], layer_stack: LayerStack) -> None:
+    def __init__(self,
+                 title: str,
+                 description: str,
+                 parameters: List[Parameter],
+                 generate_preview: FilterFunction,
+                 apply_filter: FilterFunction,
+                 filter_selection_only_default: bool = True,
+                 filter_active_layer_only_default: bool = True) -> None:
         super().__init__()
         self.setModal(True)
-        self._filter = filter_action
-        self._layer_stack = layer_stack
-        self._preview = ImageWidget(layer_stack.pixmap(), self)
+        self._preview = ImageWidget(None, self)
         self._preview.setMinimumSize(QSize(MIN_PREVIEW_SIZE, MIN_PREVIEW_SIZE))
         self._layout = QFormLayout(self)
-        self._params = parameters
         self._param_inputs: List[QWidget] = []
+        self._generate_preview = generate_preview
+        self._apply_filter = apply_filter
 
         self.setWindowTitle(title)
         self._layout.addWidget(QLabel(description))
@@ -45,13 +49,13 @@ class ImageFilterModal(QDialog):
         self._selected_only_checkbox = QCheckBox()
         self._layout.addRow(self._selected_only_checkbox)
         self._selected_only_checkbox.setText(SELECTED_ONLY_LABEL)
-        self._selected_only_checkbox.setChecked(layer_stack.selection_layer.empty is False)
+        self._selected_only_checkbox.setChecked(filter_selection_only_default)
         self._selected_only_checkbox.stateChanged.connect(self._update_preview)
 
         self._active_only_checkbox = QCheckBox()
         self._layout.addRow(self._active_only_checkbox)
         self._active_only_checkbox.setText(ACTIVE_ONLY_LABEL)
-        self._active_only_checkbox.setChecked(True)
+        self._active_only_checkbox.setChecked(filter_active_layer_only_default)
         self._active_only_checkbox.stateChanged.connect(self._update_preview)
 
         self._layout.addRow(self._preview)
@@ -68,99 +72,17 @@ class ImageFilterModal(QDialog):
         self._layout.addWidget(self._button_row)
         self._update_preview()
 
-    def _get_filtered_image(self, image: QImage, selection: Optional[QImage], selection_offset: QPoint) -> QImage:
-        arg_list = [image]
-        for input_widget in self._param_inputs:
-            arg_list.append(input_widget.value())
-        filtered_image = self._filter(*arg_list)
-        if selection is None:
-            return filtered_image
-        painter = QPainter(filtered_image)
-        painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_DestinationIn)
-        painter.drawImage(QRect(QPoint(), image.size()), selection, QRect(selection_offset, image.size()))
-        painter.end()
-        final_image = image.copy()
-        painter = QPainter(final_image)
-        painter.drawImage(QRect(0, 0, image.width(), image.height()), filtered_image)
-        return final_image
-
-    def _bounds(self, scale = 1.0) -> QRect:
-        bounds = self._layer_stack.merged_layer_geometry
-        if scale != 1.0:
-            bounds.setX(int(bounds.x() * scale))
-            bounds.setY(int(bounds.y() * scale))
-            bounds.setWidth(int(bounds.width() * scale))
-            bounds.setHeight(int(bounds.height() * scale))
-        return bounds
-
-    def _get_layer_images(self, changed_only: bool, scale: float = 1.0) -> Dict[int, QImage]:
-        images: Dict[int, QImage] = {}
-        bounds = self._bounds(scale)
-        if self._selected_only_checkbox.isChecked():
-            selection_layer = self._layer_stack.selection_layer
-            selection: Optional[QImage] = QImage(bounds.size(), QImage.Format_ARGB32_Premultiplied)
-            selection.fill(Qt.GlobalColor.transparent)
-            painter = QPainter(selection)
-            scaled_image_size = QSize(int(selection_layer.width * scale), int(selection_layer.height * scale))
-            painter.drawPixmap(QRect(-bounds.topLeft(), bounds.size()), selection_layer.pixmap, QRect(QPoint(), scaled_image_size))
-            painter.end()
-        else:
-            selection = None
-        for i in reversed(range(self._layer_stack.count)):
-            layer = self._layer_stack.get_layer_by_index(i)
-            if not layer.visible:
-                continue
-            position = QPoint(int(layer.position.x() * scale), int(layer.position.y() * scale))
-            offset = position - bounds.topLeft()
-            layer_image = layer.qimage
-            if scale != 1.0:
-                layer_image = layer_image.scaled(QSize(int(layer_image.width() * scale), int(layer_image.height() * scale)))
-            if not self._active_only_checkbox.isChecked() or layer.id == self._layer_stack.active_layer_id:
-                images[layer.id] = self._get_filtered_image(layer_image, selection, offset)
-            elif not changed_only:
-                images[layer.id] = layer_image
-        return images
-
     def _update_preview(self, _ = None) -> None:
-        scale = MAX_PREVIEW_SIZE / self._layer_stack.width
-        layer_images = self._get_layer_images(False, scale)
-        bounds = self._bounds(scale)
-        preview_image = QImage(bounds.size(), QImage.Format.Format_ARGB32_Premultiplied)
-        painter = QPainter(preview_image)
-        transparency_pattern = get_transparency_tile_pixmap()
-        painter.drawTiledPixmap(0, 0, preview_image.width(), preview_image.height(), transparency_pattern)
-        for i in reversed(range(self._layer_stack.count)):
-            layer = self._layer_stack.get_layer_by_index(i)
-            if not layer.visible:
-                continue
-            assert layer.id in layer_images
-            position = QPoint(int(layer.position.x() * scale), int(layer.position.y() * scale))
-            offset = position - bounds.topLeft()
-            painter.setOpacity(layer.opacity)
-            painter.setCompositionMode(layer.composition_mode)
-            painter.drawImage(QRect(offset, layer_images[layer.id].size()), layer_images[layer.id])
-        painter.end()
-        self._preview.image = preview_image
+        param_values = [widget.value() for widget in self._param_inputs]
+        filter_selection_only = self._selected_only_checkbox.isChecked()
+        filter_active_layer_only = self._active_only_checkbox.isChecked()
+        self._preview.image = self._generate_preview(param_values, filter_selection_only, filter_active_layer_only)
 
     def _apply_change(self) -> None:
-        """Apply the filter to the active layer or layer stack, then close the modal."""
-        layer_images = self._get_layer_images(True)
-        source_images: Dict[int, QImage] = {}
-        for layer_id in layer_images.keys():
-            layer = self._layer_stack.get_layer_by_id(layer_id)
-            source_images[layer_id] = layer.qimage
-
-        def _apply_filters(img_dict=layer_images):
-            for updated_id, image in img_dict.items():
-                updated_layer = self._layer_stack.get_layer_by_id(updated_id)
-                updated_layer.qimage = image
-
-        def _undo_filters(img_dict=source_images):
-            for updated_id, image in img_dict.items():
-                updated_layer = self._layer_stack.get_layer_by_id(updated_id)
-                updated_layer.qimage = image
-
-        commit_action(_apply_filters, _undo_filters)
+        param_values = [widget.value() for widget in self._param_inputs]
+        filter_selection_only = self._selected_only_checkbox.isChecked()
+        filter_active_layer_only = self._active_only_checkbox.isChecked()
+        self._apply_filter(param_values, filter_selection_only, filter_active_layer_only)
         self.close()
 
 
