@@ -408,6 +408,11 @@ class A1111Webservice(WebService):
         res_body = self.get(A1111Webservice.Endpoints.STYLES).json()
         return [json.dumps(s) for s in res_body]
 
+    def set_styles(self, style_list: List[Dict[str, str]]) -> None:
+        """Updates the set of available styles. NOTE: this currently does not work, the endpoint has no POST support.
+        I'm going to submit a PR to fix it at some point."""
+        self.post(A1111Webservice.Endpoints.STYLES, json.dumps(style_list))
+
     def get_scripts(self) -> dict:
         """Returns available scripts installed to the stable-diffusion-webui.
         Returns

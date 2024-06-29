@@ -200,10 +200,12 @@ class ToolPanel(QWidget):
         if orientation == Qt.Orientation.Horizontal:
             generate_label = "\n".join(GENERATE_BUTTON_TEXT)
             self._tool_list.fill_vertical = True
+            self._tool_list.max_rows = 3
             tool_list_layout.setAlignment(Qt.AlignmentFlag.AlignLeft)
         else:
             generate_label = GENERATE_BUTTON_TEXT
             self._tool_list.fill_horizontal = True
+            self._tool_list.max_rows = len(self._tools)
             tool_list_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
         self._generate_button.setText(generate_label)
         if prev_panel_box is not None:

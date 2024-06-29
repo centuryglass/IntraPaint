@@ -21,6 +21,7 @@ RESOURCES_MIN_CURSOR = './resources/cursors/min_cursor.svg'
 
 MAX_CURSOR_SIZE = 255
 MIN_CURSOR_SIZE = 20
+MIN_SMALL_CURSOR_SIZE = 15
 
 BRUSH_LABEL = 'Brush'
 BRUSH_TOOLTIP = 'Paint into the image'
@@ -46,8 +47,8 @@ class CanvasTool(BaseTool):
         self._tablet_y_tilt: Optional[float] = None
         self._tablet_input: Optional[QTabletEvent.PointerType] = None
 
-        small_brush_icon = QIcon(RESOURCES_MIN_CURSOR)
-        self._small_brush_cursor = QCursor(small_brush_icon.pixmap(MIN_CURSOR_SIZE, MIN_CURSOR_SIZE))
+        self._small_brush_icon = QIcon(RESOURCES_MIN_CURSOR)
+        self._small_brush_cursor = QCursor(self._small_brush_icon.pixmap(MIN_SMALL_CURSOR_SIZE, MIN_SMALL_CURSOR_SIZE))
         self._default_scaled_cursor_icon = QIcon(RESOURCES_CURSOR)
         self._scaled_icon_cursor: Optional[QIcon] = self._default_scaled_cursor_icon
         self._scaling_cursor = True
@@ -255,10 +256,11 @@ class CanvasTool(BaseTool):
         if not self.is_active or self._scaling_cursor is False or self._scaled_icon_cursor is None:
             return
         brush_cursor_size = int(self.brush_size * self._image_viewer.scene_scale)
-        if brush_cursor_size < MIN_CURSOR_SIZE:
+        if brush_cursor_size <= MIN_SMALL_CURSOR_SIZE:
             self.cursor = self._small_brush_cursor
         else:
-            scaled_cursor = self._scaled_icon_cursor.pixmap(brush_cursor_size, brush_cursor_size)
+            icon = self._scaled_icon_cursor if brush_cursor_size > MIN_CURSOR_SIZE else self._small_brush_icon
+            scaled_cursor = icon.pixmap(brush_cursor_size, brush_cursor_size)
             if brush_cursor_size > MAX_CURSOR_SIZE:
                 self.cursor = scaled_cursor
             else:

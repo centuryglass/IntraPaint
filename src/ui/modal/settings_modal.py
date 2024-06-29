@@ -16,7 +16,7 @@ from src.ui.input_fields.size_field import SizeField
 class SettingsModal(QDialog):
     """Manage remote settings."""
 
-    changes_saved = pyqtSignal(dict)
+    changes_saved = pyqtSignal(list)
 
     def __init__(self, parent: QWidget):
         super().__init__(parent)

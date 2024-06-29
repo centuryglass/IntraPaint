@@ -518,5 +518,13 @@
         "type": "string",
         "default": "Ctrl+5",
         "saved": true
+    },
+    "prompt_style_shortcut": {
+        "label": "View saved prompt styles",
+        "category": "Keybindings",
+        "description": "Access saved stable-diffusion prompt styles",
+        "type": "string",
+        "default": "",
+        "saved": true
     }
 }

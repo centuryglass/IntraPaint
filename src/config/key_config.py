@@ -108,7 +108,6 @@ class KeyConfig(Config):
     CUT_SHORTCUT: str
     DELETE_LAYER_SHORTCUT: str
     EYEDROPPER_TOOL_KEY: str
-    SELECTION_FILL_TOOL_KEY: str
     FILL_TOOL_KEY: str
     GENERATE_SHORTCUT: str
     GENERATION_AREA_TOOL_KEY: str
@@ -135,6 +134,7 @@ class KeyConfig(Config):
     PAN_UP: str
     PASTE_SHORTCUT: str
     POSTERIZE_SHORTCUT: str
+    PROMPT_STYLE_SHORTCUT: str
     QUIT_SHORTCUT: str
     REDO_SHORTCUT: str
     RELOAD_SHORTCUT: str
@@ -144,6 +144,7 @@ class KeyConfig(Config):
     SAVE_AS_SHORTCUT: str
     SAVE_SHORTCUT: str
     SCALE_IMAGE_SHORTCUT: str
+    SELECTION_FILL_TOOL_KEY: str
     SELECTION_TOOL_KEY: str
     SELECT_ALL_SHORTCUT: str
     SELECT_LAYER_CONTENT_SHORTCUT: str

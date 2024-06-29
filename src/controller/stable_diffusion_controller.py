@@ -1,6 +1,7 @@
 """
 Provides image editing functionality through the A1111/stable-diffusion-webui REST API.
 """
+import json
 import sys
 import threading
 import os
@@ -19,8 +20,10 @@ from src.config.cache import Cache
 from src.image.layer_stack import LayerStack
 from src.config.application_config import AppConfig
 from src.ui.modal.settings_modal import SettingsModal
+from src.ui.window.prompt_style_window import PromptStyleWindow
 from src.ui.window.stable_diffusion_main_window import StableDiffusionMainWindow
 from src.ui.modal.modal_utils import show_error_dialog
+from src.util.application_state import APP_STATE_EDITING
 from src.util.display_size import get_screen_size
 from src.controller.base_controller import BaseInpaintController, MENU_TOOLS
 from src.api.a1111_webservice import A1111Webservice
@@ -45,6 +48,7 @@ UPSCALE_ERROR_TITLE = 'Upscale failure'
 PROGRESS_KEY_CURRENT_IMAGE = 'current_image'
 PROGRESS_KEY_FRACTION = "progress"
 PROGRESS_KEY_ETA_RELATIVE = 'eta_relative'
+STYLE_ERROR_TITLE = 'Updating prompt styles failed'
 
 GENERATE_ERROR_TITLE = "Image generation failed"
 GENERATE_ERROR_MESSAGE_EMPTY_MASK = ("Selection mask was empty. Either use the mask tool to mark part of the image"
@@ -58,12 +62,18 @@ LCM_SAMPLER = 'LCM'
 LCM_LORA_1_5 = 'lcm-lora-sdv1-5'
 LCM_LORA_XL = 'lcm-lora-sdxl'
 
+MENU_STABLE_DIFFUSION = 'Stable-Diffusion'
+
 
 def _check_lcm_mode_available(_) -> bool:
     if LCM_SAMPLER not in AppConfig.instance().get_options(AppConfig.SAMPLING_METHOD):
         return False
     loras = [lora['name'] for lora in Cache.instance().get(Cache.LORA_MODELS)]
     return LCM_LORA_1_5 in loras or LCM_LORA_XL in loras
+
+def _check_prompt_styles_available(_) -> bool:
+    cache = Cache.instance()
+    return len(cache.get_options(Cache.STYLES)) > 0
 
 
 class StableDiffusionController(BaseInpaintController):
@@ -470,3 +480,21 @@ class StableDiffusionController(BaseInpaintController):
         config.set(AppConfig.SEED, -1)
         if config.get(AppConfig.BATCH_SIZE) < 5:
             config.set(AppConfig.BATCH_SIZE, 5)
+
+    def _update_styles(self, style_list: List[Dict[str, str]]) -> None:
+        try:
+            self._webservice.set_styles(style_list)
+        except RuntimeError as err:
+            show_error_dialog(None, STYLE_ERROR_TITLE, err)
+            return
+        style_strings = [json.dumps(style) for style in style_list]
+        Cache.instance().update_options(Cache.STYLES, style_strings)
+
+    @menu_action(MENU_STABLE_DIFFUSION, 'prompt_style_shortcut', 200, [APP_STATE_EDITING],
+                 condition_check=_check_prompt_styles_available)
+    def show_style_window(self) -> None:
+        """Show the saved prompt style window."""
+        style_window = PromptStyleWindow()
+        # TODO: update after the prompt style endpoint gets POST support
+        # style_window.should_save_changes.connect(self._update_styles)
+        style_window.exec_()
