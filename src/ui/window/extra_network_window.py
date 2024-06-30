@@ -1,13 +1,14 @@
 """View available extra networks/models."""
 import logging
-from typing import Dict, Optional, List
+import re
+from typing import Dict, Optional, List, cast
 
-from PyQt5.QtCore import Qt, QSize, QPoint
-from PyQt5.QtGui import QImage, QPainter
+from PyQt5.QtCore import Qt, QSize, QPoint, pyqtSignal
+from PyQt5.QtGui import QImage, QPainter, QMouseEvent
 from PyQt5.QtWidgets import QDialog, QHBoxLayout, QLabel, QPushButton, \
     QVBoxLayout, QWidget, QScrollArea
 
-from src.config.cache import Cache
+from src.config.application_config import AppConfig
 from src.ui.widget.bordered_widget import BorderedWidget
 from src.ui.widget.image_widget import ImageWidget
 from src.util.display_size import max_font_size
@@ -41,8 +42,7 @@ class ExtraNetworkWindow(QDialog):
         self._list_items: List[_LoraItem] = []
         self._image_placeholder: Optional[QImage] = None
 
-        cache = Cache.instance()
-        for lora in cache.get(Cache.LORA_MODELS):
+        for lora in loras:
             self._loras.append(lora.copy())
 
         self._lora_list = QWidget()
@@ -61,6 +61,7 @@ class ExtraNetworkWindow(QDialog):
             if thumbnail is None:
                 thumbnail = self._missing_image_placeholder()
             list_item = _LoraItem(lora, thumbnail)
+            list_item.selected.connect(self._update_selections)
             self._list_items.append(list_item)
             list_layout.addWidget(list_item)
 
@@ -75,6 +76,16 @@ class ExtraNetworkWindow(QDialog):
         close_button.setText(CLOSE_BUTTON_LABEL)
         close_button.clicked.connect(self.close)
         button_layout.addWidget(close_button, stretch=1)
+
+    def _update_selections(self, selected_lora: BorderedWidget) -> None:
+        for lora_item in self._list_items:
+            if lora_item.is_selected and lora_item != selected_lora:
+                lora_item.is_selected = False
+        lora_item = cast(_LoraItem, lora_item)
+        if _prompt_lora_match(lora_item.lora) is not None:
+            self._prompt_button.setText(REMOVE_BUTTON_LABEL)
+        else:
+            self._prompt_button.setText(ADD_BUTTON_LABEL)
 
     def _missing_image_placeholder(self) -> QImage:
         if self._image_placeholder is not None:
@@ -92,14 +103,39 @@ class ExtraNetworkWindow(QDialog):
         return self._image_placeholder
 
     def _add_remove_prompt(self) -> None:
-        print('todo: add/remove')
+        selected_lora: Optional[Dict[str, str]] = None
+        for lora_item in self._list_items:
+            if lora_item.is_selected:
+                selected_lora = lora_item.lora
+                break
+        if selected_lora is None:
+            return
+        lora_match = _prompt_lora_match(selected_lora)
+        prompt = AppConfig.instance().get(AppConfig.PROMPT)
+        if lora_match is not None:
+            prompt = prompt[:lora_match.start()] + prompt[lora_match.end():]
+            self._prompt_button.setText(ADD_BUTTON_LABEL)
+        else:
+            prompt = prompt + f' <lora:{selected_lora[LORA_KEY_NAME]}:1.0>'
+            self._prompt_button.setText(REMOVE_BUTTON_LABEL)
+        AppConfig.instance().set(AppConfig.PROMPT, prompt)
+
+
+def _prompt_lora_match(lora: Dict[str, str]) -> re.Match:
+    prompt = AppConfig.instance().get(AppConfig.PROMPT)
+    pattern = re.compile('<lora:' + lora[LORA_KEY_NAME] + r':[\d.]+>')
+    return re.search(pattern, prompt)
 
 
 class _LoraItem(BorderedWidget):
     """Represents a Lora model"""
 
+    selected = pyqtSignal(BorderedWidget)
+
     def __init__(self, lora: Dict[str, str], thumbnail: QImage) -> None:
         super().__init__()
+        self._lora = lora
+        self._selected = False
         self._layout = QHBoxLayout(self)
         self._layout.setAlignment(Qt.AlignLeft)
         image_widget = ImageWidget(thumbnail)
@@ -109,3 +145,29 @@ class _LoraItem(BorderedWidget):
         self._layout.addStretch(1)
         label = QLabel(lora[LORA_KEY_NAME])
         self._layout.addWidget(label, stretch=2)
+
+    @property
+    def lora(self) -> Dict[str, str]:
+        """Returns the Lora model data associated with this item."""
+        return self._lora
+
+    def mousePressEvent(self, event: Optional[QMouseEvent]) -> None:
+        """Select this item when left-clicked."""
+        assert event is not None
+        if event.button() == Qt.LeftButton and not self.is_selected:
+            self.is_selected = True
+
+    @property
+    def is_selected(self) -> bool:
+        """Returns whether this item is currently the selected item."""
+        return self._selected
+
+    @is_selected.setter
+    def is_selected(self, is_selected: bool) -> None:
+        if self._selected == is_selected:
+            return
+        self._selected = is_selected
+        self.line_width = 6 if is_selected else 2
+        if is_selected:
+            self.selected.emit(self)
+

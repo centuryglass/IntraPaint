@@ -485,7 +485,7 @@ class BaseInpaintController(MenuBuilder):
     def paste(self) -> None:
         """Paste copied image content into a new layer."""
         self._layer_stack.paste()
-        
+
     @menu_action(MENU_EDIT, 'settings_shortcut', 15)
     def show_settings(self) -> None:
         """Show the settings window."""

@@ -3,11 +3,11 @@
 Use this on any class with dynamic attributes to get linters/IDEs to support them properly.
 """
 
-import sys
-import os
 import importlib.util
+import os
 import re
-from typing import Dict, Tuple, Any, TypeAlias
+import sys
+from typing import Dict, Tuple, TypeAlias
 
 from PyQt5.QtWidgets import QApplication
 
