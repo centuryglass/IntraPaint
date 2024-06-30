@@ -31,7 +31,7 @@ class PosterizeFilter(ImageFilter):
         """Returns the KeyConfig key used to load menu item info and keybindings."""
         return KeyConfig.POSTERIZE_SHORTCUT
 
-    def get_filter(self) -> Callable[[...], QImage]:
+    def get_filter(self) -> Callable[..., QImage]:
         """Returns the filter's image variable filtering function."""
         return self.posterize
 
@@ -59,4 +59,4 @@ class PosterizeFilter(ImageFilter):
 
     def get_parameters(self) -> List[Parameter]:
         """Return parameter definitions for the posterize filter."""
-        return [Parameter(PARAM_LABEL, TYPE_INT, 3, PARAM_TEXT, 1, 8, 1 )]
+        return [Parameter(PARAM_LABEL, TYPE_INT, 3, PARAM_TEXT, 1, 8, 1)]

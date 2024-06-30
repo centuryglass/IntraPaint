@@ -2,45 +2,45 @@
 BaseController coordinates primary application functionality across all operation modes. Each image generation and
 editing method supported by IntraPaint should have its own BaseController subclass.
 """
-import os
-import sys
-import re
-from typing import Optional, Callable, Any, List, Tuple
-from argparse import Namespace
 import logging
-from PIL import Image, ImageFilter, UnidentifiedImageError, PngImagePlugin
-from PyQt5.QtWidgets import QApplication, QMessageBox, QMainWindow
-from PyQt5.QtCore import QObject, QRect, QPoint, QThread, QSize, pyqtSignal, Qt
-from PyQt5.QtGui import QScreen, QImage, QPainter
+import os
+import re
+import sys
+from argparse import Namespace
+from typing import Optional, Callable, Any, List, Tuple
 
+from PIL import Image, ImageFilter, UnidentifiedImageError, PngImagePlugin
+from PyQt5.QtCore import QObject, QRect, QPoint, QSize, pyqtSignal, Qt
+from PyQt5.QtGui import QScreen, QImage, QPainter
+from PyQt5.QtWidgets import QApplication, QMessageBox, QMainWindow
+
+from src.config.application_config import AppConfig
 from src.config.cache import Cache
 from src.config.key_config import KeyConfig
-from src.image.filter.posterize import PosterizeFilter
 from src.image.filter.blur import BlurFilter
+from src.image.filter.brightness_contrast import BrightnessContrastFilter
+from src.image.filter.posterize import PosterizeFilter
 from src.image.filter.rgb_color_balance import RGBColorBalanceFilter
 from src.image.filter.sharpen import SharpenFilter
-from src.image.filter.brightness_contrast import BrightnessContrastFilter
-from src.ui.panel.layer_panel import LayerPanel
-from src.util.application_state import AppStateTracker, APP_STATE_NO_IMAGE, APP_STATE_EDITING, APP_STATE_LOADING, \
-    APP_STATE_SELECTION
-from src.util.menu_builder import MenuBuilder, menu_action
-from src.util.optional_import import optional_import
-from src.config.application_config import AppConfig
 from src.image.layer_stack import LayerStack
-
-from src.ui.window.main_window import MainWindow
-from src.ui.modal.new_image_modal import NewImageModal
-from src.ui.modal.resize_canvas_modal import ResizeCanvasModal
 from src.ui.modal.image_scale_modal import ImageScaleModal
 from src.ui.modal.modal_utils import show_error_dialog, request_confirmation, open_image_file, open_image_layers
+from src.ui.modal.new_image_modal import NewImageModal
+from src.ui.modal.resize_canvas_modal import ResizeCanvasModal
 from src.ui.modal.settings_modal import SettingsModal
+from src.ui.panel.layer_panel import LayerPanel
+from src.ui.window.main_window import MainWindow
+from src.undo_stack import commit_action, undo, redo
+from src.util.application_state import AppStateTracker, APP_STATE_NO_IMAGE, APP_STATE_EDITING, APP_STATE_LOADING, \
+    APP_STATE_SELECTION
+from src.util.async_task import AsyncTask
 from src.util.display_size import get_screen_size
 from src.util.image_utils import pil_image_to_qimage, qimage_to_pil_image
+from src.util.menu_builder import MenuBuilder, menu_action
+from src.util.optional_import import optional_import
 from src.util.qtexcepthook import QtExceptHook
 from src.util.shared_constants import EDIT_MODE_INPAINT, PIL_SCALING_MODES
-
 from src.util.validation import assert_type
-from src.undo_stack import commit_action, undo, redo
 
 # Optional spacenav support and extended theming:
 qdarktheme = optional_import('qdarktheme')
@@ -126,18 +126,9 @@ class BaseInpaintController(MenuBuilder):
         self._nav_manager: Optional['SpacenavManager'] = None
         self._worker: Optional[QObject] = None
         self._metadata: Optional[dict[str, Any]] = None
-        self._thread: Optional[QThread] = None
 
     def _adjust_config_defaults(self):
         """no-op, override to adjust config before data initialization."""
-
-    def is_busy(self) -> bool:
-        """Return whether the application is in the middle of something that should not be interrupted."""
-        if self._thread is not None:
-            return True
-        if self._window is not None and hasattr(self._window, 'is_busy'):
-            return self._window.is_busy()
-        return False
 
     def get_config_categories(self) -> List[str]:
         """Return the list of AppConfig categories BaseInpaintController manages within the settings modal."""
@@ -272,10 +263,11 @@ class BaseInpaintController(MenuBuilder):
                                           MENU_FILTERS,
                                           _open_filter_modal,
                                           config_key)
+            assert action is not None
             AppStateTracker.set_enabled_states(action, [APP_STATE_EDITING])
 
         AppStateTracker.set_app_state(APP_STATE_EDITING if self._layer_stack.has_image else APP_STATE_NO_IMAGE)
-        QtExceptHook().enable()
+        # QtExceptHook().enable()
         self._app.exec_()
         sys.exit()
 
@@ -493,6 +485,17 @@ class BaseInpaintController(MenuBuilder):
     def paste(self) -> None:
         """Paste copied image content into a new layer."""
         self._layer_stack.paste()
+        
+    @menu_action(MENU_EDIT, 'settings_shortcut', 15)
+    def show_settings(self) -> None:
+        """Show the settings window."""
+        if self._settings_panel is None:
+            assert self._window is not None
+            self._settings_panel = SettingsModal(self._window)
+            self.init_settings(self._settings_panel)
+            self._settings_panel.changes_saved.connect(self.update_settings)
+        self.refresh_settings(self._settings_panel)
+        self._settings_panel.show_modal()
 
     # Image menu:
 
@@ -563,9 +566,6 @@ class BaseInpaintController(MenuBuilder):
         if not self._layer_stack.has_image:
             show_error_dialog(self._window, GENERATE_ERROR_TITLE_NO_IMAGE, GENERATE_ERROR_MESSAGE_NO_IMAGE)
             return
-        if self._thread is not None:
-            show_error_dialog(self._window, GENERATE_ERROR_TITLE_EXISTING_OP, GENERATE_ERROR_MESSAGE_EXISTING_OP)
-            return
         upscale_mode = PIL_SCALING_MODES[config.get(AppConfig.UPSCALE_MODE)]
         downscale_mode = PIL_SCALING_MODES[config.get(AppConfig.DOWNSCALE_MODE)]
 
@@ -589,33 +589,27 @@ class BaseInpaintController(MenuBuilder):
         if inpaint_mask.width != generation_size.width() or inpaint_mask.height != generation_size.height():
             inpaint_mask = resize_image(inpaint_mask, generation_size.width(), generation_size.height())
 
-        do_inpaint = self._inpaint
-
-        class InpaintThreadWorker(QObject):
-            """Handles inpainting within its own thread."""
-            finished = pyqtSignal()
+        class _AsyncInpaintTask(AsyncTask):
             image_ready = pyqtSignal(Image.Image, int)
             status_signal = pyqtSignal(dict)
             error_signal = pyqtSignal(Exception)
 
-            def run(self) -> None:
-                """Start the inpainting thread."""
-                try:
-                    do_inpaint(inpaint_image, inpaint_mask, self.image_ready.emit, self.status_signal)
-                except (IOError, ValueError, RuntimeError) as err:
-                    self.error_signal.emit(err)
-                self.finished.emit()
+            def signals(self) -> List[pyqtSignal]:
+                return [self.image_ready, self.status_signal, self.error_signal]
 
-        worker = InpaintThreadWorker()
+        def _do_inpaint(image_ready: pyqtSignal, status_signal: pyqtSignal, error_signal: pyqtSignal) -> None:
+            try:
+                self._inpaint(inpaint_image, inpaint_mask, image_ready.emit, status_signal)
+            except (IOError, ValueError, RuntimeError) as err:
+                error_signal.emit(err)
+
+        inpaint_task = _AsyncInpaintTask(_do_inpaint)
 
         def handle_error(err: BaseException) -> None:
             """Close sample selector and show an error popup if anything goes wrong."""
             assert self._window is not None
             self._window.set_image_selector_visible(False)
             show_error_dialog(self._window, GENERATE_ERROR_TITLE_UNEXPECTED, err)
-
-        worker.error_signal.connect(handle_error)
-        worker.status_signal.connect(self._apply_status_update)
 
         def load_sample_preview(img: Image.Image, idx: int) -> None:
             """Apply image mask to inpainting results."""
@@ -631,11 +625,17 @@ class BaseInpaintController(MenuBuilder):
                 img = Image.composite(base, img, mask_alpha)
             self._window.load_sample_preview(pil_image_to_qimage(img), idx)
 
-        worker.image_ready.connect(load_sample_preview)
+        def _finished():
+            self._window.set_is_loading(False)
 
-        AppStateTracker.set_app_state(APP_STATE_LOADING)
+        inpaint_task.error_signal.connect(handle_error)
+        inpaint_task.status_signal.connect(self._apply_status_update)
+        inpaint_task.image_ready.connect(load_sample_preview)
+        inpaint_task.finish_signal.connect(_finished)
+
         self._window.set_image_selector_visible(True)
-        self._start_thread(worker)
+        AppStateTracker.set_app_state(APP_STATE_LOADING)
+        inpaint_task.start()
 
     def select_and_apply_sample(self, sample_image: Image.Image | QImage) -> None:
         """Apply an AI-generated image change to the edited image.
@@ -782,17 +782,6 @@ class BaseInpaintController(MenuBuilder):
             self._layer_panel.show()
             self._layer_panel.raise_()
 
-    @menu_action(MENU_TOOLS, 'settings_shortcut', 51)
-    def show_settings(self) -> None:
-        """Show the settings window."""
-        if self._settings_panel is None:
-            assert self._window is not None
-            self._settings_panel = SettingsModal(self._window)
-            self.init_settings(self._settings_panel)
-            self._settings_panel.changes_saved.connect(self.update_settings)
-        self.refresh_settings(self._settings_panel)
-        self._settings_panel.show_modal()
-
     @menu_action(MENU_TOOLS, 'image_window_shortcut', 52)
     def show_image_window(self) -> None:
         """Show the image preview window."""
@@ -814,36 +803,6 @@ class BaseInpaintController(MenuBuilder):
             scale_mode = PIL_SCALING_MODES[config.get(AppConfig.UPSCALE_MODE)]
         scaled_image = image.resize((new_size.width(), new_size.height()), scale_mode)
         self._layer_stack.set_image(scaled_image)
-
-    def _start_thread(self, thread_worker: QObject, loading_text: Optional[str] = None) -> None:
-        assert self._window is not None
-        self._window.set_is_loading(True, loading_text)
-        self._thread = QThread()
-        self._worker = thread_worker
-        self._worker.moveToThread(self._thread)
-
-        def clear_worker() -> None:
-            """Clean up thread worker object on finish."""
-            assert self._window is not None and self._worker is not None
-            if self._thread is not None:
-                self._thread.quit()
-            self._window.set_is_loading(False)
-            self._worker.deleteLater()
-            self._worker = None
-
-        self._worker.finished.connect(clear_worker)
-        self._thread.started.connect(self._worker.run)
-
-        def clear_old_thread() -> None:
-            """Cleanup async task thread on finish."""
-            assert self._thread is not None
-            AppStateTracker.set_app_state(APP_STATE_EDITING)
-            self._thread.deleteLater()
-            self._thread = None
-
-        self._thread.finished.connect(clear_old_thread)
-        self._thread.start()
-        AppStateTracker.set_app_state(APP_STATE_LOADING)
 
     # Image generation handling:
     def _inpaint(self,

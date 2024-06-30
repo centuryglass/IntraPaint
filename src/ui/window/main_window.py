@@ -6,9 +6,8 @@ import logging
 import sys
 from typing import Optional, Any
 
-from PIL import Image
 from PyQt5.QtCore import Qt, QRect, QSize
-from PyQt5.QtGui import QIcon, QMouseEvent, QResizeEvent, QKeySequence, QCloseEvent
+from PyQt5.QtGui import QIcon, QMouseEvent, QResizeEvent, QKeySequence, QCloseEvent, QImage
 from PyQt5.QtWidgets import QMainWindow, QGridLayout, QLabel, QWidget, QPushButton, QVBoxLayout, QHBoxLayout, \
     QStackedWidget, QBoxLayout, QApplication, QTabWidget, QSizePolicy, QLayout
 
@@ -21,10 +20,10 @@ from src.ui.panel.layer_panel import LayerPanel
 from src.ui.panel.tool_panel import ToolPanel
 from src.ui.widget.loading_widget import LoadingWidget
 from src.ui.window.image_window import ImageWindow
-from src.util.application_state import AppStateTracker, APP_STATE_LOADING, APP_STATE_NO_IMAGE, APP_STATE_EDITING
+from src.util.application_state import AppStateTracker, APP_STATE_LOADING, APP_STATE_NO_IMAGE, APP_STATE_EDITING, \
+    APP_STATE_SELECTION
 from src.util.display_size import get_screen_size
 from src.util.shared_constants import TIMELAPSE_MODE_FLAG
-
 
 logger = logging.getLogger(__name__)
 
@@ -103,6 +102,10 @@ class MainWindow(QMainWindow):
             self._loading_widget.setParent(self)
             self._loading_widget.setGeometry(self.frameGeometry())
             self._loading_widget.hide()
+
+        def _show_spinner_when_busy(app_state: str) -> None:
+            self.set_is_loading(app_state == APP_STATE_LOADING)
+        AppStateTracker.signal().connect(_show_spinner_when_busy)
 
         # Image/Mask editing layout:
         self._image_panel = ImagePanel(layer_stack)
@@ -287,13 +290,14 @@ class MainWindow(QMainWindow):
             self._central_widget.setCurrentWidget(self._image_selector)
             self.installEventFilter(self._image_selector)
         else:
+            AppStateTracker.set_app_state(APP_STATE_EDITING)
             self.removeEventFilter(self._image_selector)
             self._central_widget.setCurrentWidget(self._main_widget)
             self._central_widget.removeWidget(self._image_selector)
             del self._image_selector
             self._image_selector = None
 
-    def load_sample_preview(self, image: Image.Image, idx: int) -> None:
+    def load_sample_preview(self, image: QImage, idx: int) -> None:
         """Adds an image to the generated image selection screen."""
         if self._image_selector is None:
             logger.error(f'Tried to load sample {idx} after sampleSelector was closed')
@@ -302,31 +306,29 @@ class MainWindow(QMainWindow):
 
     def set_is_loading(self, is_loading: bool, message: Optional[str] = None) -> None:
         """Sets whether the loading spinner is shown, optionally setting loading spinner message text."""
-        if self._image_selector is not None:
-            self._image_selector.set_is_loading(is_loading, message)
+        if is_loading:
+            AppStateTracker.set_app_state(APP_STATE_LOADING)
+            self._loading_widget.show()
+            self._loading_widget.message = message if message is not None else DEFAULT_LOADING_MESSAGE
         else:
-            if is_loading:
-                AppStateTracker.set_app_state(APP_STATE_LOADING)
-                self._loading_widget.show()
-                self._loading_widget.message = message if message is not None else DEFAULT_LOADING_MESSAGE
-            else:
-                AppStateTracker.set_app_state(APP_STATE_EDITING if self._layer_stack.has_image else APP_STATE_NO_IMAGE)
-                if TIMELAPSE_MODE_FLAG in sys.argv:
-                    self._loading_widget.paused = True
+            if AppStateTracker.app_state() == APP_STATE_LOADING:
+                if self.is_image_selector_visible():
+                    AppStateTracker.set_app_state(APP_STATE_SELECTION)
+                elif self._layer_stack.has_image:
+                    AppStateTracker.set_app_state(APP_STATE_EDITING)
                 else:
-                    self._loading_widget.hide()
-            self._is_loading = is_loading
-            self.update()
-
-    def is_busy(self) -> bool:
-        """Return whether there is an ongoing operation that should block most actions."""
-        return self.is_image_selector_visible() or (self._loading_widget.isVisible()
-                                                    and not self._loading_widget.paused)
+                    AppStateTracker.set_app_state(APP_STATE_NO_IMAGE)
+            if TIMELAPSE_MODE_FLAG in sys.argv:
+                self._loading_widget.paused = True
+            else:
+                self._loading_widget.hide()
+        self._is_loading = is_loading
+        self.update()
 
     def set_loading_message(self, message: str) -> None:
         """Sets the loading spinner message text."""
-        if self._image_selector is not None:
-            self._image_selector.set_loading_message(message)
+        if self._loading_widget.isVisible():
+            self._loading_widget.message = message
 
     def resizeEvent(self, unused_event: Optional[QResizeEvent]) -> None:
         """Applies the most appropriate layout when the window size changes."""

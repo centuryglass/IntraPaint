@@ -117,11 +117,11 @@ def create_sample_function(
         if isinstance(mask, Image.Image):
             mask_image = mask.convert('L').point(lambda p: 255 if p < 1 else 0)
             mask_image.save('mask.png')
-            mask_image = mask_image.resize((width // 8, height // 8), Image.LANCZOS)
+            mask_image = mask_image.resize((width // 8, height // 8), Image.Resampling.LANCZOS)
             mask = transforms.ToTensor()(mask_image).unsqueeze(0).to(device)
         elif isinstance(edit, str):
             mask_image = Image.open(fetch(mask)).convert('L')
-            mask_image = mask_image.resize((width // 8, height // 8), Image.LANCZOS)
+            mask_image = mask_image.resize((width // 8, height // 8), Image.Resampling.LANCZOS)
             mask = transforms.ToTensor()(mask_image).unsqueeze(0).to(device)
         else:
             raise ValueError(f'Expected PIL image or image path for mask, found {mask}')

@@ -524,7 +524,15 @@
         "category": "Keybindings",
         "description": "Access saved stable-diffusion prompt styles",
         "type": "string",
-        "default": "",
+        "default": "Ctrl+Alt+1",
+        "saved": true
+    },
+    "lora_shortcut": {
+        "label": "View Lora models",
+        "category": "Keybindings",
+        "description": "Access available Lora models.",
+        "type": "string",
+        "default": "Ctrl+Alt+2",
         "saved": true
     }
 }

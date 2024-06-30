@@ -33,9 +33,7 @@ class ResizeCanvasModal(QDialog):
 
         self._resize = False
         self.setModal(True)
-
-        title = QLabel(self)
-        title.setText(WINDOW_TITLE)
+        self.setWindowTitle(WINDOW_TITLE)
 
         # Main controls:
         self._image = qimage
@@ -95,7 +93,6 @@ class ResizeCanvasModal(QDialog):
 
         self._layout = QVBoxLayout()
         ordered_widgets = [
-            title,
             self._width_box,
             self._height_box,
             self._x_offset_box,

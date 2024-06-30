@@ -322,7 +322,7 @@
         "saved": true
     },
     "controlnet_downsample_rate": {
-        "label": "ControlNet tile downsample rate:",
+        "label": "Tile downsample rate:",
         "category": "Stable-Diffusion",
         "description": "Adjusts how strongly the ControlNet tile model preserves the original image data, higher values result in fewer changes.",
         "type": "float",

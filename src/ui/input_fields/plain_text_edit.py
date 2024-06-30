@@ -14,7 +14,7 @@ class PlainTextEdit(QPlainTextEdit):
         super().__init__(parent)
         self.textChanged.connect(lambda: self.valueChanged.emit(self.toPlainText()))
 
-    def value(self) -> bool:
+    def value(self) -> str:
         """Return the text value."""
         return self.toPlainText()
 

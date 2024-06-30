@@ -1,6 +1,5 @@
 """Utility functions for display text management."""
 import logging
-import sys
 from typing import Optional
 
 from PyQt5.QtCore import QSize

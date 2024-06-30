@@ -21,7 +21,6 @@ class LoadingWidget(QWidget):
         self._anim.setEndValue(359)
         self._anim.setDuration(2000)
 
-
     @property
     def paused(self) -> bool:
         """Whether the loading animation is currently paused."""
@@ -104,3 +103,4 @@ class LoadingWidget(QWidget):
         painter.rotate(self._rotation)
         painter.drawEllipse(QRect(0, int(-ellipse_dim / 2 + ellipse_dim * 0.05),
                                   self.width() // 20, self.height() // 40))
+        painter.end()

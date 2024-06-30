@@ -1,6 +1,7 @@
 """Define image sharpening functions."""
 from typing import List, Callable
-from PIL import Image, ImageEnhance
+
+from PIL import ImageEnhance
 from PyQt5.QtGui import QImage
 
 from src.config.key_config import KeyConfig
@@ -30,7 +31,7 @@ class SharpenFilter(ImageFilter):
         """Returns the KeyConfig key used to load menu item info and keybindings."""
         return KeyConfig.SHARPEN_SHORTCUT
 
-    def get_filter(self) -> Callable[[...], QImage]:
+    def get_filter(self) -> Callable[..., QImage]:
         """Returns the filter's image variable filtering function."""
         return self.sharpen
 

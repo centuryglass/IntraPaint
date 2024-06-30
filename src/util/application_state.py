@@ -7,7 +7,7 @@ from PyQt5.QtWidgets import QWidget, QAction
 
 # Valid tracked application states:
 
-# Initial loading, login, server connection, etc:
+# Initial loading, login, server connection, etc.:
 APP_STATE_INIT = 'init'
 
 # Ready for use, but no image is open:
@@ -49,10 +49,12 @@ class AppStateTracker(QObject):
     @staticmethod
     def set_app_state(new_state: str) -> None:
         """Updates the current application state."""
+        if new_state == AppStateTracker.app_state():
+            return
         AppStateTracker.instance()._set_app_state(new_state)
 
     @staticmethod
-    def app_state() -> None:
+    def app_state() -> str:
         """Returns the current application state."""
         return AppStateTracker.instance()._app_state
 
@@ -61,7 +63,9 @@ class AppStateTracker(QObject):
         """Configures a widget or action to automatically enable or disable itself based on application state."""
         assert isinstance(valid_states, list), f'Invalid state list {valid_states}'
 
-        def _change_enabled_status(app_state: str, connected_widget=widget, state_list=valid_states) -> None:
+        def _change_enabled_status(app_state: str, connected_widget=widget, state_list=None) -> None:
+            if state_list is None:
+                state_list = valid_states
             connected_widget.setEnabled(app_state in state_list)
         AppStateTracker.signal().connect(_change_enabled_status)
         _change_enabled_status(AppStateTracker.app_state())

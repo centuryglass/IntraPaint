@@ -16,12 +16,10 @@ from PyQt5.QtWidgets import QWidget, QGraphicsPixmapItem, QVBoxLayout, QLabel, \
 from src.config.application_config import AppConfig
 from src.config.key_config import KeyConfig
 from src.image.layer_stack import LayerStack
-from src.ui.graphics_items.loading_spinner import LoadingSpinner
 from src.ui.graphics_items.outline import Outline
 from src.ui.graphics_items.polygon_outline import PolygonOutline
 from src.ui.widget.image_graphics_view import ImageGraphicsView
-from src.ui.widget.loading_widget import LoadingWidget
-from src.util.application_state import APP_STATE_SELECTION, AppStateTracker
+from src.util.application_state import AppStateTracker, APP_STATE_LOADING
 from src.util.display_size import max_font_size
 from src.util.geometry_utils import get_scaled_placement
 from src.util.image_utils import get_standard_qt_icon
@@ -111,16 +109,6 @@ class GeneratedImageSelector(QWidget):
         self._layout.addWidget(self._view, stretch=255)
         scene = self._view.scene()
         assert scene is not None, 'Scene should have been created automatically and never cleared'
-        if TIMELAPSE_MODE_FLAG not in sys.argv:
-            self._loading_spinner: LoadingSpinner | LoadingWidget = LoadingSpinner()
-            self._loading_spinner.setZValue(1)
-            self._loading_spinner.visible = False
-            scene.addItem(self._loading_spinner)
-        else:
-            app = QApplication.instance()
-            assert app is not None
-            self._loading_spinner = cast(LoadingWidget, next(win for win in app.topLevelWidgets()
-                                                             if isinstance(win, LoadingWidget)))
 
         original_image = self._layer_stack.qimage_generation_area_content()
         original_option = _ImageOption(original_image, ORIGINAL_CONTENT_LABEL)
@@ -207,21 +195,6 @@ class GeneratedImageSelector(QWidget):
         self.resizeEvent(None)
         if TIMELAPSE_MODE_FLAG in sys.argv:
             self.toggle_zoom()
-
-    def set_is_loading(self, is_loading: bool, message: Optional[str] = None):
-        """Show or hide the loading indicator"""
-        if message is not None:
-            self._loading_spinner.message = message
-        if isinstance(self._loading_spinner, LoadingSpinner):
-            self._loading_spinner.setVisible(is_loading)
-        else:  # LoadingWidget
-            self._loading_spinner.paused = not is_loading
-        if not is_loading:
-            AppStateTracker.set_app_state(APP_STATE_SELECTION)
-
-    def set_loading_message(self, message: str) -> None:
-        """Changes the loading spinner message."""
-        self._loading_spinner.message = message
 
     def _add_option_selection_outline(self, idx: int) -> None:
         if len(self._options) <= idx:
@@ -333,7 +306,7 @@ class GeneratedImageSelector(QWidget):
             if QApplication.keyboardModifiers() == Qt.ControlModifier:
                 return False  # Ctrl+click is for panning, don't select options
             event = cast(QMouseEvent, event)
-            if event.button() != Qt.LeftButton or (self._loading_spinner.visible and not self._loading_spinner.paused):
+            if event.button() != Qt.LeftButton or AppStateTracker.app_state() == APP_STATE_LOADING:
                 return False
             if source == self._view:
                 view_pos = event.pos()

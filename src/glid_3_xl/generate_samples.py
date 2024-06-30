@@ -22,7 +22,7 @@ def generate_samples(
     """Given a sample generation function and a sample save function, start generating image samples."""
     if init_image:
         init = Image.open(init_image).convert('RGB')
-        init = init.resize((int(width), int(height)), Image.LANCZOS)
+        init = init.resize((int(width), int(height)), Image.Resampling.LANCZOS)
         init = TF.to_tensor(init).to(device).unsqueeze(0).clamp(0, 1)
         h = ldm_model.encode(init * 2 - 1).sample() * 0.18215
         init = torch.cat(batch_size * 2 * [h], dim=0)

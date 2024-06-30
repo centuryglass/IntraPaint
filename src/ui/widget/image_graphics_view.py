@@ -347,9 +347,6 @@ class ImageGraphicsView(QGraphicsView):
         if event.buttons() == Qt.MouseButton.MiddleButton or (event.buttons() == Qt.MouseButton.LeftButton
                                                               and key_modifiers == Qt.ControlModifier):
             self._drag_pt = event.pos()
-        # for event_filter in self._event_filters:
-        #     if event_filter.eventFilter(self, event):
-        #         return True if get_result else None
         return False if get_result else None
 
     def mouseMoveEvent(self, event: Optional[QMouseEvent], get_result=False) -> Optional[bool]:

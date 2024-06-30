@@ -9,8 +9,6 @@ from src.config.cache import Cache
 from src.config.key_config import KeyConfig
 from src.image.layer_stack import LayerStack
 from src.tools.base_tool import BaseTool
-from src.ui.input_fields.check_box import CheckBox
-from src.ui.input_fields.slider_spinbox import FloatSliderSpinbox
 from src.ui.widget.brush_color_button import BrushColorButton
 from src.util.image_utils import flood_fill
 
@@ -22,6 +20,8 @@ FILL_LABEL = 'Color fill'
 FILL_TOOLTIP = "Fill areas with solid colors"
 FILL_CONTROL_HINT = "LMB:fill -"
 FILL_BUTTON_TOOLTIP = 'Set fill color'
+
+
 class FillTool(BaseTool):
     """Lets the user fill image areas with solid colors."""
 

@@ -3,7 +3,6 @@ from PyQt5.QtCore import QSize
 from PyQt5.QtGui import QColor, QIcon, QPixmap
 from PyQt5.QtWidgets import QPushButton, QColorDialog
 
-from src.config.application_config import AppConfig
 from src.config.cache import Cache
 
 COLOR_BUTTON_LABEL = 'Color'

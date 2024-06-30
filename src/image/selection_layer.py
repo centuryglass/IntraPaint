@@ -227,7 +227,6 @@ class SelectionLayer(ImageLayer):
                 bounds = bounds.intersected(polygon_bounds)
         return bounds
 
-
     def get_selection_gen_area(self, ignore_config: bool = False) -> Optional[QRect]:
         """Returns the smallest QRect containing all masked areas, plus padding.
 

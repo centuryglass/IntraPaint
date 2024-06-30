@@ -14,7 +14,7 @@ class DualToggle(QWidget):
     valueChanged = pyqtSignal(str)
 
     def __init__(self,
-                 parent: QWidget,
+                 parent: Optional[QWidget],
                  options: list[str],
                  orientation: Qt.Orientation = Qt.Orientation.Horizontal):
         """__init__.

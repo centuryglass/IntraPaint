@@ -4,7 +4,7 @@ from typing import Optional, Dict, cast, Tuple
 from PyQt5.QtCore import Qt, QRect, QRectF, QPointF, QSize, QPoint
 from PyQt5.QtGui import QCursor, QIcon, QPixmap, QKeySequence, QTransform, QPen, QPaintEvent, QPainter, QColor, \
     QPolygon, QPainterPath, QPolygonF
-from PyQt5.QtWidgets import QWidget, QLabel, QGraphicsPixmapItem, QGraphicsItem, QSpinBox, QDoubleSpinBox, \
+from PyQt5.QtWidgets import QWidget, QLabel, QGraphicsItem, QSpinBox, QDoubleSpinBox, \
     QCheckBox, QGridLayout, QPushButton, QSizePolicy
 
 from src.config.application_config import AppConfig

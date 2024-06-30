@@ -1,5 +1,5 @@
 """Represents a value with a fixed type, descriptive metadata, and optional limitations and defaults."""
-from typing import Any, Optional, TypeAlias, List, cast, Callable
+from typing import Any, Optional, TypeAlias, List, cast
 
 from PyQt5.QtCore import QSize
 from PyQt5.QtWidgets import QWidget
@@ -97,7 +97,6 @@ class Parameter:
                                 f' {self._type}')
             if (self._maximum is not None or self._minimum is not None) and not _in_range(option, self._minimum,
                                                                                           self._maximum):
-
                 raise ValueError(f'Param {self.name}: Option {option} is not in range {self._minimum}-{self._maximum}')
         if self._default_value is not None and self._default_value not in valid_options and len(valid_options) > 0:
             self._default_value = valid_options[0]
@@ -206,7 +205,7 @@ class Parameter:
                 raise ValueError('multi_line=True is not valid for parameters with fixed option lists')
             assert self.type_name == TYPE_STR
             if len(self._options) == 2:
-                toggle = DualToggle(parent=None, options = self.options)
+                toggle = DualToggle(parent=None, options=self.options)
                 toggle.setValue(self._default_value)
                 input_field = cast(QWidget, toggle)
             else:
@@ -297,4 +296,3 @@ def _in_range(value: int | float | QSize,
         return minimum.width() <= value.width() <= maximum.width() \
             and minimum.height() <= value.height() <= maximum.height()
     return minimum <= value <= maximum
-

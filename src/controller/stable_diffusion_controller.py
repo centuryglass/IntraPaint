@@ -1,32 +1,35 @@
 """
 Provides image editing functionality through the A1111/stable-diffusion-webui REST API.
 """
+import datetime
 import json
+import logging
+import os
 import sys
 import threading
-import os
-import datetime
 from argparse import Namespace
 from typing import Optional, Callable, Any, Dict, List
-import logging
 
 import requests
 from PIL import Image
-from PyQt5.QtCore import QObject, pyqtSignal, QSize
+from PyQt5.QtCore import QObject, pyqtSignal, QSize, QThread
+from PyQt5.QtGui import QImage
 from PyQt5.QtWidgets import QInputDialog
 
+from src.api.a1111_webservice import A1111Webservice
 from src.config.a1111_config import A1111Config
-from src.config.cache import Cache
-from src.image.layer_stack import LayerStack
 from src.config.application_config import AppConfig
+from src.config.cache import Cache
+from src.controller.base_controller import BaseInpaintController, MENU_TOOLS
+from src.image.layer_stack import LayerStack
+from src.ui.modal.modal_utils import show_error_dialog
 from src.ui.modal.settings_modal import SettingsModal
+from src.ui.window.extra_network_window import ExtraNetworkWindow
 from src.ui.window.prompt_style_window import PromptStyleWindow
 from src.ui.window.stable_diffusion_main_window import StableDiffusionMainWindow
-from src.ui.modal.modal_utils import show_error_dialog
-from src.util.application_state import APP_STATE_EDITING
+from src.util.application_state import APP_STATE_EDITING, AppStateTracker, APP_STATE_LOADING, APP_STATE_NO_IMAGE
+from src.util.async_task import AsyncTask, ThreadAction
 from src.util.display_size import get_screen_size
-from src.controller.base_controller import BaseInpaintController, MENU_TOOLS
-from src.api.a1111_webservice import A1111Webservice
 from src.util.menu_builder import menu_action
 from src.util.shared_constants import EDIT_MODE_INPAINT, EDIT_MODE_TXT2IMG
 
@@ -71,9 +74,15 @@ def _check_lcm_mode_available(_) -> bool:
     loras = [lora['name'] for lora in Cache.instance().get(Cache.LORA_MODELS)]
     return LCM_LORA_1_5 in loras or LCM_LORA_XL in loras
 
+
 def _check_prompt_styles_available(_) -> bool:
     cache = Cache.instance()
     return len(cache.get_options(Cache.STYLES)) > 0
+
+
+def _check_lora_available(_) -> bool:
+    cache = Cache.instance()
+    return len(cache.get(Cache.LORA_MODELS)) > 0
 
 
 class StableDiffusionController(BaseInpaintController):
@@ -90,7 +99,8 @@ class StableDiffusionController(BaseInpaintController):
         self._server_url = args.server_url
         super().__init__(args)
         self._webservice = A1111Webservice(args.server_url)
-        self._window = None
+        self._window: Optional[StableDiffusionMainWindow] = None
+        self._lora_images: Optional[Dict[str, QImage]] = None
 
         # Login automatically if username/password are defined as env variables.
         # Obviously this isn't terribly secure, but A1111 auth security is already pretty minimal, and I'm just using
@@ -132,7 +142,12 @@ class StableDiffusionController(BaseInpaintController):
             if key in web_keys:
                 web_changes[key] = changed_settings[key]
         if len(web_changes) > 0:
-            self._webservice.set_config(changed_settings)
+            def _update_config() -> None:
+                self._webservice.set_config(changed_settings)
+            update_task = AsyncTask(_update_config, True)
+            update_task.finish_signal.connect(lambda: AppStateTracker.set_app_state(
+                APP_STATE_EDITING if self._layer_stack.has_image else APP_STATE_NO_IMAGE))
+            update_task.start()
 
     @staticmethod
     def health_check(url: Optional[str] = None, webservice: Optional[A1111Webservice] = None) -> bool:
@@ -175,47 +190,40 @@ class StableDiffusionController(BaseInpaintController):
         if not self._layer_stack.has_image:
             show_error_dialog(self._window, INTERROGATE_ERROR_TITLE, INTERROGATE_ERROR_MESSAGE_NO_IMAGE)
             return
-        if self._thread is not None:
-            show_error_dialog(self._window, INTERROGATE_ERROR_TITLE, INTERROGATE_ERROR_MESSAGE_EXISTING_OPERATION)
-            return
 
-        class InterrogateWorker(QObject):
-            """Manage interrogate requests in a child thread."""
-            finished = pyqtSignal()
+        class _InterrogateTask(AsyncTask):
             prompt_ready = pyqtSignal(str)
             error_signal = pyqtSignal(Exception)
 
-            def __init__(self, layer_stack, webservice):
-                super().__init__()
-                self._layer_stack = layer_stack
-                self._webservice = webservice
+            def signals(self) -> List[pyqtSignal]:
+                return [self.prompt_ready, self.error_signal]
 
-            def run(self):
-                """Run interrogation in the child thread, emit a signal and exit when finished."""
-                try:
-                    image = self._layer_stack.pil_image_generation_area_content()
-                    self.prompt_ready.emit(self._webservice.interrogate(image))
-                except RuntimeError as err:
-                    logger.error(f'err:{err}')
-                    self.error_signal.emit(err)
-                self.finished.emit()
+        def _interrogate(prompt_ready, error_signal):
+            try:
+                image = self._layer_stack.pil_image_generation_area_content()
+                prompt_ready.emit(self._webservice.interrogate(image))
+            except RuntimeError as err:
+                logger.error(f'err:{err}')
+                error_signal.emit(err)
 
-        worker = InterrogateWorker(self._layer_stack, self._webservice)
+        task = _InterrogateTask(_interrogate)
+        AppStateTracker.set_app_state(APP_STATE_LOADING)
 
         def set_prompt(prompt_text: str) -> None:
             """Update the image prompt in config with the interrogate results."""
             AppConfig.instance().set(AppConfig.PROMPT, prompt_text)
-
-        worker.prompt_ready.connect(set_prompt)
+        task.prompt_ready.connect(set_prompt)
 
         def handle_error(err: BaseException) -> None:
             """Show an error popup if interrogate fails."""
             assert self._window is not None
             self._window.set_is_loading(False)
             show_error_dialog(self._window, INTERROGATE_ERROR_TITLE, err)
-
-        worker.error_signal.connect(handle_error)
-        self._start_thread(worker, loading_text=INTERROGATE_LOADING_TEXT)
+        task.error_signal.connect(handle_error)
+        task.finish_signal.connect(lambda: AppStateTracker.set_app_state(APP_STATE_EDITING))
+        assert self._window is not None
+        self._window.set_loading_message(INTERROGATE_LOADING_TEXT)
+        task.start()
 
     def window_init(self) -> None:
         """Creates and shows the main editor window."""
@@ -304,8 +312,73 @@ class StableDiffusionController(BaseInpaintController):
             self.load_image(file_path=self._init_image)
         self._window.show()
 
+    def _async_progress_check(self, external_status_signal: Optional[pyqtSignal] = None):
+        webservice = self._webservice
+
+        class _ProgressTask(AsyncTask):
+            status_signal = pyqtSignal(dict)
+
+            def __init__(self) -> None:
+                super().__init__(self._check_progress)
+                self.should_stop = False
+
+            def signals(self) -> List[pyqtSignal]:
+                return [external_status_signal if external_status_signal is not None else self.status_signal]
+
+            def stop_loop(self):
+                print('stop loop')
+                self.should_stop = True
+
+            def _check_progress(self, status_signal) -> None:
+                init_timestamp: Optional[int] = None
+                error_count = 0
+                max_progress = 0
+                while not self.should_stop:
+                    sleep_time = min(MIN_RETRY_US * pow(2, error_count), MAX_RETRY_US)
+                    thread = QThread.currentThread()
+                    assert thread is not None
+                    thread.usleep(sleep_time)
+                    try:
+                        status = webservice.progress_check()
+                        progress_percent = int(status[PROGRESS_KEY_FRACTION] * 100)
+                        if progress_percent < max_progress or progress_percent >= 100:
+                            break
+                        if progress_percent <= 1:
+                            continue
+                        status_text = f'{progress_percent}%'
+                        max_progress = progress_percent
+                        if PROGRESS_KEY_ETA_RELATIVE in status and status[PROGRESS_KEY_ETA_RELATIVE] != 0:
+                            timestamp = datetime.datetime.now().timestamp()
+                            if init_timestamp is None:
+                                init_timestamp = timestamp
+                            else:
+                                seconds_passed = timestamp - init_timestamp
+                                fraction_complete = status[PROGRESS_KEY_FRACTION]
+                                eta_sec = int(seconds_passed / fraction_complete)
+                                minutes = eta_sec // 60
+                                seconds = eta_sec % 60
+                                if minutes > 0:
+                                    status_text = f'{status_text} ETA: {minutes}:{seconds}'
+                                else:
+                                    status_text = f'{status_text} ETA: {seconds}s'
+                        status_signal.emit({'progress': status_text})
+                    except RuntimeError as err:
+                        error_count += 1
+                        print(f'Error {error_count}: {err}')
+                        if error_count > MAX_ERROR_COUNT:
+                            logger.error('Inpainting failed, reached max retries.')
+                            break
+                        continue
+
+        task = _ProgressTask()
+        assert self._window is not None
+        if external_status_signal is None:
+            task.status_signal.connect(self._apply_status_update)
+        task.start()
+
     def _scale(self, new_size: QSize) -> None:
         """Provide extra upscaling modes using stable-diffusion-webui."""
+        assert self._window is not None
         width = self._layer_stack.width
         height = self._layer_stack.height
         # If downscaling, use base implementation:
@@ -314,44 +387,39 @@ class StableDiffusionController(BaseInpaintController):
             return
 
         # If upscaling, use stable-diffusion-webui upscale api:
-        class UpscaleWorker(QObject):
-            """Manage interrogate requests in a child thread."""
-            finished = pyqtSignal()
+
+        class _UpscaleTask(AsyncTask):
             image_ready = pyqtSignal(Image.Image)
-            status_signal = pyqtSignal(dict)
             error_signal = pyqtSignal(Exception)
 
-            def __init__(self, layer_stack: LayerStack, webservice: A1111Webservice) -> None:
-                super().__init__()
-                self._layer_stack = layer_stack
-                self._webservice = webservice
+            def signals(self) -> List[pyqtSignal]:
+                return [self.image_ready, self.error_signal]
 
-            def run(self):
-                """Handle the upscaling request, then emit a signal and exit when finished."""
-                try:
-                    images, info = self._webservice.upscale(self._layer_stack.pil_image(), new_size.width(),
-                                                            new_size.height())
-                    if info is not None:
-                        logger.debug(f'Upscaling result info: {info}')
-                    self.image_ready.emit(images[-1])
-                except IOError as err:
-                    self.error_signal.emit(err)
-                self.finished.emit()
-
-        worker = UpscaleWorker(self._layer_stack, self._webservice)
+        def _upscale(image_ready: pyqtSignal, error_signal: pyqtSignal) -> None:
+            try:
+                images, info = self._webservice.upscale(self._layer_stack.pil_image(), new_size.width(),
+                                                        new_size.height())
+                if info is not None:
+                    logger.debug(f'Upscaling result info: {info}')
+                image_ready.emit(images[-1])
+            except IOError as err:
+                error_signal.emit(err)
+        task = _UpscaleTask(_upscale, True)
 
         def handle_error(err: IOError) -> None:
             """Show an error dialog if upscaling fails."""
             show_error_dialog(self._window, UPSCALE_ERROR_TITLE, err)
 
-        worker.error_signal.connect(handle_error)
+        task.error_signal.connect(handle_error)
 
         def apply_upscaled(img: Image.Image) -> None:
             """Copy the upscaled image into the layer stack."""
             self._layer_stack.set_image(img)
 
-        worker.image_ready.connect(apply_upscaled)
-        self._start_thread(worker)
+        task.image_ready.connect(apply_upscaled)
+        task.finish_signal.connect(lambda: self._window.set_is_loading(False))
+        self._async_progress_check()
+        task.start()
 
     def _inpaint(self,
                  source_image_section: Image.Image,
@@ -377,81 +445,25 @@ class StableDiffusionController(BaseInpaintController):
         elif self._layer_stack.selection_layer.generation_area_is_empty():
             raise RuntimeError(GENERATE_ERROR_MESSAGE_EMPTY_MASK)
 
-        def generate_images() -> tuple[list[Image], dict | None]:
-            """Call the appropriate image generation endpoint and return generated images."""
-            if edit_mode == EDIT_MODE_TXT2IMG:
-                return self._webservice.txt2img(source_image_section.width, source_image_section.height, image=source_image_section)
-            return self._webservice.img2img(source_image_section, mask=mask)
-
-        # POST to server_url, check response
-        # If invalid or error response, throw Exception
-        error_count = 0
-        max_errors = MAX_ERROR_COUNT
-        # refresh times in microseconds:
-        min_refresh = MIN_RETRY_US
-        max_refresh = MAX_RETRY_US
-        images = []
-        errors = []
-
         # Check progress before starting:
         init_data = self._webservice.progress_check()
         if init_data[PROGRESS_KEY_CURRENT_IMAGE] is not None:
             raise RuntimeError('Image generation in progress, try again later.')
+        self._async_progress_check(status_signal)
 
-        def async_request():
-            """Request image generation, wait for and pass on response data."""
-            try:
-                image_data, info = generate_images()
-                if info is not None:
-                    logger.debug(f'Image generation result info: {info}')
-                for response_image in image_data:
-                    images.append(response_image)
-            except RuntimeError as image_gen_error:
-                logger.error(f'request failed: {image_gen_error}')
-                errors.append(image_gen_error)
+        try:
+            if edit_mode == EDIT_MODE_TXT2IMG:
+                image_data, info = self._webservice.txt2img(source_image_section.width, source_image_section.height,
+                                                            image=source_image_section)
+            else:
+                image_data, info = self._webservice.img2img(source_image_section, mask=mask)
+            if info is not None:
+                logger.debug(f'Image generation result info: {info}')
+            for i, response_image in enumerate(image_data):
+                save_image(response_image, i)
 
-        thread = threading.Thread(target=async_request)
-        thread.start()
-
-        init_timestamp = None
-        while thread.is_alive():
-            sleep_time = min(min_refresh * pow(2, error_count), max_refresh)
-            thread.join(timeout=sleep_time / 1000000)
-            if not thread.is_alive() or len(errors) > 0:
-                break
-            try:
-                status = self._webservice.progress_check()
-                status_text = f'{int(status[PROGRESS_KEY_FRACTION] * 100)}%'
-                if PROGRESS_KEY_ETA_RELATIVE in status and status[PROGRESS_KEY_ETA_RELATIVE] != 0:
-                    timestamp = datetime.datetime.now().timestamp()
-                    if init_timestamp is None:
-                        init_timestamp = timestamp
-                    else:
-                        seconds_passed = timestamp - init_timestamp
-                        fraction_complete = status[PROGRESS_KEY_FRACTION]
-                        eta_sec = int(seconds_passed / fraction_complete)
-                        minutes = eta_sec // 60
-                        seconds = eta_sec % 60
-                        if minutes > 0:
-                            status_text = f'{status_text} ETA: {minutes}:{seconds}'
-                        else:
-                            status_text = f'{status_text} ETA: {seconds}s'
-                status_signal.emit({'progress': status_text})
-            except RuntimeError as err:
-                error_count += 1
-                print(f'Error {error_count}: {err}')
-                if error_count > max_errors:
-                    logger.error('Inpainting failed, reached max retries.')
-                    break
-                continue
-            error_count = 0  # Reset error count on success.
-        if len(errors) > 0:
-            logger.error('Inpainting failed with error, raising...')
-            raise errors[0]
-        idx = 0
-        for image in images:
-            save_image(image, idx)
-            idx += 1
+        except RuntimeError as image_gen_error:
+            logger.error(f'request failed: {image_gen_error}')
 
     def _apply_status_update(self, status_dict: Dict[str, str]) -> None:
         """Show status updates in the UI."""
@@ -498,3 +510,40 @@ class StableDiffusionController(BaseInpaintController):
         # TODO: update after the prompt style endpoint gets POST support
         # style_window.should_save_changes.connect(self._update_styles)
         style_window.exec_()
+
+    @menu_action(MENU_STABLE_DIFFUSION, 'lora_shortcut', 201, [APP_STATE_EDITING],
+                 condition_check=_check_lora_available)
+    def show_lora_window(self) -> None:
+        """Show the Lora model selection window."""
+        cache = Cache.instance()
+        loras = cache.get(Cache.LORA_MODELS).copy()
+        if self._lora_images is None:
+            self._lora_images = {}
+            AppStateTracker.set_app_state(APP_STATE_LOADING)
+
+            class _LoadingTask(AsyncTask):
+                status = pyqtSignal(str)
+
+                def signals(self) -> List[pyqtSignal]:
+                    return [self.status]
+
+            def _load_and_open(status_signal: pyqtSignal) -> None:
+                for i, lora in enumerate(loras):
+                    status_signal.emit(f'Loading thumbnail {i+1}/{len(loras)}')
+                    path = lora['path']
+                    path = path[:path.rindex('.')] + '.png'
+                    self._lora_images[lora['name']] = self._webservice.get_thumbnail(path)
+
+            task = _LoadingTask(_load_and_open)
+
+            def _resume_and_show() -> None:
+                AppStateTracker.set_app_state(APP_STATE_EDITING)
+                delayed_lora_window = ExtraNetworkWindow(loras, self._lora_images)
+                delayed_lora_window.exec_()
+
+            task.status.connect(self._window.set_loading_message)
+            task.finish_signal.connect(_resume_and_show)
+            task.start()
+        else:
+            lora_window = ExtraNetworkWindow(loras, self._lora_images)
+            lora_window.exec_()

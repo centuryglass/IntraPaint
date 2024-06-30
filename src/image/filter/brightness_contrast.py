@@ -30,7 +30,7 @@ class BrightnessContrastFilter(ImageFilter):
         """Returns the KeyConfig key used to load menu item info and keybindings."""
         return KeyConfig.BRIGHTNESS_CONTRAST_SHORTCUT
 
-    def get_filter(self) -> Callable[[...], QImage]:
+    def get_filter(self) -> Callable[..., QImage]:
         """Returns the filter's image variable filtering function."""
         return self.brightness_contrast_filter
 

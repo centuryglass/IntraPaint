@@ -2,12 +2,14 @@
 and provides the information needed to add the function as a menu action."""
 from typing import Callable, List, Optional, Dict, Any
 
-from PyQt5.QtCore import QRect, QPoint, Qt, QSize
+from PyQt5.QtCore import QRect, QPoint, Qt, QSize, pyqtSignal
 from PyQt5.QtGui import QImage, QPainter
 
 from src.image.layer_stack import LayerStack
 from src.ui.modal.image_filter_modal import ImageFilterModal
 from src.undo_stack import commit_action
+from src.util.application_state import APP_STATE_EDITING, AppStateTracker
+from src.util.async_task import AsyncTask
 from src.util.image_utils import get_transparency_tile_pixmap
 from src.util.parameter import Parameter
 
@@ -41,7 +43,7 @@ class ImageFilter:
         """Returns the KeyConfig key used to load menu item info and keybindings."""
         raise NotImplementedError()
 
-    def get_filter(self) -> Callable[[...], QImage]:
+    def get_filter(self) -> Callable[..., QImage]:
         """Returns the filter's image variable filtering function."""
         raise NotImplementedError()
 
@@ -54,7 +56,7 @@ class ImageFilter:
                           filter_selection_only: bool,
                           filter_active_layer_only: bool) -> QImage:
         """
-        Generate a preview of how the filter will be applied given a of parameters.
+        Generate a preview of how the filter will be applied with given parameter values.
         Parameters
         ----------
             filter_param_values: list
@@ -120,7 +122,7 @@ class ImageFilter:
     def apply_filter(self, filter_param_values: List[Any], filter_selection_only: bool,
                      filter_active_layer_only: bool) -> None:
         """
-        Applies the filter to the layer stack.
+        Applies the filter to the layer stack, running filter operations in another thread to prevent hanging.
 
         Parameters
         ----------
@@ -131,24 +133,40 @@ class ImageFilter:
             filter_active_layer_only: bool
                 If true, filters will only be applied to the active layer instead of all visible layers.
         """
-        layer_images = self._get_layer_images(filter_param_values, filter_selection_only, filter_active_layer_only,
-                                              True)
-        source_images: Dict[int, QImage] = {}
-        for layer_id in layer_images.keys():
-            layer = self._layer_stack.get_layer_by_id(layer_id)
-            source_images[layer_id] = layer.qimage
 
-        def _apply_filters(img_dict=layer_images):
-            for updated_id, image in img_dict.items():
-                updated_layer = self._layer_stack.get_layer_by_id(updated_id)
-                updated_layer.qimage = image
+        def _filter_images(images_ready) -> None:
+            layer_images = self._get_layer_images(filter_param_values, filter_selection_only, filter_active_layer_only,
+                                                  True)
+            images_ready.emit(layer_images)
 
-        def _undo_filters(img_dict=source_images):
-            for updated_id, image in img_dict.items():
-                updated_layer = self._layer_stack.get_layer_by_id(updated_id)
-                updated_layer.qimage = image
+        def _apply_changes(layer_images: Dict[int, QImage]) -> None:
+            AppStateTracker.set_app_state(APP_STATE_EDITING)
+            source_images: Dict[int, QImage] = {}
+            for layer_id in layer_images.keys():
+                layer = self._layer_stack.get_layer_by_id(layer_id)
+                source_images[layer_id] = layer.qimage
 
-        commit_action(_apply_filters, _undo_filters)
+            def _apply_filters():
+                for updated_id, image in layer_images.items():
+                    updated_layer = self._layer_stack.get_layer_by_id(updated_id)
+                    updated_layer.qimage = image
+
+            def _undo_filters():
+                for updated_id, image in source_images.items():
+                    updated_layer = self._layer_stack.get_layer_by_id(updated_id)
+                    updated_layer.qimage = image
+
+            commit_action(_apply_filters, _undo_filters)
+
+        class _FilterTask(AsyncTask):
+            images_ready = pyqtSignal(dict)
+
+            def signals(self) -> List[pyqtSignal]:
+                return [self.images_ready]
+
+        task = _FilterTask(_filter_images, True)
+        task.images_ready.connect(_apply_changes)
+        task.start()
 
     def _get_filtered_image(self,
                             image: QImage,
@@ -170,7 +188,7 @@ class ImageFilter:
         painter.drawImage(QRect(0, 0, image.width(), image.height()), filtered_image)
         return final_image
 
-    def _bounds(self, scale = 1.0) -> QRect:
+    def _bounds(self, scale=1.0) -> QRect:
         bounds = self._layer_stack.merged_layer_geometry
         if scale != 1.0:
             bounds.setX(int(bounds.x() * scale))

@@ -5,7 +5,7 @@ from typing import Optional, List
 
 from PyQt5.QtCore import QRect, Qt, QPoint, QPointF, QRectF
 from PyQt5.QtGui import QPainter, QPixmap, QPen
-from PyQt5.QtWidgets import QGraphicsScene, QGraphicsPixmapItem, QGraphicsItem
+from PyQt5.QtWidgets import QGraphicsScene, QGraphicsItem
 
 from src.image.canvas.layer_canvas import LayerCanvas
 from src.image.image_layer import ImageLayer

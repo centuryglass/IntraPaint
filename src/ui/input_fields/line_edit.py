@@ -14,7 +14,7 @@ class LineEdit(QLineEdit):
         super().__init__(parent)
         self.textChanged.connect(self.valueChanged.emit)
 
-    def value(self) -> bool:
+    def value(self) -> str:
         """Return the text value."""
         return self.text()
 

@@ -1,6 +1,5 @@
 """Provides controls for transforming a graphics item."""
 import math
-import cv2
 from typing import Optional, Dict, Tuple, Any, Generator
 
 from PyQt5.QtCore import Qt, QRectF, QPointF, QSizeF, pyqtSignal, QLineF

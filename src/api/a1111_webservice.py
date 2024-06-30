@@ -10,6 +10,8 @@ import sys
 import requests
 import logging
 from PIL import Image
+from PyQt5.QtGui import QImage
+from PyQt5.QtCore import QByteArray
 from requests import Response
 
 from src.api.webservice import WebService
@@ -54,6 +56,9 @@ class A1111Webservice(WebService):
         CONTROLNET_CONTROL_TYPES = '/controlnet/control_types'
         CONTROLNET_SETTINGS = '/controlnet/settings'
         LOGIN = '/login'
+        EXTRA_NW_DATA = '/sd_extra_networks/metadata'
+        EXTRA_NW_THUMB = '/sd_extra_networks/thumb'
+        EXTRA_NW_CARD = '/sd_extra_networks/card'
 
     class ImgParams:
         """Image generation body key constants."""
@@ -498,6 +503,20 @@ class A1111Webservice(WebService):
         If available models may have changed, instead consider using the slower refresh_loras method.
         """
         return self.get(A1111Webservice.Endpoints.LORA_MODELS, timeout=30).json()
+
+    def get_thumbnail(self, file_path: str) -> Optional[QImage]:
+        """Attempts to load one of the extra model thumbnails given a path parameter."""
+        try:
+            res = self.get(A1111Webservice.Endpoints.EXTRA_NW_THUMB, timeout=30,
+                           url_params={'filename': file_path})
+            if not res.ok:
+                return None
+            image_bytes = QByteArray(res.content)
+            image = QImage.fromData(image_bytes)
+            return image
+        except (RuntimeError, IOError) as err:
+            logger.error(f'Failed to load thumbnail "{file_path}": {err}')
+            return None
 
     def login(self, username: str, password: str) -> requests.Response:
         """Attempt to log in with a username and password."""

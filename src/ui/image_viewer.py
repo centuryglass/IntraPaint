@@ -4,8 +4,8 @@ Interact with edited image layers through the PyQt5 2D graphics engine.
 from typing import Optional, Dict
 
 from PyQt5.QtCore import Qt, QRect, QRectF, QSize, QPointF, QSizeF
-from PyQt5.QtGui import QPainter, QMouseEvent, QColor
-from PyQt5.QtWidgets import QWidget, QSizePolicy, QGraphicsPixmapItem, QStyleOptionGraphicsItem
+from PyQt5.QtGui import QPainter, QColor
+from PyQt5.QtWidgets import QWidget, QSizePolicy
 
 from src.config.application_config import AppConfig
 from src.hotkey_filter import HotkeyFilter

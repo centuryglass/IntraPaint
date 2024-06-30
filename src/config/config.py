@@ -9,19 +9,18 @@ Main features
     - Subscribe to specific value changes through config.connect()
 """
 import json
+import logging
 import os.path
 from inspect import signature
 from threading import Lock
-from typing import Optional, Any, Callable, List, Dict, cast
-import logging
+from typing import Optional, Any, Callable, List, Dict
 
 from PyQt5.QtCore import QSize, QTimer, Qt
 from PyQt5.QtGui import QKeySequence
-from PyQt5.QtWidgets import QWidget, QComboBox
+from PyQt5.QtWidgets import QWidget
 
 from src.config.config_entry import ConfigEntry, DefinitionKey, DefinitionType
 from src.ui.input_fields.check_box import CheckBox
-from src.util.parameter import TYPE_QSIZE
 from src.util.validation import assert_type
 
 logger = logging.getLogger(__name__)
@@ -185,7 +184,7 @@ class Config:
                 assert hasattr(control_widget, 'valueChanged')
                 control_widget.valueChanged.connect(_update_config)
                 self.connect(control_widget, key, _update_control)
-            return  control_widget
+            return control_widget
 
     def get_keycodes(self, key: str) -> QKeySequence:
         """Returns a config value as a key sequence, throws RuntimeError if the value isn't a keycode."""

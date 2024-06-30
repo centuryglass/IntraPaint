@@ -72,7 +72,7 @@ class ImageFilterModal(QDialog):
         self._layout.addWidget(self._button_row)
         self._update_preview()
 
-    def _update_preview(self, _ = None) -> None:
+    def _update_preview(self, _=None) -> None:
         param_values = [widget.value() for widget in self._param_inputs]
         filter_selection_only = self._selected_only_checkbox.isChecked()
         filter_active_layer_only = self._active_only_checkbox.isChecked()
@@ -84,5 +84,3 @@ class ImageFilterModal(QDialog):
         filter_active_layer_only = self._active_only_checkbox.isChecked()
         self._apply_filter(param_values, filter_selection_only, filter_active_layer_only)
         self.close()
-
-

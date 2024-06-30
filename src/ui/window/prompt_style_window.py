@@ -1,7 +1,7 @@
 """View, apply, and update saved stable-diffusion WebUI prompt info."""
 import json
 import logging
-from typing import Dict, Optional, List, Callable
+from typing import Dict, Optional
 
 from PyQt5.QtCore import pyqtSignal
 from PyQt5.QtWidgets import QDialog, QHBoxLayout, QListWidget, QListWidgetItem, QLabel, QPushButton, \
@@ -65,8 +65,6 @@ class PromptStyleWindow(QDialog):
         self._layout.addWidget(QLabel(NEGATIVE_LABEL))
         self._negative_box = PlainTextEdit()
         self._layout.addWidget(self._negative_box)
-
-
 
         button_layout = QHBoxLayout()
         self._layout.addLayout(button_layout)

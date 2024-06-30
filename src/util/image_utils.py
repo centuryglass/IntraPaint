@@ -183,7 +183,7 @@ def get_transparency_tile_pixmap(size: Optional[QSize] = None) -> QPixmap:
     return transparency_pixmap
 
 
-def flood_fill(image: QImage, pos: QPoint, color: QColor, threshold: float, in_place: bool = False) -> QImage:
+def flood_fill(image: QImage, pos: QPoint, color: QColor, threshold: float, in_place: bool = False) -> Optional[QImage]:
     """Returns a mask image marking all areas of similar color directly connected to a point in an image.
 
     Parameters

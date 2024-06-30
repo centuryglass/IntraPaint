@@ -34,7 +34,7 @@ class RGBColorBalanceFilter(ImageFilter):
         """Returns the KeyConfig key used to load menu item info and keybindings."""
         return KeyConfig.COLOR_BALANCE_SHORTCUT
 
-    def get_filter(self) -> Callable[[...], QImage]:
+    def get_filter(self) -> Callable[..., QImage]:
         """Returns the filter's image variable filtering function."""
         return self.color_balance
 

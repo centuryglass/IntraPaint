@@ -19,6 +19,7 @@ ALPHA = 3
 
 tile_id = 0
 
+
 class MPTile(QGraphicsItem):
     """A Python wrapper for libmypaint image tile data."""
 
@@ -165,10 +166,10 @@ class MPTile(QGraphicsItem):
             destination = QRect(0, 0, image.width(), image.height())
         assert self._pixels is not None
         np_pixels = pixel_data_as_numpy_16bit(self._pixels)[source.y():source.y() + source.height(),
-                                                                             source.x():source.x() + source.width()]
+                                                            source.x():source.x() + source.width()]
         np_image = image_data_as_numpy_8bit(image)[
-                                    destination.y():destination.y() + destination.height(),
-                                    destination.x():destination.x() + destination.width()]
+                   destination.y():destination.y() + destination.height(),
+                   destination.x():destination.x() + destination.width()]
         intersect = numpy_intersect(np_image, np_pixels, 0, 0)
         if intersect[0] is None or intersect[1] is None:
             return False  # No intersection.

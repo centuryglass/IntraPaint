@@ -1,10 +1,10 @@
 """Represents configurable typed values loaded from JSON definitions."""
-from typing import Any, Optional, Dict, List
 import logging
+from typing import Any, Optional, Dict
 
 from PyQt5.QtCore import QSize
 
-from src.util.parameter import Parameter, get_parameter_type, TYPE_DICT, TYPE_INT, TYPE_FLOAT, TYPE_QSIZE, ParamType
+from src.util.parameter import Parameter, get_parameter_type, TYPE_DICT, TYPE_INT, TYPE_FLOAT, TYPE_QSIZE
 
 logger = logging.getLogger(__name__)
 
@@ -138,8 +138,8 @@ class ConfigEntry(Parameter):
         """Adds a new item to the list of accepted options."""
         if self._options is None:
             raise RuntimeError(f'Config value "{self._key}" does not have an associated options list')
-        options = self.options
-        if option not in self.options:
+        options = self._options
+        if option not in options:
             options.append(option)
         self.set_valid_options(options)
 
@@ -154,9 +154,9 @@ class ConfigEntry(Parameter):
             if minimum is not None or maximum is not None or step is not None:
                 json_dict[self._key] = {}
                 for config_param, inner_key in ((minimum, RangeKey.MIN),
-                                         (maximum, RangeKey.MAX),
-                                         (step, RangeKey.STEP),
-                                         (self._value, VALUE_KEY)):
+                                                (maximum, RangeKey.MAX),
+                                                (step, RangeKey.STEP),
+                                                (self._value, VALUE_KEY)):
                     if config_param is None:
                         continue
                     if isinstance(config_param, QSize):
@@ -202,4 +202,3 @@ class ConfigEntry(Parameter):
             logger.error(f'{self.name} skipping invalid saved value {json_value}')
         else:
             self._value = json_value
-

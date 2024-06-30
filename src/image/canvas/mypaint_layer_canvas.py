@@ -59,7 +59,6 @@ class MyPaintLayerCanvas(LayerCanvas):
         """Returns all graphics items present in the scene that belong to the canvas."""
         return [item for item in self.scene.items() if isinstance(item, MPTile)]
 
-
     @property
     def _bounds_x(self):
         """Returns last stroke bounding box x-coordinate."""

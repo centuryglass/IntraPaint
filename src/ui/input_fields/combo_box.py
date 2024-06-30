@@ -1,7 +1,7 @@
 """A simple wrapper for QComboBox to give it an interface consistent with other input widgets."""
 from typing import Any, Optional
 
-from PyQt5.QtCore import pyqtSignal, QSize
+from PyQt5.QtCore import pyqtSignal
 from PyQt5.QtWidgets import QComboBox, QWidget
 
 

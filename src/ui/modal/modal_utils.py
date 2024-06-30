@@ -54,7 +54,7 @@ def open_image_file(parent: QWidget, mode: str = 'load',
                     selected_file: str = '') -> tuple[str, str] | tuple[None, None]:
     """Opens an image file for editing, saving, etc."""
     is_pyinstaller_bundle = getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS')
-    options = str(QFileDialog.Option.DontUseNativeDialog) #if is_pyinstaller_bundle else None
+    options = str(QFileDialog.Option.DontUseNativeDialog) if is_pyinstaller_bundle else None
     try:
         if mode == LOAD_IMAGE_MODE:
             return QFileDialog.getOpenFileNames(parent, LOAD_IMAGE_TITLE, options, filter=IMAGE_LOAD_FILTER)

@@ -2,7 +2,7 @@
 from typing import Optional
 
 from PyQt5.QtCore import pyqtSignal, QSize, Qt
-from PyQt5.QtWidgets import QWidget, QHBoxLayout, QLabel, QSpinBox, QSlider, QGridLayout
+from PyQt5.QtWidgets import QWidget, QLabel, QSpinBox, QSlider, QGridLayout
 
 from src.util.shared_constants import INT_MAX
 
@@ -63,6 +63,7 @@ class SizeField(QWidget):
                 if column_widget is not None:
                     self._layout.addWidget(column_widget, 0, column)
                     self._layout.setColumnStretch(column, stretch)
+
             self._layout.setRowStretch(0, 1)
             _add_column(self._width_label, 0, 0)
             _add_column(self._width_slider, 1, 0 if self._width_slider is None else 3)
@@ -126,7 +127,7 @@ class SizeField(QWidget):
     def minimum(self, new_minimum: QSize) -> None:
         if new_minimum.width() > self._max_width or new_minimum.height() > self._max_height:
             raise ValueError(f'New minimum {new_minimum} would be greater than max size {self.maximum}')
-        size_value = self.value
+        size_value = self.value()
         if size_value.width() < new_minimum.width():
             size_value.setWidth(new_minimum.width())
         if size_value.height() < new_minimum.height():
@@ -146,7 +147,7 @@ class SizeField(QWidget):
     def maximum(self, new_maximum: QSize) -> None:
         if new_maximum.width() < self._min_width or new_maximum.height() < self._min_height:
             raise ValueError(f'New maximum {new_maximum} would be less than minimum size {self.minimumn}')
-        size_value = self.value
+        size_value = self.value()
         if size_value.width() > new_maximum.width():
             size_value.setWidth(new_maximum.width())
         if size_value.height() > new_maximum.height():
@@ -161,7 +162,7 @@ class SizeField(QWidget):
         """Set the minimum and maximum sizes permitted."""
         if maximum.width() < minimum.width() or maximum.height() < minimum.height():
             raise ValueError(f'Maximum {maximum} not equal to or greater than {minimum}')
-        size_value = self.value
+        size_value = self.value()
         size_value.setWidth(min(maximum.width(), max(minimum.width(), size_value.width())))
         size_value.setHeight(min(maximum.height(), max(minimum.height(), size_value.height())))
         self._min_height = minimum.height()
