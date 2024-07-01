@@ -82,10 +82,10 @@ class PromptStyleWindow(QDialog):
         button_layout.addWidget(replace_button, stretch=1)
         button_layout.addStretch(1)
 
-        if save_enabled:
-            for text_field in (self._name_box, self._prompt_box, self._negative_box):
-                text_field.valueChanged.connect(self._update_cached_styles)
+        for text_field in (self._name_box, self._prompt_box, self._negative_box):
+            text_field.valueChanged.connect(self._update_cached_styles)
 
+        if save_enabled:
             self._save_button = QPushButton()
             self._save_button.setEnabled(False)
             self._save_button.setText(SAVE_BUTTON_LABEL)

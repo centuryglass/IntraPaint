@@ -103,5 +103,4 @@ class BigIntSpinbox(QAbstractSpinBox):
         self.setMaximum(maximum)
 
     def _value_in_range(self, value: int) -> bool:
-        assert isinstance(value, int)
-        return bool(self.minimum() <= value <= self.maximum())
+        return bool(self.minimum() <= int(value) <= self.maximum())
