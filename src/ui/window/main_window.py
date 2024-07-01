@@ -166,6 +166,7 @@ class MainWindow(QMainWindow):
                                              else Qt.Orientation.Horizontal)
             self._tool_panel.show()
             self._layout.insertWidget(0, self._reactive_widget)
+            self._reactive_widget.show()
             if last_reactive_widget is not None:
                 last_reactive_widget.setParent(None)
 
@@ -212,7 +213,7 @@ class MainWindow(QMainWindow):
 
     def _build_control_panel(self, controller) -> QWidget:
         """Adds image editing controls to the layout."""
-        config = AppConfig.instance()
+        config = AppConfig()
         inpaint_panel = QWidget(self)
         text_prompt_textbox = config.get_control_widget(AppConfig.PROMPT, multi_line=False)
         negative_prompt_textbox = config.get_control_widget(AppConfig.NEGATIVE_PROMPT, multi_line=False)

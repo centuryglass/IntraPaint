@@ -15,7 +15,7 @@ class BrushColorButton(QPushButton):
         super().__init__()
         self._color = QColor()
         self._icon = QPixmap(QSize(64, 64))
-        cache = Cache.instance()
+        cache = Cache()
         cache.connect(self, Cache.LAST_BRUSH_COLOR, self._update_color)
         self._update_color(cache.get(Cache.LAST_BRUSH_COLOR))
         self.clicked.connect(self.select_color)
@@ -34,4 +34,4 @@ class BrushColorButton(QPushButton):
         color_dialog.setOption(QColorDialog.ColorDialogOption.DontUseNativeDialog, True)
         selection = color_dialog.getColor(self._color)
         if selection != self._color:
-            Cache.instance().set(Cache.LAST_BRUSH_COLOR, selection)
+            Cache().set(Cache.LAST_BRUSH_COLOR, selection.name())

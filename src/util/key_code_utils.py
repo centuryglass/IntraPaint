@@ -96,7 +96,7 @@ def get_key_display_string(keys: QKeySequence) -> str:
 
 
 def _speed_modifier_held() -> bool:
-    speed_modifier = KeyConfig.instance().get(KeyConfig.SPEED_MODIFIER)
+    speed_modifier = KeyConfig().get(KeyConfig.SPEED_MODIFIER)
     if speed_modifier == '':
         return False
     speed_modifier = get_modifiers(speed_modifier)

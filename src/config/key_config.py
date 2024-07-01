@@ -7,6 +7,7 @@ from PyQt5.QtWidgets import QMessageBox, QStyle, QApplication
 
 from src.util.image_utils import get_standard_qt_icon
 from src.config.config import Config
+from src.util.singleton import Singleton
 
 DEFAULT_CONFIG_PATH = 'key_config.json'
 CONFIG_DEFINITIONS = 'resources/config/key_config_definitions.json'
@@ -15,15 +16,7 @@ KEY_CONFIG_ERROR_TITLE = 'Warning'
 KEY_CONFIG_ERROR_MESSAGE = 'Errors found in configurable key bindings:\n'
 
 
-class KeyConfig(Config):
-    _instance: Optional['KeyConfig'] = None
-
-    @staticmethod
-    def instance() -> 'KeyConfig':
-        """Returns the shared config object instance."""
-        if KeyConfig._instance is None:
-            KeyConfig._instance = KeyConfig()
-        return KeyConfig._instance
+class KeyConfig(Config, metaclass=Singleton):
 
     def __init__(self, json_path: Optional[str] = DEFAULT_CONFIG_PATH) -> None:
         """Load existing config, or initialize from defaults.
@@ -36,8 +29,6 @@ class KeyConfig(Config):
             keys will be discarded.
         """
         super().__init__(CONFIG_DEFINITIONS, json_path, KeyConfig)
-        if KeyConfig._instance is not None:
-            raise RuntimeError('Do not call the KeyConfig constructor, access it with KeyConfig.instance()')
         self.validate_keybindings()
 
     def validate_keybindings(self) -> None:

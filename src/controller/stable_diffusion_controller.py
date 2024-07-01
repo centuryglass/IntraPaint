@@ -68,19 +68,19 @@ MENU_STABLE_DIFFUSION = 'Stable-Diffusion'
 
 
 def _check_lcm_mode_available(_) -> bool:
-    if LCM_SAMPLER not in AppConfig.instance().get_options(AppConfig.SAMPLING_METHOD):
+    if LCM_SAMPLER not in AppConfig().get_options(AppConfig.SAMPLING_METHOD):
         return False
-    loras = [lora['name'] for lora in Cache.instance().get(Cache.LORA_MODELS)]
+    loras = [lora['name'] for lora in Cache().get(Cache.LORA_MODELS)]
     return LCM_LORA_1_5 in loras or LCM_LORA_XL in loras
 
 
 def _check_prompt_styles_available(_) -> bool:
-    cache = Cache.instance()
+    cache = Cache()
     return len(cache.get_options(Cache.STYLES)) > 0
 
 
 def _check_lora_available(_) -> bool:
-    cache = Cache.instance()
+    cache = Cache()
     return len(cache.get(Cache.LORA_MODELS)) > 0
 
 
@@ -120,7 +120,7 @@ class StableDiffusionController(BaseInpaintController):
         if not isinstance(self._webservice, A1111Webservice):
             print('Disabling remote settings: only supported with the A1111 API')
             return
-        web_config = A1111Config.instance()
+        web_config = A1111Config()
         web_config.load_all(self._webservice)
         settings_modal.load_from_config(web_config)
 
@@ -133,7 +133,7 @@ class StableDiffusionController(BaseInpaintController):
     def update_settings(self, changed_settings: dict[str, Any]) -> None:
         """Applies changed settings from a SettingsModal to the stable-diffusion-webui."""
         super().update_settings(changed_settings)
-        web_config = A1111Config.instance()
+        web_config = A1111Config()
         web_categories = web_config.get_categories()
         web_keys = [key for cat in web_categories for key in web_config.get_category_keys(cat)]
         web_changes = {}
@@ -210,7 +210,7 @@ class StableDiffusionController(BaseInpaintController):
 
         def set_prompt(prompt_text: str) -> None:
             """Update the image prompt in config with the interrogate results."""
-            AppConfig.instance().set(AppConfig.PROMPT, prompt_text)
+            AppConfig().set(AppConfig.PROMPT, prompt_text)
         task.prompt_ready.connect(set_prompt)
 
         def handle_error(err: BaseException) -> None:
@@ -243,7 +243,7 @@ class StableDiffusionController(BaseInpaintController):
         # Check connection:
         while not StableDiffusionController.health_check(webservice=self._webservice):
             prompt_for_url(URL_REQUEST_RETRY_MESSAGE)
-        cache = Cache.instance()
+        cache = Cache()
         try:
             cache.set(Cache.CONTROLNET_VERSION, float(self._webservice.get_controlnet_version()))
         except RuntimeError:
@@ -275,7 +275,7 @@ class StableDiffusionController(BaseInpaintController):
                     if config_key in cache.get_keys():
                         cache.update_options(config_key, options)
                     else:
-                        AppConfig.instance().update_options(config_key, options)
+                        AppConfig().update_options(config_key, options)
             except (KeyError, RuntimeError) as err:
                 logger.error(f'error loading {config_key} from {self._server_url}: {err}')
 
@@ -437,7 +437,7 @@ class StableDiffusionController(BaseInpaintController):
         status_signal : pyqtSignal
             Signal to emit when status updates are available.
         """
-        edit_mode = AppConfig.instance().get(AppConfig.EDIT_MODE)
+        edit_mode = AppConfig().get(AppConfig.EDIT_MODE)
         if edit_mode == EDIT_MODE_INPAINT and self._image_stack.selection_layer.generation_area_fully_selected():
             edit_mode = EDIT_MODE_IMG2IMG
         if edit_mode != EDIT_MODE_INPAINT:
@@ -469,15 +469,15 @@ class StableDiffusionController(BaseInpaintController):
         """Show status updates in the UI."""
         assert self._window is not None
         if 'seed' in status_dict:
-            Cache.instance().set(Cache.LAST_SEED, str(status_dict['seed']))
+            Cache().set(Cache.LAST_SEED, str(status_dict['seed']))
         if 'progress' in status_dict:
             self._window.set_loading_message(status_dict['progress'])
 
     @menu_action(MENU_TOOLS, 'lcm_mode_shortcut', 99, condition_check=_check_lcm_mode_available)
     def set_lcm_mode(self) -> None:
         """Apply all settings required for using an LCM LoRA module."""
-        config = AppConfig.instance()
-        loras = [lora['name'] for lora in Cache.instance().get(Cache.LORA_MODELS)]
+        config = AppConfig()
+        loras = [lora['name'] for lora in Cache().get(Cache.LORA_MODELS)]
         if LCM_LORA_1_5 in loras:
             lora_name = LCM_LORA_1_5
         else:
@@ -500,7 +500,7 @@ class StableDiffusionController(BaseInpaintController):
             show_error_dialog(None, STYLE_ERROR_TITLE, err)
             return
         style_strings = [json.dumps(style) for style in style_list]
-        Cache.instance().update_options(Cache.STYLES, cast(List[ParamType], style_strings))
+        Cache().update_options(Cache.STYLES, cast(List[ParamType], style_strings))
 
     @menu_action(MENU_STABLE_DIFFUSION, 'prompt_style_shortcut', 200, [APP_STATE_EDITING],
                  condition_check=_check_prompt_styles_available)
@@ -515,7 +515,7 @@ class StableDiffusionController(BaseInpaintController):
                  condition_check=_check_lora_available)
     def show_lora_window(self) -> None:
         """Show the Lora model selection window."""
-        cache = Cache.instance()
+        cache = Cache()
         loras = cache.get(Cache.LORA_MODELS).copy()
         if self._lora_images is None:
             self._lora_images = {}

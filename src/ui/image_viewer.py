@@ -30,7 +30,7 @@ class ImageViewer(ImageGraphicsView):
     def __init__(self, parent: Optional[QWidget], image_stack: ImageStack) -> None:
         super().__init__(parent)
         HotkeyFilter.instance().set_default_focus(self)
-        config = AppConfig.instance()
+        config = AppConfig()
 
         self._image_stack = image_stack
         self._generation_area = image_stack.generation_area
@@ -142,7 +142,7 @@ class ImageViewer(ImageGraphicsView):
         """Sets whether the view should follow the image generation area. Setting to true updates the view, setting to
            false does not."""
         self._follow_generation_area = should_follow
-        self._generation_area_outline.animated = not should_follow and AppConfig.instance().get(
+        self._generation_area_outline.animated = not should_follow and AppConfig().get(
             AppConfig.ANIMATE_OUTLINES)
         self._generation_area_border.setVisible(should_follow)
         if should_follow:
@@ -177,7 +177,7 @@ class ImageViewer(ImageGraphicsView):
         self._generation_area_border.windowed_area = generation_area.toAlignedRect()
         self._generation_area_outline.setVisible(image_loaded)
         self._image_generation_area_outline.setVisible(
-            image_loaded and AppConfig.instance().get(AppConfig.INPAINT_FULL_RES))
+            image_loaded and AppConfig().get(AppConfig.INPAINT_FULL_RES))
         if self._image_stack.active_layer is not None:
             self._active_layer_outline.setVisible(True)
             self._active_layer_outline.outlined_region = QRectF(QPointF(self._image_stack.active_layer.position),

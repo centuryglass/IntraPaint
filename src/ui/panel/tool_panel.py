@@ -138,8 +138,8 @@ class ToolPanel(QWidget):
         generation_area_tool = GenerationAreaTool(image_stack, image_panel.image_viewer)
         add_tool(generation_area_tool)
         self._event_handler.register_tool_delegate(brush_tool, eyedropper_tool, Qt.KeyboardModifier.ControlModifier)
-        self._switch_active_tool(Cache.instance().get(Cache.LAST_ACTIVE_TOOL))
-        Cache.instance().connect(self, Cache.LAST_ACTIVE_TOOL, self._switch_active_tool)
+        self._switch_active_tool(Cache().get(Cache.LAST_ACTIVE_TOOL))
+        Cache().connect(self, Cache.LAST_ACTIVE_TOOL, self._switch_active_tool)
         self.resizeEvent(None)
         self.set_orientation(Qt.Orientation.Vertical)
 
@@ -236,7 +236,7 @@ class ToolPanel(QWidget):
         """Sets a new tool as the active tool."""
         active_tool = None if tool_label not in self._tools else self._tools[tool_label]
         if active_tool is not None:
-            Cache.instance().set(Cache.LAST_ACTIVE_TOOL, active_tool.label)
+            Cache().set(Cache.LAST_ACTIVE_TOOL, active_tool.label)
         self._event_handler.active_tool = active_tool
         # Event handler will send a signal to trigger _setup_active_tool
 

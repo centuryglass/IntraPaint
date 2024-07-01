@@ -52,13 +52,13 @@ class SelectionTool(CanvasTool):
 
         # Setup brush, load size from config
         self.brush_color = Qt.red
-        self.brush_size = AppConfig.instance().get(AppConfig.SELECTION_BRUSH_SIZE)
+        self.brush_size = AppConfig().get(AppConfig.SELECTION_BRUSH_SIZE)
         self.layer = image_stack.selection_layer
         self.update_brush_cursor()
 
     def get_hotkey(self) -> QKeySequence:
         """Returns the hotkey(s) that should activate this tool."""
-        return KeyConfig.instance().get_keycodes(KeyConfig.SELECTION_TOOL_KEY)
+        return KeyConfig().get_keycodes(KeyConfig.SELECTION_TOOL_KEY)
 
     def get_icon(self) -> QIcon:
         """Returns an icon used to represent this tool."""
@@ -80,7 +80,7 @@ class SelectionTool(CanvasTool):
         """Returns the brush control panel."""
         if self._control_layout is not None:
             return self._control_panel
-        config = AppConfig.instance()
+        config = AppConfig()
         # Initialize control panel on first request:
         control_layout = QVBoxLayout(self._control_panel)
         control_layout.setSpacing(SELECTION_CONTROL_LAYOUT_SPACING)
@@ -180,7 +180,7 @@ class SelectionTool(CanvasTool):
         """Change brush size by some offset amount, multiplying offset by 10 if shift is held."""
         if QApplication.keyboardModifiers() == Qt.ShiftModifier:
             offset *= 10
-        AppConfig.instance().set(AppConfig.SELECTION_BRUSH_SIZE, max(1, self._canvas.brush_size + offset))
+        AppConfig().set(AppConfig.SELECTION_BRUSH_SIZE, max(1, self._canvas.brush_size + offset))
 
     def _on_activate(self) -> None:
         """Override base canvas tool to keep mask layer visible."""

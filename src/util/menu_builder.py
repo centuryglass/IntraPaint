@@ -99,7 +99,7 @@ class MenuBuilder:
             self._actions[menu_name] = []
         try:
             if config_key is not None:
-                config = KeyConfig.instance()
+                config = KeyConfig()
                 if title is None or title == '':
                     title = config.get_label(config_key)
                 if tooltip is None or tooltip == '':
@@ -118,7 +118,7 @@ class MenuBuilder:
             action.setShortcut(keybinding)
         action.triggered.connect(lambda: new_action())
         if config_key is not None and config_key != '':
-            KeyConfig.instance().connect(self, config_key, lambda key_str: action.setShortcut(key_str))
+            KeyConfig().connect(self, config_key, lambda key_str: action.setShortcut(key_str))
 
         menu.addAction(action)
         self._actions[menu_name].append(action)

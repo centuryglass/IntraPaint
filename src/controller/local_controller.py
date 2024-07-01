@@ -35,7 +35,7 @@ class LocalDeviceController(BaseInpaintController):
         self._clip_guidance = args.clip_guidance
         self._ddim = args.ddim
         self._ddpm = args.ddpm
-        config = AppConfig.instance()
+        config = AppConfig()
         generate_size = config.get(AppConfig.GENERATION_SIZE)
         if generate_size.width() > 256 or generate_size.height() > 256:
             config.set(AppConfig.GENERATION_SIZE, QSize(256, 256))
@@ -63,7 +63,7 @@ class LocalDeviceController(BaseInpaintController):
                  save_image: Callable[[Image.Image, int], None],
                  status_signal: pyqtSignal) -> None:
         assert_types((source_image_section, mask), Image.Image)
-        config = AppConfig.instance()
+        config = AppConfig()
         if source_image_section.width != mask.width:
             raise RuntimeError(f'Selection and mask widths should match, found {source_image_section.width} and {mask.width}')
         if source_image_section.height != mask.height:

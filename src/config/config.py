@@ -15,7 +15,7 @@ from inspect import signature
 from threading import Lock
 from typing import Optional, Any, Callable, List, Dict
 
-from PyQt5.QtCore import QSize, QTimer, Qt
+from PyQt5.QtCore import QSize, QTimer, Qt, QThread
 from PyQt5.QtGui import QKeySequence
 from PyQt5.QtWidgets import QWidget
 
@@ -139,6 +139,16 @@ class Config:
             else:
                 self._write_to_json()
 
+    def _reset(self) -> None:
+        """Discard all changes and connections, and reload from JSON. For testing use only."""
+        with self._lock:
+            self._connected = {}
+            for key, entry in self._entries.items():
+                self._connected[key] = {}
+                entry._value = entry.default_value
+                if entry._options is not None and len(entry._options) > 0:
+                    entry._options = [entry.default_value]
+
     def _adjust_defaults(self) -> None:
         """Override this to perform any adjustments to default values needed before file IO, e.g. loading list options
            from an external source."""
@@ -258,7 +268,6 @@ class Config:
                         """Copy changes to the file and disconnect the timer."""
                         self._write_to_json()
                         self._save_timer.timeout.disconnect(write_change)
-
                     self._save_timer.timeout.connect(write_change)
                     self._save_timer.start(100)
         # Pass change to connected callback functions

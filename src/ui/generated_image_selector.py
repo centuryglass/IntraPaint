@@ -69,7 +69,7 @@ class GeneratedImageSelector(QWidget):
         self._outlines: List[Outline] = []
         self._selections: List[PolygonOutline] = []
         self._zoomed_in = False
-        self._zoom_to_changes = AppConfig.instance().get(AppConfig.SELECTION_SCREEN_ZOOMS_TO_CHANGED)
+        self._zoom_to_changes = AppConfig().get(AppConfig.SELECTION_SCREEN_ZOOMS_TO_CHANGED)
         self._change_bounds = None
         self._zoom_index = 0
         self._last_scroll_time = time.time() * 1000
@@ -93,7 +93,7 @@ class GeneratedImageSelector(QWidget):
         self._view.offset_changed.connect(self._offset_change_slot)
 
         self._view.installEventFilter(self)
-        config = AppConfig.instance()
+        config = AppConfig()
 
         def _selection_scroll(dx, dy):
             if dx > 0:
@@ -167,7 +167,7 @@ class GeneratedImageSelector(QWidget):
         self._button_bar_layout.addWidget(self._status_label)
         self._button_bar_layout.addStretch(255)
 
-        key_config = KeyConfig.instance()
+        key_config = KeyConfig()
 
         def _add_key_hint(button, config_key):
             keys = key_config.get_keycodes(config_key)
@@ -208,9 +208,9 @@ class GeneratedImageSelector(QWidget):
                            for poly in self._image_stack.selection_layer.outline)
         polys = [QPolygonF(poly) for poly in selection_polys]
         outline = PolygonOutline(self._view, polys)
-        outline.animated = AppConfig.instance().get(AppConfig.ANIMATE_OUTLINES)
+        outline.animated = AppConfig().get(AppConfig.ANIMATE_OUTLINES)
         outline.setScale(self._image_stack.width / self._image_stack.generation_area.width())
-        outline.setVisible(AppConfig.instance().get(AppConfig.SHOW_SELECTIONS_IN_GENERATION_OPTIONS))
+        outline.setVisible(AppConfig().get(AppConfig.SHOW_SELECTIONS_IN_GENERATION_OPTIONS))
         self._selections.append(outline)
 
     def add_image_option(self, image: QImage, idx: int) -> None:
@@ -225,7 +225,7 @@ class GeneratedImageSelector(QWidget):
             scene.addItem(self._options[-1])
             self._outlines.append(Outline(scene, self._view))
             # Add selections if inpainting:
-            if AppConfig.instance().get(AppConfig.EDIT_MODE) == MODE_INPAINT:
+            if AppConfig().get(AppConfig.EDIT_MODE) == MODE_INPAINT:
                 self._add_option_selection_outline(idx)
         else:
             self._options[idx].image = image
@@ -461,7 +461,7 @@ class _ImageOption(QGraphicsPixmapItem):
 
     @image.setter
     def image(self, new_image: QImage) -> None:
-        config = AppConfig.instance()
+        config = AppConfig()
         full_size = config.get(AppConfig.GENERATION_SIZE)
         final_size = config.get(AppConfig.EDIT_SIZE)
         if new_image.size() == full_size:

@@ -38,7 +38,7 @@ class BrushTool(CanvasTool):
         self._icon = QIcon(RESOURCES_BRUSH_ICON)
 
         # Load brush and size from config
-        config = AppConfig.instance()
+        config = AppConfig()
         self.brush_path = config.get(AppConfig.MYPAINT_BRUSH)
         self.brush_size = config.get(AppConfig.SKETCH_BRUSH_SIZE)
 
@@ -55,7 +55,7 @@ class BrushTool(CanvasTool):
 
     def get_hotkey(self) -> QKeySequence:
         """Returns the hotkey(s) that should activate this tool."""
-        return KeyConfig.instance().get_keycodes(KeyConfig.BRUSH_TOOL_KEY)
+        return KeyConfig().get_keycodes(KeyConfig.BRUSH_TOOL_KEY)
 
     def get_icon(self) -> QIcon:
         """Returns an icon used to represent this tool."""
@@ -77,7 +77,7 @@ class BrushTool(CanvasTool):
         """Returns the brush control panel."""
         if self._control_layout is not None:
             return self._control_panel
-        config = AppConfig.instance()
+        config = AppConfig()
         # Initialize control panel on first request:
         control_layout = QVBoxLayout(self._control_panel)
         self._control_layout = control_layout
@@ -93,7 +93,7 @@ class BrushTool(CanvasTool):
             self._canvas.brush_size = size
             self.update_brush_cursor()
 
-        AppConfig.instance().connect(self, AppConfig.SKETCH_BRUSH_SIZE, update_brush_size)
+        AppConfig().connect(self, AppConfig.SKETCH_BRUSH_SIZE, update_brush_size)
         control_layout.addWidget(brush_size_slider, stretch=2)
         color_picker_button = QPushButton()
         color_picker_button.setText(COLOR_BUTTON_LABEL)
@@ -108,13 +108,13 @@ class BrushTool(CanvasTool):
             icon = QPixmap(QSize(64, 64))
             icon.fill(color)
             color_picker_button.setIcon(QIcon(icon))
-            Cache.instance().set(Cache.LAST_BRUSH_COLOR, color.name(QColor.HexArgb))
+            Cache().set(Cache.LAST_BRUSH_COLOR, color.name(QColor.HexArgb))
 
         color_dialog = QColorDialog()
         color_dialog.setOption(QColorDialog.ColorDialogOption.ShowAlphaChannel, True)
         color_dialog.setOption(QColorDialog.ColorDialogOption.DontUseNativeDialog, True)
         color_picker_button.clicked.connect(lambda: set_brush_color(color_dialog.getColor(self.brush_color)))
-        Cache.instance().connect(color_picker_button, Cache.LAST_BRUSH_COLOR,
+        Cache().connect(color_picker_button, Cache.LAST_BRUSH_COLOR,
                                      lambda color_str: set_brush_color(QColor(color_str)))
         set_brush_color(self.brush_color)
         control_layout.addWidget(color_picker_button, stretch=2)
@@ -131,4 +131,4 @@ class BrushTool(CanvasTool):
         if QApplication.keyboardModifiers() == Qt.ShiftModifier:
             offset *= 10
         canvas = cast(MyPaintLayerCanvas, self._canvas)
-        AppConfig.instance().set(AppConfig.SKETCH_BRUSH_SIZE, max(1, canvas.brush_size + offset))
+        AppConfig().set(AppConfig.SKETCH_BRUSH_SIZE, max(1, canvas.brush_size + offset))

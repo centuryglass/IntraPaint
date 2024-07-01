@@ -27,7 +27,7 @@ class FillTool(BaseTool):
 
     def __init__(self, image_stack: ImageStack) -> None:
         super().__init__()
-        cache = Cache.instance()
+        cache = Cache()
         self._image_stack = image_stack
         self._control_panel: Optional[QWidget] = None
         self._icon = QIcon(RESOURCES_FILL_ICON)
@@ -42,7 +42,7 @@ class FillTool(BaseTool):
 
     def get_hotkey(self) -> QKeySequence:
         """Returns the hotkey(s) that should activate this tool."""
-        return KeyConfig.instance().get_keycodes(KeyConfig.FILL_TOOL_KEY)
+        return KeyConfig().get_keycodes(KeyConfig.FILL_TOOL_KEY)
 
     def get_icon(self) -> QIcon:
         """Returns an icon used to represent this tool."""
@@ -64,7 +64,7 @@ class FillTool(BaseTool):
         """Returns a panel providing controls for customizing tool behavior, or None if no such panel is needed."""
         if self._control_panel is not None:
             return self._control_panel
-        cache = Cache.instance()
+        cache = Cache()
         self._control_panel = QWidget()
         layout = QFormLayout(self._control_panel)
         color_button = BrushColorButton()

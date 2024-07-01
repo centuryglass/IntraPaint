@@ -81,7 +81,7 @@ class BrushPanel(QTabWidget):
 
     def _setup_favorites_tab(self) -> None:
         """Reads favorite brushes, adds them in a new tab."""
-        favorite_list = AppConfig.instance().get(BrushPanel.FAV_CONFIG_KEY)
+        favorite_list = AppConfig().get(BrushPanel.FAV_CONFIG_KEY)
         favorite_brushes = []
         for favorite in favorite_list:
             if '/' not in favorite:
@@ -117,10 +117,10 @@ class BrushPanel(QTabWidget):
             fav_list = []
         else:
             fav_list = self._pages[BrushPanel.FAV_KEY].findChildren(_IconButton)
-        AppConfig.instance().set(BrushPanel.FAV_CONFIG_KEY, [brush.saved_name() for brush in fav_list])
+        AppConfig().set(BrushPanel.FAV_CONFIG_KEY, [brush.saved_name() for brush in fav_list])
 
     def _add_favorite(self, icon_button: QWidget) -> None:
-        if icon_button.saved_name() in AppConfig.instance().get(BrushPanel.FAV_CONFIG_KEY):
+        if icon_button.saved_name() in AppConfig().get(BrushPanel.FAV_CONFIG_KEY):
             return
         if BrushPanel.FAV_KEY not in self._pages:
             self._create_tab(BrushPanel.FAV_KEY, index=0)
@@ -232,7 +232,7 @@ class _IconButton(QWidget):
         if event is not None and event.button() == Qt.MouseButton.LeftButton and not self.is_selected() \
                 and self._image_rect is not None and self._image_rect.contains(event.pos()):
             self._brush.load_file(self._brush_path, True)
-            AppConfig.instance().set(AppConfig.MYPAINT_BRUSH, self._brush_path)
+            AppConfig().set(AppConfig.MYPAINT_BRUSH, self._brush_path)
             parent = self.parent()
             if parent is not None:
                 brushes = parent.findChildren(_IconButton)

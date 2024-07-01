@@ -47,7 +47,7 @@ class StableDiffusionMainWindow(MainWindow):
         control_panel.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Maximum)
         control_layout = QVBoxLayout()
         control_panel.setLayout(control_layout)
-        config = AppConfig.instance()
+        config = AppConfig()
 
         main_control_box = CollapsibleBox(CONTROL_BOX_LABEL, control_panel)
         main_control_box.set_expanded_size_policy(QSizePolicy.Maximum)
@@ -124,7 +124,7 @@ class StableDiffusionMainWindow(MainWindow):
             wide_options_layout.addWidget(slider, row_num, 0, 1, 6)
 
         # ControlNet panel, if controlnet is installed:
-        cache = Cache.instance()
+        cache = Cache()
         if cache.get(cache.CONTROLNET_VERSION) > 0:
             controlnet_panel = ControlnetPanel(AppConfig.CONTROLNET_ARGS_0,
                                                cache.get(Cache.CONTROLNET_CONTROL_TYPES),
@@ -184,7 +184,7 @@ class StableDiffusionMainWindow(MainWindow):
 
         last_seed_box = cache.get_control_widget(cache.LAST_SEED)
         last_seed_box.setReadOnly(True)
-        add_option_line(Cache.instance().get_label(cache.LAST_SEED), last_seed_box, None)
+        add_option_line(Cache().get_label(cache.LAST_SEED), last_seed_box, None)
 
         control_layout.addStretch(255)
 

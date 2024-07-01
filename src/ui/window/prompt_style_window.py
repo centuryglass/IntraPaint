@@ -38,7 +38,7 @@ class PromptStyleWindow(QDialog):
         self._save_enabled = save_enabled
         self._layout = QVBoxLayout(self)
 
-        cache = Cache.instance()
+        cache = Cache()
         self._style_options = []
         for style in cache.get_options(Cache.STYLES):
             assert isinstance(style, str)
@@ -108,7 +108,7 @@ class PromptStyleWindow(QDialog):
         selected = self._get_selected_style()
         if selected is None:
             return
-        config = AppConfig.instance()
+        config = AppConfig()
         prompt = config.get(AppConfig.PROMPT)
         config.set(AppConfig.PROMPT, f'{prompt} {selected[PROMPT_KEY]}')
         negative = config.get(AppConfig.NEGATIVE_PROMPT)
@@ -118,7 +118,7 @@ class PromptStyleWindow(QDialog):
         selected = self._get_selected_style()
         if selected is None:
             return
-        config = AppConfig.instance()
+        config = AppConfig()
         config.set(AppConfig.PROMPT, selected[PROMPT_KEY])
         config.set(AppConfig.NEGATIVE_PROMPT, selected[NEGATIVE_KEY])
 

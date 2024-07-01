@@ -44,7 +44,7 @@ class GenerationAreaTool(BaseTool):
 
     def get_hotkey(self) -> QKeySequence:
         """Returns the hotkey(s) that should activate this tool."""
-        return KeyConfig.instance().get_keycodes(KeyConfig.GENERATION_AREA_TOOL_KEY)
+        return KeyConfig().get_keycodes(KeyConfig.GENERATION_AREA_TOOL_KEY)
 
     def get_icon(self) -> QIcon:
         """Returns an icon used to represent this tool."""
@@ -187,7 +187,7 @@ def get_generation_area_control_boxes(image_stack: ImageStack,
         height: QWidget
             Control for setting the area's height.
     """
-    config = AppConfig.instance()
+    config = AppConfig()
     # Create widgets:
     control_widgets = []
     sliders = []

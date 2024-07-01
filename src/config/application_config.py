@@ -1,5 +1,6 @@
 """Provides access to the user-editable application config."""
 from argparse import Namespace
+from threading import Lock
 from typing import Optional
 
 from PyQt5.QtWidgets import QStyleFactory
@@ -7,6 +8,7 @@ from PyQt5.QtWidgets import QStyleFactory
 from src.config.config import Config
 from src.util.optional_import import optional_import
 from src.util.shared_constants import PIL_SCALING_MODES
+from src.util.singleton import Singleton
 
 # Optional theme modules:
 qdarktheme = optional_import('qdarktheme')
@@ -23,15 +25,7 @@ DEFAULT_THEME_OPTIONS = ['None']
 DARK_THEME_OPTIONS = ['qdarktheme_dark', 'qdarktheme_light', 'qdarktheme_auto']
 
 
-class AppConfig(Config):
-    _instance: Optional['AppConfig'] = None
-
-    @staticmethod
-    def instance() -> 'AppConfig':
-        """Returns the shared config object instance."""
-        if AppConfig._instance is None:
-            AppConfig._instance = AppConfig()
-        return AppConfig._instance
+class AppConfig(Config, metaclass=Singleton):
 
     def __init__(self, json_path: Optional[str] = DEFAULT_CONFIG_PATH) -> None:
         """Load existing config, or initialize from defaults.
@@ -44,8 +38,6 @@ class AppConfig(Config):
             keys will be discarded.
         """
         super().__init__(CONFIG_DEFINITIONS, json_path, AppConfig)
-        if AppConfig._instance is not None:
-            raise RuntimeError('Do not call the AppConfig constructor, access it with AppConfig.instance()')
 
     def _adjust_defaults(self):
         """Dynamically initialize application style and theme options based on available modules."""

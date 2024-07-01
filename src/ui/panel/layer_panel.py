@@ -395,7 +395,7 @@ class _LayerItem(BorderedWidget):
         """Activate layer on click."""
         assert event is not None
         if self._layer == self._image_stack.selection_layer:
-            Cache.instance().set(Cache.LAST_ACTIVE_TOOL, SELECTION_TOOL_LABEL)
+            Cache().set(Cache.LAST_ACTIVE_TOOL, SELECTION_TOOL_LABEL)
         elif not self.active and event.button() == Qt.MouseButton.LeftButton:
             self._image_stack.active_layer = self._layer
             self.active = True

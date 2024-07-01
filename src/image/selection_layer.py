@@ -261,7 +261,7 @@ class SelectionLayer(ImageLayer):
            Rectangle containing all non-transparent mask canvas content plus padding, or None if the canvas is empty
            or config.get(Config.INPAINT_FULL_RES) is false and ignore_config is false.
         """
-        config = AppConfig.instance()
+        config = AppConfig()
         if (not ignore_config and not config.get(AppConfig.INPAINT_FULL_RES)) or self._bounding_box is None:
             return None
         padding = config.get(AppConfig.INPAINT_FULL_RES_PADDING)

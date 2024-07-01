@@ -34,7 +34,7 @@ class EyedropperTool(BaseTool):
 
     def get_hotkey(self) -> QKeySequence:
         """Returns the hotkey(s) that should activate this tool."""
-        return KeyConfig.instance().get_keycodes(KeyConfig.EYEDROPPER_TOOL_KEY)
+        return KeyConfig().get_keycodes(KeyConfig.EYEDROPPER_TOOL_KEY)
 
     def get_icon(self) -> QIcon:
         """Returns an icon used to represent this tool."""
@@ -64,7 +64,7 @@ class EyedropperTool(BaseTool):
         assert event is not None
         if event.buttons() == Qt.LeftButton:
             color = self._image_stack.get_color_at_point(image_coordinates)
-            Cache.instance().set(Cache.LAST_BRUSH_COLOR, color.name(QColor.HexArgb))
+            Cache().set(Cache.LAST_BRUSH_COLOR, color.name(QColor.HexArgb))
             return True
         return False
 
@@ -74,7 +74,7 @@ class _ControlPanel(ColorPicker):
     def __init__(self) -> None:
         super().__init__()
         self._orientation = Qt.Orientation.Horizontal
-        cache = Cache.instance()
+        cache = Cache()
 
         initial_color = QColor(cache.get(Cache.LAST_BRUSH_COLOR))
         self.setCurrentColor(initial_color)
@@ -114,5 +114,5 @@ class _ControlPanel(ColorPicker):
 
 
 def _update_config_color(color: QColor) -> None:
-    cache = Cache.instance()
+    cache = Cache()
     cache.set(Cache.LAST_BRUSH_COLOR, color.name(QColor.HexArgb))

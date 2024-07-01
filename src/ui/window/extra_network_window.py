@@ -111,18 +111,18 @@ class ExtraNetworkWindow(QDialog):
         if selected_lora is None:
             return
         lora_match = _prompt_lora_match(selected_lora)
-        prompt = AppConfig.instance().get(AppConfig.PROMPT)
+        prompt = AppConfig().get(AppConfig.PROMPT)
         if lora_match is not None:
             prompt = prompt[:lora_match.start()] + prompt[lora_match.end():]
             self._prompt_button.setText(ADD_BUTTON_LABEL)
         else:
             prompt = prompt + f' <lora:{selected_lora[LORA_KEY_NAME]}:1.0>'
             self._prompt_button.setText(REMOVE_BUTTON_LABEL)
-        AppConfig.instance().set(AppConfig.PROMPT, prompt)
+        AppConfig().set(AppConfig.PROMPT, prompt)
 
 
 def _prompt_lora_match(lora: Dict[str, str]) -> Optional[re.Match[str]]:
-    prompt = AppConfig.instance().get(AppConfig.PROMPT)
+    prompt = AppConfig().get(AppConfig.PROMPT)
     pattern = re.compile('<lora:' + lora[LORA_KEY_NAME] + r':[\d.]+>')
     return re.search(pattern, prompt)
 

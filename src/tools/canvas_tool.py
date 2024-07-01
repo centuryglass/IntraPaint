@@ -272,7 +272,7 @@ class CanvasTool(BaseTool):
 
     @staticmethod
     def _speed_modifier_held() -> bool:
-        speed_modifier = KeyConfig.instance().get(KeyConfig.SPEED_MODIFIER)
+        speed_modifier = KeyConfig().get(KeyConfig.SPEED_MODIFIER)
         if speed_modifier == '':
             return False
         speed_modifier = get_modifiers(speed_modifier)
@@ -290,7 +290,7 @@ class CanvasTool(BaseTool):
             offset += 1
         if offset != 0:
             if self._speed_modifier_held():
-                offset *= AppConfig.instance().get(AppConfig.SPEED_MODIFIER_MULTIPLIER)
+                offset *= AppConfig().get(AppConfig.SPEED_MODIFIER_MULTIPLIER)
             self.adjust_brush_size(offset)
             return True
         return False

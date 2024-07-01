@@ -101,7 +101,7 @@ class HotkeyFilter(QObject):
         config_key: str
             Key string for the appropriate key or keys.
         """
-        keys = KeyConfig.instance().get_keycodes(config_key)
+        keys = KeyConfig().get_keycodes(config_key)
         self.register_keybinding(action, keys, Qt.NoModifier)
 
     def register_speed_modified_keybinding(self, scaling_action: Callable[[int], bool], config_key: str) -> None:
@@ -118,7 +118,7 @@ class HotkeyFilter(QObject):
         config_key: str
             Key string for the appropriate key or keys.
         """
-        config = KeyConfig.instance()
+        config = KeyConfig()
         keys = config.get_keycodes(config_key)
         self.register_keybinding(lambda: scaling_action(1), keys, Qt.NoModifier)
 
@@ -129,7 +129,7 @@ class HotkeyFilter(QObject):
             logger.error(f'Unsupported speed_modifier {modifier_string} not applied to {config_key} binding')
             return
         if modifier != Qt.KeyboardModifier.NoModifier:
-            multiplier = AppConfig.instance().get(AppConfig.SPEED_MODIFIER_MULTIPLIER)
+            multiplier = AppConfig().get(AppConfig.SPEED_MODIFIER_MULTIPLIER)
             self.register_keybinding(lambda: scaling_action(multiplier), keys, modifier)
 
     def eventFilter(self, source: Optional[QObject], event: Optional[QEvent]) -> bool:

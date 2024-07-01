@@ -49,7 +49,7 @@ class ImageGraphicsView(QGraphicsView):
         self.setTransformationAnchor(QGraphicsView.ViewportAnchor.NoAnchor)
         self.setViewportUpdateMode(QGraphicsView.FullViewportUpdate)
 
-        if AppConfig.instance().get(AppConfig.OPENGL_ACCELERATION):
+        if AppConfig().get(AppConfig.OPENGL_ACCELERATION):
             self._opengl_view: Optional[QOpenGLWidget] = QOpenGLWidget()
             surface_format = QSurfaceFormat()
             surface_format.setSamples(4)
@@ -61,7 +61,7 @@ class ImageGraphicsView(QGraphicsView):
         self.installEventFilter(self)
 
         # Bind directional navigation and image generation area keys:
-        zoom_key = KeyConfig.instance().get_keycodes(KeyConfig.ZOOM_TOGGLE)
+        zoom_key = KeyConfig().get_keycodes(KeyConfig.ZOOM_TOGGLE)
 
         def _toggle_zoom_if_visible() -> bool:
             if not self.isVisible():

@@ -91,13 +91,13 @@ class ControlnetPanel(CollapsibleBox):
         title : str, default = "ControlNet"
             Title to display at the top of the panel.
         """
-        super().__init__(title=title, scrolling=False, start_closed=len(AppConfig.instance().get(config_key)) == 0)
+        super().__init__(title=title, scrolling=False, start_closed=len(AppConfig().get(config_key)) == 0)
         if isinstance(control_types, dict) and len(control_types) == 0:
             control_types = None
         assert_type(model_list, dict)
         if MODEL_LIST_KEY not in model_list:
             raise KeyError(f'Controlnet model list had unexpected structure: {model_list}')
-        config = AppConfig.instance()
+        config = AppConfig()
         initial_control_state = config.get(config_key)
         self._saved_state = initial_control_state
 
@@ -394,7 +394,7 @@ class _ControlnetCheckbox(CheckBox):
         super().__init__(None)
         self._key = config_key
         self._inner_key = inner_key
-        config = AppConfig.instance()
+        config = AppConfig()
         value = config.get(config_key, inner_key=inner_key)
         self.setValue(bool(value))
         self.valueChanged.connect(self._update_config)
@@ -403,4 +403,4 @@ class _ControlnetCheckbox(CheckBox):
         config.connect(self, config_key, self.setValue, inner_key=inner_key)
 
     def _update_config(self, new_value: bool) -> None:
-        AppConfig.instance().set(self._key, new_value, inner_key=self._inner_key)
+        AppConfig().set(self._key, new_value, inner_key=self._inner_key)

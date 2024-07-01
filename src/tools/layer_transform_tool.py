@@ -78,7 +78,7 @@ class LayerTransformTool(BaseTool):
 
         self._x_pos_box = _init_control(0.0, FLOAT_MIN, FLOAT_MAX, self.set_x)
         self._y_pos_box = _init_control(0.0, FLOAT_MIN, FLOAT_MAX, self.set_y)
-        edit_size = AppConfig.instance().get(AppConfig.EDIT_SIZE)
+        edit_size = AppConfig().get(AppConfig.EDIT_SIZE)
         self._width_box = _init_control(float(edit_size.width()), MIN_NONZERO, FLOAT_MAX, self.set_width)
         self._height_box = _init_control(float(edit_size.height()), MIN_NONZERO, FLOAT_MAX, self.set_height)
 
@@ -104,7 +104,7 @@ class LayerTransformTool(BaseTool):
         self._aspect_ratio_checkbox.clicked.connect(_restore_aspect_ratio)
 
         # Register movement key overrides, tied to control panel visibility:
-        config = KeyConfig.instance()
+        config = KeyConfig()
         for control, up_key_code, down_key_code in ((self._x_pos_box, KeyConfig.MOVE_RIGHT, KeyConfig.MOVE_LEFT),
                                                     (self._y_pos_box, KeyConfig.MOVE_DOWN, KeyConfig.MOVE_UP),
                                                     (self._width_box, KeyConfig.PAN_RIGHT, KeyConfig.PAN_LEFT),
@@ -128,7 +128,7 @@ class LayerTransformTool(BaseTool):
 
     def get_hotkey(self) -> QKeySequence:
         """Returns the hotkey(s) that should activate this tool."""
-        return KeyConfig.instance().get_keycodes(KeyConfig.TRANSFORM_TOOL_KEY)
+        return KeyConfig().get_keycodes(KeyConfig.TRANSFORM_TOOL_KEY)
 
     def get_icon(self) -> QIcon:
         """Returns an icon used to represent this tool."""

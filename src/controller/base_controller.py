@@ -96,7 +96,9 @@ class BaseInpaintController(MenuBuilder):
 
     def __init__(self, args: Namespace) -> None:
         super().__init__()
-        self._app = QApplication(sys.argv)
+        self._app = QApplication.instance()
+        if self._app is None:
+            self._app = QApplication(sys.argv)
         screen = self._app.primaryScreen()
         self._fixed_window_size = args.window_size
         if self._fixed_window_size is not None:
@@ -112,7 +114,7 @@ class BaseInpaintController(MenuBuilder):
         for s in self._app.screens():
             if screen_area(s) > screen_area(screen):
                 screen = s
-        config = AppConfig.instance()
+        config = AppConfig()
         self._adjust_config_defaults()
         config.apply_args(args)
 
@@ -132,9 +134,10 @@ class BaseInpaintController(MenuBuilder):
 
     def get_config_categories(self) -> List[str]:
         """Return the list of AppConfig categories BaseInpaintController manages within the settings modal."""
-        categories = AppConfig.instance().get_categories()
+        categories = AppConfig().get_categories()
         for ignored in IGNORED_APPCONFIG_CATEGORIES:
-            categories.remove(ignored)
+            if ignored in categories:
+                categories.remove(ignored)
         return categories
 
     def init_settings(self, settings_modal: SettingsModal) -> None:
@@ -142,8 +145,8 @@ class BaseInpaintController(MenuBuilder):
         Function to override initialize a SettingsModal with implementation-specific settings. This will initialize all
         universal settings, subclasses will need to extend this or override get_config_categories to add more.
         """
-        settings_modal.load_from_config(AppConfig.instance(), self.get_config_categories())
-        settings_modal.load_from_config(KeyConfig.instance())
+        settings_modal.load_from_config(AppConfig(), self.get_config_categories())
+        settings_modal.load_from_config(KeyConfig())
 
     def refresh_settings(self, settings_modal: SettingsModal):
         """
@@ -153,7 +156,7 @@ class BaseInpaintController(MenuBuilder):
         ----------
         settings_modal : SettingsModal
         """
-        config = AppConfig.instance()
+        config = AppConfig()
         categories = self.get_config_categories()
         settings = {}
         for category in categories:
@@ -163,23 +166,22 @@ class BaseInpaintController(MenuBuilder):
 
     def update_settings(self, changed_settings: dict):
         """
-        Apply changed settings from a SettingsModal.  This should only be called in
-        a child class instance that previously returned true after init_settings was called.
+        Apply changed settings from a SettingsModal.
 
         Parameters
         ----------
         changed_settings : dict
             Set of changes loaded from a SettingsModal.
         """
-        app_config = AppConfig.instance()
+        app_config = AppConfig()
         categories = self.get_config_categories()
         base_keys = [key for cat in categories for key in app_config.get_category_keys(cat)]
-        key_keys = KeyConfig.instance().get_keys()
+        key_keys = KeyConfig().get_keys()
         for key, value in changed_settings.items():
             if key in base_keys:
                 app_config.set(key, value)
             elif key in key_keys:
-                KeyConfig.instance().set(key, value)
+                KeyConfig().set(key, value)
 
     def window_init(self):
         """Initialize and show the main application window."""
@@ -201,7 +203,7 @@ class BaseInpaintController(MenuBuilder):
 
     def fix_styles(self) -> None:
         """Update application styling based on theme configuration, UI configuration, and available theme modules."""
-        config = AppConfig.instance()
+        config = AppConfig()
 
         def _apply_style(new_style: str) -> None:
             self._app.setStyle(new_style)
@@ -269,7 +271,6 @@ class BaseInpaintController(MenuBuilder):
         AppStateTracker.set_app_state(APP_STATE_EDITING if self._image_stack.has_image else APP_STATE_NO_IMAGE)
         QtExceptHook().enable()
         self._app.exec_()
-        sys.exit()
 
     # Menu action definitions:
 
@@ -280,7 +281,7 @@ class BaseInpaintController(MenuBuilder):
     def new_image(self) -> None:
         """Open a new image creation modal."""
         assert self._window is not None
-        default_size = AppConfig.instance().get(AppConfig.DEFAULT_IMAGE_SIZE)
+        default_size = AppConfig().get(AppConfig.DEFAULT_IMAGE_SIZE)
         image_modal = NewImageModal(default_size.width(), default_size.height())
         image_size = image_modal.show_image_modal()
         if image_size and (not self._image_stack.has_image or request_confirmation(self._window,
@@ -297,7 +298,7 @@ class BaseInpaintController(MenuBuilder):
                  valid_app_states=[APP_STATE_EDITING, APP_STATE_SELECTION, APP_STATE_LOADING])
     def save_image(self) -> None:
         """Saves the edited image, only opening the save dialog if no previous image path is cached."""
-        image_path = Cache.instance().get(Cache.LAST_FILE_PATH)
+        image_path = Cache().get(Cache.LAST_FILE_PATH)
         if not os.path.isfile(image_path):
             image_path = None
         self.save_image_as(file_path=image_path)
@@ -307,7 +308,7 @@ class BaseInpaintController(MenuBuilder):
     def save_image_as(self, file_path: Optional[str] = None) -> None:
         """Open a save dialog, and save the edited image to disk, preserving any metadata."""
         assert self._window is not None
-        cache = Cache.instance()
+        cache = Cache()
         if not self._image_stack.has_image:
             show_error_dialog(self._window, SAVE_ERROR_TITLE, SAVE_ERROR_MESSAGE_NO_IMAGE)
             return
@@ -346,8 +347,8 @@ class BaseInpaintController(MenuBuilder):
     def load_image(self, file_path: Optional[str] = None) -> None:
         """Open a loading dialog, then load the selected image for editing."""
         assert self._window is not None
-        cache = Cache.instance()
-        config = AppConfig.instance()
+        cache = Cache()
+        config = AppConfig()
         if file_path is None:
             file_path, file_selected = open_image_file(self._window)
             if not file_path or not file_selected:
@@ -440,7 +441,7 @@ class BaseInpaintController(MenuBuilder):
     def reload_image(self) -> None:
         """Reload the edited image from disk after getting confirmation from a confirmation dialog."""
         assert self._window is not None
-        file_path = Cache.instance().get(Cache.LAST_FILE_PATH)
+        file_path = Cache().get(Cache.LAST_FILE_PATH)
         if file_path == '':
             show_error_dialog(self._window, RELOAD_ERROR_TITLE, RELOAD_ERROR_MESSAGE_NO_IMAGE)
             return
@@ -539,7 +540,7 @@ class BaseInpaintController(MenuBuilder):
             If true, show a messagebox after the update to let the user know what happened.
         """
         assert self._window is not None
-        config = AppConfig.instance()
+        config = AppConfig()
         prompt = config.get(AppConfig.PROMPT)
         negative = config.get(AppConfig.NEGATIVE_PROMPT)
         steps = config.get(AppConfig.SAMPLING_STEPS)
@@ -562,7 +563,7 @@ class BaseInpaintController(MenuBuilder):
     def start_and_manage_inpainting(self) -> None:
         """Start inpainting/image editing based on the current state of the UI."""
         assert self._window is not None
-        config = AppConfig.instance()
+        config = AppConfig()
         if not self._image_stack.has_image:
             show_error_dialog(self._window, GENERATE_ERROR_TITLE_NO_IMAGE, GENERATE_ERROR_MESSAGE_NO_IMAGE)
             return
@@ -650,7 +651,7 @@ class BaseInpaintController(MenuBuilder):
                 image = pil_image_to_qimage(sample_image).convertToFormat(QImage.Format.Format_ARGB32_Premultiplied)
             else:
                 image = sample_image.convertToFormat(QImage.Format.Format_ARGB32_Premultiplied)
-            if AppConfig.instance().get(AppConfig.EDIT_MODE) == "Inpaint":
+            if AppConfig().get(AppConfig.EDIT_MODE) == "Inpaint":
                 inpaint_mask = self._image_stack.selection_layer.cropped_image_content(
                     self._image_stack.generation_area)
                 painter = QPainter(image)
@@ -781,7 +782,7 @@ class BaseInpaintController(MenuBuilder):
     # Internal/protected:
 
     def _scale(self, new_size: QSize) -> None:  # Override to allow alternate or external upscalers:
-        config = AppConfig.instance()
+        config = AppConfig()
         width = self._image_stack.width
         height = self._image_stack.height
         if new_size is None or (new_size.width() == width and new_size.height() == height):

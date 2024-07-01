@@ -87,7 +87,7 @@ class WebClientController(BaseInpaintController):
             Signal to emit when status updates are available.
         """
         assert source_image_section is not None and mask is not None, "GLID-3-XL only supports inpainting"
-        config = AppConfig.instance()
+        config = AppConfig()
         batch_size = config.get(AppConfig.BATCH_SIZE)
         batch_count = config.get(AppConfig.BATCH_COUNT)
         body = {

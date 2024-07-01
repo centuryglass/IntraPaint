@@ -25,7 +25,7 @@ class SelectionFillTool(BaseTool):
 
     def __init__(self, image_stack: ImageStack) -> None:
         super().__init__()
-        cache = Cache.instance()
+        cache = Cache()
         self._image_stack = image_stack
         self._control_panel: Optional[QWidget] = None
         self._icon = QIcon(RESOURCES_FILL_ICON)
@@ -39,7 +39,7 @@ class SelectionFillTool(BaseTool):
 
     def get_hotkey(self) -> QKeySequence:
         """Returns the hotkey(s) that should activate this tool."""
-        return KeyConfig.instance().get_keycodes(KeyConfig.SELECTION_FILL_TOOL_KEY)
+        return KeyConfig().get_keycodes(KeyConfig.SELECTION_FILL_TOOL_KEY)
 
     def get_icon(self) -> QIcon:
         """Returns an icon used to represent this tool."""
@@ -61,7 +61,7 @@ class SelectionFillTool(BaseTool):
         """Returns a panel providing controls for customizing tool behavior, or None if no such panel is needed."""
         if self._control_panel is not None:
             return self._control_panel
-        cache = Cache.instance()
+        cache = Cache()
         self._control_panel = QWidget()
         layout = QFormLayout(self._control_panel)
         threshold_slider = cache.get_control_widget(Cache.FILL_THRESHOLD)

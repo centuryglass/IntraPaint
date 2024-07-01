@@ -39,12 +39,17 @@ class MainWindowTest(unittest.TestCase):
         large_horizontal = QSize(4000, 2000)
         small_horizontal = QSize(1024, 768)
         self.assertTrue(self.window.isVisible())
+        self.assertFalse(self.window.geometry().isEmpty())
+        self.assertFalse(self.window._control_panel.isVisible())
+        self.assertTrue(self.window._reactive_widget.isVisible())
 
         # Large vertical: vertical orientation, no tabs, horizontal toolbar
         self.window.setGeometry(QRect(QPoint(), large_vertical))
         self.assertEqual(self.window._main_widget.count(), 1)
         self.assertEqual(self.window._orientation, Qt.Orientation.Vertical)
         self.assertTrue(self.window._control_panel.isVisible())
+
+        self.assertTrue(self.window._reactive_widget.isVisible())
 
         # check size assumptions:
         width_buffer = 800 // 30
@@ -68,16 +73,19 @@ class MainWindowTest(unittest.TestCase):
         # check layout item states:
         self.assertEqual(self.window._control_panel.parent(), self.window._main_page_tab)
         self.assertEqual(self.window._tool_panel.parent(), self.window._reactive_widget)
-        self.assertFalse(self.window._tool_panel._generate_button.isEnabled())
+        self.assertFalse(self.window._tool_panel._generate_button.isVisible())
         self.assertEqual(self.window._tool_panel.orientation, Qt.Orientation.Horizontal)
 
         # Large horizontal:
         self.window.setGeometry(QRect(QPoint(), large_horizontal))
+        self.assertEqual(self.window.size(), large_horizontal)
         self.assertEqual(self.window._main_widget.count(), 1)
         self.assertEqual(self.window._orientation, Qt.Orientation.Horizontal)
         self.assertTrue(self.window._reactive_widget is not None)
+        self.assertTrue(self.window._reactive_widget.isVisible())
         self.assertEqual(self.window._reactive_widget, self.window._tool_panel.parent())
-        self.assertFalse(self.window._tool_panel._generate_button.isEnabled())
+        self.assertTrue(self.window._tool_panel.isVisible())
+        self.assertFalse(self.window._tool_panel._generate_button.isVisible())
         self.assertEqual(self.window._tool_panel.orientation, Qt.Orientation.Vertical)
 
         # Small horizontal:
@@ -85,6 +93,7 @@ class MainWindowTest(unittest.TestCase):
         self.assertEqual(self.window._main_widget.count(), 2)
         self.assertTrue(self.window._orientation, Qt.Orientation.Horizontal)
         self.assertFalse(self.window._control_panel.isVisible())
+        self.assertFalse(self.window._tool_panel.geometry().isEmpty())
+        self.assertTrue(self.window._tool_panel._generate_button.isVisible())
         self.assertEqual(self.window._reactive_widget, self.window._tool_panel.parent())
-        self.assertTrue(self.window._tool_panel._generate_button.isEnabled())
         self.assertEqual(self.window._tool_panel.orientation, Qt.Orientation.Vertical)

@@ -20,7 +20,7 @@ class MockController(BaseInpaintController):
         print('Mock inpainting call:')
         print(f'\tselection: {source_image_section}')
         print(f'\tmask: {mask}')
-        config = AppConfig.instance()
+        config = AppConfig()
         config_options = config.list()
         for option_name in config_options:
             value = config.get(option_name)

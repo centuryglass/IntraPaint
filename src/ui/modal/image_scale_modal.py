@@ -34,7 +34,7 @@ class ImageScaleModal(QDialog):
 
     def __init__(self, default_width: int, default_height: int):
         super().__init__()
-        config = AppConfig.instance()
+        config = AppConfig()
         self._should_scale = False
         self.setModal(True)
         self._layout = QFormLayout(self)
@@ -83,7 +83,7 @@ class ImageScaleModal(QDialog):
             lambda px: set_px_on_scale_change(px, default_height, self._height_box))
 
         # Add controlnet upscale option:
-        if Cache.instance().get(Cache.CONTROLNET_VERSION) > 0:
+        if Cache().get(Cache.CONTROLNET_VERSION) > 0:
             self._controlnet_checkbox = config.get_control_widget(AppConfig.CONTROLNET_UPSCALING)
             assert isinstance(self._controlnet_checkbox, CheckBox)
             self._controlnet_checkbox.setText('')

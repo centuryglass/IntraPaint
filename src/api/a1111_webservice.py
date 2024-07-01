@@ -181,7 +181,7 @@ class A1111Webservice(WebService):
         dict or None
             Any additional information sent back with the generated images.
         """
-        config = AppConfig.instance()
+        config = AppConfig()
         body = self._get_base_diffusion_body(image, scripts)
         body[A1111Webservice.ImgParams.INIT_IMAGES] = [image_to_base64(image, include_prefix=True)]
         body[A1111Webservice.ImgParams.DENOISING] = config.get(AppConfig.DENOISING_STRENGTH)
@@ -251,7 +251,7 @@ class A1111Webservice(WebService):
         dict or None
             Any additional information sent back with the generated images.
         """
-        config = AppConfig.instance()
+        config = AppConfig()
         if config.get(AppConfig.CONTROLNET_UPSCALING):
             scripts = {
                 'controlNet': {
@@ -316,7 +316,7 @@ class A1111Webservice(WebService):
             A brief description of the image.
         """
         body = {
-            'model': AppConfig.instance().get(AppConfig.INTERROGATE_MODEL),
+            'model': AppConfig().get(AppConfig.INTERROGATE_MODEL),
             'image': image_to_base64(image, include_prefix=True)
         }
         res = self.post(A1111Webservice.Endpoints.INTERROGATE, body)
@@ -333,7 +333,7 @@ class A1111Webservice(WebService):
     @staticmethod
     def _get_base_diffusion_body(image: Optional[Image.Image] = None,
                                  scripts: Optional[dict] = None) -> dict:
-        config = AppConfig.instance()
+        config = AppConfig()
         body = {
             A1111Webservice.ImgParams.PROMPT: config.get(AppConfig.PROMPT),
             A1111Webservice.ImgParams.SEED: config.get(AppConfig.SEED),
