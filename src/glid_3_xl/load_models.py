@@ -4,6 +4,7 @@ Loads the ML models that make up GLID-3-XL.
 import gc
 import torch
 from torchvision import transforms
+# noinspection PyPackageRequirements
 import clip
 from src.glid_3_xl.guided_diffusion.script_util import create_model_and_diffusion, model_and_diffusion_defaults
 from src.glid_3_xl.encoders.modules import BERTEmbedder
@@ -71,6 +72,7 @@ def load_models(device,
     else:
         model.convert_to_fp32()
 
+    # noinspection PyShadowingNames
     def _set_requires_grad(model, value):
         for param in model.parameters():
             param.requires_grad = value

@@ -57,6 +57,14 @@
         "default": false,
         "saved": true
     },
+    "opengl_acceleration": {
+        "label": "OpenGL acceleration:",
+        "category": "Interface",
+        "description": "Use OpenGL to accelerate image manipulation",
+        "type": "bool",
+        "default": false,
+        "saved": true
+    },
     "default_image_size": {
         "label": "Default image size:",
         "category": "Editing",

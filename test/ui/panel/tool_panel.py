@@ -10,7 +10,7 @@ from PyQt5.QtTest import QTest
 from src.config.application_config import AppConfig
 from src.config.cache import Cache
 from src.config.key_config import KeyConfig
-from src.image.layer_stack import LayerStack
+from src.image.image_stack import ImageStack
 from src.ui.image_viewer import ImageViewer
 from src.ui.panel.image_panel import ImagePanel
 from src.ui.panel.tool_panel import ToolPanel
@@ -29,10 +29,10 @@ class ToolPanelTest(unittest.TestCase):
         self._key_config = KeyConfig('test/resources/key_config_test.json')
         self._cache = Cache('test/resources/cache_test.json')
         test_size = QSize(512, 512)
-        self._layer_stack = LayerStack(test_size, test_size, test_size, test_size)
-        self._image_panel = ImagePanel(self._layer_stack)
+        self._image_stack = ImageStack(test_size, test_size, test_size, test_size)
+        self._image_panel = ImagePanel(self._image_stack)
         self._generate = Mock()
-        self._tool_panel = ToolPanel(self._layer_stack, self._image_panel, self._generate)
+        self._tool_panel = ToolPanel(self._image_stack, self._image_panel, self._generate)
         self._tool_panel.show()
 
     def test_generate_button(self) -> None:

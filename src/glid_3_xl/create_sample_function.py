@@ -4,10 +4,13 @@ Provides functions used to start up a local GLID-3-XL instance.
 import io
 
 import requests
+# noinspection PyPackageRequirements
 import torch
+# noinspection PyPackageRequirements
 import clip
 import numpy as np
 from PIL import Image, ImageOps
+# noinspection PyPackageRequirements
 from torchvision import transforms
 # noinspection PyPep8Naming
 from torchvision.transforms import functional as TF
@@ -16,6 +19,7 @@ from torch.nn import functional as F
 from src.glid_3_xl.encoders.modules import MakeCutouts
 
 
+# noinspection PyUnusedLocal
 def create_sample_function(
         device,
         model,
@@ -153,6 +157,7 @@ def create_sample_function(
         eps = torch.cat([half_eps, half_eps], dim=0)
         return torch.cat([eps, rest], dim=1)
 
+    # noinspection PyShadowingNames
     def cond_fn(x, _, context=None, clip_embed=None, image_embed=None):
         """Calculates the gradient of a loss function with respect to input x for a guided diffusion model step."""
         with torch.enable_grad():
@@ -215,6 +220,7 @@ def create_sample_function(
             skip_timesteps=skip_timesteps
         )
 
+    # noinspection PyShadowingNames
     def clip_score_fn(image):
         """Provides a CLIP score ranking image closeness to text"""
         image_emb = clip_model.encode_image(clip_preprocess(image).unsqueeze(0).to(device))

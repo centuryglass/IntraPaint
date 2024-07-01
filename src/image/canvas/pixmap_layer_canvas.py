@@ -135,7 +135,7 @@ class PixmapLayerCanvas(LayerCanvas):
                 """Copy the change into the image."""
                 if img_layer == self._layer:
                     self.disconnect_layer_signals()
-                img_layer.insert_image_content(img, bounds)
+                img_layer.insert_image_content(img, bounds, register_to_undo_history=False)
                 if img_layer == self._layer:
                     self.connect_layer_signals()
 
@@ -143,7 +143,7 @@ class PixmapLayerCanvas(LayerCanvas):
                 """To undo, copy in the cached previous image data."""
                 if img_layer == self._layer:
                     self.disconnect_layer_signals()
-                img_layer.insert_image_content(img, bounds)
+                img_layer.insert_image_content(img, bounds, register_to_undo_history=False)
                 self._layer_content_change_slot(img_layer)
                 if img_layer == self._layer:
                     self.connect_layer_signals()

@@ -5,7 +5,7 @@ from typing import Callable, List, Optional, Dict, Any
 from PyQt5.QtCore import QRect, QPoint, Qt, QSize, pyqtSignal
 from PyQt5.QtGui import QImage, QPainter
 
-from src.image.layer_stack import LayerStack
+from src.image.image_stack import ImageStack
 from src.ui.modal.image_filter_modal import ImageFilterModal
 from src.undo_stack import commit_action
 from src.util.application_state import APP_STATE_EDITING, AppStateTracker
@@ -19,8 +19,8 @@ MAX_PREVIEW_SIZE = 800
 class ImageFilter:
     """Interface for image filtering functions exposed through a modal UI."""
 
-    def __init__(self, layer_stack: LayerStack) -> None:
-        self._layer_stack = layer_stack
+    def __init__(self, image_stack: ImageStack) -> None:
+        self._image_stack = image_stack
 
     def get_filter_modal(self) -> ImageFilterModal:
         """Creates and returns a modal widget that can apply the filter to the edited image."""
@@ -29,7 +29,7 @@ class ImageFilter:
                                 self.get_parameters(),
                                 self.get_preview_image,
                                 self.apply_filter,
-                                self._layer_stack.selection_layer.empty is False)
+                                self._image_stack.selection_layer.empty is False)
 
     def get_modal_title(self) -> str:
         """Return the modal's title string."""
@@ -72,7 +72,7 @@ class ImageFilter:
             QImage:
                 The new preview image, possibly downscaled to avoid excess image processing.
         """
-        scale = MAX_PREVIEW_SIZE / self._layer_stack.width
+        scale = MAX_PREVIEW_SIZE / self._image_stack.width
         layer_images = self._get_layer_images(filter_param_values, filter_selection_only, filter_active_layer_only,
                                               False, scale)
         bounds = self._bounds(scale)
@@ -80,8 +80,8 @@ class ImageFilter:
         painter = QPainter(preview_image)
         transparency_pattern = get_transparency_tile_pixmap()
         painter.drawTiledPixmap(0, 0, preview_image.width(), preview_image.height(), transparency_pattern)
-        for i in reversed(range(self._layer_stack.count)):
-            layer = self._layer_stack.get_layer_by_index(i)
+        for i in reversed(range(self._image_stack.count)):
+            layer = self._image_stack.get_layer_by_index(i)
             if not layer.visible:
                 continue
             assert layer.id in layer_images
@@ -101,13 +101,13 @@ class ImageFilter:
             rect.setHeight(int(rect.height() * scale))
 
         if filter_active_layer_only:
-            active_layer = self._layer_stack.active_layer
+            active_layer = self._image_stack.active_layer
             assert active_layer is not None
-            layer_bounds = active_layer.geometry
+            layer_bounds = active_layer.bounds
             _map_to_preview(layer_bounds)
             crop_area = crop_area.intersected(layer_bounds)
         if filter_selection_only:
-            selection_layer = self._layer_stack.selection_layer
+            selection_layer = self._image_stack.selection_layer
             selection_bounds = selection_layer.get_content_bounds()
             if not selection_bounds.isEmpty():
                 padding = max(selection_bounds.width(), selection_bounds.height()) // 10
@@ -122,7 +122,7 @@ class ImageFilter:
     def apply_filter(self, filter_param_values: List[Any], filter_selection_only: bool,
                      filter_active_layer_only: bool) -> None:
         """
-        Applies the filter to the layer stack, running filter operations in another thread to prevent hanging.
+        Applies the filter to the image stack, running filter operations in another thread to prevent hanging.
 
         Parameters
         ----------
@@ -143,18 +143,19 @@ class ImageFilter:
             AppStateTracker.set_app_state(APP_STATE_EDITING)
             source_images: Dict[int, QImage] = {}
             for layer_id in layer_images.keys():
-                layer = self._layer_stack.get_layer_by_id(layer_id)
-                source_images[layer_id] = layer.qimage
+                layer = self._image_stack.get_layer_by_id(layer_id)
+                assert layer is not None
+                source_images[layer_id] = layer.image
 
             def _apply_filters():
                 for updated_id, image in layer_images.items():
-                    updated_layer = self._layer_stack.get_layer_by_id(updated_id)
-                    updated_layer.qimage = image
+                    updated_layer = self._image_stack.get_layer_by_id(updated_id)
+                    updated_layer.set_image(image)
 
             def _undo_filters():
                 for updated_id, image in source_images.items():
-                    updated_layer = self._layer_stack.get_layer_by_id(updated_id)
-                    updated_layer.qimage = image
+                    updated_layer = self._image_stack.get_layer_by_id(updated_id)
+                    updated_layer.set_image(image)
 
             commit_action(_apply_filters, _undo_filters)
 
@@ -189,7 +190,7 @@ class ImageFilter:
         return final_image
 
     def _bounds(self, scale=1.0) -> QRect:
-        bounds = self._layer_stack.merged_layer_geometry
+        bounds = self._image_stack.merged_layer_geometry
         if scale != 1.0:
             bounds.setX(int(bounds.x() * scale))
             bounds.setY(int(bounds.y() * scale))
@@ -206,8 +207,9 @@ class ImageFilter:
         images: Dict[int, QImage] = {}
         bounds = self._bounds(scale)
         if filter_selection_only:
-            selection_layer = self._layer_stack.selection_layer
+            selection_layer = self._image_stack.selection_layer
             selection: Optional[QImage] = QImage(bounds.size(), QImage.Format_ARGB32_Premultiplied)
+            assert selection is not None
             selection.fill(Qt.GlobalColor.transparent)
             painter = QPainter(selection)
             scaled_image_size = QSize(int(selection_layer.width * scale), int(selection_layer.height * scale))
@@ -216,17 +218,17 @@ class ImageFilter:
             painter.end()
         else:
             selection = None
-        for i in reversed(range(self._layer_stack.count)):
-            layer = self._layer_stack.get_layer_by_index(i)
+        for i in reversed(range(self._image_stack.count)):
+            layer = self._image_stack.get_layer_by_index(i)
             if not layer.visible:
                 continue
             position = QPoint(int(layer.position.x() * scale), int(layer.position.y() * scale))
             offset = position - bounds.topLeft()
-            layer_image = layer.qimage
+            layer_image = layer.image
             if scale != 1.0:
                 layer_image = layer_image.scaled(QSize(int(layer_image.width() * scale),
                                                        int(layer_image.height() * scale)))
-            if not filter_active_layer_only or layer.id == self._layer_stack.active_layer_id:
+            if not filter_active_layer_only or layer.id == self._image_stack.active_layer_id:
                 images[layer.id] = self._get_filtered_image(layer_image, filter_param_values, selection, offset)
             elif not return_changed_layers_only:
                 images[layer.id] = layer_image

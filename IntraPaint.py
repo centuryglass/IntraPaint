@@ -27,7 +27,7 @@ DEFAULT_SD_URL = 'http://localhost:7860'
 DEFAULT_GLID_URL = 'http://localhost:5555'
 DEFAULT_GLID_MODEL = 'models/inpaint.pt'
 MIN_GLID_VRAM = 8000000000  # This is just a rough estimate.
-logging.basicConfig(filename='intrapaint.log', format='%(asctime)s : %(levelname)s : %(name)s: %(message)s',
+logging.basicConfig(filename='IntraPaint.log', format='%(asctime)s : %(levelname)s : %(name)s: %(message)s',
                     level=logging.INFO)
 logger = logging.getLogger(__name__)
 

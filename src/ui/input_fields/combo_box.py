@@ -15,7 +15,8 @@ class ComboBox(QComboBox):
         self._data_type = str
         self.currentIndexChanged.connect(self._index_change_slot)
 
-    def addItem(self, text: str, userData: Any = None) -> None:
+    # noinspection PyPep8Naming
+    def addItem(self, text: Optional[str], userData: Any = None) -> None:
         """Ensure options always have data attached."""
         if userData is None:
             userData = text

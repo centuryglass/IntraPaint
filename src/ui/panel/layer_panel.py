@@ -10,7 +10,7 @@ from PyQt5.QtWidgets import QWidget, QLabel, QVBoxLayout, QHBoxLayout, QScrollAr
 
 from src.config.cache import Cache
 from src.image.image_layer import ImageLayer
-from src.image.layer_stack import LayerStack
+from src.image.image_stack import ImageStack
 from src.tools.selection_tool import SELECTION_TOOL_LABEL
 from src.ui.widget.bordered_widget import BorderedWidget
 from src.ui.input_fields.editable_label import EditableLabel
@@ -73,15 +73,15 @@ class LayerPanel(QWidget):
     - Change layer order
     - Merge layers
 
-    All actual functionality is provided by LayerStack.
+    All actual functionality is provided by ImageStack.
     """
 
-    def __init__(self, layer_stack: LayerStack, parent: Optional[QWidget] = None) -> None:
-        """Connect to the LayerStack and build control layout."""
+    def __init__(self, image_stack: ImageStack, parent: Optional[QWidget] = None) -> None:
+        """Connect to the ImageStack and build control layout."""
         super().__init__(parent)
         self.setWindowTitle(WINDOW_TITLE)
         self._layout = QVBoxLayout(self)
-        self._layer_stack = layer_stack
+        self._image_stack = image_stack
         self._layer_widgets: List[_LayerItem] = []
 
         # Layer opacity slider:
@@ -96,7 +96,7 @@ class LayerPanel(QWidget):
         self._layout.addLayout(self._opacity_layout)
         self._opacity_slider.setRange(0, 100)
         self._opacity_spinbox.setRange(0.0, 1.0)
-        active_layer = layer_stack.active_layer
+        active_layer = image_stack.active_layer
         if active_layer is not None:
             self._opacity_slider.setValue(int(active_layer.opacity * 100))
             self._opacity_spinbox.setValue(active_layer.opacity)
@@ -143,10 +143,10 @@ class LayerPanel(QWidget):
             self._layer_widgets.append(widget)
             self._list_layout.insertWidget(layer_idx + 1, widget)
             self.resizeEvent(None)
-        self._layer_stack.layer_added.connect(_add_layer_widget)
-        _add_layer_widget(layer_stack.selection_layer, -1)
-        for i in range(self._layer_stack.count):
-            _add_layer_widget(self._layer_stack.get_layer_by_index(i), i + 1)
+        self._image_stack.layer_added.connect(_add_layer_widget)
+        _add_layer_widget(image_stack.selection_layer, -1)
+        for i in range(self._image_stack.count):
+            _add_layer_widget(self._image_stack.get_layer_by_index(i), i + 1)
 
         def _delete_layer_widget(layer: ImageLayer) -> None:
             layer_widget = self._layer_widget(layer)
@@ -155,21 +155,21 @@ class LayerPanel(QWidget):
                 layer_widget.setParent(None)
                 self._layer_widgets.remove(layer_widget)
                 self.resizeEvent(None)
-        self._layer_stack.layer_removed.connect(_delete_layer_widget)
+        self._image_stack.layer_removed.connect(_delete_layer_widget)
 
         def _activate_layer(layer_id: Optional[int], _=None) -> None:
             for widget in self._layer_widgets:
                 widget.active = layer_id == widget.layer.id
-            new_active_layer = layer_stack.active_layer
+            new_active_layer = image_stack.active_layer
             if new_active_layer is not None:
                 self._update_opacity_slot(new_active_layer.opacity)
                 image_mode = new_active_layer.composition_mode
                 mode_index = self._mode_box.findData(image_mode)
                 if mode_index >= 0:
                     self._mode_box.setCurrentIndex(mode_index)
-        self._layer_stack.active_layer_changed.connect(_activate_layer)
-        if self._layer_stack.active_layer is not None:
-            _activate_layer(self._layer_stack.active_layer.id)
+        self._image_stack.active_layer_changed.connect(_activate_layer)
+        if self._image_stack.active_layer is not None:
+            _activate_layer(self._image_stack.active_layer.id)
 
         # BUTTON BAR:
         self._button_bar = QWidget()
@@ -189,15 +189,15 @@ class LayerPanel(QWidget):
             self._button_bar_layout.addWidget(button)
             return button
 
-        self._add_button = _create_button(ADD_BUTTON_ICON, ADD_BUTTON_TOOLTIP, self._layer_stack.create_layer)
-        self._delete_button = _create_button(DELETE_BUTTON_ICON, DELETE_BUTTON_TOOLTIP, self._layer_stack.remove_layer)
+        self._add_button = _create_button(ADD_BUTTON_ICON, ADD_BUTTON_TOOLTIP, self._image_stack.create_layer)
+        self._delete_button = _create_button(DELETE_BUTTON_ICON, DELETE_BUTTON_TOOLTIP, self._image_stack.remove_layer)
         self._move_up_button = _create_button(LAYER_UP_BUTTON_ICON, LAYER_UP_BUTTON_TOOLTIP,
-                                              lambda: self._layer_stack.move_layer(-1))
+                                              lambda: self._image_stack.move_layer(-1))
         self._move_up_button = _create_button(LAYER_DOWN_BUTTON_ICON, LAYER_DOWN_BUTTON_TOOLTIP,
-                                              lambda: self._layer_stack.move_layer(1))
+                                              lambda: self._image_stack.move_layer(1))
 
         self._merge_down_button = _create_button(MERGE_DOWN_BUTTON_ICON, MERGE_DOWN_BUTTON_TOOLTIP,
-                                                 self._layer_stack.merge_layer_down)
+                                                 self._image_stack.merge_layer_down)
 
     def resizeEvent(self, event):
         """Keep a fixed number of layers visible."""
@@ -239,7 +239,7 @@ class LayerPanel(QWidget):
         for widget in self._layer_widgets:
             if widget.layer == layer:
                 return widget
-        return _LayerItem(layer, self._layer_stack, self)
+        return _LayerItem(layer, self._image_stack, self)
 
     def _update_opacity_slot(self, opacity: int | float) -> None:
         if isinstance(opacity, int):
@@ -248,7 +248,7 @@ class LayerPanel(QWidget):
         else:
             opacity_percent = int(opacity * 100)
             opacity_fraction = opacity
-        active_layer = self._layer_stack.active_layer
+        active_layer = self._image_stack.active_layer
         if active_layer is not None and active_layer.opacity != opacity_fraction:
             active_layer.opacity = opacity_fraction
         for input_widget, value in ((self._opacity_slider, opacity_percent),
@@ -262,7 +262,7 @@ class LayerPanel(QWidget):
         mode_text = self._mode_box.currentText()
         assert mode_text in COMPOSITION_MODES
         mode = COMPOSITION_MODES[mode_text]
-        active_layer = self._layer_stack.active_layer
+        active_layer = self._image_stack.active_layer
         if active_layer is not None and active_layer.composition_mode != mode:
             active_layer.composition_mode = mode
 
@@ -274,13 +274,13 @@ class _LayerItem(BorderedWidget):
     # read-only.
     _layer_transparency_background: Optional[QPixmap] = None
 
-    def __init__(self, layer: ImageLayer, layer_stack: LayerStack, parent: QWidget) -> None:
+    def __init__(self, layer: ImageLayer, image_stack: ImageStack, parent: QWidget) -> None:
         super().__init__(parent)
         self._layer = layer
-        self._layer_stack = layer_stack
+        self._image_stack = image_stack
         self._layout = QHBoxLayout(self)
         self._layout.addSpacing(PREVIEW_SIZE.width())
-        if layer == layer_stack.selection_layer:
+        if layer == image_stack.selection_layer:
             self._label = QLabel(layer.name, self)
         else:
             self._label = EditableLabel(layer.name, self)
@@ -333,16 +333,16 @@ class _LayerItem(BorderedWidget):
 
     def paintEvent(self, event: Optional[QPaintEvent]) -> None:
         """Draws the scaled layer contents to the widget."""
-        content_bounds = self._layer_stack.merged_layer_geometry
-        image_bounds = self._layer_stack.geometry
-        layer_bounds = self._layer.geometry
+        content_bounds = self._image_stack.merged_layer_geometry
+        image_bounds = self._image_stack.geometry
+        layer_bounds = self._layer.bounds
         pixmap = self._layer.pixmap
         paint_bounds = QRect(LAYER_PADDING, LAYER_PADDING, self._label.x() - LAYER_PADDING * 2,
                              self.height() - LAYER_PADDING * 2)
         paint_bounds = get_scaled_placement(paint_bounds, content_bounds.size(), 2)
         transformation = get_rect_transformation(content_bounds, paint_bounds)
         painter = QPainter(self)
-        if self._layer != self._layer_stack.selection_layer:
+        if self._layer != self._image_stack.selection_layer:
             assert _LayerItem._layer_transparency_background is not None
             painter.drawTiledPixmap(paint_bounds, _LayerItem._layer_transparency_background)
         else:
@@ -394,10 +394,10 @@ class _LayerItem(BorderedWidget):
     def mousePressEvent(self, event: Optional[QMouseEvent]) -> None:
         """Activate layer on click."""
         assert event is not None
-        if self._layer == self._layer_stack.selection_layer:
+        if self._layer == self._image_stack.selection_layer:
             Cache.instance().set(Cache.LAST_ACTIVE_TOOL, SELECTION_TOOL_LABEL)
         elif not self.active and event.button() == Qt.MouseButton.LeftButton:
-            self._layer_stack.active_layer = self._layer
+            self._image_stack.active_layer = self._layer
             self.active = True
             self.update()
 
@@ -405,7 +405,7 @@ class _LayerItem(BorderedWidget):
         parent = self.parent()
         if parent is None:
             return
-        for child in parent.children():
+        for child in parent.findChildren(QWidget):
             child.update()
 
     def _menu(self, pos: QPoint) -> None:
@@ -417,59 +417,59 @@ class _LayerItem(BorderedWidget):
             assert action is not None
             return action
 
-        if self._layer != self._layer_stack.selection_layer:
-            index = self._layer_stack.get_layer_index(self._layer)
+        if self._layer != self._image_stack.selection_layer:
+            index = self._image_stack.get_layer_index(self._layer)
 
             if index is not None:
                 up_option = _new_action(MENU_OPTION_MOVE_UP)
-                up_option.triggered.connect(lambda: self._layer_stack.move_layer(-1, self.layer))
+                up_option.triggered.connect(lambda: self._image_stack.move_layer(-1, self.layer))
 
-                if index < self._layer_stack.count - 1:
+                if index < self._image_stack.count - 1:
                     down_option = _new_action(MENU_OPTION_MOVE_DOWN)
-                    down_option.triggered.connect(lambda: self._layer_stack.move_layer(1, self.layer))
+                    down_option.triggered.connect(lambda: self._image_stack.move_layer(1, self.layer))
 
             copy_option = _new_action(MENU_OPTION_COPY)
-            copy_option.triggered.connect(lambda: self._layer_stack.copy_layer(self.layer))
+            copy_option.triggered.connect(lambda: self._image_stack.copy_layer(self.layer))
 
             delete_option = _new_action(MENU_OPTION_DELETE)
-            delete_option.triggered.connect(lambda: self._layer_stack.remove_layer(self.layer))
+            delete_option.triggered.connect(lambda: self._image_stack.remove_layer(self.layer))
 
-            if index is not None and index < self._layer_stack.count - 1:
+            if index is not None and index < self._image_stack.count - 1:
                 merge_option = _new_action(MENU_OPTION_MERGE_DOWN)
-                merge_option.triggered.connect(lambda: self._layer_stack.merge_layer_down(self.layer))
+                merge_option.triggered.connect(lambda: self._image_stack.merge_layer_down(self.layer))
 
             clear_option = _new_action(MENU_OPTION_CLEAR_SELECTED)
-            clear_option.triggered.connect(lambda: self._layer_stack.cut_selected(self.layer))
+            clear_option.triggered.connect(lambda: self._image_stack.cut_selected(self.layer))
 
             copy_masked_option = _new_action(MENU_OPTION_COPY_SELECTED)
 
             def do_copy() -> None:
                 """Make the copy, then add it as a new layer."""
-                masked = self._layer_stack.copy_selected(self.layer)
-                self._layer_stack.create_layer(self._layer.name + ' content', masked, layer_index=index)
+                masked = self._image_stack.copy_selected(self.layer)
+                self._image_stack.create_layer(self._layer.name + ' content', masked, layer_index=index)
 
             copy_masked_option.triggered.connect(do_copy)
 
             resize_option = _new_action(MENU_OPTION_LAYER_TO_IMAGE_SIZE)
-            resize_option.triggered.connect(lambda: self._layer_stack.layer_to_image_size(self.layer))
+            resize_option.triggered.connect(lambda: self._image_stack.layer_to_image_size(self.layer))
 
             crop_content_option = _new_action(MENU_OPTION_CROP_TO_CONTENT)
             crop_content_option.triggered.connect(self._layer.crop_to_content)
         else:
             invert_option = _new_action(MENU_OPTION_INVERT_SELECTION)
-            invert_option.triggered.connect(self._layer_stack.selection_layer.invert_selection)
+            invert_option.triggered.connect(self._image_stack.selection_layer.invert_selection)
             clear_mask_option = _new_action(MENU_OPTION_CLEAR_SELECTION)
-            clear_mask_option.triggered.connect(self._layer_stack.selection_layer.clear)
-            if self._layer_stack.active_layer_index is not None:
+            clear_mask_option.triggered.connect(self._image_stack.selection_layer.clear)
+            if self._image_stack.active_layer_index is not None:
                 mask_active_option = _new_action(MENU_OPTION_SELECT_ALL)
 
                 def mask_active() -> None:
                     """Draw the layer into the mask, then let SelectionLayer automatically convert it to
                        red/transparent."""
-                    layer_index = self._layer_stack.active_layer_index
+                    layer_index = self._image_stack.active_layer_index
                     assert layer_index is not None
-                    layer_image = self._layer_stack.get_layer_by_index(layer_index).qimage
-                    with self._layer_stack.selection_layer.borrow_image() as mask_image:
+                    layer_image = self._image_stack.get_layer_by_index(layer_index).image
+                    with self._image_stack.selection_layer.borrow_image() as mask_image:
                         assert mask_image is not None
                         painter = QPainter(mask_image)
                         painter.setCompositionMode(QPainter.CompositionMode_Source)

@@ -3,9 +3,9 @@ qdarktheme
 spacenav
 
 torch~=2.3.0
+torchvision~=0.18.0a0
 numpy~=1.26.4
 pillow~=10.3.0
-torchvision~=0.18.0a0
 PyYAML~=6.0.1
 tqdm~=4.66.2
 scipy~=1.13.0

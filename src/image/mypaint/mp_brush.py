@@ -165,6 +165,7 @@ class MPBrush:
     SPEED2_GAMMA: int
     SPEED2_SLOWNESS: int
     STROKE_DURATION_LOGARITHMIC: int
+    # noinspection SpellCheckingInspection
     STROKE_HOLDTIME: int
     STROKE_THRESHOLD: int
     TRACKING_NOISE: int

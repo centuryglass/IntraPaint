@@ -2,6 +2,7 @@
 Simplified script for single glid-3-xl inpainting operations.
 """
 import gc
+# noinspection PyPackageRequirements
 import torch
 
 from src.glid_3_xl.load_models import load_models

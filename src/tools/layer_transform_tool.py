@@ -11,7 +11,7 @@ from src.config.application_config import AppConfig
 from src.config.key_config import KeyConfig
 from src.hotkey_filter import HotkeyFilter
 from src.image.image_layer import ImageLayer
-from src.image.layer_stack import LayerStack
+from src.image.image_stack import ImageStack
 from src.tools.base_tool import BaseTool
 from src.ui.graphics_items.pixmap_item import PixmapItem
 from src.ui.graphics_items.transform_outline import TransformOutline
@@ -48,9 +48,9 @@ MIN_WIDTH_FOR_PREVIEW = 600
 class LayerTransformTool(BaseTool):
     """Applies transformations to the active layer."""
 
-    def __init__(self, layer_stack: LayerStack, image_viewer: ImageViewer) -> None:
+    def __init__(self, image_stack: ImageStack, image_viewer: ImageViewer) -> None:
         super().__init__()
-        self._layer_stack = layer_stack
+        self._image_stack = image_stack
         self._image_viewer = image_viewer
         self._icon = QIcon(RESOURCES_TRANSFORM_TOOL_ICON)
         self._transform_outline = TransformOutline(QRect())
@@ -61,13 +61,13 @@ class LayerTransformTool(BaseTool):
         assert scene is not None
         scene.addItem(self._transform_outline)
         self.cursor = QCursor(Qt.CursorShape.CrossCursor)
-        self._active_layer_id = None if layer_stack.active_layer is None else layer_stack.active_layer.id
+        self._active_layer_id = None if image_stack.active_layer is None else image_stack.active_layer.id
 
         # prepare control panel, wait to fully initialize
         self._control_panel = ReactiveLayoutWidget()
         self._control_panel.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         self._control_layout: Optional[QGridLayout] = None
-        self._preview = _TransformPreview(layer_stack.size, QRect(), QTransform())
+        self._preview = _TransformPreview(image_stack.size, QRect(), QTransform())
 
         def _init_control(default_val, min_val, max_val, change_fn):
             new_control = QSpinBox() if isinstance(default_val, int) else QDoubleSpinBox()
@@ -438,7 +438,7 @@ class LayerTransformTool(BaseTool):
         """Connects to a new image layer, or disconnects if the layer parameter is None."""
         if self._active_layer_id == (None if layer is None else layer.id):
             return
-        last_layer = self._layer_stack.get_layer_by_id(self._active_layer_id)
+        last_layer = self._image_stack.get_layer_by_id(self._active_layer_id)
         if last_layer is not None:
             self.apply_transformations_to_layer()
             last_layer.visibility_changed.disconnect(self._layer_visibility_slot)
@@ -451,7 +451,7 @@ class LayerTransformTool(BaseTool):
         self._reload_scene_item()
         self._preview.set_transform(QTransform())
         if layer is not None:
-            self._preview.set_layer_bounds(layer.geometry)
+            self._preview.set_layer_bounds(layer.bounds)
             self._image_viewer.stop_rendering_layer(layer)
             layer.visibility_changed.connect(self._layer_visibility_slot)
             layer.bounds_changed.connect(self._layer_bounds_change_slot)
@@ -465,10 +465,10 @@ class LayerTransformTool(BaseTool):
 
     def apply_transformations_to_layer(self) -> None:
         """Applies all pending transformations to the source layer."""
-        layer = self._layer_stack.get_layer_by_id(self._active_layer_id)
+        layer = self._image_stack.get_layer_by_id(self._active_layer_id)
         if layer is None:
             return
-        source_image = layer.qimage
+        source_image = layer.image
         source_pos = layer.position
         transform_image = self._transform_outline.render()
         transform_pos = self._transform_outline.mapToScene(
@@ -476,13 +476,13 @@ class LayerTransformTool(BaseTool):
 
         def _transform(pos=transform_pos, img=transform_image) -> None:
             if img is not None:
-                layer.qimage = img
-            layer.set_position(pos, False)
+                layer.set_image(img)
+            layer.set_position(pos)
 
         def _undo_transform(pos=source_pos, img=source_image) -> None:
             if img is not None:
-                layer.qimage = img
-            layer.set_position(pos, False)
+                layer.set_image(img)
+            layer.set_position(pos)
 
         transformed = commit_action(_transform, _undo_transform, ignore_if_locked=True)
         if not transformed:
@@ -491,7 +491,7 @@ class LayerTransformTool(BaseTool):
 
     def _reload_scene_item(self):
         """Reset all transformations and reload the scene pixmap from the layer."""
-        layer = self._layer_stack.active_layer
+        layer = self._image_stack.active_layer
 
         # Clear old transform outline:
         self._transform_outline.transform_changed.disconnect(self._transformation_change_slot)
@@ -500,7 +500,7 @@ class LayerTransformTool(BaseTool):
             scene.removeItem(self._transform_outline)
 
         # Re-create for new layer:
-        self._transform_outline = TransformOutline(QRectF() if layer is None else layer.geometry)
+        self._transform_outline = TransformOutline(QRectF() if layer is None else layer.bounds)
         self._transform_outline.transform_changed.connect(self._transformation_change_slot)
         self._transform_pixmap = PixmapItem(parent=self._transform_outline)
         self._transform_pixmap.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIgnoresParentOpacity)
@@ -523,18 +523,18 @@ class LayerTransformTool(BaseTool):
             self._transform_outline.setVisible(layer.visible)
             self._transform_pixmap.setOpacity(layer.opacity)
             self._transform_pixmap.composition_mode = layer.composition_mode
-            self._transform_outline.setZValue(-self._layer_stack.get_layer_index(layer))
+            self._transform_outline.setZValue(-self._image_stack.get_layer_index(layer))
             self._transformation_change_slot(QPointF(0, 0), 1.0, 1.0, 0.0)
 
     def _on_activate(self) -> None:
         """Connect to the active layer."""
-        self._layer_stack.active_layer_changed.connect(self._active_layer_change_slot)
+        self._image_stack.active_layer_changed.connect(self._active_layer_change_slot)
         self._image_viewer.mouse_moves_generation_area = False
-        self.set_layer(self._layer_stack.active_layer)
+        self.set_layer(self._image_stack.active_layer)
 
     def _on_deactivate(self) -> None:
         """Disconnect from all layers."""
-        self._layer_stack.active_layer_changed.disconnect(self._active_layer_change_slot)
+        self._image_stack.active_layer_changed.disconnect(self._active_layer_change_slot)
         self._image_viewer.mouse_moves_generation_area = True
         self.set_layer(None)
 
@@ -542,36 +542,36 @@ class LayerTransformTool(BaseTool):
         if layer_id == self._active_layer_id:
             self._transform_outline.setZValue(-layer_index)
         else:
-            self.set_layer(self._layer_stack.get_layer_by_id(layer_id))
+            self.set_layer(self._image_stack.get_layer_by_id(layer_id))
 
     def _layer_visibility_slot(self, layer: ImageLayer, visible: bool) -> None:
-        if layer != self._layer_stack.get_layer_by_id(self._active_layer_id):
+        if layer != self._image_stack.get_layer_by_id(self._active_layer_id):
             layer.visibility_changed.disconnect(self._layer_visibility_slot)
             return
         self._transform_outline.setVisible(visible)
 
     def _layer_bounds_change_slot(self, layer: ImageLayer, bounds: QRect) -> None:
-        if layer != self._layer_stack.get_layer_by_id(self._active_layer_id):
+        if layer != self._image_stack.get_layer_by_id(self._active_layer_id):
             layer.bounds_changed.disconnect(self._layer_bounds_change_slot)
             return
         self._transform_outline.setPos(bounds.topLeft())
         self._preview.set_layer_bounds(bounds)
 
     def _layer_content_change_slot(self, layer: ImageLayer) -> None:
-        if layer != self._layer_stack.get_layer_by_id(self._active_layer_id):
+        if layer != self._image_stack.get_layer_by_id(self._active_layer_id):
             layer.content_changed.disconnect(self._layer_content_change_slot)
             return
         self._reload_scene_item()
 
     def _layer_opacity_change_slot(self, layer: ImageLayer, opacity: float) -> None:
-        if layer != self._layer_stack.get_layer_by_id(self._active_layer_id):
+        if layer != self._image_stack.get_layer_by_id(self._active_layer_id):
             layer.opacity_changed.disconnect(self._layer_opacity_change_slot)
             return
         if self._transform_pixmap is not None:
             self._transform_pixmap.setOpacity(opacity)
 
     def _layer_mode_change_slot(self, layer: ImageLayer, mode: QPainter.CompositionMode) -> None:
-        if layer != self._layer_stack.get_layer_by_id(self._active_layer_id):
+        if layer != self._image_stack.get_layer_by_id(self._active_layer_id):
             layer.composition_mode_changed.disconnect(self._layer_mode_change_slot)
             return
         if self._transform_pixmap is not None:
@@ -579,7 +579,7 @@ class LayerTransformTool(BaseTool):
 
     def _transformation_change_slot(self, offset: QPointF, x_scale: float, y_scale: float, rotation: float) -> None:
         self._preview.set_transform(self._transform_outline.sceneTransform())
-        layer = self._layer_stack.get_layer_by_id(self._active_layer_id)
+        layer = self._image_stack.get_layer_by_id(self._active_layer_id)
         if layer is None:
             return
         controls = (

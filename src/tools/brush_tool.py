@@ -9,7 +9,7 @@ from src.config.application_config import AppConfig
 from src.config.cache import Cache
 from src.config.key_config import KeyConfig
 from src.image.canvas.mypaint_layer_canvas import MyPaintLayerCanvas
-from src.image.layer_stack import LayerStack
+from src.image.image_stack import ImageStack
 from src.tools.canvas_tool import CanvasTool
 from src.ui.image_viewer import ImageViewer
 from src.ui.input_fields.slider_spinbox import IntSliderSpinbox
@@ -26,10 +26,10 @@ BRUSH_CONTROL_HINT = 'LMB:draw - RMB:1px draw - Ctrl:pick color -'
 class BrushTool(CanvasTool):
     """Implements brush controls using a MyPaint surface."""
 
-    def __init__(self, layer_stack: LayerStack, image_viewer: ImageViewer) -> None:
+    def __init__(self, image_stack: ImageStack, image_viewer: ImageViewer) -> None:
         scene = image_viewer.scene()
         assert scene is not None
-        super().__init__(layer_stack, image_viewer, MyPaintLayerCanvas(scene))
+        super().__init__(image_stack, image_viewer, MyPaintLayerCanvas(scene))
         self._last_click = None
         self._control_layout: Optional[QVBoxLayout] = None
         self._active = False
@@ -43,13 +43,13 @@ class BrushTool(CanvasTool):
         self.brush_size = config.get(AppConfig.SKETCH_BRUSH_SIZE)
 
         def _active_layer_update(_: Optional[int], layer_idx: Optional[int]) -> None:
-            self.layer = layer_stack.active_layer
+            self.layer = image_stack.active_layer
             if layer_idx is not None:
                 self._canvas.z_value = -layer_idx
 
-        layer_stack.active_layer_changed.connect(_active_layer_update)
-        if layer_stack.active_layer is not None:
-            _active_layer_update(layer_stack.active_layer.id, layer_stack.active_layer_index)
+        image_stack.active_layer_changed.connect(_active_layer_update)
+        if image_stack.active_layer is not None:
+            _active_layer_update(image_stack.active_layer.id, image_stack.active_layer_index)
 
         self.update_brush_cursor()
 

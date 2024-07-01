@@ -10,7 +10,7 @@ from PyQt5.QtWidgets import QApplication
 from src.config.application_config import AppConfig
 from src.config.cache import Cache
 from src.config.key_config import KeyConfig
-from src.image.layer_stack import LayerStack
+from src.image.image_stack import ImageStack
 from src.ui.window.main_window import MainWindow, CONTROL_TAB_NAME
 
 app = QApplication(sys.argv)
@@ -27,9 +27,9 @@ class MainWindowTest(unittest.TestCase):
         self._key_config = KeyConfig('test/resources/key_config_test.json')
         self._cache = Cache('test/resources/cache_test.json')
         test_size = QSize(512, 512)
-        self._layer_stack = LayerStack(test_size, test_size, test_size, test_size)
+        self._image_stack = ImageStack(test_size, test_size, test_size, test_size)
         self._controller = Mock()
-        self.window = MainWindow(self._layer_stack, self._controller)
+        self.window = MainWindow(self._image_stack, self._controller)
         self.window.show()
 
     @patch('src.util.display_size.get_screen_size', new_callable=lambda: QSize(800, 600))

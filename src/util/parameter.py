@@ -203,9 +203,9 @@ class Parameter:
         if self._options is not None and len(self._options) > 0:
             if multi_line:
                 raise ValueError('multi_line=True is not valid for parameters with fixed option lists')
-            assert self.type_name == TYPE_STR
+            assert self.type_name == TYPE_STR, 'Widget support for non-string option lists is not implemented'
             if len(self._options) == 2:
-                toggle = DualToggle(parent=None, options=self.options)
+                toggle = DualToggle(parent=None, options=cast(list[str], self.options))
                 toggle.setValue(self._default_value)
                 input_field = cast(QWidget, toggle)
             else:
@@ -223,8 +223,8 @@ class Parameter:
                 spin_box = BigIntSpinbox()
             else:
                 spin_box = IntSliderSpinbox()
-            spin_box.setMinimum(self._minimum if self._minimum is not None else INT_MIN)
-            spin_box.setMaximum(self._maximum if self._maximum is not None else INT_MAX)
+            spin_box.setMinimum(cast(int, self._minimum) if self._minimum is not None else INT_MIN)
+            spin_box.setMaximum(cast(int, self._maximum) if self._maximum is not None else INT_MAX)
             if self._step is not None:
                 spin_box.setSingleStep(self._step)
             spin_box.setValue(self._default_value if self._default_value is not None else max(0, spin_box.minimum()))
@@ -233,8 +233,8 @@ class Parameter:
             input_field = cast(QWidget, spin_box)
         elif self._type == TYPE_FLOAT:
             spin_box = FloatSliderSpinbox()
-            spin_box.setMinimum(self._minimum if self._minimum is not None else FLOAT_MIN)
-            spin_box.setMaximum(self._maximum if self._maximum is not None else FLOAT_MAX)
+            spin_box.setMinimum(cast(float, self._minimum) if self._minimum is not None else FLOAT_MIN)
+            spin_box.setMaximum(cast(float, self._maximum) if self._maximum is not None else FLOAT_MAX)
             if self._step is not None:
                 spin_box.setSingleStep(self._step)
             spin_box.setValue(self._default_value if self._default_value is not None else max(0.0, spin_box.minimum()))

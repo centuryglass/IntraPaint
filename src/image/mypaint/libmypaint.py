@@ -116,6 +116,7 @@ class MyPaintTiledSurface(Structure):
     ]
 
 
+# noinspection PyTypeChecker
 TilePixelBuffer = c_uint16 * 4 * TILE_DIM * TILE_DIM
 
 

@@ -7,7 +7,7 @@ from PyQt5.QtWidgets import QWidget, QColorDialog
 
 from src.config.cache import Cache
 from src.config.key_config import KeyConfig
-from src.image.layer_stack import LayerStack
+from src.image.image_stack import ImageStack
 from src.tools.base_tool import BaseTool
 from src.ui.widget.color_picker import ColorPicker
 from src.util.display_size import get_window_size
@@ -24,9 +24,9 @@ EYEDROPPER_CONTROL_HINT = "LMB:pick color -"
 class EyedropperTool(BaseTool):
     """Lets the user select colors from the scene or pick a color."""
 
-    def __init__(self, layer_stack: LayerStack) -> None:
+    def __init__(self, image_stack: ImageStack) -> None:
         super().__init__()
-        self._layer_stack = layer_stack
+        self._image_stack = image_stack
         self._control_panel: Optional[QColorDialog] = None
         self._icon = QIcon(RESOURCES_EYEDROPPER_ICON)
         cursor_icon = QIcon(RESOURCES_EYEDROPPER_CURSOR)
@@ -63,7 +63,7 @@ class EyedropperTool(BaseTool):
         """Copy the color under the mouse on left-click."""
         assert event is not None
         if event.buttons() == Qt.LeftButton:
-            color = self._layer_stack.get_color_at_point(image_coordinates)
+            color = self._image_stack.get_color_at_point(image_coordinates)
             Cache.instance().set(Cache.LAST_BRUSH_COLOR, color.name(QColor.HexArgb))
             return True
         return False

@@ -1,7 +1,7 @@
 """A layer used to mark masked regions for inpainting."""
 from sys import version_info
 
-from src.image.mypaint.numpy_image_utils import is_fully_transparent, AnyNpArray
+from src.image.mypaint.numpy_image_utils import is_fully_transparent, AnyNpArray, image_data_as_numpy_8bit
 
 if version_info[1] >= 11:
     from typing import Optional, List
@@ -33,13 +33,13 @@ class SelectionLayer(ImageLayer):
     The selection layer has the following properties:
 
     - Only one selection layer ever exists, and its size always matches the image size.
-    - Layer data is effectively 1-bit, with all pixels being either ARGB #00000000 or $FFFF0000
+    - Layer data is effectively 1-bit, with all pixels being either ARGB #00000000 or #FFFF0000
     - The layer cannot be copied.
     - Selection bounds are available as polygons through the `outline` property
     - When the "inpaint selected area only" option is checked, the mask layer pixmap will track the masked area bounds.
     - Functions are provided to adjust the selection area.
 
-    The following properties can't be defined within this class itself, but should be enforced by the layer stack:
+    The following properties can't be defined within this class itself, but should be enforced by the image stack:
     - The selection layer is always above all other layers.
     - The selection layer cannot be deleted, copied, or moved.
     - The selection layer can't be set as the active layer.
@@ -52,7 +52,7 @@ class SelectionLayer(ImageLayer):
         """
         self._outline_polygons: List[QPolygonF] = []
         self._generation_area = QRect()
-        super().__init__(size, SELECTION_LAYER_NAME, False)
+        super().__init__(size, SELECTION_LAYER_NAME)
         self.opacity = MASK_OPACITY_DEFAULT
         self._bounding_box: Optional[QRect] = None
         generation_window_signal.connect(self.update_generation_area)
@@ -83,13 +83,23 @@ class SelectionLayer(ImageLayer):
         """Access the selection outline polygons directly."""
         return self._outline_polygons
 
+    def set_size(self, new_size: QSize, save_to_undo_history: bool = True) -> None:
+        """Adjust selection area size, clearing existing content."""
+        cleared_selection_area = QImage(new_size, QImage.Format_ARGB32_Premultiplied)
+        cleared_selection_area.fill(Qt.transparent)
+        if save_to_undo_history:
+            self.image = cleared_selection_area
+        else:
+            self.set_image(cleared_selection_area)
+
     # Updating cached selection
 
     # Enforcing image properties:
+
     def _update_bounds(self, np_image: Optional[np.ndarray] = None) -> None:
         """Update saved selection bounds within the generation window."""
         if np_image is None:
-            image = self.qimage
+            image = self.image
             image_ptr = image.bits()
             assert image_ptr is not None, 'Selection layer image was invalid'
             image_ptr.setsize(image.byteCount())
@@ -106,11 +116,18 @@ class SelectionLayer(ImageLayer):
         self._update_bounds()
         return self._bounding_box is None or self._bounding_box.isEmpty()
 
+    def generation_area_fully_selected(self) -> bool:
+        """Returns whether the generation area is 100% selected."""
+        np_image = image_data_as_numpy_8bit(self.get_qimage())
+        bounds = self._generation_area
+        gen_area_np_image = np_image[bounds.y():bounds.y() + bounds.height(), bounds.x():bounds.x() + bounds.width(), :]
+        return bool(np.all(np_image[:, :, 3] > ALPHA_THRESHOLD))
+
     def select_all(self) -> None:
         """Selects the entire image."""
         full_selection = QImage(self.size, QImage.Format_ARGB32_Premultiplied)
         full_selection.fill(Qt.red)
-        self.qimage = full_selection
+        self.image = full_selection
 
     def invert_selection(self) -> None:
         """Select all unselected areas, and unselect all selected areas."""
@@ -118,13 +135,13 @@ class SelectionLayer(ImageLayer):
         inverted.fill(Qt.GlobalColor.red)
         painter = QPainter(inverted)
         painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_DestinationOut)
-        painter.drawImage(QRect(QPoint(), self.size), self.qimage)
+        painter.drawImage(QRect(QPoint(), self.size), self.image)
         painter.end()
-        self.qimage = inverted
+        self.image = inverted
 
     def grow_or_shrink_selection(self, num_pixels: int) -> None:
         """Expand the selection outwards a given amount, or shrink it if num_pixels is negative."""
-        image = self.qimage
+        image = self.image
         image_ptr = image.bits()
         assert image_ptr is not None, 'Selection layer image was invalid'
         image_ptr.setsize(image.byteCount())
@@ -150,7 +167,7 @@ class SelectionLayer(ImageLayer):
         qimage = QImage(adjusted_image.data, adjusted_image.shape[1], adjusted_image.shape[0],
                         QImage.Format_ARGB32)
         qimage.save('test.png')
-        self.qimage = qimage
+        self.image = qimage
 
     @property
     def pil_mask_image(self) -> Image.Image:

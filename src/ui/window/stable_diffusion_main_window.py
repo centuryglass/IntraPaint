@@ -8,7 +8,7 @@ from PyQt5.QtWidgets import QLabel, QHBoxLayout, QVBoxLayout, QGridLayout, QPush
 
 from src.config.application_config import AppConfig
 from src.config.cache import Cache
-from src.image.layer_stack import LayerStack
+from src.image.image_stack import ImageStack
 from src.ui.panel.controlnet_panel import ControlnetPanel
 from src.ui.widget.bordered_widget import BorderedWidget
 from src.ui.widget.collapsible_box import CollapsibleBox
@@ -27,17 +27,17 @@ class StableDiffusionMainWindow(MainWindow):
 
     OPEN_PANEL_STRETCH = 80
 
-    def __init__(self, layer_stack: LayerStack, controller) -> None:
+    def __init__(self, image_stack: ImageStack, controller) -> None:
         """Initializes the window and builds the layout.
 
         Parameters
         ----------
-        layer_stack : LayerStack
+        image_stack : ImageStack
             Image layers being edited.
         controller : controller.base_controller.stable_diffusion_controller.StableDiffusionController
             Object managing application behavior.
         """
-        super().__init__(layer_stack, controller)
+        super().__init__(image_stack, controller)
         # Decrease imageLayout stretch to make room for additional controls:
         self.layout().setStretch(0, 180)
 

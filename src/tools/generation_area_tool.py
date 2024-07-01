@@ -8,7 +8,7 @@ from PyQt5.QtWidgets import QWidget, QApplication, QPushButton, QGridLayout, QHB
 
 from src.config.application_config import AppConfig
 from src.config.key_config import KeyConfig
-from src.image.layer_stack import LayerStack
+from src.image.image_stack import ImageStack
 from src.tools.base_tool import BaseTool
 from src.ui.image_viewer import ImageViewer
 
@@ -32,9 +32,9 @@ GENERATION_AREA_HEIGHT_TOOLTIP = 'Set the top edge position of the image generat
 class GenerationAreaTool(BaseTool):
     """An image editing tool that moves the selected editing region."""
 
-    def __init__(self, layer_stack: LayerStack, image_viewer: ImageViewer) -> None:
+    def __init__(self, image_stack: ImageStack, image_viewer: ImageViewer) -> None:
         super().__init__()
-        self._layer_stack = layer_stack
+        self._image_stack = image_stack
         self._image_viewer = image_viewer
         self._icon = QIcon(RESOURCES_GENERATION_AREA_ICON)
         self._resizing = False
@@ -74,7 +74,7 @@ class GenerationAreaTool(BaseTool):
             self._control_layout.setColumnStretch(i, stretch)
 
         # wire x/y coordinate boxes to set image generation area coordinates:
-        coordinate_controls = get_generation_area_control_boxes(self._layer_stack, True)
+        coordinate_controls = get_generation_area_control_boxes(self._image_stack, True)
         for control_widget in coordinate_controls:
             row = self._control_layout.rowCount()
             ctrl_label, ctrl_slider, ctrl_box = (cast(QWidget, child) for child in control_widget.children()
@@ -85,10 +85,10 @@ class GenerationAreaTool(BaseTool):
 
         def select_full_layer():
             """Expand the image generation area to fit the entire active layer."""
-            active_layer = self._layer_stack.active_layer
+            active_layer = self._image_stack.active_layer
             if active_layer is None:
                 return
-            self._layer_stack.generation_area = active_layer.geometry
+            self._image_stack.generation_area = active_layer.bounds
 
         select_layer_button = QPushButton()
         select_layer_button.setText(SELECT_LAYER_BUTTON_TEXT)
@@ -100,19 +100,19 @@ class GenerationAreaTool(BaseTool):
 
     def _move_generation_area(self, selection_pt: QPoint) -> None:
         """Updates the image generation area's location in the image."""
-        self._layer_stack.generation_area = QRect(selection_pt, self._layer_stack.generation_area.size())
+        self._image_stack.generation_area = QRect(selection_pt, self._image_stack.generation_area.size())
 
     def _resize_generation_area(self, bottom_right: QPoint) -> None:
         """Updates the image generation area's size in the image."""
-        generation_area = self._layer_stack.generation_area
-        width = min(self._layer_stack.width - generation_area.x(), bottom_right.x() - generation_area.x())
-        height = min(self._layer_stack.height - generation_area.y(), bottom_right.y() - generation_area.y())
+        generation_area = self._image_stack.generation_area
+        width = min(self._image_stack.width - generation_area.x(), bottom_right.x() - generation_area.x())
+        height = min(self._image_stack.height - generation_area.y(), bottom_right.y() - generation_area.y())
         if width > 0 and height > 0:
             key_modifiers = QApplication.keyboardModifiers()
             if key_modifiers == Qt.ControlModifier:
                 width = max(width, height)
                 height = max(width, height)
-            self._layer_stack.generation_area = QRect(generation_area.x(), generation_area.y(), width, height)
+            self._image_stack.generation_area = QRect(generation_area.x(), generation_area.y(), width, height)
 
     def mouse_click(self, event: Optional[QMouseEvent], image_coordinates: QPoint) -> bool:
         """Move the image generation area on left-click, start resizing on right-click."""
@@ -160,17 +160,17 @@ class GenerationAreaTool(BaseTool):
                 translation.setY(1 * multiplier)
             case _:
                 return False
-        self._layer_stack.generation_area = self._layer_stack.generation_area.translated(translation)
+        self._image_stack.generation_area = self._image_stack.generation_area.translated(translation)
         return True
 
 
-def get_generation_area_control_boxes(layer_stack: LayerStack,
+def get_generation_area_control_boxes(image_stack: ImageStack,
                                       include_sliders: bool = False) -> List[QWidget]:
     """
     Creates and returns labeled widgets for controlling the image generation area.
     Parameters
     ----------
-        layer_stack: LayerStack
+        image_stack: ImageStack
             Edited image object responsible for maintaining the selected image generation area
         include_sliders: bool, default=False
             Whether the returned widgets should also contain sliders.
@@ -235,23 +235,23 @@ def get_generation_area_control_boxes(layer_stack: LayerStack,
         control_sets.append(sliders)
 
     def set_coordinates(new_area: QRect):
-        """Use image generation area bounds and the LayerStack size to set all values and dynamic ranges."""
+        """Use image generation area bounds and the ImageStack size to set all values and dynamic ranges."""
         for x_widget, y_widget, w_widget, h_widget in control_sets:
-            for ctrl, value, maximum in ((x_widget, new_area.x(), layer_stack.width - new_area.width()),
-                                         (y_widget, new_area.y(), layer_stack.height - new_area.height()),
-                                         (w_widget, new_area.width(), min(max_edit_size.width(), layer_stack.width)),
+            for ctrl, value, maximum in ((x_widget, new_area.x(), image_stack.width - new_area.width()),
+                                         (y_widget, new_area.y(), image_stack.height - new_area.height()),
+                                         (w_widget, new_area.width(), min(max_edit_size.width(), image_stack.width)),
                                          (h_widget, new_area.height(),
-                                          min(max_edit_size.height(), layer_stack.height))):
+                                          min(max_edit_size.height(), image_stack.height))):
                 if value != ctrl.value():
                     ctrl.setValue(value)
                 ctrl.setMaximum(maximum)
 
-    set_coordinates(layer_stack.generation_area)
-    layer_stack.generation_area_bounds_changed.connect(set_coordinates)
+    set_coordinates(image_stack.generation_area)
+    image_stack.generation_area_bounds_changed.connect(set_coordinates)
 
     def update_size_bounds(size: QSize):
         """Update the control bounds when the image size changes."""
-        generation_area = layer_stack.generation_area
+        generation_area = image_stack.generation_area
         for x_widget, y_widget, w_widget, h_widget in control_sets:
             for ctrl, maximum in ((x_widget, size.width() - generation_area.width()),
                                   (y_widget, size.height() - generation_area.height()),
@@ -259,43 +259,43 @@ def get_generation_area_control_boxes(layer_stack: LayerStack,
                                   (h_widget, min(max_edit_size.height(), size.height()))):
                 ctrl.setMaximum(maximum)
 
-    layer_stack.size_changed.connect(update_size_bounds)
+    image_stack.size_changed.connect(update_size_bounds)
 
     # Apply control changes to image generation area:
     for x_ctrl, y_ctrl, w_ctrl, h_ctrl in control_sets:
         def set_x(value: int):
             """Handle image generation area x-coordinate changes."""
-            last_selected = layer_stack.generation_area
+            last_selected = image_stack.generation_area
             if value != last_selected.x():
-                last_selected.moveLeft(min(value, layer_stack.width - last_selected.width()))
-                layer_stack.generation_area = last_selected
+                last_selected.moveLeft(min(value, image_stack.width - last_selected.width()))
+                image_stack.generation_area = last_selected
 
         x_ctrl.valueChanged.connect(set_x)
 
         def set_y(value: int):
             """Handle image generation area y-coordinate changes."""
-            last_area = layer_stack.generation_area
+            last_area = image_stack.generation_area
             if value != last_area.y():
-                last_area.moveTop(min(value, layer_stack.height - last_area.height()))
-                layer_stack.generation_area = last_area
+                last_area.moveTop(min(value, image_stack.height - last_area.height()))
+                image_stack.generation_area = last_area
 
         y_ctrl.valueChanged.connect(set_y)
 
         def set_w(value: int):
             """Handle image generation area width changes."""
-            generation_area = layer_stack.generation_area
+            generation_area = image_stack.generation_area
             if generation_area.width() != value:
                 generation_area.setWidth(value)
-                layer_stack.generation_area = generation_area
+                image_stack.generation_area = generation_area
 
         w_ctrl.valueChanged.connect(set_w)
 
         def set_h(value: int):
             """Handle image generation area height changes."""
-            generation_area = layer_stack.generation_area
+            generation_area = image_stack.generation_area
             if generation_area.height() != value:
                 generation_area.setHeight(value)
-                layer_stack.generation_area = generation_area
+                image_stack.generation_area = generation_area
 
         h_ctrl.valueChanged.connect(set_h)
     return control_widgets

@@ -108,6 +108,7 @@ class AppConfig(Config):
     MIN_GENERATION_SIZE: str
     MYPAINT_BRUSH: str
     NEGATIVE_PROMPT: str
+    OPENGL_ACCELERATION: str
     PROMPT: str
     RESTORE_FACES: str
     SAMPLING_METHOD: str

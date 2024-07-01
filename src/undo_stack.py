@@ -1,6 +1,6 @@
 """Global stack for tracking undo/redo state."""
 from contextlib import contextmanager
-from typing import Callable, Optional, Dict, Any, Generator, List
+from typing import Callable, Optional, Dict, Any, List, ContextManager
 from threading import Lock
 
 MAX_UNDO = 50
@@ -52,8 +52,10 @@ def commit_action(action: Callable[[], None], undo_action: Callable[[], None],
     """
     global _undo_stack, _redo_stack, _access_lock
 
-    if ignore_if_locked and _access_lock.locked():
-        return False
+    if _access_lock.locked():
+        if ignore_if_locked:
+            return False
+        raise RuntimeError('Concurrent undo history changes detected!')
     with _access_lock:
         action()
         undo_entry = _UndoAction(undo_action, action, action_type, action_data)
@@ -65,7 +67,7 @@ def commit_action(action: Callable[[], None], undo_action: Callable[[], None],
 
 
 @contextmanager
-def last_action() -> Generator[Optional[_UndoAction], None, None]:
+def last_action() -> ContextManager[Optional[_UndoAction]]:
     """Access the most recent action, potentially updating it to combine actions."""
     global _undo_stack, _access_lock
     with _access_lock:

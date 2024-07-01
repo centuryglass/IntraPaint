@@ -2,7 +2,7 @@
 from typing import Optional
 
 from PyQt5.QtCore import QSize
-from PyQt5.QtWidgets import QDialog, QLabel, QFormLayout, QPushButton, QComboBox, QSpinBox, QHBoxLayout, QDoubleSpinBox, \
+from PyQt5.QtWidgets import QDialog, QFormLayout, QPushButton, QComboBox, QSpinBox, QHBoxLayout, QDoubleSpinBox, \
     QWidget, QAbstractSpinBox
 
 from src.config.application_config import AppConfig
@@ -114,7 +114,6 @@ class ImageScaleModal(QDialog):
         self._create_button.setText(SCALE_BUTTON_LABEL)
         self._create_button.clicked.connect(lambda: on_finish(True))
         button_layout.addWidget(self._create_button)
-
 
     def show_image_modal(self) -> Optional[QSize]:
         """Show the modal, returning the selected size when the modal closes."""

@@ -53,6 +53,7 @@ class BigIntSpinbox(QAbstractSpinBox):
 
     def setValue(self, value: int) -> None:
         """Sets a new integer value if within the accepted range."""
+        value = int(value)
         if self._value_in_range(value):
             self._line_edit.setText(str(value))
 
@@ -102,4 +103,5 @@ class BigIntSpinbox(QAbstractSpinBox):
         self.setMaximum(maximum)
 
     def _value_in_range(self, value: int) -> bool:
+        assert isinstance(value, int)
         return bool(self.minimum() <= value <= self.maximum())

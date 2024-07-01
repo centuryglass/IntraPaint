@@ -81,8 +81,8 @@ class ExtraNetworkWindow(QDialog):
         for lora_item in self._list_items:
             if lora_item.is_selected and lora_item != selected_lora:
                 lora_item.is_selected = False
-        lora_item = cast(_LoraItem, lora_item)
-        if _prompt_lora_match(lora_item.lora) is not None:
+        selected_lora = cast(_LoraItem, selected_lora)
+        if _prompt_lora_match(selected_lora.lora) is not None:
             self._prompt_button.setText(REMOVE_BUTTON_LABEL)
         else:
             self._prompt_button.setText(ADD_BUTTON_LABEL)
@@ -121,7 +121,7 @@ class ExtraNetworkWindow(QDialog):
         AppConfig.instance().set(AppConfig.PROMPT, prompt)
 
 
-def _prompt_lora_match(lora: Dict[str, str]) -> re.Match:
+def _prompt_lora_match(lora: Dict[str, str]) -> Optional[re.Match[str]]:
     prompt = AppConfig.instance().get(AppConfig.PROMPT)
     pattern = re.compile('<lora:' + lora[LORA_KEY_NAME] + r':[\d.]+>')
     return re.search(pattern, prompt)

@@ -37,6 +37,7 @@ def foreach_image_in_sample(sample, batch_size, ldm_model, action):
     foreach_in_sample(sample, batch_size, _convert_param)
 
 
+# noinspection PyUnusedLocal
 def get_save_fn(prefix, batch_size, ldm_model, unused_clip_model, unused_clip_preprocess, unused_device):
     """Creates and returns a function that saves sample data to disk."""
     def _save_sample(i, sample, clip_score_fn=None):

@@ -65,7 +65,7 @@ class MenuBuilder:
     def add_menu_action(self,
                         window: QMainWindow,
                         menu_name: str,
-                        new_action: Callable[[...], None],
+                        new_action: Callable[..., None],
                         config_key: Optional[str] = None,
                         title: Optional[str] = None,
                         tooltip: Optional[str] = None,

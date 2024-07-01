@@ -7,7 +7,7 @@ from PyQt5.QtWidgets import QWidget, QFormLayout, QApplication
 
 from src.config.cache import Cache
 from src.config.key_config import KeyConfig
-from src.image.layer_stack import LayerStack
+from src.image.image_stack import ImageStack
 from src.tools.base_tool import BaseTool
 from src.util.image_utils import flood_fill
 
@@ -23,10 +23,10 @@ SELECTION_FILL_CONTROL_HINT = "LMB:select - RMB:deselect -"
 class SelectionFillTool(BaseTool):
     """Lets the user select image areas with solid colors."""
 
-    def __init__(self, layer_stack: LayerStack) -> None:
+    def __init__(self, image_stack: ImageStack) -> None:
         super().__init__()
         cache = Cache.instance()
-        self._layer_stack = layer_stack
+        self._image_stack = image_stack
         self._control_panel: Optional[QWidget] = None
         self._icon = QIcon(RESOURCES_FILL_ICON)
         self._color = QColor(Qt.red)
@@ -77,26 +77,27 @@ class SelectionFillTool(BaseTool):
             return True
         if event.buttons() == Qt.LeftButton or event.buttons() == Qt.RightButton:
             clear_mode = event.buttons() == Qt.RightButton
-            layer = self._layer_stack.active_layer
+            layer = self._image_stack.active_layer
             if layer is None:
                 return False
-            if not layer.geometry.contains(image_coordinates):
+            if not layer.bounds.contains(image_coordinates):
                 return True
             if self._sample_merged:
-                image = self._layer_stack.qimage(crop_to_bounds=False)
-                layer_bounds = self._layer_stack.merged_layer_geometry.intersected(layer.geometry)
+                image = self._image_stack.qimage(crop_to_bounds=False)
+                layer_bounds = self._image_stack.merged_layer_geometry.intersected(layer.bounds)
                 image = image.copy(layer_bounds)
-                selection_image = self._layer_stack.selection_layer.qimage
+                selection_image = self._image_stack.selection_layer.image
             else:
-                image = layer.qimage
-                selection_image = self._layer_stack.selection_layer.qimage
+                image = layer.image
+                selection_image = self._image_stack.selection_layer.image
             mask = flood_fill(image, image_coordinates - layer.position, self._color, self._threshold, False)
+            assert mask is not None
             painter = QPainter(selection_image)
             if clear_mode:
                 painter.setCompositionMode(QPainter.CompositionMode_DestinationOut)
             painter.drawImage(QRect(QPoint(), layer.size), mask)
             painter.end()
-            self._layer_stack.selection_layer.set_image(selection_image)
+            self._image_stack.selection_layer.set_image(selection_image)
             return True
         return False
 

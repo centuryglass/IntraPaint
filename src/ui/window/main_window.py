@@ -13,7 +13,7 @@ from PyQt5.QtWidgets import QMainWindow, QGridLayout, QLabel, QWidget, QPushButt
 
 from src.config.application_config import AppConfig
 from src.hotkey_filter import HotkeyFilter
-from src.image.layer_stack import LayerStack
+from src.image.image_stack import ImageStack
 from src.ui.generated_image_selector import GeneratedImageSelector
 from src.ui.panel.image_panel import ImagePanel
 from src.ui.panel.layer_panel import LayerPanel
@@ -37,10 +37,10 @@ DEFAULT_LOADING_MESSAGE = 'Loading...'
 class MainWindow(QMainWindow):
     """Main user interface for inpainting."""
 
-    def __init__(self, layer_stack: LayerStack, controller: Any):
+    def __init__(self, image_stack: ImageStack, controller: Any):
         """Initializes the main application window and sets up the default UI layout and menu options.
 
-        layer_stack : LayerStack
+        image_stack : ImageStack
             Image layers being edited.
         controller : BaseController
             Object managing application behavior.
@@ -52,12 +52,12 @@ class MainWindow(QMainWindow):
 
         # Initialize UI/editing data model:
         self._controller = controller
-        self._layer_stack = layer_stack
+        self._image_stack = image_stack
         self._image_selector: Optional[GeneratedImageSelector] = None
         self._orientation: Optional[Qt.Orientation] = None
 
         self._layer_panel: Optional[LayerPanel] = None
-        self._image_window = ImageWindow(layer_stack)
+        self._image_window = ImageWindow(image_stack)
 
         # Size thresholds for reactive layout changes:
         # Real values will be populated with sizeHints when available.
@@ -108,10 +108,10 @@ class MainWindow(QMainWindow):
         AppStateTracker.signal().connect(_show_spinner_when_busy)
 
         # Image/Mask editing layout:
-        self._image_panel = ImagePanel(layer_stack)
+        self._image_panel = ImagePanel(image_stack)
         self._layout.addWidget(self._image_panel)
 
-        self._tool_panel = ToolPanel(layer_stack, self._image_panel,
+        self._tool_panel = ToolPanel(image_stack, self._image_panel,
                                      controller.start_and_manage_inpainting)
 
         # Build config + control layout (varying based on implementation):
@@ -283,7 +283,7 @@ class MainWindow(QMainWindow):
         if visible == is_visible:
             return
         if visible:
-            self._image_selector = GeneratedImageSelector(self._layer_stack,
+            self._image_selector = GeneratedImageSelector(self._image_stack,
                                                           lambda: self.set_image_selector_visible(False),
                                                           self._controller.select_and_apply_sample)
             self._central_widget.addWidget(self._image_selector)
@@ -314,7 +314,7 @@ class MainWindow(QMainWindow):
             if AppStateTracker.app_state() == APP_STATE_LOADING:
                 if self.is_image_selector_visible():
                     AppStateTracker.set_app_state(APP_STATE_SELECTION)
-                elif self._layer_stack.has_image:
+                elif self._image_stack.has_image:
                     AppStateTracker.set_app_state(APP_STATE_EDITING)
                 else:
                     AppStateTracker.set_app_state(APP_STATE_NO_IMAGE)

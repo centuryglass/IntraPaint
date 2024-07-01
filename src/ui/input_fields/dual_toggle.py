@@ -1,9 +1,9 @@
 """
 A fancier Qt toggle button implementation that allows selecting between two options.
 """
-from typing import Optional
+from typing import Optional, cast
 from PyQt5.QtGui import QPixmap, QMouseEvent
-from PyQt5.QtWidgets import QWidget, QFrame, QSizePolicy
+from PyQt5.QtWidgets import QWidget, QFrame, QSizePolicy, QApplication
 from PyQt5.QtCore import Qt, QSize, pyqtSignal, QEvent
 from src.ui.widget.label import Label
 
@@ -35,7 +35,11 @@ class DualToggle(QWidget):
         self.option2 = options[1]
         self._orientation: Optional[Qt.Orientation] = None
         self._selected: Optional[str] = None
-        bg_color = parent.palette().color(parent.backgroundRole())
+        if parent is not None:
+            bg_color = parent.palette().color(parent.backgroundRole())
+        else:
+            app = cast(QApplication, QApplication.instance())
+            bg_color = app.palette().color(app.activeWindow().backgroundRole())
         self.label1 = Label(options[0], self, bg_color=bg_color, orientation=orientation)
         self.label1.setFrameStyle(QFrame.StyledPanel | QFrame.Sunken)
         self.label1.set_inverted(True)

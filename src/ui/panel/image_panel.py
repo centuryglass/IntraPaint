@@ -4,7 +4,7 @@ from typing import Optional
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QResizeEvent
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLabel, QDoubleSpinBox, QSlider, QPushButton
-from src.image.layer_stack import LayerStack
+from src.image.image_stack import ImageStack
 from src.ui.image_viewer import ImageViewer
 
 MIN_WIDTH_SHOWING_SCALE_SLIDER = 600
@@ -21,10 +21,10 @@ SCALE_ZOOM_BUTTON_TOOLTIP = 'Zoom in on the area selected for image generation'
 class ImagePanel(QWidget):
     """Displays the image panel with zoom controls and input hints."""
 
-    def __init__(self, layer_stack: LayerStack) -> None:
+    def __init__(self, image_stack: ImageStack) -> None:
         super().__init__()
         self._layout = QVBoxLayout(self)
-        self._image_viewer = ImageViewer(self, layer_stack)
+        self._image_viewer = ImageViewer(self, image_stack)
         self._layout.addWidget(self._image_viewer, stretch=255)
         self._control_bar = QWidget()
         self._layout.addWidget(self._control_bar, stretch=1)

@@ -22,7 +22,7 @@ from src.image.filter.brightness_contrast import BrightnessContrastFilter
 from src.image.filter.posterize import PosterizeFilter
 from src.image.filter.rgb_color_balance import RGBColorBalanceFilter
 from src.image.filter.sharpen import SharpenFilter
-from src.image.layer_stack import LayerStack
+from src.image.image_stack import ImageStack
 from src.ui.modal.image_scale_modal import ImageScaleModal
 from src.ui.modal.modal_utils import show_error_dialog, request_confirmation, open_image_file, open_image_layers
 from src.ui.modal.new_image_modal import NewImageModal
@@ -30,7 +30,7 @@ from src.ui.modal.resize_canvas_modal import ResizeCanvasModal
 from src.ui.modal.settings_modal import SettingsModal
 from src.ui.panel.layer_panel import LayerPanel
 from src.ui.window.main_window import MainWindow
-from src.undo_stack import commit_action, undo, redo
+from src.undo_stack import undo, redo
 from src.util.application_state import AppStateTracker, APP_STATE_NO_IMAGE, APP_STATE_EDITING, APP_STATE_LOADING, \
     APP_STATE_SELECTION
 from src.util.async_task import AsyncTask
@@ -116,7 +116,7 @@ class BaseInpaintController(MenuBuilder):
         self._adjust_config_defaults()
         config.apply_args(args)
 
-        self._layer_stack = LayerStack(config.get(AppConfig.DEFAULT_IMAGE_SIZE), config.get(AppConfig.EDIT_SIZE),
+        self._image_stack = ImageStack(config.get(AppConfig.DEFAULT_IMAGE_SIZE), config.get(AppConfig.EDIT_SIZE),
                                        config.get(AppConfig.MIN_EDIT_SIZE), config.get(AppConfig.MAX_EDIT_SIZE))
         self._init_image = args.init_image
 
@@ -183,7 +183,7 @@ class BaseInpaintController(MenuBuilder):
 
     def window_init(self):
         """Initialize and show the main application window."""
-        self._window = MainWindow(self._layer_stack, self)
+        self._window = MainWindow(self._image_stack, self)
         if self._fixed_window_size is not None:
             size = self._fixed_window_size
             self._window.setGeometry(0, 0, size.width(), size.height())
@@ -241,7 +241,7 @@ class BaseInpaintController(MenuBuilder):
 
         # Configure support for spacemouse panning, if relevant:
         if SpacenavManager is not None and self._window is not None:
-            self._nav_manager = SpacenavManager(self._window, self._layer_stack)
+            self._nav_manager = SpacenavManager(self._window, self._image_stack)
             self._nav_manager.start_thread()
 
         # initialize menus:
@@ -252,7 +252,7 @@ class BaseInpaintController(MenuBuilder):
                              BlurFilter,
                              SharpenFilter,
                              PosterizeFilter):
-            image_filter = filter_class(self._layer_stack)
+            image_filter = filter_class(self._image_stack)
 
             def _open_filter_modal(filter_instance=image_filter) -> None:
                 modal = filter_instance.get_filter_modal()
@@ -266,8 +266,8 @@ class BaseInpaintController(MenuBuilder):
             assert action is not None
             AppStateTracker.set_enabled_states(action, [APP_STATE_EDITING])
 
-        AppStateTracker.set_app_state(APP_STATE_EDITING if self._layer_stack.has_image else APP_STATE_NO_IMAGE)
-        # QtExceptHook().enable()
+        AppStateTracker.set_app_state(APP_STATE_EDITING if self._image_stack.has_image else APP_STATE_NO_IMAGE)
+        QtExceptHook().enable()
         self._app.exec_()
         sys.exit()
 
@@ -283,13 +283,13 @@ class BaseInpaintController(MenuBuilder):
         default_size = AppConfig.instance().get(AppConfig.DEFAULT_IMAGE_SIZE)
         image_modal = NewImageModal(default_size.width(), default_size.height())
         image_size = image_modal.show_image_modal()
-        if image_size and (not self._layer_stack.has_image or request_confirmation(self._window,
+        if image_size and (not self._image_stack.has_image or request_confirmation(self._window,
                                                                                    NEW_IMAGE_CONFIRMATION_TITLE,
                                                                                    NEW_IMAGE_CONFIRMATION_MESSAGE)):
             new_image = Image.new('RGB', (image_size.width(), image_size.height()), color='white')
-            self._layer_stack.set_image(new_image)
-            for i in range(1, self._layer_stack.count):
-                self._layer_stack.get_layer_by_index(i).clear()
+            self._image_stack.set_image(new_image)
+            for i in range(1, self._image_stack.count):
+                self._image_stack.get_layer_by_index(i).clear()
             self._metadata = None
             AppStateTracker.set_app_state(APP_STATE_EDITING)
 
@@ -308,7 +308,7 @@ class BaseInpaintController(MenuBuilder):
         """Open a save dialog, and save the edited image to disk, preserving any metadata."""
         assert self._window is not None
         cache = Cache.instance()
-        if not self._layer_stack.has_image:
+        if not self._image_stack.has_image:
             show_error_dialog(self._window, SAVE_ERROR_TITLE, SAVE_ERROR_MESSAGE_NO_IMAGE)
             return
         try:
@@ -319,9 +319,9 @@ class BaseInpaintController(MenuBuilder):
                     return
             assert_type(file_path, str)
             if file_path.endswith('.inpt'):
-                self._layer_stack.save_layer_stack_file(file_path, self._metadata)
+                self._image_stack.save_image_stack_file(file_path, self._metadata)
             else:
-                image = self._layer_stack.pil_image(saved_only=True)
+                image = self._image_stack.pil_image()
                 if self._metadata is not None:
                     info = PngImagePlugin.PngInfo()
                     for key in self._metadata:
@@ -358,7 +358,7 @@ class BaseInpaintController(MenuBuilder):
         assert_type(file_path, str)
         try:
             if file_path.endswith('.inpt'):
-                self._metadata = self._layer_stack.load_layer_stack_file(file_path)
+                self._metadata = self._image_stack.load_image_stack_file(file_path)
             else:
                 image = Image.open(file_path)
                 # try and load metadata:
@@ -366,7 +366,7 @@ class BaseInpaintController(MenuBuilder):
                     self._metadata = image.info
                 else:
                     self._metadata = None
-                self._layer_stack.set_image(QImage(file_path))
+                self._image_stack.set_image(QImage(file_path))
             cache.set(Cache.LAST_FILE_PATH, file_path)
 
             # File loaded, attempt to apply metadata:
@@ -419,7 +419,7 @@ class BaseInpaintController(MenuBuilder):
                 layers.append((image, layer_path))
             except IOError:
                 errors.append(layer_path)
-        if not self._layer_stack.has_image:
+        if not self._image_stack.has_image:
             width = 0
             height = 0
             for image, _ in layers:
@@ -427,13 +427,13 @@ class BaseInpaintController(MenuBuilder):
                 height = max(height, image.height())
             base_layer = QImage(QSize(width, height), QImage.Format_ARGB32_Premultiplied)
             base_layer.fill(Qt.GlobalColor.transparent)
-            self._layer_stack.set_image(base_layer)
+            self._image_stack.set_image(base_layer)
         for image, image_path in layers:
             name = os.path.basename(image_path)
-            self._layer_stack.create_layer(name, image)
+            self._image_stack.create_layer(name, image)
         if len(errors) > 0:
             show_error_dialog(self._window, LOAD_LAYER_ERROR_TITLE, LOAD_LAYER_ERROR_MESSAGE + ','.join(errors))
-        if self._layer_stack.has_image:
+        if self._image_stack.has_image:
             AppStateTracker.set_app_state(APP_STATE_EDITING)
 
     @menu_action(MENU_FILE, 'reload_shortcut', 5, valid_app_states=[APP_STATE_EDITING])
@@ -447,7 +447,7 @@ class BaseInpaintController(MenuBuilder):
         if not os.path.isfile(file_path):
             show_error_dialog(self._window, RELOAD_ERROR_TITLE, f'Image path "{file_path}" is not a valid file.')
             return
-        if not self._layer_stack.has_image or request_confirmation(self._window,
+        if not self._image_stack.has_image or request_confirmation(self._window,
                                                                    RELOAD_CONFIRMATION_TITLE,
                                                                    RELOAD_CONFIRMATION_MESSAGE):
             self.load_image(file_path=file_path)
@@ -474,17 +474,17 @@ class BaseInpaintController(MenuBuilder):
     @menu_action(MENU_EDIT, 'cut_shortcut', 12, valid_app_states=[APP_STATE_EDITING])
     def cut(self) -> None:
         """Cut selected content from the active image layer."""
-        self._layer_stack.cut_selected()
+        self._image_stack.cut_selected()
 
     @menu_action(MENU_EDIT, 'copy_shortcut', 13, valid_app_states=[APP_STATE_EDITING])
     def copy(self) -> None:
         """Copy selected content from the active image layer."""
-        self._layer_stack.copy_selected()
+        self._image_stack.copy_selected()
 
     @menu_action(MENU_EDIT, 'paste_shortcut', 14, valid_app_states=[APP_STATE_EDITING])
     def paste(self) -> None:
         """Paste copied image content into a new layer."""
-        self._layer_stack.paste()
+        self._image_stack.paste()
 
     @menu_action(MENU_EDIT, 'settings_shortcut', 15)
     def show_settings(self) -> None:
@@ -503,24 +503,24 @@ class BaseInpaintController(MenuBuilder):
     def resize_canvas(self) -> None:
         """Crop or extend the edited image without scaling its contents based on user input into a popup modal."""
         assert self._window is not None
-        if not self._layer_stack.has_image:
+        if not self._image_stack.has_image:
             show_error_dialog(self._window, RESIZE_ERROR_TITLE, RESIZE_ERROR_MESSAGE_NO_IMAGE)
             return
-        resize_modal = ResizeCanvasModal(self._layer_stack.qimage())
+        resize_modal = ResizeCanvasModal(self._image_stack.qimage())
         new_size, offset = resize_modal.show_resize_modal()
         if new_size is None or offset is None:
             return
-        self._layer_stack.resize_canvas(new_size, offset.x(), offset.y())
+        self._image_stack.resize_canvas(new_size, offset.x(), offset.y())
 
     @menu_action(MENU_IMAGE, 'scale_image_shortcut', 21, valid_app_states=[APP_STATE_EDITING])
     def scale_image(self) -> None:
         """Scale the edited image based on user input into a popup modal."""
         assert self._window is not None
-        if not self._layer_stack.has_image:
+        if not self._image_stack.has_image:
             show_error_dialog(self._window, SCALING_ERROR_TITLE, SCALING_ERROR_MESSAGE_NO_IMAGE)
             return
-        width = self._layer_stack.width
-        height = self._layer_stack.height
+        width = self._image_stack.width
+        height = self._image_stack.height
         scale_modal = ImageScaleModal(width, height)
         new_size = scale_modal.show_image_modal()
         if new_size is not None:
@@ -563,7 +563,7 @@ class BaseInpaintController(MenuBuilder):
         """Start inpainting/image editing based on the current state of the UI."""
         assert self._window is not None
         config = AppConfig.instance()
-        if not self._layer_stack.has_image:
+        if not self._image_stack.has_image:
             show_error_dialog(self._window, GENERATE_ERROR_TITLE_NO_IMAGE, GENERATE_ERROR_MESSAGE_NO_IMAGE)
             return
         upscale_mode = PIL_SCALING_MODES[config.get(AppConfig.UPSCALE_MODE)]
@@ -577,10 +577,10 @@ class BaseInpaintController(MenuBuilder):
                 return pil_image.resize((width, height), upscale_mode)
             return pil_image.resize((width, height), downscale_mode)
 
-        source_selection = qimage_to_pil_image(self._layer_stack.qimage_generation_area_content())
+        source_selection = qimage_to_pil_image(self._image_stack.qimage_generation_area_content())
 
         inpaint_image = source_selection.copy()
-        inpaint_mask = self._layer_stack.selection_layer.pil_mask_image
+        inpaint_mask = self._image_stack.selection_layer.pil_mask_image
 
         # If necessary, scale image and mask to match the image generation size.
         generation_size = config.get(AppConfig.GENERATION_SIZE)
@@ -651,125 +651,115 @@ class BaseInpaintController(MenuBuilder):
             else:
                 image = sample_image.convertToFormat(QImage.Format.Format_ARGB32_Premultiplied)
             if AppConfig.instance().get(AppConfig.EDIT_MODE) == "Inpaint":
-                inpaint_mask = self._layer_stack.selection_layer.cropped_image_content(
-                    self._layer_stack.generation_area)
+                inpaint_mask = self._image_stack.selection_layer.cropped_image_content(
+                    self._image_stack.generation_area)
                 painter = QPainter(image)
                 painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_DestinationIn)
                 painter.drawImage(QRect(QPoint(0, 0), image.size()), inpaint_mask)
                 painter.end()
-            bounds = self._layer_stack.generation_area
-            layer = self._layer_stack.active_layer
+            bounds = self._image_stack.generation_area
+            layer = self._image_stack.active_layer
             if layer is None:
-                self._layer_stack.create_layer(image_data=image)
+                self._image_stack.create_layer(image_data=image)
             else:
                 pos = layer.position
-                prev_image = layer.cropped_image_content(bounds)
-
-                def apply_selection():
-                    """Inserts the generated image into the active layer."""
-                    layer.insert_image_content(image, QRect(bounds.topLeft() - pos, bounds.size()),
-                                               QPainter.CompositionMode.CompositionMode_SourceOver)
-
-                def undo_selection():
-                    """Revert the image generation area to its previous state."""
-                    layer.insert_image_content(prev_image, bounds)
-
-                commit_action(apply_selection, undo_selection)
+                layer.insert_image_content(image, QRect(bounds.topLeft() - pos, bounds.size()),
+                                           QPainter.CompositionMode.CompositionMode_SourceOver)
             AppStateTracker.set_app_state(APP_STATE_EDITING)
 
     # Selection menu:
     @menu_action(MENU_SELECTION, 'select_all_shortcut', 30, valid_app_states=[APP_STATE_EDITING])
     def select_all(self) -> None:
         """Selects the entire image."""
-        if self._layer_stack.has_image:
-            self._layer_stack.selection_layer.select_all()
+        if self._image_stack.has_image:
+            self._image_stack.selection_layer.select_all()
 
     @menu_action(MENU_SELECTION, 'select_none_shortcut', 31, valid_app_states=[APP_STATE_EDITING])
     def select_none(self) -> None:
         """Clears the selection."""
-        self._layer_stack.selection_layer.clear()
+        self._image_stack.selection_layer.clear()
 
     @menu_action(MENU_SELECTION, 'invert_selection_shortcut', 32, valid_app_states=[APP_STATE_EDITING])
     def invert_selection(self) -> None:
         """Swaps selected and unselected areas."""
-        if self._layer_stack.has_image:
-            self._layer_stack.selection_layer.invert_selection()
+        if self._image_stack.has_image:
+            self._image_stack.selection_layer.invert_selection()
 
     @menu_action(MENU_SELECTION, 'select_layer_content_shortcut', valid_app_states=[APP_STATE_EDITING])
     def select_active_layer_content(self) -> None:
         """Selects all pixels in the active layer that are not fully transparent."""
-        active_layer = self._layer_stack.active_layer
+        active_layer = self._image_stack.active_layer
         if active_layer is not None:
-            self._layer_stack.selection_layer.qimage = active_layer.qimage
+            self._image_stack.selection_layer.image = active_layer.image
 
     @menu_action(MENU_SELECTION, 'grow_selection_shortcut', valid_app_states=[APP_STATE_EDITING])
     def grow_selection(self, num_pixels=1) -> None:
         """Expand the selection by a given pixel count, 1 by default."""
-        if self._layer_stack.has_image:
-            self._layer_stack.selection_layer.grow_or_shrink_selection(num_pixels)
+        if self._image_stack.has_image:
+            self._image_stack.selection_layer.grow_or_shrink_selection(num_pixels)
 
     @menu_action(MENU_SELECTION, 'shrink_selection_shortcut', valid_app_states=[APP_STATE_EDITING])
     def shrink_selection(self, num_pixels=1) -> None:
         """Contract the selection by a given pixel count, 1 by default."""
-        if self._layer_stack.has_image:
-            self._layer_stack.selection_layer.grow_or_shrink_selection(-num_pixels)
+        if self._image_stack.has_image:
+            self._image_stack.selection_layer.grow_or_shrink_selection(-num_pixels)
 
     # Layer menu:
     @menu_action(MENU_LAYERS, 'new_layer_shortcut', 40,
                  valid_app_states=[APP_STATE_EDITING, APP_STATE_SELECTION])
     def new_layer(self) -> None:
         """Create a new image layer above the active layer."""
-        if self._layer_stack.has_image:
-            self._layer_stack.create_layer()
+        if self._image_stack.has_image:
+            self._image_stack.create_layer()
 
     @menu_action(MENU_LAYERS, 'copy_layer_shortcut', 41,
                  valid_app_states=[APP_STATE_EDITING, APP_STATE_SELECTION])
     def copy_layer(self) -> None:
         """Create a copy of the active layer."""
-        if self._layer_stack.has_image:
-            self._layer_stack.copy_layer()
+        if self._image_stack.has_image:
+            self._image_stack.copy_layer()
 
     @menu_action(MENU_LAYERS, 'delete_layer_shortcut', 42, valid_app_states=[APP_STATE_EDITING])
     def delete_layer(self) -> None:
         """Delete the active layer."""
-        self._layer_stack.remove_layer()
+        self._image_stack.remove_layer()
 
     @menu_action(MENU_LAYERS, 'select_previous_layer_shortcut', 43,
                  valid_app_states=[APP_STATE_EDITING, APP_STATE_SELECTION])
     def select_previous_layer(self) -> None:
         """Select the layer above the current active layer."""
-        self._layer_stack.offset_active_selection(-1)
+        self._image_stack.offset_active_selection(-1)
 
     @menu_action(MENU_LAYERS, 'select_next_layer_shortcut', 44,
                  valid_app_states=[APP_STATE_EDITING, APP_STATE_SELECTION])
     def select_next_layer(self) -> None:
         """Select the layer below the current active layer."""
-        self._layer_stack.offset_active_selection(1)
+        self._image_stack.offset_active_selection(1)
 
     @menu_action(MENU_LAYERS, 'move_layer_up_shortcut', 45, valid_app_states=[APP_STATE_EDITING])
     def move_layer_up(self) -> None:
         """Move the active layer up in the image."""
-        self._layer_stack.move_layer(-1)
+        self._image_stack.move_layer(-1)
 
     @menu_action(MENU_LAYERS, 'move_layer_down_shortcut', 46, valid_app_states=[APP_STATE_EDITING])
     def move_layer_down(self) -> None:
         """Move the active layer down in the image."""
-        self._layer_stack.move_layer(1)
+        self._image_stack.move_layer(1)
 
     @menu_action(MENU_LAYERS, 'merge_layer_down_shortcut', valid_app_states=[APP_STATE_EDITING])
     def merge_layer_down(self) -> None:
         """Merge the active layer with the one beneath it."""
-        self._layer_stack.merge_layer_down()
+        self._image_stack.merge_layer_down()
 
     @menu_action(MENU_LAYERS, 'layer_to_image_size_shortcut', 48, valid_app_states=[APP_STATE_EDITING])
     def layer_to_image_size(self) -> None:
         """Crop or expand the active layer to match the image size."""
-        self._layer_stack.layer_to_image_size()
+        self._image_stack.layer_to_image_size()
 
     @menu_action(MENU_LAYERS, 'crop_to_content_shortcut', 49, valid_app_states=[APP_STATE_EDITING])
     def crop_layer_to_content(self) -> None:
         """Crop the active layer to remove fully transparent border pixels."""
-        layer = self._layer_stack.active_layer
+        layer = self._image_stack.active_layer
         if layer is not None:
             layer.crop_to_content()
 
@@ -778,7 +768,7 @@ class BaseInpaintController(MenuBuilder):
     def show_layer_panel(self) -> None:
         """Opens the layer panel window"""
         if self._layer_panel is None:
-            self._layer_panel = LayerPanel(self._layer_stack)
+            self._layer_panel = LayerPanel(self._image_stack)
             self._layer_panel.show()
             self._layer_panel.raise_()
 
@@ -792,17 +782,17 @@ class BaseInpaintController(MenuBuilder):
 
     def _scale(self, new_size: QSize) -> None:  # Override to allow alternate or external upscalers:
         config = AppConfig.instance()
-        width = self._layer_stack.width
-        height = self._layer_stack.height
+        width = self._image_stack.width
+        height = self._image_stack.height
         if new_size is None or (new_size.width() == width and new_size.height() == height):
             return
-        image = self._layer_stack.pil_image()
+        image = self._image_stack.pil_image()
         if new_size.width() <= width and new_size.height() <= height:  # downscaling
             scale_mode = PIL_SCALING_MODES[config.get(AppConfig.DOWNSCALE_MODE)]
         else:
             scale_mode = PIL_SCALING_MODES[config.get(AppConfig.UPSCALE_MODE)]
         scaled_image = image.resize((new_size.width(), new_size.height()), scale_mode)
-        self._layer_stack.set_image(scaled_image)
+        self._image_stack.set_image(scaled_image)
 
     # Image generation handling:
     def _inpaint(self,

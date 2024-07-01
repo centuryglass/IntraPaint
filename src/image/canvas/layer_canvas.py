@@ -45,7 +45,7 @@ class LayerCanvas:
                 self.edit_region = QRect(0, 0, self._layer.width, self._layer.height)
                 self._update_canvas_position(self._layer, self._layer.position)
             else:
-                self._layer_bounds_change_slot(self._layer, self._layer.geometry)
+                self._layer_bounds_change_slot(self._layer, self._layer.bounds)
         self._layer_content_change_slot(self._layer)
 
     @property
@@ -142,6 +142,7 @@ class LayerCanvas:
 
     def disconnect_layer_signals(self) -> None:
         """Disconnect signal handlers for the connected layer."""
+        assert self._layer is not None
         self._layer.visibility_changed.disconnect(self._layer_content_change_slot)
         self._layer.content_changed.disconnect(self._layer_content_change_slot)
         self._layer.bounds_changed.disconnect(self._layer_bounds_change_slot)
@@ -151,6 +152,7 @@ class LayerCanvas:
     def connect_layer_signals(self) -> None:
         """Reconnect signal handlers for the connected layer. Only call after disconnect_layer_signals, or within
            connect_to_layer."""
+        assert self._layer is not None
         self._layer.visibility_changed.connect(self._layer_content_change_slot)
         self._layer.content_changed.connect(self._layer_content_change_slot)
         self._layer.bounds_changed.connect(self._layer_bounds_change_slot)

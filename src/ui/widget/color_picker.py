@@ -207,7 +207,9 @@ class ColorPicker(QColorDialog):
         return self._spectrum_panel, self._component_panel, self._basic_palette_panel, self._custom_palette_panel
 
     def _clear_layouts(self) -> None:
-        def _clear_intermediate_item(inner_item: QWidget | QLayout | QLayoutItem) -> None:
+        def _clear_intermediate_item(inner_item: Optional[QWidget | QLayout | QLayoutItem]) -> None:
+            if inner_item is None:
+                return
             if inner_item in self._panels():
                 inner_item.setParent(None)
                 return

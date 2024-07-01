@@ -3,6 +3,7 @@ Simplified script for glid-3-xl for image generation only, no inpainting functio
 """
 import sys
 import gc
+# noinspection PyPackageRequirements
 import torch
 from src.glid_3_xl.load_models import load_models
 from src.glid_3_xl.create_sample_function import create_sample_function

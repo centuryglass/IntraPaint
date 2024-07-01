@@ -15,7 +15,7 @@ from PyQt5.QtWidgets import QWidget, QGraphicsPixmapItem, QVBoxLayout, QLabel, \
 
 from src.config.application_config import AppConfig
 from src.config.key_config import KeyConfig
-from src.image.layer_stack import LayerStack
+from src.image.image_stack import ImageStack
 from src.ui.graphics_items.outline import Outline
 from src.ui.graphics_items.polygon_outline import PolygonOutline
 from src.ui.widget.image_graphics_view import ImageGraphicsView
@@ -58,11 +58,11 @@ class GeneratedImageSelector(QWidget):
     """Shows all images from an image generation operation, allows the user to select one or discard all of them."""
 
     def __init__(self,
-                 layer_stack: LayerStack,
+                 image_stack: ImageStack,
                  close_selector: Callable,
                  make_selection: Callable[[Optional[Image.Image]], None]) -> None:
         super().__init__(None)
-        self._layer_stack = layer_stack
+        self._image_stack = image_stack
         self._close_selector = close_selector
         self._make_selection = make_selection
         self._options: List[_ImageOption] = []
@@ -110,7 +110,7 @@ class GeneratedImageSelector(QWidget):
         scene = self._view.scene()
         assert scene is not None, 'Scene should have been created automatically and never cleared'
 
-        original_image = self._layer_stack.qimage_generation_area_content()
+        original_image = self._image_stack.qimage_generation_area_content()
         original_option = _ImageOption(original_image, ORIGINAL_CONTENT_LABEL)
         scene.addItem(original_option)
         self._options.append(original_option)
@@ -139,9 +139,9 @@ class GeneratedImageSelector(QWidget):
             self._selection_outline_checkbox.toggled.connect(self.set_selection_outline_visibility)
             self._page_top_layout.addWidget(self._selection_outline_checkbox)
             # zoom to changed area:
-            change_bounds = layer_stack.selection_layer.get_selection_gen_area(True)
-            if change_bounds != layer_stack.generation_area and change_bounds is not None:
-                change_bounds.translate(-layer_stack.generation_area.x(), -layer_stack.generation_area.y())
+            change_bounds = image_stack.selection_layer.get_selection_gen_area(True)
+            if change_bounds != image_stack.generation_area and change_bounds is not None:
+                change_bounds.translate(-image_stack.generation_area.x(), -image_stack.generation_area.y())
                 self._change_bounds = change_bounds
                 self._change_zoom_checkbox = config.get_control_widget(AppConfig.SELECTION_SCREEN_ZOOMS_TO_CHANGED)
                 self._change_zoom_checkbox.setText(CHANGE_ZOOM_CHECKBOX_LABEL)
@@ -202,14 +202,14 @@ class GeneratedImageSelector(QWidget):
         if len(self._selections) != idx:
             raise RuntimeError(f'Generating selection outline {idx}, unexpected outline count {len(self._selections)}'
                                f' found.')
-        selection_crop = QPolygonF(QRectF(self._layer_stack.generation_area))
-        origin = self._layer_stack.generation_area.topLeft()
+        selection_crop = QPolygonF(QRectF(self._image_stack.generation_area))
+        origin = self._image_stack.generation_area.topLeft()
         selection_polys = (poly.intersected(selection_crop).translated(-origin.x(), -origin.y())
-                           for poly in self._layer_stack.selection_layer.outline)
+                           for poly in self._image_stack.selection_layer.outline)
         polys = [QPolygonF(poly) for poly in selection_polys]
         outline = PolygonOutline(self._view, polys)
         outline.animated = AppConfig.instance().get(AppConfig.ANIMATE_OUTLINES)
-        outline.setScale(self._layer_stack.width / self._layer_stack.generation_area.width())
+        outline.setScale(self._image_stack.width / self._image_stack.generation_area.width())
         outline.setVisible(AppConfig.instance().get(AppConfig.SHOW_SELECTIONS_IN_GENERATION_OPTIONS))
         self._selections.append(outline)
 
@@ -434,7 +434,7 @@ class GeneratedImageSelector(QWidget):
             if len(self._selections) > idx:
                 selection = self._selections[idx]
                 selection.setZValue(self._options[idx].zValue() + 1)
-                scale = self._options[idx].bounds.width() / self._layer_stack.generation_area.width()
+                scale = self._options[idx].bounds.width() / self._image_stack.generation_area.width()
                 selection.setScale(scale)
                 selection.move_to(QPointF(x / selection.scale(), y / selection.scale()))
 

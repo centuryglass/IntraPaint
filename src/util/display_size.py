@@ -1,6 +1,6 @@
 """Utility functions for display text management."""
 import logging
-from typing import Optional
+from typing import Optional, cast
 
 from PyQt5.QtCore import QSize
 from PyQt5.QtGui import QFont, QFontMetrics
@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 def find_text_size(text: str, font: Optional[QFont] = None) -> QSize:
     """Returns the size in pixels required to render the text with the given font."""
     if font is None:  # Use application default
-        app = QApplication.instance()
+        app = cast(QApplication, QApplication.instance())
         assert app is not None
         font = app.font()
     return QFontMetrics(font).boundingRect(text).size()
@@ -38,7 +38,7 @@ def max_font_size(text: str, font: QFont, bounds: QSize) -> int:
 def get_screen_size(window: Optional[QMainWindow] = None) -> QSize:
     """Returns the size of the display a window is in, or the size of the primary display if window is None."""
     display = None
-    app = QApplication.instance()
+    app = cast(QApplication, QApplication.instance())
     assert app is not None, 'Application instance must be created to get screen size'
     if window is not None:
         display = app.screenAt(window.pos())
@@ -51,7 +51,7 @@ def get_screen_size(window: Optional[QMainWindow] = None) -> QSize:
 
 def get_window_size() -> QSize:
     """Returns the size of the largest open window."""
-    app = QApplication.instance()
+    app = cast(QApplication, QApplication.instance())
     assert app is not None, 'Application instance must be created to get window size'
     max_area = 0
     largest = None

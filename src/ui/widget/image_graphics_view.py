@@ -4,9 +4,10 @@ from typing import Optional, List, cast
 
 from PyQt5.QtCore import Qt, QObject, QPoint, QPointF, QRect, QRectF, QSize, QMarginsF, pyqtSignal, QEvent
 from PyQt5.QtGui import QPixmap, QImage, QPainter, QPen, QTransform, QResizeEvent, QMouseEvent, QCursor, QWheelEvent, \
-    QEnterEvent
-from PyQt5.QtWidgets import QWidget, QGraphicsView, QGraphicsScene, QGraphicsPixmapItem, QApplication
+    QEnterEvent, QSurfaceFormat
+from PyQt5.QtWidgets import QWidget, QGraphicsView, QGraphicsScene, QGraphicsPixmapItem, QApplication, QOpenGLWidget
 
+from src.config.application_config import AppConfig
 from src.config.key_config import KeyConfig
 from src.hotkey_filter import HotkeyFilter
 from src.util.contrast_color import contrast_color
@@ -47,6 +48,15 @@ class ImageGraphicsView(QGraphicsView):
         self.setCacheMode(QGraphicsView.CacheBackground)
         self.setTransformationAnchor(QGraphicsView.ViewportAnchor.NoAnchor)
         self.setViewportUpdateMode(QGraphicsView.FullViewportUpdate)
+
+        if AppConfig.instance().get(AppConfig.OPENGL_ACCELERATION):
+            self._opengl_view: Optional[QOpenGLWidget] = QOpenGLWidget()
+            surface_format = QSurfaceFormat()
+            surface_format.setSamples(4)
+            self._opengl_view.setFormat(surface_format)
+            self.setViewport(self._opengl_view)
+        else:
+            self._opengl_view = None
         self.setScene(self._scene)
         self.installEventFilter(self)
 
@@ -386,8 +396,9 @@ class ImageGraphicsView(QGraphicsView):
                 return True if get_result else None
         return False if get_result else None
 
-    def eventFilter(self, source, event: QEvent):
+    def eventFilter(self, source, event: Optional[QEvent]):
         """Intercept mouse wheel events, use for scrolling in zoom mode:"""
+        assert event is not None
         if event.type() == QEvent.Leave:
             self.set_cursor_pos(None)
         elif event.type() == QEvent.Enter:

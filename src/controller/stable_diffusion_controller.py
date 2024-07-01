@@ -6,13 +6,12 @@ import json
 import logging
 import os
 import sys
-import threading
 from argparse import Namespace
-from typing import Optional, Callable, Any, Dict, List
+from typing import Optional, Callable, Any, Dict, List, cast
 
 import requests
 from PIL import Image
-from PyQt5.QtCore import QObject, pyqtSignal, QSize, QThread
+from PyQt5.QtCore import pyqtSignal, QSize, QThread
 from PyQt5.QtGui import QImage
 from PyQt5.QtWidgets import QInputDialog
 
@@ -21,17 +20,17 @@ from src.config.a1111_config import A1111Config
 from src.config.application_config import AppConfig
 from src.config.cache import Cache
 from src.controller.base_controller import BaseInpaintController, MENU_TOOLS
-from src.image.layer_stack import LayerStack
 from src.ui.modal.modal_utils import show_error_dialog
 from src.ui.modal.settings_modal import SettingsModal
 from src.ui.window.extra_network_window import ExtraNetworkWindow
 from src.ui.window.prompt_style_window import PromptStyleWindow
 from src.ui.window.stable_diffusion_main_window import StableDiffusionMainWindow
 from src.util.application_state import APP_STATE_EDITING, AppStateTracker, APP_STATE_LOADING, APP_STATE_NO_IMAGE
-from src.util.async_task import AsyncTask, ThreadAction
+from src.util.async_task import AsyncTask
 from src.util.display_size import get_screen_size
 from src.util.menu_builder import menu_action
-from src.util.shared_constants import EDIT_MODE_INPAINT, EDIT_MODE_TXT2IMG
+from src.util.parameter import ParamType
+from src.util.shared_constants import EDIT_MODE_INPAINT, EDIT_MODE_TXT2IMG, EDIT_MODE_IMG2IMG
 
 STABLE_DIFFUSION_CONFIG_CATEGORY = 'Stable-Diffusion'
 
@@ -100,7 +99,7 @@ class StableDiffusionController(BaseInpaintController):
         super().__init__(args)
         self._webservice = A1111Webservice(args.server_url)
         self._window: Optional[StableDiffusionMainWindow] = None
-        self._lora_images: Optional[Dict[str, QImage]] = None
+        self._lora_images: Optional[Dict[str, Optional[QImage]]] = None
 
         # Login automatically if username/password are defined as env variables.
         # Obviously this isn't terribly secure, but A1111 auth security is already pretty minimal, and I'm just using
@@ -146,7 +145,7 @@ class StableDiffusionController(BaseInpaintController):
                 self._webservice.set_config(changed_settings)
             update_task = AsyncTask(_update_config, True)
             update_task.finish_signal.connect(lambda: AppStateTracker.set_app_state(
-                APP_STATE_EDITING if self._layer_stack.has_image else APP_STATE_NO_IMAGE))
+                APP_STATE_EDITING if self._image_stack.has_image else APP_STATE_NO_IMAGE))
             update_task.start()
 
     @staticmethod
@@ -187,7 +186,7 @@ class StableDiffusionController(BaseInpaintController):
         automatically generates an appropriate prompt. Once returned, that prompt is copied to the appropriate field
         in the UI. Displays an error dialog instead if no image is loaded or another API operation is in-progress.
         """
-        if not self._layer_stack.has_image:
+        if not self._image_stack.has_image:
             show_error_dialog(self._window, INTERROGATE_ERROR_TITLE, INTERROGATE_ERROR_MESSAGE_NO_IMAGE)
             return
 
@@ -200,7 +199,7 @@ class StableDiffusionController(BaseInpaintController):
 
         def _interrogate(prompt_ready, error_signal):
             try:
-                image = self._layer_stack.pil_image_generation_area_content()
+                image = self._image_stack.pil_image_generation_area_content()
                 prompt_ready.emit(self._webservice.interrogate(image))
             except RuntimeError as err:
                 logger.error(f'err:{err}')
@@ -296,7 +295,7 @@ class StableDiffusionController(BaseInpaintController):
 
         # initialize remote options modal:
         # Handle final window init now that data is loaded from the API:
-        self._window = StableDiffusionMainWindow(self._layer_stack, self)
+        self._window = StableDiffusionMainWindow(self._image_stack, self)
         if self._fixed_window_size is not None:
             size = self._fixed_window_size
             self._window.setGeometry(0, 0, size.width(), size.height())
@@ -325,12 +324,8 @@ class StableDiffusionController(BaseInpaintController):
             def signals(self) -> List[pyqtSignal]:
                 return [external_status_signal if external_status_signal is not None else self.status_signal]
 
-            def stop_loop(self):
-                print('stop loop')
-                self.should_stop = True
-
             def _check_progress(self, status_signal) -> None:
-                init_timestamp: Optional[int] = None
+                init_timestamp: Optional[float] = None
                 error_count = 0
                 max_progress = 0
                 while not self.should_stop:
@@ -379,8 +374,8 @@ class StableDiffusionController(BaseInpaintController):
     def _scale(self, new_size: QSize) -> None:
         """Provide extra upscaling modes using stable-diffusion-webui."""
         assert self._window is not None
-        width = self._layer_stack.width
-        height = self._layer_stack.height
+        width = self._image_stack.width
+        height = self._image_stack.height
         # If downscaling, use base implementation:
         if new_size.width() <= width and new_size.height() <= height:
             super()._scale(new_size)
@@ -397,7 +392,7 @@ class StableDiffusionController(BaseInpaintController):
 
         def _upscale(image_ready: pyqtSignal, error_signal: pyqtSignal) -> None:
             try:
-                images, info = self._webservice.upscale(self._layer_stack.pil_image(), new_size.width(),
+                images, info = self._webservice.upscale(self._image_stack.pil_image(), new_size.width(),
                                                         new_size.height())
                 if info is not None:
                     logger.debug(f'Upscaling result info: {info}')
@@ -413,11 +408,14 @@ class StableDiffusionController(BaseInpaintController):
         task.error_signal.connect(handle_error)
 
         def apply_upscaled(img: Image.Image) -> None:
-            """Copy the upscaled image into the layer stack."""
-            self._layer_stack.set_image(img)
+            """Copy the upscaled image into the image stack."""
+            self._image_stack.set_image(img)
 
         task.image_ready.connect(apply_upscaled)
-        task.finish_signal.connect(lambda: self._window.set_is_loading(False))
+        def _on_finish() -> None:
+            assert self._window is not None
+            self._window.set_is_loading(False)
+        task.finish_signal.connect(_on_finish)
         self._async_progress_check()
         task.start()
 
@@ -440,9 +438,11 @@ class StableDiffusionController(BaseInpaintController):
             Signal to emit when status updates are available.
         """
         edit_mode = AppConfig.instance().get(AppConfig.EDIT_MODE)
+        if edit_mode == EDIT_MODE_INPAINT and self._image_stack.selection_layer.generation_area_fully_selected():
+            edit_mode = EDIT_MODE_IMG2IMG
         if edit_mode != EDIT_MODE_INPAINT:
             mask = None
-        elif self._layer_stack.selection_layer.generation_area_is_empty():
+        elif self._image_stack.selection_layer.generation_area_is_empty():
             raise RuntimeError(GENERATE_ERROR_MESSAGE_EMPTY_MASK)
 
         # Check progress before starting:
@@ -500,7 +500,7 @@ class StableDiffusionController(BaseInpaintController):
             show_error_dialog(None, STYLE_ERROR_TITLE, err)
             return
         style_strings = [json.dumps(style) for style in style_list]
-        Cache.instance().update_options(Cache.STYLES, style_strings)
+        Cache.instance().update_options(Cache.STYLES, cast(List[ParamType], style_strings))
 
     @menu_action(MENU_STABLE_DIFFUSION, 'prompt_style_shortcut', 200, [APP_STATE_EDITING],
                  condition_check=_check_prompt_styles_available)
@@ -532,15 +532,18 @@ class StableDiffusionController(BaseInpaintController):
                     status_signal.emit(f'Loading thumbnail {i+1}/{len(loras)}')
                     path = lora['path']
                     path = path[:path.rindex('.')] + '.png'
+                    assert self._lora_images is not None
                     self._lora_images[lora['name']] = self._webservice.get_thumbnail(path)
 
             task = _LoadingTask(_load_and_open)
 
             def _resume_and_show() -> None:
                 AppStateTracker.set_app_state(APP_STATE_EDITING)
+                assert self._lora_images is not None
                 delayed_lora_window = ExtraNetworkWindow(loras, self._lora_images)
                 delayed_lora_window.exec_()
 
+            assert self._window is not None
             task.status.connect(self._window.set_loading_message)
             task.finish_signal.connect(_resume_and_show)
             task.start()

@@ -8,7 +8,7 @@ from PyQt5.QtWidgets import QVBoxLayout, QHBoxLayout, QWidget, QPushButton, QApp
 from src.config.application_config import AppConfig
 from src.config.key_config import KeyConfig
 from src.image.canvas.pixmap_layer_canvas import PixmapLayerCanvas
-from src.image.layer_stack import LayerStack
+from src.image.image_stack import ImageStack
 from src.tools.canvas_tool import CanvasTool
 from src.ui.image_viewer import ImageViewer
 from src.ui.input_fields.slider_spinbox import IntSliderSpinbox
@@ -38,10 +38,10 @@ TOOL_MODE_ERASE = "Erase"
 class SelectionTool(CanvasTool):
     """Selects image content for image generation or editing."""
 
-    def __init__(self, layer_stack: LayerStack, image_viewer: ImageViewer) -> None:
+    def __init__(self, image_stack: ImageStack, image_viewer: ImageViewer) -> None:
         scene = image_viewer.scene()
         assert scene is not None
-        super().__init__(layer_stack, image_viewer, PixmapLayerCanvas(scene))
+        super().__init__(image_stack, image_viewer, PixmapLayerCanvas(scene))
         self._last_click = None
         self._control_layout: Optional[QVBoxLayout] = None
         self._active = False
@@ -53,7 +53,7 @@ class SelectionTool(CanvasTool):
         # Setup brush, load size from config
         self.brush_color = Qt.red
         self.brush_size = AppConfig.instance().get(AppConfig.SELECTION_BRUSH_SIZE)
-        self.layer = layer_stack.selection_layer
+        self.layer = image_stack.selection_layer
         self.update_brush_cursor()
 
     def get_hotkey(self) -> QKeySequence:

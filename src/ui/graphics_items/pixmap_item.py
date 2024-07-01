@@ -31,6 +31,7 @@ class PixmapItem(QGraphicsPixmapItem):
               option: Optional[QStyleOptionGraphicsItem],
               widget: Optional[QWidget] = None) -> None:
         """Paints the pixmap using the item's composition mode."""
+        assert painter is not None
         painter.save()
         painter.setCompositionMode(self._mode)
         super().paint(painter, option, widget)

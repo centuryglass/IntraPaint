@@ -14,7 +14,7 @@ from typing import Optional
 import spacenav
 from PyQt5.QtCore import QObject, QThread, QSize, QRect, pyqtSignal
 from PyQt5.QtWidgets import QMainWindow
-from src.image.layer_stack import LayerStack
+from src.image.image_stack import ImageStack
 
 logger = logging.getLogger(__name__)
 
@@ -29,20 +29,20 @@ MAX_SPEED_CONTROL = 1
 class SpacenavManager:
     """Tracks spacemouse input and applies it to the edited image generation area."""
 
-    def __init__(self, window: QMainWindow, layer_stack: LayerStack) -> None:
+    def __init__(self, window: QMainWindow, image_stack: ImageStack) -> None:
         """Connects the manager to the edited image and the main application window.""
 
         Parameters
         ----------
         window : MainWindow
             The main application window.
-        layer_stack : LayerStack
+        image_stack : ImageStack
             Image layers being edited.
         """
         if spacenav is None:
             return
         self._window = window
-        self._layer_stack = layer_stack
+        self._image_stack = image_stack
         self._thread: Optional[QThread] = None
         self._worker: Optional['SpacenavThreadWorker'] = None
 
@@ -77,7 +77,7 @@ class SpacenavManager:
                 if size.height() != self._thread_data.h_image:
                     self._thread_data.h_image = size.height()
 
-        self._layer_stack.size_changed.connect(update_image_size)
+        self._image_stack.size_changed.connect(update_image_size)
 
         def update_generation_area_size(bounds: QRect):
             """Keep tracked image generation area size in sync with the current image generation area."""
@@ -87,7 +87,7 @@ class SpacenavManager:
                 if bounds.height() != self._thread_data.h_sel:
                     self._thread_data.h_sel = bounds.height()
 
-        self._layer_stack.generation_area_bounds_changed.connect(update_generation_area_size)
+        self._image_stack.generation_area_bounds_changed.connect(update_generation_area_size)
 
         def stop_loop():
             """Stop the event thread when the application finishes."""
@@ -185,9 +185,9 @@ class SpacenavManager:
                 self._thread_data.pending = False
             if self._window is None or self._window.is_sample_selector_visible():
                 return
-            generation_area = self._layer_stack.generation_area
+            generation_area = self._image_stack.generation_area
             generation_area.moveTo(generation_area.x() + x_offset, generation_area.y() + y_offset)
-            self._layer_stack.generation_area = generation_area
+            self._image_stack.generation_area = generation_area
             self._window.repaint()
 
         self._worker.nav_event_signal.connect(handle_nav_event)

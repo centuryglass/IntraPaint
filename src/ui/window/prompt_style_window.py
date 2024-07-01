@@ -41,6 +41,7 @@ class PromptStyleWindow(QDialog):
         cache = Cache.instance()
         self._style_options = []
         for style in cache.get_options(Cache.STYLES):
+            assert isinstance(style, str)
             try:
                 self._style_options.append(json.loads(style))
             except json.JSONDecodeError as err:
@@ -51,6 +52,7 @@ class PromptStyleWindow(QDialog):
         self._style_list.itemSelectionChanged.connect(self._update_preview)
         self._layout.addWidget(self._style_list)
         for style in self._style_options:
+            assert isinstance(style, str)
             QListWidgetItem(style[NAME_KEY], self._style_list)
 
         name_row = QHBoxLayout()

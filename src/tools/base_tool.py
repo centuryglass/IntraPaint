@@ -26,7 +26,7 @@ class BaseTool(QObject):
 
     2. If needed, implement on_activate to handle setup tasks and on_deactivate to handle cleanup tasks.
 
-    3.  Implement all needed event handling functions, probably by acting on the LayerStack. All event handling
+    3.  Implement all needed event handling functions, probably by acting on the ImageStack. All event handling
        functions receive the associated QEvent and the associated set of image coordinates if relevant. Event handlers
        should return True if the event was consumed, False if any default event handling should still take effect.
        Event handlers may be called without a QEvent to trigger their behavior manually.
@@ -145,6 +145,7 @@ class BaseTool(QObject):
         """Receives a mouse release event, returning whether the tool consumed the event."""
         return False
 
+    # noinspection PyUnusedLocal
     def mouse_enter(self, event: Optional[QEvent], image_coordinates: QPoint) -> bool:
         """Receives a mouse enter event, returning whether the tool consumed the event.
 
@@ -153,6 +154,7 @@ class BaseTool(QObject):
         """
         return False
 
+    # noinspection PyUnusedLocal
     def mouse_exit(self, event: Optional[QEvent], image_coordinates: QPoint) -> bool:
         """Receives a mouse exit event, returning whether the tool consumed the event.
 

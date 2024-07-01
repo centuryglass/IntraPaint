@@ -7,7 +7,7 @@ from PyQt5.QtWidgets import QWidget, QLabel, QHBoxLayout, QVBoxLayout, QSizePoli
     QStackedLayout, QBoxLayout
 
 from src.config.cache import Cache
-from src.image.layer_stack import LayerStack
+from src.image.image_stack import ImageStack
 from src.tools.base_tool import BaseTool
 from src.tools.brush_tool import BrushTool
 from src.tools.eyedropper_tool import EyedropperTool
@@ -44,12 +44,12 @@ MIN_SIZE_FOR_TOOL_LABEL = QSize(600, 300)
 class ToolPanel(QWidget):
     """Selects between image editing tools, and controls their settings."""
 
-    def __init__(self, layer_stack: LayerStack, image_panel: ImagePanel, generate_fn: Callable[[], None]) -> None:
+    def __init__(self, image_stack: ImageStack, image_panel: ImagePanel, generate_fn: Callable[[], None]) -> None:
         """Initializes instances of all Tool classes, connects them to image data, and sets up the tool interface.
 
         Parameters:
         -----------
-        layer_stack: LayerStack
+        image_stack: ImageStack
             Used by tools that need to view or modify the edited image.
         image_panel: ImagePanel
             Used by tools that interact with the way image data is displayed.
@@ -58,7 +58,7 @@ class ToolPanel(QWidget):
         """
         super().__init__()
         self.setSizePolicy(QSizePolicy(QSizePolicy.Expanding, QSizePolicy.MinimumExpanding))
-        self._layer_stack = layer_stack
+        self._image_stack = image_stack
         self._image_panel = image_panel
         self._image_viewer = image_panel.image_viewer
         self._event_handler = ToolEventHandler(image_panel.image_viewer)
@@ -75,7 +75,7 @@ class ToolPanel(QWidget):
         self._panel_box.set_expanded_size_policy(QSizePolicy.Ignored)
         self._panel_box.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
 
-        self._layer_panel: Optional[LayerPanel] = LayerPanel(layer_stack)
+        self._layer_panel: Optional[LayerPanel] = LayerPanel(image_stack)
 
         self._generate_button = QPushButton(GENERATE_BUTTON_TEXT)
         self._generate_button.clicked.connect(generate_fn)
@@ -123,19 +123,19 @@ class ToolPanel(QWidget):
             self._event_handler.register_hotkeys(new_tool)
             self._tool_list.add_widget(button)
 
-        selection_tool = SelectionTool(layer_stack, image_panel.image_viewer)
+        selection_tool = SelectionTool(image_stack, image_panel.image_viewer)
         add_tool(selection_tool)
-        selection_fill_tool = SelectionFillTool(layer_stack)
+        selection_fill_tool = SelectionFillTool(image_stack)
         add_tool(selection_fill_tool)
-        brush_tool = BrushTool(layer_stack, image_panel.image_viewer)
+        brush_tool = BrushTool(image_stack, image_panel.image_viewer)
         add_tool(brush_tool)
-        eyedropper_tool = EyedropperTool(layer_stack)
+        eyedropper_tool = EyedropperTool(image_stack)
         add_tool(eyedropper_tool)
-        transform_tool = LayerTransformTool(layer_stack, image_panel.image_viewer)
+        transform_tool = LayerTransformTool(image_stack, image_panel.image_viewer)
         add_tool(transform_tool)
-        fill_tool = FillTool(layer_stack)
+        fill_tool = FillTool(image_stack)
         add_tool(fill_tool)
-        generation_area_tool = GenerationAreaTool(layer_stack, image_panel.image_viewer)
+        generation_area_tool = GenerationAreaTool(image_stack, image_panel.image_viewer)
         add_tool(generation_area_tool)
         self._event_handler.register_tool_delegate(brush_tool, eyedropper_tool, Qt.KeyboardModifier.ControlModifier)
         self._switch_active_tool(Cache.instance().get(Cache.LAST_ACTIVE_TOOL))
@@ -289,7 +289,7 @@ class ToolPanel(QWidget):
                                 and self.height() >= LAYER_PANEL_MIN_HEIGHT))
         if show_layer_panel and self._panel_box_layout is not None:
             if self._layer_panel is None:
-                self._layer_panel = LayerPanel(self._layer_stack)
+                self._layer_panel = LayerPanel(self._image_stack)
             self._panel_box_layout.insertWidget(self._panel_box_layout.count() - 2, self._layer_panel)
         elif self._layer_panel is not None:
             if self._panel_box_layout is not None:

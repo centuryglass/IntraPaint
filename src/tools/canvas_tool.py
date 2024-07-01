@@ -10,7 +10,7 @@ from src.config.key_config import KeyConfig
 from src.hotkey_filter import HotkeyFilter
 from src.image.canvas.layer_canvas import LayerCanvas
 from src.image.image_layer import ImageLayer
-from src.image.layer_stack import LayerStack
+from src.image.image_stack import ImageStack
 from src.tools.base_tool import BaseTool
 from src.ui.image_viewer import ImageViewer
 from src.util.key_code_utils import get_modifiers
@@ -37,7 +37,7 @@ class CanvasTool(BaseTool):
     and setting or updating the affected layer.
     """
 
-    def __init__(self, layer_stack: LayerStack, image_viewer: ImageViewer, canvas: LayerCanvas) -> None:
+    def __init__(self, image_stack: ImageStack, image_viewer: ImageViewer, canvas: LayerCanvas) -> None:
         super().__init__()
         self._layer: Optional[ImageLayer] = None
         self._drawing = False
@@ -56,18 +56,18 @@ class CanvasTool(BaseTool):
 
         # Create MyPaintLayerCanvas
         self._control_panel = QWidget()
-        self._layer_stack = layer_stack
+        self._image_stack = image_stack
         self._image_viewer = image_viewer
         self._canvas = canvas
 
         def update_size(new_size: QSize) -> None:
             """Sync canvas size with image size."""
             self._canvas.edit_region = QRect(QPoint(0, 0), new_size)
-        self._layer_stack.size_changed.connect(update_size)
+        self._image_stack.size_changed.connect(update_size)
 
         for key, sign in ((KeyConfig.BRUSH_SIZE_DECREASE, -1), (KeyConfig.BRUSH_SIZE_INCREASE, 1)):
             def _size_change(mult, step=sign) -> bool:
-                if not hasattr(self, 'adjust_brush_size') or not self.is_active:
+                if not self.is_active:
                     return False
                 self.adjust_brush_size(step * mult)
                 return True
@@ -112,7 +112,7 @@ class CanvasTool(BaseTool):
             self._canvas.connect_to_layer(None)
             self._image_viewer.hide_active_layer = False
         else:
-            layer_index = self._layer_stack.get_layer_index(layer)
+            layer_index = self._image_stack.get_layer_index(layer)
             if layer_index is not None:
                 self._canvas.z_value = -layer_index
             self._canvas.connect_to_layer(layer)
@@ -143,6 +143,10 @@ class CanvasTool(BaseTool):
             self._canvas.brush_path = new_path
         else:
             raise RuntimeError(f'Tried to set brush path {new_path} when layer canvas has no brush support.')
+
+    def adjust_brush_size(self, new_size: int) -> None:
+        """Update the brush size."""
+        raise NotImplementedError()
 
     @property
     def brush_color(self) -> QColor:
@@ -179,7 +183,7 @@ class CanvasTool(BaseTool):
     # Event handlers:
     def _stroke_to(self, image_coordinates: QPoint) -> None:
         """Draws coordinates to the canvas, including tablet data if available."""
-        if not self._layer_stack.has_image:
+        if not self._image_stack.has_image:
             return
         if self._tablet_input == QTabletEvent.PointerType.Eraser:
             self._canvas.eraser = True
@@ -190,7 +194,7 @@ class CanvasTool(BaseTool):
 
     def mouse_click(self, event: Optional[QMouseEvent], image_coordinates: QPoint) -> bool:
         """Starts drawing when the mouse is clicked in the scene."""
-        if self._layer is None or event is None or not self._layer_stack.has_image:
+        if self._layer is None or event is None or not self._image_stack.has_image:
             return False
         if QApplication.keyboardModifiers() == Qt.ControlModifier:
             return True
@@ -212,7 +216,7 @@ class CanvasTool(BaseTool):
 
     def mouse_move(self, event: Optional[QMouseEvent], image_coordinates: QPoint) -> bool:
         """Receives a mouse move event, returning whether the tool consumed the event."""
-        if self._layer is None or event is None or not self._layer_stack.has_image:
+        if self._layer is None or event is None or not self._image_stack.has_image:
             return False
         if QApplication.keyboardModifiers() == Qt.ControlModifier:
             return False
@@ -223,7 +227,7 @@ class CanvasTool(BaseTool):
 
     def mouse_release(self, event: Optional[QMouseEvent], image_coordinates: QPoint) -> bool:
         """Receives a mouse release event, returning whether the tool consumed the event."""
-        if self._layer is None or event is None or not self._layer_stack.has_image:
+        if self._layer is None or event is None or not self._image_stack.has_image:
             return False
         if QApplication.keyboardModifiers() == Qt.ControlModifier:
             return True

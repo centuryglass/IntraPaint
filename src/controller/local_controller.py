@@ -101,6 +101,7 @@ class LocalDeviceController(BaseInpaintController):
             ddpm=self._ddpm,
             ddim=self._ddim)
 
+        # noinspection PyUnusedLocal
         def save_sample(i, sample, unused_clip_score=False) -> None:
             """Extract generated samples and repackage into the appropriate structure."""
             foreach_image_in_sample(

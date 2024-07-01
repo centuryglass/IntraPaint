@@ -21,6 +21,7 @@ from PyQt5.QtWidgets import QWidget
 
 from src.config.config_entry import ConfigEntry, DefinitionKey, DefinitionType
 from src.ui.input_fields.check_box import CheckBox
+from src.util.parameter import ParamType
 from src.util.validation import assert_type
 
 logger = logging.getLogger(__name__)
@@ -333,7 +334,7 @@ class Config:
         with self._lock:
             return self._entries[key].option_index
 
-    def get_options(self, key: str) -> List[str]:
+    def get_options(self, key: str) -> List[ParamType]:
         """Returns all valid options accepted for a given key.
 
         Raises
@@ -343,9 +344,11 @@ class Config:
         """
         if key not in self._entries:
             raise KeyError(f'Tried to set unknown config value "{key}"')
-        return self._entries[key].options
+        options = self._entries[key].options
+        assert options is not None
+        return options.copy()
 
-    def update_options(self, key: str, options_list: List[str]) -> None:
+    def update_options(self, key: str, options_list: List[ParamType]) -> None:
         """
         Replaces the list of accepted options for a given key.
 
@@ -361,7 +364,7 @@ class Config:
         if last_value not in options_list:
             self.set(key, options_list[0])
 
-    def add_option(self, key: str, option: str) -> None:
+    def add_option(self, key: str, option: ParamType) -> None:
         """
         Adds a new item to the list of accepted options for a given key.
 
@@ -400,7 +403,7 @@ class Config:
                    label: str,
                    category: str,
                    tooltip: str,
-                   options: Optional[List[str]] = None,
+                   options: Optional[List[ParamType]] = None,
                    range_options: Optional[Dict[str, int | float]] = None,
                    save_json: bool = True) -> None:
         if key in self._entries:
