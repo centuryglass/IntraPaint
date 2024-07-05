@@ -3,7 +3,7 @@ from typing import Optional, Dict, cast, Tuple
 
 from PyQt5.QtCore import Qt, QRect, QRectF, QPointF, QSize, QPoint
 from PyQt5.QtGui import QCursor, QIcon, QKeySequence, QTransform, QPen, QPaintEvent, QPainter, QColor, \
-    QPolygon, QPainterPath, QPolygonF
+    QPolygon
 from PyQt5.QtWidgets import QWidget, QLabel, QSpinBox, QDoubleSpinBox, QCheckBox, QGridLayout, QPushButton, QSizePolicy
 
 from src.config.application_config import AppConfig
@@ -68,6 +68,7 @@ class LayerTransformTool(BaseTool):
         self._control_panel.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         self._control_layout: Optional[QGridLayout] = None
         self._preview = _TransformPreview(image_stack.size, QRect(), QTransform())
+        image_stack.size_changed.connect(self._preview.set_image_size)
 
         def _init_control(default_val, min_val, max_val, change_fn):
             new_control = QSpinBox() if isinstance(default_val, int) else QDoubleSpinBox()
@@ -587,15 +588,15 @@ class LayerTransformTool(BaseTool):
 
 class _TransformPreview(QWidget):
 
-    def __init__(self, size: QSize, bounds: QRectF, transform: QTransform) -> None:
+    def __init__(self, image_size: QSize, layer_bounds: QRectF, layer_transform: QTransform) -> None:
         super().__init__()
-        self._size = size
-        self._bounds = bounds
-        self._transform = transform
+        self._image_size = image_size
+        self._layer_bounds = layer_bounds
+        self._layer_transform = layer_transform
         self._brush = Qt.white
         self._pen = QPen(Qt.black, 3)
         self._pen.setCosmetic(True)
-        self._background = get_transparency_tile_pixmap(size)
+        self._background = get_transparency_tile_pixmap(image_size)
         self.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Maximum)
 
     def sizeHint(self) -> QSize:
@@ -604,38 +605,36 @@ class _TransformPreview(QWidget):
 
     def set_image_size(self, new_size: QSize) -> None:
         """Update the previewed size of the edited image."""
-        self._size = new_size
+        self._image_size = new_size
         self.update()
 
     def set_layer_bounds(self, new_bounds: QRect) -> None:
         """Update the previewed layer bounds."""
-        self._bounds = new_bounds
+        self._layer_bounds = new_bounds
         self.update()
 
     def set_transform(self, new_transform: QTransform) -> None:
         """Update the previewed layer transformation."""
-        self._transform = new_transform
+        self._layer_transform = new_transform
         self.update()
 
     def paintEvent(self, event: Optional[QPaintEvent]) -> None:
         """Draw the transformed layer over the image bounds."""
         painter = QPainter(self)
         painter.drawTiledPixmap(QRect(QPoint(), self.size()), self._background)
-        image_bounds = QRect(QPoint(), self._size)
-        final_image_poly = self._transform.map(QPolygon(self._bounds))
+        image_bounds = QRect(QPoint(), self._image_size)
+        final_image_poly = self._layer_transform.map(QPolygon(self._layer_bounds))
         full_bounds = image_bounds.united(final_image_poly.boundingRect())
         scaled_full_bounds = get_scaled_placement(self.size(), full_bounds.size(), 4)
         initial_transform = get_rect_transformation(full_bounds, scaled_full_bounds)
         image_bounds_color = QColor(Qt.black)
         image_bounds_color.setAlphaF(0.3)
-        painted_image_bounds = initial_transform.map(QPolygon(image_bounds)).boundingRect()
-        painter.fillRect(painted_image_bounds, image_bounds_color)
-        if not self._bounds.isNull():
-            transformed_poly = QPolygonF(initial_transform.map(final_image_poly))
-            path = QPainterPath()
-            path.addPolygon(transformed_poly)
+        painter.setTransform(initial_transform)
+        painter.fillRect(image_bounds, image_bounds_color)
+        if not self._layer_bounds.isNull():
+            painter.setTransform(self._layer_transform, True)
             painter.setPen(self._pen)
             painter.setBrush(self._brush)
-            painter.fillPath(path, self._brush)
-            painter.drawPath(path)
+            painter.fillRect(self._layer_bounds, self._brush)
+            painter.drawRect(self._layer_bounds)
         painter.end()

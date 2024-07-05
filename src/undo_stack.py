@@ -19,11 +19,9 @@ class _UndoAction:
         self.action_data = action_data
 
 
-
 _undo_stack: List[_UndoAction] = []
 _redo_stack: List[_UndoAction] = []
 _access_lock = Lock()
-
 
 
 def commit_action(action: Callable[[], None], undo_action: Callable[[], None], action_type: str,

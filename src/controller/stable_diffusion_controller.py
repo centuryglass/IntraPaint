@@ -11,7 +11,7 @@ from typing import Optional, Callable, Any, Dict, List, cast
 
 import requests
 from PIL import Image
-from PyQt5.QtCore import pyqtSignal, QSize, QThread, Qt
+from PyQt5.QtCore import pyqtSignal, QSize, QThread
 from PyQt5.QtGui import QImage
 from PyQt5.QtWidgets import QInputDialog
 

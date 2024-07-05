@@ -306,9 +306,7 @@ class ImageStack(QObject):
     def cropped_qimage_content(self, bounds_rect: QRect) -> QImage:
         """Returns the contents of a bounding QRect as a QImage."""
         assert_type(bounds_rect, QRect)
-        image = self.qimage()
-        offset = self._layer_stack.transformed_bounds.topLeft()
-        return self.qimage().copy(bounds_rect) #.translated(offset))
+        return self.qimage().copy(bounds_rect)
 
     def qimage_generation_area_content(self) -> QImage:
         """Returns the contents of the image generation area as a QImage."""

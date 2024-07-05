@@ -1,8 +1,8 @@
 """Represents a group of linked image layers that can be manipulated as one in limited ways."""
 from typing import List, Optional, Dict, Any
 
-from PyQt5.QtCore import Qt, QPoint, QRect, pyqtSignal
-from PyQt5.QtGui import QPainter, QImage, QTransform
+from PyQt5.QtCore import Qt, QRect, pyqtSignal
+from PyQt5.QtGui import QPainter, QImage
 
 from src.image.layers.image_layer import ImageLayer, ImageLayerState
 from src.image.layers.layer import Layer

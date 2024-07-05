@@ -245,6 +245,7 @@ class ImageViewer(ImageGraphicsView):
             self.zoom_to_generation_area()
         self.update()
 
+    # noinspection PyUnusedLocal
     def _layer_transform_change_slot(self, layer: Layer, transform: QTransform) -> None:
         """Apply layer transformations to outlines."""
         if layer == self._image_stack.active_layer:

@@ -2,14 +2,13 @@
 from sys import version_info
 
 from src.image.mypaint.numpy_image_utils import is_fully_transparent, AnyNpArray, image_data_as_numpy_8bit
-from src.ui.widget.image_widget import ImageWidget
 
 if version_info[1] >= 11:
     from typing import Optional, List
 else:
     from typing import Optional, List
 import logging
-from PyQt5.QtGui import QImage, QPolygonF, QPainter, QPen
+from PyQt5.QtGui import QImage, QPolygonF, QPainter
 from PyQt5.QtCore import QRect, QPoint, QSize, pyqtSignal, QPointF, Qt
 import numpy as np
 import cv2

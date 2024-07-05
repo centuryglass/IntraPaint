@@ -4,9 +4,9 @@ from sys import version_info
 from src.image.layers.layer import Layer
 
 if version_info[1] >= 11:
-    from typing import Self, Optional, Tuple, Any
+    from typing import Self, Optional, Any
 else:
-    from typing import Optional, Tuple, Any
+    from typing import Optional, Any
     from typing_extensions import Self
 from collections.abc import Generator
 from contextlib import contextmanager

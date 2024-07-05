@@ -136,7 +136,6 @@ class Layer(QObject):
         bounds = self.local_bounds
         return self.map_rect_to_image(bounds)
 
-
     @property
     def full_image_transform(self) -> QTransform:
         """Returns this layers transformation combined with all parent transformation."""
@@ -269,9 +268,9 @@ class Layer(QObject):
 
     def set_image(self, new_image: QImage, offset: Optional[QPoint] = None) -> None:
         """Updates the layer image."""
-        size_changed = new_image.width() > self.width or new_image.height() > self.height
+        size_changed = new_image.size() != self._size
         if size_changed:
-            new_size = QSize(max(new_image.width(), self.width), max(new_image.height(), self.height))
+            new_size = new_image.size()
             self.set_size(new_size)
         if offset is not None and not offset.isNull():
             transform = self.transform

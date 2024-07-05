@@ -13,7 +13,6 @@ from src.image.mypaint.libmypaint import libmypaint, MyPaintTiledSurface, MyPain
     RectangleBuffer, MyPaintRectangles, RECTANGLE_BUF_SIZE, c_uint16_p
 from src.image.mypaint.mp_brush import MPBrush
 from src.image.mypaint.mp_tile import MPTile
-from src.util.geometry_utils import transform_str
 
 
 class MPSurface(QObject):

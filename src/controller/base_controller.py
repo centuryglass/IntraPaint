@@ -35,7 +35,7 @@ from src.util.application_state import AppStateTracker, APP_STATE_NO_IMAGE, APP_
     APP_STATE_SELECTION
 from src.util.async_task import AsyncTask
 from src.util.display_size import get_screen_size
-from src.util.image_utils import pil_image_to_qimage, qimage_to_pil_image
+from src.util.image_utils import pil_image_to_qimage
 from src.util.menu_builder import MenuBuilder, menu_action
 from src.util.optional_import import optional_import
 from src.util.qtexcepthook import QtExceptHook

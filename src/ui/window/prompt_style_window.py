@@ -52,7 +52,7 @@ class PromptStyleWindow(QDialog):
         self._style_list.itemSelectionChanged.connect(self._update_preview)
         self._layout.addWidget(self._style_list)
         for style in self._style_options:
-            assert isinstance(style, str)
+            assert isinstance(style, dict)
             QListWidgetItem(style[NAME_KEY], self._style_list)
 
         name_row = QHBoxLayout()

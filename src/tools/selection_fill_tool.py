@@ -2,7 +2,7 @@
 from typing import Optional
 
 from PyQt5.QtCore import Qt, QPoint, QRect
-from PyQt5.QtGui import QIcon, QCursor, QMouseEvent, QKeySequence, QColor, QPainter
+from PyQt5.QtGui import QIcon, QCursor, QMouseEvent, QKeySequence, QColor, QPainter, QTransform
 from PyQt5.QtWidgets import QWidget, QFormLayout, QApplication
 
 from src.config.cache import Cache
@@ -80,27 +80,34 @@ class SelectionFillTool(BaseTool):
             layer = self._image_stack.active_layer
             if layer is None:
                 return False
-            layer_point = layer.map_from_image(image_coordinates)
-            if not layer.local_bounds.contains(layer_point):
-                return True
+            mask_pos = self._image_stack.selection_layer.position
+            merged_pos = self._image_stack.merged_layer_bounds.topLeft()
+            layer_pos = layer.map_to_image(QPoint())
             if self._sample_merged:
-                layer_image_bounds = layer.full_image_bounds
-                merged_image_bounds = self._image_stack.merged_layer_bounds
                 image = self._image_stack.qimage(crop_to_image=False)
-                layer_image_bounds.translate(-merged_image_bounds.topLeft())
-                image = image.copy(layer_image_bounds)
-                selection_image = layer.image
+                sample_point = image_coordinates - merged_pos
+                offset = -mask_pos + merged_pos
+                paint_transform = QTransform.fromTranslate(offset.x(), offset.y())
             else:
                 image = layer.image
-                selection_image = self._image_stack.selection_layer.image
-            mask = flood_fill(image, layer_point, self._color, self._threshold, False)
+                sample_point = layer.map_from_image(image_coordinates)
+                paint_transform = layer.full_image_transform
+                layer_pos_in_mask = layer_pos - mask_pos
+                transformed_origin = QPoint(*paint_transform.map(0, 0))
+                img_offset = layer_pos_in_mask - transformed_origin
+                paint_transform *= QTransform.fromTranslate(img_offset.x(), img_offset.y())
+            if not QRect(QPoint(), image.size()).contains(sample_point):
+                return True
+            mask = flood_fill(image, sample_point, self._color, self._threshold, False)
+            selection_image = self._image_stack.selection_layer.image
             assert mask is not None
             painter = QPainter(selection_image)
             if clear_mode:
                 painter.setCompositionMode(QPainter.CompositionMode_DestinationOut)
-            painter.drawImage(QRect(QPoint(), layer.size), mask)
+            painter.setTransform(paint_transform)
+            painter.drawImage(QRect(QPoint(), mask.size()), mask)
             painter.end()
-            self._image_stack.selection_layer.set_image(selection_image)
+            self._image_stack.selection_layer.image = selection_image
             return True
         return False
 
