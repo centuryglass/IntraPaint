@@ -7,7 +7,7 @@ from PyQt5.QtWidgets import QWidget, QLabel, QHBoxLayout, QVBoxLayout, QSizePoli
     QStackedLayout, QBoxLayout
 
 from src.config.cache import Cache
-from src.image.image_stack import ImageStack
+from src.image.layers.image_stack import ImageStack
 from src.tools.base_tool import BaseTool
 from src.tools.brush_tool import BrushTool
 from src.tools.eyedropper_tool import EyedropperTool

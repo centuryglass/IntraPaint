@@ -1,6 +1,5 @@
 """Provides access to the user-editable application config."""
 from argparse import Namespace
-from threading import Lock
 from typing import Optional
 
 from PyQt5.QtWidgets import QStyleFactory
@@ -116,5 +115,7 @@ class AppConfig(Config, metaclass=Singleton):
     STYLE: str
     THEME: str
     TILING: str
+    UNDO_MERGE_INTERVAL: str
     UPSCALE_METHOD: str
     UPSCALE_MODE: str
+    USE_ERROR_HANDLER: str

@@ -8,7 +8,7 @@ from PyQt5.QtWidgets import QLabel, QHBoxLayout, QVBoxLayout, QGridLayout, QPush
 
 from src.config.application_config import AppConfig
 from src.config.cache import Cache
-from src.image.image_stack import ImageStack
+from src.image.layers.image_stack import ImageStack
 from src.ui.panel.controlnet_panel import ControlnetPanel
 from src.ui.widget.bordered_widget import BorderedWidget
 from src.ui.widget.collapsible_box import CollapsibleBox

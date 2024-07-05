@@ -3,7 +3,7 @@ from typing import Optional
 
 from PyQt5.QtWidgets import QWidget
 
-from src.image.image_stack import ImageStack
+from src.image.layers.image_stack import ImageStack
 from src.ui.widget.image_widget import ImageWidget
 
 

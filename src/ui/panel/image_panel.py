@@ -4,7 +4,7 @@ from typing import Optional
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QResizeEvent
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLabel, QDoubleSpinBox, QSlider, QPushButton
-from src.image.image_stack import ImageStack
+from src.image.layers.image_stack import ImageStack
 from src.ui.image_viewer import ImageViewer
 
 MIN_WIDTH_SHOWING_SCALE_SLIDER = 600

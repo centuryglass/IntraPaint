@@ -2,8 +2,9 @@
 Miscellaneous utility functions for handling torch-related functionality
 """
 import os
+# noinspection PyPackageRequirements
 import torch
-# noinspection PyPep8Naming
+# noinspection PyPep8Naming,PyPackageRequirements
 from torchvision.transforms import functional as TF
 import numpy as np
 

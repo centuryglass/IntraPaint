@@ -2,18 +2,19 @@
 from sys import version_info
 
 from src.image.mypaint.numpy_image_utils import is_fully_transparent, AnyNpArray, image_data_as_numpy_8bit
+from src.ui.widget.image_widget import ImageWidget
 
 if version_info[1] >= 11:
     from typing import Optional, List
 else:
     from typing import Optional, List
 import logging
-from PyQt5.QtGui import QImage, QPolygonF, QPainter
+from PyQt5.QtGui import QImage, QPolygonF, QPainter, QPen
 from PyQt5.QtCore import QRect, QPoint, QSize, pyqtSignal, QPointF, Qt
 import numpy as np
 import cv2
 from PIL import Image
-from src.image.image_layer import ImageLayer
+from src.image.layers.image_layer import ImageLayer
 from src.config.application_config import AppConfig
 from src.util.image_utils import qimage_to_pil_image, image_content_bounds
 
@@ -55,11 +56,12 @@ class SelectionLayer(ImageLayer):
         super().__init__(size, SELECTION_LAYER_NAME)
         self.opacity = MASK_OPACITY_DEFAULT
         self._bounding_box: Optional[QRect] = None
+        self.transform_changed.connect(lambda layer, matrix: self._update_bounds())
         generation_window_signal.connect(self.update_generation_area)
 
     def update_generation_area(self, new_area: QRect) -> None:
         """Update the area marked for image generation."""
-        self._generation_area = new_area
+        self._generation_area = QRect(new_area)
         self._update_bounds()
         self.content_changed.emit(self)
 
@@ -83,15 +85,6 @@ class SelectionLayer(ImageLayer):
         """Access the selection outline polygons directly."""
         return self._outline_polygons
 
-    def set_size(self, new_size: QSize, save_to_undo_history: bool = True) -> None:
-        """Adjust selection area size, clearing existing content."""
-        cleared_selection_area = QImage(new_size, QImage.Format_ARGB32_Premultiplied)
-        cleared_selection_area.fill(Qt.transparent)
-        if save_to_undo_history:
-            self.image = cleared_selection_area
-        else:
-            self.set_image(cleared_selection_area)
-
     # Updating cached selection
 
     # Enforcing image properties:
@@ -99,13 +92,17 @@ class SelectionLayer(ImageLayer):
     def _update_bounds(self, np_image: Optional[np.ndarray] = None) -> None:
         """Update saved selection bounds within the generation window."""
         if np_image is None:
-            image = self.image
+            image = self.get_qimage()
+            if image.size().isEmpty():
+                return
             image_ptr = image.bits()
             assert image_ptr is not None, 'Selection layer image was invalid'
             image_ptr.setsize(image.byteCount())
             np_image = np.ndarray(shape=(image.height(), image.width(), 4), dtype=np.uint8, buffer=image_ptr)
-        generation_area = self._generation_area
-        bounds = image_content_bounds(np_image, generation_area, ALPHA_THRESHOLD)
+        pos = self.position
+        generation_area = QRect(self._generation_area).translated(-pos.x(), -pos.y())
+        bounds = image_content_bounds(np_image, generation_area)
+        bounds.translate(pos.x(), pos.y())
         if bounds.isNull():
             self._bounding_box = None
         else:
@@ -119,9 +116,11 @@ class SelectionLayer(ImageLayer):
     def generation_area_fully_selected(self) -> bool:
         """Returns whether the generation area is 100% selected."""
         np_image = image_data_as_numpy_8bit(self.get_qimage())
-        bounds = self._generation_area
+        bounds = QRect(self._generation_area)
+        pos = self.position
+        bounds.translate(-pos.x(), -pos.y())
         gen_area_np_image = np_image[bounds.y():bounds.y() + bounds.height(), bounds.x():bounds.x() + bounds.width(), :]
-        return bool(np.all(np_image[:, :, 3] > ALPHA_THRESHOLD))
+        return bool(np.all(gen_area_np_image[:, :, 3] > ALPHA_THRESHOLD))
 
     def select_all(self) -> None:
         """Selects the entire image."""
@@ -166,17 +165,24 @@ class SelectionLayer(ImageLayer):
         adjusted_image[adjusted_mask, 3] = 255
         qimage = QImage(adjusted_image.data, adjusted_image.shape[1], adjusted_image.shape[0],
                         QImage.Format_ARGB32)
-        qimage.save('test.png')
         self.image = qimage
 
     @property
+    def mask_image(self) -> QImage:
+        """Gets the generation area mask content as a QImage"""
+        bounds = self.map_rect_from_image(self._generation_area)
+        return self.cropped_image_content(bounds)
+
+    @property
     def pil_mask_image(self) -> Image.Image:
-        """Gets the selection mask as a PIL image mask."""
-        return qimage_to_pil_image(self.cropped_image_content(self._generation_area))
+        """Gets the generation area mask content as a PIL image mask"""
+        return qimage_to_pil_image(self.mask_image)
 
     def _handle_content_change(self, image: QImage, change_bounds: Optional[QRect] = None) -> None:
         """When the image updates, ensure that it meets requirements, and recalculate bounds."""
         # Enforce fixed colors, alpha thresholds:
+        if image.size().isEmpty():
+            return
         image_ptr = image.bits()
         assert image_ptr is not None, 'Selection layer image was invalid'
         image_ptr.setsize(image.byteCount())
@@ -189,7 +195,6 @@ class SelectionLayer(ImageLayer):
             return
 
         if change_bounds is not None:
-            change_bounds.moveTo(change_bounds.x() - self.position.x(), change_bounds.y() - self.position.y())
             cropped_image = np_image[change_bounds.y():change_bounds.y() + change_bounds.height(),
                                      change_bounds.x():change_bounds.x() + change_bounds.width(), :]
         else:
@@ -205,9 +210,14 @@ class SelectionLayer(ImageLayer):
         cropped_image[masked, 2] = 255  # red
         cropped_image[masked, 3] = 255
 
-        # Find edge polygons:
+        # Find edge polygons, using image coordinates:
+        # Extra 0.5 offset puts lines through the center of pixels instead of on left edges.
+        pos = self.position
+        x_offset = 0.5 + pos.x()
+        y_offset = 0.5 + pos.y()
         if change_bounds is not None:
-            final_bounds = change_bounds
+            final_bounds = QRect(change_bounds)
+            final_bounds.translate(-pos.x(), -pos.y())
             polys_to_remove = []
             for poly in self._outline_polygons:
                 if poly.boundingRect().toAlignedRect().intersects(change_bounds):
@@ -218,13 +228,10 @@ class SelectionLayer(ImageLayer):
             final_bounds = final_bounds.intersected(QRect(0, 0, self.width, self.height))
             cropped_image = np_image[final_bounds.y():final_bounds.y() + final_bounds.height(),
                                      final_bounds.x():final_bounds.x() + final_bounds.width(), :]
-            x_offset = 0.5 + final_bounds.x()
-            y_offset = 0.5 + final_bounds.y()
+            x_offset += final_bounds.x()
+            y_offset += final_bounds.y()
         else:
             self._outline_polygons = []
-            x_offset = 0.5
-            y_offset = 0.5
-        # Extra 0.5 offset puts lines through the center of pixels instead of on left edges.
         gray = cv2.cvtColor(cropped_image[:, :, :3], cv2.COLOR_BGR2GRAY)
         contours, _ = cv2.findContours(gray, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
         for contour in contours:
@@ -245,7 +252,7 @@ class SelectionLayer(ImageLayer):
         return bounds
 
     def get_selection_gen_area(self, ignore_config: bool = False) -> Optional[QRect]:
-        """Returns the smallest QRect containing all masked areas, plus padding.
+        """Returns the smallest QRect within the generation area containing all masked areas, plus padding.
 
         Used for showing the actual area visible to the image model when the Config.INPAINT_FULL_RES config option is
         set to true. The padding amount is set by the Config.INPAINT_FULL_RES_PADDING config option, measured in
@@ -289,34 +296,35 @@ class SelectionLayer(ImageLayer):
         image_ratio = generation_area.width() / generation_area.height()
         bounds_ratio = width / height
 
-        try:
-            if image_ratio > bounds_ratio:
-                target_width = int(image_ratio * height)
-                width_to_add = target_width - width
-                assert width_to_add >= 0
-                d_left = min(left - area_left, width_to_add // 2)
-                width_to_add -= d_left
-                d_right = min(area_right - right, width_to_add)
-                width_to_add -= d_right
-                if width_to_add > 0:
-                    d_left = min(left - area_left, d_left + width_to_add)
-                left -= d_left
-                right += d_right
-            else:
-                target_height = width // image_ratio
-                height_to_add = target_height - height
-                assert height_to_add >= 0
-                d_top = min(top - area_top, height_to_add // 2)
-                height_to_add -= d_top
-                d_bottom = min(area_bottom - bottom, height_to_add)
-                height_to_add -= d_bottom
-                if height_to_add > 0:
-                    d_top = min(top - area_top, d_top + height_to_add)
-                top -= int(d_top)
-                bottom += int(d_bottom)
-        except AssertionError:
-            # Weird edge cases that pop up sometimes when you try to do unreasonable things like change size to 500x8
-            selection_rect = QRect(QPoint(int(left), int(top)), QPoint(int(right), int(bottom)))
-            logger.error(f'Border calc bug: calculated rect was {selection_rect}, ratio was {image_ratio}')
-        selection_rect = QRect(QPoint(int(left), int(top)), QPoint(int(right), int(bottom)))
+        if image_ratio > bounds_ratio:
+            target_width = int(image_ratio * height)
+            width_to_add = target_width - width
+            assert width_to_add >= 0
+            d_left = min(left - area_left, width_to_add // 2)
+            width_to_add -= d_left
+            d_right = min(area_right - right, width_to_add)
+            width_to_add -= d_right
+            if width_to_add > 0:
+                d_left = min(left - area_left, d_left + width_to_add)
+            left -= d_left
+            right += d_right
+        else:
+            target_height = width // image_ratio
+            height_to_add = target_height - height
+            assert height_to_add >= 0
+            d_top = min(top - area_top, height_to_add // 2)
+            height_to_add -= d_top
+            d_bottom = min(area_bottom - bottom, height_to_add)
+            height_to_add -= d_bottom
+            if height_to_add > 0:
+                d_top = min(top - area_top, d_top + height_to_add)
+            top -= int(d_top)
+            bottom += int(d_bottom)
+        selection_rect = QRect(QPoint(int(left), int(top)),
+                               QPoint(int(right), int(bottom)))
         return selection_rect
+
+    @property
+    def position(self) -> QPoint:
+        """Returns the mask layer's position relative to image bounds."""
+        return self.full_image_bounds.topLeft()

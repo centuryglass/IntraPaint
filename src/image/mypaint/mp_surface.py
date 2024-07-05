@@ -5,7 +5,7 @@ from time import time
 from typing import Any, Optional
 
 from PyQt5.QtCore import Qt, QObject, QPoint, QSize, QRect, pyqtSignal
-from PyQt5.QtGui import QImage, QColor
+from PyQt5.QtGui import QImage, QColor, QTransform
 
 from src.image.mypaint.libmypaint import libmypaint, MyPaintTiledSurface, MyPaintTileRequestStartFunction, \
     MyPaintTileRequestEndFunction, MyPaintSurfaceDestroyFunction, \
@@ -13,6 +13,7 @@ from src.image.mypaint.libmypaint import libmypaint, MyPaintTiledSurface, MyPain
     RectangleBuffer, MyPaintRectangles, RECTANGLE_BUF_SIZE, c_uint16_p
 from src.image.mypaint.mp_brush import MPBrush
 from src.image.mypaint.mp_tile import MPTile
+from src.util.geometry_utils import transform_str
 
 
 class MPSurface(QObject):
@@ -36,6 +37,7 @@ class MPSurface(QObject):
 
         self._size = QSize(0, 0)
         self._scene_position = QPoint(0, 0)
+        self._scene_transform = QTransform()
         self._tiles_width = 0
         self._tiles_height = 0
 
@@ -102,20 +104,19 @@ class MPSurface(QObject):
         return self._brush
 
     @property
-    def scene_position(self) -> QPoint:
-        """Returns the surface's coordinates within the scene."""
-        return self._scene_position
+    def scene_transform(self) -> QTransform:
+        """Returns the surface's transformation within the scene."""
+        return QTransform(self._scene_transform)
 
-    @scene_position.setter
-    def scene_position(self, position: QPoint) -> None:
+    @scene_transform.setter
+    def scene_transform(self, transform: QTransform) -> None:
         """Updates the surface's position in the scene, moving all active tiles."""
-        self._scene_position = position
+        self._scene_transform = transform
         for coordinate_str, tile in self._tiles.items():
             if tile.is_valid and tile.scene() is not None:
-                x, y = (int(value) for value in coordinate_str.split(','))
-                x_px = x * TILE_DIM
-                y_px = y * TILE_DIM
-                tile.setPos(QPoint(self._scene_position.x() + x_px, self._scene_position.y() + y_px))
+                tile.setTransform(QTransform.fromTranslate(tile.x(), tile.y())
+                                  * self._scene_transform
+                                  * QTransform.fromTranslate(-tile.x(), -tile.y()))
                 tile.update()
 
     def _assert_valid_surface(self) -> None:
@@ -133,8 +134,6 @@ class MPSurface(QObject):
     def stroke_to(self, x: float, y: float, pressure: float, x_tilt: float, y_tilt: float):
         """Continue a brush stroke, providing tablet inputs."""
         self._assert_valid_surface()
-        x -= self.scene_position.x()
-        y -= self.scene_position.y()
         dtime = 0.1  # time() - self._dtime_start
         libmypaint.mypaint_surface_begin_atomic(byref(self._surface_data))
         libmypaint.mypaint_brush_stroke_to(self.brush.brush_ptr, byref(self._surface_data),
@@ -203,6 +202,9 @@ class MPSurface(QObject):
             tile = MPTile(pixel_buffer, clear_buffer_if_new, QSize(width, height))
             self._tiles[point] = tile
             tile.setPos(QPoint(self._scene_position.x() + x * TILE_DIM, self._scene_position.y() + y * TILE_DIM))
+            tile.setTransform(QTransform.fromTranslate(tile.x(), tile.y())
+                              * self._scene_transform
+                              * QTransform.fromTranslate(-tile.x(), -tile.y()))
         if tile.scene() is None:
             self.tile_created.emit(tile)
         return tile

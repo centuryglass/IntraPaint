@@ -1,5 +1,4 @@
 """Use the Config module's data sharing capabilities to cache temporary values."""
-from typing import Optional
 
 from src.config.config import Config
 from src.util.singleton import Singleton

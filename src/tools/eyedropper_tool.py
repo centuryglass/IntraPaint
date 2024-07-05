@@ -7,7 +7,7 @@ from PyQt5.QtWidgets import QWidget, QColorDialog
 
 from src.config.cache import Cache
 from src.config.key_config import KeyConfig
-from src.image.image_stack import ImageStack
+from src.image.layers.image_stack import ImageStack
 from src.tools.base_tool import BaseTool
 from src.ui.widget.color_picker import ColorPicker
 from src.util.display_size import get_window_size

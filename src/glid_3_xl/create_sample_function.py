@@ -6,15 +6,15 @@ import io
 import requests
 # noinspection PyPackageRequirements
 import torch
-# noinspection PyPackageRequirements
+# noinspection PyPackageRequirements,PyUnresolvedReferences
 import clip
 import numpy as np
 from PIL import Image, ImageOps
 # noinspection PyPackageRequirements
 from torchvision import transforms
-# noinspection PyPep8Naming
+# noinspection PyPep8Naming,PyPackageRequirements
 from torchvision.transforms import functional as TF
-# noinspection PyPep8Naming
+# noinspection PyPep8Naming,PyPackageRequirements
 from torch.nn import functional as F
 from src.glid_3_xl.encoders.modules import MakeCutouts
 
@@ -186,6 +186,7 @@ def create_sample_function(
             clip_in = normalize(make_cutouts(x_img.add(1).div(2)))
             clip_embeds = clip_model.encode_image(clip_in).float()
 
+            # noinspection PyShadowingNames
             def _spherical_dist_loss(x, y):
                 x = F.normalize(x, dim=-1)
                 y = F.normalize(y, dim=-1)

@@ -1,6 +1,6 @@
 """Coordinate the current application state, mostly for enabling/disabling components that should only be active
    in particular states."""
-from typing import Optional, List
+from typing import List
 
 from PyQt5.QtCore import QObject, pyqtSignal
 from PyQt5.QtWidgets import QWidget, QAction

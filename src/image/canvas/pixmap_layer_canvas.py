@@ -4,13 +4,12 @@ Draws content to an image layer using basic Qt drawing operations.
 from typing import Optional, List
 
 from PyQt5.QtCore import QRect, Qt, QPoint, QPointF, QRectF
-from PyQt5.QtGui import QPainter, QPixmap, QPen
+from PyQt5.QtGui import QPainter, QPixmap, QPen, QTransform
 from PyQt5.QtWidgets import QGraphicsScene, QGraphicsItem
 
 from src.image.canvas.layer_canvas import LayerCanvas
-from src.image.image_layer import ImageLayer
+from src.image.layers.image_layer import ImageLayer
 from src.ui.graphics_items.pixmap_item import PixmapItem
-from src.undo_stack import commit_action
 
 ACTIVE_PIXMAP_OPACITY = 0.4
 
@@ -48,10 +47,10 @@ class PixmapLayerCanvas(LayerCanvas):
         """Returns all graphics items present in the scene that belong to the canvas."""
         return [self._pixmap_item] if self._pixmap_item is not None else []
 
-    def _update_canvas_position(self, _, new_position: QPoint) -> None:
-        """Updates the canvas position within the graphics scene."""
+    def _update_canvas_transform(self, layer: ImageLayer, transform: QTransform) -> None:
+        """Updates the canvas transformation within the graphics scene."""
         assert self._pixmap_item is not None
-        self._pixmap_item.setPos(new_position)
+        self._pixmap_item.setTransform(layer.full_image_transform)
 
     def _set_z_value(self, z_value: int) -> None:
         """Updates the level where content will be shown in a GraphicsScene."""
@@ -105,7 +104,8 @@ class PixmapLayerCanvas(LayerCanvas):
 
     def _layer_content_change_slot(self, layer: Optional[ImageLayer]) -> None:
         """Refreshes the layer content within the canvas, or clears it if the layer is hidden."""
-        assert self._layer == layer and self._edit_region is not None
+        assert self._layer == layer, f'change from:{layer}, but connected to {self._layer}'
+        assert self._edit_region is not None
         if self._pixmap_item is None:
             return
         if layer is not None and layer.visible:
@@ -128,24 +128,8 @@ class PixmapLayerCanvas(LayerCanvas):
             if change_bounds.isEmpty():
                 return
             image = self._pixmap_item.pixmap().toImage().copy(change_bounds)
-            prev_image = self._layer.cropped_image_content(change_bounds)
             layer = self._layer
 
-            def apply(img=image, bounds=change_bounds, img_layer=layer):
-                """Copy the change into the image."""
-                if img_layer == self._layer:
-                    self.disconnect_layer_signals()
-                img_layer.insert_image_content(img, bounds, register_to_undo_history=False)
-                if img_layer == self._layer:
-                    self.connect_layer_signals()
-
-            def reverse(img=prev_image, bounds=change_bounds, img_layer=layer):
-                """To undo, copy in the cached previous image data."""
-                if img_layer == self._layer:
-                    self.disconnect_layer_signals()
-                img_layer.insert_image_content(img, bounds, register_to_undo_history=False)
-                self._layer_content_change_slot(img_layer)
-                if img_layer == self._layer:
-                    self.connect_layer_signals()
-
-            commit_action(apply, reverse)
+            self.disconnect_layer_signals()
+            layer.insert_image_content(image, change_bounds, register_to_undo_history=True)
+            self.connect_layer_signals()

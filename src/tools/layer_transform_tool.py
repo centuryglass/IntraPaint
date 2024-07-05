@@ -2,18 +2,16 @@
 from typing import Optional, Dict, cast, Tuple
 
 from PyQt5.QtCore import Qt, QRect, QRectF, QPointF, QSize, QPoint
-from PyQt5.QtGui import QCursor, QIcon, QPixmap, QKeySequence, QTransform, QPen, QPaintEvent, QPainter, QColor, \
+from PyQt5.QtGui import QCursor, QIcon, QKeySequence, QTransform, QPen, QPaintEvent, QPainter, QColor, \
     QPolygon, QPainterPath, QPolygonF
-from PyQt5.QtWidgets import QWidget, QLabel, QGraphicsItem, QSpinBox, QDoubleSpinBox, \
-    QCheckBox, QGridLayout, QPushButton, QSizePolicy
+from PyQt5.QtWidgets import QWidget, QLabel, QSpinBox, QDoubleSpinBox, QCheckBox, QGridLayout, QPushButton, QSizePolicy
 
 from src.config.application_config import AppConfig
 from src.config.key_config import KeyConfig
 from src.hotkey_filter import HotkeyFilter
-from src.image.image_layer import ImageLayer
-from src.image.image_stack import ImageStack
+from src.image.layers.image_stack import ImageStack
+from src.image.layers.layer import Layer
 from src.tools.base_tool import BaseTool
-from src.ui.graphics_items.pixmap_item import PixmapItem
 from src.ui.graphics_items.transform_outline import TransformOutline
 from src.ui.image_viewer import ImageViewer
 from src.ui.widget.key_hint_label import KeyHintLabel
@@ -23,6 +21,8 @@ from src.util.display_size import find_text_size
 from src.util.geometry_utils import get_scaled_placement, get_rect_transformation
 from src.util.image_utils import get_transparency_tile_pixmap
 from src.util.shared_constants import FLOAT_MIN, FLOAT_MAX, MIN_NONZERO, INT_MAX
+
+CLEAR_BUTTON_TEXT = 'Clear'
 
 CONTROL_GRID_SPACING = 10
 
@@ -53,15 +53,15 @@ class LayerTransformTool(BaseTool):
         self._image_stack = image_stack
         self._image_viewer = image_viewer
         self._icon = QIcon(RESOURCES_TRANSFORM_TOOL_ICON)
+        self._initial_transform = QTransform()
         self._transform_outline = TransformOutline(QRect())
         self._transform_outline.transform_changed.connect(self._transformation_change_slot)
         self._transform_outline.setVisible(False)
-        self._transform_pixmap = PixmapItem(parent=self._transform_outline)
         scene = image_viewer.scene()
         assert scene is not None
         scene.addItem(self._transform_outline)
         self.cursor = QCursor(Qt.CursorShape.CrossCursor)
-        self._active_layer_id = None if image_stack.active_layer is None else image_stack.active_layer.id
+        self._active_layer_id = None
 
         # prepare control panel, wait to fully initialize
         self._control_panel = ReactiveLayoutWidget()
@@ -96,7 +96,11 @@ class LayerTransformTool(BaseTool):
 
         self._reset_button = QPushButton()
         self._reset_button.setText(RESET_BUTTON_TEXT)
-        self._reset_button.clicked.connect(self._reload_scene_item)
+        self._reset_button.clicked.connect(self.reset_transformation)
+
+        self._clear_button = QPushButton()
+        self._clear_button.setText(CLEAR_BUTTON_TEXT)
+        self._clear_button.clicked.connect(lambda: self._transform_outline.setTransform(QTransform()))
 
         def _restore_aspect_ratio() -> None:
             self._transform_outline.preserve_aspect_ratio = self._aspect_ratio_checkbox.isChecked()
@@ -196,6 +200,7 @@ class LayerTransformTool(BaseTool):
         for i in range(len(labels)):
             item_map[labels[i]] = (controls[i], down_control_hints[i], up_control_hints[i])
         item_map[RESET_BUTTON_TEXT] = (self._reset_button, None, None)
+        item_map[CLEAR_BUTTON_TEXT] = (self._clear_button, None, None)
 
         control_width = 0
         control_height = 0
@@ -303,6 +308,8 @@ class LayerTransformTool(BaseTool):
             _add_control(X_SCALE_LABEL, 3, 0)
             _add_control(Y_SCALE_LABEL, 3, 1)
             _add_control(RESET_BUTTON_TEXT, 3, 2)
+            grid.addWidget(self._clear_button, 3, 8)
+            self._clear_button.show()
             grid.setRowStretch(4, 100)
             _set_grid_weights()
 
@@ -336,6 +343,8 @@ class LayerTransformTool(BaseTool):
             self._aspect_ratio_checkbox.show()
             grid.addWidget(self._reset_button, 8, 0, 1, 4)
             self._reset_button.show()
+            grid.addWidget(self._clear_button, 8, 0, 1, 4)
+            self._clear_button.show()
             _set_grid_weights()
         self._control_panel.add_layout_mode('tall layout', _build_tall_layout, tall_layout_size,
                                             QSize(wide_layout_size.width() - 1, extra_tall_layout_size.height() - 1))
@@ -360,7 +369,9 @@ class LayerTransformTool(BaseTool):
             self._aspect_ratio_checkbox.show()
             grid.addWidget(self._reset_button, 11, 0, 1, 4)
             self._reset_button.show()
-            grid.setRowStretch(12, 30)
+            grid.addWidget(self._clear_button, 12, 0, 1, 4)
+            self._clear_button.show()
+            grid.setRowStretch(13, 30)
             _set_grid_weights()
         self._control_panel.add_layout_mode('extra tall layout', _build_extra_tall_layout, extra_tall_layout_size,
                                             QSize(wide_layout_size.width() - 1, INT_MAX))
@@ -375,15 +386,16 @@ class LayerTransformTool(BaseTool):
             _add_control(DEGREE_LABEL, 4, 0)
             grid.addWidget(self._aspect_ratio_checkbox, 5, 0, 1, 3)
             self._aspect_ratio_checkbox.show()
-            grid.addWidget(self._reset_button, 6, 0, 1, 3)
+            grid.addWidget(self._reset_button, 6, 0)
+            grid.addWidget(self._clear_button, 6, 2)
             self._reset_button.show()
+            self._clear_button.show()
             for hint_widget in [*up_control_hints, *down_control_hints]:
                 if hint_widget is not None:
                     grid.removeWidget(hint_widget)
                     hint_widget.hide()
             _set_grid_weights()
-        self._control_panel.add_layout_mode('reduced layout', _build_reduced_layout, QSize(0, 0),
-                                            QSize(tall_layout_size.width() - 1, tall_layout_size.height() - 1))
+        self._control_panel.add_default_layout_mode(_build_reduced_layout)
 
         return self._control_panel
 
@@ -434,33 +446,24 @@ class LayerTransformTool(BaseTool):
         if prev_rotation != rotation:
             self._transform_outline.rotation_angle = rotation
 
-    def set_layer(self, layer: Optional[ImageLayer]) -> None:
+    def set_layer(self, layer: Optional[Layer]) -> None:
         """Connects to a new image layer, or disconnects if the layer parameter is None."""
-        if self._active_layer_id == (None if layer is None else layer.id):
-            return
         last_layer = self._image_stack.get_layer_by_id(self._active_layer_id)
         if last_layer is not None:
             self.apply_transformations_to_layer()
-            last_layer.visibility_changed.disconnect(self._layer_visibility_slot)
-            last_layer.bounds_changed.disconnect(self._layer_bounds_change_slot)
-            last_layer.content_changed.disconnect(self._layer_content_change_slot)
-            last_layer.opacity_changed.disconnect(self._layer_opacity_change_slot)
-            last_layer.composition_mode_changed.disconnect(self._layer_mode_change_slot)
-            self._image_viewer.resume_rendering_layer(last_layer)
+            last_layer.transform_changed.disconnect(self._layer_transform_change_slot)
+            last_layer.z_value_changed.disconnect(self._layer_z_value_change_slot)
+            last_layer.size_changed.disconnect(self._layer_size_change_slot)
         self._active_layer_id = None if layer is None else layer.id
         self._reload_scene_item()
         self._preview.set_transform(QTransform())
         if layer is not None:
-            self._preview.set_layer_bounds(layer.bounds)
-            self._image_viewer.stop_rendering_layer(layer)
-            layer.visibility_changed.connect(self._layer_visibility_slot)
-            layer.bounds_changed.connect(self._layer_bounds_change_slot)
-            layer.content_changed.connect(self._layer_content_change_slot)
-            layer.opacity_changed.connect(self._layer_opacity_change_slot)
-            layer.composition_mode_changed.connect(self._layer_mode_change_slot)
+            self._preview.set_layer_bounds(layer.local_bounds)
+            layer.transform_changed.connect(self._layer_transform_change_slot)
+            layer.z_value_changed.connect(self._layer_z_value_change_slot)
+            layer.size_changed.connect(self._layer_size_change_slot)
         else:
             self._preview.set_layer_bounds(QRect())
-            self._transform_pixmap.setPixmap(QPixmap())
             self._transform_outline.setVisible(False)
 
     def apply_transformations_to_layer(self) -> None:
@@ -468,29 +471,28 @@ class LayerTransformTool(BaseTool):
         layer = self._image_stack.get_layer_by_id(self._active_layer_id)
         if layer is None:
             return
-        source_image = layer.image
-        source_pos = layer.position
-        transform_image = self._transform_outline.render()
-        transform_pos = self._transform_outline.mapToScene(
-            self._transform_outline.rect()).boundingRect().topLeft().toPoint()
-
-        def _transform(pos=transform_pos, img=transform_image) -> None:
-            if img is not None:
-                layer.set_image(img)
-            layer.set_position(pos)
-
-        def _undo_transform(pos=source_pos, img=source_image) -> None:
-            if img is not None:
-                layer.set_image(img)
-            layer.set_position(pos)
-
-        transformed = commit_action(_transform, _undo_transform, ignore_if_locked=True)
-        if not transformed:
-            print('Warning: pending transformation was discarded')
+        layer.transform = self._transform_outline.transform()
         self._reload_scene_item()
 
+    def reset_transformation(self) -> None:
+        """Resets the transformation to its previous state."""
+        layer = self._image_stack.active_layer
+        if layer is not None and self.is_active:
+            changed_transform = self._transform_outline.transform()
+            source_transform = self._initial_transform
+            if changed_transform != source_transform:
+
+                def _apply(active=layer, matrix=source_transform):
+                    active.set_transform(matrix)
+
+                def _undo(active=layer, matrix=changed_transform):
+                    active.set_transform(matrix)
+
+                commit_action(_apply, _undo, 'LayerTransformTool.reset_transformation')
+            self._transform_outline.setTransform(self._initial_transform)
+
     def _reload_scene_item(self):
-        """Reset all transformations and reload the scene pixmap from the layer."""
+        """Reset all transformations and reload properties from the layer."""
         layer = self._image_stack.active_layer
 
         # Clear old transform outline:
@@ -500,83 +502,60 @@ class LayerTransformTool(BaseTool):
             scene.removeItem(self._transform_outline)
 
         # Re-create for new layer:
-        self._transform_outline = TransformOutline(QRectF() if layer is None else layer.bounds)
+        self._transform_outline = TransformOutline(QRectF() if layer is None else QRectF(layer.local_bounds))
         self._transform_outline.transform_changed.connect(self._transformation_change_slot)
-        self._transform_pixmap = PixmapItem(parent=self._transform_outline)
-        self._transform_pixmap.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIgnoresParentOpacity)
         self._transform_outline.setVisible(False)
         self._image_viewer.scene().addItem(self._transform_outline)
 
         # Load layer image, set visibility and zValues:
         if layer is None or layer.id != self._active_layer_id:
-            self._transform_pixmap.setPixmap(QPixmap())
             self._transform_outline.setVisible(False)
         self._transform_outline.prepareGeometryChange()
         if layer is None:
             self._transform_outline.setRect(QRectF())
             self._preview.set_layer_bounds(QRect())
-            self._transform_pixmap.setPixmap(QPixmap())
             self._transform_outline.setVisible(False)
         else:
-            self._transform_pixmap.setPixmap(layer.pixmap)
-            self._transform_pixmap.setPos(layer.position)
+            self._initial_transform = layer.transform
             self._transform_outline.setVisible(layer.visible)
-            self._transform_pixmap.setOpacity(layer.opacity)
-            self._transform_pixmap.composition_mode = layer.composition_mode
-            self._transform_outline.setZValue(-self._image_stack.get_layer_index(layer))
-            self._transformation_change_slot(QPointF(0, 0), 1.0, 1.0, 0.0)
+            self._transform_outline.setZValue(layer.z_value + 1)
+            self._transform_outline.setTransform(self._initial_transform)
 
     def _on_activate(self) -> None:
         """Connect to the active layer."""
         self._image_stack.active_layer_changed.connect(self._active_layer_change_slot)
-        self._image_viewer.mouse_moves_generation_area = False
         self.set_layer(self._image_stack.active_layer)
 
     def _on_deactivate(self) -> None:
         """Disconnect from all layers."""
         self._image_stack.active_layer_changed.disconnect(self._active_layer_change_slot)
-        self._image_viewer.mouse_moves_generation_area = True
         self.set_layer(None)
 
-    def _active_layer_change_slot(self, layer_id: int, layer_index: int) -> None:
-        if layer_id == self._active_layer_id:
-            self._transform_outline.setZValue(-layer_index)
-        else:
-            self.set_layer(self._image_stack.get_layer_by_id(layer_id))
+    def _active_layer_change_slot(self, active_layer: Layer) -> None:
+        self.set_layer(active_layer)
 
-    def _layer_visibility_slot(self, layer: ImageLayer, visible: bool) -> None:
+    def _layer_z_value_change_slot(self, layer: Layer, z_value: int) -> None:
         if layer != self._image_stack.get_layer_by_id(self._active_layer_id):
-            layer.visibility_changed.disconnect(self._layer_visibility_slot)
+            layer.z_value_changed.disconnect(self._layer_z_value_change_slot)
             return
-        self._transform_outline.setVisible(visible)
+        self._transform_outline.setZValue(z_value + 1)
 
-    def _layer_bounds_change_slot(self, layer: ImageLayer, bounds: QRect) -> None:
+    # noinspection PyUnusedLocal
+    def _layer_transform_change_slot(self, layer: Layer, transform: QTransform) -> None:
         if layer != self._image_stack.get_layer_by_id(self._active_layer_id):
-            layer.bounds_changed.disconnect(self._layer_bounds_change_slot)
+            layer.transform_changed.disconnect(self._layer_transform_change_slot)
             return
-        self._transform_outline.setPos(bounds.topLeft())
-        self._preview.set_layer_bounds(bounds)
+        if transform != self._transform_outline.transform():
+            self._transform_outline.setTransform(transform)
 
-    def _layer_content_change_slot(self, layer: ImageLayer) -> None:
+    # noinspection PyUnusedLocal
+    def _layer_size_change_slot(self, layer: Layer, size: QSize) -> None:
         if layer != self._image_stack.get_layer_by_id(self._active_layer_id):
-            layer.content_changed.disconnect(self._layer_content_change_slot)
+            layer.size_changed.disconnect(self._layer_size_change_slot)
             return
         self._reload_scene_item()
 
-    def _layer_opacity_change_slot(self, layer: ImageLayer, opacity: float) -> None:
-        if layer != self._image_stack.get_layer_by_id(self._active_layer_id):
-            layer.opacity_changed.disconnect(self._layer_opacity_change_slot)
-            return
-        if self._transform_pixmap is not None:
-            self._transform_pixmap.setOpacity(opacity)
-
-    def _layer_mode_change_slot(self, layer: ImageLayer, mode: QPainter.CompositionMode) -> None:
-        if layer != self._image_stack.get_layer_by_id(self._active_layer_id):
-            layer.composition_mode_changed.disconnect(self._layer_mode_change_slot)
-            return
-        if self._transform_pixmap is not None:
-            self._transform_pixmap.composition_mode = mode
-
+    # noinspection PyUnusedLocal
     def _transformation_change_slot(self, offset: QPointF, x_scale: float, y_scale: float, rotation: float) -> None:
         self._preview.set_transform(self._transform_outline.sceneTransform())
         layer = self._image_stack.get_layer_by_id(self._active_layer_id)
@@ -600,6 +579,10 @@ class LayerTransformTool(BaseTool):
 
         for field, _, change_handler in controls:
             field.valueChanged.connect(change_handler)
+        try:
+            layer.transform = self._transform_outline.transform()
+        except RuntimeError:
+            layer.set_transform(self._transform_outline.transform())
 
 
 class _TransformPreview(QWidget):

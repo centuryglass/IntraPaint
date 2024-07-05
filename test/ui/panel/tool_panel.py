@@ -10,8 +10,7 @@ from PyQt5.QtTest import QTest
 from src.config.application_config import AppConfig
 from src.config.cache import Cache
 from src.config.key_config import KeyConfig
-from src.image.image_stack import ImageStack
-from src.ui.image_viewer import ImageViewer
+from src.image.layers.image_stack import ImageStack
 from src.ui.panel.image_panel import ImagePanel
 from src.ui.panel.tool_panel import ToolPanel
 

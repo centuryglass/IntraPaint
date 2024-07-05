@@ -11,7 +11,7 @@ from typing import Optional, Callable, Any, Dict, List, cast
 
 import requests
 from PIL import Image
-from PyQt5.QtCore import pyqtSignal, QSize, QThread
+from PyQt5.QtCore import pyqtSignal, QSize, QThread, Qt
 from PyQt5.QtGui import QImage
 from PyQt5.QtWidgets import QInputDialog
 
@@ -412,6 +412,7 @@ class StableDiffusionController(BaseInpaintController):
             self._image_stack.set_image(img)
 
         task.image_ready.connect(apply_upscaled)
+
         def _on_finish() -> None:
             assert self._window is not None
             self._window.set_is_loading(False)

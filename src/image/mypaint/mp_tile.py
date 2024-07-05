@@ -3,7 +3,7 @@ from ctypes import sizeof, memset
 from typing import Optional
 
 import numpy as np
-from PyQt5.QtCore import Qt, QRectF, QRect, QSize, QPoint
+from PyQt5.QtCore import Qt, QRectF, QRect, QSize
 from PyQt5.QtGui import QImage, QPainter, QPainterPath
 from PyQt5.QtWidgets import QWidget, QGraphicsItem, QStyleOptionGraphicsItem
 
@@ -104,7 +104,11 @@ class MPTile(QGraphicsItem):
             self.update_cache()
         painter.save()
         painter.setCompositionMode(self._composition_mode)
-        painter.drawImage(QPoint(0, 0), self._cache_image, self._cache_image.rect())
+        # local_transform = QTransform.fromTranslate(-self.x(), -self.y()) * painter.transform() * QTransform.fromTranslate(self.x(), self.y())
+        # # local_transform.translate(self.x(), self.y())
+        # painter.setTransform(local_transform, False)
+        bounds = QRect(0, 0, self._cache_image.width(), self._cache_image.height())
+        painter.drawImage(bounds, self._cache_image)
         painter.restore()
 
     def get_bits(self, read_only: bool) -> TilePixelBuffer:

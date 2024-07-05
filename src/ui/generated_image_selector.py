@@ -15,7 +15,7 @@ from PyQt5.QtWidgets import QWidget, QGraphicsPixmapItem, QVBoxLayout, QLabel, \
 
 from src.config.application_config import AppConfig
 from src.config.key_config import KeyConfig
-from src.image.image_stack import ImageStack
+from src.image.layers.image_stack import ImageStack
 from src.ui.graphics_items.outline import Outline
 from src.ui.graphics_items.polygon_outline import PolygonOutline
 from src.ui.widget.image_graphics_view import ImageGraphicsView
@@ -544,18 +544,6 @@ class _SelectionView(ImageGraphicsView):
     def toggle_zoom(self) -> None:
         """Zoom in on some area of focus, or back to the full scene. Bound to the 'Toggle Zoom' key."""
         self.zoom_toggled.emit()
-
-    def mousePressEvent(self, event: Optional[QMouseEvent], **kwargs) -> None:
-        """Pass mouse events back to the parent widget unless the ImageGraphicsView handles them.
-
-        QGraphicsView likes to intercept mouse events before the parent widget can process them, this gets around that
-        behavior.
-        """
-        if super().mousePressEvent(event, True):
-            return
-        parent = self.parent()
-        assert parent is not None
-        parent.eventFilter(self, event)
 
     def drawBackground(self, painter: Optional[QPainter], rect: QRectF) -> None:
         """Fill with solid black to increase visibility."""

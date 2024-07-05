@@ -14,7 +14,7 @@ from typing import Optional
 import spacenav
 from PyQt5.QtCore import QObject, QThread, QSize, QRect, pyqtSignal
 from PyQt5.QtWidgets import QMainWindow
-from src.image.image_stack import ImageStack
+from src.image.layers.image_stack import ImageStack
 
 logger = logging.getLogger(__name__)
 

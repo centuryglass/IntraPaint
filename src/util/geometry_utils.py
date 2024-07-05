@@ -1,6 +1,8 @@
 """Provides a utility function for handling image or widget placement."""
+import math
+from typing import Tuple
 
-from PyQt5.QtCore import QRect, QSize, QRectF, QSizeF, QPoint
+from PyQt5.QtCore import QRect, QSize, QRectF, QSizeF, QPoint, QPointF, QLineF
 from PyQt5.QtGui import QTransform, QPolygonF
 
 
@@ -72,3 +74,32 @@ def transforms_approx_equal(m1: QTransform, m2: QTransform, precision: int) -> b
         and round(m1.m31(), precision) == round(m2.m31(), precision) \
         and round(m1.m32(), precision) == round(m2.m32(), precision) \
         and round(m1.m33(), precision) == round(m2.m33(), precision)
+
+
+def rotation_angle(transformation: QTransform) -> float:
+    """Returns the rotation component of a transformation, in degrees."""
+    rotation_pt = transformation.map(QPointF(1.0, 1.0)) - transformation.map(QPointF(0.0, 0.0))
+    return (math.degrees(math.atan2(rotation_pt.y(), rotation_pt.x())) - 45) % 360
+
+
+def translation_point(transformation: QTransform) -> QPointF:
+    """Returns the translation component of a transformation as a point."""
+    return QPointF(transformation.m31(), transformation.m32())
+
+
+def transform_scale(transformation: QTransform) -> Tuple[float, float]:
+    """Returns the scaling component of a transformation."""
+    width_init = 1.0
+    height_init = 1.0
+    top_left = transformation.map(QPointF(0.0, 0.0))
+    top_right = transformation.map(QPointF(1.0, 0.0))
+    bottom_left = transformation.map(QPointF(0.0, 1.0))
+    width_final = math.copysign(QLineF(top_left, top_right).length(), transformation.m11())
+    height_final = math.copysign(QLineF(top_left, bottom_left).length(), transformation.m22())
+    scale_x = width_final / width_init
+    scale_y = height_final / height_init
+    angle = rotation_angle(transformation)
+    if 90 <= angle <= 270:
+        scale_x *= -1
+        scale_y *= -1
+    return scale_x, scale_y

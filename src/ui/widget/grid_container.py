@@ -126,7 +126,6 @@ class GridContainer(QWidget):
         base_size = self._children[-1].sizeHint()
         base_size = base_size + QSize(self._layout.spacing(), self._layout.spacing())
         content_size = QSize(base_size.width() * self._columns, base_size.height() * self._rows + 1)
-        print(f'child size: {base_size}, children: {len(self._children)}, rows: {self._rows}, cols: {self._columns}, final: {content_size}')
         return content_size
 
     def resizeEvent(self, event: Optional[QResizeEvent]) -> None:

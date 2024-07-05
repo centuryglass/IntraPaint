@@ -5,6 +5,7 @@ import logging
 from argparse import Namespace
 from typing import Callable, List
 
+# noinspection PyPackageRequirements
 import torch
 from PIL import Image
 from PyQt5.QtCore import pyqtSignal, QSize
@@ -70,7 +71,6 @@ class LocalDeviceController(BaseInpaintController):
             raise RuntimeError(f'Selection and mask heights should match, found {source_image_section.height} and {mask.height}')
         if source_image_section.mode == 'RGBA':
             source_image_section = source_image_section.convert('RGB')
-        print(f'gen size: {source_image_section.width}x{source_image_section.height}')
 
         batch_size = config.get(AppConfig.BATCH_SIZE)
         batch_count = config.get(AppConfig.BATCH_COUNT)

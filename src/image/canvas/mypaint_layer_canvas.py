@@ -4,16 +4,15 @@ Draws content to an image layer.
 import math
 from typing import Optional, Set, List, cast
 
-from PyQt5.QtCore import QRect, QPoint, QSize
-from PyQt5.QtGui import QColor, QPainter
+from PyQt5.QtCore import QRect, QSize
+from PyQt5.QtGui import QColor, QPainter, QTransform
 from PyQt5.QtWidgets import QGraphicsScene, QGraphicsItem
 
 from src.image.canvas.layer_canvas import LayerCanvas
-from src.image.image_layer import ImageLayer
+from src.image.layers.image_layer import ImageLayer
 from src.image.mypaint.mp_brush import MPBrush
 from src.image.mypaint.mp_surface import MPSurface
 from src.image.mypaint.mp_tile import MPTile
-from src.undo_stack import commit_action
 
 
 class MyPaintLayerCanvas(LayerCanvas):
@@ -79,9 +78,9 @@ class MyPaintLayerCanvas(LayerCanvas):
         """Returns last stroke bounding box height."""
         return self._last_stroke_bounds.height()
 
-    def _update_canvas_position(self, _, new_position: QPoint) -> None:
-        """Updates the canvas position within the graphics scene."""
-        self._mp_surface.scene_position = new_position
+    def _update_canvas_transform(self, layer: ImageLayer, transform: QTransform) -> None:
+        """Updates the canvas transformation within the graphics scene."""
+        self._mp_surface.scene_transform = layer.full_image_transform
 
     def _handle_tile_updates(self, tile: MPTile) -> None:
         """Make sure added/updated MyPaint tiles are in the correct scene with the right z-value, and track bounds."""
@@ -96,8 +95,7 @@ class MyPaintLayerCanvas(LayerCanvas):
         # If currently drawing, use tiles to track the stroke bounds:
         if self._drawing:
             self._last_stroke_tiles.add(tile)
-            tile_bounds = QRect(int(tile.x() - self._mp_surface.scene_position.x()),
-                                int(tile.y() - self._mp_surface.scene_position.y()),
+            tile_bounds = QRect(int(tile.x()), int(tile.y()),
                                 tile.size.width(), tile.size.height())
             if self._last_stroke_bounds.isEmpty():
                 self._last_stroke_bounds = tile_bounds
@@ -171,42 +169,19 @@ class MyPaintLayerCanvas(LayerCanvas):
                 and not self._edit_region.isEmpty() and not self._last_stroke_bounds.isEmpty():
 
             tile_change_image = self._layer.cropped_image_content(self._last_stroke_bounds)
-            reverse_image = tile_change_image.copy()
             change_x = self._last_stroke_bounds.x()
             change_y = self._last_stroke_bounds.y()
             for tile in self._last_stroke_tiles:
                 if not tile.is_valid:
                     continue
-                destination_x = int(tile.x() - self._mp_surface.scene_position.x() - change_x)
-                destination_y = int(tile.y() - self._mp_surface.scene_position.y() - change_y)
+                destination_x = int(tile.x() - change_x)
+                destination_y = int(tile.y() - change_y)
                 tile.copy_tile_into_image(tile_change_image,
                                           destination=QRect(destination_x, destination_y,
                                                             tile.size.width(), tile.size.height()),
                                           skip_if_transparent=False,
                                           color_correction=True)
-            reverse_image = self._layer.cropped_image_content(self._last_stroke_bounds)
-            layer = self._layer
+            self.disconnect_layer_signals()
+            self._layer.insert_image_content(tile_change_image, self._last_stroke_bounds, register_to_undo_history=True)
+            self.connect_layer_signals()
 
-            def apply():
-                """Copy the combined tile changes into the image."""
-                if layer == self._layer:
-                    self.disconnect_layer_signals()
-                with layer.borrow_image() as layer_image:
-                    layer_painter = QPainter(layer_image)
-                    layer_painter.setCompositionMode(QPainter.CompositionMode_Source)
-                    layer_painter.drawImage(change_x, change_y, tile_change_image)
-                if layer == self._layer:
-                    self.connect_layer_signals()
-
-            def reverse():
-                """To undo, copy in the cached previous image data."""
-                if layer == self._layer:
-                    self.disconnect_layer_signals()
-                with layer.borrow_image() as layer_image:
-                    layer_painter = QPainter(layer_image)
-                    layer_painter.setCompositionMode(QPainter.CompositionMode_Source)
-                    layer_painter.drawImage(change_x, change_y, reverse_image)
-                if layer == self._layer:
-                    self.connect_layer_signals()
-
-            commit_action(apply, reverse)

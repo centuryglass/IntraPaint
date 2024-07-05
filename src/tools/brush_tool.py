@@ -9,7 +9,8 @@ from src.config.application_config import AppConfig
 from src.config.cache import Cache
 from src.config.key_config import KeyConfig
 from src.image.canvas.mypaint_layer_canvas import MyPaintLayerCanvas
-from src.image.image_stack import ImageStack
+from src.image.layers.image_stack import ImageStack
+from src.image.layers.layer import Layer
 from src.tools.canvas_tool import CanvasTool
 from src.ui.image_viewer import ImageViewer
 from src.ui.input_fields.slider_spinbox import IntSliderSpinbox
@@ -42,14 +43,8 @@ class BrushTool(CanvasTool):
         self.brush_path = config.get(AppConfig.MYPAINT_BRUSH)
         self.brush_size = config.get(AppConfig.SKETCH_BRUSH_SIZE)
 
-        def _active_layer_update(_: Optional[int], layer_idx: Optional[int]) -> None:
-            self.layer = image_stack.active_layer
-            if layer_idx is not None:
-                self._canvas.z_value = -layer_idx
-
-        image_stack.active_layer_changed.connect(_active_layer_update)
-        if image_stack.active_layer is not None:
-            _active_layer_update(image_stack.active_layer.id, image_stack.active_layer_index)
+        image_stack.active_layer_changed.connect(self._active_layer_change_slot)
+        self.layer = image_stack.active_layer
 
         self.update_brush_cursor()
 
@@ -132,3 +127,6 @@ class BrushTool(CanvasTool):
             offset *= 10
         canvas = cast(MyPaintLayerCanvas, self._canvas)
         AppConfig().set(AppConfig.SKETCH_BRUSH_SIZE, max(1, canvas.brush_size + offset))
+
+    def _active_layer_change_slot(self, active_layer: Layer) -> None:
+        self.layer = active_layer

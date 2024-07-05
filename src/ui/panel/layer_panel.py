@@ -1,6 +1,6 @@
 """Shows image layers, and allows the user to manipulate them."""
 
-from typing import Optional, List, Callable, cast
+from typing import Optional, List, Callable, cast, Any
 
 from PyQt5.QtCore import Qt, QRect, QSize, QPoint
 from PyQt5.QtGui import QPainter, QColor, QPaintEvent, QMouseEvent, QIcon, QPixmap
@@ -9,8 +9,10 @@ from PyQt5.QtWidgets import QWidget, QLabel, QVBoxLayout, QHBoxLayout, QScrollAr
     QToolButton, QAction, QSlider, QDoubleSpinBox, QComboBox
 
 from src.config.cache import Cache
-from src.image.image_layer import ImageLayer
-from src.image.image_stack import ImageStack
+from src.image.layers.image_layer import ImageLayer
+from src.image.layers.image_stack import ImageStack
+from src.image.layers.layer import Layer
+from src.image.layers.layer_stack import LayerStack
 from src.tools.selection_tool import SELECTION_TOOL_LABEL
 from src.ui.widget.bordered_widget import BorderedWidget
 from src.ui.input_fields.editable_label import EditableLabel
@@ -138,29 +140,31 @@ class LayerPanel(QWidget):
         self._scroll_area.setSizePolicy(QSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.Preferred))
         self._layout.addWidget(self._scroll_area, stretch=10)
 
-        def _add_layer_widget(layer: ImageLayer, layer_idx: int) -> None:
-            widget = self._layer_widget(layer)
+        def _add_layer_widget(new_layer: Layer) -> None:
+            layer_idx = -new_layer.z_value
+            widget = self._layer_widget(new_layer)
             self._layer_widgets.append(widget)
             self._list_layout.insertWidget(layer_idx + 1, widget)
             self.resizeEvent(None)
         self._image_stack.layer_added.connect(_add_layer_widget)
-        _add_layer_widget(image_stack.selection_layer, -1)
-        for i in range(self._image_stack.count):
-            _add_layer_widget(self._image_stack.get_layer_by_index(i), i + 1)
+        _add_layer_widget(image_stack.selection_layer)
+        for layer in self._image_stack.layers:
+            _add_layer_widget(layer)
 
-        def _delete_layer_widget(layer: ImageLayer) -> None:
-            layer_widget = self._layer_widget(layer)
+        def _delete_layer_widget(deleted_layer: Layer) -> None:
+            layer_widget = self._layer_widget(deleted_layer)
             if layer_widget is not None:
                 self._list_layout.removeWidget(layer_widget)
                 layer_widget.setParent(None)
-                self._layer_widgets.remove(layer_widget)
+                if layer_widget in self._layer_widgets:
+                    self._layer_widgets.remove(layer_widget)
                 self.resizeEvent(None)
         self._image_stack.layer_removed.connect(_delete_layer_widget)
 
-        def _activate_layer(layer_id: Optional[int], _=None) -> None:
+        def _activate_layer(new_active_layer: Optional[Layer], _=None) -> None:
+            layer_id = None if new_active_layer is None else new_active_layer.id
             for widget in self._layer_widgets:
                 widget.active = layer_id == widget.layer.id
-            new_active_layer = image_stack.active_layer
             if new_active_layer is not None:
                 self._update_opacity_slot(new_active_layer.opacity)
                 image_mode = new_active_layer.composition_mode
@@ -169,7 +173,7 @@ class LayerPanel(QWidget):
                     self._mode_box.setCurrentIndex(mode_index)
         self._image_stack.active_layer_changed.connect(_activate_layer)
         if self._image_stack.active_layer is not None:
-            _activate_layer(self._image_stack.active_layer.id)
+            _activate_layer(self._image_stack.active_layer)
 
         # BUTTON BAR:
         self._button_bar = QWidget()
@@ -178,7 +182,7 @@ class LayerPanel(QWidget):
         self._button_bar_layout.setSpacing(0)
         self._button_bar_layout.setContentsMargins(0, 0, 0, 0)
 
-        def _create_button(icon_path: str, tooltip: str, action: Callable[[], None]) -> QPushButton:
+        def _create_button(icon_path: str, tooltip: str, action: Callable[..., Any]) -> QPushButton:
             button = QToolButton()
             button.setToolTip(tooltip)
             button.setContentsMargins(0, 0, 0, 0)
@@ -234,7 +238,7 @@ class LayerPanel(QWidget):
         width = max(bar_size.width(), width)
         return QSize(width, height)
 
-    def _layer_widget(self, layer: ImageLayer) -> '_LayerItem':
+    def _layer_widget(self, layer: Layer) -> 'LayerGraphicsItem':
         """Returns the layer widget for the given layer, or creates and returns a new one if none exists."""
         for widget in self._layer_widgets:
             if widget.layer == layer:
@@ -270,11 +274,11 @@ class LayerPanel(QWidget):
 class _LayerItem(BorderedWidget):
     """A single layer's representation in the list"""
 
-    # Shared transparency background pixmap. The first _LayerItem created initializes it, after that access is strictly
+    # Shared transparency background pixmap. The first LayerGraphicsItem created initializes it, after that access is strictly
     # read-only.
     _layer_transparency_background: Optional[QPixmap] = None
 
-    def __init__(self, layer: ImageLayer, image_stack: ImageStack, parent: QWidget) -> None:
+    def __init__(self, layer: Layer, image_stack: ImageStack, parent: QWidget) -> None:
         super().__init__(parent)
         self._layer = layer
         self._image_stack = image_stack
@@ -292,7 +296,8 @@ class _LayerItem(BorderedWidget):
         self._layout.addWidget(self._label, stretch=40)
         self._layer.content_changed.connect(self.update)
         self._layer.visibility_changed.connect(self.update)
-        self._layer.bounds_changed.connect(self._update_all)
+        self._layer.transform_changed.connect(self._update_all)
+        self._layer.size_changed.connect(self._update_all)
         self._active = False
         self._active_color = self.color
         self._inactive_color = self._active_color.darker() if self._active_color.lightness() > 100 \
@@ -306,7 +311,7 @@ class _LayerItem(BorderedWidget):
         class VisibilityButton(QSvgWidget):
             """Show/hide layer button."""
 
-            def __init__(self, connected_layer: ImageLayer) -> None:
+            def __init__(self, connected_layer: Layer) -> None:
                 """Connect to the layer and load the initial icon."""
                 super().__init__()
                 self.setSizePolicy(QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed))
@@ -333,31 +338,35 @@ class _LayerItem(BorderedWidget):
 
     def paintEvent(self, event: Optional[QPaintEvent]) -> None:
         """Draws the scaled layer contents to the widget."""
-        content_bounds = self._image_stack.merged_layer_geometry
-        image_bounds = self._image_stack.geometry
-        layer_bounds = self._layer.bounds
+        content_bounds = self._image_stack.merged_layer_bounds
+        image_bounds = self._image_stack.bounds
+        layer_bounds = self._layer.full_image_bounds
         pixmap = self._layer.pixmap
         paint_bounds = QRect(LAYER_PADDING, LAYER_PADDING, self._label.x() - LAYER_PADDING * 2,
                              self.height() - LAYER_PADDING * 2)
         paint_bounds = get_scaled_placement(paint_bounds, content_bounds.size(), 2)
-        transformation = get_rect_transformation(content_bounds, paint_bounds)
         painter = QPainter(self)
         if self._layer != self._image_stack.selection_layer:
             assert _LayerItem._layer_transparency_background is not None
             painter.drawTiledPixmap(paint_bounds, _LayerItem._layer_transparency_background)
         else:
             painter.fillRect(paint_bounds, Qt.GlobalColor.darkGray)
-        painter.setPen(Qt.black)
-        painter.drawRect(paint_bounds)
-        painter.save()
-        painter.setOpacity(self._layer.opacity)
-        painter.setCompositionMode(self._layer.composition_mode)
-        painter.drawPixmap(transformation.mapRect(layer_bounds), pixmap)
-        painter.restore()
-        painter.drawRect(transformation.mapRect(image_bounds))
-        painter.drawRect(transformation.mapRect(layer_bounds))
-        if not self._layer.visible:
-            painter.fillRect(paint_bounds, QColor.fromRgb(0, 0, 0, 100))
+        if not any(rect.isEmpty() for rect in (content_bounds, image_bounds, layer_bounds, paint_bounds)):
+            transformation = get_rect_transformation(content_bounds, paint_bounds)
+            painter.setTransform(transformation)
+            painter.setPen(Qt.black)
+            painter.drawRect(content_bounds)
+            painter.setTransform(self._layer.full_image_transform, True)
+            painter.save()
+            painter.setOpacity(self._layer.opacity)
+            painter.setCompositionMode(self._layer.composition_mode)
+            painter.drawPixmap(self._layer.local_bounds, pixmap)
+            painter.restore()
+            painter.drawRect(image_bounds)
+            painter.drawRect(layer_bounds)
+            if not self._layer.visible:
+                painter.fillRect(content_bounds, QColor.fromRgb(0, 0, 0, 100))
+        painter.end()
         super().paintEvent(event)
 
     def rename_layer(self, new_name: str) -> None:
@@ -375,7 +384,7 @@ class _LayerItem(BorderedWidget):
         return QSize(layer_width, layer_height)
 
     @property
-    def layer(self) -> ImageLayer:
+    def layer(self) -> Layer:
         """Return the connected layer."""
         return self._layer
 
@@ -417,8 +426,11 @@ class _LayerItem(BorderedWidget):
             assert action is not None
             return action
 
-        if self._layer != self._image_stack.selection_layer:
-            index = self._image_stack.get_layer_index(self._layer)
+        if self._layer != self._image_stack.selection_layer and self._layer.parent is not None:
+            index = None
+            parent = cast(LayerStack, self._layer.parent)
+            if parent is not None:
+                index = parent.get_layer_index(self._layer)
 
             if index is not None:
                 up_option = _new_action(MENU_OPTION_MOVE_UP)
@@ -454,35 +466,37 @@ class _LayerItem(BorderedWidget):
             resize_option.triggered.connect(lambda: self._image_stack.layer_to_image_size(self.layer))
 
             crop_content_option = _new_action(MENU_OPTION_CROP_TO_CONTENT)
-            crop_content_option.triggered.connect(self._layer.crop_to_content)
+            crop_content_option.triggered.connect(lambda: print('TODO: crop layer to content'))
         else:
             invert_option = _new_action(MENU_OPTION_INVERT_SELECTION)
             invert_option.triggered.connect(self._image_stack.selection_layer.invert_selection)
             clear_mask_option = _new_action(MENU_OPTION_CLEAR_SELECTION)
             clear_mask_option.triggered.connect(self._image_stack.selection_layer.clear)
-            if self._image_stack.active_layer_index is not None:
+            if self._image_stack.has_image:
                 mask_active_option = _new_action(MENU_OPTION_SELECT_ALL)
 
                 def mask_active() -> None:
                     """Draw the layer into the mask, then let SelectionLayer automatically convert it to
                        red/transparent."""
-                    layer_index = self._image_stack.active_layer_index
-                    assert layer_index is not None
-                    layer_image = self._image_stack.get_layer_by_index(layer_index).image
+                    active_layer = self._image_stack.active_layer
+                    assert active_layer is not None
+                    layer_image, offset_transform = active_layer.transformed_image()
                     with self._image_stack.selection_layer.borrow_image() as mask_image:
                         assert mask_image is not None
                         painter = QPainter(mask_image)
                         painter.setCompositionMode(QPainter.CompositionMode_Source)
+                        painter.setTransform(offset_transform)
                         painter.drawImage(QRect(0, 0, mask_image.width(), mask_image.height()), layer_image)
                         painter.end()
 
                 mask_active_option.triggered.connect(mask_active)
 
-        mirror_horizontal_option = _new_action('Mirror horizontally')
-        mirror_horizontal_option.triggered.connect(self.layer.flip_horizontal)
+        if isinstance(self.layer, ImageLayer):
+            mirror_horizontal_option = _new_action('Mirror horizontally')
+            mirror_horizontal_option.triggered.connect(self.layer.flip_horizontal)
 
-        mirror_vert_option = _new_action('Mirror vertically')
-        mirror_vert_option.triggered.connect(self.layer.flip_vertical)
+            mirror_vert_option = _new_action('Mirror vertically')
+            mirror_vert_option.triggered.connect(self.layer.flip_vertical)
 
         menu.exec_(self.mapToGlobal(pos))
 

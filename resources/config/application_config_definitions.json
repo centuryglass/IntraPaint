@@ -171,6 +171,14 @@
         "default": 30,
         "saved": true
     },
+    "undo_merge_interval": {
+        "label": "Undo merge interval (seconds):",
+        "category": "Editing",
+        "description": "Similar actions will be combined in the undo history if the time between them is less than this.",
+        "type": "int",
+        "default": 1,
+        "saved": true
+    },
     "speed_modifier_multiplier": {
         "label": "'Speed modifier' key multiplier:",
         "category": "Editing",
@@ -469,6 +477,14 @@
         "type": "string",
         "default": "Lanczos",
         "options": [],
+        "saved": true
+    },
+    "use_error_handler": {
+        "label": "Enable global error handler:",
+        "category": "Developer",
+        "description": "Attempt to catch and report global application errors instead of crashing. Disabling this makes it easier to debug certain errors.",
+        "type": "bool",
+        "default": true,
         "saved": true
     }
 }

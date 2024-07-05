@@ -1,5 +1,6 @@
 """Passes ImageViewer input events to an active editing tool."""
 from typing import Optional, cast, Dict
+import logging
 
 from PyQt5.QtCore import Qt, QObject, QEvent, QRect, QPoint, pyqtSignal
 from PyQt5.QtGui import QMouseEvent, QTabletEvent, QWheelEvent
@@ -8,6 +9,8 @@ from PyQt5.QtWidgets import QApplication
 from src.hotkey_filter import HotkeyFilter
 from src.tools.base_tool import BaseTool
 from src.ui.image_viewer import ImageViewer
+
+logger = logging.getLogger(__name__)
 
 
 class ToolEventHandler(QObject):
@@ -83,6 +86,7 @@ class ToolEventHandler(QObject):
     @active_tool.setter
     def active_tool(self, new_tool: BaseTool) -> None:
         """Sets a new active tool."""
+        logger.info(f'active tool set: {new_tool}')
         if self._active_delegate is not None:
             self._active_delegate.is_active = False
             self._active_delegate = None

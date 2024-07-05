@@ -83,4 +83,5 @@ def build_arg_parser(default_model='models/inpaint.pt', include_edit_params=True
     parser.add_argument('--ddim', dest='ddim', action='store_true')  # turn on to use 50 step ddim
 
     parser.add_argument('--ddpm', dest='ddpm', action='store_true')  # turn on to use 50 step ddpm
+    parser.add_argument('-v', '--verbose', action='store_true')
     return parser

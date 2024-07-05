@@ -8,7 +8,7 @@ from PyQt5.QtWidgets import QVBoxLayout, QHBoxLayout, QWidget, QPushButton, QApp
 from src.config.application_config import AppConfig
 from src.config.key_config import KeyConfig
 from src.image.canvas.pixmap_layer_canvas import PixmapLayerCanvas
-from src.image.image_stack import ImageStack
+from src.image.layers.image_stack import ImageStack
 from src.tools.canvas_tool import CanvasTool
 from src.ui.image_viewer import ImageViewer
 from src.ui.input_fields.slider_spinbox import IntSliderSpinbox

@@ -135,6 +135,7 @@ class MenuBuilder:
             raise KeyError(f'Menu {menu_name} not found.')
         return [*self._actions[menu_name]]
 
+    # noinspection PyUnresolvedReferences
     def build_menus(self, window: QMainWindow) -> None:
         """Add all @menu_action methods from this class to the window as menu items."""
         menu_actions = []

@@ -19,6 +19,7 @@ class ReactiveLayoutWidget(QWidget):
         self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         self._visibility_limits: Dict[QWidget, QSize] = {}
         self._layout_modes: List[_LayoutMode] = []
+        self._default_mode: Optional[_LayoutMode] = None
         self._active_mode: Optional[str] = None
 
     def add_visibility_limit(self, widget: QWidget, min_size: QSize) -> None:
@@ -37,15 +38,23 @@ class ReactiveLayoutWidget(QWidget):
         self._layout_modes.append(mode)
         self.resizeEvent(None)
 
+    def add_default_layout_mode(self, setup: Callable[[], None]) -> None:
+        """Add a layout mode to use as a fallback if none of the size-specific modes apply."""
+        self._default_mode = _LayoutMode('default', self, setup, None, None)
+
     def resizeEvent(self, event: Optional[QResizeEvent]) -> None:
         """Apply visibility rules and switch layout modes if necessary."""
+        new_mode = None
         for mode in self._layout_modes:
             if mode.in_range():
-                if mode.name != self._active_mode:
-                    mode.activate()
-                    self._active_mode = mode.name
-                return  # break
-        if len(self._layout_modes) > 0:
+                new_mode = mode
+        if new_mode is None and self._default_mode is not None:
+            new_mode = self._default_mode
+        if new_mode is not None:
+            if new_mode.name != self._active_mode:
+                self._active_mode = new_mode.name
+                new_mode.activate()
+        elif len(self._layout_modes) > 0:
             logger.error(f'no layout mode in range at {self.size()}')
 
         for widget, size in self._visibility_limits.items():

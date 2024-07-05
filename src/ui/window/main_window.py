@@ -13,7 +13,7 @@ from PyQt5.QtWidgets import QMainWindow, QGridLayout, QLabel, QWidget, QPushButt
 
 from src.config.application_config import AppConfig
 from src.hotkey_filter import HotkeyFilter
-from src.image.image_stack import ImageStack
+from src.image.layers.image_stack import ImageStack
 from src.ui.generated_image_selector import GeneratedImageSelector
 from src.ui.panel.image_panel import ImagePanel
 from src.ui.panel.layer_panel import LayerPanel

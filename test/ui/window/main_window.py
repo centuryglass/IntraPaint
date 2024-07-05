@@ -10,7 +10,7 @@ from PyQt5.QtWidgets import QApplication
 from src.config.application_config import AppConfig
 from src.config.cache import Cache
 from src.config.key_config import KeyConfig
-from src.image.image_stack import ImageStack
+from src.image.layers.image_stack import ImageStack
 from src.ui.window.main_window import MainWindow, CONTROL_TAB_NAME
 
 app = QApplication(sys.argv)

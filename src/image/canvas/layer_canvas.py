@@ -3,11 +3,11 @@ Draws content to an image layer.
 """
 from typing import Optional, List
 
-from PyQt5.QtCore import QRect, QPoint
-from PyQt5.QtGui import QColor, QPainter
+from PyQt5.QtCore import QRect, QSize
+from PyQt5.QtGui import QColor, QPainter, QTransform
 from PyQt5.QtWidgets import QGraphicsScene, QGraphicsItem
 
-from src.image.image_layer import ImageLayer
+from src.image.layers.image_layer import ImageLayer
 
 
 class LayerCanvas:
@@ -40,12 +40,12 @@ class LayerCanvas:
             self.disconnect_layer_signals()
         self._layer = new_layer
         if self._layer is not None:
+            if self.edit_region is None:
+                self._edit_region = self._layer.local_bounds
+            self._update_scene_content_bounds(self._edit_region)
             self.connect_layer_signals()
-            if self._edit_region is None:
-                self.edit_region = QRect(0, 0, self._layer.width, self._layer.height)
-                self._update_canvas_position(self._layer, self._layer.position)
-            else:
-                self._layer_bounds_change_slot(self._layer, self._layer.bounds)
+            self._layer_size_change_slot(self._layer, self._layer.size)
+            self._update_canvas_transform(new_layer, new_layer.transform)
         self._layer_content_change_slot(self._layer)
 
     @property
@@ -108,7 +108,7 @@ class LayerCanvas:
     def edit_region(self, new_region: Optional[QRect]) -> None:
         """Updates the bounds within the layer that the canvas is editing."""
         self._edit_region = new_region
-        if new_region is not None:
+        if new_region is not None and not new_region.isEmpty():
             self._update_scene_content_bounds(new_region)
             if self._layer is not None:
                 self._layer_content_change_slot(self._layer)
@@ -145,9 +145,11 @@ class LayerCanvas:
         assert self._layer is not None
         self._layer.visibility_changed.disconnect(self._layer_content_change_slot)
         self._layer.content_changed.disconnect(self._layer_content_change_slot)
-        self._layer.bounds_changed.disconnect(self._layer_bounds_change_slot)
+        self._layer.size_changed.disconnect(self._layer_size_change_slot)
+        self._layer.transform_changed.disconnect(self._layer_transform_change_slot)
         self._layer.opacity_changed.disconnect(self._layer_opacity_change_slot)
         self._layer.composition_mode_changed.disconnect(self._layer_composition_mode_change_slot)
+        self._layer.z_value_changed.disconnect(self._layer_z_value_change_slot)
 
     def connect_layer_signals(self) -> None:
         """Reconnect signal handlers for the connected layer. Only call after disconnect_layer_signals, or within
@@ -155,9 +157,11 @@ class LayerCanvas:
         assert self._layer is not None
         self._layer.visibility_changed.connect(self._layer_content_change_slot)
         self._layer.content_changed.connect(self._layer_content_change_slot)
-        self._layer.bounds_changed.connect(self._layer_bounds_change_slot)
+        self._layer.size_changed.connect(self._layer_size_change_slot)
+        self._layer.transform_changed.connect(self._layer_transform_change_slot)
         self._layer.opacity_changed.connect(self._layer_opacity_change_slot)
         self._layer.composition_mode_changed.connect(self._layer_composition_mode_change_slot)
+        self._layer.z_value_changed.connect(self._layer_z_value_change_slot)
 
     def _set_brush_size(self, new_size: int) -> None:
         self._brush_size = new_size
@@ -175,9 +179,9 @@ class LayerCanvas:
         if self._z_value != z_value:
             self._z_value = z_value
 
-    def _update_canvas_position(self, layer: ImageLayer, new_position: QPoint) -> None:
-        """Updates the canvas position within the graphics scene."""
-        raise NotImplementedError('Implement _update_canvas_position to adjust canvas placement in the scene.')
+    def _update_canvas_transform(self, layer: ImageLayer, transform: QTransform) -> None:
+        """Updates the canvas transformation within the graphics scene."""
+        raise NotImplementedError('Implement _update_canvas_transform to adjust canvas transformation in the scene.')
 
     def _update_scene_content_bounds(self, new_bounds: QRect) -> None:
         """Resize and reposition the internal graphics representation."""
@@ -195,12 +199,28 @@ class LayerCanvas:
     def _layer_composition_mode_change_slot(self, layer: ImageLayer, mode: QPainter.CompositionMode) -> None:
         raise NotImplementedError('Implement _layer_composition_mode_change_slot to change the canvas rendering mode.')
 
-    def _layer_bounds_change_slot(self, layer: ImageLayer, new_bounds: QRect) -> None:
+    # noinspection PyUnusedLocal
+    def _layer_size_change_slot(self, layer: ImageLayer, size: QSize) -> None:
         assert self._edit_region is not None
+        new_bounds = layer.local_bounds
         if new_bounds.size() != self._edit_region.size():
             self._update_scene_content_bounds(QRect(self._edit_region.topLeft(), new_bounds.size()))
-        self._update_canvas_position(layer, new_bounds.topLeft())
         self._edit_region = new_bounds
+
+    def _layer_transform_change_slot(self, layer: ImageLayer, _):
+        self._update_canvas_transform(layer, layer.transform)
+
+    # noinspection PyUnusedLocal
+    def _layer_bounds_change_slot(self, layer: ImageLayer, *args) -> None:
+        assert self._edit_region is not None
+        new_bounds = layer.local_bounds
+        if new_bounds.size() != self._edit_region.size():
+            self._update_scene_content_bounds(QRect(self._edit_region.topLeft(), new_bounds.size()))
+        self._edit_region = new_bounds
+
+    def _layer_z_value_change_slot(self, layer: ImageLayer, z_value: int) -> None:
+        assert layer == self._layer
+        self.z_value = z_value
 
     def _layer_opacity_change_slot(self, _, opacity: float) -> None:
         for item in self.scene_items():

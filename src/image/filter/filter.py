@@ -5,7 +5,7 @@ from typing import Callable, List, Optional, Dict, Any
 from PyQt5.QtCore import QRect, QPoint, Qt, QSize, pyqtSignal
 from PyQt5.QtGui import QImage, QPainter
 
-from src.image.image_stack import ImageStack
+from src.image.layers.image_stack import ImageStack
 from src.ui.modal.image_filter_modal import ImageFilterModal
 from src.undo_stack import commit_action
 from src.util.application_state import APP_STATE_EDITING, AppStateTracker
@@ -80,16 +80,16 @@ class ImageFilter:
         painter = QPainter(preview_image)
         transparency_pattern = get_transparency_tile_pixmap()
         painter.drawTiledPixmap(0, 0, preview_image.width(), preview_image.height(), transparency_pattern)
-        for i in reversed(range(self._image_stack.count)):
-            layer = self._image_stack.get_layer_by_index(i)
+        layers = self._image_stack.image_layers
+        layers.sort(key=lambda child_layer: child_layer.z_value)
+        for layer in layers:
             if not layer.visible:
                 continue
             assert layer.id in layer_images
-            position = QPoint(int(layer.position.x() * scale), int(layer.position.y() * scale))
-            offset = position - bounds.topLeft()
             painter.setOpacity(layer.opacity)
             painter.setCompositionMode(layer.composition_mode)
-            painter.drawImage(QRect(offset, layer_images[layer.id].size()), layer_images[layer.id])
+            painter.setTransform(layer.full_image_transform, False)
+            painter.drawImage(layer.local_bounds, layer_images[layer.id])
         painter.end()
 
         crop_area = bounds.translated(-bounds.topLeft())
@@ -103,7 +103,7 @@ class ImageFilter:
         if filter_active_layer_only:
             active_layer = self._image_stack.active_layer
             assert active_layer is not None
-            layer_bounds = active_layer.bounds
+            layer_bounds = active_layer.full_image_bounds
             _map_to_preview(layer_bounds)
             crop_area = crop_area.intersected(layer_bounds)
         if filter_selection_only:
@@ -157,7 +157,7 @@ class ImageFilter:
                     updated_layer = self._image_stack.get_layer_by_id(updated_id)
                     updated_layer.set_image(image)
 
-            commit_action(_apply_filters, _undo_filters)
+            commit_action(_apply_filters, _undo_filters, 'ImageFilter.apply_filters')
 
         class _FilterTask(AsyncTask):
             images_ready = pyqtSignal(dict)
@@ -190,7 +190,7 @@ class ImageFilter:
         return final_image
 
     def _bounds(self, scale=1.0) -> QRect:
-        bounds = self._image_stack.merged_layer_geometry
+        bounds = self._image_stack.merged_layer_bounds
         if scale != 1.0:
             bounds.setX(int(bounds.x() * scale))
             bounds.setY(int(bounds.y() * scale))
@@ -218,11 +218,14 @@ class ImageFilter:
             painter.end()
         else:
             selection = None
-        for i in reversed(range(self._image_stack.count)):
-            layer = self._image_stack.get_layer_by_index(i)
+        layers = self._image_stack.image_layers
+        layers.sort(key=lambda child_layer: child_layer.z_value)
+        for layer in layers:
             if not layer.visible:
                 continue
-            position = QPoint(int(layer.position.x() * scale), int(layer.position.y() * scale))
+            position = layer.map_to_image(QPoint())
+            position.setX(int(position.x() * scale))
+            position.setY(int(position.y() * scale))
             offset = position - bounds.topLeft()
             layer_image = layer.image
             if scale != 1.0:

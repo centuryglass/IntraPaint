@@ -2,12 +2,13 @@
 import math
 from typing import Optional, Dict, Tuple, Any, Generator
 
-from PyQt5.QtCore import Qt, QRectF, QPointF, QSizeF, pyqtSignal, QLineF
+from PyQt5.QtCore import Qt, QRectF, QPointF, QSizeF, pyqtSignal
 from PyQt5.QtGui import QPainter, QPen, QTransform, QIcon, QPainterPath, QPolygonF, QImage
 from PyQt5.QtWidgets import QWidget, QGraphicsItem, QStyleOptionGraphicsItem, \
     QGraphicsSceneMouseEvent, QGraphicsTransform, \
     QGraphicsObject, QGraphicsView
 
+from src.util.geometry_utils import rotation_angle, transform_scale
 from src.util.shared_constants import MIN_NONZERO
 
 MIN_SCENE_DIM = 5
@@ -69,6 +70,12 @@ class TransformOutline(QGraphicsObject):
             self._handles[handle_id] = _Handle(self, handle_id)
         self.transformation_origin = self.rect().center()
         self._update_handles()
+
+    def setZValue(self, z: int) -> None:
+        """Ensure handle z-values stay in sync with the outline."""
+        super().setZValue(z)
+        for handle in self._handles.values():
+            handle.setZValue(z + 2)
 
     @property
     def preserve_aspect_ratio(self) -> bool:
@@ -151,23 +158,7 @@ class TransformOutline(QGraphicsObject):
     @property
     def transform_scale(self) -> Tuple[float, float]:
         """Get the width and height scale factors."""
-        if self.rect().isEmpty():
-            return 1.0, 1.0
-        width_init = self.rect().width()
-        height_init = self.rect().height()
-        top_left = self.mapToScene(self.rect().topLeft())
-        top_right = self.mapToScene(self.rect().topRight())
-        bottom_left = self.mapToScene(self.rect().bottomLeft())
-        transform = self.sceneTransform()
-        width_final = math.copysign(QLineF(top_left, top_right).length(), transform.m11())
-        height_final = math.copysign(QLineF(top_left, bottom_left).length(), transform.m22())
-        scale_x = width_final / width_init
-        scale_y = height_final / height_init
-        angle = self.rotation_angle
-        if 90 <= angle <= 270:
-            scale_x *= -1
-            scale_y *= -1
-        return scale_x, scale_y
+        return transform_scale(self.transform())
 
     @transform_scale.setter
     def transform_scale(self, scale_factors: Tuple[float, float]) -> None:
@@ -190,11 +181,7 @@ class TransformOutline(QGraphicsObject):
     @property
     def rotation_angle(self) -> float:
         """Gets the rotation in degrees."""
-        rotation_pt = self.mapToScene(QPointF(1.0, 0.0)) - self.mapToScene(QPointF(0.0, 0.0))
-        angle = math.degrees(math.atan2(rotation_pt.y(), rotation_pt.x()))
-        while angle < 0:
-            angle += 360.0
-        return angle
+        return rotation_angle(self.transform())
 
     @rotation_angle.setter
     def rotation_angle(self, angle: float) -> None:
@@ -364,7 +351,7 @@ class TransformOutline(QGraphicsObject):
             x_scale = _avoid_minimums(x_scale, current_x_scale, final_x_scale)
             y_scale = _avoid_minimums(y_scale, current_y_scale, final_y_scale)
             if x_scale != 1.0 or y_scale != 1.0:
-                scale = self.sceneTransform()
+                scale = self.transform()
                 scale.translate(origin.x(), origin.y())
                 scale.scale(x_scale, y_scale)
                 scale.translate(-origin.x(), -origin.y())
@@ -489,7 +476,7 @@ class TransformOutline(QGraphicsObject):
             self._set_offset(offset)
 
     def _set_offset(self, offset: QPointF) -> None:
-        transform = QTransform(self.sceneTransform())
+        transform = QTransform(self.transform())
         transform.setMatrix(transform.m11(), transform.m12(), transform.m13(),
                             transform.m21(), transform.m22(), transform.m23(),
                             offset.x(), offset.y(), transform.m33())
@@ -512,7 +499,7 @@ class TransformOutline(QGraphicsObject):
         while angle >= 360.0:
             angle -= 360.0
         origin = self.mapToScene(self.transformation_origin)
-        prev_transform = self.sceneTransform()
+        prev_transform = self.transform()
         rotation = QTransform()
         rotation.translate(origin.x(), origin.y())
         rotation.rotate(angle - self.rotation_angle)

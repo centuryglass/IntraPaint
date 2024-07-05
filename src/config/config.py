@@ -15,7 +15,7 @@ from inspect import signature
 from threading import Lock
 from typing import Optional, Any, Callable, List, Dict
 
-from PyQt5.QtCore import QSize, QTimer, Qt, QThread
+from PyQt5.QtCore import QSize, QTimer, Qt
 from PyQt5.QtGui import QKeySequence
 from PyQt5.QtWidgets import QWidget
 
@@ -139,6 +139,7 @@ class Config:
             else:
                 self._write_to_json()
 
+    # noinspection PyProtectedMember
     def _reset(self) -> None:
         """Discard all changes and connections, and reload from JSON. For testing use only."""
         with self._lock:

@@ -9,8 +9,8 @@ from src.config.application_config import AppConfig
 from src.config.key_config import KeyConfig
 from src.hotkey_filter import HotkeyFilter
 from src.image.canvas.layer_canvas import LayerCanvas
-from src.image.image_layer import ImageLayer
-from src.image.image_stack import ImageStack
+from src.image.layers.image_layer import ImageLayer
+from src.image.layers.image_stack import ImageStack
 from src.tools.base_tool import BaseTool
 from src.ui.image_viewer import ImageViewer
 from src.util.key_code_utils import get_modifiers
@@ -103,18 +103,17 @@ class CanvasTool(BaseTool):
     @layer.setter
     def layer(self, layer: Optional[ImageLayer]) -> None:
         """Sets or clears the active image layer."""
-        if self._layer is not None and self._layer != layer:
+        if self._layer is not None and isinstance(self._layer, ImageLayer) and self._layer != layer:
+            assert isinstance(self._layer, ImageLayer)
             self._image_viewer.resume_rendering_layer(self._layer)
         self._layer = layer
         if not self._active:
             return
-        if layer is None:
+        if layer is None or not isinstance(layer, ImageLayer):
             self._canvas.connect_to_layer(None)
             self._image_viewer.hide_active_layer = False
         else:
-            layer_index = self._image_stack.get_layer_index(layer)
-            if layer_index is not None:
-                self._canvas.z_value = -layer_index
+            self._canvas.z_value = layer.z_value
             self._canvas.connect_to_layer(layer)
             self._image_viewer.stop_rendering_layer(layer)
 
@@ -183,6 +182,8 @@ class CanvasTool(BaseTool):
     # Event handlers:
     def _stroke_to(self, image_coordinates: QPoint) -> None:
         """Draws coordinates to the canvas, including tablet data if available."""
+        if self._layer is not None:
+            image_coordinates = self._layer.map_from_image(image_coordinates)
         if not self._image_stack.has_image:
             return
         if self._tablet_input == QTabletEvent.PointerType.Eraser:

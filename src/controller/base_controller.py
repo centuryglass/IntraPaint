@@ -22,7 +22,7 @@ from src.image.filter.brightness_contrast import BrightnessContrastFilter
 from src.image.filter.posterize import PosterizeFilter
 from src.image.filter.rgb_color_balance import RGBColorBalanceFilter
 from src.image.filter.sharpen import SharpenFilter
-from src.image.image_stack import ImageStack
+from src.image.layers.image_stack import ImageStack
 from src.ui.modal.image_scale_modal import ImageScaleModal
 from src.ui.modal.modal_utils import show_error_dialog, request_confirmation, open_image_file, open_image_layers
 from src.ui.modal.new_image_modal import NewImageModal
@@ -269,7 +269,8 @@ class BaseInpaintController(MenuBuilder):
             AppStateTracker.set_enabled_states(action, [APP_STATE_EDITING])
 
         AppStateTracker.set_app_state(APP_STATE_EDITING if self._image_stack.has_image else APP_STATE_NO_IMAGE)
-        QtExceptHook().enable()
+        if AppConfig().get(AppConfig.USE_ERROR_HANDLER):
+            QtExceptHook().enable()
         self._app.exec_()
 
     # Menu action definitions:
@@ -289,8 +290,6 @@ class BaseInpaintController(MenuBuilder):
                                                                                    NEW_IMAGE_CONFIRMATION_MESSAGE)):
             new_image = Image.new('RGB', (image_size.width(), image_size.height()), color='white')
             self._image_stack.set_image(new_image)
-            for i in range(1, self._image_stack.count):
-                self._image_stack.get_layer_by_index(i).clear()
             self._metadata = None
             AppStateTracker.set_app_state(APP_STATE_EDITING)
 
@@ -578,7 +577,7 @@ class BaseInpaintController(MenuBuilder):
                 return pil_image.resize((width, height), upscale_mode)
             return pil_image.resize((width, height), downscale_mode)
 
-        source_selection = qimage_to_pil_image(self._image_stack.qimage_generation_area_content())
+        source_selection = self._image_stack.pil_image_generation_area_content()
 
         inpaint_image = source_selection.copy()
         inpaint_mask = self._image_stack.selection_layer.pil_mask_image
@@ -652,20 +651,16 @@ class BaseInpaintController(MenuBuilder):
             else:
                 image = sample_image.convertToFormat(QImage.Format.Format_ARGB32_Premultiplied)
             if AppConfig().get(AppConfig.EDIT_MODE) == "Inpaint":
-                inpaint_mask = self._image_stack.selection_layer.cropped_image_content(
-                    self._image_stack.generation_area)
+                inpaint_mask = self._image_stack.selection_layer.mask_image
                 painter = QPainter(image)
                 painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_DestinationIn)
                 painter.drawImage(QRect(QPoint(0, 0), image.size()), inpaint_mask)
                 painter.end()
-            bounds = self._image_stack.generation_area
             layer = self._image_stack.active_layer
             if layer is None:
                 self._image_stack.create_layer(image_data=image)
             else:
-                pos = layer.position
-                layer.insert_image_content(image, QRect(bounds.topLeft() - pos, bounds.size()),
-                                           QPainter.CompositionMode.CompositionMode_SourceOver)
+                self._image_stack.set_generation_area_content(image, layer)
             AppStateTracker.set_app_state(APP_STATE_EDITING)
 
     # Selection menu:

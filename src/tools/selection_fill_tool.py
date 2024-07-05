@@ -7,7 +7,7 @@ from PyQt5.QtWidgets import QWidget, QFormLayout, QApplication
 
 from src.config.cache import Cache
 from src.config.key_config import KeyConfig
-from src.image.image_stack import ImageStack
+from src.image.layers.image_stack import ImageStack
 from src.tools.base_tool import BaseTool
 from src.util.image_utils import flood_fill
 
@@ -80,17 +80,20 @@ class SelectionFillTool(BaseTool):
             layer = self._image_stack.active_layer
             if layer is None:
                 return False
-            if not layer.bounds.contains(image_coordinates):
+            layer_point = layer.map_from_image(image_coordinates)
+            if not layer.local_bounds.contains(layer_point):
                 return True
             if self._sample_merged:
-                image = self._image_stack.qimage(crop_to_bounds=False)
-                layer_bounds = self._image_stack.merged_layer_geometry.intersected(layer.bounds)
-                image = image.copy(layer_bounds)
-                selection_image = self._image_stack.selection_layer.image
+                layer_image_bounds = layer.full_image_bounds
+                merged_image_bounds = self._image_stack.merged_layer_bounds
+                image = self._image_stack.qimage(crop_to_image=False)
+                layer_image_bounds.translate(-merged_image_bounds.topLeft())
+                image = image.copy(layer_image_bounds)
+                selection_image = layer.image
             else:
                 image = layer.image
                 selection_image = self._image_stack.selection_layer.image
-            mask = flood_fill(image, image_coordinates - layer.position, self._color, self._threshold, False)
+            mask = flood_fill(image, layer_point, self._color, self._threshold, False)
             assert mask is not None
             painter = QPainter(selection_image)
             if clear_mode:
