@@ -288,7 +288,8 @@ class BaseInpaintController(MenuBuilder):
         if image_size and (not self._image_stack.has_image or request_confirmation(self._window,
                                                                                    NEW_IMAGE_CONFIRMATION_TITLE,
                                                                                    NEW_IMAGE_CONFIRMATION_MESSAGE)):
-            new_image = Image.new('RGB', (image_size.width(), image_size.height()), color='white')
+            new_image = QImage(image_size, QImage.Format_ARGB32_Premultiplied)
+            new_image.fill(Qt.transparent)
             self._image_stack.set_image(new_image)
             self._metadata = None
             AppStateTracker.set_app_state(APP_STATE_EDITING)

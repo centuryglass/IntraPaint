@@ -842,7 +842,7 @@ class ImageStack(QObject):
 
         def _load(loaded=new_layer, gen_rect=new_gen_area, size=new_size):
             self.selection_layer.clear(False)
-            self.selection_layer.set_size(new_size)
+            self.selection_layer.resize_canvas(new_size, 0, 0, False)
             self.selection_layer.set_transform(QTransform())
             for layer in self.layers:
                 if layer != self._layer_stack:
