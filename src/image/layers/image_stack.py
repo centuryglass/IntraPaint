@@ -32,6 +32,7 @@ class ImageStack(QObject):
     layer_added = pyqtSignal(Layer)
     layer_removed = pyqtSignal(Layer)
     active_layer_changed = pyqtSignal(Layer)
+    layer_order_changed = pyqtSignal()
 
     def __init__(self,
                  image_size: QSize,
@@ -66,6 +67,8 @@ class ImageStack(QObject):
         def _content_change(*args):
             selection_bounds = self._selection_layer.full_image_bounds
             content_bounds = self._layer_stack.full_image_bounds.united(self.bounds).united(selection_bounds)
+            if content_bounds.isNull():
+                return
             if not selection_bounds.contains(content_bounds):
                 offset = content_bounds.topLeft() - selection_bounds.topLeft()
                 self._selection_layer.resize_canvas(content_bounds.size(), offset.x(), offset.y(), False)
@@ -103,7 +106,7 @@ class ImageStack(QObject):
     @property
     def active_layer(self) -> Optional[ImageLayer]:
         """Returns the active layer object, or None if the image stack is empty."""
-        return None if self._active_layer_id is None else self._layer_stack.get_layer_by_id(self._active_layer_id)
+        return None if self.active_layer_id is None else self._layer_stack.get_layer_by_id(self._active_layer_id)
 
     @active_layer.setter
     def active_layer(self, new_active_layer: Optional[Layer]) -> None:
@@ -118,7 +121,7 @@ class ImageStack(QObject):
             return
 
         def _set_active(layer):
-            self._active_layer_id = None if layer is None else layer.id
+            self.active_layer_id = None if layer is None else layer.id
             self.active_layer_changed.emit(layer)
 
         commit_action(lambda layer=new_active_layer: _set_active(layer), lambda layer=last_active: _set_active(layer),
@@ -128,6 +131,18 @@ class ImageStack(QObject):
     def active_layer_id(self) -> Optional[int]:
         """Returns the unique integer ID of the active layer, or None if no layer is active."""
         return self._active_layer_id
+
+    @active_layer_id.setter
+    def active_layer_id(self, new_active_id: Optional[int]) -> None:
+        assert new_active_id is None or isinstance(new_active_id, int)
+        if new_active_id is not None:
+            assert new_active_id == self._layer_stack.id or self._layer_stack.get_layer_by_id(new_active_id) is not None
+        self._active_layer_id = new_active_id
+
+    @property
+    def layer_stack(self) -> LayerStack:
+        """Returns the root layer group."""
+        return self._layer_stack
 
     @property
     def top_level_layers(self) -> List[Layer]:
@@ -182,7 +197,6 @@ class ImageStack(QObject):
             self._set_generation_area_internal(self._generation_area)
         self.size_changed.emit(self.size)
         self._selection_layer.set_size(new_size, False)
-        self.content_changed.emit()
 
     @property
     def width(self) -> int:
@@ -278,7 +292,9 @@ class ImageStack(QObject):
     def qimage(self, crop_to_image: bool = True) -> QImage:
         """Returns combined visible layer content as a QImage object, optionally including unsaved layers."""
         if not self._layer_stack.visible:
-            size = self.size if crop_to_image else self._layer_stack.transformed_bounds.size()
+            size = QSize(self.size if crop_to_image else self._layer_stack.transformed_bounds.size())
+            size.setWidth(max(self.width, size.width()))
+            size.setHeight(max(self.height, size.height()))
             image = QImage(size, QImage.Format.Format_ARGB32_Premultiplied)
             image.fill(Qt.transparent)
             return image
@@ -342,7 +358,7 @@ class ImageStack(QObject):
 
         - After the layer is created, the 'layer_added' signal is triggered.
         - If no layer was active, the new layer becomes active and the 'active_layer_index_changed' signal is triggered.
-        - If the new layer is visible, the 'content_changed' signal is triggered.
+        - If the new layer is visible and non-empty, the 'content_changed' signal is triggered.
 
         Parameters
         ----------
@@ -359,15 +375,8 @@ class ImageStack(QObject):
         transform: QTransform | None, default = None
             Optional initial transform to apply to the new layer.
         """
-        if layer_index is None and layer_parent is None:
-            active_layer = self.active_layer
-            if active_layer is not None:
-                layer_parent = cast(LayerStack, active_layer.parent)
-                layer_index = layer_parent.get_layer_index(active_layer)
-        if layer_parent is None:
-            layer_parent = self._layer_stack
-        if layer_index is None:
-            layer_index = layer_parent.count
+        if layer_parent is None or layer_index is None:
+            layer_parent, layer_index = self._get_new_layer_placement(layer_parent)
         if image_data is None:
             image_data = QImage(self.size, QImage.Format.Format_ARGB32_Premultiplied)
             image_data.fill(Qt.transparent)
@@ -378,10 +387,40 @@ class ImageStack(QObject):
         def _create_new(parent=layer_parent, new_layer=layer, i=layer_index) -> None:
             self._insert_layer_internal(new_layer, parent, i, True)
 
-        def _remove_new(parent=layer_parent, new_layer=layer):
+        def _remove_new(new_layer=layer):
             self._remove_layer_internal(new_layer, True)
 
         commit_action(_create_new, _remove_new, 'ImageStack.create_layer')
+        return layer
+    
+    def create_layer_group(self,
+                           layer_name: Optional[str] = None,
+                           layer_parent: Optional[LayerStack] = None,
+                           layer_index: Optional[int] = None) -> LayerStack:
+        """Creates and inserts a new layer group.
+
+        Parameters
+        ----------
+        layer_name: str or None, default=None
+            Layer name string. If None, a placeholder name will be assigned.
+        layer_parent: optional LayerStack, default = None:
+            Layer group where the layer will be inserted. If None, the main layer stack will be used.
+        layer_index: int or None, default = None
+            Index where the layer will be inserted into the stack. If None, it will be inserted above the active layer,
+            or at the last index if the active layer isn't in the same group."""
+        if layer_parent is None or layer_index is None:
+            layer_parent, layer_index = self._get_new_layer_placement(layer_parent)
+        if layer_name is None:
+            layer_name = self._get_default_new_layer_name()
+        layer = LayerStack(layer_name)
+
+        def _create_new(group=layer, parent=layer_parent, idx=layer_index) -> None:
+            self._insert_layer_internal(group, parent, idx)
+
+        def _remove_new(group=layer) -> None:
+            self._remove_layer_internal(group)
+
+        commit_action(_create_new, _remove_new, 'ImageStack.create_layer_group')
         return layer
 
     def copy_layer(self, layer: Optional[Layer] = None) -> None:
@@ -424,15 +463,15 @@ class ImageStack(QObject):
         assert layer is not None and layer.parent is not None and layer.parent.contains(layer)
         layer_parent = cast(LayerStack, layer.parent)
         layer_index = layer_parent.get_layer_index(layer)
-        last_active_id = self._active_layer_id
+        last_active_id = self.active_layer_id
 
         def _remove(removed=layer):
             self._remove_layer_internal(layer)
 
         def _undo_remove(parent=layer_parent, restored=layer, idx=layer_index, active_id=last_active_id):
             self._insert_layer_internal(restored, parent, idx)
-            if active_id != self._active_layer_id:
-                self._active_layer_id = active_id
+            if active_id != self.active_layer_id:
+                self.active_layer_id = active_id
                 active = self._layer_stack.get_layer_by_id(active_id)
                 self.active_layer_changed.emit(active)
 
@@ -444,9 +483,22 @@ class ImageStack(QObject):
         active_layer = self.active_layer
         if active_layer is None:
             return
-        parent, index = self._find_offset_index(active_layer, offset, False)
-        new_active_layer = parent.get_layer_by_index(index)
-        self.active_layer = new_active_layer
+        layer = active_layer
+        while offset > 0:
+            next_layer = self._next_layer(layer)
+            offset -= 1
+            if next_layer is None:
+                break
+            layer = next_layer
+        while offset < 0:
+            prev_layer = self._prev_layer(layer)
+            offset += 1
+            if prev_layer is None:
+                break
+            layer = prev_layer
+        if layer == active_layer:
+            return
+        self.active_layer = layer
 
     def move_layer(self, offset: int, layer: Optional[Layer] = None) -> None:
         """Moves a layer up or down in the stack.
@@ -466,28 +518,44 @@ class ImageStack(QObject):
                 The layer object to copy. If None, the active layer will be used, and the method will fail
                 silently if no layer is active.
         """
-        if layer == self._layer_stack:
-            return
         if layer is None:
             layer = self.active_layer
             if layer is None:
                 return
+        if layer == self._layer_stack:
+            return
         assert layer is not None and layer.parent is not None and layer.parent.contains(layer)
         layer_parent = cast(LayerStack, layer.parent)
         layer_index = layer_parent.get_layer_index(layer)
-        new_parent, new_index = self._find_offset_index(layer, offset, True)
-        if layer_index == new_index and layer_parent == new_parent:
-            return
-        if layer_parent == new_parent and new_index > layer_index:
-            new_index -= 1
+        assert offset == 1 or offset == -1, f'Unexpected offset {offset}'
+        if offset == 1:
+            new_parent, new_index = self._next_insert_index(layer)
+        else:  # -1
+            new_parent, new_index = self._prev_insert_index(layer)
 
         def _move(moving=layer, parent=new_parent, idx=new_index):
-            self._remove_layer_internal(moving)
-            self._insert_layer_internal(moving, parent, idx)
+            if parent == moving.parent:
+                parent.move_layer(moving, idx)
+                self._update_z_values()
+            else:
+                is_active = layer.id == self.active_layer_id
+                self._remove_layer_internal(moving)
+                self._insert_layer_internal(moving, parent, idx)
+                if is_active:
+                    self.active_layer_id = moving.id
+                    self.active_layer_changed.emit(moving)
 
         def _move_back(moving=layer, parent=layer_parent, idx=layer_index):
-            self._remove_layer_internal(moving)
-            self._insert_layer_internal(moving, parent, idx)
+            if parent == moving.parent:
+                parent.move_layer(moving, idx)
+                self._update_z_values()
+            else:
+                is_active = layer.id == self.active_layer_id
+                self._remove_layer_internal(moving)
+                self._insert_layer_internal(moving, parent, idx)
+                if is_active:
+                    self.active_layer_id = moving.id
+                    self.active_layer_changed.emit(moving)
 
         commit_action(_move, _move_back, 'ImageStack.move_layer')
 
@@ -506,13 +574,13 @@ class ImageStack(QObject):
                 The layer object to merge down. If None, the active layer will be used, and the method will fail
                 silently if no layer is active.
         """
-        if layer == self._layer_stack:
-            return
         if layer is None:
             layer = self.active_layer
             if layer is None:
                 return
-        assert layer is not None and layer.parent is not None and layer.parent.contains(layer)
+        if layer == self._layer_stack:
+            return
+        assert layer is not None and layer.parent is not None and layer.parent.contains(layer), f'invalid layer: {layer.name}:{layer.id}'
         if not isinstance(layer, ImageLayer):
             return
         top_layer = cast(ImageLayer, layer)
@@ -549,7 +617,7 @@ class ImageStack(QObject):
         final_transform = QTransform()
         final_transform.translate(offset.x(), offset.y())
 
-        def _do_merge(parent=layer_parent, removed=top_layer, base=base_layer, matrix=final_transform,
+        def _do_merge(removed=top_layer, base=base_layer, matrix=final_transform,
                       img=merged_image, update_active=is_active_layer) -> None:
             self._remove_layer_internal(removed)
             base.set_image(img)
@@ -557,7 +625,7 @@ class ImageStack(QObject):
             if removed.visible != base.visible:
                 self.content_changed.emit()
             if update_active:
-                self._active_layer_id = base.id
+                self.active_layer_id = base.id
                 self.active_layer_changed.emit(base)
 
         def _undo_merge(parent=layer_parent, restored=top_layer, base=base_layer, state=base_layer_state,
@@ -565,7 +633,7 @@ class ImageStack(QObject):
             base.restore_state(state)
             self._insert_layer_internal(restored, parent, idx)
             if update_active:
-                self._active_layer_id = restored.id
+                self.active_layer_id = restored.id
                 self.active_layer_changed.emit(restored)
 
         commit_action(_do_merge, _undo_merge, 'ImageStack.merge_layer_down')
@@ -600,17 +668,18 @@ class ImageStack(QObject):
         painter = QPainter(resized_image)
         painter.drawImage(QRect(layer_position, layer_image.size()), layer_image)
         painter.end()
+        content_changed = layer.visible and not layer.empty
 
-        def _resize(resized=layer, img=resized_image) -> None:
-            initial_bounds = resized.full_image_bounds
+        def _resize(resized=layer, img=resized_image, changed=content_changed) -> None:
             resized.set_image(img)
             layer.set_transform(QTransform())
-            if resized.visible and not self.bounds.contains(initial_bounds):
+            if changed:
                 self.content_changed.emit()
 
-        def _undo_resize(restored=layer, state=base_state) -> None:
+        def _undo_resize(restored=layer, state=base_state, changed=content_changed) -> None:
             restored.restore_state(state)
-            self.content_changed.emit()
+            if changed:
+                self.content_changed.emit()
 
         commit_action(_resize, _undo_resize, 'ImageStack.layer_to_image_size')
 
@@ -818,7 +887,7 @@ class ImageStack(QObject):
         # metadata = data['metadata']
         # return metadata
 
-    def set_image(self, image_data: Image.Image | QImage | QPixmap):
+    def load_image(self, image_data: Image.Image | QImage | QPixmap):
         """
         Loads a new image to be edited. This clears all layers, updates the image size, and inserts the image as a new
         active layer.
@@ -838,12 +907,13 @@ class ImageStack(QObject):
         new_size = new_layer.size
         gen_area = QRect(self._generation_area)
         new_gen_area = gen_area.intersected(new_layer.full_image_bounds)
-        last_active_id = self._active_layer_id
+        last_active_id = self.active_layer_id
 
         def _load(loaded=new_layer, gen_rect=new_gen_area, size=new_size):
             self.selection_layer.clear(False)
-            self.selection_layer.set_size(new_size)
+            self.selection_layer.resize_canvas(new_size, 0, 0, False)
             self.selection_layer.set_transform(QTransform())
+            assert self.selection_layer.full_image_bounds.size() == new_size
             for layer in self.layers:
                 if layer != self._layer_stack:
                     self._remove_layer_internal(layer)
@@ -854,12 +924,12 @@ class ImageStack(QObject):
             self.size = size
             self._insert_layer_internal(new_layer, self._layer_stack, 0)
             self._set_generation_area_internal(gen_rect)
-            self._active_layer_id = loaded.id
+            self.active_layer_id = loaded.id
             self.active_layer_changed.emit(self.active_layer)
 
         # noinspection PyDefaultArgument
         def _undo_load(unloaded=new_layer, state=saved_state, selection_state=saved_selection_state, gen_rect=gen_area,
-                       size=old_size, active=last_active_id, restored_layers=old_layers):
+                       size=old_size, active_id=last_active_id, restored_layers=old_layers):
             assert self.count == 1, f'Unexpected layer count {self.count} when reversing image load!'
             self._remove_layer_internal(unloaded)
             self.size = size
@@ -869,37 +939,60 @@ class ImageStack(QObject):
             self._layer_stack.restore_state(state)
             self.selection_layer.restore_state(selection_state)
             self._set_generation_area_internal(gen_rect)
-            self._active_layer_id = active
-            self.active_layer_changed.emit(self._active_layer_id)
+            self.active_layer_id = active_id
+            self.active_layer_changed.emit(self.active_layer)
 
         commit_action(_load, _undo_load, 'ImageStack.set_image')
 
     # INTERNAL:
     def _layer_content_change_slot(self, layer: Layer, _=None) -> None:
         if layer.visible and (layer == self._layer_stack or layer == self.selection_layer
-                              or self._layer_stack.contains(layer)):
+                              or self._layer_stack.contains_recursive(layer)):
             if layer != self.selection_layer:
                 self._image.invalidate()
             self.content_changed.emit()
 
     def _layer_visibility_change_slot(self, layer: ImageLayer, _) -> None:
-        if layer == self._layer_stack or layer == self.selection_layer or self._layer_stack.contains(layer):
+        if layer == self._layer_stack or layer == self.selection_layer or self._layer_stack.contains_recursive(layer):
             if layer != self.selection_layer:
                 self._image.invalidate()
-            self.content_changed.emit()
+            if not layer.empty:
+                self.content_changed.emit()
+
+    def _get_default_new_layer_name(self) -> str:
+        default_name_pattern = r'^layer (\d+)'
+        max_missing_layer = 0
+        for layer in self._all_layers():
+            match = re.match(default_name_pattern, layer.name)
+            if match:
+                max_missing_layer = max(max_missing_layer, int(match.group(1)) + 1)
+        return f'layer {max_missing_layer}'
+
+    def _get_new_layer_placement(self, layer_parent: Optional[LayerStack] = None) -> Tuple[LayerStack, int]:
+        """Default layer placement:
+        1. If no parent is provided, use the active layer's parent. If no layer is active or the root layer stack is
+           active, use the root layer stack as the parent.
+        1. Within the parent, insert above the active layer if it is under the same parent, otherwise at the end
+           of the list
+        """
+        layer_index = None
+        if layer_parent is None:
+            active_layer = self.active_layer
+            if active_layer is not None and active_layer.parent is not None:
+                layer_parent = cast(LayerStack, active_layer.parent)
+                layer_index = layer_parent.get_layer_index(active_layer)
+        if layer_parent is None:
+            layer_parent = self._layer_stack
+        if layer_index is None:
+            layer_index = layer_parent.count
+        return layer_parent, layer_index
 
     def _create_layer_internal(self, layer_name: Optional[str] = None,
                                image_data: Optional[QImage | QSize] = None) -> ImageLayer:
         """Returns a new layer object given valid data. This emits no signals, connects no signal handlers, and does
            not add the layer to the stack."""
         if layer_name is None:
-            default_name_pattern = r'^layer (\d+)'
-            max_missing_layer = 0
-            for layer in self._all_layers():
-                match = re.match(default_name_pattern, layer.name)
-                if match:
-                    max_missing_layer = max(max_missing_layer, int(match.group(1)) + 1)
-            layer_name = f'layer {max_missing_layer}'
+            layer_name = self._get_default_new_layer_name()
         assert_type(layer_name, str)
         assert_type(image_data, (QImage, QSize))
         if image_data is None:
@@ -909,8 +1002,9 @@ class ImageStack(QObject):
         return layer
 
     def _connect_layer(self, layer: Layer) -> None:
-        assert layer == self._layer_stack or self._layer_stack.contains(layer), (f'layer {layer.name}:{layer.id} is not'
-                                                                                 f' in the image stack.')
+        assert layer == self._layer_stack or self._layer_stack.contains_recursive(layer), (f'layer {layer.name}:'
+                                                                                           f'{layer.id} is not in the'
+                                                                                           ' image stack.')
         layer.size_changed.connect(self._layer_content_change_slot)
         layer.content_changed.connect(self._layer_content_change_slot)
         layer.opacity_changed.connect(self._layer_content_change_slot)
@@ -919,7 +1013,7 @@ class ImageStack(QObject):
         layer.visibility_changed.connect(self._layer_visibility_change_slot)
 
     def _disconnect_layer(self, layer: Layer) -> None:
-        assert self._layer_stack.contains(layer), f'layer {layer.name}:{layer.id} is not in the image stack.'
+        assert self._layer_stack.contains_recursive(layer), f'layer {layer.name}:{layer.id} is not in the image stack.'
         layer.size_changed.disconnect(self._layer_content_change_slot)
         layer.content_changed.disconnect(self._layer_content_change_slot)
         layer.opacity_changed.disconnect(self._layer_content_change_slot)
@@ -928,8 +1022,9 @@ class ImageStack(QObject):
         layer.visibility_changed.disconnect(self._layer_visibility_change_slot)
 
     def _insert_layer_internal(self, layer: Layer, parent: LayerStack, index: int, connect_signals=True):
-        assert layer is not None and layer.parent is None and not self._layer_stack.contains(layer)
-        assert parent is not None and (parent == self._layer_stack or self._layer_stack.contains(parent))
+        assert layer is not None and layer.parent is None and not self._layer_stack.contains_recursive(layer)
+        assert parent is not None and (parent == self._layer_stack or self._layer_stack.contains_recursive(parent))
+        layer.z_value = parent.z_value - (index + 1)
         parent.insert_layer(layer, index)
         if connect_signals:
             self._connect_layer(layer)
@@ -942,10 +1037,10 @@ class ImageStack(QObject):
                 self.layer_added.emit(child_layer)
         if self._layer_stack.count == 1:
             AppStateTracker.set_app_state(APP_STATE_EDITING)
-        if self._active_layer_id is None:
-            self._active_layer_id = layer
+        if self.active_layer_id is None:
+            self.active_layer_id = layer.id
             self.active_layer_changed.emit(layer)
-        if layer.visible:
+        if layer.visible and not layer.empty:
             self._image.invalidate()
             self.content_changed.emit()
 
@@ -956,21 +1051,21 @@ class ImageStack(QObject):
         layer_parent = cast(LayerStack, layer.parent)
         assert layer_parent is not None
         assert layer_parent.contains(layer)
-        assert self._layer_stack.contains(layer), f'layer {layer.name}:{layer.id} is not in the image stack.'
+        assert self._layer_stack.contains_recursive(layer), f'layer {layer.name}:{layer.id} is not in the image stack.'
         if disconnect_signals:
             self._disconnect_layer(layer)
-        if self._active_layer_id == layer.id:
+        if self.active_layer_id == layer.id:
             active_layer = self.active_layer
             assert active_layer is not None
-            active_parent, index = self._find_offset_index(active_layer, 1, False)
-            if active_parent.get_layer_by_index(index).id == layer.id:
-                active_parent, index = self._find_offset_index(active_layer, -1, False)
-            if active_parent.get_layer_by_index(index).id == layer.id:
+            next_active_layer = self._next_layer(active_layer)
+            if next_active_layer is None:
+                next_active_layer = self._prev_layer(active_layer)
+            if next_active_layer is None or next_active_layer == active_layer:
                 next_active_id = None
             else:
-                next_active_id = active_parent.get_layer_by_index(index).id
+                next_active_id = next_active_layer.id
         else:
-            next_active_id = self._active_layer_id
+            next_active_id = self.active_layer_id
         layer_parent.remove_layer(layer)
         self._update_z_values()
         self.layer_removed.emit(layer)
@@ -981,11 +1076,11 @@ class ImageStack(QObject):
                 self.layer_removed.emit(child_layer)
         if self._layer_stack.count == 0:
             AppStateTracker.set_app_state(APP_STATE_NO_IMAGE)
-        if next_active_id != self._active_layer_id:
-            self._active_layer_id = next_active_id
+        if next_active_id != self.active_layer_id:
+            self.active_layer_id = next_active_id
             active = self._layer_stack.get_layer_by_id(next_active_id)
             self.active_layer_changed.emit(active)
-        if layer.visible:
+        if layer.visible and not layer.empty:
             self._image.invalidate()
             self.content_changed.emit()
 
@@ -1033,13 +1128,80 @@ class ImageStack(QObject):
             self.generation_area_bounds_changed.emit(bounds_rect)
 
     def _update_z_values(self) -> None:
+        changed_values = False
+        visible_changes = False
         flattened_stack = self._all_layers()
         self.selection_layer.z_value = 1
         for i, layer in enumerate(flattened_stack):
-            layer.z_value = -i
+            if layer.z_value != -i:
+                changed_values = True
+                start = min(-layer.z_value, i)
+                end = max(-layer.z_value, i)
+                if any(not offset_layer.empty for offset_layer in flattened_stack[start:end]):
+                    visible_changes = True
+                layer.z_value = -i
+        if changed_values:
+            self.layer_order_changed.emit()
+        if visible_changes:
+            self.content_changed.emit()
 
     def _all_layers(self) -> List[Layer]:
-        return [self._layer_stack, *self._layer_stack.child_layers]
+        return [self._layer_stack, *self._layer_stack.recursive_child_layers]
+
+    def _next_insert_index(self, layer: Layer) -> Tuple[LayerStack, int]:
+        assert layer is not None and layer.parent is not None and self._layer_stack.contains_recursive(layer)
+        parent = cast(LayerStack, layer.parent)
+        current_index = parent.get_layer_index(layer)
+        if current_index == (parent.count - 1):
+            outer_parent = cast(LayerStack, parent.parent)
+            if outer_parent is None:
+                return parent, current_index
+            parent_index = outer_parent.get_layer_index(parent)
+            return outer_parent, parent_index + 1
+        next_layer = parent.get_layer_by_index(current_index + 1)
+        if isinstance(next_layer, LayerStack):
+            return next_layer, 0
+        return parent, current_index + 1
+
+    def _next_layer(self, layer: Layer) -> Optional[Layer]:
+        assert layer is not None and layer.parent is not None and self._layer_stack.contains_recursive(layer)
+        if isinstance(layer, LayerStack) and layer.count > 0:
+            return layer.get_layer_by_index(0)
+        parent = cast(LayerStack, layer.parent)
+        current_index = parent.get_layer_index(layer)
+        while current_index == (parent.count - 1):
+            outer_parent = cast(LayerStack, parent.parent)
+            if outer_parent is None:
+                return None
+            current_index = outer_parent.get_layer_index(parent)
+            parent = outer_parent
+        return parent.get_layer_by_index(current_index + 1)
+
+    def _prev_layer(self, layer: Layer) -> Optional[Layer]:
+        assert layer is not None and layer.parent is not None and self._layer_stack.contains_recursive(layer)
+        parent = cast(LayerStack, layer.parent)
+        current_index = parent.get_layer_index(layer)
+        if current_index == 0:
+            return parent
+        prev_layer = parent.get_layer_by_index(current_index - 1)
+        while isinstance(prev_layer, LayerStack) and prev_layer.count > 0:
+            prev_layer = prev_layer.get_layer_by_index(prev_layer.count - 1)
+        return prev_layer
+
+    def _prev_insert_index(self, layer: Layer) -> Tuple[LayerStack, int]:
+        assert layer is not None and layer.parent is not None and self._layer_stack.contains_recursive(layer)
+        parent = cast(LayerStack, layer.parent)
+        current_index = parent.get_layer_index(layer)
+        if current_index == 0:
+            outer_parent = cast(LayerStack, parent.parent)
+            if outer_parent is None:
+                return parent, current_index
+            parent_index = outer_parent.get_layer_index(parent)
+            return outer_parent, parent_index
+        last_layer = parent.get_layer_by_index(current_index - 1)
+        if isinstance(last_layer, LayerStack):
+            return last_layer, last_layer.count
+        return parent, current_index - 1
 
     @staticmethod
     def _find_offset_index(layer: Layer, offset: int, allow_end_indices=True) -> Tuple[LayerStack, int]:
@@ -1050,9 +1212,9 @@ class ImageStack(QObject):
                 max_idx += 1
             step = 1 if off > 0 else -1
             while off != 0:
-                if index > 0 or index <= max_idx:
+                if index < 0 or index >= max_idx:
                     if parent.parent is None:
-                        return parent, min(0, max(max_idx, index))
+                        return parent, max(0, min(max_idx, index))
                     next_parent = cast(LayerStack, parent.parent)
                     parent_idx = next_parent.get_layer_index(parent)
                     if index > 0:
@@ -1075,13 +1237,9 @@ class ImageStack(QObject):
                             if allow_end_indices:
                                 inner_index += 1
                         return _recursive_offset(layer_at_index, inner_index, off)
-            return parent, min(0, max(max_idx, index))
+            return parent, max(0, min(max_idx, index))
         assert layer.parent is not None
         layer_parent = cast(LayerStack, layer.parent)
         layer_index = layer_parent.get_layer_index(layer)
         return _recursive_offset(layer_parent, layer_index, offset)
 
-    @staticmethod
-    def _find_offset_layer(layer: Layer, offset: int) -> Layer:
-        parent, index = ImageStack._find_offset_index(layer, offset)
-        return parent.get_layer_by_index(index)

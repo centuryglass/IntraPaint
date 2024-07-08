@@ -58,9 +58,9 @@ def get_rect_transformation(source: QRect | QRectF | QSize, destination: QRect |
 
 def transform_str(transformation: QTransform) -> str:
     """Return a string representation of a transformation matrix for debugging."""
-    return (f'\n\t[{transformation.m11()}, {transformation.m12()}, {transformation.m13()}]'
-            f'\n\t[{transformation.m21()}, {transformation.m22()}, {transformation.m23()}]'
-            f'\n\t[{transformation.m31()}, {transformation.m32()}, {transformation.m33()}]\n')
+    return (f'\n\t[m11:{transformation.m11()}, m12:{transformation.m12()}, m13:{transformation.m13()}]'
+            f'\n\t[m21:{transformation.m21()}, m22:{transformation.m22()}, m23:{transformation.m23()}]'
+            f'\n\t[m31:{transformation.m31()}, m32:{transformation.m32()}, m33:{transformation.m33()}]\n')
 
 
 def transforms_approx_equal(m1: QTransform, m2: QTransform, precision: int) -> bool:
@@ -103,3 +103,56 @@ def transform_scale(transformation: QTransform) -> Tuple[float, float]:
         scale_x *= -1
         scale_y *= -1
     return scale_x, scale_y
+
+
+def extract_transform_parameters(transform: QTransform, origin: QPointF) -> Tuple[float, float, float, float, float]:
+    """Break a matrix down into a scale, rotation, and translation at an arbitrary origin, returning
+     x_offset, y_offset, x_scale, y_scale, rotation_degrees"""
+
+    # Not all transformations can be decomposed this way, throw an error if this one can't be:
+    assert transform.isInvertible(), f'Non-invertible transform {transform_str(transform)}'
+    assert transform.m13() == 0.0
+    assert transform.m23() == 0.0
+    assert transform.m33() == 1.0
+
+    # Calculate scales (absolute values)
+    x_scale = math.sqrt(transform.m11() ** 2 + transform.m21() ** 2)
+    y_scale = math.sqrt(transform.m12() ** 2 + transform.m22() ** 2)
+
+    # Calculate angles (negated because the Qt y-axis points down):
+    angle_radians = math.atan2(-transform.m21(), transform.m11())
+    angle_degrees = math.degrees(angle_radians) % 360.0
+
+    # Calculate offset:
+    transform_at_origin = QTransform.fromTranslate(origin.x(), origin.y()) * transform \
+                          * QTransform.fromTranslate(-origin.x(), -origin.y())
+    x_offset = transform_at_origin.dx()
+    y_offset = transform_at_origin.dy()
+
+    # One of the scales is flipped if the determinant is negative:
+    determinant = transform.m11() * transform.m22() - transform.m12() * transform.m21()
+    if determinant < 0:
+        while angle_degrees >= 180.0:
+            # Mirroring x is equivalent to mirroring y and rotating 180 degrees, so standardize
+            # by picking the option with the smaller angle.
+            angle_degrees -= 180.0
+        # TODO: I'm sure that there's a better way to do this than guess and check.
+        test_matrix = combine_transform_parameters(x_offset, y_offset, -x_scale, y_scale, angle_degrees, origin)
+        if transforms_approx_equal(transform, test_matrix, 5):
+            x_scale = -x_scale
+        else:
+            y_scale = -y_scale
+
+
+    return x_offset, y_offset, x_scale, y_scale, angle_degrees
+
+
+def combine_transform_parameters(x_offset: float, y_offset: float, x_scale: float, y_scale: float,
+                                 degrees: float, origin: QPointF) -> QTransform:
+    """Combine a scale, rotation, and translation about an arbitrary origin into a single transformation"""
+    assert x_scale != 0.0 and y_scale != 0.0, 'Non-invertible transformation parameters used'
+    matrix = QTransform.fromTranslate(-origin.x(), -origin.y())
+    matrix *= QTransform().rotate(degrees)
+    matrix *= QTransform.fromScale(x_scale, y_scale)
+    matrix *= QTransform.fromTranslate(x_offset + origin.x(), y_offset + origin.y())
+    return matrix

@@ -289,7 +289,7 @@ class BaseInpaintController(MenuBuilder):
                                                                                    NEW_IMAGE_CONFIRMATION_TITLE,
                                                                                    NEW_IMAGE_CONFIRMATION_MESSAGE)):
             new_image = Image.new('RGB', (image_size.width(), image_size.height()), color='white')
-            self._image_stack.set_image(new_image)
+            self._image_stack.load_image(new_image)
             self._metadata = None
             AppStateTracker.set_app_state(APP_STATE_EDITING)
 
@@ -366,7 +366,7 @@ class BaseInpaintController(MenuBuilder):
                     self._metadata = image.info
                 else:
                     self._metadata = None
-                self._image_stack.set_image(QImage(file_path))
+                self._image_stack.load_image(QImage(file_path))
             cache.set(Cache.LAST_FILE_PATH, file_path)
 
             # File loaded, attempt to apply metadata:
@@ -427,7 +427,7 @@ class BaseInpaintController(MenuBuilder):
                 height = max(height, image.height())
             base_layer = QImage(QSize(width, height), QImage.Format_ARGB32_Premultiplied)
             base_layer.fill(Qt.GlobalColor.transparent)
-            self._image_stack.set_image(base_layer)
+            self._image_stack.load_image(base_layer)
         for image, image_path in layers:
             name = os.path.basename(image_path)
             self._image_stack.create_layer(name, image)
@@ -788,7 +788,7 @@ class BaseInpaintController(MenuBuilder):
         else:
             scale_mode = PIL_SCALING_MODES[config.get(AppConfig.UPSCALE_MODE)]
         scaled_image = image.resize((new_size.width(), new_size.height()), scale_mode)
-        self._image_stack.set_image(scaled_image)
+        self._image_stack.load_image(scaled_image)
 
     # Image generation handling:
     def _inpaint(self,

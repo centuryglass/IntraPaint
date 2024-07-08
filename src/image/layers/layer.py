@@ -182,13 +182,16 @@ class Layer(QObject):
         """Sets whether this layer is marked as visible."""
         self._apply_combinable_change(visible, self._visible, self.set_visible, 'layer.visibility')
 
-    @property
-    def empty(self) -> bool:
-        """Returns whether this layer contains only fully transparent pixels."""
+    def _is_empty(self) -> bool:
         if self.size.isEmpty():
             return True
         image_array = image_data_as_numpy_8bit(self.get_qimage())
         return is_fully_transparent(image_array)
+
+    @property
+    def empty(self) -> bool:
+        """Returns whether this layer contains only fully transparent pixels."""
+        return self._is_empty()
 
     @property
     def image(self) -> QImage:

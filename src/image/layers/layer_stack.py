@@ -15,6 +15,8 @@ class LayerStack(Layer):
     """Represents a group of linked image layers that can be manipulated as one in limited ways."""
 
     bounds_changed = pyqtSignal(Layer, QRect)
+    layer_added = pyqtSignal(Layer)
+    layer_removed = pyqtSignal(Layer)
 
     def __init__(self, name: str) -> None:
         super().__init__(name)
@@ -156,6 +158,15 @@ class LayerStack(Layer):
         """Returns whether this layer contains a given child layer."""
         return child_layer in self._layers
 
+    def contains_recursive(self, child_layer: Layer) -> bool:
+        """Returns whether child_layer is underneath this layer in the layer tree."""
+        parent = child_layer.parent
+        while parent is not None:
+            if parent == self:
+                return True
+            parent = parent.parent
+        return False
+
     def remove_layer(self, layer: Layer) -> None:
         """Removes a layer.
 
@@ -190,13 +201,15 @@ class LayerStack(Layer):
             self._image_cache.invalidate()
             self.content_changed.emit(self)
         self._get_local_bounds()  # Ensure size is correct
+        self.layer_removed.emit(layer)
 
-    def insert_layer(self, layer: Layer, index: Optional[int], empty_image=False) -> None:
+    def insert_layer(self, layer: Layer, index: Optional[int]) -> None:
         """Insert a layer into the stack, optionally connect layer signals, and emit all required image stack signals.
            This does not alter the undo history."""
         if index is None:
             index = len(self._layers)
         assert layer not in self._layers, f'layer {layer.name}:{layer.id} is already in the image stack.'
+        empty_image = layer.empty
         assert_valid_index(index, self._layers, allow_end=True)
         layer.content_changed.connect(self._layer_content_change_slot)
         layer.opacity_changed.connect(self._layer_content_change_slot)
@@ -213,6 +226,17 @@ class LayerStack(Layer):
             self.invalidate_pixmap()
             self.content_changed.emit(self)
         self._get_local_bounds()  # Ensure size is correct
+        self.layer_added.emit(layer)
+
+    def move_layer(self, layer: Layer, new_index: int) -> None:
+        """Moves a layer to a new index.  This does not emit any signals or alter the undo history."""
+        assert self.contains(layer) and 0 <= new_index < len(self._layers)
+        current_index = self.get_layer_index(layer)
+        assert current_index is not None and 0 <= current_index <= len(self._layers)
+        if current_index == new_index:
+            return
+        self._layers.remove(layer)
+        self._layers.insert(new_index, layer)
 
     def save_state(self) -> Any:
         """Export the current layer state, so it can be restored later."""
@@ -242,6 +266,11 @@ class LayerStack(Layer):
         super().set_visible(visible, send_signals)
         for layer in self.recursive_child_layers:
             layer.visibility_changed.emit(layer, layer.visible)
+
+    def _is_empty(self) -> bool:
+        if any(layer.empty for layer in self._layers):
+            return False
+        return True
 
     def _layer_content_change_slot(self, layer: ImageLayer, _=None) -> None:
         if layer.visible and layer in self._layers:

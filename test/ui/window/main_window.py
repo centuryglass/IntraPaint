@@ -13,7 +13,7 @@ from src.config.key_config import KeyConfig
 from src.image.layers.image_stack import ImageStack
 from src.ui.window.main_window import MainWindow, CONTROL_TAB_NAME
 
-app = QApplication(sys.argv)
+app = QApplication.instance() or QApplication(sys.argv)
 
 
 class MainWindowTest(unittest.TestCase):
