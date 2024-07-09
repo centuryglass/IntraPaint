@@ -39,6 +39,7 @@ class DualToggle(QWidget):
             bg_color = parent.palette().color(parent.backgroundRole())
         else:
             app = cast(QApplication, QApplication.instance())
+            assert app is not None
             bg_color = app.palette().color(app.activeWindow().backgroundRole())
         self.label1 = Label(options[0], self, bg_color=bg_color, orientation=orientation)
         self.label1.setFrameStyle(QFrame.StyledPanel | QFrame.Sunken)

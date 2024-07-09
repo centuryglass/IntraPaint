@@ -14,7 +14,7 @@ from src.image.layers.image_stack import ImageStack
 from src.ui.panel.image_panel import ImagePanel
 from src.ui.panel.tool_panel import ToolPanel
 
-app = QApplication(sys.argv)
+app = QApplication.instance() or QApplication(sys.argv)
 
 
 class ToolPanelTest(unittest.TestCase):

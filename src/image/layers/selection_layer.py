@@ -43,7 +43,7 @@ class SelectionLayer(ImageLayer):
     - The selection layer is always above all other layers.
     - The selection layer cannot be deleted, copied, or moved.
     - The selection layer can't be set as the active layer.
-    - Contents are not saved unless the image is saved in the .inpt format to preserve layers.
+    - Contents are not saved.
     """
 
     def __init__(self, size: QSize, generation_window_signal: pyqtSignal) -> None:

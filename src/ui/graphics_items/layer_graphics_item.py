@@ -2,7 +2,7 @@
 from PyQt5.QtCore import QRect
 from PyQt5.QtGui import QPainter
 
-from src.image.layers.layer import Layer
+from src.image.layers.image_layer import ImageLayer
 from src.ui.graphics_items.pixmap_item import PixmapItem
 from src.util.validation import assert_type
 
@@ -10,9 +10,9 @@ from src.util.validation import assert_type
 class LayerGraphicsItem(PixmapItem):
     """Renders an image layer into a QGraphicsScene."""
 
-    def __init__(self, layer: Layer):
+    def __init__(self, layer: ImageLayer):
         super().__init__()
-        assert_type(layer, Layer)
+        assert_type(layer, ImageLayer)
         self._layer = layer
         self._hidden = False
         self.composition_mode = layer.composition_mode
@@ -36,7 +36,7 @@ class LayerGraphicsItem(PixmapItem):
         self._layer.composition_mode_changed.disconnect(self._update_mode)
 
     @property
-    def layer(self) -> Layer:
+    def layer(self) -> ImageLayer:
         """Returns the rendered image layer."""
         return self._layer
 
@@ -58,9 +58,6 @@ class LayerGraphicsItem(PixmapItem):
 
     def _update_visibility(self, _, visible: bool) -> None:
         self.setVisible(visible and not self.hidden)
-
-    def _update_position(self, _, new_bounds: QRect) -> None:
-        self.setPos(new_bounds.topLeft())
 
     def _update_opacity(self, _, opacity: float) -> None:
         self.setOpacity(opacity)

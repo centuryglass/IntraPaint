@@ -2,6 +2,7 @@
 BaseController coordinates primary application functionality across all operation modes. Each image generation and
 editing method supported by IntraPaint should have its own BaseController subclass.
 """
+import json
 import logging
 import os
 import re
@@ -23,6 +24,7 @@ from src.image.filter.posterize import PosterizeFilter
 from src.image.filter.rgb_color_balance import RGBColorBalanceFilter
 from src.image.filter.sharpen import SharpenFilter
 from src.image.layers.image_stack import ImageStack
+from src.image.open_raster import save_ora_image, read_ora_image
 from src.ui.modal.image_scale_modal import ImageScaleModal
 from src.ui.modal.modal_utils import show_error_dialog, request_confirmation, open_image_file, open_image_layers
 from src.ui.modal.new_image_modal import NewImageModal
@@ -96,9 +98,7 @@ class BaseInpaintController(MenuBuilder):
 
     def __init__(self, args: Namespace) -> None:
         super().__init__()
-        self._app = QApplication.instance()
-        if self._app is None:
-            self._app = QApplication(sys.argv)
+        self._app = QApplication.instance() or QApplication(sys.argv)
         screen = self._app.primaryScreen()
         self._fixed_window_size = args.window_size
         if self._fixed_window_size is not None:
@@ -290,7 +290,7 @@ class BaseInpaintController(MenuBuilder):
                                                                                    NEW_IMAGE_CONFIRMATION_MESSAGE)):
             new_image = QImage(image_size, QImage.Format_ARGB32_Premultiplied)
             new_image.fill(Qt.transparent)
-            self._image_stack.set_image(new_image)
+            self._image_stack.load_image(new_image)
             self._metadata = None
             AppStateTracker.set_app_state(APP_STATE_EDITING)
 
@@ -319,8 +319,8 @@ class BaseInpaintController(MenuBuilder):
                 if not file_path or not file_selected:
                     return
             assert_type(file_path, str)
-            if file_path.endswith('.inpt'):
-                self._image_stack.save_image_stack_file(file_path, self._metadata)
+            if file_path.endswith('.ora'):
+                save_ora_image(self._image_stack, file_path, json.dumps(self._metadata))
             else:
                 image = self._image_stack.pil_image()
                 if self._metadata is not None:
@@ -358,8 +358,10 @@ class BaseInpaintController(MenuBuilder):
             file_path = file_path[0]
         assert_type(file_path, str)
         try:
-            if file_path.endswith('.inpt'):
-                self._metadata = self._image_stack.load_image_stack_file(file_path)
+            if file_path.endswith('.ora'):
+                metadata = read_ora_image(self._image_stack, file_path)
+                if metadata is not None and len(metadata) > 0:
+                    self._metadata = json.loads(metadata)
             else:
                 image = Image.open(file_path)
                 # try and load metadata:
@@ -367,7 +369,7 @@ class BaseInpaintController(MenuBuilder):
                     self._metadata = image.info
                 else:
                     self._metadata = None
-                self._image_stack.set_image(QImage(file_path))
+                self._image_stack.load_image(QImage(file_path))
             cache.set(Cache.LAST_FILE_PATH, file_path)
 
             # File loaded, attempt to apply metadata:
@@ -428,7 +430,7 @@ class BaseInpaintController(MenuBuilder):
                 height = max(height, image.height())
             base_layer = QImage(QSize(width, height), QImage.Format_ARGB32_Premultiplied)
             base_layer.fill(Qt.GlobalColor.transparent)
-            self._image_stack.set_image(base_layer)
+            self._image_stack.load_image(base_layer)
         for image, image_path in layers:
             name = os.path.basename(image_path)
             self._image_stack.create_layer(name, image)
@@ -788,8 +790,8 @@ class BaseInpaintController(MenuBuilder):
             scale_mode = PIL_SCALING_MODES[config.get(AppConfig.DOWNSCALE_MODE)]
         else:
             scale_mode = PIL_SCALING_MODES[config.get(AppConfig.UPSCALE_MODE)]
-        scaled_image = image.resize((new_size.width(), new_size.height()), scale_mode)
-        self._image_stack.set_image(scaled_image)
+        scaled_image = pil_image_to_qimage(image.resize((new_size.width(), new_size.height()), scale_mode))
+        self._image_stack.load_image(scaled_image)
 
     # Image generation handling:
     def _inpaint(self,

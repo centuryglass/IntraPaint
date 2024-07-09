@@ -174,6 +174,7 @@ class LayerPanel(QWidget):
         self._image_stack.active_layer_changed.connect(_activate_layer)
         if self._image_stack.active_layer is not None:
             _activate_layer(self._image_stack.active_layer)
+        self._image_stack.layer_order_changed.connect(self._update_order_slot)
 
         # BUTTON BAR:
         self._button_bar = QWidget()
@@ -238,12 +239,19 @@ class LayerPanel(QWidget):
         width = max(bar_size.width(), width)
         return QSize(width, height)
 
-    def _layer_widget(self, layer: Layer) -> 'LayerGraphicsItem':
+    def _layer_widget(self, layer: Layer) -> '_LayerItem':
         """Returns the layer widget for the given layer, or creates and returns a new one if none exists."""
         for widget in self._layer_widgets:
             if widget.layer == layer:
                 return widget
         return _LayerItem(layer, self._image_stack, self)
+
+    def _update_order_slot(self) -> None:
+        for widget in self._layer_widgets:
+            self._list_layout.removeWidget(widget)
+        self._layer_widgets.sort(key=lambda widget: widget.layer.z_value, reverse=True)
+        for widget in self._layer_widgets:
+            self._list_layout.addWidget(widget)
 
     def _update_opacity_slot(self, opacity: int | float) -> None:
         if isinstance(opacity, int):
@@ -426,9 +434,9 @@ class _LayerItem(BorderedWidget):
             assert action is not None
             return action
 
-        if self._layer != self._image_stack.selection_layer and self._layer.parent is not None:
+        if self._layer != self._image_stack.selection_layer and self._layer.layer_parent is not None:
             index = None
-            parent = cast(LayerStack, self._layer.parent)
+            parent = cast(LayerStack, self._layer.layer_parent)
             if parent is not None:
                 index = parent.get_layer_index(self._layer)
 

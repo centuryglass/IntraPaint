@@ -1,10 +1,11 @@
 """An image editing tool that moves the selected editing region."""
-from typing import Optional, Dict, cast, Tuple
+from typing import Optional, Dict, cast, Tuple, Callable
 
-from PyQt5.QtCore import Qt, QRect, QRectF, QPointF, QSize, QPoint
+from PyQt5.QtCore import Qt, QRect, QRectF, QSize, QPoint
 from PyQt5.QtGui import QCursor, QIcon, QKeySequence, QTransform, QPen, QPaintEvent, QPainter, QColor, \
     QPolygon
-from PyQt5.QtWidgets import QWidget, QLabel, QSpinBox, QDoubleSpinBox, QCheckBox, QGridLayout, QPushButton, QSizePolicy
+from PyQt5.QtWidgets import QWidget, QLabel, QSpinBox, QDoubleSpinBox, QCheckBox, QGridLayout, QPushButton, QSizePolicy, \
+    QGraphicsRectItem
 
 from src.config.application_config import AppConfig
 from src.config.key_config import KeyConfig
@@ -54,14 +55,18 @@ class LayerTransformTool(BaseTool):
         self._image_viewer = image_viewer
         self._icon = QIcon(RESOURCES_TRANSFORM_TOOL_ICON)
         self._initial_transform = QTransform()
+        self._parent_item: Optional[QGraphicsRectItem] = None
         self._transform_outline = TransformOutline(QRect())
-        self._transform_outline.transform_changed.connect(self._transformation_change_slot)
+        self._transform_outline.offset_changed.connect(self._offset_change_slot)
+        self._transform_outline.scale_changed.connect(self._scale_change_slot)
+        self._transform_outline.angle_changed.connect(self._angle_change_slot)
+        self._transform_outline.transform_changed.connect(self._transform_change_slot)
         self._transform_outline.setVisible(False)
         scene = image_viewer.scene()
         assert scene is not None
         scene.addItem(self._transform_outline)
         self.cursor = QCursor(Qt.CursorShape.CrossCursor)
-        self._active_layer_id = None
+        self._active_layer_id: Optional[int] = None
 
         # prepare control panel, wait to fully initialize
         self._control_panel = ReactiveLayoutWidget()
@@ -451,29 +456,18 @@ class LayerTransformTool(BaseTool):
         """Connects to a new image layer, or disconnects if the layer parameter is None."""
         last_layer = self._image_stack.get_layer_by_id(self._active_layer_id)
         if last_layer is not None:
-            self.apply_transformations_to_layer()
             last_layer.transform_changed.disconnect(self._layer_transform_change_slot)
             last_layer.z_value_changed.disconnect(self._layer_z_value_change_slot)
             last_layer.size_changed.disconnect(self._layer_size_change_slot)
         self._active_layer_id = None if layer is None else layer.id
         self._reload_scene_item()
-        self._preview.set_transform(QTransform())
         if layer is not None:
-            self._preview.set_layer_bounds(layer.local_bounds)
             layer.transform_changed.connect(self._layer_transform_change_slot)
             layer.z_value_changed.connect(self._layer_z_value_change_slot)
             layer.size_changed.connect(self._layer_size_change_slot)
         else:
             self._preview.set_layer_bounds(QRect())
             self._transform_outline.setVisible(False)
-
-    def apply_transformations_to_layer(self) -> None:
-        """Applies all pending transformations to the source layer."""
-        layer = self._image_stack.get_layer_by_id(self._active_layer_id)
-        if layer is None:
-            return
-        layer.transform = self._transform_outline.transform()
-        self._reload_scene_item()
 
     def reset_transformation(self) -> None:
         """Resets the transformation to its previous state."""
@@ -497,16 +491,37 @@ class LayerTransformTool(BaseTool):
         layer = self._image_stack.active_layer
 
         # Clear old transform outline:
-        self._transform_outline.transform_changed.disconnect(self._transformation_change_slot)
+        self._transform_outline.offset_changed.disconnect(self._offset_change_slot)
+        self._transform_outline.scale_changed.disconnect(self._scale_change_slot)
+        self._transform_outline.angle_changed.disconnect(self._angle_change_slot)
+        self._transform_outline.transform_changed.disconnect(self._transform_change_slot)
         scene = self._transform_outline.scene()
         if scene is not None:
             scene.removeItem(self._transform_outline)
+            if self._parent_item is not None:
+                scene.removeItem(self._parent_item)
+        scene = self._image_viewer.scene()
+        assert scene is not None
 
         # Re-create for new layer:
-        self._transform_outline = TransformOutline(QRectF() if layer is None else QRectF(layer.local_bounds))
-        self._transform_outline.transform_changed.connect(self._transformation_change_slot)
+        layer_parent = None if layer is None else layer.layer_parent
+        if layer_parent is not None:
+            self._parent_item = QGraphicsRectItem(QRectF(layer_parent.local_bounds))
+            self._parent_item.setBrush(Qt.transparent)
+            self._parent_item.setPen(Qt.transparent)
+            self._parent_item.setTransform(layer_parent.transform)
+            scene.addItem(self._parent_item)
+        else:
+            self._parent_item = None
+        self._transform_outline = TransformOutline(QRectF() if layer is None else QRectF(layer.local_bounds),
+                                                   parent=self._parent_item)
+        self._transform_outline.offset_changed.connect(self._offset_change_slot)
+        self._transform_outline.scale_changed.connect(self._scale_change_slot)
+        self._transform_outline.angle_changed.connect(self._angle_change_slot)
+        self._transform_outline.transform_changed.connect(self._transform_change_slot)
         self._transform_outline.setVisible(False)
-        self._image_viewer.scene().addItem(self._transform_outline)
+        if self._transform_outline.scene() is None:
+            scene.addItem(self._transform_outline)
 
         # Load layer image, set visibility and zValues:
         if layer is None or layer.id != self._active_layer_id:
@@ -515,12 +530,16 @@ class LayerTransformTool(BaseTool):
         if layer is None:
             self._transform_outline.setRect(QRectF())
             self._preview.set_layer_bounds(QRect())
+            self._preview.set_transform(QTransform())
             self._transform_outline.setVisible(False)
         else:
             self._initial_transform = layer.transform
+            self._preview.set_layer_bounds(layer.local_bounds)
+            self._preview.set_transform(layer.full_image_transform)
             self._transform_outline.setVisible(layer.visible)
             self._transform_outline.setZValue(layer.z_value + 1)
             self._transform_outline.setTransform(self._initial_transform)
+        self._update_all_controls()
 
     def _on_activate(self) -> None:
         """Connect to the active layer."""
@@ -556,34 +575,42 @@ class LayerTransformTool(BaseTool):
             return
         self._reload_scene_item()
 
-    # noinspection PyUnusedLocal
-    def _transformation_change_slot(self, offset: QPointF, x_scale: float, y_scale: float, rotation: float) -> None:
-        self._preview.set_transform(self._transform_outline.sceneTransform())
+    def _transform_change_slot(self, transform: QTransform) -> None:
         layer = self._image_stack.get_layer_by_id(self._active_layer_id)
         if layer is None:
             return
-        controls = (
-            (self._x_pos_box, self._transform_outline.x_pos, self.set_x),
-            (self._y_pos_box, self._transform_outline.y_pos, self.set_y),
-            (self._width_box, self._transform_outline.width, self.set_width),
-            (self._height_box, self._transform_outline.height, self.set_height),
-            (self._x_scale_box, x_scale, self.set_x_scale),
-            (self._y_scale_box, y_scale, self.set_y_scale),
-            (self._rotate_box, rotation, self.set_rotation)
-        )
-        for field, _, change_handler in controls:
-            field.valueChanged.disconnect(change_handler)
-
-        for field, value, _ in controls:
-            if field.value() != value:
-                field.setValue(float(value) if isinstance(field, QDoubleSpinBox) else int(value))
-
-        for field, _, change_handler in controls:
-            field.valueChanged.connect(change_handler)
         try:
-            layer.transform = self._transform_outline.transform()
-        except RuntimeError:
-            layer.set_transform(self._transform_outline.transform())
+            layer.transform = transform
+        except RuntimeError:  # undo stack conflict, just don't register this one in the undo history
+            layer.set_transform(transform)
+        self._preview.set_transform(layer.full_image_transform)
+
+    @staticmethod
+    def _update_control(field: QWidget, value: float, change_handler: Callable[..., None]):
+        assert hasattr(field, 'valueChanged')
+        assert hasattr(field, 'setValue')
+        field.valueChanged.disconnect(change_handler)
+        if field.value() != value:
+            field.setValue(float(value) if isinstance(field, QDoubleSpinBox) else int(value))
+        field.valueChanged.connect(change_handler)
+
+    def _offset_change_slot(self, *unused_args) -> None:
+        self._update_control(self._x_pos_box, self._transform_outline.x_pos, self.set_x)
+        self._update_control(self._y_pos_box, self._transform_outline.y_pos, self.set_y)
+
+    def _scale_change_slot(self, x_scale: float, y_scale: float) -> None:
+        self._update_control(self._width_box, self._transform_outline.width, self.set_width),
+        self._update_control(self._height_box, self._transform_outline.height, self.set_height)
+        self._update_control(self._x_scale_box, x_scale, self.set_x_scale)
+        self._update_control(self._y_scale_box, y_scale, self.set_y_scale)
+
+    def _angle_change_slot(self, angle: float) -> None:
+        self._update_control(self._rotate_box, angle, self.set_rotation)
+
+    def _update_all_controls(self) -> None:
+        self._offset_change_slot()
+        self._scale_change_slot(*self._transform_outline.transform_scale)
+        self._angle_change_slot(self._transform_outline.rotation_angle)
 
 
 class _TransformPreview(QWidget):

@@ -19,10 +19,10 @@ LOAD_IMAGE_TITLE = 'Open Image'
 LOAD_LAYER_TITLE = 'Open Images as Layers'
 SAVE_IMAGE_TITLE = 'Save Image'
 LOAD_IMAGE_ERROR_MSG = 'Open failed'
-IMAGE_SAVE_FILTER = 'Images and IntraPaint projects (*.png *.inpt)'
+IMAGE_SAVE_FILTER = 'Images and IntraPaint projects (*.png *.ora)'
 IMAGE_LOAD_FILTER = ('Images and IntraPaint projects (*.bmp *.gif *.jpg *.jpeg *.png *.pbm *.pgm *.ppm *.xbm *.xpm'
-                     ' *.inpt)')
-LAYER_LOAD_FILTER = 'Images (*.bmp *.gif *.jpg *.jpeg *.png *.pbm *.pgm *.ppm *.xbm *.xpm *.inpt)'
+                     ' *.ora)')
+LAYER_LOAD_FILTER = 'Images (*.bmp *.gif *.jpg *.jpeg *.png *.pbm *.pgm *.ppm *.xbm *.xpm)'
 
 
 def show_error_dialog(parent: Optional[QWidget], title: str, error: str | BaseException) -> None:

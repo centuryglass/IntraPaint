@@ -13,7 +13,7 @@ from src.config.key_config import KeyConfig
 from src.image.layers.image_stack import ImageStack
 from src.ui.window.main_window import MainWindow, CONTROL_TAB_NAME
 
-app = QApplication(sys.argv)
+app = QApplication.instance() or QApplication(sys.argv)
 
 
 class MainWindowTest(unittest.TestCase):
@@ -71,8 +71,8 @@ class MainWindowTest(unittest.TestCase):
         self.assertNotEqual(self.window._tool_panel.size(), QSize(0, 0))
 
         # check layout item states:
-        self.assertEqual(self.window._control_panel.parent(), self.window._main_page_tab)
-        self.assertEqual(self.window._tool_panel.parent(), self.window._reactive_widget)
+        self.assertEqual(self.window._control_panel.layer_parent(), self.window._main_page_tab)
+        self.assertEqual(self.window._tool_panel.layer_parent(), self.window._reactive_widget)
         self.assertFalse(self.window._tool_panel._generate_button.isVisible())
         self.assertEqual(self.window._tool_panel.orientation, Qt.Orientation.Horizontal)
 
@@ -83,7 +83,7 @@ class MainWindowTest(unittest.TestCase):
         self.assertEqual(self.window._orientation, Qt.Orientation.Horizontal)
         self.assertTrue(self.window._reactive_widget is not None)
         self.assertTrue(self.window._reactive_widget.isVisible())
-        self.assertEqual(self.window._reactive_widget, self.window._tool_panel.parent())
+        self.assertEqual(self.window._reactive_widget, self.window._tool_panel.layer_parent())
         self.assertTrue(self.window._tool_panel.isVisible())
         self.assertFalse(self.window._tool_panel._generate_button.isVisible())
         self.assertEqual(self.window._tool_panel.orientation, Qt.Orientation.Vertical)
@@ -95,5 +95,5 @@ class MainWindowTest(unittest.TestCase):
         self.assertFalse(self.window._control_panel.isVisible())
         self.assertFalse(self.window._tool_panel.geometry().isEmpty())
         self.assertTrue(self.window._tool_panel._generate_button.isVisible())
-        self.assertEqual(self.window._reactive_widget, self.window._tool_panel.parent())
+        self.assertEqual(self.window._reactive_widget, self.window._tool_panel.layer_parent())
         self.assertEqual(self.window._tool_panel.orientation, Qt.Orientation.Vertical)
