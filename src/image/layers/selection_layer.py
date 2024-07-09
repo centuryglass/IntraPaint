@@ -41,7 +41,7 @@ class SelectionLayer(ImageLayer):
 
     The following properties can't be defined within this class itself, but should be enforced by the image stack:
     - The selection layer is always above all other layers.
-    - The selection layer cannot be deleted, copied, or moved.
+    - The selection layer cannot be deleted or moved.
     - The selection layer can't be set as the active layer.
     - Contents are not saved.
     """
@@ -55,6 +55,7 @@ class SelectionLayer(ImageLayer):
         super().__init__(size, SELECTION_LAYER_NAME)
         self.opacity = MASK_OPACITY_DEFAULT
         self._bounding_box: Optional[QRect] = None
+        self._content_bounds: Optional[QRect] = None
         self.transform_changed.connect(lambda layer, matrix: self._update_bounds())
         generation_window_signal.connect(self.update_generation_area)
 
@@ -70,23 +71,9 @@ class SelectionLayer(ImageLayer):
         raise RuntimeError('The selection layer cannot be copied.')
 
     @property
-    def saved(self) -> bool:
-        """The selection layer is never saved with the image."""
-        return False
-
-    @saved.setter
-    def saved(self, saved: bool):
-        """Sets whether this layer is saved when visible and image data is saved."""
-        raise RuntimeError('The selection layer is never saved with the rest of the image.')
-
-    @property
     def outline(self) -> List[QPolygonF]:
         """Access the selection outline polygons directly."""
-        return self._outline_polygons
-
-    # Updating cached selection
-
-    # Enforcing image properties:
+        return [*self._outline_polygons]
 
     def _update_bounds(self, np_image: Optional[np.ndarray] = None) -> None:
         """Update saved selection bounds within the generation window."""

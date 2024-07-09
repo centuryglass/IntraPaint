@@ -71,13 +71,13 @@ class ImageLayer(Layer):
         return layer
 
     @contextmanager
-    def borrow_image(self) -> Generator[Optional[QImage], None, None]:
+    def borrow_image(self, change_bounds: Optional[QRect] = None) -> Generator[Optional[QImage], None, None]:
         """Provides direct access to the image for editing, automatically marking it as changed when complete."""
         try:
             yield self._image
         finally:
             self._pixmap.invalidate()
-            self._handle_content_change(self._image)
+            self._handle_content_change(self._image, change_bounds)
             self.content_changed.emit(self)
 
     def resize_canvas(self, new_size: QSize, x_offset: int, y_offset: int, register_to_undo_history: bool = True):
@@ -160,6 +160,21 @@ class ImageLayer(Layer):
             painter.drawImage(layer_bounds, self.get_qimage())
             painter.end()
             offset = -merged_bounds.topLeft()
+        elif register_to_undo_history:
+            # TODO: find a way to inject change bounds when setting self.image so special handling isn't needed
+            #       to restrict post-processing to the change bounds:
+            src_image = self.image
+            def _update(img=image_data, bounds=bounds_rect):
+                with self.borrow_image(bounds) as layer_image:
+                    layer_painter = QPainter(layer_image)
+                    layer_painter.drawImage(bounds, img)
+                    layer_painter.end()
+
+            def _undo(img=src_image):
+                self.set_image(img)
+
+            commit_action(_update, _undo, 'ImageLayer.insert_image_content')
+            return
         else:
             updated_image = self.image
             offset = None
