@@ -409,7 +409,7 @@ class StableDiffusionController(BaseInpaintController):
 
         def apply_upscaled(img: Image.Image) -> None:
             """Copy the upscaled image into the image stack."""
-            self._image_stack.load_image(img)
+            self._image_stack.load_image(pil_image_to_qimage(img))
 
         task.image_ready.connect(apply_upscaled)
 
