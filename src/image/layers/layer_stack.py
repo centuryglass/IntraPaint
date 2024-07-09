@@ -160,11 +160,11 @@ class LayerStack(Layer):
 
     def contains_recursive(self, child_layer: Layer) -> bool:
         """Returns whether child_layer is underneath this layer in the layer tree."""
-        parent = child_layer.parent
+        parent = child_layer.layer_parent
         while parent is not None:
             if parent == self:
                 return True
-            parent = parent.parent
+            parent = parent.layer_parent
         return False
 
     def remove_layer(self, layer: Layer) -> None:
@@ -195,7 +195,7 @@ class LayerStack(Layer):
         index = self.get_layer_index(layer)
         assert index is not None
         self._layers.pop(index)
-        layer.parent = None
+        layer.layer_parent = None
         if layer.visible:
             self.invalidate_pixmap()
             self._image_cache.invalidate()
@@ -218,7 +218,7 @@ class LayerStack(Layer):
         layer.transform_changed.connect(self._layer_bounds_change_slot)
         layer.size_changed.connect(self._layer_bounds_change_slot)
         self._layers.insert(index, layer)
-        layer.parent = self
+        layer.layer_parent = self
         if len(self._layers) == 1 and AppStateTracker.app_state() == APP_STATE_NO_IMAGE:
             AppStateTracker.set_app_state(APP_STATE_EDITING)
         if layer.visible and not empty_image:

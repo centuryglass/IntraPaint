@@ -35,7 +35,6 @@
 
 # Menus
 - Open as layers
-- Find some way to explicitly list .inpt as a file option
 - Support saving in formats other than .png (metadata fixes?)
 - Crop image to content
 - open mypaint brush panel

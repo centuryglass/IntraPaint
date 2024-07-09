@@ -1,6 +1,6 @@
 """Provides controls for transforming a graphics item."""
 import math
-from typing import Optional, Dict, Tuple, Any, Generator, List
+from typing import Optional, Dict, Tuple, Any, Generator, List, Iterable
 
 from PyQt5.QtCore import Qt, QRectF, QPointF, QSizeF, pyqtSignal
 from PyQt5.QtGui import QPainter, QPen, QTransform, QIcon, QPainterPath, QPolygonF, QImage
@@ -74,7 +74,7 @@ class TransformOutline(QGraphicsObject):
         self.transformation_origin = self.rect().center()
         self._update_handles()
 
-    def setTransformations(self, transformations: List[QGraphicsTransform]) -> None:
+    def setTransformations(self, transformations: Iterable[QGraphicsTransform]) -> None:
         """Block alternate graphics transformations, they aren't useful here, and they'll break other calculations."""
         raise RuntimeError('Do not use setTransformations with TransformOutline.')
 
@@ -102,7 +102,7 @@ class TransformOutline(QGraphicsObject):
         if angle_changed:
             self.angle_changed.emit(angle)
 
-    def setZValue(self, z: int) -> None:
+    def setZValue(self, z: float) -> None:
         """Ensure handle z-values stay in sync with the outline."""
         super().setZValue(z)
         for handle in self._handles.values():
@@ -325,7 +325,7 @@ class TransformOutline(QGraphicsObject):
         change = QPointF(event.scenePos() - event.lastScenePos())
         parent = self.parent()
         if parent is not None:
-            change = QPointF(self.parent().transform().inverted()[0].map(change.x(), change.y()))
+            change = QPointF(parent.transform().inverted()[0].map(change.x(), change.y()))
         self.offset = change + self.offset
 
     def mouseReleaseEvent(self, event: Optional[QGraphicsSceneMouseEvent]) -> None:

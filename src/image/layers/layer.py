@@ -54,12 +54,12 @@ class Layer(QObject):
         self._apply_combinable_change(new_name, self._name, self.set_name, 'layer.name')
 
     @property
-    def parent(self) -> Optional['Layer']:
+    def layer_parent(self) -> Optional['Layer']:
         """Gets the layer this layer is contained within, if any."""
         return self._parent
 
-    @parent.setter
-    def parent(self, new_parent: Optional['Layer']) -> None:
+    @layer_parent.setter
+    def layer_parent(self, new_parent: Optional['Layer']) -> None:
         """Sets or clears this layer's parent layer."""
         if new_parent is None and self._parent is not None:
             assert not self._parent.contains(self), (f'Layer {self.name}:{self.id} not removed from '
@@ -139,11 +139,11 @@ class Layer(QObject):
     @property
     def full_image_transform(self) -> QTransform:
         """Returns this layers transformation combined with all parent transformation."""
-        stack_iter = self
+        stack_iter: Optional[Layer] = self
         transform = QTransform()
         while stack_iter is not None:
             transform = transform * stack_iter._transform
-            stack_iter = stack_iter.parent
+            stack_iter = stack_iter.layer_parent
         return transform
 
     @property
@@ -170,11 +170,11 @@ class Layer(QObject):
     @property
     def visible(self) -> bool:
         """Returns whether this layer is marked as visible."""
-        stack_iter = self
+        stack_iter: Optional[Layer] = self
         while stack_iter is not None:
             if not stack_iter._visible:
                 return False
-            stack_iter = stack_iter.parent
+            stack_iter = stack_iter.layer_parent
         return True
 
     @visible.setter

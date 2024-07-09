@@ -112,11 +112,12 @@ class ImageStack(QObject):
     def active_layer(self, new_active_layer: Optional[Layer]) -> None:
         """Updates the active layer."""
         last_active = self.active_layer
-        parent_iter = new_active_layer
-        while parent_iter.parent is not None:
-            parent_iter = parent_iter.parent
-        assert parent_iter == self._layer_stack, (f'active layer {new_active_layer.name}:{new_active_layer.id} not '
-                                                  'found in layer stack.')
+        if new_active_layer is not None:
+            parent_iter = new_active_layer
+            while parent_iter is not None and parent_iter.layer_parent is not None:
+                parent_iter = parent_iter.layer_parent
+            assert parent_iter == self._layer_stack, (f'active layer {new_active_layer.name}:{new_active_layer.id} not '
+                                                      'found in layer stack.')
         if last_active == new_active_layer:
             return
 
@@ -434,8 +435,8 @@ class ImageStack(QObject):
             return
         if layer is None:
             layer = self.active_layer
-        assert layer is not None and layer.parent is not None and layer.parent.contains(layer)
-        layer_parent = cast(LayerStack, layer.parent)
+        assert layer is not None and layer.layer_parent is not None and layer.layer_parent.contains(layer)
+        layer_parent = cast(LayerStack, layer.layer_parent)
         layer_index = layer_parent.get_layer_index(layer)
         assert layer_index is not None
         layer_copy = layer.copy()
@@ -460,8 +461,8 @@ class ImageStack(QObject):
             return
         if layer is None:
             layer = self.active_layer
-        assert layer is not None and layer.parent is not None and layer.parent.contains(layer)
-        layer_parent = cast(LayerStack, layer.parent)
+        assert layer is not None and layer.layer_parent is not None and layer.layer_parent.contains(layer)
+        layer_parent = cast(LayerStack, layer.layer_parent)
         layer_index = layer_parent.get_layer_index(layer)
         last_active_id = self.active_layer_id
 
@@ -524,8 +525,8 @@ class ImageStack(QObject):
                 return
         if layer == self._layer_stack:
             return
-        assert layer is not None and layer.parent is not None and layer.parent.contains(layer)
-        layer_parent = cast(LayerStack, layer.parent)
+        assert layer is not None and layer.layer_parent is not None and layer.layer_parent.contains(layer)
+        layer_parent = cast(LayerStack, layer.layer_parent)
         layer_index = layer_parent.get_layer_index(layer)
         assert offset == 1 or offset == -1, f'Unexpected offset {offset}'
         if offset == 1:
@@ -534,7 +535,7 @@ class ImageStack(QObject):
             new_parent, new_index = self._prev_insert_index(layer)
 
         def _move(moving=layer, parent=new_parent, idx=new_index):
-            if parent == moving.parent:
+            if parent == moving.layer_parent:
                 parent.move_layer(moving, idx)
                 self._update_z_values()
             else:
@@ -546,7 +547,7 @@ class ImageStack(QObject):
                     self.active_layer_changed.emit(moving)
 
         def _move_back(moving=layer, parent=layer_parent, idx=layer_index):
-            if parent == moving.parent:
+            if parent == moving.layer_parent:
                 parent.move_layer(moving, idx)
                 self._update_z_values()
             else:
@@ -580,12 +581,13 @@ class ImageStack(QObject):
                 return
         if layer == self._layer_stack:
             return
-        assert layer is not None and layer.parent is not None and layer.parent.contains(layer), f'invalid layer: {layer.name}:{layer.id}'
+        assert layer is not None and layer.layer_parent is not None and layer.layer_parent.contains(layer), f'invalid layer: {layer.name}:{layer.id}'
         if not isinstance(layer, ImageLayer):
             return
         top_layer = cast(ImageLayer, layer)
-        layer_parent = cast(LayerStack, top_layer.parent)
+        layer_parent = cast(LayerStack, top_layer.layer_parent)
         layer_index = layer_parent.get_layer_index(top_layer)
+        assert layer_index is not None
         if layer_index == layer_parent.count - 1:
             return
         base_layer = layer_parent.get_layer_by_index(layer_index + 1)
@@ -713,7 +715,7 @@ class ImageStack(QObject):
         if layer is None:
             layer = self.active_layer
             if layer is None:
-                return
+                return None
         if mask is None:
             mask = self._get_layer_mask(layer)
         image = layer.image
@@ -749,7 +751,8 @@ class ImageStack(QObject):
         """If the copy buffer contains image data, paste it into a new layer."""
         if self._copy_buffer is not None:
             new_layer = self.create_layer('Paste layer', self._copy_buffer.copy())
-            new_layer.set_transform(self._copy_buffer_transform)
+            if self._copy_buffer_transform is not None:
+                new_layer.set_transform(self._copy_buffer_transform)
             self.active_layer = new_layer
 
     def set_generation_area_content(self,
@@ -802,99 +805,67 @@ class ImageStack(QObject):
                 painter.drawImage(data_bounds, image_data)
                 painter.end()
 
-    def save_image_stack_file(self, file_path: str, metadata: Optional[Dict[str, Any]]) -> None:
-        """Save layers and image metadata to a file that can be opened for future editing."""
-        print('TODO: replace with .ora save')
-        # size = self.size
-        # data: Dict[str, Any] = {'metadata': metadata, 'size': f'{size.width()}x{size.height()}', 'files': []}
-        # # Create temporary directory
-        # tmpdir = tempfile.mkdtemp()
-        # self.selection_layer.image.save(os.path.join(tmpdir, SELECTION_LAYER_FILE_EMBEDDED))
-        # for layer in self._layers:
-        #     index = self._layers.index(layer)
-        #     layer.image.save(os.path.join(tmpdir, f'{index}.png'))
-        #     composition_mode = ''
-        #     for mode_name, mode_type in COMPOSITION_MODES.items():
-        #         if mode_type == layer.composition_mode:
-        #             composition_mode = mode_name
-        #             break
-        #     data['files'].append({
-        #         'name': layer.name,
-        #         'pos': f'{layer.position.x()},{layer.position.y()}',
-        #         'visible': layer.visible,
-        #         'opacity': layer.opacity,
-        #         'mode': composition_mode
-        #     })
-        # json_path = os.path.join(tmpdir, LAYER_DATA_FILE_EMBEDDED)
-        # with open(json_path, 'w', encoding='utf-8') as file:
-        #     json.dump(data, file, indent=4, ensure_ascii=False)
-        # shutil.make_archive(file_path, 'zip', tmpdir)
-        # shutil.move(f'{file_path}.zip', file_path)
-        # shutil.rmtree(tmpdir)
+    def load_layer_stack(self, layer_stack: LayerStack, new_size: QSize) -> None:
+        """Loads a new image from layer data."""
+        assert not self._layer_stack.contains_recursive(layer_stack)
+        saved_state = self._layer_stack.save_state()
+        saved_selection_state = self.selection_layer.save_state()
+        old_size = self.size
+        old_layers = self.layers
+        old_layers.remove(self._layer_stack)
+        active_id = self.active_layer_id
+        new_layers: List[Layer] = []
+        while layer_stack.count > 0:
+            new_layers.append(layer_stack.get_layer_by_index(0))
+            layer_stack.remove_layer(new_layers[-1])
 
-    def load_image_stack_file(self, file_path: str) -> Optional[Dict[str, Any]]:
-        """Load layers and image metadata from a file, returning the metadata."""
-        print('TODO: replace with .ora load')
-        return None
-        # tmpdir = tempfile.mkdtemp()
-        # shutil.unpack_archive(file_path, tmpdir, format='zip')
-        # old_mask_image = self.selection_layer.image
-        # old_layers = self._layers.copy()
-        # new_layers = []
-        # old_size = self.size
-        # with open(os.path.join(tmpdir, LAYER_DATA_FILE_EMBEDDED)) as json_file:
-        #     data = json.load(json_file)
-        # w, h = (int(substr) for substr in data['size'].split('x'))
-        # new_size = QSize(w, h)
-        # new_mask_image = QImage(os.path.join(tmpdir, SELECTION_LAYER_FILE_EMBEDDED))
-        # for i, file_data in enumerate(data['files']):
-        #     image = QImage(os.path.join(tmpdir, f'{i}.png'))
-        #     name = None
-        #     if 'name' in file_data:
-        #         name = file_data['name']
-        #     layer = self._create_layer_internal(name, image)
-        #     if 'pos' in file_data:
-        #         x, y = (int(substr) for substr in file_data['pos'].split(','))
-        #         layer.position = QPoint(x, y)
-        #     if 'visible' in file_data:
-        #         layer.visible = file_data['visible']
-        #     if 'opacity' in file_data:
-        #         layer.opacity = file_data['opacity']
-        #     if 'mode' in file_data:
-        #         mode_name = file_data['mode']
-        #         if mode_name in COMPOSITION_MODES:
-        #             layer.composition_mode = COMPOSITION_MODES[mode_name]
-        #     new_layers.append(layer)
-        # shutil.rmtree(tmpdir)
-        #
-        # def _load():
-        #     for old_layer in old_layers:
-        #         self._remove_layer_internal(old_layer)
-        #     self._set_size(new_size)
-        #     self.selection_layer.set_image(new_mask_image)
-        #     for new_layer in new_layers:
-        #         self._insert_layer_internal(new_layer, self.count)
-        #
-        # def _undo_load():
-        #     for new_layer in new_layers:
-        #         self._remove_layer_internal(new_layer)
-        #     self._set_size(old_size)
-        #     self.selection_layer.set_image(old_mask_image)
-        #     for old_layer in old_layers:
-        #         self._insert_layer_internal(old_layer, self.count)
-        #
-        # commit_action(_load, _undo_load)
-        # metadata = data['metadata']
-        # return metadata
+        def _load(loaded=layer_stack, layer_list=new_layers, size=new_size):
+            self.selection_layer.clear(False)
+            self.selection_layer.resize_canvas(new_size, 0, 0, False)
+            self.selection_layer.set_transform(QTransform())
+            assert self.selection_layer.full_image_bounds.size() == new_size
+            for layer in self.layers:
+                if layer != self._layer_stack:
+                    self._remove_layer_internal(layer)
+            self._layer_stack.set_name(loaded.name)
+            self._layer_stack.set_visible(loaded.visible)
+            self._layer_stack.set_composition_mode(loaded.composition_mode)
+            self._layer_stack.set_opacity(loaded.opacity)
+            self._layer_stack.set_transform(loaded.transform)
+            self.size = size
+            for new_layer in layer_list:
+                self._insert_layer_internal(new_layer, self._layer_stack, self._layer_stack.count)
+            if len(layer_list) > 0:
+                self._active_layer_id = layer_list[0].id
+            else:
+                self._active_layer_id = self._layer_stack.id
+            active_layer = self._layer_stack.get_layer_by_id(self._active_layer_id)
+            self.active_layer_changed.emit(active_layer)
 
-    def load_image(self, image_data: Image.Image | QImage | QPixmap):
+        def _undo_load(selection_state=saved_selection_state, stack_state=saved_state, layers=old_layers,
+                       size=old_size, active=active_id):
+            self.size = size
+            self.selection_layer.restore_state(selection_state)
+            while self._layer_stack.count > 0:
+                self._remove_layer_internal(self._layer_stack.child_layers[0])
+            for restored_layer in layers:
+                self._insert_layer_internal(restored_layer, self._layer_stack, self._layer_stack.count)
+            self._layer_stack.restore_state(stack_state)
+            self._active_layer_id = active
+            active_layer = self._layer_stack.get_layer_by_id(self._active_layer_id)
+            self.active_layer_changed.emit(active_layer)
+
+        commit_action(_load, _undo_load, 'ImageStack.load_layer_stack')
+
+
+    def load_image(self, image_data: QImage):
         """
         Loads a new image to be edited. This clears all layers, updates the image size, and inserts the image as a new
         active layer.
 
         Parameters
         ----------
-        image_data: PIL Image or QImage or QPixmap
+        image_data: QImage
             Layer stack size will be adjusted to match image data size.
         """
         saved_state = self._layer_stack.save_state()
@@ -978,8 +949,8 @@ class ImageStack(QObject):
         layer_index = None
         if layer_parent is None:
             active_layer = self.active_layer
-            if active_layer is not None and active_layer.parent is not None:
-                layer_parent = cast(LayerStack, active_layer.parent)
+            if active_layer is not None and active_layer.layer_parent is not None:
+                layer_parent = cast(LayerStack, active_layer.layer_parent)
                 layer_index = layer_parent.get_layer_index(active_layer)
         if layer_parent is None:
             layer_parent = self._layer_stack
@@ -1022,7 +993,7 @@ class ImageStack(QObject):
         layer.visibility_changed.disconnect(self._layer_visibility_change_slot)
 
     def _insert_layer_internal(self, layer: Layer, parent: LayerStack, index: int, connect_signals=True):
-        assert layer is not None and layer.parent is None and not self._layer_stack.contains_recursive(layer)
+        assert layer is not None and layer.layer_parent is None and not self._layer_stack.contains_recursive(layer)
         assert parent is not None and (parent == self._layer_stack or self._layer_stack.contains_recursive(parent))
         layer.z_value = parent.z_value - (index + 1)
         parent.insert_layer(layer, index)
@@ -1048,7 +1019,7 @@ class ImageStack(QObject):
         """Removes a layer from the stack, optionally disconnect layer signals, and emit all required image stack
            signals. This does not alter the undo history."""
         assert layer is not None
-        layer_parent = cast(LayerStack, layer.parent)
+        layer_parent = cast(LayerStack, layer.layer_parent)
         assert layer_parent is not None
         assert layer_parent.contains(layer)
         assert self._layer_stack.contains_recursive(layer), f'layer {layer.name}:{layer.id} is not in the image stack.'
@@ -1149,14 +1120,16 @@ class ImageStack(QObject):
         return [self._layer_stack, *self._layer_stack.recursive_child_layers]
 
     def _next_insert_index(self, layer: Layer) -> Tuple[LayerStack, int]:
-        assert layer is not None and layer.parent is not None and self._layer_stack.contains_recursive(layer)
-        parent = cast(LayerStack, layer.parent)
+        assert layer is not None and layer.layer_parent is not None and self._layer_stack.contains_recursive(layer)
+        parent = cast(LayerStack, layer.layer_parent)
         current_index = parent.get_layer_index(layer)
+        assert current_index is not None
         if current_index == (parent.count - 1):
-            outer_parent = cast(LayerStack, parent.parent)
+            outer_parent = cast(LayerStack, parent.layer_parent)
             if outer_parent is None:
                 return parent, current_index
             parent_index = outer_parent.get_layer_index(parent)
+            assert parent_index is not None
             return outer_parent, parent_index + 1
         next_layer = parent.get_layer_by_index(current_index + 1)
         if isinstance(next_layer, LayerStack):
@@ -1164,23 +1137,26 @@ class ImageStack(QObject):
         return parent, current_index + 1
 
     def _next_layer(self, layer: Layer) -> Optional[Layer]:
-        assert layer is not None and layer.parent is not None and self._layer_stack.contains_recursive(layer)
+        assert layer is not None and layer.layer_parent is not None and self._layer_stack.contains_recursive(layer)
         if isinstance(layer, LayerStack) and layer.count > 0:
             return layer.get_layer_by_index(0)
-        parent = cast(LayerStack, layer.parent)
+        parent = cast(LayerStack, layer.layer_parent)
         current_index = parent.get_layer_index(layer)
+        assert current_index is not None
         while current_index == (parent.count - 1):
-            outer_parent = cast(LayerStack, parent.parent)
+            outer_parent = cast(LayerStack, parent.layer_parent)
             if outer_parent is None:
                 return None
             current_index = outer_parent.get_layer_index(parent)
+            assert current_index is not None
             parent = outer_parent
         return parent.get_layer_by_index(current_index + 1)
 
     def _prev_layer(self, layer: Layer) -> Optional[Layer]:
-        assert layer is not None and layer.parent is not None and self._layer_stack.contains_recursive(layer)
-        parent = cast(LayerStack, layer.parent)
+        assert layer is not None and layer.layer_parent is not None and self._layer_stack.contains_recursive(layer)
+        parent = cast(LayerStack, layer.layer_parent)
         current_index = parent.get_layer_index(layer)
+        assert current_index is not None
         if current_index == 0:
             return parent
         prev_layer = parent.get_layer_by_index(current_index - 1)
@@ -1189,14 +1165,16 @@ class ImageStack(QObject):
         return prev_layer
 
     def _prev_insert_index(self, layer: Layer) -> Tuple[LayerStack, int]:
-        assert layer is not None and layer.parent is not None and self._layer_stack.contains_recursive(layer)
-        parent = cast(LayerStack, layer.parent)
+        assert layer is not None and layer.layer_parent is not None and self._layer_stack.contains_recursive(layer)
+        parent = cast(LayerStack, layer.layer_parent)
         current_index = parent.get_layer_index(layer)
+        assert current_index is not None
         if current_index == 0:
-            outer_parent = cast(LayerStack, parent.parent)
+            outer_parent = cast(LayerStack, parent.layer_parent)
             if outer_parent is None:
                 return parent, current_index
             parent_index = outer_parent.get_layer_index(parent)
+            assert parent_index is not None
             return outer_parent, parent_index
         last_layer = parent.get_layer_by_index(current_index - 1)
         if isinstance(last_layer, LayerStack):
@@ -1213,15 +1191,16 @@ class ImageStack(QObject):
             step = 1 if off > 0 else -1
             while off != 0:
                 if index < 0 or index >= max_idx:
-                    if parent.parent is None:
+                    if parent.layer_parent is None:
                         return parent, max(0, min(max_idx, index))
-                    next_parent = cast(LayerStack, parent.parent)
+                    next_parent = cast(LayerStack, parent.layer_parent)
                     parent_idx = next_parent.get_layer_index(parent)
+                    assert parent_idx is not None
                     if index > 0:
                         parent_idx += 1
-                    return _recursive_offset(parent.parent, parent_idx, off)
+                    return _recursive_offset(parent.layer_parent, parent_idx, off)
                 if index > max_idx:
-                    if parent.parent is None:
+                    if parent.layer_parent is None:
                         return parent, max_idx
                 index += step
                 off -= step
@@ -1238,8 +1217,9 @@ class ImageStack(QObject):
                                 inner_index += 1
                         return _recursive_offset(layer_at_index, inner_index, off)
             return parent, max(0, min(max_idx, index))
-        assert layer.parent is not None
-        layer_parent = cast(LayerStack, layer.parent)
+        assert layer.layer_parent is not None
+        layer_parent = cast(LayerStack, layer.layer_parent)
         layer_index = layer_parent.get_layer_index(layer)
+        assert layer_index is not None
         return _recursive_offset(layer_parent, layer_index, offset)
 

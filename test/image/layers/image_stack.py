@@ -147,7 +147,7 @@ class ImageStackTest(unittest.TestCase):
         self.layer_added_mock.assert_called_once()
         # TODO: inserting a transparent layer shouldn't trigger content_changed, but it triggers 3x
         # self.content_changed_mock.assert_not_called()
-        self.assertEqual(inner_group.parent, layer_group)
+        self.assertEqual(inner_group.layer_parent, layer_group)
         self.assertEqual(layer_group.count, 1)
         self.assertTrue(inner_group.empty)
         self.assertEqual(inner_group.name, 'inner group')
@@ -179,24 +179,24 @@ class ImageStackTest(unittest.TestCase):
         self.assertEqual(-2, layer_group.z_value)
         self.assertEqual(-3, inner_group.z_value)
         self.assertEqual(-4, layer_0.z_value)
-        self.assertEqual(self.image_stack._layer_stack, layer_0.parent)
+        self.assertEqual(self.image_stack._layer_stack, layer_0.layer_parent)
 
         # Move up to top:
         self.image_stack.move_layer(-1)
         self.assertEqual(-4, layer_0.z_value)
-        self.assertEqual(layer_group, layer_0.parent)
+        self.assertEqual(layer_group, layer_0.layer_parent)
 
         self.image_stack.move_layer(-1)
         self.assertEqual(-4, layer_0.z_value)
-        self.assertEqual(inner_group, layer_0.parent)
+        self.assertEqual(inner_group, layer_0.layer_parent)
 
         self.image_stack.move_layer(-1)
         self.assertEqual(-3, layer_0.z_value)
-        self.assertEqual(layer_group, layer_0.parent)
+        self.assertEqual(layer_group, layer_0.layer_parent)
 
         self.image_stack.move_layer(-1)
         self.assertEqual(-2, layer_0.z_value)
-        self.assertEqual(self.image_stack._layer_stack, layer_0.parent)
+        self.assertEqual(self.image_stack._layer_stack, layer_0.layer_parent)
 
         self.image_stack.move_layer(-1)
         self.assertEqual(-1, layer_0.z_value)
@@ -214,16 +214,16 @@ class ImageStackTest(unittest.TestCase):
 
         self.image_stack.move_layer(1)
         self.assertEqual(-3, layer_0.z_value)
-        self.assertEqual(layer_group, layer_0.parent)
+        self.assertEqual(layer_group, layer_0.layer_parent)
 
         self.image_stack.move_layer(1)
         self.assertEqual(-4, layer_0.z_value)
-        self.assertEqual(inner_group, layer_0.parent)
+        self.assertEqual(inner_group, layer_0.layer_parent)
 
         self.image_stack.move_layer(1)
         self.assertEqual(-4, layer_0.z_value)
-        self.assertEqual(layer_group, layer_0.parent)
+        self.assertEqual(layer_group, layer_0.layer_parent)
 
         self.image_stack.move_layer(1)
         self.assertEqual(-4, layer_0.z_value)
-        self.assertEqual(self.image_stack._layer_stack, layer_0.parent)
+        self.assertEqual(self.image_stack._layer_stack, layer_0.layer_parent)

@@ -93,7 +93,7 @@ class SelectionFillTool(BaseTool):
                 sample_point = layer.map_from_image(image_coordinates)
                 paint_transform = layer.full_image_transform
                 layer_pos_in_mask = layer_pos - mask_pos
-                transformed_origin = QPoint(*paint_transform.map(0, 0))
+                transformed_origin = paint_transform.map(QPoint(0, 0))
                 img_offset = layer_pos_in_mask - transformed_origin
                 paint_transform *= QTransform.fromTranslate(img_offset.x(), img_offset.y())
             if not QRect(QPoint(), image.size()).contains(sample_point):

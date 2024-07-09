@@ -66,7 +66,7 @@ class LayerTransformTool(BaseTool):
         assert scene is not None
         scene.addItem(self._transform_outline)
         self.cursor = QCursor(Qt.CursorShape.CrossCursor)
-        self._active_layer_id = None
+        self._active_layer_id: Optional[int] = None
 
         # prepare control panel, wait to fully initialize
         self._control_panel = ReactiveLayoutWidget()
@@ -504,7 +504,7 @@ class LayerTransformTool(BaseTool):
         assert scene is not None
 
         # Re-create for new layer:
-        layer_parent = None if layer is None else layer.parent
+        layer_parent = None if layer is None else layer.layer_parent
         if layer_parent is not None:
             self._parent_item = QGraphicsRectItem(QRectF(layer_parent.local_bounds))
             self._parent_item.setBrush(Qt.transparent)

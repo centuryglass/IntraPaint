@@ -147,7 +147,7 @@ class Config:
             for key, entry in self._entries.items():
                 self._connected[key] = {}
                 entry._value = entry.default_value
-                if entry._options is not None and len(entry._options) > 0:
+                if entry._options is not None and len(entry._options) > 0 and entry.default_value is not None:
                     entry._options = [entry.default_value]
 
     def _adjust_defaults(self) -> None:

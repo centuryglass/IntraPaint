@@ -38,8 +38,10 @@ class ImageViewer(ImageGraphicsView):
         self._generation_area = image_stack.generation_area
         self._layer_stack_item = LayerStackGraphicsItem(self._image_stack.layer_stack)
         self._selection_layer_item = LayerGraphicsItem(self._image_stack.selection_layer)
-        self.scene().addItem(self._layer_stack_item)
-        self.scene().addItem(self._selection_layer_item)
+        scene = self.scene()
+        assert scene is not None
+        scene.addItem(self._layer_stack_item)
+        scene.addItem(self._selection_layer_item)
         self.content_size = image_stack.size
         self.background = get_transparency_tile_pixmap()
         self.setSizePolicy(QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding))
@@ -49,8 +51,6 @@ class ImageViewer(ImageGraphicsView):
         self._selection_poly_outline.animated = config.get(AppConfig.ANIMATE_OUTLINES)
 
         # Generation area and border rectangle setup:
-        scene = self.scene()
-        assert scene is not None
         self._image_outline = Outline(scene, self)
         self._image_border = Border(scene, self)
         self._image_border.windowed_area = image_stack.bounds if image_stack.has_image else QRect()
@@ -199,7 +199,7 @@ class ImageViewer(ImageGraphicsView):
     def _active_layer_bounds_changed_slot(self, *args) -> None:
         active_layer = self._image_stack.active_layer
         if active_layer is not None:
-            self._active_layer_outline.outlined_region = QRectF(self._image_stack.active_layer.local_bounds)
+            self._active_layer_outline.outlined_region = QRectF(active_layer.local_bounds)
 
     # noinspection PyUnusedLocal
     def _active_layer_change_slot(self, new_active_layer: Layer, *args) -> None:
@@ -263,6 +263,7 @@ class ImageViewer(ImageGraphicsView):
             self._image_border.windowed_area = self._image_stack.bounds if self._image_stack.has_image else QRect()
             self._image_outline.outlined_region = self._image_border.windowed_area
         layer_item = self.find_layer_graphics_item(new_layer.id)
+        assert layer_item is not None
         for outline in (self._generation_area_outline, self._image_generation_area_outline, self._active_layer_outline,
                         self._generation_area_border):
             outline.setZValue(max(self._generation_area_outline.zValue(), new_layer.z_value + 1))

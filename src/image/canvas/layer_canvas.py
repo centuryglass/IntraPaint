@@ -42,10 +42,11 @@ class LayerCanvas:
         if self._layer is not None:
             if self.edit_region is None:
                 self._edit_region = self._layer.local_bounds
+            assert self._edit_region is not None
             self._update_scene_content_bounds(self._edit_region)
             self.connect_layer_signals()
             self._layer_size_change_slot(self._layer, self._layer.size)
-            self._update_canvas_transform(new_layer, new_layer.transform)
+            self._update_canvas_transform(self._layer, self._layer.transform)
         self._layer_content_change_slot(self._layer)
 
     @property

@@ -194,7 +194,7 @@
     "save_shortcut": {
         "label": "Save",
         "category": "Keybindings",
-        "description": "Save current image as .png or .inpt.",
+        "description": "Save current image as .png or .ora.",
         "type": "string",
         "default": "Ctrl+S",
         "saved": true
