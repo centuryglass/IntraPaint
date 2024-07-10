@@ -48,7 +48,7 @@ class CollapsibleBox(BorderedWidget):
         layout.setContentsMargins(0, 0, 0, 0)
 
         self._toggle_button = QToolButton(text=title, checkable=True, checked=not start_closed)
-        self._toggle_button.setStyleSheet("QToolButton { border: none; }")
+        self._toggle_button.setStyleSheet('QToolButton { border: none; }')
         self._button_bar = BorderedWidget()
         layout.addWidget(self._button_bar, stretch=0)
         if self._orientation == Qt.Orientation.Vertical:
@@ -108,12 +108,6 @@ class CollapsibleBox(BorderedWidget):
     def orientation(self) -> Qt.Orientation:
         """Returns whether the widget opens and closes vertically or horizontally."""
         return self.orientation
-
-    @orientation.setter
-    def orientation(self, orientation: Qt.Orientation) -> None:
-        """Updates the widget orientation."""
-        if orientation == self.orientation:
-            return
 
     def set_title_label(self, title: str) -> None:
         """Updates the title label."""

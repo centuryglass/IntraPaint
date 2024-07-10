@@ -63,7 +63,7 @@ class ImageFilterModal(QDialog):
         button_layout = QHBoxLayout(self._button_row)
         self._cancel_button = QPushButton()
         self._cancel_button.setText(CANCEL_BUTTON_TEXT)
-        self._cancel_button.clicked.connect(lambda: self.close())
+        self._cancel_button.clicked.connect(self.close)
         button_layout.addWidget(self._cancel_button)
         self._apply_button = QPushButton()
         self._apply_button.setText(APPLY_BUTTON_TEXT)

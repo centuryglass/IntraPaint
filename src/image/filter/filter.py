@@ -167,6 +167,11 @@ class ImageFilter:
 
         task = _FilterTask(_filter_images, True)
         task.images_ready.connect(_apply_changes)
+
+        def _finish():
+            task.images_ready.disconnect(_apply_changes)
+            task.finish_signal.disconnect(_finish)
+        task.finish_signal.connect(_finish)
         task.start()
 
     def _get_filtered_image(self,

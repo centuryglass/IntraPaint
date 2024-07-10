@@ -9,7 +9,7 @@ from typing import Any, Dict
 import flask
 from flask import Flask, request, jsonify, make_response, abort, current_app
 from flask_cors import CORS, cross_origin
-from src.util.image_utils import load_image_from_base64, image_to_base64
+from src.util.image_utils import pil_image_from_base64, image_to_base64
 from src.glid_3_xl.ml_utils import foreach_image_in_sample
 from src.glid_3_xl.create_sample_function import create_sample_function
 from src.glid_3_xl.generate_samples import generate_samples
@@ -63,12 +63,12 @@ def start_server(device, model_params, model, diffusion, ldm_model, bert_model, 
         edit = None
         mask = None
         try:
-            edit = load_image_from_base64(json["edit"])
+            edit = pil_image_from_base64(json["edit"])
         except Exception as err:
             print(f"loading edit image failed, {err}")
             abort(make_response({"error": f"loading edit image failed, {err}"}, 400))
         try:
-            mask = load_image_from_base64(json["mask"])
+            mask = pil_image_from_base64(json["mask"])
         except Exception as err:
             print(f"loading mask image failed, {err}")
             abort(make_response({"error": f"loading mask image failed, {err}"}, 400))

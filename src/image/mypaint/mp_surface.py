@@ -111,7 +111,7 @@ class MPSurface(QObject):
     def scene_transform(self, transform: QTransform) -> None:
         """Updates the surface's position in the scene, moving all active tiles."""
         self._scene_transform = transform
-        for coordinate_str, tile in self._tiles.items():
+        for tile in self._tiles.values():
             if tile.is_valid and tile.scene() is not None:
                 tile.setTransform(QTransform.fromTranslate(tile.x(), tile.y())
                                   * self._scene_transform

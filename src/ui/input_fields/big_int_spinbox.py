@@ -28,14 +28,14 @@ class BigIntSpinbox(QAbstractSpinBox):
         self._minimum = BigIntSpinbox.MINIMUM
         self._maximum = BigIntSpinbox.MAXIMUM
 
-        rx = QRegExp("-?[1-9]\\d{0,20}")
+        rx = QRegExp('-?[1-9]\\d{0,20}')
         validator = QRegExpValidator(rx, self)
 
         self._line_edit.setValidator(validator)
 
         def on_change(value: str) -> None:
             """Make sure we're not emitting change signals on clear/while typing a new negative number"""
-            if len(value) > 0 and value != "-":
+            if len(value) > 0 and value != '-':
                 try:
                     int_value = int(value)
                     if not self._value_in_range(int_value):
@@ -83,7 +83,7 @@ class BigIntSpinbox(QAbstractSpinBox):
         """Sets the minimum value accepted, must be an integer no less than -18446744073709551616."""
         assert isinstance(minimum, int)
         if minimum < BigIntSpinbox.MINIMUM:
-            raise ValueError(f"Minimum cannot be less that {BigIntSpinbox.MINIMUM}, got {minimum}")
+            raise ValueError(f'Minimum cannot be less that {BigIntSpinbox.MINIMUM}, got {minimum}')
         self._minimum = minimum
 
     def maximum(self) -> int:
@@ -94,7 +94,7 @@ class BigIntSpinbox(QAbstractSpinBox):
         """Sets the maximum value accepted, must be an integer no greater than 18446744073709551615."""
         assert isinstance(maximum, int)
         if maximum > BigIntSpinbox.MAXIMUM:
-            raise ValueError(f"Maximum cannot be greater that {BigIntSpinbox.MAXIMUM}, got {maximum}")
+            raise ValueError(f'Maximum cannot be greater that {BigIntSpinbox.MAXIMUM}, got {maximum}')
         self._maximum = maximum
 
     def setRange(self, minimum: int, maximum: int) -> None:

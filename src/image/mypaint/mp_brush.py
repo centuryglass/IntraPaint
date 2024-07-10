@@ -194,11 +194,10 @@ def _get_max_setting_index() -> int:
     the settings count will instead be found by checking increasing values in a child process until it fails the
     'index < count' assertion and terminates.
     """
-    if "DYNAMIC_MYPAINT_BRUSH_SETTINGS" not in os.environ:
+    if 'DYNAMIC_MYPAINT_BRUSH_SETTINGS' not in os.environ:
         if os.name == 'nt':
             return 56  # TODO: Find or build libmypaint 1.6 for Windows.
-        else:
-            return 64
+        return 64
 
     def read_settings(connection: Any) -> None:
         """Send back valid settings IDs through a connection after validating each with libmypaint."""

@@ -25,6 +25,7 @@ DARK_THEME_OPTIONS = ['qdarktheme_dark', 'qdarktheme_light', 'qdarktheme_auto']
 
 
 class AppConfig(Config, metaclass=Singleton):
+    """Provides access to the user-editable application config."""
 
     def __init__(self, json_path: Optional[str] = DEFAULT_CONFIG_PATH) -> None:
         """Load existing config, or initialize from defaults.

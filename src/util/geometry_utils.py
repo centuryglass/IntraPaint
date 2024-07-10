@@ -143,7 +143,6 @@ def extract_transform_parameters(transform: QTransform, origin: QPointF) -> Tupl
         else:
             y_scale = -y_scale
 
-
     return x_offset, y_offset, x_scale, y_scale, angle_degrees
 
 

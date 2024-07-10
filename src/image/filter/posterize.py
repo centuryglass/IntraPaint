@@ -1,7 +1,7 @@
 """Simplify images by reducing color count."""
 from typing import List, Callable
 
-from PIL import Image, ImageOps
+from PIL import ImageOps
 from PyQt5.QtCore import QRect
 from PyQt5.QtGui import QImage, QPainter
 

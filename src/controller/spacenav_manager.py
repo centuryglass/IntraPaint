@@ -119,7 +119,7 @@ class SpacenavManager:
 
                 def send_nav_signal() -> None:
                     """Convert spacemouse events to appropriate image generation area changes, emit results to main thread."""
-                    with (self._thread_data.lock):
+                    with self._thread_data.lock:
                         if self._thread_data.pending:
                             return
                         if not self._thread_data.dimensions_all_nonzero:

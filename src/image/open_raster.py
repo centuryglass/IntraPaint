@@ -10,7 +10,7 @@ import os.path
 import shutil
 import tempfile
 import zipfile
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, cast
 from xml.etree.ElementTree import ElementTree, Element
 
 from PyQt5.QtCore import QSize
@@ -150,7 +150,7 @@ def save_ora_image(image_stack: ImageStack, file_path: str,  metadata: str) -> N
 
     def encode_image_layer(layer: ImageLayer) -> Dict[str, Any]:
         """Encode an ImageLayer as image data."""
-        layer_data = {
+        layer_data: Dict[str, Any] = {
             DICT_ELEMENT_NAME: LAYER_ELEMENT,
             IMAGE_TAG_NAME: layer.name
         }
@@ -175,7 +175,7 @@ def save_ora_image(image_stack: ImageStack, file_path: str,  metadata: str) -> N
 
     def encode_layer_group(layer: LayerStack) -> Dict[str, Any]:
         """Encode a LayerStack as stack data."""
-        stack_data = {
+        stack_data: Dict[str, Any] = {
             DICT_ELEMENT_NAME: STACK_ELEMENT,
             ATTR_TAG_NAME: layer.name
         }
@@ -210,27 +210,27 @@ def save_ora_image(image_stack: ImageStack, file_path: str,  metadata: str) -> N
         IMAGE_TAG_WIDTH: image_stack.width,
         IMAGE_TAG_HEIGHT: image_stack.height,
         IMAGE_TAG_NAME: image_name,
-        DICT_NESTED_CONTENT_NAME: [ encode_layer_group(image_stack.layer_stack) ]
+        DICT_NESTED_CONTENT_NAME: [encode_layer_group(image_stack.layer_stack)]
     }
 
     if metadata is not None:
         image_data[METADATA_TAG] = metadata
 
     # Convert to XML:
-    def _create_element(data_dict: Dict[str, Any]) -> ElementTree:
-        element = Element(data_dict[DICT_ELEMENT_NAME])
+    def _create_element(data_dict: Dict[str, Any]) -> Element:
+        new_element = Element(data_dict[DICT_ELEMENT_NAME])
         for key, value in data_dict.items():
             if key == DICT_ELEMENT_NAME:
                 continue
-            elif key == DICT_NESTED_CONTENT_NAME:
+            if key == DICT_NESTED_CONTENT_NAME:
                 assert isinstance(value, list)
                 for child_dict in value:
                     assert isinstance(child_dict, dict)
                     child = _create_element(child_dict)
-                    element.append(child)
+                    new_element.append(child)
             else:
-                element.set(key, str(value))
-        return element
+                new_element.set(key, str(value))
+        return new_element
 
     xml_root = ElementTree(_create_element(image_data))
     xml_root.write(os.path.join(tmpdir, XML_FILE_NAME))
@@ -260,13 +260,14 @@ def save_ora_image(image_stack: ImageStack, file_path: str,  metadata: str) -> N
             element = element_data.pop()
             for img_tag in [LAYER_TAG_SRC, TRANSFORM_SRC_TAG]:
                 if img_tag in element:
-                    img_path = element[img_tag]
+                    img_path = str(element[img_tag])
                     zip_file.write(os.path.join(tmpdir, img_path), img_path)
             if DICT_NESTED_CONTENT_NAME in element:
-                for nested in element[DICT_NESTED_CONTENT_NAME]:
+                for nested in cast(list, element[DICT_NESTED_CONTENT_NAME]):
                     element_data.append(nested)
     shutil.move(tmp_save_path, file_path)
     shutil.rmtree(tmpdir)
+
 
 def read_ora_image(image_stack: ImageStack, file_path: str) -> Optional[str]:
     """Read a .ora file into the image stack, returning metadata."""
@@ -280,18 +281,18 @@ def read_ora_image(image_stack: ImageStack, file_path: str) -> Optional[str]:
             visible = element.get(ATTR_TAG_VISIBILITY) == ATTR_VISIBLE
             layer.set_visible(visible)
         if ATTR_TAG_OPACITY in element.keys():
-            opacity = float(element.get(ATTR_TAG_OPACITY))
+            opacity = float(str(element.get(ATTR_TAG_OPACITY)))
             layer.set_opacity(opacity)
         if ATTR_TAG_COMPOSITE in element.keys():
-            comp_mode = COMPOSITION_MODES[ORA_COMPOSITION_MODES[element.get(ATTR_TAG_COMPOSITE)]]
+            comp_mode = COMPOSITION_MODES[ORA_COMPOSITION_MODES[str(element.get(ATTR_TAG_COMPOSITE))]]
             layer.set_composition_mode(comp_mode)
         if TRANSFORM_TAG in element.keys():
-            matrix_elems = [float(elem) for elem in ','.split(element.get(TRANSFORM_TAG))]
-            transform = QTransform(*matrix_elems)
+            matrix_elements = [float(elem) for elem in ','.split(element.get(TRANSFORM_TAG))]
+            transform = QTransform(*matrix_elements)
             layer.set_transform(transform)
         elif ATTR_TAG_X_POS in element.keys() and ATTR_TAG_Y_POS in element.keys():
-            x = float(element.get(ATTR_TAG_X_POS))
-            y = float(element.get(ATTR_TAG_Y_POS))
+            x = float(str(element.get(ATTR_TAG_X_POS)))
+            y = float(str(element.get(ATTR_TAG_Y_POS)))
             transform = QTransform.fromTranslate(x, y)
             layer.set_transform(transform)
 
@@ -299,9 +300,9 @@ def read_ora_image(image_stack: ImageStack, file_path: str) -> Optional[str]:
         """Load an image layer from its saved XML definition"""
         assert element.tag == LAYER_ELEMENT
         if TRANSFORM_SRC_TAG in element.keys():
-            img_path = os.path.join(tmpdir, element.get(TRANSFORM_SRC_TAG))
+            img_path = os.path.join(tmpdir, str(element.get(TRANSFORM_SRC_TAG)))
         else:
-            img_path = os.path.join(tmpdir, element.get(LAYER_TAG_SRC))
+            img_path = os.path.join(tmpdir, str(element.get(LAYER_TAG_SRC)))
         layer_image = QImage(img_path)
         layer = ImageLayer(layer_image, '')
         _parse_common_attributes(layer, element)
@@ -325,7 +326,7 @@ def read_ora_image(image_stack: ImageStack, file_path: str) -> Optional[str]:
     xml_path = os.path.join(tmpdir, XML_FILE_NAME)
     xml_root = ElementTree().parse(xml_path)
     assert xml_root.tag == IMAGE_ELEMENT, f'Unexpected tag "{xml_root.tag}"'
-    img_size = QSize(int(xml_root.get(IMAGE_TAG_WIDTH)), int(xml_root.get(IMAGE_TAG_HEIGHT)))
+    img_size = QSize(int(str(xml_root.get(IMAGE_TAG_WIDTH))), int(str(xml_root.get(IMAGE_TAG_HEIGHT))))
     layer_stack = parse_stack_element(xml_root[0])
     metadata = xml_root.get(METADATA_TAG, None)
     image_stack.load_layer_stack(layer_stack, img_size)

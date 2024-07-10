@@ -38,6 +38,7 @@ class MainWindowTest(unittest.TestCase):
         large_vertical = QSize(2000, 4000)
         large_horizontal = QSize(4000, 2000)
         small_horizontal = QSize(1024, 768)
+        assert self.window is not None
         self.assertTrue(self.window.isVisible())
         self.assertFalse(self.window.geometry().isEmpty())
         self.assertFalse(self.window._control_panel.isVisible())

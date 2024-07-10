@@ -103,7 +103,7 @@ class SizeField(QWidget):
 
     def setValue(self, new_value: QSize) -> None:
         """Updates the current size value."""
-        if new_value != self.value:
+        if new_value != self.value():
             if not self._min_width <= new_value.width() <= self._max_width:
                 raise ValueError(f'{new_value.width()} not in range {self._min_width} - {self._max_width}')
             if not self._min_height <= new_value.height() <= self._max_height:

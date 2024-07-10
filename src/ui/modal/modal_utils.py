@@ -4,7 +4,7 @@ Provides simple popup windows for error messages, requesting confirmation, and l
 import sys
 import traceback
 import logging
-from typing import Optional
+from typing import Optional, List
 
 from PyQt5.QtWidgets import QMessageBox, QFileDialog, QWidget, QStyle
 from PIL import UnidentifiedImageError
@@ -51,7 +51,7 @@ def request_confirmation(parent: QWidget, title: str, message: str) -> bool:
 
 
 def open_image_file(parent: QWidget, mode: str = 'load',
-                    selected_file: str = '') -> tuple[str, str] | tuple[None, None]:
+                    selected_file: str = '') -> tuple[str, str] | tuple[List[str], str] | tuple[None, None]:
     """Opens an image file for editing, saving, etc."""
     is_pyinstaller_bundle = getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS')
     options = str(QFileDialog.Option.DontUseNativeDialog) if is_pyinstaller_bundle else None

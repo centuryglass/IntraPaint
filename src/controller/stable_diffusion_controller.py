@@ -10,7 +10,6 @@ from argparse import Namespace
 from typing import Optional, Callable, Any, Dict, List, cast
 
 import requests
-from PIL import Image
 from PyQt5.QtCore import pyqtSignal, QSize, QThread
 from PyQt5.QtGui import QImage
 from PyQt5.QtWidgets import QInputDialog
@@ -28,7 +27,6 @@ from src.ui.window.stable_diffusion_main_window import StableDiffusionMainWindow
 from src.util.application_state import APP_STATE_EDITING, AppStateTracker, APP_STATE_LOADING, APP_STATE_NO_IMAGE
 from src.util.async_task import AsyncTask
 from src.util.display_size import get_screen_size
-from src.util.image_utils import pil_image_to_qimage
 from src.util.menu_builder import menu_action
 from src.util.parameter import ParamType
 from src.util.shared_constants import EDIT_MODE_INPAINT, EDIT_MODE_TXT2IMG, EDIT_MODE_IMG2IMG
@@ -53,9 +51,9 @@ PROGRESS_KEY_FRACTION = "progress"
 PROGRESS_KEY_ETA_RELATIVE = 'eta_relative'
 STYLE_ERROR_TITLE = 'Updating prompt styles failed'
 
-GENERATE_ERROR_TITLE = "Image generation failed"
-GENERATE_ERROR_MESSAGE_EMPTY_MASK = ("Selection mask was empty. Either use the mask tool to mark part of the image"
-                                     " generation area for inpainting, or switch to another image generation mode.")
+GENERATE_ERROR_TITLE = 'Image generation failed'
+GENERATE_ERROR_MESSAGE_EMPTY_MASK = ('Selection mask was empty. Either use the mask tool to mark part of the image'
+                                     'q generation area for inpainting, or switch to another image generation mode.')
 
 MAX_ERROR_COUNT = 10
 MIN_RETRY_US = 300000
@@ -145,8 +143,11 @@ class StableDiffusionController(BaseInpaintController):
             def _update_config() -> None:
                 self._webservice.set_config(changed_settings)
             update_task = AsyncTask(_update_config, True)
-            update_task.finish_signal.connect(lambda: AppStateTracker.set_app_state(
-                APP_STATE_EDITING if self._image_stack.has_image else APP_STATE_NO_IMAGE))
+
+            def _update_setting():
+                AppStateTracker.set_app_state(APP_STATE_EDITING if self._image_stack.has_image else APP_STATE_NO_IMAGE)
+                update_task.finish_signal.disconnect(_update_setting)
+            update_task.finish_signal.connect(_update_setting)
             update_task.start()
 
     @staticmethod
@@ -220,7 +221,12 @@ class StableDiffusionController(BaseInpaintController):
             self._window.set_is_loading(False)
             show_error_dialog(self._window, INTERROGATE_ERROR_TITLE, err)
         task.error_signal.connect(handle_error)
-        task.finish_signal.connect(lambda: AppStateTracker.set_app_state(APP_STATE_EDITING))
+
+        def _finish():
+            AppStateTracker.set_app_state(APP_STATE_EDITING)
+            task.error_signal.disconnect(handle_error)
+            task.finish_signal.disconnect(_finish)
+        task.finish_signal.connect(_finish)
         assert self._window is not None
         self._window.set_loading_message(INTERROGATE_LOADING_TEXT)
         task.start()
@@ -370,6 +376,11 @@ class StableDiffusionController(BaseInpaintController):
         assert self._window is not None
         if external_status_signal is None:
             task.status_signal.connect(self._apply_status_update)
+
+            def _finish():
+                task.status_signal.disconnect(self._apply_status_update)
+                task.finish_signal.disconnect(_finish)
+            task.finish_signal.connect(_finish)
         task.start()
 
     def _scale(self, new_size: QSize) -> None:
@@ -385,7 +396,7 @@ class StableDiffusionController(BaseInpaintController):
         # If upscaling, use stable-diffusion-webui upscale api:
 
         class _UpscaleTask(AsyncTask):
-            image_ready = pyqtSignal(Image.Image)
+            image_ready = pyqtSignal(QImage)
             error_signal = pyqtSignal(Exception)
 
             def signals(self) -> List[pyqtSignal]:
@@ -408,31 +419,34 @@ class StableDiffusionController(BaseInpaintController):
 
         task.error_signal.connect(handle_error)
 
-        def apply_upscaled(img: Image.Image) -> None:
+        def apply_upscaled(img: QImage) -> None:
             """Copy the upscaled image into the image stack."""
-            self._image_stack.load_image(pil_image_to_qimage(img))
+            self._image_stack.load_image(img)
 
         task.image_ready.connect(apply_upscaled)
 
         def _on_finish() -> None:
             assert self._window is not None
             self._window.set_is_loading(False)
+            task.error_signal.disconnect(handle_error)
+            task.image_ready.disconnect(apply_upscaled)
+            task.finish_signal.disconnect(_on_finish)
         task.finish_signal.connect(_on_finish)
         self._async_progress_check()
         task.start()
 
     def _inpaint(self,
-                 source_image_section: Image.Image,
-                 mask: Image.Image,
-                 save_image: Callable[[Image.Image, int], None],
+                 source_image_section: Optional[QImage],
+                 mask: Optional[QImage],
+                 save_image: Callable[[QImage, int], None],
                  status_signal: pyqtSignal) -> None:
         """Handle image editing operations using stable-diffusion-webui.
 
         Parameters
         ----------
-        source_image_section : PIL Image, optional
+        source_image_section : QImage, optional
             Image selection to edit
-        mask : PIL Image, optional
+        mask : QImage, optional
             Mask marking edited image region.
         save_image : function (PIL Image, int)
             Function used to return each image response and its index.
@@ -455,9 +469,12 @@ class StableDiffusionController(BaseInpaintController):
 
         try:
             if edit_mode == EDIT_MODE_TXT2IMG:
-                image_data, info = self._webservice.txt2img(source_image_section.width, source_image_section.height,
-                                                            image=source_image_section)
+                gen_size = AppConfig().get(AppConfig.GENERATION_SIZE)
+                width = gen_size.width()
+                height = gen_size.height()
+                image_data, info = self._webservice.txt2img(width, height, image=source_image_section)
             else:
+                assert source_image_section is not None
                 image_data, info = self._webservice.img2img(source_image_section, mask=mask)
             if info is not None:
                 logger.debug(f'Image generation result info: {info}')
@@ -542,6 +559,9 @@ class StableDiffusionController(BaseInpaintController):
             def _resume_and_show() -> None:
                 AppStateTracker.set_app_state(APP_STATE_EDITING)
                 assert self._lora_images is not None
+                assert self._window is not None
+                task.status.disconnect(self._window.set_loading_message)
+                task.finish_signal.disconnect(_resume_and_show)
                 delayed_lora_window = ExtraNetworkWindow(loras, self._lora_images)
                 delayed_lora_window.exec_()
 

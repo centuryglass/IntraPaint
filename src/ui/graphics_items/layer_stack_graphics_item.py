@@ -1,7 +1,7 @@
 """Renders a layer group into a QGraphicsScene."""
 from typing import Dict, Optional, List
 
-from PyQt5.QtCore import QRect, QPointF
+from PyQt5.QtCore import QPointF
 from PyQt5.QtGui import QPainter
 from PyQt5.QtWidgets import QGraphicsItemGroup, QGraphicsItem
 

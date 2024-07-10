@@ -281,4 +281,3 @@ class ImageViewer(ImageGraphicsView):
             return self._selection_layer_item
         return self._layer_stack_item.find_layer_item(layer_id)
 
-

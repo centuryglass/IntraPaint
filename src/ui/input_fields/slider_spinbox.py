@@ -147,4 +147,3 @@ class FloatSliderSpinbox(_SliderSpinbox):
     def send_change_signal(self) -> None:
         """Emits the float valueChanged signal."""
         self.valueChanged.emit(float(self.value()))
-

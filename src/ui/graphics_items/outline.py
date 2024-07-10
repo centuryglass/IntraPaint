@@ -149,4 +149,3 @@ class Outline(QGraphicsObject):
         path = QPainterPath()
         path.addRect(QRectF(self.boundingRect()))
         return path
-

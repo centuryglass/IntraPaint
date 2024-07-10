@@ -23,8 +23,8 @@ TYPE_QSIZE = 'Size'
 TYPE_LIST = 'list'
 TYPE_DICT = 'dict'
 
-WIDTH_LABEL = "W:"
-HEIGHT_LABEL = "H:"
+WIDTH_LABEL = 'W:'
+HEIGHT_LABEL = 'H:'
 
 PARAMETER_TYPES = [TYPE_INT, TYPE_FLOAT, TYPE_STR, TYPE_BOOL, TYPE_QSIZE, TYPE_LIST, TYPE_DICT]
 
@@ -59,8 +59,8 @@ class Parameter:
                  value_type: str,
                  default_value: Optional[ParamType] = None,
                  description: str = '',
-                 minimum: Optional[int | float] = None,
-                 maximum: Optional[int | float] = None,
+                 minimum: Optional[int | float | QSize] = None,
+                 maximum: Optional[int | float | QSize] = None,
                  single_step: Optional[int | float] = None) -> None:
         self._name = name
         assert len(name) > 0
@@ -95,9 +95,11 @@ class Parameter:
             if option_type != self._type:
                 raise TypeError(f'Param {self.name}: option parameter type {option_type} does not match value type'
                                 f' {self._type}')
-            if (self._maximum is not None or self._minimum is not None) and not _in_range(option, self._minimum,
-                                                                                          self._maximum):
-                raise ValueError(f'Param {self.name}: Option {option} is not in range {self._minimum}-{self._maximum}')
+            if self._maximum is not None or self._minimum is not None:
+                assert isinstance(option, (int, float, QSize))
+                if not _in_range(option, self._minimum, self._maximum):
+                    raise ValueError(f'Param {self.name}: Option {option} is not in range'
+                                     f' {self._minimum}-{self._maximum}')
         if self._default_value is not None and self._default_value not in valid_options and len(valid_options) > 0:
             self._default_value = valid_options[0]
         self._options = [*valid_options]
@@ -178,9 +180,10 @@ class Parameter:
                 if raise_on_failure:
                     raise TypeError(f'{self.name} parameter: expected {self._type}, got {test_type}')
                 return False
-        except TypeError:
+        except TypeError as err:
             if raise_on_failure:
-                raise TypeError(f'{self.name} parameter: expected {self._type}, got {test_value} {type(test_value)}')
+                raise TypeError(f'{self.name} parameter: expected {self._type},'
+                                f' got {test_value} {type(test_value)}') from err
             return False
         if (self._maximum is not None or self._minimum is not None) and not _in_range(test_value, self._minimum,
                                                                                       self._maximum):
@@ -206,6 +209,7 @@ class Parameter:
             assert self.type_name == TYPE_STR, 'Widget support for non-string option lists is not implemented'
             if len(self._options) == 2:
                 toggle = DualToggle(parent=None, options=cast(list[str], self.options))
+                assert self._default_value is None or isinstance(self._default_value, str)
                 toggle.setValue(self._default_value)
                 input_field = cast(QWidget, toggle)
             else:
@@ -226,7 +230,8 @@ class Parameter:
             spin_box.setMinimum(cast(int, self._minimum) if self._minimum is not None else INT_MIN)
             spin_box.setMaximum(cast(int, self._maximum) if self._maximum is not None else INT_MAX)
             if self._step is not None:
-                spin_box.setSingleStep(self._step)
+                spin_box.setSingleStep(int(self._step))
+            assert self._default_value is None or isinstance(self._default_value, int)
             spin_box.setValue(self._default_value if self._default_value is not None else max(0, spin_box.minimum()))
             if isinstance(spin_box, IntSliderSpinbox) and (self._minimum is None or self._maximum is None):
                 spin_box.set_slider_included(False)
@@ -236,7 +241,8 @@ class Parameter:
             spin_box.setMinimum(cast(float, self._minimum) if self._minimum is not None else FLOAT_MIN)
             spin_box.setMaximum(cast(float, self._maximum) if self._maximum is not None else FLOAT_MAX)
             if self._step is not None:
-                spin_box.setSingleStep(self._step)
+                spin_box.setSingleStep(float(self._step))
+            assert self._default_value is None or isinstance(self._default_value, float)
             spin_box.setValue(self._default_value if self._default_value is not None else max(0.0, spin_box.minimum()))
             if self._minimum is None or self._maximum is None:
                 spin_box.set_slider_included(False)
@@ -249,21 +255,24 @@ class Parameter:
         elif self._type == TYPE_BOOL:
             check_box = CheckBox()
             if self._default_value is not None:
-                check_box.setChecked(self._default_value)
+                check_box.setChecked(bool(self._default_value))
             input_field = cast(QWidget, check_box)
         elif self._type == TYPE_QSIZE:
             size_field = SizeField()
             if self._minimum is not None:
+                assert isinstance(self._minimum, QSize)
                 size_field.minimum = self._minimum
             if self._maximum is not None:
+                assert isinstance(self._maximum, QSize)
                 size_field.maximum = self._maximum
             if self._step is not None:
-                size_field.set_single_step(self._step)
+                size_field.set_single_step(int(self._step))
             if self._default_value is not None:
+                assert isinstance(self._default_value, QSize)
                 size_field.setValue(self._default_value)
             input_field = cast(QWidget, size_field)
         else:
-            RuntimeError(f'get_input_widget not supported for type {self._type}')
+            raise RuntimeError(f'get_input_widget not supported for type {self._type}')
         assert input_field is not None, f'{self.name} failed to init input for type {self.type_name}'
         if len(self._description) > 0:
             input_field.setToolTip(self._description)
@@ -293,6 +302,11 @@ def _in_range(value: int | float | QSize,
         else:  # QSize
             minimum = QSize(INT_MAX, INT_MAX)
     if value_type == TYPE_QSIZE:
+        assert isinstance(minimum, QSize)
+        assert isinstance(maximum, QSize)
+        assert isinstance(value, QSize)
         return minimum.width() <= value.width() <= maximum.width() \
             and minimum.height() <= value.height() <= maximum.height()
+    assert minimum is not None
+    assert maximum is not None
     return minimum <= value <= maximum

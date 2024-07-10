@@ -4,18 +4,19 @@ colabFiles/IntraPaint_colab_server.ipynb.
 """
 import sys
 from typing import Optional, Callable, Any, Dict, List
+
 import requests
 from PyQt5.QtCore import QThread, pyqtSignal
+from PyQt5.QtGui import QImage
 from PyQt5.QtWidgets import QInputDialog
-from PIL import Image
 
+from src.config.application_config import AppConfig
+from src.controller.base_controller import BaseInpaintController
 from src.controller.local_controller import GLID_CONFIG_CATEGORY
+from src.ui.modal.settings_modal import SettingsModal
 from src.ui.window.main_window import MainWindow
 from src.util.display_size import get_screen_size
-from src.ui.modal.settings_modal import SettingsModal
-from src.controller.base_controller import BaseInpaintController
-from src.util.image_utils import load_image_from_base64, image_to_base64
-from src.config.application_config import AppConfig
+from src.util.image_utils import image_to_base64, qimage_from_base64
 
 
 class WebClientController(BaseInpaintController):
@@ -70,23 +71,23 @@ class WebClientController(BaseInpaintController):
             prompt_for_url('Server connection failed, enter a new URL or click "OK" to retry')
 
     def _inpaint(self,
-                 source_image_section: Optional[Image.Image],
-                 mask: Optional[Image.Image],
-                 save_image: Callable[[Image.Image, int], None],
+                 source_image_section: Optional[QImage],
+                 mask: Optional[QImage],
+                 save_image: Callable[[QImage, int], None],
                  status_signal: pyqtSignal) -> None:
         """Handle image editing operations using the GLID-3-XL API.
         Parameters
         ----------
-        source_image_section : PIL Image, optional
+        source_image_section : QImage, optional
             Image selection to edit
         mask : PIL Image, optional
             Mask marking edited image region.
-        save_image : function (PIL Image, int)
+        save_image : function (QImage, int)
             Function used to return each image response and its index.
         status_signal : pyqtSignal
             Signal to emit when status updates are available.
         """
-        assert source_image_section is not None and mask is not None, "GLID-3-XL only supports inpainting"
+        assert source_image_section is not None and mask is not None, 'GLID-3-XL only supports inpainting'
         config = AppConfig()
         batch_size = config.get(AppConfig.BATCH_SIZE)
         batch_count = config.get(AppConfig.BATCH_COUNT)
@@ -109,7 +110,7 @@ class WebClientController(BaseInpaintController):
                 if server_response.content and ('application/json' in server_response.headers['content-type']) \
                         and server_response.json() and 'error' in server_response.json():
                     raise RuntimeError(f'{server_response.status_code} response to {context_str}: '
-                                       f'{server_response.json()["error"]}')
+                                       f'{server_response.json()['error']}')
                 print(f'RESPONSE: {server_response.content}')
                 raise RuntimeError(f'{server_response.status_code} response to {context_str}: unknown error')
 
@@ -152,7 +153,7 @@ class WebClientController(BaseInpaintController):
                 continue
             for sample_name in json_body['samples'].keys():
                 try:
-                    sample_image = load_image_from_base64(json_body['samples'][sample_name]['image'])
+                    sample_image = qimage_from_base64(json_body['samples'][sample_name]['image'])
                     save_image(sample_image, int(sample_name))
                     samples[sample_name] = json_body['samples'][sample_name]['timestamp']
                 except IOError as err:

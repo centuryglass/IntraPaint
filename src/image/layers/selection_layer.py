@@ -1,20 +1,16 @@
 """A layer used to mark masked regions for inpainting."""
-from sys import version_info
-
-from src.image.mypaint.numpy_image_utils import is_fully_transparent, AnyNpArray, image_data_as_numpy_8bit
-
-if version_info[1] >= 11:
-    from typing import Optional, List
-else:
-    from typing import Optional, List
 import logging
-from PyQt5.QtGui import QImage, QPolygonF, QPainter
-from PyQt5.QtCore import QRect, QPoint, QSize, pyqtSignal, QPointF, Qt
-import numpy as np
+from typing import Optional, List
+
 import cv2
+import numpy as np
 from PIL import Image
-from src.image.layers.image_layer import ImageLayer
+from PyQt5.QtCore import QRect, QPoint, QSize, pyqtSignal, QPointF, Qt
+from PyQt5.QtGui import QImage, QPolygonF, QPainter
+
 from src.config.application_config import AppConfig
+from src.image.layers.image_layer import ImageLayer
+from src.image.mypaint.numpy_image_utils import is_fully_transparent, AnyNpArray, image_data_as_numpy_8bit
 from src.util.image_utils import qimage_to_pil_image, image_content_bounds
 
 logger = logging.getLogger(__name__)

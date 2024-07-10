@@ -8,6 +8,7 @@ DEFAULT_FILE_PATH = '.cache.json'
 
 
 class Cache(Config, metaclass=Singleton):
+    """Use the Config module's data sharing capabilities to cache temporary values."""
 
     def __init__(self, json_path: str = DEFAULT_FILE_PATH) -> None:
         """Initialize the cache, registering expected value types."""

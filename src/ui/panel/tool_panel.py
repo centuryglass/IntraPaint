@@ -100,7 +100,6 @@ class ToolPanel(QWidget):
         self._tool_control_layout.addWidget(self._tool_control_label, stretch=2)
         self._tool_control_layout.addStretch(2)
         self._tool_control_box.add_visibility_limit(self._tool_control_label, MIN_SIZE_FOR_TOOL_LABEL)
-        
         self._tool_control_box.setSizePolicy(QSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding))
 
         self._tool_scroll_area = QScrollArea()
@@ -198,7 +197,7 @@ class ToolPanel(QWidget):
         tool_list_layout = self._tool_list.layout()
         assert tool_list_layout is not None
         if orientation == Qt.Orientation.Horizontal:
-            generate_label = "\n".join(GENERATE_BUTTON_TEXT)
+            generate_label = '\n'.join(GENERATE_BUTTON_TEXT)
             self._tool_list.fill_vertical = True
             self._tool_list.max_rows = 3
             tool_list_layout.setAlignment(Qt.AlignmentFlag.AlignLeft)

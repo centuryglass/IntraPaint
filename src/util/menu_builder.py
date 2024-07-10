@@ -91,10 +91,13 @@ class MenuBuilder:
             A hotkey that should trigger this menu option.
         """
         menu_bar = window.menuBar()
+        assert menu_bar is not None
         if menu_name in self._menus:
             menu = self._menus[menu_name]
         else:
-            menu = menu_bar.addMenu(menu_name)
+            new_menu = menu_bar.addMenu(menu_name)
+            assert new_menu is not None
+            menu = new_menu
             self._menus[menu_name] = menu
             self._actions[menu_name] = []
         try:

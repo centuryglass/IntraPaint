@@ -19,8 +19,8 @@ class LayerStack(Layer):
     layer_removed = pyqtSignal(Layer)
 
     def __init__(self, name: str) -> None:
-        super().__init__(name)
         """Initialize with no layer data."""
+        super().__init__(name)
         self._image_cache = CachedData(None)
         self._layers: List[Layer] = []
         self._bounds = QRect()
@@ -148,7 +148,7 @@ class LayerStack(Layer):
                 return self._layers.index(layer)
             except (KeyError, ValueError):
                 return None
-        elif isinstance(layer, int):
+        if isinstance(layer, int):
             for i in range(self.count):
                 if self._layers[i].id == layer:
                     return i

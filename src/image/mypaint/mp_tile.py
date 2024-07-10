@@ -17,8 +17,6 @@ GREEN = 1
 BLUE = 2
 ALPHA = 3
 
-tile_id = 0
-
 
 class MPTile(QGraphicsItem):
     """A Python wrapper for libmypaint image tile data."""
@@ -29,10 +27,7 @@ class MPTile(QGraphicsItem):
                  size: QSize = QSize(TILE_DIM, TILE_DIM),
                  parent: Optional[QGraphicsItem] = None):
         """Initialize tile data."""
-        global tile_id
         super().__init__(parent)
-        self._id = tile_id
-        tile_id += 1
         self._pixels: Optional[TilePixelBuffer] = tile_buffer
         self._size = size
         self._cache_image: Optional[QImage] = QImage(size, QImage.Format_ARGB32_Premultiplied)
@@ -104,9 +99,6 @@ class MPTile(QGraphicsItem):
             self.update_cache()
         painter.save()
         painter.setCompositionMode(self._composition_mode)
-        # local_transform = QTransform.fromTranslate(-self.x(), -self.y()) * painter.transform() * QTransform.fromTranslate(self.x(), self.y())
-        # # local_transform.translate(self.x(), self.y())
-        # painter.setTransform(local_transform, False)
         bounds = QRect(0, 0, self._cache_image.width(), self._cache_image.height())
         painter.drawImage(bounds, self._cache_image)
         painter.restore()

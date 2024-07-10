@@ -33,7 +33,7 @@ class KeyConfig(Config, metaclass=Singleton):
 
     def validate_keybindings(self) -> None:
         """Checks all keybindings for conflicts, and shows a warning message if any are found."""
-        key_binding_options = self.get_category_keys("Keybindings")
+        key_binding_options = self.get_category_keys('Keybindings')
         duplicate_map = {}
         errors = []
         modifiers = ('Ctrl', 'Alt', 'Shift')

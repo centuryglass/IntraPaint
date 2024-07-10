@@ -13,7 +13,7 @@ SPECTRUM_TAB_TITLE = 'Spectrum'
 
 PALETTE_TAB_TITLE = 'Palette'
 
-COMPONENT_TAB_TITLE = "Color Component"
+COMPONENT_TAB_TITLE = 'Color Component'
 
 MODE_2X2 = '2x2'
 MODE_4X1 = '4x1'
@@ -65,7 +65,7 @@ class ColorPicker(QColorDialog):
         self._basic_palette_panel = QWidget()
         self._basic_palette_panel.setSizePolicy(self._size_policy)
         self._basic_palette_layout = QVBoxLayout(self._basic_palette_panel)
-        for i in range(3):
+        for _ in range(3):
             _move_first_item(palette_layout, self._basic_palette_layout)
 
         self._custom_palette_panel = QWidget()

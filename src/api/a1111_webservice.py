@@ -7,15 +7,15 @@ import json
 import os
 import io
 import sys
-import requests
 import logging
-from PIL import Image
+
+import requests
 from PyQt5.QtGui import QImage
 from PyQt5.QtCore import QByteArray
 from requests import Response
 
 from src.api.webservice import WebService
-from src.util.image_utils import load_image_from_base64, image_to_base64
+from src.util.image_utils import pil_image_from_base64, image_to_base64, qimage_from_base64
 from src.config.application_config import AppConfig
 from src.ui.modal.login_modal import LoginModal
 from src.util.shared_constants import CONTROLNET_REUSE_IMAGE_CODE
@@ -151,19 +151,19 @@ class A1111Webservice(WebService):
 
     # Image manipulation:
     def img2img(self,
-                image: Image.Image,
-                mask: Optional[Image.Image] = None,
+                image: QImage,
+                mask: Optional[QImage] = None,
                 width: Optional[int] = None,
                 height: Optional[int] = None,
                 overrides: Optional[dict] = None,
-                scripts: Optional[Dict[str, Any]] = None) -> Response | tuple[List[Image.Image], Dict[str, Any] | None]:
+                scripts: Optional[Dict[str, Any]] = None) -> Response | tuple[List[QImage], Dict[str, Any] | None]:
         """Starts a request to alter an image section using selected parameters.
 
         Parameters
         ----------
-        image : PIL Image
+        image : QImage
             Source image, usually contents of the ImageStack image generation area.
-        mask : PIL Image, optional
+        mask : QImage, optional
             A 1-bit image mask that's the same size as the image parameter, used to mark which areas should be altered.
             If not provided, the entire image will be altered.
         width : int, optional
@@ -176,7 +176,7 @@ class A1111Webservice(WebService):
             Array of parameters to add to the request that will trigger stable-diffusion-webui scripts or extensions.
         Returns
         -------
-        list of PIL Images
+        list of QImages
             All images returned in the API response
         dict or None
             Any additional information sent back with the generated images.
@@ -185,8 +185,8 @@ class A1111Webservice(WebService):
         body = self._get_base_diffusion_body(image, scripts)
         body[A1111Webservice.ImgParams.INIT_IMAGES] = [image_to_base64(image, include_prefix=True)]
         body[A1111Webservice.ImgParams.DENOISING] = config.get(AppConfig.DENOISING_STRENGTH)
-        body[A1111Webservice.ImgParams.WIDTH] = image.width if width is None else width
-        body[A1111Webservice.ImgParams.HEIGHT] = image.height if height is None else height
+        body[A1111Webservice.ImgParams.WIDTH] = image.width() if width is None else width
+        body[A1111Webservice.ImgParams.HEIGHT] = image.height() if height is None else height
         if mask is not None:
             body[A1111Webservice.ImgParams.MASK] = image_to_base64(mask, include_prefix=True)
             body[A1111Webservice.ImgParams.MASK_BLUR] = config.get(AppConfig.MASK_BLUR)
@@ -204,7 +204,7 @@ class A1111Webservice(WebService):
                 width: Optional[int] = None,
                 height: Optional[int] = None,
                 scripts: Optional[Dict[str, Any]] = None,
-                image: Optional[Image.Image] = None) -> Response | tuple[List[Image.Image], Dict[str, Any] | None]:
+                image: Optional[QImage] = None) -> Response | tuple[List[QImage], Dict[str, Any] | None]:
         """Starts a request to generate new images using selected parameters.
 
         Parameters
@@ -215,11 +215,11 @@ class A1111Webservice(WebService):
             Generated image height requested, in pixels.
         scripts : list, optional
             Array of parameters to add to the request that will trigger stable-diffusion-webui scripts or extensions.
-        image: PIL Image, optional
+        image: QImage, optional
             If scripts use an image to augment image generation, it should be provided through this parameter.
         Returns
         -------
-        list of PIL Images
+        list of QImages
             All images returned in the API response
         dict or None
             Any additional information sent back with the generated images.
@@ -231,14 +231,14 @@ class A1111Webservice(WebService):
         return self._handle_image_response(res)
 
     def upscale(self,
-                image: Image.Image,
+                image: QImage,
                 width: int,
-                height: int) -> Response | tuple[List[Image.Image], Dict[str, Any] | None]:
+                height: int) -> Response | tuple[List[QImage], Dict[str, Any] | None]:
         """Starts a request to upscale an image.
 
         Parameters
         ----------
-        image : PIL Image
+        image : QImage
             Source image to upscale, usually the entire image loaded in EditedImage.
         width : int
             New image width in pixels requested.
@@ -246,7 +246,7 @@ class A1111Webservice(WebService):
             New image height in pixels requested.
         Returns
         -------
-        list of PIL Images
+        list of QImages
             All images returned in the API response
         dict or None
             Any additional information sent back with the generated images.
@@ -303,7 +303,7 @@ class A1111Webservice(WebService):
         res = self.post(A1111Webservice.Endpoints.UPSCALE, body)
         return self._handle_image_response(res)
 
-    def interrogate(self, image: Image.Image) -> str:
+    def interrogate(self, image: QImage) -> str:
         """Requests text describing an image.
 
         Parameters
@@ -331,7 +331,7 @@ class A1111Webservice(WebService):
         return res.json()
 
     @staticmethod
-    def _get_base_diffusion_body(image: Optional[Image.Image] = None,
+    def _get_base_diffusion_body(image: Optional[QImage] = None,
                                  scripts: Optional[dict] = None) -> dict:
         config = AppConfig()
         body = {
@@ -373,14 +373,14 @@ class A1111Webservice(WebService):
             body['alwayson_scripts'] = scripts
         return body
 
-    def _handle_image_response(self, res: Response) -> Response | tuple[List[Image.Image], Dict[str, Any] | None]:
+    def _handle_image_response(self, res: Response) -> Response | tuple[List[QImage], Dict[str, Any] | None]:
         if res.status_code != 200:
             return res
         res_body = res.json()
         info = res_body['info'] if 'info' in res_body else None
         images = []
         if 'image' in res_body:
-            images.append(load_image_from_base64(res_body['image']))
+            images.append(pil_image_from_base64(res_body['image']))
         if 'images' in res_body:
             for image in res_body['images']:
                 if isinstance(image, dict):
@@ -393,9 +393,9 @@ class A1111Webservice(WebService):
                         buffer = io.BytesIO()
                         buffer.write(res.content)
                         buffer.seek(0)
-                        images.append(Image.open(buffer))
+                        images.append(QImage(buffer))
                 elif isinstance(image, str):
-                    images.append(load_image_from_base64(image))
+                    images.append(qimage_from_base64(image))
         return images, info
 
     # Load misc. service info:

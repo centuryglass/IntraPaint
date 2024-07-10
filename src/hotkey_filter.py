@@ -161,6 +161,6 @@ class HotkeyFilter(QObject):
             if event_handled:
                 logger.debug(f'{event.text()}: claimed by handler {i} of {len(self._bindings[event.key()])}')
                 break
-            logger.debug(
-                f'{event.text()}: not claimed by handler {i} of {len(self._bindings[event.key()])}: got {event_handled}')
+            logger.debug(f'{event.text()}: not claimed by handler {i} of {len(self._bindings[event.key()])}: '
+                         f'got {event_handled}')
         return event_handled

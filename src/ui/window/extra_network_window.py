@@ -170,4 +170,3 @@ class _LoraItem(BorderedWidget):
         self.line_width = 6 if is_selected else 2
         if is_selected:
             self.selected.emit(self)
-

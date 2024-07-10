@@ -7,7 +7,7 @@ from typing import Optional
 import cv2
 import numpy as np
 from PIL import Image
-from PyQt5.QtCore import QBuffer, QRect, QSize, Qt, QPoint
+from PyQt5.QtCore import QBuffer, QRect, QSize, Qt, QPoint, QFile, QIODevice, QByteArray
 from PyQt5.QtGui import QImage, QIcon, QPixmap, QPainter, QColor
 from PyQt5.QtWidgets import QStyle, QWidget, QApplication
 
@@ -19,30 +19,55 @@ DEFAULT_ICON_SIZE = QSize(64, 64)
 
 
 def pil_image_to_qimage(pil_image: Image.Image) -> QImage:
-    """Convert a PIL Image to a RGB888 formatted PyQt5 QImage."""
-    if isinstance(pil_image, Image.Image):
-        image = QImage(pil_image.tobytes("raw", "RGB"),
+    """Convert a PIL Image to a PyQt5 QImage."""
+    if not isinstance(pil_image, Image.Image):
+        raise TypeError('Invalid PIL Image parameter.')
+    if pil_image.mode not in ('RGBA', 'RGB'):
+        raise ValueError(f'Unsupported image mode {pil_image.mode}')
+    if pil_image.mode == 'RGB':
+        image = QImage(pil_image.tobytes('raw', 'RGB'),
                        pil_image.width,
                        pil_image.height,
                        pil_image.width * 3,
                        QImage.Format_RGB888)
-        return image.convertToFormat(QImage.Format_ARGB32_Premultiplied)
-    raise TypeError("Invalid PIL Image parameter.")
+    else:  # RGBA
+        image = QImage(pil_image.tobytes('raw', 'RGBA'),
+                       pil_image.width,
+                       pil_image.height,
+                       pil_image.width * 4,
+                       QImage.Format_RGBA8888)
+        image = image.convertToFormat(QImage.Format_ARGB32_Premultiplied)
+    return image
 
 
 def qimage_to_pil_image(qimage: QImage) -> Image.Image:
     """Convert a PyQt5 QImage to a PIL image, in PNG format."""
-    if isinstance(qimage, QImage):
-        buffer = QBuffer()
-        buffer.open(QBuffer.ReadWrite)
-        qimage.save(buffer, "PNG")
-        pil_im = Image.open(io.BytesIO(buffer.data()))
-        return pil_im
-    raise TypeError("Invalid QImage parameter.")
+    if not isinstance(qimage, QImage):
+        raise TypeError('Invalid QImage parameter.')
+    buffer = QBuffer()
+    buffer.open(QBuffer.ReadWrite)
+    qimage.save(buffer, 'PNG')
+    pil_im = Image.open(io.BytesIO(buffer.data()))
+    return pil_im
 
 
-def load_image_from_base64(image_str: str) -> Image.Image:
-    """Initialize a PIL image object from base64-encoded string data."""
+def qimage_from_base64(image_str: str) -> QImage:
+    """Returns a QImage from base64-encoded string data."""
+    if image_str.startswith(BASE_64_PREFIX):
+        image_str = image_str[len(BASE_64_PREFIX):]
+    image_data = QByteArray.fromBase64(image_str.encode())
+    image = QImage.fromData(image_data, 'PNG')
+    if image.isNull():
+        raise ValueError('Invalid base64 image string')
+    if image.hasAlphaChannel():
+        image = image.convertToFormat(QImage.Format_ARGB32_Premultiplied)
+    else:
+        image = image.convertToFormat(QImage.Format_RGB888)
+    return image
+
+
+def pil_image_from_base64(image_str: str) -> Image.Image:
+    """Returns a PIL image object from base64-encoded string data."""
     if image_str.startswith(BASE_64_PREFIX):
         image_str = image_str[len(BASE_64_PREFIX):]
     return Image.open(io.BytesIO(base64.b64decode(image_str)))
@@ -51,15 +76,26 @@ def load_image_from_base64(image_str: str) -> Image.Image:
 BASE_64_PREFIX = 'data:image/png;base64,'
 
 
-def image_to_base64(pil_image: Image.Image, include_prefix=False) -> str:
-    """Convert a PIL image to a base64 string."""
-    if isinstance(pil_image, str):
-        pil_image = Image.open(pil_image)
-    buffer = io.BytesIO()
-    pil_image.save(buffer, format='PNG')
-    image_str = str(base64.b64encode(buffer.getvalue()), 'utf-8')
+def image_to_base64(image: QImage | Image.Image | str, include_prefix=False) -> str:
+    """Convert a PIL image, QImage or image path to a base64 string."""
+    if isinstance(image, str):
+        file = QFile(image)
+        if not file.open(QIODevice.ReadOnly):
+            raise IOError(f'Failed to open {image}')
+        image_str = QByteArray(file.readAll()).toBase64().data().decode('utf-8')
+        file.close()
+    elif isinstance(image, QImage):
+        image_bytes = QByteArray()
+        buffer = QBuffer(image_bytes)
+        image.save(buffer, 'PNG')
+        image_str = base64.b64encode(image_bytes.data()).decode('utf-8')
+    else:
+        assert isinstance(image, Image.Image)
+        pil_buffer = io.BytesIO()
+        image.save(pil_buffer, format='PNG')
+        image_str = str(base64.b64encode(pil_buffer.getvalue()), 'utf-8')
     if include_prefix:
-        image_str = BASE_64_PREFIX + image_str
+        return BASE_64_PREFIX + image_str
     return image_str
 
 
@@ -225,6 +261,7 @@ def flood_fill(image: QImage, pos: QPoint, color: QColor, threshold: float, in_p
     if in_place:
         np_image[:, :, :3] = cv2_np_image
         return None
+    assert mask is not None
     mask = mask[1:-1, 1:-1]  # Remove the border
     mask_image = np.zeros_like(np_image)
     mask_indices = np.where(mask == 1)

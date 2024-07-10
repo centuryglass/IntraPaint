@@ -3,7 +3,7 @@
 from typing import Optional, List, Callable, cast, Any
 
 from PyQt5.QtCore import Qt, QRect, QSize, QPoint
-from PyQt5.QtGui import QPainter, QColor, QPaintEvent, QMouseEvent, QIcon, QPixmap
+from PyQt5.QtGui import QPainter, QColor, QPaintEvent, QMouseEvent, QIcon, QPixmap, QImage
 from PyQt5.QtSvg import QSvgWidget
 from PyQt5.QtWidgets import QWidget, QLabel, QVBoxLayout, QHBoxLayout, QScrollArea, QSizePolicy, QPushButton, QMenu, \
     QToolButton, QAction, QSlider, QDoubleSpinBox, QComboBox
@@ -58,7 +58,7 @@ MENU_OPTION_LAYER_TO_IMAGE_SIZE = 'Layer to image size'
 MENU_OPTION_CROP_TO_CONTENT = 'Crop layer to content'
 MENU_OPTION_CLEAR_SELECTION = 'Clear selection'
 MENU_OPTION_SELECT_ALL = 'Select all in active layer'
-MENU_OPTION_INVERT_SELECTION = "Invert selection"
+MENU_OPTION_INVERT_SELECTION = 'Invert selection'
 
 
 class LayerPanel(QWidget):
@@ -249,7 +249,7 @@ class LayerPanel(QWidget):
     def _update_order_slot(self) -> None:
         for widget in self._layer_widgets:
             self._list_layout.removeWidget(widget)
-        self._layer_widgets.sort(key=lambda widget: widget.layer.z_value, reverse=True)
+        self._layer_widgets.sort(key=lambda layer_widget: layer_widget.layer.z_value, reverse=True)
         for widget in self._layer_widgets:
             self._list_layout.addWidget(widget)
 
@@ -490,7 +490,7 @@ class _LayerItem(BorderedWidget):
                     assert active_layer is not None
                     layer_image, offset_transform = active_layer.transformed_image()
                     with self._image_stack.selection_layer.borrow_image() as mask_image:
-                        assert mask_image is not None
+                        assert mask_image is not None and isinstance(mask_image, QImage)
                         painter = QPainter(mask_image)
                         painter.setCompositionMode(QPainter.CompositionMode_Source)
                         painter.setTransform(offset_transform)
@@ -507,4 +507,3 @@ class _LayerItem(BorderedWidget):
             mirror_vert_option.triggered.connect(self.layer.flip_vertical)
 
         menu.exec_(self.mapToGlobal(pos))
-

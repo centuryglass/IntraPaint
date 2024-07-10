@@ -9,6 +9,7 @@ from typing import Callable, List
 import torch
 from PIL import Image
 from PyQt5.QtCore import pyqtSignal, QSize
+from PyQt5.QtGui import QImage
 
 from src.config.application_config import AppConfig
 from src.controller.base_controller import BaseInpaintController
@@ -17,6 +18,7 @@ from src.glid_3_xl.generate_samples import generate_samples
 from src.glid_3_xl.load_models import load_models
 from src.glid_3_xl.ml_utils import get_device, foreach_image_in_sample
 from src.ui.modal.settings_modal import SettingsModal
+from src.util.image_utils import qimage_to_pil_image, pil_image_to_qimage
 from src.util.validation import assert_types
 
 GLID_CONFIG_CATEGORY = 'GLID-3-XL'
@@ -59,18 +61,17 @@ class LocalDeviceController(BaseInpaintController):
         return categories
 
     def _inpaint(self,
-                 source_image_section: Image.Image,
-                 mask: Image.Image,
-                 save_image: Callable[[Image.Image, int], None],
+                 source_image_section: QImage,
+                 mask: QImage,
+                 save_image: Callable[[QImage, int], None],
                  status_signal: pyqtSignal) -> None:
-        assert_types((source_image_section, mask), Image.Image)
+        assert_types((source_image_section, mask), QImage)
         config = AppConfig()
-        if source_image_section.width != mask.width:
-            raise RuntimeError(f'Selection and mask widths should match, found {source_image_section.width} and {mask.width}')
-        if source_image_section.height != mask.height:
-            raise RuntimeError(f'Selection and mask heights should match, found {source_image_section.height} and {mask.height}')
-        if source_image_section.mode == 'RGBA':
-            source_image_section = source_image_section.convert('RGB')
+        if source_image_section.size() != mask.size():
+            raise RuntimeError(f'Selection and mask widths should match, found {source_image_section.size()}'
+                               f' and {mask.size()}')
+        if source_image_section.hasAlphaChannel():
+            source_image_section = source_image_section.convertToFormat(QImage.Format_RGB32)
 
         batch_size = config.get(AppConfig.BATCH_SIZE)
         batch_count = config.get(AppConfig.BATCH_COUNT)
@@ -85,16 +86,16 @@ class LocalDeviceController(BaseInpaintController):
             self._diffusion,
             self._normalize,
             image=None,  # Inpainting uses edit instead of this param
-            mask=mask,
+            mask=qimage_to_pil_image(mask),
             prompt=config.get(AppConfig.PROMPT),
             negative=config.get(AppConfig.NEGATIVE_PROMPT),
             guidance_scale=config.get(AppConfig.GUIDANCE_SCALE),
             batch_size=batch_size,
-            edit=source_image_section,
-            width=source_image_section.width,
-            height=source_image_section.height,
-            edit_width=source_image_section.width,
-            edit_height=source_image_section.height,
+            edit=qimage_to_pil_image(source_image_section),
+            width=source_image_section.width(),
+            height=source_image_section.height(),
+            edit_width=source_image_section.width(),
+            edit_height=source_image_section.height(),
             cutn=config.get(AppConfig.CUTN),
             clip_guidance=self._clip_guidance,
             skip_timesteps=config.get(AppConfig.SKIP_STEPS),
@@ -108,7 +109,7 @@ class LocalDeviceController(BaseInpaintController):
                 sample,
                 batch_size,
                 self._ldm,
-                lambda k, img: save_image(img, (i * batch_size) + k))
+                lambda k, img: save_image(pil_image_to_qimage(img), (i * batch_size) + k))
 
         generate_samples(
             self._device,

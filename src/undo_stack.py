@@ -24,6 +24,7 @@ _undo_stack: List[_UndoAction] = []
 _redo_stack: List[_UndoAction] = []
 _access_lock = Lock()
 
+
 def commit_action(action: Callable[[], None], undo_action: Callable[[], None], action_type: str,
                   action_data: Optional[Dict[str, Any]] = None) -> bool:
     """Performs an action, then commits it to the undo stack.

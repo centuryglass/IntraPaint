@@ -1,18 +1,13 @@
 """Manages an edited image layer."""
-from sys import version_info
-
 from src.image.layers.layer import Layer
-
-if version_info[1] >= 11:
-    from typing import Self, Optional, Any
-else:
-    from typing import Optional, Any
-    from typing_extensions import Self
+from typing import Optional, Any
 from collections.abc import Generator
 from contextlib import contextmanager
+
 from PyQt5.QtGui import QImage, QPainter, QPixmap, QTransform
 from PyQt5.QtCore import Qt, QRect, QSize, QPoint
 from PIL import Image
+
 from src.ui.modal.modal_utils import show_error_dialog
 from src.util.image_utils import image_content_bounds
 from src.util.validation import assert_type, assert_types
@@ -61,7 +56,7 @@ class ImageLayer(Layer):
 
     # LAYER/IMAGE FUNCTIONS:
 
-    def copy(self) -> Self:
+    def copy(self) -> 'ImageLayer':
         """Creates a copy of this layer."""
         layer = ImageLayer(self._image.copy(), self.name + ' copy')
         layer.set_opacity(self.opacity)

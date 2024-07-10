@@ -1,6 +1,6 @@
 """Provides controls for transforming a graphics item."""
 import math
-from typing import Optional, Dict, Tuple, Any, Generator, List, Iterable
+from typing import Optional, Dict, Tuple, Any, Generator, Iterable
 
 from PyQt5.QtCore import Qt, QRectF, QPointF, QSizeF, pyqtSignal
 from PyQt5.QtGui import QPainter, QPen, QTransform, QIcon, QPainterPath, QPolygonF, QImage

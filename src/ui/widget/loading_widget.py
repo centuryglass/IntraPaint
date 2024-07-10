@@ -10,12 +10,12 @@ from PyQt5.QtCore import Qt, QRect, QPointF, pyqtProperty, QPropertyAnimation
 class LoadingWidget(QWidget):
     """Show an animated loading indicator, with an optional message."""
 
-    def __init__(self, parent: Optional[QWidget] = None, message: str = "") -> None:
+    def __init__(self, parent: Optional[QWidget] = None, message: str = '') -> None:
         """Initializes the widget, optionally with a parent widget and/or initial loading message."""
         super().__init__(parent=parent)
         self._message = message
         self._rotation = 0
-        self._anim = QPropertyAnimation(self, b"rotation")
+        self._anim = QPropertyAnimation(self, b'rotation')
         self._anim.setLoopCount(-1)
         self._anim.setStartValue(0)
         self._anim.setEndValue(359)

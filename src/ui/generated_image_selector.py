@@ -29,7 +29,7 @@ from src.util.validation import assert_valid_index
 
 CHANGE_ZOOM_CHECKBOX_LABEL = 'Zoom to changes'
 
-SHOW_SELECTION_OUTLINES_LABEL = "Show selection"
+SHOW_SELECTION_OUTLINES_LABEL = 'Show selection'
 
 MODE_INPAINT = 'Inpaint'
 
@@ -39,7 +39,7 @@ PREVIOUS_BUTTON_TEXT = 'Previous'
 ZOOM_BUTTON_TEXT = 'Toggle zoom'
 NEXT_BUTTON_TEXT = 'Next'
 
-ORIGINAL_CONTENT_LABEL = "Original image content"
+ORIGINAL_CONTENT_LABEL = 'Original image content'
 LOADING_IMG_TEXT = 'Loading...'
 
 SELECTION_TITLE = 'Select from generated image options.'
@@ -283,7 +283,7 @@ class GeneratedImageSelector(QWidget):
             elif event.angleDelta().x() < 0:
                 self._zoom_prev()
             return event.angleDelta().x() != 0
-        elif event.type() == QEvent.KeyPress:
+        if event.type() == QEvent.KeyPress:
             event = cast(QKeyEvent, event)
             if event.key() == Qt.Key_Escape:
                 if self._zoomed_in:
@@ -313,8 +313,8 @@ class GeneratedImageSelector(QWidget):
             else:
                 view_pos = QPoint(self._view.x() + event.pos().x(), self._view.y() + event.pos().y())
             scene_pos = self._view.mapToScene(view_pos).toPoint()
-            for i in range(len(self._options)):
-                if self._options[i].bounds.contains(scene_pos):
+            for i, option in enumerate(self._options):
+                if option.bounds.contains(scene_pos):
                     self._select_option(i)
         return False
 

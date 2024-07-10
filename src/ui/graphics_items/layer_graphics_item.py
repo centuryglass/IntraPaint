@@ -1,5 +1,4 @@
 """Renders an image layer into a QGraphicsScene."""
-from PyQt5.QtCore import QRect
 from PyQt5.QtGui import QPainter
 
 from src.image.layers.image_layer import ImageLayer

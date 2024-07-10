@@ -52,10 +52,14 @@ class ImageScaleModal(QDialog):
             self._layout.addRow(title, box)
             return box
 
-        self._width_box = _add_input(default_width, MIN_PX_VALUE, MAX_PX_VALUE, WIDTH_PX_BOX_LABEL, WIDTH_PX_BOX_TOOLTIP)
-        self._height_box = _add_input(default_height, MIN_PX_VALUE, MAX_PX_VALUE, HEIGHT_PX_BOX_LABEL, HEIGHT_PX_BOX_TOOLTIP)
-        self._x_mult_box = _add_input(1.0, 0.0, 999.0, WIDTH_MULT_BOX_LABEL, WIDTH_MULT_BOX_TOOLTIP)
-        self._y_mult_box = _add_input(1.0, 0.0, 999.0, HEIGHT_MULT_BOX_LABEL, HEIGHT_MULT_BOX_TOOLTIP)
+        self._width_box = _add_input(default_width, MIN_PX_VALUE, MAX_PX_VALUE, WIDTH_PX_BOX_LABEL,
+                                     WIDTH_PX_BOX_TOOLTIP)
+        self._height_box = _add_input(default_height, MIN_PX_VALUE, MAX_PX_VALUE, HEIGHT_PX_BOX_LABEL,
+                                      HEIGHT_PX_BOX_TOOLTIP)
+        self._x_mult_box = _add_input(1.0, 0.0, 999.0, WIDTH_MULT_BOX_LABEL,
+                                      WIDTH_MULT_BOX_TOOLTIP)
+        self._y_mult_box = _add_input(1.0, 0.0, 999.0, HEIGHT_MULT_BOX_LABEL,
+                                      HEIGHT_MULT_BOX_TOOLTIP)
 
         def set_scale_on_px_change(pixel_size: int, base_value: int, scale_box: QAbstractSpinBox):
             """Apply scale box changes to pixel size boxes."""

@@ -1,9 +1,10 @@
 """Metaclass used to ensure only a single instance of a class object exists."""
+from typing import Dict
 
 
 class Singleton(type):
     """Metaclass used to ensure only a single instance of a class object exists."""
-    _instances = {}
+    _instances: Dict[type, type] = {}
 
     def __call__(cls, *args, **kwargs):
         if cls not in cls._instances:

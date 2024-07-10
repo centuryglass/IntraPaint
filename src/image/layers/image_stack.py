@@ -1,7 +1,7 @@
 """Manages an edited image composed of multiple layers."""
-import re
 import os
-from typing import Optional, Tuple, Dict, Any, cast, List
+import re
+from typing import Optional, Tuple, cast, List
 
 from PIL import Image
 from PyQt5.QtCore import Qt, QObject, QSize, QPoint, QRect, pyqtSignal, QRectF
@@ -408,7 +408,7 @@ class ImageStack(QObject):
 
         commit_action(_create_new, _remove_new, 'ImageStack.create_layer')
         return layer
-    
+
     def create_layer_group(self,
                            layer_name: Optional[str] = None,
                            layer_parent: Optional[LayerStack] = None,
@@ -482,7 +482,7 @@ class ImageStack(QObject):
         last_active_id = self.active_layer_id
 
         def _remove(removed=layer):
-            self._remove_layer_internal(layer)
+            self._remove_layer_internal(removed)
 
         def _undo_remove(parent=layer_parent, restored=layer, idx=layer_index, active_id=last_active_id):
             self._insert_layer_internal(restored, parent, idx)
@@ -543,7 +543,7 @@ class ImageStack(QObject):
         assert layer is not None and layer.layer_parent is not None and layer.layer_parent.contains(layer)
         layer_parent = cast(LayerStack, layer.layer_parent)
         layer_index = layer_parent.get_layer_index(layer)
-        assert offset == 1 or offset == -1, f'Unexpected offset {offset}'
+        assert offset in (1, -1), f'Unexpected offset {offset}'
         if offset == 1:
             new_parent, new_index = self._next_insert_index(layer)
         else:  # -1
@@ -596,7 +596,8 @@ class ImageStack(QObject):
                 return
         if layer == self._layer_stack:
             return
-        assert layer is not None and layer.layer_parent is not None and layer.layer_parent.contains(layer), f'invalid layer: {layer.name}:{layer.id}'
+        assert layer is not None and layer.layer_parent is not None \
+               and layer.layer_parent.contains(layer), f'invalid layer: {layer.name}:{layer.id}'
         if not isinstance(layer, ImageLayer):
             return
         top_layer = cast(ImageLayer, layer)
@@ -872,7 +873,6 @@ class ImageStack(QObject):
 
         commit_action(_load, _undo_load, 'ImageStack.load_layer_stack')
 
-
     def load_image(self, image_data: QImage):
         """
         Loads a new image to be edited. This clears all layers, updates the image size, and inserts the image as a new
@@ -1102,8 +1102,8 @@ class ImageStack(QObject):
         return bounds_rect
 
     def _set_generation_area_internal(self, bounds_rect: QRect) -> None:
-        """Updates the image generation area, adjusting as needed based on image bounds, and sending the selection_changed signal
-           if any changes happened. Does not update undo history."""
+        """Updates the image generation area, adjusting as needed based on image bounds, and sending the
+           selection_changed signal if any changes happened. Does not update undo history."""
         assert_type(bounds_rect, QRect)
         bounds_rect = self._get_closest_valid_generation_area(bounds_rect)
         if bounds_rect != self._generation_area:

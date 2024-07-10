@@ -20,7 +20,7 @@ GEN_AREA_SIZE = QSize(300, 300)
 MIN_GEN_AREA = QSize(8, 8)
 MAX_GEN_AREA = QSize(999, 999)
 
-INIT_IMAGE = 'resources/image_stack/source.png'
+INIT_IMAGE = 'resources/test_images/source.png'
 app = QApplication.instance() or QApplication(sys.argv)
 
 
@@ -103,6 +103,7 @@ class ImageStackTest(unittest.TestCase):
         layer = self.image_stack.active_layer
         from src.image.layers.image_layer import ImageLayer
         self.assertIsInstance(layer, ImageLayer)
+        assert layer is not None
         self.assertEqual(layer.image, image)
 
     def test_layer_create(self) -> None:

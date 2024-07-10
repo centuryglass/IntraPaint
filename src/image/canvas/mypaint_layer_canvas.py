@@ -163,7 +163,7 @@ class MyPaintLayerCanvas(LayerCanvas):
             tile = cast(MPTile, tile)
             tile.composition_mode = mode
 
-    def _copy_changes_to_layer(self, use_stroke_bounds: bool = False):
+    def _copy_changes_to_layer(self, layer: ImageLayer):
         """Copies content back to the connected layer."""
         if self._layer is not None and self._layer.visible and self._edit_region is not None \
                 and not self._edit_region.isEmpty() and not self._last_stroke_bounds.isEmpty():

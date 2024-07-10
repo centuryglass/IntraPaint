@@ -37,7 +37,7 @@ from src.util.application_state import AppStateTracker, APP_STATE_NO_IMAGE, APP_
     APP_STATE_SELECTION
 from src.util.async_task import AsyncTask
 from src.util.display_size import get_screen_size
-from src.util.image_utils import pil_image_to_qimage
+from src.util.image_utils import pil_image_to_qimage, qimage_to_pil_image
 from src.util.menu_builder import MenuBuilder, menu_action
 from src.util.optional_import import optional_import
 from src.util.qtexcepthook import QtExceptHook
@@ -243,8 +243,10 @@ class BaseInpaintController(MenuBuilder):
 
         # Configure support for spacemouse panning, if relevant:
         if SpacenavManager is not None and self._window is not None:
-            self._nav_manager = SpacenavManager(self._window, self._image_stack)
-            self._nav_manager.start_thread()
+            assert SpacenavManager is not None
+            nav_manager = SpacenavManager(self._window, self._image_stack)
+            nav_manager.start_thread()
+            self._nav_manager = nav_manager
 
         # initialize menus:
         self.build_menus(self._window)
@@ -314,11 +316,12 @@ class BaseInpaintController(MenuBuilder):
             return
         try:
             if not isinstance(file_path, str):
-                file_path, file_selected = open_image_file(self._window, mode='save',
-                                                           selected_file=cache.get(Cache.LAST_FILE_PATH))
-                if not file_path or not file_selected:
+                selected_path, file_selected = open_image_file(self._window, mode='save',
+                                                               selected_file=cache.get(Cache.LAST_FILE_PATH))
+                if not file_selected or not isinstance(selected_path, str):
                     return
-            assert_type(file_path, str)
+                file_path = selected_path
+            assert isinstance(file_path, str)
             if file_path.endswith('.ora'):
                 save_ora_image(self._image_stack, file_path, json.dumps(self._metadata))
             else:
@@ -350,9 +353,10 @@ class BaseInpaintController(MenuBuilder):
         cache = Cache()
         config = AppConfig()
         if file_path is None:
-            file_path, file_selected = open_image_file(self._window)
-            if not file_path or not file_selected:
+            selected_path, file_selected = open_image_file(self._window)
+            if not file_selected or not isinstance(selected_path, str):
                 return
+            file_path = selected_path
         if isinstance(file_path, list):
             logger.warning(f'Expected single image, got list with length {len(file_path)}')
             file_path = file_path[0]
@@ -569,40 +573,46 @@ class BaseInpaintController(MenuBuilder):
         if not self._image_stack.has_image:
             show_error_dialog(self._window, GENERATE_ERROR_TITLE_NO_IMAGE, GENERATE_ERROR_MESSAGE_NO_IMAGE)
             return
-        upscale_mode = PIL_SCALING_MODES[config.get(AppConfig.UPSCALE_MODE)]
-        downscale_mode = PIL_SCALING_MODES[config.get(AppConfig.DOWNSCALE_MODE)]
 
-        def resize_image(pil_image: Image.Image, width: int, height: int) -> Image.Image:
-            """Resize a PIL image using the appropriate scaling mode:"""
-            if width == pil_image.width and height == pil_image.height:
-                return pil_image
-            if width > pil_image.width or height > pil_image.height:
-                return pil_image.resize((width, height), upscale_mode)
-            return pil_image.resize((width, height), downscale_mode)
-
-        source_selection = self._image_stack.pil_image_generation_area_content()
+        source_selection = self._image_stack.qimage_generation_area_content()
 
         inpaint_image = source_selection.copy()
-        inpaint_mask = self._image_stack.selection_layer.pil_mask_image
 
         # If necessary, scale image and mask to match the image generation size.
         generation_size = config.get(AppConfig.GENERATION_SIZE)
-        if inpaint_image.width != generation_size.width() or inpaint_image.height != generation_size.height():
-            inpaint_image = resize_image(inpaint_image, generation_size.width(), generation_size.height())
-        if inpaint_mask.width != generation_size.width() or inpaint_mask.height != generation_size.height():
-            inpaint_mask = resize_image(inpaint_mask, generation_size.width(), generation_size.height())
+        if inpaint_image.size() != generation_size:
+            inpaint_image = inpaint_image.scaled(generation_size,
+                                                 transformMode=Qt.TransformationMode.SmoothTransformation)
+
+        if config.get(AppConfig.EDIT_MODE) == EDIT_MODE_INPAINT:
+            inpaint_mask = self._image_stack.selection_layer.mask_image
+            if inpaint_mask.size() != generation_size:
+                inpaint_mask = inpaint_mask.scaled(generation_size,
+                                                   transformMode=Qt.TransformationMode.SmoothTransformation)
+
+            blurred_mask = qimage_to_pil_image(inpaint_mask).filter(ImageFilter.GaussianBlur())
+            blurred_alpha_mask = pil_image_to_qimage(blurred_mask)
+            composite_base = inpaint_image.copy()
+            base_painter = QPainter(composite_base)
+            base_painter.setCompositionMode(QPainter.CompositionMode_DestinationOut)
+            base_painter.drawImage(QPoint(), blurred_alpha_mask)
+            base_painter.end()
+        else:
+            inpaint_mask = None
+            composite_base = None
 
         class _AsyncInpaintTask(AsyncTask):
-            image_ready = pyqtSignal(Image.Image, int)
+            image_ready = pyqtSignal(QImage, int)
             status_signal = pyqtSignal(dict)
             error_signal = pyqtSignal(Exception)
 
             def signals(self) -> List[pyqtSignal]:
                 return [self.image_ready, self.status_signal, self.error_signal]
 
-        def _do_inpaint(image_ready: pyqtSignal, status_signal: pyqtSignal, error_signal: pyqtSignal) -> None:
+        def _do_inpaint(image_ready: pyqtSignal, status_signal: pyqtSignal, error_signal: pyqtSignal,
+                        image=inpaint_image, mask=inpaint_mask) -> None:
             try:
-                self._inpaint(inpaint_image, inpaint_mask, image_ready.emit, status_signal)
+                self._inpaint(image, mask, image_ready.emit, status_signal)
             except (IOError, ValueError, RuntimeError) as err:
                 error_signal.emit(err)
 
@@ -614,22 +624,25 @@ class BaseInpaintController(MenuBuilder):
             self._window.set_image_selector_visible(False)
             show_error_dialog(self._window, GENERATE_ERROR_TITLE_UNEXPECTED, err)
 
-        def load_sample_preview(img: Image.Image, idx: int) -> None:
+        def load_sample_preview(img: QImage, idx: int, unmasked_content: Optional[QImage] = composite_base) -> None:
             """Apply image mask to inpainting results."""
             assert self._window is not None
             if config.get(AppConfig.EDIT_MODE) == EDIT_MODE_INPAINT:
-                def point_fn(p: int) -> int:
-                    """Convert pixel to 1-bit."""
-                    return 255 if p < 1 else 0
-
-                mask_alpha = inpaint_mask.convert('L').point(point_fn).filter(ImageFilter.GaussianBlur())
-                mask_alpha = resize_image(mask_alpha, img.width, img.height)
-                base = resize_image(source_selection, img.width, img.height)
-                img = Image.composite(base, img, mask_alpha)
-            self._window.load_sample_preview(pil_image_to_qimage(img), idx)
+                assert unmasked_content is not None
+                assert unmasked_content.size() == img.size()
+                img.save(f'test-sample-{idx}.png')
+                painter = QPainter(img)
+                painter.drawImage(QPoint(), unmasked_content)
+                painter.end()
+                img.save(f'test-sample-{idx}-merged.png')
+            self._window.load_sample_preview(img, idx)
 
         def _finished():
             self._window.set_is_loading(False)
+            inpaint_task.error_signal.disconnect(handle_error)
+            inpaint_task.status_signal.disconnect(self._apply_status_update)
+            inpaint_task.image_ready.disconnect(load_sample_preview)
+            inpaint_task.finish_signal.disconnect(_finished)
 
         inpaint_task.error_signal.connect(handle_error)
         inpaint_task.status_signal.connect(self._apply_status_update)
@@ -653,7 +666,7 @@ class BaseInpaintController(MenuBuilder):
                 image = pil_image_to_qimage(sample_image).convertToFormat(QImage.Format.Format_ARGB32_Premultiplied)
             else:
                 image = sample_image.convertToFormat(QImage.Format.Format_ARGB32_Premultiplied)
-            if AppConfig().get(AppConfig.EDIT_MODE) == "Inpaint":
+            if AppConfig().get(AppConfig.EDIT_MODE) == 'Inpaint':
                 inpaint_mask = self._image_stack.selection_layer.mask_image
                 painter = QPainter(image)
                 painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_DestinationIn)
@@ -795,19 +808,19 @@ class BaseInpaintController(MenuBuilder):
 
     # Image generation handling:
     def _inpaint(self,
-                 source_image_section: Optional[Image.Image],
-                 mask: Optional[Image.Image],
-                 save_image: Callable[[Image.Image, int], None],
+                 source_image_section: Optional[QImage],
+                 mask: Optional[QImage],
+                 save_image: Callable[[QImage, int], None],
                  status_signal: pyqtSignal) -> None:
         """Unimplemented method for handling image inpainting.
 
         Parameters
         ----------
-        source_image_section : PIL Image, optional
+        source_image_section : QImage, optional
             Image selection to edit
-        mask : PIL Image, optional
+        mask : QImage, optional
             Mask marking edited image region.
-        save_image : function (PIL Image, int)
+        save_image : function (QImage, int)
             Function used to return each image response and its index.
         status_signal : pyqtSignal
             Signal to emit when status updates are available.

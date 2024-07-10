@@ -8,6 +8,7 @@ from PyQt5.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QPushButton, QLin
 from PyQt5.QtCore import pyqtSignal, QSize
 
 from src.config.config import Config
+from src.ui.input_fields.check_box import CheckBox
 from src.ui.widget.bordered_widget import BorderedWidget
 from src.ui.input_fields.big_int_spinbox import BigIntSpinbox
 from src.ui.input_fields.size_field import SizeField
@@ -65,9 +66,11 @@ class SettingsModal(QDialog):
                 label = config.get_label(key)
                 try:
                     control_widget = config.get_control_widget(key, False)
-                except AssertionError:
+                except RuntimeError:
                     continue
                 assert hasattr(control_widget, 'valueChanged')
+                if isinstance(control_widget, CheckBox):
+                    control_widget.setText('')  # External labels look better than checkbox labels in this layout.
 
                 def _add_change(new_value: Any, name=key):
                     self._add_change(name, new_value)

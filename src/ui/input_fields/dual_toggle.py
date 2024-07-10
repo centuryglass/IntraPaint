@@ -40,7 +40,9 @@ class DualToggle(QWidget):
         else:
             app = cast(QApplication, QApplication.instance())
             assert app is not None
-            bg_color = app.palette().color(app.activeWindow().backgroundRole())
+            window = app.activeWindow()
+            assert window is not None
+            bg_color = app.palette().color(window.backgroundRole())
         self.label1 = Label(options[0], self, bg_color=bg_color, orientation=orientation)
         self.label1.setFrameStyle(QFrame.StyledPanel | QFrame.Sunken)
         self.label1.set_inverted(True)

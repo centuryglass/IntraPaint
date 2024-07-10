@@ -71,6 +71,7 @@ if args.verbose:
 logging.basicConfig(level=logging.INFO, handlers=handlers)
 logger = logging.getLogger(__name__)
 
+
 def start_application() -> None:
     """Apply args, and start in the appropriate image generation mode."""
     controller_mode = str(args.mode)

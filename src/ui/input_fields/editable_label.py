@@ -81,7 +81,7 @@ class EditableLabel(QWidget):
             if event.key() in (Qt.Key_Enter, Qt.Key_Return):
                 self.apply_changes()
                 return
-            elif event.key() == Qt.Key_Escape:
+            if event.key() == Qt.Key_Escape:
                 self.discard_changes()
                 return
         super().keyPressEvent(event)

@@ -1,5 +1,4 @@
 """Provides access to configurable options for the Automatic1111 or Forge Stable-Diffusion WebUI."""
-from typing import Optional
 import logging
 
 from src.api.a1111_webservice import A1111Webservice
@@ -11,14 +10,7 @@ logger = logging.getLogger(__name__)
 
 
 class A1111Config(Config, metaclass=Singleton):
-    _instance: Optional['A1111Config'] = None
-
-    @staticmethod
-    def instance() -> 'A1111Config':
-        """Returns the shared config object instance."""
-        if A1111Config._instance is None:
-            A1111Config._instance = A1111Config()
-        return A1111Config._instance
+    """Provides access to configurable options for the Automatic1111 or Forge Stable-Diffusion WebUI."""
 
     def __init__(self) -> None:
         super().__init__(CONFIG_DEFINITIONS, None, A1111Config)

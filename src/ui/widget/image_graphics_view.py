@@ -115,7 +115,7 @@ class ImageGraphicsView(QGraphicsView):
     def mouse_navigation_enabled(self, enabled: bool) -> None:
         self._mouse_navigation_enabled = enabled
 
-    def centerOn(self, pos: QPointF | QPoint) -> None:
+    def center_on_point(self, pos: QPointF | QPoint) -> None:
         """Cache the center point whenever it changes."""
         super().centerOn(pos)
         self._centered_on.setX(int(pos.x()))
@@ -175,7 +175,7 @@ class ImageGraphicsView(QGraphicsView):
         self._scale_adjustment = 0.0
         self.offset = QPoint(0, 0)
         self.resizeEvent(None)
-        self.centerOn(QPoint(int(self._content_size.width() / 2), int(self._content_size.height() / 2)))
+        self.center_on_point(QPoint(int(self._content_size.width() / 2), int(self._content_size.height() / 2)))
         if scale_will_change:
             self.scale_changed.emit(self.scene_scale)
 
@@ -197,7 +197,7 @@ class ImageGraphicsView(QGraphicsView):
             return
         self._content_size.setWidth(new_size.width())
         self._content_size.setHeight(new_size.height())
-        self.centerOn(QPointF(new_size.width() / 2, new_size.height() / 2))
+        self.center_on_point(QPointF(new_size.width() / 2, new_size.height() / 2))
         self.resizeEvent(None)
         self.resetCachedContent()
         self.update()
@@ -219,8 +219,8 @@ class ImageGraphicsView(QGraphicsView):
         """Updates the image content scale, limiting minimum scale to 0.01."""
         new_scale = max(new_scale, 0.001)
         self._scale_adjustment = new_scale - self._scale
-        self.centerOn(QPoint(int(self._content_size.width() / 2 + self._offset.x()),
-                             int(self._content_size.height() / 2 + self._offset.y())))
+        self.center_on_point(QPoint(int(self._content_size.width() / 2 + self._offset.x()),
+                                    int(self._content_size.height() / 2 + self._offset.y())))
         self.resizeEvent(None)
         self.scale_changed.emit(new_scale)
 
@@ -235,7 +235,7 @@ class ImageGraphicsView(QGraphicsView):
         change = (QPointF(new_offset) if isinstance(new_offset, QPoint) else new_offset) - self._offset
         self._offset.setX(float(new_offset.x()))
         self._offset.setY(float(new_offset.y()))
-        self.centerOn(self._centered_on + change.toPoint())
+        self.center_on_point(self._centered_on + change.toPoint())
         self.offset_changed.emit(self._offset.toPoint())
         self.resizeEvent(None)
 

@@ -19,7 +19,7 @@ class ImageWidget(QWidget):
         """Set expected size based on image size."""
         if self._image is None:
             return QSize(0, 0)
-        elif isinstance(self._image, QIcon):
+        if isinstance(self._image, QIcon):
             return self._image.availableSizes()[0]
         return self._image.size()
 
@@ -46,4 +46,3 @@ class ImageWidget(QWidget):
         elif isinstance(self._image, QIcon):
             self._image.paint(painter, paint_bounds)
         painter.end()
-
