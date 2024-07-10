@@ -28,6 +28,7 @@ from src.ui.window.stable_diffusion_main_window import StableDiffusionMainWindow
 from src.util.application_state import APP_STATE_EDITING, AppStateTracker, APP_STATE_LOADING, APP_STATE_NO_IMAGE
 from src.util.async_task import AsyncTask
 from src.util.display_size import get_screen_size
+from src.util.image_utils import pil_image_to_qimage
 from src.util.menu_builder import menu_action
 from src.util.parameter import ParamType
 from src.util.shared_constants import EDIT_MODE_INPAINT, EDIT_MODE_TXT2IMG, EDIT_MODE_IMG2IMG

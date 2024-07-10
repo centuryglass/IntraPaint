@@ -4,6 +4,7 @@ from contextlib import contextmanager
 from typing import Callable, Optional, Dict, Any, List, ContextManager
 from threading import Lock
 
+
 logger = logging.getLogger(__name__)
 MAX_UNDO = 50
 
@@ -22,7 +23,6 @@ class _UndoAction:
 _undo_stack: List[_UndoAction] = []
 _redo_stack: List[_UndoAction] = []
 _access_lock = Lock()
-
 
 def commit_action(action: Callable[[], None], undo_action: Callable[[], None], action_type: str,
                   action_data: Optional[Dict[str, Any]] = None) -> bool:

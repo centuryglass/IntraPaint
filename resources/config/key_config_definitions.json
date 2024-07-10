@@ -375,6 +375,14 @@
         "default": "Ctrl+Shift+N",
         "saved": true
     },
+    "new_layer_group_shortcut": {
+        "label": "New layer group",
+        "category": "Keybindings",
+        "description": "Create a new layer group above the active layer.",
+        "type": "string",
+        "default": "Ctrl+Shift+G",
+        "saved": true
+    },
     "copy_layer_shortcut": {
         "label": "Copy layer",
         "category": "Keybindings",

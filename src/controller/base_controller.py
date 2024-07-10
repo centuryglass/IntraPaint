@@ -670,8 +670,7 @@ class BaseInpaintController(MenuBuilder):
     @menu_action(MENU_SELECTION, 'select_all_shortcut', 30, valid_app_states=[APP_STATE_EDITING])
     def select_all(self) -> None:
         """Selects the entire image."""
-        if self._image_stack.has_image:
-            self._image_stack.selection_layer.select_all()
+        self._image_stack.selection_layer.select_all()
 
     @menu_action(MENU_SELECTION, 'select_none_shortcut', 31, valid_app_states=[APP_STATE_EDITING])
     def select_none(self) -> None:
@@ -681,8 +680,7 @@ class BaseInpaintController(MenuBuilder):
     @menu_action(MENU_SELECTION, 'invert_selection_shortcut', 32, valid_app_states=[APP_STATE_EDITING])
     def invert_selection(self) -> None:
         """Swaps selected and unselected areas."""
-        if self._image_stack.has_image:
-            self._image_stack.selection_layer.invert_selection()
+        self._image_stack.selection_layer.invert_selection()
 
     @menu_action(MENU_SELECTION, 'select_layer_content_shortcut', valid_app_states=[APP_STATE_EDITING])
     def select_active_layer_content(self) -> None:
@@ -694,29 +692,31 @@ class BaseInpaintController(MenuBuilder):
     @menu_action(MENU_SELECTION, 'grow_selection_shortcut', valid_app_states=[APP_STATE_EDITING])
     def grow_selection(self, num_pixels=1) -> None:
         """Expand the selection by a given pixel count, 1 by default."""
-        if self._image_stack.has_image:
-            self._image_stack.selection_layer.grow_or_shrink_selection(num_pixels)
+        self._image_stack.selection_layer.grow_or_shrink_selection(num_pixels)
 
     @menu_action(MENU_SELECTION, 'shrink_selection_shortcut', valid_app_states=[APP_STATE_EDITING])
     def shrink_selection(self, num_pixels=1) -> None:
         """Contract the selection by a given pixel count, 1 by default."""
-        if self._image_stack.has_image:
-            self._image_stack.selection_layer.grow_or_shrink_selection(-num_pixels)
+        self._image_stack.selection_layer.grow_or_shrink_selection(-num_pixels)
 
     # Layer menu:
     @menu_action(MENU_LAYERS, 'new_layer_shortcut', 40,
                  valid_app_states=[APP_STATE_EDITING, APP_STATE_SELECTION])
     def new_layer(self) -> None:
         """Create a new image layer above the active layer."""
-        if self._image_stack.has_image:
-            self._image_stack.create_layer()
+        self._image_stack.create_layer()
+
+    @menu_action(MENU_LAYERS, 'new_layer_group_shortcut', 40,
+                 valid_app_states=[APP_STATE_EDITING, APP_STATE_SELECTION])
+    def new_layer_group(self) -> None:
+        """Create a new layer group above the active layer."""
+        self._image_stack.create_layer_group()
 
     @menu_action(MENU_LAYERS, 'copy_layer_shortcut', 41,
                  valid_app_states=[APP_STATE_EDITING, APP_STATE_SELECTION])
     def copy_layer(self) -> None:
         """Create a copy of the active layer."""
-        if self._image_stack.has_image:
-            self._image_stack.copy_layer()
+        self._image_stack.copy_layer()
 
     @menu_action(MENU_LAYERS, 'delete_layer_shortcut', 42, valid_app_states=[APP_STATE_EDITING])
     def delete_layer(self) -> None:

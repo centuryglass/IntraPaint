@@ -288,7 +288,22 @@ class ImageStack(QObject):
             Y offset where existing image content will be placed in the adjusted layer
         """
         assert_type(new_size, QSize)
-        print('TODO: re-think resize_canvas method')
+        last_size = self.size
+        selection_state = self.selection_layer.save_state()
+        layer_state = self._layer_stack.save_state()
+
+        def _resize(size=new_size, x=x_offset, y=y_offset):
+            self.size = size
+            self.selection_layer.resize_canvas(size, x, y, False)
+            for layer in self.image_layers:
+                layer.resize_canvas(size, x, y, False)
+
+        def _undo_resize(size=last_size, sel_state=selection_state, stack_state=layer_state):
+            self.size = size
+            self._layer_stack.restore_state(stack_state)
+            self._selection_layer.restore_state(sel_state)
+
+        commit_action(_resize, _undo_resize, 'ImageStack.resize_canvas')
 
     def qimage(self, crop_to_image: bool = True) -> QImage:
         """Returns combined visible layer content as a QImage object, optionally including unsaved layers."""

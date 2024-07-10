@@ -163,15 +163,21 @@ class ImageLayer(Layer):
         elif register_to_undo_history:
             # TODO: find a way to inject change bounds when setting self.image so special handling isn't needed
             #       to restrict post-processing to the change bounds:
-            src_image = self.image
+            src_image = self.get_qimage().copy(bounds_rect)
+
             def _update(img=image_data, bounds=bounds_rect):
                 with self.borrow_image(bounds) as layer_image:
                     layer_painter = QPainter(layer_image)
+                    layer_painter.setCompositionMode(QPainter.CompositionMode_Source)
                     layer_painter.drawImage(bounds, img)
                     layer_painter.end()
 
-            def _undo(img=src_image):
-                self.set_image(img)
+            def _undo(img=src_image, bounds=bounds_rect):
+                with self.borrow_image(bounds) as layer_image:
+                    layer_painter = QPainter(layer_image)
+                    layer_painter.setCompositionMode(QPainter.CompositionMode_Source)
+                    layer_painter.drawImage(bounds, img)
+                    layer_painter.end()
 
             commit_action(_update, _undo, 'ImageLayer.insert_image_content')
             return
