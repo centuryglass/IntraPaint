@@ -100,7 +100,7 @@ class FillTool(BaseTool):
             painter = QPainter(layer_image)
             painter.drawImage(QRect(QPoint(), layer.size), mask)
             painter.end()
-            layer.set_image(layer_image)
+            layer.image = layer_image
             return True
         return False
 

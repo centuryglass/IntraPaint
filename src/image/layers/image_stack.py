@@ -69,10 +69,13 @@ class ImageStack(QObject):
             content_bounds = self._layer_stack.full_image_bounds.united(self.bounds).united(selection_bounds)
             if content_bounds.isNull():
                 return
-            if not selection_bounds.contains(content_bounds):
+            if not selection_bounds.contains(content_bounds) or (selection_bounds.width() * selection_bounds.height()) \
+                    > (content_bounds.width() * content_bounds.height() * 10):
                 offset = content_bounds.topLeft() - selection_bounds.topLeft()
-                self._selection_layer.resize_canvas(content_bounds.size(), offset.x(), offset.y(), False)
-                assert self._selection_layer.full_image_bounds.contains(selection_bounds), f'expected {content_bounds}, got {self._selection_layer.full_image_bounds}'
+                self._selection_layer.resize_canvas(content_bounds.size(), offset.x(), offset.y(),
+                                                    False)
+                assert self._selection_layer.full_image_bounds.contains(selection_bounds), \
+                    f'expected {content_bounds}, got {self._selection_layer.full_image_bounds}'
             self._image.invalidate()
             self.content_changed.emit()
         self._layer_stack.content_changed.connect(_content_change)
@@ -814,12 +817,7 @@ class ImageStack(QObject):
 
         else:
             assert isinstance(layer, ImageLayer)
-            with layer.borrow_image() as layer_image:
-                painter = QPainter(layer_image)
-                painter.setTransform(data_transform)
-                painter.setCompositionMode(composition_mode)
-                painter.drawImage(data_bounds, image_data)
-                painter.end()
+            layer.insert_image_content(image_data, data_bounds, composition_mode)
 
     def load_layer_stack(self, layer_stack: LayerStack, new_size: QSize) -> None:
         """Loads a new image from layer data."""

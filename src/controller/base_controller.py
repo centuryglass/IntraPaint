@@ -354,7 +354,7 @@ class BaseInpaintController(MenuBuilder):
         config = AppConfig()
         if file_path is None:
             selected_path, file_selected = open_image_file(self._window)
-            if not file_selected or not isinstance(selected_path, str):
+            if not file_selected or not isinstance(selected_path, (str, list)):
                 return
             file_path = selected_path
         if isinstance(file_path, list):

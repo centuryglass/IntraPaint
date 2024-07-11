@@ -160,10 +160,10 @@ class ImageLayer(Layer):
             #       to restrict post-processing to the change bounds:
             src_image = self.get_qimage().copy(bounds_rect)
 
-            def _update(img=image_data, bounds=bounds_rect):
+            def _update(img=image_data, bounds=bounds_rect, mode=composition_mode):
                 with self.borrow_image(bounds) as layer_image:
                     layer_painter = QPainter(layer_image)
-                    layer_painter.setCompositionMode(QPainter.CompositionMode_Source)
+                    layer_painter.setCompositionMode(mode)
                     layer_painter.drawImage(bounds, img)
                     layer_painter.end()
 
