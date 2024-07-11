@@ -6,6 +6,7 @@ from typing import Any, Optional
 
 from PyQt5.QtCore import Qt, QObject, QPoint, QSize, QRect, pyqtSignal
 from PyQt5.QtGui import QImage, QColor, QTransform
+from PyQt5.QtWidgets import QGraphicsItemGroup
 
 from src.image.mypaint.libmypaint import libmypaint, MyPaintTiledSurface, MyPaintTileRequestStartFunction, \
     MyPaintTileRequestEndFunction, MyPaintSurfaceDestroyFunction, \
@@ -46,6 +47,8 @@ class MPSurface(QObject):
         self._rectangle_buf.rectangles = self._rectangles
         self._rectangle_buf.num_rectangles = RECTANGLE_BUF_SIZE
         self._dtime_start = time()
+        self._z_value: Optional[int] = None
+        self._parent_group: Optional[QGraphicsItemGroup] = None
 
         self._scene = None
 
@@ -92,10 +95,21 @@ class MPSurface(QObject):
 
     def set_z_values(self, z_value: int) -> None:
         """Applies a new z-value to all tiles that are currently in scenes."""
+        self._z_value = z_value
         for tile in self._tiles.values():
             if tile.scene() is not None and tile.zValue() != z_value:
                 tile.setZValue(z_value)
                 tile.update()
+    def set_parent_group(self, parent: Optional[QGraphicsItemGroup]) -> None:
+        """Move all tiles into a graphics item group."""
+        if self._parent_group is not None:
+            for tile in self._tiles.values():
+                if tile in self._parent_group.childItems():
+                    self._parent_group.removeFromGroup(tile)
+        self._parent_group = parent
+        if parent is not None:
+            for tile in self._tiles.values():
+                self._parent_group.addToGroup(tile)
 
     @property
     def brush(self) -> MPBrush:
@@ -204,8 +218,12 @@ class MPSurface(QObject):
             tile.setTransform(QTransform.fromTranslate(tile.x(), tile.y())
                               * self._scene_transform
                               * QTransform.fromTranslate(-tile.x(), -tile.y()))
+            if self._z_value is not None:
+                tile.setZValue(self._z_value)
         if tile.scene() is None:
             self.tile_created.emit(tile)
+        if tile.scene() is not None and self._parent_group is not None:
+            self._parent_group.addToGroup(tile)
         return tile
 
     @property

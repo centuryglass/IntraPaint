@@ -23,9 +23,9 @@ class MainWindowTest(unittest.TestCase):
         while os.path.basename(os.getcwd()) not in ('IntraPaint', ''):
             os.chdir('..')
         assert os.path.basename(os.getcwd()) == 'IntraPaint'
-        self._app_config = AppConfig('test/resources/app_config_test.json')
-        self._key_config = KeyConfig('test/resources/key_config_test.json')
-        self._cache = Cache('test/resources/cache_test.json')
+        AppConfig('test/resources/app_config_test.json')._reset()
+        KeyConfig('test/resources/key_config_test.json')._reset()
+        Cache('test/resources/cache_test.json')._reset()
         test_size = QSize(512, 512)
         self._image_stack = ImageStack(test_size, test_size, test_size, test_size)
         self._controller = Mock()
@@ -72,8 +72,8 @@ class MainWindowTest(unittest.TestCase):
         self.assertNotEqual(self.window._tool_panel.size(), QSize(0, 0))
 
         # check layout item states:
-        self.assertEqual(self.window._control_panel.layer_parent(), self.window._main_page_tab)
-        self.assertEqual(self.window._tool_panel.layer_parent(), self.window._reactive_widget)
+        self.assertEqual(self.window._control_panel.parent(), self.window._main_page_tab)
+        self.assertEqual(self.window._tool_panel.parent(), self.window._reactive_widget)
         self.assertFalse(self.window._tool_panel._generate_button.isVisible())
         self.assertEqual(self.window._tool_panel.orientation, Qt.Orientation.Horizontal)
 
@@ -84,7 +84,7 @@ class MainWindowTest(unittest.TestCase):
         self.assertEqual(self.window._orientation, Qt.Orientation.Horizontal)
         self.assertTrue(self.window._reactive_widget is not None)
         self.assertTrue(self.window._reactive_widget.isVisible())
-        self.assertEqual(self.window._reactive_widget, self.window._tool_panel.layer_parent())
+        self.assertEqual(self.window._reactive_widget, self.window._tool_panel.parent())
         self.assertTrue(self.window._tool_panel.isVisible())
         self.assertFalse(self.window._tool_panel._generate_button.isVisible())
         self.assertEqual(self.window._tool_panel.orientation, Qt.Orientation.Vertical)
@@ -96,5 +96,5 @@ class MainWindowTest(unittest.TestCase):
         self.assertFalse(self.window._control_panel.isVisible())
         self.assertFalse(self.window._tool_panel.geometry().isEmpty())
         self.assertTrue(self.window._tool_panel._generate_button.isVisible())
-        self.assertEqual(self.window._reactive_widget, self.window._tool_panel.layer_parent())
+        self.assertEqual(self.window._reactive_widget, self.window._tool_panel.parent())
         self.assertEqual(self.window._tool_panel.orientation, Qt.Orientation.Vertical)

@@ -110,6 +110,7 @@ class KeyConfig(Config, metaclass=Singleton):
     LCM_MODE_SHORTCUT: str
     LOAD_LAYERS_SHORTCUT: str
     LOAD_SHORTCUT: str
+    LORA_SHORTCUT: str
     MERGE_LAYER_DOWN_SHORTCUT: str
     MOVE_DOWN: str
     MOVE_LAYER_DOWN_SHORTCUT: str
@@ -118,6 +119,7 @@ class KeyConfig(Config, metaclass=Singleton):
     MOVE_RIGHT: str
     MOVE_UP: str
     NEW_IMAGE_SHORTCUT: str
+    NEW_LAYER_GROUP_SHORTCUT: str
     NEW_LAYER_SHORTCUT: str
     PAN_DOWN: str
     PAN_LEFT: str

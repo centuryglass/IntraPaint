@@ -1,13 +1,14 @@
 """
 Draws content to an image layer.
 """
-from typing import Optional, List
+from typing import Optional, List, cast
 
 from PyQt5.QtCore import QRect, QSize
 from PyQt5.QtGui import QColor, QPainter, QTransform
-from PyQt5.QtWidgets import QGraphicsScene, QGraphicsItem
+from PyQt5.QtWidgets import QGraphicsScene, QGraphicsItem, QGraphicsItemGroup
 
 from src.image.layers.image_layer import ImageLayer
+from src.ui.graphics_items.layer_stack_graphics_item import LayerStackGraphicsItem
 
 
 class LayerCanvas:
@@ -47,6 +48,16 @@ class LayerCanvas:
             self.connect_layer_signals()
             self._layer_size_change_slot(self._layer, self._layer.size)
             self._update_canvas_transform(self._layer, self._layer.transform)
+            self._set_z_value(self._layer.z_value)
+            layer_parent = self._layer.layer_parent
+            if self._scene is not None and layer_parent is not None:
+                for item in self._scene.items():
+                    if isinstance(item, LayerStackGraphicsItem):
+                        group = cast(LayerStackGraphicsItem, item)
+                        if group.layer == layer_parent:
+                            self._set_parent_group(group)
+                            break
+
         self._layer_content_change_slot(self._layer)
 
     @property
@@ -227,6 +238,10 @@ class LayerCanvas:
         for item in self.scene_items():
             item.setOpacity(opacity)
             item.update()
+
+    def _set_parent_group(self, parent: Optional[QGraphicsItemGroup]) -> None:
+        """Moves scene contents under an appropriate parent group."""
+        raise NotImplementedError()
 
     def _copy_changes_to_layer(self, layer: ImageLayer):
         """Copies content back to the connected layer."""

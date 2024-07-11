@@ -6,7 +6,7 @@ from typing import Optional, Set, List, cast
 
 from PyQt5.QtCore import QRect, QSize
 from PyQt5.QtGui import QColor, QPainter, QTransform
-from PyQt5.QtWidgets import QGraphicsScene, QGraphicsItem
+from PyQt5.QtWidgets import QGraphicsScene, QGraphicsItem, QGraphicsItemGroup
 
 from src.image.canvas.layer_canvas import LayerCanvas
 from src.image.layers.image_layer import ImageLayer
@@ -81,6 +81,10 @@ class MyPaintLayerCanvas(LayerCanvas):
     def _update_canvas_transform(self, layer: ImageLayer, transform: QTransform) -> None:
         """Updates the canvas transformation within the graphics scene."""
         self._mp_surface.scene_transform = layer.full_image_transform
+
+    def _set_parent_group(self, parent: Optional[QGraphicsItemGroup]) -> None:
+        """Moves scene contents under an appropriate parent group."""
+        self._mp_surface.set_parent_group(parent)
 
     def _handle_tile_updates(self, tile: MPTile) -> None:
         """Make sure added/updated MyPaint tiles are in the correct scene with the right z-value, and track bounds."""

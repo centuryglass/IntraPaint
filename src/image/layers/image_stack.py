@@ -817,7 +817,7 @@ class ImageStack(QObject):
 
         else:
             assert isinstance(layer, ImageLayer)
-            layer.insert_image_content(image_data, data_bounds, composition_mode)
+            layer.insert_image_content(image_data, target_bounds, composition_mode)
 
     def load_layer_stack(self, layer_stack: LayerStack, new_size: QSize) -> None:
         """Loads a new image from layer data."""
