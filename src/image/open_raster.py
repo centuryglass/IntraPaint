@@ -287,7 +287,7 @@ def read_ora_image(image_stack: ImageStack, file_path: str) -> Optional[str]:
             comp_mode = COMPOSITION_MODES[ORA_COMPOSITION_MODES[str(element.get(ATTR_TAG_COMPOSITE))]]
             layer.set_composition_mode(comp_mode)
         if TRANSFORM_TAG in element.keys():
-            matrix_elements = [float(elem) for elem in ','.split(element.get(TRANSFORM_TAG))]
+            matrix_elements = [float(elem) for elem in str(element.get(TRANSFORM_TAG)).split(',')]
             transform = QTransform(*matrix_elements)
             layer.set_transform(transform)
         elif ATTR_TAG_X_POS in element.keys() and ATTR_TAG_Y_POS in element.keys():

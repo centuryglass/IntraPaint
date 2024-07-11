@@ -616,27 +616,24 @@ class ImageStack(QObject):
         base_layer_state = base_layer.save_state()
         is_active_layer = bool(top_layer.id == self.active_layer_id)
 
-        base_bounds = base_layer.transformed_bounds
-        top_bounds = top_layer.transformed_bounds
+        top_to_base_transform = top_layer.transform * base_layer.transform.inverted()[0]
+        base_bounds = base_layer.local_bounds
+        top_bounds = top_to_base_transform.map(QPolygonF(QRectF(top_layer.local_bounds))).boundingRect().toAlignedRect()
         merged_bounds = base_bounds.united(top_bounds)
         merged_image = QImage(merged_bounds.size(), QImage.Format.Format_ARGB32_Premultiplied)
-        offset = -merged_bounds.topLeft()
+        offset = base_bounds.topLeft() - merged_bounds.topLeft()
         merged_image.fill(Qt.transparent)
         painter = QPainter(merged_image)
 
-        base_paint_transform = base_layer.transform
-        base_paint_transform.translate(base_bounds.x() + offset.x(), base_bounds.y() + offset.y())
+        base_paint_transform = QTransform.fromTranslate(offset.x(), offset.y())
         painter.setTransform(base_paint_transform, False)
         painter.drawImage(QRect(QPoint(), base_layer.size), base_layer.image)
 
-        top_paint_transform = top_layer.transform
-        top_paint_transform.translate(top_bounds.x() + offset.x(), top_bounds.y() + offset.y())
-        painter.setTransform(top_paint_transform)
-        painter.drawImage(QRect(top_bounds.topLeft() + offset, top_bounds.size()), top_layer.image)
+        painter.setTransform(top_to_base_transform * base_paint_transform)
+        painter.drawImage(top_layer.local_bounds, top_layer.image)
         painter.end()
 
-        final_transform = QTransform()
-        final_transform.translate(offset.x(), offset.y())
+        final_transform = QTransform.fromTranslate(-offset.x(), -offset.y()) * base_layer.transform
 
         def _do_merge(removed=top_layer, base=base_layer, matrix=final_transform,
                       img=merged_image, update_active=is_active_layer) -> None:
