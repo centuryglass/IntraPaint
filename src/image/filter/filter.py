@@ -3,17 +3,19 @@ and provides the information needed to add the function as a menu action."""
 from typing import Callable, List, Optional, Dict, Any
 
 from PyQt5.QtCore import QRect, QPoint, Qt, QSize, pyqtSignal
-from PyQt5.QtGui import QImage, QPainter
+from PyQt5.QtGui import QImage, QPainter, QTransform
 
 from src.image.layers.image_stack import ImageStack
 from src.ui.modal.image_filter_modal import ImageFilterModal
 from src.undo_stack import commit_action
 from src.util.application_state import APP_STATE_EDITING, AppStateTracker
 from src.util.async_task import AsyncTask
-from src.util.image_utils import get_transparency_tile_pixmap
+from src.util.geometry_utils import adjusted_placement_in_bounds
+from src.util.image_utils import get_transparency_tile_pixmap, image_content_bounds
 from src.util.parameter import Parameter
 
 MAX_PREVIEW_SIZE = 800
+MIN_PREVIEW_SIZE = 200
 
 
 class ImageFilter:
@@ -21,15 +23,52 @@ class ImageFilter:
 
     def __init__(self, image_stack: ImageStack) -> None:
         self._image_stack = image_stack
+        self._filter_selection_only = True
+        self._filter_active_layer_only = True
+
+    @property
+    def selection_only(self) -> bool:
+        """Controls whether the filter will only be applied to selected areas."""
+        return self._filter_selection_only
+
+    @selection_only.setter
+    def selection_only(self, use_selection_only: bool) -> None:
+        self._filter_selection_only = use_selection_only
+
+    @property
+    def active_layer_only(self) -> bool:
+        """Controls whether the filter will only be applied to the active layer, or to all visible layers."""
+        return self._filter_active_layer_only
+
+    @active_layer_only.setter
+    def active_layer_only(self, use_active_only: bool) -> None:
+        self._filter_active_layer_only = use_active_only
+
+    def is_local(self) -> bool:
+        """Indicates whether the filter operates independently on each pixel (True) or takes neighboring pixels
+        into account (False)."""
+        return True
 
     def get_filter_modal(self) -> ImageFilterModal:
         """Creates and returns a modal widget that can apply the filter to the edited image."""
-        return ImageFilterModal(self.get_modal_title(),
-                                self.get_modal_description(),
-                                self.get_parameters(),
-                                self.get_preview_image,
-                                self.apply_filter,
-                                self._image_stack.selection_layer.empty is False)
+        self.selection_only = not self._image_stack.selection_layer.empty
+        modal = ImageFilterModal(self.get_modal_title(),
+                                 self.get_modal_description(),
+                                 self.get_parameters(),
+                                 self.get_preview_image,
+                                 self.apply_filter,
+                                 self.selection_only,
+                                 self.active_layer_only)
+
+        def _set_active_only(active_only: bool) -> None:
+            self.active_layer_only = active_only
+            print(f'ACTIVE_ONLY={self.active_layer_only}')
+        modal.filter_active_only.connect(_set_active_only)
+
+        def _set_selection_only(selection_only: bool) -> None:
+            self.selection_only = selection_only
+        modal.filter_selection_only.connect(_set_selection_only)
+        return modal
 
     def get_modal_title(self) -> str:
         """Return the modal's title string."""
@@ -51,76 +90,107 @@ class ImageFilter:
         """Returns definitions for the non-image parameters passed to the filtering function."""
         return []
 
-    def get_preview_image(self,
-                          filter_param_values: List[Any],
-                          filter_selection_only: bool,
-                          filter_active_layer_only: bool) -> QImage:
+    def _filter_layer_image(self, filter_param_values: List[Any], layer_id: int, layer_image: QImage) -> bool:
+        """Apply any required filtering in-place to a layer image, returning whether changes were made."""
+        if self._filter_active_layer_only and layer_id != self._image_stack.active_layer_id:
+            return False
+        if self._filter_selection_only:
+            layer = self._image_stack.get_layer_by_id(layer_id)
+            assert layer is not None
+            selection_bounds = self._image_stack.selection_layer.map_rect_from_image(layer.full_image_bounds)
+            if self._image_stack.selection_layer.is_empty(selection_bounds):
+                return False
+            layer_mask = self._image_stack.get_layer_mask(layer)
+            if layer_mask.size() != layer_image.size():
+                layer_mask = layer_mask.scaled(layer_image.width(), layer_image.height())
+            if self.is_local():
+                masked_bounds = image_content_bounds(layer_mask)
+                if masked_bounds.size() == layer_image.size():
+                    filtered_selection_image = self.get_filter()(layer_image, *filter_param_values)
+                else:
+                    filtered_section = layer_image.copy(masked_bounds)
+                    cropped_filtered_image = self.get_filter()(filtered_section, *filter_param_values)
+                    filtered_selection_image = layer_image.copy()
+                    cropped_change_painter = QPainter(filtered_selection_image)
+                    cropped_change_painter.drawImage(masked_bounds, cropped_filtered_image)
+                    cropped_change_painter.end()
+            else:
+                filtered_selection_image = self.get_filter()(layer_image, *filter_param_values)
+            # Clear areas where the filter may have altered image data outside of the selection:
+            filter_painter = QPainter(filtered_selection_image)
+            filter_painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_DestinationIn)
+            filter_painter.drawImage(QPoint(), layer_mask)
+
+            # Fully replace the selected area with the filtered content:
+            filtered_image = layer_image.copy()
+            filter_painter = QPainter(filtered_image)
+            filter_painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_DestinationOut)
+            filter_painter.drawImage(QPoint(), layer_mask)
+            filter_painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_SourceOver)
+            filter_painter.drawImage(QPoint(), filtered_selection_image)
+            filter_painter.end()
+        else:
+            filtered_image = self.get_filter()(layer_image, *filter_param_values)
+        painter = QPainter(layer_image)
+        painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_Source)
+        painter.drawImage(QPoint(), filtered_image)
+        painter.end()
+        return True
+
+    def get_preview_image(self, filter_param_values: List[Any]) -> QImage:
         """
         Generate a preview of how the filter will be applied with given parameter values.
         Parameters
         ----------
             filter_param_values: list
                 Parameter values to use, fitting the definitions the filter provides through get_parameters.
-            filter_selection_only: bool
-                If true, filters will only be applied to selected image content, and the preview will be cropped to
-                the changed area.
-            filter_active_layer_only: bool
-                If true, filters will only be applied to the active layer, and the preview will be cropped to the active
-                layer bounds.
         Returns
         -------
             QImage:
-                The new preview image, possibly downscaled to avoid excess image processing.
+                The new preview image, possibly downscaled to avoid excess image processing time.
         """
-        scale = MAX_PREVIEW_SIZE / self._image_stack.width
-        layer_images = self._get_layer_images(filter_param_values, filter_selection_only, filter_active_layer_only,
-                                              False, scale)
-        bounds = self._bounds(scale)
+        bounds = self._image_stack.layer_stack.local_bounds
+        if self._filter_selection_only:
+            cropped_preview_bounds = self._image_stack.selection_layer.get_content_bounds()
+            center = cropped_preview_bounds.center()
+            cropped_preview_bounds.setWidth(max(int(cropped_preview_bounds.width() * 1.2), MIN_PREVIEW_SIZE))
+            cropped_preview_bounds.setHeight(max(int(cropped_preview_bounds.height() * 1.2), MIN_PREVIEW_SIZE))
+            cropped_preview_bounds.moveCenter(center)
+            cropped_preview_bounds = adjusted_placement_in_bounds(cropped_preview_bounds, bounds)
+            scale = max(MAX_PREVIEW_SIZE / cropped_preview_bounds.width(),
+                        MAX_PREVIEW_SIZE / cropped_preview_bounds.height())
+        else:
+            cropped_preview_bounds = None
+            scale = max(MAX_PREVIEW_SIZE / bounds.width(), MAX_PREVIEW_SIZE / bounds.height())
+        scale = min(scale, 1.0)
+        # TEMP, testing:
+        scale = 1.0
+        cropped_preview_bounds = None
+
+        scale_transform = QTransform.fromScale(scale, scale)
+        bounds = scale_transform.mapRect(bounds)
+        if cropped_preview_bounds is not None:
+            cropped_preview_bounds = scale_transform.mapRect(cropped_preview_bounds)
         preview_image = QImage(bounds.size(), QImage.Format.Format_ARGB32_Premultiplied)
-        painter = QPainter(preview_image)
+        background_painter = QPainter(preview_image)
         transparency_pattern = get_transparency_tile_pixmap()
-        painter.drawTiledPixmap(0, 0, preview_image.width(), preview_image.height(), transparency_pattern)
-        layers = self._image_stack.image_layers
-        layers.sort(key=lambda child_layer: child_layer.z_value)
-        for layer in layers:
-            if not layer.visible:
-                continue
-            assert layer.id in layer_images
-            painter.setOpacity(layer.opacity)
-            painter.setCompositionMode(layer.composition_mode)
-            painter.setTransform(layer.full_image_transform, False)
-            painter.drawImage(layer.local_bounds, layer_images[layer.id])
-        painter.end()
+        background_painter.drawTiledPixmap(0, 0, preview_image.width(), preview_image.height(), transparency_pattern)
+        background_painter.end()
 
-        crop_area = bounds.translated(-bounds.topLeft())
+        def _adjust_layer_paint_params(layer_id: int, layer_image: QImage, _, painter: QPainter) -> Optional[QImage]:
+            if scale != 1.0:
+                layer_image = layer_image.scaled(int(layer_image.width() * scale), int(layer_image.height() * scale))
+                painter.setTransform(scale_transform, True)
+            self._filter_layer_image(filter_param_values, layer_id, layer_image)
+            return layer_image if scale != 1.0 else None
 
-        def _map_to_preview(rect: QRect) -> None:
-            rect.moveLeft(int(rect.x() * scale) - bounds.x())
-            rect.moveTop(int(rect.y() * scale) - bounds.y())
-            rect.setWidth(int(rect.width() * scale))
-            rect.setHeight(int(rect.height() * scale))
-
-        if filter_active_layer_only:
-            active_layer = self._image_stack.active_layer
-            assert active_layer is not None
-            layer_bounds = active_layer.full_image_bounds
-            _map_to_preview(layer_bounds)
-            crop_area = crop_area.intersected(layer_bounds)
-        if filter_selection_only:
-            selection_layer = self._image_stack.selection_layer
-            selection_bounds = selection_layer.get_content_bounds()
-            if not selection_bounds.isEmpty():
-                padding = max(selection_bounds.width(), selection_bounds.height()) // 10
-                selection_bounds.adjust(-padding, -padding, padding, padding)
-            _map_to_preview(selection_bounds)
-            crop_area = crop_area.intersected(selection_bounds)
-
-        if crop_area is not None and not crop_area.isEmpty() and crop_area.size() != bounds.size():
-            preview_image = preview_image.copy(crop_area)
+        self._image_stack.render(preview_image, _adjust_layer_paint_params)
+        if cropped_preview_bounds is not None:
+            cropped_preview_bounds.translate(-bounds.x(), - bounds.y())
+            return preview_image.copy(cropped_preview_bounds)
         return preview_image
 
-    def apply_filter(self, filter_param_values: List[Any], filter_selection_only: bool,
-                     filter_active_layer_only: bool) -> None:
+    def apply_filter(self, filter_param_values: List[Any]) -> None:
         """
         Applies the filter to the image stack, running filter operations in another thread to prevent hanging.
 
@@ -128,19 +198,48 @@ class ImageFilter:
         ----------
             filter_param_values: list
                 Parameter values to use, fitting the definitions the filter provides through get_parameters.
-            filter_selection_only: bool
-                If true, filters will only be applied to selected image content.
-            filter_active_layer_only: bool
-                If true, filters will only be applied to the active layer instead of all visible layers.
         """
 
         def _filter_images(images_ready) -> None:
-            layer_images = self._get_layer_images(filter_param_values, filter_selection_only, filter_active_layer_only,
-                                                  True)
+            layer_images: Dict[int, QImage] = {}
+            if self._filter_selection_only:
+                selection_bounds = self._image_stack.selection_layer.get_content_bounds()
+                selection_pos = self._image_stack.selection_layer.position
+                selection_bounds.translate(-selection_pos.x(), -selection_pos.y())
+            else:
+                selection_bounds = None
+            for layer in self._image_stack.image_layers:
+                if self._filter_active_layer_only and layer.id != self._image_stack.active_layer_id:
+                    continue
+                if selection_bounds is not None and not selection_bounds.intersects(layer.full_image_bounds):
+                    continue
+                layer_image = layer.image
+                image_changed = self._filter_layer_image(filter_param_values, layer.id, layer_image)
+                if image_changed:
+                    layer_images[layer.id] = layer_image
             images_ready.emit(layer_images)
 
-        def _apply_changes(layer_images: Dict[int, QImage]) -> None:
+        updated_layer_images: Dict[int, QImage] = {}
+
+        def _transfer_changes_from_thread(layer_images: Dict[int, QImage]) -> None:
+            for layer_id, image in layer_images.items():
+                updated_layer_images[layer_id] = image
+
+        class _FilterTask(AsyncTask):
+            images_ready = pyqtSignal(dict)
+
+            def signals(self) -> List[pyqtSignal]:
+                return [self.images_ready]
+
+        task = _FilterTask(_filter_images, True)
+        task.images_ready.connect(_transfer_changes_from_thread)
+
+        def _finish(layer_images=updated_layer_images):
             AppStateTracker.set_app_state(APP_STATE_EDITING)
+            task.images_ready.disconnect(_transfer_changes_from_thread)
+            task.finish_signal.disconnect(_finish)
+            if len(layer_images) == 0:
+                return
             source_images: Dict[int, QImage] = {}
             for layer_id in layer_images.keys():
                 layer = self._image_stack.get_layer_by_id(layer_id)
@@ -159,85 +258,5 @@ class ImageFilter:
 
             commit_action(_apply_filters, _undo_filters, 'ImageFilter.apply_filters')
 
-        class _FilterTask(AsyncTask):
-            images_ready = pyqtSignal(dict)
-
-            def signals(self) -> List[pyqtSignal]:
-                return [self.images_ready]
-
-        task = _FilterTask(_filter_images, True)
-        task.images_ready.connect(_apply_changes)
-
-        def _finish():
-            task.images_ready.disconnect(_apply_changes)
-            task.finish_signal.disconnect(_finish)
         task.finish_signal.connect(_finish)
         task.start()
-
-    def _get_filtered_image(self,
-                            image: QImage,
-                            filter_param_values: List[Any],
-                            selection: Optional[QImage],
-                            selection_offset: QPoint) -> QImage:
-        arg_list = [image]
-        for arg in filter_param_values:
-            arg_list.append(arg)
-        filtered_image = self.get_filter()(*arg_list)
-        if selection is None:
-            return filtered_image
-        painter = QPainter(filtered_image)
-        painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_DestinationIn)
-        painter.drawImage(QRect(QPoint(), image.size()), selection, QRect(selection_offset, image.size()))
-        painter.end()
-        final_image = image.copy()
-        painter = QPainter(final_image)
-        painter.drawImage(QRect(0, 0, image.width(), image.height()), filtered_image)
-        return final_image
-
-    def _bounds(self, scale=1.0) -> QRect:
-        bounds = self._image_stack.merged_layer_bounds
-        if scale != 1.0:
-            bounds.setX(int(bounds.x() * scale))
-            bounds.setY(int(bounds.y() * scale))
-            bounds.setWidth(int(bounds.width() * scale))
-            bounds.setHeight(int(bounds.height() * scale))
-        return bounds
-
-    def _get_layer_images(self,
-                          filter_param_values: List[Any],
-                          filter_selection_only: bool,
-                          filter_active_layer_only: bool,
-                          return_changed_layers_only: bool,
-                          scale: float = 1.0) -> Dict[int, QImage]:
-        images: Dict[int, QImage] = {}
-        bounds = self._bounds(scale)
-        if filter_selection_only:
-            selection_layer = self._image_stack.selection_layer
-            selection: Optional[QImage] = QImage(bounds.size(), QImage.Format_ARGB32_Premultiplied)
-            assert selection is not None
-            selection.fill(Qt.GlobalColor.transparent)
-            painter = QPainter(selection)
-            scaled_image_size = QSize(int(selection_layer.width * scale), int(selection_layer.height * scale))
-            painter.drawPixmap(QRect(-bounds.topLeft(), bounds.size()), selection_layer.pixmap,
-                               QRect(QPoint(), scaled_image_size))
-            painter.end()
-        else:
-            selection = None
-        layers = self._image_stack.image_layers
-        layers.sort(key=lambda child_layer: child_layer.z_value)
-        for layer in layers:
-            if not layer.visible:
-                continue
-            position = layer.map_to_image(QPoint())
-            position.setX(int(position.x() * scale))
-            position.setY(int(position.y() * scale))
-            offset = position - bounds.topLeft()
-            layer_image = layer.image
-            if scale != 1.0:
-                layer_image = layer_image.scaled(QSize(int(layer_image.width() * scale),
-                                                       int(layer_image.height() * scale)))
-            if not filter_active_layer_only or layer.id == self._image_stack.active_layer_id:
-                images[layer.id] = self._get_filtered_image(layer_image, filter_param_values, selection, offset)
-            elif not return_changed_layers_only:
-                images[layer.id] = layer_image
-        return images

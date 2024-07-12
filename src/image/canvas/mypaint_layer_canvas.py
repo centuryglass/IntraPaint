@@ -4,7 +4,7 @@ Draws content to an image layer.
 import math
 from typing import Optional, Set, List, cast
 
-from PyQt5.QtCore import QRect, QSize
+from PyQt5.QtCore import QRect, QSize, Qt, QPoint, QRectF, QPointF
 from PyQt5.QtGui import QColor, QPainter, QTransform
 from PyQt5.QtWidgets import QGraphicsScene, QGraphicsItem, QGraphicsItemGroup
 
@@ -52,6 +52,7 @@ class MyPaintLayerCanvas(LayerCanvas):
         """Signals the start of a brush stroke, to be called once whenever user input starts or resumes."""
         super().start_stroke()
         self._last_stroke_tiles.clear()
+        self._last_stroke_bounds = QRect()
         self._mp_surface.start_stroke()
 
     def scene_items(self) -> List[QGraphicsItem]:
@@ -95,12 +96,15 @@ class MyPaintLayerCanvas(LayerCanvas):
         tile.setZValue(self._z_value)
         if self._layer is not None:
             tile.setOpacity(self._layer.opacity)
+            tile.composition_mode = self._layer.composition_mode
         tile.update()
         # If currently drawing, use tiles to track the stroke bounds:
         if self._drawing:
+            assert self._layer is not None
             self._last_stroke_tiles.add(tile)
-            tile_bounds = QRect(int(tile.x()), int(tile.y()),
-                                tile.size.width(), tile.size.height())
+            tile_bounds = QRect(QPoint(), tile.size)
+            tile_bounds = tile.mapRectToScene(QRectF(tile_bounds)).toAlignedRect()
+            tile_bounds = self._layer.map_rect_from_image(tile_bounds)
             if self._last_stroke_bounds.isEmpty():
                 self._last_stroke_bounds = tile_bounds
             else:
@@ -171,18 +175,15 @@ class MyPaintLayerCanvas(LayerCanvas):
         """Copies content back to the connected layer."""
         if self._layer is not None and self._layer.visible and self._edit_region is not None \
                 and not self._edit_region.isEmpty() and not self._last_stroke_bounds.isEmpty():
-
+            self._last_stroke_bounds = self._last_stroke_bounds.intersected(self._layer.local_bounds)
             tile_change_image = self._layer.cropped_image_content(self._last_stroke_bounds)
-            change_x = self._last_stroke_bounds.x()
-            change_y = self._last_stroke_bounds.y()
             for tile in self._last_stroke_tiles:
                 if not tile.is_valid:
                     continue
-                destination_x = int(tile.x() - change_x)
-                destination_y = int(tile.y() - change_y)
+                tile_pt = tile.mapToScene(QPointF())
+                tile_pt = self._layer.map_from_image(tile_pt) - self._last_stroke_bounds.topLeft()
                 tile.copy_tile_into_image(tile_change_image,
-                                          destination=QRect(destination_x, destination_y,
-                                                            tile.size.width(), tile.size.height()),
+                                          destination=QRect(tile_pt.toPoint(), tile.size),
                                           skip_if_transparent=False,
                                           color_correction=True)
             self.disconnect_layer_signals()

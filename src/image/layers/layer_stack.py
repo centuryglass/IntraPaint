@@ -1,8 +1,8 @@
 """Represents a group of linked image layers that can be manipulated as one in limited ways."""
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Dict, Any, Callable
 
-from PyQt5.QtCore import Qt, QRect, pyqtSignal
-from PyQt5.QtGui import QPainter, QImage
+from PyQt5.QtCore import Qt, QRect, pyqtSignal, QPoint, QRectF
+from PyQt5.QtGui import QPainter, QImage, QPolygonF
 
 from src.image.layers.image_layer import ImageLayer, ImageLayerState
 from src.image.layers.layer import Layer
@@ -98,23 +98,72 @@ class LayerStack(Layer):
         """Returns combined visible layer content as a QImage object."""
         if self._image_cache.valid:
             return self._image_cache.data
-        image_bounds = self.local_bounds
-        image = QImage(image_bounds.size(), QImage.Format.Format_ARGB32_Premultiplied)
+        image = self.render()
+        self._image_cache.data = image
+        return image
+
+    def render(self, base_image: Optional[QImage] = None,
+                      paint_param_adjuster: Optional[Callable[[int, QImage, QRect, QPainter], Optional[QImage]]]
+                      = None) -> QImage:
+        """Render all layers to a QImage with a custom base image and accepting a function to control layer painting on
+        a per-layer basis.
+
+        Parameters
+        ----------
+        base_image: QImage, optional, default=None.
+            The base image that all layer content will be painted onto.  If None, a new image will be created that's
+            large enough to fit all layers.
+        paint_param_adjuster: Optional[Callable[[int, QImage, QRect, QPainter) -> Optional[QImage]]
+            Default=None. If provided, it will be called before each layer is painted, allowing it to directly make
+            changes to the image, paint bounds, or painter as needed. Parameters are layer_id, layer_image,
+            paint_bounds and layer_painter.  If it returns a QImage, that image will replace the layer image.
+        Returns
+        -------
+        QImage: The final rendered image.
+        """
+        if base_image is None:
+            image_bounds = self.local_bounds
+            base_image = QImage(image_bounds.size(), QImage.Format.Format_ARGB32_Premultiplied)
+            base_image.fill(Qt.transparent)
+        else:
+            image_bounds = QRect(QPoint(), base_image.size())
+        if not self.visible:
+            return base_image
+        if self.opacity != 1.0 or self.composition_mode != QPainter.CompositionMode_SourceOver:
+            final_base_image = base_image
+            base_image = QImage(image_bounds.size(), QImage.Format.Format_ARGB32_Premultiplied)
+            base_image.fill(Qt.transparent)
+        else:
+            final_base_image = None
+
+        offset = -image_bounds.topLeft()
         if not image_bounds.isEmpty():
-            image.fill(Qt.transparent)
-            painter = QPainter(image)
+            painter = QPainter(base_image)
             for layer in reversed(self._layers):
                 if not layer.visible:
                     continue
                 layer_image, layer_translate = layer.transformed_image()
                 if layer_image is not None:
+                    painter.save()
                     painter.setOpacity(layer.opacity)
                     painter.setCompositionMode(layer.composition_mode)
                     painter.setTransform(layer_translate, False)
-                    painter.drawImage(QRect(-image_bounds.topLeft(), layer_image.size()), layer_image)
+                    layer_bounds = QRect(offset, layer_image.size())
+                    if paint_param_adjuster is not None:
+                        new_image = paint_param_adjuster(layer.id, layer_image, layer_bounds, painter)
+                        if new_image is not None:
+                            layer_image = new_image
+                    painter.drawImage(layer_bounds, layer_image)
+                    painter.restore()
             painter.end()
-        self._image_cache.data = image
-        return image
+        if final_base_image is not None:
+            painter = QPainter(final_base_image)
+            painter.setOpacity(self.opacity)
+            painter.setCompositionMode(self.composition_mode)
+            painter.drawImage(image_bounds, base_image)
+            painter.end()
+            return final_base_image
+        return base_image
 
     def set_qimage(self, image: QImage) -> None:
         raise RuntimeError('Tried to directly assign image content to a LayerStack layer group')
@@ -267,9 +316,17 @@ class LayerStack(Layer):
         for layer in self.recursive_child_layers:
             layer.visibility_changed.emit(layer, layer.visible)
 
-    def _is_empty(self) -> bool:
-        if any(layer.empty for layer in self._layers):
-            return False
+    def is_empty(self, bounds: Optional[QRect] = None) -> bool:
+        """Returns whether this layer contains only fully transparent pixels, optionally restricting the check to a
+           bounding rectangle."""
+        for layer in self._layers:
+            if bounds is not None:
+                layer_bounds = layer.transform.inverted()[0].map(QPolygonF(QRectF(bounds))).boundingRect()\
+                    .toAlignedRect()
+            else:
+                layer_bounds = None
+            if not layer.is_empty(layer_bounds):
+                return False
         return True
 
     def _layer_content_change_slot(self, layer: ImageLayer, _=None) -> None:

@@ -700,7 +700,14 @@ class BaseInpaintController(MenuBuilder):
         """Selects all pixels in the active layer that are not fully transparent."""
         active_layer = self._image_stack.active_layer
         if active_layer is not None:
-            self._image_stack.selection_layer.image = active_layer.image
+            selection_image = QImage(self._image_stack.selection_layer.size, QImage.Format_ARGB32_Premultiplied)
+            selection_image.fill(Qt.transparent)
+            painter = QPainter(selection_image)
+            painter.setTransform(active_layer.full_image_transform
+                                 * self._image_stack.selection_layer.full_image_transform.inverted()[0])
+            painter.drawImage(0, 0, active_layer.image)
+            painter.end()
+            self._image_stack.selection_layer.image = selection_image
 
     @menu_action(MENU_SELECTION, 'grow_selection_shortcut', valid_app_states=[APP_STATE_EDITING])
     def grow_selection(self, num_pixels=1) -> None:

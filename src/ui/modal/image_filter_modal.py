@@ -1,10 +1,11 @@
 """Popup modal window that applies an arbitrary image filtering action."""
 from typing import List, Callable, Optional, TypeAlias, Any
 
-from PyQt5.QtCore import QSize
+from PyQt5.QtCore import QSize, pyqtSignal
 from PyQt5.QtGui import QImage
-from PyQt5.QtWidgets import QDialog, QFormLayout, QLabel, QWidget, QCheckBox, QHBoxLayout, QPushButton
+from PyQt5.QtWidgets import QDialog, QFormLayout, QLabel, QWidget, QHBoxLayout, QPushButton
 
+from src.ui.input_fields.check_box import CheckBox
 from src.ui.widget.image_widget import ImageWidget
 from src.util.parameter import Parameter
 
@@ -14,12 +15,15 @@ MIN_PREVIEW_SIZE = 450
 CANCEL_BUTTON_TEXT = 'Cancel'
 APPLY_BUTTON_TEXT = 'Apply'
 
-# parameters: filter_param_values: list, filter_selection_only: bool, filter_active_layer_only: bool
-FilterFunction: TypeAlias = Callable[[List[Any], bool, bool], Optional[QImage]]
+# parameters: filter_param_values: list
+FilterFunction: TypeAlias = Callable[[List[Any]], Optional[QImage]]
 
 
 class ImageFilterModal(QDialog):
     """Popup modal window that applies an arbitrary image filtering action."""
+
+    filter_active_only = pyqtSignal(bool)
+    filter_selection_only = pyqtSignal(bool)
 
     def __init__(self,
                  title: str,
@@ -46,15 +50,17 @@ class ImageFilterModal(QDialog):
             self._layout.addRow(param.name, field_widget)
             field_widget.valueChanged.connect(self._update_preview)
 
-        self._selected_only_checkbox = QCheckBox()
+        self._selected_only_checkbox = CheckBox()
         self._layout.addRow(self._selected_only_checkbox)
         self._selected_only_checkbox.setText(SELECTED_ONLY_LABEL)
+        self._selected_only_checkbox.valueChanged.connect(self.filter_selection_only)
         self._selected_only_checkbox.setChecked(filter_selection_only_default)
         self._selected_only_checkbox.stateChanged.connect(self._update_preview)
 
-        self._active_only_checkbox = QCheckBox()
+        self._active_only_checkbox = CheckBox()
         self._layout.addRow(self._active_only_checkbox)
         self._active_only_checkbox.setText(ACTIVE_ONLY_LABEL)
+        self._active_only_checkbox.valueChanged.connect(self.filter_active_only)
         self._active_only_checkbox.setChecked(filter_active_layer_only_default)
         self._active_only_checkbox.stateChanged.connect(self._update_preview)
 
@@ -74,13 +80,9 @@ class ImageFilterModal(QDialog):
 
     def _update_preview(self, _=None) -> None:
         param_values = [widget.value() for widget in self._param_inputs]
-        filter_selection_only = self._selected_only_checkbox.isChecked()
-        filter_active_layer_only = self._active_only_checkbox.isChecked()
-        self._preview.image = self._generate_preview(param_values, filter_selection_only, filter_active_layer_only)
+        self._preview.image = self._generate_preview(param_values)
 
     def _apply_change(self) -> None:
         param_values = [widget.value() for widget in self._param_inputs]
-        filter_selection_only = self._selected_only_checkbox.isChecked()
-        filter_active_layer_only = self._active_only_checkbox.isChecked()
-        self._apply_filter(param_values, filter_selection_only, filter_active_layer_only)
+        self._apply_filter(param_values)
         self.close()

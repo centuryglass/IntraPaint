@@ -35,6 +35,11 @@ class SharpenFilter(ImageFilter):
         """Returns the filter's image variable filtering function."""
         return self.sharpen
 
+    def is_local(self) -> bool:
+        """Indicates whether the filter operates independently on each pixel (True) or takes neighboring pixels
+        into account (False)."""
+        return False
+
     @staticmethod
     def sharpen(image: QImage, factor: float) -> QImage:
         """Sharpens an image."""

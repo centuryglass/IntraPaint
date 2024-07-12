@@ -1,6 +1,6 @@
 """Provides a utility function for handling image or widget placement."""
 import math
-from typing import Tuple
+from typing import Tuple, Optional
 
 from PyQt5.QtCore import QRect, QSize, QRectF, QSizeF, QPoint, QPointF, QLineF
 from PyQt5.QtGui import QTransform, QPolygonF
@@ -155,3 +155,33 @@ def combine_transform_parameters(x_offset: float, y_offset: float, x_scale: floa
     matrix *= QTransform.fromScale(x_scale, y_scale)
     matrix *= QTransform.fromTranslate(x_offset + origin.x(), y_offset + origin.y())
     return matrix
+
+
+def adjusted_placement_in_bounds(rect: QRect, bounds: QRect) -> QRect:
+    """Returns the closest rectangle to the rect param that fits within a bounding rectangle.
+
+    More specifically:
+    - Width and height of the rectangle are only reduced if they exceed the width or height of the bounds.
+    - The rectangle is translated the minimum distance necessary to place it fully within the bounds.
+    """
+    if bounds.width() <= rect.width() and bounds.height() <= rect.height():
+        return QRect(bounds)
+    adjusted_rect = QRect(rect)
+    if bounds.contains(rect):
+        return adjusted_rect
+    if adjusted_rect.width() > bounds.width():
+        adjusted_rect.setWidth(bounds.width())
+    if adjusted_rect.height() > bounds.height():
+        adjusted_rect.setHeight(bounds.height())
+    if adjusted_rect.x() < bounds.x():
+        adjusted_rect.moveLeft(bounds.x())
+    if (adjusted_rect.x() + adjusted_rect.width()) > (bounds.x() + bounds.width()):
+        adjusted_rect.moveLeft(bounds.x() + bounds.width() - adjusted_rect.width())
+    if adjusted_rect.y() < bounds.y():
+        adjusted_rect.moveTop(bounds.y())
+    if (adjusted_rect.y() + adjusted_rect.height()) > (bounds.y() + bounds.height()):
+        adjusted_rect.moveTop(bounds.y() + bounds.height() - adjusted_rect.height())
+    assert bounds.contains(adjusted_rect)
+    return adjusted_rect
+
+

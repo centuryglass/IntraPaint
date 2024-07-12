@@ -75,31 +75,29 @@ class ImageLayer(Layer):
             self._handle_content_change(self._image, change_bounds)
             self.content_changed.emit(self)
 
-    def resize_canvas(self, new_size: QSize, x_offset: int, y_offset: int, register_to_undo_history: bool = True):
-        """
-        Changes the layer size without scaling existing image content.
+    def adjust_local_bounds(self, relative_bounds: QRect, register_to_undo_history: bool = True) -> None:
+        """Changes local image bounds, cropping or extending the layer image.
 
-        Parameters
+        - All image content within the new bounds will remain at the same position and scale within the image.
+        - Content outside of the bounds will be removed.
+        - Areas where the bounds don't intersect with the existing image will be filled with transparency.
+        - The top-left position of layer.local_bounds will *not* change. If the new bounds do not have the same
+          top left point, the layer translation will be adjusted.
+
+        Parameters:
         ----------
-        new_size: QSize
-            New layer size in pixels.
-        x_offset: int
-            X offset where existing image content will be placed in the adjusted layer
-        y_offset: int
-            Y offset where existing image content will be placed in the adjusted layer
+        new_bounds: QRect
+            The area the layer should occupy. This is relative to the local coordinate system, i.e. transformations
+            do not apply.
         register_to_undo_history: bool, default=True
             Whether the resize operation should be registered to the undo history.
         """
-        assert_type(new_size, QSize)
-        assert_types((x_offset, y_offset), int)
-        if new_size == self.size and x_offset == 0 and y_offset == 0:
-            return
-        offset = QPoint(x_offset, y_offset)
-        new_image = QImage(new_size, QImage.Format.Format_ARGB32_Premultiplied)
+        new_image = QImage(relative_bounds.size(), QImage.Format.Format_ARGB32_Premultiplied)
         new_image.fill(Qt.transparent)
         painter = QPainter(new_image)
-        painter.drawImage(-x_offset, -y_offset, self._image)
+        painter.drawImage(-relative_bounds.x(), -relative_bounds.y(), self._image)
         painter.end()
+        offset = relative_bounds.topLeft()
         if register_to_undo_history:
             source_image = self.image
             source_offset = -offset
@@ -110,7 +108,7 @@ class ImageLayer(Layer):
             def _restore(img=source_image, off=source_offset):
                 self.set_image(img, off)
 
-            commit_action(_resize, _restore, 'ImageLayer.resize_canvas')
+            commit_action(_resize, _restore, 'ImageLayer.adjust_local_bounds')
         else:
             self.set_image(new_image, offset)
 
@@ -148,13 +146,17 @@ class ImageLayer(Layer):
         assert_type(bounds_rect, QRect)
         layer_bounds = self.local_bounds
         if not layer_bounds.contains(bounds_rect):
-            merged_bounds = layer_bounds.intersected(bounds_rect)
+            merged_bounds = layer_bounds.united(bounds_rect)
             updated_image = QImage(merged_bounds.size(), QImage.Format_ARGB32_Premultiplied)
             updated_image.fill(Qt.transparent)
             painter = QPainter(updated_image)
             painter.drawImage(layer_bounds, self.get_qimage())
             painter.end()
-            offset = -merged_bounds.topLeft()
+            offset = QPoint()
+            if merged_bounds.left() < layer_bounds.left():
+                offset.setX(merged_bounds.left() - layer_bounds.left())
+            if merged_bounds.top() < layer_bounds.top():
+                offset.setY(merged_bounds.top() - layer_bounds.top())
         elif register_to_undo_history:
             # TODO: find a way to inject change bounds when setting self.image so special handling isn't needed
             #       to restrict post-processing to the change bounds:
@@ -186,7 +188,7 @@ class ImageLayer(Layer):
         if register_to_undo_history:
             self.image = (updated_image, offset)
         else:
-            self.set_image(updated_image)
+            self.set_image(updated_image, offset)
 
     def clear(self, save_to_undo_history: bool = True):
         """Replaces all image content with transparency."""

@@ -1,7 +1,7 @@
 """Manages an edited image composed of multiple layers."""
 import os
 import re
-from typing import Optional, Tuple, cast, List
+from typing import Optional, Tuple, cast, List, Callable
 
 from PIL import Image
 from PyQt5.QtCore import Qt, QObject, QSize, QPoint, QRect, pyqtSignal, QRectF
@@ -16,6 +16,7 @@ from src.image.layers.selection_layer import SelectionLayer
 from src.undo_stack import commit_action, last_action, _UndoAction
 from src.util.application_state import AppStateTracker, APP_STATE_NO_IMAGE, APP_STATE_EDITING
 from src.util.cached_data import CachedData
+from src.util.geometry_utils import adjusted_placement_in_bounds
 from src.util.image_utils import qimage_to_pil_image
 from src.util.validation import assert_type
 
@@ -72,8 +73,8 @@ class ImageStack(QObject):
             if not selection_bounds.contains(content_bounds) or (selection_bounds.width() * selection_bounds.height()) \
                     > (content_bounds.width() * content_bounds.height() * 10):
                 offset = content_bounds.topLeft() - selection_bounds.topLeft()
-                self._selection_layer.resize_canvas(content_bounds.size(), offset.x(), offset.y(),
-                                                    False)
+                self._selection_layer.adjust_local_bounds(self._selection_layer.map_rect_from_image(content_bounds),
+                                                          False)
                 assert self._selection_layer.full_image_bounds.contains(selection_bounds), \
                     f'expected {content_bounds}, got {self._selection_layer.full_image_bounds}'
             self._image.invalidate()
@@ -286,7 +287,7 @@ class ImageStack(QObject):
         new_size: QSize
             New layer size in pixels.
         x_offset: int
-            X offset where existing image content will be placed in the adjusted layer
+            X offset where existing image content will be placed in the adjusted image
         y_offset: int
             Y offset where existing image content will be placed in the adjusted layer
         """
@@ -294,12 +295,18 @@ class ImageStack(QObject):
         last_size = self.size
         selection_state = self.selection_layer.save_state()
         layer_state = self._layer_stack.save_state()
+        transform = QTransform.fromTranslate(x_offset, y_offset)
+        canvas_image_bounds = QRect(QPoint(), new_size)
 
-        def _resize(size=new_size, x=x_offset, y=y_offset):
-            self.size = size
-            self.selection_layer.resize_canvas(size, x, y, False)
+        def _resize(bounds=canvas_image_bounds, translate=transform):
+            self.size = bounds.size()
+            self.selection_layer.set_transform(self.selection_layer.transform * translate)
+            mapped_bounds = self.selection_layer.map_rect_from_image(bounds)
+            self.selection_layer.adjust_local_bounds(mapped_bounds, False)
             for layer in self.image_layers:
-                layer.resize_canvas(size, x, y, False)
+                layer.set_transform(layer.transform * translate)
+                mapped_bounds = layer.map_rect_from_image(bounds)
+                layer.adjust_local_bounds(mapped_bounds, False)
 
         def _undo_resize(size=last_size, sel_state=selection_state, stack_state=layer_state):
             self.size = size
@@ -310,6 +317,8 @@ class ImageStack(QObject):
 
     def qimage(self, crop_to_image: bool = True) -> QImage:
         """Returns combined visible layer content as a QImage object, optionally including unsaved layers."""
+        if crop_to_image and self._image.valid:
+            return self._image.data
         if not self._layer_stack.visible:
             size = QSize(self.size if crop_to_image else self._layer_stack.transformed_bounds.size())
             size.setWidth(max(self.width, size.width()))
@@ -317,10 +326,42 @@ class ImageStack(QObject):
             image = QImage(size, QImage.Format.Format_ARGB32_Premultiplied)
             image.fill(Qt.transparent)
             return image
-        image, translation = self._layer_stack.transformed_image()
+        image = self.render()
+        assert image.size() == self.merged_layer_bounds.size()
         if crop_to_image:
-            image = image.copy(QRect(QPoint(int(-translation.dx()), int(-translation.dy())), self.size))
+            offset = -self.merged_layer_bounds.topLeft()
+            image = image.copy(QRect(offset, self.size))
+            self._image.data = image
         return image
+
+    def render(self, base_image: Optional[QImage] = None,
+                      paint_param_adjuster: Optional[Callable[[int, QImage, QRect, QPainter], Optional[QImage]]]
+                      = None) -> QImage:
+        """Render all layers to a QImage with a custom base image and accepting a function to control layer painting on
+        a per-layer basis.
+
+        Parameters
+        ----------
+        base_image: QImage, optional, default=None.
+            The base image that all layer content will be painted onto.  If None, a new image will be created that's
+            large enough to fit all layers.
+        paint_param_adjuster: Optional[Callable[[int, QImage, QRect, QPainter) -> Optional[QImage]]
+            Default=None. If provided, it will be called before each layer is painted, allowing it to directly make
+            changes to the image, paint bounds, or painter as needed. Parameters are layer_id, layer_image,
+            paint_bounds and layer_painter.  If it returns a QImage, that image will replace the layer image.
+        Returns
+        -------
+        QImage: The final rendered image.
+        """
+        if base_image is None:
+            base_image = QImage(self.merged_layer_bounds.size(), QImage.Format_ARGB32_Premultiplied)
+            base_image.fill(Qt.transparent)
+        layer_stack_image = self._layer_stack.render(None, paint_param_adjuster)
+        painter = QPainter(base_image)
+        painter.setTransform(self._layer_stack.transform)
+        painter.drawImage(QPoint(), layer_stack_image)
+        painter.end()
+        return base_image
 
     def pixmap(self) -> QPixmap:
         """Returns combined visible layer content as a QPixmap, optionally including unsaved layers."""
@@ -354,11 +395,12 @@ class ImageStack(QObject):
 
     def get_color_at_point(self, image_point: QPoint) -> QColor:
         """Gets the combined color of visible saved layers at a single point, or QColor(0, 0, 0) if out of bounds."""
-        layer_bounds = self._layer_stack.full_image_bounds
-        adjusted_point = image_point - layer_bounds.topLeft()
-        if not layer_bounds.contains(adjusted_point):
+        content_bounds = self.merged_layer_bounds
+        image_bounds = self.bounds
+        adjusted_point = image_point - content_bounds.topLeft()
+        if not content_bounds.contains(adjusted_point):
             return QColor(0, 0, 0)
-        return self.qimage().pixelColor(adjusted_point)
+        return self.qimage(image_bounds.contains(adjusted_point)).pixelColor(adjusted_point)
 
     # LAYER ACCESS / MANIPULATION FUNCTIONS:
 
@@ -701,8 +743,9 @@ class ImageStack(QObject):
 
         commit_action(_resize, _undo_resize, 'ImageStack.layer_to_image_size')
 
-    def _get_layer_mask(self, layer: Layer) -> QImage:
-        """Transform the mask layer to another layer's local coordinates"""
+    def get_layer_mask(self, layer: Layer) -> QImage:
+        """Transform the selection layer to another layer's local coordinates, crop to bounds, and return the
+        resulting image mask.."""
         selection_mask = self.selection_layer.image
         transformed_mask = QImage(layer.size, QImage.Format_ARGB32_Premultiplied)
         transformed_mask.fill(Qt.transparent)
@@ -733,7 +776,7 @@ class ImageStack(QObject):
             if layer is None:
                 return None
         if mask is None:
-            mask = self._get_layer_mask(layer)
+            mask = self.get_layer_mask(layer)
         image = layer.image
         painter = QPainter(image)
         painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_DestinationIn)
@@ -750,7 +793,7 @@ class ImageStack(QObject):
             if layer is None:
                 return
         saved_state = layer.save_state()
-        transformed_mask = self._get_layer_mask(layer)
+        transformed_mask = self.get_layer_mask(layer)
 
         self._copy_buffer = self.copy_selected(layer, transformed_mask)
         self._copy_buffer_transform = layer.full_image_transform
@@ -832,7 +875,7 @@ class ImageStack(QObject):
 
         def _load(loaded=layer_stack, layer_list=new_layers, size=new_size):
             self.selection_layer.clear(False)
-            self.selection_layer.resize_canvas(new_size, 0, 0, False)
+            self.selection_layer.adjust_local_bounds(QRect(QPoint(), size), False)
             self.selection_layer.set_transform(QTransform())
             assert self.selection_layer.full_image_bounds.size() == new_size
             for layer in self.layers:
@@ -892,7 +935,7 @@ class ImageStack(QObject):
 
         def _load(loaded=new_layer, gen_rect=new_gen_area, size=new_size):
             self.selection_layer.clear(False)
-            self.selection_layer.resize_canvas(new_size, 0, 0, False)
+            self.selection_layer.adjust_local_bounds(QRect(QPoint(), size), False)
             self.selection_layer.set_transform(QTransform())
             assert self.selection_layer.full_image_bounds.size() == new_size
             for layer in self.layers:
@@ -1065,36 +1108,14 @@ class ImageStack(QObject):
             self._image.invalidate()
             self.content_changed.emit()
 
-    def _get_closest_valid_generation_area(self, bounds_rect: QRect) -> QRect:
-        assert_type(bounds_rect, QRect)
-        initial_bounds = bounds_rect
-        bounds_rect = QRect(initial_bounds.topLeft(), initial_bounds.size())
+    def _get_closest_valid_generation_area(self, initial_area: QRect) -> QRect:
+        adjusted_area = QRect(initial_area)
         # Make sure that the image generation area fits within allowed size limits:
         min_size = self.min_generation_area_size
-        max_size = self.get_max_generation_area_size()
-        if bounds_rect.width() > self.width:
-            bounds_rect.setWidth(self.width)
-        if bounds_rect.width() > max_size.width():
-            bounds_rect.setWidth(max_size.width())
-        if bounds_rect.width() < min_size.width():
-            bounds_rect.setWidth(min_size.width())
-        if bounds_rect.height() > self.height:
-            bounds_rect.setHeight(self.height)
-        if bounds_rect.height() > max_size.height():
-            bounds_rect.setHeight(max_size.height())
-        if bounds_rect.height() < min_size.height():
-            bounds_rect.setHeight(min_size.height())
-
-        # make sure the image generation area is within the image bounds:
-        if bounds_rect.left() > (self.width - bounds_rect.width()):
-            bounds_rect.moveLeft(self.width - bounds_rect.width())
-        if bounds_rect.left() < 0:
-            bounds_rect.moveLeft(0)
-        if bounds_rect.top() > (self.height - bounds_rect.height()):
-            bounds_rect.moveTop(self.height - bounds_rect.height())
-        if bounds_rect.top() < 0:
-            bounds_rect.moveTop(0)
-        return bounds_rect
+        adjusted_area = adjusted_area.united(QRect(adjusted_area.topLeft(), min_size))
+        max_size = self.max_generation_area_size
+        adjusted_area = adjusted_area.intersected(QRect(adjusted_area.topLeft(), max_size))
+        return adjusted_placement_in_bounds(adjusted_area, self.bounds)
 
     def _set_generation_area_internal(self, bounds_rect: QRect) -> None:
         """Updates the image generation area, adjusting as needed based on image bounds, and sending the

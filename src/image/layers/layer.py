@@ -2,7 +2,7 @@
 import datetime
 from typing import Any, Callable, Optional, Tuple
 
-from PyQt5.QtCore import QObject, pyqtSignal, QRect, QPoint, QSize, QRectF, Qt
+from PyQt5.QtCore import QObject, pyqtSignal, QRect, QPoint, QSize, QRectF, Qt, QPointF
 from PyQt5.QtGui import QPainter, QImage, QPixmap, QTransform, QPolygonF
 
 from src.config.application_config import AppConfig
@@ -182,16 +182,23 @@ class Layer(QObject):
         """Sets whether this layer is marked as visible."""
         self._apply_combinable_change(visible, self._visible, self.set_visible, 'layer.visibility')
 
-    def _is_empty(self) -> bool:
-        if self.size.isEmpty():
+    def is_empty(self, bounds: Optional[QRect] = None) -> bool:
+        """Returns whether this layer contains only fully transparent pixels, optionally restricting the check to a
+           bounding rectangle."""
+        image = self.get_qimage()
+        if bounds is None:
+            bounds = QRect(QPoint(), image.size())
+        if bounds.isEmpty():
             return True
         image_array = image_data_as_numpy_8bit(self.get_qimage())
+        image_array = image_array[bounds.y():bounds.y() + bounds.height(),
+                      bounds.x():bounds.x() + bounds.width(), :]
         return is_fully_transparent(image_array)
 
     @property
     def empty(self) -> bool:
         """Returns whether this layer contains only fully transparent pixels."""
-        return self._is_empty()
+        return self.is_empty()
 
     @property
     def image(self) -> QImage:
@@ -354,7 +361,7 @@ class Layer(QObject):
         self._pixmap.data = QPixmap.fromImage(self.get_qimage())
         self.content_changed.emit(self)
 
-    def map_from_image(self, image_point: QPoint) -> QPoint:
+    def map_from_image(self, image_point: QPoint | QPointF) -> QPoint:
         """Map a top level image point to the appropriate spot in the layer image."""
         inverse, invert_success = self.full_image_transform.inverted()
         assert invert_success

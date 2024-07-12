@@ -41,6 +41,11 @@ class BlurFilter(ImageFilter):
         """Returns the filter's image variable filtering function."""
         return self.blur
 
+    def is_local(self) -> bool:
+        """Indicates whether the filter operates independently on each pixel (True) or takes neighboring pixels
+        into account (False)."""
+        return False
+
     @staticmethod
     def blur(image: QImage, mode: str, radius: float) -> QImage:
         """Blurs an image."""

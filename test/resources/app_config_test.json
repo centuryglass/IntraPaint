@@ -1,0 +1,99 @@
+{
+    "style": "Breeze",
+    "theme": "None",
+    "font_point_size": 10,
+    "animate_outlines": true,
+    "show_selections_in_generation_options": true,
+    "selection_screen_zooms_to_changed": false,
+    "show_options_full_resolution": false,
+    "opengl_acceleration": false,
+    "default_image_size": "1024x1024",
+    "edit_size": "512x512",
+    "max_edit_size": "10240x10240",
+    "min_edit_size": "8x8",
+    "generation_size": "512x512",
+    "max_generation_size": "2048x2048",
+    "min_generation_size": "256x256",
+    "selection_brush_size": {
+        "min": 1,
+        "max": 300,
+        "step": 1,
+        "value": 40
+    },
+    "sketch_brush_size": {
+        "min": 1,
+        "max": 300,
+        "step": 1,
+        "value": 8
+    },
+    "mypaint_brush": "./resources/brushes/experimental/1pixel.myb",
+    "brush_favorites": [],
+    "max_undo": 30,
+    "undo_merge_interval": 1,
+    "speed_modifier_multiplier": 5,
+    "guidance_scale": {
+        "min": 0.0,
+        "max": 20.0,
+        "step": 0.1,
+        "value": 9.0
+    },
+    "batch_size": {
+        "min": 1,
+        "max": 20,
+        "step": 1,
+        "value": 5
+    },
+    "batch_count": {
+        "min": 1,
+        "max": 99,
+        "step": 1,
+        "value": 1
+    },
+    "edit_mode": "Inpaint",
+    "masked_content": "original",
+    "interrogate_model": "clip",
+    "sampling_method": "Euler a",
+    "upscale_method": "None",
+    "controlnet_upscaling": false,
+    "controlnet_tile_model": "control_v11f1e_sd15_tile [a371b31b]",
+    "controlnet_downsample_rate": {
+        "min": 1.0,
+        "max": 4.0,
+        "step": 0.1,
+        "value": 1.0
+    },
+    "mask_blur": {
+        "min": 0,
+        "max": 64,
+        "step": 1,
+        "value": 4
+    },
+    "seed": {
+        "min": -1,
+        "max": 18446744073709551615,
+        "step": 1,
+        "value": -1
+    },
+    "inpaint_full_res": false,
+    "inpaint_full_res_padding": {
+        "min": 0,
+        "max": 1024,
+        "step": 1,
+        "value": 32
+    },
+    "restore_faces": false,
+    "tiling": false,
+    "controlnet_args_0": {},
+    "controlnet_args_1": {},
+    "controlnet_args_2": {},
+    "cutn": 16,
+    "skip_steps": {
+        "min": 0,
+        "max": 27,
+        "step": 1,
+        "value": 0
+    },
+    "upscale_mode": "Lanczos",
+    "downscale_mode": "Lanczos",
+    "use_error_handler": true
+}
