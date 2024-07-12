@@ -50,7 +50,7 @@ class PixmapLayerCanvas(LayerCanvas):
     def _update_canvas_transform(self, layer: ImageLayer, transform: QTransform) -> None:
         """Updates the canvas transformation within the graphics scene."""
         assert self._pixmap_item is not None
-        self._pixmap_item.setTransform(layer.full_image_transform)
+        self._pixmap_item.setTransform(layer.transform)
 
     def _set_z_value(self, z_value: int) -> None:
         """Updates the level where content will be shown in a GraphicsScene."""

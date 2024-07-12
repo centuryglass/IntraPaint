@@ -37,11 +37,11 @@ from src.util.application_state import AppStateTracker, APP_STATE_NO_IMAGE, APP_
     APP_STATE_SELECTION
 from src.util.async_task import AsyncTask
 from src.util.display_size import get_screen_size
-from src.util.image_utils import pil_image_to_qimage, qimage_to_pil_image
+from src.util.image_utils import pil_image_to_qimage, qimage_to_pil_image, pil_image_scaling
 from src.util.menu_builder import MenuBuilder, menu_action
 from src.util.optional_import import optional_import
 from src.util.qtexcepthook import QtExceptHook
-from src.util.shared_constants import EDIT_MODE_INPAINT, PIL_SCALING_MODES
+from src.util.shared_constants import EDIT_MODE_INPAINT
 from src.util.validation import assert_type
 
 # Optional spacenav support and extended theming:
@@ -575,20 +575,17 @@ class BaseInpaintController(MenuBuilder):
             return
 
         source_selection = self._image_stack.qimage_generation_area_content()
-
         inpaint_image = source_selection.copy()
 
         # If necessary, scale image and mask to match the image generation size.
         generation_size = config.get(AppConfig.GENERATION_SIZE)
         if inpaint_image.size() != generation_size:
-            inpaint_image = inpaint_image.scaled(generation_size,
-                                                 transformMode=Qt.TransformationMode.SmoothTransformation)
+            inpaint_image = pil_image_scaling(inpaint_image, generation_size)
 
         if config.get(AppConfig.EDIT_MODE) == EDIT_MODE_INPAINT:
             inpaint_mask = self._image_stack.selection_layer.mask_image
             if inpaint_mask.size() != generation_size:
-                inpaint_mask = inpaint_mask.scaled(generation_size,
-                                                   transformMode=Qt.TransformationMode.SmoothTransformation)
+                inpaint_mask = pil_image_scaling(inpaint_mask, generation_size)
 
             blurred_mask = qimage_to_pil_image(inpaint_mask).filter(ImageFilter.GaussianBlur())
             blurred_alpha_mask = pil_image_to_qimage(blurred_mask)
@@ -630,11 +627,9 @@ class BaseInpaintController(MenuBuilder):
             if config.get(AppConfig.EDIT_MODE) == EDIT_MODE_INPAINT:
                 assert unmasked_content is not None
                 assert unmasked_content.size() == img.size()
-                img.save(f'test-sample-{idx}.png')
                 painter = QPainter(img)
                 painter.drawImage(QPoint(), unmasked_content)
                 painter.end()
-                img.save(f'test-sample-{idx}-merged.png')
             self._window.load_sample_preview(img, idx)
 
         def _finished():
@@ -703,8 +698,8 @@ class BaseInpaintController(MenuBuilder):
             selection_image = QImage(self._image_stack.selection_layer.size, QImage.Format_ARGB32_Premultiplied)
             selection_image.fill(Qt.transparent)
             painter = QPainter(selection_image)
-            painter.setTransform(active_layer.full_image_transform
-                                 * self._image_stack.selection_layer.full_image_transform.inverted()[0])
+            painter.setTransform(active_layer.transform
+                                 * self._image_stack.selection_layer.transform.inverted()[0])
             painter.drawImage(0, 0, active_layer.image)
             painter.end()
             self._image_stack.selection_layer.image = selection_image
@@ -800,17 +795,10 @@ class BaseInpaintController(MenuBuilder):
     # Internal/protected:
 
     def _scale(self, new_size: QSize) -> None:  # Override to allow alternate or external upscalers:
-        config = AppConfig()
-        width = self._image_stack.width
-        height = self._image_stack.height
-        if new_size is None or (new_size.width() == width and new_size.height() == height):
+        image = self._image_stack.qimage()
+        if image.size() == new_size:
             return
-        image = self._image_stack.pil_image()
-        if new_size.width() <= width and new_size.height() <= height:  # downscaling
-            scale_mode = PIL_SCALING_MODES[config.get(AppConfig.DOWNSCALE_MODE)]
-        else:
-            scale_mode = PIL_SCALING_MODES[config.get(AppConfig.UPSCALE_MODE)]
-        scaled_image = pil_image_to_qimage(image.resize((new_size.width(), new_size.height()), scale_mode))
+        scaled_image = pil_image_scaling(image, new_size)
         self._image_stack.load_image(scaled_image)
 
     # Image generation handling:

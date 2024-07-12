@@ -83,10 +83,10 @@ class FillTool(BaseTool):
             if layer is None:
                 return False
             layer_point = layer.map_from_image(image_coordinates)
-            if not layer.local_bounds.contains(layer_point):
+            if not layer.bounds.contains(layer_point):
                 return True
             if self._sample_merged:
-                layer_image_bounds = layer.full_image_bounds
+                layer_image_bounds = layer.transformed_bounds
                 merged_image_bounds = self._image_stack.merged_layer_bounds
                 image = self._image_stack.qimage(crop_to_image=False)
                 layer_image_bounds.translate(-merged_image_bounds.topLeft())

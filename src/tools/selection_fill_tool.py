@@ -91,7 +91,7 @@ class SelectionFillTool(BaseTool):
             else:
                 image = layer.image
                 sample_point = layer.map_from_image(image_coordinates)
-                paint_transform = layer.full_image_transform
+                paint_transform = layer.transform
                 layer_pos_in_mask = layer_pos - mask_pos
                 transformed_origin = paint_transform.map(QPoint(0, 0))
                 img_offset = layer_pos_in_mask - transformed_origin

@@ -1,24 +1,24 @@
 """Manages an edited image layer."""
-from src.image.layers.layer import Layer
-from typing import Optional, Any
 from collections.abc import Generator
 from contextlib import contextmanager
+from typing import Optional, Any, Tuple
 
-from PyQt5.QtGui import QImage, QPainter, QPixmap, QTransform
-from PyQt5.QtCore import Qt, QRect, QSize, QPoint
 from PIL import Image
+from PyQt5.QtCore import Qt, QRect, QSize, QPoint
+from PyQt5.QtGui import QImage, QPainter, QPixmap, QTransform
 
+from src.image.layers.transform_layer import TransformLayer
 from src.ui.modal.modal_utils import show_error_dialog
-from src.util.image_utils import image_content_bounds
-from src.util.validation import assert_type, assert_types
 from src.undo_stack import commit_action
+from src.util.image_utils import image_content_bounds
+from src.util.validation import assert_type
 
 CROP_TO_CONTENT_ERROR_TITLE = 'Layer cropping failed'
 CROP_TO_CONTENT_ERROR_MESSAGE_EMPTY = 'Layer has no image content.'
 CROP_TO_CONTENT_ERROR_MESSAGE_FULL = 'Layer is already cropped to fit image content.'
 
 
-class ImageLayer(Layer):
+class ImageLayer(TransformLayer):
     """Represents an edited image layer."""
     def __init__(self, image_data: QImage | QSize, name: str):
         """
@@ -65,6 +65,39 @@ class ImageLayer(Layer):
         layer.set_transform(self.transform)
         return layer
 
+    def _image_prop_setter(self, new_image: QImage | Tuple[QImage, QPoint]) -> None:
+        """Replaces the layer's QImage content.  Unlike other setters, subsequent changes won't be combined in the
+           undo history."""
+        if isinstance(new_image, tuple):
+            new_image, offset = new_image
+            undo_offset = None if offset is None else -offset
+        else:
+            offset = None
+            undo_offset = None
+        last_image = self.image
+
+        def _update_image(img=new_image, off=offset) -> None:
+            self.set_image(img, off)
+
+        def _undo_image(img=last_image, off=undo_offset) -> None:
+            self.set_image(img, off)
+
+        commit_action(_update_image, _undo_image, 'Layer.image')
+
+    def set_image(self, new_image: QImage, offset: Optional[QPoint] = None) -> None:
+        """Updates the layer image."""
+        size_changed = new_image.size() != self._size
+        if size_changed:
+            new_size = new_image.size()
+            self.set_size(new_size)
+        if offset is not None and not offset.isNull():
+            transform = self.transform
+            transform.translate(offset.x(), offset.y())
+            self.set_transform(transform)
+        self.set_qimage(new_image)
+        self._pixmap.invalidate()
+        self.content_changed.emit(self)
+
     @contextmanager
     def borrow_image(self, change_bounds: Optional[QRect] = None) -> Generator[Optional[QImage], None, None]:
         """Provides direct access to the image for editing, automatically marking it as changed when complete."""
@@ -79,7 +112,7 @@ class ImageLayer(Layer):
         """Changes local image bounds, cropping or extending the layer image.
 
         - All image content within the new bounds will remain at the same position and scale within the image.
-        - Content outside of the bounds will be removed.
+        - Content outside the bounds will be removed.
         - Areas where the bounds don't intersect with the existing image will be filled with transparency.
         - The top-left position of layer.local_bounds will *not* change. If the new bounds do not have the same
           top left point, the layer translation will be adjusted.
@@ -144,7 +177,7 @@ class ImageLayer(Layer):
         """
         assert_type(image_data, QImage)
         assert_type(bounds_rect, QRect)
-        layer_bounds = self.local_bounds
+        layer_bounds = self.bounds
         if not layer_bounds.contains(bounds_rect):
             merged_bounds = layer_bounds.united(bounds_rect)
             updated_image = QImage(merged_bounds.size(), QImage.Format_ARGB32_Premultiplied)
@@ -241,7 +274,7 @@ class ImageLayer(Layer):
         assert image_mask.size() == layer_image.size(), 'Mask should be pre-converted to image size'
         painter = QPainter(layer_image)
         painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_DestinationOut)
-        painter.drawImage(self.local_bounds, image_mask)
+        painter.drawImage(self.bounds, image_mask)
         painter.end()
         self.set_image(layer_image)
 
@@ -263,8 +296,8 @@ class ImageLayer(Layer):
 
     def _validate_bounds(self, bounds_rect: QRect):
         assert_type(bounds_rect, QRect)
-        if not self.local_bounds.contains(bounds_rect):
-            raise ValueError(f'{bounds_rect} not within {self.local_bounds}')
+        if not self.bounds.contains(bounds_rect):
+            raise ValueError(f'{bounds_rect} not within {self.bounds}')
 
 
 class ImageLayerState:

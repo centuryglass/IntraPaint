@@ -7,7 +7,6 @@ from typing import Callable, List
 
 # noinspection PyPackageRequirements
 import torch
-from PIL import Image
 from PyQt5.QtCore import pyqtSignal, QSize
 from PyQt5.QtGui import QImage
 

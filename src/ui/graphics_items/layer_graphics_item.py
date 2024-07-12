@@ -24,7 +24,7 @@ class LayerGraphicsItem(PixmapItem):
         layer.composition_mode_changed.connect(self._update_mode)
         self.setFlag(LayerGraphicsItem.GraphicsItemFlag.ItemStacksBehindParent, True)
         self.setOpacity(layer.opacity)
-        self.setTransform(layer.full_image_transform)
+        self.setTransform(layer.transform)
         self.setVisible(layer.visible)
         self.setZValue(layer.z_value)
         self._update_pixmap(layer)

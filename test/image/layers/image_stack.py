@@ -2,25 +2,29 @@
 import os
 import sys
 import unittest
-from unittest.mock import Mock, MagicMock
+from unittest.mock import MagicMock
 
-from PyQt5.QtCore import QSize, QRect, QPoint, Qt
+from PyQt5.QtCore import QSize, QRect, QPoint
 from PyQt5.QtGui import QImage
 from PyQt5.QtWidgets import QApplication
 
 from src.config.application_config import AppConfig
 from src.config.cache import Cache
 from src.config.key_config import KeyConfig
+from src.image.layers.image_layer import ImageLayer
 from src.image.layers.image_stack import ImageStack
 from src.image.layers.layer_stack import LayerStack
 from src.image.layers.selection_layer import SelectionLayer
+from src.image.open_raster import read_ora_image
 
 IMG_SIZE = QSize(512, 512)
 GEN_AREA_SIZE = QSize(300, 300)
 MIN_GEN_AREA = QSize(8, 8)
 MAX_GEN_AREA = QSize(999, 999)
 
-INIT_IMAGE = 'resources/test_images/source.png'
+INIT_IMAGE = 'test/resources/test_images/source.png'
+LAYER_IMAGE = 'test/resources/test_images/layer-test.ora'
+LAYER_IMAGE_PNG = 'test/resources/test_images/layer-test.png'
 app = QApplication.instance() or QApplication(sys.argv)
 
 
@@ -63,8 +67,8 @@ class ImageStackTest(unittest.TestCase):
     def test_init_properties(self) -> None:
         """Check that all initial properties behave as expected."""
         self.assertEqual(self.image_stack.count, 0)
-        self.assertIsNone(self.image_stack.active_layer)
-        self.assertIsNone(self.image_stack.active_layer_id)
+        self.assertEqual(self.image_stack.active_layer, self.image_stack.layer_stack)
+        self.assertEqual(self.image_stack.active_layer_id, self.image_stack.layer_stack.id)
         self.assertEqual(self.image_stack.top_level_layers, [])
         layer_list = self.image_stack.layers
         self.assertEqual(len(layer_list), 1)
@@ -99,6 +103,7 @@ class ImageStackTest(unittest.TestCase):
         self.content_changed_mock.assert_called()
         self.assertEqual(image.size(), self.image_stack.size)
         self.assertEqual(1, self.image_stack.count)
+        image = image.convertToFormat(QImage.Format_ARGB32_Premultiplied)
         self.assertEqual(self.image_stack.qimage(), image)
         layer = self.image_stack.active_layer
         from src.image.layers.image_layer import ImageLayer
@@ -112,13 +117,15 @@ class ImageStackTest(unittest.TestCase):
         # Create layer from image:
         image = QImage(INIT_IMAGE)
         layer_0 = self.image_stack.create_layer(None, image)
+        image = image.convertToFormat(QImage.Format_ARGB32_Premultiplied)
         self.layer_added_mock.assert_called_once()
         self.content_changed_mock.assert_called_once()
         self.active_layer_changed_mock.assert_called_with(layer_0)
         self.assertEqual(self.image_stack.active_layer_id, layer_0.id)
         self.assertEqual(self.image_stack.active_layer, layer_0)
         self.assertEqual(1, self.image_stack.count)
-        self.assertEqual(self.image_stack.qimage(), image)
+        # size wasn't updated, so image will be cropped to initial size:
+        self.assertEqual(self.image_stack.qimage(), image.copy(QRect(QPoint(), IMG_SIZE)))
         self.assertEqual(layer_0.image, image)
         self.assertEqual(layer_0.name, 'layer 0')
         self.layer_added_mock.reset_mock()
@@ -228,3 +235,24 @@ class ImageStackTest(unittest.TestCase):
         self.image_stack.move_layer(1)
         self.assertEqual(-4, layer_0.z_value)
         self.assertEqual(self.image_stack._layer_stack, layer_0.layer_parent)
+
+    def test_transform_rendering(self) -> None:
+        """Confirm that image rendering properly supports complex transformed nested layer groups."""
+        read_ora_image(self.image_stack, LAYER_IMAGE)
+        group_count = 0
+        image_count = 0
+        for layer in self.image_stack.layers:
+            # Confirm that all the layers have transformations:
+            if isinstance(layer, ImageLayer):
+                self.assertFalse(layer.transform.isIdentity())
+                image_count += 1
+            elif isinstance(layer, LayerStack):
+                group_count += 1
+        self.assertEqual(3, group_count)
+        self.assertEqual(8, image_count)
+        expected_output = QImage(LAYER_IMAGE_PNG).convertToFormat(QImage.Format_ARGB32_Premultiplied)
+        output_image = self.image_stack.qimage()
+        self.assertEqual(expected_output.size(), self.image_stack.size)
+        self.assertEqual(output_image.size(), self.image_stack.size)
+        self.assertEqual(output_image.format(), expected_output.format())
+        self.assertEqual(output_image, expected_output)

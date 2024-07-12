@@ -309,4 +309,4 @@ class SelectionLayer(ImageLayer):
     @property
     def position(self) -> QPoint:
         """Returns the mask layer's position relative to image bounds."""
-        return self.full_image_bounds.topLeft()
+        return self.transformed_bounds.topLeft()

@@ -2,7 +2,7 @@
 and provides the information needed to add the function as a menu action."""
 from typing import Callable, List, Optional, Dict, Any
 
-from PyQt5.QtCore import QRect, QPoint, Qt, QSize, pyqtSignal
+from PyQt5.QtCore import QPoint, pyqtSignal
 from PyQt5.QtGui import QImage, QPainter, QTransform
 
 from src.image.layers.image_stack import ImageStack
@@ -97,7 +97,7 @@ class ImageFilter:
         if self._filter_selection_only:
             layer = self._image_stack.get_layer_by_id(layer_id)
             assert layer is not None
-            selection_bounds = self._image_stack.selection_layer.map_rect_from_image(layer.full_image_bounds)
+            selection_bounds = self._image_stack.selection_layer.map_rect_from_image(layer.transformed_bounds)
             if self._image_stack.selection_layer.is_empty(selection_bounds):
                 return False
             layer_mask = self._image_stack.get_layer_mask(layer)
@@ -116,7 +116,7 @@ class ImageFilter:
                     cropped_change_painter.end()
             else:
                 filtered_selection_image = self.get_filter()(layer_image, *filter_param_values)
-            # Clear areas where the filter may have altered image data outside of the selection:
+            # Clear areas where the filter may have altered image data outside the selection:
             filter_painter = QPainter(filtered_selection_image)
             filter_painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_DestinationIn)
             filter_painter.drawImage(QPoint(), layer_mask)
@@ -149,7 +149,7 @@ class ImageFilter:
             QImage:
                 The new preview image, possibly downscaled to avoid excess image processing time.
         """
-        bounds = self._image_stack.layer_stack.local_bounds
+        bounds = self._image_stack.layer_stack.bounds
         if self._filter_selection_only:
             cropped_preview_bounds = self._image_stack.selection_layer.get_content_bounds()
             center = cropped_preview_bounds.center()
@@ -211,7 +211,7 @@ class ImageFilter:
             for layer in self._image_stack.image_layers:
                 if self._filter_active_layer_only and layer.id != self._image_stack.active_layer_id:
                     continue
-                if selection_bounds is not None and not selection_bounds.intersects(layer.full_image_bounds):
+                if selection_bounds is not None and not selection_bounds.intersects(layer.transformed_bounds):
                     continue
                 layer_image = layer.image
                 image_changed = self._filter_layer_image(filter_param_values, layer.id, layer_image)

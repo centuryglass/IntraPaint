@@ -13,6 +13,7 @@ from src.image.layers.image_layer import ImageLayer
 from src.image.layers.image_stack import ImageStack
 from src.image.layers.layer import Layer
 from src.image.layers.layer_stack import LayerStack
+from src.image.layers.transform_layer import TransformLayer
 from src.tools.selection_tool import SELECTION_TOOL_LABEL
 from src.ui.widget.bordered_widget import BorderedWidget
 from src.ui.input_fields.editable_label import EditableLabel
@@ -304,7 +305,8 @@ class _LayerItem(BorderedWidget):
         self._layout.addWidget(self._label, stretch=40)
         self._layer.content_changed.connect(self.update)
         self._layer.visibility_changed.connect(self.update)
-        self._layer.transform_changed.connect(self._update_all)
+        if isinstance(self._layer, TransformLayer):
+            self._layer.transform_changed.connect(self._update_all)
         self._layer.size_changed.connect(self._update_all)
         self._active = False
         self._active_color = self.color
@@ -348,7 +350,10 @@ class _LayerItem(BorderedWidget):
         """Draws the scaled layer contents to the widget."""
         content_bounds = self._image_stack.merged_layer_bounds
         image_bounds = self._image_stack.bounds
-        layer_bounds = self._layer.full_image_bounds
+        if isinstance(self._layer, TransformLayer):
+            layer_bounds = self._layer.transformed_bounds
+        else:
+            layer_bounds = self._layer.bounds
         pixmap = self._layer.pixmap
         paint_bounds = QRect(LAYER_PADDING, LAYER_PADDING, self._label.x() - LAYER_PADDING * 2,
                              self.height() - LAYER_PADDING * 2)
@@ -364,11 +369,12 @@ class _LayerItem(BorderedWidget):
             painter.setTransform(transformation)
             painter.setPen(Qt.black)
             painter.drawRect(content_bounds)
-            painter.setTransform(self._layer.full_image_transform, True)
+            if isinstance(self._layer, TransformLayer):
+                painter.setTransform(self._layer.transform, True)
             painter.save()
             painter.setOpacity(self._layer.opacity)
             painter.setCompositionMode(self._layer.composition_mode)
-            painter.drawPixmap(self._layer.local_bounds, pixmap)
+            painter.drawPixmap(self._layer.bounds, pixmap)
             painter.restore()
             painter.drawRect(image_bounds)
             painter.drawRect(layer_bounds)
@@ -499,11 +505,11 @@ class _LayerItem(BorderedWidget):
 
                 mask_active_option.triggered.connect(mask_active)
 
-        if isinstance(self.layer, ImageLayer):
+        if isinstance(self._layer, ImageLayer):
             mirror_horizontal_option = _new_action('Mirror horizontally')
-            mirror_horizontal_option.triggered.connect(self.layer.flip_horizontal)
+            mirror_horizontal_option.triggered.connect(self._layer.flip_horizontal)
 
             mirror_vert_option = _new_action('Mirror vertically')
-            mirror_vert_option.triggered.connect(self.layer.flip_vertical)
+            mirror_vert_option.triggered.connect(self._layer.flip_vertical)
 
         menu.exec_(self.mapToGlobal(pos))

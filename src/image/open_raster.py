@@ -160,7 +160,7 @@ def save_ora_image(image_stack: ImageStack, file_path: str,  metadata: str) -> N
         layer_data[ATTR_TAG_OPACITY] = layer.opacity
         layer_data[ATTR_TAG_VISIBILITY] = ATTR_VISIBLE if layer.visible else ATTR_HIDDEN
         image_path = os.path.join(DATA_DIRECTORY_NAME, f'{layer.name}_{layer.id}.png')
-        flattened_image, offset_transform = layer.transformed_image(True)
+        flattened_image, offset_transform = layer.transformed_image()
         layer_data[ATTR_TAG_X_POS] = round(offset_transform.dx())
         layer_data[ATTR_TAG_Y_POS] = round(offset_transform.dy())
         layer_data[LAYER_TAG_SRC] = image_path
@@ -186,9 +186,6 @@ def save_ora_image(image_stack: ImageStack, file_path: str,  metadata: str) -> N
         stack_data[ATTR_TAG_VISIBILITY] = ATTR_VISIBLE if layer.visible else ATTR_HIDDEN
         # TODO: properly support 'isolate' attribute in layer stacks
         stack_data[STACK_TAG_ISOLATION] = ISOLATION_AUTO
-        transform = layer.transform
-        if not transform.isIdentity():
-            stack_data[TRANSFORM_TAG] = _get_transform_str(transform)
         stack_data[DICT_NESTED_CONTENT_NAME] = []
         for child_layer in layer.child_layers:
             if isinstance(child_layer, LayerStack):
@@ -286,15 +283,6 @@ def read_ora_image(image_stack: ImageStack, file_path: str) -> Optional[str]:
         if ATTR_TAG_COMPOSITE in element.keys():
             comp_mode = COMPOSITION_MODES[ORA_COMPOSITION_MODES[str(element.get(ATTR_TAG_COMPOSITE))]]
             layer.set_composition_mode(comp_mode)
-        if TRANSFORM_TAG in element.keys():
-            matrix_elements = [float(elem) for elem in str(element.get(TRANSFORM_TAG)).split(',')]
-            transform = QTransform(*matrix_elements)
-            layer.set_transform(transform)
-        elif ATTR_TAG_X_POS in element.keys() and ATTR_TAG_Y_POS in element.keys():
-            x = float(str(element.get(ATTR_TAG_X_POS)))
-            y = float(str(element.get(ATTR_TAG_Y_POS)))
-            transform = QTransform.fromTranslate(x, y)
-            layer.set_transform(transform)
 
     def parse_image_element(element: Element) -> ImageLayer:
         """Load an image layer from its saved XML definition"""
@@ -306,6 +294,15 @@ def read_ora_image(image_stack: ImageStack, file_path: str) -> Optional[str]:
         layer_image = QImage(img_path)
         layer = ImageLayer(layer_image, '')
         _parse_common_attributes(layer, element)
+        if TRANSFORM_TAG in element.keys():
+            matrix_elements = [float(elem) for elem in str(element.get(TRANSFORM_TAG)).split(',')]
+            transform = QTransform(*matrix_elements)
+            layer.set_transform(transform)
+        elif ATTR_TAG_X_POS in element.keys() and ATTR_TAG_Y_POS in element.keys():
+            x = float(str(element.get(ATTR_TAG_X_POS)))
+            y = float(str(element.get(ATTR_TAG_Y_POS)))
+            transform = QTransform.fromTranslate(x, y)
+            layer.set_transform(transform)
         return layer
 
     def parse_stack_element(element: Element) -> LayerStack:

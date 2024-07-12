@@ -11,8 +11,11 @@ from PyQt5.QtCore import QBuffer, QRect, QSize, Qt, QPoint, QFile, QIODevice, QB
 from PyQt5.QtGui import QImage, QIcon, QPixmap, QPainter, QColor
 from PyQt5.QtWidgets import QStyle, QWidget, QApplication
 
+from src.config.application_config import AppConfig
 from src.image.mypaint.numpy_image_utils import AnyNpArray, image_data_as_numpy_8bit, numpy_8bit_to_qimage
 from src.util.display_size import max_font_size
+from src.util.geometry_utils import is_smaller_size
+from src.util.shared_constants import PIL_SCALING_MODES
 
 logger = logging.getLogger(__name__)
 DEFAULT_ICON_SIZE = QSize(64, 64)
@@ -49,6 +52,28 @@ def qimage_to_pil_image(qimage: QImage) -> Image.Image:
     qimage.save(buffer, 'PNG')
     pil_im = Image.open(io.BytesIO(buffer.data()))
     return pil_im
+
+
+def pil_qsize(image: Image.Image) -> QSize:
+    """Return PIL image size as QSize for easier comparison."""
+    return QSize(image.width, image.height)
+
+
+def pil_image_scaling(image: QImage | Image.Image, size: QSize, mode: Optional[Image.Resampling] = None) -> QImage:
+    """Resize an image using a PIL scaling algorithm, returning a QImage.  If no specific scaling mode is provided,
+       the appropriate scaling mode defined in AppConfig will be used."""
+    image_size = image.size() if isinstance(image, QImage) else pil_qsize(image)
+    if image_size == size:
+        return image if isinstance(image, QImage) else pil_image_to_qimage(image)
+    if isinstance(image, QImage):
+        image = qimage_to_pil_image(image)
+    if mode is None:
+        if is_smaller_size(image_size, size):
+            mode = PIL_SCALING_MODES[AppConfig().get(AppConfig.UPSCALE_MODE)]
+        else:
+            mode = PIL_SCALING_MODES[AppConfig().get(AppConfig.DOWNSCALE_MODE)]
+    image = image.resize((size.width(), size.height()), mode)
+    return pil_image_to_qimage(image)
 
 
 def qimage_from_base64(image_str: str) -> QImage:

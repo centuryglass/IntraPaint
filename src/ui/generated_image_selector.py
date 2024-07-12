@@ -22,7 +22,7 @@ from src.ui.widget.image_graphics_view import ImageGraphicsView
 from src.util.application_state import AppStateTracker, APP_STATE_LOADING
 from src.util.display_size import max_font_size
 from src.util.geometry_utils import get_scaled_placement
-from src.util.image_utils import get_standard_qt_icon
+from src.util.image_utils import get_standard_qt_icon, pil_image_scaling, get_transparency_tile_pixmap
 from src.util.key_code_utils import get_key_display_string
 from src.util.shared_constants import TIMELAPSE_MODE_FLAG
 from src.util.validation import assert_valid_index
@@ -447,6 +447,7 @@ class _ImageOption(QGraphicsPixmapItem):
         self._full_image = image
         self._scaled_image = image
         self._label_text = label_text
+        self._transparency_pixmap = get_transparency_tile_pixmap(image.size())
         self.image = image
 
     @property
@@ -466,11 +467,9 @@ class _ImageOption(QGraphicsPixmapItem):
         final_size = config.get(AppConfig.EDIT_SIZE)
         if new_image.size() == full_size:
             self._full_image = new_image
-            self._scaled_image = new_image.scaled(final_size.width(), final_size.height(),
-                                                  transformMode=Qt.TransformationMode.SmoothTransformation)
+            self._scaled_image = pil_image_scaling(new_image, final_size)
         elif new_image.size() == final_size:
-            self._full_image = new_image.scaled(full_size.width(), full_size.height(),
-                                                transformMode=Qt.TransformationMode.SmoothTransformation)
+            self._full_image = pil_image_scaling(new_image, full_size)
             self._scaled_image = new_image
         self.setPixmap(QPixmap.fromImage(self._full_image if config.get(AppConfig.SHOW_OPTIONS_FULL_RESOLUTION)
                                          else self._scaled_image))
@@ -489,7 +488,7 @@ class _ImageOption(QGraphicsPixmapItem):
     @size.setter
     def size(self, new_size) -> None:
         if new_size != self.size:
-            self.setPixmap(QPixmap.fromImage(self.image.scaled(new_size)))
+            self.setPixmap(QPixmap.fromImage(pil_image_scaling(self.image, new_size)))
             self.update()
 
     @property
@@ -523,7 +522,9 @@ class _ImageOption(QGraphicsPixmapItem):
         font.setPointSize(font_size)
         painter.setFont(font)
         painter.drawText(text_bounds, Qt.AlignCenter, self._label_text)
+        painter.drawTiledPixmap(QRect(QPoint(), self.size), self._transparency_pixmap)
         painter.restore()
+        super().paint(painter, option, widget)
 
 
 class _SelectionView(ImageGraphicsView):

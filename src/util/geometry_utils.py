@@ -1,6 +1,6 @@
 """Provides a utility function for handling image or widget placement."""
 import math
-from typing import Tuple, Optional
+from typing import Tuple
 
 from PyQt5.QtCore import QRect, QSize, QRectF, QSizeF, QPoint, QPointF, QLineF
 from PyQt5.QtGui import QTransform, QPolygonF
@@ -184,4 +184,8 @@ def adjusted_placement_in_bounds(rect: QRect, bounds: QRect) -> QRect:
     assert bounds.contains(adjusted_rect)
     return adjusted_rect
 
+
+def is_smaller_size(size1: QSize, size2: QSize) -> bool:
+    """Returns whether size1 is smaller than size2"""
+    return size1.width() * size1.height() < size2.width() * size2.height()
 

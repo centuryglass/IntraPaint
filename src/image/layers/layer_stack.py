@@ -2,10 +2,11 @@
 from typing import List, Optional, Dict, Any, Callable
 
 from PyQt5.QtCore import Qt, QRect, pyqtSignal, QPoint, QRectF
-from PyQt5.QtGui import QPainter, QImage, QPolygonF
+from PyQt5.QtGui import QPainter, QImage, QPolygonF, QTransform
 
 from src.image.layers.image_layer import ImageLayer, ImageLayerState
 from src.image.layers.layer import Layer
+from src.image.layers.transform_layer import TransformLayer
 from src.util.application_state import APP_STATE_NO_IMAGE, APP_STATE_EDITING, AppStateTracker
 from src.util.cached_data import CachedData
 from src.util.validation import assert_valid_index
@@ -35,7 +36,10 @@ class LayerStack(Layer):
     def _get_local_bounds(self) -> QRect:
         bounds = None
         for child in self._layers:
-            child_bounds = child.transformed_bounds
+            if isinstance(child, TransformLayer):
+                child_bounds = child.transformed_bounds
+            else:
+                child_bounds = child.bounds
             if bounds is None:
                 bounds = child_bounds
             else:
@@ -73,7 +77,6 @@ class LayerStack(Layer):
     def copy(self) -> 'LayerStack':
         """Returns a copy of this layer, and all the layers within it."""
         copy = LayerStack(self.name + ' (copy)')
-        copy.transform = self.transform
         copy.opacity = self.opacity
         copy.composition_mode = self.composition_mode
         for layer in self._layers:
@@ -83,14 +86,15 @@ class LayerStack(Layer):
 
     def cut_masked(self, image_mask: QImage) -> None:
         """Clear the contents of an area in the parent image."""
-        assert image_mask.size() == self.local_bounds.size(), 'Mask should be pre-converted to image size'
+        assert image_mask.size() == self.bounds.size(), 'Mask should be pre-converted to image size'
         for layer in self._layers:
             transformed_mask = QImage(layer.size, QImage.Format_ARGB32_Premultiplied)
             transformed_mask.fill(Qt.transparent)
-            painter_transform = layer.transform.inverted()[0]
             painter = QPainter(transformed_mask)
-            painter.setTransform(painter_transform)
-            painter.drawImage(layer.local_bounds, image_mask)
+            if isinstance(layer, TransformLayer):
+                painter_transform = layer.transform.inverted()[0]
+                painter.setTransform(painter_transform)
+            painter.drawImage(layer.bounds, image_mask)
             painter.end()
             layer.cut_masked(transformed_mask)
 
@@ -122,7 +126,7 @@ class LayerStack(Layer):
         QImage: The final rendered image.
         """
         if base_image is None:
-            image_bounds = self.local_bounds
+            image_bounds = self.bounds
             base_image = QImage(image_bounds.size(), QImage.Format.Format_ARGB32_Premultiplied)
             base_image.fill(Qt.transparent)
         else:
@@ -142,13 +146,16 @@ class LayerStack(Layer):
             for layer in reversed(self._layers):
                 if not layer.visible:
                     continue
-                layer_image, layer_translate = layer.transformed_image()
+                layer_image = layer.image
                 if layer_image is not None:
                     painter.save()
                     painter.setOpacity(layer.opacity)
                     painter.setCompositionMode(layer.composition_mode)
-                    painter.setTransform(layer_translate, False)
-                    layer_bounds = QRect(offset, layer_image.size())
+                    if isinstance(layer, TransformLayer):
+                        painter.setTransform(layer.transform * QTransform.fromTranslate(offset.x(), offset.y()))
+                    else:
+                        painter.setTransform(QTransform.fromTranslate(offset.x(), offset.y()))
+                    layer_bounds = layer.bounds
                     if paint_param_adjuster is not None:
                         new_image = paint_param_adjuster(layer.id, layer_image, layer_bounds, painter)
                         if new_image is not None:
@@ -238,7 +245,8 @@ class LayerStack(Layer):
         layer.opacity_changed.disconnect(self._layer_content_change_slot)
         layer.composition_mode_changed.disconnect(self._layer_content_change_slot)
         layer.visibility_changed.disconnect(self._layer_visibility_change_slot)
-        layer.transform_changed.disconnect(self._layer_bounds_change_slot)
+        if isinstance(layer, TransformLayer):
+            layer.transform_changed.disconnect(self._layer_bounds_change_slot)
         layer.size_changed.disconnect(self._layer_bounds_change_slot)
 
         index = self.get_layer_index(layer)
@@ -264,7 +272,8 @@ class LayerStack(Layer):
         layer.opacity_changed.connect(self._layer_content_change_slot)
         layer.composition_mode_changed.connect(self._layer_content_change_slot)
         layer.visibility_changed.connect(self._layer_visibility_change_slot)
-        layer.transform_changed.connect(self._layer_bounds_change_slot)
+        if isinstance(layer, TransformLayer):
+            layer.transform_changed.connect(self._layer_bounds_change_slot)
         layer.size_changed.connect(self._layer_bounds_change_slot)
         self._layers.insert(index, layer)
         layer.layer_parent = self
@@ -300,7 +309,6 @@ class LayerStack(Layer):
         self.set_visible(saved_state.visible)
         self.set_opacity(saved_state.opacity)
         self.set_composition_mode(saved_state.mode)
-        self.set_transform(saved_state.transform)
         restore_list = list(saved_state.child_states.keys())
         for layer in self._layers:
             if layer.id in saved_state.child_states:
@@ -320,11 +328,11 @@ class LayerStack(Layer):
         """Returns whether this layer contains only fully transparent pixels, optionally restricting the check to a
            bounding rectangle."""
         for layer in self._layers:
-            if bounds is not None:
+            if bounds is not None and isinstance(layer, TransformLayer):
                 layer_bounds = layer.transform.inverted()[0].map(QPolygonF(QRectF(bounds))).boundingRect()\
                     .toAlignedRect()
             else:
-                layer_bounds = None
+                layer_bounds = bounds
             if not layer.is_empty(layer_bounds):
                 return False
         return True
@@ -357,7 +365,6 @@ class LayerStackState:
         self.visible = layer.visible
         self.opacity = layer.opacity
         self.mode = layer.composition_mode
-        self.transform = layer.transform
         self.child_states: Dict[int, ImageLayerState | LayerStackState] = {}
         for i in range(layer.count):
             child = layer.get_layer_by_index(i)

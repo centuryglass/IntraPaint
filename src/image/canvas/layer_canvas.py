@@ -1,14 +1,13 @@
 """
 Draws content to an image layer.
 """
-from typing import Optional, List, cast
+from typing import Optional, List
 
 from PyQt5.QtCore import QRect, QSize
 from PyQt5.QtGui import QColor, QPainter, QTransform
-from PyQt5.QtWidgets import QGraphicsScene, QGraphicsItem, QGraphicsItemGroup
+from PyQt5.QtWidgets import QGraphicsScene, QGraphicsItem
 
 from src.image.layers.image_layer import ImageLayer
-from src.ui.graphics_items.layer_stack_graphics_item import LayerStackGraphicsItem
 
 
 class LayerCanvas:
@@ -42,21 +41,13 @@ class LayerCanvas:
         self._layer = new_layer
         if self._layer is not None:
             if self.edit_region is None:
-                self._edit_region = self._layer.local_bounds
+                self._edit_region = self._layer.bounds
             assert self._edit_region is not None
             self._update_scene_content_bounds(self._edit_region)
             self.connect_layer_signals()
             self._layer_size_change_slot(self._layer, self._layer.size)
             self._update_canvas_transform(self._layer, self._layer.transform)
             self._set_z_value(self._layer.z_value)
-            layer_parent = self._layer.layer_parent
-            if self._scene is not None and layer_parent is not None:
-                for item in self._scene.items():
-                    if isinstance(item, LayerStackGraphicsItem):
-                        group = cast(LayerStackGraphicsItem, item)
-                        if group.layer == layer_parent:
-                            self._set_parent_group(group)
-                            break
 
         self._layer_content_change_slot(self._layer)
 
@@ -214,7 +205,7 @@ class LayerCanvas:
     # noinspection PyUnusedLocal
     def _layer_size_change_slot(self, layer: ImageLayer, size: QSize) -> None:
         assert self._edit_region is not None
-        new_bounds = layer.local_bounds
+        new_bounds = layer.bounds
         if new_bounds.size() != self._edit_region.size():
             self._update_scene_content_bounds(QRect(self._edit_region.topLeft(), new_bounds.size()))
         self._edit_region = new_bounds
@@ -225,7 +216,7 @@ class LayerCanvas:
     # noinspection PyUnusedLocal
     def _layer_bounds_change_slot(self, layer: ImageLayer, *args) -> None:
         assert self._edit_region is not None
-        new_bounds = layer.local_bounds
+        new_bounds = layer.bounds
         if new_bounds.size() != self._edit_region.size():
             self._update_scene_content_bounds(QRect(self._edit_region.topLeft(), new_bounds.size()))
         self._edit_region = new_bounds
@@ -238,10 +229,6 @@ class LayerCanvas:
         for item in self.scene_items():
             item.setOpacity(opacity)
             item.update()
-
-    def _set_parent_group(self, parent: Optional[QGraphicsItemGroup]) -> None:
-        """Moves scene contents under an appropriate parent group."""
-        raise NotImplementedError()
 
     def _copy_changes_to_layer(self, layer: ImageLayer):
         """Copies content back to the connected layer."""

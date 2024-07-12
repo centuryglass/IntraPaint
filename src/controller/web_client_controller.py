@@ -110,7 +110,7 @@ class WebClientController(BaseInpaintController):
                 if server_response.content and ('application/json' in server_response.headers['content-type']) \
                         and server_response.json() and 'error' in server_response.json():
                     raise RuntimeError(f'{server_response.status_code} response to {context_str}: '
-                                       f'{server_response.json()['error']}')
+                                       f'{server_response.json()["error"]}')
                 print(f'RESPONSE: {server_response.content}')
                 raise RuntimeError(f'{server_response.status_code} response to {context_str}: unknown error')
 

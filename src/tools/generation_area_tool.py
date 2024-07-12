@@ -9,6 +9,7 @@ from PyQt5.QtWidgets import QWidget, QApplication, QPushButton, QGridLayout, QHB
 from src.config.application_config import AppConfig
 from src.config.key_config import KeyConfig
 from src.image.layers.image_stack import ImageStack
+from src.image.layers.transform_layer import TransformLayer
 from src.tools.base_tool import BaseTool
 from src.ui.image_viewer import ImageViewer
 
@@ -88,7 +89,10 @@ class GenerationAreaTool(BaseTool):
             active_layer = self._image_stack.active_layer
             if active_layer is None:
                 return
-            self._image_stack.generation_area = active_layer.full_image_bounds
+            if isinstance(active_layer, TransformLayer):
+                self._image_stack.generation_area = active_layer.transformed_bounds
+            else:
+                self._image_stack.generation_area = active_layer.bounds
 
         select_layer_button = QPushButton()
         select_layer_button.setText(SELECT_LAYER_BUTTON_TEXT)

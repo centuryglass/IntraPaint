@@ -1,7 +1,7 @@
 """
 Interact with edited image layers through the PyQt5 2D graphics engine.
 """
-from typing import Optional
+from typing import Optional, Dict
 
 from PyQt5.QtCore import Qt, QRect, QRectF, QSize
 from PyQt5.QtGui import QPainter, QColor, QTransform
@@ -13,9 +13,9 @@ from src.image.layers.image_layer import ImageLayer
 from src.image.layers.image_stack import ImageStack
 from src.image.layers.layer import Layer
 from src.image.layers.layer_stack import LayerStack
+from src.image.layers.transform_layer import TransformLayer
 from src.ui.graphics_items.border import Border
 from src.ui.graphics_items.layer_graphics_item import LayerGraphicsItem
-from src.ui.graphics_items.layer_stack_graphics_item import LayerStackGraphicsItem
 from src.ui.graphics_items.outline import Outline
 from src.ui.graphics_items.polygon_outline import PolygonOutline
 from src.ui.widget.image_graphics_view import ImageGraphicsView
@@ -36,12 +36,7 @@ class ImageViewer(ImageGraphicsView):
 
         self._image_stack = image_stack
         self._generation_area = image_stack.generation_area
-        self._layer_stack_item = LayerStackGraphicsItem(self._image_stack.layer_stack)
-        self._selection_layer_item = LayerGraphicsItem(self._image_stack.selection_layer)
-        scene = self.scene()
-        assert scene is not None
-        scene.addItem(self._layer_stack_item)
-        scene.addItem(self._selection_layer_item)
+        self._layer_items: Dict[int, 'LayerGraphicsItem'] = {}
         self.content_size = image_stack.size
         self.background = get_transparency_tile_pixmap()
         self.setSizePolicy(QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding))
@@ -51,6 +46,8 @@ class ImageViewer(ImageGraphicsView):
         self._selection_poly_outline.animated = config.get(AppConfig.ANIMATE_OUTLINES)
 
         # Generation area and border rectangle setup:
+        scene = self.scene()
+        assert scene is not None
         self._image_outline = Outline(scene, self)
         self._image_border = Border(scene, self)
         self._image_border.windowed_area = image_stack.bounds if image_stack.has_image else QRect()
@@ -87,11 +84,12 @@ class ImageViewer(ImageGraphicsView):
         image_stack.size_changed.connect(self._image_size_changed_slot)
         image_stack.generation_area_bounds_changed.connect(self._image_generation_area_change_slot)
         image_stack.layer_added.connect(self._layer_added_slot)
+        image_stack.layer_removed.connect(self._layer_removed_slot)
 
         # Manually trigger signal handlers to set up the initial state:
         self._image_size_changed_slot(self.content_size)
         self._layer_added_slot(image_stack.selection_layer)
-        for layer in self._image_stack.layers:
+        for layer in self._image_stack.image_layers:
             self._layer_added_slot(layer)
         self._image_generation_area_change_slot(image_stack.generation_area)
         self.resizeEvent(None)
@@ -109,31 +107,28 @@ class ImageViewer(ImageGraphicsView):
     def stop_rendering_layer(self, layer: Layer) -> None:
         """Makes the ImageViewer stop direct rendering of a particular layer until further notice."""
         self._hidden.add(layer.id)
-        layer_item = self.find_layer_graphics_item(layer.id)
-        if layer_item is not None:
-            layer_item.hidden = True
-            if isinstance(layer, LayerStack):
-                for child in layer.recursive_child_layers:
-                    self.stop_rendering_layer(child)
+        if layer.id in self._layer_items:
+            self._layer_items[layer.id].hidden = True
+        if isinstance(layer, LayerStack):
+            for child in layer.recursive_child_layers:
+                self.stop_rendering_layer(child)
         self.update()
 
     def resume_rendering_layer(self, layer: Layer) -> None:
         """Makes the ImageViewer resume normal rendering for a layer."""
         self._hidden.discard(layer.id)
-        layer_item = self.find_layer_graphics_item(layer.id)
-        if layer_item is not None:
-            layer_item.hidden = False
-            if isinstance(layer, LayerStack):
-                for child in layer.recursive_child_layers:
-                    self.resume_rendering_layer(child)
+        if layer.id in self._layer_items:
+            self._layer_items[layer.id].hidden = False
+        if isinstance(layer, LayerStack):
+            for child in layer.recursive_child_layers:
+                self.resume_rendering_layer(child)
         self.update()
 
     def set_layer_opacity(self, layer: ImageLayer, opacity: float) -> None:
         """Updates the rendered opacity of a layer."""
-        layer_item = self.find_layer_graphics_item(layer.id)
-        if layer_item is None:
+        if layer not in self._layer_items:
             raise KeyError('Layer not yet present in the imageViewer')
-        layer_item.setOpacity(opacity)
+        self._layer_items[layer.id].setOpacity(opacity)
 
     @property
     def follow_generation_area(self) -> bool:
@@ -183,7 +178,7 @@ class ImageViewer(ImageGraphicsView):
             image_loaded and AppConfig().get(AppConfig.INPAINT_FULL_RES))
         if self._image_stack.active_layer is not None:
             self._active_layer_outline.setVisible(True)
-            self._active_layer_outline.outlined_region = QRectF(self._image_stack.active_layer.local_bounds)
+            self._active_layer_outline.outlined_region = QRectF(self._image_stack.active_layer.bounds)
         else:
             self._active_layer_outline.setVisible(False)
         selection_layer = self._image_stack.selection_layer
@@ -199,7 +194,7 @@ class ImageViewer(ImageGraphicsView):
     def _active_layer_bounds_changed_slot(self, *args) -> None:
         active_layer = self._image_stack.active_layer
         if active_layer is not None:
-            self._active_layer_outline.outlined_region = QRectF(active_layer.local_bounds)
+            self._active_layer_outline.outlined_region = QRectF(self._image_stack.active_layer.bounds)
 
     # noinspection PyUnusedLocal
     def _active_layer_change_slot(self, new_active_layer: Layer, *args) -> None:
@@ -207,14 +202,18 @@ class ImageViewer(ImageGraphicsView):
         if active_id != self._active_layer_id:
             last_active = self._image_stack.get_layer_by_id(self._active_layer_id)
             if last_active is not None:
-                last_active.transform_changed.disconnect(self._layer_transform_change_slot)
+                if isinstance(last_active, TransformLayer):
+                    last_active.transform_changed.disconnect(self._layer_transform_change_slot)
                 last_active.size_changed.disconnect(self._active_layer_bounds_changed_slot)
             self._active_layer_id = active_id
             if new_active_layer is not None:
-                new_active_layer.transform_changed.connect(self._layer_transform_change_slot)
                 new_active_layer.size_changed.connect(self._active_layer_bounds_changed_slot)
-                self._active_layer_outline.outlined_region = QRectF(new_active_layer.local_bounds)
-                self._active_layer_outline.setTransform(new_active_layer.transform)
+                if isinstance(new_active_layer, TransformLayer):
+                    new_active_layer.transform_changed.connect(self._layer_transform_change_slot)
+                    self._active_layer_outline.setTransform(new_active_layer.transform)
+                else:
+                    self._active_layer_outline.setTransform(QTransform())
+                self._active_layer_outline.outlined_region = QRectF(new_active_layer.bounds)
                 self._active_layer_outline.setVisible(True)
             else:
                 self._active_layer_outline.setVisible(False)
@@ -254,30 +253,41 @@ class ImageViewer(ImageGraphicsView):
     # noinspection PyUnusedLocal
     def _layer_transform_change_slot(self, layer: Layer, transform: QTransform) -> None:
         """Apply layer transformations to outlines."""
+        assert isinstance(layer, TransformLayer)
         if layer == self._image_stack.active_layer:
-            self._active_layer_outline.setTransform(layer.full_image_transform)
+            self._active_layer_outline.setTransform(layer.transform)
 
     def _layer_added_slot(self, new_layer: Layer) -> None:
         """Adds a new image layer into the view."""
         if self._image_border.windowed_area.isEmpty() and self._image_stack.has_image:
             self._image_border.windowed_area = self._image_stack.bounds if self._image_stack.has_image else QRect()
             self._image_outline.outlined_region = self._image_border.windowed_area
-        layer_item = self.find_layer_graphics_item(new_layer.id)
-        assert layer_item is not None
+        if isinstance(new_layer, ImageLayer):
+            layer_item = LayerGraphicsItem(new_layer)
+            scene = self.scene()
+            assert scene is not None
+            self._layer_items[new_layer.id] = layer_item
+            scene.addItem(layer_item)
+            if new_layer.id in self._hidden:
+                layer_item.hidden = True
+            if layer_item.isVisible():
+                self.resetCachedContent()
+                self.update()
         for outline in (self._generation_area_outline, self._image_generation_area_outline, self._active_layer_outline,
                         self._generation_area_border):
             outline.setZValue(max(self._generation_area_outline.zValue(), new_layer.z_value + 1))
-        if new_layer.id in self._hidden:
-            layer_item.hidden = True
-        if layer_item.isVisible():
-            self.resetCachedContent()
+
+    def _layer_removed_slot(self, removed_layer: Layer) -> None:
+        """Removes an image layer from the view."""
+        if not self._image_stack.has_image:
+            self._image_border.windowed_area = QRect()
+        if removed_layer.id not in self._layer_items:
+            return
+        layer_item = self._layer_items[removed_layer.id]
+        layer_was_visible = layer_item.isVisible()
+        scene = self.scene()
+        assert scene is not None
+        scene.removeItem(layer_item)
+        del self._layer_items[removed_layer.id]
+        if layer_was_visible:
             self.update()
-
-    def find_layer_graphics_item(self, layer_id: int) -> Optional[LayerGraphicsItem | LayerStackGraphicsItem]:
-        """Returns the graphics item representing a layer, or None if the layer isn't found"""
-        if layer_id == self._layer_stack_item.layer.id:
-            return self._layer_stack_item
-        if layer_id == self._selection_layer_item.layer.id:
-            return self._selection_layer_item
-        return self._layer_stack_item.find_layer_item(layer_id)
-

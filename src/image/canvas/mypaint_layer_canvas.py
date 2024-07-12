@@ -4,9 +4,9 @@ Draws content to an image layer.
 import math
 from typing import Optional, Set, List, cast
 
-from PyQt5.QtCore import QRect, QSize, Qt, QPoint, QRectF, QPointF
+from PyQt5.QtCore import QRect, QSize, QPoint, QRectF, QPointF
 from PyQt5.QtGui import QColor, QPainter, QTransform
-from PyQt5.QtWidgets import QGraphicsScene, QGraphicsItem, QGraphicsItemGroup
+from PyQt5.QtWidgets import QGraphicsScene, QGraphicsItem
 
 from src.image.canvas.layer_canvas import LayerCanvas
 from src.image.layers.image_layer import ImageLayer
@@ -81,11 +81,7 @@ class MyPaintLayerCanvas(LayerCanvas):
 
     def _update_canvas_transform(self, layer: ImageLayer, transform: QTransform) -> None:
         """Updates the canvas transformation within the graphics scene."""
-        self._mp_surface.scene_transform = layer.full_image_transform
-
-    def _set_parent_group(self, parent: Optional[QGraphicsItemGroup]) -> None:
-        """Moves scene contents under an appropriate parent group."""
-        self._mp_surface.set_parent_group(parent)
+        self._mp_surface.scene_transform = layer.transform
 
     def _handle_tile_updates(self, tile: MPTile) -> None:
         """Make sure added/updated MyPaint tiles are in the correct scene with the right z-value, and track bounds."""
@@ -175,7 +171,7 @@ class MyPaintLayerCanvas(LayerCanvas):
         """Copies content back to the connected layer."""
         if self._layer is not None and self._layer.visible and self._edit_region is not None \
                 and not self._edit_region.isEmpty() and not self._last_stroke_bounds.isEmpty():
-            self._last_stroke_bounds = self._last_stroke_bounds.intersected(self._layer.local_bounds)
+            self._last_stroke_bounds = self._last_stroke_bounds.intersected(self._layer.bounds)
             tile_change_image = self._layer.cropped_image_content(self._last_stroke_bounds)
             for tile in self._last_stroke_tiles:
                 if not tile.is_valid:

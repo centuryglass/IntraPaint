@@ -1,9 +1,9 @@
 """Interface for any entity that can exist within an image layer stack."""
 import datetime
-from typing import Any, Callable, Optional, Tuple
+from typing import Any, Callable, Optional
 
-from PyQt5.QtCore import QObject, pyqtSignal, QRect, QPoint, QSize, QRectF, Qt, QPointF
-from PyQt5.QtGui import QPainter, QImage, QPixmap, QTransform, QPolygonF
+from PyQt5.QtCore import QObject, pyqtSignal, QRect, QPoint, QSize
+from PyQt5.QtGui import QPainter, QImage, QPixmap
 
 from src.config.application_config import AppConfig
 from src.image.mypaint.numpy_image_utils import image_data_as_numpy_8bit, is_fully_transparent
@@ -19,7 +19,6 @@ class Layer(QObject):
     content_changed = pyqtSignal(QObject)
     opacity_changed = pyqtSignal(QObject, float)
     size_changed = pyqtSignal(QObject, QSize)
-    transform_changed = pyqtSignal(QObject, QTransform)
     composition_mode_changed = pyqtSignal(QObject, QPainter.CompositionMode)
     z_value_changed = pyqtSignal(QObject, int)
 
@@ -31,7 +30,6 @@ class Layer(QObject):
         self._visible = True
         self._opacity = 1.0
         self._size = QSize()
-        self._transform = QTransform()
         self._mode = QPainter.CompositionMode.CompositionMode_SourceOver
         self._pixmap = CachedData(None)
         self._id = Layer._next_layer_id
@@ -107,44 +105,13 @@ class Layer(QObject):
         assert isinstance(new_mode, QPainter.CompositionMode)
         self._apply_combinable_change(new_mode, self._mode, self.set_composition_mode, 'layer.composition_mode')
 
-    @property
-    def transform(self) -> QTransform:
-        """Returns the layer's matrix transformation."""
-        return QTransform(self._transform)
-
-    @transform.setter
-    def transform(self, new_transform: QTransform) -> None:
-        self._apply_combinable_change(new_transform, self._transform, self.set_transform, 'layer.transform')
-
     def _get_local_bounds(self) -> QRect:
         return QRect(QPoint(), self.size)
 
     @property
-    def local_bounds(self) -> QRect:
-        """Returns the layer's bounds with no transformations applied."""
+    def bounds(self) -> QRect:
+        """Returns the layer's bounds."""
         return self._get_local_bounds()
-
-    @property
-    def transformed_bounds(self) -> QRect:
-        """Returns the layer's bounds after applying its transformation."""
-        bounds = self.local_bounds
-        return self._transform.map(QPolygonF(QRectF(bounds))).boundingRect().toAlignedRect()
-
-    @property
-    def full_image_bounds(self) -> QRect:
-        """Returns the layer's bounds within the uppermost layer, with all transforms applied."""
-        bounds = self.local_bounds
-        return self.map_rect_to_image(bounds)
-
-    @property
-    def full_image_transform(self) -> QTransform:
-        """Returns this layers transformation combined with all parent transformation."""
-        stack_iter: Optional[Layer] = self
-        transform = QTransform()
-        while stack_iter is not None:
-            transform = transform * stack_iter._transform
-            stack_iter = stack_iter.layer_parent
-        return transform
 
     @property
     def size(self) -> QSize:
@@ -192,7 +159,7 @@ class Layer(QObject):
             return True
         image_array = image_data_as_numpy_8bit(self.get_qimage())
         image_array = image_array[bounds.y():bounds.y() + bounds.height(),
-                      bounds.x():bounds.x() + bounds.width(), :]
+                                  bounds.x():bounds.x() + bounds.width(), :]
         return is_fully_transparent(image_array)
 
     @property
@@ -205,25 +172,13 @@ class Layer(QObject):
         """Returns a copy of the layer content as a QImage object"""
         return self.get_qimage().copy()
 
+    def _image_prop_setter(self, _) -> None:
+        raise NotImplementedError()
+
     @image.setter
-    def image(self, new_image: QImage | Tuple[QImage, QPoint]) -> None:
-        """Replaces the layer's QImage content.  Unlike other setters, subsequent changes won't be combined in the
-           undo history."""
-        if isinstance(new_image, tuple):
-            new_image, offset = new_image
-            undo_offset = None if offset is None else -offset
-        else:
-            offset = None
-            undo_offset = None
-        last_image = self.image
-
-        def _update_image(img=new_image, off=offset) -> None:
-            self.set_image(img, off)
-
-        def _undo_image(img=last_image, off=undo_offset) -> None:
-            self.set_image(img, off)
-
-        commit_action(_update_image, _undo_image, 'Layer.image')
+    def image(self, new_image: Any) -> None:
+        """Unimplemented, replaces the layer's QImage content."""
+        self._image_prop_setter(new_image)
 
     @property
     def pixmap(self) -> QPixmap:
@@ -247,14 +202,6 @@ class Layer(QObject):
             if send_signals:
                 self.name_changed.emit(self, new_name)
 
-    def set_transform(self, transform: QTransform, send_signals: bool = True) -> None:
-        """Updates the layer's matrix transformation."""
-        if transform != self._transform:
-            assert transform.isInvertible(), f'layer {self.name}:{self.id} given non-invertible transform'
-            self._transform = transform
-            if send_signals:
-                self.transform_changed.emit(self, transform)
-
     def set_opacity(self, opacity: float, send_signals: bool = True) -> None:
         """Set the layer's opacity."""
         if opacity != self._opacity:
@@ -275,20 +222,6 @@ class Layer(QObject):
             self._visible = visible
             if send_signals:
                 self.visibility_changed.emit(self, visible)
-
-    def set_image(self, new_image: QImage, offset: Optional[QPoint] = None) -> None:
-        """Updates the layer image."""
-        size_changed = new_image.size() != self._size
-        if size_changed:
-            new_size = new_image.size()
-            self.set_size(new_size)
-        if offset is not None and not offset.isNull():
-            transform = self.transform
-            transform.translate(offset.x(), offset.y())
-            self.set_transform(transform)
-        self.set_qimage(new_image)
-        self._pixmap.invalidate()
-        self.content_changed.emit(self)
 
     def set_size(self, new_size: QSize, send_signals: bool = True) -> None:
         """Updates the layer's size."""
@@ -330,24 +263,6 @@ class Layer(QObject):
 
     # Misc. utility:
 
-    def transformed_image(self, full_transform: bool = False) -> Tuple[QImage, QTransform]:
-        """Apply all non-translating transformations to a copy of the image, returning it with the final translation."""
-        bounds = self.full_image_bounds if full_transform else self.transformed_bounds
-        layer_transform = self.full_image_transform if full_transform else self.transform
-        offset = bounds.topLeft()
-        final_transform = QTransform()
-        final_transform.translate(offset.x(), offset.y())
-        if final_transform == layer_transform:
-            return self.image, self.transform
-        image = QImage(bounds.size(), QImage.Format_ARGB32_Premultiplied)
-        image.fill(Qt.transparent)
-        painter = QPainter(image)
-        paint_transform = layer_transform * QTransform.fromTranslate(-offset.x(), -offset.y())
-        painter.setTransform(paint_transform)
-        painter.drawImage(self.local_bounds, self.get_qimage())
-        painter.end()
-        return image, final_transform
-
     def cropped_image_content(self, bounds_rect: QRect) -> QImage:
         """Returns the contents of a bounding QRect as a QImage."""
         return self.get_qimage().copy(bounds_rect)
@@ -360,28 +275,6 @@ class Layer(QObject):
         """Regenerate the image pixmap cache and notify self.content_changed subscribers."""
         self._pixmap.data = QPixmap.fromImage(self.get_qimage())
         self.content_changed.emit(self)
-
-    def map_from_image(self, image_point: QPoint | QPointF) -> QPoint:
-        """Map a top level image point to the appropriate spot in the layer image."""
-        inverse, invert_success = self.full_image_transform.inverted()
-        assert invert_success
-        assert isinstance(inverse, QTransform)
-        return inverse.map(image_point)
-
-    def map_rect_from_image(self, image_rect: QRect) -> QRect:
-        """Map a top level image rectangle to the appropriate spot in the layer image."""
-        inverse, invert_success = self.full_image_transform.inverted()
-        assert invert_success
-        assert isinstance(inverse, QTransform)
-        return inverse.map(QPolygonF(QRectF(image_rect))).boundingRect().toAlignedRect()
-
-    def map_to_image(self, layer_point: QPoint) -> QPoint:
-        """Map a point in the layer image to its final spot in the top level image."""
-        return self.full_image_transform.map(layer_point)
-
-    def map_rect_to_image(self, layer_rect: QRect) -> QRect:
-        """Map a rectangle in the layer image to its final spot in the top level image."""
-        return self.full_image_transform.map(QPolygonF(QRectF(layer_rect))).boundingRect().toAlignedRect()
 
     def _apply_combinable_change(self,
                                     new_value: Any,

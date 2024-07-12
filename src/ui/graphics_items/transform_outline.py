@@ -52,8 +52,8 @@ class TransformOutline(QGraphicsObject):
     scale_changed = pyqtSignal(float, float)
     angle_changed = pyqtSignal(float)
 
-    def __init__(self, initial_bounds: QRectF, parent: Optional[QGraphicsItem] = None) -> None:
-        super().__init__(parent)
+    def __init__(self, initial_bounds: QRectF) -> None:
+        super().__init__()
 
         self.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsSelectable, True)
         self._handles: Dict[str, _Handle] = {}
@@ -323,9 +323,6 @@ class TransformOutline(QGraphicsObject):
                 handle.mouseMoveEvent(event)
                 return
         change = QPointF(event.scenePos() - event.lastScenePos())
-        parent = self.parent()
-        if parent is not None:
-            change = QPointF(parent.transform().inverted()[0].map(change.x(), change.y()))
         self.offset = change + self.offset
 
     def mouseReleaseEvent(self, event: Optional[QGraphicsSceneMouseEvent]) -> None:
