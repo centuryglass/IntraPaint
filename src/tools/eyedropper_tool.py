@@ -11,9 +11,10 @@ from src.image.layers.image_stack import ImageStack
 from src.tools.base_tool import BaseTool
 from src.ui.widget.color_picker import ColorPicker
 from src.util.display_size import get_window_size
+from src.util.shared_constants import PROJECT_DIR
 
-RESOURCES_EYEDROPPER_ICON = 'resources/icons/eyedropper_icon.svg'
-RESOURCES_EYEDROPPER_CURSOR = 'resources/cursors/eyedropper_cursor.svg'
+RESOURCES_EYEDROPPER_ICON = f'{PROJECT_DIR}/resources/icons/eyedropper_icon.svg'
+RESOURCES_EYEDROPPER_CURSOR = f'{PROJECT_DIR}/resources/cursors/eyedropper_cursor.svg'
 CURSOR_SIZE = 50
 
 EYEDROPPER_LABEL = 'Color Picker'

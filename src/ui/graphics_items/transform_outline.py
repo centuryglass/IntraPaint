@@ -9,7 +9,7 @@ from PyQt5.QtWidgets import QWidget, QGraphicsItem, QStyleOptionGraphicsItem, \
     QGraphicsObject, QGraphicsView
 
 from src.util.geometry_utils import extract_transform_parameters, combine_transform_parameters
-from src.util.shared_constants import MIN_NONZERO
+from src.util.shared_constants import MIN_NONZERO, PROJECT_DIR
 
 MIN_SCENE_DIM = 5
 
@@ -23,8 +23,8 @@ BR_HANDLE_ID = 'bottom right'
 LINE_COLOR = Qt.black
 LINE_WIDTH = 3
 
-CORNER_SCALE_ARROW_FILE = 'resources/arrow_corner.svg'
-CORNER_ROTATE_ARROW_FILE = 'resources/arrow_corner_rot.svg'
+CORNER_SCALE_ARROW_FILE = f'{PROJECT_DIR}/resources/arrow_corner.svg'
+CORNER_ROTATE_ARROW_FILE = f'{PROJECT_DIR}/resources/arrow_corner_rot.svg'
 
 MODE_SCALE = 'scale'
 MODE_ROTATE = 'rotate'

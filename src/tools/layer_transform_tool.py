@@ -23,7 +23,7 @@ from src.undo_stack import commit_action
 from src.util.display_size import find_text_size
 from src.util.geometry_utils import get_scaled_placement, get_rect_transformation
 from src.util.image_utils import get_transparency_tile_pixmap
-from src.util.shared_constants import FLOAT_MIN, FLOAT_MAX, MIN_NONZERO, INT_MAX
+from src.util.shared_constants import FLOAT_MIN, FLOAT_MAX, MIN_NONZERO, INT_MAX, PROJECT_DIR
 
 CLEAR_BUTTON_TEXT = 'Clear'
 
@@ -39,7 +39,7 @@ DEGREE_LABEL = 'Angle:'
 
 TRANSFORM_LABEL = 'Transform Layers'
 TRANSFORM_TOOLTIP = 'Move, scale, or rotate the active layer.'
-RESOURCES_TRANSFORM_TOOL_ICON = 'resources/icons/layer_transform_icon.svg'
+RESOURCES_TRANSFORM_TOOL_ICON = f'{PROJECT_DIR}/resources/icons/layer_transform_icon.svg'
 ASPECT_RATIO_CHECK_LABEL = 'Keep aspect ratio'
 RESET_BUTTON_TEXT = 'Reset'
 TRANSFORM_CONTROL_HINT = 'LMB+drag:move layer -'

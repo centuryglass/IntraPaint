@@ -7,10 +7,11 @@ from PyQt5.QtWidgets import QMessageBox, QStyle, QApplication
 
 from src.util.image_utils import get_standard_qt_icon
 from src.config.config import Config
+from src.util.shared_constants import PROJECT_DIR
 from src.util.singleton import Singleton
 
-DEFAULT_CONFIG_PATH = 'key_config.json'
-CONFIG_DEFINITIONS = 'resources/config/key_config_definitions.json'
+DEFAULT_CONFIG_PATH = f'{PROJECT_DIR}/key_config.json'
+CONFIG_DEFINITIONS = f'{PROJECT_DIR}/resources/config/key_config_definitions.json'
 
 KEY_CONFIG_ERROR_TITLE = 'Warning'
 KEY_CONFIG_ERROR_MESSAGE = 'Errors found in configurable key bindings:\n'

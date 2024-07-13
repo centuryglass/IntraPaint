@@ -12,8 +12,9 @@ from src.image.layers.image_stack import ImageStack
 from src.image.layers.transform_layer import TransformLayer
 from src.tools.base_tool import BaseTool
 from src.ui.image_viewer import ImageViewer
+from src.util.shared_constants import PROJECT_DIR
 
-RESOURCES_GENERATION_AREA_ICON = 'resources/icons/gen_area_icon.svg'
+RESOURCES_GENERATION_AREA_ICON = f'{PROJECT_DIR}/resources/icons/gen_area_icon.svg'
 GENERATION_AREA_LABEL = 'Select Image Generation Area'
 GENERATION_AREA_TOOLTIP = 'Select an image region for AI image generation'
 SELECT_LAYER_BUTTON_TEXT = 'Full image as generation area'

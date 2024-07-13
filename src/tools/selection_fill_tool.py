@@ -10,9 +10,10 @@ from src.config.key_config import KeyConfig
 from src.image.layers.image_stack import ImageStack
 from src.tools.base_tool import BaseTool
 from src.util.image_utils import flood_fill
+from src.util.shared_constants import PROJECT_DIR
 
-RESOURCES_FILL_ICON = 'resources/icons/selection_fill_icon.svg'
-RESOURCES_FILL_CURSOR = 'resources/cursors/selection_fill_cursor.svg'
+RESOURCES_FILL_ICON = f'{PROJECT_DIR}/resources/icons/selection_fill_icon.svg'
+RESOURCES_FILL_CURSOR = f'{PROJECT_DIR}/resources/cursors/selection_fill_cursor.svg'
 CURSOR_SIZE = 25
 
 SELECTION_FILL_LABEL = 'Selection fill'

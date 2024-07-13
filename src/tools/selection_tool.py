@@ -13,6 +13,7 @@ from src.tools.canvas_tool import CanvasTool
 from src.ui.image_viewer import ImageViewer
 from src.ui.input_fields.slider_spinbox import IntSliderSpinbox
 from src.ui.input_fields.dual_toggle import DualToggle
+from src.util.shared_constants import PROJECT_DIR
 
 SELECTION_CONTROL_LAYOUT_SPACING = 4
 
@@ -22,12 +23,12 @@ SELECTION_TOOL_LABEL = 'Selection'
 SELECTION_TOOL_TOOLTIP = 'Select areas for editing or inpainting.'
 SELECTION_CONTROL_HINT = 'LMB:select - RMB:1px select -'
 
-RESOURCES_PEN_PNG = './resources/icons/pen_small.svg'
-RESOURCES_ERASER_PNG = 'resources/icons/eraser_small.svg'
-RESOURCES_CLEAR_PNG = './resources/icons/clear.png'
-RESOURCES_FILL_PNG = './resources/icons/fill.png'
-RESOURCES_SELECTION_CURSOR = './resources/cursors/selection_cursor.svg'
-RESOURCES_SELECTION_ICON = './resources/icons/selection_icon.svg'
+RESOURCES_PEN_PNG = f'{PROJECT_DIR}/resources/icons/pen_small.svg'
+RESOURCES_ERASER_PNG = f'{PROJECT_DIR}/resources/icons/eraser_small.svg'
+RESOURCES_CLEAR_PNG = f'{PROJECT_DIR}/resources/icons/clear.png'
+RESOURCES_FILL_PNG = f'{PROJECT_DIR}/resources/icons/fill.png'
+RESOURCES_SELECTION_CURSOR = f'{PROJECT_DIR}/resources/cursors/selection_cursor.svg'
+RESOURCES_SELECTION_ICON = f'{PROJECT_DIR}/resources/icons/selection_icon.svg'
 CLEAR_BUTTON_LABEL = 'clear'
 FILL_BUTTON_LABEL = 'fill'
 

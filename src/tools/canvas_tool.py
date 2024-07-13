@@ -1,5 +1,6 @@
 """Base template for tools that use a MyPaint surface within an image layer."""
 from typing import Optional
+import logging
 
 from PyQt5.QtCore import Qt, QPoint, QSize, QRect
 from PyQt5.QtGui import QCursor, QTabletEvent, QMouseEvent, QColor, QIcon, QWheelEvent
@@ -14,10 +15,11 @@ from src.image.layers.image_stack import ImageStack
 from src.tools.base_tool import BaseTool
 from src.ui.image_viewer import ImageViewer
 from src.util.key_code_utils import get_modifiers
+from src.util.shared_constants import PROJECT_DIR
 
-RESOURCES_BRUSH_ICON = 'resources/icons/brush_icon.svg'
-RESOURCES_CURSOR = './resources/cursors/brush_cursor.svg'
-RESOURCES_MIN_CURSOR = './resources/cursors/min_cursor.svg'
+RESOURCES_BRUSH_ICON = f'{PROJECT_DIR}/resources/icons/brush_icon.svg'
+RESOURCES_CURSOR = f'{PROJECT_DIR}/resources/cursors/brush_cursor.svg'
+RESOURCES_MIN_CURSOR = f'{PROJECT_DIR}/resources/cursors/min_cursor.svg'
 
 MAX_CURSOR_SIZE = 255
 MIN_CURSOR_SIZE = 20
@@ -28,6 +30,7 @@ BRUSH_TOOLTIP = 'Paint into the image'
 COLOR_BUTTON_LABEL = 'Color'
 COLOR_BUTTON_TOOLTIP = 'Select sketch brush color'
 
+logger = logging.getLogger(__name__)
 
 class CanvasTool(BaseTool):
     """Base template for tools that use a LayerCanvas to edit an image layer using drawing commands.
@@ -139,7 +142,10 @@ class CanvasTool(BaseTool):
     def brush_path(self, new_path: str) -> None:
         """Updates the active brush size."""
         if hasattr(self._canvas, 'brush_path'):
-            self._canvas.brush_path = new_path
+            try:
+                self._canvas.brush_path = new_path
+            except OSError as err:
+                logger.error(f'loading brush {new_path} failed', err)
         else:
             raise RuntimeError(f'Tried to set brush path {new_path} when layer canvas has no brush support.')
 

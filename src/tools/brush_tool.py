@@ -15,8 +15,9 @@ from src.tools.canvas_tool import CanvasTool
 from src.ui.image_viewer import ImageViewer
 from src.ui.input_fields.slider_spinbox import IntSliderSpinbox
 from src.ui.panel.brush_panel import BrushPanel
+from src.util.shared_constants import PROJECT_DIR
 
-RESOURCES_BRUSH_ICON = 'resources/icons/brush_icon.svg'
+RESOURCES_BRUSH_ICON = f'{PROJECT_DIR}/resources/icons/brush_icon.svg'
 BRUSH_LABEL = 'Brush'
 BRUSH_TOOLTIP = 'Paint into the image'
 COLOR_BUTTON_LABEL = 'Color'

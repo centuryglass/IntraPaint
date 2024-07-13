@@ -4,6 +4,8 @@ from ctypes import CFUNCTYPE, POINTER, Structure, c_int, c_void_p, c_float, c_do
 from ctypes.util import find_library
 from typing import Optional, TypeAlias
 
+from src.util.shared_constants import PROJECT_DIR
+
 # constants and basic typedefs:
 c_float_p = POINTER(c_float)
 c_uint16_p = POINTER(c_uint16)
@@ -12,9 +14,9 @@ NUM_BBOXES_DEFAULT = 32  # Tiled surface default bounding box count.
 TILE_DIM = 64  # Tiled surface x/y resolution
 LIBRARY_NAME = 'mypaint'  # For the ctypes.util.find_library function
 if os.name == 'nt':
-    DEFAULT_LIBRARY_PATH = './lib/libmypaint.dll'
+    DEFAULT_LIBRARY_PATH = f'{PROJECT_DIR}/lib/libmypaint.dll'
 else:
-    DEFAULT_LIBRARY_PATH = './lib/libmypaint.so'
+    DEFAULT_LIBRARY_PATH = f'{PROJECT_DIR}//lib/libmypaint.so'
 
 
 # Rectangles:

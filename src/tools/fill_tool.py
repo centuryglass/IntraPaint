@@ -11,9 +11,10 @@ from src.image.layers.image_stack import ImageStack
 from src.tools.base_tool import BaseTool
 from src.ui.widget.brush_color_button import BrushColorButton
 from src.util.image_utils import flood_fill
+from src.util.shared_constants import PROJECT_DIR
 
-RESOURCES_FILL_ICON = 'resources/icons/fill_icon.svg'
-RESOURCES_FILL_CURSOR = 'resources/cursors/fill_cursor.svg'
+RESOURCES_FILL_ICON = f'{PROJECT_DIR}/resources/icons/fill_icon.svg'
+RESOURCES_FILL_CURSOR = f'{PROJECT_DIR}/resources/cursors/fill_cursor.svg'
 CURSOR_SIZE = 50
 
 FILL_LABEL = 'Color fill'

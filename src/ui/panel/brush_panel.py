@@ -15,6 +15,7 @@ from src.image.mypaint.mp_brush import MPBrush
 from src.ui.widget.grid_container import GridContainer
 from src.util.display_size import get_window_size
 from src.util.geometry_utils import get_scaled_placement
+from src.util.shared_constants import PROJECT_DIR
 
 MIN_COLUMNS = 2
 MAX_COLUMNS = 10
@@ -26,7 +27,7 @@ class BrushPanel(QTabWidget):
     FAV_KEY = 'favorites'
     FAV_CONFIG_KEY = 'brush_favorites'
 
-    BRUSH_DIR = './resources/brushes'
+    BRUSH_DIR = f'{PROJECT_DIR}/resources/brushes'
     BRUSH_CONF_FILE = 'brushes.conf'
     BRUSH_ORDER_FILE = 'order.conf'
     BRUSH_EXTENSION = '.myb'

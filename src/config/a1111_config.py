@@ -3,9 +3,10 @@ import logging
 
 from src.api.a1111_webservice import A1111Webservice
 from src.config.config import Config
+from src.util.shared_constants import PROJECT_DIR
 from src.util.singleton import Singleton
 
-CONFIG_DEFINITIONS = 'resources/config/a1111_setting_definitions.json'
+CONFIG_DEFINITIONS = f'{PROJECT_DIR}/resources/config/a1111_setting_definitions.json'
 logger = logging.getLogger(__name__)
 
 

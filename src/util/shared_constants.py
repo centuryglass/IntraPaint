@@ -1,6 +1,10 @@
 """Assorted constants required in multiple areas."""
+import os.path
+
 from PyQt5.QtGui import QPainter
 from PIL import Image
+
+PROJECT_DIR = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
 
 # Numeric:
 INT_MIN = -2147483647

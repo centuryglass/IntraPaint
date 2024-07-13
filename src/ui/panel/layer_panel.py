@@ -20,7 +20,7 @@ from src.ui.input_fields.editable_label import EditableLabel
 from src.util.display_size import find_text_size
 from src.util.geometry_utils import get_scaled_placement, get_rect_transformation
 from src.util.image_utils import get_transparency_tile_pixmap
-from src.util.shared_constants import COMPOSITION_MODES
+from src.util.shared_constants import COMPOSITION_MODES, PROJECT_DIR
 
 LIST_SPACING = 4
 MIN_VISIBLE_LAYERS = 3
@@ -28,20 +28,20 @@ PREVIEW_SIZE = QSize(80, 80)
 ICON_SIZE = QSize(32, 32)
 LAYER_PADDING = 10
 MAX_WIDTH = PREVIEW_SIZE.width() + ICON_SIZE.width() + LAYER_PADDING * 2 + 400
-ICON_PATH_VISIBLE_LAYER = 'resources/icons/layer/visible.svg'
-ICON_PATH_HIDDEN_LAYER = 'resources/icons/layer/hidden.svg'
+ICON_PATH_VISIBLE_LAYER = f'{PROJECT_DIR}/resources/icons/layer/visible.svg'
+ICON_PATH_HIDDEN_LAYER = f'{PROJECT_DIR}/resources/icons/layer/hidden.svg'
 
 WINDOW_TITLE = 'Image Layers'
 
-ADD_BUTTON_ICON = 'resources/icons/layer/plus_icon.svg'
+ADD_BUTTON_ICON = f'{PROJECT_DIR}/resources/icons/layer/plus_icon.svg'
 ADD_BUTTON_TOOLTIP = 'Create a new layer above the current active layer.'
-DELETE_BUTTON_ICON = 'resources/icons/layer/minus_icon.svg'
+DELETE_BUTTON_ICON = f'{PROJECT_DIR}/resources/icons/layer/minus_icon.svg'
 DELETE_BUTTON_TOOLTIP = 'Delete the active layer.'
-LAYER_UP_BUTTON_ICON = 'resources/icons/layer/up_icon.svg'
+LAYER_UP_BUTTON_ICON = f'{PROJECT_DIR}/resources/icons/layer/up_icon.svg'
 LAYER_UP_BUTTON_TOOLTIP = 'Move the active layer up.'
-LAYER_DOWN_BUTTON_ICON = 'resources/icons/layer/down_icon.svg'
+LAYER_DOWN_BUTTON_ICON = f'{PROJECT_DIR}/resources/icons/layer/down_icon.svg'
 LAYER_DOWN_BUTTON_TOOLTIP = 'Move the active layer down.'
-MERGE_DOWN_BUTTON_ICON = 'resources/icons/layer/merge_down_icon.svg'
+MERGE_DOWN_BUTTON_ICON = f'{PROJECT_DIR}/resources/icons/layer/merge_down_icon.svg'
 MERGE_DOWN_BUTTON_TOOLTIP = 'Merge the active layer with the one below it.'
 MERGE_BUTTON_LABEL = 'Merge Down'
 

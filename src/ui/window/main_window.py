@@ -23,7 +23,7 @@ from src.ui.window.image_window import ImageWindow
 from src.util.application_state import AppStateTracker, APP_STATE_LOADING, APP_STATE_NO_IMAGE, APP_STATE_EDITING, \
     APP_STATE_SELECTION
 from src.util.display_size import get_screen_size
-from src.util.shared_constants import TIMELAPSE_MODE_FLAG
+from src.util.shared_constants import TIMELAPSE_MODE_FLAG, PROJECT_DIR
 
 logger = logging.getLogger(__name__)
 
@@ -46,7 +46,7 @@ class MainWindow(QMainWindow):
             Object managing application behavior.
         """
         super().__init__()
-        self.setWindowIcon(QIcon('resources/icons/app_icon.png'))
+        self.setWindowIcon(QIcon(f'{PROJECT_DIR}/resources/icons/app_icon.png'))
         self.setSizePolicy(QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding))
         self.setMinimumSize(QSize(0, 0))
 
