@@ -15,13 +15,12 @@ from inspect import signature
 from threading import Lock
 from typing import Optional, Any, Callable, List, Dict
 
-from PyQt5.QtCore import QSize, QTimer, Qt
-from PyQt5.QtGui import QKeySequence
-from PyQt5.QtWidgets import QWidget
+from PyQt6.QtCore import QSize, QTimer, Qt
+from PyQt6.QtGui import QKeySequence
 
 from src.config.config_entry import ConfigEntry, DefinitionKey, DefinitionType
 from src.ui.input_fields.check_box import CheckBox
-from src.util.parameter import ParamType
+from src.util.parameter import ParamType, DynamicFieldWidget
 from src.util.validation import assert_type
 
 logger = logging.getLogger(__name__)
@@ -176,7 +175,7 @@ class Config:
         with self._lock:
             return self._entries[key].get_value(inner_key)
 
-    def get_control_widget(self, key: str, connect_to_config: bool = True, multi_line=False) -> QWidget:
+    def get_control_widget(self, key: str, connect_to_config: bool = True, multi_line=False) -> DynamicFieldWidget:
         """Returns a QWidget capable of adjusting the chosen config value. Unless connect_to_config is false, changes
         will immediately propagate to the underlying config file."""
         with self._lock:
@@ -204,7 +203,7 @@ class Config:
         if not isinstance(code_string, str):
             raise RuntimeError(f'Tried to get key code "{key}", found {code_string}')
         sequence = QKeySequence(code_string)
-        if Qt.Key_unknown in sequence:
+        if Qt.Key.Key_unknown in sequence:
             raise RuntimeError(f'key "{key}": value "{code_string}" is not a valid key code or code list')
         return sequence
 

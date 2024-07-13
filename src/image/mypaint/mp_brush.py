@@ -6,8 +6,8 @@ from ctypes import c_void_p, c_float, c_char_p, c_int
 from multiprocessing import Process, Pipe
 from typing import Optional, Any, Dict
 
-from PyQt5.QtCore import Qt, QByteArray, QFile, QIODevice
-from PyQt5.QtGui import QColor
+from PyQt6.QtCore import Qt, QByteArray, QFile, QIODevice
+from PyQt6.QtGui import QColor
 
 from src.image.mypaint.libmypaint import libmypaint, load_libmypaint, DEFAULT_LIBRARY_PATH
 
@@ -50,7 +50,7 @@ class MPBrush:
         """Load a brush from a .myb file, optionally preserving brush size."""
         logger.info(f'loading brush file {file_path}')
         file = QFile(file_path)
-        if not file.open(QIODevice.ReadOnly | QIODevice.Text):
+        if not file.open(QIODevice.OpenModeFlag.ReadOnly | QIODevice.OpenModeFlag.Text):
             raise IOError(f'Failed to open {file_path}')
         byte_array = QByteArray(file.readAll())
         file.close()

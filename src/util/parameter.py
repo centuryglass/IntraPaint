@@ -1,8 +1,7 @@
 """Represents a value with a fixed type, descriptive metadata, and optional limitations and defaults."""
 from typing import Any, Optional, TypeAlias, List, cast
 
-from PyQt5.QtCore import QSize
-from PyQt5.QtWidgets import QWidget
+from PyQt6.QtCore import QSize
 
 from src.ui.input_fields.big_int_spinbox import BigIntSpinbox
 from src.ui.input_fields.check_box import CheckBox
@@ -49,6 +48,9 @@ def get_parameter_type(value: Any) -> str:
 
 
 ParamType: TypeAlias = int | float | str | bool | QSize | list | dict
+
+DynamicFieldWidget: TypeAlias = (BigIntSpinbox | CheckBox | ComboBox | DualToggle | LineEdit | PlainTextEdit |
+                                 SizeField | IntSliderSpinbox | FloatSliderSpinbox)
 
 
 class Parameter:
@@ -197,12 +199,11 @@ class Parameter:
             return False
         return True
 
-    def get_input_widget(self, multi_line=False) -> QWidget:
+    def get_input_widget(self, multi_line=False) -> DynamicFieldWidget:
         """Creates a widget that can be used to set this parameter."""
         if multi_line and self._type != TYPE_STR:
             raise ValueError(f'multi_line=True is only valid for text parameters, value {self.name}'
                              f' is {self.type_name}')
-        input_field = None
         if self._options is not None and len(self._options) > 0:
             if multi_line:
                 raise ValueError('multi_line=True is not valid for parameters with fixed option lists')
@@ -211,7 +212,7 @@ class Parameter:
                 toggle = DualToggle(parent=None, options=cast(list[str], self.options))
                 assert self._default_value is None or isinstance(self._default_value, str)
                 toggle.setValue(self._default_value)
-                input_field = cast(QWidget, toggle)
+                input_field = cast(DynamicFieldWidget, toggle)
             else:
                 combo_box = ComboBox()
                 for option in self._options:
@@ -220,7 +221,7 @@ class Parameter:
                     index = combo_box.findText(str(self._default_value))
                     assert index >= 0
                     combo_box.setCurrentIndex(index)
-                input_field = cast(QWidget, combo_box)
+                input_field = cast(DynamicFieldWidget, combo_box)
         elif self._type == TYPE_INT:
             if (self._maximum is not None and self._maximum > INT_MAX) or (self._minimum is not None
                                                                            and self._minimum < INT_MIN):
@@ -235,7 +236,7 @@ class Parameter:
             spin_box.setValue(self._default_value if self._default_value is not None else max(0, spin_box.minimum()))
             if isinstance(spin_box, IntSliderSpinbox) and (self._minimum is None or self._maximum is None):
                 spin_box.set_slider_included(False)
-            input_field = cast(QWidget, spin_box)
+            input_field = cast(DynamicFieldWidget, spin_box)
         elif self._type == TYPE_FLOAT:
             spin_box = FloatSliderSpinbox()
             spin_box.setMinimum(cast(float, self._minimum) if self._minimum is not None else FLOAT_MIN)
@@ -246,17 +247,17 @@ class Parameter:
             spin_box.setValue(self._default_value if self._default_value is not None else max(0.0, spin_box.minimum()))
             if self._minimum is None or self._maximum is None:
                 spin_box.set_slider_included(False)
-            input_field = cast(QWidget, spin_box)
+            input_field = cast(DynamicFieldWidget, spin_box)
         elif self._type == TYPE_STR:
             text_box = PlainTextEdit() if multi_line else LineEdit()
             if self._default_value is not None:
                 text_box.setValue(self._default_value)
-            input_field = cast(QWidget, text_box)
+            input_field = cast(DynamicFieldWidget, text_box)
         elif self._type == TYPE_BOOL:
             check_box = CheckBox()
             if self._default_value is not None:
                 check_box.setChecked(bool(self._default_value))
-            input_field = cast(QWidget, check_box)
+            input_field = cast(DynamicFieldWidget, check_box)
         elif self._type == TYPE_QSIZE:
             size_field = SizeField()
             if self._minimum is not None:
@@ -270,10 +271,9 @@ class Parameter:
             if self._default_value is not None:
                 assert isinstance(self._default_value, QSize)
                 size_field.setValue(self._default_value)
-            input_field = cast(QWidget, size_field)
+            input_field = cast(DynamicFieldWidget, size_field)
         else:
             raise RuntimeError(f'get_input_widget not supported for type {self._type}')
-        assert input_field is not None, f'{self.name} failed to init input for type {self.type_name}'
         if len(self._description) > 0:
             input_field.setToolTip(self._description)
         return input_field

@@ -3,9 +3,9 @@ QSpinbox implementation that supports a larger range of integer values.
 Adapted from https://stackoverflow.com/a/26861829
 """
 from typing import Optional, Any
-from PyQt5.QtWidgets import QAbstractSpinBox, QLineEdit, QWidget
-from PyQt5.QtCore import pyqtSignal, QRegExp
-from PyQt5.QtGui import QRegExpValidator
+from PyQt6.QtWidgets import QAbstractSpinBox, QLineEdit, QWidget
+from PyQt6.QtCore import pyqtSignal, QRegularExpression
+from PyQt6.QtGui import QRegularExpressionValidator
 
 
 class BigIntSpinbox(QAbstractSpinBox):
@@ -28,8 +28,8 @@ class BigIntSpinbox(QAbstractSpinBox):
         self._minimum = BigIntSpinbox.MINIMUM
         self._maximum = BigIntSpinbox.MAXIMUM
 
-        rx = QRegExp('-?[1-9]\\d{0,20}')
-        validator = QRegExpValidator(rx, self)
+        rx = QRegularExpression('-?[1-9]\\d{0,20}')
+        validator = QRegularExpressionValidator(rx, self)
 
         self._line_edit.setValidator(validator)
 
@@ -69,7 +69,7 @@ class BigIntSpinbox(QAbstractSpinBox):
 
     def stepEnabled(self) -> Any:
         """Returns whether incrementing/decrementing the value by steps is enabled."""
-        return self.StepUpEnabled | self.StepDownEnabled
+        return self.StepEnabledFlag.StepUpEnabled | self.StepEnabledFlag.StepDownEnabled
 
     def singleStep(self) -> int:
         """Returns the amount the spinbox value changes when controls are clicked once. """

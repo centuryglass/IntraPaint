@@ -6,7 +6,7 @@ import traceback
 import logging
 from typing import Optional, List
 
-from PyQt5.QtWidgets import QMessageBox, QFileDialog, QWidget, QStyle
+from PyQt6.QtWidgets import QMessageBox, QFileDialog, QWidget, QStyle
 from PIL import UnidentifiedImageError
 
 from src.util.image_utils import get_standard_qt_icon
@@ -33,9 +33,9 @@ def show_error_dialog(parent: Optional[QWidget], title: str, error: str | BaseEx
     messagebox = QMessageBox(parent)
     messagebox.setWindowTitle(title)
     messagebox.setText(f'{error}')
-    messagebox.setWindowIcon(get_standard_qt_icon(QStyle.SP_MessageBoxWarning, parent))
+    messagebox.setWindowIcon(get_standard_qt_icon(QStyle.StandardPixmap.SP_MessageBoxWarning, parent))
     messagebox.setIcon(QMessageBox.Icon.Critical)
-    messagebox.setStandardButtons(QMessageBox.Ok)
+    messagebox.setStandardButtons(QMessageBox.StandardButton.Ok)
     messagebox.exec()
 
 
@@ -44,10 +44,10 @@ def request_confirmation(parent: QWidget, title: str, message: str) -> bool:
     confirm_box = QMessageBox(parent)
     confirm_box.setWindowTitle(title)
     confirm_box.setText(message)
-    confirm_box.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
-    confirm_box.setWindowIcon(get_standard_qt_icon(QStyle.SP_MessageBoxQuestion, parent))
+    confirm_box.setStandardButtons(QMessageBox.StandardButton.Ok | QMessageBox.StandardButton.Cancel)
+    confirm_box.setWindowIcon(get_standard_qt_icon(QStyle.StandardPixmap.SP_MessageBoxQuestion, parent))
     response = confirm_box.exec()
-    return bool(response == QMessageBox.Ok)
+    return bool(response == QMessageBox.StandardButton.Ok)
 
 
 def open_image_file(parent: QWidget, mode: str = 'load',

@@ -1,8 +1,8 @@
 """A horizontal slider and spinbox that both control the same value."""
 from typing import Optional
 
-from PyQt5.QtCore import pyqtSignal, Qt
-from PyQt5.QtWidgets import QWidget, QHBoxLayout, QLabel, QSlider, QDoubleSpinBox, QSpinBox
+from PyQt6.QtCore import pyqtSignal, Qt
+from PyQt6.QtWidgets import QWidget, QHBoxLayout, QLabel, QSlider, QDoubleSpinBox, QSpinBox
 
 
 class _SliderSpinbox(QWidget):
@@ -71,11 +71,19 @@ class _SliderSpinbox(QWidget):
         self._slider.setMinimum(int(new_minimum * 100) if isinstance(self._spinbox, QDoubleSpinBox) else new_minimum)
         self._update_slider_ticks()
 
+    def minimum(self) -> int | float:
+        """Returns the minimum accepted value."""
+        return self._spinbox.minimum()
+
     def setMaximum(self, new_maximum: int | float) -> None:
         """Sets a new maximum accepted value."""
         self._spinbox.setMaximum(new_maximum)
         self._slider.setMaximum(int(new_maximum * 100) if isinstance(self._spinbox, QDoubleSpinBox) else new_maximum)
         self._update_slider_ticks()
+
+    def maximum(self) -> int | float:
+        """Returns the maximum accepted value."""
+        return self._spinbox.maximum()
 
     def setRange(self, new_minimum: int | float, new_maximum: int | float) -> None:
         """Sets a new range of accepted values."""

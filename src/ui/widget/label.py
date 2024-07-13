@@ -1,11 +1,11 @@
 """
 An extended QLabel implementation that supports vertical text.
 """
-from typing import Optional, cast
+from typing import Optional
 
-from PyQt5.QtCore import Qt, QSize, QPointF
-from PyQt5.QtGui import QPainter, QPixmap, QPainterPath, QTransform, QFont, QColor
-from PyQt5.QtWidgets import QLabel, QSizePolicy, QWidget
+from PyQt6.QtCore import Qt, QSize, QPointF
+from PyQt6.QtGui import QPainter, QPixmap, QPainterPath, QTransform, QFont, QColor, QPalette
+from PyQt6.QtWidgets import QLabel, QSizePolicy, QWidget
 
 from src.util.display_size import find_text_size
 
@@ -47,11 +47,13 @@ class Label(QLabel):
         self.setAutoFillBackground(True)
         self._bg_color = bg_color if bg_color is not None else self.palette().color(self.backgroundRole())
         self._fg_color = self.palette().color(self.foregroundRole())
-        bg_color_name = bg_color if not hasattr(bg_color, 'name') else bg_color.name()
-        fg_color_name = self._fg_color if not hasattr(self._fg_color, 'name') else self._fg_color.name()
-        self._base_style = f'QLabel {{ background-color : {bg_color_name}; color : {fg_color_name}; }}'
-        self._inverted_style = f'QLabel {{ background-color : {fg_color_name}; color : {bg_color_name}; }}'
-        self.setStyleSheet(self._base_style)
+        self._base_palette = QPalette(self.palette())
+        self._base_palette.setColor(self.backgroundRole(), self._bg_color)
+        self._base_palette.setColor(self.foregroundRole(), self._fg_color)
+        self._inverted_palette = QPalette(self.palette())
+        self._inverted_palette.setColor(self.backgroundRole(), self._fg_color)
+        self._inverted_palette.setColor(self.foregroundRole(), self._bg_color)
+        self.setPalette(self._base_palette)
         if size is not None:
             self._font.setPointSize(size)
         self.set_orientation(orientation)
@@ -63,9 +65,9 @@ class Label(QLabel):
             return
         self._orientation = orientation
         if self._orientation == Qt.Orientation.Vertical:
-            self.setAlignment(cast(Qt.Alignment, Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignHCenter))
+            self.setAlignment(Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignHCenter)
         else:
-            self.setAlignment(cast(Qt.Alignment, Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter))
+            self.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
         if self._text is not None and self._image is not None:
             self._image, self._image_inverted = self._draw_text_pixmaps()
             self._merge_text_and_icon()
@@ -75,7 +77,7 @@ class Label(QLabel):
         if invert_colors == self._inverted:
             return
         assert self._image is not None and self._image_inverted is not None
-        self.setStyleSheet(self._inverted_style if invert_colors else self._base_style)
+        self.setPalette(self._inverted_palette if invert_colors else self._base_palette)
         self._inverted = invert_colors
         self.setPixmap(self._image_inverted if invert_colors else self._image)
         self.update()
@@ -177,9 +179,9 @@ class Label(QLabel):
 
             self._image, self._image_inverted = (draw(img) for img in (self._image, self._image_inverted))
         if self._orientation == Qt.Orientation.Vertical:
-            self.setSizePolicy(QSizePolicy(QSizePolicy.Fixed, QSizePolicy.MinimumExpanding))
+            self.setSizePolicy(QSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.MinimumExpanding))
         else:
-            self.setSizePolicy(QSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.Fixed))
+            self.setSizePolicy(QSizePolicy(QSizePolicy.Policy.MinimumExpanding, QSizePolicy.Policy.Fixed))
         self.setPixmap(self._image_inverted if self._inverted else self._image)
         self.update()
 

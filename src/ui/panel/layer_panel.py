@@ -2,11 +2,10 @@
 
 from typing import Optional, List, Callable, cast, Any
 
-from PyQt5.QtCore import Qt, QRect, QSize, QPoint
-from PyQt5.QtGui import QPainter, QColor, QPaintEvent, QMouseEvent, QIcon, QPixmap, QImage
-from PyQt5.QtSvg import QSvgWidget
-from PyQt5.QtWidgets import QWidget, QLabel, QVBoxLayout, QHBoxLayout, QScrollArea, QSizePolicy, QPushButton, QMenu, \
-    QToolButton, QAction, QSlider, QDoubleSpinBox, QComboBox
+from PyQt6.QtCore import Qt, QRect, QSize, QPoint
+from PyQt6.QtGui import QPainter, QColor, QPaintEvent, QMouseEvent, QIcon, QPixmap, QAction
+from PyQt6.QtWidgets import QWidget, QLabel, QVBoxLayout, QHBoxLayout, QScrollArea, QSizePolicy, QMenu, \
+    QToolButton, QSlider, QDoubleSpinBox, QComboBox
 
 from src.config.cache import Cache
 from src.image.layers.image_layer import ImageLayer
@@ -15,8 +14,8 @@ from src.image.layers.layer import Layer
 from src.image.layers.layer_stack import LayerStack
 from src.image.layers.transform_layer import TransformLayer
 from src.tools.selection_tool import SELECTION_TOOL_LABEL
-from src.ui.widget.bordered_widget import BorderedWidget
 from src.ui.input_fields.editable_label import EditableLabel
+from src.ui.widget.bordered_widget import BorderedWidget
 from src.util.display_size import find_text_size
 from src.util.geometry_utils import get_scaled_placement, get_rect_transformation
 from src.util.image_utils import get_transparency_tile_pixmap
@@ -100,9 +99,8 @@ class LayerPanel(QWidget):
         self._opacity_slider.setRange(0, 100)
         self._opacity_spinbox.setRange(0.0, 1.0)
         active_layer = image_stack.active_layer
-        if active_layer is not None:
-            self._opacity_slider.setValue(int(active_layer.opacity * 100))
-            self._opacity_spinbox.setValue(active_layer.opacity)
+        self._opacity_slider.setValue(int(active_layer.opacity * 100))
+        self._opacity_spinbox.setValue(active_layer.opacity)
 
         self._opacity_slider.valueChanged.connect(self._update_opacity_slot)
         self._opacity_spinbox.valueChanged.connect(self._update_opacity_slot)
@@ -123,58 +121,33 @@ class LayerPanel(QWidget):
         self._list_layout = QVBoxLayout(self._layer_list)
         self._list_layout.setSpacing(LIST_SPACING)
         self._layer_list.contents_margin = LAYER_PADDING
-        self._list_layout.setAlignment(cast(Qt.Alignment, Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignTop))
+        self._list_layout.setAlignment(Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignTop)
 
         self._scroll_area = QScrollArea(self)
         self._scroll_area.setWidgetResizable(True)
         self._scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
-        self._scroll_area.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
+        self._scroll_area.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOn)
         horizontal_scroll_bar = self._scroll_area.horizontalScrollBar()
         assert horizontal_scroll_bar is not None
         horizontal_scroll_bar.rangeChanged.connect(self.resizeEvent)
         horizontal_scroll_bar.setMinimum(0)
         horizontal_scroll_bar.setMaximum(0)
-        self._scroll_area.setAlignment(cast(Qt.Alignment, Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignTop))
+        self._scroll_area.setAlignment(Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignTop)
         self._scroll_area.setWidget(self._layer_list)
 
-        self._layer_list.setSizePolicy(QSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.Preferred))
-        self._scroll_area.setSizePolicy(QSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.Preferred))
+        self._layer_list.setSizePolicy(QSizePolicy(QSizePolicy.Policy.MinimumExpanding, QSizePolicy.Policy.Preferred))
+        self._scroll_area.setSizePolicy(QSizePolicy(QSizePolicy.Policy.MinimumExpanding, QSizePolicy.Policy.Preferred))
         self._layout.addWidget(self._scroll_area, stretch=10)
 
-        def _add_layer_widget(new_layer: Layer) -> None:
-            layer_idx = -new_layer.z_value
-            widget = self._layer_widget(new_layer)
-            self._layer_widgets.append(widget)
-            self._list_layout.insertWidget(layer_idx + 1, widget)
-            self.resizeEvent(None)
-        self._image_stack.layer_added.connect(_add_layer_widget)
-        _add_layer_widget(image_stack.selection_layer)
+        self._image_stack.layer_added.connect(self._add_layer_slot)
+        self._add_layer_slot(image_stack.selection_layer)
         for layer in self._image_stack.layers:
-            _add_layer_widget(layer)
+            self._add_layer_slot(layer)
 
-        def _delete_layer_widget(deleted_layer: Layer) -> None:
-            layer_widget = self._layer_widget(deleted_layer)
-            if layer_widget is not None:
-                self._list_layout.removeWidget(layer_widget)
-                layer_widget.setParent(None)
-                if layer_widget in self._layer_widgets:
-                    self._layer_widgets.remove(layer_widget)
-                self.resizeEvent(None)
-        self._image_stack.layer_removed.connect(_delete_layer_widget)
+        self._image_stack.layer_removed.connect(self._delete_layer_slot)
 
-        def _activate_layer(new_active_layer: Optional[Layer], _=None) -> None:
-            layer_id = None if new_active_layer is None else new_active_layer.id
-            for widget in self._layer_widgets:
-                widget.active = layer_id == widget.layer.id
-            if new_active_layer is not None:
-                self._update_opacity_slot(new_active_layer.opacity)
-                image_mode = new_active_layer.composition_mode
-                mode_index = self._mode_box.findData(image_mode)
-                if mode_index >= 0:
-                    self._mode_box.setCurrentIndex(mode_index)
-        self._image_stack.active_layer_changed.connect(_activate_layer)
-        if self._image_stack.active_layer is not None:
-            _activate_layer(self._image_stack.active_layer)
+        self._image_stack.active_layer_changed.connect(self._active_layer_change_slot)
+        self._active_layer_change_slot(self._image_stack.active_layer)
         self._image_stack.layer_order_changed.connect(self._update_order_slot)
 
         # BUTTON BAR:
@@ -184,13 +157,13 @@ class LayerPanel(QWidget):
         self._button_bar_layout.setSpacing(0)
         self._button_bar_layout.setContentsMargins(0, 0, 0, 0)
 
-        def _create_button(icon_path: str, tooltip: str, action: Callable[..., Any]) -> QPushButton:
+        def _create_button(icon_path: str, tooltip: str, action: Callable[..., Any]) -> QToolButton:
             button = QToolButton()
             button.setToolTip(tooltip)
             button.setContentsMargins(0, 0, 0, 0)
             icon = QIcon(icon_path)
             button.setIcon(icon)
-            button.setToolButtonStyle(Qt.ToolButtonIconOnly)
+            button.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonIconOnly)
             button.clicked.connect(lambda: action())
             self._button_bar_layout.addWidget(button)
             return button
@@ -245,7 +218,11 @@ class LayerPanel(QWidget):
         for widget in self._layer_widgets:
             if widget.layer == layer:
                 return widget
-        return _LayerItem(layer, self._image_stack, self)
+        widget = _LayerItem(layer, self._image_stack, self)
+        self._layer_widgets.append(widget)
+        self._list_layout.insertWidget(0, widget)
+        self._update_order_slot()
+        return widget
 
     def _update_order_slot(self) -> None:
         for widget in self._layer_widgets:
@@ -262,7 +239,7 @@ class LayerPanel(QWidget):
             opacity_percent = int(opacity * 100)
             opacity_fraction = opacity
         active_layer = self._image_stack.active_layer
-        if active_layer is not None and active_layer.opacity != opacity_fraction:
+        if active_layer.opacity != opacity_fraction:
             active_layer.opacity = opacity_fraction
         for input_widget, value in ((self._opacity_slider, opacity_percent),
                                     (self._opacity_spinbox, opacity_fraction)):
@@ -276,15 +253,39 @@ class LayerPanel(QWidget):
         assert mode_text in COMPOSITION_MODES
         mode = COMPOSITION_MODES[mode_text]
         active_layer = self._image_stack.active_layer
-        if active_layer is not None and active_layer.composition_mode != mode:
+        if active_layer.composition_mode != mode:
             active_layer.composition_mode = mode
+
+    def _add_layer_slot(self, new_layer: Layer) -> None:
+        self._layer_widget(new_layer)
+        self.resizeEvent(None)
+
+    def _delete_layer_slot(self, removed_layer: Layer) -> None:
+        layer_widget = self._layer_widget(removed_layer)
+        if layer_widget is not None:
+            self._list_layout.removeWidget(layer_widget)
+            layer_widget.setParent(None)
+            if layer_widget in self._layer_widgets:
+                self._layer_widgets.remove(layer_widget)
+            self.resizeEvent(None)
+
+    def _active_layer_change_slot(self, new_active_layer: Optional[Layer]) -> None:
+        layer_id = None if new_active_layer is None else new_active_layer.id
+        for widget in self._layer_widgets:
+            widget.active = layer_id == widget.layer.id
+        if new_active_layer is not None:
+            self._update_opacity_slot(new_active_layer.opacity)
+            image_mode = new_active_layer.composition_mode
+            mode_index = self._mode_box.findData(image_mode)
+            if mode_index >= 0:
+                self._mode_box.setCurrentIndex(mode_index)
 
 
 class _LayerItem(BorderedWidget):
     """A single layer's representation in the list"""
 
-    # Shared transparency background pixmap. The first LayerGraphicsItem created initializes it, after that access is strictly
-    # read-only.
+    # Shared transparency background pixmap. The first LayerGraphicsItem created initializes it, after that access is
+    # strictly read-only.
     _layer_transparency_background: Optional[QPixmap] = None
 
     def __init__(self, layer: Layer, image_stack: ImageStack, parent: QWidget) -> None:
@@ -312,38 +313,12 @@ class _LayerItem(BorderedWidget):
         self._active_color = self.color
         self._inactive_color = self._active_color.darker() if self._active_color.lightness() > 100 \
             else self._active_color.lighter()
-        self.setSizePolicy(QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Maximum))
+        self.setSizePolicy(QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Maximum))
         if _LayerItem._layer_transparency_background is None:
             _LayerItem._layer_transparency_background = get_transparency_tile_pixmap(QSize(64, 64))
         self.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self.customContextMenuRequested.connect(self._menu)
-
-        class VisibilityButton(QSvgWidget):
-            """Show/hide layer button."""
-
-            def __init__(self, connected_layer: Layer) -> None:
-                """Connect to the layer and load the initial icon."""
-                super().__init__()
-                self.setSizePolicy(QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed))
-                self._layer = connected_layer
-                layer.visibility_changed.connect(self._update_icon)
-                self._update_icon()
-
-            def sizeHint(self):
-                """Use a fixed size for icons."""
-                return ICON_SIZE
-
-            def _update_icon(self):
-                """Loads the open eye icon if the layer is visible, the closed eye icon otherwise."""
-                self.load(ICON_PATH_VISIBLE_LAYER if self._layer.visible else ICON_PATH_HIDDEN_LAYER)
-                self.renderer().setAspectRatioMode(Qt.AspectRatioMode.KeepAspectRatio)
-                self.update()
-
-            def mousePressEvent(self, unused_event: Optional[QMouseEvent]) -> None:
-                """Toggle visibility on click."""
-                self._layer.visible = not self._layer.visible
-
-        self._visibility_button = VisibilityButton(self._layer)
+        self._visibility_button = _VisibilityButton(self._layer)
         self._layout.addWidget(self._visibility_button, stretch=10)
 
     def paintEvent(self, event: Optional[QPaintEvent]) -> None:
@@ -367,7 +342,7 @@ class _LayerItem(BorderedWidget):
         if not any(rect.isEmpty() for rect in (content_bounds, image_bounds, layer_bounds, paint_bounds)):
             transformation = get_rect_transformation(content_bounds, paint_bounds)
             painter.setTransform(transformation)
-            painter.setPen(Qt.black)
+            painter.setPen(Qt.GlobalColor.black)
             painter.drawRect(content_bounds)
             if isinstance(self._layer, TransformLayer):
                 painter.setTransform(self._layer.transform, True)
@@ -479,37 +454,49 @@ class _LayerItem(BorderedWidget):
             resize_option = _new_action(MENU_OPTION_LAYER_TO_IMAGE_SIZE)
             resize_option.triggered.connect(lambda: self._image_stack.layer_to_image_size(self.layer))
 
-            crop_content_option = _new_action(MENU_OPTION_CROP_TO_CONTENT)
-            crop_content_option.triggered.connect(lambda: print('TODO: crop layer to content'))
         else:
             invert_option = _new_action(MENU_OPTION_INVERT_SELECTION)
             invert_option.triggered.connect(self._image_stack.selection_layer.invert_selection)
             clear_mask_option = _new_action(MENU_OPTION_CLEAR_SELECTION)
             clear_mask_option.triggered.connect(self._image_stack.selection_layer.clear)
-            if self._image_stack.has_image:
-                mask_active_option = _new_action(MENU_OPTION_SELECT_ALL)
-
-                def mask_active() -> None:
-                    """Draw the layer into the mask, then let SelectionLayer automatically convert it to
-                       red/transparent."""
-                    active_layer = self._image_stack.active_layer
-                    assert active_layer is not None
-                    layer_image, offset_transform = active_layer.transformed_image()
-                    with self._image_stack.selection_layer.borrow_image() as mask_image:
-                        assert mask_image is not None and isinstance(mask_image, QImage)
-                        painter = QPainter(mask_image)
-                        painter.setCompositionMode(QPainter.CompositionMode_Source)
-                        painter.setTransform(offset_transform)
-                        painter.drawImage(QRect(0, 0, mask_image.width(), mask_image.height()), layer_image)
-                        painter.end()
-
-                mask_active_option.triggered.connect(mask_active)
+            mask_active_option = _new_action(MENU_OPTION_SELECT_ALL)
+            mask_active_option.triggered.connect(self._image_stack.select_active_layer_content)
 
         if isinstance(self._layer, ImageLayer):
+            crop_content_option = _new_action(MENU_OPTION_CROP_TO_CONTENT)
+            crop_content_option.triggered.connect(self._layer.crop_to_content)
+
             mirror_horizontal_option = _new_action('Mirror horizontally')
             mirror_horizontal_option.triggered.connect(self._layer.flip_horizontal)
 
             mirror_vert_option = _new_action('Mirror vertically')
             mirror_vert_option.triggered.connect(self._layer.flip_vertical)
 
-        menu.exec_(self.mapToGlobal(pos))
+        menu.exec(self.mapToGlobal(pos))
+
+
+class _VisibilityButton(QToolButton):
+    """Show/hide layer button."""
+
+    def __init__(self, connected_layer: Layer) -> None:
+        """Connect to the layer and load the initial icon."""
+        super().__init__()
+        self.setSizePolicy(QSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed))
+        self._layer = connected_layer
+        connected_layer.visibility_changed.connect(self._update_icon)
+        self._visible_icon = QIcon(ICON_PATH_VISIBLE_LAYER)
+        self._hidden_icon = QIcon(ICON_PATH_HIDDEN_LAYER)
+        self._update_icon()
+
+    # noinspection PyMethodMayBeStatic
+    def sizeHint(self):
+        """Use a fixed size for icons."""
+        return ICON_SIZE
+
+    def _update_icon(self):
+        """Loads the open eye icon if the layer is visible, the closed eye icon otherwise."""
+        self.setIcon(self._visible_icon if self._layer.visible else self._hidden_icon)
+
+    def mousePressEvent(self, unused_event: Optional[QMouseEvent]) -> None:
+        """Toggle visibility on click."""
+        self._layer.visible = not self._layer.visible

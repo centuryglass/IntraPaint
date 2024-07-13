@@ -2,8 +2,8 @@
 from typing import List, Callable
 
 from PIL import ImageOps
-from PyQt5.QtCore import QRect
-from PyQt5.QtGui import QImage, QPainter
+from PyQt6.QtCore import QRect
+from PyQt6.QtGui import QImage, QPainter
 
 from src.config.key_config import KeyConfig
 from src.image.filter.filter import ImageFilter
@@ -49,10 +49,10 @@ class PosterizeFilter(ImageFilter):
         assert 0 < bits <= 8, f'Invalid bit count {bits}'
         pil_image = qimage_to_pil_image(image).convert('RGB')
         posterized = ImageOps.posterize(pil_image, bits)
-        filtered_image = pil_image_to_qimage(posterized)
+        filtered_image = pil_image_to_qimage(posterized).convertToFormat(QImage.Format.Format_ARGB32_Premultiplied)
         # Preserve transparency:
         painter = QPainter(filtered_image)
-        painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_DestinationAtop)
+        painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_DestinationIn)
         painter.drawImage(QRect(0, 0, image.width(), image.height()), image)
         painter.end()
         return filtered_image

@@ -2,10 +2,12 @@
 and provides the information needed to add the function as a menu action."""
 from typing import Callable, List, Optional, Dict, Any
 
-from PyQt5.QtCore import QPoint, pyqtSignal
-from PyQt5.QtGui import QImage, QPainter, QTransform
+from PyQt6.QtCore import QPoint, pyqtSignal
+from PyQt6.QtGui import QImage, QPainter, QTransform
 
 from src.image.layers.image_stack import ImageStack
+from src.image.layers.layer_stack import LayerStack
+from src.image.layers.transform_layer import TransformLayer
 from src.ui.modal.image_filter_modal import ImageFilterModal
 from src.undo_stack import commit_action
 from src.util.application_state import APP_STATE_EDITING, AppStateTracker
@@ -62,7 +64,6 @@ class ImageFilter:
 
         def _set_active_only(active_only: bool) -> None:
             self.active_layer_only = active_only
-            print(f'ACTIVE_ONLY={self.active_layer_only}')
         modal.filter_active_only.connect(_set_active_only)
 
         def _set_selection_only(selection_only: bool) -> None:
@@ -92,12 +93,17 @@ class ImageFilter:
 
     def _filter_layer_image(self, filter_param_values: List[Any], layer_id: int, layer_image: QImage) -> bool:
         """Apply any required filtering in-place to a layer image, returning whether changes were made."""
-        if self._filter_active_layer_only and layer_id != self._image_stack.active_layer_id:
-            return False
+        if self._filter_active_layer_only:
+            active_layer = self._image_stack.active_layer
+            if active_layer.id != layer_id and not (isinstance(active_layer, LayerStack)
+                                                   and active_layer.contains_recursive(
+                        self._image_stack.get_layer_by_id(layer_id))):
+                return False
         if self._filter_selection_only:
             layer = self._image_stack.get_layer_by_id(layer_id)
             assert layer is not None
-            selection_bounds = self._image_stack.selection_layer.map_rect_from_image(layer.transformed_bounds)
+            layer_bounds = layer.bounds if not isinstance(layer, TransformLayer) else layer.transformed_bounds
+            selection_bounds = self._image_stack.selection_layer.map_rect_from_image(layer_bounds)
             if self._image_stack.selection_layer.is_empty(selection_bounds):
                 return False
             layer_mask = self._image_stack.get_layer_mask(layer)
@@ -234,20 +240,20 @@ class ImageFilter:
         task = _FilterTask(_filter_images, True)
         task.images_ready.connect(_transfer_changes_from_thread)
 
-        def _finish(layer_images=updated_layer_images):
+        def _finish():
             AppStateTracker.set_app_state(APP_STATE_EDITING)
             task.images_ready.disconnect(_transfer_changes_from_thread)
             task.finish_signal.disconnect(_finish)
-            if len(layer_images) == 0:
+            if len(updated_layer_images) == 0:
                 return
             source_images: Dict[int, QImage] = {}
-            for layer_id in layer_images.keys():
+            for layer_id in updated_layer_images:
                 layer = self._image_stack.get_layer_by_id(layer_id)
                 assert layer is not None
                 source_images[layer_id] = layer.image
 
             def _apply_filters():
-                for updated_id, image in layer_images.items():
+                for updated_id, image in updated_layer_images.items():
                     updated_layer = self._image_stack.get_layer_by_id(updated_id)
                     updated_layer.set_image(image)
 

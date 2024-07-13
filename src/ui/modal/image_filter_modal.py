@@ -1,13 +1,13 @@
 """Popup modal window that applies an arbitrary image filtering action."""
 from typing import List, Callable, Optional, TypeAlias, Any
 
-from PyQt5.QtCore import QSize, pyqtSignal
-from PyQt5.QtGui import QImage
-from PyQt5.QtWidgets import QDialog, QFormLayout, QLabel, QWidget, QHBoxLayout, QPushButton
+from PyQt6.QtCore import QSize, pyqtSignal
+from PyQt6.QtGui import QImage
+from PyQt6.QtWidgets import QDialog, QFormLayout, QLabel, QWidget, QHBoxLayout, QPushButton
 
 from src.ui.input_fields.check_box import CheckBox
 from src.ui.widget.image_widget import ImageWidget
-from src.util.parameter import Parameter
+from src.util.parameter import Parameter, DynamicFieldWidget
 
 SELECTED_ONLY_LABEL = 'Change selected areas only'
 ACTIVE_ONLY_LABEL = 'Change active layer only'
@@ -38,7 +38,7 @@ class ImageFilterModal(QDialog):
         self._preview = ImageWidget(None, self)
         self._preview.setMinimumSize(QSize(MIN_PREVIEW_SIZE, MIN_PREVIEW_SIZE))
         self._layout = QFormLayout(self)
-        self._param_inputs: List[QWidget] = []
+        self._param_inputs: List[DynamicFieldWidget] = []
         self._generate_preview = generate_preview
         self._apply_filter = apply_filter
 

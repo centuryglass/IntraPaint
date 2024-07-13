@@ -1,14 +1,15 @@
 """Implements brush controls using a MyPaint surface."""
 from typing import Optional, cast
 
-from PyQt5.QtCore import Qt, QSize
-from PyQt5.QtGui import QPixmap, QColor, QIcon, QKeySequence
-from PyQt5.QtWidgets import QVBoxLayout, QPushButton, QColorDialog, QWidget, QApplication
+from PyQt6.QtCore import Qt, QSize
+from PyQt6.QtGui import QPixmap, QColor, QIcon, QKeySequence
+from PyQt6.QtWidgets import QVBoxLayout, QPushButton, QColorDialog, QWidget, QApplication
 
 from src.config.application_config import AppConfig
 from src.config.cache import Cache
 from src.config.key_config import KeyConfig
 from src.image.canvas.mypaint_layer_canvas import MyPaintLayerCanvas
+from src.image.layers.image_layer import ImageLayer
 from src.image.layers.image_stack import ImageStack
 from src.image.layers.layer import Layer
 from src.tools.canvas_tool import CanvasTool
@@ -104,7 +105,7 @@ class BrushTool(CanvasTool):
             icon = QPixmap(QSize(64, 64))
             icon.fill(color)
             color_picker_button.setIcon(QIcon(icon))
-            Cache().set(Cache.LAST_BRUSH_COLOR, color.name(QColor.HexArgb))
+            Cache().set(Cache.LAST_BRUSH_COLOR, color.name(QColor.NameFormat.HexArgb))
 
         color_dialog = QColorDialog()
         color_dialog.setOption(QColorDialog.ColorDialogOption.ShowAlphaChannel, True)
@@ -124,10 +125,13 @@ class BrushTool(CanvasTool):
 
     def adjust_brush_size(self, offset: int) -> None:
         """Change brush size by some offset amount, multiplying offset by 10 if shift is held."""
-        if QApplication.keyboardModifiers() == Qt.ShiftModifier:
+        if QApplication.keyboardModifiers() == Qt.KeyboardModifier.ShiftModifier:
             offset *= 10
         canvas = cast(MyPaintLayerCanvas, self._canvas)
         AppConfig().set(AppConfig.SKETCH_BRUSH_SIZE, max(1, canvas.brush_size + offset))
 
     def _active_layer_change_slot(self, active_layer: Layer) -> None:
-        self.layer = active_layer
+        if isinstance(active_layer, ImageLayer):
+            self.layer = active_layer
+        else:
+            self.layer = None

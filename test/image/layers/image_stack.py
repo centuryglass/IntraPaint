@@ -4,9 +4,9 @@ import sys
 import unittest
 from unittest.mock import MagicMock
 
-from PyQt5.QtCore import QSize, QRect, QPoint
-from PyQt5.QtGui import QImage
-from PyQt5.QtWidgets import QApplication
+from PyQt6.QtCore import QSize, QRect, QPoint
+from PyQt6.QtGui import QImage
+from PyQt6.QtWidgets import QApplication
 
 from src.config.application_config import AppConfig
 from src.config.cache import Cache
@@ -103,7 +103,7 @@ class ImageStackTest(unittest.TestCase):
         self.content_changed_mock.assert_called()
         self.assertEqual(image.size(), self.image_stack.size)
         self.assertEqual(1, self.image_stack.count)
-        image = image.convertToFormat(QImage.Format_ARGB32_Premultiplied)
+        image = image.convertToFormat(QImage.Format.Format_ARGB32_Premultiplied)
         self.assertEqual(self.image_stack.qimage(), image)
         layer = self.image_stack.active_layer
         from src.image.layers.image_layer import ImageLayer
@@ -117,7 +117,7 @@ class ImageStackTest(unittest.TestCase):
         # Create layer from image:
         image = QImage(INIT_IMAGE)
         layer_0 = self.image_stack.create_layer(None, image)
-        image = image.convertToFormat(QImage.Format_ARGB32_Premultiplied)
+        image = image.convertToFormat(QImage.Format.Format_ARGB32_Premultiplied)
         self.layer_added_mock.assert_called_once()
         self.content_changed_mock.assert_called_once()
         self.active_layer_changed_mock.assert_called_with(layer_0)
@@ -250,7 +250,7 @@ class ImageStackTest(unittest.TestCase):
                 group_count += 1
         self.assertEqual(3, group_count)
         self.assertEqual(8, image_count)
-        expected_output = QImage(LAYER_IMAGE_PNG).convertToFormat(QImage.Format_ARGB32_Premultiplied)
+        expected_output = QImage(LAYER_IMAGE_PNG).convertToFormat(QImage.Format.Format_ARGB32_Premultiplied)
         output_image = self.image_stack.qimage()
         self.assertEqual(expected_output.size(), self.image_stack.size)
         self.assertEqual(output_image.size(), self.image_stack.size)

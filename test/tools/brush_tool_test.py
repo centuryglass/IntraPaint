@@ -3,8 +3,8 @@ import sys
 import unittest
 from unittest.mock import Mock, MagicMock, patch
 
-from PyQt5.QtCore import QSize, QPoint
-from PyQt5.QtWidgets import QApplication
+from PyQt6.QtCore import QSize, QPoint
+from PyQt6.QtWidgets import QApplication
 
 from src.config.application_config import AppConfig
 from src.config.cache import Cache

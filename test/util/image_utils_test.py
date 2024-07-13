@@ -4,8 +4,8 @@ import sys
 import unittest
 
 from PIL import Image
-from PyQt5.QtGui import QImage
-from PyQt5.QtWidgets import QApplication
+from PyQt6.QtGui import QImage
+from PyQt6.QtWidgets import QApplication
 
 from src.util.image_utils import pil_image_to_qimage, qimage_to_pil_image, qimage_from_base64, pil_image_from_base64, \
     BASE_64_PREFIX, image_to_base64
@@ -22,9 +22,9 @@ class TestImageUtils(unittest.TestCase):
         while os.path.basename(os.getcwd()) not in ('IntraPaint', ''):
             os.chdir('..')
         assert os.path.basename(os.getcwd()) == 'IntraPaint'
-        self.qimage_argb = QImage(TEST_ARGB_IMAGE_PATH).convertToFormat(QImage.Format_ARGB32_Premultiplied)
+        self.qimage_argb = QImage(TEST_ARGB_IMAGE_PATH).convertToFormat(QImage.Format.Format_ARGB32_Premultiplied)
         self.pil_image_argb = Image.open(TEST_ARGB_IMAGE_PATH)
-        self.qimage_rgb = QImage(TEST_RGB_IMAGE_PATH).convertToFormat(QImage.Format_RGB888)
+        self.qimage_rgb = QImage(TEST_RGB_IMAGE_PATH).convertToFormat(QImage.Format.Format_RGB888)
         self.pil_image_rgb = Image.open(TEST_RGB_IMAGE_PATH)
         self.pil_image_l = Image.new('L', (64, 64), 0)
         with open(TEST_RGB_IMAGE_PATH + '.base64.txt', 'r') as rgb_text:

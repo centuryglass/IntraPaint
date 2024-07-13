@@ -1,23 +1,23 @@
 """Utilities for managing Qt keycodes and strings."""
 from typing import Tuple, List
 
-from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QKeySequence
-from PyQt5.QtWidgets import QApplication
+from PyQt6.QtCore import Qt
+from PyQt6.QtGui import QKeySequence
+from PyQt6.QtWidgets import QApplication
 
 from src.config.key_config import KeyConfig
 
 _MODIFIERS = {
-    Qt.Key_Control: Qt.KeyboardModifier.ControlModifier,
-    Qt.Key_Shift: Qt.KeyboardModifier.ShiftModifier,
-    Qt.Key_Alt: Qt.KeyboardModifier.AltModifier
+    Qt.Key.Key_Control: Qt.KeyboardModifier.ControlModifier,
+    Qt.Key.Key_Shift: Qt.KeyboardModifier.ShiftModifier,
+    Qt.Key.Key_Alt: Qt.KeyboardModifier.AltModifier
 }
 
 
 def get_key_code(key_string: str) -> int:
     """Get a key code for a given key string, or throw ValueError if the key string was invalid."""
     key = QKeySequence(key_string)
-    if key.count() != 1 or key[0] == Qt.Key_unknown:
+    if key.count() != 1 or key[0] == Qt.Key.Key_unknown:
         raise ValueError(f'Expected a single key string, got "{str}" (key count={key.count()})')
     return key[0]
 
@@ -27,23 +27,23 @@ def get_key_string(key: Qt.Key) -> str:
     return QKeySequence(key).toString()
 
 
-def get_key_with_modifiers(key_string: str) -> Tuple[int, int]:
+def get_key_with_modifiers(key_string: str) -> Tuple[Qt.Key, Qt.KeyboardModifier]:
     """Converts a key string to a key code and a set of key modifiers."""
-    modifiers = int(Qt.KeyboardModifier.NoModifier)
+    modifiers = Qt.KeyboardModifier.NoModifier
     keys = QKeySequence(key_string)
     for i in range(keys.count() - 1):
         key = keys[i]
         if key not in _MODIFIERS:
             raise ValueError(f'Expected zero or more modifiers followed by a single key, got {str}')
         modifiers = modifiers & _MODIFIERS[key]
-    if keys[-1] in _MODIFIERS or keys[-1] == Qt.Key_unknown:
+    if keys[-1] in _MODIFIERS or keys[-1] == Qt.Key.Key_unknown:
         raise ValueError(f'Expected zero or more modifiers followed by a single key, got {str}')
     return keys[-1], modifiers
 
 
-def get_modifiers(modifier_str: str | List[str]) -> int:
+def get_modifiers(modifier_str: str | List[str]) -> Qt.KeyboardModifier:
     """Return the modifiers represented by a string."""
-    modifiers = int(Qt.KeyboardModifier.NoModifier)
+    modifiers = Qt.KeyboardModifier.NoModifier
     if not isinstance(modifier_str, list):
         modifier_str = modifier_str.split('+')
     for mod_str in modifier_str:
@@ -59,7 +59,7 @@ def get_modifiers(modifier_str: str | List[str]) -> int:
     return modifiers
 
 
-def get_modifier_string(modifiers: Qt.KeyboardModifier | Qt.KeyboardModifiers | int) -> str:
+def get_modifier_string(modifiers: Qt.KeyboardModifier) -> str:
     """Get the string representation of one or more keyboard modifiers."""
     mod_strings = []
     for code, name in ((Qt.KeyboardModifier.AltModifier, 'Alt'),

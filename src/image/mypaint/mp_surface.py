@@ -4,8 +4,8 @@ from ctypes import sizeof, pointer, byref, c_float, c_double, c_int, c_void_p
 from time import time
 from typing import Any, Optional
 
-from PyQt5.QtCore import Qt, QObject, QPoint, QSize, QRect, pyqtSignal
-from PyQt5.QtGui import QImage, QColor, QTransform
+from PyQt6.QtCore import Qt, QObject, QPoint, QSize, QRect, pyqtSignal, QPointF
+from PyQt6.QtGui import QImage, QColor, QTransform
 
 from src.image.mypaint.libmypaint import libmypaint, MyPaintTiledSurface, MyPaintTileRequestStartFunction, \
     MyPaintTileRequestEndFunction, MyPaintSurfaceDestroyFunction, \
@@ -13,6 +13,7 @@ from src.image.mypaint.libmypaint import libmypaint, MyPaintTiledSurface, MyPain
     RectangleBuffer, MyPaintRectangles, RECTANGLE_BUF_SIZE, c_uint16_p
 from src.image.mypaint.mp_brush import MPBrush
 from src.image.mypaint.mp_tile import MPTile
+from src.util.image_utils import create_transparent_image
 
 
 class MPSurface(QObject):
@@ -154,8 +155,8 @@ class MPSurface(QObject):
             raise RuntimeError(f'Cannot load image, surface is in an invalid state (w={self.width},h={self.height},'
                                f'buf={self._tiles}')
         image = image.scaled(self.size)
-        if image.format() != QImage.Format_ARGB32_Premultiplied:
-            image = image.convertToFormat(QImage.Format_ARGB32_Premultiplied)
+        if image.format() != QImage.Format.Format_ARGB32_Premultiplied:
+            image = image.convertToFormat(QImage.Format.Format_ARGB32_Premultiplied)
         self.clear()
 
         for y in range(self._tiles_height):
@@ -202,7 +203,7 @@ class MPSurface(QObject):
             height = tile_dim(self.height, y, self._tiles_height - 1)
             tile = MPTile(pixel_buffer, clear_buffer_if_new, QSize(width, height))
             self._tiles[point] = tile
-            tile.setPos(QPoint(self._scene_position.x() + x * TILE_DIM, self._scene_position.y() + y * TILE_DIM))
+            tile.setPos(QPointF(self._scene_position.x() + x * TILE_DIM, self._scene_position.y() + y * TILE_DIM))
             tile.setTransform(QTransform.fromTranslate(tile.x(), tile.y())
                               * self._scene_transform
                               * QTransform.fromTranslate(-tile.x(), -tile.y()))
@@ -279,8 +280,7 @@ class MPSurface(QObject):
         self._assert_valid_surface()
         skip_transparent_tiles = destination_image is None
         if destination_image is None:
-            destination_image = QImage(self.size, QImage.Format_ARGB32_Premultiplied)
-            destination_image.fill(Qt.transparent)
+            destination_image = create_transparent_image(self.size)
         if source is None:
             source = QRect(0, 0, self._size.width(), self._size.height())
         if destination is None:

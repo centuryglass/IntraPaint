@@ -1,7 +1,7 @@
 """Shows the edited image in its own window."""
 from typing import Optional
 
-from PyQt5.QtWidgets import QWidget
+from PyQt6.QtWidgets import QWidget
 
 from src.image.layers.image_stack import ImageStack
 from src.ui.widget.image_widget import ImageWidget

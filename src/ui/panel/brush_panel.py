@@ -4,11 +4,11 @@ brushlib/libmypaint QT library is available, currently only true for x86_64 Linu
 """
 import os
 import re
-from typing import Optional, List, Dict
+from typing import Optional, List, Dict, cast
 
-from PyQt5.QtCore import Qt, QRect, QPoint, pyqtSignal, QSize
-from PyQt5.QtGui import QPixmap, QImage, QPainter, QPaintEvent, QMouseEvent, QResizeEvent
-from PyQt5.QtWidgets import QWidget, QTabWidget, QMenu, QSizePolicy
+from PyQt6.QtCore import Qt, QRect, QPoint, pyqtSignal, QSize
+from PyQt6.QtGui import QPixmap, QImage, QPainter, QPaintEvent, QMouseEvent, QResizeEvent
+from PyQt6.QtWidgets import QWidget, QTabWidget, QMenu, QSizePolicy
 
 from src.config.application_config import AppConfig
 from src.image.mypaint.mp_brush import MPBrush
@@ -110,7 +110,7 @@ class BrushPanel(QTabWidget):
             self.addTab(content, tab_name)
         else:
             self.insertTab(index, content, tab_name)
-        content.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        content.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
 
     def _save_favorite_brushes(self) -> None:
         """Saves favorite brushes to config whenever a favorite is added or removed."""
@@ -120,19 +120,19 @@ class BrushPanel(QTabWidget):
             fav_list = self._pages[BrushPanel.FAV_KEY].findChildren(_IconButton)
         AppConfig().set(BrushPanel.FAV_CONFIG_KEY, [brush.saved_name() for brush in fav_list])
 
-    def _add_favorite(self, icon_button: QWidget) -> None:
+    def _add_favorite(self, icon_button: '_IconButton') -> None:
         if icon_button.saved_name() in AppConfig().get(BrushPanel.FAV_CONFIG_KEY):
             return
         if BrushPanel.FAV_KEY not in self._pages:
             self._create_tab(BrushPanel.FAV_KEY, index=0)
 
-        brush_copy = icon_button.copy(True)
+        brush_copy = cast(_IconButton, icon_button.copy(True))
         self._pages[BrushPanel.FAV_KEY].add_widget(brush_copy)
         brush_copy.favorite_change.connect(self._remove_favorite)
         self._save_favorite_brushes()
         self.resizeEvent(None)
 
-    def _remove_favorite(self, icon_button: QWidget) -> None:
+    def _remove_favorite(self, icon_button: '_IconButton') -> None:
         self._pages[BrushPanel.FAV_KEY].remove_widget(icon_button)
         icon_button.favorite_change.disconnect(self._remove_favorite)
         icon_button.setParent(None)
@@ -177,7 +177,7 @@ class _IconButton(QWidget):
         self._image_rect: Optional[QRect] = None
         self._image = QPixmap(image_path)
         inverted = QImage(image_path)
-        inverted.invertPixels(QImage.InvertRgba)
+        inverted.invertPixels(QImage.InvertMode.InvertRgba)
         self._image_inverted = QPixmap.fromImage(inverted)
         self.setMinimumSize(self._image.width() // 2, self._image.height() // 2)
         self.setMaximumSize(self._image.width(), self._image.height())
@@ -248,4 +248,4 @@ class _IconButton(QWidget):
         if fav_option is None:
             raise RuntimeError('Unable to set up brush option menu')
         fav_option.triggered.connect(lambda: self.favorite_change.emit(self))
-        menu.exec_(self.mapToGlobal(pos))
+        menu.exec(self.mapToGlobal(pos))

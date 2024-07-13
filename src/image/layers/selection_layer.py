@@ -5,8 +5,8 @@ from typing import Optional, List
 import cv2
 import numpy as np
 from PIL import Image
-from PyQt5.QtCore import QRect, QPoint, QSize, pyqtSignal, QPointF, Qt
-from PyQt5.QtGui import QImage, QPolygonF, QPainter
+from PyQt6.QtCore import QRect, QPoint, QSize, pyqtSignal, QPointF, Qt
+from PyQt6.QtGui import QImage, QPolygonF, QPainter
 
 from src.config.application_config import AppConfig
 from src.image.layers.image_layer import ImageLayer
@@ -79,7 +79,7 @@ class SelectionLayer(ImageLayer):
                 return
             image_ptr = image.bits()
             assert image_ptr is not None, 'Selection layer image was invalid'
-            image_ptr.setsize(image.byteCount())
+            image_ptr.setsize(image.sizeInBytes())
             np_image = np.ndarray(shape=(image.height(), image.width(), 4), dtype=np.uint8, buffer=image_ptr)
         pos = self.position
         generation_area = QRect(self._generation_area).translated(-pos.x(), -pos.y())
@@ -106,13 +106,13 @@ class SelectionLayer(ImageLayer):
 
     def select_all(self) -> None:
         """Selects the entire image."""
-        full_selection = QImage(self.size, QImage.Format_ARGB32_Premultiplied)
-        full_selection.fill(Qt.red)
+        full_selection = QImage(self.size, QImage.Format.Format_ARGB32_Premultiplied)
+        full_selection.fill(Qt.GlobalColor.red)
         self.image = full_selection
 
     def invert_selection(self) -> None:
         """Select all unselected areas, and unselect all selected areas."""
-        inverted = QImage(self.size, QImage.Format_ARGB32_Premultiplied)
+        inverted = QImage(self.size, QImage.Format.Format_ARGB32_Premultiplied)
         inverted.fill(Qt.GlobalColor.red)
         painter = QPainter(inverted)
         painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_DestinationOut)
@@ -125,7 +125,7 @@ class SelectionLayer(ImageLayer):
         image = self.image
         image_ptr = image.bits()
         assert image_ptr is not None, 'Selection layer image was invalid'
-        image_ptr.setsize(image.byteCount())
+        image_ptr.setsize(image.sizeInBytes())
         np_image: AnyNpArray = np.ndarray(shape=(image.height(), image.width(), 4), dtype=np.uint8, buffer=image_ptr)
 
         masked = np_image[:, :, 3] >= ALPHA_THRESHOLD
@@ -146,7 +146,7 @@ class SelectionLayer(ImageLayer):
         adjusted_image[adjusted_mask, 2] = 255  # red
         adjusted_image[adjusted_mask, 3] = 255
         qimage = QImage(adjusted_image.data, adjusted_image.shape[1], adjusted_image.shape[0],
-                        QImage.Format_ARGB32)
+                        QImage.Format.Format_ARGB32)
         self.image = qimage
 
     @property
@@ -167,7 +167,7 @@ class SelectionLayer(ImageLayer):
             return
         image_ptr = image.bits()
         assert image_ptr is not None, 'Selection layer image was invalid'
-        image_ptr.setsize(image.byteCount())
+        image_ptr.setsize(image.sizeInBytes())
         np_image: AnyNpArray = np.ndarray(shape=(image.height(), image.width(), 4), dtype=np.uint8, buffer=image_ptr)
 
         # Update selection bounds, skip extra processing if selection is empty:

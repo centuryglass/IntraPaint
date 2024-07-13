@@ -1,7 +1,7 @@
 """
 Convenience class for adding labels to the left of arbitrary widgets.
 """
-from PyQt5.QtWidgets import QWidget, QLabel, QHBoxLayout
+from PyQt6.QtWidgets import QWidget, QLabel, QHBoxLayout
 
 
 class LabelWrapper(QWidget):

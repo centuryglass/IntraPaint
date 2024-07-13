@@ -2,7 +2,7 @@
 from typing import Callable, List
 
 import numpy as np
-from PyQt5.QtGui import QImage
+from PyQt6.QtGui import QImage
 
 from src.config.key_config import KeyConfig
 from src.image.filter.filter import ImageFilter

@@ -3,9 +3,9 @@ import sys
 import os
 from unittest.mock import Mock
 
-from PyQt5.QtCore import Qt, QSize
-from PyQt5.QtWidgets import QApplication
-from PyQt5.QtTest import QTest
+from PyQt6.QtCore import Qt, QSize
+from PyQt6.QtWidgets import QApplication
+from PyQt6.QtTest import QTest
 
 from src.config.application_config import AppConfig
 from src.config.cache import Cache

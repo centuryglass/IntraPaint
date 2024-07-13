@@ -1,10 +1,10 @@
 """Base template for tools that use a MyPaint surface within an image layer."""
-from typing import Optional
 import logging
+from typing import Optional
 
-from PyQt5.QtCore import Qt, QPoint, QSize, QRect
-from PyQt5.QtGui import QCursor, QTabletEvent, QMouseEvent, QColor, QIcon, QWheelEvent
-from PyQt5.QtWidgets import QApplication, QWidget
+from PyQt6.QtCore import Qt, QPoint, QSize, QRect
+from PyQt6.QtGui import QCursor, QTabletEvent, QMouseEvent, QColor, QIcon, QWheelEvent, QPointingDevice
+from PyQt6.QtWidgets import QApplication, QWidget
 
 from src.config.application_config import AppConfig
 from src.config.key_config import KeyConfig
@@ -32,6 +32,7 @@ COLOR_BUTTON_TOOLTIP = 'Select sketch brush color'
 
 logger = logging.getLogger(__name__)
 
+
 class CanvasTool(BaseTool):
     """Base template for tools that use a LayerCanvas to edit an image layer using drawing commands.
 
@@ -48,7 +49,7 @@ class CanvasTool(BaseTool):
         self._tablet_pressure: Optional[float] = None
         self._tablet_x_tilt: Optional[float] = None
         self._tablet_y_tilt: Optional[float] = None
-        self._tablet_input: Optional[QTabletEvent.PointerType] = None
+        self._tablet_input: Optional[QPointingDevice.PointerType] = None
 
         self._small_brush_icon = QIcon(RESOURCES_MIN_CURSOR)
         self._small_brush_cursor = QCursor(self._small_brush_icon.pixmap(MIN_SMALL_CURSOR_SIZE, MIN_SMALL_CURSOR_SIZE))
@@ -105,7 +106,7 @@ class CanvasTool(BaseTool):
 
     @layer.setter
     def layer(self, layer: Optional[ImageLayer]) -> None:
-        """Sets or clears the active image layer."""
+        """Sets or clears the connected image layer."""
         if self._layer is not None and isinstance(self._layer, ImageLayer) and self._layer != layer:
             assert isinstance(self._layer, ImageLayer)
             self._image_viewer.resume_rendering_layer(self._layer)
@@ -119,6 +120,8 @@ class CanvasTool(BaseTool):
             self._canvas.z_value = layer.z_value
             self._canvas.connect_to_layer(layer)
             self._image_viewer.stop_rendering_layer(layer)
+        if self._control_panel is not None:
+            self._control_panel.setEnabled(isinstance(layer, ImageLayer))
 
     @property
     def brush_size(self) -> int:
@@ -192,27 +195,27 @@ class CanvasTool(BaseTool):
             image_coordinates = self._layer.map_from_image(image_coordinates)
         if not self._image_stack.has_image:
             return
-        if self._tablet_input == QTabletEvent.PointerType.Eraser:
+        if self._tablet_input == QPointingDevice.PointerType.Eraser:
             self._canvas.eraser = True
         self._canvas.stroke_to(image_coordinates.x(), image_coordinates.y(), self._tablet_pressure,
                                self._tablet_x_tilt, self._tablet_y_tilt)
-        if self._tablet_input == QTabletEvent.PointerType.Eraser:
+        if self._tablet_input == QPointingDevice.PointerType.Eraser:
             self._canvas.eraser = False
 
     def mouse_click(self, event: Optional[QMouseEvent], image_coordinates: QPoint) -> bool:
         """Starts drawing when the mouse is clicked in the scene."""
         if self._layer is None or event is None or not self._image_stack.has_image:
             return False
-        if QApplication.keyboardModifiers() == Qt.ControlModifier:
+        if QApplication.keyboardModifiers() == Qt.KeyboardModifier.ControlModifier:
             return True
-        if event.buttons() == Qt.LeftButton or event.buttons() == Qt.RightButton:
+        if event.buttons() == Qt.MouseButton.LeftButton or event.buttons() == Qt.MouseButton.RightButton:
             if self._drawing:
                 self._canvas.end_stroke()
             self._drawing = True
-            if self._cached_size is not None and event.buttons() == Qt.LeftButton:
+            if self._cached_size is not None and event.buttons() == Qt.MouseButton.LeftButton:
                 self.brush_size = self._cached_size
                 self._cached_size = None
-            elif event.buttons() == Qt.RightButton:
+            elif event.buttons() == Qt.MouseButton.RightButton:
                 if self._cached_size is None:
                     self._cached_size = self._canvas.brush_size
                 self.brush_size = 1
@@ -225,9 +228,10 @@ class CanvasTool(BaseTool):
         """Receives a mouse move event, returning whether the tool consumed the event."""
         if self._layer is None or event is None or not self._image_stack.has_image:
             return False
-        if QApplication.keyboardModifiers() == Qt.ControlModifier:
+        if QApplication.keyboardModifiers() == Qt.KeyboardModifier.ControlModifier:
             return False
-        if event.buttons() == Qt.LeftButton or event.buttons() == Qt.RightButton and self._drawing:
+        if (event.buttons() == Qt.MouseButton.LeftButton or event.buttons() == Qt.MouseButton.RightButton
+                and self._drawing):
             self._stroke_to(image_coordinates)
             return True
         return False
@@ -236,7 +240,7 @@ class CanvasTool(BaseTool):
         """Receives a mouse release event, returning whether the tool consumed the event."""
         if self._layer is None or event is None or not self._image_stack.has_image:
             return False
-        if QApplication.keyboardModifiers() == Qt.ControlModifier:
+        if QApplication.keyboardModifiers() == Qt.KeyboardModifier.ControlModifier:
             return True
         if self._drawing:
             self._drawing = False

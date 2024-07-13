@@ -1,9 +1,9 @@
 """Provides access to the user-editable application keybinding config."""
 from typing import Optional
 
-from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QKeySequence
-from PyQt5.QtWidgets import QMessageBox, QStyle, QApplication
+from PyQt6.QtCore import Qt
+from PyQt6.QtGui import QKeySequence
+from PyQt6.QtWidgets import QMessageBox, QStyle, QApplication
 
 from src.util.image_utils import get_standard_qt_icon
 from src.config.config import Config
@@ -18,6 +18,7 @@ KEY_CONFIG_ERROR_MESSAGE = 'Errors found in configurable key bindings:\n'
 
 
 class KeyConfig(Config, metaclass=Singleton):
+    """Provides access to the user-editable application keybinding config."""
 
     def __init__(self, json_path: Optional[str] = DEFAULT_CONFIG_PATH) -> None:
         """Load existing config, or initialize from defaults.
@@ -47,7 +48,7 @@ class KeyConfig(Config, metaclass=Singleton):
             for key_value in key_values:
                 if len(key_value) == 1:
                     key_value = key_value.upper()
-                if key_value != '' and key_value not in modifiers and QKeySequence(key_value)[0] == Qt.Key_unknown:
+                if key_value != '' and key_value not in modifiers and QKeySequence(key_value)[0] == Qt.Key.Key_unknown:
                     errors.append(f'"{key_str}" value "{key_value}" is not a recognized key')
                 elif any(mod_str in key_str for mod_str in speed_modifier_strings) and speed_modifier \
                         in modifiers:
@@ -81,8 +82,8 @@ class KeyConfig(Config, metaclass=Singleton):
             message_box.setTextFormat(Qt.TextFormat.RichText)
             message_box.setWindowTitle(KEY_CONFIG_ERROR_TITLE)
             message_box.setText(error_message)
-            message_box.setWindowIcon(get_standard_qt_icon(QStyle.SP_MessageBoxWarning, message_box))
-            message_box.setStandardButtons(QMessageBox.Ok)
+            message_box.setWindowIcon(get_standard_qt_icon(QStyle.StandardPixmap.SP_MessageBoxWarning, message_box))
+            message_box.setStandardButtons(QMessageBox.StandardButton.Ok)
             message_box.exec()
 
     # DYNAMIC PROPERTIES:

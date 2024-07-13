@@ -2,9 +2,9 @@
 Provides a widget that can be dragged to resize UI elements.
 """
 from typing import Optional
-from PyQt5.QtWidgets import QWidget
-from PyQt5.QtGui import QPainter, QPen, QColor, QResizeEvent, QMouseEvent, QPaintEvent
-from PyQt5.QtCore import Qt, QPoint, QSize, QRect, pyqtSignal
+from PyQt6.QtWidgets import QWidget
+from PyQt6.QtGui import QPainter, QPen, QColor, QResizeEvent, QMouseEvent, QPaintEvent
+from PyQt6.QtCore import Qt, QPoint, QSize, QRect, pyqtSignal
 from src.util.geometry_utils import get_scaled_placement
 from src.util.contrast_color import contrast_color
 

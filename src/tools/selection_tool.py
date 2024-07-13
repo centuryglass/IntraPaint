@@ -1,9 +1,9 @@
 """Selects image content for image generation or editing."""
 from typing import Optional, cast
 
-from PyQt5.QtCore import Qt, QPoint
-from PyQt5.QtGui import QMouseEvent, QIcon, QPixmap, QPainter, QKeySequence
-from PyQt5.QtWidgets import QVBoxLayout, QHBoxLayout, QWidget, QPushButton, QApplication, QLabel
+from PyQt6.QtCore import Qt, QPoint
+from PyQt6.QtGui import QMouseEvent, QIcon, QPixmap, QPainter, QKeySequence, QColor
+from PyQt6.QtWidgets import QVBoxLayout, QHBoxLayout, QWidget, QPushButton, QApplication, QLabel
 
 from src.config.application_config import AppConfig
 from src.config.key_config import KeyConfig
@@ -52,7 +52,7 @@ class SelectionTool(CanvasTool):
         self.set_scaling_icon_cursor(QIcon(RESOURCES_SELECTION_CURSOR))
 
         # Setup brush, load size from config
-        self.brush_color = Qt.red
+        self.brush_color = QColor(Qt.GlobalColor.red)
         self.brush_size = AppConfig().get(AppConfig.SELECTION_BRUSH_SIZE)
         self.layer = image_stack.selection_layer
         self.update_brush_cursor()
@@ -135,7 +135,7 @@ class SelectionTool(CanvasTool):
                 return
             with self.layer.borrow_image() as mask_image:
                 painter = QPainter(mask_image)
-                painter.fillRect(0, 0, mask_image.width(), mask_image.height(), Qt.red)
+                painter.fillRect(0, 0, mask_image.width(), mask_image.height(), Qt.GlobalColor.red)
 
         fill_selection_button.clicked.connect(fill_mask)
 
@@ -179,7 +179,7 @@ class SelectionTool(CanvasTool):
 
     def adjust_brush_size(self, offset: int) -> None:
         """Change brush size by some offset amount, multiplying offset by 10 if shift is held."""
-        if QApplication.keyboardModifiers() == Qt.ShiftModifier:
+        if QApplication.keyboardModifiers() == Qt.KeyboardModifier.ShiftModifier:
             offset *= 10
         AppConfig().set(AppConfig.SELECTION_BRUSH_SIZE, max(1, self._canvas.brush_size + offset))
 
@@ -194,7 +194,7 @@ class SelectionTool(CanvasTool):
         """Hide the mask layer while actively drawing."""
         assert event is not None
         layer = self.layer
-        if layer is not None and (event.buttons() == Qt.LeftButton or event.buttons() == Qt.RightButton):
+        if layer is not None and (event.buttons() == Qt.MouseButton.LeftButton or event.buttons() == Qt.MouseButton.RightButton):
             self._image_viewer.stop_rendering_layer(layer)
             self._canvas.z_value = 1
         return super().mouse_click(event, image_coordinates)

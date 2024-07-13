@@ -1,9 +1,9 @@
 """Selects between image editing tools, and controls their settings."""
-from typing import Optional, Dict, Callable, cast
+from typing import Optional, Dict, Callable
 
-from PyQt5.QtCore import Qt, pyqtSignal, QRect, QSize, QMargins
-from PyQt5.QtGui import QMouseEvent, QPaintEvent, QPainter, QPen, QResizeEvent
-from PyQt5.QtWidgets import QWidget, QLabel, QHBoxLayout, QVBoxLayout, QSizePolicy, QScrollArea, QPushButton, \
+from PyQt6.QtCore import Qt, pyqtSignal, QRect, QSize, QMargins
+from PyQt6.QtGui import QMouseEvent, QPaintEvent, QPainter, QPen, QResizeEvent
+from PyQt6.QtWidgets import QWidget, QLabel, QHBoxLayout, QVBoxLayout, QSizePolicy, QScrollArea, QPushButton, \
     QStackedLayout, QBoxLayout
 
 from src.config.cache import Cache
@@ -11,10 +11,10 @@ from src.image.layers.image_stack import ImageStack
 from src.tools.base_tool import BaseTool
 from src.tools.brush_tool import BrushTool
 from src.tools.eyedropper_tool import EyedropperTool
-from src.tools.selection_fill_tool import SelectionFillTool
 from src.tools.fill_tool import FillTool
 from src.tools.generation_area_tool import GenerationAreaTool
 from src.tools.layer_transform_tool import LayerTransformTool
+from src.tools.selection_fill_tool import SelectionFillTool
 from src.tools.selection_tool import SelectionTool
 from src.tools.tool_event_handler import ToolEventHandler
 from src.ui.panel.image_panel import ImagePanel
@@ -23,8 +23,8 @@ from src.ui.widget.collapsible_box import CollapsibleBox
 from src.ui.widget.grid_container import GridContainer
 from src.ui.widget.key_hint_label import KeyHintLabel
 from src.ui.widget.reactive_layout_widget import ReactiveLayoutWidget
-from src.util.geometry_utils import get_scaled_placement
 from src.util.display_size import get_window_size
+from src.util.geometry_utils import get_scaled_placement
 
 TOOL_PANEL_TITLE = 'Tools'
 LIST_SPACING = 10
@@ -57,13 +57,14 @@ class ToolPanel(QWidget):
             Connected to the "Generate" button, if one is enabled.
         """
         super().__init__()
-        self.setSizePolicy(QSizePolicy(QSizePolicy.Expanding, QSizePolicy.MinimumExpanding))
+        self.setSizePolicy(QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.MinimumExpanding))
         self._image_stack = image_stack
         self._image_panel = image_panel
         self._image_viewer = image_panel.image_viewer
         self._event_handler = ToolEventHandler(image_panel.image_viewer)
         self._event_handler.tool_changed.connect(self._setup_active_tool)
         self._layout = QStackedLayout(self)
+
         # Initial orientation is Vertical, set at the end of init, defined here as Horizontal so the orientation setup
         # doesn't ignore the change.
         self._orientation = Qt.Orientation.Horizontal
@@ -72,7 +73,7 @@ class ToolPanel(QWidget):
                                          parent=self,
                                          scrolling=False,
                                          orientation=Qt.Orientation.Horizontal)
-        self._panel_box.set_expanded_size_policy(QSizePolicy.Ignored)
+        self._panel_box.set_expanded_size_policy(QSizePolicy.Policy.Ignored)
         self._panel_box.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
 
         self._layer_panel: Optional[LayerPanel] = LayerPanel(image_stack)
@@ -95,18 +96,19 @@ class ToolPanel(QWidget):
         self._tool_control_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self._tool_control_label = QLabel()
         self._tool_control_label.setStyleSheet('text-decoration: bold;')
-        self._tool_control_label.setAlignment(cast(Qt.Alignment,
-                                                   Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignTop))
+        self._tool_control_label.setAlignment(Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignTop)
         self._tool_control_layout.addWidget(self._tool_control_label, stretch=2)
         self._tool_control_layout.addStretch(2)
         self._tool_control_box.add_visibility_limit(self._tool_control_label, MIN_SIZE_FOR_TOOL_LABEL)
-        self._tool_control_box.setSizePolicy(QSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding))
+        self._tool_control_box.setSizePolicy(QSizePolicy(QSizePolicy.Policy.MinimumExpanding,
+                                                         QSizePolicy.Policy.MinimumExpanding))
 
         self._tool_scroll_area = QScrollArea()
         self._tool_scroll_area.setWidgetResizable(True)
         self._tool_scroll_area.setWidget(self._tool_control_box)
         self._tool_scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
-        self._tool_scroll_area.setSizePolicy(QSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.Expanding))
+        self._tool_scroll_area.setSizePolicy(QSizePolicy(QSizePolicy.Policy.MinimumExpanding,
+                                                         QSizePolicy.Policy.Expanding))
 
         # Create individual tools:
 
@@ -275,7 +277,7 @@ class ToolPanel(QWidget):
         new_cursor = self._active_tool.cursor
         self._image_viewer.set_cursor(new_cursor)
 
-    def resizeEvent(self, event: Optional[QResizeEvent]) -> None:
+    def resizeEvent(self, unused_event: Optional[QResizeEvent]) -> None:
         """Keep tool list sized correctly within the panel."""
         max_width = self._tool_scroll_area.width() - self._tool_scroll_area.contentsMargins().left() * 2
         scroll_bar = self._tool_scroll_area.verticalScrollBar()
@@ -310,7 +312,7 @@ class _ToolButton(QWidget):
         super().__init__()
         self._tool = connected_tool
         self._icon = connected_tool.get_icon()
-        self.setSizePolicy(QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed))
+        self.setSizePolicy(QSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed))
         label_text = connected_tool.label
         if connected_tool.get_hotkey() is not None:
             self._key_hint: Optional[KeyHintLabel] = KeyHintLabel(connected_tool.get_hotkey(), self)
@@ -329,7 +331,7 @@ class _ToolButton(QWidget):
         size = max(min(window_size.width() // 30, window_size.height() // 30), TOOL_ICON_SIZE)
         return QSize(int(size * 1.5), size)
 
-    def resizeEvent(self, event: Optional[QResizeEvent]):
+    def resizeEvent(self, unused_event: Optional[QResizeEvent]):
         """Recalculate and cache icon bounds on size change."""
         self._icon_bounds = get_scaled_placement(self.size(), QSize(10, 10), 8)
         if self._key_hint is not None:
@@ -365,4 +367,3 @@ class _ToolButton(QWidget):
         painter.setPen(pen)
         painter.drawRect(self._icon_bounds.adjusted(-4, -4, 4, 4))
         self._icon.paint(painter, self._icon_bounds)
-

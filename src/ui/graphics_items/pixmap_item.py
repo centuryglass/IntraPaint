@@ -1,8 +1,8 @@
 """Extends QGraphicsPixmapItem to add alternate composition modes."""
 from typing import Optional
 
-from PyQt5.QtGui import QPainter, QPixmap
-from PyQt5.QtWidgets import QGraphicsPixmapItem, QGraphicsItem, QStyleOptionGraphicsItem, QWidget
+from PyQt6.QtGui import QPainter, QPixmap
+from PyQt6.QtWidgets import QGraphicsPixmapItem, QGraphicsItem, QStyleOptionGraphicsItem, QWidget
 
 
 class PixmapItem(QGraphicsPixmapItem):

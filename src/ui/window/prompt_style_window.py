@@ -3,8 +3,8 @@ import json
 import logging
 from typing import Dict, Optional
 
-from PyQt5.QtCore import pyqtSignal
-from PyQt5.QtWidgets import QDialog, QHBoxLayout, QListWidget, QListWidgetItem, QLabel, QPushButton, \
+from PyQt6.QtCore import pyqtSignal
+from PyQt6.QtWidgets import QDialog, QHBoxLayout, QListWidget, QListWidgetItem, QLabel, QPushButton, \
     QVBoxLayout
 
 from src.config.application_config import AppConfig

@@ -2,7 +2,7 @@
 Minimal wrapper class for creating a labeled spinbox widget.
 """
 from typing import Optional
-from PyQt5.QtWidgets import QWidget, QDoubleSpinBox, QLabel, QHBoxLayout
+from PyQt6.QtWidgets import QWidget, QDoubleSpinBox, QLabel, QHBoxLayout
 from src.ui.input_fields.big_int_spinbox import BigIntSpinbox
 
 

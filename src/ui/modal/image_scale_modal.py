@@ -1,9 +1,9 @@
 """Popup modal window used for scaling the edited image."""
-from typing import Optional
+from typing import Optional, cast, TypeAlias
 
-from PyQt5.QtCore import QSize
-from PyQt5.QtWidgets import QDialog, QFormLayout, QPushButton, QComboBox, QSpinBox, QHBoxLayout, QDoubleSpinBox, \
-    QWidget, QAbstractSpinBox
+from PyQt6.QtCore import QSize
+from PyQt6.QtWidgets import QDialog, QFormLayout, QPushButton, QComboBox, QSpinBox, QHBoxLayout, QDoubleSpinBox, \
+    QWidget
 
 from src.config.application_config import AppConfig
 from src.config.cache import Cache
@@ -28,6 +28,8 @@ CANCEL_BUTTON_LABEL = 'Cancel'
 MIN_PX_VALUE = 8
 MAX_PX_VALUE = 20000
 
+Spinbox: TypeAlias = QSpinBox | QDoubleSpinBox
+
 
 class ImageScaleModal(QDialog):
     """Popup modal window used for scaling the edited image."""
@@ -41,10 +43,10 @@ class ImageScaleModal(QDialog):
 
         self.setWindowTitle(TITLE_TEXT)
 
-        self._upscale_method_box: QComboBox = config.get_control_widget(AppConfig.UPSCALE_METHOD)
+        self._upscale_method_box: QComboBox = cast(QComboBox, config.get_control_widget(AppConfig.UPSCALE_METHOD))
         self._layout.addRow(UPSCALE_METHOD_LABEL, self._upscale_method_box)
 
-        def _add_input(default_value, min_val, max_val, title, tooltip) -> QSpinBox:
+        def _add_input(default_value, min_val, max_val, title, tooltip) -> Spinbox:
             box = QSpinBox() if isinstance(default_value, int) else QDoubleSpinBox()
             box.setRange(min_val, max_val)
             box.setValue(default_value)
@@ -61,7 +63,7 @@ class ImageScaleModal(QDialog):
         self._y_mult_box = _add_input(1.0, 0.0, 999.0, HEIGHT_MULT_BOX_LABEL,
                                       HEIGHT_MULT_BOX_TOOLTIP)
 
-        def set_scale_on_px_change(pixel_size: int, base_value: int, scale_box: QAbstractSpinBox):
+        def set_scale_on_px_change(pixel_size: int, base_value: int, scale_box: QDoubleSpinBox):
             """Apply scale box changes to pixel size boxes."""
             current_scale = scale_box.value()
             new_scale = round(int(pixel_size) / base_value, 2)
@@ -69,7 +71,7 @@ class ImageScaleModal(QDialog):
             if int(base_value * float(current_scale)) != pixel_size:
                 scale_box.setValue(new_scale)
 
-        def set_px_on_scale_change(scale: float, base_value: float, px_box: QAbstractSpinBox):
+        def set_px_on_scale_change(scale: float, base_value: float, px_box: QSpinBox):
             """Apply pixel size changes to scale size boxes."""
             current_pixel_size = px_box.value()
             new_pixel_size = int(base_value * float(scale))
@@ -121,7 +123,7 @@ class ImageScaleModal(QDialog):
 
     def show_image_modal(self) -> Optional[QSize]:
         """Show the modal, returning the selected size when the modal closes."""
-        self.exec_()
+        self.exec()
         if self._should_scale:
-            return QSize(self._width_box.value(), self._height_box.value())
+            return QSize(int(self._width_box.value()), int(self._height_box.value()))
         return None

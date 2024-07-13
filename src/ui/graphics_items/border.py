@@ -1,9 +1,9 @@
 """Fills in all bounds except an inner rectangular region with a solid color."""
 from typing import Optional
 
-from PyQt5.QtCore import Qt, QRectF, QPoint, QRect
-from PyQt5.QtGui import QPainter, QPainterPath, QColor
-from PyQt5.QtWidgets import QWidget, QGraphicsItem, QGraphicsScene, QStyleOptionGraphicsItem
+from PyQt6.QtCore import Qt, QRectF, QPoint, QRect
+from PyQt6.QtGui import QPainter, QPainterPath, QColor
+from PyQt6.QtWidgets import QWidget, QGraphicsItem, QGraphicsScene, QStyleOptionGraphicsItem
 
 from src.ui.widget.image_graphics_view import ImageGraphicsView
 
@@ -21,7 +21,7 @@ class Border(QGraphicsItem):
         super().__init__(parent)
         self._rect = QRectF()
         self._view = view
-        self._color = QColor(Qt.black)
+        self._color = QColor(Qt.GlobalColor.black)
         scene.addItem(self)
 
     def paint(self,

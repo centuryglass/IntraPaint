@@ -10,8 +10,8 @@ import sys
 import logging
 
 import requests
-from PyQt5.QtGui import QImage
-from PyQt5.QtCore import QByteArray
+from PyQt6.QtGui import QImage
+from PyQt6.QtCore import QByteArray
 from requests import Response
 
 from src.api.webservice import WebService

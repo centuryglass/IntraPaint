@@ -1,6 +1,6 @@
 """Utility functions for speeding up image operations using numpy."""
 from typing import Tuple, TypeAlias, Any, Optional
-from PyQt5.QtGui import QImage
+from PyQt6.QtGui import QImage
 import numpy as np
 from numpy import ndarray, dtype
 
@@ -17,12 +17,12 @@ def pixel_data_as_numpy_16bit(pixel_data: TilePixelBuffer) -> AnyNpArray:
 
 def image_data_as_numpy_8bit(image: QImage) -> AnyNpArray:
     """Returns a numpy array interface for a QImage's internal data buffer."""
-    assert image.format() == QImage.Format_ARGB32_Premultiplied, \
+    assert image.format() == QImage.Format.Format_ARGB32_Premultiplied, \
         f'Image must be pre-converted to ARGB32_premultiplied, format was {image.format()}'
     image_ptr = image.bits()
     if image_ptr is None:
         raise ValueError("Invalid image parameter")
-    image_ptr.setsize(image.byteCount())
+    image_ptr.setsize(image.sizeInBytes())
     return np.ndarray(shape=(image.height(), image.width(), 4), dtype=np.uint8, buffer=image_ptr)
 
 
@@ -30,7 +30,7 @@ def numpy_8bit_to_qimage(np_image: AnyNpArray) -> QImage:
     """Create a new QImage from numpy image data."""
     height, width, channel = np_image.shape
     assert channel == 4, f'Expected ARGB32 image, but found {channel} channels'
-    return QImage(np_image.data, width, height, QImage.Format_ARGB32_Premultiplied)
+    return QImage(np_image.data, width, height, QImage.Format.Format_ARGB32_Premultiplied)
 
 
 def numpy_8bit_to_16bit(np_image: AnyNpArray) -> AnyNpArray:
@@ -57,7 +57,7 @@ def zero_image(image: QImage) -> None:
     image_ptr = image.bits()
     if image_ptr is None:
         return
-    image_ptr.setsize(image.byteCount())
+    image_ptr.setsize(image.sizeInBytes())
     img_arr: AnyNpArray = np.ndarray(shape=(image.height(), image.width(), 4), dtype=np.uint8, buffer=image_ptr)
     img_arr[:, :, [3]] = 0
 

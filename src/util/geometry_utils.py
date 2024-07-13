@@ -1,9 +1,9 @@
 """Provides a utility function for handling image or widget placement."""
 import math
-from typing import Tuple
+from typing import Tuple, Optional
 
-from PyQt5.QtCore import QRect, QSize, QRectF, QSizeF, QPoint, QPointF, QLineF
-from PyQt5.QtGui import QTransform, QPolygonF
+from PyQt6.QtCore import QRect, QSize, QRectF, QSizeF, QPoint, QPointF, QLineF
+from PyQt6.QtGui import QTransform, QPolygonF
 
 
 def get_scaled_placement(container_rect: QRect | QSize,
@@ -54,6 +54,20 @@ def get_rect_transformation(source: QRect | QRectF | QSize, destination: QRect |
     assert QTransform.quadToQuad(orig_points, trans_points,
                                  transform), f'Failed transformation: {source} -> {destination}'
     return transform
+
+
+def translate_to_point(transform: QTransform,
+                       new_origin: Optional[QPointF | QPoint] = None) -> QTransform:
+    """Creates an adjusted transformation by adding a final translation to ensure (0, 0) lands on a specific point."""
+    if new_origin is None:
+        new_origin = QPointF(0.0, 0.0)
+    if isinstance(new_origin, QPoint):
+        new_origin = QPointF(new_origin)
+    initial_origin = transform.map(QPointF(0.0, 0.0))
+    if initial_origin == new_origin:
+        return QTransform(transform)
+    return transform * QTransform.fromTranslate(new_origin.x() - initial_origin.x(),
+                                                new_origin.y() - initial_origin.y())
 
 
 def transform_str(transformation: QTransform) -> str:
@@ -188,4 +202,3 @@ def adjusted_placement_in_bounds(rect: QRect, bounds: QRect) -> QRect:
 def is_smaller_size(size1: QSize, size2: QSize) -> bool:
     """Returns whether size1 is smaller than size2"""
     return size1.width() * size1.height() < size2.width() * size2.height()
-

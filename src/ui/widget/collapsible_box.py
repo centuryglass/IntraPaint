@@ -4,9 +4,9 @@ Originally adapted from https://stackoverflow.com/a/52617714
 """
 from typing import Optional, cast
 
-from PyQt5.QtCore import Qt, QSize, pyqtSignal
-from PyQt5.QtGui import QResizeEvent
-from PyQt5.QtWidgets import QWidget, QScrollArea, QToolButton, QHBoxLayout, QVBoxLayout, QSizePolicy, QLayout, \
+from PyQt6.QtCore import Qt, QSize, pyqtSignal
+from PyQt6.QtGui import QResizeEvent
+from PyQt6.QtWidgets import QWidget, QScrollArea, QToolButton, QHBoxLayout, QVBoxLayout, QSizePolicy, QLayout, \
     QBoxLayout
 
 from src.ui.widget.bordered_widget import BorderedWidget
@@ -19,7 +19,7 @@ class CollapsibleBox(BorderedWidget):
     box_toggled = pyqtSignal(bool)
 
     def __init__(self,
-                 title: str = "",
+                 title: str = '',
                  parent: Optional[QWidget] = None,
                  start_closed: bool = False,
                  scrolling: bool = True,
@@ -42,7 +42,7 @@ class CollapsibleBox(BorderedWidget):
         super().__init__(parent)
         self._widget_size_max = self.maximumWidth()
         self._orientation = orientation
-        self._expanded_size_policy = QSizePolicy.Preferred
+        self._expanded_size_policy = QSizePolicy.Policy.Preferred
         layout = QVBoxLayout(self) if self._orientation == Qt.Orientation.Vertical else QHBoxLayout(self)
         layout.setSpacing(0)
         layout.setContentsMargins(0, 0, 0, 0)
@@ -56,18 +56,18 @@ class CollapsibleBox(BorderedWidget):
                 Qt.ToolButtonStyle.ToolButtonTextBesideIcon
             )
             self._toggle_label = None
-            self._toggle_button.setSizePolicy(QSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed))
-            self._button_bar.setSizePolicy(QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Maximum))
+            self._toggle_button.setSizePolicy(QSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed))
+            self._button_bar.setSizePolicy(QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Maximum))
             self._button_bar_layout = QHBoxLayout(self._button_bar)
-            alignment = cast(Qt.Alignment, Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
+            alignment = Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter
             self._button_bar_layout.setAlignment(alignment)
             self._button_bar_layout.addWidget(self._toggle_button, stretch=1)
         else:
             self._toggle_label = Label(title)
-            alignment = cast(Qt.Alignment, Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignHCenter)
+            alignment = Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignHCenter
             self._toggle_label.setAlignment(alignment)
             self._toggle_button.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonIconOnly)
-            self._button_bar.setSizePolicy(QSizePolicy(QSizePolicy.Maximum, QSizePolicy.Expanding))
+            self._button_bar.setSizePolicy(QSizePolicy(QSizePolicy.Policy.Maximum, QSizePolicy.Policy.Expanding))
             self._button_bar_layout = QVBoxLayout(self._button_bar)
             self._button_bar_layout.setAlignment(alignment)
             self._button_bar_layout.addWidget(self._toggle_button)
@@ -83,17 +83,17 @@ class CollapsibleBox(BorderedWidget):
         if scrolling:
             self.scroll_area = QScrollArea()
             self.content = QWidget(self.scroll_area)
-            self.content.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding)
+            self.content.setSizePolicy(QSizePolicy.Policy.MinimumExpanding, QSizePolicy.Policy.MinimumExpanding)
             self.scroll_area.setWidget(self.content)
             self.scroll_area.setWidgetResizable(True)
         else:
             self.scroll_area = QWidget()
             self.content = self.scroll_area
-        self.scroll_area.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.MinimumExpanding)
+        self.scroll_area.setSizePolicy(QSizePolicy.Policy.MinimumExpanding, QSizePolicy.Policy.MinimumExpanding)
         if self._orientation == Qt.Orientation.Vertical:
-            self.setSizePolicy(QSizePolicy.Expanding, self._expanded_size_policy)
+            self.setSizePolicy(QSizePolicy.Policy.Expanding, self._expanded_size_policy)
         else:
-            self.setSizePolicy(self._expanded_size_policy, QSizePolicy.Expanding)
+            self.setSizePolicy(self._expanded_size_policy, QSizePolicy.Policy.Expanding)
 
         layout.addWidget(self.scroll_area, stretch=255)
         self._start_closed = start_closed
@@ -143,9 +143,9 @@ class CollapsibleBox(BorderedWidget):
         self._expanded_size_policy = policy
         if self.is_expanded():
             if self._orientation == Qt.Orientation.Vertical:
-                self.setSizePolicy(QSizePolicy.Expanding, self._expanded_size_policy)
+                self.setSizePolicy(QSizePolicy.Policy.Expanding, self._expanded_size_policy)
             else:
-                self.setSizePolicy(self._expanded_size_policy, QSizePolicy.Expanding)
+                self.setSizePolicy(self._expanded_size_policy, QSizePolicy.Policy.Expanding)
 
     def toggled(self) -> pyqtSignal:
         """Returns the internal pyqtSignal emitted when the box is expanded or collapsed."""
@@ -179,7 +179,7 @@ class CollapsibleBox(BorderedWidget):
         if not show_bar:
             self.set_expanded(True)
 
-    def resizeEvent(self, event: Optional[QResizeEvent]) -> None:
+    def resizeEvent(self, unused_event: Optional[QResizeEvent]) -> None:
         """Keep toolbar items sized correctly."""
         min_bar_dim = min(self._button_bar.width(), self._button_bar.height(), self._button_bar.sizeHint().width(),
                           self._button_bar.sizeHint().height())
@@ -193,7 +193,7 @@ class CollapsibleBox(BorderedWidget):
 
     def add_button_bar_widget(self, widget: QWidget) -> None:
         """Adds a widget to the button bar."""
-        widget.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+        widget.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
         self._button_bar_layout.addWidget(widget)
         self.resizeEvent(None)
 
@@ -221,17 +221,17 @@ class CollapsibleBox(BorderedWidget):
             layout.addWidget(self.scroll_area, stretch=255)
             self.scroll_area.setVisible(True)
             if self._orientation == Qt.Orientation.Vertical:
-                self.setSizePolicy(QSizePolicy.Expanding, self._expanded_size_policy)
+                self.setSizePolicy(QSizePolicy.Policy.Expanding, self._expanded_size_policy)
             else:
-                self.setSizePolicy(self._expanded_size_policy, QSizePolicy.Expanding)
+                self.setSizePolicy(self._expanded_size_policy, QSizePolicy.Policy.Expanding)
             self.box_toggled.emit(True)
         else:
             layout.removeWidget(self.scroll_area)
             self.scroll_area.setVisible(False)
             if self._orientation == Qt.Orientation.Vertical:
-                self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Maximum)
+                self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Maximum)
             else:
-                self.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Expanding)
+                self.setSizePolicy(QSizePolicy.Policy.Maximum, QSizePolicy.Policy.Expanding)
             self.box_toggled.emit(False)
         self.update()
 

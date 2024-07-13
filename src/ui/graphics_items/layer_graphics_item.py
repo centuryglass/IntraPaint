@@ -1,5 +1,5 @@
 """Renders an image layer into a QGraphicsScene."""
-from PyQt5.QtGui import QPainter
+from PyQt6.QtGui import QPainter
 
 from src.image.layers.image_layer import ImageLayer
 from src.ui.graphics_items.pixmap_item import PixmapItem

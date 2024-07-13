@@ -1,9 +1,9 @@
 """Displays the image panel with zoom controls and input hints."""
 from typing import Optional
 
-from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QResizeEvent
-from PyQt5.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLabel, QDoubleSpinBox, QSlider, QPushButton
+from PyQt6.QtCore import Qt
+from PyQt6.QtGui import QResizeEvent
+from PyQt6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLabel, QDoubleSpinBox, QSlider, QPushButton
 from src.image.layers.image_stack import ImageStack
 from src.ui.image_viewer import ImageViewer
 
@@ -29,7 +29,7 @@ class ImagePanel(QWidget):
         self._control_bar = QWidget()
         self._layout.addWidget(self._control_bar, stretch=1)
         self._control_layout = QHBoxLayout(self._control_bar)
-        self._control_hint_label = QLabel("")
+        self._control_hint_label = QLabel('')
         self._control_hint_label.setWordWrap(True)
         self._control_layout.addWidget(self._control_hint_label)
         self._control_layout.addSpacing(25)

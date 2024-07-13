@@ -1,8 +1,8 @@
 """A simple wrapper for QCheckBox to give it an interface consistent with other input widgets."""
 from typing import Optional
 
-from PyQt5.QtCore import pyqtSignal
-from PyQt5.QtWidgets import QCheckBox, QWidget
+from PyQt6.QtCore import pyqtSignal
+from PyQt6.QtWidgets import QCheckBox, QWidget
 
 
 class CheckBox(QCheckBox):

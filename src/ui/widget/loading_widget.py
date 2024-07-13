@@ -2,9 +2,9 @@
 Animated widget used to indicate a loading state.
 """
 from typing import Optional
-from PyQt5.QtWidgets import QWidget
-from PyQt5.QtGui import QPainter, QPen, QBrush, QColor, QShowEvent, QHideEvent, QPaintEvent
-from PyQt5.QtCore import Qt, QRect, QPointF, pyqtProperty, QPropertyAnimation
+from PyQt6.QtWidgets import QWidget
+from PyQt6.QtGui import QPainter, QPen, QBrush, QColor, QShowEvent, QHideEvent, QPaintEvent
+from PyQt6.QtCore import Qt, QRect, QPointF, pyqtProperty, QPropertyAnimation
 
 
 class LoadingWidget(QWidget):
@@ -24,7 +24,7 @@ class LoadingWidget(QWidget):
     @property
     def paused(self) -> bool:
         """Whether the loading animation is currently paused."""
-        return self._anim.state() == QPropertyAnimation.Paused
+        return self._anim.state() == QPropertyAnimation.State.Paused
 
     @paused.setter
     def paused(self, should_pause: bool) -> None:

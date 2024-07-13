@@ -2,9 +2,9 @@
 A fancier Qt toggle button implementation that allows selecting between two options.
 """
 from typing import Optional, cast
-from PyQt5.QtGui import QPixmap, QMouseEvent
-from PyQt5.QtWidgets import QWidget, QFrame, QSizePolicy, QApplication
-from PyQt5.QtCore import Qt, QSize, pyqtSignal, QEvent
+from PyQt6.QtGui import QPixmap, QMouseEvent
+from PyQt6.QtWidgets import QWidget, QFrame, QSizePolicy, QApplication
+from PyQt6.QtCore import Qt, QSize, pyqtSignal, QEvent
 from src.ui.widget.label import Label
 
 
@@ -44,10 +44,10 @@ class DualToggle(QWidget):
             assert window is not None
             bg_color = app.palette().color(window.backgroundRole())
         self.label1 = Label(options[0], self, bg_color=bg_color, orientation=orientation)
-        self.label1.setFrameStyle(QFrame.StyledPanel | QFrame.Sunken)
+        self.label1.setFrameStyle(QFrame.Shape.StyledPanel | QFrame.Shadow.Sunken)
         self.label1.set_inverted(True)
         self.label2 = Label(options[1], self, bg_color=bg_color, orientation=orientation)
-        self.label2.setFrameStyle(QFrame.StyledPanel | QFrame.Raised)
+        self.label2.setFrameStyle(QFrame.Shape.StyledPanel | QFrame.Shadow.Raised)
         self.set_orientation(orientation)
 
     def set_orientation(self, orientation: Qt.Orientation) -> None:
@@ -58,9 +58,9 @@ class DualToggle(QWidget):
         self.label1.set_orientation(orientation)
         self.label2.set_orientation(orientation)
         if orientation == Qt.Orientation.Vertical:
-            self.setSizePolicy(QSizePolicy(QSizePolicy.Fixed, QSizePolicy.MinimumExpanding))
+            self.setSizePolicy(QSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.MinimumExpanding))
         else:
-            self.setSizePolicy(QSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.Fixed))
+            self.setSizePolicy(QSizePolicy(QSizePolicy.Policy.MinimumExpanding, QSizePolicy.Policy.Fixed))
         self.update()
 
     def sizeHint(self) -> QSize:
@@ -99,11 +99,11 @@ class DualToggle(QWidget):
             raise ValueError(f"invalid option {selected_option}")
         self._selected = selected_option
         for label in (self.label1, self.label2):
-            label.setFrameStyle(QFrame.StyledPanel | QFrame.Raised)
+            label.setFrameStyle(QFrame.Shape.StyledPanel | QFrame.Shadow.Raised)
             label.set_inverted(False)
         if selected_option is not None:
             label = self.label1 if selected_option == self.option1 else self.label2
-            label.setFrameStyle(QFrame.StyledPanel | QFrame.Sunken)
+            label.setFrameStyle(QFrame.Shape.StyledPanel | QFrame.Shadow.Sunken)
             label.set_inverted(True)
         self.valueChanged.emit(selected_option)
 

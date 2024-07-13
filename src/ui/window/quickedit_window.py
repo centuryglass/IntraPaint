@@ -4,9 +4,9 @@ Minimal editing window meant for performing a single inpainting operation using 
 from typing import Optional
 import io
 import sys
-from PyQt5.QtWidgets import QApplication, QMainWindow
-from PyQt5.QtCore import Qt, QPoint, QRect, QBuffer
-from PyQt5.QtGui import QPainter, QPen, QPixmap, QImage, QPaintEvent, QMouseEvent, QResizeEvent
+from PyQt6.QtWidgets import QApplication, QMainWindow
+from PyQt6.QtCore import Qt, QPoint, QRect, QBuffer
+from PyQt6.QtGui import QPainter, QPen, QPixmap, QImage, QPaintEvent, QMouseEvent, QResizeEvent
 from PIL import Image
 
 
@@ -28,12 +28,12 @@ class QuickEditWindow(QMainWindow):
         if isinstance(im, str):
             self.qim = QImage(im)
         elif isinstance(im, Image.Image):
-            self.qim = QImage(im.tobytes('raw', 'RGB'), im.width, im.height, QImage.Format_RGB888)
+            self.qim = QImage(im.tobytes('raw', 'RGB'), im.width, im.height, QImage.Format.Format_RGB888)
         else:
             raise TypeError(f'Invalid source image type: {im}')
         self._image = QPixmap.fromImage(self.qim)
 
-        canvas = QImage(self.qim.width(), self.qim.height(), QImage.Format_ARGB32)
+        canvas = QImage(self.qim.width(), self.qim.height(), QImage.Format.Format_ARGB32)
         self._canvas = QPixmap.fromImage(canvas)
         self._canvas.fill(Qt.GlobalColor.transparent)
 
@@ -61,7 +61,8 @@ class QuickEditWindow(QMainWindow):
             return
         if event.buttons() == Qt.MouseButton.LeftButton and self._drawing:
             painter = QPainter(self._canvas)
-            painter.setPen(QPen(Qt.red, (self.width() + self.height()) / 20, Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin))
+            painter.setPen(QPen(Qt.GlobalColor.red, (self.width() + self.height()) / 20, Qt.PenStyle.SolidLine,
+                                Qt.PenCapStyle.RoundCap, Qt.PenJoinStyle.RoundJoin))
             painter.drawLine(self._last_point, event.pos())
             self._last_point = event.pos()
             self.update()
@@ -70,7 +71,7 @@ class QuickEditWindow(QMainWindow):
         """Stop drawing when the left mouse button is released."""
         if event is None:
             return
-        if event.button == Qt.LeftButton:
+        if event.button == Qt.MouseButton.LeftButton:
             self._drawing = False
 
     def get_mask(self) -> Image.Image:
@@ -87,7 +88,7 @@ class QuickEditWindow(QMainWindow):
         self._image = QPixmap.fromImage(self.qim)
         self._image = self._image.scaled(self.width(), self.height())
 
-        canvas = QImage(self.width(), self.height(), QImage.Format_ARGB32)
+        canvas = QImage(self.width(), self.height(), QImage.Format.Format_ARGB32)
         self._canvas = QPixmap.fromImage(canvas)
         self._canvas.fill(Qt.GlobalColor.transparent)
 
@@ -97,5 +98,5 @@ def get_drawn_mask(image: Image.Image | str) -> Image.Image:
     print('draw the area for inpainting, then close the window')
     app = QApplication(sys.argv)
     d = QuickEditWindow(image)
-    app.exec_()
+    app.exec()
     return d.get_mask()

@@ -6,9 +6,9 @@ import logging
 import sys
 from typing import Optional, Any
 
-from PyQt5.QtCore import Qt, QRect, QSize
-from PyQt5.QtGui import QIcon, QMouseEvent, QResizeEvent, QKeySequence, QCloseEvent, QImage
-from PyQt5.QtWidgets import QMainWindow, QGridLayout, QLabel, QWidget, QPushButton, QVBoxLayout, QHBoxLayout, \
+from PyQt6.QtCore import Qt, QRect, QSize
+from PyQt6.QtGui import QIcon, QMouseEvent, QResizeEvent, QKeySequence, QCloseEvent, QImage
+from PyQt6.QtWidgets import QMainWindow, QGridLayout, QLabel, QWidget, QPushButton, QVBoxLayout, QHBoxLayout, \
     QStackedWidget, QBoxLayout, QApplication, QTabWidget, QSizePolicy, QLayout
 
 from src.config.application_config import AppConfig
@@ -47,7 +47,7 @@ class MainWindow(QMainWindow):
         """
         super().__init__()
         self.setWindowIcon(QIcon(f'{PROJECT_DIR}/resources/icons/app_icon.png'))
-        self.setSizePolicy(QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding))
+        self.setSizePolicy(QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding))
         self.setMinimumSize(QSize(0, 0))
 
         # Initialize UI/editing data model:

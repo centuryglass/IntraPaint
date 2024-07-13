@@ -2,9 +2,9 @@
 from typing import Optional, cast, Dict
 import logging
 
-from PyQt5.QtCore import Qt, QObject, QEvent, QRect, QPoint, pyqtSignal
-from PyQt5.QtGui import QMouseEvent, QTabletEvent, QWheelEvent
-from PyQt5.QtWidgets import QApplication
+from PyQt6.QtCore import Qt, QObject, QEvent, QRect, QPoint, pyqtSignal
+from PyQt6.QtGui import QMouseEvent, QTabletEvent, QWheelEvent
+from PyQt6.QtWidgets import QApplication
 
 from src.hotkey_filter import HotkeyFilter
 from src.tools.base_tool import BaseTool
@@ -24,7 +24,7 @@ class ToolEventHandler(QObject):
         self._image_viewer = image_viewer
         self._active_tool: Optional[BaseTool] = None
         self._active_delegate: Optional[BaseTool] = None
-        self._tool_modifier_delegates: Dict[BaseTool, Dict[Qt.KeyboardModifier | Qt.KeyboardModifiers, BaseTool]] = {}
+        self._tool_modifier_delegates: Dict[BaseTool, Dict[Qt.KeyboardModifier, BaseTool]] = {}
         self._last_modifier_state = QApplication.keyboardModifiers()
         self._mouse_in_bounds = False
         image_viewer.setMouseTracking(True)
@@ -44,7 +44,7 @@ class ToolEventHandler(QObject):
         HotkeyFilter.instance().register_keybinding(set_active, keys, Qt.KeyboardModifier.NoModifier)
 
     def register_tool_delegate(self, source_tool: BaseTool, delegate_tool: BaseTool,
-                               modifiers: Qt.KeyboardModifiers | Qt.KeyboardModifier) -> None:
+                               modifiers: Qt.KeyboardModifier) -> None:
         """Registers a delegate relationship between tools. Delegates take over when certain hotkeys are held, and the
            original tool reactivates when tho set of held keys changes.
 
@@ -54,7 +54,7 @@ class ToolEventHandler(QObject):
                 The active tool that will register the selected modifiers.
             delegate_tool: BaseTool
                 The tool that will become active when the modifier is held.
-            modifiers: Qt.KeyModifiers
+            modifiers: Qt.KeyModifier
                 The modifier or set of modifiers that will trigger the delegation.
         """
         if source_tool not in self._tool_modifier_delegates:

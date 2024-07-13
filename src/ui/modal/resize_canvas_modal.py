@@ -1,9 +1,9 @@
 """Popup modal window used for cropping or extending the edited image without scaling its contents."""
 from typing import Optional
 import math
-from PyQt5.QtWidgets import QWidget, QDialog, QVBoxLayout, QHBoxLayout, QPushButton
-from PyQt5.QtCore import Qt, QSize, QRect, QPoint
-from PyQt5.QtGui import QPainter, QPen, QImage, QResizeEvent, QPaintEvent
+from PyQt6.QtWidgets import QWidget, QDialog, QVBoxLayout, QHBoxLayout, QPushButton
+from PyQt6.QtCore import Qt, QSize, QRect, QPoint
+from PyQt6.QtGui import QPainter, QPen, QImage, QResizeEvent, QPaintEvent
 from src.ui.widget.labeled_spinbox import LabeledSpinbox
 from src.util.geometry_utils import get_scaled_placement
 
@@ -117,8 +117,8 @@ class ResizeCanvasModal(QDialog):
 
     def _center(self) -> None:
         """Adjust offsets to center existing image content in the canvas."""
-        current_width = self._qimage.width()
-        current_height = self._qimage.height()
+        current_width = self._image.width()
+        current_height = self._image.height()
         width = self._width_box.spinbox.value()
         height = self._height_box.spinbox.value()
         x_off = (width // 2) - (current_width // 2)
@@ -133,7 +133,7 @@ class ResizeCanvasModal(QDialog):
 
     def show_resize_modal(self) -> tuple[QSize, QPoint] | tuple[None, None]:
         """Show this modal, returning QSize new_size and QPoint offset if changes are confirmed."""
-        self.exec_()
+        self.exec()
         if self._resize:
             new_size = QSize(self._width_box.spinbox.value(), self._height_box.spinbox.value())
             offset = QPoint(self._x_offset_box.spinbox.value(), self._y_offset_box.spinbox.value())

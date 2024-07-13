@@ -8,9 +8,9 @@ Supports the following:
 """
 from typing import Optional
 
-from PyQt5.QtCore import QObject, pyqtSignal, QPoint, QEvent
-from PyQt5.QtGui import QCursor, QPixmap, QMouseEvent, QTabletEvent, QWheelEvent, QIcon, QKeySequence
-from PyQt5.QtWidgets import QWidget
+from PyQt6.QtCore import QObject, pyqtSignal, QPoint, QEvent
+from PyQt6.QtGui import QCursor, QPixmap, QMouseEvent, QTabletEvent, QWheelEvent, QIcon, QKeySequence
+from PyQt6.QtWidgets import QWidget
 
 DEFAULT_INPUT_HINT = "Ctrl+LMB/MMB and drag:pan view - Scroll wheel:zoom"
 

@@ -76,8 +76,8 @@ note: you can use > 256px but the model only sees 256x256 at a time, so ensure t
 note: inpaint training wip
 ```
 
-# install PyQt5 if you want to use a gui, otherwise supply a mask file
-pip install PyQt5
+# install PyQt6 if you want to use a gui, otherwise supply a mask file
+pip install PyQt6
 
 # this will pop up a window, use your mouse to paint
 # use the generated npy files instead of png for best quality

@@ -1,8 +1,8 @@
 """A Qt5 color dialog with alternate reduced layouts."""
 from typing import Optional, cast
 
-from PyQt5.QtCore import QSize
-from PyQt5.QtWidgets import QColorDialog, QWidget, QVBoxLayout, QHBoxLayout, \
+from PyQt6.QtCore import QSize
+from PyQt6.QtWidgets import QColorDialog, QWidget, QVBoxLayout, QHBoxLayout, \
     QTabWidget, QBoxLayout, QLayoutItem, QLayout, QSizePolicy
 
 BASIC_PALETTE_TITLE = 'Basic Palette'
@@ -32,10 +32,10 @@ class ColorPicker(QColorDialog):
 
     def __init__(self, parent: Optional[QWidget] = None) -> None:
         super().__init__(parent)
-        self.setOption(QColorDialog.ShowAlphaChannel, True)
-        self.setOption(QColorDialog.NoButtons, True)
+        self.setOption(QColorDialog.ColorDialogOption.ShowAlphaChannel, True)
+        self.setOption(QColorDialog.ColorDialogOption.NoButtons, True)
         self.setOption(QColorDialog.ColorDialogOption.DontUseNativeDialog, True)
-        self._size_policy = QSizePolicy(QSizePolicy.Preferred, QSizePolicy.Preferred)
+        self._size_policy = QSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Preferred)
         self.setSizePolicy(self._size_policy)
         self._main_layout: Optional[QBoxLayout] = None
         self._mode = ''
@@ -81,7 +81,7 @@ class ColorPicker(QColorDialog):
         self._spectrum_panel = QWidget()
         self._spectrum_panel.setSizePolicy(self._size_policy)
         self._spectrum_panel_layout = QVBoxLayout(self._spectrum_panel)
-        for i in range(2):
+        for _ in range(2):
             _move_first_item(component_layout, self._spectrum_panel_layout)
 
         self._component_panel = QWidget()

@@ -1,8 +1,8 @@
 """Provides an input widget for setting a QSize value."""
 from typing import Optional
 
-from PyQt5.QtCore import pyqtSignal, QSize, Qt
-from PyQt5.QtWidgets import QWidget, QLabel, QSpinBox, QSlider, QGridLayout
+from PyQt6.QtCore import pyqtSignal, QSize, Qt
+from PyQt6.QtWidgets import QWidget, QLabel, QSpinBox, QSlider, QGridLayout
 
 from src.util.shared_constants import INT_MAX
 
@@ -146,7 +146,7 @@ class SizeField(QWidget):
     @maximum.setter
     def maximum(self, new_maximum: QSize) -> None:
         if new_maximum.width() < self._min_width or new_maximum.height() < self._min_height:
-            raise ValueError(f'New maximum {new_maximum} would be less than minimum size {self.minimumn}')
+            raise ValueError(f'New maximum {new_maximum} would be less than minimum size {self.minimum}')
         size_value = self.value()
         if size_value.width() > new_maximum.width():
             size_value.setWidth(new_maximum.width())

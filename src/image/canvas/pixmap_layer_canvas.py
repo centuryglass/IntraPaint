@@ -3,9 +3,9 @@ Draws content to an image layer using basic Qt drawing operations.
 """
 from typing import Optional, List
 
-from PyQt5.QtCore import QRect, Qt, QPoint, QPointF, QRectF
-from PyQt5.QtGui import QPainter, QPixmap, QPen, QTransform
-from PyQt5.QtWidgets import QGraphicsScene, QGraphicsItem
+from PyQt6.QtCore import QRect, Qt, QPoint, QPointF, QRectF
+from PyQt6.QtGui import QPainter, QPixmap, QPen, QTransform
+from PyQt6.QtWidgets import QGraphicsScene, QGraphicsItem
 
 from src.image.canvas.layer_canvas import LayerCanvas
 from src.image.layers.image_layer import ImageLayer
@@ -69,7 +69,7 @@ class PixmapLayerCanvas(LayerCanvas):
             self._pixmap_item.setOpacity(INACTIVE_PIXMAP_OPACITY)
             self._scene.addItem(self._pixmap_item)
         self._pixmap_item.setPixmap(pixmap)
-        self._pixmap_item.setPos(new_bounds.topLeft())
+        self._pixmap_item.setPos(QPointF(new_bounds.topLeft()))
 
     def _draw(self, x: float, y: float, pressure: Optional[float], x_tilt: Optional[float],
               y_tilt: Optional[float]) -> None:
@@ -80,11 +80,11 @@ class PixmapLayerCanvas(LayerCanvas):
         pixmap.swap(self._pixmap_item.pixmap())
         painter = QPainter(pixmap)
         if self.eraser:
-            painter.setCompositionMode(QPainter.CompositionMode_Clear)
+            painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_Clear)
         size = self.brush_size
         if pressure is not None:
             size = max(int(size * pressure), 1)
-        pen = QPen(self.brush_color, size, Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin)
+        pen = QPen(self.brush_color, size, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap, Qt.PenJoinStyle.RoundJoin)
         painter.setPen(pen)
         change_pt = QPointF(x - self.edit_region.x(), y - self.edit_region.y())
         last_pt = None if self._last_point is None else QPointF(self._last_point.x() - self.edit_region.x(),
@@ -120,7 +120,7 @@ class PixmapLayerCanvas(LayerCanvas):
         assert self._pixmap_item is not None
         self._pixmap_item.composition_mode = mode
 
-    def _copy_changes_to_layer(self, use_stroke_bounds: bool = False):
+    def _copy_changes_to_layer(self, layer: ImageLayer):
         """Copies content back to the connected layer."""
         if self._layer is not None and self._layer.visible and self._pixmap_item is not None \
                 and self._edit_region is not None and not self._edit_region.isEmpty():

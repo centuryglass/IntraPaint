@@ -2,7 +2,7 @@
 from threading import Lock
 from typing import Callable, TypeAlias, Optional, List
 
-from PyQt5.QtCore import QObject, pyqtSignal, QThread
+from PyQt6.QtCore import QObject, pyqtSignal, QThread
 
 from src.util.application_state import AppStateTracker, APP_STATE_LOADING
 

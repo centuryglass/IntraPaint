@@ -3,7 +3,7 @@ Runs IntraPaint with no real image editing functionality. Intended for testing o
 """
 from typing import Optional, Callable
 from PIL import Image
-from PyQt5.QtCore import pyqtSignal
+from PyQt6.QtCore import pyqtSignal
 from src.controller.base_controller import BaseInpaintController
 from src.config.application_config import AppConfig
 from src.ui.modal.settings_modal import SettingsModal

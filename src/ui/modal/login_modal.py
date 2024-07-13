@@ -3,7 +3,7 @@ import json
 from typing import Callable, Optional
 
 import requests
-from PyQt5.QtWidgets import QDialog, QHBoxLayout, QFormLayout, QLabel, QLineEdit, QPushButton
+from PyQt6.QtWidgets import QDialog, QHBoxLayout, QFormLayout, QLabel, QLineEdit, QPushButton
 
 LOGIN_TITLE = 'Enter image generation server credentials:'
 USERNAME_LABEL = 'Username:'
@@ -88,7 +88,7 @@ class LoginModal(QDialog):
 
     def show_login_modal(self) -> tuple[str | None, str | None]:
         """Shows the login modal and returns user input on close."""
-        self.exec_()
+        self.exec()
         if self._res is not None and self._res.status_code == 200:
             return self.user, self.pw
         return None, None

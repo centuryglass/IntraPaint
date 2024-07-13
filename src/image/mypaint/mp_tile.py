@@ -3,9 +3,9 @@ from ctypes import sizeof, memset
 from typing import Optional
 
 import numpy as np
-from PyQt5.QtCore import Qt, QRectF, QRect, QSize
-from PyQt5.QtGui import QImage, QPainter, QPainterPath
-from PyQt5.QtWidgets import QWidget, QGraphicsItem, QStyleOptionGraphicsItem
+from PyQt6.QtCore import Qt, QRectF, QRect, QSize
+from PyQt6.QtGui import QImage, QPainter, QPainterPath
+from PyQt6.QtWidgets import QWidget, QGraphicsItem, QStyleOptionGraphicsItem
 
 from src.image.mypaint.libmypaint import TILE_DIM, TilePixelBuffer
 from src.image.mypaint.numpy_image_utils import pixel_data_as_numpy_16bit, image_data_as_numpy_8bit, \
@@ -31,10 +31,10 @@ class MPTile(QGraphicsItem):
         super().__init__(parent)
         self._pixels: Optional[TilePixelBuffer] = tile_buffer
         self._size = size
-        self._cache_image: Optional[QImage] = QImage(size, QImage.Format_ARGB32_Premultiplied)
+        self._cache_image: Optional[QImage] = QImage(size, QImage.Format.Format_ARGB32_Premultiplied)
         self._cache_valid = False
-        self._composition_mode = QPainter.CompositionMode_SourceOver
-        self.setCacheMode(QGraphicsItem.NoCache)
+        self._composition_mode = QPainter.CompositionMode.CompositionMode_SourceOver
+        self.setCacheMode(QGraphicsItem.CacheMode.NoCache)
         self.setFlag(LayerGraphicsItem.GraphicsItemFlag.ItemStacksBehindParent, True)
         if clear_buffer:
             self.clear()
@@ -229,7 +229,7 @@ class MPTile(QGraphicsItem):
         self._assert_is_valid()
         assert self._pixels is not None and self._cache_image is not None
         memset(self._pixels, 0, sizeof(self._pixels))
-        self._cache_image.fill(Qt.transparent)
+        self._cache_image.fill(Qt.GlobalColor.transparent)
         self._cache_valid = True
 
     def save(self, path: str) -> None:
@@ -246,8 +246,8 @@ class MPTile(QGraphicsItem):
         tile_size = self.boundingRect().size()
         if tile_size != image.size():
             image = image.scaled(tile_size)
-        if image.format() != QImage.Format_ARGB32_Premultiplied:
-            image = image.convertToFormat(QImage.Format_ARGB32_Premultiplied)
+        if image.format() != QImage.Format.Format_ARGB32_Premultiplied:
+            image = image.convertToFormat(QImage.Format.Format_ARGB32_Premultiplied)
         self._cache_image = image.scaled(tile_size)
         image_ptr = image.bits()
         assert image_ptr is not None, 'Invalid image given'

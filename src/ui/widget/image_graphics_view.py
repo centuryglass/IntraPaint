@@ -2,10 +2,11 @@
 import math
 from typing import Optional, List, cast
 
-from PyQt5.QtCore import Qt, QObject, QPoint, QPointF, QRect, QRectF, QSize, QMarginsF, pyqtSignal, QEvent
-from PyQt5.QtGui import QPixmap, QImage, QPainter, QPen, QTransform, QResizeEvent, QMouseEvent, QCursor, QWheelEvent, \
+from PyQt6.QtCore import Qt, QObject, QPoint, QPointF, QRect, QRectF, QSize, QMarginsF, pyqtSignal, QEvent
+from PyQt6.QtGui import QPixmap, QImage, QPainter, QPen, QTransform, QResizeEvent, QMouseEvent, QCursor, QWheelEvent, \
     QEnterEvent, QSurfaceFormat
-from PyQt5.QtWidgets import QWidget, QGraphicsView, QGraphicsScene, QGraphicsPixmapItem, QApplication, QOpenGLWidget
+from PyQt6.QtOpenGLWidgets import QOpenGLWidget
+from PyQt6.QtWidgets import QWidget, QGraphicsView, QGraphicsScene, QGraphicsPixmapItem, QApplication
 
 from src.config.application_config import AppConfig
 from src.config.key_config import KeyConfig
@@ -34,7 +35,7 @@ class ImageGraphicsView(QGraphicsView):
         self._last_cursor_pos: Optional[QPoint] = None
         self._cursor_pixmap: Optional[QPixmap] = None
         self._cursor_pixmap_item: Optional[QGraphicsPixmapItem] = None
-        self._centered_on = QPoint(self.width() // 2, self.height() // 2)
+        self._centered_on = QPointF(self.width() // 2, self.height() // 2)
         self._mouse_navigation_enabled = True
 
         self._scale = 1.0
@@ -45,9 +46,9 @@ class ImageGraphicsView(QGraphicsView):
         self.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
-        self.setCacheMode(QGraphicsView.CacheBackground)
+        self.setCacheMode(QGraphicsView.CacheModeFlag.CacheBackground)
         self.setTransformationAnchor(QGraphicsView.ViewportAnchor.NoAnchor)
-        self.setViewportUpdateMode(QGraphicsView.FullViewportUpdate)
+        self.setViewportUpdateMode(QGraphicsView.ViewportUpdateMode.FullViewportUpdate)
 
         if AppConfig().get(AppConfig.OPENGL_ACCELERATION):
             self._opengl_view: Optional[QOpenGLWidget] = QOpenGLWidget()
@@ -115,7 +116,7 @@ class ImageGraphicsView(QGraphicsView):
     def mouse_navigation_enabled(self, enabled: bool) -> None:
         self._mouse_navigation_enabled = enabled
 
-    def center_on_point(self, pos: QPointF | QPoint) -> None:
+    def center_on_point(self, pos: QPointF) -> None:
         """Cache the center point whenever it changes."""
         super().centerOn(pos)
         self._centered_on.setX(int(pos.x()))
@@ -175,7 +176,7 @@ class ImageGraphicsView(QGraphicsView):
         self._scale_adjustment = 0.0
         self.offset = QPoint(0, 0)
         self.resizeEvent(None)
-        self.center_on_point(QPoint(int(self._content_size.width() / 2), int(self._content_size.height() / 2)))
+        self.center_on_point(QPointF(self._content_size.width() / 2, self._content_size.height() / 2))
         if scale_will_change:
             self.scale_changed.emit(self.scene_scale)
 
@@ -219,8 +220,8 @@ class ImageGraphicsView(QGraphicsView):
         """Updates the image content scale, limiting minimum scale to 0.01."""
         new_scale = max(new_scale, 0.001)
         self._scale_adjustment = new_scale - self._scale
-        self.center_on_point(QPoint(int(self._content_size.width() / 2 + self._offset.x()),
-                                    int(self._content_size.height() / 2 + self._offset.y())))
+        self.center_on_point(QPointF(self._content_size.width() / 2 + self._offset.x(),
+                                     self._content_size.height() / 2 + self._offset.y()))
         self.resizeEvent(None)
         self.scale_changed.emit(new_scale)
 
@@ -235,7 +236,7 @@ class ImageGraphicsView(QGraphicsView):
         change = (QPointF(new_offset) if isinstance(new_offset, QPoint) else new_offset) - self._offset
         self._offset.setX(float(new_offset.x()))
         self._offset.setY(float(new_offset.y()))
-        self.center_on_point(self._centered_on + change.toPoint())
+        self.center_on_point(self._centered_on + change)
         self.offset_changed.emit(self._offset.toPoint())
         self.resizeEvent(None)
 
@@ -256,15 +257,13 @@ class ImageGraphicsView(QGraphicsView):
 
     def widget_to_scene_coordinates(self, point: QPoint) -> QPointF:
         """Returns a point within the scene content corresponding to some point within the widget bounds."""
-        assert_type(point, QPoint)
         return self.mapToScene(point)
 
-    def scene_to_widget_coordinates(self, point: QPoint) -> QPointF:
+    def scene_to_widget_coordinates(self, point: QPointF) -> QPoint:
         """Returns a point within the widget bounds corresponding to some point within the scene content."""
-        assert_type(point, QPoint)
         return self.mapFromScene(point)
 
-    def drawBackground(self, painter: Optional[QPainter], rect: QRectF) -> None:
+    def drawBackground(self, painter: Optional[QPainter], unused_rect: QRectF) -> None:
         """Renders any background image behind all scene contents."""
         if painter is None or self._background is None or self._content_rect is None:
             return
@@ -278,7 +277,7 @@ class ImageGraphicsView(QGraphicsView):
                             Qt.PenJoinStyle.RoundJoin))
         painter.drawRect(border_rect)
 
-    def drawForeground(self, painter: Optional[QPainter], rect: QRectF) -> None:
+    def drawForeground(self, painter: Optional[QPainter], unused_rect: QRectF) -> None:
         """Draws cursor pixmap over the scene if one is installed."""
         if painter is None or self._cursor_pixmap is None or self._last_cursor_pos is None:
             return
@@ -355,7 +354,7 @@ class ImageGraphicsView(QGraphicsView):
         super().mousePressEvent(event)
         key_modifiers = QApplication.keyboardModifiers()
         if event.buttons() == Qt.MouseButton.MiddleButton or (event.buttons() == Qt.MouseButton.LeftButton
-                                                              and key_modifiers == Qt.ControlModifier):
+                                                              and key_modifiers == Qt.KeyboardModifier.ControlModifier):
             self._drag_pt = event.pos()
         return False if get_result else None
 
@@ -367,8 +366,9 @@ class ImageGraphicsView(QGraphicsView):
         super().mouseMoveEvent(event)
         if self._mouse_navigation_enabled and self._drag_pt is not None and event is not None:
             key_modifiers = QApplication.keyboardModifiers()
-            if event.buttons() == Qt.MouseButton.MiddleButton or (event.buttons() == Qt.MouseButton.LeftButton
-                                                                  and key_modifiers == Qt.ControlModifier):
+            if (event.buttons() == Qt.MouseButton.MiddleButton or
+                    (event.buttons() == Qt.MouseButton.LeftButton
+                     and key_modifiers == Qt.KeyboardModifier.ControlModifier)):
                 mouse_pt = event.pos()
                 scale = self.scene_scale
                 x_off = (self._drag_pt.x() - mouse_pt.x()) / scale
@@ -399,12 +399,12 @@ class ImageGraphicsView(QGraphicsView):
     def eventFilter(self, source, event: Optional[QEvent]):
         """Intercept mouse wheel events, use for scrolling in zoom mode:"""
         assert event is not None
-        if event.type() == QEvent.Leave:
+        if event.type() == QEvent.Type.Leave:
             self.set_cursor_pos(None)
-        elif event.type() == QEvent.Enter:
+        elif event.type() == QEvent.Type.Enter:
             event = cast(QEnterEvent, event)
-            self.set_cursor_pos(event.pos())
-        elif event.type() == QEvent.Wheel:
+            self.set_cursor_pos(event.position())
+        elif event.type() == QEvent.Type.Wheel:
             event = cast(QWheelEvent, event)
             if event.angleDelta().y() == 0:
                 return False
@@ -421,12 +421,13 @@ class ImageGraphicsView(QGraphicsView):
         self._last_cursor_pos = None
         super().leaveEvent(event)
 
-    def scroll_content(self, dx: int | float, dy: int | float) -> bool:
+    def scroll_content(self, unused_dx: int | float, unused_dy: int | float) -> bool:
         """Scroll content by the given offset, returning whether content was able to move."""
         return False
 
     def toggle_zoom(self) -> None:
         """Zoom in on some area of focus, or back to the full scene. Bound to the 'Toggle Zoom' key."""
+        raise NotImplementedError()
 
     def zoom_to_bounds(self, bounds: QRect) -> None:
         """Adjust viewport scale and offset to center a selected area in the view."""

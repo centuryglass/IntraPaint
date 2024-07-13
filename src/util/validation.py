@@ -1,8 +1,8 @@
 """Provides a convenience function for miscellaneous validation."""
 from typing import Any, Iterable
 
-from PyQt5.QtGui import QColor
-from PyQt5.QtWidgets import QWidget
+from PyQt6.QtGui import QColor
+from PyQt6.QtWidgets import QWidget
 
 
 def assert_type(value: Any, expected_type: Any) -> None:

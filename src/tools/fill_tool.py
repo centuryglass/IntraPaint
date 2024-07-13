@@ -1,12 +1,13 @@
 """Fill areas within an image."""
 from typing import Optional
 
-from PyQt5.QtCore import Qt, QPoint, QRect
-from PyQt5.QtGui import QIcon, QCursor, QMouseEvent, QKeySequence, QColor, QPainter
-from PyQt5.QtWidgets import QWidget, QFormLayout
+from PyQt6.QtCore import Qt, QPoint, QRect
+from PyQt6.QtGui import QIcon, QCursor, QMouseEvent, QKeySequence, QColor, QPainter
+from PyQt6.QtWidgets import QWidget, QFormLayout
 
 from src.config.cache import Cache
 from src.config.key_config import KeyConfig
+from src.image.layers.image_layer import ImageLayer
 from src.image.layers.image_stack import ImageStack
 from src.tools.base_tool import BaseTool
 from src.ui.widget.brush_color_button import BrushColorButton
@@ -79,9 +80,9 @@ class FillTool(BaseTool):
     def mouse_click(self, event: Optional[QMouseEvent], image_coordinates: QPoint) -> bool:
         """Copy the color under the mouse on left-click."""
         assert event is not None
-        if event.buttons() == Qt.LeftButton:
+        if event.buttons() == Qt.MouseButton.LeftButton:
             layer = self._image_stack.active_layer
-            if layer is None:
+            if not isinstance(layer, ImageLayer):
                 return False
             layer_point = layer.map_from_image(image_coordinates)
             if not layer.bounds.contains(layer_point):

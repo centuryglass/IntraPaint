@@ -6,9 +6,9 @@ import sys
 from typing import Optional, Callable, Any, Dict, List
 
 import requests
-from PyQt5.QtCore import QThread, pyqtSignal
-from PyQt5.QtGui import QImage
-from PyQt5.QtWidgets import QInputDialog
+from PyQt6.QtCore import QThread, pyqtSignal
+from PyQt6.QtGui import QImage
+from PyQt6.QtWidgets import QInputDialog
 
 from src.config.application_config import AppConfig
 from src.controller.base_controller import BaseInpaintController

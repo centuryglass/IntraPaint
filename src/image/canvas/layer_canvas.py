@@ -3,11 +3,12 @@ Draws content to an image layer.
 """
 from typing import Optional, List
 
-from PyQt5.QtCore import QRect, QSize
-from PyQt5.QtGui import QColor, QPainter, QTransform
-from PyQt5.QtWidgets import QGraphicsScene, QGraphicsItem
+from PyQt6.QtCore import QRect, QSize
+from PyQt6.QtGui import QColor, QPainter, QTransform
+from PyQt6.QtWidgets import QGraphicsScene, QGraphicsItem
 
 from src.image.layers.image_layer import ImageLayer
+from src.image.layers.layer import Layer
 
 
 class LayerCanvas:
@@ -32,12 +33,14 @@ class LayerCanvas:
         if layer is not None:
             self.connect_to_layer(layer)
 
-    def connect_to_layer(self, new_layer: Optional[ImageLayer]):
+    def connect_to_layer(self, new_layer: Optional[Layer]):
         """Disconnects from the current layer, and connects to a new one."""
         if self._layer is not None:
             if self._drawing:
                 self.end_stroke()
             self.disconnect_layer_signals()
+        if not isinstance(new_layer, ImageLayer):
+            new_layer = None
         self._layer = new_layer
         if self._layer is not None:
             if self.edit_region is None:
@@ -233,4 +236,3 @@ class LayerCanvas:
     def _copy_changes_to_layer(self, layer: ImageLayer):
         """Copies content back to the connected layer."""
         raise NotImplementedError('implement _copy_changes_to_layer to write the canvas content back to the layer.')
-

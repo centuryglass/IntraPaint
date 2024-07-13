@@ -2,9 +2,9 @@
 import sys
 from typing import Optional, List
 
-from PyQt5.QtCore import Qt, pyqtProperty, QPropertyAnimation, QObject, QPointF
-from PyQt5.QtGui import QPen, QColor, QShowEvent, QHideEvent, QPolygonF, QTransform
-from PyQt5.QtWidgets import QGraphicsItem, QGraphicsView, QGraphicsItemGroup, QGraphicsPolygonItem
+from PyQt6.QtCore import Qt, pyqtProperty, QPropertyAnimation, QObject, QPointF
+from PyQt6.QtGui import QPen, QColor, QShowEvent, QHideEvent, QPolygonF, QTransform
+from PyQt6.QtWidgets import QGraphicsItem, QGraphicsView, QGraphicsItemGroup, QGraphicsPolygonItem
 
 from src.util.shared_constants import TIMELAPSE_MODE_FLAG
 
@@ -100,7 +100,7 @@ class PolygonOutline(QGraphicsItemGroup):
         pen = self._get_pen()
         for polygon in polygons:
             polygon_item = QGraphicsPolygonItem(polygon)
-            polygon_item.setBrush(Qt.transparent)
+            polygon_item.setBrush(Qt.GlobalColor.transparent)
             polygon_item.setPen(pen)
             self.addToGroup(polygon_item)
             self._polygons.append(polygon_item)

@@ -12,9 +12,10 @@ import logging
 from typing import Optional
 
 import spacenav
-from PyQt5.QtCore import QObject, QThread, QSize, QRect, pyqtSignal
-from PyQt5.QtWidgets import QMainWindow
+from PyQt6.QtCore import QObject, QThread, QSize, QRect, pyqtSignal
 from src.image.layers.image_stack import ImageStack
+from src.ui.window.main_window import MainWindow
+from src.util.application_state import AppStateTracker, APP_STATE_EDITING
 
 logger = logging.getLogger(__name__)
 
@@ -29,7 +30,7 @@ MAX_SPEED_CONTROL = 1
 class SpacenavManager:
     """Tracks spacemouse input and applies it to the edited image generation area."""
 
-    def __init__(self, window: QMainWindow, image_stack: ImageStack) -> None:
+    def __init__(self, window: MainWindow, image_stack: ImageStack) -> None:
         """Connects the manager to the edited image and the main application window.""
 
         Parameters
@@ -50,7 +51,7 @@ class SpacenavManager:
             """Shares data between main thread and spacemouse thread."""
 
             def __init__(self):
-                self.readEvents = True
+                self.read_events = True
                 self.pending = False
                 self.x = 0
                 self.y = 0
@@ -92,7 +93,7 @@ class SpacenavManager:
         def stop_loop():
             """Stop the event thread when the application finishes."""
             with self._thread_data.lock:
-                self._thread_data.readEvents = False
+                self._thread_data.read_events = False
             logger.info('Spacenav connection terminating at exit.')
 
         atexit.register(stop_loop)
@@ -118,7 +119,8 @@ class SpacenavManager:
                 logger.info('spacenav connection started.')
 
                 def send_nav_signal() -> None:
-                    """Convert spacemouse events to appropriate image generation area changes, emit results to main thread."""
+                    """Convert spacemouse events to appropriate image generation area changes, emit results to main
+                       thread."""
                     with self._thread_data.lock:
                         if self._thread_data.pending:
                             return
@@ -147,7 +149,7 @@ class SpacenavManager:
 
                 # start = 0
                 last = 0
-                while self._thread_data.readEvents:
+                while self._thread_data.read_events:
                     event = spacenav.poll()
                     now = time.monotonic_ns()
                     # Reset accumulated change if last event was more than 0.2 second ago:
@@ -183,7 +185,7 @@ class SpacenavManager:
             """Move the image generation area when the thread worker requests."""
             with self._thread_data.lock:
                 self._thread_data.pending = False
-            if self._window is None or self._window.is_sample_selector_visible():
+            if self._window is None or AppStateTracker.app_state() != APP_STATE_EDITING:
                 return
             generation_area = self._image_stack.generation_area
             generation_area.moveTo(generation_area.x() + x_offset, generation_area.y() + y_offset)

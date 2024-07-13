@@ -1,11 +1,11 @@
 """
-Interact with edited image layers through the PyQt5 2D graphics engine.
+Interact with edited image layers through the PyQt6 2D graphics engine.
 """
 from typing import Optional, Dict
 
-from PyQt5.QtCore import Qt, QRect, QRectF, QSize
-from PyQt5.QtGui import QPainter, QColor, QTransform
-from PyQt5.QtWidgets import QWidget, QSizePolicy
+from PyQt6.QtCore import Qt, QRect, QRectF, QSize
+from PyQt6.QtGui import QPainter, QColor, QTransform
+from PyQt6.QtWidgets import QWidget, QSizePolicy
 
 from src.config.application_config import AppConfig
 from src.hotkey_filter import HotkeyFilter
@@ -39,7 +39,7 @@ class ImageViewer(ImageGraphicsView):
         self._layer_items: Dict[int, 'LayerGraphicsItem'] = {}
         self.content_size = image_stack.size
         self.background = get_transparency_tile_pixmap()
-        self.setSizePolicy(QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding))
+        self.setSizePolicy(QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding))
         self._follow_generation_area = False
         self._hidden: set[int] = set()
         self._selection_poly_outline = PolygonOutline(self)
@@ -176,11 +176,8 @@ class ImageViewer(ImageGraphicsView):
         self._generation_area_outline.setVisible(image_loaded)
         self._image_generation_area_outline.setVisible(
             image_loaded and AppConfig().get(AppConfig.INPAINT_FULL_RES))
-        if self._image_stack.active_layer is not None:
-            self._active_layer_outline.setVisible(True)
-            self._active_layer_outline.outlined_region = QRectF(self._image_stack.active_layer.bounds)
-        else:
-            self._active_layer_outline.setVisible(False)
+        self._active_layer_outline.setVisible(True)
+        self._active_layer_outline.outlined_region = QRectF(self._image_stack.active_layer.bounds)
         selection_layer = self._image_stack.selection_layer
         bounds = selection_layer.get_selection_gen_area()
         if bounds is not None:
@@ -193,8 +190,7 @@ class ImageViewer(ImageGraphicsView):
     # noinspection PyUnusedLocal
     def _active_layer_bounds_changed_slot(self, *args) -> None:
         active_layer = self._image_stack.active_layer
-        if active_layer is not None:
-            self._active_layer_outline.outlined_region = QRectF(self._image_stack.active_layer.bounds)
+        self._active_layer_outline.outlined_region = QRectF(active_layer.bounds)
 
     # noinspection PyUnusedLocal
     def _active_layer_change_slot(self, new_active_layer: Layer, *args) -> None:

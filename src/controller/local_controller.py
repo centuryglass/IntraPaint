@@ -3,12 +3,12 @@ Provides image editing functionality through a local instance of GLID-3-XL.
 """
 import logging
 from argparse import Namespace
-from typing import Callable, List
+from typing import Callable, List, Optional
 
 # noinspection PyPackageRequirements
 import torch
-from PyQt5.QtCore import pyqtSignal, QSize
-from PyQt5.QtGui import QImage
+from PyQt6.QtCore import pyqtSignal, QSize
+from PyQt6.QtGui import QImage
 
 from src.config.application_config import AppConfig
 from src.controller.base_controller import BaseInpaintController
@@ -60,17 +60,19 @@ class LocalDeviceController(BaseInpaintController):
         return categories
 
     def _inpaint(self,
-                 source_image_section: QImage,
-                 mask: QImage,
+                 source_image_section: Optional[QImage],
+                 mask: Optional[QImage],
                  save_image: Callable[[QImage, int], None],
                  status_signal: pyqtSignal) -> None:
         assert_types((source_image_section, mask), QImage)
         config = AppConfig()
+        assert source_image_section is not None, 'GLID-3-XL inpainting always requires a source image'
+        assert mask is not None, 'GLID-3-XL inpainting always requires a mask image'
         if source_image_section.size() != mask.size():
             raise RuntimeError(f'Selection and mask widths should match, found {source_image_section.size()}'
                                f' and {mask.size()}')
         if source_image_section.hasAlphaChannel():
-            source_image_section = source_image_section.convertToFormat(QImage.Format_RGB32)
+            source_image_section = source_image_section.convertToFormat(QImage.Format.Format_RGB32)
 
         batch_size = config.get(AppConfig.BATCH_SIZE)
         batch_count = config.get(AppConfig.BATCH_COUNT)

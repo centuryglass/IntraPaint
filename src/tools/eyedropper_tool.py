@@ -1,9 +1,9 @@
 """Samples colors within the image, setting brush color."""
 from typing import Optional
 
-from PyQt5.QtCore import Qt, QPoint
-from PyQt5.QtGui import QIcon, QCursor, QColor, QMouseEvent, QKeySequence, QResizeEvent, QShowEvent
-from PyQt5.QtWidgets import QWidget, QColorDialog
+from PyQt6.QtCore import Qt, QPoint
+from PyQt6.QtGui import QIcon, QCursor, QColor, QMouseEvent, QKeySequence, QResizeEvent, QShowEvent
+from PyQt6.QtWidgets import QWidget, QColorDialog
 
 from src.config.cache import Cache
 from src.config.key_config import KeyConfig
@@ -63,9 +63,9 @@ class EyedropperTool(BaseTool):
     def mouse_click(self, event: Optional[QMouseEvent], image_coordinates: QPoint) -> bool:
         """Copy the color under the mouse on left-click."""
         assert event is not None
-        if event.buttons() == Qt.LeftButton:
+        if event.buttons() == Qt.MouseButton.LeftButton:
             color = self._image_stack.get_color_at_point(image_coordinates)
-            Cache().set(Cache.LAST_BRUSH_COLOR, color.name(QColor.HexArgb))
+            Cache().set(Cache.LAST_BRUSH_COLOR, color.name(QColor.NameFormat.HexArgb))
             return True
         return False
 
@@ -116,4 +116,4 @@ class _ControlPanel(ColorPicker):
 
 def _update_config_color(color: QColor) -> None:
     cache = Cache()
-    cache.set(Cache.LAST_BRUSH_COLOR, color.name(QColor.HexArgb))
+    cache.set(Cache.LAST_BRUSH_COLOR, color.name(QColor.NameFormat.HexArgb))

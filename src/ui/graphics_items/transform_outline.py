@@ -2,13 +2,14 @@
 import math
 from typing import Optional, Dict, Tuple, Any, Generator, Iterable
 
-from PyQt5.QtCore import Qt, QRectF, QPointF, QSizeF, pyqtSignal
-from PyQt5.QtGui import QPainter, QPen, QTransform, QIcon, QPainterPath, QPolygonF, QImage
-from PyQt5.QtWidgets import QWidget, QGraphicsItem, QStyleOptionGraphicsItem, \
+from PyQt6.QtCore import Qt, QRectF, QPointF, QSizeF, pyqtSignal
+from PyQt6.QtGui import QPainter, QPen, QTransform, QIcon, QPainterPath, QPolygonF, QImage
+from PyQt6.QtWidgets import QWidget, QGraphicsItem, QStyleOptionGraphicsItem, \
     QGraphicsSceneMouseEvent, QGraphicsTransform, \
     QGraphicsObject, QGraphicsView
 
 from src.util.geometry_utils import extract_transform_parameters, combine_transform_parameters
+from src.util.image_utils import create_transparent_image
 from src.util.shared_constants import MIN_NONZERO, PROJECT_DIR
 
 MIN_SCENE_DIM = 5
@@ -20,7 +21,7 @@ TR_HANDLE_ID = 'top right'
 BL_HANDLE_ID = 'bottom left'
 BR_HANDLE_ID = 'bottom right'
 
-LINE_COLOR = Qt.black
+LINE_COLOR = Qt.GlobalColor.black
 LINE_WIDTH = 3
 
 CORNER_SCALE_ARROW_FILE = f'{PROJECT_DIR}/resources/arrow_corner.svg'
@@ -275,8 +276,7 @@ class TransformOutline(QGraphicsObject):
 
         # Create image and render:
         bounds = self.mapRectToScene(self.rect())
-        image = QImage(bounds.size().toSize(), QImage.Format_ARGB32_Premultiplied)
-        image.fill(Qt.GlobalColor.transparent)
+        image = create_transparent_image(bounds.size().toSize())
         painter = QPainter(image)
         scene.render(painter, QRectF(QPointF(), bounds.size()), bounds)
         painter.end()
@@ -295,7 +295,7 @@ class TransformOutline(QGraphicsObject):
             # within approx. 10px of the click event:
             view = _get_view(self)
             handle_pos = _map_to_view(handle.rect().center(), handle)
-            click_pos = view.mapFromGlobal(event.screenPos())
+            click_pos = QPointF(view.mapFromGlobal(event.screenPos()))
             distance = (click_pos - handle_pos).manhattanLength()
             if distance < HANDLE_SIZE * 2:
                 handle.setSelected(True)
@@ -478,10 +478,10 @@ class _Handle(QGraphicsItem):
         self.setToolTip(handle_id)
         self._last_pos = None
         self._parent = parent
-        self.setAcceptedMouseButtons(Qt.LeftButton)
+        self.setAcceptedMouseButtons(Qt.MouseButton.LeftButton)
         self.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsSelectable, True)
-        self._brush = Qt.black
-        self._pen = Qt.white
+        self._brush = Qt.GlobalColor.black
+        self._pen = Qt.GlobalColor.white
         self._rect = QRectF()
         self._arrow_icon = QIcon(CORNER_SCALE_ARROW_FILE)
         self._rot_arrow_icon = QIcon(CORNER_ROTATE_ARROW_FILE)
@@ -638,7 +638,7 @@ def _get_handle_rect(pos: QPointF) -> QRectF:
 def _map_to_view(local_pt: QPointF, item: QGraphicsItem) -> QPointF:
     scene_pt = item.mapToScene(local_pt)
     view = _get_view(item)
-    return QPointF(view.mapFromScene(scene_pt.toPoint()))
+    return QPointF(view.mapFromScene(scene_pt))
 
 
 def _map_from_view(view_pt: QPointF, item: QGraphicsItem) -> QPointF:

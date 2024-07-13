@@ -13,8 +13,8 @@ import zipfile
 from typing import Optional, Dict, Any, cast
 from xml.etree.ElementTree import ElementTree, Element
 
-from PyQt5.QtCore import QSize
-from PyQt5.QtGui import QTransform, QPainter, QImage
+from PyQt6.QtCore import QSize
+from PyQt6.QtGui import QTransform, QPainter, QImage
 
 from src.image.layers.image_layer import ImageLayer
 from src.image.layers.image_stack import ImageStack
@@ -328,4 +328,3 @@ def read_ora_image(image_stack: ImageStack, file_path: str) -> Optional[str]:
     metadata = xml_root.get(METADATA_TAG, None)
     image_stack.load_layer_stack(layer_stack, img_size)
     return metadata
-

@@ -6,11 +6,10 @@ import sys
 import time
 from typing import Callable, Optional, cast, List
 
-from PIL import Image
-from PyQt5.QtCore import Qt, QRect, QSize, QPoint, QSizeF, QRectF, QEvent, pyqtSignal, QPointF, QObject
-from PyQt5.QtGui import QImage, QResizeEvent, QPixmap, QPainter, QWheelEvent, QMouseEvent, \
+from PyQt6.QtCore import Qt, QRect, QSize, QSizeF, QRectF, QEvent, pyqtSignal, QPointF, QObject
+from PyQt6.QtGui import QImage, QResizeEvent, QPixmap, QPainter, QWheelEvent, QMouseEvent, \
     QPainterPath, QKeyEvent, QPolygonF
-from PyQt5.QtWidgets import QWidget, QGraphicsPixmapItem, QVBoxLayout, QLabel, \
+from PyQt6.QtWidgets import QWidget, QGraphicsPixmapItem, QVBoxLayout, QLabel, \
     QStyleOptionGraphicsItem, QHBoxLayout, QPushButton, QStyle, QApplication
 
 from src.config.application_config import AppConfig
@@ -18,6 +17,7 @@ from src.config.key_config import KeyConfig
 from src.image.layers.image_stack import ImageStack
 from src.ui.graphics_items.outline import Outline
 from src.ui.graphics_items.polygon_outline import PolygonOutline
+from src.ui.input_fields.check_box import CheckBox
 from src.ui.widget.image_graphics_view import ImageGraphicsView
 from src.util.application_state import AppStateTracker, APP_STATE_LOADING
 from src.util.display_size import max_font_size
@@ -60,7 +60,7 @@ class GeneratedImageSelector(QWidget):
     def __init__(self,
                  image_stack: ImageStack,
                  close_selector: Callable,
-                 make_selection: Callable[[Optional[Image.Image]], None]) -> None:
+                 make_selection: Callable[[Optional[QImage]], None]) -> None:
         super().__init__(None)
         self._image_stack = image_stack
         self._close_selector = close_selector
@@ -74,10 +74,10 @@ class GeneratedImageSelector(QWidget):
         self._zoom_index = 0
         self._last_scroll_time = time.time() * 1000
 
-        self._base_option_offset = QPoint(0, 0)
+        self._base_option_offset = QPointF(0.0, 0.0)
         self._base_option_scale = 0.0
         self._option_scale_offset = 0.0
-        self._option_pos_offset = QPoint(0, 0)
+        self._option_pos_offset = QPointF(0.0, 0.0)
 
         self._layout = QVBoxLayout(self)
         self._page_top_bar = QWidget()
@@ -120,11 +120,12 @@ class GeneratedImageSelector(QWidget):
             self._add_option_selection_outline(0)
 
         # Add initial images, placeholders for expected images:
-        self._loading_image = QImage(original_image.size(), QImage.Format_ARGB32_Premultiplied)
+        self._loading_image = QImage(original_image.size(), QImage.Format.Format_ARGB32_Premultiplied)
         self._loading_image.fill(Qt.GlobalColor.black)
         painter = QPainter(self._loading_image)
         painter.setPen(Qt.GlobalColor.white)
-        painter.drawText(QRect(0, 0, self._loading_image.width(), self._loading_image.height()), Qt.AlignCenter,
+        painter.drawText(QRect(0, 0, self._loading_image.width(), self._loading_image.height()),
+                         Qt.AlignmentFlag.AlignCenter,
                          LOADING_IMG_TEXT)
 
         expected_count = config.get(AppConfig.BATCH_SIZE) * config.get(AppConfig.BATCH_COUNT)
@@ -134,7 +135,9 @@ class GeneratedImageSelector(QWidget):
         # Add extra checkboxes when inpainting:
         if config.get(AppConfig.EDIT_MODE) == MODE_INPAINT:
             # show/hide selection outlines:
-            self._selection_outline_checkbox = config.get_control_widget(AppConfig.SHOW_SELECTIONS_IN_GENERATION_OPTIONS)
+            self._selection_outline_checkbox = config.get_control_widget(
+                AppConfig.SHOW_SELECTIONS_IN_GENERATION_OPTIONS)
+            assert isinstance(self._selection_outline_checkbox, CheckBox)
             self._selection_outline_checkbox.setText(SHOW_SELECTION_OUTLINES_LABEL)
             self._selection_outline_checkbox.toggled.connect(self.set_selection_outline_visibility)
             self._page_top_layout.addWidget(self._selection_outline_checkbox)
@@ -144,6 +147,7 @@ class GeneratedImageSelector(QWidget):
                 change_bounds.translate(-image_stack.generation_area.x(), -image_stack.generation_area.y())
                 self._change_bounds = change_bounds
                 self._change_zoom_checkbox = config.get_control_widget(AppConfig.SELECTION_SCREEN_ZOOMS_TO_CHANGED)
+                assert isinstance(self._change_zoom_checkbox, CheckBox)
                 self._change_zoom_checkbox.setText(CHANGE_ZOOM_CHECKBOX_LABEL)
                 self._change_zoom_checkbox.toggled.connect(self.zoom_to_changes)
                 self._page_top_layout.addWidget(self._change_zoom_checkbox)
@@ -155,7 +159,7 @@ class GeneratedImageSelector(QWidget):
         self._button_bar_layout = QHBoxLayout(self._button_bar)
 
         self._cancel_button = QPushButton()
-        self._cancel_button.setIcon(get_standard_qt_icon(QStyle.SP_DialogCancelButton))
+        self._cancel_button.setIcon(get_standard_qt_icon(QStyle.StandardPixmap.SP_DialogCancelButton))
         self._cancel_button.setText(CANCEL_BUTTON_TEXT)
         self._cancel_button.setToolTip(CANCEL_BUTTON_TOOLTIP)
         self._cancel_button.clicked.connect(self._close_selector)
@@ -174,7 +178,7 @@ class GeneratedImageSelector(QWidget):
             button.setText(f'{button.text()} [{get_key_display_string(keys)}]')
 
         self._prev_button = QPushButton()
-        self._prev_button.setIcon(get_standard_qt_icon(QStyle.SP_ArrowLeft))
+        self._prev_button.setIcon(get_standard_qt_icon(QStyle.StandardPixmap.SP_ArrowLeft))
         self._prev_button.setText(PREVIOUS_BUTTON_TEXT)
         self._prev_button.clicked.connect(self._zoom_prev)
         _add_key_hint(self._prev_button, KeyConfig.MOVE_LEFT)
@@ -187,7 +191,7 @@ class GeneratedImageSelector(QWidget):
         self._button_bar_layout.addWidget(self._zoom_button)
 
         self._next_button = QPushButton()
-        self._next_button.setIcon(get_standard_qt_icon(QStyle.SP_ArrowRight))
+        self._next_button.setIcon(get_standard_qt_icon(QStyle.StandardPixmap.SP_ArrowRight))
         self._next_button.setText(NEXT_BUTTON_TEXT)
         self._next_button.clicked.connect(self._zoom_next)
         _add_key_hint(self._next_button, KeyConfig.MOVE_RIGHT)
@@ -244,7 +248,7 @@ class GeneratedImageSelector(QWidget):
             if not self._scroll_debounce_finished():
                 return
             self._view.reset_scale()
-            self._option_pos_offset = QPoint(0, 0)
+            self._option_pos_offset = QPointF(0.0, 0.0)
             self._option_scale_offset = 0.0
             for option in self._options:
                 option.setOpacity(1.0)
@@ -276,21 +280,21 @@ class GeneratedImageSelector(QWidget):
     def eventFilter(self, source: Optional[QObject], event: Optional[QEvent]):
         """Use horizontal scroll to move through selections, select items when clicked."""
         assert event is not None
-        if event.type() == QEvent.Wheel:
+        if event.type() == QEvent.Type.Wheel:
             event = cast(QWheelEvent, event)
             if event.angleDelta().x() > 0:
                 self._zoom_next()
             elif event.angleDelta().x() < 0:
                 self._zoom_prev()
             return event.angleDelta().x() != 0
-        if event.type() == QEvent.KeyPress:
+        if event.type() == QEvent.Type.KeyPress:
             event = cast(QKeyEvent, event)
-            if event.key() == Qt.Key_Escape:
+            if event.key() == Qt.Key.Key_Escape:
                 if self._zoomed_in:
                     self.toggle_zoom()
                 else:
                     self._close_selector()
-            elif (event.key() == Qt.Key_Enter or event.key() == Qt.Key_Return) and self._zoomed_in:
+            elif (event.key() == Qt.Key.Key_Enter or event.key() == Qt.Key.Key_Return) and self._zoomed_in:
                 self._select_option(self._zoom_index)
             else:
                 try:
@@ -302,23 +306,23 @@ class GeneratedImageSelector(QWidget):
                 except ValueError:
                     return False
             return True
-        elif event.type() == QEvent.MouseButtonPress:
-            if QApplication.keyboardModifiers() == Qt.ControlModifier:
+        elif event.type() == QEvent.Type.MouseButtonPress:
+            if QApplication.keyboardModifiers() == Qt.KeyboardModifier.ControlModifier:
                 return False  # Ctrl+click is for panning, don't select options
             event = cast(QMouseEvent, event)
-            if event.button() != Qt.LeftButton or AppStateTracker.app_state() == APP_STATE_LOADING:
+            if event.button() != Qt.MouseButton.LeftButton or AppStateTracker.app_state() == APP_STATE_LOADING:
                 return False
             if source == self._view:
                 view_pos = event.pos()
             else:
-                view_pos = QPoint(self._view.x() + event.pos().x(), self._view.y() + event.pos().y())
+                view_pos = QPointF(self._view.x() + event.pos().x(), self._view.y() + event.pos().y())
             scene_pos = self._view.mapToScene(view_pos).toPoint()
             for i, option in enumerate(self._options):
                 if option.bounds.contains(scene_pos):
                     self._select_option(i)
         return False
 
-    def _offset_change_slot(self, offset: QPoint) -> None:
+    def _offset_change_slot(self, offset: QPointF) -> None:
         if not self._zoomed_in:
             return
         self._option_pos_offset = offset - self._base_option_offset
@@ -515,14 +519,14 @@ class _ImageOption(QGraphicsPixmapItem):
         corner_radius = text_bounds.height() // 5
         text_background = QPainterPath()
         text_background.addRoundedRect(QRectF(text_bounds), corner_radius, corner_radius)
-        painter.fillPath(text_background, Qt.black)
-        painter.setPen(Qt.white)
+        painter.fillPath(text_background, Qt.GlobalColor.black)
+        painter.setPen(Qt.GlobalColor.white)
         font = painter.font()
-        font_size = max(1, min(font.pointSize(), max_font_size(self._label_text, font, text_bounds)))
+        font_size = max(1, min(font.pointSize(), max_font_size(self._label_text, font, text_bounds.size())))
         font.setPointSize(font_size)
         painter.setFont(font)
-        painter.drawText(text_bounds, Qt.AlignCenter, self._label_text)
-        painter.drawTiledPixmap(QRect(QPoint(), self.size), self._transparency_pixmap)
+        painter.drawText(text_bounds, Qt.AlignmentFlag.AlignCenter, self._label_text)
+        painter.drawTiledPixmap(QRect(0, 0, self.width, self.height), self._transparency_pixmap)
         painter.restore()
         super().paint(painter, option, widget)
 

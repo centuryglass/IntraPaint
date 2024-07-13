@@ -2,7 +2,7 @@
 import logging
 from typing import Any, Optional, Dict
 
-from PyQt5.QtCore import QSize
+from PyQt6.QtCore import QSize
 
 from src.util.parameter import Parameter, get_parameter_type, TYPE_DICT, TYPE_INT, TYPE_FLOAT, TYPE_QSIZE
 
@@ -116,9 +116,9 @@ class ConfigEntry(Parameter):
             raise TypeError(f'Tried to read {self._key}.{inner_key} from type {type(self._value)}')
         if isinstance(self._value, QSize):
             return QSize(self._value)
-        elif isinstance(self._value, list):
+        if isinstance(self._value, list):
             return [*self._value]
-        elif isinstance(self._value, dict):
+        if isinstance(self._value, dict):
             return self._value.copy()
         return self._value
 

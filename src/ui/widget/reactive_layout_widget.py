@@ -2,9 +2,9 @@
 from typing import Optional, Dict, Callable, List
 import logging
 
-from PyQt5.QtCore import QSize
-from PyQt5.QtGui import QResizeEvent, QShowEvent
-from PyQt5.QtWidgets import QWidget, QSizePolicy
+from PyQt6.QtCore import QSize
+from PyQt6.QtGui import QResizeEvent, QShowEvent
+from PyQt6.QtWidgets import QWidget, QSizePolicy
 
 from src.util.shared_constants import INT_MAX
 
@@ -16,7 +16,7 @@ class ReactiveLayoutWidget(QWidget):
 
     def __init__(self, parent: Optional[QWidget] = None) -> None:
         super().__init__(parent)
-        self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         self._visibility_limits: Dict[QWidget, QSize] = {}
         self._layout_modes: List[_LayoutMode] = []
         self._default_mode: Optional[_LayoutMode] = None
@@ -42,7 +42,7 @@ class ReactiveLayoutWidget(QWidget):
         """Add a layout mode to use as a fallback if none of the size-specific modes apply."""
         self._default_mode = _LayoutMode('default', self, setup, None, None)
 
-    def resizeEvent(self, event: Optional[QResizeEvent]) -> None:
+    def resizeEvent(self, unused_event: Optional[QResizeEvent]) -> None:
         """Apply visibility rules and switch layout modes if necessary."""
         new_mode = None
         for mode in self._layout_modes:
@@ -66,7 +66,7 @@ class ReactiveLayoutWidget(QWidget):
             else:
                 widget.hide()
 
-    def showEvent(self, event: Optional[QShowEvent]) -> None:
+    def showEvent(self, unused_event: Optional[QShowEvent]) -> None:
         """Re-check size constraints when the widget is shown."""
         self.resizeEvent(None)
 

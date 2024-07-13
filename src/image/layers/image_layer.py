@@ -4,13 +4,13 @@ from contextlib import contextmanager
 from typing import Optional, Any, Tuple
 
 from PIL import Image
-from PyQt5.QtCore import Qt, QRect, QSize, QPoint
-from PyQt5.QtGui import QImage, QPainter, QPixmap, QTransform
+from PyQt6.QtCore import Qt, QRect, QSize, QPoint
+from PyQt6.QtGui import QImage, QPainter, QPixmap, QTransform
 
 from src.image.layers.transform_layer import TransformLayer
 from src.ui.modal.modal_utils import show_error_dialog
 from src.undo_stack import commit_action
-from src.util.image_utils import image_content_bounds
+from src.util.image_utils import image_content_bounds, create_transparent_image
 from src.util.validation import assert_type
 
 CROP_TO_CONTENT_ERROR_TITLE = 'Layer cropping failed'
@@ -36,8 +36,7 @@ class ImageLayer(TransformLayer):
         if isinstance(image_data, QImage):
             self.set_image(image_data)
         elif isinstance(image_data, QSize):
-            qimage = QImage(image_data, QImage.Format.Format_ARGB32_Premultiplied)
-            qimage.fill(Qt.transparent)
+            qimage = create_transparent_image(image_data)
             self.set_image(qimage)
         else:
             raise TypeError(f'Invalid layer image data: {image_data}')
@@ -48,8 +47,8 @@ class ImageLayer(TransformLayer):
 
     def set_qimage(self, image: QImage) -> None:
         """Replaces the layer's QImage content."""
-        if image.format() != QImage.Format_ARGB32_Premultiplied:
-            self._image = image.convertToFormat(QImage.Format_ARGB32_Premultiplied)
+        if image.format() != QImage.Format.Format_ARGB32_Premultiplied:
+            self._image = image.convertToFormat(QImage.Format.Format_ARGB32_Premultiplied)
         else:
             self._image = image.copy()
         self._handle_content_change(self._image)
@@ -125,8 +124,7 @@ class ImageLayer(TransformLayer):
         register_to_undo_history: bool, default=True
             Whether the resize operation should be registered to the undo history.
         """
-        new_image = QImage(relative_bounds.size(), QImage.Format.Format_ARGB32_Premultiplied)
-        new_image.fill(Qt.transparent)
+        new_image = create_transparent_image(relative_bounds.size())
         painter = QPainter(new_image)
         painter.drawImage(-relative_bounds.x(), -relative_bounds.y(), self._image)
         painter.end()
@@ -180,19 +178,19 @@ class ImageLayer(TransformLayer):
         layer_bounds = self.bounds
         if not layer_bounds.contains(bounds_rect):
             merged_bounds = layer_bounds.united(bounds_rect)
-            updated_image = QImage(merged_bounds.size(), QImage.Format_ARGB32_Premultiplied)
-            updated_image.fill(Qt.transparent)
+            updated_image = create_transparent_image(merged_bounds.size())
             painter = QPainter(updated_image)
-            painter.drawImage(layer_bounds, self.get_qimage())
+            painter.drawImage(layer_bounds.topLeft() - merged_bounds.topLeft(), self.get_qimage())
             painter.end()
             offset = QPoint()
             if merged_bounds.left() < layer_bounds.left():
                 offset.setX(merged_bounds.left() - layer_bounds.left())
             if merged_bounds.top() < layer_bounds.top():
                 offset.setY(merged_bounds.top() - layer_bounds.top())
+            bounds_rect = QRect(bounds_rect.topLeft() - merged_bounds.topLeft(), bounds_rect.size())
+            assert QRect(QPoint(), updated_image.size()).contains(bounds_rect)
         elif register_to_undo_history:
-            # TODO: find a way to inject change bounds when setting self.image so special handling isn't needed
-            #       to restrict post-processing to the change bounds:
+            # Used instead of self.image to ensure post-processing is restricted to the change bounds:
             src_image = self.get_qimage().copy(bounds_rect)
 
             def _update(img=image_data, bounds=bounds_rect, mode=composition_mode):
@@ -205,7 +203,7 @@ class ImageLayer(TransformLayer):
             def _undo(img=src_image, bounds=bounds_rect):
                 with self.borrow_image(bounds) as layer_image:
                     layer_painter = QPainter(layer_image)
-                    layer_painter.setCompositionMode(QPainter.CompositionMode_Source)
+                    layer_painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_Source)
                     layer_painter.drawImage(bounds, img)
                     layer_painter.end()
 
@@ -225,8 +223,7 @@ class ImageLayer(TransformLayer):
 
     def clear(self, save_to_undo_history: bool = True):
         """Replaces all image content with transparency."""
-        cleared_image = QImage(self.size, QImage.Format_ARGB32_Premultiplied)
-        cleared_image.fill(Qt.transparent)
+        cleared_image = create_transparent_image(self.size)
         if save_to_undo_history:
             self.image = cleared_image
         else:

@@ -1,7 +1,7 @@
 """Assorted constants required in multiple areas."""
 import os.path
 
-from PyQt5.QtGui import QPainter
+from PyQt6.QtGui import QPainter
 from PIL import Image
 
 PROJECT_DIR = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))

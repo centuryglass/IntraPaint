@@ -10,9 +10,9 @@ from argparse import Namespace
 from typing import Optional, Callable, Any, Dict, List, cast
 
 import requests
-from PyQt5.QtCore import pyqtSignal, QSize, QThread
-from PyQt5.QtGui import QImage
-from PyQt5.QtWidgets import QInputDialog
+from PyQt6.QtCore import pyqtSignal, QSize, QThread
+from PyQt6.QtGui import QImage
+from PyQt6.QtWidgets import QInputDialog
 
 from src.api.a1111_webservice import A1111Webservice
 from src.config.a1111_config import A1111Config
@@ -47,7 +47,7 @@ URL_REQUEST_RETRY_MESSAGE = 'Server connection failed, enter a new URL or click 
 CONTROLNET_MODEL_LIST_KEY = 'model_list'
 UPSCALE_ERROR_TITLE = 'Upscale failure'
 PROGRESS_KEY_CURRENT_IMAGE = 'current_image'
-PROGRESS_KEY_FRACTION = "progress"
+PROGRESS_KEY_FRACTION = 'progress'
 PROGRESS_KEY_ETA_RELATIVE = 'eta_relative'
 STYLE_ERROR_TITLE = 'Updating prompt styles failed'
 
@@ -528,7 +528,7 @@ class StableDiffusionController(BaseInpaintController):
         style_window = PromptStyleWindow()
         # TODO: update after the prompt style endpoint gets POST support
         # style_window.should_save_changes.connect(self._update_styles)
-        style_window.exec_()
+        style_window.exec()
 
     @menu_action(MENU_STABLE_DIFFUSION, 'lora_shortcut', 201, [APP_STATE_EDITING],
                  condition_check=_check_lora_available)
@@ -563,7 +563,7 @@ class StableDiffusionController(BaseInpaintController):
                 task.status.disconnect(self._window.set_loading_message)
                 task.finish_signal.disconnect(_resume_and_show)
                 delayed_lora_window = ExtraNetworkWindow(loras, self._lora_images)
-                delayed_lora_window.exec_()
+                delayed_lora_window.exec()
 
             assert self._window is not None
             task.status.connect(self._window.set_loading_message)
@@ -571,4 +571,4 @@ class StableDiffusionController(BaseInpaintController):
             task.start()
         else:
             lora_window = ExtraNetworkWindow(loras, self._lora_images)
-            lora_window.exec_()
+            lora_window.exec()

@@ -53,14 +53,14 @@ from smtplib import SMTP, SMTPException
 from typing import Callable
 
 # pylint: disable=no-name-in-module
-from PyQt5.QtCore import (QCommandLineOption, QCommandLineParser, QEvent,
+from PyQt6.QtCore import (QCommandLineOption, QCommandLineParser, QEvent,
     pyqtSlot)
-from PyQt5.QtGui import QTextOption
-from PyQt5.QtWidgets import QApplication, QMessageBox, QSizePolicy, QTextEdit
+from PyQt6.QtGui import QTextOption
+from PyQt6.QtWidgets import QApplication, QMessageBox, QSizePolicy, QTextEdit
 
 # pylint: disable=unused-import,wrong-import-order
 from typing import Dict  # noqa
-from PyQt5.QtWidgets import QPushButton  # noqa
+from PyQt6.QtWidgets import QPushButton  # noqa
 
 #: The :meth:`QCoreApplication.translate` context for strings in this file
 TR_ID = "excepthook"
@@ -97,18 +97,18 @@ class ResizableMessageBox(QMessageBox):  # pylint: disable=R0903
         res = QMessageBox.event(self, event)
 
         # Skip events we don't care about
-        if event.type() != QEvent.LayoutRequest:
+        if event.type() != QEvent.Type.LayoutRequest:
             return res
 
         # Only do all this stuff once the TextWidget is here
         details = self.findChild(QTextEdit)
         if details:
             self.setSizeGripEnabled(True)
-            self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+            self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
             self.setMaximumSize(16777215, 16777215)
 
-            details.setWordWrapMode(QTextOption.NoWrap)
-            details.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+            details.setWordWrapMode(QTextOption.WrapMode.NoWrap)
+            details.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
             details.setMaximumSize(16777215, 16777215)
 
         return res
@@ -130,7 +130,7 @@ class QtExceptHook(object):
         self._extra_info = ''
         self._reporting_cb = reporting_cb
 
-        self._dialog = ResizableMessageBox(QMessageBox.Warning,
+        self._dialog = ResizableMessageBox(QMessageBox.Icon.Warning,
             _tr("Bug Detected"),
             _tr("<big><b>A programming error has been detected "
                 "during the execution of this program.</b></big>"))
@@ -138,14 +138,14 @@ class QtExceptHook(object):
         secondary = _tr("It probably isn't fatal, but should be "
             "reported to the developers nonetheless.")
 
-        if self._reporting_cb:
+        if self._reporting_cb is not None:
             btn_report = self._dialog.addButton(_tr("Report Bug..."),
-                                              QMessageBox.ActionRole)
+                                              QMessageBox.ButtonRole.ActionRole)
             btn_report.clicked.disconnect()
             btn_report.clicked.connect(self._cb_report_bug)
         else:
             btn_copy = self._dialog.addButton(_tr("Copy Traceback..."),
-                                              QMessageBox.ActionRole)
+                                              QMessageBox.ButtonRole.ActionRole)
             btn_copy.clicked.disconnect()
             btn_copy.clicked.connect(self._cb_copy_to_clipboard)
 
@@ -156,10 +156,10 @@ class QtExceptHook(object):
 
         # Workaround for the X button not working when details are available
         # Source: https://stackoverflow.com/a/32764190/435253
-        btn_close = self._dialog.addButton(QMessageBox.Close)
+        btn_close = self._dialog.addButton(QMessageBox.StandardButton.Close)
         self._dialog.setEscapeButton(btn_close)
 
-        self.b_quit = self._dialog.addButton(_("Quit"), QMessageBox.RejectRole)
+        self.b_quit = self._dialog.addButton(_("Quit"), QMessageBox.ButtonRole.RejectRole)
 
 
     def _cb_copy_to_clipboard(self):
@@ -167,7 +167,7 @@ class QtExceptHook(object):
         QApplication.instance().clipboard().setText(
             self._dialog.detailedText())
 
-        QMessageBox(QMessageBox.Information,
+        QMessageBox(QMessageBox.Icon.Information,
             _tr("Traceback Copied"),
             _tr("The traceback has now been copied to the clipboard.")
                     ).exec_()
@@ -190,7 +190,7 @@ class QtExceptHook(object):
         self._dialog.setDetailedText(traceback_text)
 
         # Show the dialog
-        self._dialog.exec_()
+        self._dialog.exec()
         if self._dialog.clickedButton() == self.b_quit:
             QApplication.instance().quit()
 
@@ -233,14 +233,14 @@ def make_email_sender(from_address: str=None, smtp_host: str='localhost'
             smtp.sendmail(from_addr, (from_addr,), message)
             smtp.quit()
         except (socket.error, SMTPException):
-            QMessageBox(QMessageBox.Information,
+            QMessageBox(QMessageBox.Icon.Information,
                 _tr("SMTP Failure"),
                 _tr("An error was encountered while attempting to send "
-                    "your bug report. Please submit it manually.")).exec_()
+                    "your bug report. Please submit it manually.")).exec()
         else:
-            QMessageBox(QMessageBox.Information,
+            QMessageBox(QMessageBox.Icon.Information,
                 _tr("Bug Reported"),
-                _tr("Your bug report was successfully sent.")).exec_()
+                _tr("Your bug report was successfully sent.")).exec()
     return send_email
 
 if __name__ == '__main__':

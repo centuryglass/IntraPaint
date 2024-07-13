@@ -4,7 +4,7 @@ Panel providing controls for the stable-diffusion ControlNet extension. Only sup
 import logging
 from typing import Optional
 
-from PyQt5.QtWidgets import QVBoxLayout, QHBoxLayout, QCheckBox, QPushButton, QLineEdit, QComboBox, QSizePolicy
+from PyQt6.QtWidgets import QVBoxLayout, QHBoxLayout, QCheckBox, QPushButton, QLineEdit, QComboBox, QSizePolicy
 
 from src.config.application_config import AppConfig
 from src.ui.input_fields.check_box import CheckBox
@@ -152,7 +152,7 @@ class ControlnetPanel(CollapsibleBox):
 
         def image_path_update(text: str):
             """Update config when the selected control image changes."""
-            if reuse_image_checkbox.checked():
+            if reuse_image_checkbox.isChecked():
                 return
             config.set(config_key, text, inner_key=CONTROL_CONFIG_IMAGE_KEY)
 
@@ -177,7 +177,7 @@ class ControlnetPanel(CollapsibleBox):
 
         # Dynamic options section:
         options_combobox = CollapsibleBox(OPTION_BOX_TITLE, start_closed=True)
-        options_combobox.set_expanded_size_policy(QSizePolicy.Maximum)
+        options_combobox.set_expanded_size_policy(QSizePolicy.Policy.Maximum)
         options_layout = QVBoxLayout()
         options_combobox.set_content_layout(options_layout)
         layout.addWidget(options_combobox)
@@ -296,8 +296,8 @@ class ControlnetPanel(CollapsibleBox):
                                               single_step=step)
                     slider = control_param.get_input_widget()
 
-                    def _update_value(new_value):
-                        config.set(config_key, new_value, inner_key=key)
+                    def _update_value(new_value, inner_key=key):
+                        config.set(config_key, new_value, inner_key=inner_key)
                     slider.valueChanged.connect(_update_value)
                     if slider_row.count() > 1:
                         options_layout.addLayout(slider_row)

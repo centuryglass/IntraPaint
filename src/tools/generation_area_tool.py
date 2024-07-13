@@ -2,9 +2,9 @@
 
 from typing import Optional, cast, List
 
-from PyQt5.QtCore import Qt, QRect, QPoint, QSize
-from PyQt5.QtGui import QMouseEvent, QKeyEvent, QCursor, QIcon, QKeySequence
-from PyQt5.QtWidgets import QWidget, QApplication, QPushButton, QGridLayout, QHBoxLayout, QLabel, QSlider, QSpinBox
+from PyQt6.QtCore import Qt, QRect, QPoint, QSize
+from PyQt6.QtGui import QMouseEvent, QKeyEvent, QCursor, QIcon, QKeySequence
+from PyQt6.QtWidgets import QWidget, QApplication, QPushButton, QGridLayout, QHBoxLayout, QLabel, QSlider, QSpinBox
 
 from src.config.application_config import AppConfig
 from src.config.key_config import KeyConfig
@@ -71,7 +71,7 @@ class GenerationAreaTool(BaseTool):
         self._control_panel = QWidget()
         self._control_layout = QGridLayout(self._control_panel)
         self._control_layout.setSpacing(5)
-        self._control_layout.setAlignment(Qt.AlignCenter)
+        self._control_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
         for i, stretch in enumerate((1, 8, 1)):
             self._control_layout.setColumnStretch(i, stretch)
 
@@ -88,8 +88,6 @@ class GenerationAreaTool(BaseTool):
         def select_full_layer():
             """Expand the image generation area to fit the entire active layer."""
             active_layer = self._image_stack.active_layer
-            if active_layer is None:
-                return
             if isinstance(active_layer, TransformLayer):
                 self._image_stack.generation_area = active_layer.transformed_bounds
             else:
@@ -114,7 +112,7 @@ class GenerationAreaTool(BaseTool):
         height = min(self._image_stack.height - generation_area.y(), bottom_right.y() - generation_area.y())
         if width > 0 and height > 0:
             key_modifiers = QApplication.keyboardModifiers()
-            if key_modifiers == Qt.ControlModifier:
+            if key_modifiers == Qt.KeyboardModifier.ControlModifier:
                 width = max(width, height)
                 height = max(width, height)
             self._image_stack.generation_area = QRect(generation_area.x(), generation_area.y(), width, height)
@@ -122,11 +120,11 @@ class GenerationAreaTool(BaseTool):
     def mouse_click(self, event: Optional[QMouseEvent], image_coordinates: QPoint) -> bool:
         """Move the image generation area on left-click, start resizing on right-click."""
         assert event is not None
-        if event.buttons() == Qt.LeftButton:
+        if event.buttons() == Qt.MouseButton.LeftButton:
             if QApplication.keyboardModifiers() != Qt.KeyboardModifier.NoModifier:
                 return False
             self._move_generation_area(image_coordinates)
-        elif event.buttons() == Qt.RightButton:
+        elif event.buttons() == Qt.MouseButton.RightButton:
             self._image_viewer.follow_generation_area = False
             self._resizing = True
             self._resize_generation_area(image_coordinates)
@@ -137,9 +135,9 @@ class GenerationAreaTool(BaseTool):
     def mouse_move(self, event: Optional[QMouseEvent], image_coordinates: QPoint) -> bool:
         """If resizing, dynamically adjust the image generation area if the new size would be non-empty."""
         assert event is not None
-        if event.buttons() == Qt.LeftButton:
+        if event.buttons() == Qt.MouseButton.LeftButton:
             return self.mouse_click(event, image_coordinates)
-        if event.buttons() == Qt.RightButton and self._resizing:
+        if event.buttons() == Qt.MouseButton.RightButton and self._resizing:
             self._resize_generation_area(image_coordinates)
             return True
         return False
@@ -153,7 +151,7 @@ class GenerationAreaTool(BaseTool):
         """Move image generation area with arrow keys."""
         assert event is not None
         translation = QPoint(0, 0)
-        multiplier = 10 if QApplication.keyboardModifiers() == Qt.ShiftModifier else 1
+        multiplier = 10 if QApplication.keyboardModifiers() == Qt.KeyboardModifier.ShiftModifier else 1
         match event.key():
             case Qt.Key.Key_Left:
                 translation.setX(-1 * multiplier)

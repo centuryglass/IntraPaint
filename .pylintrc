@@ -458,15 +458,17 @@ confidence=HIGH,
 # --enable=similarities". If you want to run only the classes checker, but have
 # no Warning level messages displayed, use "--disable=all --enable=classes
 # --disable=W".
-disable=no-name-in-module,
-#        too-few-public-methods,
-#        too-many-public-methods,
-#        too-many-arguments,
-#        too-many-locals,
-#        too-many-instance-attributes,
-#        too-many-branches,
-#        too-many-statements,
-#        duplicate_code
+disable= too-few-public-methods,
+        too-many-public-methods,
+        too-many-arguments,
+        too-many-locals,
+        too-many-instance-attributes,
+        too-many-branches,
+        too-many-statements,
+        no-name-in-module,
+        logging-fstring-interpolation,
+        abstract-method
+#       duplicate_code
 
 # Enable the message, report, category or checker with the given id(s). You can
 # either give multiple identifier separated by comma (,) or put this option

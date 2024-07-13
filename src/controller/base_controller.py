@@ -11,9 +11,9 @@ from argparse import Namespace
 from typing import Optional, Callable, Any, List, Tuple
 
 from PIL import Image, ImageFilter, UnidentifiedImageError, PngImagePlugin
-from PyQt5.QtCore import QObject, QRect, QPoint, QSize, pyqtSignal, Qt
-from PyQt5.QtGui import QScreen, QImage, QPainter
-from PyQt5.QtWidgets import QApplication, QMessageBox, QMainWindow
+from PyQt6.QtCore import QObject, QRect, QPoint, QSize, pyqtSignal, Qt
+from PyQt6.QtGui import QScreen, QImage, QPainter
+from PyQt6.QtWidgets import QApplication, QMessageBox
 
 from src.config.application_config import AppConfig
 from src.config.cache import Cache
@@ -23,6 +23,7 @@ from src.image.filter.brightness_contrast import BrightnessContrastFilter
 from src.image.filter.posterize import PosterizeFilter
 from src.image.filter.rgb_color_balance import RGBColorBalanceFilter
 from src.image.filter.sharpen import SharpenFilter
+from src.image.layers.image_layer import ImageLayer
 from src.image.layers.image_stack import ImageStack
 from src.image.open_raster import save_ora_image, read_ora_image
 from src.ui.modal.image_scale_modal import ImageScaleModal
@@ -37,12 +38,11 @@ from src.util.application_state import AppStateTracker, APP_STATE_NO_IMAGE, APP_
     APP_STATE_SELECTION
 from src.util.async_task import AsyncTask
 from src.util.display_size import get_screen_size
-from src.util.image_utils import pil_image_to_qimage, qimage_to_pil_image, pil_image_scaling
+from src.util.image_utils import pil_image_to_qimage, qimage_to_pil_image, pil_image_scaling, create_transparent_image
 from src.util.menu_builder import MenuBuilder, menu_action
 from src.util.optional_import import optional_import
 from src.util.qtexcepthook import QtExceptHook
 from src.util.shared_constants import EDIT_MODE_INPAINT
-from src.util.validation import assert_type
 
 # Optional spacenav support and extended theming:
 qdarktheme = optional_import('qdarktheme')
@@ -122,7 +122,7 @@ class BaseInpaintController(MenuBuilder):
                                        config.get(AppConfig.MIN_EDIT_SIZE), config.get(AppConfig.MAX_EDIT_SIZE))
         self._init_image = args.init_image
 
-        self._window: Optional[QMainWindow] = None
+        self._window: Optional[MainWindow] = None
         self._layer_panel: Optional[LayerPanel] = None
         self._settings_panel: Optional[SettingsModal] = None
         self._nav_manager: Optional['SpacenavManager'] = None
@@ -260,7 +260,7 @@ class BaseInpaintController(MenuBuilder):
 
             def _open_filter_modal(filter_instance=image_filter) -> None:
                 modal = filter_instance.get_filter_modal()
-                modal.exec_()
+                modal.exec()
 
             config_key = image_filter.get_config_key()
             action = self.add_menu_action(self._window,
@@ -273,7 +273,7 @@ class BaseInpaintController(MenuBuilder):
         AppStateTracker.set_app_state(APP_STATE_EDITING if self._image_stack.has_image else APP_STATE_NO_IMAGE)
         if AppConfig().get(AppConfig.USE_ERROR_HANDLER):
             QtExceptHook().enable()
-        self._app.exec_()
+        self._app.exec()
 
     # Menu action definitions:
 
@@ -290,8 +290,7 @@ class BaseInpaintController(MenuBuilder):
         if image_size and (not self._image_stack.has_image or request_confirmation(self._window,
                                                                                    NEW_IMAGE_CONFIRMATION_TITLE,
                                                                                    NEW_IMAGE_CONFIRMATION_MESSAGE)):
-            new_image = QImage(image_size, QImage.Format_ARGB32_Premultiplied)
-            new_image.fill(Qt.transparent)
+            new_image = create_transparent_image(image_size)
             self._image_stack.load_image(new_image)
             self._metadata = None
             AppStateTracker.set_app_state(APP_STATE_EDITING)
@@ -347,7 +346,7 @@ class BaseInpaintController(MenuBuilder):
 
     @menu_action(MENU_FILE, 'load_shortcut', 3,
                  valid_app_states=[APP_STATE_EDITING, APP_STATE_NO_IMAGE])
-    def load_image(self, file_path: Optional[str] = None) -> None:
+    def load_image(self, file_path: Optional[str | List[str]] = None) -> None:
         """Open a loading dialog, then load the selected image for editing."""
         assert self._window is not None
         cache = Cache()
@@ -358,10 +357,12 @@ class BaseInpaintController(MenuBuilder):
                 return
             file_path = selected_path
         if isinstance(file_path, list):
-            logger.warning(f'Expected single image, got list with length {len(file_path)}')
+            if len(file_path) != 1:
+                logger.warning(f'Expected single image, got list with length {len(file_path)}')
             file_path = file_path[0]
-        assert_type(file_path, str)
+        assert isinstance(file_path, str)
         try:
+            assert file_path is not None
             if file_path.endswith('.ora'):
                 metadata = read_ora_image(self._image_stack, file_path)
                 if metadata is not None and len(metadata) > 0:
@@ -406,7 +407,7 @@ class BaseInpaintController(MenuBuilder):
                     logger.warning('image parameters do not match expected patterns, cannot be used. '
                                    f'parameters:{param_str}')
             AppStateTracker.set_app_state(APP_STATE_EDITING)
-        except UnidentifiedImageError as err:
+        except (UnidentifiedImageError, OSError) as err:
             show_error_dialog(self._window, LOAD_ERROR_TITLE, err)
             return
 
@@ -432,8 +433,7 @@ class BaseInpaintController(MenuBuilder):
             for image, _ in layers:
                 width = max(width, image.width())
                 height = max(height, image.height())
-            base_layer = QImage(QSize(width, height), QImage.Format_ARGB32_Premultiplied)
-            base_layer.fill(Qt.GlobalColor.transparent)
+            base_layer = create_transparent_image(QSize(width, height))
             self._image_stack.load_image(base_layer)
         for image, image_path in layers:
             name = os.path.basename(image_path)
@@ -562,7 +562,7 @@ class BaseInpaintController(MenuBuilder):
             message_box = QMessageBox()
             message_box.setWindowTitle(METADATA_UPDATE_TITLE)
             message_box.setText(METADATA_UPDATE_MESSAGE)
-            message_box.setStandardButtons(QMessageBox.Ok)
+            message_box.setStandardButtons(QMessageBox.StandardButton.Ok)
             message_box.exec()
 
     @menu_action(MENU_IMAGE, 'generate_shortcut', 23, valid_app_states=[APP_STATE_EDITING])
@@ -591,7 +591,7 @@ class BaseInpaintController(MenuBuilder):
             blurred_alpha_mask = pil_image_to_qimage(blurred_mask)
             composite_base = inpaint_image.copy()
             base_painter = QPainter(composite_base)
-            base_painter.setCompositionMode(QPainter.CompositionMode_DestinationOut)
+            base_painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_DestinationOut)
             base_painter.drawImage(QPoint(), blurred_alpha_mask)
             base_painter.end()
         else:
@@ -668,10 +668,7 @@ class BaseInpaintController(MenuBuilder):
                 painter.drawImage(QRect(QPoint(0, 0), image.size()), inpaint_mask)
                 painter.end()
             layer = self._image_stack.active_layer
-            if layer is None:
-                self._image_stack.create_layer(image_data=image)
-            else:
-                self._image_stack.set_generation_area_content(image, layer)
+            self._image_stack.set_generation_area_content(image, layer)
             AppStateTracker.set_app_state(APP_STATE_EDITING)
 
     # Selection menu:
@@ -693,16 +690,7 @@ class BaseInpaintController(MenuBuilder):
     @menu_action(MENU_SELECTION, 'select_layer_content_shortcut', valid_app_states=[APP_STATE_EDITING])
     def select_active_layer_content(self) -> None:
         """Selects all pixels in the active layer that are not fully transparent."""
-        active_layer = self._image_stack.active_layer
-        if active_layer is not None:
-            selection_image = QImage(self._image_stack.selection_layer.size, QImage.Format_ARGB32_Premultiplied)
-            selection_image.fill(Qt.transparent)
-            painter = QPainter(selection_image)
-            painter.setTransform(active_layer.transform
-                                 * self._image_stack.selection_layer.transform.inverted()[0])
-            painter.drawImage(0, 0, active_layer.image)
-            painter.end()
-            self._image_stack.selection_layer.image = selection_image
+        self._image_stack.select_active_layer_content()
 
     @menu_action(MENU_SELECTION, 'grow_selection_shortcut', valid_app_states=[APP_STATE_EDITING])
     def grow_selection(self, num_pixels=1) -> None:
@@ -774,7 +762,7 @@ class BaseInpaintController(MenuBuilder):
     def crop_layer_to_content(self) -> None:
         """Crop the active layer to remove fully transparent border pixels."""
         layer = self._image_stack.active_layer
-        if layer is not None:
+        if isinstance(layer, ImageLayer):
             layer.crop_to_content()
 
     # Tool menu:

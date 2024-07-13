@@ -1,10 +1,10 @@
 """An image editing tool that moves the selected editing region."""
-from typing import Optional, Dict, cast, Tuple, Callable
+from typing import Optional, Dict, Tuple, Callable
 
-from PyQt5.QtCore import Qt, QRect, QRectF, QSize, QPoint
-from PyQt5.QtGui import QCursor, QIcon, QKeySequence, QTransform, QPen, QPaintEvent, QPainter, QColor, \
+from PyQt6.QtCore import Qt, QRect, QRectF, QSize, QPoint
+from PyQt6.QtGui import QCursor, QIcon, QKeySequence, QTransform, QPen, QPaintEvent, QPainter, QColor, \
     QPolygon
-from PyQt5.QtWidgets import QWidget, QLabel, QSpinBox, QDoubleSpinBox, QCheckBox, QGridLayout, QPushButton, QSizePolicy
+from PyQt6.QtWidgets import QWidget, QLabel, QSpinBox, QDoubleSpinBox, QCheckBox, QGridLayout, QPushButton, QSizePolicy
 
 from src.config.application_config import AppConfig
 from src.config.key_config import KeyConfig
@@ -58,7 +58,7 @@ class LayerTransformTool(BaseTool):
         self._image_viewer = image_viewer
         self._icon = QIcon(RESOURCES_TRANSFORM_TOOL_ICON)
         self._initial_transform = QTransform()
-        self._transform_outline = TransformOutline(QRect())
+        self._transform_outline = TransformOutline(QRectF())
         self._transform_outline.offset_changed.connect(self._offset_change_slot)
         self._transform_outline.scale_changed.connect(self._scale_change_slot)
         self._transform_outline.angle_changed.connect(self._angle_change_slot)
@@ -71,9 +71,9 @@ class LayerTransformTool(BaseTool):
 
         # prepare control panel, wait to fully initialize
         self._control_panel = ReactiveLayoutWidget()
-        self._control_panel.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        self._control_panel.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         self._control_layout: Optional[QGridLayout] = None
-        self._preview = _TransformPreview(image_stack.size, QRect(), QTransform())
+        self._preview = _TransformPreview(image_stack.size, QRectF(), QTransform())
         image_stack.size_changed.connect(self._preview.set_image_size)
 
         def _init_control(default_val, min_val, max_val, change_fn):
@@ -168,9 +168,9 @@ class LayerTransformTool(BaseTool):
             return self._control_panel
         self._control_layout = QGridLayout(self._control_panel)
         self._control_panel.setContentsMargins(0, 0, 0, 0)
-        self._control_panel.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Ignored)
+        self._control_panel.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Ignored)
         grid = self._control_layout
-        grid.setAlignment(Qt.AlignCenter)
+        grid.setAlignment(Qt.AlignmentFlag.AlignCenter)
         grid.setSpacing(CONTROL_GRID_SPACING)
 
         labels = [X_LABEL, Y_LABEL, WIDTH_LABEL, HEIGHT_LABEL, X_SCALE_LABEL, Y_SCALE_LABEL, DEGREE_LABEL,
@@ -188,16 +188,14 @@ class LayerTransformTool(BaseTool):
         def _get_down_hint(control: QWidget) -> Optional[KeyHintLabel]:
             if control in self._down_keys:
                 down_hint_widget = KeyHintLabel(self._down_keys[control])
-                down_hint_widget.setAlignment(cast(Qt.Alignment,
-                                                   Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter))
+                down_hint_widget.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
                 return down_hint_widget
             return None
 
         def _get_up_hint(control: QWidget) -> Optional[KeyHintLabel]:
             if control in self._up_keys:
                 up_hint_widget = KeyHintLabel(self._up_keys[control])
-                up_hint_widget.setAlignment(cast(Qt.Alignment,
-                                                 Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter))
+                up_hint_widget.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
                 return up_hint_widget
             return None
 
@@ -571,14 +569,16 @@ class LayerTransformTool(BaseTool):
         self._preview.set_transform(layer.transform)
 
     @staticmethod
-    def _update_control(field: QWidget, value: float, change_handler: Callable[..., None]):
-        assert hasattr(field, 'valueChanged')
-        assert hasattr(field, 'setValue')
+    def _update_control(field: QSpinBox | QDoubleSpinBox, value: float, change_handler: Callable[..., None]):
         field.valueChanged.disconnect(change_handler)
         if field.value() != value:
-            field.setValue(float(value) if isinstance(field, QDoubleSpinBox) else int(value))
+            if isinstance(field, QSpinBox):
+                field.setValue(int(value))
+            else:  # QDoubleSpinBox
+                field.setValue(float(value))
         field.valueChanged.connect(change_handler)
 
+    # noinspection PyUnusedLocal
     def _offset_change_slot(self, *unused_args) -> None:
         self._update_control(self._x_pos_box, self._transform_outline.x_pos, self.set_x)
         self._update_control(self._y_pos_box, self._transform_outline.y_pos, self.set_y)
@@ -605,11 +605,11 @@ class _TransformPreview(QWidget):
         self._image_size = image_size
         self._layer_bounds = layer_bounds
         self._layer_transform = layer_transform
-        self._brush = Qt.white
-        self._pen = QPen(Qt.black, 3)
+        self._brush = Qt.GlobalColor.white
+        self._pen = QPen(Qt.GlobalColor.black, 3)
         self._pen.setCosmetic(True)
         self._background = get_transparency_tile_pixmap(image_size)
-        self.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Maximum)
+        self.setSizePolicy(QSizePolicy.Policy.Maximum, QSizePolicy.Policy.Maximum)
 
     def sizeHint(self) -> QSize:
         """Preview size is capped at 200x200."""
@@ -639,7 +639,7 @@ class _TransformPreview(QWidget):
         full_bounds = image_bounds.united(final_image_poly.boundingRect())
         scaled_full_bounds = get_scaled_placement(self.size(), full_bounds.size(), 4)
         initial_transform = get_rect_transformation(full_bounds, scaled_full_bounds)
-        image_bounds_color = QColor(Qt.black)
+        image_bounds_color = QColor(Qt.GlobalColor.black)
         image_bounds_color.setAlphaF(0.3)
         painter.setTransform(initial_transform)
         painter.fillRect(image_bounds, image_bounds_color)

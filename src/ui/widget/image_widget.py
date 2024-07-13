@@ -1,9 +1,9 @@
 """Displays a single image or pixmap, keeping aspect ratios."""
 from typing import Optional
 
-from PyQt5.QtCore import QSize
-from PyQt5.QtGui import QIcon, QPaintEvent, QPainter, QImage, QPixmap
-from PyQt5.QtWidgets import QWidget
+from PyQt6.QtCore import QSize
+from PyQt6.QtGui import QIcon, QPaintEvent, QPainter, QImage, QPixmap
+from PyQt6.QtWidgets import QWidget
 
 from src.util.geometry_utils import get_scaled_placement
 

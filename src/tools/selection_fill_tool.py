@@ -1,13 +1,14 @@
 """Fill areas within an image."""
 from typing import Optional
 
-from PyQt5.QtCore import Qt, QPoint, QRect
-from PyQt5.QtGui import QIcon, QCursor, QMouseEvent, QKeySequence, QColor, QPainter, QTransform
-from PyQt5.QtWidgets import QWidget, QFormLayout, QApplication
+from PyQt6.QtCore import Qt, QPoint, QRect
+from PyQt6.QtGui import QIcon, QCursor, QMouseEvent, QKeySequence, QColor, QPainter, QTransform
+from PyQt6.QtWidgets import QWidget, QFormLayout, QApplication
 
 from src.config.cache import Cache
 from src.config.key_config import KeyConfig
 from src.image.layers.image_stack import ImageStack
+from src.image.layers.transform_layer import TransformLayer
 from src.tools.base_tool import BaseTool
 from src.util.image_utils import flood_fill
 from src.util.shared_constants import PROJECT_DIR
@@ -30,7 +31,7 @@ class SelectionFillTool(BaseTool):
         self._image_stack = image_stack
         self._control_panel: Optional[QWidget] = None
         self._icon = QIcon(RESOURCES_FILL_ICON)
-        self._color = QColor(Qt.red)
+        self._color = QColor(Qt.GlobalColor.red)
         self._threshold = cache.get(Cache.FILL_THRESHOLD)
         self._sample_merged = cache.get(Cache.SAMPLE_MERGED)
         cursor_icon = QIcon(RESOURCES_FILL_CURSOR)
@@ -76,14 +77,15 @@ class SelectionFillTool(BaseTool):
         assert event is not None
         if QApplication.keyboardModifiers() != Qt.KeyboardModifier.NoModifier:
             return True
-        if event.buttons() == Qt.LeftButton or event.buttons() == Qt.RightButton:
-            clear_mode = event.buttons() == Qt.RightButton
+        if event.buttons() == Qt.MouseButton.LeftButton or event.buttons() == Qt.MouseButton.RightButton:
+            clear_mode = event.buttons() == Qt.MouseButton.RightButton
             layer = self._image_stack.active_layer
-            if layer is None:
-                return False
             mask_pos = self._image_stack.selection_layer.position
             merged_pos = self._image_stack.merged_layer_bounds.topLeft()
-            layer_pos = layer.map_to_image(QPoint())
+            if isinstance(layer, TransformLayer):
+                layer_pos = layer.map_to_image(QPoint())
+            else:
+                layer_pos = QPoint()
             if self._sample_merged:
                 image = self._image_stack.qimage(crop_to_image=False)
                 sample_point = image_coordinates - merged_pos
@@ -91,8 +93,12 @@ class SelectionFillTool(BaseTool):
                 paint_transform = QTransform.fromTranslate(offset.x(), offset.y())
             else:
                 image = layer.image
-                sample_point = layer.map_from_image(image_coordinates)
-                paint_transform = layer.transform
+                if isinstance(layer, TransformLayer):
+                    sample_point = layer.map_from_image(image_coordinates)
+                    paint_transform = layer.transform
+                else:
+                    sample_point = image_coordinates
+                    paint_transform = QTransform()
                 layer_pos_in_mask = layer_pos - mask_pos
                 transformed_origin = paint_transform.map(QPoint(0, 0))
                 img_offset = layer_pos_in_mask - transformed_origin
@@ -104,7 +110,7 @@ class SelectionFillTool(BaseTool):
             assert mask is not None
             painter = QPainter(selection_image)
             if clear_mode:
-                painter.setCompositionMode(QPainter.CompositionMode_DestinationOut)
+                painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_DestinationOut)
             painter.setTransform(paint_transform)
             painter.drawImage(QRect(QPoint(), mask.size()), mask)
             painter.end()

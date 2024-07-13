@@ -1,10 +1,11 @@
-"""Defines the @menu_action decorator and the MenuBuilder class for more convenient PyQt5 menu initialization."""
+"""Defines the @menu_action decorator and the MenuBuilder class for more convenient PyQt6 menu initialization."""
 import inspect
 from functools import wraps
 from inspect import signature
 from typing import Callable, Any, Optional, TypeVar, Dict, List
 
-from PyQt5.QtWidgets import QMainWindow, QAction, QMenu
+from PyQt6.QtGui import QAction
+from PyQt6.QtWidgets import QMainWindow, QMenu
 
 from src.config.key_config import KeyConfig
 from src.util.application_state import AppStateTracker
@@ -58,7 +59,7 @@ def menu_action(menu_name: str, config_key: str, priority: int = INT_MAX,
 class MenuBuilder:
     """Provides the build_menus method to initialize menus from annotated methods."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._menus: Dict[str, QMenu] = {}
         self._actions: Dict[str, List[QAction]] = {}
 
@@ -114,7 +115,7 @@ class MenuBuilder:
         except RuntimeError:
             print(f'Warning: could not load menu option {config_key}, skipping...')
             return None
-        action = QAction(title, window)
+        action = QAction(title)
         if tooltip is not None and tooltip != '':
             action.setToolTip(tooltip)
         if keybinding is not None and keybinding != '':

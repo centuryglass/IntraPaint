@@ -3,9 +3,9 @@ import logging
 import re
 from typing import Dict, Optional, List, cast
 
-from PyQt5.QtCore import Qt, QSize, QPoint, pyqtSignal
-from PyQt5.QtGui import QImage, QPainter, QMouseEvent
-from PyQt5.QtWidgets import QDialog, QHBoxLayout, QLabel, QPushButton, \
+from PyQt6.QtCore import Qt, QSize, QPoint, pyqtSignal
+from PyQt6.QtGui import QImage, QPainter, QMouseEvent
+from PyQt6.QtWidgets import QDialog, QHBoxLayout, QLabel, QPushButton, \
     QVBoxLayout, QWidget, QScrollArea
 
 from src.config.application_config import AppConfig
@@ -91,9 +91,9 @@ class ExtraNetworkWindow(QDialog):
         if self._image_placeholder is not None:
             return self._image_placeholder
         self._image_placeholder = QImage(QSize(PREVIEW_SIZE, PREVIEW_SIZE), QImage.Format.Format_ARGB32_Premultiplied)
-        self._image_placeholder.fill(Qt.black)
+        self._image_placeholder.fill(Qt.GlobalColor.black)
         painter = QPainter(self._image_placeholder)
-        painter.setPen(Qt.white)
+        painter.setPen(Qt.GlobalColor.white)
         font = painter.font()
         pt_size = max_font_size(PLACEHOLDER_TEXT, font, QSize(PREVIEW_SIZE, PREVIEW_SIZE))
         font.setPointSize(pt_size)
@@ -137,7 +137,7 @@ class _LoraItem(BorderedWidget):
         self._lora = lora
         self._selected = False
         self._layout = QHBoxLayout(self)
-        self._layout.setAlignment(Qt.AlignLeft)
+        self._layout.setAlignment(Qt.AlignmentFlag.AlignLeft)
         image_widget = ImageWidget(thumbnail)
         image_widget.setMinimumSize(PREVIEW_SIZE, PREVIEW_SIZE)
         image_widget.setMaximumSize(PREVIEW_SIZE, PREVIEW_SIZE)
@@ -154,7 +154,7 @@ class _LoraItem(BorderedWidget):
     def mousePressEvent(self, event: Optional[QMouseEvent]) -> None:
         """Select this item when left-clicked."""
         assert event is not None
-        if event.button() == Qt.LeftButton and not self.is_selected:
+        if event.button() == Qt.MouseButton.LeftButton and not self.is_selected:
             self.is_selected = True
 
     @property

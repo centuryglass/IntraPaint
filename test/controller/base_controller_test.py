@@ -3,8 +3,8 @@ import sys
 import unittest
 from unittest.mock import patch, MagicMock
 
-from PyQt5.QtCore import QSize
-from PyQt5.QtWidgets import QApplication
+from PyQt6.QtCore import QSize
+from PyQt6.QtWidgets import QApplication
 
 from src.config.application_config import AppConfig
 from src.config.cache import Cache
@@ -16,10 +16,10 @@ app = QApplication.instance() or QApplication(sys.argv)
 exec_mock = MagicMock()
 
 
-@patch('PyQt5.QtWidgets.QApplication.exec_', new=exec_mock)
+@patch('PyQt6.QtWidgets.QApplication.exec', new=exec_mock)
 class TestBaseInpaintController(unittest.TestCase):
 
-    @patch('PyQt5.QtWidgets.QApplication.exec_', new=exec_mock)
+    @patch('PyQt6.QtWidgets.QApplication.exec', new=exec_mock)
     def setUp(self):
         while os.path.basename(os.getcwd()) not in ('IntraPaint', ''):
             os.chdir('..')

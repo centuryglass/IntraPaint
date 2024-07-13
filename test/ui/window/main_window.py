@@ -4,8 +4,8 @@ import sys
 import unittest
 from unittest.mock import Mock, patch
 
-from PyQt5.QtCore import QSize, QRect, QPoint, Qt
-from PyQt5.QtWidgets import QApplication
+from PyQt6.QtCore import QSize, QRect, QPoint, Qt
+from PyQt6.QtWidgets import QApplication
 
 from src.config.application_config import AppConfig
 from src.config.cache import Cache

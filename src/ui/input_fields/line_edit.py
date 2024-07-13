@@ -1,8 +1,8 @@
 """A simple wrapper for QLineEdit to give it an interface consistent with other input widgets."""
 from typing import Optional
 
-from PyQt5.QtCore import pyqtSignal
-from PyQt5.QtWidgets import QLineEdit, QWidget
+from PyQt6.QtCore import pyqtSignal
+from PyQt6.QtWidgets import QLineEdit, QWidget
 
 
 class LineEdit(QLineEdit):

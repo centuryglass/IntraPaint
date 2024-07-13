@@ -26,5 +26,5 @@ def optional_import(module_name: str, package_name: Optional[str] = None, attr_n
             return module
         return getattr(module, attr_name)
     except ImportError as err:
-        logger.warn(f'Failed to load optional import from {module_name}: {err}')
+        logger.warning(f'Failed to load optional import from {module_name}: {err}')
         return None

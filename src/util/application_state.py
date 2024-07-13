@@ -2,8 +2,9 @@
    in particular states."""
 from typing import List
 
-from PyQt5.QtCore import QObject, pyqtSignal
-from PyQt5.QtWidgets import QWidget, QAction
+from PyQt6.QtCore import QObject, pyqtSignal
+from PyQt6.QtGui import QAction
+from PyQt6.QtWidgets import QWidget
 
 from src.util.singleton import Singleton
 

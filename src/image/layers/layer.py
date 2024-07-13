@@ -2,8 +2,8 @@
 import datetime
 from typing import Any, Callable, Optional
 
-from PyQt5.QtCore import QObject, pyqtSignal, QRect, QPoint, QSize
-from PyQt5.QtGui import QPainter, QImage, QPixmap
+from PyQt6.QtCore import QObject, pyqtSignal, QRect, QPoint, QSize
+from PyQt6.QtGui import QPainter, QImage, QPixmap
 
 from src.config.application_config import AppConfig
 from src.image.mypaint.numpy_image_utils import image_data_as_numpy_8bit, is_fully_transparent
@@ -167,13 +167,13 @@ class Layer(QObject):
         """Returns whether this layer contains only fully transparent pixels."""
         return self.is_empty()
 
+    def _image_prop_setter(self, _) -> None:
+        raise NotImplementedError()
+
     @property
     def image(self) -> QImage:
         """Returns a copy of the layer content as a QImage object"""
         return self.get_qimage().copy()
-
-    def _image_prop_setter(self, _) -> None:
-        raise NotImplementedError()
 
     @image.setter
     def image(self, new_image: Any) -> None:
@@ -301,4 +301,3 @@ class Layer(QObject):
                 prev_action.redo()
                 return
         commit_action(_update, _undo, change_type, {'layer': self, 'timestamp': timestamp})
-

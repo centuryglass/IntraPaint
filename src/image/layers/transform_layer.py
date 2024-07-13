@@ -1,10 +1,11 @@
 """Interface for layers that have a persistent transformation."""
 from typing import Tuple
 
-from PyQt5.QtCore import QObject, pyqtSignal, QRect, QPoint, QRectF, Qt, QPointF
-from PyQt5.QtGui import QPainter, QImage, QTransform, QPolygonF
+from PyQt6.QtCore import QObject, pyqtSignal, QRect, QPoint, QRectF, Qt, QPointF
+from PyQt6.QtGui import QPainter, QImage, QTransform, QPolygonF
 
 from src.image.layers.layer import Layer
+from src.util.image_utils import create_transparent_image
 
 
 class TransformLayer(Layer):
@@ -52,8 +53,7 @@ class TransformLayer(Layer):
         final_transform.translate(offset.x(), offset.y())
         if final_transform == layer_transform:
             return self.image, self.transform
-        image = QImage(bounds.size(), QImage.Format_ARGB32_Premultiplied)
-        image.fill(Qt.transparent)
+        image = create_transparent_image(bounds.size())
         painter = QPainter(image)
         paint_transform = layer_transform * QTransform.fromTranslate(-offset.x(), -offset.y())
         painter.setTransform(paint_transform)
@@ -82,4 +82,3 @@ class TransformLayer(Layer):
     def map_rect_to_image(self, layer_rect: QRect) -> QRect:
         """Map a rectangle in the layer image to its final spot in the top level image."""
         return self.transform.map(QPolygonF(QRectF(layer_rect))).boundingRect().toAlignedRect()
-

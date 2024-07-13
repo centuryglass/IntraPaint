@@ -1,9 +1,9 @@
 """A label that can be double-clicked for editing."""
 from typing import Optional
 
-from PyQt5.QtCore import pyqtSignal, Qt
-from PyQt5.QtGui import QKeyEvent
-from PyQt5.QtWidgets import QWidget, QLabel, QHBoxLayout, QLineEdit, QToolButton, QStyle
+from PyQt6.QtCore import pyqtSignal, Qt
+from PyQt6.QtGui import QKeyEvent
+from PyQt6.QtWidgets import QWidget, QLabel, QHBoxLayout, QLineEdit, QToolButton, QStyle
 
 from src.util.image_utils import get_standard_qt_icon
 
@@ -21,10 +21,10 @@ class EditableLabel(QWidget):
         self._label = QLabel(text)
         self._field = QLineEdit(text)
         self._cancel_button = QToolButton()
-        self._cancel_button.setIcon(get_standard_qt_icon(QStyle.SP_DialogNoButton))
+        self._cancel_button.setIcon(get_standard_qt_icon(QStyle.StandardPixmap.SP_DialogNoButton))
         self._cancel_button.clicked.connect(self.discard_changes)
         self._confirm_button = QToolButton()
-        self._confirm_button.setIcon(get_standard_qt_icon(QStyle.SP_DialogOkButton))
+        self._confirm_button.setIcon(get_standard_qt_icon(QStyle.StandardPixmap.SP_DialogOkButton))
         self._confirm_button.clicked.connect(self.apply_changes)
         self._layout.addWidget(self._label)
 
@@ -78,10 +78,10 @@ class EditableLabel(QWidget):
     def keyPressEvent(self, event: Optional[QKeyEvent]) -> None:
         """Confirm input with enter/return, cancel with escape."""
         if event is not None and self.is_requesting_input():
-            if event.key() in (Qt.Key_Enter, Qt.Key_Return):
+            if event.key() in (Qt.Key.Key_Enter, Qt.Key.Key_Return):
                 self.apply_changes()
                 return
-            if event.key() == Qt.Key_Escape:
+            if event.key() == Qt.Key.Key_Escape:
                 self.discard_changes()
                 return
         super().keyPressEvent(event)

@@ -3,9 +3,9 @@ import math
 import sys
 import unittest
 
-from PyQt5.QtCore import QPointF, QLineF
-from PyQt5.QtGui import QTransform
-from PyQt5.QtWidgets import QApplication
+from PyQt6.QtCore import QPointF, QLineF
+from PyQt6.QtGui import QTransform
+from PyQt6.QtWidgets import QApplication
 
 from src.util.geometry_utils import extract_transform_parameters, combine_transform_parameters, transform_str, \
     transforms_approx_equal

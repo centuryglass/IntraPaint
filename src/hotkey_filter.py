@@ -2,9 +2,9 @@
 from typing import Optional, Dict, Callable, List, cast
 import logging
 
-from PyQt5.QtCore import Qt, QObject, QEvent
-from PyQt5.QtGui import QKeyEvent, QKeySequence
-from PyQt5.QtWidgets import QApplication, QWidget, QTextEdit, QLineEdit, QPlainTextEdit, QAbstractSpinBox, QComboBox
+from PyQt6.QtCore import Qt, QObject, QEvent
+from PyQt6.QtGui import QKeyEvent, QKeySequence
+from PyQt6.QtWidgets import QApplication, QWidget, QTextEdit, QLineEdit, QPlainTextEdit, QAbstractSpinBox, QComboBox
 
 from src.config.application_config import AppConfig
 from src.config.key_config import KeyConfig
@@ -37,7 +37,7 @@ class HotkeyFilter(QObject):
         """
 
         def __init__(self, action: Callable[[], bool], key: Qt.Key | int,
-                     modifiers: Qt.KeyboardModifier | Qt.KeyboardModifiers | int = Qt.NoModifier):
+                     modifiers: Qt.KeyboardModifier = Qt.KeyboardModifier.NoModifier):
             self.action = action
             self.key = key
             self.modifiers = modifiers
@@ -60,7 +60,7 @@ class HotkeyFilter(QObject):
         self._default_focus = focus_widget
 
     def register_keybinding(self, action: Callable[[], bool], keys: QKeySequence,
-                            modifiers: Qt.KeyboardModifier | Qt.KeyboardModifiers | int = Qt.NoModifier) -> None:
+                            modifiers: Qt.KeyboardModifier = Qt.KeyboardModifier.NoModifier) -> None:
         """Register a keystroke that should invoke an action.
 
         If keybindings share a key, newer ones will be checked before older ones. This makes it easier to add
@@ -76,7 +76,7 @@ class HotkeyFilter(QObject):
             Exact keyboard modifiers required to invoke the action, defaults to Qt.NoModifier.
         """
         for key in keys:
-            assert key != Qt.Key_unknown, 'Invalid keybinding'
+            assert key != Qt.Key.Key_unknown, 'Invalid keybinding'
             key_string = get_key_string(key)
             key_modifiers = modifiers
             if '+' in key_string:  # Divide out any modifiers passed in via the key parameter
@@ -102,7 +102,7 @@ class HotkeyFilter(QObject):
             Key string for the appropriate key or keys.
         """
         keys = KeyConfig().get_keycodes(config_key)
-        self.register_keybinding(action, keys, Qt.NoModifier)
+        self.register_keybinding(action, keys, Qt.KeyboardModifier.NoModifier)
 
     def register_speed_modified_keybinding(self, scaling_action: Callable[[int], bool], config_key: str) -> None:
         """Register a keybinding defined in application config that's affected by the speed modifier.
@@ -120,7 +120,7 @@ class HotkeyFilter(QObject):
         """
         config = KeyConfig()
         keys = config.get_keycodes(config_key)
-        self.register_keybinding(lambda: scaling_action(1), keys, Qt.NoModifier)
+        self.register_keybinding(lambda: scaling_action(1), keys, Qt.KeyboardModifier.NoModifier)
 
         modifier_string = config.get(KeyConfig.SPEED_MODIFIER)
         try:
@@ -143,7 +143,7 @@ class HotkeyFilter(QObject):
         # Avoid blocking inputs to text fields:
         focused_widget = QApplication.focusWidget()
         if isinstance(focused_widget, (QLineEdit, QTextEdit, QLineEdit, QPlainTextEdit, QAbstractSpinBox, QComboBox)):
-            if event.key() == Qt.Key_Escape and self._default_focus is not None and self._default_focus.isVisible():
+            if event.key() == Qt.Key.Key_Escape and self._default_focus is not None and self._default_focus.isVisible():
                 self._default_focus.setFocus()
                 return True
             return False

@@ -3,9 +3,9 @@ import logging
 import math
 from typing import Optional, List, Tuple
 
-from PyQt5.QtCore import QSize, Qt, QRect
-from PyQt5.QtGui import QResizeEvent
-from PyQt5.QtWidgets import QWidget, QGridLayout
+from PyQt6.QtCore import QSize, Qt, QRect
+from PyQt6.QtGui import QResizeEvent
+from PyQt6.QtWidgets import QWidget, QGridLayout
 
 from src.util.geometry_utils import get_scaled_placement
 
@@ -20,7 +20,7 @@ class GridContainer(QWidget):
         super().__init__(parent)
         self._children: List[QWidget] = []
         self._layout = QGridLayout(self)
-        self._layout.setAlignment(Qt.AlignTop | Qt.AlignLeft)
+        self._layout.setAlignment(Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignLeft)
         self._max_rows = DEFAULT_MAX
         self._max_columns = DEFAULT_MAX
         self._min_rows = 1
@@ -128,7 +128,7 @@ class GridContainer(QWidget):
         content_size = QSize(base_size.width() * self._columns, base_size.height() * self._rows + 1)
         return content_size
 
-    def resizeEvent(self, event: Optional[QResizeEvent]) -> None:
+    def resizeEvent(self, unused_event: Optional[QResizeEvent]) -> None:
         """Update grid flow on resize."""
         self._update_grid_flow()
 

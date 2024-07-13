@@ -4,12 +4,13 @@ Draws content to an image layer.
 import math
 from typing import Optional, Set, List, cast
 
-from PyQt5.QtCore import QRect, QSize, QPoint, QRectF, QPointF
-from PyQt5.QtGui import QColor, QPainter, QTransform
-from PyQt5.QtWidgets import QGraphicsScene, QGraphicsItem
+from PyQt6.QtCore import QRect, QSize, QPoint, QRectF, QPointF
+from PyQt6.QtGui import QColor, QPainter, QTransform
+from PyQt6.QtWidgets import QGraphicsScene, QGraphicsItem
 
 from src.image.canvas.layer_canvas import LayerCanvas
 from src.image.layers.image_layer import ImageLayer
+from src.image.layers.transform_layer import TransformLayer
 from src.image.mypaint.mp_brush import MPBrush
 from src.image.mypaint.mp_surface import MPSurface
 from src.image.mypaint.mp_tile import MPTile
@@ -177,7 +178,9 @@ class MyPaintLayerCanvas(LayerCanvas):
                 if not tile.is_valid:
                     continue
                 tile_pt = tile.mapToScene(QPointF())
-                tile_pt = self._layer.map_from_image(tile_pt) - self._last_stroke_bounds.topLeft()
+                if isinstance(self._layer, TransformLayer):
+                    tile_pt = QPointF(self._layer.map_from_image(tile_pt))
+                tile_pt -= QPointF(self._last_stroke_bounds.topLeft())
                 tile.copy_tile_into_image(tile_change_image,
                                           destination=QRect(tile_pt.toPoint(), tile.size),
                                           skip_if_transparent=False,
@@ -185,4 +188,3 @@ class MyPaintLayerCanvas(LayerCanvas):
             self.disconnect_layer_signals()
             self._layer.insert_image_content(tile_change_image, self._last_stroke_bounds, register_to_undo_history=True)
             self.connect_layer_signals()
-

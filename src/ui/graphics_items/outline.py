@@ -2,9 +2,9 @@
 import sys
 from typing import Optional, List
 
-from PyQt5.QtCore import Qt, pyqtProperty, QPropertyAnimation, QRectF, QRect
-from PyQt5.QtGui import QPainter, QPen, QPainterPath, QColor, QShowEvent, QHideEvent
-from PyQt5.QtWidgets import QWidget, QGraphicsItem, QGraphicsView, QGraphicsScene, QStyleOptionGraphicsItem, \
+from PyQt6.QtCore import Qt, pyqtProperty, QPropertyAnimation, QRectF, QRect
+from PyQt6.QtGui import QPainter, QPen, QPainterPath, QColor, QShowEvent, QHideEvent
+from PyQt6.QtWidgets import QWidget, QGraphicsItem, QGraphicsView, QGraphicsScene, QStyleOptionGraphicsItem, \
     QGraphicsObject
 
 from src.util.shared_constants import TIMELAPSE_MODE_FLAG

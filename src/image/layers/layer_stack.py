@@ -1,14 +1,15 @@
 """Represents a group of linked image layers that can be manipulated as one in limited ways."""
 from typing import List, Optional, Dict, Any, Callable
 
-from PyQt5.QtCore import Qt, QRect, pyqtSignal, QPoint, QRectF
-from PyQt5.QtGui import QPainter, QImage, QPolygonF, QTransform
+from PyQt6.QtCore import Qt, QRect, pyqtSignal, QPoint, QRectF
+from PyQt6.QtGui import QPainter, QImage, QPolygonF, QTransform
 
 from src.image.layers.image_layer import ImageLayer, ImageLayerState
 from src.image.layers.layer import Layer
 from src.image.layers.transform_layer import TransformLayer
 from src.util.application_state import APP_STATE_NO_IMAGE, APP_STATE_EDITING, AppStateTracker
 from src.util.cached_data import CachedData
+from src.util.image_utils import create_transparent_image
 from src.util.validation import assert_valid_index
 
 
@@ -88,8 +89,7 @@ class LayerStack(Layer):
         """Clear the contents of an area in the parent image."""
         assert image_mask.size() == self.bounds.size(), 'Mask should be pre-converted to image size'
         for layer in self._layers:
-            transformed_mask = QImage(layer.size, QImage.Format_ARGB32_Premultiplied)
-            transformed_mask.fill(Qt.transparent)
+            transformed_mask = create_transparent_image(layer.size)
             painter = QPainter(transformed_mask)
             if isinstance(layer, TransformLayer):
                 painter_transform = layer.transform.inverted()[0]
@@ -127,16 +127,14 @@ class LayerStack(Layer):
         """
         if base_image is None:
             image_bounds = self.bounds
-            base_image = QImage(image_bounds.size(), QImage.Format.Format_ARGB32_Premultiplied)
-            base_image.fill(Qt.transparent)
+            base_image = create_transparent_image(image_bounds.size())
         else:
             image_bounds = QRect(QPoint(), base_image.size())
         if not self.visible:
             return base_image
-        if self.opacity != 1.0 or self.composition_mode != QPainter.CompositionMode_SourceOver:
+        if self.opacity != 1.0 or self.composition_mode != QPainter.CompositionMode.CompositionMode_SourceOver:
             final_base_image = base_image
-            base_image = QImage(image_bounds.size(), QImage.Format.Format_ARGB32_Premultiplied)
-            base_image.fill(Qt.transparent)
+            base_image = create_transparent_image(image_bounds.size())
         else:
             final_base_image = None
 
@@ -146,7 +144,10 @@ class LayerStack(Layer):
             for layer in reversed(self._layers):
                 if not layer.visible:
                     continue
-                layer_image = layer.image
+                if isinstance(layer, LayerStack):
+                    layer_image = layer.render(None, paint_param_adjuster)
+                else:
+                    layer_image = layer.image
                 if layer_image is not None:
                     painter.save()
                     painter.setOpacity(layer.opacity)
@@ -191,7 +192,7 @@ class LayerStack(Layer):
         for layer in self._layers:
             if layer.id == layer_id:
                 return layer
-            elif isinstance(layer, LayerStack):
+            if isinstance(layer, LayerStack):
                 inner_layer = layer.get_layer_by_id(layer_id)
                 if inner_layer is not None:
                     return inner_layer

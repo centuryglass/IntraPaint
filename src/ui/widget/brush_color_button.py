@@ -1,7 +1,7 @@
 """Opens a color picker to set the brush color."""
-from PyQt5.QtCore import QSize
-from PyQt5.QtGui import QColor, QIcon, QPixmap
-from PyQt5.QtWidgets import QPushButton, QColorDialog
+from PyQt6.QtCore import QSize
+from PyQt6.QtGui import QColor, QIcon, QPixmap
+from PyQt6.QtWidgets import QPushButton, QColorDialog
 
 from src.config.cache import Cache
 

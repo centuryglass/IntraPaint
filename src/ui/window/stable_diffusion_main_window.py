@@ -3,8 +3,8 @@ A MainWindow implementation providing controls specific to stable-diffusion inpa
 """
 from typing import Optional, cast
 
-from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QLabel, QHBoxLayout, QVBoxLayout, QGridLayout, QPushButton, QSizePolicy, QWidget
+from PyQt6.QtCore import Qt
+from PyQt6.QtWidgets import QLabel, QHBoxLayout, QVBoxLayout, QGridLayout, QPushButton, QSizePolicy, QWidget
 
 from src.config.application_config import AppConfig
 from src.config.cache import Cache
@@ -44,13 +44,13 @@ class StableDiffusionMainWindow(MainWindow):
     def _build_control_panel(self, controller) -> QWidget:
         """Adds controls for Stable-diffusion inpainting."""
         control_panel = BorderedWidget()
-        control_panel.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Maximum)
+        control_panel.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Maximum)
         control_layout = QVBoxLayout()
         control_panel.setLayout(control_layout)
         config = AppConfig()
 
         main_control_box = CollapsibleBox(CONTROL_BOX_LABEL, control_panel)
-        main_control_box.set_expanded_size_policy(QSizePolicy.Maximum)
+        main_control_box.set_expanded_size_policy(QSizePolicy.Policy.Maximum)
         if main_control_box.is_expanded():
             self.layout().setStretch(1, self.layout().stretch(1) + StableDiffusionMainWindow.OPEN_PANEL_STRETCH)
 
@@ -130,7 +130,7 @@ class StableDiffusionMainWindow(MainWindow):
                                                cache.get(Cache.CONTROLNET_CONTROL_TYPES),
                                                cache.get(Cache.CONTROLNET_MODULES),
                                                cache.get(Cache.CONTROLNET_MODELS))
-            controlnet_panel.set_expanded_size_policy(QSizePolicy.Maximum)
+            controlnet_panel.set_expanded_size_policy(QSizePolicy.Policy.Maximum)
             control_layout.addWidget(controlnet_panel, stretch=20)
 
         # Right side: box of dropdown/checkbox options:
@@ -192,7 +192,7 @@ class StableDiffusionMainWindow(MainWindow):
         button_bar = BorderedWidget(control_panel)
         button_bar_layout = QHBoxLayout()
         button_bar.setLayout(button_bar_layout)
-        button_bar.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Maximum)
+        button_bar.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Maximum)
         control_layout.addWidget(button_bar, stretch=5)
 
         # interrogate_button:

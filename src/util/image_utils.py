@@ -7,9 +7,9 @@ from typing import Optional
 import cv2
 import numpy as np
 from PIL import Image
-from PyQt5.QtCore import QBuffer, QRect, QSize, Qt, QPoint, QFile, QIODevice, QByteArray
-from PyQt5.QtGui import QImage, QIcon, QPixmap, QPainter, QColor
-from PyQt5.QtWidgets import QStyle, QWidget, QApplication
+from PyQt6.QtCore import QBuffer, QRect, QSize, Qt, QPoint, QFile, QIODevice, QByteArray
+from PyQt6.QtGui import QImage, QIcon, QPixmap, QPainter, QColor
+from PyQt6.QtWidgets import QStyle, QWidget, QApplication
 
 from src.config.application_config import AppConfig
 from src.image.mypaint.numpy_image_utils import AnyNpArray, image_data_as_numpy_8bit, numpy_8bit_to_qimage
@@ -21,8 +21,14 @@ logger = logging.getLogger(__name__)
 DEFAULT_ICON_SIZE = QSize(64, 64)
 
 
+def create_transparent_image(size: QSize) -> QImage:
+    """Returns a new image filled with transparency, set to the requested size."""
+    image = QImage(size, QImage.Format.Format_ARGB32_Premultiplied)
+    image.fill(Qt.GlobalColor.transparent)
+    return image
+
 def pil_image_to_qimage(pil_image: Image.Image) -> QImage:
-    """Convert a PIL Image to a PyQt5 QImage."""
+    """Convert a PIL Image to a PyQt6 QImage."""
     if not isinstance(pil_image, Image.Image):
         raise TypeError('Invalid PIL Image parameter.')
     if pil_image.mode not in ('RGBA', 'RGB'):
@@ -32,23 +38,23 @@ def pil_image_to_qimage(pil_image: Image.Image) -> QImage:
                        pil_image.width,
                        pil_image.height,
                        pil_image.width * 3,
-                       QImage.Format_RGB888)
+                       QImage.Format.Format_RGB888)
     else:  # RGBA
         image = QImage(pil_image.tobytes('raw', 'RGBA'),
                        pil_image.width,
                        pil_image.height,
                        pil_image.width * 4,
-                       QImage.Format_RGBA8888)
-        image = image.convertToFormat(QImage.Format_ARGB32_Premultiplied)
+                       QImage.Format.Format_RGBA8888)
+        image = image.convertToFormat(QImage.Format.Format_ARGB32_Premultiplied)
     return image
 
 
 def qimage_to_pil_image(qimage: QImage) -> Image.Image:
-    """Convert a PyQt5 QImage to a PIL image, in PNG format."""
+    """Convert a PyQt6 QImage to a PIL image, in PNG format."""
     if not isinstance(qimage, QImage):
         raise TypeError('Invalid QImage parameter.')
     buffer = QBuffer()
-    buffer.open(QBuffer.ReadWrite)
+    buffer.open(QBuffer.OpenModeFlag.ReadWrite)
     qimage.save(buffer, 'PNG')
     pil_im = Image.open(io.BytesIO(buffer.data()))
     return pil_im
@@ -85,9 +91,9 @@ def qimage_from_base64(image_str: str) -> QImage:
     if image.isNull():
         raise ValueError('Invalid base64 image string')
     if image.hasAlphaChannel():
-        image = image.convertToFormat(QImage.Format_ARGB32_Premultiplied)
+        image = image.convertToFormat(QImage.Format.Format_ARGB32_Premultiplied)
     else:
-        image = image.convertToFormat(QImage.Format_RGB888)
+        image = image.convertToFormat(QImage.Format.Format_RGB888)
     return image
 
 
@@ -105,7 +111,7 @@ def image_to_base64(image: QImage | Image.Image | str, include_prefix=False) -> 
     """Convert a PIL image, QImage or image path to a base64 string."""
     if isinstance(image, str):
         file = QFile(image)
-        if not file.open(QIODevice.ReadOnly):
+        if not file.open(QIODevice.OpenModeFlag.ReadOnly):
             raise IOError(f'Failed to open {image}')
         image_str = QByteArray(file.readAll()).toBase64().data().decode('utf-8')
         file.close()
@@ -140,7 +146,7 @@ def image_content_bounds(image: QImage | np.ndarray, search_bounds: Optional[QRe
     if isinstance(image, QImage):
         image_ptr = image.bits()
         assert image_ptr is not None
-        image_ptr.setsize(image.byteCount())
+        image_ptr.setsize(image.sizeInBytes())
         np_image: AnyNpArray = np.ndarray(shape=(image.height(), image.width(), 4), dtype=np.uint8, buffer=image_ptr)
     else:
         np_image = image
@@ -205,7 +211,7 @@ def get_character_icon(character: str, color: QColor) -> QIcon:
     painter.setFont(font)
     painter.setPen(color)
     painter.setRenderHint(QPainter.RenderHint.TextAntialiasing)
-    painter.drawText(QRect(QPoint(), DEFAULT_ICON_SIZE), Qt.AlignCenter, character)
+    painter.drawText(QRect(QPoint(), DEFAULT_ICON_SIZE), Qt.AlignmentFlag.AlignCenter, character)
     painter.end()
     return QIcon(pixmap)
 

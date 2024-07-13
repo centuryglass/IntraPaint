@@ -1,8 +1,8 @@
 """A temporary layer class used to coordinate transformations applied to multiple layers."""
 from typing import List
 
-from PyQt5.QtCore import QRect
-from PyQt5.QtGui import QTransform
+from PyQt6.QtCore import QRect
+from PyQt6.QtGui import QTransform
 
 from src.image.layers.layer import Layer
 from src.image.layers.layer_stack import LayerStack
@@ -26,7 +26,7 @@ class TransformGroup(TransformLayer):
         self._groups: List[LayerStack] = []
         self._transform_layers: List[TransformLayer] = []
         self._layer_added_slot(layer_stack)
-        
+
     def __del__(self) -> None:
         self.remove_all()
 
@@ -48,7 +48,7 @@ class TransformGroup(TransformLayer):
     def has_layers(self) -> bool:
         """Returns whether at least one layer or layer group is connected to this group."""
         return len(self._groups) > 0 or len(self._transform_layers) > 0
-        
+
     def remove_all(self) -> None:
         """Remove all connected layers, leaving transformations in-place."""
         for group in self._groups:
@@ -93,4 +93,3 @@ class TransformGroup(TransformLayer):
             self._groups.remove(layer)
             for child in layer.child_layers:
                 self._layer_removed_slot(child)
-
