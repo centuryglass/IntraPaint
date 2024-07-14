@@ -31,6 +31,8 @@ MAIN_TAB_NAME = 'Main'
 CONTROL_TAB_NAME = 'Image Generation'
 CONTROL_PANEL_STRETCH = 5
 MAX_TABS = 2
+LAYOUT_SWAP_HEIGHT = 1000
+LAYOUT_SWAP_BUFFER = 50
 DEFAULT_LOADING_MESSAGE = 'Loading...'
 
 
@@ -58,13 +60,6 @@ class MainWindow(QMainWindow):
 
         self._layer_panel: Optional[LayerPanel] = None
         self._image_window = ImageWindow(image_stack)
-
-        # Size thresholds for reactive layout changes:
-        # Real values will be populated with sizeHints when available.
-        self._min_control_panel_size = QSize(0, 0)
-        self._min_horizontal_window_size = QSize(0, 0)
-        self._min_horizontal_tool_panel_size = QSize(0, 0)
-        self._min_vertical_window_size = QSize(0, 0)
 
         # Create components, build layout:
         self._main_widget = QTabWidget(self)
@@ -125,7 +120,12 @@ class MainWindow(QMainWindow):
 
     def _get_appropriate_orientation(self) -> Qt.Orientation:
         """Returns whether the window's image and tool layout should be vertical or horizontal."""
-        return Qt.Orientation.Vertical if self.height() > (self.width() * 1.2) else Qt.Orientation.Horizontal
+        height = self.height()
+        if self._orientation == Qt.Orientation.Vertical:
+            height_threshold = LAYOUT_SWAP_HEIGHT - LAYOUT_SWAP_BUFFER
+        else:
+            height_threshold = LAYOUT_SWAP_HEIGHT + LAYOUT_SWAP_BUFFER
+        return Qt.Orientation.Vertical if self.height() > height_threshold else Qt.Orientation.Horizontal
 
     def show_image_window(self) -> None:
         """Show or raise the image window."""
@@ -135,16 +135,7 @@ class MainWindow(QMainWindow):
     def refresh_layout(self) -> None:
         """Update orientation and layout based on window dimensions."""
 
-        # Update minimums:
-        self._min_control_panel_size = self._control_panel.sizeHint()
-        if self._orientation == Qt.Orientation.Horizontal:
-            self._min_horizontal_tool_panel_size = self._tool_panel.sizeHint()
         tab_names = [self._main_widget.tabText(i) for i in range(self._main_widget.count())]
-        if CONTROL_TAB_NAME in tab_names:
-            if self._orientation == Qt.Orientation.Horizontal:
-                self._min_horizontal_window_size = self.sizeHint()
-            elif self._orientation == Qt.Orientation.Vertical:
-                self._min_vertical_window_size = self.sizeHint()
 
         # Flip the orientation if necessary:
         orientation = self._get_appropriate_orientation()
@@ -170,35 +161,15 @@ class MainWindow(QMainWindow):
             if last_reactive_widget is not None:
                 last_reactive_widget.setParent(None)
 
-        # Check if panels need to be tabbed/un-tabbed:
-        current_screen_size = get_screen_size(self)
-        if get_screen_size is not None:
-            height_buffer = current_screen_size.height() // 30
-            width_buffer = current_screen_size.width() // 30
-        else:
-            height_buffer = self.height() // 30
-            width_buffer = self.width() // 30
-
-        # Include or hide control panel:
-        min_w_ctrl_panel = self._min_control_panel_size.width()
-        if self._orientation == Qt.Orientation.Horizontal:
-            min_h_ctrl_panel = self._min_horizontal_window_size.height() + self._min_control_panel_size.height()
-        else:  # self._orientation == Qt.Orientation.Vertical:
-            min_h_ctrl_panel = self._min_vertical_window_size.height() + self._min_horizontal_tool_panel_size.height() \
-                               + self._min_control_panel_size.height()
-        w_show_ctrl_panel = min_w_ctrl_panel + width_buffer * 2
-        h_show_ctrl_panel = min_h_ctrl_panel + height_buffer * 2
-        w_hide_ctrl_panel = min_w_ctrl_panel + width_buffer
-        h_hide_ctrl_panel = min_h_ctrl_panel + height_buffer
-
-        if self.width() >= w_show_ctrl_panel and self.height() >= h_show_ctrl_panel:
+        # Include or tab control panel based on orientation:
+        if self._orientation == Qt.Orientation.Vertical:
             if CONTROL_TAB_NAME in tab_names:
                 self._main_widget.removeTab(tab_names.index(CONTROL_TAB_NAME))
             if self._control_panel not in self._layout.children():
                 self._layout.addWidget(self._control_panel)
                 self._control_panel.setVisible(True)
             self._tool_panel.show_generate_button(False)
-        elif self.width() < w_hide_ctrl_panel or self.height() < h_hide_ctrl_panel:
+        else:  # horizontal
             if self._control_panel in self._layout.children():
                 self._layout.removeWidget(self._control_panel)
             if CONTROL_TAB_NAME not in tab_names:

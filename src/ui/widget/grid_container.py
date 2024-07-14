@@ -3,8 +3,8 @@ import logging
 import math
 from typing import Optional, List, Tuple
 
-from PyQt6.QtCore import QSize, Qt, QRect
-from PyQt6.QtGui import QResizeEvent
+from PyQt6.QtCore import QSize, Qt, QRect, QPoint
+from PyQt6.QtGui import QResizeEvent, QPainter
 from PyQt6.QtWidgets import QWidget, QGridLayout
 
 from src.util.geometry_utils import get_scaled_placement
@@ -124,9 +124,22 @@ class GridContainer(QWidget):
         if len(self._children) == 0:
             return QSize(0, 0)
         base_size = self._children[-1].sizeHint()
+        actual_size = self._children[-1].size()
+        if actual_size.width() > base_size.width():
+            base_size.setWidth(actual_size.width())
+        if actual_size.height() > base_size.height():
+            base_size.setHeight(actual_size.height())
         base_size = base_size + QSize(self._layout.spacing(), self._layout.spacing())
-        content_size = QSize(base_size.width() * self._columns, base_size.height() * self._rows + 1)
+        content_size = QSize(base_size.width() * self._columns, base_size.height() * self._rows)
         return content_size
+
+    # def paintEvent(self, _):
+    #     painter = QPainter(self)
+    #     painter.setPen(Qt.GlobalColor.red)
+    #     painter.fillRect(QRect(QPoint(), self.size()), Qt.GlobalColor.red)
+    #     painter.setPen(Qt.GlobalColor.green)
+    #     painter.drawRect(QRect(QPoint(), self.actual_content_size()))
+    #     painter.end()
 
     def resizeEvent(self, unused_event: Optional[QResizeEvent]) -> None:
         """Update grid flow on resize."""
@@ -134,29 +147,30 @@ class GridContainer(QWidget):
 
     def sizeHint(self) -> QSize:
         """Base sizeHint on smallest total area given item size, count, and grid size constraints."""
-        base_hint = super().sizeHint()
-        num_children = len(self._children)
-        if num_children == 0:
-            return base_hint
-        child_size = self._children[-1].sizeHint()
-        min_cols, max_cols, min_rows, max_rows = self._get_constrained_grid_bounds(True)
-        best_size = None
-        max_dim = None
-        for n_cols in range(min_cols, max_cols + 1):
-            n_rows = math.ceil(num_children / n_cols)
-            if not min_rows <= n_rows <= max_rows:
-                continue
-            w = child_size.width() * n_cols
-            h = child_size.height() * n_rows
-            if not (self.minimumWidth() <= w <= self.maximumWidth()
-                    and self.minimumHeight() <= h <= self.maximumHeight()):
-                continue
-            if max_dim is None or max(w, h) < max_dim:
-                max_dim = max(w, h)
-                best_size = QSize(w, h)
-        if best_size is None:
-            return base_hint
-        return best_size
+        return self.actual_content_size()
+        # base_hint = super().sizeHint()
+        # num_children = len(self._children)
+        # if num_children == 0:
+        #     return base_hint
+        # child_size = self._children[-1].sizeHint()
+        # min_cols, max_cols, min_rows, max_rows = self._get_constrained_grid_bounds(True)
+        # best_size = None
+        # max_dim = None
+        # for n_cols in range(min_cols, max_cols + 1):
+        #     n_rows = math.ceil(num_children / n_cols)
+        #     if not min_rows <= n_rows <= max_rows:
+        #         continue
+        #     w = child_size.width() * n_cols
+        #     h = child_size.height() * n_rows
+        #     if not (self.minimumWidth() <= w <= self.maximumWidth()
+        #             and self.minimumHeight() <= h <= self.maximumHeight()):
+        #         continue
+        #     if max_dim is None or max(w, h) < max_dim:
+        #         max_dim = max(w, h)
+        #         best_size = QSize(w, h)
+        # if best_size is None:
+        #     return base_hint
+        # return best_size
 
     def _get_constrained_grid_bounds(self, ignore_bounds=False) -> Tuple[int, int, int, int]:
         # Rows/column count must be within range, can't be less than 1:
@@ -223,6 +237,6 @@ class GridContainer(QWidget):
             self._layout.addWidget(child, row, col)
         self._rows = row_count
         self._columns = column_count
-        content_height = (self._children[-1].sizeHint().height() + self._layout.spacing() * 2) * (row_count + 1)
+        content_height = (self._children[-1].sizeHint().height() + self._layout.spacing() * 2) * row_count
         self.setMinimumHeight(content_height)
         self.update()

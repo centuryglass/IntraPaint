@@ -1089,8 +1089,14 @@ class ImageStack(QObject):
         if self.active_layer_id == layer.id:
             active_layer = self.active_layer
             next_active_layer = self._next_layer(active_layer)
+            if isinstance(active_layer, LayerStack):
+                while next_active_layer is not None and active_layer.contains_recursive(next_active_layer):
+                    next_active_layer = self._next_layer(next_active_layer)
             if next_active_layer is None:
                 next_active_layer = self._prev_layer(active_layer)
+                if isinstance(active_layer, LayerStack):
+                    while next_active_layer is not None and active_layer.contains_recursive(next_active_layer):
+                        next_active_layer = self._prev_layer(next_active_layer)
             if next_active_layer is None or next_active_layer == layer or not \
                     self._layer_stack.contains_recursive(next_active_layer):
                 next_active_id = self._layer_stack.id

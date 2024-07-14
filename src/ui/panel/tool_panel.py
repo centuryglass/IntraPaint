@@ -20,6 +20,7 @@ from src.tools.tool_event_handler import ToolEventHandler
 from src.ui.panel.image_panel import ImagePanel
 from src.ui.panel.layer_panel import LayerPanel
 from src.ui.widget.collapsible_box import CollapsibleBox
+from src.ui.widget.draggable_divider import DraggableDivider
 from src.ui.widget.grid_container import GridContainer
 from src.ui.widget.key_hint_label import KeyHintLabel
 from src.ui.widget.reactive_layout_widget import ReactiveLayoutWidget
@@ -31,12 +32,10 @@ LIST_SPACING = 10
 TOOL_ICON_SIZE = 40
 GENERATE_BUTTON_TEXT = 'Generate'
 
-LAYER_PANEL_MIN_WIDTH = 0
-LAYER_PANEL_MIN_HEIGHT = 0
 
-TOOL_LIST_STRETCH = 2
-TOOL_PANEL_STRETCH = 30
-LAYER_PANEL_STRETCH = 3
+TOOL_LIST_STRETCH = 1
+TOOL_PANEL_STRETCH = 60
+LAYER_PANEL_STRETCH = 30
 
 MIN_SIZE_FOR_TOOL_LABEL = QSize(600, 300)
 
@@ -64,6 +63,7 @@ class ToolPanel(QWidget):
         self._event_handler = ToolEventHandler(image_panel.image_viewer)
         self._event_handler.tool_changed.connect(self._setup_active_tool)
         self._layout = QStackedLayout(self)
+        self._divider = DraggableDivider()
 
         # Initial orientation is Vertical, set at the end of init, defined here as Horizontal so the orientation setup
         # doesn't ignore the change.
@@ -76,13 +76,13 @@ class ToolPanel(QWidget):
         self._panel_box.set_expanded_size_policy(QSizePolicy.Policy.Ignored)
         self._panel_box.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
 
-        self._layer_panel: Optional[LayerPanel] = LayerPanel(image_stack)
+        self._layer_panel = LayerPanel(image_stack)
 
         self._generate_button = QPushButton(GENERATE_BUTTON_TEXT)
         self._generate_button.clicked.connect(generate_fn)
 
         # Setup tool list:
-        self._tool_list = GridContainer()
+        self._tool_button_grid = GridContainer()
 
         self._tools: Dict[str, BaseTool] = {}
         self._tool_widgets: Dict[str, '_ToolButton'] = {}
@@ -100,14 +100,14 @@ class ToolPanel(QWidget):
         self._tool_control_layout.addWidget(self._tool_control_label, stretch=2)
         self._tool_control_layout.addStretch(2)
         self._tool_control_box.add_visibility_limit(self._tool_control_label, MIN_SIZE_FOR_TOOL_LABEL)
-        self._tool_control_box.setSizePolicy(QSizePolicy(QSizePolicy.Policy.MinimumExpanding,
-                                                         QSizePolicy.Policy.MinimumExpanding))
+        self._tool_control_box.setSizePolicy(QSizePolicy(QSizePolicy.Policy.Fixed,
+                                                         QSizePolicy.Policy.Fixed))
 
         self._tool_scroll_area = QScrollArea()
         self._tool_scroll_area.setWidgetResizable(True)
         self._tool_scroll_area.setWidget(self._tool_control_box)
         self._tool_scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
-        self._tool_scroll_area.setSizePolicy(QSizePolicy(QSizePolicy.Policy.MinimumExpanding,
+        self._tool_scroll_area.setSizePolicy(QSizePolicy(QSizePolicy.Policy.Expanding,
                                                          QSizePolicy.Policy.Expanding))
 
         # Create individual tools:
@@ -122,7 +122,7 @@ class ToolPanel(QWidget):
             button.tool_selected.connect(self._switch_active_tool)
             toolbar_button.tool_selected.connect(self._switch_active_tool)
             self._event_handler.register_hotkeys(new_tool)
-            self._tool_list.add_widget(button)
+            self._tool_button_grid.add_widget(button)
 
         selection_tool = SelectionTool(image_stack, image_panel.image_viewer)
         add_tool(selection_tool)
@@ -168,6 +168,21 @@ class ToolPanel(QWidget):
         """Sets the panel to a vertical or horizontal Qt.Orientation."""
         if self._orientation == orientation:
             return
+        if self._panel_box_layout is not None:
+            def _get_stretch(widget, default):
+                idx = self._panel_box_layout.indexOf(widget)
+                if idx < 0:
+                    return default
+                return self._panel_box_layout.stretch(idx)
+            tool_list_stretch = _get_stretch(self._tool_button_grid, TOOL_LIST_STRETCH)
+            tool_panel_stretch = _get_stretch(self._tool_scroll_area, TOOL_PANEL_STRETCH)
+            layer_panel_stretch = _get_stretch(self._layer_panel, LAYER_PANEL_STRETCH)
+            while self._panel_box_layout.count() > 0:
+                self._panel_box_layout.takeAt(0)
+        else:
+            tool_list_stretch = TOOL_LIST_STRETCH
+            tool_panel_stretch = TOOL_PANEL_STRETCH
+            layer_panel_stretch = LAYER_PANEL_STRETCH
         self._orientation = orientation
         prev_panel_box = self._panel_box
         show_generate_button = self._generate_button.isVisible()
@@ -191,23 +206,23 @@ class ToolPanel(QWidget):
         box_layout.setContentsMargins(QMargins(2, 2, 2, 2))
         self._layout.addWidget(self._panel_box)
         self._layout.setCurrentWidget(self._panel_box)
-        box_layout.addWidget(self._tool_list, stretch=TOOL_LIST_STRETCH)
-        box_layout.addWidget(self._tool_scroll_area, stretch=TOOL_PANEL_STRETCH)
-        if self._layer_panel is not None:
-            box_layout.addWidget(self._layer_panel, stretch=LAYER_PANEL_STRETCH)
+        box_layout.addWidget(self._tool_button_grid, stretch=tool_list_stretch)
+        box_layout.addWidget(self._tool_scroll_area, stretch=tool_panel_stretch)
+        box_layout.addWidget(self._divider, stretch = 1)
+        box_layout.addWidget(self._layer_panel, stretch=layer_panel_stretch)
         box_layout.addWidget(self._generate_button)
         self._generate_button.setVisible(show_generate_button)
-        tool_list_layout = self._tool_list.layout()
+        tool_list_layout = self._tool_button_grid.layout()
         assert tool_list_layout is not None
         if orientation == Qt.Orientation.Horizontal:
             generate_label = '\n'.join(GENERATE_BUTTON_TEXT)
-            self._tool_list.fill_vertical = True
-            self._tool_list.max_rows = 3
+            self._tool_button_grid.fill_vertical = True
+            self._tool_button_grid.max_rows = 1
             tool_list_layout.setAlignment(Qt.AlignmentFlag.AlignLeft)
         else:
             generate_label = GENERATE_BUTTON_TEXT
-            self._tool_list.fill_horizontal = True
-            self._tool_list.max_rows = len(self._tools)
+            self._tool_button_grid.fill_horizontal = True
+            self._tool_button_grid.max_rows = len(self._tools)
             tool_list_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
         self._generate_button.setText(generate_label)
         if prev_panel_box is not None:
@@ -286,20 +301,6 @@ class ToolPanel(QWidget):
             max_width -= scroll_bar.sizeHint().width()
         if max_width > 0:
             self._tool_control_box.setMaximumWidth(max_width)
-        show_layer_panel = ((self._orientation == Qt.Orientation.Horizontal and self.width() >= LAYER_PANEL_MIN_WIDTH)
-                            or (self._orientation == Qt.Orientation.Vertical
-                                and self.height() >= LAYER_PANEL_MIN_HEIGHT))
-        if show_layer_panel and self._panel_box_layout is not None:
-            if self._layer_panel is None:
-                self._layer_panel = LayerPanel(self._image_stack)
-            self._panel_box_layout.insertWidget(self._panel_box_layout.count() - 2, self._layer_panel)
-        elif self._layer_panel is not None:
-            if self._panel_box_layout is not None:
-                self._panel_box_layout.removeWidget(self._layer_panel)
-            self._layer_panel.hide()
-            self._layer_panel.setParent(None)
-            self._layer_panel = None
-
         if self._active_tool_panel is not None and hasattr(self._active_tool_panel, 'set_orientation'):
             self._active_tool_panel.set_orientation(self._orientation)
 
