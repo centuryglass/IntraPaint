@@ -118,8 +118,8 @@ class Label(QLabel):
         """Re-renders the label text."""
         drawn_text = '     ' if self._text is None else (self._text + '     ')
         text_size = find_text_size(drawn_text, self._font)
-        w = int(text_size.height() * 1.3) if self._orientation == Qt.Orientation.Vertical else text_size.width()
-        h = text_size.width() if self._orientation == Qt.Orientation.Vertical else int(text_size.height() * 1.3)
+        w = int(text_size.height() * 1.1) if self._orientation == Qt.Orientation.Vertical else text_size.width()
+        h = text_size.width() if self._orientation == Qt.Orientation.Vertical else int(text_size.height() * 1.1)
         image_size = QSize(w, h)
 
         path = QPainterPath()

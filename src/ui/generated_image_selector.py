@@ -315,7 +315,7 @@ class GeneratedImageSelector(QWidget):
             if source == self._view:
                 view_pos = event.pos()
             else:
-                view_pos = QPointF(self._view.x() + event.pos().x(), self._view.y() + event.pos().y())
+                view_pos = QPoint(self._view.x() + event.pos().x(), self._view.y() + event.pos().y())
             scene_pos = self._view.mapToScene(view_pos).toPoint()
             for i, option in enumerate(self._options):
                 if option.bounds.contains(scene_pos):
