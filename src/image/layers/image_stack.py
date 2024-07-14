@@ -388,12 +388,14 @@ class ImageStack(QObject):
 
     def get_color_at_point(self, image_point: QPoint) -> QColor:
         """Gets the combined color of visible saved layers at a single point, or QColor(0, 0, 0) if out of bounds."""
-        content_bounds = self.merged_layer_bounds
         image_bounds = self.bounds
+        if image_bounds.contains(image_point):
+            return self.qimage(True).pixelColor(image_point)
+        content_bounds = self.merged_layer_bounds
         adjusted_point = image_point - content_bounds.topLeft()
         if not content_bounds.contains(adjusted_point):
             return QColor(0, 0, 0)
-        return self.qimage(image_bounds.contains(adjusted_point)).pixelColor(adjusted_point)
+        return self.qimage(False).pixelColor(adjusted_point)
 
     # LAYER ACCESS / MANIPULATION FUNCTIONS:
 

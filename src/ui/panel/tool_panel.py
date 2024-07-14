@@ -139,6 +139,7 @@ class ToolPanel(QWidget):
         generation_area_tool = GenerationAreaTool(image_stack, image_panel.image_viewer)
         add_tool(generation_area_tool)
         self._event_handler.register_tool_delegate(brush_tool, eyedropper_tool, Qt.KeyboardModifier.ControlModifier)
+        self._event_handler.register_tool_delegate(fill_tool, eyedropper_tool, Qt.KeyboardModifier.ControlModifier)
         self._switch_active_tool(Cache().get(Cache.LAST_ACTIVE_TOOL))
         Cache().connect(self, Cache.LAST_ACTIVE_TOOL, self._switch_active_tool)
         self.resizeEvent(None)

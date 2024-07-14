@@ -1,8 +1,8 @@
 """Fill areas within an image."""
 from typing import Optional
 
-from PyQt6.QtCore import Qt, QPoint, QRect
-from PyQt6.QtGui import QIcon, QCursor, QMouseEvent, QKeySequence, QColor, QPainter
+from PyQt6.QtCore import Qt, QPoint, QRect, QLine
+from PyQt6.QtGui import QIcon, QCursor, QMouseEvent, QKeySequence, QColor, QPainter, QPen, QTransform
 from PyQt6.QtWidgets import QWidget, QFormLayout
 
 from src.config.cache import Cache
@@ -11,7 +11,7 @@ from src.image.layers.image_layer import ImageLayer
 from src.image.layers.image_stack import ImageStack
 from src.tools.base_tool import BaseTool
 from src.ui.widget.brush_color_button import BrushColorButton
-from src.util.image_utils import flood_fill
+from src.util.image_utils import flood_fill, create_transparent_image
 from src.util.shared_constants import PROJECT_DIR
 
 RESOURCES_FILL_ICON = f'{PROJECT_DIR}/resources/icons/fill_icon.svg'
@@ -88,16 +88,22 @@ class FillTool(BaseTool):
             if not layer.bounds.contains(layer_point):
                 return True
             if self._sample_merged:
-                layer_image_bounds = layer.transformed_bounds
                 merged_image_bounds = self._image_stack.merged_layer_bounds
-                image = self._image_stack.qimage(crop_to_image=False)
-                layer_image_bounds.translate(-merged_image_bounds.topLeft())
-                image = image.copy(layer_image_bounds)
+                full_image = self._image_stack.qimage(crop_to_image=False)
+                projected_image_content = create_transparent_image(layer.size)
+                painter = QPainter(projected_image_content)
+                transform = QTransform.fromTranslate(merged_image_bounds.x(),
+                                                     merged_image_bounds.y()) * layer.transform.inverted()[0]
+                painter.setTransform(transform)
+                painter.drawImage(0, 0, full_image)
+                painter.end()
+                fill_image = projected_image_content
                 layer_image = layer.image
             else:
-                image = layer.image
-                layer_image = image
-            mask = flood_fill(image, layer_point, self._color, self._threshold, False)
+                fill_image = layer.image
+                layer_image = fill_image
+            print(f'flood fill: {layer_point} within {fill_image.size()} image')
+            mask = flood_fill(fill_image, layer_point, self._color, self._threshold, False)
             assert mask is not None
             painter = QPainter(layer_image)
             painter.drawImage(QRect(QPoint(), layer.size), mask)
