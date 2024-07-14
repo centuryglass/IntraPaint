@@ -76,6 +76,7 @@ class HotkeyFilter(QObject):
             Exact keyboard modifiers required to invoke the action, defaults to Qt.NoModifier.
         """
         for key in keys:
+            key = key.key()
             assert key != Qt.Key.Key_unknown, 'Invalid keybinding'
             key_string = get_key_string(key)
             key_modifiers = modifiers

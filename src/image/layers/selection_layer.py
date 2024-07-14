@@ -161,7 +161,15 @@ class SelectionLayer(ImageLayer):
         return qimage_to_pil_image(self.mask_image)
 
     def _handle_content_change(self, image: QImage, change_bounds: Optional[QRect] = None) -> None:
-        """When the image updates, ensure that it meets requirements, and recalculate bounds."""
+        """When the image updates, ensure that it meets requirements, and recalculate bounds.
+
+        Parameters:
+            image: QImage
+                The new image being applied, which this method may directly change.
+            change_bounds: Optional[QRect] = None
+                If not None, this indicates the area (in local coordinates) within the image where the content has
+                changed.
+        """
         # Enforce fixed colors, alpha thresholds:
         if image.size().isEmpty():
             return
@@ -198,22 +206,25 @@ class SelectionLayer(ImageLayer):
         x_offset = 0.5 + pos.x()
         y_offset = 0.5 + pos.y()
         if change_bounds is not None:
-            final_bounds = QRect(change_bounds)
-            final_bounds.translate(-pos.x(), -pos.y())
+            final_image_bounds = QRect(change_bounds).translated(pos.x(), pos.y())
             polys_to_remove = []
             for poly in self._outline_polygons:
-                if poly.boundingRect().toAlignedRect().intersects(change_bounds):
-                    final_bounds = final_bounds.united(poly.boundingRect().toAlignedRect().adjusted(-1, -1, 1, 1))
+                poly_bounds = poly.boundingRect().toAlignedRect()
+                if poly_bounds.intersects(final_image_bounds):
+                    final_image_bounds = final_image_bounds.united(poly_bounds.adjusted(-1, -1, 1, 1))
                     polys_to_remove.append(poly)
             for poly in polys_to_remove:
                 self._outline_polygons.remove(poly)
-            final_bounds = final_bounds.intersected(QRect(0, 0, self.width, self.height))
-            cropped_image = np_image[final_bounds.y():final_bounds.y() + final_bounds.height(),
-                                     final_bounds.x():final_bounds.x() + final_bounds.width(), :]
-            x_offset += final_bounds.x()
-            y_offset += final_bounds.y()
+            final_local_bounds = final_image_bounds.translated(-pos.x(), -pos.y())\
+                .adjusted(-10, -10, 10, 10)\
+                .intersected(QRect(0, 0, self.width, self.height))
+            cropped_image = np_image[final_local_bounds.y():final_local_bounds.y() + final_local_bounds.height(),
+                                     final_local_bounds.x():final_local_bounds.x() + final_local_bounds.width(), :]
+            x_offset += final_local_bounds.x()
+            y_offset += final_local_bounds.y()
         else:
             self._outline_polygons = []
+            cropped_image = np_image
         gray = cv2.cvtColor(cropped_image[:, :, :3], cv2.COLOR_BGR2GRAY)
         contours, _ = cv2.findContours(gray, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
         for contour in contours:
@@ -221,6 +232,7 @@ class SelectionLayer(ImageLayer):
             for point in contour:
                 polygon.append(QPointF(point[0][0] + x_offset, point[0][1] + y_offset))
             self._outline_polygons.append(polygon)
+
 
     def get_content_bounds(self) -> QRect:
         """Returns a rectangle containing all selected content within the image."""
