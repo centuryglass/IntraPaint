@@ -10,7 +10,9 @@ from PyQt6.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QPushButton, QWid
 
 from src.config.config import Config
 from src.ui.input_fields.big_int_spinbox import BigIntSpinbox
+from src.ui.input_fields.slider_spinbox import IntSliderSpinbox
 from src.ui.input_fields.check_box import CheckBox
+from src.ui.input_fields.combo_box import ComboBox
 from src.ui.input_fields.dual_toggle import DualToggle
 from src.ui.input_fields.line_edit import LineEdit
 from src.ui.input_fields.plain_text_edit import PlainTextEdit
@@ -119,11 +121,13 @@ class SettingsModal(QDialog):
                 widget.setValue(new_value)
             else:
                 assert not isinstance(new_value, QSize)
-                if isinstance(widget, (LineEdit, PlainTextEdit, DualToggle)):
+                if isinstance(widget, (LineEdit, PlainTextEdit, DualToggle, ComboBox)):
                     widget.setValue(str(new_value))
                 else:
+                    if new_value is None:
+                        new_value = 0
                     assert isinstance(new_value, (int, float, bool))
-                    if isinstance(widget, BigIntSpinbox):
+                    if isinstance(widget, (BigIntSpinbox, IntSliderSpinbox)):
                         widget.setValue(int(new_value))
                     elif isinstance(widget, CheckBox):
                         widget.setValue(bool(new_value))
