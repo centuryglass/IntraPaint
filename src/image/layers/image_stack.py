@@ -754,8 +754,11 @@ class ImageStack(QObject):
         selection_image = create_transparent_image(self.selection_layer.size)
         painter = QPainter(selection_image)
         if isinstance(active_layer, TransformLayer):
-            painter.setTransform(active_layer.transform)
-        painter.setTransform(self.selection_layer.transform.inverted()[0], True)
+            painter.setTransform(active_layer.transform * self.selection_layer.transform.inverted()[0])
+        else:
+            offset = active_layer.bounds.topLeft()
+            painter.setTransform(self.selection_layer.transform.inverted()[0] * QTransform.fromTranslate(offset.x(),
+                                                                                                         offset.y()))
         painter.drawImage(0, 0, active_layer.image)
         painter.end()
         self.selection_layer.image = selection_image
