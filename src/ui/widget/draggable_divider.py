@@ -1,11 +1,12 @@
 """
 Provides a widget that can be dragged to resize UI elements.
 """
-from typing import Optional, Tuple
-from PyQt6.QtWidgets import QWidget, QSizePolicy, QBoxLayout, QHBoxLayout, QVBoxLayout
-from PyQt6.QtGui import QPainter, QPen, QColor, QResizeEvent, QMouseEvent, QPaintEvent, QCursor
+from typing import Optional
+
 from PyQt6.QtCore import Qt, QPoint, QSize, QRect, pyqtSignal
-from src.util.geometry_utils import get_scaled_placement
+from PyQt6.QtGui import QPainter, QPen, QResizeEvent, QMouseEvent, QPaintEvent, QCursor
+from PyQt6.QtWidgets import QWidget, QSizePolicy, QBoxLayout, QHBoxLayout, QVBoxLayout
+
 from src.util.contrast_color import contrast_color
 
 DIVIDER_SIZE = 8

@@ -28,6 +28,7 @@ class A1111Webservice(WebService):
     A1111Webservice provides access to the a1111/stable-diffusion-webui through the REST API.
     """
 
+    # noinspection SpellCheckingInspection
     class Endpoints:
         """REST API endpoint constants."""
         OPTIONS = '/sdapi/v1/options'

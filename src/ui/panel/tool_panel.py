@@ -32,7 +32,6 @@ LIST_SPACING = 10
 TOOL_ICON_SIZE = 40
 GENERATE_BUTTON_TEXT = 'Generate'
 
-
 TOOL_LIST_STRETCH = 1
 TOOL_PANEL_STRETCH = 60
 LAYER_PANEL_STRETCH = 30
@@ -174,6 +173,7 @@ class ToolPanel(QWidget):
                 if idx < 0:
                     return default
                 return self._panel_box_layout.stretch(idx)
+
             tool_list_stretch = _get_stretch(self._tool_button_grid, TOOL_LIST_STRETCH)
             tool_panel_stretch = _get_stretch(self._tool_scroll_area, TOOL_PANEL_STRETCH)
             layer_panel_stretch = _get_stretch(self._layer_panel, LAYER_PANEL_STRETCH)
@@ -208,7 +208,7 @@ class ToolPanel(QWidget):
         self._layout.setCurrentWidget(self._panel_box)
         box_layout.addWidget(self._tool_button_grid, stretch=tool_list_stretch)
         box_layout.addWidget(self._tool_scroll_area, stretch=tool_panel_stretch)
-        box_layout.addWidget(self._divider, stretch = 1)
+        box_layout.addWidget(self._divider, stretch=1)
         box_layout.addWidget(self._layer_panel, stretch=layer_panel_stretch)
         box_layout.addWidget(self._generate_button)
         self._generate_button.setVisible(show_generate_button)

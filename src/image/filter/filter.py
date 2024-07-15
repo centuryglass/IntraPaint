@@ -64,10 +64,12 @@ class ImageFilter:
 
         def _set_active_only(active_only: bool) -> None:
             self.active_layer_only = active_only
+
         modal.filter_active_only.connect(_set_active_only)
 
         def _set_selection_only(selection_only: bool) -> None:
             self.selection_only = selection_only
+
         modal.filter_selection_only.connect(_set_selection_only)
         return modal
 
@@ -96,7 +98,7 @@ class ImageFilter:
         if self._filter_active_layer_only:
             active_layer = self._image_stack.active_layer
             if active_layer.id != layer_id and not (isinstance(active_layer, LayerStack)
-                                                   and active_layer.contains_recursive(
+                                                    and active_layer.contains_recursive(
                         self._image_stack.get_layer_by_id(layer_id))):
                 return False
         if self._filter_selection_only:

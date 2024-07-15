@@ -8,10 +8,10 @@ import os
 import re
 import sys
 from argparse import Namespace
-from typing import Optional, Callable, Any, List, Tuple
+from typing import Optional, Any, List, Tuple
 
 from PIL import Image, ImageFilter, UnidentifiedImageError, PngImagePlugin
-from PyQt6.QtCore import QObject, QRect, QPoint, QSize, pyqtSignal, Qt
+from PyQt6.QtCore import QObject, QRect, QPoint, QSize, pyqtSignal
 from PyQt6.QtGui import QScreen, QImage, QPainter
 from PyQt6.QtWidgets import QApplication, QMessageBox
 
@@ -51,40 +51,44 @@ SpacenavManager = optional_import('spacenav_manager', 'src.controller', 'Spacena
 
 logger = logging.getLogger(__name__)
 
-MENU_FILE = 'File'
-MENU_EDIT = 'Edit'
-MENU_IMAGE = 'Image'
-MENU_SELECTION = 'Selection'
-MENU_LAYERS = 'Layers'
-MENU_TOOLS = 'Tools'
-MENU_FILTERS = 'Filters'
+# The QCoreApplication.translate context for strings in this file
+TR_ID = 'controller.base_controller'
 
-CONFIRM_QUIT_TITLE = 'Quit now?'
-CONFIRM_QUIT_MESSAGE = 'All unsaved changes will be lost.'
-NEW_IMAGE_CONFIRMATION_TITLE = 'Create new image?'
-NEW_IMAGE_CONFIRMATION_MESSAGE = 'This will discard all unsaved changes.'
-SAVE_ERROR_MESSAGE_NO_IMAGE = 'Open or create an image first before trying to save.'
-SAVE_ERROR_TITLE = 'Save failed'
-LOAD_ERROR_TITLE = 'Open failed'
-RELOAD_ERROR_MESSAGE_NO_IMAGE = 'Enter an image path or click "Open Image" first.'
-RELOAD_ERROR_TITLE = 'Reload failed'
-RELOAD_CONFIRMATION_TITLE = 'Reload image?'
-RELOAD_CONFIRMATION_MESSAGE = 'This will discard all unsaved changes.'
-METADATA_UPDATE_TITLE = 'Metadata updated'
-METADATA_UPDATE_MESSAGE = 'On save, current image generation parameters will be stored within the image'
-RESIZE_ERROR_TITLE = 'Resize failed'
-RESIZE_ERROR_MESSAGE_NO_IMAGE = 'Open or create an image first before trying to resize.'
-SCALING_ERROR_TITLE = 'Scaling failed'
-SCALING_ERROR_MESSAGE_NO_IMAGE = 'Open or create an image first before trying to scale.'
-GENERATE_ERROR_TITLE_UNEXPECTED = 'Inpainting failure'
-GENERATE_ERROR_TITLE_NO_IMAGE = 'Save failed'
-GENERATE_ERROR_MESSAGE_NO_IMAGE = 'Open or create an image first before trying to start image generation.'
-GENERATE_ERROR_TITLE_EXISTING_OP = 'Failed'
-GENERATE_ERROR_MESSAGE_EXISTING_OP = 'Existing image generation operation not yet finished, wait a little longer.'
-SETTINGS_ERROR_MESSAGE = 'Settings not supported in this mode.'
-SETTINGS_ERROR_TITLE = 'Failed to open settings'
-LOAD_LAYER_ERROR_TITLE = 'Opening layers failed'
-LOAD_LAYER_ERROR_MESSAGE = 'Could not open the following images: '
+
+def _tr(*args):
+    """Helper to make QCoreApplication.translate more concise."""
+    return QApplication.translate(TR_ID, *args)
+
+
+MENU_FILE = _tr('File')
+MENU_EDIT = _tr('Edit')
+MENU_IMAGE = _tr('Image')
+MENU_SELECTION = _tr('Selection')
+MENU_LAYERS = _tr('Layers')
+MENU_TOOLS = _tr('Tools')
+MENU_FILTERS = _tr('Filters')
+
+CONFIRM_QUIT_TITLE = _tr('Quit now?')
+CONFIRM_QUIT_MESSAGE = _tr('All unsaved changes will be lost.')
+NEW_IMAGE_CONFIRMATION_TITLE = _tr('Create new image?')
+NEW_IMAGE_CONFIRMATION_MESSAGE = _tr('This will discard all unsaved changes.')
+SAVE_ERROR_TITLE = _tr('Save failed')
+LOAD_ERROR_TITLE = _tr('Open failed')
+RELOAD_ERROR_TITLE = _tr('Reload failed')
+RELOAD_ERROR_MESSAGE_NO_IMAGE = _tr('Enter an image path or click "Open Image" first.')
+RELOAD_CONFIRMATION_TITLE = _tr('Reload image?')
+RELOAD_CONFIRMATION_MESSAGE = _tr('This will discard all unsaved changes.')
+METADATA_UPDATE_TITLE = _tr('Metadata updated')
+METADATA_UPDATE_MESSAGE = _tr('On save, current image generation parameters will be stored within the image')
+RESIZE_ERROR_TITLE = _tr('Resize failed')
+GENERATE_ERROR_TITLE_UNEXPECTED = _tr('Inpainting failure')
+GENERATE_ERROR_TITLE_NO_IMAGE = _tr('Save failed')
+GENERATE_ERROR_TITLE_EXISTING_OP = _tr('Failed')
+GENERATE_ERROR_MESSAGE_EXISTING_OP = _tr('Existing image generation operation not yet finished, wait a little longer.')
+SETTINGS_ERROR_MESSAGE = _tr('Settings not supported in this mode.')
+SETTINGS_ERROR_TITLE = _tr('Failed to open settings')
+LOAD_LAYER_ERROR_TITLE = _tr('Opening layers failed')
+LOAD_LAYER_ERROR_MESSAGE = _tr('Could not open the following images: ')
 
 METADATA_PARAMETER_KEY = 'parameters'
 IGNORED_APPCONFIG_CATEGORIES = ('Stable-Diffusion', 'GLID-3-XL')
@@ -99,6 +103,7 @@ class BaseInpaintController(MenuBuilder):
     def __init__(self, args: Namespace) -> None:
         super().__init__()
         self._app = QApplication.instance() or QApplication(sys.argv)
+        self._generated_images: List[QImage] = []
         screen = self._app.primaryScreen()
         self._fixed_window_size = args.window_size
         if self._fixed_window_size is not None:
@@ -310,9 +315,6 @@ class BaseInpaintController(MenuBuilder):
         """Open a save dialog, and save the edited image to disk, preserving any metadata."""
         assert self._window is not None
         cache = Cache()
-        if not self._image_stack.has_image:
-            show_error_dialog(self._window, SAVE_ERROR_TITLE, SAVE_ERROR_MESSAGE_NO_IMAGE)
-            return
         try:
             if not isinstance(file_path, str):
                 selected_path, file_selected = open_image_file(self._window, mode='save',
@@ -510,9 +512,6 @@ class BaseInpaintController(MenuBuilder):
     def resize_canvas(self) -> None:
         """Crop or extend the edited image without scaling its contents based on user input into a popup modal."""
         assert self._window is not None
-        if not self._image_stack.has_image:
-            show_error_dialog(self._window, RESIZE_ERROR_TITLE, RESIZE_ERROR_MESSAGE_NO_IMAGE)
-            return
         resize_modal = ResizeCanvasModal(self._image_stack.qimage())
         new_size, offset = resize_modal.show_resize_modal()
         if new_size is None or offset is None:
@@ -523,9 +522,6 @@ class BaseInpaintController(MenuBuilder):
     def scale_image(self) -> None:
         """Scale the edited image based on user input into a popup modal."""
         assert self._window is not None
-        if not self._image_stack.has_image:
-            show_error_dialog(self._window, SCALING_ERROR_TITLE, SCALING_ERROR_MESSAGE_NO_IMAGE)
-            return
         width = self._image_stack.width
         height = self._image_stack.height
         scale_modal = ImageScaleModal(width, height)
@@ -570,9 +566,7 @@ class BaseInpaintController(MenuBuilder):
         """Start inpainting/image editing based on the current state of the UI."""
         assert self._window is not None
         config = AppConfig()
-        if not self._image_stack.has_image:
-            show_error_dialog(self._window, GENERATE_ERROR_TITLE_NO_IMAGE, GENERATE_ERROR_MESSAGE_NO_IMAGE)
-            return
+        self._generated_images.clear()
 
         source_selection = self._image_stack.qimage_generation_area_content()
         inpaint_image = source_selection.copy()
@@ -599,17 +593,16 @@ class BaseInpaintController(MenuBuilder):
             composite_base = None
 
         class _AsyncInpaintTask(AsyncTask):
-            image_ready = pyqtSignal(QImage, int)
             status_signal = pyqtSignal(dict)
             error_signal = pyqtSignal(Exception)
 
             def signals(self) -> List[pyqtSignal]:
-                return [self.image_ready, self.status_signal, self.error_signal]
+                return [self.status_signal, self.error_signal]
 
-        def _do_inpaint(image_ready: pyqtSignal, status_signal: pyqtSignal, error_signal: pyqtSignal,
-                        image=inpaint_image, mask=inpaint_mask) -> None:
+        def _do_inpaint(status_signal: pyqtSignal, error_signal: pyqtSignal, image=inpaint_image,
+                        mask=inpaint_mask) -> None:
             try:
-                self._inpaint(image, mask, image_ready.emit, status_signal)
+                self._inpaint(image, mask, status_signal)
             except (IOError, ValueError, RuntimeError) as err:
                 error_signal.emit(err)
 
@@ -621,27 +614,25 @@ class BaseInpaintController(MenuBuilder):
             self._window.set_image_selector_visible(False)
             show_error_dialog(self._window, GENERATE_ERROR_TITLE_UNEXPECTED, err)
 
-        def load_sample_preview(img: QImage, idx: int, unmasked_content: Optional[QImage] = composite_base) -> None:
-            """Apply image mask to inpainting results."""
-            assert self._window is not None
-            if config.get(AppConfig.EDIT_MODE) == EDIT_MODE_INPAINT:
-                assert unmasked_content is not None
-                assert unmasked_content.size() == img.size()
-                painter = QPainter(img)
-                painter.drawImage(QPoint(), unmasked_content)
-                painter.end()
-            self._window.load_sample_preview(img, idx)
-
         def _finished():
+            assert self._window is not None
             self._window.set_is_loading(False)
             inpaint_task.error_signal.disconnect(handle_error)
             inpaint_task.status_signal.disconnect(self._apply_status_update)
-            inpaint_task.image_ready.disconnect(load_sample_preview)
             inpaint_task.finish_signal.disconnect(_finished)
+            for idx, image in enumerate(self._generated_images):
+                if image.isNull():
+                    continue
+                if config.get(AppConfig.EDIT_MODE) == EDIT_MODE_INPAINT:
+                    assert composite_base is not None
+                    assert composite_base.size() == image.size()
+                    painter = QPainter(image)
+                    painter.drawImage(QPoint(), composite_base)
+                    painter.end()
+                self._window.load_sample_preview(image, idx)
 
         inpaint_task.error_signal.connect(handle_error)
         inpaint_task.status_signal.connect(self._apply_status_update)
-        inpaint_task.image_ready.connect(load_sample_preview)
         inpaint_task.finish_signal.connect(_finished)
 
         self._window.set_image_selector_visible(True)
@@ -790,10 +781,17 @@ class BaseInpaintController(MenuBuilder):
         self._image_stack.load_image(scaled_image)
 
     # Image generation handling:
+
+    def _cache_generated_image(self, image: QImage, index: int) -> None:
+        while len(self._generated_images) < index:
+            self._generated_images.append(QImage())
+        if len(self._generated_images) > index:
+            self._generated_images.pop(index)
+        self._generated_images.insert(index, image)
+
     def _inpaint(self,
                  source_image_section: Optional[QImage],
                  mask: Optional[QImage],
-                 save_image: Callable[[QImage, int], None],
                  status_signal: pyqtSignal) -> None:
         """Unimplemented method for handling image inpainting.
 
@@ -803,10 +801,8 @@ class BaseInpaintController(MenuBuilder):
             Image selection to edit
         mask : QImage, optional
             Mask marking edited image region.
-        save_image : function (QImage, int)
-            Function used to return each image response and its index.
         status_signal : pyqtSignal
-            Signal to emit when status updates are available.
+            Signal to emit when status updates are available
         """
         raise NotImplementedError('_inpaint method not implemented.')
 

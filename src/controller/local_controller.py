@@ -3,7 +3,7 @@ Provides image editing functionality through a local instance of GLID-3-XL.
 """
 import logging
 from argparse import Namespace
-from typing import Callable, List, Optional
+from typing import List, Optional
 
 # noinspection PyPackageRequirements
 import torch
@@ -62,7 +62,6 @@ class LocalDeviceController(BaseInpaintController):
     def _inpaint(self,
                  source_image_section: Optional[QImage],
                  mask: Optional[QImage],
-                 save_image: Callable[[QImage, int], None],
                  status_signal: pyqtSignal) -> None:
         assert_types((source_image_section, mask), QImage)
         config = AppConfig()
@@ -110,7 +109,7 @@ class LocalDeviceController(BaseInpaintController):
                 sample,
                 batch_size,
                 self._ldm,
-                lambda k, img: save_image(pil_image_to_qimage(img), (i * batch_size) + k))
+                lambda k, img: self._cache_generated_image(pil_image_to_qimage(img), (i * batch_size) + k))
 
         generate_samples(
             self._device,

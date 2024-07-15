@@ -7,7 +7,7 @@ import logging
 import os
 import sys
 from argparse import Namespace
-from typing import Optional, Callable, Any, Dict, List, cast
+from typing import Optional, Any, Dict, List, cast
 
 import requests
 from PyQt6.QtCore import pyqtSignal, QSize, QThread
@@ -438,7 +438,6 @@ class StableDiffusionController(BaseInpaintController):
     def _inpaint(self,
                  source_image_section: Optional[QImage],
                  mask: Optional[QImage],
-                 save_image: Callable[[QImage, int], None],
                  status_signal: pyqtSignal) -> None:
         """Handle image editing operations using stable-diffusion-webui.
 
@@ -448,8 +447,6 @@ class StableDiffusionController(BaseInpaintController):
             Image selection to edit
         mask : QImage, optional
             Mask marking edited image region.
-        save_image : function (PIL Image, int)
-            Function used to return each image response and its index.
         status_signal : pyqtSignal
             Signal to emit when status updates are available.
         """
@@ -466,7 +463,6 @@ class StableDiffusionController(BaseInpaintController):
         if init_data[PROGRESS_KEY_CURRENT_IMAGE] is not None:
             raise RuntimeError('Image generation in progress, try again later.')
         self._async_progress_check(status_signal)
-
         try:
             if edit_mode == EDIT_MODE_TXT2IMG:
                 gen_size = AppConfig().get(AppConfig.GENERATION_SIZE)
@@ -479,7 +475,7 @@ class StableDiffusionController(BaseInpaintController):
             if info is not None:
                 logger.debug(f'Image generation result info: {info}')
             for i, response_image in enumerate(image_data):
-                save_image(response_image, i)
+                self._cache_generated_image(response_image, i)
 
         except RuntimeError as image_gen_error:
             logger.error(f'request failed: {image_gen_error}')

@@ -4,7 +4,7 @@ from contextlib import contextmanager
 from typing import Optional, Any, Tuple
 
 from PIL import Image
-from PyQt6.QtCore import Qt, QRect, QSize, QPoint
+from PyQt6.QtCore import QRect, QSize, QPoint
 from PyQt6.QtGui import QImage, QPainter, QPixmap, QTransform
 
 from src.image.layers.transform_layer import TransformLayer

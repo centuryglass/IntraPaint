@@ -1,7 +1,7 @@
 """Interface for layers that have a persistent transformation."""
 from typing import Tuple
 
-from PyQt6.QtCore import QObject, pyqtSignal, QRect, QPoint, QRectF, Qt, QPointF
+from PyQt6.QtCore import QObject, pyqtSignal, QRect, QPoint, QRectF, QPointF
 from PyQt6.QtGui import QPainter, QImage, QTransform, QPolygonF
 
 from src.image.layers.layer import Layer

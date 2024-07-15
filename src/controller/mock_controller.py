@@ -1,11 +1,13 @@
 """
 Runs IntraPaint with no real image editing functionality. Intended for testing only.
 """
-from typing import Optional, Callable
+from typing import Optional
+
 from PIL import Image
 from PyQt6.QtCore import pyqtSignal
-from src.controller.base_controller import BaseInpaintController
+
 from src.config.application_config import AppConfig
+from src.controller.base_controller import BaseInpaintController
 from src.ui.modal.settings_modal import SettingsModal
 
 
@@ -15,7 +17,6 @@ class MockController(BaseInpaintController):
     def _inpaint(self,
                  source_image_section: Optional[Image.Image],
                  mask: Optional[Image.Image],
-                 save_image: Callable[[Image.Image, int], None],
                  status_signal: pyqtSignal) -> None:
         print('Mock inpainting call:')
         print(f'\tselection: {source_image_section}')
@@ -28,7 +29,7 @@ class MockController(BaseInpaintController):
         with Image.open(open('mask.png', 'rb')).convert('RGB') as test_sample:
             for y in range(0, config.get(AppConfig.BATCH_COUNT)):
                 for x in range(0, config.get(AppConfig.BATCH_SIZE)):
-                    save_image(test_sample, x + y * config.get(AppConfig.BATCH_SIZE))
+                    self._cache_generated_image(test_sample, x + y * config.get(AppConfig.BATCH_SIZE))
 
     def refresh_settings(self, unused_settings_modal: SettingsModal) -> None:
         """Settings not in scope for mock controller."""

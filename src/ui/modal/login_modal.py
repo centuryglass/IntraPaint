@@ -1,21 +1,19 @@
 """Popup modal window used for entering login information."""
 import json
-import sys
 from typing import Callable, Optional
 
 import requests
-from PyQt6.QtCore import QRect, QPoint
 from PyQt6.QtGui import QIcon
 from PyQt6.QtWidgets import QDialog, QHBoxLayout, QFormLayout, QLabel, QLineEdit, QPushButton, QApplication, QSizePolicy
 
 from src.util.shared_constants import PROJECT_DIR
 
-#: The :meth:`QCoreApplication.translate` context for strings in this file
+# The QCoreApplication.translate context for strings in this file
 TR_ID = "ui.login_modal"
 
 
 def _tr(*args):
-    """Helper to make :meth:`QCoreApplication.translate` more concise."""
+    """Helper to make QCoreApplication.translate more concise."""
     return QApplication.translate(TR_ID, *args)
 
 

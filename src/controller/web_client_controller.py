@@ -3,7 +3,7 @@ Provides image editing functionality through the GLID-3-XL API provided through 
 colabFiles/IntraPaint_colab_server.ipynb.
 """
 import sys
-from typing import Optional, Callable, Any, Dict, List
+from typing import Optional, Any, Dict, List
 
 import requests
 from PyQt6.QtCore import QThread, pyqtSignal
@@ -73,7 +73,6 @@ class WebClientController(BaseInpaintController):
     def _inpaint(self,
                  source_image_section: Optional[QImage],
                  mask: Optional[QImage],
-                 save_image: Callable[[QImage, int], None],
                  status_signal: pyqtSignal) -> None:
         """Handle image editing operations using the GLID-3-XL API.
         Parameters
@@ -82,8 +81,6 @@ class WebClientController(BaseInpaintController):
             Image selection to edit
         mask : PIL Image, optional
             Mask marking edited image region.
-        save_image : function (QImage, int)
-            Function used to return each image response and its index.
         status_signal : pyqtSignal
             Signal to emit when status updates are available.
         """
@@ -154,7 +151,7 @@ class WebClientController(BaseInpaintController):
             for sample_name in json_body['samples'].keys():
                 try:
                     sample_image = qimage_from_base64(json_body['samples'][sample_name]['image'])
-                    save_image(sample_image, int(sample_name))
+                    self._cache_generated_image(sample_image, int(sample_name))
                     samples[sample_name] = json_body['samples'][sample_name]['timestamp']
                 except IOError as err:
                     print(f'Warning: {err}')

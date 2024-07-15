@@ -233,7 +233,6 @@ class SelectionLayer(ImageLayer):
                 polygon.append(QPointF(point[0][0] + x_offset, point[0][1] + y_offset))
             self._outline_polygons.append(polygon)
 
-
     def get_content_bounds(self) -> QRect:
         """Returns a rectangle containing all selected content within the image."""
         bounds = QRect()

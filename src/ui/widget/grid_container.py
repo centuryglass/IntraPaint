@@ -3,8 +3,8 @@ import logging
 import math
 from typing import Optional, List, Tuple
 
-from PyQt6.QtCore import QSize, Qt, QRect, QPoint
-from PyQt6.QtGui import QResizeEvent, QPainter
+from PyQt6.QtCore import QSize, Qt, QRect
+from PyQt6.QtGui import QResizeEvent
 from PyQt6.QtWidgets import QWidget, QGridLayout
 
 from src.util.geometry_utils import get_scaled_placement

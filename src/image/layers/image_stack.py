@@ -17,7 +17,7 @@ from src.image.layers.transform_layer import TransformLayer
 from src.undo_stack import commit_action, last_action, _UndoAction
 from src.util.application_state import AppStateTracker, APP_STATE_NO_IMAGE, APP_STATE_EDITING
 from src.util.cached_data import CachedData
-from src.util.geometry_utils import adjusted_placement_in_bounds, translate_to_point
+from src.util.geometry_utils import adjusted_placement_in_bounds
 from src.util.image_utils import qimage_to_pil_image, create_transparent_image
 from src.util.validation import assert_type
 

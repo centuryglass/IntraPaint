@@ -27,6 +27,7 @@ def create_transparent_image(size: QSize) -> QImage:
     image.fill(Qt.GlobalColor.transparent)
     return image
 
+
 def pil_image_to_qimage(pil_image: Image.Image) -> QImage:
     """Convert a PIL Image to a PyQt6 QImage."""
     if not isinstance(pil_image, Image.Image):

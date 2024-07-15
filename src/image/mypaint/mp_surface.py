@@ -4,7 +4,7 @@ from ctypes import sizeof, pointer, byref, c_float, c_double, c_int, c_void_p
 from time import time
 from typing import Any, Optional
 
-from PyQt6.QtCore import Qt, QObject, QPoint, QSize, QRect, pyqtSignal, QPointF
+from PyQt6.QtCore import QObject, QPoint, QSize, QRect, pyqtSignal, QPointF
 from PyQt6.QtGui import QImage, QColor, QTransform
 
 from src.image.mypaint.libmypaint import libmypaint, MyPaintTiledSurface, MyPaintTileRequestStartFunction, \

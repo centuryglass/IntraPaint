@@ -120,7 +120,6 @@ class MainWindow(QMainWindow):
 
     def _get_appropriate_orientation(self) -> Qt.Orientation:
         """Returns whether the window's image and tool layout should be vertical or horizontal."""
-        height = self.height()
         if self._orientation == Qt.Orientation.Vertical:
             height_threshold = LAYOUT_SWAP_HEIGHT - LAYOUT_SWAP_BUFFER
         else:
@@ -255,9 +254,12 @@ class MainWindow(QMainWindow):
         if visible == is_visible:
             return
         if visible:
-            self._image_selector = GeneratedImageSelector(self._image_stack,
-                                                          lambda: self.set_image_selector_visible(False),
-                                                          self._controller.select_and_apply_sample)
+            if self._image_selector is None:
+                self._image_selector = GeneratedImageSelector(self._image_stack,
+                                                              lambda: self.set_image_selector_visible(False),
+                                                              self._controller.select_and_apply_sample)
+            else:
+                self._image_selector.reset()
             self._central_widget.addWidget(self._image_selector)
             self._central_widget.setCurrentWidget(self._image_selector)
             self.installEventFilter(self._image_selector)
@@ -266,8 +268,6 @@ class MainWindow(QMainWindow):
             self.removeEventFilter(self._image_selector)
             self._central_widget.setCurrentWidget(self._main_widget)
             self._central_widget.removeWidget(self._image_selector)
-            del self._image_selector
-            self._image_selector = None
 
     def load_sample_preview(self, image: QImage, idx: int) -> None:
         """Adds an image to the generated image selection screen."""

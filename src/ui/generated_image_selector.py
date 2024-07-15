@@ -6,7 +6,7 @@ import sys
 import time
 from typing import Callable, Optional, cast, List
 
-from PyQt6.QtCore import Qt, QRect, QSize, QSizeF, QRectF, QEvent, pyqtSignal, QPointF, QObject
+from PyQt6.QtCore import Qt, QRect, QSize, QSizeF, QRectF, QEvent, pyqtSignal, QPointF, QObject, QPoint
 from PyQt6.QtGui import QImage, QResizeEvent, QPixmap, QPainter, QWheelEvent, QMouseEvent, \
     QPainterPath, QKeyEvent, QPolygonF
 from PyQt6.QtWidgets import QWidget, QGraphicsPixmapItem, QVBoxLayout, QLabel, \
@@ -68,6 +68,7 @@ class GeneratedImageSelector(QWidget):
         self._options: List[_ImageOption] = []
         self._outlines: List[Outline] = []
         self._selections: List[PolygonOutline] = []
+        self._loading_image = QImage()
         self._zoomed_in = False
         self._zoom_to_changes = AppConfig().get(AppConfig.SELECTION_SCREEN_ZOOMS_TO_CHANGED)
         self._change_bounds = None
@@ -107,52 +108,22 @@ class GeneratedImageSelector(QWidget):
         self._view.zoom_toggled.connect(self.toggle_zoom)
 
         self._layout.addWidget(self._view, stretch=255)
-        scene = self._view.scene()
-        assert scene is not None, 'Scene should have been created automatically and never cleared'
 
-        original_image = self._image_stack.qimage_generation_area_content()
-        original_option = _ImageOption(original_image, ORIGINAL_CONTENT_LABEL)
-        scene.addItem(original_option)
-        self._options.append(original_option)
-        self._outlines.append(Outline(scene, self._view))
-        self._outlines[0].outlined_region = self._options[0].bounds
-        if config.get(AppConfig.EDIT_MODE) == MODE_INPAINT:
-            self._add_option_selection_outline(0)
+        # Add inpainting checkboxes:
+        # show/hide selection outlines:
+        self._selection_outline_checkbox = config.get_control_widget(
+            AppConfig.SHOW_SELECTIONS_IN_GENERATION_OPTIONS)
+        assert isinstance(self._selection_outline_checkbox, CheckBox)
+        self._selection_outline_checkbox.setText(SHOW_SELECTION_OUTLINES_LABEL)
+        self._selection_outline_checkbox.toggled.connect(self.set_selection_outline_visibility)
+        self._page_top_layout.addWidget(self._selection_outline_checkbox)
 
-        # Add initial images, placeholders for expected images:
-        self._loading_image = QImage(original_image.size(), QImage.Format.Format_ARGB32_Premultiplied)
-        self._loading_image.fill(Qt.GlobalColor.black)
-        painter = QPainter(self._loading_image)
-        painter.setPen(Qt.GlobalColor.white)
-        painter.drawText(QRect(0, 0, self._loading_image.width(), self._loading_image.height()),
-                         Qt.AlignmentFlag.AlignCenter,
-                         LOADING_IMG_TEXT)
-
-        expected_count = config.get(AppConfig.BATCH_SIZE) * config.get(AppConfig.BATCH_COUNT)
-        for i in range(expected_count):
-            self.add_image_option(self._loading_image, i)
-
-        # Add extra checkboxes when inpainting:
-        if config.get(AppConfig.EDIT_MODE) == MODE_INPAINT:
-            # show/hide selection outlines:
-            self._selection_outline_checkbox = config.get_control_widget(
-                AppConfig.SHOW_SELECTIONS_IN_GENERATION_OPTIONS)
-            assert isinstance(self._selection_outline_checkbox, CheckBox)
-            self._selection_outline_checkbox.setText(SHOW_SELECTION_OUTLINES_LABEL)
-            self._selection_outline_checkbox.toggled.connect(self.set_selection_outline_visibility)
-            self._page_top_layout.addWidget(self._selection_outline_checkbox)
-            # zoom to changed area:
-            change_bounds = image_stack.selection_layer.get_selection_gen_area(True)
-            if change_bounds != image_stack.generation_area and change_bounds is not None:
-                change_bounds.translate(-image_stack.generation_area.x(), -image_stack.generation_area.y())
-                self._change_bounds = change_bounds
-                self._change_zoom_checkbox = config.get_control_widget(AppConfig.SELECTION_SCREEN_ZOOMS_TO_CHANGED)
-                assert isinstance(self._change_zoom_checkbox, CheckBox)
-                self._change_zoom_checkbox.setText(CHANGE_ZOOM_CHECKBOX_LABEL)
-                self._change_zoom_checkbox.toggled.connect(self.zoom_to_changes)
-                self._page_top_layout.addWidget(self._change_zoom_checkbox)
-
-        # Add selections if inpainting:
+        # zoom to changed area:
+        self._change_zoom_checkbox = config.get_control_widget(AppConfig.SELECTION_SCREEN_ZOOMS_TO_CHANGED)
+        assert isinstance(self._change_zoom_checkbox, CheckBox)
+        self._change_zoom_checkbox.setText(CHANGE_ZOOM_CHECKBOX_LABEL)
+        self._change_zoom_checkbox.toggled.connect(self.zoom_to_changes)
+        self._page_top_layout.addWidget(self._change_zoom_checkbox)
 
         self._button_bar = QWidget()
         self._layout.addWidget(self._button_bar)
@@ -196,9 +167,65 @@ class GeneratedImageSelector(QWidget):
         self._next_button.clicked.connect(self._zoom_next)
         _add_key_hint(self._next_button, KeyConfig.MOVE_RIGHT)
         self._button_bar_layout.addWidget(self._next_button)
-        self.resizeEvent(None)
-        if TIMELAPSE_MODE_FLAG in sys.argv:
+        self.reset()
+
+    def reset(self) -> None:
+        """Remove all old options and prepare for new ones."""
+        config = AppConfig()
+        scene = self._view.scene()
+        assert scene is not None
+        # Clear the scene:
+        for scene_item_list in (self._selections, self._outlines, self._options):
+            while len(scene_item_list) > 0:
+                scene_item = scene_item_list.pop()
+                if scene_item in scene.items():
+                    scene.removeItem(scene_item)
+
+        # Configure checkboxes and change bounds:
+        if config.get(AppConfig.EDIT_MODE) == MODE_INPAINT:
+            self._selection_outline_checkbox.setVisible(True)
+            change_bounds = self._image_stack.selection_layer.get_selection_gen_area(True)
+            if change_bounds != self._image_stack.generation_area and change_bounds is not None:
+                change_bounds.translate(-self._image_stack.generation_area.x(), -self._image_stack.generation_area.y())
+                self._change_bounds = change_bounds
+                self._change_zoom_checkbox.setVisible(True)
+            else:
+                self._change_bounds = None
+                self._change_zoom_checkbox.setVisible(False)
+        else:
+            self._selection_outline_checkbox.setVisible(False)
+            self._change_zoom_checkbox.setVisible(False)
+            self._change_bounds = None
+
+        # Add initial images, placeholders for expected images:
+        original_image = self._image_stack.qimage_generation_area_content()
+        original_option = _ImageOption(original_image, ORIGINAL_CONTENT_LABEL)
+        scene.addItem(original_option)
+        self._options.append(original_option)
+        self._outlines.append(Outline(scene, self._view))
+        self._outlines[0].outlined_region = self._options[0].bounds
+        if config.get(AppConfig.EDIT_MODE) == MODE_INPAINT:
+            self._add_option_selection_outline(0)
+
+        self._loading_image = QImage(original_image.size(), QImage.Format.Format_ARGB32_Premultiplied)
+        self._loading_image.fill(Qt.GlobalColor.black)
+        painter = QPainter(self._loading_image)
+        painter.setPen(Qt.GlobalColor.white)
+        painter.drawText(QRect(0, 0, self._loading_image.width(), self._loading_image.height()),
+                         Qt.AlignmentFlag.AlignCenter,
+                         LOADING_IMG_TEXT)
+        painter.end()
+
+        expected_count = config.get(AppConfig.BATCH_SIZE) * config.get(AppConfig.BATCH_COUNT)
+        for i in range(expected_count):
+            self.add_image_option(self._loading_image, i)
+
+        self._zoom_index = 0
+        if self._zoomed_in and TIMELAPSE_MODE_FLAG not in sys.argv:
             self.toggle_zoom()
+        elif TIMELAPSE_MODE_FLAG in sys.argv:
+            self._zoom_to_option(0)
+        self.resizeEvent(None)
 
     def _add_option_selection_outline(self, idx: int) -> None:
         if len(self._options) <= idx:
@@ -238,7 +265,7 @@ class GeneratedImageSelector(QWidget):
         self.resizeEvent(None)
 
     def toggle_zoom(self, zoom_index: Optional[int] = None) -> None:
-        """Toggle between zoomin in on one option and showing all of them."""
+        """Toggle between zooming in on one option and showing all of them."""
         if zoom_index is not None:
             self._zoom_index = zoom_index
         self._zoomed_in = not self._zoomed_in
