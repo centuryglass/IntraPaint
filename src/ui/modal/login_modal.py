@@ -1,18 +1,32 @@
 """Popup modal window used for entering login information."""
 import json
+import sys
 from typing import Callable, Optional
 
 import requests
-from PyQt6.QtWidgets import QDialog, QHBoxLayout, QFormLayout, QLabel, QLineEdit, QPushButton
+from PyQt6.QtCore import QRect, QPoint
+from PyQt6.QtGui import QIcon
+from PyQt6.QtWidgets import QDialog, QHBoxLayout, QFormLayout, QLabel, QLineEdit, QPushButton, QApplication, QSizePolicy
 
-LOGIN_TITLE = 'Enter image generation server credentials:'
-USERNAME_LABEL = 'Username:'
-PASSWORD_LABEL = 'Password:'
-LOGIN_BUTTON_TEXT = 'Log In'
-CANCEL_BUTTON_TEXT = 'Cancel'
+from src.util.shared_constants import PROJECT_DIR
 
-ERROR_MISSING_INFO = 'Username and password cannot be empty.'
-ERROR_UNKNOWN = 'Unknown error, try again.'
+#: The :meth:`QCoreApplication.translate` context for strings in this file
+TR_ID = "ui.login_modal"
+
+
+def _tr(*args):
+    """Helper to make :meth:`QCoreApplication.translate` more concise."""
+    return QApplication.translate(TR_ID, *args)
+
+
+LOGIN_TITLE = _tr('Enter image generation server credentials:')
+USERNAME_LABEL = _tr('Username:')
+PASSWORD_LABEL = _tr('Password:')
+LOGIN_BUTTON_TEXT = _tr('Log In')
+CANCEL_BUTTON_TEXT = _tr('Cancel')
+
+ERROR_MISSING_INFO = _tr('Username and password cannot be empty.')
+ERROR_UNKNOWN = _tr('Unknown error, try again.')
 
 
 class LoginModal(QDialog):
@@ -49,6 +63,8 @@ class LoginModal(QDialog):
         self._cancel_button.setText(CANCEL_BUTTON_TEXT)
         self._button_row.addWidget(self._cancel_button)
         self._layout.addRow(self._button_row)
+        self.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
+        self.setWindowIcon(QIcon(f'{PROJECT_DIR}/resources/icons/app_icon.png'))
 
         def on_login() -> None:
             """Attempt to log in, show a message on error or set response on success."""
@@ -88,6 +104,7 @@ class LoginModal(QDialog):
 
     def show_login_modal(self) -> tuple[str | None, str | None]:
         """Shows the login modal and returns user input on close."""
+        self.setMaximumSize(self.sizeHint().width(), self.sizeHint().height())
         self.exec()
         if self._res is not None and self._res.status_code == 200:
             return self.user, self.pw
