@@ -6,6 +6,7 @@ import sys
 import time
 from typing import Callable, Optional, cast, List
 
+from PIL import Image
 from PyQt6.QtCore import Qt, QRect, QSize, QSizeF, QRectF, QEvent, pyqtSignal, QPointF, QObject, QPoint
 from PyQt6.QtGui import QImage, QResizeEvent, QPixmap, QPainter, QWheelEvent, QMouseEvent, \
     QPainterPath, QKeyEvent, QPolygonF
@@ -19,10 +20,11 @@ from src.ui.graphics_items.outline import Outline
 from src.ui.graphics_items.polygon_outline import PolygonOutline
 from src.ui.input_fields.check_box import CheckBox
 from src.ui.widget.image_graphics_view import ImageGraphicsView
-from src.util.application_state import AppStateTracker, APP_STATE_LOADING
+from src.util.application_state import AppStateTracker, APP_STATE_LOADING, APP_STATE_EDITING
 from src.util.display_size import max_font_size
 from src.util.geometry_utils import get_scaled_placement
-from src.util.image_utils import get_standard_qt_icon, pil_image_scaling, get_transparency_tile_pixmap
+from src.util.image_utils import get_standard_qt_icon, pil_image_scaling, get_transparency_tile_pixmap, \
+    pil_image_to_qimage
 from src.util.key_code_utils import get_key_display_string
 from src.util.shared_constants import TIMELAPSE_MODE_FLAG
 from src.util.validation import assert_valid_index
@@ -59,12 +61,10 @@ class GeneratedImageSelector(QWidget):
 
     def __init__(self,
                  image_stack: ImageStack,
-                 close_selector: Callable,
-                 make_selection: Callable[[Optional[QImage]], None]) -> None:
+                 close_selector: Callable) -> None:
         super().__init__(None)
         self._image_stack = image_stack
         self._close_selector = close_selector
-        self._make_selection = make_selection
         self._options: List[_ImageOption] = []
         self._outlines: List[Outline] = []
         self._selections: List[PolygonOutline] = []
@@ -171,6 +171,7 @@ class GeneratedImageSelector(QWidget):
 
     def reset(self) -> None:
         """Remove all old options and prepare for new ones."""
+        self._zoom_index = 0
         config = AppConfig()
         scene = self._view.scene()
         assert scene is not None
@@ -220,7 +221,6 @@ class GeneratedImageSelector(QWidget):
         for i in range(expected_count):
             self.add_image_option(self._loading_image, i)
 
-        self._zoom_index = 0
         if self._zoomed_in and TIMELAPSE_MODE_FLAG not in sys.argv:
             self.toggle_zoom()
         elif TIMELAPSE_MODE_FLAG in sys.argv:
@@ -360,10 +360,22 @@ class GeneratedImageSelector(QWidget):
         self._option_scale_offset = scale - self._base_option_scale
 
     def _select_option(self, option_index: int) -> None:
-        if option_index == 0:  # Original image, no changes needed:
-            self._make_selection(None)
-        else:
-            self._make_selection(self._options[option_index].image)
+        """Apply an AI-generated image change to the edited image."""
+        sample_image = None if option_index == 0 else self._options[option_index].image
+        if sample_image is not None:
+            if isinstance(sample_image, Image.Image):
+                image = pil_image_to_qimage(sample_image).convertToFormat(QImage.Format.Format_ARGB32_Premultiplied)
+            else:
+                image = sample_image.convertToFormat(QImage.Format.Format_ARGB32_Premultiplied)
+            if AppConfig().get(AppConfig.EDIT_MODE) == 'Inpaint':
+                inpaint_mask = self._image_stack.selection_layer.mask_image
+                painter = QPainter(image)
+                painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_DestinationIn)
+                painter.drawImage(QRect(QPoint(0, 0), image.size()), inpaint_mask)
+                painter.end()
+            layer = self._image_stack.active_layer
+            self._image_stack.set_generation_area_content(image, layer)
+            AppStateTracker.set_app_state(APP_STATE_EDITING)
         self._close_selector()
 
     def _scroll_debounce_finished(self) -> bool:

@@ -2,7 +2,7 @@
 A fancier Qt toggle button implementation that allows selecting between two options.
 """
 from typing import Optional, cast
-from PyQt6.QtGui import QPixmap, QMouseEvent
+from PyQt6.QtGui import QPixmap, QMouseEvent, QColor
 from PyQt6.QtWidgets import QWidget, QFrame, QSizePolicy, QApplication
 from PyQt6.QtCore import Qt, QSize, pyqtSignal, QEvent
 from src.ui.widget.label import Label
@@ -41,8 +41,10 @@ class DualToggle(QWidget):
             app = cast(QApplication, QApplication.instance())
             assert app is not None
             window = app.activeWindow()
-            assert window is not None
-            bg_color = app.palette().color(window.backgroundRole())
+            if window is not None:
+                bg_color = app.palette().color(window.backgroundRole())
+            else:
+                bg_color = QColor(Qt.GlobalColor.gray)  # Fallback, should only happen during unit testing.
         self.label1 = Label(options[0], self, bg_color=bg_color, orientation=orientation)
         self.label1.setFrameStyle(QFrame.Shape.StyledPanel | QFrame.Shadow.Sunken)
         self.label1.set_inverted(True)

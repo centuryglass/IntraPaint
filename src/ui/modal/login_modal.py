@@ -13,7 +13,7 @@ TR_ID = "ui.login_modal"
 
 
 def _tr(*args):
-    """Helper to make QCoreApplication.translate more concise."""
+    """Helper to make `QCoreApplication.translate` more concise."""
     return QApplication.translate(TR_ID, *args)
 
 

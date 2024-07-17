@@ -149,6 +149,11 @@ class WebService:
             raise RuntimeError(f'{res.status_code}: {res.text}')
         return res
 
+    def disconnect(self) -> None:
+        """Close the session and clear auth.  Do not use the webservice after calling this."""
+        self._session.close()
+        self._auth = None
+
     def _handle_auth_error(self):
         raise NotImplementedError('Authentication is not implemented')
 

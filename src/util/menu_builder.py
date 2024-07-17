@@ -71,7 +71,7 @@ class MenuBuilder:
                         title: Optional[str] = None,
                         tooltip: Optional[str] = None,
                         keybinding: Optional[str] = None) -> Optional[QAction]:
-        """Adds a new menu action to a window.
+        """Adds a new menu action to a window, or return an existing action with the same name.
 
         Parameters
         ----------
@@ -94,13 +94,21 @@ class MenuBuilder:
         menu_bar = window.menuBar()
         assert menu_bar is not None
         if menu_name in self._menus:
-            menu = self._menus[menu_name]
+            menu: Optional[QMenu] = self._menus[menu_name]
         else:
-            new_menu = menu_bar.addMenu(menu_name)
-            assert new_menu is not None
-            menu = new_menu
+            # Check if menu exists but was added elsewhere:
+            menu = None
+            for action in menu_bar.actions():
+                possible_menu = action.menu()
+                if possible_menu is not None and possible_menu.title() == title:
+                    menu = possible_menu
+                    break
+            if menu is None:
+                menu = QMenu(menu_name)
+                menu_bar.addMenu(menu)
             self._menus[menu_name] = menu
             self._actions[menu_name] = []
+        assert menu is not None
         try:
             if config_key is not None:
                 config = KeyConfig()
@@ -115,6 +123,10 @@ class MenuBuilder:
         except RuntimeError:
             print(f'Warning: could not load menu option {config_key}, skipping...')
             return None
+        _menu_set_visible(menu, True)
+        for existing_action in self._actions[menu_name]:
+            if existing_action.text() == title:
+                return existing_action
         action = QAction(title)
         if tooltip is not None and tooltip != '':
             action.setToolTip(tooltip)
@@ -139,6 +151,22 @@ class MenuBuilder:
             raise KeyError(f'Menu {menu_name} not found.')
         return [*self._actions[menu_name]]
 
+    def remove_menu_action(self, window: QMainWindow, menu_name: str, action_name: str) -> None:
+        """Removes an action from the menu."""
+        menu_bar = window.menuBar()
+        assert menu_bar is not None
+        if menu_name not in self._menus:
+            return
+        menu = self._menus[menu_name]
+        for action in menu.actions():
+            if action.text() == action_name:
+                menu.removeAction(action)
+                self._actions[menu_name].remove(action)
+                action.deleteLater()
+                break
+        if len(menu.actions()) == 0:
+            _menu_set_visible(menu, False)
+
     # noinspection PyUnresolvedReferences
     def build_menus(self, window: QMainWindow) -> None:
         """Add all @menu_action methods from this class to the window as menu items."""
@@ -152,10 +180,36 @@ class MenuBuilder:
         menu_bar = window.menuBar()
         assert menu_bar is not None
         for menu_action_method in menu_actions:
-            if menu_action_method.condition_check is not None and menu_action_method.condition_check(self) is False:
-                continue
             menu_name = menu_action_method.menu_name
             key = menu_action_method.config_key
+            title = KeyConfig().get_label(key)
+            # Check if the action already exists. If so, remove it if checks are no longer passing.
+            if menu_name in self._menus:
+                for existing_action in self._actions[menu_name]:
+                    if existing_action.text() == title:
+                        if menu_action_method.condition_check is not None and menu_action_method.condition_check(
+                                self) is False:
+                            self.remove_menu_action(window, menu_name, title)
+                        continue
+            # If not blocked by condition checks, create and add the new item:
+            if menu_action_method.condition_check is not None and menu_action_method.condition_check(self) is False:
+                continue
             action = self.add_menu_action(window, menu_name, menu_action_method, key)
             if action is not None and menu_action_method.valid_app_states is not None:
                 AppStateTracker.set_enabled_states(action, menu_action_method.valid_app_states)
+
+    def clear_menus(self) -> None:
+        """Remove all @menu_action methods that this class added to the menu"""
+        for menu_name, menu in self._menus.items():
+            while len(self._actions[menu_name]) > 0:
+                action = self._actions[menu.title()].pop()
+                menu.removeAction(action)
+                action.deleteLater()
+            if len(menu.actions()) == 0:
+                _menu_set_visible(menu, False)
+
+
+def _menu_set_visible(menu: QMenu, visible: bool) -> None:
+    main_menu_action = menu.menuAction()
+    assert main_menu_action is not None
+    main_menu_action.setVisible(visible)

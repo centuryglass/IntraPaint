@@ -2,25 +2,29 @@
 Accesses the A1111/stable-diffusion-webui through its REST API, providing access to image generation and editing
 through stable-diffusion.
 """
-from typing import Optional, List, Dict, Any
-import json
-import os
 import io
-import sys
+import json
 import logging
+import os
+from typing import Optional, List, Dict, Any
 
 import requests
-from PyQt6.QtGui import QImage
+from PIL import Image
 from PyQt6.QtCore import QByteArray
+from PyQt6.QtGui import QImage
 from requests import Response
 
 from src.api.webservice import WebService
-from src.util.image_utils import pil_image_from_base64, image_to_base64, qimage_from_base64
 from src.config.application_config import AppConfig
 from src.ui.modal.login_modal import LoginModal
+from src.util.image_utils import pil_image_from_base64, image_to_base64, qimage_from_base64
 from src.util.shared_constants import CONTROLNET_REUSE_IMAGE_CODE
 
 logger = logging.getLogger(__name__)
+
+
+class AuthError(Exception):
+    """Identifies login failures."""
 
 
 class A1111Webservice(WebService):
@@ -304,7 +308,7 @@ class A1111Webservice(WebService):
         res = self.post(A1111Webservice.Endpoints.UPSCALE, body)
         return self._handle_image_response(res)
 
-    def interrogate(self, image: QImage) -> str:
+    def interrogate(self, image: QImage | Image.Image) -> str:
         """Requests text describing an image.
 
         Parameters
@@ -534,6 +538,6 @@ class A1111Webservice(WebService):
             except RuntimeError:
                 auth = None
             if login_modal.get_login_response() is None:
-                logger.info('Login aborted, exiting')
-                sys.exit()
+                logger.info('Login aborted')
+                raise AuthError()
         self.set_auth(auth)

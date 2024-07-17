@@ -1,59 +1,78 @@
-"""
-Provides image editing functionality through the A1111/stable-diffusion-webui REST API.
-"""
+"""Generates images through the Stable-Diffusion WebUI (A1111 or Forge)"""
 import datetime
 import json
 import logging
 import os
-import sys
 from argparse import Namespace
-from typing import Optional, Any, Dict, List, cast
+from typing import Optional, Dict, List, cast, Any
 
 import requests
 from PyQt6.QtCore import pyqtSignal, QSize, QThread
-from PyQt6.QtGui import QImage
-from PyQt6.QtWidgets import QInputDialog
+from PyQt6.QtGui import QImage, QAction
+from PyQt6.QtWidgets import QInputDialog, QWidget, QApplication
 
-from src.api.a1111_webservice import A1111Webservice
+from src.api.a1111_webservice import A1111Webservice, AuthError
 from src.config.a1111_config import A1111Config
 from src.config.application_config import AppConfig
 from src.config.cache import Cache
-from src.controller.base_controller import BaseInpaintController, MENU_TOOLS
+from src.controller.image_generation.image_generator import ImageGenerator
+from src.image.layers.image_stack import ImageStack
 from src.ui.modal.modal_utils import show_error_dialog
 from src.ui.modal.settings_modal import SettingsModal
+from src.ui.panel.generators.sd_webui_panel import SDWebUIPanel
 from src.ui.window.extra_network_window import ExtraNetworkWindow
+from src.ui.window.main_window import MainWindow
 from src.ui.window.prompt_style_window import PromptStyleWindow
-from src.ui.window.stable_diffusion_main_window import StableDiffusionMainWindow
-from src.util.application_state import APP_STATE_EDITING, AppStateTracker, APP_STATE_LOADING, APP_STATE_NO_IMAGE
+from src.util.application_state import AppStateTracker, APP_STATE_LOADING, APP_STATE_EDITING, APP_STATE_NO_IMAGE
 from src.util.async_task import AsyncTask
-from src.util.display_size import get_screen_size
 from src.util.menu_builder import menu_action
 from src.util.parameter import ParamType
-from src.util.shared_constants import EDIT_MODE_INPAINT, EDIT_MODE_TXT2IMG, EDIT_MODE_IMG2IMG
-
-STABLE_DIFFUSION_CONFIG_CATEGORY = 'Stable-Diffusion'
+from src.util.shared_constants import EDIT_MODE_TXT2IMG, EDIT_MODE_INPAINT, EDIT_MODE_IMG2IMG
 
 logger = logging.getLogger(__name__)
 
+# The QCoreApplication.translate context for strings in this file
+TR_ID = 'controller.image_generation.sd_webui_generator'
+
+
+def _tr(*args):
+    """Helper to make `QCoreApplication.translate` more concise."""
+    return QApplication.translate(TR_ID, *args)
+
+
+MENU_TOOLS = _tr('Tools')
+
+SD_WEBUI_GENERATOR_NAME = _tr('Stable-Diffusion WebUI API')
+SD_WEBUI_GENERATOR_DESCRIPTION = _tr('<p>Generate or alter images using Stable-Diffusion through an API connection to'
+                                     'the Stable-Diffusion WebUI.</p></br> <p>The recommended provider for this is '
+                                     '<a href="https://github.com/lllyasviel/stable-diffusion-webui-forge>Forge WebUI'
+                                     '</a>, but the original <a href='
+                                     '"https://github.com/AUTOMATIC1111/stable-diffusion-webui">Stable-Diffusion WebUI'
+                                     '</p> also works. Follow instructions <a href="TODO: installation guide">here'
+                                     '</a> to install and configure either option.')
+DEFAULT_SD_URL = 'http://localhost:7860'
+STABLE_DIFFUSION_CONFIG_CATEGORY = 'Stable-Diffusion'
 AUTH_ERROR_DETAIL_KEY = 'detail'
-AUTH_ERROR_MESSAGE = 'Not authenticated'
-INTERROGATE_ERROR_MESSAGE_NO_IMAGE = 'Open or create an image first.'
-INTERROGATE_ERROR_MESSAGE_EXISTING_OPERATION = 'Existing operation currently in progress'
-INTERROGATE_ERROR_TITLE = 'Interrogate failure'
-INTERROGATE_LOADING_TEXT = 'Running CLIP interrogate'
-URL_REQUEST_TITLE = 'Inpainting UI'
-URL_REQUEST_MESSAGE = 'Enter server URL:'
-URL_REQUEST_RETRY_MESSAGE = 'Server connection failed, enter a new URL or click "OK" to retry'
+AUTH_ERROR_MESSAGE = _tr('Not authenticated')
+INTERROGATE_ERROR_MESSAGE_NO_IMAGE = _tr('Open or create an image first.')
+INTERROGATE_ERROR_MESSAGE_EXISTING_OPERATION = _tr('Existing operation currently in progress')
+INTERROGATE_ERROR_TITLE = _tr('Interrogate failure')
+INTERROGATE_LOADING_TEXT = _tr('Running CLIP interrogate')
+URL_REQUEST_TITLE = _tr('Inpainting UI')
+URL_REQUEST_MESSAGE = _tr('Enter server URL:')
+URL_REQUEST_RETRY_MESSAGE = _tr('Server connection failed, enter a new URL or click "OK" to retry')
 CONTROLNET_MODEL_LIST_KEY = 'model_list'
-UPSCALE_ERROR_TITLE = 'Upscale failure'
+UPSCALE_ERROR_TITLE = _tr('Upscale failure')
 PROGRESS_KEY_CURRENT_IMAGE = 'current_image'
 PROGRESS_KEY_FRACTION = 'progress'
 PROGRESS_KEY_ETA_RELATIVE = 'eta_relative'
-STYLE_ERROR_TITLE = 'Updating prompt styles failed'
+STYLE_ERROR_TITLE = _tr('Updating prompt styles failed')
 
-GENERATE_ERROR_TITLE = 'Image generation failed'
-GENERATE_ERROR_MESSAGE_EMPTY_MASK = ('Selection mask was empty. Either use the mask tool to mark part of the image'
-                                     'q generation area for inpainting, or switch to another image generation mode.')
+GENERATE_ERROR_TITLE = _tr('Image generation failed')
+GENERATE_ERROR_MESSAGE_EMPTY_MASK = _tr('Nothing was selected in the image generation area. Either use the selection'
+                                        ' tool to mark part of the image generation area for inpainting, move the image'
+                                        ' generation area to cover selected content, or switch to another image'
+                                        ' generation mode.')
 
 MAX_ERROR_COUNT = 10
 MIN_RETRY_US = 300000
@@ -83,180 +102,74 @@ def _check_lora_available(_) -> bool:
     return len(cache.get(Cache.LORA_MODELS)) > 0
 
 
-class StableDiffusionController(BaseInpaintController):
-    """StableDiffusionController using the A1111/stable-diffusion-webui REST API to handle image operations. """
+class SDWebUIGenerator(ImageGenerator):
+    """Interface for providing image generation capabilities."""
 
-    def __init__(self, args: Namespace) -> None:
-        """Starts the application and creates the main window on init.
-
-        Parameters
-        ----------
-        args : Namespace
-            Command-line arguments, as generated by the argparse module
-        """
-        self._server_url = args.server_url
-        super().__init__(args)
-        self._webservice = A1111Webservice(args.server_url)
-        self._window: Optional[StableDiffusionMainWindow] = None
+    def __init__(self, window: MainWindow, image_stack: ImageStack, args: Namespace) -> None:
+        super().__init__(window, image_stack)
+        self._server_url = args.server_url if args.server_url != '' else DEFAULT_SD_URL
+        self._webservice: Optional[A1111Webservice] = A1111Webservice(self._server_url)
         self._lora_images: Optional[Dict[str, Optional[QImage]]] = None
+        self._menu_actions: Dict[str, List[QAction]] = {}
+        self._connected = False
+        self._control_panel: Optional[SDWebUIPanel] = None
 
+    def get_display_name(self) -> str:
+        """Returns a display name identifying the generator."""
+        return SD_WEBUI_GENERATOR_NAME
+
+    def get_description(self) -> str:
+        """Returns an extended description of this generator."""
+        return SD_WEBUI_GENERATOR_DESCRIPTION
+
+    def is_available(self) -> bool:
+        """Returns whether the generator is supported on the current system."""
+        assert self._webservice is not None
         # Login automatically if username/password are defined as env variables.
         # Obviously this isn't terribly secure, but A1111 auth security is already pretty minimal, and I'm just using
         # this for testing.
         if 'SD_UNAME' in os.environ and 'SD_PASS' in os.environ:
+            print('env auth applied')
             self._webservice.login(os.environ['SD_UNAME'], os.environ['SD_PASS'])
             self._webservice.set_auth((os.environ['SD_UNAME'], os.environ['SD_PASS']))
-
-    def get_config_categories(self) -> List[str]:
-        """Return the list of AppConfig categories this controller supports."""
-        categories = super().get_config_categories()
-        categories.append(STABLE_DIFFUSION_CONFIG_CATEGORY)
-        return categories
-
-    def init_settings(self, settings_modal: SettingsModal) -> None:
-        """Adds relevant stable-diffusion-webui settings to a ui.modal SettingsModal.  """
-        super().init_settings(settings_modal)
-        if not isinstance(self._webservice, A1111Webservice):
-            print('Disabling remote settings: only supported with the A1111 API')
-            return
-        web_config = A1111Config()
-        web_config.load_all(self._webservice)
-        settings_modal.load_from_config(web_config)
-
-    def refresh_settings(self, settings_modal: SettingsModal) -> None:
-        """Loads current settings from the webui and applies them to the SettingsModal."""
-        super().refresh_settings(settings_modal)
-        settings = self._webservice.get_config()
-        settings_modal.update_settings(settings)
-
-    def update_settings(self, changed_settings: dict[str, Any]) -> None:
-        """Applies changed settings from a SettingsModal to the stable-diffusion-webui."""
-        super().update_settings(changed_settings)
-        web_config = A1111Config()
-        web_categories = web_config.get_categories()
-        web_keys = [key for cat in web_categories for key in web_config.get_category_keys(cat)]
-        web_changes = {}
-        for key in changed_settings:
-            if key in web_keys:
-                web_changes[key] = changed_settings[key]
-        if len(web_changes) > 0:
-            def _update_config() -> None:
-                self._webservice.set_config(changed_settings)
-            update_task = AsyncTask(_update_config, True)
-
-            def _update_setting():
-                AppStateTracker.set_app_state(APP_STATE_EDITING if self._image_stack.has_image else APP_STATE_NO_IMAGE)
-                update_task.finish_signal.disconnect(_update_setting)
-            update_task.finish_signal.connect(_update_setting)
-            update_task.start()
-
-    @staticmethod
-    def health_check(url: Optional[str] = None, webservice: Optional[A1111Webservice] = None) -> bool:
-        """Static method to check if the stable-diffusion-webui API is available.
-
-        Parameters
-        ----------
-        url : str
-            URL to check for the stable-diffusion-webui API.
-        webservice : A1111Webservice, optional
-            If provided, the url param will be ignored and this object will be used to check the connection.
-        Returns
-        -------
-        bool
-            Whether the API is available through the provided URL or webservice object.
-        """
         try:
-            if webservice is None:
-                res = requests.get(url, timeout=20)
-            else:
-                res = webservice.login_check()
-            if res.status_code == 200 or (res.status_code == 401
-                                          and res.json()[AUTH_ERROR_DETAIL_KEY] == AUTH_ERROR_MESSAGE):
+            health_check_res = self._webservice.login_check()
+            if health_check_res.ok or (health_check_res.status_code == 401
+                                       and health_check_res.json()[AUTH_ERROR_DETAIL_KEY] == AUTH_ERROR_MESSAGE):
                 return True
-            raise RuntimeError(f'{res.status_code} : {res.text}')
-        except RuntimeError as status_err:
-            logger.error(f'Login check returned failure response: {status_err}')
-            return False
         except requests.exceptions.RequestException as req_err:
             logger.error(f'Login check connection failed: {req_err}')
-            return False
+        return False
 
-    def interrogate(self) -> None:
-        """ Calls the "interrogate" endpoint to automatically generate image prompts.
+    def connect_to_url(self, url: str) -> bool:
+        """Attempt to connect to a specific URL, returning whether the connection succeeded."""
+        assert self._webservice is not None
+        if url == self._server_url:
+            if self._connected:
+                return True
+            return self.configure_or_connect()
+        self._server_url = url
+        self._webservice.disconnect()
+        self._webservice = A1111Webservice(url)
+        return self.configure_or_connect()
 
-        Sends the image generation area content to the stable-diffusion-webui API, where an image captioning model
-        automatically generates an appropriate prompt. Once returned, that prompt is copied to the appropriate field
-        in the UI. Displays an error dialog instead if no image is loaded or another API operation is in-progress.
-        """
-        if not self._image_stack.has_image:
-            show_error_dialog(self._window, INTERROGATE_ERROR_TITLE, INTERROGATE_ERROR_MESSAGE_NO_IMAGE)
-            return
-
-        class _InterrogateTask(AsyncTask):
-            prompt_ready = pyqtSignal(str)
-            error_signal = pyqtSignal(Exception)
-
-            def signals(self) -> List[pyqtSignal]:
-                return [self.prompt_ready, self.error_signal]
-
-        def _interrogate(prompt_ready, error_signal):
-            try:
-                image = self._image_stack.pil_image_generation_area_content()
-                prompt_ready.emit(self._webservice.interrogate(image))
-            except RuntimeError as err:
-                logger.error(f'err:{err}')
-                error_signal.emit(err)
-
-        task = _InterrogateTask(_interrogate)
-        AppStateTracker.set_app_state(APP_STATE_LOADING)
-
-        def set_prompt(prompt_text: str) -> None:
-            """Update the image prompt in config with the interrogate results."""
-            AppConfig().set(AppConfig.PROMPT, prompt_text)
-        task.prompt_ready.connect(set_prompt)
-
-        def handle_error(err: BaseException) -> None:
-            """Show an error popup if interrogate fails."""
-            assert self._window is not None
-            self._window.set_is_loading(False)
-            show_error_dialog(self._window, INTERROGATE_ERROR_TITLE, err)
-        task.error_signal.connect(handle_error)
-
-        def _finish():
-            AppStateTracker.set_app_state(APP_STATE_EDITING)
-            task.error_signal.disconnect(handle_error)
-            task.finish_signal.disconnect(_finish)
-        task.finish_signal.connect(_finish)
-        assert self._window is not None
-        self._window.set_loading_message(INTERROGATE_LOADING_TEXT)
-        task.start()
-
-    def window_init(self) -> None:
-        """Creates and shows the main editor window."""
-
-        # Make sure a valid connection exists:
-        def prompt_for_url(prompt_text: str) -> None:
-            """Open a dialog box to get the server URL from the user."""
-            new_url, url_entered = QInputDialog.getText(self._window, URL_REQUEST_TITLE, prompt_text)
-            if not url_entered:  # User clicked 'Cancel'
-                sys.exit()
-            if new_url != '':
-                self._server_url = new_url
-
-        # Get URL if one was not provided on the command line:
-        while self._server_url == '':
-            prompt_for_url(URL_REQUEST_MESSAGE)
-
-        # Check connection:
-        while not StableDiffusionController.health_check(webservice=self._webservice):
-            prompt_for_url(URL_REQUEST_RETRY_MESSAGE)
-        cache = Cache()
+    def configure_or_connect(self) -> bool:
+        """Handles any required steps necessary to configure the generator, install required components, and/or
+           connect to required external services, returning whether the process completed correctly."""
+        # Check for a valid connection, requesting a URL if needed:
         try:
-            cache.set(Cache.CONTROLNET_VERSION, float(self._webservice.get_controlnet_version()))
-        except RuntimeError:
-            # The webui fork at lllyasviel/stable-diffusion-webui-forge is mostly compatible with the A1111 API, but
-            # it doesn't have the ControlNet version endpoint. Before assuming ControlNet isn't installed, check if
-            # the ControlNet model list endpoint returns anything:
+            if self._webservice is None:
+                self._webservice = A1111Webservice(self._server_url)
+            while self._server_url == '' or not self.is_available():
+                prompt_text = URL_REQUEST_MESSAGE if self._server_url == '' else URL_REQUEST_RETRY_MESSAGE
+                new_url, url_entered = QInputDialog.getText(None, URL_REQUEST_TITLE, prompt_text)
+                if not url_entered:
+                    return False
+                return self.connect_to_url(new_url)
+
+            # If a login is required and none is defined in the environment, the webservice will automatically request one
+            # during the following setup process:
+            cache = Cache()
             try:
                 model_list = self._webservice.get_controlnet_models()
                 if model_list is not None and CONTROLNET_MODEL_LIST_KEY in model_list and len(
@@ -268,58 +181,154 @@ class StableDiffusionController(BaseInpaintController):
                 logger.error(f'Loading controlnet config failed: {err}')
                 cache.set(Cache.CONTROLNET_VERSION, -1.0)
 
-        option_loading_params = (
-            (Cache.STYLES, self._webservice.get_styles),
-            (AppConfig.SAMPLING_METHOD, self._webservice.get_samplers),
-            (AppConfig.UPSCALE_METHOD, self._webservice.get_upscalers)
-        )
+            option_loading_params = (
+                (Cache.STYLES, self._webservice.get_styles),
+                (AppConfig.SAMPLING_METHOD, self._webservice.get_samplers),
+                (AppConfig.UPSCALE_METHOD, self._webservice.get_upscalers)
+            )
 
-        # load various option lists:
-        for config_key, option_loading_fn in option_loading_params:
+            # load various option lists:
+            for config_key, option_loading_fn in option_loading_params:
+                try:
+                    options = option_loading_fn()
+                    if options is not None and len(options) > 0:
+                        if config_key in cache.get_keys():
+                            cache.update_options(config_key, options)
+                        else:
+                            AppConfig().update_options(config_key, options)
+                except (KeyError, RuntimeError) as err:
+                    logger.error(f'error loading {config_key} from {self._server_url}: {err}')
+
+            data_params = (
+                (Cache.CONTROLNET_CONTROL_TYPES, self._webservice.get_controlnet_control_types),
+                (Cache.CONTROLNET_MODULES, self._webservice.get_controlnet_modules),
+                (Cache.CONTROLNET_MODELS, self._webservice.get_controlnet_models),
+                (Cache.LORA_MODELS, self._webservice.get_loras)
+            )
+
+            for config_key, data_loading_fn in data_params:
+                try:
+                    value = data_loading_fn()
+                    if value is not None and len(value) > 0:
+                        cache.set(config_key, value)
+                except (KeyError, RuntimeError) as err:
+                    logger.error(f'error loading {config_key} from {self._server_url}: {err}')
+            return True
+        except AuthError:
+            return False
+
+    def disconnect_or_disable(self) -> None:
+        """Closes any connections, unloads models, or otherwise turns off this generator."""
+        if self._webservice is not None:
+            self._webservice.disconnect()
+            self._webservice = None
+        # Clear cached webservice data:
+        if self._lora_images is not None:
+            self._lora_images.clear()
+            self._lora_images = None
+        cache = Cache()
+        cache.set(Cache.CONTROLNET_VERSION, -1.0)
+        cache.set(Cache.CONTROLNET_CONTROL_TYPES, '')
+        cache.set(Cache.CONTROLNET_MODULES, '')
+        cache.set(Cache.CONTROLNET_MODELS, '')
+        cache.set(Cache.LORA_MODELS, '')
+        self.clear_menus()
+
+    def init_settings(self, settings_modal: SettingsModal) -> None:
+        """Updates a settings modal to add settings relevant to this generator."""
+        assert self._webservice is not None
+        web_config = A1111Config()
+        web_config.load_all(self._webservice)
+        settings_modal.load_from_config(web_config)
+
+    def refresh_settings(self, settings_modal: SettingsModal) -> None:
+        """Reloads current values for this generator's settings, and updates them in the settings modal."""
+        assert self._webservice is not None
+        settings = self._webservice.get_config()
+        settings_modal.update_settings(settings)
+
+    def update_settings(self, changed_settings: dict[str, Any]) -> None:
+        """Applies any changed settings from a SettingsModal that are relevant to the image generator and require
+           special handling."""
+        assert self._webservice is not None
+        web_config = A1111Config()
+        web_categories = web_config.get_categories()
+        web_keys = [key for cat in web_categories for key in web_config.get_category_keys(cat)]
+        web_changes = {}
+        for key in changed_settings:
+            if key in web_keys:
+                web_changes[key] = changed_settings[key]
+        if len(web_changes) > 0:
+            def _update_config() -> None:
+                assert self._webservice is not None
+                self._webservice.set_config(changed_settings)
+            update_task = AsyncTask(_update_config, True)
+
+            def _update_setting():
+                AppStateTracker.set_app_state(APP_STATE_EDITING if self._image_stack.has_image else APP_STATE_NO_IMAGE)
+                update_task.finish_signal.disconnect(_update_setting)
+            update_task.finish_signal.connect(_update_setting)
+            update_task.start()
+
+    def unload_settings(self, settings_modal: SettingsModal) -> None:
+        """Unloads this generator's settings from the settings modal."""
+        settings_modal.remove_category(A1111Config(), STABLE_DIFFUSION_CONFIG_CATEGORY)
+
+    def interrogate(self) -> None:
+        """ Calls the "interrogate" endpoint to automatically generate image prompts.
+
+        Sends the image generation area content to the stable-diffusion-webui API, where an image captioning model
+        automatically generates an appropriate prompt. Once returned, that prompt is copied to the appropriate field
+        in the UI. Displays an error dialog instead if no image is loaded or another API operation is in-progress.
+        """
+        assert self._webservice is not None
+        if not self._image_stack.has_image:
+            show_error_dialog(None, INTERROGATE_ERROR_TITLE, INTERROGATE_ERROR_MESSAGE_NO_IMAGE)
+            return
+        image = self._image_stack.qimage_generation_area_content()
+
+        class _InterrogateTask(AsyncTask):
+            prompt_ready = pyqtSignal(str)
+            error_signal = pyqtSignal(Exception)
+
+            def signals(self) -> List[pyqtSignal]:
+                return [self.prompt_ready, self.error_signal]
+
+        def _interrogate(prompt_ready, error_signal):
             try:
-                options = option_loading_fn()
-                if options is not None and len(options) > 0:
-                    if config_key in cache.get_keys():
-                        cache.update_options(config_key, options)
-                    else:
-                        AppConfig().update_options(config_key, options)
-            except (KeyError, RuntimeError) as err:
-                logger.error(f'error loading {config_key} from {self._server_url}: {err}')
+                prompt_ready.emit(self._webservice.interrogate(image))
+            except RuntimeError as err:
+                logger.error(f'err:{err}')
+                error_signal.emit(err)
 
-        data_params = (
-            (Cache.CONTROLNET_CONTROL_TYPES, self._webservice.get_controlnet_control_types),
-            (Cache.CONTROLNET_MODULES, self._webservice.get_controlnet_modules),
-            (Cache.CONTROLNET_MODELS, self._webservice.get_controlnet_models),
-            (Cache.LORA_MODELS, self._webservice.get_loras)
-        )
-        for config_key, data_loading_fn in data_params:
-            try:
-                value = data_loading_fn()
-                if value is not None and len(value) > 0:
-                    cache.set(config_key, value)
-            except (KeyError, RuntimeError) as err:
-                logger.error(f'error loading {config_key} from {self._server_url}: {err}')
+        task = _InterrogateTask(_interrogate)
+        AppStateTracker.set_app_state(APP_STATE_LOADING)
 
-        # initialize remote options modal:
-        # Handle final window init now that data is loaded from the API:
-        self._window = StableDiffusionMainWindow(self._image_stack, self)
-        if self._fixed_window_size is not None:
-            size = self._fixed_window_size
-            self._window.setGeometry(0, 0, size.width(), size.height())
-            self._window.setMaximumSize(self._fixed_window_size)
-            self._window.setMinimumSize(self._fixed_window_size)
-        else:
-            size = get_screen_size(self._window)
-            self._window.setGeometry(0, 0, size.width(), size.height())
-            self._window.setMaximumSize(size)
-        self.fix_styles()
-        if self._init_image is not None:
-            logger.info('loading init image:')
-            self.load_image(file_path=self._init_image)
-        self._window.show()
+        def set_prompt(prompt_text: str) -> None:
+            """Update the image prompt in config with the interrogate results."""
+            AppConfig().set(AppConfig.PROMPT, prompt_text)
+
+        task.prompt_ready.connect(set_prompt)
+
+        def handle_error(err: BaseException) -> None:
+            """Show an error popup if interrogate fails."""
+            assert self._window is not None
+            self._window.set_is_loading(False)
+            show_error_dialog(self._window, INTERROGATE_ERROR_TITLE, err)
+
+        task.error_signal.connect(handle_error)
+
+    def get_control_panel(self) -> QWidget:
+        """Returns a widget with inputs for controlling this generator."""
+        if self._control_panel is None:
+            self._control_panel = SDWebUIPanel()
+            self._control_panel.generate_signal.connect(self.start_and_manage_image_generation)
+            self._control_panel.interrogate_signal.connect(self.interrogate)
+        return self._control_panel
 
     def _async_progress_check(self, external_status_signal: Optional[pyqtSignal] = None):
         webservice = self._webservice
+        assert webservice is not None
 
         class _ProgressTask(AsyncTask):
             status_signal = pyqtSignal(dict)
@@ -341,6 +350,7 @@ class StableDiffusionController(BaseInpaintController):
                     assert thread is not None
                     thread.usleep(sleep_time)
                     try:
+                        assert webservice is not None
                         status = webservice.progress_check()
                         progress_percent = int(status[PROGRESS_KEY_FRACTION] * 100)
                         if progress_percent < max_progress or progress_percent >= 100:
@@ -380,20 +390,18 @@ class StableDiffusionController(BaseInpaintController):
             def _finish():
                 task.status_signal.disconnect(self._apply_status_update)
                 task.finish_signal.disconnect(_finish)
+
             task.finish_signal.connect(_finish)
         task.start()
 
-    def _scale(self, new_size: QSize) -> None:
-        """Provide extra upscaling modes using stable-diffusion-webui."""
+    def upscale(self, new_size: QSize) -> bool:
+        """Upscale using AI upscaling modes provided by stable-diffusion-webui, returning whether upscaling
+        was attempted."""
         assert self._window is not None
         width = self._image_stack.width
         height = self._image_stack.height
-        # If downscaling, use base implementation:
         if new_size.width() <= width and new_size.height() <= height:
-            super()._scale(new_size)
-            return
-
-        # If upscaling, use stable-diffusion-webui upscale api:
+            return False
 
         class _UpscaleTask(AsyncTask):
             image_ready = pyqtSignal(QImage)
@@ -404,13 +412,15 @@ class StableDiffusionController(BaseInpaintController):
 
         def _upscale(image_ready: pyqtSignal, error_signal: pyqtSignal) -> None:
             try:
-                images, info = self._webservice.upscale(self._image_stack.pil_image(), new_size.width(),
+                assert self._webservice is not None
+                images, info = self._webservice.upscale(self._image_stack.qimage(), new_size.width(),
                                                         new_size.height())
                 if info is not None:
                     logger.debug(f'Upscaling result info: {info}')
                 image_ready.emit(images[-1])
             except IOError as err:
                 error_signal.emit(err)
+
         task = _UpscaleTask(_upscale, True)
 
         def handle_error(err: IOError) -> None:
@@ -431,34 +441,38 @@ class StableDiffusionController(BaseInpaintController):
             task.error_signal.disconnect(handle_error)
             task.image_ready.disconnect(apply_upscaled)
             task.finish_signal.disconnect(_on_finish)
+
         task.finish_signal.connect(_on_finish)
         self._async_progress_check()
         task.start()
+        return True
 
-    def _inpaint(self,
-                 source_image_section: Optional[QImage],
-                 mask: Optional[QImage],
-                 status_signal: pyqtSignal) -> None:
-        """Handle image editing operations using stable-diffusion-webui.
+    def generate(self,
+                 status_signal: pyqtSignal,
+                 source_image: Optional[QImage] = None,
+                 mask_image: Optional[QImage] = None) -> None:
+        """Generates new images. Image size, image count, prompts, etc. are loaded from AppConfig as needed.
 
         Parameters
         ----------
-        source_image_section : QImage, optional
-            Image selection to edit
-        mask : QImage, optional
-            Mask marking edited image region.
-        status_signal : pyqtSignal
+        status_signal : pyqtSignal[str]
             Signal to emit when status updates are available.
+        source_image : QImage, optional
+            Image used as a basis for the edited image.
+        mask_image : QImage, optional
+            Mask marking edited image region.
         """
+        assert self._webservice is not None
         edit_mode = AppConfig().get(AppConfig.EDIT_MODE)
         if edit_mode == EDIT_MODE_INPAINT and self._image_stack.selection_layer.generation_area_fully_selected():
             edit_mode = EDIT_MODE_IMG2IMG
         if edit_mode != EDIT_MODE_INPAINT:
-            mask = None
+            mask_image = None
         elif self._image_stack.selection_layer.generation_area_is_empty():
             raise RuntimeError(GENERATE_ERROR_MESSAGE_EMPTY_MASK)
 
-        # Check progress before starting:
+            # Check progress before starting:
+        assert self._webservice is not None
         init_data = self._webservice.progress_check()
         if init_data[PROGRESS_KEY_CURRENT_IMAGE] is not None:
             raise RuntimeError('Image generation in progress, try again later.')
@@ -468,10 +482,10 @@ class StableDiffusionController(BaseInpaintController):
                 gen_size = AppConfig().get(AppConfig.GENERATION_SIZE)
                 width = gen_size.width()
                 height = gen_size.height()
-                image_data, info = self._webservice.txt2img(width, height, image=source_image_section)
+                image_data, info = self._webservice.txt2img(width, height, image=source_image)
             else:
-                assert source_image_section is not None
-                image_data, info = self._webservice.img2img(source_image_section, mask=mask)
+                assert source_image is not None
+                image_data, info = self._webservice.img2img(source_image, mask=mask_image)
             if info is not None:
                 logger.debug(f'Image generation result info: {info}')
             for i, response_image in enumerate(image_data):
@@ -479,14 +493,6 @@ class StableDiffusionController(BaseInpaintController):
 
         except RuntimeError as image_gen_error:
             logger.error(f'request failed: {image_gen_error}')
-
-    def _apply_status_update(self, status_dict: Dict[str, str]) -> None:
-        """Show status updates in the UI."""
-        assert self._window is not None
-        if 'seed' in status_dict:
-            Cache().set(Cache.LAST_SEED, str(status_dict['seed']))
-        if 'progress' in status_dict:
-            self._window.set_loading_message(status_dict['progress'])
 
     @menu_action(MENU_TOOLS, 'lcm_mode_shortcut', 99, condition_check=_check_lcm_mode_available)
     def set_lcm_mode(self) -> None:
@@ -510,6 +516,7 @@ class StableDiffusionController(BaseInpaintController):
 
     def _update_styles(self, style_list: List[Dict[str, str]]) -> None:
         try:
+            assert self._webservice is not None
             self._webservice.set_styles(style_list)
         except RuntimeError as err:
             show_error_dialog(None, STYLE_ERROR_TITLE, err)
@@ -544,10 +551,11 @@ class StableDiffusionController(BaseInpaintController):
 
             def _load_and_open(status_signal: pyqtSignal) -> None:
                 for i, lora in enumerate(loras):
-                    status_signal.emit(f'Loading thumbnail {i+1}/{len(loras)}')
+                    status_signal.emit(f'Loading thumbnail {i + 1}/{len(loras)}')
                     path = lora['path']
                     path = path[:path.rindex('.')] + '.png'
                     assert self._lora_images is not None
+                    assert self._webservice is not None
                     self._lora_images[lora['name']] = self._webservice.get_thumbnail(path)
 
             task = _LoadingTask(_load_and_open)

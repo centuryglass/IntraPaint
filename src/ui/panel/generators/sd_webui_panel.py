@@ -1,18 +1,15 @@
-"""
-A MainWindow implementation providing controls specific to stable-diffusion inpainting.
-"""
-from typing import Optional, cast
+"""A control panel for the Stable-Diffusion WebUI image generator."""
+from typing import cast, Optional
 
-from PyQt6.QtCore import Qt
-from PyQt6.QtWidgets import QLabel, QHBoxLayout, QVBoxLayout, QGridLayout, QPushButton, QSizePolicy, QWidget
+from PyQt6.QtCore import Qt, pyqtSignal
+from PyQt6.QtWidgets import QWidget, QSizePolicy, QVBoxLayout, QHBoxLayout, QGridLayout, QLabel, QPushButton
 
 from src.config.application_config import AppConfig
 from src.config.cache import Cache
-from src.image.layers.image_stack import ImageStack
 from src.ui.panel.controlnet_panel import ControlnetPanel
 from src.ui.widget.bordered_widget import BorderedWidget
 from src.ui.widget.collapsible_box import CollapsibleBox
-from src.ui.window.main_window import MainWindow
+from src.util.application_state import APP_STATE_EDITING, AppStateTracker
 from src.util.shared_constants import GENERATE_BUTTON_TEXT, EDIT_MODE_INPAINT
 
 CONTROL_BOX_LABEL = 'Image Generation Controls'
@@ -22,46 +19,21 @@ WIDTH_BOX_TOOLTIP = 'Resize image generation area content to this width before i
 HEIGHT_BOX_TOOLTIP = 'Resize image generation area content to this height before inpainting'
 
 
-class StableDiffusionMainWindow(MainWindow):
-    """StableDiffusionMainWindow organizes the main application window for Stable-Diffusion inpainting."""
+class SDWebUIPanel(BorderedWidget):
+    """A control panel for the Stable-Diffusion WebUI image generator."""
 
-    OPEN_PANEL_STRETCH = 80
+    interrogate_signal = pyqtSignal()
+    generate_signal = pyqtSignal()
 
-    def __init__(self, image_stack: ImageStack, controller) -> None:
-        """Initializes the window and builds the layout.
-
-        Parameters
-        ----------
-        image_stack : ImageStack
-            Image layers being edited.
-        controller : controller.base_controller.stable_diffusion_controller.StableDiffusionController
-            Object managing application behavior.
-        """
-        super().__init__(image_stack, controller)
-        # Decrease imageLayout stretch to make room for additional controls:
-        self.layout().setStretch(0, 180)
-
-    def _build_control_panel(self, controller) -> QWidget:
-        """Adds controls for Stable-diffusion inpainting."""
-        control_panel = BorderedWidget()
-        control_panel.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Maximum)
-        control_layout = QVBoxLayout()
-        control_panel.setLayout(control_layout)
+    def __init__(self) -> None:
+        super().__init__()
+        self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Maximum)
+        control_layout = QVBoxLayout(self)
         config = AppConfig()
+        AppStateTracker.set_enabled_states(self, [APP_STATE_EDITING])
 
-        main_control_box = CollapsibleBox(CONTROL_BOX_LABEL, control_panel)
+        main_control_box = CollapsibleBox(CONTROL_BOX_LABEL, self)
         main_control_box.set_expanded_size_policy(QSizePolicy.Policy.Maximum)
-        if main_control_box.is_expanded():
-            self.layout().setStretch(1, self.layout().stretch(1) + StableDiffusionMainWindow.OPEN_PANEL_STRETCH)
-
-        def on_main_controls_expanded(expanded: bool):
-            """When the main controls are showing, adjust the layout and hide redundant sliders."""
-            stretch = self.layout().stretch(1) + (StableDiffusionMainWindow.OPEN_PANEL_STRETCH if expanded
-                                                  else -StableDiffusionMainWindow.OPEN_PANEL_STRETCH)
-            stretch = max(stretch, 10)
-            self.layout().setStretch(1, stretch)
-
-        main_control_box.toggled().connect(on_main_controls_expanded)
         main_controls = QHBoxLayout()
         main_control_box.set_content_layout(main_controls)
         control_layout.addWidget(main_control_box, stretch=20)
@@ -189,7 +161,7 @@ class StableDiffusionMainWindow(MainWindow):
         control_layout.addStretch(255)
 
         # Put action buttons on the bottom:
-        button_bar = BorderedWidget(control_panel)
+        button_bar = BorderedWidget(self)
         button_bar_layout = QHBoxLayout()
         button_bar.setLayout(button_bar_layout)
         button_bar.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Maximum)
@@ -199,13 +171,12 @@ class StableDiffusionMainWindow(MainWindow):
         interrogate_button = QPushButton()
         interrogate_button.setText(INTERROGATE_BUTTON_TEXT)
         interrogate_button.setToolTip(INTERROGATE_BUTTON_TOOLTIP)
-        interrogate_button.clicked.connect(controller.interrogate)
+        interrogate_button.clicked.connect(self.interrogate_signal)
         button_bar_layout.addWidget(interrogate_button, stretch=1)
         interrogate_button.resize(interrogate_button.width(), interrogate_button.height() * 2)
         # Start generation button:
         start_button = QPushButton()
         start_button.setText(GENERATE_BUTTON_TEXT)
-        start_button.clicked.connect(controller.start_and_manage_inpainting)
+        start_button.clicked.connect(self.generate_signal)
         button_bar_layout.addWidget(start_button, stretch=2)
         start_button.resize(start_button.width(), start_button.height() * 2)
-        return control_panel

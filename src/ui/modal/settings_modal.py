@@ -82,7 +82,34 @@ class SettingsModal(QDialog):
                 def _add_change(new_value: Any, name=key):
                     self._add_change(name, new_value)
                 control_widget.valueChanged.connect(_add_change)
-                self._add_setting(key, category, control_widget, label)
+                self._add_setting(key, category, control_widget, label)\
+
+
+    def remove_category(self, config: Config, category: str) -> None:
+        """Remove a category from the modal"""
+        if category not in self._tabs:
+            return
+        for key in config.get_category_keys(category):
+            if key in self._inputs:
+                del self._inputs[key]
+            if key in self._changes:
+                del self._changes[key]
+        assert category in self._tab_layouts
+        layout = self._tab_layouts[category]
+        del self._tab_layouts[category]
+        while layout.count() > 0:
+            item = layout.takeAt(0)
+            assert item is not None
+            widget = item.widget()
+            assert widget is not None
+            widget.setParent(None)
+            widget.deleteLater()
+        layout.deleteLater()
+        tab = self._tabs[category]
+        index = self._tab_widget.indexOf(tab)
+        self._tab_widget.removeTab(index)
+        del self._tabs[category]
+        tab.deleteLater()
 
     def show_modal(self):
         """Shows the settings modal."""

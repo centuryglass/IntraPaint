@@ -1,6 +1,5 @@
 """
-BaseController coordinates primary application functionality across all operation modes. Each image generation and
-editing method supported by IntraPaint should have its own BaseController subclass.
+AppController coordinates IntraPaint application behavior.
 """
 import json
 import logging
@@ -10,14 +9,19 @@ import sys
 from argparse import Namespace
 from typing import Optional, Any, List, Tuple
 
-from PIL import Image, ImageFilter, UnidentifiedImageError, PngImagePlugin
-from PyQt6.QtCore import QObject, QRect, QPoint, QSize, pyqtSignal
-from PyQt6.QtGui import QScreen, QImage, QPainter
+from PIL import Image, UnidentifiedImageError, PngImagePlugin
+from PyQt6.QtCore import QSize
+from PyQt6.QtGui import QImage
 from PyQt6.QtWidgets import QApplication, QMessageBox
 
 from src.config.application_config import AppConfig
 from src.config.cache import Cache
 from src.config.key_config import KeyConfig
+from src.controller.image_generation.glid3_webservice_generator import Glid3WebserviceGenerator, DEFAULT_GLID_URL
+from src.controller.image_generation.glid3_xl_generator import Glid3XLGenerator
+from src.controller.image_generation.image_generator import ImageGenerator
+from src.controller.image_generation.sd_webui_generator import SDWebUIGenerator, DEFAULT_SD_URL
+from src.controller.image_generation.test_generator import TestGenerator
 from src.image.filter.blur import BlurFilter
 from src.image.filter.brightness_contrast import BrightnessContrastFilter
 from src.image.filter.posterize import PosterizeFilter
@@ -36,13 +40,11 @@ from src.ui.window.main_window import MainWindow
 from src.undo_stack import undo, redo
 from src.util.application_state import AppStateTracker, APP_STATE_NO_IMAGE, APP_STATE_EDITING, APP_STATE_LOADING, \
     APP_STATE_SELECTION
-from src.util.async_task import AsyncTask
 from src.util.display_size import get_screen_size
-from src.util.image_utils import pil_image_to_qimage, qimage_to_pil_image, pil_image_scaling, create_transparent_image
+from src.util.image_utils import pil_image_scaling, create_transparent_image
 from src.util.menu_builder import MenuBuilder, menu_action
 from src.util.optional_import import optional_import
 from src.util.qtexcepthook import QtExceptHook
-from src.util.shared_constants import EDIT_MODE_INPAINT
 
 # Optional spacenav support and extended theming:
 qdarktheme = optional_import('qdarktheme')
@@ -52,13 +54,19 @@ SpacenavManager = optional_import('spacenav_manager', 'src.controller', 'Spacena
 logger = logging.getLogger(__name__)
 
 # The QCoreApplication.translate context for strings in this file
-TR_ID = 'controller.base_controller'
+TR_ID = 'controller.app_controller'
 
 
 def _tr(*args):
-    """Helper to make QCoreApplication.translate more concise."""
+    """Helper to make `QCoreApplication.translate` more concise."""
     return QApplication.translate(TR_ID, *args)
 
+
+GENERATION_MODE_SD_WEBUI = 'stable'
+GENERATION_MODE_LOCAL_GLID = 'local'
+GENERATION_MODE_WEB_GLID = 'web'
+GENERATION_MODE_TEST = 'mock'
+GENERATION_MODE_AUTO = 'auto'
 
 MENU_FILE = _tr('File')
 MENU_EDIT = _tr('Edit')
@@ -68,6 +76,8 @@ MENU_LAYERS = _tr('Layers')
 MENU_TOOLS = _tr('Tools')
 MENU_FILTERS = _tr('Filters')
 
+GENERATOR_LOAD_ERROR_TITLE = _tr('Loading image generator failed')
+GENERATOR_LOAD_ERROR_MESSAGE = _tr('Unable to load the {generator_name} image generator')
 CONFIRM_QUIT_TITLE = _tr('Quit now?')
 CONFIRM_QUIT_MESSAGE = _tr('All unsaved changes will be lost.')
 NEW_IMAGE_CONFIRMATION_TITLE = _tr('Create new image?')
@@ -92,159 +102,55 @@ LOAD_LAYER_ERROR_MESSAGE = _tr('Could not open the following images: ')
 
 METADATA_PARAMETER_KEY = 'parameters'
 IGNORED_APPCONFIG_CATEGORIES = ('Stable-Diffusion', 'GLID-3-XL')
+DEV_APPCONFIG_CATEGORY = 'Developer'
 
 
-class BaseInpaintController(MenuBuilder):
-    """Shared base class for managing inpainting.
+def _get_config_categories() -> List[str]:
+    categories = AppConfig().get_categories()
+    for ignored in IGNORED_APPCONFIG_CATEGORIES:
+        if ignored in categories:
+            categories.remove(ignored)
+    if DEV_APPCONFIG_CATEGORY in categories and '--dev' not in sys.argv:
+        categories.remove(DEV_APPCONFIG_CATEGORY)
+    return categories
 
-    At a bare minimum, subclasses will need to implement self._inpaint.
-    """
+
+class AppController(MenuBuilder):
+    """AppController coordinates IntraPaint application behavior."""
 
     def __init__(self, args: Namespace) -> None:
         super().__init__()
-        self._app = QApplication.instance() or QApplication(sys.argv)
-        self._generated_images: List[QImage] = []
-        screen = self._app.primaryScreen()
-        self._fixed_window_size = args.window_size
-        if self._fixed_window_size is not None:
-            x, y = (int(dim) for dim in self._fixed_window_size.split('x'))
-            self._fixed_window_size = QSize(x, y)
-
-        def screen_area(screen_option: Optional[QScreen]) -> int:
-            """Calculate the area of an available screen."""
-            if screen_option is None:
-                return 0
-            return screen_option.availableGeometry().width() * screen_option.availableGeometry().height()
-
-        for s in self._app.screens():
-            if screen_area(s) > screen_area(screen):
-                screen = s
+        app = QApplication.instance() or QApplication(sys.argv)
         config = AppConfig()
-        self._adjust_config_defaults()
         config.apply_args(args)
+        self._generator: Optional[ImageGenerator] = None
+        self._layer_panel: Optional[LayerPanel] = None
 
+        # Initialize edited image data structures:
         self._image_stack = ImageStack(config.get(AppConfig.DEFAULT_IMAGE_SIZE), config.get(AppConfig.EDIT_SIZE),
                                        config.get(AppConfig.MIN_EDIT_SIZE), config.get(AppConfig.MAX_EDIT_SIZE))
-        self._init_image = args.init_image
 
-        self._window: Optional[MainWindow] = None
-        self._layer_panel: Optional[LayerPanel] = None
-        self._settings_panel: Optional[SettingsModal] = None
-        self._nav_manager: Optional['SpacenavManager'] = None
-        self._worker: Optional[QObject] = None
         self._metadata: Optional[dict[str, Any]] = None
 
-    def _adjust_config_defaults(self):
-        """no-op, override to adjust config before data initialization."""
-
-    def get_config_categories(self) -> List[str]:
-        """Return the list of AppConfig categories BaseInpaintController manages within the settings modal."""
-        categories = AppConfig().get_categories()
-        for ignored in IGNORED_APPCONFIG_CATEGORIES:
-            if ignored in categories:
-                categories.remove(ignored)
-        return categories
-
-    def init_settings(self, settings_modal: SettingsModal) -> None:
-        """ 
-        Function to override initialize a SettingsModal with implementation-specific settings. This will initialize all
-        universal settings, subclasses will need to extend this or override get_config_categories to add more.
-        """
-        settings_modal.load_from_config(AppConfig(), self.get_config_categories())
-        settings_modal.load_from_config(KeyConfig())
-
-    def refresh_settings(self, settings_modal: SettingsModal):
-        """
-        Updates a SettingsModal to reflect any changes.
-
-        Parameters
-        ----------
-        settings_modal : SettingsModal
-        """
-        config = AppConfig()
-        categories = self.get_config_categories()
-        settings = {}
-        for category in categories:
-            for key in config.get_category_keys(category):
-                settings[key] = config.get(key)
-        settings_modal.update_settings(settings)
-
-    def update_settings(self, changed_settings: dict):
-        """
-        Apply changed settings from a SettingsModal.
-
-        Parameters
-        ----------
-        changed_settings : dict
-            Set of changes loaded from a SettingsModal.
-        """
-        app_config = AppConfig()
-        categories = self.get_config_categories()
-        base_keys = [key for cat in categories for key in app_config.get_category_keys(cat)]
-        key_keys = KeyConfig().get_keys()
-        for key, value in changed_settings.items():
-            if key in base_keys:
-                app_config.set(key, value)
-            elif key in key_keys:
-                KeyConfig().set(key, value)
-
-    def window_init(self):
-        """Initialize and show the main application window."""
-        self._window = MainWindow(self._image_stack, self)
-        if self._fixed_window_size is not None:
-            size = self._fixed_window_size
-            self._window.setGeometry(0, 0, size.width(), size.height())
-            self._window.setMaximumSize(self._fixed_window_size)
-            self._window.setMinimumSize(self._fixed_window_size)
+        # Initialize main window:
+        self._window = MainWindow(self._image_stack)
+        self._window.generate_signal.connect(self.start_and_manage_inpainting)
+        if args.window_size is not None:
+            width, height = (int(dim) for dim in args.window_size.split('x'))
+            self._window.setGeometry(0, 0, width, height)
+            self._window.setMaximumSize(width, height)
+            self._window.setMinimumSize(width, height)
         else:
             size = get_screen_size(self._window)
             self._window.setGeometry(0, 0, size.width(), size.height())
             self._window.setMaximumSize(size)
-        self.fix_styles()
-        if self._init_image is not None:
-            logger.info('loading init image:')
-            self.load_image(file_path=self._init_image)
-        self._window.show()
+        if args.init_image is not None:
+            self.load_image(file_path=args.init_image)
 
-    def fix_styles(self) -> None:
-        """Update application styling based on theme configuration, UI configuration, and available theme modules."""
-        config = AppConfig()
-
-        def _apply_style(new_style: str) -> None:
-            self._app.setStyle(new_style)
-
-        config.connect(self, AppConfig.STYLE, _apply_style)
-        _apply_style(config.get(AppConfig.STYLE))
-
-        def _apply_theme(theme: str) -> None:
-            if theme.startswith('qdarktheme_') and qdarktheme is not None and hasattr(qdarktheme, 'setup_theme'):
-                if theme.endswith('_light'):
-                    qdarktheme.setup_theme('light')
-                elif theme.endswith('_auto'):
-                    qdarktheme.setup_theme('auto')
-                else:
-                    qdarktheme.setup_theme()
-            elif theme.startswith('qt_material_') and qt_material is not None:
-                xml_file = theme[len('qt_material_'):]
-                qt_material.apply_stylesheet(self._app, theme=xml_file)
-            elif theme != 'None':
-                logger.error(f'Failed to load theme {theme}')
-
-        config.connect(self, AppConfig.THEME, _apply_theme)
-        _apply_theme(config.get(AppConfig.THEME))
-
-        def _apply_font(font_pt: int) -> None:
-            font = self._app.font()
-            font.setPointSize(font_pt)
-            self._app.setFont(font)
-
-        config.connect(self, AppConfig.FONT_POINT_SIZE, _apply_font)
-        _apply_font(config.get(AppConfig.FONT_POINT_SIZE))
-
-    def start_app(self) -> None:
-        """Start the application after performing any additional required setup steps."""
-        self.window_init()
-        assert self._window is not None
+        # Load settings:
+        self._settings_modal = SettingsModal(self._window)
+        self.init_settings(self._settings_modal)
+        self._settings_modal.changes_saved.connect(self.update_settings)
 
         # Configure support for spacemouse panning, if relevant:
         if SpacenavManager is not None and self._window is not None:
@@ -253,7 +159,7 @@ class BaseInpaintController(MenuBuilder):
             nav_manager.start_thread()
             self._nav_manager = nav_manager
 
-        # initialize menus:
+        # Set up menus:
         self.build_menus(self._window)
         # Since image filter menus follow a very simple pattern, add them here instead of using @menu_action:
         for filter_class in (RGBColorBalanceFilter,
@@ -275,10 +181,137 @@ class BaseInpaintController(MenuBuilder):
             assert action is not None
             AppStateTracker.set_enabled_states(action, [APP_STATE_EDITING])
 
-        AppStateTracker.set_app_state(APP_STATE_EDITING if self._image_stack.has_image else APP_STATE_NO_IMAGE)
+        # Load and apply styling and themes:
+
+        def _apply_style(new_style: str) -> None:
+            app.setStyle(new_style)
+        config.connect(self, AppConfig.STYLE, _apply_style)
+        _apply_style(config.get(AppConfig.STYLE))
+
+        def _apply_theme(theme: str) -> None:
+            if theme.startswith('qdarktheme_') and qdarktheme is not None and hasattr(qdarktheme, 'setup_theme'):
+                if theme.endswith('_light'):
+                    qdarktheme.setup_theme('light')
+                elif theme.endswith('_auto'):
+                    qdarktheme.setup_theme('auto')
+                else:
+                    qdarktheme.setup_theme()
+            elif theme.startswith('qt_material_') and qt_material is not None:
+                xml_file = theme[len('qt_material_'):]
+                qt_material.apply_stylesheet(app, theme=xml_file)
+            elif theme != 'None':
+                logger.error(f'Failed to load theme {theme}')
+        config.connect(self, AppConfig.THEME, _apply_theme)
+        _apply_theme(config.get(AppConfig.THEME))
+
+        def _apply_font(font_pt: int) -> None:
+            font = app.font()
+            font.setPointSize(font_pt)
+            app.setFont(font)
+        config.connect(self, AppConfig.FONT_POINT_SIZE, _apply_font)
+        _apply_font(config.get(AppConfig.FONT_POINT_SIZE))
+
+        # Load image generator, if any:
+        mode = args.mode
+        match mode:
+            case _ if mode == GENERATION_MODE_SD_WEBUI:
+                self.load_image_generator(SDWebUIGenerator(self._window, self._image_stack, args))
+            case _ if mode == GENERATION_MODE_WEB_GLID:
+                self.load_image_generator(Glid3WebserviceGenerator(self._window, self._image_stack, args))
+            case _ if mode == GENERATION_MODE_LOCAL_GLID:
+                self.load_image_generator(Glid3XLGenerator(self._window, self._image_stack, args))
+            case _ if mode == GENERATION_MODE_TEST:
+                self.load_image_generator(TestGenerator(self._window, self._image_stack))
+            case _:
+                if mode != GENERATION_MODE_AUTO:
+                    logger.error(f'Unexpected mode {mode}, defaulting to mode=auto')
+                server_url = args.server_url
+                if server_url == DEFAULT_GLID_URL:
+                    self.load_image_generator(Glid3WebserviceGenerator(self._window, self._image_stack, args))
+                elif server_url == DEFAULT_SD_URL:
+                    self.load_image_generator(SDWebUIGenerator(self._window, self._image_stack, args))
+                glid_generator = Glid3WebserviceGenerator(self._window, self._image_stack, args)
+                if glid_generator.is_available():
+                    self.load_image_generator(glid_generator)
+                    return
+                sd_generator = SDWebUIGenerator(self._window, self._image_stack, args)
+                if sd_generator.is_available():
+                    self.load_image_generator(sd_generator)
+                    return
+                elif args.dev:
+                    self.load_image_generator(TestGenerator(self._window, self._image_stack))
+                else:
+                    glid_local_generator = Glid3XLGenerator(self._window, self._image_stack, args)
+                    if glid_local_generator.is_available():
+                        self.load_image_generator(glid_local_generator)
+                        return
+                logger.error('No valid generator detected, starting with none enabled.')
+
+    def start_app(self) -> None:
+        """Start the application."""
+        app = QApplication.instance() or QApplication(sys.argv)
         if AppConfig().get(AppConfig.USE_ERROR_HANDLER):
             QtExceptHook().enable()
-        self._app.exec()
+        self._window.show()
+        AppStateTracker.set_app_state(APP_STATE_EDITING if self._image_stack.has_image else APP_STATE_NO_IMAGE)
+        app.exec()
+
+    def load_image_generator(self, generator: ImageGenerator) -> None:
+        """Load an image generator, updating controls and settings."""
+        if not generator.configure_or_connect():
+            show_error_dialog(self._window, GENERATOR_LOAD_ERROR_TITLE,
+                              GENERATOR_LOAD_ERROR_MESSAGE.format(generator_name=generator.get_display_name()))
+            return
+        if self._generator is not None:
+            self._generator.unload_settings(self._settings_modal)
+            self._generator.clear_menus()
+            self._generator.disconnect_or_disable()
+            self._generator = None
+        self._generator = generator
+        self._generator.init_settings(self._settings_modal)
+        self._generator.build_menus(self._window)
+        self._window.set_control_panel(self._generator.get_control_panel())
+
+    def init_settings(self, settings_modal: SettingsModal) -> None:
+        """Load application settings into a SettingsModal"""
+        categories = _get_config_categories()
+        settings_modal.load_from_config(AppConfig(), categories)
+        settings_modal.load_from_config(KeyConfig())
+        if self._generator is not None:
+            self._generator.init_settings(settings_modal)
+
+    def refresh_settings(self, settings_modal: SettingsModal):
+        """Updates a SettingsModal to reflect any changes."""
+        config = AppConfig()
+        categories = _get_config_categories()
+        settings = {}
+        for category in categories:
+            for key in config.get_category_keys(category):
+                settings[key] = config.get(key)
+        settings_modal.update_settings(settings)
+        if self._generator is not None:
+            self._generator.refresh_settings(settings_modal)
+
+    def update_settings(self, changed_settings: dict):
+        """
+        Apply changed settings from a SettingsModal.
+
+        Parameters
+        ----------
+        changed_settings : dict
+            Set of changes loaded from a SettingsModal.
+        """
+        app_config = AppConfig()
+        categories = _get_config_categories()
+        base_keys = [key for cat in categories for key in app_config.get_category_keys(cat)]
+        key_keys = KeyConfig().get_keys()
+        for key, value in changed_settings.items():
+            if key in base_keys:
+                app_config.set(key, value)
+            elif key in key_keys:
+                KeyConfig().set(key, value)
+        if self._generator is not None:
+            self._generator.update_settings(changed_settings)
 
     # Menu action definitions:
 
@@ -288,7 +321,6 @@ class BaseInpaintController(MenuBuilder):
                  valid_app_states=[APP_STATE_EDITING, APP_STATE_NO_IMAGE])
     def new_image(self) -> None:
         """Open a new image creation modal."""
-        assert self._window is not None
         default_size = AppConfig().get(AppConfig.DEFAULT_IMAGE_SIZE)
         image_modal = NewImageModal(default_size.width(), default_size.height())
         image_size = image_modal.show_image_modal()
@@ -313,7 +345,6 @@ class BaseInpaintController(MenuBuilder):
                  valid_app_states=[APP_STATE_EDITING, APP_STATE_SELECTION, APP_STATE_LOADING])
     def save_image_as(self, file_path: Optional[str] = None) -> None:
         """Open a save dialog, and save the edited image to disk, preserving any metadata."""
-        assert self._window is not None
         cache = Cache()
         try:
             if not isinstance(file_path, str):
@@ -350,7 +381,6 @@ class BaseInpaintController(MenuBuilder):
                  valid_app_states=[APP_STATE_EDITING, APP_STATE_NO_IMAGE])
     def load_image(self, file_path: Optional[str | List[str]] = None) -> None:
         """Open a loading dialog, then load the selected image for editing."""
-        assert self._window is not None
         cache = Cache()
         config = AppConfig()
         if file_path is None:
@@ -400,7 +430,10 @@ class BaseInpaintController(MenuBuilder):
                         config.set(AppConfig.PROMPT, prompt)
                         config.set(AppConfig.NEGATIVE_PROMPT, negative)
                         config.set(AppConfig.SAMPLING_STEPS, steps)
-                        config.set(AppConfig.SAMPLING_METHOD, sampler)
+                        try:
+                            config.set(AppConfig.SAMPLING_METHOD, sampler)
+                        except ValueError:
+                            logger.error(f'sampler "{sampler}" used to generate this image is not supported.')
                         config.set(AppConfig.GUIDANCE_SCALE, cfg_scale)
                         config.set(AppConfig.SEED, seed)
                     except (TypeError, RuntimeError) as err:
@@ -417,7 +450,6 @@ class BaseInpaintController(MenuBuilder):
                  valid_app_states=[APP_STATE_EDITING, APP_STATE_NO_IMAGE])
     def load_image_layers(self) -> None:
         """Open one or more images as layers."""
-        assert self._window is not None
         layer_paths, layers_selected = open_image_layers(self._window)
         if not layers_selected or not layer_paths or len(layer_paths) == 0:
             return
@@ -448,7 +480,6 @@ class BaseInpaintController(MenuBuilder):
     @menu_action(MENU_FILE, 'reload_shortcut', 5, valid_app_states=[APP_STATE_EDITING])
     def reload_image(self) -> None:
         """Reload the edited image from disk after getting confirmation from a confirmation dialog."""
-        assert self._window is not None
         file_path = Cache().get(Cache.LAST_FILE_PATH)
         if file_path == '':
             show_error_dialog(self._window, RELOAD_ERROR_TITLE, RELOAD_ERROR_MESSAGE_NO_IMAGE)
@@ -464,7 +495,7 @@ class BaseInpaintController(MenuBuilder):
     @menu_action(MENU_FILE, 'quit_shortcut', 6)
     def quit(self) -> None:
         """Quit the application after getting confirmation from the user."""
-        if self._window is not None and request_confirmation(self._window, CONFIRM_QUIT_TITLE, CONFIRM_QUIT_MESSAGE):
+        if request_confirmation(self._window, CONFIRM_QUIT_TITLE, CONFIRM_QUIT_MESSAGE):
             self._window.close()
 
     # Edit menu:
@@ -498,20 +529,18 @@ class BaseInpaintController(MenuBuilder):
     @menu_action(MENU_EDIT, 'settings_shortcut', 15)
     def show_settings(self) -> None:
         """Show the settings window."""
-        if self._settings_panel is None:
-            assert self._window is not None
-            self._settings_panel = SettingsModal(self._window)
-            self.init_settings(self._settings_panel)
-            self._settings_panel.changes_saved.connect(self.update_settings)
-        self.refresh_settings(self._settings_panel)
-        self._settings_panel.show_modal()
+        if self._settings_modal is None:
+            self._settings_modal = SettingsModal(self._window)
+            self.init_settings(self._settings_modal)
+            self._settings_modal.changes_saved.connect(self.update_settings)
+        self.refresh_settings(self._settings_modal)
+        self._settings_modal.show_modal()
 
     # Image menu:
 
     @menu_action(MENU_IMAGE, 'resize_canvas_shortcut', 20, valid_app_states=[APP_STATE_EDITING])
     def resize_canvas(self) -> None:
         """Crop or extend the edited image without scaling its contents based on user input into a popup modal."""
-        assert self._window is not None
         resize_modal = ResizeCanvasModal(self._image_stack.qimage())
         new_size, offset = resize_modal.show_resize_modal()
         if new_size is None or offset is None:
@@ -521,12 +550,14 @@ class BaseInpaintController(MenuBuilder):
     @menu_action(MENU_IMAGE, 'scale_image_shortcut', 21, valid_app_states=[APP_STATE_EDITING])
     def scale_image(self) -> None:
         """Scale the edited image based on user input into a popup modal."""
-        assert self._window is not None
         width = self._image_stack.width
         height = self._image_stack.height
         scale_modal = ImageScaleModal(width, height)
         new_size = scale_modal.show_image_modal()
         if new_size is not None:
+            if self._generator is not None:
+                if self._generator.upscale(new_size):
+                    return
             self._scale(new_size)
 
     @menu_action(MENU_IMAGE, 'update_metadata_shortcut',
@@ -541,7 +572,6 @@ class BaseInpaintController(MenuBuilder):
         show_messagebox: bool
             If true, show a messagebox after the update to let the user know what happened.
         """
-        assert self._window is not None
         config = AppConfig()
         prompt = config.get(AppConfig.PROMPT)
         negative = config.get(AppConfig.NEGATIVE_PROMPT)
@@ -564,103 +594,10 @@ class BaseInpaintController(MenuBuilder):
     @menu_action(MENU_IMAGE, 'generate_shortcut', 23, valid_app_states=[APP_STATE_EDITING])
     def start_and_manage_inpainting(self) -> None:
         """Start inpainting/image editing based on the current state of the UI."""
-        assert self._window is not None
-        config = AppConfig()
-        self._generated_images.clear()
-
-        source_selection = self._image_stack.qimage_generation_area_content()
-        inpaint_image = source_selection.copy()
-
-        # If necessary, scale image and mask to match the image generation size.
-        generation_size = config.get(AppConfig.GENERATION_SIZE)
-        if inpaint_image.size() != generation_size:
-            inpaint_image = pil_image_scaling(inpaint_image, generation_size)
-
-        if config.get(AppConfig.EDIT_MODE) == EDIT_MODE_INPAINT:
-            inpaint_mask = self._image_stack.selection_layer.mask_image
-            if inpaint_mask.size() != generation_size:
-                inpaint_mask = pil_image_scaling(inpaint_mask, generation_size)
-
-            blurred_mask = qimage_to_pil_image(inpaint_mask).filter(ImageFilter.GaussianBlur())
-            blurred_alpha_mask = pil_image_to_qimage(blurred_mask)
-            composite_base = inpaint_image.copy()
-            base_painter = QPainter(composite_base)
-            base_painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_DestinationOut)
-            base_painter.drawImage(QPoint(), blurred_alpha_mask)
-            base_painter.end()
-        else:
-            inpaint_mask = None
-            composite_base = None
-
-        class _AsyncInpaintTask(AsyncTask):
-            status_signal = pyqtSignal(dict)
-            error_signal = pyqtSignal(Exception)
-
-            def signals(self) -> List[pyqtSignal]:
-                return [self.status_signal, self.error_signal]
-
-        def _do_inpaint(status_signal: pyqtSignal, error_signal: pyqtSignal, image=inpaint_image,
-                        mask=inpaint_mask) -> None:
-            try:
-                self._inpaint(image, mask, status_signal)
-            except (IOError, ValueError, RuntimeError) as err:
-                error_signal.emit(err)
-
-        inpaint_task = _AsyncInpaintTask(_do_inpaint)
-
-        def handle_error(err: BaseException) -> None:
-            """Close sample selector and show an error popup if anything goes wrong."""
-            assert self._window is not None
-            self._window.set_image_selector_visible(False)
-            show_error_dialog(self._window, GENERATE_ERROR_TITLE_UNEXPECTED, err)
-
-        def _finished():
-            assert self._window is not None
-            self._window.set_is_loading(False)
-            inpaint_task.error_signal.disconnect(handle_error)
-            inpaint_task.status_signal.disconnect(self._apply_status_update)
-            inpaint_task.finish_signal.disconnect(_finished)
-            for idx, image in enumerate(self._generated_images):
-                if image.isNull():
-                    continue
-                if config.get(AppConfig.EDIT_MODE) == EDIT_MODE_INPAINT:
-                    assert composite_base is not None
-                    assert composite_base.size() == image.size()
-                    painter = QPainter(image)
-                    painter.drawImage(QPoint(), composite_base)
-                    painter.end()
-                self._window.load_sample_preview(image, idx)
-
-        inpaint_task.error_signal.connect(handle_error)
-        inpaint_task.status_signal.connect(self._apply_status_update)
-        inpaint_task.finish_signal.connect(_finished)
-
-        self._window.set_image_selector_visible(True)
-        AppStateTracker.set_app_state(APP_STATE_LOADING)
-        inpaint_task.start()
-
-    def select_and_apply_sample(self, sample_image: Image.Image | QImage) -> None:
-        """Apply an AI-generated image change to the edited image.
-
-        Parameters
-        ----------
-        sample_image : PIL Image
-            Data to be inserted into the edited image generation area bounds.
-        """
-        if sample_image is not None:
-            if isinstance(sample_image, Image.Image):
-                image = pil_image_to_qimage(sample_image).convertToFormat(QImage.Format.Format_ARGB32_Premultiplied)
-            else:
-                image = sample_image.convertToFormat(QImage.Format.Format_ARGB32_Premultiplied)
-            if AppConfig().get(AppConfig.EDIT_MODE) == 'Inpaint':
-                inpaint_mask = self._image_stack.selection_layer.mask_image
-                painter = QPainter(image)
-                painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_DestinationIn)
-                painter.drawImage(QRect(QPoint(0, 0), image.size()), inpaint_mask)
-                painter.end()
-            layer = self._image_stack.active_layer
-            self._image_stack.set_generation_area_content(image, layer)
-            AppStateTracker.set_app_state(APP_STATE_EDITING)
+        if self._generator is None:
+            print('TODO: interface for selecting an appropriate image generator.')
+            return
+        self._generator.start_and_manage_image_generation()
 
     # Selection menu:
     @menu_action(MENU_SELECTION, 'select_all_shortcut', 30, valid_app_states=[APP_STATE_EDITING])
@@ -768,7 +705,6 @@ class BaseInpaintController(MenuBuilder):
     @menu_action(MENU_TOOLS, 'image_window_shortcut', 52)
     def show_image_window(self) -> None:
         """Show the image preview window."""
-        assert self._window is not None
         self._window.show_image_window()
 
     # Internal/protected:
@@ -780,31 +716,3 @@ class BaseInpaintController(MenuBuilder):
         scaled_image = pil_image_scaling(image, new_size)
         self._image_stack.load_image(scaled_image)
 
-    # Image generation handling:
-
-    def _cache_generated_image(self, image: QImage, index: int) -> None:
-        while len(self._generated_images) < index:
-            self._generated_images.append(QImage())
-        if len(self._generated_images) > index:
-            self._generated_images.pop(index)
-        self._generated_images.insert(index, image)
-
-    def _inpaint(self,
-                 source_image_section: Optional[QImage],
-                 mask: Optional[QImage],
-                 status_signal: pyqtSignal) -> None:
-        """Unimplemented method for handling image inpainting.
-
-        Parameters
-        ----------
-        source_image_section : QImage, optional
-            Image selection to edit
-        mask : QImage, optional
-            Mask marking edited image region.
-        status_signal : pyqtSignal
-            Signal to emit when status updates are available
-        """
-        raise NotImplementedError('_inpaint method not implemented.')
-
-    def _apply_status_update(self, unused_status_dict: dict) -> None:
-        """Optional unimplemented method for handling image editing status updates."""

@@ -3,30 +3,18 @@ Runs the main IntraPaint inpainting UI.
 Assuming you're running the A1111 stable-diffusion API on the same machine with default settings, running
 `python IntraPaint.py` should be all you need. For more information on options, run `python IntraPaint.py --help`
 """
-import sys
-from typing import Any
-import logging
 import atexit
+import logging
+import sys
 
-from PyQt5.QtWidgets import QApplication
+from PyQt6.QtWidgets import QApplication
 
+from src.controller.app_controller import AppController
 from src.ui.modal.modal_utils import show_error_dialog
-from src.util.optional_import import optional_import
-from src.controller.mock_controller import MockController
 from src.util.arg_parser import build_arg_parser
 from src.util.shared_constants import TIMELAPSE_MODE_FLAG
 
 LOG_FILE_PATH = 'IntraPaint.log'
-
-StableDiffusionController = optional_import('src.controller.stable_diffusion_controller',
-                                            attr_name='StableDiffusionController')
-torch = optional_import('torch')
-get_device = optional_import('src.glid_3_xl.ml_utils', attr_name='get_device')
-WebClientController = optional_import('src.controller.web_client_controller', attr_name='WebClientController')
-LocalDeviceController = optional_import('src.controller.local_controller', attr_name='LocalDeviceController')
-
-DEFAULT_SD_URL = 'http://localhost:7860'
-DEFAULT_GLID_URL = 'http://localhost:5555'
 DEFAULT_GLID_MODEL = 'models/inpaint.pt'
 MIN_GLID_VRAM = 8000000000  # This is just a rough estimate.
 
@@ -72,51 +60,6 @@ logging.basicConfig(level=logging.INFO, handlers=handlers)
 logger = logging.getLogger(__name__)
 
 
-def start_application() -> None:
-    """Apply args, and start in the appropriate image generation mode."""
-    controller_mode = str(args.mode)
-
-    def health_check(controller_type: Any, url: str) -> bool:
-        """Check if a web repo initialized and passes health checks."""
-        return controller_type is not None and controller_type.health_check(url)
-
-    if controller_mode == 'auto' and args.server_url != '':
-        controller_mode = 'stable' if health_check(StableDiffusionController, args.server_url) \
-            else 'web' if health_check(WebClientController, args.server_url) else 'auto'
-    if controller_mode == 'auto':
-        logger.info(f'Unable to identify server type for url "{args.server_url}", checking default localhost ports...')
-        if health_check(StableDiffusionController, DEFAULT_SD_URL):
-            args.server_url = DEFAULT_SD_URL
-            controller_mode = 'stable'
-        elif health_check(WebClientController, DEFAULT_GLID_URL):
-            args.server_url = DEFAULT_GLID_URL
-            controller_mode = 'web'
-        else:
-            logger.info('Failed to identify webservice, trying local mode.')
-            controller_mode = 'local'
-
-    match controller_mode:
-        case 'local':
-            if torch is None or LocalDeviceController is None:
-                raise RuntimeError('No web service found, and required dependencies for local GLID-3-XL mode are'
-                                   ' missing.')
-            device = get_device()
-            (mem_free, mem_total) = torch.cuda.mem_get_info(device)
-            if mem_free < MIN_GLID_VRAM:
-                raise RuntimeError(f'No web service found and Not enough VRAM to run GLID-3-XL local, expected >='
-                                   f' {MIN_GLID_VRAM}, found {mem_free} of {mem_total}')
-            controller = LocalDeviceController(args)
-        case 'stable' if health_check(StableDiffusionController, args.server_url):
-            controller = StableDiffusionController(args)
-        case 'web' if health_check(WebClientController, args.server_url):
-            controller = WebClientController(args)
-        case 'mock':
-            controller = MockController(args)
-        case _:
-            raise RuntimeError(f'Exiting: invalid or unsupported mode "{controller_mode}"')
-    controller.start_app()
-
-
 def exit_log():
     """Log when IntraPaint exits under normal circumstances."""
     logger.info('IntraPaint exiting now.')
@@ -126,7 +69,8 @@ atexit.register(exit_log)
 
 if __name__ == '__main__':
     try:
-        start_application()
+        controller = AppController(args)
+        controller.start_app()
     except Exception as err:
         logger.exception('main crashed, error: %s', err)
         if QApplication.instance() is None:

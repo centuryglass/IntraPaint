@@ -9,7 +9,10 @@ from PyQt6.QtWidgets import QApplication
 from src.config.application_config import AppConfig
 from src.config.cache import Cache
 from src.config.key_config import KeyConfig
-from src.controller.base_controller import BaseInpaintController
+from src.controller.app_controller import AppController
+from src.controller.image_generation.test_generator import TestGenerator
+from src.ui.modal.settings_modal import SettingsModal
+from src.ui.window.main_window import MainWindow
 from src.util.arg_parser import build_arg_parser
 
 app = QApplication.instance() or QApplication(sys.argv)
@@ -17,7 +20,7 @@ exec_mock = MagicMock()
 
 
 @patch('PyQt6.QtWidgets.QApplication.exec', new=exec_mock)
-class TestBaseInpaintController(unittest.TestCase):
+class TestAppController(unittest.TestCase):
 
     @patch('PyQt6.QtWidgets.QApplication.exec', new=exec_mock)
     def setUp(self):
@@ -27,33 +30,30 @@ class TestBaseInpaintController(unittest.TestCase):
         KeyConfig('test/resources/key_config_test.json')._reset()
         Cache('test/resources/cache_test.json')._reset()
         self.mock_screen = MagicMock()
-        args = ['--window_size', '800x600']
-        args = build_arg_parser(include_edit_params=False).parse_args(args)
-        self.controller = BaseInpaintController(args)
+        args = ['--window_size', '800x600', '--mode', 'mock']
+        self.args = build_arg_parser(include_edit_params=False).parse_args(args)
+        self.args.mode = 'mock'
+        self.controller = AppController(self.args)
 
-    def test_init(self):
-        self.assertIsInstance(self.controller, BaseInpaintController)
-        self.assertEqual(self.controller._fixed_window_size, QSize(800, 600))
-        self.assertIsNone(self.controller._window)
+    @patch('src.controller.app_controller.MainWindow')
+    @patch('src.controller.app_controller.get_screen_size')
+    def test_init(self, MockGetScreenSize, MockMainWindow):
+        mock_main_window = MockMainWindow.return_value
+        MockGetScreenSize.return_value = QSize(1024, 768)
+        self.assertIsInstance(self.controller, AppController)
+        self.assertIsInstance(self.controller._window, MainWindow)
+        self.assertIsInstance(self.controller._settings_modal, SettingsModal)
+        self.assertIsInstance(self.controller._generator, TestGenerator)
         self.assertIsNone(self.controller._layer_panel)
-        self.assertIsNone(self.controller._settings_panel)
-        self.assertIsNone(self.controller._nav_manager)
-        self.assertIsNone(self.controller._worker)
         self.assertIsNone(self.controller._metadata)
 
-    def test_get_config_categories(self):
-        categories = self.controller.get_config_categories()
-        self.assertNotIn('Stable-Diffusion', categories)
-        self.assertNotIn('GLID-3-XL', categories)
-        self.assertIn('Interface', categories)
-
-    @patch('src.controller.base_controller.SettingsModal')
+    @patch('src.controller.app_controller.SettingsModal')
     def test_init_settings(self, MockSettingsModal):
         settings_modal = MockSettingsModal.return_value
         self.controller.init_settings(settings_modal)
         settings_modal.load_from_config.assert_called()
 
-    @patch('src.controller.base_controller.SettingsModal')
+    @patch('src.controller.app_controller.SettingsModal')
     def test_refresh_settings(self, MockSettingsModal):
         settings_modal = MockSettingsModal.return_value
         self.controller.refresh_settings(settings_modal)
@@ -78,48 +78,42 @@ class TestBaseInpaintController(unittest.TestCase):
         self.assertEqual(changed_settings['zoom_in'], KeyConfig().get('zoom_in'))
         KeyConfig().set('zoom_in', 'PgUp')
 
-    @patch('src.controller.base_controller.BaseInpaintController.fix_styles')
-    @patch('src.controller.base_controller.MainWindow')
-    @patch('src.controller.base_controller.get_screen_size')
-    def test_window_init(self, MockGetScreenSize, MockMainWindow, _mock_fix_styles):
-        mock_main_window = MockMainWindow.return_value
-        MockGetScreenSize.return_value = QSize(1024, 768)
-        self.controller.window_init()
-        self.assertTrue(mock_main_window.show.called)
-        self.assertTrue(mock_main_window.setGeometry.called)
-        self.assertTrue(self.controller.fix_styles.called)
-
-    @patch('src.controller.base_controller.qdarktheme')
-    @patch('src.controller.base_controller.qt_material')
+    @patch('src.controller.app_controller.qdarktheme')
+    @patch('src.controller.app_controller.qt_material')
     def test_fix_styles_qdarktheme(self, MockQtMaterial, MockQDarkTheme):
+        AppConfig()._reset()
         AppConfig().add_option('theme', 'qdarktheme_dark')
         AppConfig().set('theme', 'qdarktheme_dark')
         AppConfig().set('font_point_size', QApplication.instance().font().pointSize() + 10)
         self.assertNotEqual(AppConfig().get('font_point_size'), QApplication.instance().font().pointSize())
-        self.controller.fix_styles()
+        self.controller = AppController(self.args)
         self.assertTrue(MockQDarkTheme.setup_theme.called)
         self.assertFalse(MockQtMaterial.apply_stylesheet.called)
         self.assertEqual(AppConfig().get('font_point_size'), QApplication.instance().font().pointSize())
 
-    @patch('src.controller.base_controller.qdarktheme')
-    @patch('src.controller.base_controller.qt_material')
+    @patch('src.controller.app_controller.qdarktheme')
+    @patch('src.controller.app_controller.qt_material')
     def test_fix_styles_qt_material(self, MockQtMaterial, MockQDarkTheme):
+        AppConfig()._reset()
         AppConfig().add_option('theme', 'qt_material_dark')
         AppConfig().set('theme', 'qt_material_dark')
         AppConfig().set('font_point_size', QApplication.instance().font().pointSize() + 10)
         self.assertNotEqual(AppConfig().get('font_point_size'), QApplication.instance().font().pointSize())
-        self.controller.fix_styles()
+        self.controller = AppController(self.args)
         self.assertFalse(MockQDarkTheme.setup_theme.called)
         self.assertTrue(MockQtMaterial.apply_stylesheet.called)
         self.assertEqual(AppConfig().get('font_point_size'), QApplication.instance().font().pointSize())
 
-    @patch('src.controller.base_controller.QtExceptHook')
-    @patch('src.controller.base_controller.MainWindow')
-    @patch('src.controller.base_controller.BaseInpaintController.add_menu_action')
-    @patch('src.controller.base_controller.BaseInpaintController.build_menus')
-    @patch('src.controller.base_controller.SpacenavManager')
+    @patch('src.controller.image_generation.test_generator.TestGenerator.build_menus')
+    @patch('src.controller.app_controller.SettingsModal')
+    @patch('src.controller.app_controller.QtExceptHook')
+    @patch('src.controller.app_controller.MainWindow')
+    @patch('src.controller.app_controller.AppController.add_menu_action')
+    @patch('src.controller.app_controller.AppController.build_menus')
+    @patch('src.controller.app_controller.SpacenavManager')
     def test_start_app(self, MockSpacenavManager, mock_build_menus, mock_add_menu_action, MockMainWindow,
-                       MockQtExceptHook):
+                       MockQtExceptHook, MockSettingsModal, _):
+        self.controller = AppController(self.args)
         self.controller.start_app()
         self.assertTrue(mock_build_menus.called)
         self.assertTrue(mock_add_menu_action.called)

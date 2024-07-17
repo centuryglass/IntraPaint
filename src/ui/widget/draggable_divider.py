@@ -98,11 +98,16 @@ class DraggableDivider(QWidget):
         if event.buttons() and self._dragging:
             self.dragged.emit(event.pos() + self.geometry().topLeft())
             layout = self._get_containing_layout()
+            assert layout is not None
             index = layout.indexOf(self)
             if index == 0 or index == layout.count() - 1:
                 return
-            prev_item = layout.itemAt(index - 1).widget()
-            next_item = layout.itemAt(index + 1).widget()
+            def _get_item_widget(idx: int) -> Optional[QWidget]:
+                item = layout.itemAt(idx)
+                assert item is not None
+                return item.widget()
+            prev_item = _get_item_widget(index - 1)
+            next_item = _get_item_widget(index + 1)
             if prev_item is None or next_item is None:
                 return
             if self._mode == Qt.Orientation.Horizontal:

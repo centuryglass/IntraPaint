@@ -157,13 +157,15 @@ class ImageGraphicsView(QGraphicsView):
             self.setCursor(new_cursor)
         self.update()
 
-    def set_cursor_pos(self, cursor_pos: Optional[QPoint]) -> None:
+    def set_cursor_pos(self, cursor_pos: Optional[QPoint | QPointF]) -> None:
         """Updates the last cursor position within the widget so that pixmap cursor rendering stays active."""
         self._last_cursor_pos = cursor_pos
         if self._cursor_pixmap_item is not None and self._cursor_pixmap_item.scene() is not None:
             self._cursor_pixmap_item.setVisible(cursor_pos is not None)
             if cursor_pos is None:
                 return
+            if isinstance(cursor_pos, QPointF):
+                cursor_pos = cursor_pos.toPoint()
             scene_pos = self.mapToScene(cursor_pos)
             self._cursor_pixmap_item.setPos(scene_pos.x() - self._cursor_pixmap_item.pixmap().width()
                                             * self._cursor_pixmap_item.scale() / 2,

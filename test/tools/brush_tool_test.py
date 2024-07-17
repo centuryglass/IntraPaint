@@ -30,8 +30,7 @@ class BrushToolTest(unittest.TestCase):
         Cache('test/resources/cache_test.json')._reset()
         test_size = QSize(512, 512)
         self.image_stack = ImageStack(test_size, test_size, test_size, test_size)
-        self.controller = Mock()
-        self.window = MainWindow(self.image_stack, self.controller)
+        self.window = MainWindow(self.image_stack)
         self.window.show()
         self.tool_panel = self.window._tool_panel
         self.brush_tool = self.tool_panel._tools[BRUSH_LABEL]

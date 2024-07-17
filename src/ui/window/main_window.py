@@ -4,14 +4,13 @@ inpainting modes.  Other editing modes should provide subclasses with implementa
 """
 import logging
 import sys
-from typing import Optional, Any
+from typing import Optional
 
-from PyQt6.QtCore import Qt, QRect, QSize
+from PyQt6.QtCore import Qt, QRect, QSize, pyqtSignal, pyqtBoundSignal
 from PyQt6.QtGui import QIcon, QMouseEvent, QResizeEvent, QKeySequence, QCloseEvent, QImage
-from PyQt6.QtWidgets import QMainWindow, QGridLayout, QLabel, QWidget, QPushButton, QVBoxLayout, QHBoxLayout, \
+from PyQt6.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, \
     QStackedWidget, QBoxLayout, QApplication, QTabWidget, QSizePolicy, QLayout
 
-from src.config.application_config import AppConfig
 from src.hotkey_filter import HotkeyFilter
 from src.image.layers.image_stack import ImageStack
 from src.ui.generated_image_selector import GeneratedImageSelector
@@ -39,7 +38,9 @@ DEFAULT_LOADING_MESSAGE = 'Loading...'
 class MainWindow(QMainWindow):
     """Main user interface for inpainting."""
 
-    def __init__(self, image_stack: ImageStack, controller: Any):
+    generate_signal = pyqtSignal()
+
+    def __init__(self, image_stack: ImageStack):
         """Initializes the main application window and sets up the default UI layout and menu options.
 
         image_stack : ImageStack
@@ -53,7 +54,6 @@ class MainWindow(QMainWindow):
         self.setMinimumSize(QSize(0, 0))
 
         # Initialize UI/editing data model:
-        self._controller = controller
         self._image_stack = image_stack
         self._image_selector: Optional[GeneratedImageSelector] = None
         self._orientation: Optional[Qt.Orientation] = None
@@ -106,17 +106,39 @@ class MainWindow(QMainWindow):
         self._image_panel = ImagePanel(image_stack)
         self._layout.addWidget(self._image_panel)
 
-        self._tool_panel = ToolPanel(image_stack, self._image_panel,
-                                     controller.start_and_manage_inpainting)
+        self._tool_panel = ToolPanel(image_stack, self._image_panel, self.generate_signal.emit)
 
-        # Build config + control layout (varying based on implementation):
-        self._control_panel = self._build_control_panel(controller)
+        self._control_panel: Optional[QWidget] = None
         self._main_widget.addTab(self._control_panel, CONTROL_TAB_NAME)
-        self._layout.addWidget(self._control_panel, stretch=CONTROL_PANEL_STRETCH)
 
-        for panel in (self._image_panel, self._tool_panel, self._control_panel):
+        for panel in (self._image_panel, self._tool_panel):
             AppStateTracker.set_enabled_states(panel, [APP_STATE_EDITING])
         self.resizeEvent(None)
+
+    def set_control_panel(self, control_panel: Optional[QWidget]) -> None:
+        """Sets the image generation control panel."""
+        if self._control_panel is not None:
+            tab_names = [self._main_widget.tabText(i) for i in range(self._main_widget.count())]
+            if CONTROL_TAB_NAME in tab_names:
+                self._main_widget.removeTab(tab_names.index(CONTROL_TAB_NAME))
+                self._control_panel.setParent(None)
+                self._control_panel = control_panel
+                if control_panel is not None:
+                    self._main_widget.addTab(self._control_panel, CONTROL_TAB_NAME)
+            else:
+                assert self._control_panel in self._layout.children()
+                panel_index = self._layout.indexOf(self._control_panel)
+                self._layout.takeAt(panel_index)
+                self._control_panel.setParent(None)
+                self._control_panel = control_panel
+                if control_panel is not None:
+                    self._layout.addWidget(self._control_panel)
+        else:
+            self._control_panel = control_panel
+        assert hasattr(control_panel, 'generate_signal') and isinstance(control_panel.generate_signal,
+                                                                    (pyqtBoundSignal, pyqtSignal))
+        control_panel.generate_signal.connect(self.generate_signal.emit)
+        self.refresh_layout()
 
     def _get_appropriate_orientation(self) -> Qt.Orientation:
         """Returns whether the window's image and tool layout should be vertical or horizontal."""
@@ -161,80 +183,28 @@ class MainWindow(QMainWindow):
                 last_reactive_widget.setParent(None)
 
         # Include or tab control panel based on orientation:
-        if self._orientation == Qt.Orientation.Vertical:
-            if CONTROL_TAB_NAME in tab_names:
-                self._main_widget.removeTab(tab_names.index(CONTROL_TAB_NAME))
-            if self._control_panel not in self._layout.children():
-                self._layout.addWidget(self._control_panel)
-                self._control_panel.setVisible(True)
-            self._tool_panel.show_generate_button(False)
-        else:  # horizontal
-            if self._control_panel in self._layout.children():
-                self._layout.removeWidget(self._control_panel)
-            if CONTROL_TAB_NAME not in tab_names:
-                self._main_widget.addTab(self._control_panel, CONTROL_TAB_NAME)
-            self._tool_panel.show_generate_button(True)
+        if self._control_panel is not None:
+            if self._orientation == Qt.Orientation.Vertical:
+                if CONTROL_TAB_NAME in tab_names:
+                    self._main_widget.removeTab(tab_names.index(CONTROL_TAB_NAME))
+                if self._control_panel not in self._layout.children():
+                    self._layout.addWidget(self._control_panel)
+                    self._control_panel.setVisible(True)
+                self._tool_panel.show_generate_button(False)
+            else:  # horizontal
+                if self._control_panel in self._layout.children():
+                    self._layout.removeWidget(self._control_panel)
+                if CONTROL_TAB_NAME not in tab_names:
+                    self._main_widget.addTab(self._control_panel, CONTROL_TAB_NAME)
+                self._tool_panel.show_generate_button(True)
+        else:
+            self._tool_panel.show_generate_button(True)  # Will trigger generator setup instead of generating
 
         # Restrict the tool panel to a reasonable portion of the screen:
         if self._orientation == Qt.Orientation.Vertical:
             self._tool_panel.setMaximumSize(self.width(), self.height() // 3)
         else:
             self._tool_panel.setMaximumSize(self.width() // 2, self.height())
-
-    def _build_control_panel(self, controller) -> QWidget:
-        """Adds image editing controls to the layout."""
-        config = AppConfig()
-        inpaint_panel = QWidget(self)
-        text_prompt_textbox = config.get_control_widget(AppConfig.PROMPT, multi_line=False)
-        negative_prompt_textbox = config.get_control_widget(AppConfig.NEGATIVE_PROMPT, multi_line=False)
-
-        batch_size_spinbox = config.get_control_widget(AppConfig.BATCH_SIZE)
-
-        batch_count_spinbox = config.get_control_widget(AppConfig.BATCH_COUNT)
-
-        inpaint_button = QPushButton()
-        inpaint_button.setText('Start inpainting')
-        inpaint_button.clicked.connect(controller.start_and_manage_inpainting)
-
-        more_options_bar = QHBoxLayout()
-        guidance_scale_spinbox = config.get_control_widget(AppConfig.GUIDANCE_SCALE)
-
-        skip_steps_spinbox = config.get_control_widget(AppConfig.SKIP_STEPS)
-
-        enable_scale_checkbox = config.get_control_widget(AppConfig.INPAINT_FULL_RES)
-        enable_scale_checkbox.setText(config.get_label(AppConfig.INPAINT_FULL_RES))
-
-        upscale_mode_label = QLabel(config.get_label(AppConfig.UPSCALE_MODE), inpaint_panel)
-        upscale_mode_list = config.get_control_widget(AppConfig.UPSCALE_MODE)
-        downscale_mode_label = QLabel(config.get_label(AppConfig.DOWNSCALE_MODE), inpaint_panel)
-        downscale_mode_list = config.get_control_widget(AppConfig.DOWNSCALE_MODE)
-
-        more_options_bar.addWidget(QLabel(config.get_label(AppConfig.GUIDANCE_SCALE), inpaint_panel), stretch=0)
-        more_options_bar.addWidget(guidance_scale_spinbox, stretch=20)
-        more_options_bar.addWidget(QLabel(config.get_label(AppConfig.SKIP_STEPS), inpaint_panel), stretch=0)
-        more_options_bar.addWidget(skip_steps_spinbox, stretch=20)
-        more_options_bar.addWidget(enable_scale_checkbox, stretch=10)
-        more_options_bar.addWidget(upscale_mode_label, stretch=0)
-        more_options_bar.addWidget(upscale_mode_list, stretch=10)
-        more_options_bar.addWidget(downscale_mode_label, stretch=0)
-        more_options_bar.addWidget(downscale_mode_list, stretch=10)
-
-        # Build layout with labels:
-        layout = QGridLayout()
-        layout.addWidget(QLabel(config.get_label(AppConfig.PROMPT), inpaint_panel), 1, 1, 1, 1)
-        layout.addWidget(text_prompt_textbox, 1, 2, 1, 1)
-        layout.addWidget(QLabel(config.get_label(AppConfig.NEGATIVE_PROMPT), inpaint_panel), 2, 1, 1, 1)
-        layout.addWidget(negative_prompt_textbox, 2, 2, 1, 1)
-        layout.addWidget(QLabel(config.get_label(AppConfig.BATCH_SIZE), inpaint_panel), 1, 3, 1, 1)
-        layout.addWidget(batch_size_spinbox, 1, 4, 1, 1)
-        layout.addWidget(QLabel(config.get_label(AppConfig.BATCH_COUNT), inpaint_panel), 2, 3, 1, 1)
-        layout.addWidget(batch_count_spinbox, 2, 4, 1, 1)
-        layout.addWidget(inpaint_button, 2, 5, 1, 1)
-        layout.setColumnStretch(2, 255)  # Maximize prompt input
-
-        layout.addLayout(more_options_bar, 3, 1, 1, 4)
-        inpaint_panel.setLayout(layout)
-        return inpaint_panel
 
     def focus_tab(self, tab_index: int) -> bool:
         """Attempt to focus a tab index, returning whether changing focus was possible."""
@@ -256,8 +226,7 @@ class MainWindow(QMainWindow):
         if visible:
             if self._image_selector is None:
                 self._image_selector = GeneratedImageSelector(self._image_stack,
-                                                              lambda: self.set_image_selector_visible(False),
-                                                              self._controller.select_and_apply_sample)
+                                                              lambda: self.set_image_selector_visible(False))
             else:
                 self._image_selector.reset()
             self._central_widget.addWidget(self._image_selector)
