@@ -3,16 +3,17 @@ from typing import Optional, cast
 
 from PyQt6.QtCore import Qt, QPoint
 from PyQt6.QtGui import QMouseEvent, QIcon, QPixmap, QPainter, QKeySequence, QColor
-from PyQt6.QtWidgets import QVBoxLayout, QHBoxLayout, QWidget, QPushButton, QApplication, QLabel
+from PyQt6.QtWidgets import QVBoxLayout, QHBoxLayout, QWidget, QPushButton, QLabel
 
 from src.config.application_config import AppConfig
+from src.config.config_entry import RangeKey
 from src.config.key_config import KeyConfig
 from src.image.canvas.pixmap_layer_canvas import PixmapLayerCanvas
 from src.image.layers.image_stack import ImageStack
 from src.tools.canvas_tool import CanvasTool
 from src.ui.image_viewer import ImageViewer
-from src.ui.input_fields.slider_spinbox import IntSliderSpinbox
 from src.ui.input_fields.dual_toggle import DualToggle
+from src.ui.input_fields.slider_spinbox import IntSliderSpinbox
 from src.util.shared_constants import PROJECT_DIR
 
 SELECTION_CONTROL_LAYOUT_SPACING = 4
@@ -177,11 +178,12 @@ class SelectionTool(CanvasTool):
 
         return self._control_panel
 
-    def adjust_brush_size(self, offset: int) -> None:
-        """Change brush size by some offset amount, multiplying offset by 10 if shift is held."""
-        if QApplication.keyboardModifiers() == Qt.KeyboardModifier.ShiftModifier:
-            offset *= 10
-        AppConfig().set(AppConfig.SELECTION_BRUSH_SIZE, max(1, self._canvas.brush_size + offset))
+
+    def set_brush_size(self, new_size: int) -> None:
+        """Update the brush size."""
+        new_size = min(new_size, AppConfig().get(AppConfig.SELECTION_BRUSH_SIZE, RangeKey.MAX))
+        super().set_brush_size(new_size)
+        AppConfig().set(AppConfig.SELECTION_BRUSH_SIZE, max(1, new_size))
 
     def _on_activate(self) -> None:
         """Override base canvas tool to keep mask layer visible."""

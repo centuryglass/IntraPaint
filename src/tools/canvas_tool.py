@@ -131,8 +131,7 @@ class CanvasTool(BaseTool):
     @brush_size.setter
     def brush_size(self, new_size: int):
         """Updates the active brush size."""
-        self._canvas.brush_size = new_size
-        self.update_brush_cursor()
+        self.set_brush_size(new_size)
 
     @property
     def brush_path(self) -> Optional[str]:
@@ -152,9 +151,23 @@ class CanvasTool(BaseTool):
         else:
             raise RuntimeError(f'Tried to set brush path {new_path} when layer canvas has no brush support.')
 
-    def adjust_brush_size(self, new_size: int) -> None:
+    def adjust_brush_size(self, offset: int) -> None:
+        """Change brush size by some offset amount, multiplying offset if the speed modifier is held."""
+        try:
+            speed_modifiers = KeyConfig().get(KeyConfig.SPEED_MODIFIER)
+            speed_modifiers = get_modifiers(speed_modifiers)
+            if not isinstance(speed_modifiers, list):
+                speed_modifiers = [speed_modifiers]
+            if QApplication.keyboardModifiers() in speed_modifiers:
+                offset *= AppConfig().get(AppConfig.SPEED_MODIFIER_MULTIPLIER)
+        except RuntimeError:
+            pass  # Speed modifier was missing or invalid, so just don't check for it.
+        self.set_brush_size(max(self._canvas.brush_size + offset, 1))
+
+    def set_brush_size(self, new_size: int) -> None:
         """Update the brush size."""
-        raise NotImplementedError()
+        self._canvas.brush_size = max(new_size, 1)
+        self.update_brush_cursor()
 
     @property
     def brush_color(self) -> QColor:
@@ -245,10 +258,10 @@ class CanvasTool(BaseTool):
         if self._drawing:
             self._drawing = False
             self._stroke_to(image_coordinates)
+            self._canvas.end_stroke()
             if self._cached_size:
                 self.brush_size = self._cached_size
                 self._cached_size = None
-            self._canvas.end_stroke()
             self._tablet_input = None
             self._tablet_pressure = None
             self._tablet_x_tilt = None
@@ -261,7 +274,8 @@ class CanvasTool(BaseTool):
         assert event is not None
         if event.pointerType() is not None:
             self._tablet_input = event.pointerType()
-        self._tablet_pressure = event.pressure()
+        if event.pressure() > 0.0001:
+            self._tablet_pressure = event.pressure()
         self._tablet_x_tilt = event.xTilt()
         self._tablet_y_tilt = event.yTilt()
         return True

@@ -7,6 +7,7 @@ from PyQt6.QtWidgets import QVBoxLayout, QPushButton, QColorDialog, QWidget, QAp
 
 from src.config.application_config import AppConfig
 from src.config.cache import Cache
+from src.config.config_entry import RangeKey
 from src.config.key_config import KeyConfig
 from src.image.canvas.mypaint_layer_canvas import MyPaintLayerCanvas
 from src.image.layers.image_layer import ImageLayer
@@ -123,12 +124,11 @@ class BrushTool(CanvasTool):
         control_layout.addStretch(255)
         return self._control_panel
 
-    def adjust_brush_size(self, offset: int) -> None:
-        """Change brush size by some offset amount, multiplying offset by 10 if shift is held."""
-        if QApplication.keyboardModifiers() == Qt.KeyboardModifier.ShiftModifier:
-            offset *= 10
-        canvas = cast(MyPaintLayerCanvas, self._canvas)
-        AppConfig().set(AppConfig.SKETCH_BRUSH_SIZE, max(1, canvas.brush_size + offset))
+    def set_brush_size(self, new_size: int) -> None:
+        """Update the brush size."""
+        new_size = min(new_size, AppConfig().get(AppConfig.SKETCH_BRUSH_SIZE, RangeKey.MAX))
+        super().set_brush_size(new_size)
+        AppConfig().set(AppConfig.SKETCH_BRUSH_SIZE, max(1, new_size))
 
     def _active_layer_change_slot(self, active_layer: Layer) -> None:
         if isinstance(active_layer, ImageLayer):
