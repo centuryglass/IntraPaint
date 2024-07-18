@@ -1,10 +1,11 @@
 """Selects between image editing tools, and controls their settings."""
+import math
 from typing import Optional, Dict, Callable
 
 from PyQt6.QtCore import Qt, pyqtSignal, QRect, QSize, QMargins
 from PyQt6.QtGui import QMouseEvent, QPaintEvent, QPainter, QPen, QResizeEvent
 from PyQt6.QtWidgets import QWidget, QLabel, QHBoxLayout, QVBoxLayout, QSizePolicy, QScrollArea, QPushButton, \
-    QStackedLayout, QBoxLayout
+    QStackedLayout, QBoxLayout, QGridLayout, QLayout
 
 from src.config.cache import Cache
 from src.image.layers.image_stack import ImageStack
@@ -21,26 +22,25 @@ from src.ui.panel.image_panel import ImagePanel
 from src.ui.panel.layer_panel import LayerPanel
 from src.ui.widget.collapsible_box import CollapsibleBox
 from src.ui.widget.draggable_divider import DraggableDivider
-from src.ui.widget.grid_container import GridContainer
 from src.ui.widget.key_hint_label import KeyHintLabel
 from src.ui.widget.reactive_layout_widget import ReactiveLayoutWidget
 from src.util.display_size import get_window_size
 from src.util.geometry_utils import get_scaled_placement
 
 TOOL_PANEL_TITLE = 'Tools'
-LIST_SPACING = 10
 TOOL_ICON_SIZE = 40
 GENERATE_BUTTON_TEXT = 'Generate'
 
-TOOL_LIST_STRETCH = 1
-TOOL_PANEL_STRETCH = 60
+TOOL_LIST_STRETCH = 0
+TOOL_PANEL_STRETCH = 50
 LAYER_PANEL_STRETCH = 30
 
 MIN_SIZE_FOR_TOOL_LABEL = QSize(600, 300)
 
-
 class ToolPanel(QWidget):
     """Selects between image editing tools, and controls their settings."""
+
+    panel_toggled = pyqtSignal(bool)
 
     def __init__(self, image_stack: ImageStack, image_panel: ImagePanel, generate_fn: Callable[[], None]) -> None:
         """Initializes instances of all Tool classes, connects them to image data, and sets up the tool interface.
@@ -55,7 +55,7 @@ class ToolPanel(QWidget):
             Connected to the "Generate" button, if one is enabled.
         """
         super().__init__()
-        self.setSizePolicy(QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.MinimumExpanding))
+        self.setSizePolicy(QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding))
         self._image_stack = image_stack
         self._image_panel = image_panel
         self._image_viewer = image_panel.image_viewer
@@ -72,7 +72,8 @@ class ToolPanel(QWidget):
                                          parent=self,
                                          scrolling=False,
                                          orientation=Qt.Orientation.Horizontal)
-        self._panel_box.set_expanded_size_policy(QSizePolicy.Policy.Ignored)
+        self._panel_box.box_toggled.connect(self.panel_toggled)
+        self._panel_box.set_expanded_size_policy(QSizePolicy.Policy.Expanding)
         self._panel_box.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
 
         self._layer_panel = LayerPanel(image_stack)
@@ -81,7 +82,11 @@ class ToolPanel(QWidget):
         self._generate_button.clicked.connect(generate_fn)
 
         # Setup tool list:
-        self._tool_button_grid = GridContainer()
+        self._tool_button_layout = QGridLayout()
+        self._tool_button_layout.setSizeConstraint(QLayout.SizeConstraint.SetNoConstraint)
+        self._tool_button_layout.setSpacing(2)
+        self._row_count = 0
+        self._column_count = 0
 
         self._tools: Dict[str, BaseTool] = {}
         self._tool_widgets: Dict[str, '_ToolButton'] = {}
@@ -98,9 +103,10 @@ class ToolPanel(QWidget):
         self._tool_control_label.setAlignment(Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignTop)
         self._tool_control_layout.addWidget(self._tool_control_label, stretch=2)
         self._tool_control_layout.addStretch(2)
+        self._tool_control_layout.setSizeConstraint(QLayout.SizeConstraint.SetNoConstraint)
         self._tool_control_box.add_visibility_limit(self._tool_control_label, MIN_SIZE_FOR_TOOL_LABEL)
-        self._tool_control_box.setSizePolicy(QSizePolicy(QSizePolicy.Policy.Fixed,
-                                                         QSizePolicy.Policy.Fixed))
+        self._tool_control_box.setSizePolicy(QSizePolicy(QSizePolicy.Policy.Expanding,
+                                                         QSizePolicy.Policy.Expanding))
 
         self._tool_scroll_area = QScrollArea()
         self._tool_scroll_area.setWidgetResizable(True)
@@ -121,7 +127,7 @@ class ToolPanel(QWidget):
             button.tool_selected.connect(self._switch_active_tool)
             toolbar_button.tool_selected.connect(self._switch_active_tool)
             self._event_handler.register_hotkeys(new_tool)
-            self._tool_button_grid.add_widget(button)
+            self._build_tool_button_layout()
 
         selection_tool = SelectionTool(image_stack, image_panel.image_viewer)
         add_tool(selection_tool)
@@ -174,7 +180,7 @@ class ToolPanel(QWidget):
                     return default
                 return self._panel_box_layout.stretch(idx)
 
-            tool_list_stretch = _get_stretch(self._tool_button_grid, TOOL_LIST_STRETCH)
+            tool_list_stretch = _get_stretch(self._tool_button_layout, TOOL_LIST_STRETCH)
             tool_panel_stretch = _get_stretch(self._tool_scroll_area, TOOL_PANEL_STRETCH)
             layer_panel_stretch = _get_stretch(self._layer_panel, LAYER_PANEL_STRETCH)
             while self._panel_box_layout.count() > 0:
@@ -187,13 +193,20 @@ class ToolPanel(QWidget):
         prev_panel_box = self._panel_box
         show_generate_button = self._generate_button.isVisible()
         if self._panel_box is not None:
-            self._layout.removeWidget(self._panel_box)
+            self._panel_box.box_toggled.disconnect(self.panel_toggled)
+        while self._layout.count() > 0:
+            self._layout.takeAt(0)
         box_orientation = Qt.Orientation.Vertical if orientation == Qt.Orientation.Horizontal \
             else Qt.Orientation.Horizontal
         self._panel_box = CollapsibleBox(TOOL_PANEL_TITLE,
                                          parent=self,
                                          scrolling=False,
                                          orientation=box_orientation)
+        self._panel_box.set_expanded_size_policy(QSizePolicy.Policy.Expanding)
+        self._panel_box.box_toggled.connect(self.panel_toggled)
+        # TODO: Figure out how to address this within CollapsibleBox without messing up the control panels.
+        self._panel_box.scroll_area.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+
         for tool_widget in self._toolbar_tool_widgets.values():
             self._panel_box.add_button_bar_widget(tool_widget)
         self._handle_panel_toggle(self._panel_box.is_expanded())
@@ -201,34 +214,28 @@ class ToolPanel(QWidget):
         if prev_panel_box is not None:
             self._panel_box.set_expanded(prev_panel_box.is_expanded())
         box_layout = QVBoxLayout() if orientation == Qt.Orientation.Vertical else QHBoxLayout()
+        box_layout.setSizeConstraint(QLayout.SizeConstraint.SetNoConstraint)
         self._panel_box_layout = box_layout
         self._panel_box.set_content_layout(box_layout)
         box_layout.setContentsMargins(QMargins(2, 2, 2, 2))
         self._layout.addWidget(self._panel_box)
         self._layout.setCurrentWidget(self._panel_box)
-        box_layout.addWidget(self._tool_button_grid, stretch=tool_list_stretch)
+        box_layout.addLayout(self._tool_button_layout, stretch=tool_list_stretch)
         box_layout.addWidget(self._tool_scroll_area, stretch=tool_panel_stretch)
         box_layout.addWidget(self._divider, stretch=1)
         box_layout.addWidget(self._layer_panel, stretch=layer_panel_stretch)
         box_layout.addWidget(self._generate_button)
         self._generate_button.setVisible(show_generate_button)
-        tool_list_layout = self._tool_button_grid.layout()
-        assert tool_list_layout is not None
         if orientation == Qt.Orientation.Horizontal:
             generate_label = '\n'.join(GENERATE_BUTTON_TEXT)
-            self._tool_button_grid.fill_vertical = True
-            self._tool_button_grid.max_rows = 1
-            tool_list_layout.setAlignment(Qt.AlignmentFlag.AlignLeft)
         else:
             generate_label = GENERATE_BUTTON_TEXT
-            self._tool_button_grid.fill_horizontal = True
-            self._tool_button_grid.max_rows = len(self._tools)
-            tool_list_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
         self._generate_button.setText(generate_label)
         if prev_panel_box is not None:
             prev_panel_box.setParent(None)
         if self._active_tool_panel is not None and hasattr(self._active_tool_panel, 'set_orientation'):
             self._active_tool_panel.set_orientation(self._orientation)
+        self._build_tool_button_layout()
         self.updateGeometry()
         self.resizeEvent(None)
 
@@ -260,7 +267,8 @@ class ToolPanel(QWidget):
     def _setup_active_tool(self, tool_label: Optional[str]) -> None:
         """Reconfigures the panel for a new active tool."""
         if self._active_tool_panel is not None:
-            self._tool_control_layout.removeWidget(self._active_tool_panel)
+            while self._tool_control_layout.count() > 1:
+                self._tool_control_layout.takeAt(1)
             self._active_tool_panel.hide()
             self._active_tool_panel.setParent(None)
             self._active_tool_panel = None
@@ -277,7 +285,7 @@ class ToolPanel(QWidget):
             if tool_panel is not None:
                 tool_panel.setToolTip(active_tool.get_tooltip_text())
                 self._active_tool_panel = tool_panel
-                self._tool_control_layout.insertWidget(1, tool_panel, stretch=10)
+                self._tool_control_layout.insertWidget(1, tool_panel, stretch=100)
                 if hasattr(tool_panel, 'set_orientation'):
                     tool_panel.set_orientation(self._orientation)
                 tool_panel.show()
@@ -293,6 +301,42 @@ class ToolPanel(QWidget):
         new_cursor = self._active_tool.cursor
         self._image_viewer.set_cursor(new_cursor)
 
+    def _build_tool_button_layout(self) -> None:
+        button_list = list(self._tool_widgets.values())
+        if len(button_list) == 0:
+            return
+        button_size = button_list[0].sizeHint()
+        if self._orientation == Qt.Orientation.Vertical:
+            num_cols = 4
+            num_rows = 2
+            self._tool_button_layout.setAlignment(Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignHCenter)
+        else:  # Horizontal
+            num_rows = len(button_list)
+            num_cols = 1
+            self.setMinimumHeight(0)
+            self._tool_button_layout.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
+        if self._row_count == num_rows and self._column_count == num_cols \
+                and self._tool_button_layout.count() == len(self._tool_widgets):
+            return
+        for column in range(self._tool_button_layout.columnCount()):
+            self._tool_button_layout.setColumnMinimumWidth(column, 0)
+        for row in range(self._tool_button_layout.rowCount()):
+            self._tool_button_layout.setRowMinimumHeight(row, 0)
+        self._row_count = num_rows
+        self._column_count = num_cols
+        while self._tool_button_layout.count() > 0:
+            self._tool_button_layout.takeAt(0)
+        button_idx = 0
+        for row in range(num_rows):
+            self._tool_button_layout.setRowMinimumHeight(row, button_size.height())
+            for column in range(num_cols):
+                self._tool_button_layout.setColumnMinimumWidth(column, button_size.width())
+                button = button_list[button_idx]
+                self._tool_button_layout.addWidget(button, row, column)
+                button_idx += 1
+                if button_idx >= len(button_list):
+                    return
+
     def resizeEvent(self, unused_event: Optional[QResizeEvent]) -> None:
         """Keep tool list sized correctly within the panel."""
         max_width = self._tool_scroll_area.width() - self._tool_scroll_area.contentsMargins().left() * 2
@@ -303,6 +347,7 @@ class ToolPanel(QWidget):
             self._tool_control_box.setMaximumWidth(max_width)
         if self._active_tool_panel is not None and hasattr(self._active_tool_panel, 'set_orientation'):
             self._active_tool_panel.set_orientation(self._orientation)
+        self._build_tool_button_layout()
 
 
 class _ToolButton(QWidget):

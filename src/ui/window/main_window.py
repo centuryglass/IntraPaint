@@ -17,12 +17,14 @@ from src.ui.generated_image_selector import GeneratedImageSelector
 from src.ui.panel.image_panel import ImagePanel
 from src.ui.panel.layer_panel import LayerPanel
 from src.ui.panel.tool_panel import ToolPanel
+from src.ui.widget.draggable_divider import DraggableDivider
 from src.ui.widget.loading_widget import LoadingWidget
 from src.ui.window.image_window import ImageWindow
 from src.util.application_state import AppStateTracker, APP_STATE_LOADING, APP_STATE_NO_IMAGE, APP_STATE_EDITING, \
     APP_STATE_SELECTION
 from src.util.display_size import get_screen_size
 from src.util.shared_constants import TIMELAPSE_MODE_FLAG, PROJECT_DIR
+from src.util.validation import layout_debug
 
 logger = logging.getLogger(__name__)
 
@@ -53,6 +55,12 @@ class MainWindow(QMainWindow):
         self.setSizePolicy(QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding))
         self.setMinimumSize(QSize(0, 0))
 
+        if '--dev' in sys.argv:
+            def _dbg_layout():
+                layout_debug(self)
+                return True
+            HotkeyFilter.instance().register_keybinding(_dbg_layout, QKeySequence("U"))
+
         # Initialize UI/editing data model:
         self._image_stack = image_stack
         self._image_selector: Optional[GeneratedImageSelector] = None
@@ -68,7 +76,7 @@ class MainWindow(QMainWindow):
         self._main_widget.addTab(self._main_page_tab, MAIN_TAB_NAME)
         self._layout = QVBoxLayout(self._main_page_tab)
         self._reactive_widget: Optional[QWidget] = None
-        self._reactive_layout: Optional[QLayout] = None
+        self._reactive_layout: Optional[QBoxLayout] = None
         self._central_widget = QStackedWidget(self)
         self._central_widget.addWidget(self._main_widget)
         self.setCentralWidget(self._central_widget)
@@ -108,6 +116,15 @@ class MainWindow(QMainWindow):
 
         self._tool_panel = ToolPanel(image_stack, self._image_panel, self.generate_signal.emit)
 
+        def _tool_panel_toggle(panel_expanded: bool) -> None:
+            self._tool_divider.set_hidden(not panel_expanded)
+            if not panel_expanded and self._reactive_layout is not None:
+                panel_idx = self._reactive_layout.indexOf(self._tool_panel)
+                assert panel_idx > 0
+                self._reactive_layout.setStretch(panel_idx, 0)
+        self._tool_panel.panel_toggled.connect(_tool_panel_toggle)
+
+        self._tool_divider = DraggableDivider()
         self._control_panel: Optional[QWidget] = None
         self._main_widget.addTab(self._control_panel, CONTROL_TAB_NAME)
 
@@ -173,7 +190,8 @@ class MainWindow(QMainWindow):
             reactive_layout.setContentsMargins(0, 0, 0, 0)
             reactive_layout.setSpacing(0)
             reactive_layout.addWidget(self._image_panel, stretch=80)
-            reactive_layout.addWidget(self._tool_panel, stretch=0)
+            reactive_layout.addWidget(self._tool_divider)
+            reactive_layout.addWidget(self._tool_panel, stretch=1)
             self._tool_panel.set_orientation(Qt.Orientation.Vertical if orientation == Qt.Orientation.Horizontal
                                              else Qt.Orientation.Horizontal)
             self._tool_panel.show()

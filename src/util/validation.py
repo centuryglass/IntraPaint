@@ -1,8 +1,10 @@
 """Provides a convenience function for miscellaneous validation."""
+import json
 from typing import Any, Iterable
 
+from PyQt5.QtCore import QSize
 from PyQt6.QtGui import QColor
-from PyQt6.QtWidgets import QWidget
+from PyQt6.QtWidgets import QWidget, QLayout, QSizePolicy
 
 
 def assert_type(value: Any, expected_type: Any) -> None:
@@ -75,3 +77,65 @@ def debug_widget_bounds(widget: QWidget, color: QColor) -> None:
     palette.setColor(widget.backgroundRole(), color)
     widget.setPalette(palette)
     widget.setAutoFillBackground(True)
+
+
+def layout_debug(widget: QWidget) -> None:
+    """Dump nested layout info to a JSON file for inspection."""
+    layout_data = {}
+
+    def _policy_str(policy: QSizePolicy.Policy) -> str:
+        match policy:
+            case QSizePolicy.Policy.Expanding:
+                return 'Expanding'
+            case QSizePolicy.Policy.MinimumExpanding:
+                return 'MinimumExpanding'
+            case QSizePolicy.Policy.Fixed:
+                return 'Fixed'
+            case QSizePolicy.Policy.Maximum:
+                return 'Maximum'
+            case QSizePolicy.Policy.Preferred:
+                return 'Preferred'
+            case QSizePolicy.Policy.Ignored:
+                return 'ignored'
+            case _:
+                return f'unknown ({policy})'
+
+    def _record_size(width_key: str, height_key: str, size: QSize, record: dict):
+        if size is not None and not size.isNull():
+            record[width_key] = size.width()
+            record[height_key] = size.height()
+
+    def _add_item(item: QLayout | QWidget, record: dict) -> None:
+        record['type'] = str(item.__class__)
+        if hasattr(item, 'sizePolicy'):
+            record['w_policy'] = _policy_str(item.sizePolicy().horizontalPolicy())
+            record['h_policy'] = _policy_str(item.sizePolicy().verticalPolicy())
+        _record_size('minW', 'minH', item.minimumSize(), record)
+        _record_size('maxW', 'maxH', item.minimumSize(), record)
+        _record_size('hintW', 'hintH', item.sizeHint(), record)
+        if isinstance(item, QWidget):
+            _record_size('w', 'h', item.size(), record)
+            layout = item.layout()
+            if layout is not None:
+                record['layout'] = {}
+                _add_item(layout, record['layout'])
+        else:
+            assert isinstance(item, QLayout)
+            record['spacing'] = item.spacing()
+            record['margins'] = str(item.contentsMargins())
+            record['children'] = []
+            for i in range(item.count()):
+                child = item.itemAt(i)
+                widget = child.widget()
+                if widget is not None:
+                    data = {}
+                    _add_item(widget, data)
+                    record['children'].append(data)
+                else:
+                    layout = child.layout()
+                    if layout is not None:
+                        data = {}
+                        _add_item(layout, data)
+                        record['children'].append(data)
+    _add_item(widget, layout_data)
+    json.dump(layout_data, open('layout-debug.json', 'w'), indent=2)

@@ -24,6 +24,7 @@ from src.util.display_size import find_text_size
 from src.util.geometry_utils import get_scaled_placement, get_rect_transformation
 from src.util.image_utils import get_transparency_tile_pixmap
 from src.util.shared_constants import FLOAT_MIN, FLOAT_MAX, MIN_NONZERO, INT_MAX, PROJECT_DIR
+from src.util.validation import debug_widget_bounds
 
 CLEAR_BUTTON_TEXT = 'Clear'
 
@@ -71,7 +72,7 @@ class LayerTransformTool(BaseTool):
 
         # prepare control panel, wait to fully initialize
         self._control_panel = ReactiveLayoutWidget()
-        self._control_panel.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+        self._control_panel.setSizePolicy(QSizePolicy.Policy.MinimumExpanding, QSizePolicy.Policy.MinimumExpanding)
         self._control_layout: Optional[QGridLayout] = None
         self._preview = _TransformPreview(image_stack.size, QRectF(), QTransform())
         image_stack.size_changed.connect(self._preview.set_image_size)
@@ -236,7 +237,7 @@ class LayerTransformTool(BaseTool):
                 widget = item.widget()
                 assert widget is not None
                 widget.hide()
-                grid.removeItem(item)
+                grid.takeAt(0)
             for row_num in range(grid.rowCount()):
                 grid.setRowStretch(row_num, 0)
             for col_num in range(grid.columnCount()):

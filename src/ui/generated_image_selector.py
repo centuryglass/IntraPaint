@@ -352,7 +352,7 @@ class GeneratedImageSelector(QWidget):
     def _offset_change_slot(self, offset: QPointF) -> None:
         if not self._zoomed_in:
             return
-        self._option_pos_offset = offset - self._base_option_offset
+        self._option_pos_offset = QPointF(offset) - QPointF(self._base_option_offset)
 
     def _scale_change_slot(self, scale: float) -> None:
         if not self._zoomed_in:
@@ -565,7 +565,8 @@ class _ImageOption(QGraphicsPixmapItem):
         font.setPointSize(font_size)
         painter.setFont(font)
         painter.drawText(text_bounds, Qt.AlignmentFlag.AlignCenter, self._label_text)
-        painter.drawTiledPixmap(QRect(0, 0, self.width, self.height), self._transparency_pixmap)
+        if self.opacity() == 1.0:
+            painter.drawTiledPixmap(QRect(0, 0, self.width, self.height), self._transparency_pixmap)
         painter.restore()
         super().paint(painter, option, widget)
 

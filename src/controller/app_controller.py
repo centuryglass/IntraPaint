@@ -699,8 +699,8 @@ class AppController(MenuBuilder):
         """Opens the layer panel window"""
         if self._layer_panel is None:
             self._layer_panel = LayerPanel(self._image_stack)
-            self._layer_panel.show()
-            self._layer_panel.raise_()
+        self._layer_panel.show()
+        self._layer_panel.raise_()
 
     @menu_action(MENU_TOOLS, 'image_window_shortcut', 52)
     def show_image_window(self) -> None:

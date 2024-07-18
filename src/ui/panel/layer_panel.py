@@ -22,7 +22,6 @@ from src.util.image_utils import get_transparency_tile_pixmap
 from src.util.shared_constants import COMPOSITION_MODES, PROJECT_DIR
 
 LIST_SPACING = 4
-MIN_VISIBLE_LAYERS = 3
 PREVIEW_SIZE = QSize(80, 80)
 ICON_SIZE = QSize(32, 32)
 LAYER_PADDING = 10
@@ -135,8 +134,6 @@ class LayerPanel(QWidget):
         self._scroll_area.setAlignment(Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignTop)
         self._scroll_area.setWidget(self._layer_list)
 
-        self._layer_list.setSizePolicy(QSizePolicy(QSizePolicy.Policy.MinimumExpanding, QSizePolicy.Policy.Preferred))
-        self._scroll_area.setSizePolicy(QSizePolicy(QSizePolicy.Policy.MinimumExpanding, QSizePolicy.Policy.Preferred))
         self._layout.addWidget(self._scroll_area, stretch=10)
 
         self._image_stack.layer_added.connect(self._add_layer_slot)
@@ -179,10 +176,9 @@ class LayerPanel(QWidget):
                                                  self._image_stack.merge_layer_down)
 
     def resizeEvent(self, event):
-        """Keep a fixed number of layers visible."""
+        """Keep at least one layer visible."""
         if len(self._layer_widgets) > 0:
-            self._scroll_area.setMinimumHeight((self._layer_widgets[0].height() + LIST_SPACING)
-                                               * min(MIN_VISIBLE_LAYERS, len(self._layer_widgets)))
+            self._scroll_area.setMinimumHeight(self._layer_widgets[0].height() + LIST_SPACING)
         min_scroll_width = self._layer_list.sizeHint().width()
         vertical_scrollbar = self._scroll_area.verticalScrollBar()
         if vertical_scrollbar is not None:
@@ -203,7 +199,7 @@ class LayerPanel(QWidget):
         layer_width += PREVIEW_SIZE.width() + ICON_SIZE.width() + 2 * LAYER_PADDING
         layer_height = max(layer_height, ICON_SIZE.height(), PREVIEW_SIZE.height())
         width = min(MAX_WIDTH, layer_width + LAYER_PADDING)
-        height = layer_height * min(MIN_VISIBLE_LAYERS, len(self._layer_widgets)) + LAYER_PADDING
+        height = layer_height + LAYER_PADDING
         scrollbar = self._scroll_area.verticalScrollBar()
         if scrollbar is not None:
             width += scrollbar.sizeHint().width()
