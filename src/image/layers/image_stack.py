@@ -554,36 +554,19 @@ class ImageStack(QObject):
             return
         self.active_layer = layer
 
-    def move_layer(self, offset: int, layer: Optional[Layer] = None) -> None:
-        """Moves a layer up or down in the stack.
-
-        - The layer will first be removed, triggering all the usual signals you would get from remove_layer.
-        - The layer is then inserted at the new layer_index, triggering all the usual signals you would get from
-           add_layer.
-        - Layer offset is applied as if the entire layer stack is flattened, so this might move the layer into or out
-          of a nested group.
-        - Both operations will be combined in the undo stack into a single operation.
-
-        Parameters
-        ----------
-            offset: int
-                The amount the layer index should change.
-            layer: ImageLayer | None, default=None
-                The layer object to copy. If None, the active layer will be used, and the method will fail
-                silently if no layer is active.
-        """
-        if layer is None:
-            layer = self.active_layer
-        if layer == self._layer_stack:
+    def move_layer(self, layer: Layer, new_parent: LayerStack, new_index: int) -> None:
+        """Moves a layer to a specific index under a parent group."""
+        assert self._layer_stack.contains_recursive(layer)
+        assert self._layer_stack == new_parent or self._layer_stack.contains_recursive(new_parent)
+        layer_parent = layer.layer_parent
+        assert layer_parent is not None and isinstance(layer_parent, LayerStack)
+        if layer_parent == new_parent and new_index == new_parent.get_layer_index(layer):
             return
-        assert layer.layer_parent is not None and layer.layer_parent.contains(layer)
-        layer_parent = cast(LayerStack, layer.layer_parent)
+        max_idx = new_parent.count - 1 if layer_parent == new_parent else new_parent.count
+        assert 0 <= new_index <= max_idx, (f'insert attempted into {new_parent.name} at {new_index}, expected 0 < i <'
+                                           f' {max_idx}')
         layer_index = layer_parent.get_layer_index(layer)
-        assert offset in (1, -1), f'Unexpected offset {offset}'
-        if offset == 1:
-            new_parent, new_index = self._next_insert_index(layer)
-        else:  # -1
-            new_parent, new_index = self._prev_insert_index(layer)
+        assert layer_index is not None
 
         @self._with_batch_content_update
         def _move(moving=layer, parent=new_parent, idx=new_index):
@@ -612,6 +595,36 @@ class ImageStack(QObject):
                     self.active_layer_changed.emit(moving)
 
         commit_action(_move, _move_back, 'ImageStack.move_layer')
+
+    def move_layer_by_offset(self, offset: int, layer: Optional[Layer] = None) -> None:
+        """Moves a layer up or down in the stack.
+
+        - The layer will first be removed, triggering all the usual signals you would get from remove_layer.
+        - The layer is then inserted at the new layer_index, triggering all the usual signals you would get from
+           add_layer.
+        - Layer offset is applied as if the entire layer stack is flattened, so this might move the layer into or out
+          of a nested group.
+        - Both operations will be combined in the undo stack into a single operation.
+
+        Parameters
+        ----------
+            offset: int
+                The amount the layer index should change.
+            layer: ImageLayer | None, default=None
+                The layer object to copy. If None, the active layer will be used, and the method will fail
+                silently if no layer is active.
+        """
+        if layer is None:
+            layer = self.active_layer
+        if layer == self._layer_stack:
+            return
+        assert layer.layer_parent is not None and layer.layer_parent.contains(layer)
+        assert offset in (1, -1), f'Unexpected offset {offset}'
+        if offset == 1:
+            new_parent, new_index = self._next_insert_index(layer)
+        else:  # -1
+            new_parent, new_index = self._prev_insert_index(layer)
+        self.move_layer(layer, new_parent, new_index)
 
     def merge_layer_down(self, layer: Optional[Layer] = None) -> None:
         """Merges a layer with the one beneath it on the stack.

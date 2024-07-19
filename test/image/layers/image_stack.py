@@ -182,7 +182,7 @@ class ImageStackTest(unittest.TestCase):
         self.assertEqual(-4, layer_0.z_value)
 
         # Moving down when at bottom does nothing:
-        self.image_stack.move_layer(1)
+        self.image_stack.move_layer_by_offset(1)
         self.assertEqual(-1, layer_1.z_value)
         self.assertEqual(-2, layer_group.z_value)
         self.assertEqual(-3, inner_group.z_value)
@@ -190,49 +190,49 @@ class ImageStackTest(unittest.TestCase):
         self.assertEqual(self.image_stack._layer_stack, layer_0.layer_parent)
 
         # Move up to top:
-        self.image_stack.move_layer(-1)
+        self.image_stack.move_layer_by_offset(-1)
         self.assertEqual(-4, layer_0.z_value)
         self.assertEqual(layer_group, layer_0.layer_parent)
 
-        self.image_stack.move_layer(-1)
+        self.image_stack.move_layer_by_offset(-1)
         self.assertEqual(-4, layer_0.z_value)
         self.assertEqual(inner_group, layer_0.layer_parent)
 
-        self.image_stack.move_layer(-1)
+        self.image_stack.move_layer_by_offset(-1)
         self.assertEqual(-3, layer_0.z_value)
         self.assertEqual(layer_group, layer_0.layer_parent)
 
-        self.image_stack.move_layer(-1)
+        self.image_stack.move_layer_by_offset(-1)
         self.assertEqual(-2, layer_0.z_value)
         self.assertEqual(self.image_stack._layer_stack, layer_0.layer_parent)
 
-        self.image_stack.move_layer(-1)
+        self.image_stack.move_layer_by_offset(-1)
         self.assertEqual(-1, layer_0.z_value)
 
         # No change moving up from top:
-        self.image_stack.move_layer(-1)
+        self.image_stack.move_layer_by_offset(-1)
         self.assertEqual(-1, layer_0.z_value)
         self.assertEqual(-2, layer_1.z_value)
         self.assertEqual(-3, layer_group.z_value)
         self.assertEqual(-4, inner_group.z_value)
 
         # Move back to bottom:
-        self.image_stack.move_layer(1)
+        self.image_stack.move_layer_by_offset(1)
         self.assertEqual(-2, layer_0.z_value)
 
-        self.image_stack.move_layer(1)
+        self.image_stack.move_layer_by_offset(1)
         self.assertEqual(-3, layer_0.z_value)
         self.assertEqual(layer_group, layer_0.layer_parent)
 
-        self.image_stack.move_layer(1)
+        self.image_stack.move_layer_by_offset(1)
         self.assertEqual(-4, layer_0.z_value)
         self.assertEqual(inner_group, layer_0.layer_parent)
 
-        self.image_stack.move_layer(1)
+        self.image_stack.move_layer_by_offset(1)
         self.assertEqual(-4, layer_0.z_value)
         self.assertEqual(layer_group, layer_0.layer_parent)
 
-        self.image_stack.move_layer(1)
+        self.image_stack.move_layer_by_offset(1)
         self.assertEqual(-4, layer_0.z_value)
         self.assertEqual(self.image_stack._layer_stack, layer_0.layer_parent)
 

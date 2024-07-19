@@ -20,6 +20,7 @@ CROP_TO_CONTENT_ERROR_MESSAGE_FULL = 'Layer is already cropped to fit image cont
 
 class ImageLayer(TransformLayer):
     """Represents an edited image layer."""
+
     def __init__(self, image_data: QImage | QSize, name: str):
         """
         Initializes a new layer with image data.

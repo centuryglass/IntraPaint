@@ -178,7 +178,6 @@ class SelectionTool(CanvasTool):
 
         return self._control_panel
 
-
     def set_brush_size(self, new_size: int) -> None:
         """Update the brush size."""
         new_size = min(new_size, AppConfig().get(AppConfig.SELECTION_BRUSH_SIZE, RangeKey.MAX))

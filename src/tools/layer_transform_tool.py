@@ -24,7 +24,6 @@ from src.util.display_size import find_text_size
 from src.util.geometry_utils import get_scaled_placement, get_rect_transformation
 from src.util.image_utils import get_transparency_tile_pixmap
 from src.util.shared_constants import FLOAT_MIN, FLOAT_MAX, MIN_NONZERO, INT_MAX, PROJECT_DIR
-from src.util.validation import debug_widget_bounds
 
 CLEAR_BUTTON_TEXT = 'Clear'
 

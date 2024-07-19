@@ -2,7 +2,7 @@
 import json
 from typing import Any, Iterable
 
-from PyQt5.QtCore import QSize
+from PyQt6.QtCore import QSize
 from PyQt6.QtGui import QColor
 from PyQt6.QtWidgets import QWidget, QLayout, QSizePolicy
 
@@ -126,10 +126,10 @@ def layout_debug(widget: QWidget) -> None:
             record['children'] = []
             for i in range(item.count()):
                 child = item.itemAt(i)
-                widget = child.widget()
-                if widget is not None:
+                child_widget = child.widget()
+                if child_widget is not None:
                     data = {}
-                    _add_item(widget, data)
+                    _add_item(child_widget, data)
                     record['children'].append(data)
                 else:
                     layout = child.layout()

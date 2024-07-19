@@ -15,7 +15,7 @@ from src.image.filter.sharpen import SharpenFilter
 from src.image.layers.image_stack import ImageStack
 from src.ui.panel.generators.testing_panel import TestControlPanel
 from src.ui.window.main_window import MainWindow
-from src.util.shared_constants import PROJECT_DIR, EDIT_MODE_TXT2IMG, EDIT_MODE_IMG2IMG
+from src.util.shared_constants import PROJECT_DIR, EDIT_MODE_TXT2IMG
 
 # The QCoreApplication.translate context for strings in this file
 TR_ID = 'controller.image_generation.test_generator'

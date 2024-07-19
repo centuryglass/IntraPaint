@@ -188,6 +188,16 @@ def image_content_bounds(image: QImage | np.ndarray, search_bounds: Optional[QRe
     return bounds
 
 
+def crop_to_content(image: QImage) -> QImage:
+    """Return a copy of an image with outer transparent pixels cropped away."""
+    if image.isNull():
+        return QImage()
+    bounds = image_content_bounds(image)
+    if bounds.isEmpty():
+        return image.copy()
+    return image.copy(bounds)
+
+
 def get_standard_qt_icon(icon_code: QStyle.StandardPixmap, style_source: Optional[QWidget] = None) -> QIcon:
     """Returns one of the standard Qt icons."""
     if style_source is None:

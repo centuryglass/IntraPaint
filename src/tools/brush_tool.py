@@ -1,9 +1,9 @@
 """Implements brush controls using a MyPaint surface."""
 from typing import Optional, cast
 
-from PyQt6.QtCore import Qt, QSize
+from PyQt6.QtCore import QSize
 from PyQt6.QtGui import QPixmap, QColor, QIcon, QKeySequence
-from PyQt6.QtWidgets import QVBoxLayout, QPushButton, QColorDialog, QWidget, QApplication
+from PyQt6.QtWidgets import QVBoxLayout, QPushButton, QColorDialog, QWidget
 
 from src.config.application_config import AppConfig
 from src.config.cache import Cache

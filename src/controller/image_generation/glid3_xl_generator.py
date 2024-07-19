@@ -35,7 +35,7 @@ TR_ID = 'controller.image_generation.glid3_xl_generator'
 
 
 def _tr(*args):
-    """Helper to make QCoreApplication.translate more concise."""
+    """Helper to make `QCoreApplication.translate` more concise."""
     return QApplication.translate(TR_ID, *args)
 
 
@@ -184,6 +184,8 @@ class Glid3XLGenerator(ImageGenerator):
         except TypeError as err:
             raise RuntimeError('GLID-3-XL inpainting always requires a source and mask image') from err
         config = AppConfig()
+        assert source_image is not None
+        assert mask_image is not None
         if source_image.size() != mask_image.size():
             raise RuntimeError(f'Selection and mask widths should match, found {source_image.size()}'
                                f' and {mask_image.size()}')

@@ -35,7 +35,7 @@ from src.ui.modal.modal_utils import show_error_dialog, request_confirmation, op
 from src.ui.modal.new_image_modal import NewImageModal
 from src.ui.modal.resize_canvas_modal import ResizeCanvasModal
 from src.ui.modal.settings_modal import SettingsModal
-from src.ui.panel.layer_panel import LayerPanel
+from src.ui.panel.layer.layer_panel import LayerPanel
 from src.ui.window.main_window import MainWindow
 from src.undo_stack import undo, redo
 from src.util.application_state import AppStateTracker, APP_STATE_NO_IMAGE, APP_STATE_EDITING, APP_STATE_LOADING, \
@@ -669,12 +669,12 @@ class AppController(MenuBuilder):
     @menu_action(MENU_LAYERS, 'move_layer_up_shortcut', 45, valid_app_states=[APP_STATE_EDITING])
     def move_layer_up(self) -> None:
         """Move the active layer up in the image."""
-        self._image_stack.move_layer(-1)
+        self._image_stack.move_layer_by_offset(-1)
 
     @menu_action(MENU_LAYERS, 'move_layer_down_shortcut', 46, valid_app_states=[APP_STATE_EDITING])
     def move_layer_down(self) -> None:
         """Move the active layer down in the image."""
-        self._image_stack.move_layer(1)
+        self._image_stack.move_layer_by_offset(1)
 
     @menu_action(MENU_LAYERS, 'merge_layer_down_shortcut', valid_app_states=[APP_STATE_EDITING])
     def merge_layer_down(self) -> None:

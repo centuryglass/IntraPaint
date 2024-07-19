@@ -95,15 +95,14 @@ class ImageFilter:
 
     def _filter_layer_image(self, filter_param_values: List[Any], layer_id: int, layer_image: QImage) -> bool:
         """Apply any required filtering in-place to a layer image, returning whether changes were made."""
+        layer = self._image_stack.get_layer_by_id(layer_id)
+        assert layer is not None
         if self._filter_active_layer_only:
             active_layer = self._image_stack.active_layer
             if active_layer.id != layer_id and not (isinstance(active_layer, LayerStack)
-                                                    and active_layer.contains_recursive(
-                        self._image_stack.get_layer_by_id(layer_id))):
+                                                    and active_layer.contains_recursive(layer)):
                 return False
         if self._filter_selection_only:
-            layer = self._image_stack.get_layer_by_id(layer_id)
-            assert layer is not None
             layer_bounds = layer.bounds if not isinstance(layer, TransformLayer) else layer.transformed_bounds
             selection_bounds = self._image_stack.selection_layer.map_rect_from_image(layer_bounds)
             if self._image_stack.selection_layer.is_empty(selection_bounds):

@@ -1,6 +1,6 @@
 """Control panel widget for GLID-3-XL inpainting."""
 from PyQt6.QtCore import pyqtSignal
-from PyQt6.QtWidgets import QWidget, QPushButton, QHBoxLayout, QLabel, QGridLayout
+from PyQt6.QtWidgets import QPushButton, QHBoxLayout, QLabel, QGridLayout
 
 from src.config.application_config import AppConfig
 from src.ui.widget.bordered_widget import BorderedWidget

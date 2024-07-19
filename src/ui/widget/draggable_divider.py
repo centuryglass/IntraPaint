@@ -102,6 +102,7 @@ class DraggableDivider(QWidget):
             index = layout.indexOf(self)
             if index == 0 or index == layout.count() - 1:
                 return
+
             def _get_item_widget(idx: int) -> Optional[QWidget]:
                 item = layout.itemAt(idx)
                 assert item is not None

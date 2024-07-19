@@ -1,5 +1,4 @@
 """Selects between image editing tools, and controls their settings."""
-import math
 from typing import Optional, Dict, Callable
 
 from PyQt6.QtCore import Qt, pyqtSignal, QRect, QSize, QMargins
@@ -19,7 +18,7 @@ from src.tools.selection_fill_tool import SelectionFillTool
 from src.tools.selection_tool import SelectionTool
 from src.tools.tool_event_handler import ToolEventHandler
 from src.ui.panel.image_panel import ImagePanel
-from src.ui.panel.layer_panel import LayerPanel
+from src.ui.panel.layer.layer_panel import LayerPanel
 from src.ui.widget.collapsible_box import CollapsibleBox
 from src.ui.widget.draggable_divider import DraggableDivider
 from src.ui.widget.key_hint_label import KeyHintLabel
@@ -36,6 +35,7 @@ TOOL_PANEL_STRETCH = 50
 LAYER_PANEL_STRETCH = 30
 
 MIN_SIZE_FOR_TOOL_LABEL = QSize(600, 300)
+
 
 class ToolPanel(QWidget):
     """Selects between image editing tools, and controls their settings."""

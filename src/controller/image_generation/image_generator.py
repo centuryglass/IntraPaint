@@ -203,7 +203,7 @@ class ImageGenerator(MenuBuilder):
             AppStateTracker.set_app_state(APP_STATE_EDITING)
 
     def _load_generated_image_for_selection(self, index: int) -> None:
-        assert len(self._generated_images > index)
+        assert len(self._generated_images) > index
         image = self._generated_images[index]
         if not image.isNull():
             self._window.load_sample_preview(image, index)
@@ -216,7 +216,6 @@ class ImageGenerator(MenuBuilder):
         self._generated_images.insert(index, image)
         # Load in main thread:
         QTimer.singleShot(1, lambda: self._load_generated_image_for_selection(index))
-
 
     def _apply_status_update(self, status_dict: Dict[str, str]) -> None:
         """Show status updates in the UI."""

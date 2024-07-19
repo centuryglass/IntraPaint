@@ -9,13 +9,13 @@ from typing import Optional
 from PyQt6.QtCore import Qt, QRect, QSize, pyqtSignal, pyqtBoundSignal
 from PyQt6.QtGui import QIcon, QMouseEvent, QResizeEvent, QKeySequence, QCloseEvent, QImage
 from PyQt6.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, \
-    QStackedWidget, QBoxLayout, QApplication, QTabWidget, QSizePolicy, QLayout
+    QStackedWidget, QBoxLayout, QApplication, QTabWidget, QSizePolicy
 
 from src.hotkey_filter import HotkeyFilter
 from src.image.layers.image_stack import ImageStack
 from src.ui.generated_image_selector import GeneratedImageSelector
 from src.ui.panel.image_panel import ImagePanel
-from src.ui.panel.layer_panel import LayerPanel
+from src.ui.panel.layer.layer_panel import LayerPanel
 from src.ui.panel.tool_panel import ToolPanel
 from src.ui.widget.draggable_divider import DraggableDivider
 from src.ui.widget.loading_widget import LoadingWidget
@@ -153,7 +153,7 @@ class MainWindow(QMainWindow):
         else:
             self._control_panel = control_panel
         assert hasattr(control_panel, 'generate_signal') and isinstance(control_panel.generate_signal,
-                                                                    (pyqtBoundSignal, pyqtSignal))
+                                                                        (pyqtBoundSignal, pyqtSignal))
         control_panel.generate_signal.connect(self.generate_signal.emit)
         self.refresh_layout()
 

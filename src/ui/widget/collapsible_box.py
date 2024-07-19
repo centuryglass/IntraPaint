@@ -7,7 +7,7 @@ from typing import Optional, cast
 from PyQt6.QtCore import Qt, QSize, pyqtSignal
 from PyQt6.QtGui import QResizeEvent
 from PyQt6.QtWidgets import QWidget, QScrollArea, QToolButton, QHBoxLayout, QVBoxLayout, QSizePolicy, QLayout, \
-    QBoxLayout
+    QBoxLayout, QScrollBar
 
 from src.ui.widget.bordered_widget import BorderedWidget
 from src.ui.widget.label import Label
@@ -97,6 +97,13 @@ class CollapsibleBox(BorderedWidget):
 
         layout.addWidget(self.scroll_area, stretch=255)
         self._start_closed = start_closed
+
+    @property
+    def scroll_bar(self) -> Optional[QScrollBar]:
+        """Access the vertical scroll bar, if one exists."""
+        if isinstance(self.scroll_area, QScrollArea):
+            return self.scroll_area.verticalScrollBar()
+        return None
 
     # noinspection PyPep8Naming
     def setHorizontalScrollBarPolicy(self, policy: Qt.ScrollBarPolicy) -> None:
@@ -191,9 +198,10 @@ class CollapsibleBox(BorderedWidget):
             widget.setMinimumHeight(min_bar_dim)
             widget.setMinimumWidth(min_bar_dim)
 
-    def add_button_bar_widget(self, widget: QWidget) -> None:
+    def add_button_bar_widget(self, widget: QWidget, fixed_widget_size=True) -> None:
         """Adds a widget to the button bar."""
-        widget.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
+        if fixed_widget_size:
+            widget.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
         self._button_bar_layout.addWidget(widget)
         self.resizeEvent(None)
 
