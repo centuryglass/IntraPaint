@@ -343,18 +343,21 @@ class LayerStack(Layer):
             self._image_cache.invalidate()
             self.invalidate_pixmap()
             self._get_local_bounds()  # Ensure size is correct
+            self.content_changed.emit(self)
 
     def _layer_visibility_change_slot(self, layer: ImageLayer, _) -> None:
         if layer in self._layers:
             self._image_cache.invalidate()
             self.invalidate_pixmap()
+            self.content_changed.emit(self)
+
 
     def _layer_bounds_change_slot(self, layer: ImageLayer, _) -> None:
         if layer in self._layers:
             self._image_cache.invalidate()
             self.invalidate_pixmap()
-            self.content_changed.emit(self)
             self._get_local_bounds()  # Ensure size is correct
+            self.content_changed.emit(self)
 
 
 class LayerStackState:
