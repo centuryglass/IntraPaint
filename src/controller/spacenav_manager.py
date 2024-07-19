@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 
 # Once the xy offset of sequential spacenav events adds up to this value, the image generation area will
 # reach max scrolling speed:
-MAX_SPEED_AT_OFFSET = 9000
+MAX_SPEED_AT_OFFSET = 20000
 # Controls how quickly the image generation area will move across the entire image at max speed:
 # Values must >= 0.  The higher the value, the slower the max speed will be.
 MAX_SPEED_CONTROL = 1

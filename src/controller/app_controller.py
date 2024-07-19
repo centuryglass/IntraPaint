@@ -49,7 +49,7 @@ from src.util.qtexcepthook import QtExceptHook
 # Optional spacenav support and extended theming:
 qdarktheme = optional_import('qdarktheme')
 qt_material = optional_import('qt_material')
-SpacenavManager = optional_import('spacenav_manager', 'src.controller', 'SpacenavManager')
+SpacenavManager = optional_import('src.controller.spacenav_manager',attr_name='SpacenavManager')
 
 logger = logging.getLogger(__name__)
 

@@ -51,6 +51,12 @@ class ImageStack(QObject):
         self._copy_buffer_transform: Optional[QTransform] = None
         self._content_change_signal_enabled = True
         self.generation_area = self._generation_area
+
+        def _update_gen_area_size(size: QSize) -> None:
+            if size != self._generation_area.size():
+                self.generation_area = QRect(self._generation_area.topLeft(), size)
+        AppConfig().connect(self, AppConfig.GENERATION_SIZE, _update_gen_area_size)
+
         self._layer_stack = LayerStack('new image')
         self._image = CachedData(None)
         self._active_layer_id = self._layer_stack.id
