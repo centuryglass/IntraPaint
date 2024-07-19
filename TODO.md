@@ -1,40 +1,18 @@
 # Development tasks
 
-- ORA file format: https://www.openraster.org/baseline/file-layout-spec.html
-# Bugs
-- copy/paste issues in small layers
-- disconnect between EDIT_SIZE in config and layer stack gen area
-
-## intermittent, can't reproduce reliably:
-- Keep size on brush change not working (possibly a pressure issue?)
-- Selection tool reverts to 1px, usually after picking image option
-
+- ORA SVG support
 
 # General interface
-- Control Panel cleanup with FormLayout
-- Add click+drag resizing to CollapsibleBox
-- Add option to pop out CollapsibleBox content as window
 - When scaling, center scale on mouse position
 - Rework mode settings:
-    * Add "No image generation" mode
-    * Let web modes start when the server is down
     * Support login/URL changes outside the init process
     * Improve controls for login and setting server URL
 
 # Layers
-- Drag and drop reordering
-- layer name changes should save on layer change
 - Layer locking
 - Transparency locking
-- Rework selection layer panel item
-- Support for extended un-rastered states as GraphicsItems
-
-# Stability
-- Unit testing for critical modules
-- Crash handling: have a parent process monitor for crashes, cache data, save as .inpt on crash
 
 # Menus
-- Open as layers
 - Support saving in formats other than .png (metadata fixes?)
 - Crop image to content
 - open mypaint brush panel
@@ -49,18 +27,15 @@
 ## Image gen area tool
 - generation area to generation size button
 - generation size controls
-- fix ctrl-click panning
+
+## Selection fill
+- fill based on selection layer only
+- floodfill with alpha support
 
 ## Selection tool
 - Add mask draw/erase hotkey
-- Add select by color/fill select
-- Allow selection outside of image bounds
-- Optimize outline detection: pixmap canvas should be able to track outlines,
-  only use CV2 for dynamic changes
 
 ## Transform tool
-- Misc. edge cases causing transforms to be discarded
-- Add "apply changes" button
 - Better rotation arrows
 - Unique look for origin point
 - Toggle switch for scale/rotate modes
@@ -72,10 +47,7 @@
   
 ## Fill tool
 cv2 or PIL probably have good support for this.
-- Color control syncs with brush color
-- Adjustable threshold
-- Toggle: active layer only/all layers
-- Toggle: preserve transparency
+- floodfill with alpha support
   
 ## Brush tool sub-tools
 Alternate brush tools that filter for certain brush types
@@ -111,13 +83,10 @@ Alternate brush tools that filter for certain brush types
 - Add tooltip descriptions for modules and models
 
 # Code cleanup
-- Rework window/controller interface to avoid circular dependencies
-    * Window creates controller
-    * Controller has zero interaction with window besides perhaps being able to close it
 - Localization support
 
 # sketch canvas/libmypaint
-- Cleanup and release libmypaint-pyqt5 package
+- Cleanup and release libmypaint-pyqt package
 
 # Documentation + Release
 - Rewrite README.md for stable-diffusion info
@@ -134,5 +103,8 @@ Alternate brush tools that filter for certain brush types
 - Investigate ComfyUI support
 - A1111 script panel support
 - A1111 lora/hypernet/etc selection support
-- A1111 saved style support
+- A1111 PR for updating saved styles
 
+# Legacy generators
+- DeepDream
+- VQGAN+CLIP
