@@ -55,7 +55,7 @@ class ImageStack(QObject):
         def _update_gen_area_size(size: QSize) -> None:
             if size != self._generation_area.size():
                 self.generation_area = QRect(self._generation_area.topLeft(), size)
-        AppConfig().connect(self, AppConfig.GENERATION_SIZE, _update_gen_area_size)
+        AppConfig().connect(self, AppConfig.EDIT_SIZE, _update_gen_area_size)
 
         self._layer_stack = LayerStack('new image')
         self._image = CachedData(None)

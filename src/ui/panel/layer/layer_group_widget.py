@@ -2,7 +2,7 @@
 from typing import Dict, Optional, List
 import logging
 
-from PyQt6.QtCore import QPointF, QPoint, QLine, pyqtSignal
+from PyQt6.QtCore import QPointF, QPoint, QLine, pyqtSignal, Qt
 from PyQt6.QtGui import QDragEnterEvent, QDragMoveEvent, QDragLeaveEvent, QDropEvent, QPaintEvent, QPainter
 from PyQt6.QtWidgets import QVBoxLayout, QWidget
 
@@ -35,6 +35,7 @@ class LayerGroupWidget(CollapsibleBox):
         self._parent_item.drag_ended.connect(self.drag_ended)
         self._child_list = CollapsibleBox()
         self._list_layout = QVBoxLayout()
+        self._list_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
 
         # Tracking where drag and drop would insert child items:
         self._insert_parent: Optional[LayerStack] = None

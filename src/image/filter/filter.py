@@ -164,20 +164,17 @@ class ImageFilter:
             cropped_preview_bounds.setHeight(max(int(cropped_preview_bounds.height() * 1.2), MIN_PREVIEW_SIZE))
             cropped_preview_bounds.moveCenter(center)
             cropped_preview_bounds = adjusted_placement_in_bounds(cropped_preview_bounds, bounds)
-            scale = max(MAX_PREVIEW_SIZE / cropped_preview_bounds.width(),
+            scale = min(MAX_PREVIEW_SIZE / cropped_preview_bounds.width(),
                         MAX_PREVIEW_SIZE / cropped_preview_bounds.height())
         else:
             cropped_preview_bounds = None
-            scale = max(MAX_PREVIEW_SIZE / bounds.width(), MAX_PREVIEW_SIZE / bounds.height())
-        scale = min(scale, 1.0)
-        # TEMP, testing:
-        scale = 1.0
-        cropped_preview_bounds = None
+            scale = min(MAX_PREVIEW_SIZE / bounds.width(), MAX_PREVIEW_SIZE / bounds.height())
+        scale = min(1.0, scale)
 
-        scale_transform = QTransform.fromScale(scale, scale)
-        bounds = scale_transform.mapRect(bounds)
+        preview_transform = QTransform.fromScale(scale, scale)
+        bounds = preview_transform.mapRect(bounds)
         if cropped_preview_bounds is not None:
-            cropped_preview_bounds = scale_transform.mapRect(cropped_preview_bounds)
+            cropped_preview_bounds = preview_transform.mapRect(cropped_preview_bounds)
         preview_image = QImage(bounds.size(), QImage.Format.Format_ARGB32_Premultiplied)
         background_painter = QPainter(preview_image)
         transparency_pattern = get_transparency_tile_pixmap()
@@ -187,13 +184,12 @@ class ImageFilter:
         def _adjust_layer_paint_params(layer_id: int, layer_image: QImage, _, painter: QPainter) -> Optional[QImage]:
             if scale != 1.0:
                 layer_image = layer_image.scaled(int(layer_image.width() * scale), int(layer_image.height() * scale))
-                painter.setTransform(scale_transform, True)
+                painter.setTransform(preview_transform, True)
             self._filter_layer_image(filter_param_values, layer_id, layer_image)
             return layer_image if scale != 1.0 else None
 
         self._image_stack.render(preview_image, _adjust_layer_paint_params)
         if cropped_preview_bounds is not None:
-            cropped_preview_bounds.translate(-bounds.x(), - bounds.y())
             return preview_image.copy(cropped_preview_bounds)
         return preview_image
 
