@@ -21,7 +21,7 @@ MIN_COLUMNS = 2
 MAX_COLUMNS = 10
 
 
-class BrushPanel(QTabWidget):
+class MypaintBrushPanel(QTabWidget):
     """BrushPanel selects between the default MyPaint brushes found in resources/brushes."""
 
     FAV_KEY = 'favorites'
@@ -48,55 +48,55 @@ class BrushPanel(QTabWidget):
         self._groups: List[str] = []
         self._group_orders: Dict[str, List[str]] = {}
         self._pages: Dict[str, GridContainer] = {}
-        self._read_order_file(os.path.join(BrushPanel.BRUSH_DIR, BrushPanel.BRUSH_CONF_FILE))
+        self._read_order_file(os.path.join(MypaintBrushPanel.BRUSH_DIR, MypaintBrushPanel.BRUSH_CONF_FILE))
         self._setup_brush_tabs()
         self._setup_favorites_tab()
 
     def _setup_brush_tabs(self) -> None:
         """Reads in brush files, organizes them into tabs."""
-        for group in os.listdir(BrushPanel.BRUSH_DIR):
-            group_dir = os.path.join(BrushPanel.BRUSH_DIR, group)
+        for group in os.listdir(MypaintBrushPanel.BRUSH_DIR):
+            group_dir = os.path.join(MypaintBrushPanel.BRUSH_DIR, group)
             if group in self._group_orders or not os.path.isdir(group_dir):
                 continue
-            if self._read_order_file(os.path.join(group_dir, BrushPanel.BRUSH_ORDER_FILE)):
+            if self._read_order_file(os.path.join(group_dir, MypaintBrushPanel.BRUSH_ORDER_FILE)):
                 continue
             # No order.conf: just read in file order
             self._groups.append(group)
             self._group_orders[group] = []
             for file in os.listdir(group_dir):
-                if not file.endswith(BrushPanel.BRUSH_EXTENSION):
+                if not file.endswith(MypaintBrushPanel.BRUSH_EXTENSION):
                     continue
                 brush_name = file[:-4]
                 self._group_orders[group].append(brush_name)
         for group in self._groups:
-            group_dir = os.path.join(BrushPanel.BRUSH_DIR, group)
+            group_dir = os.path.join(MypaintBrushPanel.BRUSH_DIR, group)
             if not os.path.isdir(group_dir):
                 continue
             self._create_tab(group)
             for brush_name in self._group_orders[group]:
-                brush_path = os.path.join(group_dir, brush_name + BrushPanel.BRUSH_EXTENSION)
-                image_path = os.path.join(group_dir, brush_name + BrushPanel.BRUSH_ICON_EXTENSION)
+                brush_path = os.path.join(group_dir, brush_name + MypaintBrushPanel.BRUSH_EXTENSION)
+                image_path = os.path.join(group_dir, brush_name + MypaintBrushPanel.BRUSH_ICON_EXTENSION)
                 brush_icon = _IconButton(self._brush, image_path, brush_path, False)
                 brush_icon.favorite_change.connect(self._add_favorite)
                 self._pages[group].add_widget(brush_icon)
 
     def _setup_favorites_tab(self) -> None:
         """Reads favorite brushes, adds them in a new tab."""
-        favorite_list = AppConfig().get(BrushPanel.FAV_CONFIG_KEY)
+        favorite_list = AppConfig().get(MypaintBrushPanel.FAV_CONFIG_KEY)
         favorite_brushes = []
         for favorite in favorite_list:
             if '/' not in favorite:
                 continue
             group, brush = favorite.split('/')
-            brush_path = os.path.join(BrushPanel.BRUSH_DIR, group, brush + BrushPanel.BRUSH_EXTENSION)
-            image_path = os.path.join(BrushPanel.BRUSH_DIR, group, brush + BrushPanel.BRUSH_ICON_EXTENSION)
+            brush_path = os.path.join(MypaintBrushPanel.BRUSH_DIR, group, brush + MypaintBrushPanel.BRUSH_EXTENSION)
+            image_path = os.path.join(MypaintBrushPanel.BRUSH_DIR, group, brush + MypaintBrushPanel.BRUSH_ICON_EXTENSION)
             brush_icon = _IconButton(self._brush, image_path, brush_path, True)
             brush_icon.favorite_change.connect(self._remove_favorite)
             favorite_brushes.append(brush_icon)
         if len(favorite_brushes) > 0:
-            self._create_tab(BrushPanel.FAV_KEY, index=0)
+            self._create_tab(MypaintBrushPanel.FAV_KEY, index=0)
             for brush_widget in favorite_brushes:
-                self._pages[BrushPanel.FAV_KEY].add_widget(brush_widget)
+                self._pages[MypaintBrushPanel.FAV_KEY].add_widget(brush_widget)
             self.setCurrentIndex(0)
 
     def _create_tab(self, tab_name: str, index: Optional[int] = None) -> None:
@@ -114,26 +114,26 @@ class BrushPanel(QTabWidget):
 
     def _save_favorite_brushes(self) -> None:
         """Saves favorite brushes to config whenever a favorite is added or removed."""
-        if BrushPanel.FAV_KEY not in self._pages:
+        if MypaintBrushPanel.FAV_KEY not in self._pages:
             fav_list = []
         else:
-            fav_list = self._pages[BrushPanel.FAV_KEY].findChildren(_IconButton)
-        AppConfig().set(BrushPanel.FAV_CONFIG_KEY, [brush.saved_name() for brush in fav_list])
+            fav_list = self._pages[MypaintBrushPanel.FAV_KEY].findChildren(_IconButton)
+        AppConfig().set(MypaintBrushPanel.FAV_CONFIG_KEY, [brush.saved_name() for brush in fav_list])
 
     def _add_favorite(self, icon_button: '_IconButton') -> None:
-        if icon_button.saved_name() in AppConfig().get(BrushPanel.FAV_CONFIG_KEY):
+        if icon_button.saved_name() in AppConfig().get(MypaintBrushPanel.FAV_CONFIG_KEY):
             return
-        if BrushPanel.FAV_KEY not in self._pages:
-            self._create_tab(BrushPanel.FAV_KEY, index=0)
+        if MypaintBrushPanel.FAV_KEY not in self._pages:
+            self._create_tab(MypaintBrushPanel.FAV_KEY, index=0)
 
         brush_copy = cast(_IconButton, icon_button.copy(True))
-        self._pages[BrushPanel.FAV_KEY].add_widget(brush_copy)
+        self._pages[MypaintBrushPanel.FAV_KEY].add_widget(brush_copy)
         brush_copy.favorite_change.connect(self._remove_favorite)
         self._save_favorite_brushes()
         self.resizeEvent(None)
 
     def _remove_favorite(self, icon_button: '_IconButton') -> None:
-        self._pages[BrushPanel.FAV_KEY].remove_widget(icon_button)
+        self._pages[MypaintBrushPanel.FAV_KEY].remove_widget(icon_button)
         icon_button.favorite_change.disconnect(self._remove_favorite)
         icon_button.setParent(None)
         self._save_favorite_brushes()

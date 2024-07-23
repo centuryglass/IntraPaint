@@ -18,8 +18,8 @@ RESOURCES_FILL_CURSOR = f'{PROJECT_DIR}/resources/cursors/selection_fill_cursor.
 CURSOR_SIZE = 25
 
 SELECTION_FILL_LABEL = 'Selection fill'
-SELECTION_FILL_TOOLTIP = "Select areas with solid colors"
-SELECTION_FILL_CONTROL_HINT = "LMB:select - RMB:deselect -"
+SELECTION_FILL_TOOLTIP = 'Select areas with solid colors'
+SELECTION_FILL_CONTROL_HINT = 'LMB:select - RMB:deselect -'
 
 
 class SelectionFillTool(BaseTool):

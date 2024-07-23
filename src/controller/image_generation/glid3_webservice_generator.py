@@ -38,6 +38,9 @@ GLID_WEB_GENERATOR_DESCRIPTION = _tr('<p>Generate images using a network connect
                                      'Instructions for setting it up can be found '
                                      '<a href="https://github.com/centuryglass/IntraPaint?tab=readme-ov-file#setup">'
                                      'here</a></p>')
+NO_SERVER_ERROR = _tr('No GLID-3-XL server address was provided.')
+CONNECTION_ERROR = _tr('Could not find a valid GLID-3-XL server at "{server_address}"')
+
 
 
 class Glid3WebserviceGenerator(ImageGenerator):
@@ -61,11 +64,12 @@ class Glid3WebserviceGenerator(ImageGenerator):
         """Returns whether the generator is supported on the current system."""
         try:
             res = requests.get(self._server_url, timeout=30)
-            return res.status_code == 200 and ('application/json' in res.headers['content-type']) \
-                and 'success' in res.json() and res.json()['success'] is True
-        except requests.exceptions.RequestException as err:
-            print(f'Request error: {err}')
-            return False
+            if res.status_code == 200 and ('application/json' in res.headers['content-type']) \
+                    and 'success' in res.json() and res.json()['success'] is True:
+                return True
+        except requests.exceptions.RequestException:
+            pass
+        self.status_signal.emit(CONNECTION_ERROR.format(server_address=self._server_url))
 
     def configure_or_connect(self) -> bool:
         """Handles any required steps necessary to configure the generator, install required components, and/or

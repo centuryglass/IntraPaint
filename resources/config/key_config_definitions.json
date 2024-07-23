@@ -151,6 +151,14 @@
         "default": "E",
         "saved": true
     },
+    "shape_selection_tool_key": {
+        "label": "Switch to the shape selection tool:",
+        "category": "Keybindings",
+        "description": "Activate the shape selection tool to mark areas for editing.",
+        "type": "string",
+        "default": "R",
+        "saved": true
+    },
     "fill_tool_key": {
         "label": "Switch to the fill tool:",
         "category": "Keybindings",

@@ -1,5 +1,6 @@
 """Convenience function for importing optional dependencies."""
 import importlib
+import importlib.util
 import logging
 from typing import Any, Optional
 
@@ -28,3 +29,9 @@ def optional_import(module_name: str, package_name: Optional[str] = None, attr_n
     except ImportError as err:
         logger.warning(f'Failed to load optional import from {module_name}: {err}')
         return None
+
+
+def check_import(name: str, module_name: Optional[str] = None) -> bool:
+    """Returns whether a particular module could potentially be imported."""
+    spec = importlib.util.find_spec(name, package=module_name)
+    return spec is not None

@@ -1,5 +1,6 @@
 """Generate images using GLID-3-XL running locally."""
 import logging
+import os
 from argparse import Namespace
 from typing import Optional, Any, Dict
 
@@ -14,7 +15,7 @@ from src.ui.modal.settings_modal import SettingsModal
 from src.ui.panel.generators.glid_panel import GlidPanel
 from src.ui.window.main_window import MainWindow
 from src.util.image_utils import qimage_to_pil_image, pil_image_to_qimage
-from src.util.optional_import import optional_import
+from src.util.optional_import import optional_import, check_import
 from src.util.shared_constants import EDIT_MODE_INPAINT
 from src.util.validation import assert_types
 
@@ -51,6 +52,18 @@ GLID_WEB_GENERATOR_DESCRIPTION = _tr('<p>Generate images by running a GLID-3-XL 
                                      'found '
                                      '<a href="https://github.com/centuryglass/IntraPaint?tab=readme-ov-file#setup">'
                                      'here</a></p>')
+MISSING_DEPS_ERROR = _tr('Required dependencies are missing: {dependency_list}')
+NOT_ENOUGH_VRAM_ERROR = _tr('Not enough VRAM for the GLID-3-XL generator: {mem_free} free memory found, expected at'
+                            ' least {min_vram}')
+MISSING_MODEL_ERROR = _tr('{model_name} model file expected at "{model_path}" is missing')
+
+EXPECTED_MODULE_NAMES = ['torch', 'torchvision', 'transforms', 'PyYAML', 'tqdm', 'scipy', 'regex', 'numpy', 'blobfile',
+                         'einops', 'clip', 'setuptools']
+
+
+GLID_MODEL = _tr('GLID-3-XL')
+BERT_MODEL = _tr('BERT')
+KL_MODEL = _tr('KL')
 
 
 class Glid3XLGenerator(ImageGenerator):
@@ -91,11 +104,19 @@ class Glid3XLGenerator(ImageGenerator):
     def is_available(self) -> bool:
         """Returns whether the generator is supported on the current system."""
         if None in (torch, get_device, foreach_image_in_sample, generate_samples, create_sample_function, load_models):
+            missing_modules = ','.join([module for module in EXPECTED_MODULE_NAMES if check_import(module) is False])
+            self.status_signal.emit(MISSING_DEPS_ERROR.format(dependency_list=missing_modules))
             return False
         device = get_device()
         (mem_free, mem_total) = torch.cuda.mem_get_info(device)
         if mem_free < MIN_GLID_VRAM:
+            self.status_signal.emit(NOT_ENOUGH_VRAM_ERROR.format(mem_free=mem_free, min_vram=MIN_GLID_VRAM))
             return False
+        for model_name, model_path in ((GLID_MODEL, self._model_path), (BERT_MODEL, self._bert_path),
+                                       (KL_MODEL, self._kl_path)):
+            if not os.path.exists(model_path):
+                self.status_signal.emit(MISSING_MODEL_ERROR.format(model_name=model_name, model_path=model_path))
+                return False
         return True
 
     def configure_or_connect(self) -> bool:

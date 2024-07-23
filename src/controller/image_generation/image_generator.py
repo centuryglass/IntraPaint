@@ -2,7 +2,7 @@
 from typing import List, Dict, Optional, Any
 
 from PIL import Image, ImageFilter
-from PyQt6.QtCore import QPoint, QRect, QSize, pyqtSignal, QTimer
+from PyQt6.QtCore import QPoint, QRect, QSize, pyqtSignal, QTimer, QObject
 from PyQt6.QtGui import QImage, QPainter
 from PyQt6.QtWidgets import QApplication, QWidget
 
@@ -33,11 +33,15 @@ GENERATE_ERROR_TITLE_EXISTING_OP = _tr('Failed')
 GENERATE_ERROR_MESSAGE_EXISTING_OP = _tr('Existing image generation operation not yet finished, wait a little longer.')
 
 
-class ImageGenerator(MenuBuilder):
+class ImageGenerator(MenuBuilder, QObject):
     """Interface for providing image generation capabilities."""
+
+    # Used to emit additional information when anything goes wrong with an active generator.
+    status_signal = pyqtSignal(str)
 
     def __init__(self, window: MainWindow, image_stack: ImageStack) -> None:
         super().__init__()
+        super(QObject, self).__init__()
         self._window = window
         self._image_stack = image_stack
         self._generated_images: List[QImage] = []

@@ -16,7 +16,7 @@ from src.image.layers.layer import Layer
 from src.tools.canvas_tool import CanvasTool
 from src.ui.image_viewer import ImageViewer
 from src.ui.input_fields.slider_spinbox import IntSliderSpinbox
-from src.ui.panel.brush_panel import BrushPanel
+from src.ui.panel.mypaint_brush_panel import MypaintBrushPanel
 from src.util.shared_constants import PROJECT_DIR
 
 RESOURCES_BRUSH_ICON = f'{PROJECT_DIR}/resources/icons/brush_icon.svg'
@@ -119,7 +119,7 @@ class BrushTool(CanvasTool):
 
         # Brush selection:
         canvas = cast(MyPaintLayerCanvas, self._canvas)
-        brush_panel = BrushPanel(canvas.brush)
+        brush_panel = MypaintBrushPanel(canvas.brush)
         control_layout.addWidget(brush_panel, stretch=8)
         control_layout.addStretch(255)
         return self._control_panel

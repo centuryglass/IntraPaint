@@ -1,11 +1,22 @@
+# Optional theming support:
 qt-material
 qdarktheme
+
+# Allows using a SpaceMouse for panning:
 spacenav
+
+# Needed for GLID-3-XL local mode:
 torch~=2.3.0
 torchvision~=0.18.0a0
+transforms
 PyYAML~=6.0.1
 tqdm~=4.66.2
 scipy~=1.13.0
 regex~=2024.5.15
-Flask~=2.3.3
+blobfile
+einops
+clip
 setuptools~=69.0.3
+
+# Needed for hosting a GLID-3-XL server:
+Flask~=2.3.3

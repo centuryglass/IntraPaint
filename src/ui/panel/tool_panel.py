@@ -16,6 +16,7 @@ from src.tools.generation_area_tool import GenerationAreaTool
 from src.tools.layer_transform_tool import LayerTransformTool
 from src.tools.selection_fill_tool import SelectionFillTool
 from src.tools.selection_tool import SelectionTool
+from src.tools.shape_selection_tool import ShapeSelectionTool
 from src.tools.tool_event_handler import ToolEventHandler
 from src.ui.panel.image_panel import ImagePanel
 from src.ui.panel.layer.layer_panel import LayerPanel
@@ -133,6 +134,8 @@ class ToolPanel(QWidget):
         add_tool(selection_tool)
         selection_fill_tool = SelectionFillTool(image_stack)
         add_tool(selection_fill_tool)
+        shape_selection_tool = ShapeSelectionTool(image_stack, image_panel.image_viewer)
+        add_tool(shape_selection_tool)
         brush_tool = BrushTool(image_stack, image_panel.image_viewer)
         add_tool(brush_tool)
         eyedropper_tool = EyedropperTool(image_stack)

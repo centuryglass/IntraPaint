@@ -53,7 +53,7 @@ SpacenavManager = optional_import('src.controller.spacenav_manager',attr_name='S
 
 logger = logging.getLogger(__name__)
 
-# The QCoreApplication.translate context for strings in this file
+# The `QCoreApplication.translate` context for strings in this file
 TR_ID = 'controller.app_controller'
 
 
