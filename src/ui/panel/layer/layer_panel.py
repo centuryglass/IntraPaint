@@ -1,10 +1,11 @@
 """Shows image layers, and allows the user to manipulate them."""
-from typing import Optional, List, Callable, Any
 import logging
+from typing import Optional, List, Callable, Any
 
 from PyQt6.QtCore import Qt, QSize, QPointF, QTimer
-from PyQt6.QtGui import QIcon, QMouseEvent
-from PyQt6.QtWidgets import QWidget, QLabel, QVBoxLayout, QHBoxLayout, QScrollArea, QToolButton, QSlider, QDoubleSpinBox, QComboBox
+from PyQt6.QtGui import QIcon
+from PyQt6.QtWidgets import QWidget, QLabel, QVBoxLayout, QHBoxLayout, QScrollArea, QToolButton, QSlider, \
+    QDoubleSpinBox, QComboBox
 
 from src.image.layers.image_stack import ImageStack
 from src.image.layers.layer import Layer

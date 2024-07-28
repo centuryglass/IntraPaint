@@ -1,7 +1,7 @@
 """Select or deselect rectangular or ellipsoid areas."""
 from typing import Optional
 
-from PyQt6.QtCore import Qt, QPoint, QSize, QRect, QRectF, QSizeF, QPointF
+from PyQt6.QtCore import Qt, QPoint, QRect, QRectF, QSizeF, QPointF
 from PyQt6.QtGui import QKeySequence, QIcon, QMouseEvent, QPainter
 from PyQt6.QtWidgets import QWidget, QLayout, QApplication, QHBoxLayout, QGraphicsRectItem, \
     QGraphicsEllipseItem
@@ -12,7 +12,6 @@ from src.tools.base_tool import BaseTool
 from src.ui.image_viewer import ImageViewer
 from src.ui.input_fields.dual_toggle import DualToggle
 from src.util.shared_constants import PROJECT_DIR
-
 
 # The `QCoreApplication.translate` context for strings in this file
 TR_ID = 'tools.shape_selection_tool'

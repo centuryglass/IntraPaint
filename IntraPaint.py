@@ -5,6 +5,7 @@ Assuming you're running the A1111 stable-diffusion API on the same machine with 
 """
 import atexit
 import logging
+import os
 import sys
 
 from PyQt6.QtWidgets import QApplication
@@ -12,7 +13,8 @@ from PyQt6.QtWidgets import QApplication
 from src.controller.app_controller import AppController
 from src.ui.modal.modal_utils import show_error_dialog
 from src.util.arg_parser import build_arg_parser
-from src.util.shared_constants import TIMELAPSE_MODE_FLAG
+from src.util.optional_import import check_import
+from src.util.shared_constants import TIMELAPSE_MODE_FLAG, PROJECT_DIR
 
 LOG_FILE_PATH = 'IntraPaint.log'
 DEFAULT_GLID_MODEL = 'models/inpaint.pt'
@@ -66,6 +68,30 @@ def exit_log():
 
 
 atexit.register(exit_log)
+
+# If relevant directories exist, update paths for GLID-3-XL dependencies:
+if not check_import('ldm'):
+    expected_ldm_path = f'{PROJECT_DIR}/latent-diffusion'
+    if os.path.exists(expected_ldm_path):
+        sys.path.append(expected_ldm_path)
+
+        # Newer versions of pytorch-lightning changed the location of one needed dependency, but latent-diffusion was
+        # never updated. This only requires a single minor update, so make that change here if necessary:
+        updated_file_path = f'{expected_ldm_path}/ldm/models/diffusion/ddpm.py'
+        with open(updated_file_path, 'r+') as file:
+            lines = file.readlines()
+            for i, line in enumerate(lines):
+                if 'from pytorch_lightning.utilities.distributed import rank_zero_only' in line:
+                    lines[i] = 'from pytorch_lightning.utilities.rank_zero import rank_zero_only'
+                    file.seek(0)
+                    file.writelines(lines)
+                    file.truncate()
+                    break
+
+if not check_import('taming'):
+    expected_taming_path = f'{PROJECT_DIR}/taming-transformers'
+    if os.path.exists(expected_taming_path):
+        sys.path.append(expected_taming_path)
 
 if __name__ == '__main__':
     try:

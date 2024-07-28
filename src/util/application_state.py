@@ -1,6 +1,6 @@
 """Coordinate the current application state, mostly for enabling/disabling components that should only be active
    in particular states."""
-from typing import List
+from typing import List, Dict, Any
 
 from PyQt6.QtCore import QObject, pyqtSignal
 from PyQt6.QtGui import QAction
@@ -39,6 +39,7 @@ class AppStateTracker(metaclass=Singleton):
         self._signal_object = _InnerQObject()
         self._state_changed = self._signal_object.state_changed
         self._app_state = APP_STATE_INIT
+        self._connections: Dict[QWidget | QAction, Any] = {}
 
     @staticmethod
     def set_app_state(new_state: str) -> None:
@@ -56,13 +57,25 @@ class AppStateTracker(metaclass=Singleton):
     def set_enabled_states(widget: QWidget | QAction, valid_states: List[str]) -> None:
         """Configures a widget or action to automatically enable or disable itself based on application state."""
         assert isinstance(valid_states, list), f'Invalid state list {valid_states}'
+        state_tracker = AppStateTracker()
+        assert widget not in state_tracker._connections, 'Widget/Action already connected to app state'
 
         def _change_enabled_status(app_state: str, connected_widget=widget, state_list=None) -> None:
+            assert connected_widget in AppStateTracker()._connections
             if state_list is None:
                 state_list = valid_states
             connected_widget.setEnabled(app_state in state_list)
-        AppStateTracker.signal().connect(_change_enabled_status)
+        state_tracker._connections[widget] = AppStateTracker.signal().connect(_change_enabled_status)
         _change_enabled_status(AppStateTracker.app_state())
+
+    @staticmethod
+    def disconnect_from_state(widget: QWidget | QAction) -> None:
+        """Removes a widget or action that was previously connected to state change signals."""
+        state_tracker = AppStateTracker()
+        if widget in state_tracker._connections:
+            state_tracker.signal().disconnect(state_tracker._connections[widget])
+            del state_tracker._connections[widget]
+        assert widget not in AppStateTracker()._connections
 
     @staticmethod
     def signal() -> pyqtSignal:

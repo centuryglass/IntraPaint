@@ -134,27 +134,16 @@ class MainWindow(QMainWindow):
 
     def set_control_panel(self, control_panel: Optional[QWidget]) -> None:
         """Sets the image generation control panel."""
+        assert control_panel is None or control_panel != self._control_panel
         if self._control_panel is not None:
             tab_names = [self._main_widget.tabText(i) for i in range(self._main_widget.count())]
+            self._control_panel.setVisible(False)
             if CONTROL_TAB_NAME in tab_names:
                 self._main_widget.removeTab(tab_names.index(CONTROL_TAB_NAME))
-                self._control_panel.setParent(None)
-                self._control_panel = control_panel
-                if control_panel is not None:
-                    self._main_widget.addTab(self._control_panel, CONTROL_TAB_NAME)
-            else:
-                assert self._control_panel in self._layout.children()
+            elif self._control_panel in self._layout.children():
                 panel_index = self._layout.indexOf(self._control_panel)
                 self._layout.takeAt(panel_index)
-                self._control_panel.setParent(None)
-                self._control_panel = control_panel
-                if control_panel is not None:
-                    self._layout.addWidget(self._control_panel)
-        else:
-            self._control_panel = control_panel
-        assert hasattr(control_panel, 'generate_signal') and isinstance(control_panel.generate_signal,
-                                                                        (pyqtBoundSignal, pyqtSignal))
-        control_panel.generate_signal.connect(self.generate_signal.emit)
+        self._control_panel = control_panel
         self.refresh_layout()
 
     def _get_appropriate_orientation(self) -> Qt.Orientation:
@@ -212,6 +201,7 @@ class MainWindow(QMainWindow):
             else:  # horizontal
                 if self._control_panel in self._layout.children():
                     self._layout.removeWidget(self._control_panel)
+                    self._control_panel.setParent(None)
                 if CONTROL_TAB_NAME not in tab_names:
                     self._main_widget.addTab(self._control_panel, CONTROL_TAB_NAME)
                 self._tool_panel.show_generate_button(True)

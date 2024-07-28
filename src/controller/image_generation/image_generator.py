@@ -54,6 +54,14 @@ class ImageGenerator(MenuBuilder, QObject):
         """Returns an extended description of this generator."""
         raise NotImplementedError()
 
+    def get_preview_image(self) -> QImage:
+        """Returns a preview image for this generator."""
+        raise NotImplementedError()
+
+    def get_setup_text(self) -> str:
+        """Returns a rich text description of how to set up this generator."""
+        raise NotImplementedError()
+
     def is_available(self) -> bool:
         """Returns whether the generator is supported on the current system."""
         raise NotImplementedError()

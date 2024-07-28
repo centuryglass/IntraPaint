@@ -27,7 +27,7 @@ from src.util.application_state import AppStateTracker, APP_STATE_LOADING, APP_S
 from src.util.async_task import AsyncTask
 from src.util.menu_builder import menu_action
 from src.util.parameter import ParamType
-from src.util.shared_constants import EDIT_MODE_TXT2IMG, EDIT_MODE_INPAINT, EDIT_MODE_IMG2IMG
+from src.util.shared_constants import EDIT_MODE_TXT2IMG, EDIT_MODE_INPAINT, EDIT_MODE_IMG2IMG, PROJECT_DIR
 
 logger = logging.getLogger(__name__)
 
@@ -43,13 +43,39 @@ def _tr(*args):
 MENU_TOOLS = _tr('Tools')
 
 SD_WEBUI_GENERATOR_NAME = _tr('Stable-Diffusion WebUI API')
-SD_WEBUI_GENERATOR_DESCRIPTION = _tr('<p>Generate or alter images using Stable-Diffusion through an API connection to'
-                                     'the Stable-Diffusion WebUI.</p></br> <p>The recommended provider for this is '
-                                     '<a href="https://github.com/lllyasviel/stable-diffusion-webui-forge>Forge WebUI'
-                                     '</a>, but the original <a href='
-                                     '"https://github.com/AUTOMATIC1111/stable-diffusion-webui">Stable-Diffusion WebUI'
-                                     '</p> also works. Follow instructions <a href="TODO: installation guide">here'
-                                     '</a> to install and configure either option.')
+SD_WEBUI_GENERATOR_DESCRIPTION = _tr('<h2>Stable-Diffusion: via WebUI API</h2>'
+                                     '<p>Released in August 2022, Stable-Diffusion remains the most versatile and '
+                                     'useful free image generation model.</p>'
+                                     '<h2>Generator capabilities and limits:</h2>'
+                                     '<ul>'
+                                     '<li>Requires only 4GB of VRAM, or 8GB if using an SDXL model.</li>'
+                                     '<li>Tuned for an ideal resolution of 512x512 (1024x1024 for SDXL).</li>'
+                                     '<li>A huge variety of fine-tuned variant models are available.</li>'
+                                     '<li>The magnitude of changes made to existing images can be precisely controlled'
+                                     ' by varying denoising strength.</li>'
+                                     '<li>Supports LORAs, miniature extension models adding support for new styles and'
+                                     ' subjects.</li>'
+                                     '<li>Supports positive and negative prompting, where (parentheses) draw additional'
+                                     ' attention to prompt sections, and [square brackets] reduce attention.</li>'
+                                     '<li>Supports ControlNet modules, allowing image generation to be guided by '
+                                     'arbitrary constraints like depth maps, existing image lines, and more.</li>'
+                                     '</ul><h3>Stable-Diffusion WebUI:</h3><p>The Stable-Diffusion WebUI is one of the '
+                                     'first interfaces created for using Stable-Diffusion. This IntraPaint generator '
+                                     'offloads image generation to that system through a network connection.  The '
+                                     'WebUI instance can be run on the same computer as IntraPaint, or remotely on a '
+                                     'separate server.</p>')
+
+
+SD_WEBUI_GENERATOR_SETUP = _tr('<h2>Installing the WebUI</h2><p>The <a href="https://github.com/lllyasviel/'
+                               'stable-diffusion-webui-forge">Forge WebUI</a> is the recommended version, but the'
+                               ' original <a href="https://github.com/AUTOMATIC1111/stable-diffusion-webui">'
+                               'Stable-Diffusion WebUI</a> also works. Pick one of those, and follow instructions at'
+                               ' the link to install it.</p><p>Once the WebUI is installed, open the "webui-user.bat" '
+                               'file in its main folder (or "webui-user.sh" on Linux and MacOS). Where it says "set '
+                               'COMMANDLINE_ARGS", add <nobr>--api</nobr>, save changes, and run the webui-user script.'
+                               ' Once the WebUI starts successfully, you should be able to activate this IntraPaint'
+                               ' generator.</p>')
+SD_PREVIEW_IMAGE = f'{PROJECT_DIR}/resources/generator_preview/stable-diffusion.png'
 DEFAULT_SD_URL = 'http://localhost:7860'
 STABLE_DIFFUSION_CONFIG_CATEGORY = 'Stable-Diffusion'
 AUTH_ERROR_DETAIL_KEY = 'detail'
@@ -113,10 +139,19 @@ class SDWebUIGenerator(ImageGenerator):
         self._menu_actions: Dict[str, List[QAction]] = {}
         self._connected = False
         self._control_panel: Optional[SDWebUIPanel] = None
+        self._preview = QImage(SD_PREVIEW_IMAGE)
 
     def get_display_name(self) -> str:
         """Returns a display name identifying the generator."""
         return SD_WEBUI_GENERATOR_NAME
+
+    def get_preview_image(self) -> QImage:
+        """Returns a preview image for this generator."""
+        return self._preview
+
+    def get_setup_text(self) -> str:
+        """Returns a rich text description of how to set up this generator."""
+        return SD_WEBUI_GENERATOR_SETUP
 
     def get_description(self) -> str:
         """Returns an extended description of this generator."""
@@ -124,7 +159,8 @@ class SDWebUIGenerator(ImageGenerator):
 
     def is_available(self) -> bool:
         """Returns whether the generator is supported on the current system."""
-        assert self._webservice is not None
+        if self._webservice is None:
+            self._webservice = A1111Webservice(self._server_url)
         # Login automatically if username/password are defined as env variables.
         # Obviously this isn't terribly secure, but A1111 auth security is already pretty minimal, and I'm just using
         # this for testing.
@@ -227,10 +263,10 @@ class SDWebUIGenerator(ImageGenerator):
             self._lora_images = None
         cache = Cache()
         cache.set(Cache.CONTROLNET_VERSION, -1.0)
-        cache.set(Cache.CONTROLNET_CONTROL_TYPES, '')
-        cache.set(Cache.CONTROLNET_MODULES, '')
-        cache.set(Cache.CONTROLNET_MODELS, '')
-        cache.set(Cache.LORA_MODELS, '')
+        cache.set(Cache.CONTROLNET_CONTROL_TYPES, {})
+        cache.set(Cache.CONTROLNET_MODULES, {})
+        cache.set(Cache.CONTROLNET_MODELS, {})
+        cache.set(Cache.LORA_MODELS, [])
         self.clear_menus()
 
     def init_settings(self, settings_modal: SettingsModal) -> None:

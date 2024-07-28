@@ -495,6 +495,14 @@
         "default": "Ctrl+Alt+W",
         "saved": true
     },
+    "generator_select_shortcut": {
+        "label": "Select Image Generator",
+        "category": "Keybindings",
+        "description": "Selects an AI image generator",
+        "type": "string",
+        "default": "F11",
+        "saved": true
+    },
     "color_balance_shortcut": {
         "label": "RGBA Color Balance",
         "category": "Keybindings",

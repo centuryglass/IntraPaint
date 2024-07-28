@@ -351,7 +351,6 @@ class LayerStack(Layer):
             self.invalidate_pixmap()
             self.content_changed.emit(self)
 
-
     def _layer_bounds_change_slot(self, layer: ImageLayer, _) -> None:
         if layer in self._layers:
             self._image_cache.invalidate()

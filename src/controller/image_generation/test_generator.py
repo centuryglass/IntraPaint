@@ -28,6 +28,7 @@ def _tr(*args):
 
 TEST_GENERATOR_NAME = _tr('Test/development image generator')
 TEST_GENERATOR_DESCRIPTION = _tr('Mock image generator, for testing and development')
+TEST_GENERATOR_SETUP = _tr('No setup required.')
 
 
 class TestGenerator(ImageGenerator):
@@ -45,6 +46,14 @@ class TestGenerator(ImageGenerator):
     def get_description(self) -> str:
         """Returns an extended description of this generator."""
         return TEST_GENERATOR_DESCRIPTION
+
+    def get_preview_image(self) -> QImage:
+        """Returns a preview image for this generator."""
+        return QImage()
+
+    def get_setup_text(self) -> str:
+        """Returns a rich text description of how to set up this generator."""
+        return TEST_GENERATOR_SETUP
 
     def is_available(self) -> bool:
         """Returns whether the generator is supported on the current system."""

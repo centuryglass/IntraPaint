@@ -16,7 +16,7 @@ from src.ui.panel.generators.glid_panel import GlidPanel
 from src.ui.window.main_window import MainWindow
 from src.util.image_utils import qimage_to_pil_image, pil_image_to_qimage
 from src.util.optional_import import optional_import, check_import
-from src.util.shared_constants import EDIT_MODE_INPAINT
+from src.util.shared_constants import EDIT_MODE_INPAINT, PROJECT_DIR
 from src.util.validation import assert_types
 
 # Imports require considerable setup and many extra nested dependencies, so all of them are imported as optional to
@@ -43,22 +43,87 @@ def _tr(*args):
 DEFAULT_GLID_MODEL = 'models/inpaint.pt'
 MIN_GLID_VRAM = 8000000000  # This is just a rough estimate.
 GLID_CONFIG_CATEGORY = 'GLID-3-XL'
-GLID_WEB_GENERATOR_NAME = _tr('GLID-3-XL image generation')
-GLID_WEB_GENERATOR_DESCRIPTION = _tr('<p>Generate images by running a GLID-3-XL image generation model.</p></br>  <p>'
-                                     'This mode is included mostly for historical reasons, GLID-3-XL is primitive by '
-                                     'modern standards, only supporting inpainting and only generating images up to '
-                                     '256x256 pixels.  This mode was one of the two supported modes available when '
-                                     'IntraPaint alpha was released in 2022.  Instructions for setting it up can be '
-                                     'found '
-                                     '<a href="https://github.com/centuryglass/IntraPaint?tab=readme-ov-file#setup">'
-                                     'here</a></p>')
-MISSING_DEPS_ERROR = _tr('Required dependencies are missing: {dependency_list}')
+GLID_GENERATOR_NAME = _tr('GLID-3-XL image generation')
+GLID_GENERATOR_DESCRIPTION = _tr('<h1>GLID-3-XL</h1>'
+                                 '<p>GLID-3-XL was the best inpainting model available until August 2022, and the '
+                                 'first model supported by IntraPaint. IntraPaint continues to support it for '
+                                 'the sake of preserving historically interesting image generation models.'
+                                 '<h2>Generator capabilities and limits:</h2>'
+                                 '<ul>'
+                                 '<li>Requires approximately 8GB of VRAM.</li>'
+                                 '<li>Inpainting is supported at an ideal resolution of 256x256, with limited'
+                                 ' support for other resolutions.</li>'
+                                 '<li>Supports positive and negative prompting with variable guidance strength</li>'
+                                 '<li>Capable of generating images in batches, with max batch size dependent on '
+                                 'available VRAM.</li>'
+                                 '<li>Some stylistic flexibility, but limited ability to understand complex prompts.'
+                                 '</ul>')
+GLID_PREVIEW_IMAGE = f'{PROJECT_DIR}/resources/generator_preview/glid-3-xl.png'
+GLID_WEB_GENERATOR_SETUP = _tr('<h2>GLID-3-XL server setup</h2>'
+                               '<p>NOTE: Because GLID-3-XL is mainly a historical curiosity at this point, few steps '
+                               'have been taken to simplify the setup process. As the software involved becomes '
+                               'increasingly outdated, further steps may be necessary to get this generator to work. '
+                               'Currently, completing the following steps should allow IntraPaint to run GLID-3-XL:</p>'
+                               '<ol>'
+                               '<li>Make sure your computer has a NVIDIA GPU with at least 8GB of VRAM. Other GPUs'
+                               'or slightly less memory may work, but are not tested.</li>'
+                               '<li>If you are using the pre-built version of IntraPaint, you will need to switch to'
+                               ' the Git version. Here\'s how you do that:</li>'
+                               '<ol>'
+                               '<li>Ensure that all of the following are installed:</li>'
+                               '<ol><li><a href="https://www.python.org/">Python3</a></li>'
+                               '<li><a href="https://git-scm.com/">Git</a></li>'
+                               '<li><a href="https://developer.nvidia.com/cuda-toolkit">CUDA</a> (if using a NVIDIA'
+                               ' graphics card)</li>'
+                               '<li><a href="https://www.anaconda.com/download/">Anaconda</a></li></ol>'
+                               '<li>Depending on your system, you may need to take extra steps to add Python, Git, '
+                               'and Anaconda to your system path, or perform other configuration steps. Refer to the '
+                               'sites linked above for full documentation.</li>'
+                               '<li>In a terminal window, run <code>git clone https://github.com/centuryglass/'
+                               'IntraPaint.git</code> to download the full IntraPaint repository, then change directory'
+                               ' to the new IntraPaint folder that this creates.</li></ol>'
+                               '<li>In a terminal window, run `<code>conda create -n intrapaint-glid</code>`, then '
+                               '`<code>conda activate intrapaint-glid</code>` to prepare to install additional'
+                               ' dependencies.</li>'       
+                               '<li>Within the the terminal in the IntraPaint directory with the `intrapaint-glid`'
+                               'environment active, install the appropriate versions of torch and torchvision found '
+                               '<a href="https://pytorch.org/get-started/locally/">here</a>.'
+                               '<li>Run `<code>conda install pip</code>` to make sure the environment has its own copy'
+                               ' of the python package manager.</li>'
+                               '<li>Run `<code>pip install -r requirements.txt</code>` to install primary IntraPaint'
+                               ' requirements within the anaconda environment.</li>'
+                               '<li>Run `<code>pip install -r requirements-glid.txt</code>` to install additional'
+                               ' dependencies for GLID-3-XL.</li>'
+                               '<li>Run the following Git commands to add two other required dependencies:<li><ol>'
+                               '<li>`<code>git clone https://github.com/CompVis/taming-transformers.git</code>`</li>'
+                               '<li>`<code>git clone https://github.com/CompVis/latent-diffusion.git</code>`</li>'
+                               '<li>Download one or more GLID-3-XL inpainting models, and place them in the IntraPaint/'
+                               'models/ directory. These are the main options available:<li><ol>'
+                               '<li><a href="https://dall-3.com/models/glid-3-xl/">inpaint.pt</a>, the original GLID-3-'
+                               'XL inpainting model</li>'
+                               '<li><a href="https://huggingface.co/laion/ongo/resolve/main/ongo.pt>ongo.pt</a>, '
+                               'trained by LAION on paintings from the Wikiart dataset</li>'
+                               '<li><a href="https://huggingface.co/laion/erlich/resolve/main/model/ema_0.9999_120000'
+                               '.pt">erlich.pt</a>, trained on the LAION large logo dataset</li>'
+                               '</ol>'
+                               '<li>Start IntraPaint by running `<code>python IntraPaint.py</code>`. If you are using a'
+                               ' model other than the default inpaint.pt, instead run `<code>python'
+                               ' Intrapaint_server.py  --model_path models/model.pt</code>`, replacing "model.pt" with'
+                               ' the file name of whatever model you are using.</li>'
+                               '<li>If all steps were performed correctly, you should be able to activate this '
+                               'generator without any errors.</li>')
+
+MISSING_DEPS_ERROR = _tr('Required dependencies are missing: <code>{dependency_list}</code>')
 NOT_ENOUGH_VRAM_ERROR = _tr('Not enough VRAM for the GLID-3-XL generator: {mem_free} free memory found, expected at'
                             ' least {min_vram}')
 MISSING_MODEL_ERROR = _tr('{model_name} model file expected at "{model_path}" is missing')
 
-EXPECTED_MODULE_NAMES = ['torch', 'torchvision', 'transforms', 'PyYAML', 'tqdm', 'scipy', 'regex', 'numpy', 'blobfile',
-                         'einops', 'clip', 'setuptools']
+EXPECTED_MODULE_NAMES = ['torch', 'torchvision', 'pytorch-lightning', 'transformers', 'PyYAML', 'tqdm', 'scipy',
+                         'regex', 'numpy', 'blobfile', 'einops', 'openai-clip', 'setuptools']
+MISSING_REPO_ERROR = _tr('Missing required {repo_name} repository, please run `git clone {repo_url}` within the '
+                         'IntraPaint directory.')
+TAMING_TRANSFORMERS_REPO = 'https://github.com/CompVis/taming-transformers.git'
+LATENT_DIFFUSION_REPO = 'https://github.com/CompVis/latent-diffusion.git'
 
 
 GLID_MODEL = _tr('GLID-3-XL')
@@ -92,19 +157,33 @@ class Glid3XLGenerator(ImageGenerator):
         self._clip_model: Optional[Any] = None
         self._clip_preprocess: Optional[Any] = None
         self._normalize: Optional[Any] = None
+        self._preview = QImage(GLID_PREVIEW_IMAGE)
 
     def get_display_name(self) -> str:
         """Returns a display name identifying the generator."""
-        return GLID_WEB_GENERATOR_NAME
+        return GLID_GENERATOR_NAME
 
     def get_description(self) -> str:
         """Returns an extended description of this generator."""
-        return GLID_WEB_GENERATOR_DESCRIPTION
+        return GLID_GENERATOR_DESCRIPTION
+
+    def get_preview_image(self) -> QImage:
+        """Returns a preview image for this generator."""
+        return self._preview
+
+    def get_setup_text(self) -> str:
+        """Returns a rich text description of how to set up this generator."""
+        return GLID_WEB_GENERATOR_SETUP
 
     def is_available(self) -> bool:
         """Returns whether the generator is supported on the current system."""
+        for import_name, repo_name, repo_url in (('taming', 'taming-transformers', TAMING_TRANSFORMERS_REPO),
+                                                 ('ldm', 'latent-diffusion', LATENT_DIFFUSION_REPO)):
+            if not check_import(import_name):
+                self.status_signal.emit(MISSING_DEPS_ERROR.format(repo_name=repo_name, repo_url=repo_url))
+                return False
         if None in (torch, get_device, foreach_image_in_sample, generate_samples, create_sample_function, load_models):
-            missing_modules = ','.join([module for module in EXPECTED_MODULE_NAMES if check_import(module) is False])
+            missing_modules = ', '.join([module for module in EXPECTED_MODULE_NAMES if check_import(module) is False])
             self.status_signal.emit(MISSING_DEPS_ERROR.format(dependency_list=missing_modules))
             return False
         device = get_device()

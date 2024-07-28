@@ -100,7 +100,7 @@ class MenuBuilder:
             menu = None
             for action in menu_bar.actions():
                 possible_menu = action.menu()
-                if possible_menu is not None and possible_menu.title() == title:
+                if possible_menu is not None and possible_menu.title().replace('&', '') == menu_name:
                     menu = possible_menu
                     break
             if menu is None:
@@ -125,7 +125,10 @@ class MenuBuilder:
             return None
         _menu_set_visible(menu, True)
         for existing_action in self._actions[menu_name]:
-            if existing_action.text() == title:
+            if existing_action.text().replace('&', '') == title:
+                if not existing_action.isVisible():
+                    existing_action.setVisible(True)
+                    existing_action.setEnabled(True)
                 return existing_action
         action = QAction(title)
         if tooltip is not None and tooltip != '':
@@ -159,10 +162,10 @@ class MenuBuilder:
             return
         menu = self._menus[menu_name]
         for action in menu.actions():
-            if action.text() == action_name:
-                menu.removeAction(action)
-                self._actions[menu_name].remove(action)
-                action.deleteLater()
+            if action.text().replace('&', '') == action_name:
+                AppStateTracker.disconnect_from_state(action)
+                action.setEnabled(False)
+                action.setVisible(False)
                 break
         if len(menu.actions()) == 0:
             _menu_set_visible(menu, False)
@@ -186,7 +189,7 @@ class MenuBuilder:
             # Check if the action already exists. If so, remove it if checks are no longer passing.
             if menu_name in self._menus:
                 for existing_action in self._actions[menu_name]:
-                    if existing_action.text() == title:
+                    if existing_action.text().replace('&', '') == title:
                         if menu_action_method.condition_check is not None and menu_action_method.condition_check(
                                 self) is False:
                             self.remove_menu_action(window, menu_name, title)
@@ -202,9 +205,10 @@ class MenuBuilder:
         """Remove all @menu_action methods that this class added to the menu"""
         for menu_name, menu in self._menus.items():
             while len(self._actions[menu_name]) > 0:
-                action = self._actions[menu.title()].pop()
-                menu.removeAction(action)
-                action.deleteLater()
+                action = self._actions[menu_name].pop()
+                AppStateTracker.disconnect_from_state(action)
+                action.setEnabled(False)
+                action.setVisible(False)
             if len(menu.actions()) == 0:
                 _menu_set_visible(menu, False)
 

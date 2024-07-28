@@ -104,6 +104,7 @@ class KeyConfig(Config, metaclass=Singleton):
     FILL_TOOL_KEY: str
     GENERATE_SHORTCUT: str
     GENERATION_AREA_TOOL_KEY: str
+    GENERATOR_SELECT_SHORTCUT: str
     GROW_SELECTION_SHORTCUT: str
     IMAGE_TO_LAYERS_SHORTCUT: str
     IMAGE_WINDOW_SHORTCUT: str

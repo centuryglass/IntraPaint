@@ -28,6 +28,7 @@ class LayerGroupWidget(CollapsibleBox):
         self._image_stack = image_stack
         self._layer_items: Dict[Layer, LayerGroupWidget | ImageLayerWidget] = {}
         self._parent_item = ImageLayerWidget(layer_stack, image_stack, self)
+
         def _on_drag() -> None:
             if self.is_expanded():
                 self.set_expanded(False)

@@ -20,6 +20,7 @@ from src.config.key_config import KeyConfig
 from src.controller.image_generation.glid3_webservice_generator import Glid3WebserviceGenerator, DEFAULT_GLID_URL
 from src.controller.image_generation.glid3_xl_generator import Glid3XLGenerator
 from src.controller.image_generation.image_generator import ImageGenerator
+from src.controller.image_generation.null_generator import NullGenerator
 from src.controller.image_generation.sd_webui_generator import SDWebUIGenerator, DEFAULT_SD_URL
 from src.controller.image_generation.test_generator import TestGenerator
 from src.image.filter.blur import BlurFilter
@@ -36,6 +37,7 @@ from src.ui.modal.new_image_modal import NewImageModal
 from src.ui.modal.resize_canvas_modal import ResizeCanvasModal
 from src.ui.modal.settings_modal import SettingsModal
 from src.ui.panel.layer.layer_panel import LayerPanel
+from src.ui.window.generator_setup_window import GeneratorSetupWindow
 from src.ui.window.main_window import MainWindow
 from src.undo_stack import undo, redo
 from src.util.application_state import AppStateTracker, APP_STATE_NO_IMAGE, APP_STATE_EDITING, APP_STATE_LOADING, \
@@ -123,8 +125,8 @@ class AppController(MenuBuilder):
         app = QApplication.instance() or QApplication(sys.argv)
         config = AppConfig()
         config.apply_args(args)
-        self._generator: Optional[ImageGenerator] = None
         self._layer_panel: Optional[LayerPanel] = None
+        self._generator_window: Optional[GeneratorSetupWindow] = None
 
         # Initialize edited image data structures:
         self._image_stack = ImageStack(config.get(AppConfig.DEFAULT_IMAGE_SIZE), config.get(AppConfig.EDIT_SIZE),
@@ -146,6 +148,14 @@ class AppController(MenuBuilder):
             self._window.setMaximumSize(size)
         if args.init_image is not None:
             self.load_image(file_path=args.init_image)
+
+        # Prepare generator options:
+        self._sd_generator = SDWebUIGenerator(self._window, self._image_stack, args)
+        self._glid_generator = Glid3XLGenerator(self._window, self._image_stack, args)
+        self._glid_web_generator = Glid3WebserviceGenerator(self._window, self._image_stack, args)
+        self._test_generator = TestGenerator(self._window, self._image_stack)
+        self._null_generator = NullGenerator(self._window, self._image_stack)
+        self._generator = self._null_generator
 
         # Load settings:
         self._settings_modal = SettingsModal(self._window)
@@ -215,37 +225,34 @@ class AppController(MenuBuilder):
         mode = args.mode
         match mode:
             case _ if mode == GENERATION_MODE_SD_WEBUI:
-                self.load_image_generator(SDWebUIGenerator(self._window, self._image_stack, args))
+                self.load_image_generator(self._sd_generator)
             case _ if mode == GENERATION_MODE_WEB_GLID:
-                self.load_image_generator(Glid3WebserviceGenerator(self._window, self._image_stack, args))
+                self.load_image_generator(self._glid_web_generator)
             case _ if mode == GENERATION_MODE_LOCAL_GLID:
-                self.load_image_generator(Glid3XLGenerator(self._window, self._image_stack, args))
+                self.load_image_generator(self._glid_generator)
             case _ if mode == GENERATION_MODE_TEST:
-                self.load_image_generator(TestGenerator(self._window, self._image_stack))
+                self.load_image_generator(self._test_generator)
             case _:
                 if mode != GENERATION_MODE_AUTO:
                     logger.error(f'Unexpected mode {mode}, defaulting to mode=auto')
                 server_url = args.server_url
-                if server_url == DEFAULT_GLID_URL:
-                    self.load_image_generator(Glid3WebserviceGenerator(self._window, self._image_stack, args))
-                elif server_url == DEFAULT_SD_URL:
-                    self.load_image_generator(SDWebUIGenerator(self._window, self._image_stack, args))
-                glid_generator = Glid3WebserviceGenerator(self._window, self._image_stack, args)
-                if glid_generator.is_available():
-                    self.load_image_generator(glid_generator)
+                if server_url == DEFAULT_SD_URL:
+                    self.load_image_generator(self._sd_generator)
+                elif server_url == DEFAULT_GLID_URL:
+                    self.load_image_generator(self._glid_web_generator)
+                if self._sd_generator.is_available():
+                    self.load_image_generator(self._sd_generator)
                     return
-                sd_generator = SDWebUIGenerator(self._window, self._image_stack, args)
-                if sd_generator.is_available():
-                    self.load_image_generator(sd_generator)
+                if self._glid_web_generator.is_available():
+                    self.load_image_generator(self._glid_generator)
                     return
                 elif args.dev:
-                    self.load_image_generator(TestGenerator(self._window, self._image_stack))
+                    self.load_image_generator(self._test_generator)
                 else:
-                    glid_local_generator = Glid3XLGenerator(self._window, self._image_stack, args)
-                    if glid_local_generator.is_available():
-                        self.load_image_generator(glid_local_generator)
+                    if self._glid_generator.is_available():
+                        self.load_image_generator(self._glid_generator)
                         return
-                logger.error('No valid generator detected, starting with none enabled.')
+                logger.info('No valid generator detected, starting with none enabled.')
 
     def start_app(self) -> None:
         """Start the application."""
@@ -271,6 +278,8 @@ class AppController(MenuBuilder):
         self._generator.init_settings(self._settings_modal)
         self._generator.build_menus(self._window)
         self._window.set_control_panel(self._generator.get_control_panel())
+        if self._generator_window is not None:
+            self._generator_window.mark_active_generator(generator)
 
     def init_settings(self, settings_modal: SettingsModal) -> None:
         """Load application settings into a SettingsModal"""
@@ -594,10 +603,12 @@ class AppController(MenuBuilder):
     @menu_action(MENU_IMAGE, 'generate_shortcut', 23, valid_app_states=[APP_STATE_EDITING])
     def start_and_manage_inpainting(self) -> None:
         """Start inpainting/image editing based on the current state of the UI."""
-        if self._generator is None:
-            print('TODO: interface for selecting an appropriate image generator.')
+        if AppStateTracker.app_state() != APP_STATE_EDITING:
             return
-        self._generator.start_and_manage_image_generation()
+        if self._generator == self._null_generator:
+            self.show_generator_window()
+        else:
+            self._generator.start_and_manage_image_generation()
 
     # Selection menu:
     @menu_action(MENU_SELECTION, 'select_all_shortcut', 30, valid_app_states=[APP_STATE_EDITING])
@@ -706,6 +717,22 @@ class AppController(MenuBuilder):
     def show_image_window(self) -> None:
         """Show the image preview window."""
         self._window.show_image_window()
+
+    @menu_action(MENU_TOOLS, 'generator_select_shortcut', 53)
+    def show_generator_window(self) -> None:
+        """Show the generator selection window."""
+        if self._generator_window is None:
+            self._generator_window = GeneratorSetupWindow()
+            self._generator_window.add_generator(self._sd_generator)
+            self._generator_window.add_generator(self._glid_generator)
+            self._generator_window.add_generator(self._glid_web_generator)
+            if '--dev' in sys.argv or self._generator == self._test_generator:
+                self._generator_window.add_generator(self._test_generator)
+            self._generator_window.add_generator(self._null_generator)
+            self._generator_window.activate_signal.connect(self.load_image_generator)
+        self._generator_window.mark_active_generator(self._generator)
+        self._generator_window.show()
+        self._generator_window.raise_()
 
     # Internal/protected:
 
