@@ -5,7 +5,7 @@ from PyQt6.QtWidgets import QApplication
 
 from src.image.layers.image_layer import ImageLayer
 from src.image.layers.layer import Layer
-from src.ui.panel.layer.layer_toggle_button import LayerToggleButton
+from src.ui.panel.layer_ui.layer_toggle_button import LayerToggleButton
 from src.util.shared_constants import PROJECT_DIR
 
 # The QCoreApplication.translate context for strings in this file

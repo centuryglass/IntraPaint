@@ -156,6 +156,7 @@ class LayerCanvas:
         self._layer.opacity_changed.disconnect(self._layer_opacity_change_slot)
         self._layer.composition_mode_changed.disconnect(self._layer_composition_mode_change_slot)
         self._layer.z_value_changed.disconnect(self._layer_z_value_change_slot)
+        self._layer.alpha_lock_changed.disconnect(self._layer_alpha_lock_change_slot)
 
     def connect_layer_signals(self) -> None:
         """Reconnect signal handlers for the connected layer. Only call after disconnect_layer_signals, or within
@@ -168,6 +169,7 @@ class LayerCanvas:
         self._layer.opacity_changed.connect(self._layer_opacity_change_slot)
         self._layer.composition_mode_changed.connect(self._layer_composition_mode_change_slot)
         self._layer.z_value_changed.connect(self._layer_z_value_change_slot)
+        self._layer.alpha_lock_changed.connect(self._layer_alpha_lock_change_slot)
 
     def _set_brush_size(self, new_size: int) -> None:
         self._brush_size = new_size
@@ -204,6 +206,9 @@ class LayerCanvas:
 
     def _layer_composition_mode_change_slot(self, layer: ImageLayer, mode: QPainter.CompositionMode) -> None:
         raise NotImplementedError('Implement _layer_composition_mode_change_slot to change the canvas rendering mode.')
+
+    def _layer_alpha_lock_change_slot(self, layer: ImageLayer, locked: bool):
+        raise NotImplementedError()
 
     # noinspection PyUnusedLocal
     def _layer_size_change_slot(self, layer: ImageLayer, size: QSize) -> None:

@@ -38,8 +38,9 @@ class TransformGroup(TransformLayer):
             else:
                 bounds = bounds.united(layer.transformed_bounds)
         if bounds is None:
-            return QRect()
-        bounds = self.transform.inverted()[0].mapRect(bounds)
+            bounds = QRect()
+        else:
+            bounds = self.transform.inverted()[0].mapRect(bounds)
         if self.size != bounds.size():
             self.set_size(bounds.size())
         return bounds
@@ -78,6 +79,7 @@ class TransformGroup(TransformLayer):
             self._groups.append(layer)
             for child in layer.child_layers:
                 self._layer_added_slot(child)
+        self._get_local_bounds()  # Updates size, emits size_changed if needed
 
     def _layer_removed_slot(self, layer: Layer) -> None:
         assert isinstance(layer, (TransformLayer, LayerStack))
@@ -93,3 +95,4 @@ class TransformGroup(TransformLayer):
             self._groups.remove(layer)
             for child in layer.child_layers:
                 self._layer_removed_slot(child)
+        self._get_local_bounds()  # Updates size, emits size_changed if needed

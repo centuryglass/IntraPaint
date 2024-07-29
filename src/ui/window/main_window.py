@@ -15,7 +15,7 @@ from src.hotkey_filter import HotkeyFilter
 from src.image.layers.image_stack import ImageStack
 from src.ui.generated_image_selector import GeneratedImageSelector
 from src.ui.panel.image_panel import ImagePanel
-from src.ui.panel.layer.layer_panel import LayerPanel
+from src.ui.panel.layer_ui.layer_panel import LayerPanel
 from src.ui.panel.tool_panel import ToolPanel
 from src.ui.widget.draggable_divider import DraggableDivider
 from src.ui.widget.loading_widget import LoadingWidget

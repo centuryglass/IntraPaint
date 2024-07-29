@@ -29,6 +29,7 @@ class MPTile(QGraphicsItem):
                  parent: Optional[QGraphicsItem] = None):
         """Initialize tile data."""
         super().__init__(parent)
+        self._lock_alpha = False
         self._pixels: Optional[TilePixelBuffer] = tile_buffer
         self._size = size
         self._cache_image: Optional[QImage] = QImage(size, QImage.Format.Format_ARGB32_Premultiplied)
@@ -57,6 +58,19 @@ class MPTile(QGraphicsItem):
         if new_mode != self._composition_mode:
             self._composition_mode = QPainter.CompositionMode(new_mode)
             self.update()
+
+    @property
+    def alpha_lock(self) -> bool:
+        """Return whether the alpha channel is currently locked."""
+        return self._lock_alpha
+
+    @alpha_lock.setter
+    def alpha_lock(self, locked: bool) -> None:
+        if self._lock_alpha and not locked:  # When unlocking, make sure suppressed alpha changes don't appear suddenly
+            if not self._cache_valid:
+                self.update_cache()
+            self.copy_image_into_pixel_buffer(self._pixels, self._cache_image, 0, 0, False)
+        self._lock_alpha = locked
 
     @property
     def is_valid(self) -> bool:
@@ -176,6 +190,10 @@ class MPTile(QGraphicsItem):
             return False  # Don't waste time converting and copying transparent pixels into a transparent image.
         np_pixels = numpy_16bit_to_8bit(np_pixels)
 
+        if self._lock_alpha:
+            np_image = np_image[:, :, 0:3]
+            np_pixels = np_pixels[:, :, 0:3]
+
         if color_correction:
             # Color conversion produces artifacts at tile edges if the data is copied directly.  Avoid this by
             # discarding pixel changes that don't exceed the magnitude of error created by color conversion.
@@ -187,7 +205,7 @@ class MPTile(QGraphicsItem):
 
             for y in range(np_image.shape[0]):
                 for x in range(np_image.shape[1]):
-                    if np_image[y, x, ALPHA] == 0:
+                    if not self._lock_alpha and np_image[y, x, ALPHA] == 0:
                         # Don't filter out changes to transparent pixels:
                         np_image[y, x] = np_pixels[y, x]
                         continue

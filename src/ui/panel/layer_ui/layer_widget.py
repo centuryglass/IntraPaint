@@ -16,11 +16,11 @@ from src.image.layers.layer_stack import LayerStack
 from src.image.layers.transform_layer import TransformLayer
 from src.tools.selection_tool import SELECTION_TOOL_LABEL
 from src.ui.input_fields.editable_label import EditableLabel
-from src.ui.panel.layer.layer_alpha_lock_button import LayerAlphaLockButton
-from src.ui.panel.layer.layer_lock_button import LayerLockButton
-from src.ui.panel.layer.layer_toggle_button import ICON_SIZE
+from src.ui.panel.layer_ui.layer_alpha_lock_button import LayerAlphaLockButton
+from src.ui.panel.layer_ui.layer_lock_button import LayerLockButton
+from src.ui.panel.layer_ui.layer_toggle_button import ICON_SIZE
 
-from src.ui.panel.layer.layer_visibility_button import LayerVisibilityButton
+from src.ui.panel.layer_ui.layer_visibility_button import LayerVisibilityButton
 from src.ui.widget.bordered_widget import BorderedWidget
 from src.util.display_size import find_text_size
 from src.util.geometry_utils import get_scaled_placement
@@ -56,7 +56,7 @@ MENU_OPTION_MIRROR_HORIZONTAL = _tr('Mirror horizontally')
 COPIED_LAYER_NAME = _tr('{src_layer_name} copied content')
 
 
-class ImageLayerWidget(BorderedWidget):
+class LayerWidget(BorderedWidget):
     """A single layer's representation in the list"""
 
     dragging = pyqtSignal()
@@ -96,8 +96,8 @@ class ImageLayerWidget(BorderedWidget):
         self._inactive_color = self._active_color.darker() if self._active_color.lightness() > 100 \
             else self._active_color.lighter()
         self.setSizePolicy(QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Maximum))
-        if ImageLayerWidget._layer_transparency_background is None:
-            ImageLayerWidget._layer_transparency_background = get_transparency_tile_pixmap(QSize(64, 64))
+        if LayerWidget._layer_transparency_background is None:
+            LayerWidget._layer_transparency_background = get_transparency_tile_pixmap(QSize(64, 64))
         self.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self.customContextMenuRequested.connect(self._menu)
         if isinstance(layer, ImageLayer):
@@ -131,8 +131,8 @@ class ImageLayerWidget(BorderedWidget):
         painter = QPainter(self._preview_pixmap)
         paint_bounds = QRect(QPoint(), paint_bounds.size())
         if self._layer != self._image_stack.selection_layer:
-            assert ImageLayerWidget._layer_transparency_background is not None
-            painter.drawTiledPixmap(paint_bounds, ImageLayerWidget._layer_transparency_background)
+            assert LayerWidget._layer_transparency_background is not None
+            painter.drawTiledPixmap(paint_bounds, LayerWidget._layer_transparency_background)
         else:
             painter.fillRect(paint_bounds, Qt.GlobalColor.darkGray)
         scale = paint_bounds.width() / self._layer_image.width()

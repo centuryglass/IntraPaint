@@ -552,11 +552,12 @@ class _Handle(QGraphicsItem):
             mirrored = (scale_y < 0 < scale_x) or (scale_x < 0 < scale_y)
 
             if mirrored:
+                angle *= -1
                 angles = {
-                    TL_HANDLE_ID: 270.0,
-                    TR_HANDLE_ID: 180.0,
-                    BR_HANDLE_ID: 90.0,
-                    BL_HANDLE_ID: 0.0
+                    TL_HANDLE_ID: 90.0 if scale_x < 0 else 270.0,
+                    TR_HANDLE_ID: 0.0 if scale_x < 0 else 180.0,
+                    BR_HANDLE_ID: 270.0 if scale_x < 0 else 90.0,
+                    BL_HANDLE_ID: 180.0 if scale_x < 0 else 0.0
                 }
             else:
                 angles = {

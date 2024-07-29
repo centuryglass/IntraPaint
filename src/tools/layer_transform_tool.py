@@ -470,7 +470,6 @@ class LayerTransformTool(BaseTool):
             self._layer.z_value_changed.connect(self._layer_z_value_change_slot)
             self._layer.size_changed.connect(self._layer_size_change_slot)
             self._layer.lock_changed.connect(self._layer_lock_change_slot)
-            self._transform_outline.setEnabled(not layer.locked)
         else:
             self._preview.set_layer_bounds(QRect())
             self._transform_outline.setVisible(False)
@@ -527,10 +526,11 @@ class LayerTransformTool(BaseTool):
         else:
             self._initial_transform = layer.transform
             self._preview.set_layer_bounds(layer.bounds)
-            self._transform_outline.setVisible(layer.visible)
+            self._transform_outline.setVisible(layer.visible and not layer.size.isEmpty())
             self._transform_outline.setZValue(layer.z_value + 1)
             self._preview.set_transform(self._initial_transform)
             self._transform_outline.setTransform(self._initial_transform)
+        self._control_panel.setEnabled(layer is not None and not layer.locked and not self._layer.size.isEmpty())
         self._update_all_controls()
 
     def _on_activate(self) -> None:

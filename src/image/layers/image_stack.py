@@ -1030,27 +1030,29 @@ class ImageStack(QObject):
 
     def _get_new_layer_placement(self, layer_parent: Optional[LayerStack] = None) -> Tuple[LayerStack, int]:
         """Default layer placement:
-        1. If no parent is provided, use the active layer's parent. If no layer is active or the root layer stack is
-           active, use the root layer stack as the parent.
-        2. Within the parent, insert above the active layer if it is under the same parent, otherwise at the end
+        1. If no parent is provided, use the active layer if it is a layer group, otherwise use the active layer's
+           parent
+        2. Within the parent, insert above the active layer if it is under the same parent, otherwise at the start
            of the list.
         3. If the parent is locked, move the new layer up until an unlocked parent is found.
         """
-        layer_index = None
+        layer_index = 0
         if layer_parent is None:
             active_layer = self.active_layer
-            if active_layer.layer_parent is not None:
-                layer_parent = cast(LayerStack, active_layer.layer_parent)
+            if isinstance(active_layer, LayerStack):
+                layer_parent = active_layer
+                index_layer: Optional[Layer] = None
+            else:
+                layer_parent = active_layer.layer_parent
                 index_layer = active_layer
-                while layer_parent.locked:
-                    index_layer = layer_parent
-                    layer_parent = cast(LayerStack, layer_parent.layer_parent)
-                    assert layer_parent is not None
+            while layer_parent is not None and layer_parent.locked:
+                index_layer = layer_parent
+                layer_parent = layer_parent.layer_parent
+            assert layer_parent is not None, 'root layer stack was locked or layer stack was broken'
+            if index_layer is not None:
                 layer_index = layer_parent.get_layer_index(index_layer)
-        if layer_parent is None:
-            layer_parent = self._layer_stack
-        if layer_index is None:
-            layer_index = layer_parent.count
+                assert layer_index is not None
+        assert layer_parent is not None
         return layer_parent, layer_index
 
     def _create_layer_internal(self, layer_name: Optional[str] = None,

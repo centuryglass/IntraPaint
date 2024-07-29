@@ -9,7 +9,7 @@ from PyQt6.QtWidgets import QVBoxLayout, QWidget
 from src.image.layers.image_stack import ImageStack
 from src.image.layers.layer import Layer
 from src.image.layers.layer_stack import LayerStack
-from src.ui.panel.layer.image_layer_widget import ImageLayerWidget
+from src.ui.panel.layer_ui.layer_widget import LayerWidget
 from src.ui.widget.collapsible_box import CollapsibleBox
 
 
@@ -26,8 +26,8 @@ class LayerGroupWidget(CollapsibleBox):
         super().__init__(scrolling=False)
         self._layer = layer_stack
         self._image_stack = image_stack
-        self._layer_items: Dict[Layer, LayerGroupWidget | ImageLayerWidget] = {}
-        self._parent_item = ImageLayerWidget(layer_stack, image_stack, self)
+        self._layer_items: Dict[Layer, LayerGroupWidget | LayerWidget] = {}
+        self._parent_item = LayerWidget(layer_stack, image_stack, self)
 
         def _on_drag() -> None:
             if self.is_expanded():
@@ -104,7 +104,7 @@ class LayerGroupWidget(CollapsibleBox):
         """Accept drag events from layer widgets."""
         assert event is not None
         moved_layer_item = event.source()
-        if not isinstance(moved_layer_item, (LayerGroupWidget, ImageLayerWidget)) or self._layer.locked \
+        if not isinstance(moved_layer_item, (LayerGroupWidget, LayerWidget)) or self._layer.locked \
                 or self._layer.parent_locked:
             return
         event.accept()
@@ -128,7 +128,7 @@ class LayerGroupWidget(CollapsibleBox):
         """Drag and drop layers to reorder them."""
         assert event is not None
         moved_layer_item = event.source()
-        if not isinstance(moved_layer_item, (LayerGroupWidget, ImageLayerWidget)):
+        if not isinstance(moved_layer_item, (LayerGroupWidget, LayerWidget)):
             return
         self.drag_ended.emit()
         moved_layer = moved_layer_item.layer
@@ -162,7 +162,7 @@ class LayerGroupWidget(CollapsibleBox):
         painter.end()
 
     @property
-    def layer_item(self) -> 'ImageLayerWidget':
+    def layer_item(self) -> 'LayerWidget':
         """Access the group's parent layer item"""
         return self._parent_item
 
@@ -193,7 +193,7 @@ class LayerGroupWidget(CollapsibleBox):
                 self.dragging.emit(QPointF(self.mapFromGlobal(child_widget.mapToGlobal(pos))))
             child_widget.dragging.connect(_handle_drag)
         else:
-            child_widget = ImageLayerWidget(layer, self._image_stack)
+            child_widget = LayerWidget(layer, self._image_stack)
         child_widget.drag_ended.connect(self.drag_ended)
         self._layer_items[layer] = child_widget
         self._list_layout.insertWidget(index, child_widget)

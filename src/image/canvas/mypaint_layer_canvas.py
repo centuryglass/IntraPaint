@@ -94,6 +94,7 @@ class MyPaintLayerCanvas(LayerCanvas):
         if self._layer is not None:
             tile.setOpacity(self._layer.opacity)
             tile.composition_mode = self._layer.composition_mode
+            tile.alpha_lock = self._layer.alpha_locked
         tile.update()
         # If currently drawing, use tiles to track the stroke bounds:
         if self._drawing:
@@ -167,6 +168,12 @@ class MyPaintLayerCanvas(LayerCanvas):
         for tile in self.scene_items():
             tile = cast(MPTile, tile)
             tile.composition_mode = mode
+
+    def _layer_alpha_lock_change_slot(self, layer: ImageLayer, locked: bool):
+        assert layer == self._layer
+        for tile in self.scene_items():
+            tile = cast(MPTile, tile)
+            tile.alpha_lock = locked
 
     def _copy_changes_to_layer(self, layer: ImageLayer):
         """Copies content back to the connected layer."""

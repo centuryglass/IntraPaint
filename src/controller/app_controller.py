@@ -36,7 +36,7 @@ from src.ui.modal.modal_utils import show_error_dialog, request_confirmation, op
 from src.ui.modal.new_image_modal import NewImageModal
 from src.ui.modal.resize_canvas_modal import ResizeCanvasModal
 from src.ui.modal.settings_modal import SettingsModal
-from src.ui.panel.layer.layer_panel import LayerPanel
+from src.ui.panel.layer_ui.layer_panel import LayerPanel
 from src.ui.window.generator_setup_window import GeneratorSetupWindow
 from src.ui.window.main_window import MainWindow
 from src.undo_stack import undo, redo

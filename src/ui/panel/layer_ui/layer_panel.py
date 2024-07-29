@@ -9,8 +9,8 @@ from PyQt6.QtWidgets import QWidget, QLabel, QVBoxLayout, QHBoxLayout, QScrollAr
 
 from src.image.layers.image_stack import ImageStack
 from src.image.layers.layer import Layer
-from src.ui.panel.layer.image_layer_widget import PREVIEW_SIZE, LAYER_PADDING, MAX_WIDTH, ImageLayerWidget, ICON_SIZE
-from src.ui.panel.layer.layer_group_widget import LayerGroupWidget
+from src.ui.panel.layer_ui.layer_widget import PREVIEW_SIZE, LAYER_PADDING, MAX_WIDTH, LayerWidget, ICON_SIZE
+from src.ui.panel.layer_ui.layer_group_widget import LayerGroupWidget
 from src.util.shared_constants import COMPOSITION_MODES, PROJECT_DIR
 
 logger = logging.getLogger(__name__)
@@ -254,7 +254,7 @@ class LayerPanel(QWidget):
                 if isinstance(child, LayerGroupWidget):
                     layer_groups.append(child)
                 else:
-                    assert isinstance(child, ImageLayerWidget)
+                    assert isinstance(child, LayerWidget)
                     child.active = child.layer.id == layer_id
         if new_active_layer is not None:
             self._update_opacity_slot(new_active_layer.opacity)

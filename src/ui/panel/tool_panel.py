@@ -19,7 +19,7 @@ from src.tools.selection_tool import SelectionTool
 from src.tools.shape_selection_tool import ShapeSelectionTool
 from src.tools.tool_event_handler import ToolEventHandler
 from src.ui.panel.image_panel import ImagePanel
-from src.ui.panel.layer.layer_panel import LayerPanel
+from src.ui.panel.layer_ui.layer_panel import LayerPanel
 from src.ui.widget.collapsible_box import CollapsibleBox
 from src.ui.widget.draggable_divider import DraggableDivider
 from src.ui.widget.key_hint_label import KeyHintLabel

@@ -99,6 +99,7 @@ GENERATE_ERROR_MESSAGE_EMPTY_MASK = _tr('Nothing was selected in the image gener
                                         ' tool to mark part of the image generation area for inpainting, move the image'
                                         ' generation area to cover selected content, or switch to another image'
                                         ' generation mode.')
+AUTH_ERROR = _tr('Login cancelled.')
 
 MAX_ERROR_COUNT = 10
 MIN_RETRY_US = 300000
@@ -174,6 +175,8 @@ class SDWebUIGenerator(ImageGenerator):
                 return True
         except requests.exceptions.RequestException as req_err:
             logger.error(f'Login check connection failed: {req_err}')
+        except AuthError:
+            self.status_signal.emit(AUTH_ERROR)
         return False
 
     def connect_to_url(self, url: str) -> bool:

@@ -8,6 +8,7 @@ from PyQt6.QtCore import QRect, QSize, QPoint, pyqtSignal, QObject
 from PyQt6.QtGui import QImage, QPainter, QPixmap, QTransform
 
 from src.image.layers.transform_layer import TransformLayer
+from src.image.mypaint.numpy_image_utils import image_data_as_numpy_8bit, numpy_intersect
 from src.ui.modal.modal_utils import show_error_dialog
 from src.undo_stack import commit_action
 from src.util.image_utils import image_content_bounds, create_transparent_image
@@ -282,10 +283,12 @@ class ImageLayer(TransformLayer):
         if not hasattr(self, 'alpha_locked'):
             return
         if self.alpha_locked:
-            painter = QPainter(image)
-            painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_DestinationIn)
-            painter.drawImage(QRect(0, 0, last_image.width(), last_image.height()), last_image)
-            painter.end()
+            np_source = image_data_as_numpy_8bit(last_image)
+            np_dst = image_data_as_numpy_8bit(image)
+            np_source, np_dst = numpy_intersect(np_source, np_dst)
+            if np_source is None or np_dst is None:
+                return
+            np_dst[:, :, 3] = np_source[:, :, 3]
 
     def crop_to_content(self):
         """Crops the layer to remove transparent areas."""
