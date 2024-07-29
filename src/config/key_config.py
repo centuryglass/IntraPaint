@@ -10,11 +10,29 @@ from src.config.config import Config
 from src.util.shared_constants import PROJECT_DIR
 from src.util.singleton import Singleton
 
+
+# The `QCoreApplication.translate` context for strings in this file
+TR_ID = 'config.key_config'
+
+
+def _tr(*args):
+    """Helper to make `QCoreApplication.translate` more concise."""
+    return QApplication.translate(TR_ID, *args)
+
+
 DEFAULT_CONFIG_PATH = f'{PROJECT_DIR}/key_config.json'
 CONFIG_DEFINITIONS = f'{PROJECT_DIR}/resources/config/key_config_definitions.json'
 
-KEY_CONFIG_ERROR_TITLE = 'Warning'
-KEY_CONFIG_ERROR_MESSAGE = 'Errors found in configurable key bindings:\n'
+KEY_CONFIG_ERROR_TITLE = _tr('Warning')
+KEY_CONFIG_ERROR_MESSAGE = _tr('Errors found in configurable key bindings:\n')
+SPEED_MODIFIER_ERROR = _tr('Invalid key for speed_modifier option: found {speed_modifier}, expected {modifiers}')
+UNKNOWN_KEY_CODE_ERROR = _tr('"{key_binding_name}" value "{key_value}" is not a recognized key')
+SPEED_MODIFIER_CONFLICT_ERROR = _tr('"{key_binding_name}" is set to {key_value}, but {speed_modifier} is the speed'
+                                    ' modifier'
+                                    ' key. This will cause {key_str} to always operate at 10x speed.')
+UNSET_KEY_ERROR = _tr('{key_binding_name} is not set')
+KEY_CONFLICT_ERROR = _tr('Key "{key_str}" is shared between options {key_names}, some keys may not work.')
+SPEED_MODIFIED_KEY_DESCRIPTION = _tr('{key_binding_name} (with speed modifier)')
 
 
 class KeyConfig(Config, metaclass=Singleton):
@@ -42,23 +60,26 @@ class KeyConfig(Config, metaclass=Singleton):
         speed_modifier_strings = ('zoom_in', 'zoom_out', 'pan', 'move', 'brush_size')
         speed_modifier = self.get(KeyConfig.SPEED_MODIFIER)
         if speed_modifier != '' and speed_modifier not in modifiers:
-            errors.append(f'Invalid key for speed_modifier option: found {speed_modifier}, expected {modifiers}')
-        for key_str in key_binding_options:
-            key_values = self.get(key_str).split(',')
+            errors.append(SPEED_MODIFIER_ERROR.format(speed_modifier=speed_modifier, modifiers=modifiers))
+        for config_key in key_binding_options:
+            key_binding_name = self.get_label(config_key)
+            key_values = self.get(config_key).split(',')
             for key_value in key_values:
                 if len(key_value) == 1:
                     key_value = key_value.upper()
                 if key_value != '' and key_value not in modifiers and QKeySequence(key_value)[0] == Qt.Key.Key_unknown:
-                    errors.append(f'"{key_str}" value "{key_value}" is not a recognized key')
-                elif any(mod_str in key_str for mod_str in speed_modifier_strings) and speed_modifier \
+                    errors.append(UNKNOWN_KEY_CODE_ERROR.format(key_binding_name=key_binding_name,
+                                                                key_value=key_value))
+                elif any(mod_str in config_key for mod_str in speed_modifier_strings) and speed_modifier \
                         in modifiers:
                     if speed_modifier in key_value:
-                        errors.append(f'"{key_str}" is set to {key_value}, but {speed_modifier} is the speed modifier'
-                                      f' key. This will cause {key_str} to always operate at 10x speed.')
+                        errors.append(SPEED_MODIFIER_CONFLICT_ERROR.format(key_binding_name=key_binding_name,
+                                                                           key_value=key_value,
+                                                                           speed_modifier=speed_modifier))
                     else:
                         speed_value = f'{speed_modifier}+{key_value}'
                         speed_value = QKeySequence(speed_value).toString()  # Make sure modifiers are consistent
-                        speed_key = f'{key_str} (with speed modifier)'
+                        speed_key = SPEED_MODIFIED_KEY_DESCRIPTION.format(key_binding_name=key_binding_name)
                         if speed_value not in duplicate_map:
                             duplicate_map[speed_value] = [speed_key]
                         else:
@@ -66,14 +87,15 @@ class KeyConfig(Config, metaclass=Singleton):
                 if '+' in key_value:
                     key_value = QKeySequence(key_value).toString()  # Make sure modifiers are consistent
                 if len(key_value) == 0:
-                    errors.append(f'{key_str} is not set.')
+                    errors.append(UNSET_KEY_ERROR.format(key_binding_name=key_binding_name))
                 elif key_value not in duplicate_map:
-                    duplicate_map[key_value] = [key_str]
+                    duplicate_map[key_value] = [config_key]
                 else:
-                    duplicate_map[key_value].append(key_str)
-        for key_binding, config_keys in duplicate_map.items():
+                    duplicate_map[key_value].append(config_key)
+        for key_str, config_keys in duplicate_map.items():
             if len(config_keys) > 1:
-                errors.append(f'Key "{key_binding}" is shared between options {config_keys}, some keys may not work.')
+                key_names = [self.get_label(key) for key in config_keys]
+                errors.append(KEY_CONFLICT_ERROR.format(key_str=key_str, key_names=key_names))
         if len(errors) > 0 and QApplication.instance() is not None:
             # Error messages can be fairly long, apply HTML to make them a bit more readable.
             lines = ['<li>' + err + '</li>\n' for err in errors]

@@ -1,6 +1,8 @@
 """Provides access to configurable options for the Automatic1111 or Forge Stable-Diffusion WebUI."""
 import logging
 
+from PyQt6.QtWidgets import QApplication
+
 from src.api.a1111_webservice import A1111Webservice
 from src.config.config import Config
 from src.util.shared_constants import PROJECT_DIR
@@ -8,6 +10,19 @@ from src.util.singleton import Singleton
 
 CONFIG_DEFINITIONS = f'{PROJECT_DIR}/resources/config/a1111_setting_definitions.json'
 logger = logging.getLogger(__name__)
+
+
+
+# The `QCoreApplication.translate` context for strings in this file
+TR_ID = 'config.a1111_config'
+
+
+def _tr(*args):
+    """Helper to make `QCoreApplication.translate` more concise."""
+    return QApplication.translate(TR_ID, *args)
+
+
+WEB_CONFIG_TYPE_ERROR = _tr(TR_ID, 'key "{key}" had unexpected type {value_type}, value {value}')
 
 
 class A1111Config(Config, metaclass=Singleton):
@@ -42,7 +57,7 @@ class A1111Config(Config, metaclass=Singleton):
             elif isinstance(prev_value, (list, dict)):
                 self.set(key, value)
             else:
-                raise RuntimeError(f'key "{key}" had unexpected type {type(value)}, value {value}')
+                raise RuntimeError(WEB_CONFIG_TYPE_ERROR.format(key=key, value_type=type(value), value=value))
         for key, value in missing.items():
             logger.debug(f'NOT USED: {key}={value}')
 

@@ -9,6 +9,7 @@ from src.config.cache import Cache
 from src.config.key_config import KeyConfig
 from src.image.layers.image_layer import ImageLayer
 from src.image.layers.image_stack import ImageStack
+from src.image.layers.layer import Layer
 from src.tools.base_tool import BaseTool
 from src.ui.widget.brush_color_button import BrushColorButton
 from src.util.image_utils import flood_fill, create_transparent_image
@@ -30,7 +31,6 @@ class FillTool(BaseTool):
     def __init__(self, image_stack: ImageStack) -> None:
         super().__init__()
         cache = Cache()
-        self._image_stack = image_stack
         self._control_panel: Optional[QWidget] = None
         self._icon = QIcon(RESOURCES_FILL_ICON)
         self._color = QColor(cache.get(Cache.LAST_BRUSH_COLOR))
@@ -41,6 +41,11 @@ class FillTool(BaseTool):
         cache.connect(self, Cache.LAST_BRUSH_COLOR, self._update_color)
         cache.connect(self, Cache.FILL_THRESHOLD, self._update_threshold)
         cache.connect(self, Cache.SAMPLE_MERGED, self._update_sample_merged)
+
+        self._layer = image_stack.active_layer
+        self._layer.lock_changed.connect(self._layer_lock_change_slot)
+        image_stack.active_layer_changed.connect(self._active_layer_change_slot)
+        self._layer_lock_change_slot(self._layer, self._layer.locked)
 
     def get_hotkey(self) -> QKeySequence:
         """Returns the hotkey(s) that should activate this tool."""
@@ -81,8 +86,8 @@ class FillTool(BaseTool):
         """Copy the color under the mouse on left-click."""
         assert event is not None
         if event.buttons() == Qt.MouseButton.LeftButton:
-            layer = self._image_stack.active_layer
-            if not isinstance(layer, ImageLayer):
+            layer = self._layer
+            if not isinstance(layer, ImageLayer) or layer.locked:
                 return False
             layer_point = layer.map_from_image(image_coordinates)
             if not layer.bounds.contains(layer_point):
@@ -102,7 +107,6 @@ class FillTool(BaseTool):
             else:
                 fill_image = layer.image
                 layer_image = fill_image
-            print(f'flood fill: {layer_point} within {fill_image.size()} image')
             mask = flood_fill(fill_image, layer_point, self._color, self._threshold, False)
             assert mask is not None
             painter = QPainter(layer_image)
@@ -111,6 +115,17 @@ class FillTool(BaseTool):
             layer.image = layer_image
             return True
         return False
+
+    def _active_layer_change_slot(self, active_layer: Layer) -> None:
+        if self._layer != active_layer:
+            self._layer.lock_changed.disconnect(self._layer_lock_change_slot)
+            active_layer.lock_changed.connect(self._layer_lock_change_slot)
+            self._layer = active_layer
+            self._layer_lock_change_slot(self._layer, self._layer.locked)
+
+    def _layer_lock_change_slot(self, layer: Layer, locked: bool) -> None:
+        if self._control_panel is not None:
+            self._control_panel.setEnabled(isinstance(layer, ImageLayer) and not locked)
 
     def _update_color(self, color_str: str) -> None:
         self._color = QColor(color_str)

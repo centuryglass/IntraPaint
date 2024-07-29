@@ -9,9 +9,8 @@ from PyQt6.QtWidgets import QWidget, QLabel, QVBoxLayout, QHBoxLayout, QScrollAr
 
 from src.image.layers.image_stack import ImageStack
 from src.image.layers.layer import Layer
-from src.ui.panel.layer.image_layer_widget import PREVIEW_SIZE, LAYER_PADDING, MAX_WIDTH, ImageLayerWidget
+from src.ui.panel.layer.image_layer_widget import PREVIEW_SIZE, LAYER_PADDING, MAX_WIDTH, ImageLayerWidget, ICON_SIZE
 from src.ui.panel.layer.layer_group_widget import LayerGroupWidget
-from src.ui.panel.layer.layer_visibility_button import ICON_SIZE
 from src.util.shared_constants import COMPOSITION_MODES, PROJECT_DIR
 
 logger = logging.getLogger(__name__)

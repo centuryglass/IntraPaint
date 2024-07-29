@@ -1,12 +1,12 @@
 """Represents an image layer within the layer panel."""
 
 import datetime
-from typing import Optional, cast
+from typing import Optional, cast, Callable
 
 from PyQt6.QtCore import QSize, Qt, QRect, QPoint, QMimeData, pyqtSignal
 from PyQt6.QtGui import QPixmap, QImage, QPainter, QTransform, QResizeEvent, QPaintEvent, QColor, QMouseEvent, QDrag, \
     QAction
-from PyQt6.QtWidgets import QWidget, QHBoxLayout, QLabel, QSizePolicy, QMenu
+from PyQt6.QtWidgets import QWidget, QHBoxLayout, QLabel, QSizePolicy, QMenu, QApplication
 
 from src.config.cache import Cache
 from src.image.layers.image_layer import ImageLayer
@@ -16,28 +16,44 @@ from src.image.layers.layer_stack import LayerStack
 from src.image.layers.transform_layer import TransformLayer
 from src.tools.selection_tool import SELECTION_TOOL_LABEL
 from src.ui.input_fields.editable_label import EditableLabel
+from src.ui.panel.layer.layer_alpha_lock_button import LayerAlphaLockButton
+from src.ui.panel.layer.layer_lock_button import LayerLockButton
+from src.ui.panel.layer.layer_toggle_button import ICON_SIZE
 
-from src.ui.panel.layer.layer_visibility_button import ICON_SIZE, LayerVisibilityButton
+from src.ui.panel.layer.layer_visibility_button import LayerVisibilityButton
 from src.ui.widget.bordered_widget import BorderedWidget
 from src.util.display_size import find_text_size
 from src.util.geometry_utils import get_scaled_placement
 from src.util.image_utils import get_transparency_tile_pixmap, crop_to_content
 
+
+# The QCoreApplication.translate context for strings in this file
+TR_ID = 'ui.panel.layer.image_layer_widget'
+
+
+def _tr(*args):
+    """Helper to make `QCoreApplication.translate` more concise."""
+    return QApplication.translate(TR_ID, *args)
+
+
 PREVIEW_SIZE = QSize(80, 80)
 LAYER_PADDING = 10
 MAX_WIDTH = PREVIEW_SIZE.width() + ICON_SIZE.width() + LAYER_PADDING * 2 + 400
-MENU_OPTION_MOVE_UP = 'Move up'
-MENU_OPTION_MOVE_DOWN = 'Move down'
-MENU_OPTION_COPY = 'Copy'
-MENU_OPTION_DELETE = 'Delete'
-MENU_OPTION_MERGE_DOWN = 'Merge down'
-MENU_OPTION_CLEAR_SELECTED = 'Clear selected'
-MENU_OPTION_COPY_SELECTED = 'Copy selected to new layer'
-MENU_OPTION_LAYER_TO_IMAGE_SIZE = 'Layer to image size'
-MENU_OPTION_CROP_TO_CONTENT = 'Crop layer to content'
-MENU_OPTION_CLEAR_SELECTION = 'Clear selection'
-MENU_OPTION_SELECT_ALL = 'Select all in active layer'
-MENU_OPTION_INVERT_SELECTION = 'Invert selection'
+MENU_OPTION_MOVE_UP = _tr('Move up')
+MENU_OPTION_MOVE_DOWN = _tr('Move down')
+MENU_OPTION_COPY = _tr('Copy')
+MENU_OPTION_DELETE = _tr('Delete')
+MENU_OPTION_MERGE_DOWN = _tr('Merge down')
+MENU_OPTION_CLEAR_SELECTED = _tr('Clear selected')
+MENU_OPTION_COPY_SELECTED = _tr('Copy selected to new layer')
+MENU_OPTION_LAYER_TO_IMAGE_SIZE = _tr('Layer to image size')
+MENU_OPTION_CROP_TO_CONTENT = _tr('Crop layer to content')
+MENU_OPTION_CLEAR_SELECTION = _tr('Clear selection')
+MENU_OPTION_SELECT_ALL = _tr('Select all in active layer')
+MENU_OPTION_INVERT_SELECTION = _tr('Invert selection')
+MENU_OPTION_MIRROR_VERTICAL = _tr('Mirror vertically')
+MENU_OPTION_MIRROR_HORIZONTAL = _tr('Mirror horizontally')
+COPIED_LAYER_NAME = _tr('{src_layer_name} copied content')
 
 
 class ImageLayerWidget(BorderedWidget):
@@ -84,6 +100,12 @@ class ImageLayerWidget(BorderedWidget):
             ImageLayerWidget._layer_transparency_background = get_transparency_tile_pixmap(QSize(64, 64))
         self.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self.customContextMenuRequested.connect(self._menu)
+        if isinstance(layer, ImageLayer):
+            self._alpha_lock_button = LayerAlphaLockButton(layer)
+            self._layout.addWidget(self._alpha_lock_button, stretch=10)
+        if layer != image_stack.layer_stack:
+            self._lock_button = LayerLockButton(self._layer)
+            self._layout.addWidget(self._lock_button, stretch=10)
         self._visibility_button = LayerVisibilityButton(self._layer)
         self._layout.addWidget(self._visibility_button, stretch=10)
         # Prepare initial layer image:
@@ -226,9 +248,12 @@ class ImageLayerWidget(BorderedWidget):
         menu = QMenu()
         menu.setTitle(self._layer.name)
 
-        def _new_action(name: str) -> QAction:
+        def _add_action(name: str, action_callback: Callable[..., None], disable_if_locked = False) -> QAction:
             action = menu.addAction(name)
             assert action is not None
+            action.triggered.connect(action_callback)
+            if disable_if_locked:
+                action.setEnabled(not self._layer.locked and not self._layer.parent_locked)
             return action
 
         if self._layer != self._image_stack.selection_layer and self._layer.layer_parent is not None:
@@ -238,54 +263,40 @@ class ImageLayerWidget(BorderedWidget):
                 index = parent.get_layer_index(self._layer)
 
             if index is not None:
-                up_option = _new_action(MENU_OPTION_MOVE_UP)
-                up_option.triggered.connect(lambda: self._image_stack.move_layer_by_offset(-1, self.layer))
+                _add_action(MENU_OPTION_MOVE_UP, lambda: self._image_stack.move_layer_by_offset(-1, self.layer))
 
                 if index < self._image_stack.count - 1:
-                    down_option = _new_action(MENU_OPTION_MOVE_DOWN)
-                    down_option.triggered.connect(lambda: self._image_stack.move_layer_by_offset(1, self.layer))
+                    _add_action(MENU_OPTION_MOVE_DOWN, lambda: self._image_stack.move_layer_by_offset(1, self.layer))
 
-            copy_option = _new_action(MENU_OPTION_COPY)
-            copy_option.triggered.connect(lambda: self._image_stack.copy_layer(self.layer))
-
-            delete_option = _new_action(MENU_OPTION_DELETE)
-            delete_option.triggered.connect(lambda: self._image_stack.remove_layer(self.layer))
+            _add_action(MENU_OPTION_COPY, lambda: self._image_stack.copy_layer(self.layer))
+            _add_action(MENU_OPTION_DELETE, lambda: self._image_stack.remove_layer(self.layer), True)
 
             if index is not None and index < self._image_stack.count - 1:
-                merge_option = _new_action(MENU_OPTION_MERGE_DOWN)
-                merge_option.triggered.connect(lambda: self._image_stack.merge_layer_down(self.layer))
+                merge_option = _add_action(MENU_OPTION_MERGE_DOWN,
+                                           lambda: self._image_stack.merge_layer_down(self.layer), True)
+                next_layer = self._image_stack.next_layer(self._layer)
+                if next_layer.locked or not next_layer.visible:
+                    merge_option.setEnabled(False)
 
-            clear_option = _new_action(MENU_OPTION_CLEAR_SELECTED)
-            clear_option.triggered.connect(lambda: self._image_stack.cut_selected(self.layer))
-
-            copy_masked_option = _new_action(MENU_OPTION_COPY_SELECTED)
+            _add_action(MENU_OPTION_CLEAR_SELECTED, lambda: self._image_stack.cut_selected(self.layer), True)
 
             def do_copy() -> None:
                 """Make the copy, then add it as a new layer."""
                 masked = self._image_stack.copy_selected(self.layer)
-                self._image_stack.create_layer(self._layer.name + ' content', masked, layer_index=index)
-
-            copy_masked_option.triggered.connect(do_copy)
-
-            resize_option = _new_action(MENU_OPTION_LAYER_TO_IMAGE_SIZE)
-            resize_option.triggered.connect(lambda: self._image_stack.layer_to_image_size(self.layer))
+                self._image_stack.create_layer(COPIED_LAYER_NAME.format(src_layer_name=self._layer.name), masked,
+                                               layer_index=index)
+            _add_action(MENU_OPTION_COPY_SELECTED, do_copy)
+            _add_action(MENU_OPTION_LAYER_TO_IMAGE_SIZE, lambda: self._image_stack.layer_to_image_size(self.layer),
+                        True)
 
         else:
-            invert_option = _new_action(MENU_OPTION_INVERT_SELECTION)
-            invert_option.triggered.connect(self._image_stack.selection_layer.invert_selection)
-            clear_mask_option = _new_action(MENU_OPTION_CLEAR_SELECTION)
-            clear_mask_option.triggered.connect(self._image_stack.selection_layer.clear)
-            mask_active_option = _new_action(MENU_OPTION_SELECT_ALL)
-            mask_active_option.triggered.connect(self._image_stack.select_active_layer_content)
+            _add_action(MENU_OPTION_INVERT_SELECTION, self._image_stack.selection_layer.invert_selection)
+            _add_action(MENU_OPTION_CLEAR_SELECTION, self._image_stack.selection_layer.clear)
+            _add_action(MENU_OPTION_SELECT_ALL, self._image_stack.select_active_layer_content)
 
         if isinstance(self._layer, ImageLayer):
-            crop_content_option = _new_action(MENU_OPTION_CROP_TO_CONTENT)
-            crop_content_option.triggered.connect(self._layer.crop_to_content)
-
-            mirror_horizontal_option = _new_action('Mirror horizontally')
-            mirror_horizontal_option.triggered.connect(self._layer.flip_horizontal)
-
-            mirror_vert_option = _new_action('Mirror vertically')
-            mirror_vert_option.triggered.connect(self._layer.flip_vertical)
+            _add_action(MENU_OPTION_CROP_TO_CONTENT, self._layer.crop_to_content, True)
+            _add_action(MENU_OPTION_MIRROR_HORIZONTAL, self._layer.flip_horizontal, True)
+            _add_action(MENU_OPTION_MIRROR_VERTICAL, self._layer.flip_vertical, True)
 
         menu.exec(self.mapToGlobal(pos))

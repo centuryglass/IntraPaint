@@ -17,6 +17,7 @@ from typing import Optional, Any, Callable, List, Dict
 
 from PyQt6.QtCore import QSize, QTimer, Qt
 from PyQt6.QtGui import QKeySequence
+from PyQt6.QtWidgets import QApplication
 
 from src.config.config_entry import ConfigEntry, DefinitionKey, DefinitionType
 from src.ui.input_fields.check_box import CheckBox
@@ -24,6 +25,24 @@ from src.util.parameter import ParamType, DynamicFieldWidget
 from src.util.validation import assert_type
 
 logger = logging.getLogger(__name__)
+
+# The `QCoreApplication.translate` context for strings in this file
+TR_ID = 'config.config'
+
+
+def _tr(*args):
+    """Helper to make `QCoreApplication.translate` more concise."""
+    return QApplication.translate(TR_ID, *args)
+
+
+MISSING_DEF_ERROR = _tr('Config definition file not found at {definition_path}')
+INVALID_CONFIG_TYPE_ERROR = _tr('Config value definition for {key} had invalid data type {value_type}')
+INVALID_KEY_ERROR = _tr('Loading {key} failed: {err}')
+INVALID_JSON_DEFINITION_ERROR = _tr('Reading JSON config definitions failed: {err}')
+INVALID_JSON_ERROR = _tr('Reading JSON config values failed: {err}')
+UNKNOWN_KEY_ERROR = _tr('Tried to access unknown config value "{key}"')
+INVALID_KEYCODE_ERROR = _tr('Tried to get key code "{key}", found "{code_string}"')
+DUPLICATE_KEY_ERROR = _tr('Tried to add duplicate config entry for key "{key}"')
 
 
 class Config:
@@ -63,7 +82,7 @@ class Config:
         self._save_timer.setSingleShot(True)
 
         if not os.path.isfile(definition_path):
-            raise RuntimeError(f'Config definition file not found at {definition_path}')
+            raise RuntimeError(MISSING_DEF_ERROR.format(definition_path=definition_path))
         try:
             with open(definition_path, encoding='utf-8') as file:
                 json_data = json.load(file)
@@ -91,8 +110,9 @@ class Config:
                                 case DefinitionType.DICT:
                                     initial_value = dict(initial_value)
                                 case _:
-                                    raise RuntimeError(f'Config value definition for {key} had invalid data type '
-                                                       f'{definition[DefinitionKey.TYPE]}')
+                                    raise RuntimeError(INVALID_CONFIG_TYPE_ERROR.format(key=key,
+                                                                                        value_type=definition[
+                                                                                            DefinitionKey.TYPE]))
                         else:  # If no default is provided, use the closest equivalent to an empty value:
                             match definition[DefinitionKey.TYPE]:
                                 case DefinitionType.QSIZE:
@@ -110,10 +130,11 @@ class Config:
                                 case DefinitionType.DICT:
                                     initial_value = {}
                                 case _:
-                                    raise RuntimeError(f'Config value definition for {key} had invalid data type '
-                                                       f'{definition[DefinitionKey.TYPE]}')
+                                    raise RuntimeError(INVALID_CONFIG_TYPE_ERROR.format(key=key,
+                                                                                        value_type=definition[
+                                                                                            DefinitionKey.TYPE]))
                     except KeyError as err:
-                        raise RuntimeError(f'Loading {key} failed: {err}') from err
+                        raise RuntimeError(INVALID_KEY_ERROR.format(key=key, err=err)) from err
 
                     label = definition[DefinitionKey.LABEL]
                     category = definition[DefinitionKey.CATEGORY]
@@ -129,7 +150,7 @@ class Config:
                     self._add_entry(key, initial_value, label, category, tooltip, options, range_options, save_json)
 
         except json.JSONDecodeError as err:
-            raise RuntimeError(f'Reading JSON config definitions failed: {err}') from err
+            raise RuntimeError(INVALID_JSON_DEFINITION_ERROR.format(err=err)) from err
 
         self._adjust_defaults()
         if self._json_path is not None:
@@ -171,7 +192,7 @@ class Config:
             are not type-checked.
         """
         if key not in self._entries:
-            raise KeyError(f'Tried to get unknown config value "{key}"')
+            raise KeyError(UNKNOWN_KEY_ERROR.format(key=key))
         with self._lock:
             return self._entries[key].get_value(inner_key)
 
@@ -201,23 +222,23 @@ class Config:
         """Returns a config value as a key sequence, throws RuntimeError if the value isn't a keycode."""
         code_string = self.get(key)
         if not isinstance(code_string, str):
-            raise RuntimeError(f'Tried to get key code "{key}", found {code_string}')
+            raise RuntimeError(INVALID_KEYCODE_ERROR.format(key=key, code_string=code_string))
         sequence = QKeySequence(code_string)
         if Qt.Key.Key_unknown in sequence:
-            raise RuntimeError(f'key "{key}": value "{code_string}" is not a valid key code or code list')
+            raise RuntimeError(INVALID_KEYCODE_ERROR.format(key=key, code_string=code_string))
         return sequence
 
     def get_label(self, key: str) -> str:
         """Gets the label text assigned to a config value."""
         if key not in self._entries:
-            raise KeyError(f'Tried to get label for unknown config value "{key}"')
-        return self._entries[key].name
+            raise KeyError(UNKNOWN_KEY_ERROR.format(key=key))
+        return _tr(self._entries[key].name)
 
     def get_tooltip(self, key: str) -> str:
         """Gets the tooltip text assigned to a config value."""
         if key not in self._entries:
-            raise KeyError(f'Tried to get tooltip for unknown config value "{key}"')
-        return self._entries[key].description
+            raise KeyError(UNKNOWN_KEY_ERROR.format(key=key))
+        return _tr(self._entries[key].description)
 
     def set(self,
             key: str,
@@ -253,7 +274,7 @@ class Config:
             `add_missing_options` is false.
         """
         if key not in self._entries:
-            raise KeyError(f'Tried to set unknown config value "{key}"')
+            raise KeyError(UNKNOWN_KEY_ERROR.format(key=key))
         new_value = value
         # Update existing value:
         with self._lock:
@@ -268,6 +289,7 @@ class Config:
                         """Copy changes to the file and disconnect the timer."""
                         self._write_to_json()
                         self._save_timer.timeout.disconnect(write_change)
+
                     self._save_timer.timeout.connect(write_change)
                     self._save_timer.start(100)
         # Pass change to connected callback functions
@@ -303,7 +325,7 @@ class Config:
             changes within the value.
         """
         if key not in self._connected:
-            raise KeyError(f'Tried to connect to unknown config value "{key}"')
+            raise KeyError(UNKNOWN_KEY_ERROR.format(key=key))
         num_args = len(signature(on_change_fn).parameters)
         if num_args > 2:
             raise RuntimeError(f'callback function connected to {key} value takes {num_args} '
@@ -323,7 +345,7 @@ class Config:
         Removes a callback function previously registered through config.connect() for a particular object and key.
         """
         if key not in self._connected:
-            raise KeyError(f'Tried to disconnect from unknown config value "{key}"')
+            raise KeyError(UNKNOWN_KEY_ERROR.format(key=key))
         self._connected[key].pop(connected_object, None)
 
     def list(self) -> List[str]:
@@ -339,7 +361,7 @@ class Config:
             If the value associated with the key does not have a predefined list of options
         """
         if key not in self._entries:
-            raise KeyError(f'Tried to get unknown config value "{key}"')
+            raise KeyError(UNKNOWN_KEY_ERROR.format(key=key))
         with self._lock:
             return self._entries[key].option_index
 
@@ -352,7 +374,7 @@ class Config:
             If the value associated with the key does not have a predefined list of options.
         """
         if key not in self._entries:
-            raise KeyError(f'Tried to set unknown config value "{key}"')
+            raise KeyError(UNKNOWN_KEY_ERROR.format(key=key))
         options = self._entries[key].options
         assert options is not None
         return options.copy()
@@ -367,7 +389,7 @@ class Config:
             If the value associated with the key does not have a predefined list of options.
         """
         if key not in self._entries:
-            raise KeyError(f'Tried to get unknown config value "{key}"')
+            raise KeyError(UNKNOWN_KEY_ERROR.format(key=key))
         last_value = self.get(key)
         self._entries[key].set_valid_options(options_list)
         if last_value not in options_list:
@@ -383,7 +405,7 @@ class Config:
             If the value associated with the key does not have a predefined list of options.
         """
         if key not in self._entries:
-            raise KeyError(f'Tried to get unknown config value "{key}"')
+            raise KeyError(UNKNOWN_KEY_ERROR.format(key=key))
         self._entries[key].add_option(option)
 
     def get_categories(self) -> List[str]:
@@ -416,7 +438,7 @@ class Config:
                    range_options: Optional[Dict[str, int | float]] = None,
                    save_json: bool = True) -> None:
         if key in self._entries:
-            raise KeyError(f'Tried add duplicate config entry "{key}"')
+            raise KeyError(DUPLICATE_KEY_ERROR.format(key=key))
         entry = ConfigEntry(key, initial_value, label, category, tooltip, options, range_options, save_json)
         self._entries[key] = entry
         self._connected[key] = {}
@@ -439,8 +461,8 @@ class Config:
             with open(self._json_path, encoding='utf-8') as file:
                 json_data = json.load(file)
         except json.JSONDecodeError as err:
-            logger.error(f'Reading JSON config failed: {err}')
-        if json_data is None:   # Invalid JSON, replace it with defaults
+            logger.error(INVALID_JSON_ERROR.format(err=err))
+        if json_data is None:  # Invalid JSON, replace it with defaults
             self._write_to_json()
             return
         with self._lock:

@@ -126,9 +126,9 @@ TAMING_TRANSFORMERS_REPO = 'https://github.com/CompVis/taming-transformers.git'
 LATENT_DIFFUSION_REPO = 'https://github.com/CompVis/latent-diffusion.git'
 
 
-GLID_MODEL = _tr('GLID-3-XL')
-BERT_MODEL = _tr('BERT')
-KL_MODEL = _tr('KL')
+GLID_MODEL = 'GLID-3-XL'
+BERT_MODEL = 'BERT'
+KL_MODEL = 'KL'
 
 
 class Glid3XLGenerator(ImageGenerator):
@@ -325,7 +325,6 @@ class Glid3XLGenerator(ImageGenerator):
         # noinspection PyUnusedLocal
         def save_sample(i, sample, unused_clip_score=False) -> None:
             """Extract generated samples and repackage into the appropriate structure."""
-            print(f'save sample {i}')
             foreach_image_in_sample(
                 sample,
                 batch_size,
@@ -342,4 +341,3 @@ class Glid3XLGenerator(ImageGenerator):
             batch_count,
             source_image.width,
             source_image.height)
-        print('exit')

@@ -4,7 +4,7 @@ from contextlib import contextmanager
 from typing import Optional, Any, Tuple
 
 from PIL import Image
-from PyQt6.QtCore import QRect, QSize, QPoint
+from PyQt6.QtCore import QRect, QSize, QPoint, pyqtSignal, QObject
 from PyQt6.QtGui import QImage, QPainter, QPixmap, QTransform
 
 from src.image.layers.transform_layer import TransformLayer
@@ -20,6 +20,8 @@ CROP_TO_CONTENT_ERROR_MESSAGE_FULL = 'Layer is already cropped to fit image cont
 
 class ImageLayer(TransformLayer):
     """Represents an edited image layer."""
+
+    alpha_lock_changed = pyqtSignal(QObject, bool)
 
     def __init__(self, image_data: QImage | QSize, name: str):
         """
@@ -41,6 +43,27 @@ class ImageLayer(TransformLayer):
             self.set_image(qimage)
         else:
             raise TypeError(f'Invalid layer image data: {image_data}')
+        self._alpha_locked = False
+
+    @property
+    def alpha_locked(self) -> bool:
+        """Return whether changes to transparent content in this layer are blocked."""
+        return self._alpha_locked
+
+    @alpha_locked.setter
+    def alpha_locked(self, lock: bool) -> None:
+        if lock == self._alpha_locked:
+            return
+
+        def _update_lock(locked=lock) -> None:
+            self._alpha_locked = locked
+            self.alpha_lock_changed.emit(self, locked)
+
+        def _undo(locked=not lock) -> None:
+            self._alpha_locked = locked
+            self.alpha_lock_changed.emit(self, locked)
+
+        commit_action(_update_lock, _undo, 'src.layers.image_layer.alpha_locked')
 
     def get_qimage(self) -> QImage:
         """Return layer image data as an ARGB32 formatted QImage."""
@@ -48,11 +71,13 @@ class ImageLayer(TransformLayer):
 
     def set_qimage(self, image: QImage) -> None:
         """Replaces the layer's QImage content."""
+        assert not self.locked, 'Tried to change image in a locked layer'
+        initial_image = self._image
         if image.format() != QImage.Format.Format_ARGB32_Premultiplied:
             self._image = image.convertToFormat(QImage.Format.Format_ARGB32_Premultiplied)
         else:
             self._image = image.copy()
-        self._handle_content_change(self._image)
+        self._handle_content_change(self._image, initial_image)
 
     # LAYER/IMAGE FUNCTIONS:
 
@@ -68,6 +93,7 @@ class ImageLayer(TransformLayer):
     def _image_prop_setter(self, new_image: QImage | Tuple[QImage, QPoint]) -> None:
         """Replaces the layer's QImage content.  Unlike other setters, subsequent changes won't be combined in the
            undo history."""
+        assert not self.locked, f'Tried to change image in a locked layer'
         if isinstance(new_image, tuple):
             new_image, offset = new_image
             undo_offset = None if offset is None else -offset
@@ -86,6 +112,7 @@ class ImageLayer(TransformLayer):
 
     def set_image(self, new_image: QImage, offset: Optional[QPoint] = None) -> None:
         """Updates the layer image."""
+        assert not self.locked, f'Tried to change image in a locked layer'
         size_changed = new_image.size() != self._size
         if size_changed:
             new_size = new_image.size()
@@ -101,11 +128,16 @@ class ImageLayer(TransformLayer):
     @contextmanager
     def borrow_image(self, change_bounds: Optional[QRect] = None) -> Generator[Optional[QImage], None, None]:
         """Provides direct access to the image for editing, automatically marking it as changed when complete."""
+        assert not self.locked, f'Tried to change image in a locked layer'
+        if self.alpha_locked:
+            initial_image = self.image.copy()
+        else:
+            initial_image = self._image
         try:
             yield self._image
         finally:
             self._pixmap.invalidate()
-            self._handle_content_change(self._image, change_bounds)
+            self._handle_content_change(self._image, initial_image, change_bounds)
             self.content_changed.emit(self)
 
     def adjust_local_bounds(self, relative_bounds: QRect, register_to_undo_history: bool = True) -> None:
@@ -238,8 +270,22 @@ class ImageLayer(TransformLayer):
         """Mirrors layer content vertically, saving the change to the undo history."""
         self.image = self._image.mirrored(horizontal=False, vertical=True)
 
-    def _handle_content_change(self, image: QImage, change_bounds: Optional[QRect] = None) -> None:
-        """Child classes should override to handle changes that they need to make before sending update signals."""
+    def set_alpha_locked(self, locked: bool) -> None:
+        """Locks or unlocks layer alpha content."""
+        if locked != self._alpha_locked:
+            self._alpha_locked = locked
+            self.alpha_lock_changed.emit(self, locked)
+
+    def _handle_content_change(self, image: QImage, last_image: QImage, change_bounds: Optional[QRect] = None) -> None:
+        """Preserve alpha channel if alpha is locked. Child classes should override to handle changes that they need to
+         make before sending update signals."""
+        if not hasattr(self, 'alpha_locked'):
+            return
+        if self.alpha_locked:
+            painter = QPainter(image)
+            painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_DestinationIn)
+            painter.drawImage(QRect(0, 0, last_image.width(), last_image.height()), last_image)
+            painter.end()
 
     def crop_to_content(self):
         """Crops the layer to remove transparent areas."""
@@ -278,7 +324,14 @@ class ImageLayer(TransformLayer):
 
     def save_state(self) -> Any:
         """Export the current layer state, so it can be restored later."""
-        return ImageLayerState(self.name, self.visible, self.opacity, self.composition_mode, self.transform, self.image)
+        return ImageLayerState(self.name,
+                               self.visible,
+                               self.opacity,
+                               self.composition_mode,
+                               self.transform,
+                               self.image,
+                               self.locked,
+                               self.alpha_locked)
 
     def restore_state(self, saved_state: Any) -> None:
         """Restore the layer state from a previous saved state."""
@@ -289,6 +342,8 @@ class ImageLayer(TransformLayer):
         self.set_composition_mode(saved_state.mode)
         self.set_transform(saved_state.transform)
         self.set_image(saved_state.image)
+        self.set_alpha_locked(saved_state.alpha_locked)
+        self.set_locked(saved_state.locked)
 
     # INTERNAL:
 
@@ -300,11 +355,14 @@ class ImageLayer(TransformLayer):
 
 class ImageLayerState:
     """Preserves a copy of an image layer's state."""
+
     def __init__(self, name: str, visible: bool, opacity: float, mode: QPainter.CompositionMode,
-                 transform: QTransform, image: QImage) -> None:
+                 transform: QTransform, image: QImage, locked: bool, alpha_locked: bool) -> None:
         self.name = name
         self.visible = visible
         self.opacity = opacity
         self.mode = mode
         self.transform = transform
         self.image = image
+        self.locked = locked
+        self.alpha_locked = alpha_locked

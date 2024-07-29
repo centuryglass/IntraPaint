@@ -16,8 +16,6 @@ qt_material = optional_import('qt_material')
 DEFAULT_CONFIG_PATH = f'{PROJECT_DIR}/config.json'
 CONFIG_DEFINITIONS = f'{PROJECT_DIR}/resources/config/application_config_definitions.json'
 
-KEY_CONFIG_ERROR_TITLE = 'Warning'
-KEY_CONFIG_ERROR_MESSAGE = 'Errors found in configurable key bindings:\n'
 
 # System-based theme/style init constants
 DEFAULT_THEME_OPTIONS = ['None']

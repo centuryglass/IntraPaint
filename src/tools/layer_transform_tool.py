@@ -126,7 +126,7 @@ class LayerTransformTool(BaseTool):
             self._down_keys[control] = config.get_keycodes(down_key_code)
 
             def _step(steps: int, spinbox) -> bool:
-                if not self.is_active:
+                if not self.is_active or image_stack.active_layer.locked:
                     return False
                 spinbox.stepBy(steps)
                 return True
@@ -458,6 +458,7 @@ class LayerTransformTool(BaseTool):
             last_layer.transform_changed.disconnect(self._layer_transform_change_slot)
             last_layer.z_value_changed.disconnect(self._layer_z_value_change_slot)
             last_layer.size_changed.disconnect(self._layer_size_change_slot)
+            last_layer.lock_changed.disconnect(self._layer_lock_change_slot)
         if layer is None or isinstance(layer, TransformLayer):
             self._layer = layer
         else:
@@ -468,6 +469,8 @@ class LayerTransformTool(BaseTool):
             self._layer.transform_changed.connect(self._layer_transform_change_slot)
             self._layer.z_value_changed.connect(self._layer_z_value_change_slot)
             self._layer.size_changed.connect(self._layer_size_change_slot)
+            self._layer.lock_changed.connect(self._layer_lock_change_slot)
+            self._transform_outline.setEnabled(not layer.locked)
         else:
             self._preview.set_layer_bounds(QRect())
             self._transform_outline.setVisible(False)
@@ -542,6 +545,10 @@ class LayerTransformTool(BaseTool):
 
     def _active_layer_change_slot(self, active_layer: Layer) -> None:
         self.set_layer(active_layer)
+
+    def _layer_lock_change_slot(self, _unused_layer: Layer, locked: bool) -> None:
+        if self._control_panel is not None:
+            self._control_panel.setEnabled(not locked)
 
     def _layer_z_value_change_slot(self, layer: Layer, z_value: int) -> None:
         assert layer == self._layer

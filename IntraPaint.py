@@ -8,17 +8,13 @@ import logging
 import os
 import sys
 
+from PyQt6.QtCore import QTranslator
 from PyQt6.QtWidgets import QApplication
 
-from src.controller.app_controller import AppController
-from src.ui.modal.modal_utils import show_error_dialog
-from src.util.arg_parser import build_arg_parser
 from src.util.optional_import import check_import
 from src.util.shared_constants import TIMELAPSE_MODE_FLAG, PROJECT_DIR
-
-LOG_FILE_PATH = 'IntraPaint.log'
-DEFAULT_GLID_MODEL = 'models/inpaint.pt'
-MIN_GLID_VRAM = 8000000000  # This is just a rough estimate.
+from src.util.arg_parser import build_arg_parser
+DEFAULT_GLID_MODEL = f'{PROJECT_DIR}/models/inpaint.pt'
 
 # argument parsing:
 parser = build_arg_parser(default_model=DEFAULT_GLID_MODEL, include_edit_params=False)
@@ -47,7 +43,9 @@ parser.add_argument('--fast_ngrok_connection', type=str, required=False, default
 parser.set_defaults(timelapse_mode=False)
 args = parser.parse_args()
 
+
 # Logging setup:
+LOG_FILE_PATH = 'IntraPaint.log'
 log_file_handler = logging.FileHandler(LOG_FILE_PATH)
 log_file_handler.setLevel(logging.INFO)
 log_formatter = logging.Formatter('%(asctime)s: %(levelname)s: %(name)s: %(message)s')
@@ -68,6 +66,15 @@ def exit_log():
 
 
 atexit.register(exit_log)
+
+# Load translations:
+app = QApplication.instance() or QApplication(sys.argv)
+translator = QTranslator()
+for root, _, files in os.walk(f'{PROJECT_DIR}/resources/translations'):
+    for file in files:
+        if file.endswith('.qm'):
+            assert translator.load(os.path.join(root, file)), f'Failed to load {file}'
+app.installTranslator(translator)
 
 # If relevant directories exist, update paths for GLID-3-XL dependencies:
 if not check_import('ldm'):
@@ -92,6 +99,11 @@ if not check_import('taming'):
     expected_taming_path = f'{PROJECT_DIR}/taming-transformers'
     if os.path.exists(expected_taming_path):
         sys.path.append(expected_taming_path)
+
+# These imports need to be delayed until after logging setup, translation, and import path tweaks:
+from src.controller.app_controller import AppController
+from src.ui.modal.modal_utils import show_error_dialog
+
 
 if __name__ == '__main__':
     try:

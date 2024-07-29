@@ -4,9 +4,6 @@
 
 # General interface
 - When scaling, center scale on mouse position
-- Rework mode settings:
-    * Support login/URL changes outside the init process
-    * Improve controls for login and setting server URL
 
 # Layers
 - Layer locking

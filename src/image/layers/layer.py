@@ -21,6 +21,7 @@ class Layer(QObject):
     size_changed = pyqtSignal(QObject, QSize)
     composition_mode_changed = pyqtSignal(QObject, QPainter.CompositionMode)
     z_value_changed = pyqtSignal(QObject, int)
+    lock_changed = pyqtSignal(QObject, bool)
 
     _next_layer_id = 0
 
@@ -34,6 +35,7 @@ class Layer(QObject):
         self._pixmap = CachedData(None)
         self._id = Layer._next_layer_id
         self._parent: Optional[Layer] = None
+        self._locked = False
         self._z_value = 0
         Layer._next_layer_id += 1
 
@@ -68,6 +70,36 @@ class Layer(QObject):
                                                f' to {new_parent.name}:{new_parent.id}), but that layer does not '
                                                 'contain this one.')
         self._parent = new_parent
+
+    @property
+    def locked(self) -> bool:
+        """Returns whether changes to this layer are blocked."""
+        return self._locked
+
+    @locked.setter
+    def locked(self, lock: bool) -> None:
+        if lock == self._locked:
+            return
+
+        def _update_lock(locked=lock) -> None:
+            self._locked = locked
+            self.lock_changed.emit(self, locked)
+
+        def _undo(locked=not lock) -> None:
+            self._locked = locked
+            self.lock_changed.emit(self, locked)
+
+        commit_action(_update_lock, _undo, 'src.layers.layer.locked')
+
+    @property
+    def parent_locked(self) -> bool:
+        """Return whether any of this layer's parents are locked."""
+        parent_iter = self.layer_parent
+        while parent_iter is not None:
+            if parent_iter.locked:
+                return True
+            parent_iter = parent_iter.layer_parent
+        return False
 
     @property
     def z_value(self) -> int:
@@ -231,6 +263,12 @@ class Layer(QObject):
             if send_signals:
                 self.size_changed.emit(self, new_size)
 
+    def set_locked(self, locked: bool) -> None:
+        """Locks or unlocks the layer."""
+        if locked != self._locked:
+            self._locked = locked
+            self.lock_changed.emit(self, locked)
+
     # Unimplemented interface:
 
     def get_qimage(self) -> QImage:
@@ -281,6 +319,7 @@ class Layer(QObject):
                                     last_value: Any,
                                     value_setter: Callable[[Any], None],
                                     change_type: str) -> None:
+        assert not self.locked and not self.parent_locked, f'Tried to change {change_type} in a locked layer'
         if last_value == new_value:
             return
 

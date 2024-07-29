@@ -51,7 +51,7 @@ from src.util.qtexcepthook import QtExceptHook
 # Optional spacenav support and extended theming:
 qdarktheme = optional_import('qdarktheme')
 qt_material = optional_import('qt_material')
-SpacenavManager = optional_import('src.controller.spacenav_manager',attr_name='SpacenavManager')
+SpacenavManager = optional_import('src.controller.spacenav_manager', attr_name='SpacenavManager')
 
 logger = logging.getLogger(__name__)
 
@@ -377,7 +377,7 @@ class AppController(MenuBuilder):
                             # I've seen this a few times, mostly with images edited in Krita. This data isn't important
                             # to me, so it'll just be discarded. If it's important to you, open a GitHub issue with
                             # details or submit a PR, and I'll take care of it.
-                            print(f'failed to preserve "{key}" in metadata: {png_err}')
+                            logger.error(f'failed to preserve "{key}" in metadata: {png_err}')
                     image.save(file_path, 'PNG', pnginfo=info)
                 else:
                     image.save(file_path, 'PNG')

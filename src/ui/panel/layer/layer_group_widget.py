@@ -50,6 +50,7 @@ class LayerGroupWidget(CollapsibleBox):
             self.add_child_layer(layer)
         layer_stack.layer_added.connect(self.add_child_layer)
         layer_stack.layer_removed.connect(self.remove_child_layer)
+        layer_stack.lock_changed.connect(self._update_layer_lock_slot)
         self.setAcceptDrops(True)
 
     def _update_insert_params(self, point: QPointF) -> None:
@@ -103,7 +104,8 @@ class LayerGroupWidget(CollapsibleBox):
         """Accept drag events from layer widgets."""
         assert event is not None
         moved_layer_item = event.source()
-        if not isinstance(moved_layer_item, (LayerGroupWidget, ImageLayerWidget)):
+        if not isinstance(moved_layer_item, (LayerGroupWidget, ImageLayerWidget)) or self._layer.locked \
+                or self._layer.parent_locked:
             return
         event.accept()
         self._update_insert_params(event.position())
@@ -219,3 +221,8 @@ class LayerGroupWidget(CollapsibleBox):
             self._list_layout.addWidget(widget)
             if isinstance(widget, LayerGroupWidget):
                 widget.reorder_child_layers()
+
+    def _update_layer_lock_slot(self, layer: Layer, locked: bool) -> None:
+        assert layer == self._layer
+        if locked and self.is_expanded():
+            self.set_expanded(False)

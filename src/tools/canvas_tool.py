@@ -12,6 +12,7 @@ from src.hotkey_filter import HotkeyFilter
 from src.image.canvas.layer_canvas import LayerCanvas
 from src.image.layers.image_layer import ImageLayer
 from src.image.layers.image_stack import ImageStack
+from src.image.layers.layer import Layer
 from src.tools.base_tool import BaseTool
 from src.ui.image_viewer import ImageViewer
 from src.util.key_code_utils import get_modifiers
@@ -107,13 +108,24 @@ class CanvasTool(BaseTool):
     @layer.setter
     def layer(self, layer: Optional[ImageLayer]) -> None:
         """Sets or clears the connected image layer."""
-        if self._layer is not None and isinstance(self._layer, ImageLayer) and self._layer != layer:
-            assert isinstance(self._layer, ImageLayer)
-            self._image_viewer.resume_rendering_layer(self._layer)
+        if self._layer is not None and self._layer != layer:
+            self._layer.lock_changed.disconnect(self._layer_lock_slot)
+            if isinstance(self._layer, ImageLayer):
+                self._image_viewer.resume_rendering_layer(self._layer)
         self._layer = layer
+        if layer is not None:
+            layer.lock_changed.connect(self._layer_lock_slot)
+            self._layer_lock_slot(layer, layer.locked)
         if not self._active:
             return
         if layer is None or not isinstance(layer, ImageLayer):
+            self._canvas.connect_to_layer(None)
+            self._image_viewer.hide_active_layer = False
+            self._control_panel.setEnabled(False)
+
+    def _layer_lock_slot(self, layer: Layer, locked: bool) -> None:
+        assert layer == self._layer
+        if locked:
             self._canvas.connect_to_layer(None)
             self._image_viewer.hide_active_layer = False
         else:
@@ -121,7 +133,8 @@ class CanvasTool(BaseTool):
             self._canvas.connect_to_layer(layer)
             self._image_viewer.stop_rendering_layer(layer)
         if self._control_panel is not None:
-            self._control_panel.setEnabled(isinstance(layer, ImageLayer))
+            self._control_panel.setEnabled(not locked)
+
 
     @property
     def brush_size(self) -> int:

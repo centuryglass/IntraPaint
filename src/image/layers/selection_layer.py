@@ -160,16 +160,20 @@ class SelectionLayer(ImageLayer):
         """Gets the generation area mask content as a PIL image mask"""
         return qimage_to_pil_image(self.mask_image)
 
-    def _handle_content_change(self, image: QImage, change_bounds: Optional[QRect] = None) -> None:
+    def _handle_content_change(self, image: QImage, initial_image: QImage,
+                               change_bounds: Optional[QRect] = None) -> None:
         """When the image updates, ensure that it meets requirements, and recalculate bounds.
 
         Parameters:
             image: QImage
                 The new image being applied, which this method may directly change.
+            initial_image: QImage
+                Previous image state, not needed in this implementation.
             change_bounds: Optional[QRect] = None
                 If not None, this indicates the area (in local coordinates) within the image where the content has
                 changed.
         """
+        super()._handle_content_change(image, initial_image, change_bounds)
         # Enforce fixed colors, alpha thresholds:
         if image.size().isEmpty():
             return

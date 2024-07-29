@@ -3,12 +3,30 @@ import logging
 from typing import Any, Optional, Dict
 
 from PyQt6.QtCore import QSize
+from PyQt6.QtWidgets import QApplication
 
 from src.util.parameter import Parameter, get_parameter_type, TYPE_DICT, TYPE_INT, TYPE_FLOAT, TYPE_QSIZE
 
 logger = logging.getLogger(__name__)
 
 VALUE_KEY = 'value'
+
+
+# The `QCoreApplication.translate` context for strings in this file
+TR_ID = 'config.config_entry'
+
+
+def _tr(*args):
+    """Helper to make `QCoreApplication.translate` more concise."""
+    return QApplication.translate(TR_ID, *args)
+
+
+INVALID_INNER_KEY_TYPE_ERROR = _tr('Tried to set "{key}.{inner_key}" to value "{value}", but {key} is type'
+                                   ' "{type_name}"')
+INVALID_INNER_KEY_ERROR = _tr('Tried to read {key}.{inner_key} from type {type_name}')
+MISSING_OPTION_LIST_ERROR = _tr('Config value "{key}" does not have an associated options list')
+UNEXPECTED_TYPE_ERROR = _tr('unexpected type:')
+MISSING_VALUE_ERROR = _tr('{key}: missing value')
 
 
 class DefinitionKey:
@@ -87,8 +105,8 @@ class ConfigEntry(Parameter):
                 value_changed = prev_value != value
                 self._value[inner_key] = value
                 return value_changed
-            raise TypeError(f'Tried to set "{self._key}.{inner_key}" to value "{value}", but '
-                            f'{self._key} is type "{self.type_name}"')
+            raise TypeError(INVALID_INNER_KEY_TYPE_ERROR.format(key=self._key, inner_key=inner_key, value=value,
+                                                                type_name=self.type_name))
 
         # Handle changes to values with predefined options lists:
         if self.options is not None and value not in self.options and add_missing_options:
@@ -113,7 +131,8 @@ class ConfigEntry(Parameter):
                 return self.maximum
             if inner_key == RangeKey.STEP:
                 return self.single_step
-            raise TypeError(f'Tried to read {self._key}.{inner_key} from type {type(self._value)}')
+            raise TypeError(INVALID_INNER_KEY_ERROR.format(key=self._key, inner_key=inner_key,
+                                                           type_name=type(self._value)))
         if isinstance(self._value, QSize):
             return QSize(self._value)
         if isinstance(self._value, list):
@@ -131,13 +150,13 @@ class ConfigEntry(Parameter):
     def option_index(self) -> int:
         """ Returns the index of the selected option."""
         if self.options is None:
-            raise RuntimeError(f'Config value "{self._key}" does not have an associated options list')
+            raise RuntimeError(MISSING_OPTION_LIST_ERROR.format(key=self._key))
         return self.options.index(self._value)
 
     def add_option(self, option: Any) -> None:
         """Adds a new item to the list of accepted options."""
         if self._options is None:
-            raise RuntimeError(f'Config value "{self._key}" does not have an associated options list')
+            raise RuntimeError(MISSING_OPTION_LIST_ERROR.format(key=self._key))
         options = self._options
         if option not in options:
             options.append(option)
@@ -179,7 +198,7 @@ class ConfigEntry(Parameter):
                 return float(value)
             if param_type == TYPE_QSIZE:
                 return QSize(*(int(n) for n in value.split('x')))
-            raise ValueError('unexpected type:', param_type)
+            raise ValueError(UNEXPECTED_TYPE_ERROR, param_type)
 
         json_value = json_dict[self._key]
         if isinstance(json_value, dict) and self.type_name != TYPE_DICT:
@@ -191,7 +210,7 @@ class ConfigEntry(Parameter):
                 step_type = TYPE_FLOAT if self.type_name == TYPE_FLOAT else TYPE_INT
                 self.single_step = _apply_type(json_value[RangeKey.STEP], step_type)
             if VALUE_KEY not in json_value:
-                raise RuntimeError(f'{self._key}: missing value')
+                raise RuntimeError(MISSING_VALUE_ERROR.format(key=self._key))
             json_value = json_value[VALUE_KEY]
 
         if self.type_name == TYPE_QSIZE:
