@@ -18,7 +18,7 @@
     "description": "Number of image generation models to keep in memory.",
     "type": "int",
     "range_options": {
-      "min": 1,
+      "min": 0,
       "max": 10,
       "step": 1
     }
@@ -36,7 +36,7 @@
     "description": "Number of VAE models to keep in memory.",
     "type": "int",
     "range_options": {
-      "min": 1,
+      "min": 0,
       "max": 10,
       "step": 1
     }
