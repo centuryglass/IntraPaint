@@ -16,7 +16,7 @@ LIBRARY_NAME = 'mypaint'  # For the ctypes.util.find_library function
 if os.name == 'nt':
     DEFAULT_LIBRARY_PATH = f'{PROJECT_DIR}/lib/libmypaint.dll'
 else:
-    DEFAULT_LIBRARY_PATH = f'{PROJECT_DIR}//lib/libmypaint.so'
+    DEFAULT_LIBRARY_PATH = f'{PROJECT_DIR}/lib/libmypaint.so'
 
 
 # Rectangles:
@@ -142,10 +142,10 @@ def load_libmypaint(default_library_path: Optional[str]) -> CDLL:
     if library_path is None:
         library_path = default_library_path
     if os.name == 'nt':
-        cdll.LoadLibrary('./lib/libiconv-2.dll')
-        cdll.LoadLibrary('./lib/libintl-8.dll')
-        cdll.LoadLibrary('./lib/libjson-c-2.dll')
-        lib = cdll.LoadLibrary('./lib/libmypaint-1-4-0.dll')
+        cdll.LoadLibrary(f'{PROJECT_DIR}/lib/libiconv-2.dll')
+        cdll.LoadLibrary(f'{PROJECT_DIR}/lib/libintl-8.dll')
+        cdll.LoadLibrary(f'{PROJECT_DIR}/lib/libjson-c-2.dll')
+        lib = cdll.LoadLibrary(f'{PROJECT_DIR}/lib/libmypaint-1-4-0.dll')
     else:
         lib = CDLL(library_path)
     # Brush functions:

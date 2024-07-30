@@ -9,7 +9,6 @@ from PyQt6.QtWidgets import QWidget, QLabel, QHBoxLayout, QVBoxLayout, QSizePoli
 from src.config.cache import Cache
 from src.image.layers.image_stack import ImageStack
 from src.tools.base_tool import BaseTool
-from src.tools.brush_tool import BrushTool
 from src.tools.eyedropper_tool import EyedropperTool
 from src.tools.fill_tool import FillTool
 from src.tools.generation_area_tool import GenerationAreaTool
@@ -26,6 +25,8 @@ from src.ui.widget.key_hint_label import KeyHintLabel
 from src.ui.widget.reactive_layout_widget import ReactiveLayoutWidget
 from src.util.display_size import get_window_size
 from src.util.geometry_utils import get_scaled_placement
+from src.util.optional_import import optional_import
+BrushTool = optional_import('src.tools.brush_tool', attr_name='BrushTool')
 
 TOOL_PANEL_TITLE = 'Tools'
 TOOL_ICON_SIZE = 40
@@ -136,8 +137,12 @@ class ToolPanel(QWidget):
         add_tool(selection_fill_tool)
         shape_selection_tool = ShapeSelectionTool(image_stack, image_panel.image_viewer)
         add_tool(shape_selection_tool)
-        brush_tool = BrushTool(image_stack, image_panel.image_viewer)
-        add_tool(brush_tool)
+        if BrushTool is not None:
+            brush_tool = BrushTool(image_stack, image_panel.image_viewer)
+            add_tool(brush_tool)
+        else:
+            print('Failed to load libmypaint, brush tool will not be available')
+            brush_tool = None
         eyedropper_tool = EyedropperTool(image_stack)
         add_tool(eyedropper_tool)
         transform_tool = LayerTransformTool(image_stack, image_panel.image_viewer)
@@ -146,7 +151,8 @@ class ToolPanel(QWidget):
         add_tool(fill_tool)
         generation_area_tool = GenerationAreaTool(image_stack, image_panel.image_viewer)
         add_tool(generation_area_tool)
-        self._event_handler.register_tool_delegate(brush_tool, eyedropper_tool, Qt.KeyboardModifier.ControlModifier)
+        if brush_tool is not None:
+            self._event_handler.register_tool_delegate(brush_tool, eyedropper_tool, Qt.KeyboardModifier.ControlModifier)
         self._event_handler.register_tool_delegate(fill_tool, eyedropper_tool, Qt.KeyboardModifier.ControlModifier)
         self._switch_active_tool(Cache().get(Cache.LAST_ACTIVE_TOOL))
         Cache().connect(self, Cache.LAST_ACTIVE_TOOL, self._switch_active_tool)

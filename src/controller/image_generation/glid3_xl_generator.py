@@ -180,7 +180,7 @@ class Glid3XLGenerator(ImageGenerator):
         for import_name, repo_name, repo_url in (('taming', 'taming-transformers', TAMING_TRANSFORMERS_REPO),
                                                  ('ldm', 'latent-diffusion', LATENT_DIFFUSION_REPO)):
             if not check_import(import_name):
-                self.status_signal.emit(MISSING_DEPS_ERROR.format(repo_name=repo_name, repo_url=repo_url))
+                self.status_signal.emit(MISSING_REPO_ERROR.format(repo_name=repo_name, repo_url=repo_url))
                 return False
         if None in (torch, get_device, foreach_image_in_sample, generate_samples, create_sample_function, load_models):
             missing_modules = ', '.join([module for module in EXPECTED_MODULE_NAMES if check_import(module) is False])

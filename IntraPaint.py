@@ -108,6 +108,13 @@ from src.ui.modal.modal_utils import show_error_dialog
 if __name__ == '__main__':
     try:
         controller = AppController(args)
+		
+        try:
+            import pyi_splash
+            pyi_splash.close()
+        except ImportError:
+            pass  # Not using the pyinstaller bundle, there's no splash screen to close
+		
         controller.start_app()
     except Exception as err:
         logger.exception('main crashed, error: %s', err)
