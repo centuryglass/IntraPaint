@@ -133,14 +133,6 @@ class GridContainer(QWidget):
         content_size = QSize(base_size.width() * self._columns, base_size.height() * self._rows)
         return content_size
 
-    # def paintEvent(self, _):
-    #     painter = QPainter(self)
-    #     painter.setPen(Qt.GlobalColor.red)
-    #     painter.fillRect(QRect(QPoint(), self.size()), Qt.GlobalColor.red)
-    #     painter.setPen(Qt.GlobalColor.green)
-    #     painter.drawRect(QRect(QPoint(), self.actual_content_size()))
-    #     painter.end()
-
     def resizeEvent(self, unused_event: Optional[QResizeEvent]) -> None:
         """Update grid flow on resize."""
         self._update_grid_flow()

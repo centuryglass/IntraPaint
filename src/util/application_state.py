@@ -58,7 +58,8 @@ class AppStateTracker(metaclass=Singleton):
         """Configures a widget or action to automatically enable or disable itself based on application state."""
         assert isinstance(valid_states, list), f'Invalid state list {valid_states}'
         state_tracker = AppStateTracker()
-        assert widget not in state_tracker._connections, 'Widget/Action already connected to app state'
+        if widget in state_tracker._connections:
+            AppStateTracker.disconnect_from_state(widget)
 
         def _change_enabled_status(app_state: str, connected_widget=widget, state_list=None) -> None:
             assert connected_widget in AppStateTracker()._connections

@@ -8,11 +8,25 @@ Supports the following:
 """
 from typing import Optional
 
-from PyQt6.QtCore import QObject, pyqtSignal, QPoint, QEvent
+from PyQt6.QtCore import QObject, pyqtSignal, QPoint, QEvent, Qt
 from PyQt6.QtGui import QCursor, QPixmap, QMouseEvent, QTabletEvent, QWheelEvent, QIcon, QKeySequence
-from PyQt6.QtWidgets import QWidget
+from PyQt6.QtWidgets import QWidget, QApplication
 
-DEFAULT_INPUT_HINT = "Ctrl+LMB/MMB and drag:pan view - Scroll wheel:zoom"
+from src.config.key_config import KeyConfig
+
+
+# The `QCoreApplication.translate` context for strings in this file
+TR_ID = 'tools.base_tool'
+
+
+def _tr(*args):
+    """Helper to make `QCoreApplication.translate` more concise."""
+    return QApplication.translate(TR_ID, *args)
+
+
+PAN_HINT = _tr('{modifier_or_modifiers}+LMB/MMB and drag:pan view - ')
+ZOOM_HINT = _tr('Scroll wheel:zoom')
+FIXED_ASPECT_HINT = _tr('{modifier_or_modifiers}: Fixed aspect ratio')
 
 
 # noinspection PyMethodMayBeStatic
@@ -70,6 +84,20 @@ class BaseTool(QObject):
         self._cursor: Optional[QCursor | QPixmap] = None
         self._active = False
 
+    @staticmethod
+    def modifier_hint(modifier_key: str, modifier_hint_str: str) -> str:
+        """Returns a hint string with a config-defined modifier inserted, or the empty string if the modifier is not
+           defined."""
+        assert '{modifier_or_modifiers}' in modifier_hint_str
+        if KeyConfig().get_modifier(modifier_key) == Qt.KeyboardModifier.NoModifier:
+            return ''
+        return modifier_hint_str.format(modifier_or_modifiers=KeyConfig().get(modifier_key))
+
+    @staticmethod
+    def fixed_aspect_hint() -> str:
+        """Returns the hint for the fixed aspect ratio key, if set"""
+        return BaseTool.modifier_hint(KeyConfig.FIXED_ASPECT_MODIFIER, FIXED_ASPECT_HINT)
+
     @property
     def cursor(self) -> Optional[QCursor | QPixmap]:
         """Returns the active tool cursor or tool pixmap."""
@@ -114,7 +142,7 @@ class BaseTool(QObject):
 
     def get_input_hint(self) -> str:
         """Return text describing different input functionality."""
-        return DEFAULT_INPUT_HINT
+        return f'{BaseTool.modifier_hint(KeyConfig.PAN_VIEW_MODIFIER, PAN_HINT)}{ZOOM_HINT}'
 
     @property
     def label(self) -> str:

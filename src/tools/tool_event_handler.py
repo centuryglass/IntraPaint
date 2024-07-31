@@ -6,6 +6,7 @@ from PyQt6.QtCore import Qt, QObject, QEvent, QRect, QPoint, pyqtSignal
 from PyQt6.QtGui import QMouseEvent, QTabletEvent, QWheelEvent
 from PyQt6.QtWidgets import QApplication
 
+from src.config.key_config import KeyConfig
 from src.hotkey_filter import HotkeyFilter
 from src.tools.base_tool import BaseTool
 from src.ui.image_viewer import ImageViewer
@@ -127,11 +128,12 @@ class ToolEventHandler(QObject):
 
         # Handle expected event types:
         event_handled = False
+        pan_modifier_held = KeyConfig.modifier_held(KeyConfig.PAN_VIEW_MODIFIER, True)
         match event.type():
             case QEvent.Type.MouseButtonPress:
                 event = cast(QMouseEvent, event)
                 event_handled = active_tool.mouse_click(event, find_image_coordinates(event))
-            case QEvent.Type.MouseMove:
+            case QEvent.Type.MouseMove if not pan_modifier_held:
                 event = cast(QMouseEvent, event)
                 event_handled = active_tool.mouse_move(event, find_image_coordinates(event))
             case QEvent.Type.MouseButtonRelease:

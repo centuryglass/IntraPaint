@@ -2,9 +2,9 @@
 import logging
 from typing import Optional
 
-from PyQt6.QtCore import Qt, QPoint, QSize, QRect
+from PyQt6.QtCore import Qt, QPoint, QSize, QRect, QLineF, QPointF
 from PyQt6.QtGui import QCursor, QTabletEvent, QMouseEvent, QColor, QIcon, QWheelEvent, QPointingDevice
-from PyQt6.QtWidgets import QApplication, QWidget
+from PyQt6.QtWidgets import QWidget, QApplication
 
 from src.config.application_config import AppConfig
 from src.config.key_config import KeyConfig
@@ -15,21 +15,29 @@ from src.image.layers.image_stack import ImageStack
 from src.image.layers.layer import Layer
 from src.tools.base_tool import BaseTool
 from src.ui.image_viewer import ImageViewer
-from src.util.key_code_utils import get_modifiers
-from src.util.shared_constants import PROJECT_DIR
+from src.util.shared_constants import PROJECT_DIR, FLOAT_MAX
 
 RESOURCES_BRUSH_ICON = f'{PROJECT_DIR}/resources/icons/brush_icon.svg'
 RESOURCES_CURSOR = f'{PROJECT_DIR}/resources/cursors/brush_cursor.svg'
 RESOURCES_MIN_CURSOR = f'{PROJECT_DIR}/resources/cursors/min_cursor.svg'
 
+
+# The `QCoreApplication.translate` context for strings in this file
+TR_ID = 'tools.canvas_tool'
+
+
+def _tr(*args):
+    """Helper to make `QCoreApplication.translate` more concise."""
+    return QApplication.translate(TR_ID, *args)
+
+
+LINE_HINT = _tr('{modifier_or_modifiers}+click: line mode - ')
+FIXED_ANGLE_HINT = _tr('{modifier_or_modifiers}: fixed angle - ')
+
 MAX_CURSOR_SIZE = 255
 MIN_CURSOR_SIZE = 20
 MIN_SMALL_CURSOR_SIZE = 15
-
-BRUSH_LABEL = 'Brush'
-BRUSH_TOOLTIP = 'Paint into the image'
-COLOR_BUTTON_LABEL = 'Color'
-COLOR_BUTTON_TOOLTIP = 'Select sketch brush color'
+MIN_LINE_PRESSURE = 0.5
 
 logger = logging.getLogger(__name__)
 
@@ -51,6 +59,8 @@ class CanvasTool(BaseTool):
         self._tablet_x_tilt: Optional[float] = None
         self._tablet_y_tilt: Optional[float] = None
         self._tablet_input: Optional[QPointingDevice.PointerType] = None
+        self._last_pos: Optional[QPoint] = None
+        self._fixed_angle: Optional[int] = None
 
         self._small_brush_icon = QIcon(RESOURCES_MIN_CURSOR)
         self._small_brush_cursor = QCursor(self._small_brush_icon.pixmap(MIN_SMALL_CURSOR_SIZE, MIN_SMALL_CURSOR_SIZE))
@@ -78,6 +88,12 @@ class CanvasTool(BaseTool):
                 return True
 
             HotkeyFilter.instance().register_speed_modified_keybinding(_size_change, key)
+
+    @staticmethod
+    def canvas_control_hints() -> str:
+        """Get control hints for line and fixed angle modes, if enabled."""
+        return (f'{BaseTool.modifier_hint(KeyConfig.LINE_MODIFIER, LINE_HINT)}'
+                f'{BaseTool.modifier_hint(KeyConfig.FIXED_ASPECT_MODIFIER, FIXED_ANGLE_HINT)}')
 
     def set_scaling_icon_cursor(self, icon: Optional[QIcon]) -> None:
         """Sets whether the tool should use a cursor scaled to the brush size and canvas.
@@ -166,15 +182,8 @@ class CanvasTool(BaseTool):
 
     def adjust_brush_size(self, offset: int) -> None:
         """Change brush size by some offset amount, multiplying offset if the speed modifier is held."""
-        try:
-            speed_modifiers = KeyConfig().get(KeyConfig.SPEED_MODIFIER)
-            speed_modifiers = get_modifiers(speed_modifiers)
-            if not isinstance(speed_modifiers, list):
-                speed_modifiers = [speed_modifiers]
-            if QApplication.keyboardModifiers() in speed_modifiers:
-                offset *= AppConfig().get(AppConfig.SPEED_MODIFIER_MULTIPLIER)
-        except RuntimeError:
-            pass  # Speed modifier was missing or invalid, so just don't check for it.
+        if KeyConfig.modifier_held(KeyConfig.SPEED_MODIFIER):
+            offset *= AppConfig().get(AppConfig.SPEED_MODIFIER_MULTIPLIER)
         self.set_brush_size(max(self._canvas.brush_size + offset, 1))
 
     def set_brush_size(self, new_size: int) -> None:
@@ -223,21 +232,60 @@ class CanvasTool(BaseTool):
             return
         if self._tablet_input == QPointingDevice.PointerType.Eraser:
             self._canvas.eraser = True
-        self._canvas.stroke_to(image_coordinates.x(), image_coordinates.y(), self._tablet_pressure,
-                               self._tablet_x_tilt, self._tablet_y_tilt)
+
+        if KeyConfig.modifier_held(KeyConfig.FIXED_ANGLE_MODIFIER) and self._last_pos is not None \
+                and self._last_pos != image_coordinates:
+            closest_point = None
+            last_pos = QPointF(self._last_pos)
+            if self._fixed_angle is None:
+                distance_line = QLineF(last_pos, QPointF(image_coordinates))
+                min_distance = FLOAT_MAX
+                for angle in range(0, 360, 45):
+                    distance_line.setAngle(angle)
+                    distance_from_mouse = QLineF(QPointF(image_coordinates), distance_line.p2()).length()
+                    if distance_from_mouse < min_distance:
+                        self._fixed_angle = angle
+                        min_distance = distance_from_mouse
+                        closest_point = distance_line.p2().toPoint()
+            else:
+                line = QLineF(last_pos, last_pos + QPointF(1.0, 0.0))
+                line.setAngle(self._fixed_angle)
+                normal_line = QLineF(QPointF(image_coordinates), QPointF(image_coordinates) + QPointF(1.0, 0.0))
+                normal_line.setAngle(self._fixed_angle + 90)
+                intersect_type, closest_point = line.intersects(normal_line)
+                assert intersect_type != QLineF.IntersectionType.NoIntersection, f'{line} parallel to {normal_line}'
+                assert isinstance(closest_point, QPointF)
+                closest_point = closest_point.toPoint()
+            assert isinstance(closest_point, QPoint)
+            print(f"fixed aspect: {image_coordinates} => {closest_point}")
+            image_coordinates = closest_point
+        if KeyConfig.modifier_held(KeyConfig.LINE_MODIFIER) and self._last_pos is not None:
+            pressure = None if self._tablet_pressure is None else max(self._tablet_pressure, MIN_LINE_PRESSURE)
+            self._canvas.stroke_to(self._last_pos.x(), self._last_pos.y(), pressure, self._tablet_x_tilt,
+                                   self._tablet_y_tilt)
+            self._canvas.stroke_to(image_coordinates.x(), image_coordinates.y(), pressure,
+                                   self._tablet_x_tilt, self._tablet_y_tilt)
+        else:
+            self._canvas.stroke_to(image_coordinates.x(), image_coordinates.y(), self._tablet_pressure,
+                                   self._tablet_x_tilt, self._tablet_y_tilt)
+
         if self._tablet_input == QPointingDevice.PointerType.Eraser:
             self._canvas.eraser = False
+        self._last_pos = image_coordinates
 
     def mouse_click(self, event: Optional[QMouseEvent], image_coordinates: QPoint) -> bool:
         """Starts drawing when the mouse is clicked in the scene."""
         if self._layer is None or event is None or not self._image_stack.has_image:
             return False
-        if QApplication.keyboardModifiers() == Qt.KeyboardModifier.ControlModifier:
-            return True
+        if KeyConfig.modifier_held(KeyConfig.PAN_VIEW_MODIFIER, True):
+            return False
         if event.buttons() == Qt.MouseButton.LeftButton or event.buttons() == Qt.MouseButton.RightButton:
             if self._drawing:
                 self._canvas.end_stroke()
             self._drawing = True
+            self._fixed_angle = None
+            if KeyConfig.modifier_held(KeyConfig.FIXED_ANGLE_MODIFIER):
+                self._last_pos = image_coordinates  # Update so previous clicks don't constrain the angle
             if self._cached_size is not None and event.buttons() == Qt.MouseButton.LeftButton:
                 self.brush_size = self._cached_size
                 self._cached_size = None
@@ -254,8 +302,6 @@ class CanvasTool(BaseTool):
         """Receives a mouse move event, returning whether the tool consumed the event."""
         if self._layer is None or event is None or not self._image_stack.has_image:
             return False
-        if QApplication.keyboardModifiers() == Qt.KeyboardModifier.ControlModifier:
-            return False
         if (event.buttons() == Qt.MouseButton.LeftButton or event.buttons() == Qt.MouseButton.RightButton
                 and self._drawing):
             self._stroke_to(image_coordinates)
@@ -266,8 +312,6 @@ class CanvasTool(BaseTool):
         """Receives a mouse release event, returning whether the tool consumed the event."""
         if self._layer is None or event is None or not self._image_stack.has_image:
             return False
-        if QApplication.keyboardModifiers() == Qt.KeyboardModifier.ControlModifier:
-            return True
         if self._drawing:
             self._drawing = False
             self._stroke_to(image_coordinates)
@@ -308,14 +352,6 @@ class CanvasTool(BaseTool):
             else:
                 self.cursor = QCursor(scaled_cursor)
 
-    @staticmethod
-    def _speed_modifier_held() -> bool:
-        speed_modifier = KeyConfig().get(KeyConfig.SPEED_MODIFIER)
-        if speed_modifier == '':
-            return False
-        speed_modifier = get_modifiers(speed_modifier)
-        return QApplication.keyboardModifiers() & speed_modifier == speed_modifier
-
     def wheel_event(self, event: Optional[QWheelEvent]) -> bool:
         """Adjust brush size if scrolling horizontal."""
         assert event is not None
@@ -327,7 +363,7 @@ class CanvasTool(BaseTool):
         elif event.angleDelta().x() > 0:
             offset += 1
         if offset != 0:
-            if self._speed_modifier_held():
+            if KeyConfig.modifier_held(KeyConfig.SPEED_MODIFIER):
                 offset *= AppConfig().get(AppConfig.SPEED_MODIFIER_MULTIPLIER)
             self.adjust_brush_size(offset)
             return True

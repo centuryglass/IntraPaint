@@ -33,6 +33,14 @@
         "default": true,
         "saved": true
     },
+    "selection_color": {
+        "label": "Selection overlay color:",
+        "category": "Interface",
+        "description": "Overlay color used to highlight selected image areas",
+        "type": "string",
+        "default": "#55ff0000",
+        "saved": true
+    },
     "show_selections_in_generation_options": {
         "label": "Show selections in generated image options:",
         "category": "Interface",

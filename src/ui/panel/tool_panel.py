@@ -7,6 +7,7 @@ from PyQt6.QtWidgets import QWidget, QLabel, QHBoxLayout, QVBoxLayout, QSizePoli
     QStackedLayout, QBoxLayout, QGridLayout, QLayout
 
 from src.config.cache import Cache
+from src.config.key_config import KeyConfig
 from src.image.layers.image_stack import ImageStack
 from src.tools.base_tool import BaseTool
 from src.tools.eyedropper_tool import EyedropperTool
@@ -151,9 +152,12 @@ class ToolPanel(QWidget):
         add_tool(fill_tool)
         generation_area_tool = GenerationAreaTool(image_stack, image_panel.image_viewer)
         add_tool(generation_area_tool)
-        if brush_tool is not None:
-            self._event_handler.register_tool_delegate(brush_tool, eyedropper_tool, Qt.KeyboardModifier.ControlModifier)
-        self._event_handler.register_tool_delegate(fill_tool, eyedropper_tool, Qt.KeyboardModifier.ControlModifier)
+        eyedropper_modifier = KeyConfig().get_modifier(KeyConfig.EYEDROPPER_OVERRIDE_MODIFIER)
+        if eyedropper_modifier != Qt.KeyboardModifier.NoModifier:
+            if brush_tool is not None:
+                self._event_handler.register_tool_delegate(brush_tool, eyedropper_tool, eyedropper_modifier)
+            self._event_handler.register_tool_delegate(fill_tool, eyedropper_tool, eyedropper_modifier)
+
         self._switch_active_tool(Cache().get(Cache.LAST_ACTIVE_TOOL))
         Cache().connect(self, Cache.LAST_ACTIVE_TOOL, self._switch_active_tool)
         self.resizeEvent(None)

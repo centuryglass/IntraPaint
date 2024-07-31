@@ -5,6 +5,7 @@ from PyQt6.QtCore import Qt, QPoint, QRect
 from PyQt6.QtGui import QIcon, QCursor, QMouseEvent, QKeySequence, QColor, QPainter, QTransform
 from PyQt6.QtWidgets import QWidget, QFormLayout, QApplication
 
+from src.config.application_config import AppConfig
 from src.config.cache import Cache
 from src.config.key_config import KeyConfig
 from src.image.layers.image_stack import ImageStack
@@ -13,13 +14,23 @@ from src.tools.base_tool import BaseTool
 from src.util.image_utils import flood_fill
 from src.util.shared_constants import PROJECT_DIR
 
+
+# The `QCoreApplication.translate` context for strings in this file
+TR_ID = 'tools.selection_fill_tool'
+
+
+def _tr(*args):
+    """Helper to make `QCoreApplication.translate` more concise."""
+    return QApplication.translate(TR_ID, *args)
+
+
 RESOURCES_FILL_ICON = f'{PROJECT_DIR}/resources/icons/selection_fill_icon.svg'
 RESOURCES_FILL_CURSOR = f'{PROJECT_DIR}/resources/cursors/selection_fill_cursor.svg'
 CURSOR_SIZE = 25
 
-SELECTION_FILL_LABEL = 'Selection fill'
-SELECTION_FILL_TOOLTIP = 'Select areas with solid colors'
-SELECTION_FILL_CONTROL_HINT = 'LMB:select - RMB:deselect -'
+SELECTION_FILL_LABEL = _tr('Selection fill')
+SELECTION_FILL_TOOLTIP = _tr('Select areas with solid colors')
+SELECTION_FILL_CONTROL_HINT = _tr('LMB:select - RMB:deselect - ')
 
 
 class SelectionFillTool(BaseTool):
@@ -31,7 +42,16 @@ class SelectionFillTool(BaseTool):
         self._image_stack = image_stack
         self._control_panel: Optional[QWidget] = None
         self._icon = QIcon(RESOURCES_FILL_ICON)
-        self._color = QColor(Qt.GlobalColor.red)
+        self._color = QColor()
+
+        def _update_color(color_str: str) -> None:
+            if color_str == self._color.name():
+                return
+            self._color = QColor(color_str)
+            self._color.setAlphaF(1.0)
+        _update_color(AppConfig().get(AppConfig.SELECTION_COLOR))
+        AppConfig().connect(self, AppConfig.SELECTION_COLOR, _update_color)
+
         self._threshold = cache.get(Cache.FILL_THRESHOLD)
         self._sample_merged = cache.get(Cache.SAMPLE_MERGED)
         cursor_icon = QIcon(RESOURCES_FILL_CURSOR)
@@ -57,7 +77,7 @@ class SelectionFillTool(BaseTool):
 
     def get_input_hint(self) -> str:
         """Return text describing different input functionality."""
-        return f'{SELECTION_FILL_CONTROL_HINT} {super().get_input_hint()}'
+        return f'{SELECTION_FILL_CONTROL_HINT}{super().get_input_hint()}'
 
     def get_control_panel(self) -> Optional[QWidget]:
         """Returns a panel providing controls for customizing tool behavior, or None if no such panel is needed."""
@@ -73,7 +93,7 @@ class SelectionFillTool(BaseTool):
         return self._control_panel
 
     def mouse_click(self, event: Optional[QMouseEvent], image_coordinates: QPoint) -> bool:
-        """Copy the color under the mouse on left-click."""
+        """Fill the region under the mouse on left-click, clear on right-click."""
         assert event is not None
         if QApplication.keyboardModifiers() != Qt.KeyboardModifier.NoModifier:
             return True

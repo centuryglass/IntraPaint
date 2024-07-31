@@ -3,9 +3,6 @@ from typing import Tuple, List
 
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QKeySequence
-from PyQt6.QtWidgets import QApplication
-
-from src.config.key_config import KeyConfig
 
 _MODIFIERS = {
     Qt.Key.Key_Control: Qt.KeyboardModifier.ControlModifier,
@@ -59,6 +56,7 @@ def get_modifiers(modifier_str: str | List[str]) -> Qt.KeyboardModifier:
     return modifiers
 
 
+
 def get_modifier_string(modifiers: Qt.KeyboardModifier) -> str:
     """Get the string representation of one or more keyboard modifiers."""
     mod_strings = []
@@ -94,10 +92,3 @@ def get_key_display_string(keys: QKeySequence) -> str:
         text = text.replace(key, symbol)
     return text
 
-
-def _speed_modifier_held() -> bool:
-    speed_modifier = KeyConfig().get(KeyConfig.SPEED_MODIFIER)
-    if speed_modifier == '':
-        return False
-    speed_modifier = get_modifiers(speed_modifier)
-    return QApplication.keyboardModifiers() & speed_modifier == speed_modifier

@@ -354,9 +354,9 @@ class ImageGraphicsView(QGraphicsView):
         assert event is not None
         self.set_cursor_pos(event.pos())
         super().mousePressEvent(event)
-        key_modifiers = QApplication.keyboardModifiers()
         if event.buttons() == Qt.MouseButton.MiddleButton or (event.buttons() == Qt.MouseButton.LeftButton
-                                                              and key_modifiers == Qt.KeyboardModifier.ControlModifier):
+                                                              and KeyConfig.modifier_held(KeyConfig.PAN_VIEW_MODIFIER,
+                                                                                          True)):
             self._drag_pt = event.pos()
         return False if get_result else None
 
@@ -370,7 +370,7 @@ class ImageGraphicsView(QGraphicsView):
             key_modifiers = QApplication.keyboardModifiers()
             if (event.buttons() == Qt.MouseButton.MiddleButton or
                     (event.buttons() == Qt.MouseButton.LeftButton
-                     and key_modifiers == Qt.KeyboardModifier.ControlModifier)):
+                     and KeyConfig.modifier_held(KeyConfig.PAN_VIEW_MODIFIER))):
                 mouse_pt = event.pos()
                 scale = self.scene_scale
                 x_off = (self._drag_pt.x() - mouse_pt.x()) / scale

@@ -1,17 +1,18 @@
 """Select or deselect rectangular or ellipsoid areas."""
 from typing import Optional
 
-from PyQt6.QtCore import Qt, QPoint, QRect, QRectF, QSizeF, QPointF
-from PyQt6.QtGui import QKeySequence, QIcon, QMouseEvent, QPainter
+from PyQt6.QtCore import Qt, QPoint, QRect, QRectF, QSizeF, QPointF, QLineF
+from PyQt6.QtGui import QKeySequence, QIcon, QMouseEvent, QPainter, QColor
 from PyQt6.QtWidgets import QWidget, QLayout, QApplication, QHBoxLayout, QGraphicsRectItem, \
     QGraphicsEllipseItem
 
+from src.config.application_config import AppConfig
 from src.config.key_config import KeyConfig
 from src.image.layers.image_stack import ImageStack
 from src.tools.base_tool import BaseTool
 from src.ui.image_viewer import ImageViewer
 from src.ui.input_fields.dual_toggle import DualToggle
-from src.util.shared_constants import PROJECT_DIR
+from src.util.shared_constants import PROJECT_DIR, FLOAT_MAX
 
 # The `QCoreApplication.translate` context for strings in this file
 TR_ID = 'tools.shape_selection_tool'
@@ -26,7 +27,8 @@ RESOURCES_SHAPE_SELECT_ICON = f'{PROJECT_DIR}/resources/icons/shape_selection_ic
 
 SHAPE_SELECTION_LABEL = _tr('Rectangle/Ellipse selection')
 SHAPE_SELECTION_TOOLTIP = _tr('Select or de-select rectangles or ellipses')
-SHAPE_SELECTION_CONTROL_HINT = _tr('LMB:select - RMB:deselect - Ctrl:fixed aspect -')
+SHAPE_SELECTION_CONTROL_HINT = _tr('LMB:select - RMB:deselect - ')
+FIXED_ASPECT_CONTROL_HINT = _tr('')
 
 MODE_RECT = _tr('Rectangle')
 MODE_ELLIPSE = _tr('Ellipse')
@@ -49,6 +51,15 @@ class ShapeSelectionTool(BaseTool):
         self._clearing = False
         self._icon = QIcon(RESOURCES_SHAPE_SELECT_ICON)
         self._mode = MODE_RECT
+        self._color = QColor()
+
+        def _update_color(color_str: str) -> None:
+            if color_str == self._color.name():
+                return
+            self._color = QColor(color_str)
+            self._color.setAlphaF(1.0)
+        _update_color(AppConfig().get(AppConfig.SELECTION_COLOR))
+        AppConfig().connect(self, AppConfig.SELECTION_COLOR, _update_color)
 
     def get_hotkey(self) -> QKeySequence:
         """Returns the hotkey(s) that should activate this tool."""
@@ -68,7 +79,7 @@ class ShapeSelectionTool(BaseTool):
 
     def get_input_hint(self) -> str:
         """Return text describing different input functionality."""
-        return f'{SHAPE_SELECTION_CONTROL_HINT} {super().get_input_hint()}'
+        return f'{SHAPE_SELECTION_CONTROL_HINT}{BaseTool.fixed_aspect_hint()}{super().get_input_hint()}'
 
     def get_control_panel(self) -> Optional[QWidget]:
         """Returns a panel providing controls for customizing tool behavior, or None if no such panel is needed."""
@@ -92,6 +103,8 @@ class ShapeSelectionTool(BaseTool):
 
     def mouse_click(self, event: Optional[QMouseEvent], image_coordinates: QPoint) -> bool:
         """Start selecting on click."""
+        if KeyConfig.modifier_held(KeyConfig.PAN_VIEW_MODIFIER, True):
+            return False
         if self._selection_shape is not None:
             self._scene.removeItem(self._selection_shape)
             self._selection_shape = None
@@ -104,7 +117,7 @@ class ShapeSelectionTool(BaseTool):
         self._selection_shape = QGraphicsRectItem(QRectF(QPointF(image_coordinates), QSizeF(0, 0))) \
                 if self._mode == MODE_RECT \
                 else QGraphicsEllipseItem(image_coordinates.x(), image_coordinates.y(), 0, 0)
-        self._selection_shape.setBrush(Qt.GlobalColor.red)
+        self._selection_shape.setBrush(self._color)
         self._selection_shape.setOpacity(GRAPHICS_ITEM_OPACITY)
         self._scene.addItem(self._selection_shape)
         self._dragging = True
@@ -116,7 +129,26 @@ class ShapeSelectionTool(BaseTool):
             return False
         assert self._selection_shape is not None
         rect = self._selection_shape.rect()
-        rect.setCoords(rect.x(), rect.y(), image_coordinates.x(), image_coordinates.y())
+        if KeyConfig.modifier_held(KeyConfig.FIXED_ASPECT_MODIFIER):
+            x_size = image_coordinates.x() - rect.x()
+            y_size = image_coordinates.y() - rect.y()
+            point_options = [
+                QPointF(image_coordinates.x(), rect.y() + x_size),
+                QPointF(image_coordinates.x(), rect.y() - x_size),
+                QPointF(rect.x() + y_size, image_coordinates.y()),
+                QPointF(rect.x() - y_size, image_coordinates.y())
+            ]
+            min_distance = FLOAT_MAX
+            bottom_right = None
+            for point in point_options:
+                distance_from_mouse = QLineF(QPointF(image_coordinates), point).length()
+                if distance_from_mouse < min_distance:
+                    min_distance = distance_from_mouse
+                    bottom_right = point
+            assert bottom_right is not None
+        else:
+            bottom_right = image_coordinates
+        rect.setCoords(rect.x(), rect.y(), bottom_right.x(), bottom_right.y())
         self._selection_shape.setRect(rect)
         return True
 
@@ -130,7 +162,7 @@ class ShapeSelectionTool(BaseTool):
         with self._image_stack.selection_layer.borrow_image() as selection_image:
             rect = QRect(rect.topLeft().toPoint() - self._image_stack.selection_layer.position, rect.size().toSize())
             painter = QPainter(selection_image)
-            fill_color = Qt.GlobalColor.red
+            fill_color = self._color
             if self._clearing:
                 painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_Clear)
             if self._mode == MODE_RECT:

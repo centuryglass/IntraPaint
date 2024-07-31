@@ -16,7 +16,7 @@ a = Analysis(
 )
 pyz = PYZ(a.pure)
 splash = Splash(
-    'resources\\icons\\app_icon.png',
+    'resources/icons/app_icon.png',
     binaries=a.binaries,
     datas=a.datas,
     text_pos=None,
@@ -46,5 +46,5 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    icon=['resources\\icons\\app_icon.png'],
+    icon=['resources/icons/app_icon.png'],
 )

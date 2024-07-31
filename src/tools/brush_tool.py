@@ -3,7 +3,7 @@ from typing import Optional, cast
 
 from PyQt6.QtCore import QSize
 from PyQt6.QtGui import QPixmap, QColor, QIcon, QKeySequence
-from PyQt6.QtWidgets import QVBoxLayout, QPushButton, QColorDialog, QWidget
+from PyQt6.QtWidgets import QVBoxLayout, QPushButton, QColorDialog, QWidget, QApplication
 
 from src.config.application_config import AppConfig
 from src.config.cache import Cache
@@ -13,18 +13,30 @@ from src.image.canvas.mypaint_layer_canvas import MyPaintLayerCanvas
 from src.image.layers.image_layer import ImageLayer
 from src.image.layers.image_stack import ImageStack
 from src.image.layers.layer import Layer
+from src.tools.base_tool import BaseTool
 from src.tools.canvas_tool import CanvasTool
 from src.ui.image_viewer import ImageViewer
 from src.ui.input_fields.slider_spinbox import IntSliderSpinbox
 from src.ui.panel.mypaint_brush_panel import MypaintBrushPanel
 from src.util.shared_constants import PROJECT_DIR
 
+
+# The `QCoreApplication.translate` context for strings in this file
+TR_ID = 'tools.brush_tool'
+
+
+def _tr(*args):
+    """Helper to make `QCoreApplication.translate` more concise."""
+    return QApplication.translate(TR_ID, *args)
+
+
 RESOURCES_BRUSH_ICON = f'{PROJECT_DIR}/resources/icons/brush_icon.svg'
-BRUSH_LABEL = 'Brush'
-BRUSH_TOOLTIP = 'Paint into the image'
-COLOR_BUTTON_LABEL = 'Color'
-COLOR_BUTTON_TOOLTIP = 'Select sketch brush color'
-BRUSH_CONTROL_HINT = 'LMB:draw - RMB:1px draw - Ctrl:pick color -'
+BRUSH_LABEL = _tr('Brush')
+BRUSH_TOOLTIP = _tr('Paint into the image')
+COLOR_BUTTON_LABEL = _tr('Color')
+COLOR_BUTTON_TOOLTIP = _tr('Select sketch brush color')
+BRUSH_CONTROL_HINT = _tr('LMB:draw - RMB:1px draw - ')
+COLOR_PICK_HINT = _tr('{modifier_or_modifiers}:pick color - ')
 
 
 class BrushTool(CanvasTool):
@@ -69,7 +81,8 @@ class BrushTool(CanvasTool):
 
     def get_input_hint(self) -> str:
         """Return text describing different input functionality."""
-        return f'{BRUSH_CONTROL_HINT} {super().get_input_hint()}'
+        return (f'{BRUSH_CONTROL_HINT}{BaseTool.modifier_hint(KeyConfig.EYEDROPPER_TOOL_KEY, COLOR_PICK_HINT)}'
+                f'{CanvasTool.canvas_control_hints()}{super().get_input_hint()}')
 
     def get_control_panel(self) -> Optional[QWidget]:
         """Returns the brush control panel."""

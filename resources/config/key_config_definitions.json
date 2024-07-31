@@ -7,6 +7,46 @@
         "default": "Alt",
         "saved": true
     },
+    "line_modifier": {
+        "label": "Line Drawing Modifier:",
+        "category": "Keybindings",
+        "description": "When held, drawing tools will draw a line from the last point.",
+        "type": "string",
+        "default": "Shift",
+        "saved": true
+    },
+    "fixed_angle_modifier": {
+        "label": "Fixed Angle Modifier:",
+        "category": "Keybindings",
+        "description": "When held, drawing tools will be constrained to a fixed angle.",
+        "type": "string",
+        "default": "Alt",
+        "saved": true
+    },
+    "pan_view_modifier": {
+        "label": "Pan View Modifier:",
+        "category": "Keybindings",
+        "description": "When held, click and drag to pan the image view",
+        "type": "string",
+        "default": "Ctrl",
+        "saved": true
+    },
+    "fixed_aspect_modifier": {
+        "label": "Fixed Aspect Ratio Modifier:",
+        "category": "Keybindings",
+        "description": "When held, shape and transform tools will keep a fixed aspect ratio.",
+        "type": "string",
+        "default": "Ctrl",
+        "saved": true
+    },
+    "eyedropper_override_modifier": {
+        "label" : "Color Picker Override Modifier:",
+        "category": "Keybindings",
+        "description": "When held, temporarily switch from the brush or fill tool to the color picker.",
+        "type": "string",
+        "default": "Ctrl",
+        "saved": true
+    },
     "zoom_in": {
         "label": "Zoom in:",
         "category": "Keybindings",

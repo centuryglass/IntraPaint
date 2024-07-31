@@ -334,7 +334,7 @@ class GeneratedImageSelector(QWidget):
                     return False
             return True
         elif event.type() == QEvent.Type.MouseButtonPress:
-            if QApplication.keyboardModifiers() == Qt.KeyboardModifier.ControlModifier:
+            if KeyConfig.modifier_held(KeyConfig.PAN_VIEW_MODIFIER):
                 return False  # Ctrl+click is for panning, don't select options
             event = cast(QMouseEvent, event)
             if event.button() != Qt.MouseButton.LeftButton or AppStateTracker.app_state() == APP_STATE_LOADING:

@@ -3,7 +3,7 @@ from typing import Optional
 
 from PyQt6.QtCore import Qt, QPoint, QRect
 from PyQt6.QtGui import QIcon, QCursor, QMouseEvent, QKeySequence, QColor, QPainter, QTransform
-from PyQt6.QtWidgets import QWidget, QFormLayout
+from PyQt6.QtWidgets import QWidget, QFormLayout, QApplication
 
 from src.config.cache import Cache
 from src.config.key_config import KeyConfig
@@ -11,18 +11,28 @@ from src.image.layers.image_layer import ImageLayer
 from src.image.layers.image_stack import ImageStack
 from src.image.layers.layer import Layer
 from src.tools.base_tool import BaseTool
+from src.tools.brush_tool import COLOR_PICK_HINT
 from src.ui.widget.brush_color_button import BrushColorButton
 from src.util.image_utils import flood_fill, create_transparent_image
 from src.util.shared_constants import PROJECT_DIR
+
+# The `QCoreApplication.translate` context for strings in this file
+TR_ID = 'tools.fill_tool'
+
+
+def _tr(*args):
+    """Helper to make `QCoreApplication.translate` more concise."""
+    return QApplication.translate(TR_ID, *args)
+
 
 RESOURCES_FILL_ICON = f'{PROJECT_DIR}/resources/icons/fill_icon.svg'
 RESOURCES_FILL_CURSOR = f'{PROJECT_DIR}/resources/cursors/fill_cursor.svg'
 CURSOR_SIZE = 50
 
-FILL_LABEL = 'Color fill'
-FILL_TOOLTIP = "Fill areas with solid colors"
-FILL_CONTROL_HINT = "LMB:fill -"
-FILL_BUTTON_TOOLTIP = 'Set fill color'
+FILL_LABEL = _tr('Color fill')
+FILL_TOOLTIP = _tr('Fill areas with solid colors')
+FILL_CONTROL_HINT = _tr('LMB:fill - ')
+FILL_BUTTON_TOOLTIP = _tr('Set fill color')
 
 
 class FillTool(BaseTool):
@@ -32,6 +42,7 @@ class FillTool(BaseTool):
         super().__init__()
         cache = Cache()
         self._control_panel: Optional[QWidget] = None
+        self._image_stack = image_stack
         self._icon = QIcon(RESOURCES_FILL_ICON)
         self._color = QColor(cache.get(Cache.LAST_BRUSH_COLOR))
         self._threshold = cache.get(Cache.FILL_THRESHOLD)
@@ -65,7 +76,8 @@ class FillTool(BaseTool):
 
     def get_input_hint(self) -> str:
         """Return text describing different input functionality."""
-        return f'{FILL_CONTROL_HINT} {super().get_input_hint()}'
+        return (f'{FILL_CONTROL_HINT}{BaseTool.modifier_hint(KeyConfig.EYEDROPPER_TOOL_KEY, COLOR_PICK_HINT)}'
+                f'{super().get_input_hint()}')
 
     def get_control_panel(self) -> Optional[QWidget]:
         """Returns a panel providing controls for customizing tool behavior, or None if no such panel is needed."""

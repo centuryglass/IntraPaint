@@ -222,7 +222,6 @@ class _IconButton(QWidget):
         if self._image_rect is None:
             return
         painter = QPainter(self)
-        painter.fillRect(self._image_rect, Qt.GlobalColor.red)
         if self.is_selected():
             painter.drawPixmap(self._image_rect, self._image_inverted)
         else:

@@ -3,8 +3,9 @@ from typing import Optional, Dict, Tuple, Callable
 
 from PyQt6.QtCore import Qt, QRect, QRectF, QSize, QPoint
 from PyQt6.QtGui import QCursor, QIcon, QKeySequence, QTransform, QPen, QPaintEvent, QPainter, QColor, \
-    QPolygon
-from PyQt6.QtWidgets import QWidget, QLabel, QSpinBox, QDoubleSpinBox, QCheckBox, QGridLayout, QPushButton, QSizePolicy
+    QPolygon, QKeyEvent
+from PyQt6.QtWidgets import QWidget, QLabel, QSpinBox, QDoubleSpinBox, QCheckBox, QGridLayout, QPushButton, QSizePolicy, \
+    QApplication
 
 from src.config.application_config import AppConfig
 from src.config.key_config import KeyConfig
@@ -25,27 +26,34 @@ from src.util.geometry_utils import get_scaled_placement, get_rect_transformatio
 from src.util.image_utils import get_transparency_tile_pixmap
 from src.util.shared_constants import FLOAT_MIN, FLOAT_MAX, MIN_NONZERO, INT_MAX, PROJECT_DIR
 
-CLEAR_BUTTON_TEXT = 'Clear'
+# The `QCoreApplication.translate` context for strings in this file
+TR_ID = 'tools.generation_area_tool'
 
-CONTROL_GRID_SPACING = 10
 
-X_LABEL = "X:"
-Y_LABEL = "Y:"
-X_SCALE_LABEL = "X-Scale:"
-Y_SCALE_LABEL = "Y-Scale:"
-WIDTH_LABEL = "W:"
-HEIGHT_LABEL = "H:"
-DEGREE_LABEL = 'Angle:'
+def _tr(*args):
+    """Helper to make `QCoreApplication.translate` more concise."""
+    return QApplication.translate(TR_ID, *args)
 
-TRANSFORM_LABEL = 'Transform Layers'
-TRANSFORM_TOOLTIP = 'Move, scale, or rotate the active layer.'
-RESOURCES_TRANSFORM_TOOL_ICON = f'{PROJECT_DIR}/resources/icons/layer_transform_icon.svg'
-ASPECT_RATIO_CHECK_LABEL = 'Keep aspect ratio'
-RESET_BUTTON_TEXT = 'Reset'
-TRANSFORM_CONTROL_HINT = 'LMB+drag:move layer -'
+
+X_LABEL = _tr('X:')
+Y_LABEL = _tr('Y:')
+X_SCALE_LABEL = _tr('X-Scale:')
+Y_SCALE_LABEL = _tr('Y-Scale:')
+WIDTH_LABEL = _tr('W:')
+HEIGHT_LABEL = _tr('H:')
+DEGREE_LABEL = _tr('Angle:')
+
+TRANSFORM_LABEL = _tr('Transform Layers')
+TRANSFORM_TOOLTIP = _tr('Move, scale, or rotate the active layer.')
+ASPECT_RATIO_CHECK_LABEL = _tr('Keep aspect ratio')
+RESET_BUTTON_TEXT = _tr('Reset')
+CLEAR_BUTTON_TEXT = _tr('Clear')
+TRANSFORM_CONTROL_HINT = _tr('LMB+drag:move layer - ')
 
 SCALE_STEP = 0.05
 MIN_WIDTH_FOR_PREVIEW = 600
+CONTROL_GRID_SPACING = 10
+RESOURCES_TRANSFORM_TOOL_ICON = f'{PROJECT_DIR}/resources/icons/layer_transform_icon.svg'
 
 
 class LayerTransformTool(BaseTool):
@@ -137,6 +145,7 @@ class LayerTransformTool(BaseTool):
 
                 HotkeyFilter.instance().register_speed_modified_keybinding(_binding, key)
 
+
     def get_hotkey(self) -> QKeySequence:
         """Returns the hotkey(s) that should activate this tool."""
         return KeyConfig().get_keycodes(KeyConfig.TRANSFORM_TOOL_KEY)
@@ -155,7 +164,7 @@ class LayerTransformTool(BaseTool):
 
     def get_input_hint(self) -> str:
         """Return text describing different input functionality."""
-        return f'{TRANSFORM_CONTROL_HINT} {super().get_input_hint()}'
+        return f'{TRANSFORM_CONTROL_HINT}{super().get_input_hint()}'
 
     def restore_aspect_ratio(self) -> None:
         """Ensure that the aspect ratio is constant."""

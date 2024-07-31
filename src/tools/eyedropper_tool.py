@@ -3,7 +3,7 @@ from typing import Optional
 
 from PyQt6.QtCore import Qt, QPoint
 from PyQt6.QtGui import QIcon, QCursor, QColor, QMouseEvent, QKeySequence, QResizeEvent, QShowEvent
-from PyQt6.QtWidgets import QWidget, QColorDialog
+from PyQt6.QtWidgets import QWidget, QColorDialog, QApplication
 
 from src.config.cache import Cache
 from src.config.key_config import KeyConfig
@@ -13,13 +13,22 @@ from src.ui.widget.color_picker import ColorPicker
 from src.util.display_size import get_window_size
 from src.util.shared_constants import PROJECT_DIR
 
+# The `QCoreApplication.translate` context for strings in this file
+TR_ID = 'tools.eyedropper_tool'
+
+
+def _tr(*args):
+    """Helper to make `QCoreApplication.translate` more concise."""
+    return QApplication.translate(TR_ID, *args)
+
+
 RESOURCES_EYEDROPPER_ICON = f'{PROJECT_DIR}/resources/icons/eyedropper_icon.svg'
 RESOURCES_EYEDROPPER_CURSOR = f'{PROJECT_DIR}/resources/cursors/eyedropper_cursor.svg'
 CURSOR_SIZE = 50
 
-EYEDROPPER_LABEL = 'Color Picker'
-EYEDROPPER_TOOLTIP = "Select a brush color"
-EYEDROPPER_CONTROL_HINT = "LMB:pick color -"
+EYEDROPPER_LABEL = _tr('Color Picker')
+EYEDROPPER_TOOLTIP = _tr('Select a brush color')
+EYEDROPPER_CONTROL_HINT = _tr('LMB:pick color - ')
 
 
 class EyedropperTool(BaseTool):
@@ -51,7 +60,7 @@ class EyedropperTool(BaseTool):
 
     def get_input_hint(self) -> str:
         """Return text describing different input functionality."""
-        return f'{EYEDROPPER_CONTROL_HINT} {super().get_input_hint()}'
+        return f'{EYEDROPPER_CONTROL_HINT}{super().get_input_hint()}'
 
     def get_control_panel(self) -> Optional[QWidget]:
         """Returns a panel providing controls for customizing tool behavior, or None if no such panel is needed."""

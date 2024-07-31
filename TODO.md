@@ -1,39 +1,53 @@
 # Development tasks
 
+# Files
 - ORA SVG support
+- Move non-standard ORA data to new xml file
+- Add layer locks to ORA extended data
+- Support saving in formats other than .png (metadata fixes?)
+- Warn when saving would merge layers, discard metadata, discard alpha
 
 # General interface
 - When scaling, center scale on mouse position
+- Warning modal with "don't warn me again checkbox"
+
+# Panels
+- Put ToolPanel's layer panel in a tab widget with other new window/panel options
+- ColorPanel: tabbed color picker
+- Extend imageWindow to navigation panel (add gen area control, zoom control)
 
 # Layers
-- Layer locking
-- Transparency locking
+- Transparency locking: adjust for transformation offset (temp disable when resizing/cropping layers, probably)
+- support for missing composition modes
+- Add selection layer back to layer panel
 
 # Menus
-- Support saving in formats other than .png (metadata fixes?)
 - Crop image to content
 - open mypaint brush panel
 - open mypaint brush file
-- Filters: just throw in whatever fun stuff PIL/CV2 has to offer
+- Filters: just throw in whatever fun stuff PIL/CV2 have to offer
 
 # Config
 - Hide startup warnings option
-- Automatic metadata updates
+- Automatic metadata update option
 
 # Tools
 ## Image gen area tool
 - generation area to generation size button
 - generation size controls
 
-## Selection fill
-- fill based on selection layer only
-- floodfill with alpha support
+## Selection fill, fill tool
+- option to fill based on selection layer only
+- floodfill alpha support
 
 ## Selection tool
 - Add mask draw/erase hotkey
 
+## Lasso tool
+- Vector-based selection tool
+
 ## Transform tool
-- Better rotation arrows
+- Why do angles look off when rotating scaled layers?
 - Unique look for origin point
 - Toggle switch for scale/rotate modes
 
@@ -42,18 +56,11 @@
 - Variable opacity/hardness sliders
 - Pressure controls
   
-## Fill tool
-cv2 or PIL probably have good support for this.
-- floodfill with alpha support
-  
 ## Brush tool sub-tools
 Alternate brush tools that filter for certain brush types
 - Erase tool
 - Smudge tool
 - Blur tool
-
-## Canvas tools
-- Draw lines on shift
 
 # Text tool
 - Font selection
@@ -80,7 +87,7 @@ Alternate brush tools that filter for certain brush types
 - Add tooltip descriptions for modules and models
 
 # Code cleanup
-- Localization support
+- Localization support: continue removing hard-coded strings
 
 # sketch canvas/libmypaint
 - Cleanup and release libmypaint-pyqt package

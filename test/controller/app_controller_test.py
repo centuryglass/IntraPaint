@@ -33,6 +33,8 @@ class TestAppController(unittest.TestCase):
         args = ['--window_size', '800x600', '--mode', 'mock']
         self.args = build_arg_parser(include_edit_params=False).parse_args(args)
         self.args.mode = 'mock'
+        self.args.server_url = ''
+        self.args.fast_ngrok_connection = False
         self.controller = AppController(self.args)
 
     @patch('src.controller.app_controller.MainWindow')

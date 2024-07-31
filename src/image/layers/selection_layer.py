@@ -6,7 +6,7 @@ import cv2
 import numpy as np
 from PIL import Image
 from PyQt6.QtCore import QRect, QPoint, QSize, pyqtSignal, QPointF, Qt
-from PyQt6.QtGui import QImage, QPolygonF, QPainter
+from PyQt6.QtGui import QImage, QPolygonF, QPainter, QColor
 
 from src.config.application_config import AppConfig
 from src.image.layers.image_layer import ImageLayer
@@ -16,11 +16,7 @@ from src.util.image_utils import qimage_to_pil_image, image_content_bounds
 logger = logging.getLogger(__name__)
 
 SELECTION_LAYER_NAME = 'Selection'
-
-MASK_OPACITY_DEFAULT = 0.2
-ALPHA_THRESHOLD = 1
-ALPHA_SELECTED = 180
-ALPHA_UNSELECTED = 150
+DEFAULT_BRUSH_COLOR_STR = '#55ff0000'
 
 
 class SelectionLayer(ImageLayer):
@@ -49,9 +45,24 @@ class SelectionLayer(ImageLayer):
         self._outline_polygons: List[QPolygonF] = []
         self._generation_area = QRect()
         super().__init__(size, SELECTION_LAYER_NAME)
-        self.opacity = MASK_OPACITY_DEFAULT
         self._bounding_box: Optional[QRect] = None
         self._content_bounds: Optional[QRect] = None
+        self._selection_color = QColor()
+
+        def _update_color(color_str: str) -> None:
+            if color_str == self._selection_color.name():
+                return
+            self._selection_color = QColor(color_str)
+            if self._selection_color.alpha() == 0:
+                logger.error(f'Invalid full-transparent selection color {self._selection_color.name()}'
+                             f', restoring default {DEFAULT_BRUSH_COLOR_STR}')
+                self._selection_color = QColor(DEFAULT_BRUSH_COLOR_STR)
+                AppConfig().set(AppConfig.SELECTION_COLOR, DEFAULT_BRUSH_COLOR_STR)
+            self.opacity = self._selection_color.alphaF()
+            self.image = self.get_qimage()  # Replace previous color
+        _update_color(AppConfig().get(AppConfig.SELECTION_COLOR))
+        AppConfig().connect(self, AppConfig.SELECTION_COLOR, _update_color)
+
         self.transform_changed.connect(lambda layer, matrix: self._update_bounds())
         generation_window_signal.connect(self.update_generation_area)
 
@@ -102,18 +113,18 @@ class SelectionLayer(ImageLayer):
         pos = self.position
         bounds.translate(-pos.x(), -pos.y())
         gen_area_np_image = np_image[bounds.y():bounds.y() + bounds.height(), bounds.x():bounds.x() + bounds.width(), :]
-        return bool(np.all(gen_area_np_image[:, :, 3] > ALPHA_THRESHOLD))
+        return bool(np.all(gen_area_np_image[:, :, 3] > 0))
 
     def select_all(self) -> None:
         """Selects the entire image."""
         full_selection = QImage(self.size, QImage.Format.Format_ARGB32_Premultiplied)
-        full_selection.fill(Qt.GlobalColor.red)
+        full_selection.fill(self._selection_color)
         self.image = full_selection
 
     def invert_selection(self) -> None:
         """Select all unselected areas, and unselect all selected areas."""
         inverted = QImage(self.size, QImage.Format.Format_ARGB32_Premultiplied)
-        inverted.fill(Qt.GlobalColor.red)
+        inverted.fill(self._selection_color)
         painter = QPainter(inverted)
         painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_DestinationOut)
         painter.drawImage(QRect(QPoint(), self.size), self.image)
@@ -128,7 +139,7 @@ class SelectionLayer(ImageLayer):
         image_ptr.setsize(image.sizeInBytes())
         np_image: AnyNpArray = np.ndarray(shape=(image.height(), image.width(), 4), dtype=np.uint8, buffer=image_ptr)
 
-        masked = np_image[:, :, 3] >= ALPHA_THRESHOLD
+        masked = np_image[:, :, 3] > 0
         mask_uint8 = masked.astype(np.uint8) * 255
         if num_pixels == 0:
             adjusted_mask = masked
@@ -195,13 +206,13 @@ class SelectionLayer(ImageLayer):
             cropped_image = np_image
 
         # Areas under ALPHA_THRESHOLD set to (0, 0, 0, 0), areas within the threshold set to #FF0000:
-        masked = cropped_image[:, :, 3] >= ALPHA_THRESHOLD
+        masked = cropped_image[:, :, 3] > 0
         unmasked = ~masked
         for i in range(4):
             cropped_image[unmasked, i] = 0
-        cropped_image[masked, 0] = 0  # blue
-        cropped_image[masked, 1] = 0  # green
-        cropped_image[masked, 2] = 255  # red
+        cropped_image[masked, 0] = self._selection_color.blue()
+        cropped_image[masked, 1] = self._selection_color.green()
+        cropped_image[masked, 2] = self._selection_color.red()
         cropped_image[masked, 3] = 255
 
         # Find edge polygons, using image coordinates:

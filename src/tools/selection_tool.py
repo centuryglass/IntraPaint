@@ -3,7 +3,7 @@ from typing import Optional, cast
 
 from PyQt6.QtCore import Qt, QPoint
 from PyQt6.QtGui import QMouseEvent, QIcon, QPixmap, QPainter, QKeySequence, QColor
-from PyQt6.QtWidgets import QVBoxLayout, QHBoxLayout, QWidget, QPushButton, QLabel
+from PyQt6.QtWidgets import QVBoxLayout, QHBoxLayout, QWidget, QPushButton, QLabel, QApplication
 
 from src.config.application_config import AppConfig
 from src.config.config_entry import RangeKey
@@ -16,25 +16,32 @@ from src.ui.input_fields.dual_toggle import DualToggle
 from src.ui.input_fields.slider_spinbox import IntSliderSpinbox
 from src.util.shared_constants import PROJECT_DIR
 
+
+# The `QCoreApplication.translate` context for strings in this file
+TR_ID = 'tools.selection_tool'
+
+
+def _tr(*args):
+    """Helper to make `QCoreApplication.translate` more concise."""
+    return QApplication.translate(TR_ID, *args)
+
+
+SELECTION_TOOL_LABEL = _tr('Selection')
+SELECTION_TOOL_TOOLTIP = _tr('Select areas for editing or inpainting.')
+SELECTION_CONTROL_HINT = _tr('LMB:select - RMB:1px select - ')
+SELECTION_SIZE_SHORT_LABEL = _tr('Size:')
+CLEAR_BUTTON_LABEL = _tr('clear')
+FILL_BUTTON_LABEL = _tr('fill')
+TOOL_MODE_DRAW = _tr('Draw')
+TOOL_MODE_ERASE = _tr('Erase')
+
 SELECTION_CONTROL_LAYOUT_SPACING = 4
-
-SELECTION_SIZE_SHORT_LABEL = 'Size:'
-
-SELECTION_TOOL_LABEL = 'Selection'
-SELECTION_TOOL_TOOLTIP = 'Select areas for editing or inpainting.'
-SELECTION_CONTROL_HINT = 'LMB:select - RMB:1px select -'
-
 RESOURCES_PEN_PNG = f'{PROJECT_DIR}/resources/icons/pen_small.svg'
 RESOURCES_ERASER_PNG = f'{PROJECT_DIR}/resources/icons/eraser_small.svg'
 RESOURCES_CLEAR_PNG = f'{PROJECT_DIR}/resources/icons/clear.png'
 RESOURCES_FILL_PNG = f'{PROJECT_DIR}/resources/icons/fill.png'
 RESOURCES_SELECTION_CURSOR = f'{PROJECT_DIR}/resources/cursors/selection_cursor.svg'
 RESOURCES_SELECTION_ICON = f'{PROJECT_DIR}/resources/icons/selection_icon.svg'
-CLEAR_BUTTON_LABEL = 'clear'
-FILL_BUTTON_LABEL = 'fill'
-
-TOOL_MODE_DRAW = "Draw"
-TOOL_MODE_ERASE = "Erase"
 
 
 class SelectionTool(CanvasTool):
@@ -53,7 +60,17 @@ class SelectionTool(CanvasTool):
         self.set_scaling_icon_cursor(QIcon(RESOURCES_SELECTION_CURSOR))
 
         # Setup brush, load size from config
-        self.brush_color = QColor(Qt.GlobalColor.red)
+        self.brush_color = QColor()
+
+        def _update_color(color_str: str) -> None:
+            if color_str == self.brush_color.name():
+                return
+            color = QColor(color_str)
+            color.setAlphaF(1.0)
+            self.brush_color = color
+        _update_color(AppConfig().get(AppConfig.SELECTION_COLOR))
+        AppConfig().connect(self, AppConfig.SELECTION_COLOR, _update_color)
+
         self.brush_size = AppConfig().get(AppConfig.SELECTION_BRUSH_SIZE)
         self.layer = image_stack.selection_layer
         self.update_brush_cursor()
@@ -72,7 +89,7 @@ class SelectionTool(CanvasTool):
 
     def get_input_hint(self) -> str:
         """Return text describing different input functionality."""
-        return f'{SELECTION_CONTROL_HINT} {super().get_input_hint()}'
+        return f'{SELECTION_CONTROL_HINT}{CanvasTool.canvas_control_hints()}{super().get_input_hint()}'
 
     def get_tooltip_text(self) -> str:
         """Returns tooltip text used to describe this tool."""
@@ -136,7 +153,7 @@ class SelectionTool(CanvasTool):
                 return
             with self.layer.borrow_image() as mask_image:
                 painter = QPainter(mask_image)
-                painter.fillRect(0, 0, mask_image.width(), mask_image.height(), Qt.GlobalColor.red)
+                painter.fillRect(0, 0, mask_image.width(), mask_image.height(), self.brush_color)
 
         fill_selection_button.clicked.connect(fill_mask)
 

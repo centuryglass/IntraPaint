@@ -14,21 +14,31 @@ from src.tools.base_tool import BaseTool
 from src.ui.image_viewer import ImageViewer
 from src.util.shared_constants import PROJECT_DIR
 
-RESOURCES_GENERATION_AREA_ICON = f'{PROJECT_DIR}/resources/icons/gen_area_icon.svg'
-GENERATION_AREA_LABEL = 'Select Image Generation Area'
-GENERATION_AREA_TOOLTIP = 'Select an image region for AI image generation'
-SELECT_LAYER_BUTTON_TEXT = 'Full image as generation area'
-SELECT_LAYER_BUTTON_TOOLTIP = 'Send the entire image during image generation.'
-GEN_AREA_CONTROL_HINT = 'LMB:move area - RMB:resize area -'
 
-GENERATION_AREA_X_LABEL = 'X:'
-GENERATION_AREA_Y_LABEL = 'Y:'
-GENERATION_AREA_WIDTH_LABEL = 'W:'
-GENERATION_AREA_HEIGHT_LABEL = 'H:'
-GENERATION_AREA_X_TOOLTIP = 'Set the left edge position of the image generation area.'
-GENERATION_AREA_Y_TOOLTIP = 'Set the top edge position of the image generation area.'
-GENERATION_AREA_WIDTH_TOOLTIP = 'Set the width of the image generation area.'
-GENERATION_AREA_HEIGHT_TOOLTIP = 'Set the top edge position of the image generation area.'
+# The `QCoreApplication.translate` context for strings in this file
+TR_ID = 'tools.generation_area_tool'
+
+
+def _tr(*args):
+    """Helper to make `QCoreApplication.translate` more concise."""
+    return QApplication.translate(TR_ID, *args)
+
+
+RESOURCES_GENERATION_AREA_ICON = f'{PROJECT_DIR}/resources/icons/gen_area_icon.svg'
+GENERATION_AREA_LABEL = _tr('Select Image Generation Area')
+GENERATION_AREA_TOOLTIP = _tr('Select an image region for AI image generation')
+SELECT_LAYER_BUTTON_TEXT = _tr('Full image as generation area')
+SELECT_LAYER_BUTTON_TOOLTIP = _tr('Send the entire image during image generation.')
+GEN_AREA_CONTROL_HINT = _tr('LMB:move area - RMB:resize area - ')
+
+GENERATION_AREA_X_LABEL = _tr('X:')
+GENERATION_AREA_Y_LABEL = _tr('Y:')
+GENERATION_AREA_WIDTH_LABEL = _tr('W:')
+GENERATION_AREA_HEIGHT_LABEL = _tr('H:')
+GENERATION_AREA_X_TOOLTIP = _tr('Set the left edge position of the image generation area.')
+GENERATION_AREA_Y_TOOLTIP = _tr('Set the top edge position of the image generation area.')
+GENERATION_AREA_WIDTH_TOOLTIP = _tr('Set the width of the image generation area.')
+GENERATION_AREA_HEIGHT_TOOLTIP = _tr('Set the top edge position of the image generation area.')
 
 
 class GenerationAreaTool(BaseTool):
@@ -62,7 +72,7 @@ class GenerationAreaTool(BaseTool):
 
     def get_input_hint(self) -> str:
         """Return text describing different input functionality."""
-        return f'{GEN_AREA_CONTROL_HINT} {super().get_input_hint()}'
+        return f'{GEN_AREA_CONTROL_HINT}{BaseTool.fixed_aspect_hint()}{super().get_input_hint()}'
 
     def get_control_panel(self) -> Optional[QWidget]:
         """Returns a panel providing controls for customizing tool behavior, or None if no such panel is needed."""
@@ -111,8 +121,7 @@ class GenerationAreaTool(BaseTool):
         width = min(self._image_stack.width - generation_area.x(), bottom_right.x() - generation_area.x())
         height = min(self._image_stack.height - generation_area.y(), bottom_right.y() - generation_area.y())
         if width > 0 and height > 0:
-            key_modifiers = QApplication.keyboardModifiers()
-            if key_modifiers == Qt.KeyboardModifier.ControlModifier:
+            if KeyConfig.modifier_held(KeyConfig.FIXED_ASPECT_MODIFIER):
                 width = max(width, height)
                 height = max(width, height)
             self._image_stack.generation_area = QRect(generation_area.x(), generation_area.y(), width, height)
@@ -151,7 +160,7 @@ class GenerationAreaTool(BaseTool):
         """Move image generation area with arrow keys."""
         assert event is not None
         translation = QPoint(0, 0)
-        multiplier = 10 if QApplication.keyboardModifiers() == Qt.KeyboardModifier.ShiftModifier else 1
+        multiplier = 10 if KeyConfig().modifier_held(KeyConfig.SPEED_MODIFIER) else 1
         match event.key():
             case Qt.Key.Key_Left:
                 translation.setX(-1 * multiplier)
