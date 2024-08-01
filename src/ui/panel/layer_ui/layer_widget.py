@@ -248,7 +248,7 @@ class LayerWidget(BorderedWidget):
         menu = QMenu()
         menu.setTitle(self._layer.name)
 
-        def _add_action(name: str, action_callback: Callable[..., None], disable_if_locked = False) -> QAction:
+        def _add_action(name: str, action_callback: Callable[..., None], disable_if_locked=False) -> QAction:
             action = menu.addAction(name)
             assert action is not None
             action.triggered.connect(action_callback)

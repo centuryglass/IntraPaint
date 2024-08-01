@@ -1,6 +1,6 @@
 """Icon button used to lock or unlock an image layer."""
 
-from PyQt6.QtCore import QSize, pyqtSignal, pyqtBoundSignal
+from PyQt6.QtCore import pyqtSignal, pyqtBoundSignal
 from PyQt6.QtWidgets import QApplication
 
 from src.image.layers.layer import Layer
@@ -26,7 +26,7 @@ class LayerLockButton(LayerToggleButton):
 
     def __init__(self, connected_layer: Layer) -> None:
         """Connect to the layer and load the initial icon."""
-        super().__init__(connected_layer, ICON_PATH_LOCKED_LAYER, ICON_PATH_UNLOCKED_LAYER)
+        super().__init__(connected_layer, ICON_PATH_LOCKED_LAYER, ICON_PATH_UNLOCKED_LAYER, disable_when_locked=False)
         self.setToolTip(LOCK_TOOLTIP)
 
     def _get_boolean(self, layer: Layer) -> bool:

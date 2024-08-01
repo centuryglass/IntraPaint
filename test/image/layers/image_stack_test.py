@@ -4,8 +4,8 @@ import sys
 import unittest
 from unittest.mock import MagicMock
 
-from PyQt6.QtCore import QSize, QRect, QPoint
-from PyQt6.QtGui import QImage
+from PyQt6.QtCore import QSize, QRect, QPoint, Qt
+from PyQt6.QtGui import QImage, QPainter
 from PyQt6.QtWidgets import QApplication
 
 from src.config.application_config import AppConfig
@@ -23,8 +23,10 @@ MIN_GEN_AREA = QSize(8, 8)
 MAX_GEN_AREA = QSize(999, 999)
 
 INIT_IMAGE = 'test/resources/test_images/source.png'
-LAYER_IMAGE = 'test/resources/test_images/layer-test.ora'
-LAYER_IMAGE_PNG = 'test/resources/test_images/layer-test.png'
+LAYER_IMAGE = 'test/resources/test_images/layer_test.ora'
+LAYER_IMAGE_PNG = 'test/resources/test_images/layer_test.png'
+SELECTION_PNG = 'test/resources/test_images/selected_test.png'
+SELECTION_CLEARED_PNG = 'test/resources/test_images/selected_clear_test.png'
 app = QApplication.instance() or QApplication(sys.argv)
 
 
@@ -256,3 +258,38 @@ class ImageStackTest(unittest.TestCase):
         self.assertEqual(output_image.size(), self.image_stack.size)
         self.assertEqual(output_image.format(), expected_output.format())
         self.assertEqual(output_image, expected_output)
+
+    def test_copy_paste_selected(self) -> None:
+        """Confirm that copying selected layer content properly supports complex transformed nested layer groups."""
+        read_ora_image(self.image_stack, LAYER_IMAGE)
+        selection_bounds = QRect(50, self.image_stack.height // 6 * 4, self.image_stack.width - 80, 160)
+        with self.image_stack.selection_layer.borrow_image() as mask_image:
+            painter = QPainter(mask_image)
+            painter.fillRect(selection_bounds, Qt.GlobalColor.black)
+            painter.end()
+        self.image_stack.active_layer = self.image_stack.layer_stack
+        self.image_stack.copy_selected()
+        self.image_stack.paste()
+        pasted_layer = self.image_stack.active_layer
+        expected_content = QImage(SELECTION_PNG).convertToFormat(QImage.Format.Format_ARGB32_Premultiplied)
+        self.assertEqual(pasted_layer.name, 'Paste layer')
+        image = pasted_layer.image
+        self.assertEqual(image.size(), expected_content.size())
+        self.assertEqual(image.format(), expected_content.format())
+        self.assertEqual(image, expected_content)
+
+    def test_clear_selected(self) -> None:
+        """Confirm that clearing selected layer content properly supports complex transformed nested layer groups."""
+        read_ora_image(self.image_stack, LAYER_IMAGE)
+        selection_bounds = QRect(50, self.image_stack.height // 6 * 4, self.image_stack.width - 80, 160)
+        with self.image_stack.selection_layer.borrow_image() as mask_image:
+            painter = QPainter(mask_image)
+            painter.fillRect(selection_bounds, Qt.GlobalColor.black)
+            painter.end()
+        self.image_stack.active_layer = self.image_stack.layer_stack
+        self.image_stack.clear_selected()
+        image = self.image_stack.render()
+        expected_content = QImage(SELECTION_CLEARED_PNG).convertToFormat(QImage.Format.Format_ARGB32_Premultiplied)
+        self.assertEqual(image.size(), expected_content.size())
+        self.assertEqual(image.format(), expected_content.format())
+        self.assertEqual(image, expected_content)

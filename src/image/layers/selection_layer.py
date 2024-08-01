@@ -5,7 +5,7 @@ from typing import Optional, List
 import cv2
 import numpy as np
 from PIL import Image
-from PyQt6.QtCore import QRect, QPoint, QSize, pyqtSignal, QPointF, Qt
+from PyQt6.QtCore import QRect, QPoint, QSize, pyqtSignal, QPointF
 from PyQt6.QtGui import QImage, QPolygonF, QPainter, QColor
 
 from src.config.application_config import AppConfig

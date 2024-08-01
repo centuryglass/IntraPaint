@@ -18,7 +18,7 @@ from src.undo_stack import commit_action, last_action, _UndoAction
 from src.util.application_state import AppStateTracker, APP_STATE_NO_IMAGE, APP_STATE_EDITING
 from src.util.cached_data import CachedData
 from src.util.geometry_utils import adjusted_placement_in_bounds
-from src.util.image_utils import qimage_to_pil_image, create_transparent_image
+from src.util.image_utils import qimage_to_pil_image, create_transparent_image, image_content_bounds
 from src.util.validation import assert_type
 
 LAYER_DATA_FILE_EMBEDDED = 'data.json'
@@ -766,6 +766,9 @@ class ImageStack(QObject):
         # Image coordinates to local layer coordinates:
         if isinstance(layer, TransformLayer):
             painter_transform = painter_transform * layer.transform.inverted()[0]
+        else:
+            layer_pos = layer.bounds.topLeft()
+            painter_transform = painter_transform * QTransform.fromTranslate(-layer_pos.x(),  -layer_pos.y())
         painter = QPainter(transformed_mask)
         painter.setTransform(painter_transform)
         painter.drawImage(QRect(0, 0, selection_mask.width(), selection_mask.height()), selection_mask)
@@ -810,13 +813,20 @@ class ImageStack(QObject):
         painter.end()
         self._copy_buffer = image
         if isinstance(layer, TransformLayer):
-            self._copy_buffer_transform = layer.transform
+            transform = layer.transform
         else:
-            self._copy_buffer_transform = QTransform()
+            offset = layer.bounds.topLeft()
+            transform = QTransform.fromTranslate(offset.x(), offset.y())
+        content_bounds = image_content_bounds(image)
+        if content_bounds.size() != image.size():
+            image = image.copy(content_bounds)
+            transform = QTransform.fromTranslate(content_bounds.x(), content_bounds.y()) * transform
+        self._copy_buffer = image
+        self._copy_buffer_transform = transform
         return image
 
-    def cut_selected(self, layer: Optional[Layer] = None) -> None:
-        """Replaces all masked image content in a layer with transparency, saving it in the copy buffer."""
+    def clear_selected(self, layer: Optional[Layer] = None, save_to_copy_buffer=False) -> None:
+        """Replaces all masked image content in a layer with transparency."""
         if layer is None:
             layer = self.active_layer
         if layer.locked:
@@ -824,7 +834,8 @@ class ImageStack(QObject):
         saved_state = layer.save_state()
         transformed_mask = self.get_layer_mask(layer)
 
-        self._copy_buffer = self.copy_selected(layer, transformed_mask)
+        if save_to_copy_buffer:
+            self.copy_selected(layer, transformed_mask)
 
         def _make_cut(to_cut=layer, mask=transformed_mask) -> None:
             to_cut.cut_masked(mask)
@@ -832,7 +843,11 @@ class ImageStack(QObject):
         def _undo_cut(to_restore=layer, state=saved_state) -> None:
             to_restore.restore_state(state)
 
-        commit_action(_make_cut, _undo_cut, 'ImageStack.cut_selected')
+        commit_action(_make_cut, _undo_cut, 'ImageStack.clear_selected')
+
+    def cut_selected(self, layer: Optional[Layer] = None) -> None:
+        """Replaces all masked image content in a layer with transparency, saving it in the copy buffer."""
+        self.clear_selected(layer, True)
 
     def paste(self) -> None:
         """If the copy buffer contains image data, paste it into a new layer."""

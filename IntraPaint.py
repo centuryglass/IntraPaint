@@ -14,6 +14,7 @@ from PyQt6.QtWidgets import QApplication
 from src.util.optional_import import check_import
 from src.util.shared_constants import TIMELAPSE_MODE_FLAG, PROJECT_DIR
 from src.util.arg_parser import build_arg_parser
+
 DEFAULT_GLID_MODEL = f'{PROJECT_DIR}/models/inpaint.pt'
 
 # argument parsing:
@@ -43,13 +44,12 @@ parser.add_argument('--fast_ngrok_connection', type=str, required=False, default
 parser.set_defaults(timelapse_mode=False)
 args = parser.parse_args()
 
-
 # Logging setup:
 LOG_FILE_PATH = 'IntraPaint.log'
 log_file_handler = logging.FileHandler(LOG_FILE_PATH)
 log_file_handler.setLevel(logging.INFO)
 log_formatter = logging.Formatter('%(asctime)s: %(levelname)s: %(name)s: %(message)s')
-log_file_handler.setFormatter(log_formatter)    # Also log to stdout if --verbose is set:
+log_file_handler.setFormatter(log_formatter)  # Also log to stdout if --verbose is set:
 handlers = [log_file_handler]
 if args.verbose:
     stdout_handler = logging.StreamHandler(sys.stdout)
@@ -104,17 +104,17 @@ if not check_import('taming'):
 from src.controller.app_controller import AppController
 from src.ui.modal.modal_utils import show_error_dialog
 
-
 if __name__ == '__main__':
     try:
         controller = AppController(args)
-		
+
         try:
             import pyi_splash
+
             pyi_splash.close()
         except ImportError:
             pass  # Not using the pyinstaller bundle, there's no splash screen to close
-		
+
         controller.start_app()
     except Exception as err:
         logger.exception('main crashed, error: %s', err)

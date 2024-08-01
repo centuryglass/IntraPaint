@@ -3,7 +3,7 @@ from typing import Optional, Dict, Tuple, Callable
 
 from PyQt6.QtCore import Qt, QRect, QRectF, QSize, QPoint
 from PyQt6.QtGui import QCursor, QIcon, QKeySequence, QTransform, QPen, QPaintEvent, QPainter, QColor, \
-    QPolygon, QKeyEvent
+    QPolygon
 from PyQt6.QtWidgets import QWidget, QLabel, QSpinBox, QDoubleSpinBox, QCheckBox, QGridLayout, QPushButton, QSizePolicy, \
     QApplication
 
@@ -144,7 +144,6 @@ class LayerTransformTool(BaseTool):
                     return _step(n * mult, box)
 
                 HotkeyFilter.instance().register_speed_modified_keybinding(_binding, key)
-
 
     def get_hotkey(self) -> QKeySequence:
         """Returns the hotkey(s) that should activate this tool."""

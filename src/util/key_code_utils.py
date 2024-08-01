@@ -26,16 +26,13 @@ def get_key_string(key: Qt.Key) -> str:
 
 def get_key_with_modifiers(key_string: str) -> Tuple[Qt.Key, Qt.KeyboardModifier]:
     """Converts a key string to a key code and a set of key modifiers."""
+    assert ',' not in key_string, f'Expected single key with possible modifiers, got key list {key_string}'
     modifiers = Qt.KeyboardModifier.NoModifier
-    keys = QKeySequence(key_string)
-    for i in range(keys.count() - 1):
-        key = keys[i]
-        if key not in _MODIFIERS:
-            raise ValueError(f'Expected zero or more modifiers followed by a single key, got {str}')
-        modifiers = modifiers & _MODIFIERS[key]
-    if keys[-1] in _MODIFIERS or keys[-1] == Qt.Key.Key_unknown:
-        raise ValueError(f'Expected zero or more modifiers followed by a single key, got {str}')
-    return keys[-1], modifiers
+    keys = key_string.split('+')
+    if len(keys) > 1:
+        modifiers = get_modifiers(keys[:-1])
+    key = get_key_code(keys[-1])
+    return key, modifiers
 
 
 def get_modifiers(modifier_str: str | List[str]) -> Qt.KeyboardModifier:
@@ -54,7 +51,6 @@ def get_modifiers(modifier_str: str | List[str]) -> Qt.KeyboardModifier:
             case _:
                 raise RuntimeError(f'Unexpected modifier key string {mod_str}')
     return modifiers
-
 
 
 def get_modifier_string(modifiers: Qt.KeyboardModifier) -> str:
@@ -91,4 +87,3 @@ def get_key_display_string(keys: QKeySequence) -> str:
     for key, symbol in symbol_map.items():
         text = text.replace(key, symbol)
     return text
-

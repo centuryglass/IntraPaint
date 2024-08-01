@@ -11,7 +11,7 @@ from PyQt6.QtCore import Qt, QRect, QSize, QSizeF, QRectF, QEvent, pyqtSignal, Q
 from PyQt6.QtGui import QImage, QResizeEvent, QPixmap, QPainter, QWheelEvent, QMouseEvent, \
     QPainterPath, QKeyEvent, QPolygonF
 from PyQt6.QtWidgets import QWidget, QGraphicsPixmapItem, QVBoxLayout, QLabel, \
-    QStyleOptionGraphicsItem, QHBoxLayout, QPushButton, QStyle, QApplication
+    QStyleOptionGraphicsItem, QHBoxLayout, QPushButton, QStyle
 
 from src.config.application_config import AppConfig
 from src.config.key_config import KeyConfig

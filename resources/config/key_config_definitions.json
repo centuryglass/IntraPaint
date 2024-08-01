@@ -306,7 +306,7 @@
     "cut_shortcut": {
         "label": "Cut",
         "category": "Keybindings",
-        "description": "Remove masked image content in the active layer.",
+        "description": "Remove selected image content in the active layer.",
         "type": "string",
         "default": "Ctrl+X",
         "saved": true
@@ -314,7 +314,7 @@
     "copy_shortcut": {
         "label": "Copy",
         "category": "Keybindings",
-        "description": "Copy masked image content in the active layer.",
+        "description": "Copy selected image content in the active layer.",
         "type": "string",
         "default": "Ctrl+C",
         "saved": true
@@ -325,6 +325,14 @@
         "description": "Insert copied image data into a new layer.",
         "type": "string",
         "default": "Ctrl+V",
+        "saved": true
+    },
+    "clear_shortcut": {
+        "label": "Clear",
+        "category": "Keybindings",
+        "description": "Delete selected image content in the active layer.",
+        "type": "string",
+        "default": "Delete",
         "saved": true
     },
     "resize_canvas_shortcut": {

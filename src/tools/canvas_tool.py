@@ -140,6 +140,8 @@ class CanvasTool(BaseTool):
             self._control_panel.setEnabled(False)
 
     def _layer_lock_slot(self, layer: Layer, locked: bool) -> None:
+        if not self.is_active:
+            return
         assert layer == self._layer
         if locked:
             self._canvas.connect_to_layer(None)
@@ -150,7 +152,6 @@ class CanvasTool(BaseTool):
             self._image_viewer.stop_rendering_layer(layer)
         if self._control_panel is not None:
             self._control_panel.setEnabled(not locked)
-
 
     @property
     def brush_size(self) -> int:

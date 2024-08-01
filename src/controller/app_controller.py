@@ -535,7 +535,12 @@ class AppController(MenuBuilder):
         """Paste copied image content into a new layer."""
         self._image_stack.paste()
 
-    @menu_action(MENU_EDIT, 'settings_shortcut', 15)
+    @menu_action(MENU_EDIT, 'clear_shortcut', 15, valid_app_states=[APP_STATE_EDITING])
+    def clear(self) -> None:
+        """Clear selected content from the active image layer."""
+        self._image_stack.clear_selected()
+
+    @menu_action(MENU_EDIT, 'settings_shortcut', 16)
     def show_settings(self) -> None:
         """Show the settings window."""
         if self._settings_modal is None:

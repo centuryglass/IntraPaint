@@ -6,7 +6,7 @@ import logging
 import sys
 from typing import Optional
 
-from PyQt6.QtCore import Qt, QRect, QSize, pyqtSignal, pyqtBoundSignal
+from PyQt6.QtCore import Qt, QRect, QSize, pyqtSignal
 from PyQt6.QtGui import QIcon, QMouseEvent, QResizeEvent, QKeySequence, QCloseEvent, QImage
 from PyQt6.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, \
     QStackedWidget, QBoxLayout, QApplication, QTabWidget, QSizePolicy

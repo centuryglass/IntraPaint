@@ -22,8 +22,6 @@ ICON_PATH_VISIBLE_LAYER = f'{PROJECT_DIR}/resources/icons/layer/visible.svg'
 ICON_PATH_HIDDEN_LAYER = f'{PROJECT_DIR}/resources/icons/layer/hidden.svg'
 
 
-
-
 class LayerVisibilityButton(LayerToggleButton):
     """Show/hide layer button."""
 

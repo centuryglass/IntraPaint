@@ -367,7 +367,6 @@ class ImageGraphicsView(QGraphicsView):
         self.set_cursor_pos(event.pos())
         super().mouseMoveEvent(event)
         if self._mouse_navigation_enabled and self._drag_pt is not None and event is not None:
-            key_modifiers = QApplication.keyboardModifiers()
             if (event.buttons() == Qt.MouseButton.MiddleButton or
                     (event.buttons() == Qt.MouseButton.LeftButton
                      and KeyConfig.modifier_held(KeyConfig.PAN_VIEW_MODIFIER))):

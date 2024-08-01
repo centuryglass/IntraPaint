@@ -12,7 +12,6 @@ CONFIG_DEFINITIONS = f'{PROJECT_DIR}/resources/config/a1111_setting_definitions.
 logger = logging.getLogger(__name__)
 
 
-
 # The `QCoreApplication.translate` context for strings in this file
 TR_ID = 'config.a1111_config'
 

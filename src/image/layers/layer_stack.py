@@ -87,16 +87,20 @@ class LayerStack(Layer):
 
     def cut_masked(self, image_mask: QImage) -> None:
         """Clear the contents of an area in the parent image."""
-        assert image_mask.size() == self.bounds.size(), 'Mask should be pre-converted to image size'
+        assert image_mask.size() == self.bounds.size(), 'Mask should be pre-converted to layer group size'
         for layer in self._layers:
-            transformed_mask = create_transparent_image(layer.size)
-            painter = QPainter(transformed_mask)
+            layer_mask = create_transparent_image(layer.size)
+            painter = QPainter(layer_mask)
+            group_pos = self.bounds.topLeft()
             if isinstance(layer, TransformLayer):
                 painter_transform = layer.transform.inverted()[0]
-                painter.setTransform(painter_transform)
-            painter.drawImage(layer.bounds, image_mask)
+            else:
+                layer_pos = layer.bounds.topLeft()
+                painter_transform = QTransform.fromTranslate(-layer_pos.x(), -layer_pos.y())
+            painter.setTransform(QTransform.fromTranslate(group_pos.x(),  group_pos.y()) * painter_transform)
+            painter.drawImage(0, 0, image_mask)
             painter.end()
-            layer.cut_masked(transformed_mask)
+            layer.cut_masked(layer_mask)
 
     def get_qimage(self) -> QImage:
         """Returns combined visible layer content as a QImage object."""

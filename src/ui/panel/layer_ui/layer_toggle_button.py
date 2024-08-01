@@ -13,7 +13,8 @@ ICON_SIZE = QSize(32, 32)
 class LayerToggleButton(QToolButton):
     """Toggles a boolean layer property."""
 
-    def __init__(self, connected_layer: Layer, true_icon_path: str, false_icon_path: str) -> None:
+    def __init__(self, connected_layer: Layer, true_icon_path: str, false_icon_path: str,
+                 disable_when_locked: bool = True) -> None:
         """Connect to the layer and load the initial icon."""
         super().__init__()
         self.setSizePolicy(QSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed))
@@ -22,6 +23,13 @@ class LayerToggleButton(QToolButton):
         self._true_icon = QIcon(true_icon_path)
         self._false_icon = QIcon(false_icon_path)
         self._update_icon()
+
+        if disable_when_locked:
+            def _on_lock_change(_, is_locked: bool) -> None:
+                self.setEnabled(not is_locked)
+            connected_layer.lock_changed.connect(_on_lock_change)
+            if connected_layer.locked:
+                self.setEnabled(False)
 
     # noinspection PyMethodMayBeStatic
     def sizeHint(self):

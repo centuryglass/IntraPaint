@@ -8,7 +8,7 @@ from PyQt6.QtWidgets import QApplication, QWidget, QTextEdit, QLineEdit, QPlainT
 
 from src.config.application_config import AppConfig
 from src.config.key_config import KeyConfig
-from src.util.key_code_utils import get_modifiers, get_modifier_string, get_key_string
+from src.util.key_code_utils import get_modifiers, get_modifier_string, get_key_string, get_key_with_modifiers
 
 logger = logging.getLogger(__name__)
 
@@ -102,8 +102,12 @@ class HotkeyFilter(QObject):
         config_key: str
             Key string for the appropriate key or keys.
         """
-        keys = KeyConfig().get_keycodes(config_key)
-        self.register_keybinding(action, keys, Qt.KeyboardModifier.NoModifier)
+        key_text = KeyConfig().get(config_key)
+        assert isinstance(key_text, str)
+        keys = key_text.split(',')
+        for binding_str in keys:
+            key, modifiers = get_key_with_modifiers(binding_str)
+            self.register_keybinding(action, QKeySequence(key), modifiers)
 
     def register_speed_modified_keybinding(self, scaling_action: Callable[[int], bool], config_key: str) -> None:
         """Register a keybinding defined in application config that's affected by the speed modifier.
@@ -120,18 +124,21 @@ class HotkeyFilter(QObject):
             Key string for the appropriate key or keys.
         """
         config = KeyConfig()
-        keys = config.get_keycodes(config_key)
-        self.register_keybinding(lambda: scaling_action(1), keys, Qt.KeyboardModifier.NoModifier)
-
-        modifier_string = config.get(KeyConfig.SPEED_MODIFIER)
+        speed_modifier_string = config.get(KeyConfig.SPEED_MODIFIER)
         try:
-            modifier = get_modifiers(modifier_string)
+            speed_modifier = get_modifiers(speed_modifier_string)
         except RuntimeError:
-            logger.error(f'Unsupported speed_modifier {modifier_string} not applied to {config_key} binding')
-            return
-        if modifier != Qt.KeyboardModifier.NoModifier:
-            multiplier = AppConfig().get(AppConfig.SPEED_MODIFIER_MULTIPLIER)
-            self.register_keybinding(lambda: scaling_action(multiplier), keys, modifier)
+            logger.error(f'Unsupported speed_modifier {speed_modifier_string} not applied to {config_key} binding')
+            speed_modifier = Qt.KeyboardModifier.NoModifier
+        key_text = KeyConfig().get(config_key)
+        assert isinstance(key_text, str)
+        keys = key_text.split(',')
+        for binding_str in keys:
+            key, modifiers = get_key_with_modifiers(binding_str)
+            self.register_keybinding(lambda: scaling_action(1), QKeySequence(key), modifiers)
+            if (speed_modifier | modifiers) != modifiers:
+                self.register_keybinding(lambda: scaling_action(AppConfig().get(AppConfig.SPEED_MODIFIER_MULTIPLIER)),
+                                         QKeySequence(key), modifiers | speed_modifier)
 
     def eventFilter(self, source: Optional[QObject], event: Optional[QEvent]) -> bool:
         """Check for registered keys and trigger associated actions."""
