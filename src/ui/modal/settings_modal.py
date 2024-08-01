@@ -5,6 +5,7 @@ stable_diffusion_controller.
 from typing import Any, Dict, List, Optional
 
 from PyQt6.QtCore import pyqtSignal, QSize
+from PyQt6.QtGui import QIcon
 from PyQt6.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QPushButton, QWidget, QTabWidget, QFormLayout, \
     QScrollArea
 
@@ -19,6 +20,7 @@ from src.ui.input_fields.plain_text_edit import PlainTextEdit
 from src.ui.input_fields.size_field import SizeField
 from src.ui.widget.bordered_widget import BorderedWidget
 from src.util.parameter import DynamicFieldWidget
+from src.util.shared_constants import APP_ICON_PATH
 
 
 class SettingsModal(QDialog):
@@ -29,6 +31,7 @@ class SettingsModal(QDialog):
     def __init__(self, parent: QWidget):
         super().__init__(parent)
         self.setModal(True)
+        self.setWindowIcon(QIcon(APP_ICON_PATH))
 
         self._tabs: Dict[str, QWidget] = {}
         self._tab_layouts: Dict[str, QFormLayout] = {}

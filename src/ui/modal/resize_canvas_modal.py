@@ -3,9 +3,10 @@ from typing import Optional
 import math
 from PyQt6.QtWidgets import QWidget, QDialog, QVBoxLayout, QHBoxLayout, QPushButton
 from PyQt6.QtCore import Qt, QSize, QRect, QPoint
-from PyQt6.QtGui import QPainter, QPen, QImage, QResizeEvent, QPaintEvent
+from PyQt6.QtGui import QPainter, QPen, QImage, QResizeEvent, QPaintEvent, QIcon
 from src.ui.widget.labeled_spinbox import LabeledSpinbox
 from src.util.geometry_utils import get_scaled_placement
+from src.util.shared_constants import APP_ICON_PATH
 
 WINDOW_TITLE = 'Resize image canvas'
 MIN_PX_VALUE = 8
@@ -30,6 +31,7 @@ class ResizeCanvasModal(QDialog):
 
     def __init__(self, qimage: QImage) -> None:
         super().__init__()
+        self.setWindowIcon(QIcon(APP_ICON_PATH))
 
         self._resize = False
         self.setModal(True)

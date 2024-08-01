@@ -11,7 +11,7 @@ from src.image.layers.image_stack import ImageStack
 from src.image.layers.layer import Layer
 from src.ui.panel.layer_ui.layer_widget import PREVIEW_SIZE, LAYER_PADDING, MAX_WIDTH, LayerWidget, ICON_SIZE
 from src.ui.panel.layer_ui.layer_group_widget import LayerGroupWidget
-from src.util.shared_constants import COMPOSITION_MODES, PROJECT_DIR
+from src.util.shared_constants import COMPOSITION_MODES, PROJECT_DIR, APP_ICON_PATH
 
 logger = logging.getLogger(__name__)
 
@@ -58,8 +58,10 @@ class LayerPanel(QWidget):
         """Connect to the ImageStack and build control layout."""
         super().__init__(parent)
         self.setWindowTitle(WINDOW_TITLE)
+        self.setWindowIcon(QIcon(APP_ICON_PATH))
         self._layout = QVBoxLayout(self)
         self._image_stack = image_stack
+        self._active_layer: Optional[Layer] = None
         self._parent_group_item = LayerGroupWidget(self._image_stack.layer_stack, self._image_stack)
         self._parent_group_item.dragging.connect(self._layer_drag_slot)
         self._parent_group_item.drag_ended.connect(self._layer_drag_end_slot)
@@ -111,10 +113,6 @@ class LayerPanel(QWidget):
         self._scroll_timer.timeout.connect(self._scroll_timer_slot)
         self._scroll_offset = 0
 
-        self._image_stack.active_layer_changed.connect(self._active_layer_change_slot)
-        self._active_layer_change_slot(self._image_stack.active_layer)
-        self._image_stack.layer_order_changed.connect(self._update_order_slot)
-
         # BUTTON BAR:
         self._button_bar = QWidget()
         self._layout.addWidget(self._button_bar)
@@ -142,6 +140,10 @@ class LayerPanel(QWidget):
 
         self._merge_down_button = _create_button(MERGE_DOWN_BUTTON_ICON, MERGE_DOWN_BUTTON_TOOLTIP,
                                                  self._image_stack.merge_layer_down)
+
+        self._image_stack.active_layer_changed.connect(self._active_layer_change_slot)
+        self._active_layer_change_slot(self._image_stack.active_layer)
+        self._image_stack.layer_order_changed.connect(self._update_order_slot)
 
     def _scroll_timer_slot(self) -> None:
         if self._scroll_offset == 0:
@@ -245,6 +247,11 @@ class LayerPanel(QWidget):
             active_layer.composition_mode = mode
 
     def _active_layer_change_slot(self, new_active_layer: Layer) -> None:
+        if self._active_layer is not None:
+            self._active_layer.lock_changed.disconnect(self._lock_change_slot)
+        self._active_layer = new_active_layer
+        new_active_layer.lock_changed.connect(self._lock_change_slot)
+        self._lock_change_slot(new_active_layer, new_active_layer.locked)
         layer_id = new_active_layer.id
         layer_groups: List[LayerGroupWidget] = [self._parent_group_item]
         while len(layer_groups) > 0:
@@ -262,5 +269,14 @@ class LayerPanel(QWidget):
             mode_index = self._mode_box.findData(image_mode)
             if mode_index >= 0:
                 self._mode_box.setCurrentIndex(mode_index)
+
+    def _lock_change_slot(self, layer: Layer, is_locked: bool) -> None:
+        assert layer == self._image_stack.active_layer
+        for widget in (self._opacity_spinbox,
+                       self._opacity_slider,
+                       self._mode_box,
+                       self._merge_down_button,
+                       self._delete_button):
+            widget.setEnabled(not is_locked)
 
 

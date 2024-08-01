@@ -3,6 +3,7 @@ import json
 import logging
 from typing import Dict, Optional
 
+from PyQt6.QtGui import QIcon
 from PyQt6.QtCore import pyqtSignal
 from PyQt6.QtWidgets import QDialog, QHBoxLayout, QListWidget, QListWidgetItem, QLabel, QPushButton, \
     QVBoxLayout
@@ -11,6 +12,7 @@ from src.config.application_config import AppConfig
 from src.config.cache import Cache
 from src.ui.input_fields.line_edit import LineEdit
 from src.ui.input_fields.plain_text_edit import PlainTextEdit
+from src.util.shared_constants import APP_ICON_PATH
 
 logger = logging.getLogger(__name__)
 
@@ -35,6 +37,7 @@ class PromptStyleWindow(QDialog):
     def __init__(self, save_enabled: bool = False) -> None:
         """View, apply, and update saved stable-diffusion WebUI prompt info."""
         super().__init__()
+        self.setWindowIcon(QIcon(APP_ICON_PATH))
         self._save_enabled = save_enabled
         self._layout = QVBoxLayout(self)
 

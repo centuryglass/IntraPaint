@@ -6,8 +6,10 @@ import io
 import sys
 from PyQt6.QtWidgets import QApplication, QMainWindow
 from PyQt6.QtCore import Qt, QPoint, QRect, QBuffer
-from PyQt6.QtGui import QPainter, QPen, QPixmap, QImage, QPaintEvent, QMouseEvent, QResizeEvent
+from PyQt6.QtGui import QPainter, QPen, QPixmap, QImage, QPaintEvent, QMouseEvent, QResizeEvent, QIcon
 from PIL import Image
+
+from src.util.shared_constants import APP_ICON_PATH
 
 
 class QuickEditWindow(QMainWindow):
@@ -22,6 +24,7 @@ class QuickEditWindow(QMainWindow):
             An image or image path to edit
         """
         super().__init__()
+        self.setWindowIcon(QIcon(APP_ICON_PATH))
         self._drawing = False
         self._last_point = QPoint()
 

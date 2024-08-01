@@ -6,7 +6,7 @@ import requests
 from PyQt6.QtGui import QIcon
 from PyQt6.QtWidgets import QDialog, QHBoxLayout, QFormLayout, QLabel, QLineEdit, QPushButton, QApplication, QSizePolicy
 
-from src.util.shared_constants import PROJECT_DIR
+from src.util.shared_constants import PROJECT_DIR, APP_ICON_PATH
 
 # The QCoreApplication.translate context for strings in this file
 TR_ID = "ui.login_modal"
@@ -32,6 +32,7 @@ class LoginModal(QDialog):
 
     def __init__(self, try_login: Callable[[str, str], Optional[requests.Response]]) -> None:
         super().__init__()
+        self.setWindowIcon(QIcon(APP_ICON_PATH))
         self.user: Optional[str] = None
         self.pw: Optional[str] = None
         self._res: Optional[requests.Response] = None
@@ -62,7 +63,6 @@ class LoginModal(QDialog):
         self._button_row.addWidget(self._cancel_button)
         self._layout.addRow(self._button_row)
         self.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
-        self.setWindowIcon(QIcon(f'{PROJECT_DIR}/resources/icons/app_icon.png'))
 
         def on_login() -> None:
             """Attempt to log in, show a message on error or set response on success."""

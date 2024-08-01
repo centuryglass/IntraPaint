@@ -2,7 +2,7 @@
 from typing import List, Optional
 
 from PyQt6.QtCore import pyqtSignal, Qt
-from PyQt6.QtGui import QMouseEvent, QImage, QFont, QResizeEvent
+from PyQt6.QtGui import QMouseEvent, QImage, QFont, QResizeEvent, QIcon
 from PyQt6.QtWidgets import QWidget, QHBoxLayout, QVBoxLayout, QApplication, QLabel, QScrollArea, QSizePolicy, \
     QPushButton
 
@@ -10,6 +10,7 @@ from src.controller.image_generation.image_generator import ImageGenerator
 from src.ui.widget.bordered_widget import BorderedWidget
 from src.ui.widget.draggable_divider import DraggableDivider
 from src.ui.widget.image_widget import ImageWidget
+from src.util.shared_constants import APP_ICON_PATH
 
 # The QCoreApplication.translate context for strings in this file
 TR_ID = 'ui.window.generator_setup_window'
@@ -139,10 +140,11 @@ class GeneratorSetupWindow(QWidget):
         self.select_generator(generator)
 
 
-class _GeneratorWidget(QLabel):
+class _GeneratorWidget(QPushButton):
 
     def __init__(self, generator: ImageGenerator):
         super().__init__(generator.get_display_name())
+        self.setWindowIcon(QIcon(APP_ICON_PATH))
         self._generator = generator
         self._active = False
         self._selected = False

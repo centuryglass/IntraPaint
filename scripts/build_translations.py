@@ -50,6 +50,7 @@ for file in translation_files:
 tree = ElementTree()
 xml_root = tree.parse(TS_PATH)
 assert xml_root.tag == 'TS'
+xml_root.set('language', 'en_US')
 
 def find_or_add_context(context_name):
     for context_elem in xml_root:
@@ -66,15 +67,18 @@ def find_or_add_context(context_name):
     xml_root.append(new_context_element)
     return new_context_element
 
-def add_message(context_elem, filename, message):
+def add_message(context_elem, filename, message, line=None):
     message_elem = Element('message')
     location_elem = Element('location', filename=filename)
+    if line is not None:
+        location_elem.set('line', str(line))
     message_elem.append(location_elem)
     source_elem = Element('source')
     source_elem.text = message
     message_elem.append(source_elem)
     message_elem.append(Element('translation', type='unfinished'))
     context_elem.append(message_elem)
+
 
 for content_key, json_prefix in (
         ('a1111_config', 'a1111_setting'),
@@ -85,13 +89,38 @@ for content_key, json_prefix in (
     full_key = f'config.{content_key}'
     src_path = f'../../src/config/{content_key}.py'
     json_path = f'resources/config/{json_prefix}_definitions.json'
+    saved_json_path = f'../config/{json_prefix}_definitions.json'
 
     context_elem = find_or_add_context(full_key)
     with open(json_path, encoding='utf-8') as json_file:
-        json_data = json.load(json_file)
+        lines = json_file.readlines()
+        json_data = json.loads('\n'.join(lines))
+
+    def _find_line_num(text):
+        for i, line in enumerate(lines):
+            if text in line:
+                return i + 1
+        return None
     for entry in json_data.values():
-        add_message(context_elem, src_path, entry['label'])
-        add_message(context_elem, src_path, entry['description'])
+        add_message(context_elem, saved_json_path, entry['label'], _find_line_num(entry['label']))
+        add_message(context_elem, saved_json_path, entry['description'], _find_line_num(entry['description']))
+
+# Copy sources to translations:
+for context_elem in xml_root:
+    if context_elem.tag != 'context':
+        continue
+    for message_elem in context_elem:
+        if message_elem.tag != 'message':
+            continue
+        source_elem = message_elem[-2]
+        assert source_elem.tag == 'source'
+        source_text = source_elem.text
+        translate_elem = message_elem[-1]
+        assert translate_elem.tag == 'translation'
+        message_elem.remove(translate_elem)
+        translate_elem = Element('translation')
+        message_elem.append(translate_elem)
+        translate_elem.text = source_text
 
 xml_content = ET.tostring(xml_root, encoding='utf-8').decode('utf-8')
 xml_temp = 'temp.xml'

@@ -2,12 +2,13 @@
 from typing import List, Callable, Optional, TypeAlias, Any
 
 from PyQt6.QtCore import QSize, pyqtSignal
-from PyQt6.QtGui import QImage
+from PyQt6.QtGui import QImage, QIcon
 from PyQt6.QtWidgets import QDialog, QFormLayout, QLabel, QWidget, QHBoxLayout, QPushButton
 
 from src.ui.input_fields.check_box import CheckBox
 from src.ui.widget.image_widget import ImageWidget
 from src.util.parameter import Parameter, DynamicFieldWidget
+from src.util.shared_constants import APP_ICON_PATH
 
 SELECTED_ONLY_LABEL = 'Change selected areas only'
 ACTIVE_ONLY_LABEL = 'Change active layer only'
@@ -35,6 +36,7 @@ class ImageFilterModal(QDialog):
                  filter_active_layer_only_default: bool = True) -> None:
         super().__init__()
         self.setModal(True)
+        self.setWindowIcon(QIcon(APP_ICON_PATH))
         self._preview = ImageWidget(None, self)
         self._preview.setMinimumSize(QSize(MIN_PREVIEW_SIZE, MIN_PREVIEW_SIZE))
         self._layout = QFormLayout(self)

@@ -30,7 +30,7 @@ def _tr(*args):
 
 DEFAULT_GLID_URL = 'http://localhost:5555'
 GLID_CONFIG_CATEGORY = 'GLID-3-XL'
-GLID_WEB_GENERATOR_NAME = _tr(TR_ID, 'GLID-3-XL image generation server')
+GLID_WEB_GENERATOR_NAME = _tr('GLID-3-XL image generation server')
 GLID_WEB_GENERATOR_SETUP = _tr('<h2>GLID-3-XL server setup</h2>'
                                '<p>NOTE: Because GLID-3-XL is mainly a historical curiosity at this point, few steps '
                                'have been taken to simplify the setup process. As the software involved becomes '

@@ -1,8 +1,11 @@
 """Popup modal window used for creating a new image at an arbitrary size."""
 from typing import Optional
+
+from PyQt6.QtGui import QIcon
 from PyQt6.QtWidgets import QDialog, QLabel, QVBoxLayout, QPushButton
 from PyQt6.QtCore import QSize
 from src.ui.widget.labeled_spinbox import LabeledSpinbox
+from src.util.shared_constants import APP_ICON_PATH
 
 CREATE_IMAGE_TITLE = 'Create new image'
 WIDTH_LABEL = 'Width:'
@@ -20,6 +23,7 @@ class NewImageModal(QDialog):
 
     def __init__(self, default_width: int, default_height: int) -> None:
         super().__init__()
+        self.setWindowIcon(QIcon(APP_ICON_PATH))
 
         self._create = False
         self.setModal(True)

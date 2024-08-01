@@ -23,7 +23,7 @@ from src.ui.window.image_window import ImageWindow
 from src.util.application_state import AppStateTracker, APP_STATE_LOADING, APP_STATE_NO_IMAGE, APP_STATE_EDITING, \
     APP_STATE_SELECTION
 from src.util.display_size import get_screen_size
-from src.util.shared_constants import TIMELAPSE_MODE_FLAG, PROJECT_DIR
+from src.util.shared_constants import TIMELAPSE_MODE_FLAG, PROJECT_DIR, APP_ICON_PATH
 from src.util.validation import layout_debug
 
 logger = logging.getLogger(__name__)
@@ -33,6 +33,7 @@ CONTROL_TAB_NAME = 'Image Generation'
 CONTROL_PANEL_STRETCH = 5
 MAX_TABS = 2
 LAYOUT_SWAP_HEIGHT = 1000
+CONTROL_TAB_HEIGHT = 800
 LAYOUT_SWAP_BUFFER = 50
 DEFAULT_LOADING_MESSAGE = 'Loading...'
 
@@ -51,7 +52,7 @@ class MainWindow(QMainWindow):
             Object managing application behavior.
         """
         super().__init__()
-        self.setWindowIcon(QIcon(f'{PROJECT_DIR}/resources/icons/app_icon.png'))
+        self.setWindowIcon(QIcon(APP_ICON_PATH))
         self.setSizePolicy(QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding))
         self.setMinimumSize(QSize(0, 0))
 

@@ -4,7 +4,7 @@ import re
 from typing import Dict, Optional, List, cast
 
 from PyQt6.QtCore import Qt, QSize, QPoint, pyqtSignal
-from PyQt6.QtGui import QImage, QPainter, QMouseEvent
+from PyQt6.QtGui import QImage, QPainter, QMouseEvent, QIcon
 from PyQt6.QtWidgets import QDialog, QHBoxLayout, QLabel, QPushButton, \
     QVBoxLayout, QWidget, QScrollArea
 
@@ -12,6 +12,7 @@ from src.config.application_config import AppConfig
 from src.ui.widget.bordered_widget import BorderedWidget
 from src.ui.widget.image_widget import ImageWidget
 from src.util.display_size import max_font_size
+from src.util.shared_constants import APP_ICON_PATH
 
 logger = logging.getLogger(__name__)
 
@@ -37,6 +38,7 @@ class ExtraNetworkWindow(QDialog):
     def __init__(self, loras: List[Dict[str, str]], images: Dict[str, Optional[QImage]]) -> None:
         super().__init__()
 
+        self.setWindowIcon(QIcon(APP_ICON_PATH))
         self._layout = QVBoxLayout(self)
         self._loras: List[Dict[str, str]] = []
         self._list_items: List[_LoraItem] = []

@@ -2,6 +2,7 @@
 from typing import Optional, cast, TypeAlias
 
 from PyQt6.QtCore import QSize
+from PyQt6.QtGui import QIcon
 from PyQt6.QtWidgets import QDialog, QFormLayout, QPushButton, QComboBox, QSpinBox, QHBoxLayout, QDoubleSpinBox, \
     QWidget
 
@@ -9,6 +10,7 @@ from src.config.application_config import AppConfig
 from src.config.cache import Cache
 from src.ui.input_fields.check_box import CheckBox
 from src.ui.input_fields.slider_spinbox import FloatSliderSpinbox
+from src.util.shared_constants import APP_ICON_PATH
 
 TITLE_TEXT = 'Scale image'
 WIDTH_PX_BOX_LABEL = 'Width:'
@@ -39,6 +41,7 @@ class ImageScaleModal(QDialog):
         config = AppConfig()
         self._should_scale = False
         self.setModal(True)
+        self.setWindowIcon(QIcon(APP_ICON_PATH))
         self._layout = QFormLayout(self)
 
         self.setWindowTitle(TITLE_TEXT)

@@ -5,6 +5,7 @@ from PyQt6.QtGui import QPainter
 from PIL import Image
 
 PROJECT_DIR = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+APP_ICON_PATH = f'{PROJECT_DIR}/resources/icons/app_icon.png'
 
 # Numeric:
 INT_MIN = -2147483647

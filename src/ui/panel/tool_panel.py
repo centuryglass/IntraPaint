@@ -37,7 +37,7 @@ TOOL_LIST_STRETCH = 0
 TOOL_PANEL_STRETCH = 50
 LAYER_PANEL_STRETCH = 30
 
-MIN_SIZE_FOR_TOOL_LABEL = QSize(600, 300)
+MIN_SIZE_FOR_TOOL_LABEL = QSize(300, 200)
 
 
 class ToolPanel(QWidget):
@@ -102,6 +102,7 @@ class ToolPanel(QWidget):
         self._tool_control_layout = QVBoxLayout(self._tool_control_box)
         self._tool_control_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self._tool_control_label = QLabel()
+        self._tool_control_label.setWordWrap(True)
         self._tool_control_label.setStyleSheet('text-decoration: bold;')
         self._tool_control_label.setAlignment(Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignTop)
         self._tool_control_layout.addWidget(self._tool_control_label, stretch=2)
@@ -289,6 +290,7 @@ class ToolPanel(QWidget):
         self._active_tool = active_tool
         if active_tool is not None:
             self._tool_control_label.setText(f'{active_tool.label} - {active_tool.get_tooltip_text()}')
+            self._tool_control_box.setToolTip(active_tool.get_tooltip_text())
             for label, widget in [*self._tool_widgets.items(), *self._toolbar_tool_widgets.items()]:
                 widget.is_active = label == tool_label
             self._update_cursor()
@@ -305,6 +307,7 @@ class ToolPanel(QWidget):
         else:
             self._update_cursor()
             self._tool_control_label.setText('')
+            self._tool_control_box.setToolTip('')
         self.updateGeometry()
 
     def _update_cursor(self) -> None:
