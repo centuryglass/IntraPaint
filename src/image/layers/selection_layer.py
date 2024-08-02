@@ -218,8 +218,8 @@ class SelectionLayer(ImageLayer):
         # Find edge polygons, using image coordinates:
         # Extra 0.5 offset puts lines through the center of pixels instead of on left edges.
         pos = self.position
-        x_offset = 0.5 + pos.x()
-        y_offset = 0.5 + pos.y()
+        x_offset = pos.x()  #0.5 + pos.x()
+        y_offset = pos.y()  # 0.5 + pos.y()
         if change_bounds is not None:
             final_image_bounds = QRect(change_bounds).translated(pos.x(), pos.y())
             polys_to_remove = []
@@ -240,12 +240,13 @@ class SelectionLayer(ImageLayer):
         else:
             self._outline_polygons = []
             cropped_image = np_image
-        gray = cv2.cvtColor(cropped_image[:, :, :3], cv2.COLOR_BGR2GRAY)
-        contours, _ = cv2.findContours(gray, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
+        # Edge detection needs to scale the mask by 3 for cv2 to avoid approximating away the pixel edges:
+        cv2_image = np.kron(cropped_image[:, :, 3], np.ones((3, 3), dtype=np.uint8))
+        contours, _ = cv2.findContours(cv2_image, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
         for contour in contours:
             polygon = QPolygonF()
             for point in contour:
-                polygon.append(QPointF(point[0][0] + x_offset, point[0][1] + y_offset))
+                polygon.append(QPointF(round(point[0][0] / 3) + x_offset, round(point[0][1] / 3) + y_offset ))
             self._outline_polygons.append(polygon)
 
     def get_content_bounds(self) -> QRect:

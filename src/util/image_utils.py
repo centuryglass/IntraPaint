@@ -261,6 +261,28 @@ def get_transparency_tile_pixmap(size: Optional[QSize] = None) -> QPixmap:
     return transparency_pixmap
 
 
+def _flood_fill_rgb(image: QImage, pos: QPoint, color: QColor, threshold: float) -> QImage:
+    np_image = image_data_as_numpy_8bit(image)
+    cv2_np_image = np_image[:, :, :3]  # cv2 won't accept 4-channel images.
+    if not cv2_np_image.flags['C_CONTIGUOUS']:
+        cv2_np_image = np.ascontiguousarray(cv2_np_image)
+    seed_point = (pos.x(), pos.y())
+    fill_color = (color.blue(), color.green(), color.red())
+    height, width, _ = np_image.shape
+    mask = np.zeros((height + 2, width + 2), np.uint8)
+    flags = cv2.FLOODFILL_MASK_ONLY
+    cv2.floodFill(cv2_np_image, mask, seed_point, fill_color,
+                  loDiff=(threshold, threshold, threshold, threshold),
+                  upDiff=(threshold, threshold, threshold, threshold),
+                  flags=flags)
+    assert mask is not None
+    mask = mask[1:-1, 1:-1]  # Remove the border
+    mask_image = np.zeros_like(np_image)
+    mask_indices = np.where(mask == 1)
+    mask_image[mask_indices[0], mask_indices[1]] = (color.blue(), color.green(), color.red(), 255)
+    return numpy_8bit_to_qimage(mask_image)
+
+
 def flood_fill(image: QImage, pos: QPoint, color: QColor, threshold: float, in_place: bool = False) -> Optional[QImage]:
     """Returns a mask image marking all areas of similar color directly connected to a point in an image.
 
@@ -283,30 +305,25 @@ def flood_fill(image: QImage, pos: QPoint, color: QColor, threshold: float, in_p
             size as the source image. filled pixels will be set to the color parameter, while unfilled pixels will be
             fully transparent.
     """
+    tmp_image = image.copy()
+    np_tmp_image = image_data_as_numpy_8bit(tmp_image)
     np_image = image_data_as_numpy_8bit(image)
-    cv2_np_image = np_image[:, :, :3]  # cv2 won't accept 4-channel images.
-    if not cv2_np_image.flags['C_CONTIGUOUS']:
-        cv2_np_image = np.ascontiguousarray(cv2_np_image)
-    seed_point = (pos.x(), pos.y())
-    fill_color = (color.blue(), color.green(), color.red())
-    height, width, _ = np_image.shape
-    if in_place:
-        mask = None
-        flags = 0
-    else:
-        mask = np.zeros((height + 2, width + 2), np.uint8)
-        flags = cv2.FLOODFILL_MASK_ONLY
-    cv2.floodFill(cv2_np_image, mask, seed_point, fill_color,
-                  loDiff=(threshold, threshold, threshold, threshold),
-                  upDiff=(threshold, threshold, threshold, threshold),
-                  flags=flags)
-    if in_place:
-        np_image[:, :, :3] = cv2_np_image
-        return None
-    assert mask is not None
-    mask = mask[1:-1, 1:-1]  # Remove the border
-    mask_image = np.zeros_like(np_image)
-    mask_indices = np.where(mask == 1)
-    mask_image[mask_indices[0], mask_indices[1], :3] = fill_color
-    mask_image[mask_indices[0], mask_indices[1], 3] = 255  # Set alpha to 255 for filled areas
-    return numpy_8bit_to_qimage(mask_image)
+    mask = QImage(image.size(), QImage.Format.Format_ARGB32_Premultiplied)
+    mask.fill(color)
+    painter = QPainter(mask)
+    painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_DestinationIn)
+    np_tmp_image[..., 3] = 255
+    for i in range(3):
+        if i > 0:
+            np_tmp_image[..., i - 1] = np_image[..., i - 1]
+        np_tmp_image[..., i] = np_image[..., 3]
+        channel_fill_mask = _flood_fill_rgb(tmp_image, pos, color, threshold)
+        painter.drawImage(0, 0, channel_fill_mask)
+    painter.end()
+    if not in_place:
+        return mask
+    painter = QPainter(image)
+    painter.drawImage(0, 0, mask)
+    painter.end()
+    return None
+
