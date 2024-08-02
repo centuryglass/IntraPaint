@@ -3,7 +3,7 @@ from typing import Optional, cast
 
 from PyQt6.QtCore import QSize
 from PyQt6.QtGui import QPixmap, QColor, QIcon, QKeySequence
-from PyQt6.QtWidgets import QVBoxLayout, QPushButton, QColorDialog, QWidget, QApplication
+from PyQt6.QtWidgets import QVBoxLayout, QPushButton, QColorDialog, QWidget, QApplication, QHBoxLayout
 
 from src.config.application_config import AppConfig
 from src.config.cache import Cache
@@ -37,6 +37,7 @@ COLOR_BUTTON_LABEL = _tr('Color')
 COLOR_BUTTON_TOOLTIP = _tr('Select sketch brush color')
 BRUSH_CONTROL_HINT = _tr('LMB:draw - RMB:1px draw - ')
 COLOR_PICK_HINT = _tr('{modifier_or_modifiers}:pick color - ')
+SELECTION_ONLY_LABEL = _tr('Paint selection only')
 
 
 class BrushTool(CanvasTool):
@@ -106,6 +107,8 @@ class BrushTool(CanvasTool):
 
         AppConfig().connect(self, AppConfig.SKETCH_BRUSH_SIZE, update_brush_size)
         control_layout.addWidget(brush_size_slider, stretch=2)
+        second_row = QHBoxLayout()
+        control_layout.addLayout(second_row, stretch=2)
         color_picker_button = QPushButton()
         color_picker_button.setText(COLOR_BUTTON_LABEL)
         color_picker_button.setToolTip(COLOR_BUTTON_TOOLTIP)
@@ -128,7 +131,11 @@ class BrushTool(CanvasTool):
         Cache().connect(color_picker_button, Cache.LAST_BRUSH_COLOR,
                                      lambda color_str: set_brush_color(QColor(color_str)))
         set_brush_color(self.brush_color)
-        control_layout.addWidget(color_picker_button, stretch=2)
+        second_row.addWidget(color_picker_button, stretch=2)
+
+        selection_only_checkbox = Cache().get_control_widget(Cache.PAINT_SELECTION_ONLY)
+        selection_only_checkbox.setText(SELECTION_ONLY_LABEL)
+        second_row.addWidget(selection_only_checkbox)
 
         # Brush selection:
         canvas = cast(MyPaintLayerCanvas, self._canvas)

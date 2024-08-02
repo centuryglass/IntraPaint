@@ -7,6 +7,7 @@ from PyQt6.QtGui import QCursor, QTabletEvent, QMouseEvent, QColor, QIcon, QWhee
 from PyQt6.QtWidgets import QWidget, QApplication
 
 from src.config.application_config import AppConfig
+from src.config.cache import Cache
 from src.config.key_config import KeyConfig
 from src.hotkey_filter import HotkeyFilter
 from src.image.canvas.layer_canvas import LayerCanvas
@@ -89,6 +90,26 @@ class CanvasTool(BaseTool):
 
             HotkeyFilter.instance().register_speed_modified_keybinding(_size_change, key)
 
+        # Handle restricting changes to selection:
+        def _set_restricted_to_selection(selected_only: bool) -> None:
+            if not self.is_active or self._layer is None or self._layer == image_stack.selection_layer:
+                return
+            if selected_only:
+                mask = image_stack.get_layer_mask(self._layer)
+                self._canvas.set_input_mask(mask)
+            else:
+                self._canvas.set_input_mask(None)
+        Cache().connect(self, Cache.PAINT_SELECTION_ONLY, _set_restricted_to_selection)
+
+        def _selection_layer_update(_) -> None:
+            if not Cache().get(Cache.PAINT_SELECTION_ONLY) or not self.is_active or self._layer is None \
+                    or self._layer == image_stack.selection_layer:
+                return
+            mask = image_stack.get_layer_mask(self._layer)
+            self._canvas.set_input_mask(mask)
+        image_stack.selection_layer.content_changed.connect(_selection_layer_update)
+
+
     @staticmethod
     def canvas_control_hints() -> str:
         """Get control hints for line and fixed angle modes, if enabled."""
@@ -132,6 +153,9 @@ class CanvasTool(BaseTool):
         if layer is not None:
             layer.lock_changed.connect(self._layer_lock_slot)
             self._layer_lock_slot(layer, layer.locked)
+            if layer != self._image_stack.selection_layer and Cache().get(Cache.PAINT_SELECTION_ONLY):
+                mask = self._image_stack.get_layer_mask(layer)
+                self._canvas.set_input_mask(mask)
         if not self._active:
             return
         if layer is None or not isinstance(layer, ImageLayer):

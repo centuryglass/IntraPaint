@@ -2,6 +2,1285 @@
 <!DOCTYPE TS>
 <TS version="2.1" language="en_US">
   <context>
+    <name>config.a1111_config</name>
+    <message>
+      <source>Stable-Diffusion Model:</source>
+      <translation>Stable-Diffusion Model:</translation>
+    </message>
+    <message>
+      <source>Active image generation model</source>
+      <translation>Active image generation model</translation>
+    </message>
+    <message>
+      <source>Only keep one model on GPU/TPU</source>
+      <translation>Only keep one model on GPU/TPU</translation>
+    </message>
+    <message>
+      <source>If selected, checkpoints after the first are cached in RAM instead</source>
+      <translation>If selected, checkpoints after the first are cached in RAM instead</translation>
+    </message>
+    <message>
+      <source>Max checkpoints loaded:</source>
+      <translation>Max checkpoints loaded:</translation>
+    </message>
+    <message>
+      <source>Number of image generation models to keep in memory.</source>
+      <translation>Number of image generation models to keep in memory.</translation>
+    </message>
+    <message>
+      <source>Stable-Diffusion VAE model:</source>
+      <translation>Stable-Diffusion VAE model:</translation>
+    </message>
+    <message>
+      <source>VAE model used for final image data creation.</source>
+      <translation>VAE model used for final image data creation.</translation>
+    </message>
+    <message>
+      <source>Stable-Diffusion VAE models cached:</source>
+      <translation>Stable-Diffusion VAE models cached:</translation>
+    </message>
+    <message>
+      <source>Number of VAE models to keep in memory.</source>
+      <translation>Number of VAE models to keep in memory.</translation>
+    </message>
+    <message>
+      <source>CLIP skip:</source>
+      <translation>CLIP skip:</translation>
+    </message>
+    <message>
+      <source>Number of final image generation steps taken without prompt guidance.</source>
+      <translation>Number of final image generation steps taken without prompt guidance.</translation>
+    </message>
+    <message>
+      <location filename="../config/a1111_setting_definitions.json" line="3"/>
+      <source>Stable-Diffusion Model:</source>
+      <translation>Stable-Diffusion Model:</translation>
+    </message>
+    <message>
+      <location filename="../config/a1111_setting_definitions.json" line="5"/>
+      <source>Active image generation model</source>
+      <translation>Active image generation model</translation>
+    </message>
+    <message>
+      <location filename="../config/a1111_setting_definitions.json" line="10"/>
+      <source>Only keep one model on GPU/TPU</source>
+      <translation>Only keep one model on GPU/TPU</translation>
+    </message>
+    <message>
+      <location filename="../config/a1111_setting_definitions.json" line="12"/>
+      <source>If selected, checkpoints after the first are cached in RAM instead</source>
+      <translation>If selected, checkpoints after the first are cached in RAM instead</translation>
+    </message>
+    <message>
+      <location filename="../config/a1111_setting_definitions.json" line="16"/>
+      <source>Max checkpoints loaded:</source>
+      <translation>Max checkpoints loaded:</translation>
+    </message>
+    <message>
+      <location filename="../config/a1111_setting_definitions.json" line="18"/>
+      <source>Number of image generation models to keep in memory.</source>
+      <translation>Number of image generation models to keep in memory.</translation>
+    </message>
+    <message>
+      <location filename="../config/a1111_setting_definitions.json" line="27"/>
+      <source>Stable-Diffusion VAE model:</source>
+      <translation>Stable-Diffusion VAE model:</translation>
+    </message>
+    <message>
+      <location filename="../config/a1111_setting_definitions.json" line="29"/>
+      <source>VAE model used for final image data creation.</source>
+      <translation>VAE model used for final image data creation.</translation>
+    </message>
+    <message>
+      <location filename="../config/a1111_setting_definitions.json" line="34"/>
+      <source>Stable-Diffusion VAE models cached:</source>
+      <translation>Stable-Diffusion VAE models cached:</translation>
+    </message>
+    <message>
+      <location filename="../config/a1111_setting_definitions.json" line="36"/>
+      <source>Number of VAE models to keep in memory.</source>
+      <translation>Number of VAE models to keep in memory.</translation>
+    </message>
+    <message>
+      <location filename="../config/a1111_setting_definitions.json" line="45"/>
+      <source>CLIP skip:</source>
+      <translation>CLIP skip:</translation>
+    </message>
+    <message>
+      <location filename="../config/a1111_setting_definitions.json" line="47"/>
+      <source>Number of final image generation steps taken without prompt guidance.</source>
+      <translation>Number of final image generation steps taken without prompt guidance.</translation>
+    </message>
+  </context>
+  <context>
+    <name>config.application_config</name>
+    <message>
+      <source>Style:</source>
+      <translation>Style:</translation>
+    </message>
+    <message>
+      <source>Qt style to use for the user interface</source>
+      <translation>Qt style to use for the user interface</translation>
+    </message>
+    <message>
+      <source>Theme:</source>
+      <translation>Theme:</translation>
+    </message>
+    <message>
+      <source>Theme to use for the user interface (may require restart)</source>
+      <translation>Theme to use for the user interface (may require restart)</translation>
+    </message>
+    <message>
+      <source>Font size:</source>
+      <translation>Font size:</translation>
+    </message>
+    <message>
+      <source>Font point size to use for user interface text (may require restart)</source>
+      <translation>Font point size to use for user interface text (may require restart)</translation>
+    </message>
+    <message>
+      <source>Animate outlines and selections:</source>
+      <translation>Animate outlines and selections:</translation>
+    </message>
+    <message>
+      <source>Enable or disable animated outlines (may require restart)</source>
+      <translation>Enable or disable animated outlines (may require restart)</translation>
+    </message>
+    <message>
+      <source>Selection overlay color:</source>
+      <translation>Selection overlay color:</translation>
+    </message>
+    <message>
+      <source>Overlay color used to highlight selected image areas</source>
+      <translation>Overlay color used to highlight selected image areas</translation>
+    </message>
+    <message>
+      <source>Show selections in generated image options:</source>
+      <translation>Show selections in generated image options:</translation>
+    </message>
+    <message>
+      <source>Draw the selection borders when choosing inpainted image options.</source>
+      <translation>Draw the selection borders when choosing inpainted image options.</translation>
+    </message>
+    <message>
+      <source>Show generated images zoomed to changes:</source>
+      <translation>Show generated images zoomed to changes:</translation>
+    </message>
+    <message>
+      <source>When zooming in on individual inpainting options, focus the change region.</source>
+      <translation>When zooming in on individual inpainting options, focus the change region.</translation>
+    </message>
+    <message>
+      <source>Show generated image options at original size</source>
+      <translation>Show generated image options at original size</translation>
+    </message>
+    <message>
+      <source>When the selected image size doesn't match the image generation resolution, preview options using the generated size.</source>
+      <translation>When the selected image size doesn't match the image generation resolution, preview options using the generated size.</translation>
+    </message>
+    <message>
+      <source>OpenGL acceleration:</source>
+      <translation>OpenGL acceleration:</translation>
+    </message>
+    <message>
+      <source>Use OpenGL to accelerate image manipulation</source>
+      <translation>Use OpenGL to accelerate image manipulation</translation>
+    </message>
+    <message>
+      <source>Default image size:</source>
+      <translation>Default image size:</translation>
+    </message>
+    <message>
+      <source>Default size when creating new images</source>
+      <translation>Default size when creating new images</translation>
+    </message>
+    <message>
+      <source>Editing size:</source>
+      <translation>Editing size:</translation>
+    </message>
+    <message>
+      <source>Current/initial size in pixels of the area selected for editing</source>
+      <translation>Current/initial size in pixels of the area selected for editing</translation>
+    </message>
+    <message>
+      <source>Maximum editing size:</source>
+      <translation>Maximum editing size:</translation>
+    </message>
+    <message>
+      <source>Maximum size in pixels of the area selected for editing</source>
+      <translation>Maximum size in pixels of the area selected for editing</translation>
+    </message>
+    <message>
+      <source>Minimum editing size:</source>
+      <translation>Minimum editing size:</translation>
+    </message>
+    <message>
+      <source>Minimum size in pixels of the area selected for editing</source>
+      <translation>Minimum size in pixels of the area selected for editing</translation>
+    </message>
+    <message>
+      <source>Generation size:</source>
+      <translation>Generation size:</translation>
+    </message>
+    <message>
+      <source>Current/initial size in pixels used for AI image generation</source>
+      <translation>Current/initial size in pixels used for AI image generation</translation>
+    </message>
+    <message>
+      <source>Maximum generation size:</source>
+      <translation>Maximum generation size:</translation>
+    </message>
+    <message>
+      <source>Maximum size in pixels allowed for AI image generation</source>
+      <translation>Maximum size in pixels allowed for AI image generation</translation>
+    </message>
+    <message>
+      <source>Minimum generation size:</source>
+      <translation>Minimum generation size:</translation>
+    </message>
+    <message>
+      <source>Minimum size in pixels allowed for AI image generation</source>
+      <translation>Minimum size in pixels allowed for AI image generation</translation>
+    </message>
+    <message>
+      <source>Selection brush size:</source>
+      <translation>Selection brush size:</translation>
+    </message>
+    <message>
+      <source>Current/initial brush size (in pixels) for the selection tool.</source>
+      <translation>Current/initial brush size (in pixels) for the selection tool.</translation>
+    </message>
+    <message>
+      <source>Brush size:</source>
+      <translation>Brush size:</translation>
+    </message>
+    <message>
+      <source>Current/initial brush size (in pixels) for the drawing/painting tool.</source>
+      <translation>Current/initial brush size (in pixels) for the drawing/painting tool.</translation>
+    </message>
+    <message>
+      <source>Selected MyPaint brush:</source>
+      <translation>Selected MyPaint brush:</translation>
+    </message>
+    <message>
+      <source>Currently selected MyPaint brush file.</source>
+      <translation>Currently selected MyPaint brush file.</translation>
+    </message>
+    <message>
+      <source>Favorite MyPaint brushes:</source>
+      <translation>Favorite MyPaint brushes:</translation>
+    </message>
+    <message>
+      <source>Brushes to list in the 'Favorites' tab of the brush selection window</source>
+      <translation>Brushes to list in the 'Favorites' tab of the brush selection window</translation>
+    </message>
+    <message>
+      <source>Maximum undo count:</source>
+      <translation>Maximum undo count:</translation>
+    </message>
+    <message>
+      <source>Number of actions that can be reversed using the 'undo' option.</source>
+      <translation>Number of actions that can be reversed using the 'undo' option.</translation>
+    </message>
+    <message>
+      <source>Undo merge interval (seconds):</source>
+      <translation>Undo merge interval (seconds):</translation>
+    </message>
+    <message>
+      <source>Similar actions will be combined in the undo history if the time between them is less than this.</source>
+      <translation>Similar actions will be combined in the undo history if the time between them is less than this.</translation>
+    </message>
+    <message>
+      <source>'Speed modifier' key multiplier:</source>
+      <translation>'Speed modifier' key multiplier:</translation>
+    </message>
+    <message>
+      <source>Controls how much faster changes happen when the 'speed_modifier' key is held down</source>
+      <translation>Controls how much faster changes happen when the 'speed_modifier' key is held down</translation>
+    </message>
+    <message>
+      <source>Prompt:</source>
+      <translation>Prompt:</translation>
+    </message>
+    <message>
+      <source>Description that generated images should match.</source>
+      <translation>Description that generated images should match.</translation>
+    </message>
+    <message>
+      <source>Negative prompt:</source>
+      <translation>Negative prompt:</translation>
+    </message>
+    <message>
+      <source>Description that generated images should not match.</source>
+      <translation>Description that generated images should not match.</translation>
+    </message>
+    <message>
+      <source>Guidance scale:</source>
+      <translation>Guidance scale:</translation>
+    </message>
+    <message>
+      <source>Controls how strongly the prompt and negative prompt are applied. Higher values are more consistent but may be less creative.  Overly high or low values may cause image distortion.</source>
+      <translation>Controls how strongly the prompt and negative prompt are applied. Higher values are more consistent but may be less creative.  Overly high or low values may cause image distortion.</translation>
+    </message>
+    <message>
+      <source>Batch size:</source>
+      <translation>Batch size:</translation>
+    </message>
+    <message>
+      <source>Number of image options to simultaneously create in a single image editing operation. Increasing this value too much may result in errors or slowdown if GPU memory limits are reached.</source>
+      <translation>Number of image options to simultaneously create in a single image editing operation. Increasing this value too much may result in errors or slowdown if GPU memory limits are reached.</translation>
+    </message>
+    <message>
+      <source>Batch count:</source>
+      <translation>Batch count:</translation>
+    </message>
+    <message>
+      <source>Number of image batches to create in a single image editing operation. Increasing this value doesn't require additional memory, but it slows down image editing more than increasing the batch size does.</source>
+      <translation>Number of image batches to create in a single image editing operation. Increasing this value doesn't require additional memory, but it slows down image editing more than increasing the batch size does.</translation>
+    </message>
+    <message>
+      <source>Edit mode:</source>
+      <translation>Edit mode:</translation>
+    </message>
+    <message>
+      <source>Stable-Diffusion image editing mode. 'Text to Image' completely replaces the selected image section with new content, 'Image to Image' creates altered versions of the image selection, and 'Inpaint' works like 'Image to Image' except that it only affects areas selected by the mask tool</source>
+      <translation>Stable-Diffusion image editing mode. 'Text to Image' completely replaces the selected image section with new content, 'Image to Image' creates altered versions of the image selection, and 'Inpaint' works like 'Image to Image' except that it only affects areas selected by the mask tool</translation>
+    </message>
+    <message>
+      <source>Masked content:</source>
+      <translation>Masked content:</translation>
+    </message>
+    <message>
+      <source>Determines what should be used to fill the masked area before inpainting. 'fill' replaces it with a solid color, 'original' keeps it as-is, 'latent noise' replaces it with random data, and 'latent nothing' clears it. Unless you're inpainting with a denoising strength &gt;0.8, 'original' will almost always be the best option</source>
+      <translation>Determines what should be used to fill the masked area before inpainting. 'fill' replaces it with a solid color, 'original' keeps it as-is, 'latent noise' replaces it with random data, and 'latent nothing' clears it. Unless you're inpainting with a denoising strength &gt;0.8, 'original' will almost always be the best option</translation>
+    </message>
+    <message>
+      <source>Image interrogation model:</source>
+      <translation>Image interrogation model:</translation>
+    </message>
+    <message>
+      <source>Model used when auto-generating appropriate prompts using the 'interrogate' button. Supported values will vary based on what extensions you've installed into the stable-generation-webui, but 'clip' should always be accepted.</source>
+      <translation>Model used when auto-generating appropriate prompts using the 'interrogate' button. Supported values will vary based on what extensions you've installed into the stable-generation-webui, but 'clip' should always be accepted.</translation>
+    </message>
+    <message>
+      <source>Sampling steps:</source>
+      <translation>Sampling steps:</translation>
+    </message>
+    <message>
+      <source>Number of diffusion operations to perform when generating image data. Higher values take longer, but often produce more detailed and accurate results. Different stable-diffusion models and samplers have different requirements, but in most cates setting this higher than 30 has only minimal benefits</source>
+      <translation>Number of diffusion operations to perform when generating image data. Higher values take longer, but often produce more detailed and accurate results. Different stable-diffusion models and samplers have different requirements, but in most cates setting this higher than 30 has only minimal benefits</translation>
+    </message>
+    <message>
+      <source>Denoising strength:</source>
+      <translation>Denoising strength:</translation>
+    </message>
+    <message>
+      <source>Controls how dramatically inpainting and image-to-image operations will change the initial image data. At 0.0, the image will be completely unedited, at 1.0 the image will be completely different</source>
+      <translation>Controls how dramatically inpainting and image-to-image operations will change the initial image data. At 0.0, the image will be completely unedited, at 1.0 the image will be completely different</translation>
+    </message>
+    <message>
+      <source>Sampling method:</source>
+      <translation>Sampling method:</translation>
+    </message>
+    <message>
+      <source>Mathematical technique used to transform image data during the generation process. 'Euler a' works well in most cases, but certain models or extensions might perform better with other options.</source>
+      <translation>Mathematical technique used to transform image data during the generation process. 'Euler a' works well in most cases, but certain models or extensions might perform better with other options.</translation>
+    </message>
+    <message>
+      <source>Upscale method:</source>
+      <translation>Upscale method:</translation>
+    </message>
+    <message>
+      <source>Method to use when increasing image resolution. Available options will be loaded from the stable-diffusion-webui on launch.</source>
+      <translation>Method to use when increasing image resolution. Available options will be loaded from the stable-diffusion-webui on launch.</translation>
+    </message>
+    <message>
+      <source>ControlNet tiled upscaling</source>
+      <translation>ControlNet tiled upscaling</translation>
+    </message>
+    <message>
+      <source>Whether to use the ControlNet tile model to improve image upscaling. When enabled and supported, all other image generation options will influence upscaling results. To use this, the ControlNet extension needs to be installed in the stable-diffusion-webui, and the controlnet tile model needs to be downloaded to the correct folder.</source>
+      <translation>Whether to use the ControlNet tile model to improve image upscaling. When enabled and supported, all other image generation options will influence upscaling results. To use this, the ControlNet extension needs to be installed in the stable-diffusion-webui, and the controlnet tile model needs to be downloaded to the correct folder.</translation>
+    </message>
+    <message>
+      <source>ControlNet tiled upscaling model:</source>
+      <translation>ControlNet tiled upscaling model:</translation>
+    </message>
+    <message>
+      <source>ControlNet model to use for tiled upscaling, in the 'filename [hash]' format used by the webui. This only needs to change if a newer model is available if using a stable diffusion model not based on stable-diffusion 1.5.</source>
+      <translation>ControlNet model to use for tiled upscaling, in the 'filename [hash]' format used by the webui. This only needs to change if a newer model is available if using a stable diffusion model not based on stable-diffusion 1.5.</translation>
+    </message>
+    <message>
+      <source>Tile downsample rate:</source>
+      <translation>Tile downsample rate:</translation>
+    </message>
+    <message>
+      <source>Adjusts how strongly the ControlNet tile model preserves the original image data, higher values result in fewer changes.</source>
+      <translation>Adjusts how strongly the ControlNet tile model preserves the original image data, higher values result in fewer changes.</translation>
+    </message>
+    <message>
+      <source>Mask blur:</source>
+      <translation>Mask blur:</translation>
+    </message>
+    <message>
+      <source>Pixel radius to blur in the inpainting mask to smoothly combine edited and original image content.</source>
+      <translation>Pixel radius to blur in the inpainting mask to smoothly combine edited and original image content.</translation>
+    </message>
+    <message>
+      <source>Seed:</source>
+      <translation>Seed:</translation>
+    </message>
+    <message>
+      <source>Number used to control pseudo-random aspects of image generation, in most cases using the same seed with the same settings and inputs will always produce the same results. If set to -1, a different random seed will be used for each image generation. </source>
+      <translation>Number used to control pseudo-random aspects of image generation, in most cases using the same seed with the same settings and inputs will always produce the same results. If set to -1, a different random seed will be used for each image generation. </translation>
+    </message>
+    <message>
+      <source>Inpaint Full Resolution</source>
+      <translation>Inpaint Full Resolution</translation>
+    </message>
+    <message>
+      <source>If true, inpaint the masked area at higher resolution by ignoring the unmasked area. This can increase image quality by sacrificing awareness of additional image content.</source>
+      <translation>If true, inpaint the masked area at higher resolution by ignoring the unmasked area. This can increase image quality by sacrificing awareness of additional image content.</translation>
+    </message>
+    <message>
+      <source>Padding:</source>
+      <translation>Padding:</translation>
+    </message>
+    <message>
+      <source>Pixel radius outside of the masked area to include when inpainting when the 'Inpaint Full Resolution' option is enabled. Higher values increase contextual awareness while decreasing overall level of detail.</source>
+      <translation>Pixel radius outside of the masked area to include when inpainting when the 'Inpaint Full Resolution' option is enabled. Higher values increase contextual awareness while decreasing overall level of detail.</translation>
+    </message>
+    <message>
+      <source>Restore faces</source>
+      <translation>Restore faces</translation>
+    </message>
+    <message>
+      <source>Use a face restoration model to correct image data after stable-diffusion runs. In most cases you'll probably get better results without it.</source>
+      <translation>Use a face restoration model to correct image data after stable-diffusion runs. In most cases you'll probably get better results without it.</translation>
+    </message>
+    <message>
+      <source>Tiling</source>
+      <translation>Tiling</translation>
+    </message>
+    <message>
+      <source>Generate tiling images that can be seamlessly repeated.</source>
+      <translation>Generate tiling images that can be seamlessly repeated.</translation>
+    </message>
+    <message>
+      <source>ControlNet Settings (first layer)</source>
+      <translation>ControlNet Settings (first layer)</translation>
+    </message>
+    <message>
+      <source>First layer ControlNet extension settings.</source>
+      <translation>First layer ControlNet extension settings.</translation>
+    </message>
+    <message>
+      <source>ControlNet Settings (second layer)</source>
+      <translation>ControlNet Settings (second layer)</translation>
+    </message>
+    <message>
+      <source>Second layer ControlNet extension settings.</source>
+      <translation>Second layer ControlNet extension settings.</translation>
+    </message>
+    <message>
+      <source>ControlNet Settings (third layer)</source>
+      <translation>ControlNet Settings (third layer)</translation>
+    </message>
+    <message>
+      <source>Second layer ControlNet extension settings.</source>
+      <translation>Second layer ControlNet extension settings.</translation>
+    </message>
+    <message>
+      <source>Detail reference count (cutn):</source>
+      <translation>Detail reference count (cutn):</translation>
+    </message>
+    <message>
+      <source>Determines how many random cutouts from the input image are used to guide image generation. Higher values can introduce more detail and variation, but may also introduce more noise and irrelevant information.</source>
+      <translation>Determines how many random cutouts from the input image are used to guide image generation. Higher values can introduce more detail and variation, but may also introduce more noise and irrelevant information.</translation>
+    </message>
+    <message>
+      <source>Skip steps:</source>
+      <translation>Skip steps:</translation>
+    </message>
+    <message>
+      <source>Number of diffusion steps to skip. Higher values will result in faster image generation with decreased detail and accuracy.</source>
+      <translation>Number of diffusion steps to skip. Higher values will result in faster image generation with decreased detail and accuracy.</translation>
+    </message>
+    <message>
+      <source>Upscale mode:</source>
+      <translation>Upscale mode:</translation>
+    </message>
+    <message>
+      <source>Upscaling mode used when the inpainting resolution doesn't match the image generation area size.</source>
+      <translation>Upscaling mode used when the inpainting resolution doesn't match the image generation area size.</translation>
+    </message>
+    <message>
+      <source>Downscale mode:</source>
+      <translation>Downscale mode:</translation>
+    </message>
+    <message>
+      <source>Downscaling mode used when the inpainting resolution doesn't match the image generation area size.</source>
+      <translation>Downscaling mode used when the inpainting resolution doesn't match the image generation area size.</translation>
+    </message>
+    <message>
+      <source>Enable global error handler:</source>
+      <translation>Enable global error handler:</translation>
+    </message>
+    <message>
+      <source>Attempt to catch and report global application errors instead of crashing. Disabling this makes it easier to debug certain errors.</source>
+      <translation>Attempt to catch and report global application errors instead of crashing. Disabling this makes it easier to debug certain errors.</translation>
+    </message>
+    <message>
+      <location filename="../config/application_config_definitions.json" line="3"/>
+      <source>Style:</source>
+      <translation>Style:</translation>
+    </message>
+    <message>
+      <location filename="../config/application_config_definitions.json" line="5"/>
+      <source>Qt style to use for the user interface</source>
+      <translation>Qt style to use for the user interface</translation>
+    </message>
+    <message>
+      <location filename="../config/application_config_definitions.json" line="12"/>
+      <source>Theme:</source>
+      <translation>Theme:</translation>
+    </message>
+    <message>
+      <location filename="../config/application_config_definitions.json" line="14"/>
+      <source>Theme to use for the user interface (may require restart)</source>
+      <translation>Theme to use for the user interface (may require restart)</translation>
+    </message>
+    <message>
+      <location filename="../config/application_config_definitions.json" line="21"/>
+      <source>Font size:</source>
+      <translation>Font size:</translation>
+    </message>
+    <message>
+      <location filename="../config/application_config_definitions.json" line="23"/>
+      <source>Font point size to use for user interface text (may require restart)</source>
+      <translation>Font point size to use for user interface text (may require restart)</translation>
+    </message>
+    <message>
+      <location filename="../config/application_config_definitions.json" line="29"/>
+      <source>Animate outlines and selections:</source>
+      <translation>Animate outlines and selections:</translation>
+    </message>
+    <message>
+      <location filename="../config/application_config_definitions.json" line="31"/>
+      <source>Enable or disable animated outlines (may require restart)</source>
+      <translation>Enable or disable animated outlines (may require restart)</translation>
+    </message>
+    <message>
+      <location filename="../config/application_config_definitions.json" line="37"/>
+      <source>Selection overlay color:</source>
+      <translation>Selection overlay color:</translation>
+    </message>
+    <message>
+      <location filename="../config/application_config_definitions.json" line="39"/>
+      <source>Overlay color used to highlight selected image areas</source>
+      <translation>Overlay color used to highlight selected image areas</translation>
+    </message>
+    <message>
+      <location filename="../config/application_config_definitions.json" line="45"/>
+      <source>Show selections in generated image options:</source>
+      <translation>Show selections in generated image options:</translation>
+    </message>
+    <message>
+      <location filename="../config/application_config_definitions.json" line="47"/>
+      <source>Draw the selection borders when choosing inpainted image options.</source>
+      <translation>Draw the selection borders when choosing inpainted image options.</translation>
+    </message>
+    <message>
+      <location filename="../config/application_config_definitions.json" line="53"/>
+      <source>Show generated images zoomed to changes:</source>
+      <translation>Show generated images zoomed to changes:</translation>
+    </message>
+    <message>
+      <location filename="../config/application_config_definitions.json" line="55"/>
+      <source>When zooming in on individual inpainting options, focus the change region.</source>
+      <translation>When zooming in on individual inpainting options, focus the change region.</translation>
+    </message>
+    <message>
+      <location filename="../config/application_config_definitions.json" line="61"/>
+      <source>Show generated image options at original size</source>
+      <translation>Show generated image options at original size</translation>
+    </message>
+    <message>
+      <location filename="../config/application_config_definitions.json" line="63"/>
+      <source>When the selected image size doesn't match the image generation resolution, preview options using the generated size.</source>
+      <translation>When the selected image size doesn't match the image generation resolution, preview options using the generated size.</translation>
+    </message>
+    <message>
+      <location filename="../config/application_config_definitions.json" line="69"/>
+      <source>OpenGL acceleration:</source>
+      <translation>OpenGL acceleration:</translation>
+    </message>
+    <message>
+      <location filename="../config/application_config_definitions.json" line="71"/>
+      <source>Use OpenGL to accelerate image manipulation</source>
+      <translation>Use OpenGL to accelerate image manipulation</translation>
+    </message>
+    <message>
+      <location filename="../config/application_config_definitions.json" line="77"/>
+      <source>Default image size:</source>
+      <translation>Default image size:</translation>
+    </message>
+    <message>
+      <location filename="../config/application_config_definitions.json" line="79"/>
+      <source>Default size when creating new images</source>
+      <translation>Default size when creating new images</translation>
+    </message>
+    <message>
+      <location filename="../config/application_config_definitions.json" line="85"/>
+      <source>Editing size:</source>
+      <translation>Editing size:</translation>
+    </message>
+    <message>
+      <location filename="../config/application_config_definitions.json" line="87"/>
+      <source>Current/initial size in pixels of the area selected for editing</source>
+      <translation>Current/initial size in pixels of the area selected for editing</translation>
+    </message>
+    <message>
+      <location filename="../config/application_config_definitions.json" line="93"/>
+      <source>Maximum editing size:</source>
+      <translation>Maximum editing size:</translation>
+    </message>
+    <message>
+      <location filename="../config/application_config_definitions.json" line="95"/>
+      <source>Maximum size in pixels of the area selected for editing</source>
+      <translation>Maximum size in pixels of the area selected for editing</translation>
+    </message>
+    <message>
+      <location filename="../config/application_config_definitions.json" line="101"/>
+      <source>Minimum editing size:</source>
+      <translation>Minimum editing size:</translation>
+    </message>
+    <message>
+      <location filename="../config/application_config_definitions.json" line="103"/>
+      <source>Minimum size in pixels of the area selected for editing</source>
+      <translation>Minimum size in pixels of the area selected for editing</translation>
+    </message>
+    <message>
+      <location filename="../config/application_config_definitions.json" line="109"/>
+      <source>Generation size:</source>
+      <translation>Generation size:</translation>
+    </message>
+    <message>
+      <location filename="../config/application_config_definitions.json" line="111"/>
+      <source>Current/initial size in pixels used for AI image generation</source>
+      <translation>Current/initial size in pixels used for AI image generation</translation>
+    </message>
+    <message>
+      <location filename="../config/application_config_definitions.json" line="117"/>
+      <source>Maximum generation size:</source>
+      <translation>Maximum generation size:</translation>
+    </message>
+    <message>
+      <location filename="../config/application_config_definitions.json" line="119"/>
+      <source>Maximum size in pixels allowed for AI image generation</source>
+      <translation>Maximum size in pixels allowed for AI image generation</translation>
+    </message>
+    <message>
+      <location filename="../config/application_config_definitions.json" line="125"/>
+      <source>Minimum generation size:</source>
+      <translation>Minimum generation size:</translation>
+    </message>
+    <message>
+      <location filename="../config/application_config_definitions.json" line="127"/>
+      <source>Minimum size in pixels allowed for AI image generation</source>
+      <translation>Minimum size in pixels allowed for AI image generation</translation>
+    </message>
+    <message>
+      <location filename="../config/application_config_definitions.json" line="133"/>
+      <source>Selection brush size:</source>
+      <translation>Selection brush size:</translation>
+    </message>
+    <message>
+      <location filename="../config/application_config_definitions.json" line="135"/>
+      <source>Current/initial brush size (in pixels) for the selection tool.</source>
+      <translation>Current/initial brush size (in pixels) for the selection tool.</translation>
+    </message>
+    <message>
+      <location filename="../config/application_config_definitions.json" line="146"/>
+      <source>Brush size:</source>
+      <translation>Brush size:</translation>
+    </message>
+    <message>
+      <location filename="../config/application_config_definitions.json" line="148"/>
+      <source>Current/initial brush size (in pixels) for the drawing/painting tool.</source>
+      <translation>Current/initial brush size (in pixels) for the drawing/painting tool.</translation>
+    </message>
+    <message>
+      <location filename="../config/application_config_definitions.json" line="159"/>
+      <source>Selected MyPaint brush:</source>
+      <translation>Selected MyPaint brush:</translation>
+    </message>
+    <message>
+      <location filename="../config/application_config_definitions.json" line="161"/>
+      <source>Currently selected MyPaint brush file.</source>
+      <translation>Currently selected MyPaint brush file.</translation>
+    </message>
+    <message>
+      <location filename="../config/application_config_definitions.json" line="167"/>
+      <source>Favorite MyPaint brushes:</source>
+      <translation>Favorite MyPaint brushes:</translation>
+    </message>
+    <message>
+      <location filename="../config/application_config_definitions.json" line="169"/>
+      <source>Brushes to list in the 'Favorites' tab of the brush selection window</source>
+      <translation>Brushes to list in the 'Favorites' tab of the brush selection window</translation>
+    </message>
+    <message>
+      <location filename="../config/application_config_definitions.json" line="175"/>
+      <source>Maximum undo count:</source>
+      <translation>Maximum undo count:</translation>
+    </message>
+    <message>
+      <location filename="../config/application_config_definitions.json" line="177"/>
+      <source>Number of actions that can be reversed using the 'undo' option.</source>
+      <translation>Number of actions that can be reversed using the 'undo' option.</translation>
+    </message>
+    <message>
+      <location filename="../config/application_config_definitions.json" line="183"/>
+      <source>Undo merge interval (seconds):</source>
+      <translation>Undo merge interval (seconds):</translation>
+    </message>
+    <message>
+      <location filename="../config/application_config_definitions.json" line="185"/>
+      <source>Similar actions will be combined in the undo history if the time between them is less than this.</source>
+      <translation>Similar actions will be combined in the undo history if the time between them is less than this.</translation>
+    </message>
+    <message>
+      <location filename="../config/application_config_definitions.json" line="191"/>
+      <source>'Speed modifier' key multiplier:</source>
+      <translation>'Speed modifier' key multiplier:</translation>
+    </message>
+    <message>
+      <location filename="../config/application_config_definitions.json" line="193"/>
+      <source>Controls how much faster changes happen when the 'speed_modifier' key is held down</source>
+      <translation>Controls how much faster changes happen when the 'speed_modifier' key is held down</translation>
+    </message>
+    <message>
+      <location filename="../config/application_config_definitions.json" line="199"/>
+      <source>Prompt:</source>
+      <translation>Prompt:</translation>
+    </message>
+    <message>
+      <location filename="../config/application_config_definitions.json" line="201"/>
+      <source>Description that generated images should match.</source>
+      <translation>Description that generated images should match.</translation>
+    </message>
+    <message>
+      <location filename="../config/application_config_definitions.json" line="207"/>
+      <source>Negative prompt:</source>
+      <translation>Negative prompt:</translation>
+    </message>
+    <message>
+      <location filename="../config/application_config_definitions.json" line="209"/>
+      <source>Description that generated images should not match.</source>
+      <translation>Description that generated images should not match.</translation>
+    </message>
+    <message>
+      <location filename="../config/application_config_definitions.json" line="215"/>
+      <source>Guidance scale:</source>
+      <translation>Guidance scale:</translation>
+    </message>
+    <message>
+      <location filename="../config/application_config_definitions.json" line="217"/>
+      <source>Controls how strongly the prompt and negative prompt are applied. Higher values are more consistent but may be less creative.  Overly high or low values may cause image distortion.</source>
+      <translation>Controls how strongly the prompt and negative prompt are applied. Higher values are more consistent but may be less creative.  Overly high or low values may cause image distortion.</translation>
+    </message>
+    <message>
+      <location filename="../config/application_config_definitions.json" line="228"/>
+      <source>Batch size:</source>
+      <translation>Batch size:</translation>
+    </message>
+    <message>
+      <location filename="../config/application_config_definitions.json" line="230"/>
+      <source>Number of image options to simultaneously create in a single image editing operation. Increasing this value too much may result in errors or slowdown if GPU memory limits are reached.</source>
+      <translation>Number of image options to simultaneously create in a single image editing operation. Increasing this value too much may result in errors or slowdown if GPU memory limits are reached.</translation>
+    </message>
+    <message>
+      <location filename="../config/application_config_definitions.json" line="241"/>
+      <source>Batch count:</source>
+      <translation>Batch count:</translation>
+    </message>
+    <message>
+      <location filename="../config/application_config_definitions.json" line="243"/>
+      <source>Number of image batches to create in a single image editing operation. Increasing this value doesn't require additional memory, but it slows down image editing more than increasing the batch size does.</source>
+      <translation>Number of image batches to create in a single image editing operation. Increasing this value doesn't require additional memory, but it slows down image editing more than increasing the batch size does.</translation>
+    </message>
+    <message>
+      <location filename="../config/application_config_definitions.json" line="254"/>
+      <source>Edit mode:</source>
+      <translation>Edit mode:</translation>
+    </message>
+    <message>
+      <location filename="../config/application_config_definitions.json" line="256"/>
+      <source>Stable-Diffusion image editing mode. 'Text to Image' completely replaces the selected image section with new content, 'Image to Image' creates altered versions of the image selection, and 'Inpaint' works like 'Image to Image' except that it only affects areas selected by the mask tool</source>
+      <translation>Stable-Diffusion image editing mode. 'Text to Image' completely replaces the selected image section with new content, 'Image to Image' creates altered versions of the image selection, and 'Inpaint' works like 'Image to Image' except that it only affects areas selected by the mask tool</translation>
+    </message>
+    <message>
+      <location filename="../config/application_config_definitions.json" line="267"/>
+      <source>Masked content:</source>
+      <translation>Masked content:</translation>
+    </message>
+    <message>
+      <location filename="../config/application_config_definitions.json" line="269"/>
+      <source>Determines what should be used to fill the masked area before inpainting. 'fill' replaces it with a solid color, 'original' keeps it as-is, 'latent noise' replaces it with random data, and 'latent nothing' clears it. Unless you're inpainting with a denoising strength &gt;0.8, 'original' will almost always be the best option</source>
+      <translation>Determines what should be used to fill the masked area before inpainting. 'fill' replaces it with a solid color, 'original' keeps it as-is, 'latent noise' replaces it with random data, and 'latent nothing' clears it. Unless you're inpainting with a denoising strength &gt;0.8, 'original' will almost always be the best option</translation>
+    </message>
+    <message>
+      <location filename="../config/application_config_definitions.json" line="281"/>
+      <source>Image interrogation model:</source>
+      <translation>Image interrogation model:</translation>
+    </message>
+    <message>
+      <location filename="../config/application_config_definitions.json" line="283"/>
+      <source>Model used when auto-generating appropriate prompts using the 'interrogate' button. Supported values will vary based on what extensions you've installed into the stable-generation-webui, but 'clip' should always be accepted.</source>
+      <translation>Model used when auto-generating appropriate prompts using the 'interrogate' button. Supported values will vary based on what extensions you've installed into the stable-generation-webui, but 'clip' should always be accepted.</translation>
+    </message>
+    <message>
+      <location filename="../config/application_config_definitions.json" line="289"/>
+      <source>Sampling steps:</source>
+      <translation>Sampling steps:</translation>
+    </message>
+    <message>
+      <location filename="../config/application_config_definitions.json" line="291"/>
+      <source>Number of diffusion operations to perform when generating image data. Higher values take longer, but often produce more detailed and accurate results. Different stable-diffusion models and samplers have different requirements, but in most cates setting this higher than 30 has only minimal benefits</source>
+      <translation>Number of diffusion operations to perform when generating image data. Higher values take longer, but often produce more detailed and accurate results. Different stable-diffusion models and samplers have different requirements, but in most cates setting this higher than 30 has only minimal benefits</translation>
+    </message>
+    <message>
+      <location filename="../config/application_config_definitions.json" line="302"/>
+      <source>Denoising strength:</source>
+      <translation>Denoising strength:</translation>
+    </message>
+    <message>
+      <location filename="../config/application_config_definitions.json" line="304"/>
+      <source>Controls how dramatically inpainting and image-to-image operations will change the initial image data. At 0.0, the image will be completely unedited, at 1.0 the image will be completely different</source>
+      <translation>Controls how dramatically inpainting and image-to-image operations will change the initial image data. At 0.0, the image will be completely unedited, at 1.0 the image will be completely different</translation>
+    </message>
+    <message>
+      <location filename="../config/application_config_definitions.json" line="315"/>
+      <source>Sampling method:</source>
+      <translation>Sampling method:</translation>
+    </message>
+    <message>
+      <location filename="../config/application_config_definitions.json" line="317"/>
+      <source>Mathematical technique used to transform image data during the generation process. 'Euler a' works well in most cases, but certain models or extensions might perform better with other options.</source>
+      <translation>Mathematical technique used to transform image data during the generation process. 'Euler a' works well in most cases, but certain models or extensions might perform better with other options.</translation>
+    </message>
+    <message>
+      <location filename="../config/application_config_definitions.json" line="324"/>
+      <source>Upscale method:</source>
+      <translation>Upscale method:</translation>
+    </message>
+    <message>
+      <location filename="../config/application_config_definitions.json" line="326"/>
+      <source>Method to use when increasing image resolution. Available options will be loaded from the stable-diffusion-webui on launch.</source>
+      <translation>Method to use when increasing image resolution. Available options will be loaded from the stable-diffusion-webui on launch.</translation>
+    </message>
+    <message>
+      <location filename="../config/application_config_definitions.json" line="333"/>
+      <source>ControlNet tiled upscaling</source>
+      <translation>ControlNet tiled upscaling</translation>
+    </message>
+    <message>
+      <location filename="../config/application_config_definitions.json" line="335"/>
+      <source>Whether to use the ControlNet tile model to improve image upscaling. When enabled and supported, all other image generation options will influence upscaling results. To use this, the ControlNet extension needs to be installed in the stable-diffusion-webui, and the controlnet tile model needs to be downloaded to the correct folder.</source>
+      <translation>Whether to use the ControlNet tile model to improve image upscaling. When enabled and supported, all other image generation options will influence upscaling results. To use this, the ControlNet extension needs to be installed in the stable-diffusion-webui, and the controlnet tile model needs to be downloaded to the correct folder.</translation>
+    </message>
+    <message>
+      <location filename="../config/application_config_definitions.json" line="341"/>
+      <source>ControlNet tiled upscaling model:</source>
+      <translation>ControlNet tiled upscaling model:</translation>
+    </message>
+    <message>
+      <location filename="../config/application_config_definitions.json" line="343"/>
+      <source>ControlNet model to use for tiled upscaling, in the 'filename [hash]' format used by the webui. This only needs to change if a newer model is available if using a stable diffusion model not based on stable-diffusion 1.5.</source>
+      <translation>ControlNet model to use for tiled upscaling, in the 'filename [hash]' format used by the webui. This only needs to change if a newer model is available if using a stable diffusion model not based on stable-diffusion 1.5.</translation>
+    </message>
+    <message>
+      <location filename="../config/application_config_definitions.json" line="349"/>
+      <source>Tile downsample rate:</source>
+      <translation>Tile downsample rate:</translation>
+    </message>
+    <message>
+      <location filename="../config/application_config_definitions.json" line="351"/>
+      <source>Adjusts how strongly the ControlNet tile model preserves the original image data, higher values result in fewer changes.</source>
+      <translation>Adjusts how strongly the ControlNet tile model preserves the original image data, higher values result in fewer changes.</translation>
+    </message>
+    <message>
+      <location filename="../config/application_config_definitions.json" line="362"/>
+      <source>Mask blur:</source>
+      <translation>Mask blur:</translation>
+    </message>
+    <message>
+      <location filename="../config/application_config_definitions.json" line="364"/>
+      <source>Pixel radius to blur in the inpainting mask to smoothly combine edited and original image content.</source>
+      <translation>Pixel radius to blur in the inpainting mask to smoothly combine edited and original image content.</translation>
+    </message>
+    <message>
+      <location filename="../config/application_config_definitions.json" line="375"/>
+      <source>Seed:</source>
+      <translation>Seed:</translation>
+    </message>
+    <message>
+      <location filename="../config/application_config_definitions.json" line="377"/>
+      <source>Number used to control pseudo-random aspects of image generation, in most cases using the same seed with the same settings and inputs will always produce the same results. If set to -1, a different random seed will be used for each image generation. </source>
+      <translation>Number used to control pseudo-random aspects of image generation, in most cases using the same seed with the same settings and inputs will always produce the same results. If set to -1, a different random seed will be used for each image generation. </translation>
+    </message>
+    <message>
+      <location filename="../config/application_config_definitions.json" line="388"/>
+      <source>Inpaint Full Resolution</source>
+      <translation>Inpaint Full Resolution</translation>
+    </message>
+    <message>
+      <location filename="../config/application_config_definitions.json" line="390"/>
+      <source>If true, inpaint the masked area at higher resolution by ignoring the unmasked area. This can increase image quality by sacrificing awareness of additional image content.</source>
+      <translation>If true, inpaint the masked area at higher resolution by ignoring the unmasked area. This can increase image quality by sacrificing awareness of additional image content.</translation>
+    </message>
+    <message>
+      <location filename="../config/application_config_definitions.json" line="396"/>
+      <source>Padding:</source>
+      <translation>Padding:</translation>
+    </message>
+    <message>
+      <location filename="../config/application_config_definitions.json" line="398"/>
+      <source>Pixel radius outside of the masked area to include when inpainting when the 'Inpaint Full Resolution' option is enabled. Higher values increase contextual awareness while decreasing overall level of detail.</source>
+      <translation>Pixel radius outside of the masked area to include when inpainting when the 'Inpaint Full Resolution' option is enabled. Higher values increase contextual awareness while decreasing overall level of detail.</translation>
+    </message>
+    <message>
+      <location filename="../config/application_config_definitions.json" line="409"/>
+      <source>Restore faces</source>
+      <translation>Restore faces</translation>
+    </message>
+    <message>
+      <location filename="../config/application_config_definitions.json" line="411"/>
+      <source>Use a face restoration model to correct image data after stable-diffusion runs. In most cases you'll probably get better results without it.</source>
+      <translation>Use a face restoration model to correct image data after stable-diffusion runs. In most cases you'll probably get better results without it.</translation>
+    </message>
+    <message>
+      <location filename="../config/application_config_definitions.json" line="417"/>
+      <source>Tiling</source>
+      <translation>Tiling</translation>
+    </message>
+    <message>
+      <location filename="../config/application_config_definitions.json" line="419"/>
+      <source>Generate tiling images that can be seamlessly repeated.</source>
+      <translation>Generate tiling images that can be seamlessly repeated.</translation>
+    </message>
+    <message>
+      <location filename="../config/application_config_definitions.json" line="425"/>
+      <source>ControlNet Settings (first layer)</source>
+      <translation>ControlNet Settings (first layer)</translation>
+    </message>
+    <message>
+      <location filename="../config/application_config_definitions.json" line="427"/>
+      <source>First layer ControlNet extension settings.</source>
+      <translation>First layer ControlNet extension settings.</translation>
+    </message>
+    <message>
+      <location filename="../config/application_config_definitions.json" line="433"/>
+      <source>ControlNet Settings (second layer)</source>
+      <translation>ControlNet Settings (second layer)</translation>
+    </message>
+    <message>
+      <location filename="../config/application_config_definitions.json" line="435"/>
+      <source>Second layer ControlNet extension settings.</source>
+      <translation>Second layer ControlNet extension settings.</translation>
+    </message>
+    <message>
+      <location filename="../config/application_config_definitions.json" line="441"/>
+      <source>ControlNet Settings (third layer)</source>
+      <translation>ControlNet Settings (third layer)</translation>
+    </message>
+    <message>
+      <location filename="../config/application_config_definitions.json" line="435"/>
+      <source>Second layer ControlNet extension settings.</source>
+      <translation>Second layer ControlNet extension settings.</translation>
+    </message>
+    <message>
+      <location filename="../config/application_config_definitions.json" line="452"/>
+      <source>Detail reference count (cutn):</source>
+      <translation>Detail reference count (cutn):</translation>
+    </message>
+    <message>
+      <location filename="../config/application_config_definitions.json" line="454"/>
+      <source>Determines how many random cutouts from the input image are used to guide image generation. Higher values can introduce more detail and variation, but may also introduce more noise and irrelevant information.</source>
+      <translation>Determines how many random cutouts from the input image are used to guide image generation. Higher values can introduce more detail and variation, but may also introduce more noise and irrelevant information.</translation>
+    </message>
+    <message>
+      <location filename="../config/application_config_definitions.json" line="460"/>
+      <source>Skip steps:</source>
+      <translation>Skip steps:</translation>
+    </message>
+    <message>
+      <location filename="../config/application_config_definitions.json" line="462"/>
+      <source>Number of diffusion steps to skip. Higher values will result in faster image generation with decreased detail and accuracy.</source>
+      <translation>Number of diffusion steps to skip. Higher values will result in faster image generation with decreased detail and accuracy.</translation>
+    </message>
+    <message>
+      <location filename="../config/application_config_definitions.json" line="473"/>
+      <source>Upscale mode:</source>
+      <translation>Upscale mode:</translation>
+    </message>
+    <message>
+      <location filename="../config/application_config_definitions.json" line="475"/>
+      <source>Upscaling mode used when the inpainting resolution doesn't match the image generation area size.</source>
+      <translation>Upscaling mode used when the inpainting resolution doesn't match the image generation area size.</translation>
+    </message>
+    <message>
+      <location filename="../config/application_config_definitions.json" line="482"/>
+      <source>Downscale mode:</source>
+      <translation>Downscale mode:</translation>
+    </message>
+    <message>
+      <location filename="../config/application_config_definitions.json" line="484"/>
+      <source>Downscaling mode used when the inpainting resolution doesn't match the image generation area size.</source>
+      <translation>Downscaling mode used when the inpainting resolution doesn't match the image generation area size.</translation>
+    </message>
+    <message>
+      <location filename="../config/application_config_definitions.json" line="491"/>
+      <source>Enable global error handler:</source>
+      <translation>Enable global error handler:</translation>
+    </message>
+    <message>
+      <location filename="../config/application_config_definitions.json" line="493"/>
+      <source>Attempt to catch and report global application errors instead of crashing. Disabling this makes it easier to debug certain errors.</source>
+      <translation>Attempt to catch and report global application errors instead of crashing. Disabling this makes it easier to debug certain errors.</translation>
+    </message>
+  </context>
+  <context>
+    <name>config.cache</name>
+    <message>
+      <source>styles</source>
+      <translation>styles</translation>
+    </message>
+    <message>
+      <source>Saved style prompts loaded from the webui</source>
+      <translation>Saved style prompts loaded from the webui</translation>
+    </message>
+    <message>
+      <source>ControlNet version:</source>
+      <translation>ControlNet version:</translation>
+    </message>
+    <message>
+      <source>ControlNet extension version loaded from the webui</source>
+      <translation>ControlNet extension version loaded from the webui</translation>
+    </message>
+    <message>
+      <source>ControlNet control types:</source>
+      <translation>ControlNet control types:</translation>
+    </message>
+    <message>
+      <source>ControlNet control type definitions loaded from the webui</source>
+      <translation>ControlNet control type definitions loaded from the webui</translation>
+    </message>
+    <message>
+      <source>ControlNet modules:</source>
+      <translation>ControlNet modules:</translation>
+    </message>
+    <message>
+      <source>ControlNet module definitions loaded from the webui</source>
+      <translation>ControlNet module definitions loaded from the webui</translation>
+    </message>
+    <message>
+      <source>ControlNet models:</source>
+      <translation>ControlNet models:</translation>
+    </message>
+    <message>
+      <source>ControlNet model definitions loaded from the webui</source>
+      <translation>ControlNet model definitions loaded from the webui</translation>
+    </message>
+    <message>
+      <source>LoRA models:</source>
+      <translation>LoRA models:</translation>
+    </message>
+    <message>
+      <source>LoRA model definitions loaded from the webui</source>
+      <translation>LoRA model definitions loaded from the webui</translation>
+    </message>
+    <message>
+      <source>Last seed:</source>
+      <translation>Last seed:</translation>
+    </message>
+    <message>
+      <source>Last seed used for image generation</source>
+      <translation>Last seed used for image generation</translation>
+    </message>
+    <message>
+      <source>Last file path:</source>
+      <translation>Last file path:</translation>
+    </message>
+    <message>
+      <source>Last image file loaded</source>
+      <translation>Last image file loaded</translation>
+    </message>
+    <message>
+      <source>Last brush color:</source>
+      <translation>Last brush color:</translation>
+    </message>
+    <message>
+      <source>Last brush color</source>
+      <translation>Last brush color</translation>
+    </message>
+    <message>
+      <source>Last active tool:</source>
+      <translation>Last active tool:</translation>
+    </message>
+    <message>
+      <source>Label of the last active tool, to restore after restart</source>
+      <translation>Label of the last active tool, to restore after restart</translation>
+    </message>
+    <message>
+      <source>Color threshold:</source>
+      <translation>Color threshold:</translation>
+    </message>
+    <message>
+      <source>Sets how closely colors need to match the clicked color to be selected. 0.0 only changes exact matching colors, higher values are more permissive.</source>
+      <translation>Sets how closely colors need to match the clicked color to be selected. 0.0 only changes exact matching colors, higher values are more permissive.</translation>
+    </message>
+    <message>
+      <source>Sample Merged:</source>
+      <translation>Sample Merged:</translation>
+    </message>
+    <message>
+      <source>If checked, fill based on the entire image contents, not just the current layer</source>
+      <translation>If checked, fill based on the entire image contents, not just the current layer</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="2"/>
+      <source>styles</source>
+      <translation>styles</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="5"/>
+      <source>Saved style prompts loaded from the webui</source>
+      <translation>Saved style prompts loaded from the webui</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="14"/>
+      <source>ControlNet version:</source>
+      <translation>ControlNet version:</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="16"/>
+      <source>ControlNet extension version loaded from the webui</source>
+      <translation>ControlNet extension version loaded from the webui</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="22"/>
+      <source>ControlNet control types:</source>
+      <translation>ControlNet control types:</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="24"/>
+      <source>ControlNet control type definitions loaded from the webui</source>
+      <translation>ControlNet control type definitions loaded from the webui</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="30"/>
+      <source>ControlNet modules:</source>
+      <translation>ControlNet modules:</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="32"/>
+      <source>ControlNet module definitions loaded from the webui</source>
+      <translation>ControlNet module definitions loaded from the webui</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="38"/>
+      <source>ControlNet models:</source>
+      <translation>ControlNet models:</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="40"/>
+      <source>ControlNet model definitions loaded from the webui</source>
+      <translation>ControlNet model definitions loaded from the webui</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="46"/>
+      <source>LoRA models:</source>
+      <translation>LoRA models:</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="48"/>
+      <source>LoRA model definitions loaded from the webui</source>
+      <translation>LoRA model definitions loaded from the webui</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="54"/>
+      <source>Last seed:</source>
+      <translation>Last seed:</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="56"/>
+      <source>Last seed used for image generation</source>
+      <translation>Last seed used for image generation</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="62"/>
+      <source>Last file path:</source>
+      <translation>Last file path:</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="64"/>
+      <source>Last image file loaded</source>
+      <translation>Last image file loaded</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="70"/>
+      <source>Last brush color:</source>
+      <translation>Last brush color:</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="70"/>
+      <source>Last brush color</source>
+      <translation>Last brush color</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="78"/>
+      <source>Last active tool:</source>
+      <translation>Last active tool:</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="80"/>
+      <source>Label of the last active tool, to restore after restart</source>
+      <translation>Label of the last active tool, to restore after restart</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="86"/>
+      <source>Color threshold:</source>
+      <translation>Color threshold:</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="88"/>
+      <source>Sets how closely colors need to match the clicked color to be selected. 0.0 only changes exact matching colors, higher values are more permissive.</source>
+      <translation>Sets how closely colors need to match the clicked color to be selected. 0.0 only changes exact matching colors, higher values are more permissive.</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="99"/>
+      <source>Sample Merged:</source>
+      <translation>Sample Merged:</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="101"/>
+      <source>If checked, fill based on the entire image contents, not just the current layer</source>
+      <translation>If checked, fill based on the entire image contents, not just the current layer</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="107"/>
+      <source>Paint selection only:</source>
+      <translation>Paint selection only:</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="109"/>
+      <source>If checked, only paint within the selection bounds</source>
+      <translation>If checked, only paint within the selection bounds</translation>
+    </message>
+  </context>
+  <context>
     <name>config.config</name>
     <message>
       <location filename="../../src/config/config.py" line="38"/>
@@ -177,6 +1456,614 @@
     <message>
       <source>Zoom in:</source>
       <translation>Zoom in:</translation>
+    </message>
+    <message>
+      <source>Key Speed Modifier:</source>
+      <translation>Key Speed Modifier:</translation>
+    </message>
+    <message>
+      <source>If this key is held, movement/zoom/pan/scroll/etc. operations will go faster. (avoid changing, Shift and Ctrl are the only other working options and those cause various conflicts.)</source>
+      <translation>If this key is held, movement/zoom/pan/scroll/etc. operations will go faster. (avoid changing, Shift and Ctrl are the only other working options and those cause various conflicts.)</translation>
+    </message>
+    <message>
+      <source>Line Drawing Modifier:</source>
+      <translation>Line Drawing Modifier:</translation>
+    </message>
+    <message>
+      <source>When held, drawing tools will draw a line from the last point.</source>
+      <translation>When held, drawing tools will draw a line from the last point.</translation>
+    </message>
+    <message>
+      <source>Fixed Angle Modifier:</source>
+      <translation>Fixed Angle Modifier:</translation>
+    </message>
+    <message>
+      <source>When held, drawing tools will be constrained to a fixed angle.</source>
+      <translation>When held, drawing tools will be constrained to a fixed angle.</translation>
+    </message>
+    <message>
+      <source>Pan View Modifier:</source>
+      <translation>Pan View Modifier:</translation>
+    </message>
+    <message>
+      <source>When held, click and drag to pan the image view</source>
+      <translation>When held, click and drag to pan the image view</translation>
+    </message>
+    <message>
+      <source>Fixed Aspect Ratio Modifier:</source>
+      <translation>Fixed Aspect Ratio Modifier:</translation>
+    </message>
+    <message>
+      <source>When held, shape and transform tools will keep a fixed aspect ratio.</source>
+      <translation>When held, shape and transform tools will keep a fixed aspect ratio.</translation>
+    </message>
+    <message>
+      <source>Color Picker Override Modifier:</source>
+      <translation>Color Picker Override Modifier:</translation>
+    </message>
+    <message>
+      <source>When held, temporarily switch from the brush or fill tool to the color picker.</source>
+      <translation>When held, temporarily switch from the brush or fill tool to the color picker.</translation>
+    </message>
+    <message>
+      <source>Zoom in:</source>
+      <translation>Zoom in:</translation>
+    </message>
+    <message>
+      <source>Zoom in on image content</source>
+      <translation>Zoom in on image content</translation>
+    </message>
+    <message>
+      <source>Zoom out:</source>
+      <translation>Zoom out:</translation>
+    </message>
+    <message>
+      <source>Zoom out on image content</source>
+      <translation>Zoom out on image content</translation>
+    </message>
+    <message>
+      <source>Toggle zoom:</source>
+      <translation>Toggle zoom:</translation>
+    </message>
+    <message>
+      <source>Switch between close-up and zoomed out views</source>
+      <translation>Switch between close-up and zoomed out views</translation>
+    </message>
+    <message>
+      <source>Pan left:</source>
+      <translation>Pan left:</translation>
+    </message>
+    <message>
+      <source>Scroll the image view left</source>
+      <translation>Scroll the image view left</translation>
+    </message>
+    <message>
+      <source>Pan right:</source>
+      <translation>Pan right:</translation>
+    </message>
+    <message>
+      <source>Scroll the image view right</source>
+      <translation>Scroll the image view right</translation>
+    </message>
+    <message>
+      <source>Pan up:</source>
+      <translation>Pan up:</translation>
+    </message>
+    <message>
+      <source>Scroll the image view up</source>
+      <translation>Scroll the image view up</translation>
+    </message>
+    <message>
+      <source>Pan down:</source>
+      <translation>Pan down:</translation>
+    </message>
+    <message>
+      <source>Scroll the image view down</source>
+      <translation>Scroll the image view down</translation>
+    </message>
+    <message>
+      <source>Move left:</source>
+      <translation>Move left:</translation>
+    </message>
+    <message>
+      <source>Move the image generation area left</source>
+      <translation>Move the image generation area left</translation>
+    </message>
+    <message>
+      <source>Move right:</source>
+      <translation>Move right:</translation>
+    </message>
+    <message>
+      <source>Move the image generation area right</source>
+      <translation>Move the image generation area right</translation>
+    </message>
+    <message>
+      <source>Move up:</source>
+      <translation>Move up:</translation>
+    </message>
+    <message>
+      <source>Move the image generation area up</source>
+      <translation>Move the image generation area up</translation>
+    </message>
+    <message>
+      <source>Move down:</source>
+      <translation>Move down:</translation>
+    </message>
+    <message>
+      <source>Move the image generation area down</source>
+      <translation>Move the image generation area down</translation>
+    </message>
+    <message>
+      <source>Increase brush size:</source>
+      <translation>Increase brush size:</translation>
+    </message>
+    <message>
+      <source>Increase the size of the active brush</source>
+      <translation>Increase the size of the active brush</translation>
+    </message>
+    <message>
+      <source>Decrease brush size:</source>
+      <translation>Decrease brush size:</translation>
+    </message>
+    <message>
+      <source>Increase the size of the active brush</source>
+      <translation>Increase the size of the active brush</translation>
+    </message>
+    <message>
+      <source>Switch to the brush tool:</source>
+      <translation>Switch to the brush tool:</translation>
+    </message>
+    <message>
+      <source>Activate the brush tool to draw into the image.</source>
+      <translation>Activate the brush tool to draw into the image.</translation>
+    </message>
+    <message>
+      <source>Switch to the color picker tool:</source>
+      <translation>Switch to the color picker tool:</translation>
+    </message>
+    <message>
+      <source>Activate the color picker tool to change the brush color.</source>
+      <translation>Activate the color picker tool to change the brush color.</translation>
+    </message>
+    <message>
+      <source>Switch to the layer transformation tool:</source>
+      <translation>Switch to the layer transformation tool:</translation>
+    </message>
+    <message>
+      <source>Activate the layer transformation tool to move, scale, or rotate layers.</source>
+      <translation>Activate the layer transformation tool to move, scale, or rotate layers.</translation>
+    </message>
+    <message>
+      <source>Switch to the selection tool:</source>
+      <translation>Switch to the selection tool:</translation>
+    </message>
+    <message>
+      <source>Activate the selection tool to mark areas for editing.</source>
+      <translation>Activate the selection tool to mark areas for editing.</translation>
+    </message>
+    <message>
+      <source>Switch to the area selection tool:</source>
+      <translation>Switch to the area selection tool:</translation>
+    </message>
+    <message>
+      <source>Activate the area selection tool to mark areas for editing.</source>
+      <translation>Activate the area selection tool to mark areas for editing.</translation>
+    </message>
+    <message>
+      <source>Switch to the shape selection tool:</source>
+      <translation>Switch to the shape selection tool:</translation>
+    </message>
+    <message>
+      <source>Activate the shape selection tool to mark areas for editing.</source>
+      <translation>Activate the shape selection tool to mark areas for editing.</translation>
+    </message>
+    <message>
+      <source>Switch to the fill tool:</source>
+      <translation>Switch to the fill tool:</translation>
+    </message>
+    <message>
+      <source>Activate the fill tool to fill areas with solid colors.</source>
+      <translation>Activate the fill tool to fill areas with solid colors.</translation>
+    </message>
+    <message>
+      <source>Switch to the image generation area selection tool:</source>
+      <translation>Switch to the image generation area selection tool:</translation>
+    </message>
+    <message>
+      <source>Activate the generation area tool to pick an image area for AI image generation.</source>
+      <translation>Activate the generation area tool to pick an image area for AI image generation.</translation>
+    </message>
+    <message>
+      <source>Rotate layer counter-clockwise:</source>
+      <translation>Rotate layer counter-clockwise:</translation>
+    </message>
+    <message>
+      <source>Rotates the layer when the layer transformation tool is active</source>
+      <translation>Rotates the layer when the layer transformation tool is active</translation>
+    </message>
+    <message>
+      <source>Rotate layer clockwise:</source>
+      <translation>Rotate layer clockwise:</translation>
+    </message>
+    <message>
+      <source>Rotates the layer when the layer transformation tool is active</source>
+      <translation>Rotates the layer when the layer transformation tool is active</translation>
+    </message>
+    <message>
+      <source>New Image</source>
+      <translation>New Image</translation>
+    </message>
+    <message>
+      <source>Open a new image for editing.</source>
+      <translation>Open a new image for editing.</translation>
+    </message>
+    <message>
+      <source>Save</source>
+      <translation>Save</translation>
+    </message>
+    <message>
+      <source>Save current image as .png or .ora.</source>
+      <translation>Save current image as .png or .ora.</translation>
+    </message>
+    <message>
+      <source>Save as</source>
+      <translation>Save as</translation>
+    </message>
+    <message>
+      <source>Save current image as .png or .inpt at a new file path.</source>
+      <translation>Save current image as .png or .inpt at a new file path.</translation>
+    </message>
+    <message>
+      <source>Load Image</source>
+      <translation>Load Image</translation>
+    </message>
+    <message>
+      <source>Open an image file for editing.</source>
+      <translation>Open an image file for editing.</translation>
+    </message>
+    <message>
+      <source>Open as Layers</source>
+      <translation>Open as Layers</translation>
+    </message>
+    <message>
+      <source>Open images as new layers.</source>
+      <translation>Open images as new layers.</translation>
+    </message>
+    <message>
+      <source>Reload</source>
+      <translation>Reload</translation>
+    </message>
+    <message>
+      <source>Reload the image from its file.</source>
+      <translation>Reload the image from its file.</translation>
+    </message>
+    <message>
+      <source>Quit</source>
+      <translation>Quit</translation>
+    </message>
+    <message>
+      <source>Closes the application.</source>
+      <translation>Closes the application.</translation>
+    </message>
+    <message>
+      <source>Undo</source>
+      <translation>Undo</translation>
+    </message>
+    <message>
+      <source>Undo the last action taken</source>
+      <translation>Undo the last action taken</translation>
+    </message>
+    <message>
+      <source>Redo</source>
+      <translation>Redo</translation>
+    </message>
+    <message>
+      <source>Re-apply the last action reversed with undo.</source>
+      <translation>Re-apply the last action reversed with undo.</translation>
+    </message>
+    <message>
+      <source>Cut</source>
+      <translation>Cut</translation>
+    </message>
+    <message>
+      <source>Remove selected image content in the active layer.</source>
+      <translation>Remove selected image content in the active layer.</translation>
+    </message>
+    <message>
+      <source>Copy</source>
+      <translation>Copy</translation>
+    </message>
+    <message>
+      <source>Copy selected image content in the active layer.</source>
+      <translation>Copy selected image content in the active layer.</translation>
+    </message>
+    <message>
+      <source>Paste</source>
+      <translation>Paste</translation>
+    </message>
+    <message>
+      <source>Insert copied image data into a new layer.</source>
+      <translation>Insert copied image data into a new layer.</translation>
+    </message>
+    <message>
+      <source>Clear</source>
+      <translation>Clear</translation>
+    </message>
+    <message>
+      <source>Delete selected image content in the active layer.</source>
+      <translation>Delete selected image content in the active layer.</translation>
+    </message>
+    <message>
+      <source>Resize canvas</source>
+      <translation>Resize canvas</translation>
+    </message>
+    <message>
+      <source>Change the image size without scaling layers.</source>
+      <translation>Change the image size without scaling layers.</translation>
+    </message>
+    <message>
+      <source>Scale image</source>
+      <translation>Scale image</translation>
+    </message>
+    <message>
+      <source>Scale image content to a new size.</source>
+      <translation>Scale image content to a new size.</translation>
+    </message>
+    <message>
+      <source>Resize image to content</source>
+      <translation>Resize image to content</translation>
+    </message>
+    <message>
+      <source>Resize the image to fit all layers</source>
+      <translation>Resize the image to fit all layers</translation>
+    </message>
+    <message>
+      <source>Update metadata</source>
+      <translation>Update metadata</translation>
+    </message>
+    <message>
+      <source>Update image metadata that will be saved with the file.</source>
+      <translation>Update image metadata that will be saved with the file.</translation>
+    </message>
+    <message>
+      <source>Generate</source>
+      <translation>Generate</translation>
+    </message>
+    <message>
+      <source>Start AI image generation.</source>
+      <translation>Start AI image generation.</translation>
+    </message>
+    <message>
+      <source>Select All</source>
+      <translation>Select All</translation>
+    </message>
+    <message>
+      <source>Select the entire image</source>
+      <translation>Select the entire image</translation>
+    </message>
+    <message>
+      <source>Deselect All</source>
+      <translation>Deselect All</translation>
+    </message>
+    <message>
+      <source>Clear the selection</source>
+      <translation>Clear the selection</translation>
+    </message>
+    <message>
+      <source>Invert selection</source>
+      <translation>Invert selection</translation>
+    </message>
+    <message>
+      <source>Swap selected and unselected areas</source>
+      <translation>Swap selected and unselected areas</translation>
+    </message>
+    <message>
+      <source>Select layer content</source>
+      <translation>Select layer content</translation>
+    </message>
+    <message>
+      <source>Select all non-transparent pixels in the active layer</source>
+      <translation>Select all non-transparent pixels in the active layer</translation>
+    </message>
+    <message>
+      <source>Expand selection</source>
+      <translation>Expand selection</translation>
+    </message>
+    <message>
+      <source>Expand the selection bounds</source>
+      <translation>Expand the selection bounds</translation>
+    </message>
+    <message>
+      <source>Shrink selection</source>
+      <translation>Shrink selection</translation>
+    </message>
+    <message>
+      <source>Shrink the selection bounds</source>
+      <translation>Shrink the selection bounds</translation>
+    </message>
+    <message>
+      <source>New layer</source>
+      <translation>New layer</translation>
+    </message>
+    <message>
+      <source>Create a new layer above the active layer.</source>
+      <translation>Create a new layer above the active layer.</translation>
+    </message>
+    <message>
+      <source>New layer group</source>
+      <translation>New layer group</translation>
+    </message>
+    <message>
+      <source>Create a new layer group above the active layer.</source>
+      <translation>Create a new layer group above the active layer.</translation>
+    </message>
+    <message>
+      <source>Copy layer</source>
+      <translation>Copy layer</translation>
+    </message>
+    <message>
+      <source>Create a copy of the active layer.</source>
+      <translation>Create a copy of the active layer.</translation>
+    </message>
+    <message>
+      <source>Delete layer</source>
+      <translation>Delete layer</translation>
+    </message>
+    <message>
+      <source>Delete the active layer.</source>
+      <translation>Delete the active layer.</translation>
+    </message>
+    <message>
+      <source>Select previous layer</source>
+      <translation>Select previous layer</translation>
+    </message>
+    <message>
+      <source>Switch to the next layer up.</source>
+      <translation>Switch to the next layer up.</translation>
+    </message>
+    <message>
+      <source>Select next layer</source>
+      <translation>Select next layer</translation>
+    </message>
+    <message>
+      <source>Switch to the next layer down.</source>
+      <translation>Switch to the next layer down.</translation>
+    </message>
+    <message>
+      <source>Move layer up</source>
+      <translation>Move layer up</translation>
+    </message>
+    <message>
+      <source>Move the active layer up</source>
+      <translation>Move the active layer up</translation>
+    </message>
+    <message>
+      <source>Move layer down</source>
+      <translation>Move layer down</translation>
+    </message>
+    <message>
+      <source>Move the active layer down</source>
+      <translation>Move the active layer down</translation>
+    </message>
+    <message>
+      <source>Merge layer down</source>
+      <translation>Merge layer down</translation>
+    </message>
+    <message>
+      <source>Merge the active layer with the one below it</source>
+      <translation>Merge the active layer with the one below it</translation>
+    </message>
+    <message>
+      <source>Layer to image size</source>
+      <translation>Layer to image size</translation>
+    </message>
+    <message>
+      <source>Expand or crop the active layer to match the image bounds.</source>
+      <translation>Expand or crop the active layer to match the image bounds.</translation>
+    </message>
+    <message>
+      <source>Crop layer to contents</source>
+      <translation>Crop layer to contents</translation>
+    </message>
+    <message>
+      <source>Crop transparent borders in the active layer.</source>
+      <translation>Crop transparent borders in the active layer.</translation>
+    </message>
+    <message>
+      <source>Show layer window</source>
+      <translation>Show layer window</translation>
+    </message>
+    <message>
+      <source>Open the image layer panel in a new window.</source>
+      <translation>Open the image layer panel in a new window.</translation>
+    </message>
+    <message>
+      <source>Settings</source>
+      <translation>Settings</translation>
+    </message>
+    <message>
+      <source>Open the application settings window.</source>
+      <translation>Open the application settings window.</translation>
+    </message>
+    <message>
+      <source>LCM Mode</source>
+      <translation>LCM Mode</translation>
+    </message>
+    <message>
+      <source>Apply appropriate settings for the LCM LORA.</source>
+      <translation>Apply appropriate settings for the LCM LORA.</translation>
+    </message>
+    <message>
+      <source>Show Image Window</source>
+      <translation>Show Image Window</translation>
+    </message>
+    <message>
+      <source>Open a new window showing the edited image.</source>
+      <translation>Open a new window showing the edited image.</translation>
+    </message>
+    <message>
+      <source>Select Image Generator</source>
+      <translation>Select Image Generator</translation>
+    </message>
+    <message>
+      <source>Selects an AI image generator</source>
+      <translation>Selects an AI image generator</translation>
+    </message>
+    <message>
+      <source>RGBA Color Balance</source>
+      <translation>RGBA Color Balance</translation>
+    </message>
+    <message>
+      <source>Adjust RGBA color channels</source>
+      <translation>Adjust RGBA color channels</translation>
+    </message>
+    <message>
+      <source>Brightness/Contrast</source>
+      <translation>Brightness/Contrast</translation>
+    </message>
+    <message>
+      <source>Adjust image brightness/contrast</source>
+      <translation>Adjust image brightness/contrast</translation>
+    </message>
+    <message>
+      <source>Blur</source>
+      <translation>Blur</translation>
+    </message>
+    <message>
+      <source>Image blurring</source>
+      <translation>Image blurring</translation>
+    </message>
+    <message>
+      <source>Sharpen</source>
+      <translation>Sharpen</translation>
+    </message>
+    <message>
+      <source>Sharpen image details</source>
+      <translation>Sharpen image details</translation>
+    </message>
+    <message>
+      <source>Posterize</source>
+      <translation>Posterize</translation>
+    </message>
+    <message>
+      <source>Simplify layer color palette</source>
+      <translation>Simplify layer color palette</translation>
+    </message>
+    <message>
+      <source>View saved prompt styles</source>
+      <translation>View saved prompt styles</translation>
+    </message>
+    <message>
+      <source>Access saved stable-diffusion prompt styles</source>
+      <translation>Access saved stable-diffusion prompt styles</translation>
+    </message>
+    <message>
+      <source>View Lora models</source>
+      <translation>View Lora models</translation>
+    </message>
+    <message>
+      <source>Access available Lora models.</source>
+      <translation>Access available Lora models.</translation>
     </message>
     <message>
       <location filename="../config/key_config_definitions.json" line="3"/>
@@ -1087,6 +2974,11 @@
   <context>
     <name>controller.image_generation.glid3_webservice_generator</name>
     <message>
+      <location filename="../../src/controller/image_generation/glid3_webservice_generator.py" line="33"/>
+      <source>GLID-3-XL image generation server</source>
+      <translation>GLID-3-XL image generation server</translation>
+    </message>
+    <message>
       <location filename="../../src/controller/image_generation/glid3_webservice_generator.py" line="34"/>
       <source>&lt;h2&gt;GLID-3-XL server setup&lt;/h2&gt;&lt;p&gt;NOTE: Because GLID-3-XL is mainly a historical curiosity at this point, few steps have been taken to simplify the setup process. As the software involved becomes increasingly outdated, further steps may be necessary to get this generator to work.&lt;/p&gt;&lt;p&gt;The original preferred way to use this mode relied on a Google Colab notebook, found &lt;a href="https://colab.research.google.com/github/centuryglass/IntraPaint/blob/colab-refactor/colabFiles/IntraPaint_colab_server.ipynb"&gt;here&lt;/a&gt;. This approach is discouraged by Google and no longer seems to work using the free tier of Google Colab. It may or may not work on the paid tier, or if additional steps are taken to replace the ngrok service used to handle external connections. Steps for running the server on your own machine are as follows:&lt;ol&gt;&lt;li&gt;Make sure the server system has a NVIDIA GPU with at least 8GB of VRAM. Other GPUsor slightly less memory may work, but are not tested.&lt;/li&gt;&lt;li&gt;Install required dependencies:&lt;/li&gt;&lt;ol&gt;&lt;li&gt;&lt;a href="https://www.python.org/"&gt;Python3&lt;/a&gt;&lt;/li&gt;&lt;li&gt;&lt;a href="https://git-scm.com/"&gt;Git&lt;/a&gt;&lt;/li&gt;&lt;li&gt;&lt;a href="https://developer.nvidia.com/cuda-toolkit"&gt;CUDA&lt;/a&gt; (if using a NVIDIA graphics card)&lt;/li&gt;&lt;li&gt;&lt;a href="https://www.anaconda.com/download/"&gt;Anaconda&lt;/a&gt;&lt;/li&gt;&lt;/ol&gt;&lt;li&gt;Depending on your system, you may need to take extra steps to add Python, Git, and Anaconda to your system path, or perform other configuration steps. Refer to the sites linked above for full documentation.&lt;/li&gt;&lt;li&gt;In a terminal window, run `&lt;code&gt;conda create -n intrapaint-server&lt;/code&gt;`, then `&lt;code&gt;conda activate intrapaint-server&lt;/code&gt;` to prepare to install additional dependencies.&lt;/li&gt;&lt;li&gt;Next run `&lt;code&gt;git clone https://github.com/centuryglass/IntraPaint.git&lt;/code&gt;` to download the full IntraPaint repository, then change directory to the new IntraPaint folder that this creates.&lt;/li&gt;&lt;li&gt;Within the the terminal in the IntraPaint directory with the `intrapaint-server`environment active, install the appropriate versions of torch and torchvision found &lt;a href="https://pytorch.org/get-started/locally/"&gt;here&lt;/a&gt;.&lt;li&gt;Run `&lt;code&gt;conda install pip&lt;/code&gt;` to make sure the environment has its own copy of the python package manager.&lt;/li&gt;&lt;li&gt;Run `&lt;code&gt;pip install -r requirements-glid.txt&lt;/code&gt;` to install additional dependencies.&lt;/li&gt;&lt;li&gt;Run the following Git commands to add two other required dependencies:&lt;li&gt;&lt;ol&gt;&lt;li&gt;`&lt;code&gt;git clone https://github.com/CompVis/taming-transformers.git&lt;/code&gt;`&lt;/li&gt;&lt;li&gt;`&lt;code&gt;git clone https://github.com/CompVis/latent-diffusion.git&lt;/code&gt;`&lt;/li&gt;&lt;li&gt;Download one or more GLID-3-XL inpainting models, and place them in the IntraPaint/models/ directory. These are the main options available:&lt;li&gt;&lt;ol&gt;&lt;li&gt;&lt;a href="https://dall-3.com/models/glid-3-xl/"&gt;inpaint.pt&lt;/a&gt;, the original GLID-3-XL inpainting model&lt;/li&gt;&lt;li&gt;&lt;a href="https://huggingface.co/laion/ongo/resolve/main/ongo.pt&gt;ongo.pt&lt;/a&gt;, trained by LAION on paintings from the Wikiart dataset&lt;/li&gt;&lt;li&gt;&lt;a href="https://huggingface.co/laion/erlich/resolve/main/model/ema_0.9999_120000.pt"&gt;erlich.pt&lt;/a&gt;, trained on the LAION large logo dataset&lt;/li&gt;&lt;/ol&gt;&lt;li&gt;Start the server by running &lt;code&gt;python IntraPaint_server.py&lt;/code&gt;. If you are using a model other than the default inpaint.pt, instead run `&lt;code&gt;python Intrapaint_server.py --model_path models/model.pt&lt;/code&gt;`, replacing "model.pt" with the file name of whatever model you are using.&lt;/li&gt;&lt;li&gt;If the setup was successful, something like "* Running on http://192.168.0.XXX:5555" will be printed in the console  after a short delay. You can now activate this generator, entering that URL when prompted.</source>
       <translation>&lt;h2&gt;GLID-3-XL server setup&lt;/h2&gt;&lt;p&gt;NOTE: Because GLID-3-XL is mainly a historical curiosity at this point, few steps have been taken to simplify the setup process. As the software involved becomes increasingly outdated, further steps may be necessary to get this generator to work.&lt;/p&gt;&lt;p&gt;The original preferred way to use this mode relied on a Google Colab notebook, found &lt;a href="https://colab.research.google.com/github/centuryglass/IntraPaint/blob/colab-refactor/colabFiles/IntraPaint_colab_server.ipynb"&gt;here&lt;/a&gt;. This approach is discouraged by Google and no longer seems to work using the free tier of Google Colab. It may or may not work on the paid tier, or if additional steps are taken to replace the ngrok service used to handle external connections. Steps for running the server on your own machine are as follows:&lt;ol&gt;&lt;li&gt;Make sure the server system has a NVIDIA GPU with at least 8GB of VRAM. Other GPUsor slightly less memory may work, but are not tested.&lt;/li&gt;&lt;li&gt;Install required dependencies:&lt;/li&gt;&lt;ol&gt;&lt;li&gt;&lt;a href="https://www.python.org/"&gt;Python3&lt;/a&gt;&lt;/li&gt;&lt;li&gt;&lt;a href="https://git-scm.com/"&gt;Git&lt;/a&gt;&lt;/li&gt;&lt;li&gt;&lt;a href="https://developer.nvidia.com/cuda-toolkit"&gt;CUDA&lt;/a&gt; (if using a NVIDIA graphics card)&lt;/li&gt;&lt;li&gt;&lt;a href="https://www.anaconda.com/download/"&gt;Anaconda&lt;/a&gt;&lt;/li&gt;&lt;/ol&gt;&lt;li&gt;Depending on your system, you may need to take extra steps to add Python, Git, and Anaconda to your system path, or perform other configuration steps. Refer to the sites linked above for full documentation.&lt;/li&gt;&lt;li&gt;In a terminal window, run `&lt;code&gt;conda create -n intrapaint-server&lt;/code&gt;`, then `&lt;code&gt;conda activate intrapaint-server&lt;/code&gt;` to prepare to install additional dependencies.&lt;/li&gt;&lt;li&gt;Next run `&lt;code&gt;git clone https://github.com/centuryglass/IntraPaint.git&lt;/code&gt;` to download the full IntraPaint repository, then change directory to the new IntraPaint folder that this creates.&lt;/li&gt;&lt;li&gt;Within the the terminal in the IntraPaint directory with the `intrapaint-server`environment active, install the appropriate versions of torch and torchvision found &lt;a href="https://pytorch.org/get-started/locally/"&gt;here&lt;/a&gt;.&lt;li&gt;Run `&lt;code&gt;conda install pip&lt;/code&gt;` to make sure the environment has its own copy of the python package manager.&lt;/li&gt;&lt;li&gt;Run `&lt;code&gt;pip install -r requirements-glid.txt&lt;/code&gt;` to install additional dependencies.&lt;/li&gt;&lt;li&gt;Run the following Git commands to add two other required dependencies:&lt;li&gt;&lt;ol&gt;&lt;li&gt;`&lt;code&gt;git clone https://github.com/CompVis/taming-transformers.git&lt;/code&gt;`&lt;/li&gt;&lt;li&gt;`&lt;code&gt;git clone https://github.com/CompVis/latent-diffusion.git&lt;/code&gt;`&lt;/li&gt;&lt;li&gt;Download one or more GLID-3-XL inpainting models, and place them in the IntraPaint/models/ directory. These are the main options available:&lt;li&gt;&lt;ol&gt;&lt;li&gt;&lt;a href="https://dall-3.com/models/glid-3-xl/"&gt;inpaint.pt&lt;/a&gt;, the original GLID-3-XL inpainting model&lt;/li&gt;&lt;li&gt;&lt;a href="https://huggingface.co/laion/ongo/resolve/main/ongo.pt&gt;ongo.pt&lt;/a&gt;, trained by LAION on paintings from the Wikiart dataset&lt;/li&gt;&lt;li&gt;&lt;a href="https://huggingface.co/laion/erlich/resolve/main/model/ema_0.9999_120000.pt"&gt;erlich.pt&lt;/a&gt;, trained on the LAION large logo dataset&lt;/li&gt;&lt;/ol&gt;&lt;li&gt;Start the server by running &lt;code&gt;python IntraPaint_server.py&lt;/code&gt;. If you are using a model other than the default inpaint.pt, instead run `&lt;code&gt;python Intrapaint_server.py --model_path models/model.pt&lt;/code&gt;`, replacing "model.pt" with the file name of whatever model you are using.&lt;/li&gt;&lt;li&gt;If the setup was successful, something like "* Running on http://192.168.0.XXX:5555" will be printed in the console  after a short delay. You can now activate this generator, entering that URL when prompted.</translation>
@@ -1342,16 +3234,21 @@
       <source>{modifier_or_modifiers}:pick color - </source>
       <translation>{modifier_or_modifiers}:pick color - </translation>
     </message>
+    <message>
+      <location filename="../../src/tools/brush_tool.py" line="40"/>
+      <source>Paint selection only</source>
+      <translation>Paint selection only</translation>
+    </message>
   </context>
   <context>
     <name>tools.canvas_tool</name>
     <message>
-      <location filename="../../src/tools/canvas_tool.py" line="34"/>
+      <location filename="../../src/tools/canvas_tool.py" line="35"/>
       <source>{modifier_or_modifiers}+click: line mode - </source>
       <translation>{modifier_or_modifiers}+click: line mode - </translation>
     </message>
     <message>
-      <location filename="../../src/tools/canvas_tool.py" line="35"/>
+      <location filename="../../src/tools/canvas_tool.py" line="36"/>
       <source>{modifier_or_modifiers}: fixed angle - </source>
       <translation>{modifier_or_modifiers}: fixed angle - </translation>
     </message>
@@ -1513,19 +3410,29 @@
   <context>
     <name>tools.selection_fill_tool</name>
     <message>
-      <location filename="../../src/tools/selection_fill_tool.py" line="31"/>
+      <location filename="../../src/tools/selection_fill_tool.py" line="32"/>
       <source>Selection fill</source>
       <translation>Selection fill</translation>
     </message>
     <message>
-      <location filename="../../src/tools/selection_fill_tool.py" line="32"/>
+      <location filename="../../src/tools/selection_fill_tool.py" line="33"/>
       <source>Select areas with solid colors</source>
       <translation>Select areas with solid colors</translation>
     </message>
     <message>
-      <location filename="../../src/tools/selection_fill_tool.py" line="33"/>
+      <location filename="../../src/tools/selection_fill_tool.py" line="34"/>
       <source>LMB:select - RMB:deselect - </source>
       <translation>LMB:select - RMB:deselect - </translation>
+    </message>
+    <message>
+      <location filename="../../src/tools/selection_fill_tool.py" line="35"/>
+      <source>Fill selection holes</source>
+      <translation>Fill selection holes</translation>
+    </message>
+    <message>
+      <location filename="../../src/tools/selection_fill_tool.py" line="36"/>
+      <source>Fill based on selection shape only.</source>
+      <translation>Fill based on selection shape only.</translation>
     </message>
   </context>
   <context>
@@ -1732,715 +3639,6 @@
       <location filename="../../src/ui/window/generator_setup_window.py" line="29"/>
       <source>&lt;h1&gt;Generator Options:&lt;/h1&gt;</source>
       <translation>&lt;h1&gt;Generator Options:&lt;/h1&gt;</translation>
-    </message>
-  </context>
-  <context>
-    <name>config.a1111_config</name>
-    <message>
-      <location filename="../config/a1111_setting_definitions.json" line="3"/>
-      <source>Stable-Diffusion Model:</source>
-      <translation>Stable-Diffusion Model:</translation>
-    </message>
-    <message>
-      <location filename="../config/a1111_setting_definitions.json" line="5"/>
-      <source>Active image generation model</source>
-      <translation>Active image generation model</translation>
-    </message>
-    <message>
-      <location filename="../config/a1111_setting_definitions.json" line="10"/>
-      <source>Only keep one model on GPU/TPU</source>
-      <translation>Only keep one model on GPU/TPU</translation>
-    </message>
-    <message>
-      <location filename="../config/a1111_setting_definitions.json" line="12"/>
-      <source>If selected, checkpoints after the first are cached in RAM instead</source>
-      <translation>If selected, checkpoints after the first are cached in RAM instead</translation>
-    </message>
-    <message>
-      <location filename="../config/a1111_setting_definitions.json" line="16"/>
-      <source>Max checkpoints loaded:</source>
-      <translation>Max checkpoints loaded:</translation>
-    </message>
-    <message>
-      <location filename="../config/a1111_setting_definitions.json" line="18"/>
-      <source>Number of image generation models to keep in memory.</source>
-      <translation>Number of image generation models to keep in memory.</translation>
-    </message>
-    <message>
-      <location filename="../config/a1111_setting_definitions.json" line="27"/>
-      <source>Stable-Diffusion VAE model:</source>
-      <translation>Stable-Diffusion VAE model:</translation>
-    </message>
-    <message>
-      <location filename="../config/a1111_setting_definitions.json" line="29"/>
-      <source>VAE model used for final image data creation.</source>
-      <translation>VAE model used for final image data creation.</translation>
-    </message>
-    <message>
-      <location filename="../config/a1111_setting_definitions.json" line="34"/>
-      <source>Stable-Diffusion VAE models cached:</source>
-      <translation>Stable-Diffusion VAE models cached:</translation>
-    </message>
-    <message>
-      <location filename="../config/a1111_setting_definitions.json" line="36"/>
-      <source>Number of VAE models to keep in memory.</source>
-      <translation>Number of VAE models to keep in memory.</translation>
-    </message>
-    <message>
-      <location filename="../config/a1111_setting_definitions.json" line="45"/>
-      <source>CLIP skip:</source>
-      <translation>CLIP skip:</translation>
-    </message>
-    <message>
-      <location filename="../config/a1111_setting_definitions.json" line="47"/>
-      <source>Number of final image generation steps taken without prompt guidance.</source>
-      <translation>Number of final image generation steps taken without prompt guidance.</translation>
-    </message>
-  </context>
-  <context>
-    <name>config.application_config</name>
-    <message>
-      <location filename="../config/application_config_definitions.json" line="3"/>
-      <source>Style:</source>
-      <translation>Style:</translation>
-    </message>
-    <message>
-      <location filename="../config/application_config_definitions.json" line="5"/>
-      <source>Qt style to use for the user interface</source>
-      <translation>Qt style to use for the user interface</translation>
-    </message>
-    <message>
-      <location filename="../config/application_config_definitions.json" line="12"/>
-      <source>Theme:</source>
-      <translation>Theme:</translation>
-    </message>
-    <message>
-      <location filename="../config/application_config_definitions.json" line="14"/>
-      <source>Theme to use for the user interface (may require restart)</source>
-      <translation>Theme to use for the user interface (may require restart)</translation>
-    </message>
-    <message>
-      <location filename="../config/application_config_definitions.json" line="21"/>
-      <source>Font size:</source>
-      <translation>Font size:</translation>
-    </message>
-    <message>
-      <location filename="../config/application_config_definitions.json" line="23"/>
-      <source>Font point size to use for user interface text (may require restart)</source>
-      <translation>Font point size to use for user interface text (may require restart)</translation>
-    </message>
-    <message>
-      <location filename="../config/application_config_definitions.json" line="29"/>
-      <source>Animate outlines and selections:</source>
-      <translation>Animate outlines and selections:</translation>
-    </message>
-    <message>
-      <location filename="../config/application_config_definitions.json" line="31"/>
-      <source>Enable or disable animated outlines (may require restart)</source>
-      <translation>Enable or disable animated outlines (may require restart)</translation>
-    </message>
-    <message>
-      <location filename="../config/application_config_definitions.json" line="37"/>
-      <source>Selection overlay color:</source>
-      <translation>Selection overlay color:</translation>
-    </message>
-    <message>
-      <location filename="../config/application_config_definitions.json" line="39"/>
-      <source>Overlay color used to highlight selected image areas</source>
-      <translation>Overlay color used to highlight selected image areas</translation>
-    </message>
-    <message>
-      <location filename="../config/application_config_definitions.json" line="45"/>
-      <source>Show selections in generated image options:</source>
-      <translation>Show selections in generated image options:</translation>
-    </message>
-    <message>
-      <location filename="../config/application_config_definitions.json" line="47"/>
-      <source>Draw the selection borders when choosing inpainted image options.</source>
-      <translation>Draw the selection borders when choosing inpainted image options.</translation>
-    </message>
-    <message>
-      <location filename="../config/application_config_definitions.json" line="53"/>
-      <source>Show generated images zoomed to changes:</source>
-      <translation>Show generated images zoomed to changes:</translation>
-    </message>
-    <message>
-      <location filename="../config/application_config_definitions.json" line="55"/>
-      <source>When zooming in on individual inpainting options, focus the change region.</source>
-      <translation>When zooming in on individual inpainting options, focus the change region.</translation>
-    </message>
-    <message>
-      <location filename="../config/application_config_definitions.json" line="61"/>
-      <source>Show generated image options at original size</source>
-      <translation>Show generated image options at original size</translation>
-    </message>
-    <message>
-      <location filename="../config/application_config_definitions.json" line="63"/>
-      <source>When the selected image size doesn't match the image generation resolution, preview options using the generated size.</source>
-      <translation>When the selected image size doesn't match the image generation resolution, preview options using the generated size.</translation>
-    </message>
-    <message>
-      <location filename="../config/application_config_definitions.json" line="69"/>
-      <source>OpenGL acceleration:</source>
-      <translation>OpenGL acceleration:</translation>
-    </message>
-    <message>
-      <location filename="../config/application_config_definitions.json" line="71"/>
-      <source>Use OpenGL to accelerate image manipulation</source>
-      <translation>Use OpenGL to accelerate image manipulation</translation>
-    </message>
-    <message>
-      <location filename="../config/application_config_definitions.json" line="77"/>
-      <source>Default image size:</source>
-      <translation>Default image size:</translation>
-    </message>
-    <message>
-      <location filename="../config/application_config_definitions.json" line="79"/>
-      <source>Default size when creating new images</source>
-      <translation>Default size when creating new images</translation>
-    </message>
-    <message>
-      <location filename="../config/application_config_definitions.json" line="85"/>
-      <source>Editing size:</source>
-      <translation>Editing size:</translation>
-    </message>
-    <message>
-      <location filename="../config/application_config_definitions.json" line="87"/>
-      <source>Current/initial size in pixels of the area selected for editing</source>
-      <translation>Current/initial size in pixels of the area selected for editing</translation>
-    </message>
-    <message>
-      <location filename="../config/application_config_definitions.json" line="93"/>
-      <source>Maximum editing size:</source>
-      <translation>Maximum editing size:</translation>
-    </message>
-    <message>
-      <location filename="../config/application_config_definitions.json" line="95"/>
-      <source>Maximum size in pixels of the area selected for editing</source>
-      <translation>Maximum size in pixels of the area selected for editing</translation>
-    </message>
-    <message>
-      <location filename="../config/application_config_definitions.json" line="101"/>
-      <source>Minimum editing size:</source>
-      <translation>Minimum editing size:</translation>
-    </message>
-    <message>
-      <location filename="../config/application_config_definitions.json" line="103"/>
-      <source>Minimum size in pixels of the area selected for editing</source>
-      <translation>Minimum size in pixels of the area selected for editing</translation>
-    </message>
-    <message>
-      <location filename="../config/application_config_definitions.json" line="109"/>
-      <source>Generation size:</source>
-      <translation>Generation size:</translation>
-    </message>
-    <message>
-      <location filename="../config/application_config_definitions.json" line="111"/>
-      <source>Current/initial size in pixels used for AI image generation</source>
-      <translation>Current/initial size in pixels used for AI image generation</translation>
-    </message>
-    <message>
-      <location filename="../config/application_config_definitions.json" line="117"/>
-      <source>Maximum generation size:</source>
-      <translation>Maximum generation size:</translation>
-    </message>
-    <message>
-      <location filename="../config/application_config_definitions.json" line="119"/>
-      <source>Maximum size in pixels allowed for AI image generation</source>
-      <translation>Maximum size in pixels allowed for AI image generation</translation>
-    </message>
-    <message>
-      <location filename="../config/application_config_definitions.json" line="125"/>
-      <source>Minimum generation size:</source>
-      <translation>Minimum generation size:</translation>
-    </message>
-    <message>
-      <location filename="../config/application_config_definitions.json" line="127"/>
-      <source>Minimum size in pixels allowed for AI image generation</source>
-      <translation>Minimum size in pixels allowed for AI image generation</translation>
-    </message>
-    <message>
-      <location filename="../config/application_config_definitions.json" line="133"/>
-      <source>Selection brush size:</source>
-      <translation>Selection brush size:</translation>
-    </message>
-    <message>
-      <location filename="../config/application_config_definitions.json" line="135"/>
-      <source>Current/initial brush size (in pixels) for the selection tool.</source>
-      <translation>Current/initial brush size (in pixels) for the selection tool.</translation>
-    </message>
-    <message>
-      <location filename="../config/application_config_definitions.json" line="146"/>
-      <source>Brush size:</source>
-      <translation>Brush size:</translation>
-    </message>
-    <message>
-      <location filename="../config/application_config_definitions.json" line="148"/>
-      <source>Current/initial brush size (in pixels) for the drawing/painting tool.</source>
-      <translation>Current/initial brush size (in pixels) for the drawing/painting tool.</translation>
-    </message>
-    <message>
-      <location filename="../config/application_config_definitions.json" line="159"/>
-      <source>Selected MyPaint brush:</source>
-      <translation>Selected MyPaint brush:</translation>
-    </message>
-    <message>
-      <location filename="../config/application_config_definitions.json" line="161"/>
-      <source>Currently selected MyPaint brush file.</source>
-      <translation>Currently selected MyPaint brush file.</translation>
-    </message>
-    <message>
-      <location filename="../config/application_config_definitions.json" line="167"/>
-      <source>Favorite MyPaint brushes:</source>
-      <translation>Favorite MyPaint brushes:</translation>
-    </message>
-    <message>
-      <location filename="../config/application_config_definitions.json" line="169"/>
-      <source>Brushes to list in the 'Favorites' tab of the brush selection window</source>
-      <translation>Brushes to list in the 'Favorites' tab of the brush selection window</translation>
-    </message>
-    <message>
-      <location filename="../config/application_config_definitions.json" line="175"/>
-      <source>Maximum undo count:</source>
-      <translation>Maximum undo count:</translation>
-    </message>
-    <message>
-      <location filename="../config/application_config_definitions.json" line="177"/>
-      <source>Number of actions that can be reversed using the 'undo' option.</source>
-      <translation>Number of actions that can be reversed using the 'undo' option.</translation>
-    </message>
-    <message>
-      <location filename="../config/application_config_definitions.json" line="183"/>
-      <source>Undo merge interval (seconds):</source>
-      <translation>Undo merge interval (seconds):</translation>
-    </message>
-    <message>
-      <location filename="../config/application_config_definitions.json" line="185"/>
-      <source>Similar actions will be combined in the undo history if the time between them is less than this.</source>
-      <translation>Similar actions will be combined in the undo history if the time between them is less than this.</translation>
-    </message>
-    <message>
-      <location filename="../config/application_config_definitions.json" line="191"/>
-      <source>'Speed modifier' key multiplier:</source>
-      <translation>'Speed modifier' key multiplier:</translation>
-    </message>
-    <message>
-      <location filename="../config/application_config_definitions.json" line="193"/>
-      <source>Controls how much faster changes happen when the 'speed_modifier' key is held down</source>
-      <translation>Controls how much faster changes happen when the 'speed_modifier' key is held down</translation>
-    </message>
-    <message>
-      <location filename="../config/application_config_definitions.json" line="199"/>
-      <source>Prompt:</source>
-      <translation>Prompt:</translation>
-    </message>
-    <message>
-      <location filename="../config/application_config_definitions.json" line="201"/>
-      <source>Description that generated images should match.</source>
-      <translation>Description that generated images should match.</translation>
-    </message>
-    <message>
-      <location filename="../config/application_config_definitions.json" line="207"/>
-      <source>Negative prompt:</source>
-      <translation>Negative prompt:</translation>
-    </message>
-    <message>
-      <location filename="../config/application_config_definitions.json" line="209"/>
-      <source>Description that generated images should not match.</source>
-      <translation>Description that generated images should not match.</translation>
-    </message>
-    <message>
-      <location filename="../config/application_config_definitions.json" line="215"/>
-      <source>Guidance scale:</source>
-      <translation>Guidance scale:</translation>
-    </message>
-    <message>
-      <location filename="../config/application_config_definitions.json" line="217"/>
-      <source>Controls how strongly the prompt and negative prompt are applied. Higher values are more consistent but may be less creative.  Overly high or low values may cause image distortion.</source>
-      <translation>Controls how strongly the prompt and negative prompt are applied. Higher values are more consistent but may be less creative.  Overly high or low values may cause image distortion.</translation>
-    </message>
-    <message>
-      <location filename="../config/application_config_definitions.json" line="228"/>
-      <source>Batch size:</source>
-      <translation>Batch size:</translation>
-    </message>
-    <message>
-      <location filename="../config/application_config_definitions.json" line="230"/>
-      <source>Number of image options to simultaneously create in a single image editing operation. Increasing this value too much may result in errors or slowdown if GPU memory limits are reached.</source>
-      <translation>Number of image options to simultaneously create in a single image editing operation. Increasing this value too much may result in errors or slowdown if GPU memory limits are reached.</translation>
-    </message>
-    <message>
-      <location filename="../config/application_config_definitions.json" line="241"/>
-      <source>Batch count:</source>
-      <translation>Batch count:</translation>
-    </message>
-    <message>
-      <location filename="../config/application_config_definitions.json" line="243"/>
-      <source>Number of image batches to create in a single image editing operation. Increasing this value doesn't require additional memory, but it slows down image editing more than increasing the batch size does.</source>
-      <translation>Number of image batches to create in a single image editing operation. Increasing this value doesn't require additional memory, but it slows down image editing more than increasing the batch size does.</translation>
-    </message>
-    <message>
-      <location filename="../config/application_config_definitions.json" line="254"/>
-      <source>Edit mode:</source>
-      <translation>Edit mode:</translation>
-    </message>
-    <message>
-      <location filename="../config/application_config_definitions.json" line="256"/>
-      <source>Stable-Diffusion image editing mode. 'Text to Image' completely replaces the selected image section with new content, 'Image to Image' creates altered versions of the image selection, and 'Inpaint' works like 'Image to Image' except that it only affects areas selected by the mask tool</source>
-      <translation>Stable-Diffusion image editing mode. 'Text to Image' completely replaces the selected image section with new content, 'Image to Image' creates altered versions of the image selection, and 'Inpaint' works like 'Image to Image' except that it only affects areas selected by the mask tool</translation>
-    </message>
-    <message>
-      <location filename="../config/application_config_definitions.json" line="267"/>
-      <source>Masked content:</source>
-      <translation>Masked content:</translation>
-    </message>
-    <message>
-      <location filename="../config/application_config_definitions.json" line="269"/>
-      <source>Determines what should be used to fill the masked area before inpainting. 'fill' replaces it with a solid color, 'original' keeps it as-is, 'latent noise' replaces it with random data, and 'latent nothing' clears it. Unless you're inpainting with a denoising strength &gt;0.8, 'original' will almost always be the best option</source>
-      <translation>Determines what should be used to fill the masked area before inpainting. 'fill' replaces it with a solid color, 'original' keeps it as-is, 'latent noise' replaces it with random data, and 'latent nothing' clears it. Unless you're inpainting with a denoising strength &gt;0.8, 'original' will almost always be the best option</translation>
-    </message>
-    <message>
-      <location filename="../config/application_config_definitions.json" line="281"/>
-      <source>Image interrogation model:</source>
-      <translation>Image interrogation model:</translation>
-    </message>
-    <message>
-      <location filename="../config/application_config_definitions.json" line="283"/>
-      <source>Model used when auto-generating appropriate prompts using the 'interrogate' button. Supported values will vary based on what extensions you've installed into the stable-generation-webui, but 'clip' should always be accepted.</source>
-      <translation>Model used when auto-generating appropriate prompts using the 'interrogate' button. Supported values will vary based on what extensions you've installed into the stable-generation-webui, but 'clip' should always be accepted.</translation>
-    </message>
-    <message>
-      <location filename="../config/application_config_definitions.json" line="289"/>
-      <source>Sampling steps:</source>
-      <translation>Sampling steps:</translation>
-    </message>
-    <message>
-      <location filename="../config/application_config_definitions.json" line="291"/>
-      <source>Number of diffusion operations to perform when generating image data. Higher values take longer, but often produce more detailed and accurate results. Different stable-diffusion models and samplers have different requirements, but in most cates setting this higher than 30 has only minimal benefits</source>
-      <translation>Number of diffusion operations to perform when generating image data. Higher values take longer, but often produce more detailed and accurate results. Different stable-diffusion models and samplers have different requirements, but in most cates setting this higher than 30 has only minimal benefits</translation>
-    </message>
-    <message>
-      <location filename="../config/application_config_definitions.json" line="302"/>
-      <source>Denoising strength:</source>
-      <translation>Denoising strength:</translation>
-    </message>
-    <message>
-      <location filename="../config/application_config_definitions.json" line="304"/>
-      <source>Controls how dramatically inpainting and image-to-image operations will change the initial image data. At 0.0, the image will be completely unedited, at 1.0 the image will be completely different</source>
-      <translation>Controls how dramatically inpainting and image-to-image operations will change the initial image data. At 0.0, the image will be completely unedited, at 1.0 the image will be completely different</translation>
-    </message>
-    <message>
-      <location filename="../config/application_config_definitions.json" line="315"/>
-      <source>Sampling method:</source>
-      <translation>Sampling method:</translation>
-    </message>
-    <message>
-      <location filename="../config/application_config_definitions.json" line="317"/>
-      <source>Mathematical technique used to transform image data during the generation process. 'Euler a' works well in most cases, but certain models or extensions might perform better with other options.</source>
-      <translation>Mathematical technique used to transform image data during the generation process. 'Euler a' works well in most cases, but certain models or extensions might perform better with other options.</translation>
-    </message>
-    <message>
-      <location filename="../config/application_config_definitions.json" line="324"/>
-      <source>Upscale method:</source>
-      <translation>Upscale method:</translation>
-    </message>
-    <message>
-      <location filename="../config/application_config_definitions.json" line="326"/>
-      <source>Method to use when increasing image resolution. Available options will be loaded from the stable-diffusion-webui on launch.</source>
-      <translation>Method to use when increasing image resolution. Available options will be loaded from the stable-diffusion-webui on launch.</translation>
-    </message>
-    <message>
-      <location filename="../config/application_config_definitions.json" line="333"/>
-      <source>ControlNet tiled upscaling</source>
-      <translation>ControlNet tiled upscaling</translation>
-    </message>
-    <message>
-      <location filename="../config/application_config_definitions.json" line="335"/>
-      <source>Whether to use the ControlNet tile model to improve image upscaling. When enabled and supported, all other image generation options will influence upscaling results. To use this, the ControlNet extension needs to be installed in the stable-diffusion-webui, and the controlnet tile model needs to be downloaded to the correct folder.</source>
-      <translation>Whether to use the ControlNet tile model to improve image upscaling. When enabled and supported, all other image generation options will influence upscaling results. To use this, the ControlNet extension needs to be installed in the stable-diffusion-webui, and the controlnet tile model needs to be downloaded to the correct folder.</translation>
-    </message>
-    <message>
-      <location filename="../config/application_config_definitions.json" line="341"/>
-      <source>ControlNet tiled upscaling model:</source>
-      <translation>ControlNet tiled upscaling model:</translation>
-    </message>
-    <message>
-      <location filename="../config/application_config_definitions.json" line="343"/>
-      <source>ControlNet model to use for tiled upscaling, in the 'filename [hash]' format used by the webui. This only needs to change if a newer model is available if using a stable diffusion model not based on stable-diffusion 1.5.</source>
-      <translation>ControlNet model to use for tiled upscaling, in the 'filename [hash]' format used by the webui. This only needs to change if a newer model is available if using a stable diffusion model not based on stable-diffusion 1.5.</translation>
-    </message>
-    <message>
-      <location filename="../config/application_config_definitions.json" line="349"/>
-      <source>Tile downsample rate:</source>
-      <translation>Tile downsample rate:</translation>
-    </message>
-    <message>
-      <location filename="../config/application_config_definitions.json" line="351"/>
-      <source>Adjusts how strongly the ControlNet tile model preserves the original image data, higher values result in fewer changes.</source>
-      <translation>Adjusts how strongly the ControlNet tile model preserves the original image data, higher values result in fewer changes.</translation>
-    </message>
-    <message>
-      <location filename="../config/application_config_definitions.json" line="362"/>
-      <source>Mask blur:</source>
-      <translation>Mask blur:</translation>
-    </message>
-    <message>
-      <location filename="../config/application_config_definitions.json" line="364"/>
-      <source>Pixel radius to blur in the inpainting mask to smoothly combine edited and original image content.</source>
-      <translation>Pixel radius to blur in the inpainting mask to smoothly combine edited and original image content.</translation>
-    </message>
-    <message>
-      <location filename="../config/application_config_definitions.json" line="375"/>
-      <source>Seed:</source>
-      <translation>Seed:</translation>
-    </message>
-    <message>
-      <location filename="../config/application_config_definitions.json" line="377"/>
-      <source>Number used to control pseudo-random aspects of image generation, in most cases using the same seed with the same settings and inputs will always produce the same results. If set to -1, a different random seed will be used for each image generation. </source>
-      <translation>Number used to control pseudo-random aspects of image generation, in most cases using the same seed with the same settings and inputs will always produce the same results. If set to -1, a different random seed will be used for each image generation. </translation>
-    </message>
-    <message>
-      <location filename="../config/application_config_definitions.json" line="388"/>
-      <source>Inpaint Full Resolution</source>
-      <translation>Inpaint Full Resolution</translation>
-    </message>
-    <message>
-      <location filename="../config/application_config_definitions.json" line="390"/>
-      <source>If true, inpaint the masked area at higher resolution by ignoring the unmasked area. This can increase image quality by sacrificing awareness of additional image content.</source>
-      <translation>If true, inpaint the masked area at higher resolution by ignoring the unmasked area. This can increase image quality by sacrificing awareness of additional image content.</translation>
-    </message>
-    <message>
-      <location filename="../config/application_config_definitions.json" line="396"/>
-      <source>Padding:</source>
-      <translation>Padding:</translation>
-    </message>
-    <message>
-      <location filename="../config/application_config_definitions.json" line="398"/>
-      <source>Pixel radius outside of the masked area to include when inpainting when the 'Inpaint Full Resolution' option is enabled. Higher values increase contextual awareness while decreasing overall level of detail.</source>
-      <translation>Pixel radius outside of the masked area to include when inpainting when the 'Inpaint Full Resolution' option is enabled. Higher values increase contextual awareness while decreasing overall level of detail.</translation>
-    </message>
-    <message>
-      <location filename="../config/application_config_definitions.json" line="409"/>
-      <source>Restore faces</source>
-      <translation>Restore faces</translation>
-    </message>
-    <message>
-      <location filename="../config/application_config_definitions.json" line="411"/>
-      <source>Use a face restoration model to correct image data after stable-diffusion runs. In most cases you'll probably get better results without it.</source>
-      <translation>Use a face restoration model to correct image data after stable-diffusion runs. In most cases you'll probably get better results without it.</translation>
-    </message>
-    <message>
-      <location filename="../config/application_config_definitions.json" line="417"/>
-      <source>Tiling</source>
-      <translation>Tiling</translation>
-    </message>
-    <message>
-      <location filename="../config/application_config_definitions.json" line="419"/>
-      <source>Generate tiling images that can be seamlessly repeated.</source>
-      <translation>Generate tiling images that can be seamlessly repeated.</translation>
-    </message>
-    <message>
-      <location filename="../config/application_config_definitions.json" line="425"/>
-      <source>ControlNet Settings (first layer)</source>
-      <translation>ControlNet Settings (first layer)</translation>
-    </message>
-    <message>
-      <location filename="../config/application_config_definitions.json" line="427"/>
-      <source>First layer ControlNet extension settings.</source>
-      <translation>First layer ControlNet extension settings.</translation>
-    </message>
-    <message>
-      <location filename="../config/application_config_definitions.json" line="433"/>
-      <source>ControlNet Settings (second layer)</source>
-      <translation>ControlNet Settings (second layer)</translation>
-    </message>
-    <message>
-      <location filename="../config/application_config_definitions.json" line="435"/>
-      <source>Second layer ControlNet extension settings.</source>
-      <translation>Second layer ControlNet extension settings.</translation>
-    </message>
-    <message>
-      <location filename="../config/application_config_definitions.json" line="441"/>
-      <source>ControlNet Settings (third layer)</source>
-      <translation>ControlNet Settings (third layer)</translation>
-    </message>
-    <message>
-      <location filename="../config/application_config_definitions.json" line="435"/>
-      <source>Second layer ControlNet extension settings.</source>
-      <translation>Second layer ControlNet extension settings.</translation>
-    </message>
-    <message>
-      <location filename="../config/application_config_definitions.json" line="452"/>
-      <source>Detail reference count (cutn):</source>
-      <translation>Detail reference count (cutn):</translation>
-    </message>
-    <message>
-      <location filename="../config/application_config_definitions.json" line="454"/>
-      <source>Determines how many random cutouts from the input image are used to guide image generation. Higher values can introduce more detail and variation, but may also introduce more noise and irrelevant information.</source>
-      <translation>Determines how many random cutouts from the input image are used to guide image generation. Higher values can introduce more detail and variation, but may also introduce more noise and irrelevant information.</translation>
-    </message>
-    <message>
-      <location filename="../config/application_config_definitions.json" line="460"/>
-      <source>Skip steps:</source>
-      <translation>Skip steps:</translation>
-    </message>
-    <message>
-      <location filename="../config/application_config_definitions.json" line="462"/>
-      <source>Number of diffusion steps to skip. Higher values will result in faster image generation with decreased detail and accuracy.</source>
-      <translation>Number of diffusion steps to skip. Higher values will result in faster image generation with decreased detail and accuracy.</translation>
-    </message>
-    <message>
-      <location filename="../config/application_config_definitions.json" line="473"/>
-      <source>Upscale mode:</source>
-      <translation>Upscale mode:</translation>
-    </message>
-    <message>
-      <location filename="../config/application_config_definitions.json" line="475"/>
-      <source>Upscaling mode used when the inpainting resolution doesn't match the image generation area size.</source>
-      <translation>Upscaling mode used when the inpainting resolution doesn't match the image generation area size.</translation>
-    </message>
-    <message>
-      <location filename="../config/application_config_definitions.json" line="482"/>
-      <source>Downscale mode:</source>
-      <translation>Downscale mode:</translation>
-    </message>
-    <message>
-      <location filename="../config/application_config_definitions.json" line="484"/>
-      <source>Downscaling mode used when the inpainting resolution doesn't match the image generation area size.</source>
-      <translation>Downscaling mode used when the inpainting resolution doesn't match the image generation area size.</translation>
-    </message>
-    <message>
-      <location filename="../config/application_config_definitions.json" line="491"/>
-      <source>Enable global error handler:</source>
-      <translation>Enable global error handler:</translation>
-    </message>
-    <message>
-      <location filename="../config/application_config_definitions.json" line="493"/>
-      <source>Attempt to catch and report global application errors instead of crashing. Disabling this makes it easier to debug certain errors.</source>
-      <translation>Attempt to catch and report global application errors instead of crashing. Disabling this makes it easier to debug certain errors.</translation>
-    </message>
-  </context>
-  <context>
-    <name>config.cache</name>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="2"/>
-      <source>styles</source>
-      <translation>styles</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="5"/>
-      <source>Saved style prompts loaded from the webui</source>
-      <translation>Saved style prompts loaded from the webui</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="14"/>
-      <source>ControlNet version:</source>
-      <translation>ControlNet version:</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="16"/>
-      <source>ControlNet extension version loaded from the webui</source>
-      <translation>ControlNet extension version loaded from the webui</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="22"/>
-      <source>ControlNet control types:</source>
-      <translation>ControlNet control types:</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="24"/>
-      <source>ControlNet control type definitions loaded from the webui</source>
-      <translation>ControlNet control type definitions loaded from the webui</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="30"/>
-      <source>ControlNet modules:</source>
-      <translation>ControlNet modules:</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="32"/>
-      <source>ControlNet module definitions loaded from the webui</source>
-      <translation>ControlNet module definitions loaded from the webui</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="38"/>
-      <source>ControlNet models:</source>
-      <translation>ControlNet models:</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="40"/>
-      <source>ControlNet model definitions loaded from the webui</source>
-      <translation>ControlNet model definitions loaded from the webui</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="46"/>
-      <source>LoRA models:</source>
-      <translation>LoRA models:</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="48"/>
-      <source>LoRA model definitions loaded from the webui</source>
-      <translation>LoRA model definitions loaded from the webui</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="54"/>
-      <source>Last seed:</source>
-      <translation>Last seed:</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="56"/>
-      <source>Last seed used for image generation</source>
-      <translation>Last seed used for image generation</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="62"/>
-      <source>Last file path:</source>
-      <translation>Last file path:</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="64"/>
-      <source>Last image file loaded</source>
-      <translation>Last image file loaded</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="70"/>
-      <source>Last brush color:</source>
-      <translation>Last brush color:</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="70"/>
-      <source>Last brush color</source>
-      <translation>Last brush color</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="78"/>
-      <source>Last active tool:</source>
-      <translation>Last active tool:</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="80"/>
-      <source>Label of the last active tool, to restore after restart</source>
-      <translation>Label of the last active tool, to restore after restart</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="86"/>
-      <source>Color threshold:</source>
-      <translation>Color threshold:</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="88"/>
-      <source>Sets how closely colors need to match the clicked color to be selected. 0.0 only changes exact matching colors, higher values are more permissive.</source>
-      <translation>Sets how closely colors need to match the clicked color to be selected. 0.0 only changes exact matching colors, higher values are more permissive.</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="99"/>
-      <source>Sample Merged:</source>
-      <translation>Sample Merged:</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="101"/>
-      <source>If checked, fill based on the entire image contents, not just the current layer</source>
-      <translation>If checked, fill based on the entire image contents, not just the current layer</translation>
     </message>
   </context>
 </TS>

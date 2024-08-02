@@ -5,7 +5,7 @@ import math
 from typing import Optional, Set, List, cast
 
 from PyQt6.QtCore import QRect, QSize, QPoint, QRectF, QPointF
-from PyQt6.QtGui import QColor, QPainter, QTransform
+from PyQt6.QtGui import QColor, QPainter, QTransform, QImage
 from PyQt6.QtWidgets import QGraphicsScene, QGraphicsItem
 
 from src.image.canvas.layer_canvas import LayerCanvas
@@ -23,6 +23,7 @@ class MyPaintLayerCanvas(LayerCanvas):
                  edit_region: Optional[QRect] = None) -> None:
         """Initialize a MyPaint surface, and connect to the image layer."""
         super().__init__(scene, layer, edit_region)
+        self._mask: Optional[QImage] = None
         self._mp_surface = MPSurface(QSize() if self.edit_region is None else self.edit_region.size())
         self._last_stroke_bounds = QRect()
         self._last_stroke_tiles: Set[MPTile] = set()
@@ -60,6 +61,20 @@ class MyPaintLayerCanvas(LayerCanvas):
         """Returns all graphics items present in the scene that belong to the canvas."""
         return [item for item in self.scene.items() if isinstance(item, MPTile)]
 
+    def _get_tile_mask(self, tile: MPTile) -> Optional[QImage]:
+        if self._mask is None or self._layer is None:
+            return None
+        tile_bounds = QRect(int(tile.x()) - self._layer.bounds.x(), int(tile.y()) - self._layer.bounds.y(),
+                            tile.size.width(), tile.size.height())
+        return self._mask.copy(tile_bounds)
+
+    def set_input_mask(self, mask_image: Optional[QImage]) -> None:
+        """Sets a mask image, restricting canvas changes to areas covered by non-transparent mask areas"""
+        self._mask = mask_image
+        for tile in self.scene_items():
+            assert isinstance(tile, MPTile)
+            tile.mask = self._get_tile_mask(tile)
+
     @property
     def _bounds_x(self):
         """Returns last stroke bounding box x-coordinate."""
@@ -90,6 +105,7 @@ class MyPaintLayerCanvas(LayerCanvas):
             return
         if tile.scene() is None:
             self._scene.addItem(tile)
+            tile.mask = self._get_tile_mask(tile)
         tile.setZValue(self._z_value)
         if self._layer is not None:
             tile.setOpacity(self._layer.opacity)

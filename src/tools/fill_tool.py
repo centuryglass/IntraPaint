@@ -92,6 +92,8 @@ class FillTool(BaseTool):
         layout.addRow(cache.get_label(Cache.FILL_THRESHOLD), threshold_slider)
         sample_merged_checkbox = cache.get_control_widget(Cache.SAMPLE_MERGED)
         layout.addRow(sample_merged_checkbox)
+        selection_only_checkbox = cache.get_control_widget(Cache.PAINT_SELECTION_ONLY)
+        layout.addRow(selection_only_checkbox)
         return self._control_panel
 
     def mouse_click(self, event: Optional[QMouseEvent], image_coordinates: QPoint) -> bool:
@@ -121,8 +123,15 @@ class FillTool(BaseTool):
                 layer_image = fill_image
             mask = flood_fill(fill_image, layer_point, self._color, self._threshold, False)
             assert mask is not None
+            if Cache().get(Cache.PAINT_SELECTION_ONLY):
+                selection_mask = self._image_stack.get_layer_mask(layer)
+                mask_painter = QPainter(mask)
+                mask_painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_DestinationIn)
+                mask_painter.drawImage(0, 0, selection_mask)
+                mask_painter.end()
             painter = QPainter(layer_image)
             painter.drawImage(QRect(QPoint(), layer.size), mask)
+
             painter.end()
             layer.image = layer_image
             return True

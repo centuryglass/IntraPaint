@@ -37,7 +37,6 @@
 - generation size controls
 
 ## Selection fill, fill tool
-- option to fill based on selection layer only
 - floodfill alpha support
 
 ## Selection tool

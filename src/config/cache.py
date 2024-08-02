@@ -28,5 +28,6 @@ class Cache(Config, metaclass=Singleton):
     LAST_FILE_PATH: str
     LAST_SEED: str
     LORA_MODELS: str
+    PAINT_SELECTION_ONLY: str
     SAMPLE_MERGED: str
     STYLES: str

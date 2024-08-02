@@ -33,6 +33,7 @@ class MPTile(QGraphicsItem):
         self._pixels: Optional[TilePixelBuffer] = tile_buffer
         self._size = size
         self._cache_image: Optional[QImage] = QImage(size, QImage.Format.Format_ARGB32_Premultiplied)
+        self._mask_image: Optional[QImage] = None
         self._cache_valid = False
         self._composition_mode = QPainter.CompositionMode.CompositionMode_SourceOver
         self.setCacheMode(QGraphicsItem.CacheMode.NoCache)
@@ -71,6 +72,24 @@ class MPTile(QGraphicsItem):
                 self.update_cache()
             self.copy_image_into_pixel_buffer(self._pixels, self._cache_image, 0, 0, False)
         self._lock_alpha = locked
+
+    @property
+    def mask(self) -> Optional[QImage]:
+        """If not None, only content covered by sections of the mask with alpha > 0 will be shown or copied."""
+        return self._mask_image
+
+    @mask.setter
+    def mask(self, mask: Optional[QImage]) -> None:
+        if mask is None and self._mask_image is None:
+            return
+        if not self._cache_valid:
+            self.update_cache()
+        if mask is not None:
+            assert mask.size() == self._size, 'Mask size must match tile size'
+        if self._mask_image is not None:  # Clear hidden changes suppressed by the old mask:
+            self.copy_image_into_pixel_buffer(self._pixels, self._cache_image, 0, 0, False)
+        self._mask_image = mask
+        self.update_cache()
 
     @property
     def is_valid(self) -> bool:
@@ -182,6 +201,11 @@ class MPTile(QGraphicsItem):
         np_image = image_data_as_numpy_8bit(image)[
                    destination.y():destination.y() + destination.height(),
                    destination.x():destination.x() + destination.width()]
+        if self._mask_image is not None:
+            np_mask = image_data_as_numpy_8bit(self._mask_image)
+            _, np_mask = numpy_intersect(np_image, np_mask, 0, 0)
+        else:
+            np_mask = None
         intersect = numpy_intersect(np_image, np_pixels, 0, 0)
         if intersect[0] is None or intersect[1] is None:
             return False  # No intersection.
@@ -205,6 +229,8 @@ class MPTile(QGraphicsItem):
 
             for y in range(np_image.shape[0]):
                 for x in range(np_image.shape[1]):
+                    if np_mask is not None and np_mask[y, x, ALPHA] == 0:
+                        continue
                     if not self._lock_alpha and np_image[y, x, ALPHA] == 0:
                         # Don't filter out changes to transparent pixels:
                         np_image[y, x] = np_pixels[y, x]
@@ -213,7 +239,11 @@ class MPTile(QGraphicsItem):
                     if color_diff > min_color_difference:
                         np_image[y, x] = np_pixels[y, x]
         else:
-            np.copyto(np_image, np_pixels)
+            if np_mask is not None:
+                mask_index = np_mask[..., 3] != 0
+                np_image[mask_index] = np_pixels[mask_index]
+            else:
+                np.copyto(np_image, np_pixels)
         return True
 
     @staticmethod

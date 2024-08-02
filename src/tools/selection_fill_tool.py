@@ -11,6 +11,7 @@ from src.config.key_config import KeyConfig
 from src.image.layers.image_stack import ImageStack
 from src.image.layers.transform_layer import TransformLayer
 from src.tools.base_tool import BaseTool
+from src.ui.input_fields.check_box import CheckBox
 from src.util.image_utils import flood_fill
 from src.util.shared_constants import PROJECT_DIR
 
@@ -31,6 +32,8 @@ CURSOR_SIZE = 25
 SELECTION_FILL_LABEL = _tr('Selection fill')
 SELECTION_FILL_TOOLTIP = _tr('Select areas with solid colors')
 SELECTION_FILL_CONTROL_HINT = _tr('LMB:select - RMB:deselect - ')
+FILL_BY_SELECTION = _tr('Fill selection holes')
+FILL_BY_SELECTION_TOOLTIP = _tr('Fill based on selection shape only.')
 
 
 class SelectionFillTool(BaseTool):
@@ -54,6 +57,10 @@ class SelectionFillTool(BaseTool):
 
         self._threshold = cache.get(Cache.FILL_THRESHOLD)
         self._sample_merged = cache.get(Cache.SAMPLE_MERGED)
+        self._fill_by_selection_checkbox = CheckBox()
+        self._fill_by_selection_checkbox.setText(FILL_BY_SELECTION)
+        self._fill_by_selection_checkbox.setToolTip(FILL_BY_SELECTION_TOOLTIP)
+
         cursor_icon = QIcon(RESOURCES_FILL_CURSOR)
         self.cursor = QCursor(cursor_icon.pixmap(CURSOR_SIZE, CURSOR_SIZE))
         cache.connect(self, Cache.FILL_THRESHOLD, self._update_threshold)
@@ -90,6 +97,9 @@ class SelectionFillTool(BaseTool):
         layout.addRow(cache.get_label(Cache.FILL_THRESHOLD), threshold_slider)
         sample_merged_checkbox = cache.get_control_widget(Cache.SAMPLE_MERGED)
         layout.addRow(sample_merged_checkbox)
+        self._fill_by_selection_checkbox.valueChanged.connect(lambda checked: sample_merged_checkbox.setEnabled(
+            not checked))
+        layout.addRow(self._fill_by_selection_checkbox)
         return self._control_panel
 
     def mouse_click(self, event: Optional[QMouseEvent], image_coordinates: QPoint) -> bool:
@@ -106,7 +116,11 @@ class SelectionFillTool(BaseTool):
                 layer_pos = layer.map_to_image(QPoint())
             else:
                 layer_pos = QPoint()
-            if self._sample_merged:
+            if self._fill_by_selection_checkbox.isChecked():
+                image = self._image_stack.selection_layer.image
+                paint_transform = QTransform()
+                sample_point = image_coordinates + mask_pos
+            elif self._sample_merged:
                 image = self._image_stack.qimage(crop_to_image=False)
                 sample_point = image_coordinates - merged_pos
                 offset = -mask_pos + merged_pos

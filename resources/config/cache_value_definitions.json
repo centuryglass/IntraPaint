@@ -102,5 +102,13 @@
         "type": "bool",
         "default": false,
         "saved": true
+    },
+    "paint_selection_only": {
+        "label": "Paint selection only:",
+        "category": "Cache",
+        "description": "If checked, only paint within the selection bounds",
+        "type": "bool",
+        "default": false,
+        "saved": true
     }
 }
