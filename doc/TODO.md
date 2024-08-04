@@ -1,5 +1,8 @@
 # Development tasks
 
+# Misc
+- Color picker tool should show the "select screen color" button regardless of what tab is active.
+
 # Files
 - ORA SVG support
 - Move non-standard ORA data to new xml file
@@ -12,6 +15,7 @@
 - Warning modal with "don't warn me again checkbox"
 
 # Panels
+- Vertical control panel tabbed with tools? Always keep image visible
 - Put ToolPanel's layer panel in a tab widget with other new window/panel options
 - ColorPanel: tabbed color picker
 
@@ -34,6 +38,10 @@
 ## Image gen area tool
 - generation area to generation size button
 - generation size controls
+- fix gen area tool aspect ratio constraints
+- Fixed aspect ratio should be based on generation size aspect ratio
+- Add checkboxes to limit generation size to edit size, force restricted aspect ratio.
+- Fix issues with gen area recalculation when loading a smaller image.
 
 ## Selection tool
 - Add mask draw/erase hotkey
@@ -65,7 +73,7 @@ Alternate brush tools that filter for certain brush types
 - Circle, polygons with n sides
 - stroke+fill controls
 
-# Generated image selection widget
+# Generated image selection screen
 - Add context menu for selections:
     * Select
     * Send to new layer
@@ -73,6 +81,7 @@ Alternate brush tools that filter for certain brush types
 - Non-transitory selection tab?
 
 # ControlNet
+- Fix missing labels on default (strength, start step, end step) sliders
 - Make "use generation area as control" the default
     - Don't allow it to be unchecked if no image is selected
     - Automatically uncheck it on image selection
@@ -102,6 +111,15 @@ Alternate brush tools that filter for certain brush types
 - A1111 lora/hypernet/etc selection support
 - A1111 PR for updating saved styles
 
+# Help window
+- Rich text tutorial content, with images and dynamic hotkeys.
+
 # Legacy generators
 - DeepDream
 - VQGAN+CLIP
+
+# Tutorial topics
+- Visual influence on control: sketching details to guide inpainting
+- Generation area control: effects of generation area on content
+- Stable-diffusion settings: what do all those options do:
+- ControlNet model guides

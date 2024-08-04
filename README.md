@@ -64,7 +64,7 @@ python IntraPaint.py
 #### Running the server:
 To run the server, you'll need a CUDA-capable GPU with around 10GB of memory. I've been using a RTX 3080.
 
-1. Start by following the [GLID-3-XL documentation](./GLID-3-XL-DOC.md) to install the required dependencies and download pretrained models. To confirm that this step is completed correctly, run `python quickEdit.py --edit examples/edit.png --mask examples/mask.png --prefix test`, and make sure it successfully generates an image at *output/test00000.png*.
+1. Start by following the [GLID-3-XL documentation](src/glid_3_xl/GLID-3-XL-DOC.md) to install the required dependencies and download pretrained models. To confirm that this step is completed correctly, run `python quickEdit.py --edit examples/edit.png --mask examples/mask.png --prefix test`, and make sure it successfully generates an image at *output/test00000.png*.
 2. Install additional dependencies needed to run the server with `pip install flask flask_cors`.
 3. Start the server using `python IntraPaint_server.py --port 5555`, and the server's local address will be printed in the console output once it finishes starting.
 
@@ -78,7 +78,7 @@ Once you've followed the steps for setting up both the client and server, you ca
 - Using the "draw sketch" option, you can draw directly into the selected area on the right side of the screen to provide additional visual guidance to the AI. This can make it much easier to influence what features it emphasizes and what colors it uses. 
 
 ## Original GLID-3-XL command-line functionality:
-All functionality is still available, although some features are untested. I've created a [colab notebook](https://colab.research.google.com/github/centuryglass/IntraPaint/blob/colab-refactor/colabFiles/GLID_3_XL_testing.ipynb) you can use to test these. Scripts have been divided up into separate files. Examples below provide minimal valid commands, but all command line options from the original are still present. Follow [GLID-3-XL documentation](./GLID-3-XL-DOC.md) first to set up dependencies and download models.
+All functionality is still available, although some features are untested. I've created a [colab notebook](https://colab.research.google.com/github/centuryglass/IntraPaint/blob/colab-refactor/colabFiles/GLID_3_XL_testing.ipynb) you can use to test these. Scripts have been divided up into separate files. Examples below provide minimal valid commands, but all command line options from the original are still present. Follow [GLID-3-XL documentation](src/glid_3_xl/GLID-3-XL-DOC.md) first to set up dependencies and download models.
 
 - Image generation: `python generate.py --text "Your prompt here"
 - Single inpainting operations: `python quickEdit.py --edit "path/to/edited/image" --text "Your prompt here"`
