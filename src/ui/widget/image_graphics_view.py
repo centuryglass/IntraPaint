@@ -6,7 +6,7 @@ from PyQt6.QtCore import Qt, QObject, QPoint, QPointF, QRect, QRectF, QSize, QMa
 from PyQt6.QtGui import QPixmap, QImage, QPainter, QPen, QTransform, QResizeEvent, QMouseEvent, QCursor, QWheelEvent, \
     QEnterEvent, QSurfaceFormat
 from PyQt6.QtOpenGLWidgets import QOpenGLWidget
-from PyQt6.QtWidgets import QWidget, QGraphicsView, QGraphicsScene, QGraphicsPixmapItem, QApplication
+from PyQt6.QtWidgets import QWidget, QGraphicsView, QGraphicsScene, QGraphicsPixmapItem
 
 from src.config.application_config import AppConfig
 from src.config.key_config import KeyConfig

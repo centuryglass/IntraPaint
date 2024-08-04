@@ -1,11 +1,11 @@
 """Use the Config module's data sharing capabilities to cache temporary values."""
 
 from src.config.config import Config
-from src.util.shared_constants import PROJECT_DIR
+from src.util.shared_constants import PROJECT_DIR, DATA_DIR
 from src.util.singleton import Singleton
 
 CONFIG_DEFINITIONS = f'{PROJECT_DIR}/resources/config/cache_value_definitions.json'
-DEFAULT_FILE_PATH = f'{PROJECT_DIR}/.cache.json'
+DEFAULT_FILE_PATH = f'{DATA_DIR}/.cache.json'
 
 
 class Cache(Config, metaclass=Singleton):

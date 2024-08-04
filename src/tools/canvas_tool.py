@@ -109,7 +109,6 @@ class CanvasTool(BaseTool):
             self._canvas.set_input_mask(mask)
         image_stack.selection_layer.content_changed.connect(_selection_layer_update)
 
-
     @staticmethod
     def canvas_control_hints() -> str:
         """Get control hints for line and fixed angle modes, if enabled."""

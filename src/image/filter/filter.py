@@ -9,7 +9,7 @@ from src.image.layers.image_stack import ImageStack
 from src.image.layers.layer_stack import LayerStack
 from src.image.layers.transform_layer import TransformLayer
 from src.ui.modal.image_filter_modal import ImageFilterModal
-from src.undo_stack import commit_action
+from src.undo_stack import UndoStack
 from src.util.application_state import APP_STATE_EDITING, AppStateTracker
 from src.util.async_task import AsyncTask
 from src.util.geometry_utils import adjusted_placement_in_bounds
@@ -259,7 +259,7 @@ class ImageFilter:
                     updated_layer = self._image_stack.get_layer_by_id(updated_id)
                     updated_layer.set_image(image)
 
-            commit_action(_apply_filters, _undo_filters, 'ImageFilter.apply_filters')
+            UndoStack().commit_action(_apply_filters, _undo_filters, 'ImageFilter.apply_filters')
 
         task.finish_signal.connect(_finish)
         task.start()

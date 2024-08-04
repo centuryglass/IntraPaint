@@ -7,7 +7,7 @@ from PyQt6.QtGui import QPainter, QImage, QPixmap
 
 from src.config.application_config import AppConfig
 from src.image.mypaint.numpy_image_utils import image_data_as_numpy_8bit, is_fully_transparent
-from src.undo_stack import commit_action, last_action, _UndoAction
+from src.undo_stack import UndoStack, _UndoAction
 from src.util.cached_data import CachedData
 
 
@@ -89,7 +89,7 @@ class Layer(QObject):
             self._locked = locked
             self.lock_changed.emit(self, locked)
 
-        commit_action(_update_lock, _undo, 'src.layers.layer.locked')
+        UndoStack().commit_action(_update_lock, _undo, 'src.layers.layer.locked')
 
     @property
     def parent_locked(self) -> bool:
@@ -332,11 +332,11 @@ class Layer(QObject):
         prev_action: Optional[_UndoAction]
         timestamp = datetime.datetime.now().timestamp()
         merge_interval = AppConfig().get(AppConfig.UNDO_MERGE_INTERVAL)
-        with last_action() as prev_action:
+        with UndoStack().last_action() as prev_action:
             if prev_action is not None and prev_action.type == change_type and prev_action.action_data is not None \
                     and prev_action.action_data['layer'] == self \
                     and timestamp - prev_action.action_data['timestamp'] < merge_interval:
                 prev_action.redo = _update
                 prev_action.redo()
                 return
-        commit_action(_update, _undo, change_type, {'layer': self, 'timestamp': timestamp})
+        UndoStack().commit_action(_update, _undo, change_type, {'layer': self, 'timestamp': timestamp})

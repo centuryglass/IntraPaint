@@ -5,6 +5,7 @@ from PyQt6.QtCore import QObject, pyqtSignal, QRect, QPoint, QRectF, QPointF
 from PyQt6.QtGui import QPainter, QImage, QTransform, QPolygonF
 
 from src.image.layers.layer import Layer
+from src.util.geometry_utils import extract_transform_parameters, combine_transform_parameters
 from src.util.image_utils import create_transparent_image
 
 
@@ -82,3 +83,30 @@ class TransformLayer(Layer):
     def map_rect_to_image(self, layer_rect: QRect) -> QRect:
         """Map a rectangle in the layer image to its final spot in the top level image."""
         return self.transform.map(QPolygonF(QRectF(layer_rect))).boundingRect().toAlignedRect()
+
+    def rotate(self, degrees: int) -> None:
+        """Rotate the layer by an arbitrary degree count, on top of any previous transformations."""
+        center = self.bounds.center()
+        x_off, y_off, x_scale, y_scale, base_angle = extract_transform_parameters(self.transform, center)
+        angle_offset = degrees if x_scale > 0 and y_scale > 0 else -degrees
+        self.transform = combine_transform_parameters(x_off, y_off, x_scale, y_scale, base_angle + angle_offset, center)
+
+    def _flip(self, horizontal: bool = True) -> None:
+        # center = self._transform.map(QPolygonF(QRectF(self.bounds))).boundingRect().center()
+        center = self.bounds.center()
+        x_off, y_off, x_scale, y_scale, angle = extract_transform_parameters(self.transform, center)
+        if horizontal:
+            x_scale *= -1
+        else:
+            y_scale *= -1
+        self.transform = combine_transform_parameters(x_off, y_off, x_scale, y_scale, angle, center)
+
+    def flip_horizontal(self) -> None:
+        """Flip the layer horizontally, on top of any previous transformations."""
+        self._flip(True)
+
+    def flip_vertical(self) -> None:
+        """Flip the layer vertically, on top of any previous transformations."""
+        self._flip(False)
+
+

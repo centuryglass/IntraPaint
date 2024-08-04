@@ -14,7 +14,6 @@
 # Panels
 - Put ToolPanel's layer panel in a tab widget with other new window/panel options
 - ColorPanel: tabbed color picker
-- Extend imageWindow to navigation panel (add gen area control, zoom control)
 
 # Layers
 - Transparency locking: adjust for transformation offset (temp disable when resizing/cropping layers, probably)
@@ -22,10 +21,10 @@
 - Add selection layer back to layer panel
 
 # Menus
-- Crop image to content
 - open mypaint brush panel
 - open mypaint brush file
 - Filters: just throw in whatever fun stuff PIL/CV2 have to offer
+- Enable/disable menus based on arbitrary context, not just app state
 
 # Config
 - Hide startup warnings option
@@ -35,9 +34,6 @@
 ## Image gen area tool
 - generation area to generation size button
 - generation size controls
-
-## Selection fill, fill tool
-- floodfill alpha support
 
 ## Selection tool
 - Add mask draw/erase hotkey
@@ -97,8 +93,6 @@ Alternate brush tools that filter for certain brush types
     * Editing with the sketch layer
     * Filling in details with controlNet + tile
 - Create timelapse editing video
-- Wizard for automatic stable-diffusion setup
-- Write scripts for generating release builds on all platforms
 - Update Windows libmypaint DLLs
 - Add Mac OS, ARM linux libmypaint libraries
 

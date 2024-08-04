@@ -6,14 +6,14 @@ from PyQt6.QtWidgets import QStyleFactory
 
 from src.config.config import Config
 from src.util.optional_import import optional_import
-from src.util.shared_constants import PIL_SCALING_MODES, PROJECT_DIR
+from src.util.shared_constants import PIL_SCALING_MODES, PROJECT_DIR, DATA_DIR
 from src.util.singleton import Singleton
 
 # Optional theme modules:
 qdarktheme = optional_import('qdarktheme')
 qt_material = optional_import('qt_material')
 
-DEFAULT_CONFIG_PATH = f'{PROJECT_DIR}/config.json'
+DEFAULT_CONFIG_PATH = f'{DATA_DIR}/config.json'
 CONFIG_DEFINITIONS = f'{PROJECT_DIR}/resources/config/application_config_definitions.json'
 
 

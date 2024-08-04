@@ -30,6 +30,9 @@ from src.image.filter.rgb_color_balance import RGBColorBalanceFilter
 from src.image.filter.sharpen import SharpenFilter
 from src.image.layers.image_layer import ImageLayer
 from src.image.layers.image_stack import ImageStack
+from src.image.layers.layer_stack import LayerStack
+from src.image.layers.transform_group import TransformGroup
+from src.image.layers.transform_layer import TransformLayer
 from src.image.open_raster import save_ora_image, read_ora_image
 from src.ui.modal.image_scale_modal import ImageScaleModal
 from src.ui.modal.modal_utils import show_error_dialog, request_confirmation, open_image_file, open_image_layers
@@ -39,7 +42,7 @@ from src.ui.modal.settings_modal import SettingsModal
 from src.ui.panel.layer_ui.layer_panel import LayerPanel
 from src.ui.window.generator_setup_window import GeneratorSetupWindow
 from src.ui.window.main_window import MainWindow
-from src.undo_stack import undo, redo
+from src.undo_stack import UndoStack
 from src.util.application_state import AppStateTracker, APP_STATE_NO_IMAGE, APP_STATE_EDITING, APP_STATE_LOADING, \
     APP_STATE_SELECTION
 from src.util.display_size import get_screen_size
@@ -77,6 +80,10 @@ MENU_SELECTION = _tr('Selection')
 MENU_LAYERS = _tr('Layers')
 MENU_TOOLS = _tr('Tools')
 MENU_FILTERS = _tr('Filters')
+
+SUBMENU_MOVE = _tr('Move')
+SUBMENU_SELECT = _tr('Select')
+SUBMENU_TRANSFORM = _tr('Transform')
 
 GENERATOR_LOAD_ERROR_TITLE = _tr('Loading image generator failed')
 GENERATOR_LOAD_ERROR_MESSAGE = _tr('Unable to load the {generator_name} image generator')
@@ -136,6 +143,7 @@ class AppController(MenuBuilder):
 
         # Initialize main window:
         self._window = MainWindow(self._image_stack)
+        self.menu_window = self._window
         self._window.generate_signal.connect(self.start_and_manage_inpainting)
         if args.window_size is not None:
             width, height = (int(dim) for dim in args.window_size.split('x'))
@@ -170,7 +178,7 @@ class AppController(MenuBuilder):
             self._nav_manager = nav_manager
 
         # Set up menus:
-        self.build_menus(self._window)
+        self.build_menus()
         # Since image filter menus follow a very simple pattern, add them here instead of using @menu_action:
         for filter_class in (RGBColorBalanceFilter,
                              BrightnessContrastFilter,
@@ -184,8 +192,7 @@ class AppController(MenuBuilder):
                 modal.exec()
 
             config_key = image_filter.get_config_key()
-            action = self.add_menu_action(self._window,
-                                          MENU_FILTERS,
+            action = self.add_menu_action(MENU_FILTERS,
                                           _open_filter_modal,
                                           config_key)
             assert action is not None
@@ -195,6 +202,7 @@ class AppController(MenuBuilder):
 
         def _apply_style(new_style: str) -> None:
             app.setStyle(new_style)
+
         config.connect(self, AppConfig.STYLE, _apply_style)
         _apply_style(config.get(AppConfig.STYLE))
 
@@ -211,6 +219,7 @@ class AppController(MenuBuilder):
                 qt_material.apply_stylesheet(app, theme=xml_file)
             elif theme != 'None':
                 logger.error(f'Failed to load theme {theme}')
+
         config.connect(self, AppConfig.THEME, _apply_theme)
         _apply_theme(config.get(AppConfig.THEME))
 
@@ -218,6 +227,7 @@ class AppController(MenuBuilder):
             font = app.font()
             font.setPointSize(font_pt)
             app.setFont(font)
+
         config.connect(self, AppConfig.FONT_POINT_SIZE, _apply_font)
         _apply_font(config.get(AppConfig.FONT_POINT_SIZE))
 
@@ -275,8 +285,9 @@ class AppController(MenuBuilder):
             self._generator.disconnect_or_disable()
             self._generator = None
         self._generator = generator
+        self._generator.menu_window = self._window
         self._generator.init_settings(self._settings_modal)
-        self._generator.build_menus(self._window)
+        self._generator.build_menus()
         self._window.set_control_panel(self._generator.get_control_panel())
         if self._generator_window is not None:
             self._generator_window.mark_active_generator(generator)
@@ -509,38 +520,38 @@ class AppController(MenuBuilder):
 
     # Edit menu:
 
-    @menu_action(MENU_EDIT, 'undo_shortcut', 10,
+    @menu_action(MENU_EDIT, 'undo_shortcut', 100,
                  valid_app_states=[APP_STATE_EDITING, APP_STATE_NO_IMAGE])
     def undo(self) -> None:
         """Revert the most recent significant change made."""
-        undo()
+        UndoStack().undo()
 
-    @menu_action(MENU_EDIT, 'redo_shortcut', 11, valid_app_states=[APP_STATE_EDITING, APP_STATE_NO_IMAGE])
+    @menu_action(MENU_EDIT, 'redo_shortcut', 101, valid_app_states=[APP_STATE_EDITING, APP_STATE_NO_IMAGE])
     def redo(self) -> None:
         """Restore the most recent reverted change."""
-        redo()
+        UndoStack().redo()
 
-    @menu_action(MENU_EDIT, 'cut_shortcut', 12, valid_app_states=[APP_STATE_EDITING])
+    @menu_action(MENU_EDIT, 'cut_shortcut', 102, valid_app_states=[APP_STATE_EDITING])
     def cut(self) -> None:
         """Cut selected content from the active image layer."""
         self._image_stack.cut_selected()
 
-    @menu_action(MENU_EDIT, 'copy_shortcut', 13, valid_app_states=[APP_STATE_EDITING])
+    @menu_action(MENU_EDIT, 'copy_shortcut', 103, valid_app_states=[APP_STATE_EDITING])
     def copy(self) -> None:
         """Copy selected content from the active image layer."""
         self._image_stack.copy_selected()
 
-    @menu_action(MENU_EDIT, 'paste_shortcut', 14, valid_app_states=[APP_STATE_EDITING])
+    @menu_action(MENU_EDIT, 'paste_shortcut', 104, valid_app_states=[APP_STATE_EDITING])
     def paste(self) -> None:
         """Paste copied image content into a new layer."""
         self._image_stack.paste()
 
-    @menu_action(MENU_EDIT, 'clear_shortcut', 15, valid_app_states=[APP_STATE_EDITING])
+    @menu_action(MENU_EDIT, 'clear_shortcut', 105, valid_app_states=[APP_STATE_EDITING])
     def clear(self) -> None:
         """Clear selected content from the active image layer."""
         self._image_stack.clear_selected()
 
-    @menu_action(MENU_EDIT, 'settings_shortcut', 16)
+    @menu_action(MENU_EDIT, 'settings_shortcut', 106)
     def show_settings(self) -> None:
         """Show the settings window."""
         if self._settings_modal is None:
@@ -552,7 +563,7 @@ class AppController(MenuBuilder):
 
     # Image menu:
 
-    @menu_action(MENU_IMAGE, 'resize_canvas_shortcut', 20, valid_app_states=[APP_STATE_EDITING])
+    @menu_action(MENU_IMAGE, 'resize_canvas_shortcut', 200, valid_app_states=[APP_STATE_EDITING])
     def resize_canvas(self) -> None:
         """Crop or extend the edited image without scaling its contents based on user input into a popup modal."""
         resize_modal = ResizeCanvasModal(self._image_stack.qimage())
@@ -561,7 +572,7 @@ class AppController(MenuBuilder):
             return
         self._image_stack.resize_canvas(new_size, offset.x(), offset.y())
 
-    @menu_action(MENU_IMAGE, 'scale_image_shortcut', 21, valid_app_states=[APP_STATE_EDITING])
+    @menu_action(MENU_IMAGE, 'scale_image_shortcut', 201, valid_app_states=[APP_STATE_EDITING])
     def scale_image(self) -> None:
         """Scale the edited image based on user input into a popup modal."""
         width = self._image_stack.width
@@ -574,7 +585,7 @@ class AppController(MenuBuilder):
                     return
             self._scale(new_size)
 
-    @menu_action(MENU_IMAGE, 'update_metadata_shortcut',
+    @menu_action(MENU_IMAGE, 'update_metadata_shortcut', 202,
                  valid_app_states=[APP_STATE_EDITING, APP_STATE_SELECTION])
     def update_metadata(self, show_messagebox: bool = True) -> None:
         """
@@ -605,7 +616,7 @@ class AppController(MenuBuilder):
             message_box.setStandardButtons(QMessageBox.StandardButton.Ok)
             message_box.exec()
 
-    @menu_action(MENU_IMAGE, 'generate_shortcut', 23, valid_app_states=[APP_STATE_EDITING])
+    @menu_action(MENU_IMAGE, 'generate_shortcut', 203, valid_app_states=[APP_STATE_EDITING])
     def start_and_manage_inpainting(self) -> None:
         """Start inpainting/image editing based on the current state of the UI."""
         if AppStateTracker.app_state() != APP_STATE_EDITING:
@@ -616,101 +627,150 @@ class AppController(MenuBuilder):
             self._generator.start_and_manage_image_generation()
 
     # Selection menu:
-    @menu_action(MENU_SELECTION, 'select_all_shortcut', 30, valid_app_states=[APP_STATE_EDITING])
+    @menu_action(MENU_SELECTION, 'select_all_shortcut', 300, valid_app_states=[APP_STATE_EDITING])
     def select_all(self) -> None:
         """Selects the entire image."""
         self._image_stack.selection_layer.select_all()
 
-    @menu_action(MENU_SELECTION, 'select_none_shortcut', 31, valid_app_states=[APP_STATE_EDITING])
+    @menu_action(MENU_SELECTION, 'select_none_shortcut', 301, valid_app_states=[APP_STATE_EDITING])
     def select_none(self) -> None:
         """Clears the selection."""
         self._image_stack.selection_layer.clear()
 
-    @menu_action(MENU_SELECTION, 'invert_selection_shortcut', 32, valid_app_states=[APP_STATE_EDITING])
+    @menu_action(MENU_SELECTION, 'invert_selection_shortcut', 302,
+                 valid_app_states=[APP_STATE_EDITING])
     def invert_selection(self) -> None:
         """Swaps selected and unselected areas."""
         self._image_stack.selection_layer.invert_selection()
 
-    @menu_action(MENU_SELECTION, 'select_layer_content_shortcut', valid_app_states=[APP_STATE_EDITING])
+    @menu_action(MENU_SELECTION, 'select_layer_content_shortcut', 303,
+                 valid_app_states=[APP_STATE_EDITING])
     def select_active_layer_content(self) -> None:
         """Selects all pixels in the active layer that are not fully transparent."""
         self._image_stack.select_active_layer_content()
 
-    @menu_action(MENU_SELECTION, 'grow_selection_shortcut', valid_app_states=[APP_STATE_EDITING])
+    @menu_action(MENU_SELECTION, 'grow_selection_shortcut', 304, valid_app_states=[APP_STATE_EDITING])
     def grow_selection(self, num_pixels=1) -> None:
         """Expand the selection by a given pixel count, 1 by default."""
         self._image_stack.selection_layer.grow_or_shrink_selection(num_pixels)
 
-    @menu_action(MENU_SELECTION, 'shrink_selection_shortcut', valid_app_states=[APP_STATE_EDITING])
+    @menu_action(MENU_SELECTION, 'shrink_selection_shortcut', 305,
+                 valid_app_states=[APP_STATE_EDITING])
     def shrink_selection(self, num_pixels=1) -> None:
         """Contract the selection by a given pixel count, 1 by default."""
         self._image_stack.selection_layer.grow_or_shrink_selection(-num_pixels)
 
     # Layer menu:
-    @menu_action(MENU_LAYERS, 'new_layer_shortcut', 40,
-                 valid_app_states=[APP_STATE_EDITING, APP_STATE_SELECTION])
-    def new_layer(self) -> None:
-        """Create a new image layer above the active layer."""
-        self._image_stack.create_layer()
 
-    @menu_action(MENU_LAYERS, 'new_layer_group_shortcut', 40,
-                 valid_app_states=[APP_STATE_EDITING, APP_STATE_SELECTION])
-    def new_layer_group(self) -> None:
-        """Create a new layer group above the active layer."""
-        self._image_stack.create_layer_group()
-
-    @menu_action(MENU_LAYERS, 'copy_layer_shortcut', 41,
-                 valid_app_states=[APP_STATE_EDITING, APP_STATE_SELECTION])
-    def copy_layer(self) -> None:
-        """Create a copy of the active layer."""
-        self._image_stack.copy_layer()
-
-    @menu_action(MENU_LAYERS, 'delete_layer_shortcut', 42, valid_app_states=[APP_STATE_EDITING])
-    def delete_layer(self) -> None:
-        """Delete the active layer."""
-        self._image_stack.remove_layer()
-
-    @menu_action(MENU_LAYERS, 'select_previous_layer_shortcut', 43,
+    @menu_action(f'{MENU_LAYERS}.{SUBMENU_SELECT}', 'select_previous_layer_shortcut', 400,
                  valid_app_states=[APP_STATE_EDITING, APP_STATE_SELECTION])
     def select_previous_layer(self) -> None:
         """Select the layer above the current active layer."""
         self._image_stack.offset_active_selection(-1)
 
-    @menu_action(MENU_LAYERS, 'select_next_layer_shortcut', 44,
+    @menu_action(f'{MENU_LAYERS}.{SUBMENU_SELECT}', 'select_next_layer_shortcut', 401,
                  valid_app_states=[APP_STATE_EDITING, APP_STATE_SELECTION])
     def select_next_layer(self) -> None:
         """Select the layer below the current active layer."""
         self._image_stack.offset_active_selection(1)
 
-    @menu_action(MENU_LAYERS, 'move_layer_up_shortcut', 45, valid_app_states=[APP_STATE_EDITING])
+    @menu_action(f'{MENU_LAYERS}.{SUBMENU_MOVE}', 'move_layer_up_shortcut', 410,
+                 valid_app_states=[APP_STATE_EDITING])
     def move_layer_up(self) -> None:
         """Move the active layer up in the image."""
         self._image_stack.move_layer_by_offset(-1)
 
-    @menu_action(MENU_LAYERS, 'move_layer_down_shortcut', 46, valid_app_states=[APP_STATE_EDITING])
+    @menu_action(f'{MENU_LAYERS}.{SUBMENU_MOVE}', 'move_layer_down_shortcut', 411,
+                 valid_app_states=[APP_STATE_EDITING])
     def move_layer_down(self) -> None:
         """Move the active layer down in the image."""
         self._image_stack.move_layer_by_offset(1)
 
-    @menu_action(MENU_LAYERS, 'merge_layer_down_shortcut', valid_app_states=[APP_STATE_EDITING])
+    @menu_action(f'{MENU_LAYERS}.{SUBMENU_MOVE}', 'move_layer_to_top_shortcut', 412,
+                 valid_app_states=[APP_STATE_EDITING])
+    def move_layer_to_top(self) -> None:
+        """Move the active layer to the top of the layer stack."""
+        self._image_stack.move_layer(self._image_stack.active_layer, self._image_stack.layer_stack, 0)
+
+    def _get_active_transform_layer(self) -> TransformLayer:
+        active_layer = self._image_stack.active_layer
+        if isinstance(active_layer, TransformLayer):
+            return active_layer
+        assert isinstance(active_layer, LayerStack)
+        return TransformGroup(active_layer)
+
+    @menu_action(f'{MENU_LAYERS}.{SUBMENU_TRANSFORM}', 'layer_mirror_horizontal_shortcut', 430,
+                 valid_app_states=[APP_STATE_EDITING])
+    def layer_mirror_horizontal(self) -> None:
+        """Flip the active layer horizontally."""
+        layer = self._get_active_transform_layer()
+        layer.flip_horizontal()
+
+    @menu_action(f'{MENU_LAYERS}.{SUBMENU_TRANSFORM}', 'layer_mirror_vertical_shortcut', 431,
+                 valid_app_states=[APP_STATE_EDITING])
+    def layer_mirror_vertical(self) -> None:
+        """Flip the active layer vertically."""
+        layer = self._get_active_transform_layer()
+        layer.flip_vertical()
+
+    @menu_action(f'{MENU_LAYERS}.{SUBMENU_TRANSFORM}', 'layer_rotate_cw_shortcut', 432,
+                 valid_app_states=[APP_STATE_EDITING])
+    def layer_rotate_cw(self) -> None:
+        """Rotate the active layer 90 degrees clockwise."""
+        layer = self._get_active_transform_layer()
+        layer.rotate(90)
+
+    @menu_action(f'{MENU_LAYERS}.{SUBMENU_TRANSFORM}', 'layer_rotate_ccw_shortcut', 433,
+                 valid_app_states=[APP_STATE_EDITING])
+    def layer_rotate_ccw(self) -> None:
+        """Rotate the active layer 90 degrees counter-clockwise."""
+        layer = self._get_active_transform_layer()
+        layer.rotate(-90)
+
+    @menu_action(MENU_LAYERS, 'new_layer_shortcut', 440,
+                 valid_app_states=[APP_STATE_EDITING, APP_STATE_SELECTION])
+    def new_layer(self) -> None:
+        """Create a new image layer above the active layer."""
+        self._image_stack.create_layer()
+
+    @menu_action(MENU_LAYERS, 'new_layer_group_shortcut', 441,
+                 valid_app_states=[APP_STATE_EDITING, APP_STATE_SELECTION])
+    def new_layer_group(self) -> None:
+        """Create a new layer group above the active layer."""
+        self._image_stack.create_layer_group()
+
+    @menu_action(MENU_LAYERS, 'copy_layer_shortcut', 442,
+                 valid_app_states=[APP_STATE_EDITING, APP_STATE_SELECTION])
+    def copy_layer(self) -> None:
+        """Create a copy of the active layer."""
+        self._image_stack.copy_layer()
+
+    @menu_action(MENU_LAYERS, 'delete_layer_shortcut', 443, valid_app_states=[APP_STATE_EDITING])
+    def delete_layer(self) -> None:
+        """Delete the active layer."""
+        self._image_stack.remove_layer()
+
+    @menu_action(MENU_LAYERS, 'merge_layer_down_shortcut', 444, valid_app_states=[APP_STATE_EDITING])
     def merge_layer_down(self) -> None:
         """Merge the active layer with the one beneath it."""
         self._image_stack.merge_layer_down()
 
-    @menu_action(MENU_LAYERS, 'layer_to_image_size_shortcut', 48, valid_app_states=[APP_STATE_EDITING])
+    @menu_action(MENU_LAYERS, 'layer_to_image_size_shortcut', 445,
+                 valid_app_states=[APP_STATE_EDITING])
     def layer_to_image_size(self) -> None:
         """Crop or expand the active layer to match the image size."""
         self._image_stack.layer_to_image_size()
 
-    @menu_action(MENU_LAYERS, 'crop_to_content_shortcut', 49, valid_app_states=[APP_STATE_EDITING])
+    @menu_action(MENU_LAYERS, 'crop_to_content_shortcut', 446,
+                 valid_app_states=[APP_STATE_EDITING])
     def crop_layer_to_content(self) -> None:
         """Crop the active layer to remove fully transparent border pixels."""
         layer = self._image_stack.active_layer
-        if isinstance(layer, ImageLayer):
-            layer.crop_to_content()
+        layer.crop_to_content()
 
     # Tool menu:
-    @menu_action(MENU_TOOLS, 'show_layer_menu_shortcut', 50)
+
+    @menu_action(MENU_TOOLS, 'show_layer_menu_shortcut', 500)
     def show_layer_panel(self) -> None:
         """Opens the layer panel window"""
         if self._layer_panel is None:
@@ -718,12 +778,12 @@ class AppController(MenuBuilder):
         self._layer_panel.show()
         self._layer_panel.raise_()
 
-    @menu_action(MENU_TOOLS, 'image_window_shortcut', 52)
+    @menu_action(MENU_TOOLS, 'image_window_shortcut', 501)
     def show_image_window(self) -> None:
         """Show the image preview window."""
         self._window.show_image_window()
 
-    @menu_action(MENU_TOOLS, 'generator_select_shortcut', 53)
+    @menu_action(MENU_TOOLS, 'generator_select_shortcut', 502)
     def show_generator_window(self) -> None:
         """Show the generator selection window."""
         if self._generator_window is None:
@@ -747,4 +807,3 @@ class AppController(MenuBuilder):
             return
         scaled_image = pil_image_scaling(image, new_size)
         self._image_stack.load_image(scaled_image)
-

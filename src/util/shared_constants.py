@@ -3,9 +3,15 @@ import os.path
 
 from PyQt6.QtGui import QPainter
 from PIL import Image
+from platformdirs import user_data_dir, user_log_dir
 
 PROJECT_DIR = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
 APP_ICON_PATH = f'{PROJECT_DIR}/resources/icons/app_icon.png'
+DATA_DIR = user_data_dir('IntraPaint', 'centuryglass')
+LOG_DIR = user_log_dir('IntraPaint', 'centuryglass')
+for app_dir in [DATA_DIR, LOG_DIR]:
+    if not os.path.isdir(app_dir):
+        os.makedirs(app_dir)
 
 # Numeric:
 INT_MIN = -2147483647

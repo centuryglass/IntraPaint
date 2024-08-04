@@ -7,6 +7,7 @@ from PyQt6.QtGui import QPainter, QImage, QPolygonF, QTransform
 from src.image.layers.image_layer import ImageLayer, ImageLayerState
 from src.image.layers.layer import Layer
 from src.image.layers.transform_layer import TransformLayer
+from src.undo_stack import UndoStack
 from src.util.application_state import APP_STATE_NO_IMAGE, APP_STATE_EDITING, AppStateTracker
 from src.util.cached_data import CachedData
 from src.util.image_utils import create_transparent_image
@@ -88,19 +89,30 @@ class LayerStack(Layer):
     def cut_masked(self, image_mask: QImage) -> None:
         """Clear the contents of an area in the parent image."""
         assert image_mask.size() == self.bounds.size(), 'Mask should be pre-converted to layer group size'
-        for layer in self._layers:
-            layer_mask = create_transparent_image(layer.size)
-            painter = QPainter(layer_mask)
-            group_pos = self.bounds.topLeft()
-            if isinstance(layer, TransformLayer):
-                painter_transform = layer.transform.inverted()[0]
-            else:
-                layer_pos = layer.bounds.topLeft()
-                painter_transform = QTransform.fromTranslate(-layer_pos.x(), -layer_pos.y())
-            painter.setTransform(QTransform.fromTranslate(group_pos.x(),  group_pos.y()) * painter_transform)
-            painter.drawImage(0, 0, image_mask)
-            painter.end()
-            layer.cut_masked(layer_mask)
+        with UndoStack().combining_actions('image.layers.layer_stack.cut_masked'):
+            for layer in self.recursive_child_layers:
+                if isinstance(layer, LayerStack) or layer.locked:
+                    continue
+                layer_mask = create_transparent_image(layer.size)
+                painter = QPainter(layer_mask)
+                group_pos = self.bounds.topLeft()
+                if isinstance(layer, TransformLayer):
+                    painter_transform = layer.transform.inverted()[0]
+                else:
+                    layer_pos = layer.bounds.topLeft()
+                    painter_transform = QTransform.fromTranslate(-layer_pos.x(), -layer_pos.y())
+                painter.setTransform(QTransform.fromTranslate(group_pos.x(),  group_pos.y()) * painter_transform)
+                painter.drawImage(0, 0, image_mask)
+                painter.end()
+                layer.cut_masked(layer_mask)
+
+    def crop_to_content(self):
+        """Crops the layer to remove transparent areas."""
+        with UndoStack().combining_actions('image.layers.layer_stack.crop_to_content'):
+            for layer in self.recursive_child_layers:
+                if isinstance(layer, LayerStack) or layer.locked:
+                    continue
+                layer.crop_to_content(False)
 
     def get_qimage(self) -> QImage:
         """Returns combined visible layer content as a QImage object."""

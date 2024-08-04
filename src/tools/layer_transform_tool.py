@@ -20,7 +20,7 @@ from src.ui.graphics_items.transform_outline import TransformOutline
 from src.ui.image_viewer import ImageViewer
 from src.ui.widget.key_hint_label import KeyHintLabel
 from src.ui.widget.reactive_layout_widget import ReactiveLayoutWidget
-from src.undo_stack import commit_action
+from src.undo_stack import UndoStack
 from src.util.display_size import find_text_size
 from src.util.geometry_utils import get_scaled_placement, get_rect_transformation
 from src.util.image_utils import get_transparency_tile_pixmap
@@ -496,7 +496,7 @@ class LayerTransformTool(BaseTool):
                 def _undo(active=layer, matrix=changed_transform):
                     active.set_transform(matrix)
 
-                commit_action(_apply, _undo, 'LayerTransformTool.reset_transformation')
+                UndoStack().commit_action(_apply, _undo, 'LayerTransformTool.reset_transformation')
             self._transform_outline.setTransform(self._initial_transform)
 
     def _reload_scene_item(self):

@@ -6,7 +6,7 @@ import requests
 from PyQt6.QtGui import QIcon
 from PyQt6.QtWidgets import QDialog, QHBoxLayout, QFormLayout, QLabel, QLineEdit, QPushButton, QApplication, QSizePolicy
 
-from src.util.shared_constants import PROJECT_DIR, APP_ICON_PATH
+from src.util.shared_constants import APP_ICON_PATH
 
 # The QCoreApplication.translate context for strings in this file
 TR_ID = "ui.login_modal"

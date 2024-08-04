@@ -8,7 +8,7 @@ from PyQt6.QtWidgets import QMessageBox, QStyle, QApplication
 from src.util.image_utils import get_standard_qt_icon
 from src.config.config import Config
 from src.util.key_code_utils import get_modifiers
-from src.util.shared_constants import PROJECT_DIR
+from src.util.shared_constants import PROJECT_DIR, DATA_DIR
 from src.util.singleton import Singleton
 
 
@@ -21,7 +21,7 @@ def _tr(*args):
     return QApplication.translate(TR_ID, *args)
 
 
-DEFAULT_CONFIG_PATH = f'{PROJECT_DIR}/key_config.json'
+DEFAULT_CONFIG_PATH = f'{DATA_DIR}/key_config.json'
 CONFIG_DEFINITIONS = f'{PROJECT_DIR}/resources/config/key_config_definitions.json'
 
 KEY_CONFIG_ERROR_TITLE = _tr('Warning')

@@ -487,6 +487,14 @@
         "default": "Ctrl+End",
         "saved": true
     },
+    "move_layer_to_top_shortcut": {
+        "label": "Move layer to top",
+        "category": "Keybindings",
+        "description": "Move the active layer above all others",
+        "type": "string",
+        "default": "Ctrl+Shift+Home",
+        "saved": true
+    },
     "merge_layer_down_shortcut": {
         "label": "Merge layer down",
         "category": "Keybindings",
@@ -509,6 +517,35 @@
         "description": "Crop transparent borders in the active layer.",
         "type": "string",
         "default": "Ctrl+Shift+P",
+        "saved": true
+    },
+    "layer_mirror_horizontal_shortcut": {
+        "label": "Mirror layer horizontally",
+        "category": "Keybindings",
+        "description": "Flip layer content horizontally",
+        "type": "string",
+        "default": "Ctrl+Shift+H",
+        "saved": true
+    },"layer_mirror_vertical_shortcut": {
+        "label": "Mirror layer vertically",
+        "category": "Keybindings",
+        "description": "Flip layer content vertically",
+        "type": "string",
+        "default": "Ctrl+Shift+V",
+        "saved": true
+    },"layer_rotate_cw_shortcut": {
+        "label": "Rotate layer 90° CW",
+        "category": "Keybindings",
+        "description": "Rotate the active layer 90 degrees clockwise.",
+        "type": "string",
+        "default": "Ctrl+Shift+R",
+        "saved": true
+    },"layer_rotate_ccw_shortcut": {
+        "label": "Rotate layer 90° CCW",
+        "category": "Keybindings",
+        "description": "Rotate the active layer 90 degrees counter-clockwise.",
+        "type": "string",
+        "default": "Ctrl+Shift+L",
         "saved": true
     },
     "show_layer_menu_shortcut": {

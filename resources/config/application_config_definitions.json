@@ -494,5 +494,21 @@
         "type": "bool",
         "default": true,
         "saved": true
+    },
+    "warn_on_key_error": {
+        "label": "Warn about keybinding issues:",
+        "category": "Alerts",
+        "description": "Show an alert when keybinding issues are found on startup.",
+        "type": "bool",
+        "default": true,
+        "saved": true
+    },
+    "warn_before_layerless_save": {
+        "label": "Warn when saving without layers:",
+        "category": "Alerts",
+        "description": "Warn the user when saving in a format that discards layer data.",
+        "type": "bool",
+        "default": true,
+        "saved": true
     }
 }

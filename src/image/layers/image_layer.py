@@ -10,7 +10,7 @@ from PyQt6.QtGui import QImage, QPainter, QPixmap, QTransform
 from src.image.layers.transform_layer import TransformLayer
 from src.image.mypaint.numpy_image_utils import image_data_as_numpy_8bit, numpy_intersect
 from src.ui.modal.modal_utils import show_error_dialog
-from src.undo_stack import commit_action
+from src.undo_stack import UndoStack
 from src.util.image_utils import image_content_bounds, create_transparent_image
 from src.util.validation import assert_type
 
@@ -64,7 +64,7 @@ class ImageLayer(TransformLayer):
             self._alpha_locked = locked
             self.alpha_lock_changed.emit(self, locked)
 
-        commit_action(_update_lock, _undo, 'src.layers.image_layer.alpha_locked')
+        UndoStack().commit_action(_update_lock, _undo, 'src.layers.image_layer.alpha_locked')
 
     def get_qimage(self) -> QImage:
         """Return layer image data as an ARGB32 formatted QImage."""
@@ -109,7 +109,7 @@ class ImageLayer(TransformLayer):
         def _undo_image(img=last_image, off=undo_offset) -> None:
             self.set_image(img, off)
 
-        commit_action(_update_image, _undo_image, 'Layer.image')
+        UndoStack().commit_action(_update_image, _undo_image, 'Layer.image')
 
     def set_image(self, new_image: QImage, offset: Optional[QPoint] = None) -> None:
         """Updates the layer image."""
@@ -173,7 +173,7 @@ class ImageLayer(TransformLayer):
             def _restore(img=source_image, off=source_offset):
                 self.set_image(img, off)
 
-            commit_action(_resize, _restore, 'ImageLayer.adjust_local_bounds')
+            UndoStack().commit_action(_resize, _restore, 'ImageLayer.adjust_local_bounds')
         else:
             self.set_image(new_image, offset)
 
@@ -241,7 +241,7 @@ class ImageLayer(TransformLayer):
                     layer_painter.drawImage(bounds, img)
                     layer_painter.end()
 
-            commit_action(_update, _undo, 'ImageLayer.insert_image_content')
+            UndoStack().commit_action(_update, _undo, 'ImageLayer.insert_image_content')
             return
         else:
             updated_image = self.image
@@ -263,14 +263,6 @@ class ImageLayer(TransformLayer):
         else:
             self.set_image(cleared_image)
 
-    def flip_horizontal(self):
-        """Mirrors layer content horizontally, saving the change to the undo history."""
-        self.image = self._image.mirrored(horizontal=True, vertical=False)
-
-    def flip_vertical(self):
-        """Mirrors layer content vertically, saving the change to the undo history."""
-        self.image = self._image.mirrored(horizontal=False, vertical=True)
-
     def set_alpha_locked(self, locked: bool) -> None:
         """Locks or unlocks layer alpha content."""
         if locked != self._alpha_locked:
@@ -290,14 +282,16 @@ class ImageLayer(TransformLayer):
                 return
             np_dst[:, :, 3] = np_source[:, :, 3]
 
-    def crop_to_content(self):
+    def crop_to_content(self, show_warnings: bool = True):
         """Crops the layer to remove transparent areas."""
         full_bounds = QRect(QPoint(), self.size)
         cropped_bounds = image_content_bounds(self._image)
         if cropped_bounds.isNull():
-            show_error_dialog(None, CROP_TO_CONTENT_ERROR_TITLE, CROP_TO_CONTENT_ERROR_MESSAGE_EMPTY)
+            if show_warnings:
+                show_error_dialog(None, CROP_TO_CONTENT_ERROR_TITLE, CROP_TO_CONTENT_ERROR_MESSAGE_EMPTY)
         elif cropped_bounds.size() == full_bounds.size():
-            show_error_dialog(None, CROP_TO_CONTENT_ERROR_TITLE, CROP_TO_CONTENT_ERROR_MESSAGE_FULL)
+            if show_warnings:
+                show_error_dialog(None, CROP_TO_CONTENT_ERROR_TITLE, CROP_TO_CONTENT_ERROR_MESSAGE_FULL)
         else:
             full_image = self._image.copy()
             cropped_image = full_image.copy(cropped_bounds)
@@ -313,7 +307,7 @@ class ImageLayer(TransformLayer):
                 self.set_image(img)
                 self.set_transform(matrix)
 
-            commit_action(_do_crop, _undo_crop, 'ImageLayer.crop_to_content')
+            UndoStack().commit_action(_do_crop, _undo_crop, 'ImageLayer.crop_to_content')
 
     def cut_masked(self, image_mask: QImage) -> None:
         """Clear the contents of an area in the parent image."""
@@ -323,7 +317,7 @@ class ImageLayer(TransformLayer):
         painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_DestinationOut)
         painter.drawImage(self.bounds, image_mask)
         painter.end()
-        self.set_image(layer_image)
+        self.image = layer_image
 
     def save_state(self) -> Any:
         """Export the current layer state, so it can be restored later."""

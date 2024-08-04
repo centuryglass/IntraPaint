@@ -12,7 +12,7 @@ from PyQt6.QtCore import QTranslator
 from PyQt6.QtWidgets import QApplication
 
 from src.util.optional_import import check_import
-from src.util.shared_constants import TIMELAPSE_MODE_FLAG, PROJECT_DIR
+from src.util.shared_constants import TIMELAPSE_MODE_FLAG, PROJECT_DIR, LOG_DIR
 from src.util.arg_parser import build_arg_parser
 
 DEFAULT_GLID_MODEL = f'{PROJECT_DIR}/models/inpaint.pt'
@@ -45,7 +45,7 @@ parser.set_defaults(timelapse_mode=False)
 args = parser.parse_args()
 
 # Logging setup:
-LOG_FILE_PATH = 'IntraPaint.log'
+LOG_FILE_PATH = os.path.join(LOG_DIR, 'IntraPaint.log')
 log_file_handler = logging.FileHandler(LOG_FILE_PATH)
 log_file_handler.setLevel(logging.INFO)
 log_formatter = logging.Formatter('%(asctime)s: %(levelname)s: %(name)s: %(message)s')
