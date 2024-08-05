@@ -7,7 +7,7 @@ import os
 import re
 import sys
 from argparse import Namespace
-from typing import Optional, Any, List, Tuple
+from typing import Optional, Any, List, Tuple, Callable
 
 from PIL import Image, UnidentifiedImageError, PngImagePlugin
 from PyQt6.QtCore import QSize
@@ -30,6 +30,7 @@ from src.image.filter.rgb_color_balance import RGBColorBalanceFilter
 from src.image.filter.sharpen import SharpenFilter
 from src.image.layers.image_layer import ImageLayer
 from src.image.layers.image_stack import ImageStack
+from src.image.layers.layer import Layer
 from src.image.layers.layer_stack import LayerStack
 from src.image.layers.transform_group import TransformGroup
 from src.image.layers.transform_layer import TransformLayer
@@ -47,7 +48,7 @@ from src.util.application_state import AppStateTracker, APP_STATE_NO_IMAGE, APP_
     APP_STATE_SELECTION
 from src.util.display_size import get_screen_size
 from src.util.image_utils import pil_image_scaling, create_transparent_image
-from src.util.menu_builder import MenuBuilder, menu_action
+from src.util.menu_builder import MenuBuilder, menu_action, MENU_DATA_ATTR, _MenuData
 from src.util.optional_import import optional_import
 from src.util.qtexcepthook import QtExceptHook
 
@@ -198,6 +199,22 @@ class AppController(MenuBuilder):
             assert action is not None
             AppStateTracker.set_enabled_states(action, [APP_STATE_EDITING])
 
+        self._last_active = self._image_stack.active_layer
+        self._lock_connection = self._last_active.lock_changed.connect(
+            lambda _layer, _lock: self._update_enabled_actions())
+
+        def _active_changed(active_layer: Layer) -> None:
+            self._last_active.lock_changed.disconnect(self._lock_connection)
+            self._last_active = active_layer
+            self._lock_connection = self._last_active.lock_changed.connect(
+                lambda _layer, _lock: self._update_enabled_actions())
+            self._update_enabled_actions()
+
+        self._image_stack.active_layer_changed.connect(_active_changed)
+        self._image_stack.selection_layer.content_changed.connect(lambda _layer: self._update_enabled_actions())
+        UndoStack().undo_count_changed.connect(lambda _count: self._update_enabled_actions())
+        UndoStack().redo_count_changed.connect(lambda _count: self._update_enabled_actions())
+
         # Load and apply styling and themes:
 
         def _apply_style(new_style: str) -> None:
@@ -332,6 +349,83 @@ class AppController(MenuBuilder):
                 KeyConfig().set(key, value)
         if self._generator is not None:
             self._generator.update_settings(changed_settings)
+
+    def _update_enabled_actions(self) -> None:
+        self.get_action_for_method(self.undo).setEnabled(UndoStack().undo_count() > 0)
+        self.get_action_for_method(self.redo).setEnabled(UndoStack().redo_count() > 0)
+
+        def _test_state(menu_action_method: Callable[..., None]) -> bool:
+            app_state = AppStateTracker.app_state()
+            assert callable(menu_action_method) and hasattr(menu_action_method, MENU_DATA_ATTR)
+            data = getattr(menu_action_method, MENU_DATA_ATTR, None)
+            assert isinstance(data, _MenuData)
+            if data.valid_app_states is None:
+                return True
+            return app_state in data.valid_app_states
+
+        selection_is_empty = self._image_stack.selection_layer.empty
+        selection_methods = {
+            self.cut,
+            self.copy,
+            self.clear,
+            self.grow_selection,
+            self.shrink_selection
+        }
+        unlocked_layer_methods = {
+            self.cut,
+            self.clear,
+            self.layer_mirror_horizontal,
+            self.layer_mirror_vertical,
+            self.layer_rotate_cw,
+            self.layer_rotate_ccw,
+            self.delete_layer,
+            self.merge_layer_down,
+            self.layer_to_image_size,
+            self.crop_layer_to_content
+
+        }
+        not_bottom_layer_methods = {
+            self.select_next_layer,
+            self.move_layer_down
+        }
+        not_top_layer_methods = {
+            self.select_previous_layer,
+            self.move_layer_up,
+            self.move_layer_to_top
+        }
+        not_layer_stack_methods = {
+            self.select_previous_layer,
+            self.move_layer_up,
+            self.move_layer_down,
+            self.move_layer_to_top
+        }
+        not_layer_group_methods = {self.merge_layer_down}
+
+        managed_menu_methods = selection_methods | unlocked_layer_methods | not_bottom_layer_methods | not_top_layer_methods \
+                               | not_layer_stack_methods | not_layer_group_methods
+
+        active_layer = self._image_stack.active_layer
+        is_top_layer = active_layer == self._image_stack.layer_stack or self._image_stack.prev_layer(active_layer) \
+            in (None, self._image_stack.layer_stack)
+        is_bottom_layer = active_layer != self._image_stack.layer_stack \
+            and self._image_stack.next_layer(active_layer) is None
+        for menu_method in managed_menu_methods:
+            action = self.get_action_for_method(menu_method)
+            assert action is not None
+            if not _test_state(menu_method):
+                action.setEnabled(False)
+                continue
+            action.setEnabled(True)
+            for method_set, disable_condition in ((selection_methods, selection_is_empty),
+                                                  (unlocked_layer_methods, active_layer.locked),
+                                                  (not_bottom_layer_methods, is_bottom_layer),
+                                                  (not_top_layer_methods, is_top_layer),
+                                                  (not_layer_stack_methods,
+                                                   active_layer == self._image_stack.layer_stack),
+                                                  (not_layer_group_methods, isinstance(active_layer, LayerStack))):
+                if menu_method in method_set and disable_condition:
+                    action.setEnabled(False)
+                    break
 
     # Menu action definitions:
 

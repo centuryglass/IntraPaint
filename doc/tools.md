@@ -1,5 +1,5 @@
 # Tools:
-All hotkeys can be changed in settings (F9) under the keybindings tab.
+This covers the editing tools found under the "Tools" panel, and the extra options found under the "Tools" menu. All hotkeys can be changed in settings (F9) under the keybindings tab.
 
 ## Image Generation Area tool (G)
 Controls the area of the image in use for AI image generation. AI generators are restricted to certain resolutions, but this tool lets you use them with images of any size.  When you click "Generate", the AI generator will only act on the area selected by this tool, and only content within this area will influence generated imagery.
@@ -70,3 +70,9 @@ Select content based on similar color regions, like the fill tool.
 Select rectangle or ellipse regions in the image.
 - Left click and drag to select, right click and drag to clear.
 - Hold control to force selections to stick to a fixed aspect ratio.
+
+# Tool menu options:
+- Show layer window: Opens the layer panel in a new window.
+- Show image window: Opens a new window that shows only the edited image and selection, and lets you move the image generation area.
+- Select image generator: Opens a window you can use to review alternate AI image generators, and switch between them if they've been set up correctly.
+- LCM mode: This option is only visible when using stable-diffusion when you've downloaded the LCM lora model and have the LCM sampler.  LCM mode dramatically decreases image generation time, and gives more predictable but less creative results. Selecting this option adjusts various image generation parameters to the particular settings needed by LCM models.

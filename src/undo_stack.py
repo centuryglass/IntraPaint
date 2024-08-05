@@ -73,6 +73,14 @@ class UndoStack(metaclass=Singleton):
         """Returns the signal emitted whenever redo action count changes."""
         return self._signal_manager.redo_count_changed
 
+    def undo_count(self) -> int:
+        """Returns the number of saved actions in the undo stack."""
+        return len(self._undo_stack)
+
+    def redo_count(self) -> int:
+        """Returns the number of saved actions in the redo stack."""
+        return len(self._redo_stack)
+    
     def commit_action(self, action: Callable[[], None], undo_action: Callable[[], None], action_type: str,
                       action_data: Optional[Dict[str, Any]] = None) -> bool:
         """Performs an action, then commits it to the undo stack.

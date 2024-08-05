@@ -23,13 +23,15 @@ class LayerToggleButton(QToolButton):
         self._true_icon = QIcon(true_icon_path)
         self._false_icon = QIcon(false_icon_path)
         self._update_icon()
+        self._disable_when_locked = disable_when_locked
 
         if disable_when_locked:
-            def _on_lock_change(_, is_locked: bool) -> None:
-                self.setEnabled(not is_locked)
-            connected_layer.lock_changed.connect(_on_lock_change)
+            connected_layer.lock_changed.connect(self._lock_change_slot)
             if connected_layer.locked:
                 self.setEnabled(False)
+
+    def _lock_change_slot(self, _, is_locked: bool) -> None:
+        self.setEnabled(not is_locked)
 
     # noinspection PyMethodMayBeStatic
     def sizeHint(self):
