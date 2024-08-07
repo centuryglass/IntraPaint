@@ -41,7 +41,7 @@ RESOURCES_ERASER_PNG = f'{PROJECT_DIR}/resources/icons/eraser_small.svg'
 RESOURCES_CLEAR_PNG = f'{PROJECT_DIR}/resources/icons/clear.png'
 RESOURCES_FILL_PNG = f'{PROJECT_DIR}/resources/icons/fill.png'
 RESOURCES_SELECTION_CURSOR = f'{PROJECT_DIR}/resources/cursors/selection_cursor.svg'
-RESOURCES_SELECTION_ICON = f'{PROJECT_DIR}/resources/icons/selection_icon.svg'
+RESOURCES_SELECTION_ICON = f'{PROJECT_DIR}/resources/icons/tools/selection_icon.svg'
 
 
 class SelectionTool(CanvasTool):

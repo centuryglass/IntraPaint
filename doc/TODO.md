@@ -1,5 +1,7 @@
 # Development tasks
-- Bug(?): Smudge/blur brushes behave oddly when input doesn't have pressure data
+
+# Bugs
+- '.png' auto-appended onto '.ora' paths sometimes
 
 # Misc
 - Color picker tool should show the "select screen color" button regardless of what tab is active.
@@ -18,13 +20,9 @@
 - Add right click menu to move tabs to any bar
 - Test GLID with tab interface
 
-# Panels
-- Put ToolPanel's layer panel in a tab widget with other new window/panel options
-- ColorPanel: tabbed color picker
-
 # Layers
 - Transparency locking: adjust for transformation offset (temp disable when resizing/cropping layers, probably)
-- support for missing composition modes
+- support for missing OpenRaster composition modes
 - Add selection layer back to layer panel
 - Add "merge group" and "merge all" options
 

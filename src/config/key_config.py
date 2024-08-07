@@ -261,3 +261,4 @@ class KeyConfig(Config, metaclass=Singleton):
     ZOOM_IN: str
     ZOOM_OUT: str
     ZOOM_TOGGLE: str
+    

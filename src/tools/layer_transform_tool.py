@@ -53,7 +53,7 @@ TRANSFORM_CONTROL_HINT = _tr('LMB+drag:move layer - ')
 SCALE_STEP = 0.05
 MIN_WIDTH_FOR_PREVIEW = 600
 CONTROL_GRID_SPACING = 10
-RESOURCES_TRANSFORM_TOOL_ICON = f'{PROJECT_DIR}/resources/icons/layer_transform_icon.svg'
+RESOURCES_TRANSFORM_TOOL_ICON = f'{PROJECT_DIR}/resources/icons/tools/layer_transform_icon.svg'
 
 
 class LayerTransformTool(BaseTool):

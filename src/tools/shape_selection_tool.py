@@ -23,7 +23,7 @@ def _tr(*args):
     return QApplication.translate(TR_ID, *args)
 
 
-RESOURCES_SHAPE_SELECT_ICON = f'{PROJECT_DIR}/resources/icons/shape_selection_icon.svg'
+RESOURCES_SHAPE_SELECT_ICON = f'{PROJECT_DIR}/resources/icons/tools/shape_selection_icon.svg'
 
 SHAPE_SELECTION_LABEL = _tr('Rectangle/Ellipse selection')
 SHAPE_SELECTION_TOOLTIP = _tr('Select or de-select rectangles or ellipses')

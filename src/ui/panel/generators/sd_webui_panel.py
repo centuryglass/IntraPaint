@@ -131,7 +131,7 @@ class SDWebUIPanel(BorderedWidget):
             prompt_labels = (self._prompt_label, self._negative_label)
             prompt_controls = (self._prompt_textbox, self._negative_textbox)
             for row, label, control in zip(range(len(prompt_labels)), prompt_labels, prompt_controls):
-                grid.setRowStretch(row, 4)
+                # grid.setRowStretch(row, 4)
                 grid.addWidget(label, row, 0)
                 grid.addWidget(control, row, 1, 1, 4)
 
@@ -139,7 +139,7 @@ class SDWebUIPanel(BorderedWidget):
             slider_labels = (self._step_count_label, self._guidance_scale_label, self._denoising_strength_label)
             slider_controls = (self._step_count_slider, self._guidance_scale_slider, self._denoising_strength_slider)
             for row, label, control in zip(range(len(slider_labels)), slider_labels, slider_controls):
-                grid.setRowStretch(row + len(prompt_controls), 1)
+                # grid.setRowStretch(row + len(prompt_controls), 1)
                 grid.addWidget(label, row + len(prompt_controls), 0)
                 grid.addWidget(control, row + len(prompt_controls), 1)
                 control.setSizePolicy(QSizePolicy.Policy.MinimumExpanding, QSizePolicy.Policy.MinimumExpanding)
@@ -188,7 +188,7 @@ class SDWebUIPanel(BorderedWidget):
 
         # Vertical setup:
         else:
-            grid.setAlignment(Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignHCenter)
+            grid.setAlignment(Qt.AlignmentFlag.AlignTop)
             assert isinstance(self._gen_size_input, SizeField)
             self._gen_size_input.orientation = Qt.Orientation.Horizontal
             vertical_labels = (
@@ -220,7 +220,7 @@ class SDWebUIPanel(BorderedWidget):
             for i in range(10):
                 grid.setColumnStretch(i, 1)
             for row, label, control in zip(range(len(vertical_labels)), vertical_labels, vertical_controls):
-                grid.setRowStretch(row, 1)
+                # grid.setRowStretch(row, 1)
                 if isinstance(label, tuple) and isinstance(control, tuple):
                     label1, label2 = label
                     control1, control2 = control
@@ -232,8 +232,8 @@ class SDWebUIPanel(BorderedWidget):
                     grid.addWidget(label, row, 0, 1, 2)
                     grid.addWidget(control, row, 2, 1, 8)
             # increase stretch for textbox rows:
-            for i in range(2):
-                grid.setRowStretch(i, 3)
+            # for i in range(2):
+                # grid.setRowStretch(i, 3)
             grid.setRowStretch(len(vertical_labels), 1)
             grid.addWidget(self._interrogate_button, len(vertical_labels), 0, 1, 2)
             grid.addWidget(self._generate_button, len(vertical_labels), 2, 1, 8)

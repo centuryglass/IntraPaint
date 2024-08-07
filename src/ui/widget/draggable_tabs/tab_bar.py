@@ -63,7 +63,9 @@ class TabBar(BorderedWidget):
 
     def add_widget(self, widget: QWidget, index: int) -> None:
         """Add a widget to the bar."""
-        assert widget not in self._widgets
+        if widget in self._widgets:
+            self.move_widget(widget, index)
+            return
         last_parent = widget.parent()
         if isinstance(last_parent, TabBar):
             last_parent.remove_widget(widget)
@@ -110,6 +112,20 @@ class TabBar(BorderedWidget):
         if len(self._widgets) == 0:
             self._toggle_button.setEnabled(False)
             self._toggle_button.setVisible(False)
+        self.update()
+
+    def move_widget(self, widget: QWidget, index: int) -> None:
+        """Moves a widget to another position in the bar."""
+        assert widget in self._widgets
+        current_index = self._widgets.index(widget)
+        if index == current_index or index == (current_index + 1):
+            return
+        if index > current_index:
+            index -= 1
+        self._widgets.remove(widget)
+        self._layout.removeWidget(widget)
+        self._widgets.insert(index, widget)
+        self._layout.insertWidget(index + 1, widget)
         self.update()
 
     def _update_toggle_arrow(self, checked: bool):
@@ -244,8 +260,7 @@ class TabBar(BorderedWidget):
         """Accept drag events from widgets."""
         assert event is not None
         dragged_item = event.source()
-        if not isinstance(dragged_item, QWidget) or isinstance(dragged_item, LayerWidget) \
-                or dragged_item in self._widgets:
+        if not isinstance(dragged_item, QWidget) or isinstance(dragged_item, LayerWidget):
             return
         event.accept()
         self._update_insert_pos(event.position())

@@ -24,7 +24,7 @@ def _tr(*args):
     return QApplication.translate(TR_ID, *args)
 
 
-RESOURCES_GENERATION_AREA_ICON = f'{PROJECT_DIR}/resources/icons/gen_area_icon.svg'
+RESOURCES_GENERATION_AREA_ICON = f'{PROJECT_DIR}/resources/icons/tools/gen_area_icon.svg'
 GENERATION_AREA_LABEL = _tr('Select Image Generation Area')
 GENERATION_AREA_TOOLTIP = _tr('Select an image region for AI image generation')
 SELECT_LAYER_BUTTON_TEXT = _tr('Full image as generation area')

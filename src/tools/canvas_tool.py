@@ -18,7 +18,7 @@ from src.tools.base_tool import BaseTool
 from src.ui.image_viewer import ImageViewer
 from src.util.shared_constants import PROJECT_DIR, FLOAT_MAX
 
-RESOURCES_BRUSH_ICON = f'{PROJECT_DIR}/resources/icons/brush_icon.svg'
+RESOURCES_BRUSH_ICON = f'{PROJECT_DIR}/resources/icons/tools/brush_icon.svg'
 RESOURCES_CURSOR = f'{PROJECT_DIR}/resources/cursors/brush_cursor.svg'
 RESOURCES_MIN_CURSOR = f'{PROJECT_DIR}/resources/cursors/min_cursor.svg'
 

@@ -44,8 +44,8 @@ LEFT_TAB_BOX_ID = 'LEFT'
 RIGHT_TAB_BOX_ID = 'RIGHT'
 LOWER_TAB_BOX_ID = 'LOWER'
 
-TOOL_TAB_ICON = f'{PROJECT_DIR}/resources/icons/wrench.svg'
-GEN_TAB_ICON = f'{PROJECT_DIR}/resources/icons/sparkle.svg'
+TOOL_TAB_ICON = f'{PROJECT_DIR}/resources/icons/tabs/wrench.svg'
+GEN_TAB_ICON = f'{PROJECT_DIR}/resources/icons/tabs/sparkle.svg'
 
 
 class MainWindow(QMainWindow):
@@ -139,7 +139,7 @@ class MainWindow(QMainWindow):
 
         self._control_panel: Optional[QWidget] = None
         self._control_tab = Tab(CONTROL_TAB_NAME)
-        self._control_tab.setIcon(QIcon(TOOL_TAB_ICON))
+        self._control_tab.setIcon(QIcon(GEN_TAB_ICON))
 
         for panel in (self._image_panel, self._tool_panel):
             AppStateTracker.set_enabled_states(panel, [APP_STATE_EDITING])

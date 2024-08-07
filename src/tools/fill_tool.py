@@ -25,7 +25,7 @@ def _tr(*args):
     return QApplication.translate(TR_ID, *args)
 
 
-RESOURCES_FILL_ICON = f'{PROJECT_DIR}/resources/icons/fill_icon.svg'
+RESOURCES_FILL_ICON = f'{PROJECT_DIR}/resources/icons/tools/fill_icon.svg'
 RESOURCES_FILL_CURSOR = f'{PROJECT_DIR}/resources/cursors/fill_cursor.svg'
 CURSOR_SIZE = 50
 

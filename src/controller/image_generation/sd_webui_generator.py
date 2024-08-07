@@ -78,7 +78,7 @@ SD_WEBUI_GENERATOR_SETUP = _tr('<h2>Installing the WebUI</h2><p>The <a href="htt
                                ' Once the WebUI starts successfully, you should be able to activate this IntraPaint'
                                ' generator.</p>')
 SD_PREVIEW_IMAGE = f'{PROJECT_DIR}/resources/generator_preview/stable-diffusion.png'
-CONTROLNET_TAB_ICON = f'{PROJECT_DIR}/resources/icons/hex.svg'
+CONTROLNET_TAB_ICON = f'{PROJECT_DIR}/resources/icons/tabs/hex.svg'
 DEFAULT_SD_URL = 'http://localhost:7860'
 STABLE_DIFFUSION_CONFIG_CATEGORY = 'Stable-Diffusion'
 AUTH_ERROR_DETAIL_KEY = 'detail'
@@ -116,7 +116,7 @@ LCM_LORA_XL = 'lcm-lora-sdxl'
 
 MENU_STABLE_DIFFUSION = 'Stable-Diffusion'
 
-GEN_TAB_ICON = f'{PROJECT_DIR}/resources/icons/sparkle.svg'
+GEN_TAB_ICON = f'{PROJECT_DIR}/resources/icons/tabs/sparkle.svg'
 
 
 def _check_lcm_mode_available(_) -> bool:

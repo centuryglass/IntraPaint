@@ -30,7 +30,7 @@ def _tr(*args):
     return QApplication.translate(TR_ID, *args)
 
 
-RESOURCES_BRUSH_ICON = f'{PROJECT_DIR}/resources/icons/brush_icon.svg'
+RESOURCES_BRUSH_ICON = f'{PROJECT_DIR}/resources/icons/tools/brush_icon.svg'
 BRUSH_LABEL = _tr('Brush')
 BRUSH_TOOLTIP = _tr('Paint into the image')
 COLOR_BUTTON_LABEL = _tr('Color')

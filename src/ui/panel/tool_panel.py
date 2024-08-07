@@ -4,16 +4,18 @@ from typing import Optional, Dict, Callable
 from PyQt6.QtCore import Qt, pyqtSignal, QRect, QSize, QMargins, QObject
 from PyQt6.QtGui import QMouseEvent, QPaintEvent, QPainter, QPen, QResizeEvent
 from PyQt6.QtWidgets import QWidget, QLabel, QHBoxLayout, QVBoxLayout, QSizePolicy, QScrollArea, QPushButton, \
-    QGridLayout, QLayout, QApplication
+    QGridLayout, QLayout, QApplication, QTabWidget
 
 from src.controller.tool_controller import ToolController
 from src.image.layers.image_stack import ImageStack
 from src.tools.base_tool import BaseTool
+from src.ui.panel.color_panel import ColorControlPanel
 from src.ui.panel.image_panel import ImagePanel
 from src.ui.panel.layer_ui.layer_panel import LayerPanel
 from src.ui.widget.draggable_divider import DraggableDivider
 from src.ui.widget.key_hint_label import KeyHintLabel
 from src.ui.widget.reactive_layout_widget import ReactiveLayoutWidget
+from src.ui.window.image_window import ImageWindow
 from src.util.display_size import get_window_size
 from src.util.geometry_utils import get_scaled_placement
 
@@ -28,6 +30,10 @@ def _tr(*args):
 
 TOOL_PANEL_TITLE = _tr('Tools')
 GENERATE_BUTTON_TEXT = _tr('Generate')
+LAYER_TAB = _tr('Layers')
+COLOR_TAB = _tr('Color')
+NAV_TAB = _tr('Navigation')
+
 TOOL_ICON_SIZE = 40
 
 TOOL_LIST_STRETCH = 0
@@ -66,7 +72,14 @@ class ToolPanel(QWidget):
         self._divider = DraggableDivider()
 
         # TODO: Tabbed panel with other options
-        self._layer_panel = LayerPanel(image_stack)
+        self._control_panel = QTabWidget()
+        self._layer_tab = LayerPanel(image_stack)
+        self._color_tab = ColorControlPanel(disable_extended_layouts=True)
+        self._color_tab.set_orientation(self._orientation)
+        self._navigation_tab = ImageWindow(image_stack)
+        self._control_panel.addTab(self._layer_tab, LAYER_TAB)
+        self._control_panel.addTab(self._color_tab, COLOR_TAB)
+        self._control_panel.addTab(self._navigation_tab, NAV_TAB)
 
         self._generate_button = QPushButton(GENERATE_BUTTON_TEXT)
         self._generate_button.clicked.connect(generate_fn)
@@ -133,7 +146,7 @@ class ToolPanel(QWidget):
             return self._layout.stretch(idx)
         tool_list_stretch = _get_stretch(self._tool_button_layout, TOOL_LIST_STRETCH)
         tool_panel_stretch = _get_stretch(self._tool_scroll_area, TOOL_PANEL_STRETCH)
-        layer_panel_stretch = _get_stretch(self._layer_panel, LAYER_PANEL_STRETCH)
+        layer_panel_stretch = _get_stretch(self._control_panel, LAYER_PANEL_STRETCH)
         show_generate_button = self._generate_button.isVisible()
 
         # Replace layout if orientation changed:
@@ -150,7 +163,7 @@ class ToolPanel(QWidget):
             self._layout.addLayout(self._tool_button_layout, stretch=tool_list_stretch)
             self._layout.addWidget(self._tool_scroll_area, stretch=tool_panel_stretch)
             self._layout.addWidget(self._divider)
-            self._layout.addWidget(self._layer_panel, stretch=layer_panel_stretch)
+            self._layout.addWidget(self._control_panel, stretch=layer_panel_stretch)
             self._layout.addWidget(self._generate_button)
             self._generate_button.setVisible(show_generate_button)
             if self._orientation == Qt.Orientation.Horizontal:
@@ -169,6 +182,7 @@ class ToolPanel(QWidget):
         if self._orientation == orientation:
             return
         self._orientation = orientation
+        self._color_tab.set_orientation(orientation)
         self._build_layout()
 
     def show_generate_button(self, should_show: bool) -> None:
