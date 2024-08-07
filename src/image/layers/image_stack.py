@@ -696,6 +696,8 @@ class ImageStack(QObject):
         painter.drawImage(QRect(QPoint(), base_layer.size), base_layer.image)
 
         painter.setTransform(top_to_base_transform * base_paint_transform)
+        painter.setOpacity(top_layer.opacity)
+        painter.setCompositionMode(top_layer.composition_mode)
         painter.drawImage(top_layer.bounds, top_layer.image)
         painter.end()
 

@@ -1,6 +1,4 @@
 # Development tasks
-
-- Bug: Composition mode not used when merging layers down (what about opacity?)
 - Bug(?): Smudge/blur brushes behave oddly when input doesn't have pressure data
 
 # Misc
@@ -28,6 +26,7 @@
 - Transparency locking: adjust for transformation offset (temp disable when resizing/cropping layers, probably)
 - support for missing composition modes
 - Add selection layer back to layer panel
+- Add "merge group" and "merge all" options
 
 # Menus
 - open mypaint brush panel
