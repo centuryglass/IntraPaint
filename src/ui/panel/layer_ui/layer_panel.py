@@ -5,7 +5,7 @@ from typing import Optional, List, Callable, Any
 from PyQt6.QtCore import Qt, QSize, QPointF, QTimer
 from PyQt6.QtGui import QIcon
 from PyQt6.QtWidgets import QWidget, QLabel, QVBoxLayout, QHBoxLayout, QScrollArea, QToolButton, QSlider, \
-    QDoubleSpinBox, QComboBox
+    QDoubleSpinBox, QComboBox, QApplication
 
 from src.image.layers.image_stack import ImageStack
 from src.image.layers.layer import Layer
@@ -15,24 +15,32 @@ from src.util.shared_constants import COMPOSITION_MODES, PROJECT_DIR, APP_ICON_P
 
 logger = logging.getLogger(__name__)
 
+# The `QCoreApplication.translate` context for strings in this file
+TR_ID = 'ui.panel.layer_ui.layer_panel'
+
+
+def _tr(*args):
+    """Helper to make `QCoreApplication.translate` more concise."""
+    return QApplication.translate(TR_ID, *args)
+
+
 LIST_SPACING = 4
 
-WINDOW_TITLE = 'Image Layers'
+WINDOW_TITLE = _tr('Image Layers')
+ADD_BUTTON_TOOLTIP = _tr('Create a new layer above the current active layer.')
+DELETE_BUTTON_TOOLTIP = _tr('Delete the active layer.')
+LAYER_UP_BUTTON_TOOLTIP = _tr('Move the active layer up.')
+LAYER_DOWN_BUTTON_TOOLTIP = _tr('Move the active layer down.')
+MERGE_DOWN_BUTTON_TOOLTIP = _tr('Merge the active layer with the one below it.')
+MERGE_BUTTON_LABEL = _tr('Merge Down')
+OPACITY_LABEL_TEXT = _tr('Opacity:')
+MODE_LABEL_TEXT = _tr('Layer mode:')
 
 ADD_BUTTON_ICON = f'{PROJECT_DIR}/resources/icons/layer/plus_icon.svg'
-ADD_BUTTON_TOOLTIP = 'Create a new layer above the current active layer.'
 DELETE_BUTTON_ICON = f'{PROJECT_DIR}/resources/icons/layer/minus_icon.svg'
-DELETE_BUTTON_TOOLTIP = 'Delete the active layer.'
 LAYER_UP_BUTTON_ICON = f'{PROJECT_DIR}/resources/icons/layer/up_icon.svg'
-LAYER_UP_BUTTON_TOOLTIP = 'Move the active layer up.'
 LAYER_DOWN_BUTTON_ICON = f'{PROJECT_DIR}/resources/icons/layer/down_icon.svg'
-LAYER_DOWN_BUTTON_TOOLTIP = 'Move the active layer down.'
 MERGE_DOWN_BUTTON_ICON = f'{PROJECT_DIR}/resources/icons/layer/merge_down_icon.svg'
-MERGE_DOWN_BUTTON_TOOLTIP = 'Merge the active layer with the one below it.'
-MERGE_BUTTON_LABEL = 'Merge Down'
-
-OPACITY_LABEL_TEXT = 'Opacity:'
-MODE_LABEL_TEXT = 'Layer mode:'
 
 SCROLL_TIMER_INTERVAL_MS = 50
 

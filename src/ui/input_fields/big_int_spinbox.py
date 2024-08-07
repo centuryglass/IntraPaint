@@ -46,13 +46,6 @@ class BigIntSpinbox(QAbstractSpinBox):
         self._line_edit.textChanged.connect(on_change)
         self.setLineEdit(self._line_edit)
 
-    def sizeHint(self):
-        """Reduce the expected width."""
-        base_hint = super().sizeHint()
-        base_hint.setWidth(base_hint.width() // 20)
-        print(f'value: {self.value()}, hint: {base_hint}, size: {self.size()}, min: {self.minimumSize()}')
-        return base_hint
-
     def value(self) -> int:
         """Returns the current numeric value as an int."""
         return int(self._line_edit.text())

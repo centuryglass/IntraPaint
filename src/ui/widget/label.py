@@ -4,7 +4,7 @@ An extended QLabel implementation that supports vertical text.
 from typing import Optional
 
 from PyQt6.QtCore import Qt, QSize, QPointF
-from PyQt6.QtGui import QPainter, QPixmap, QPainterPath, QTransform, QFont, QColor, QPalette
+from PyQt6.QtGui import QPainter, QPixmap, QPainterPath, QTransform, QFont, QColor, QPalette, QIcon
 from PyQt6.QtWidgets import QLabel, QSizePolicy, QWidget
 
 from src.util.display_size import find_text_size
@@ -97,18 +97,20 @@ class Label(QLabel):
         self._merge_text_and_icon()
 
     # noinspection PyPep8Naming
-    def setIcon(self, icon: QPixmap | str) -> None:
+    def setIcon(self, icon: QPixmap | QIcon | str) -> None:
         """Adds an icon to the label before its text.
 
         Parameters
         ----------
-        icon : QPixmap or str
+        icon : QPixmap or QIcon or str
             If icon is a string, it should be a path to a valid image file.
         """
         if self._icon is not None:
             self._image, self._image_inverted = self._draw_text_pixmaps()
         if isinstance(icon, str):
             icon = QPixmap(icon)
+        if isinstance(icon, QIcon):
+            icon = icon.pixmap(QSize(256, 256))
         if not isinstance(icon, QPixmap):
             raise TypeError(f'Icon should be image path or QPixmap, icon={icon}')
         self._icon = icon
@@ -157,29 +159,34 @@ class Label(QLabel):
         """Combines the text and icon into a single internal image."""
         assert self._image is not None and self._image_inverted is not None
         if self._icon is not None:
+            text_padding = self._image.width() // 3 if self._orientation == Qt.Orientation.Vertical  \
+                else self._image.height() // 3
+            icon_padding = 2
             if self._orientation == Qt.Orientation.Vertical:
-                scaled_icon = self._icon.scaledToWidth(self._image.width())
+                scaled_icon = self._icon.scaledToWidth(self._image.width() - (2 * icon_padding),
+                                                       Qt.TransformationMode.SmoothTransformation)
             else:
-                scaled_icon = self._icon.scaledToHeight(self._image.height())
-            icon_padding = (self._image.width() if self._orientation == Qt.Orientation.Vertical
-                            else self._image.height()) // 3
+                scaled_icon = self._icon.scaledToHeight(self._image.height() - (2 * icon_padding),
+                                                        Qt.TransformationMode.SmoothTransformation)
             new_size = QSize(self._image.width(), self._image.height())
             if self._orientation == Qt.Orientation.Vertical:
-                new_size.setHeight(new_size.height() + icon_padding + scaled_icon.height())
+                new_size.setHeight(new_size.height() + 2 * icon_padding + text_padding + scaled_icon.height())
             else:
-                new_size.setWidth(new_size.width() + icon_padding + scaled_icon.width())
+                new_size.setWidth(new_size.width() + 2 * icon_padding + text_padding + scaled_icon.width())
 
             def draw(text_image: QPixmap) -> QPixmap:
                 """Perform drawing operations on one of the internal label images."""
-                assert self._icon is not None
                 merged_image = QPixmap(new_size)
                 merged_image.fill(self._bg_color if text_image == self._image else self._fg_color)
                 painter = QPainter(merged_image)
-                painter.drawPixmap(0, 0, self._icon)
+                painter.setRenderHint(QPainter.RenderHint.LosslessImageRendering, True)
+                painter.setRenderHint(QPainter.RenderHint.SmoothPixmapTransform, True)
+                painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
+                painter.drawPixmap(icon_padding, icon_padding, scaled_icon)
                 if self._orientation == Qt.Orientation.Vertical:
-                    painter.drawPixmap(0, self._icon.height() + icon_padding, text_image)
+                    painter.drawPixmap(0, scaled_icon.height() + icon_padding * 2 + text_padding, text_image)
                 else:
-                    painter.drawPixmap(self._icon.width() + icon_padding, 0, text_image)
+                    painter.drawPixmap(scaled_icon.width() + icon_padding * 2 + text_padding, 0, text_image)
                 painter.end()
                 return merged_image
 

@@ -51,11 +51,11 @@ class ToolController(QObject):
         self._active_tool: Optional[BaseTool] = None
         self._active_delegate: Optional[BaseTool] = None
         self._tool_modifier_delegates: Dict[BaseTool, Dict[Qt.KeyboardModifier, BaseTool]] = {}
-        self._last_modifier_state = QApplication.keyboardModifiers()
         self._mouse_in_bounds = False
         self._all_tools: List[BaseTool] = []
         image_viewer.setMouseTracking(True)
         image_viewer.installEventFilter(self)
+        HotkeyFilter.instance().modifiers_changed.connect(self._handle_modifier_delegation)
 
         if not load_all_tools:
             return
@@ -142,22 +142,18 @@ class ToolController(QObject):
             self._tool_modifier_delegates[source_tool] = {}
         self._tool_modifier_delegates[source_tool][modifiers] = delegate_tool
 
-    def _check_modifiers(self):
+    def _handle_modifier_delegation(self, modifiers: Qt.KeyboardModifier) -> None:
         """Check for changes in held key modifiers, and handle tool delegation."""
-        modifiers = QApplication.keyboardModifiers()
-        if modifiers == self._last_modifier_state:
-            return
-        self._last_modifier_state = modifiers
         if self._active_delegate and self._tool_modifier_delegates[self._active_tool] != modifiers:
             self._active_delegate.is_active = False
             self._active_delegate = None
             self._active_tool.is_active = True
-            self.tool_changed.emit(self._active_tool.label)
+            self.tool_changed.emit(self._active_tool)
         if modifiers in self._tool_modifier_delegates[self._active_tool]:
             self._active_tool.is_active = False
             self._active_delegate = self._tool_modifier_delegates[self._active_tool][modifiers]
             self._active_delegate.is_active = True
-            self.tool_changed.emit(self._active_delegate.label)
+            self.tool_changed.emit(self._active_delegate)
 
     @property
     def active_tool(self) -> Optional[BaseTool]:
@@ -190,7 +186,6 @@ class ToolController(QObject):
         assert event is not None
         if self._active_tool is None:
             return super().eventFilter(source, event)
-        self._check_modifiers()
         active_tool = self._active_delegate if self._active_delegate is not None else self._active_tool
 
         def find_image_coordinates(typed_event: QMouseEvent | QTabletEvent) -> QPoint:

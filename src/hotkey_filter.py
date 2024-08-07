@@ -2,7 +2,7 @@
 from typing import Optional, Dict, Callable, List, cast
 import logging
 
-from PyQt6.QtCore import Qt, QObject, QEvent
+from PyQt6.QtCore import Qt, QObject, QEvent, pyqtSignal
 from PyQt6.QtGui import QKeyEvent, QKeySequence
 from PyQt6.QtWidgets import QApplication, QWidget, QTextEdit, QLineEdit, QPlainTextEdit, QAbstractSpinBox, QComboBox
 
@@ -17,6 +17,7 @@ class HotkeyFilter(QObject):
     """Registers and handles window-level hotkeys."""
 
     shared_instance: Optional['HotkeyFilter'] = None
+    modifiers_changed = pyqtSignal(Qt.KeyboardModifier)
 
     @staticmethod
     def instance() -> 'HotkeyFilter':
@@ -53,6 +54,7 @@ class HotkeyFilter(QObject):
         assert app is not None, 'No QApplication initialized'
         app.installEventFilter(self)
         self._default_focus: Optional[QWidget] = None
+        self._last_modifier_state = QApplication.keyboardModifiers()
 
     def set_default_focus(self, focus_widget: Optional[QWidget]) -> None:
         """Sets or clears the default focus widget. If a focus widget is set, pressing escape within a text input
@@ -142,6 +144,7 @@ class HotkeyFilter(QObject):
 
     def eventFilter(self, source: Optional[QObject], event: Optional[QEvent]) -> bool:
         """Check for registered keys and trigger associated actions."""
+        self._check_modifiers()
         if event is None:
             return False
         if event.type() != QEvent.Type.KeyPress:
@@ -172,3 +175,11 @@ class HotkeyFilter(QObject):
             logger.debug(f'{event.text()}: not claimed by handler {i} of {len(self._bindings[event.key()])}: '
                          f'got {event_handled}')
         return event_handled
+
+    def _check_modifiers(self):
+        """Check for changes in held key modifiers, notifying any registered listeners."""
+        modifiers = QApplication.keyboardModifiers()
+        if modifiers == self._last_modifier_state:
+            return
+        self._last_modifier_state = modifiers
+        self.modifiers_changed.emit(self._last_modifier_state)

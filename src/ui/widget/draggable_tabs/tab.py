@@ -6,6 +6,7 @@ from PyQt6.QtCore import pyqtSignal, Qt, QMimeData
 from PyQt6.QtGui import QPalette, QMouseEvent, QDrag
 from PyQt6.QtWidgets import QWidget, QFrame
 
+from src.config.application_config import AppConfig
 from src.ui.widget.label import Label
 
 
@@ -16,7 +17,7 @@ class Tab(Label):
     tab_content_replaced = pyqtSignal(QWidget, QWidget)
 
     def __init__(self, text: str, widget: Optional[QWidget] = None) -> None:
-        super().__init__(text, size=10)
+        super().__init__(text, size=AppConfig().get(AppConfig.TAB_FONT_POINT_SIZE))
         self.setFrameStyle(QFrame.Shape.Panel | QFrame.Shadow.Plain)
         palette = self.palette()
         palette.setColor(QPalette.ColorRole.Mid, palette.color(self.foregroundRole()))

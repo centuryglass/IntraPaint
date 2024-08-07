@@ -25,6 +25,14 @@
         "default": 10,
         "saved": true
     },
+    "tab_font_point_size": {
+        "label": "Tab font size:",
+        "category": "Interface",
+        "description": "Font point size to use for user interface tab labels (may require restart)",
+        "type": "int",
+        "default": 12,
+        "saved": true
+    },
     "animate_outlines": {
         "label": "Animate outlines and selections:",
         "category": "Interface",

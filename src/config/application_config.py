@@ -115,6 +115,7 @@ class AppConfig(Config, metaclass=Singleton):
     SKIP_STEPS: str
     SPEED_MODIFIER_MULTIPLIER: str
     STYLE: str
+    TAB_FONT_POINT_SIZE: str
     THEME: str
     TILING: str
     TOOL_TAB_BAR: str

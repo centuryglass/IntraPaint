@@ -6,6 +6,7 @@ from typing import Optional, Tuple, cast, List, Callable
 from PIL import Image
 from PyQt6.QtCore import QObject, QSize, QPoint, QRect, pyqtSignal, QRectF
 from PyQt6.QtGui import QPainter, QPixmap, QImage, QColor, QTransform, QPolygonF
+from PyQt6.QtWidgets import QApplication
 
 from src.config.application_config import AppConfig
 from src.config.cache import Cache
@@ -21,10 +22,15 @@ from src.util.geometry_utils import adjusted_placement_in_bounds
 from src.util.image_utils import qimage_to_pil_image, create_transparent_image, image_content_bounds
 from src.util.validation import assert_type
 
-LAYER_DATA_FILE_EMBEDDED = 'data.json'
+# The `QCoreApplication.translate` context for strings in this file
+TR_ID = 'image.layers.image_stack'
 
-SELECTION_LAYER_FILE_EMBEDDED = 'selection.png'
 
+def _tr(*args):
+    """Helper to make `QCoreApplication.translate` more concise."""
+    return QApplication.translate(TR_ID, *args)
+
+NEW_IMAGE_LAYER_GROUP_NAME = _tr('new image')
 
 class ImageStack(QObject):
     """Manages an edited image composed of multiple layers."""
@@ -57,7 +63,7 @@ class ImageStack(QObject):
                 self.generation_area = QRect(self._generation_area.topLeft(), size)
         AppConfig().connect(self, AppConfig.EDIT_SIZE, _update_gen_area_size)
 
-        self._layer_stack = LayerStack('new image')
+        self._layer_stack = LayerStack(NEW_IMAGE_LAYER_GROUP_NAME)
         self._image = CachedData(None)
         self._active_layer_id = self._layer_stack.id
 
@@ -731,7 +737,13 @@ class ImageStack(QObject):
         if layer is None:
             layer = self.active_layer
         if not isinstance(layer, ImageLayer):
-            print('TODO: LayerStack to image size')
+            assert isinstance(layer, LayerStack)
+            with UndoStack().combining_actions('ImageStack.layer_to_image_size'):
+                layers = layer.recursive_child_layers
+                for child_layer in layers:
+                    if child_layer.locked or child_layer.parent_locked or not isinstance(child_layer, ImageLayer):
+                        continue
+                    self.layer_to_image_size(child_layer)
             return
         layer_image_bounds = layer.transformed_bounds
         image_bounds = self.bounds

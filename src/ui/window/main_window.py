@@ -25,7 +25,7 @@ from src.ui.window.image_window import ImageWindow
 from src.util.application_state import AppStateTracker, APP_STATE_LOADING, APP_STATE_NO_IMAGE, APP_STATE_EDITING, \
     APP_STATE_SELECTION
 from src.util.display_size import get_screen_size
-from src.util.shared_constants import TIMELAPSE_MODE_FLAG, APP_ICON_PATH
+from src.util.shared_constants import TIMELAPSE_MODE_FLAG, APP_ICON_PATH, PROJECT_DIR
 from src.util.validation import layout_debug
 
 logger = logging.getLogger(__name__)
@@ -35,14 +35,17 @@ CONTROL_TAB_NAME = 'Image Generation'
 DEFAULT_LOADING_MESSAGE = 'Loading...'
 TAB_BOX_STRETCH = 50
 IMAGE_PANEL_STRETCH = 300
-AUTO_TAB_MOVE_THRESHOLD = 1000
-USE_LOWER_CONTROL_TAB_THRESHOLD = 1500
+AUTO_TAB_MOVE_THRESHOLD = 1200
+USE_LOWER_CONTROL_TAB_THRESHOLD = 1600
 
 TOP_TAB_BOX_ID = 'TOP'
 BOTTOM_TAB_BOX_ID = 'BOTTOM'
 LEFT_TAB_BOX_ID = 'LEFT'
 RIGHT_TAB_BOX_ID = 'RIGHT'
 LOWER_TAB_BOX_ID = 'LOWER'
+
+TOOL_TAB_ICON = f'{PROJECT_DIR}/resources/icons/wrench.svg'
+GEN_TAB_ICON = f'{PROJECT_DIR}/resources/icons/sparkle.svg'
 
 
 class MainWindow(QMainWindow):
@@ -125,6 +128,7 @@ class MainWindow(QMainWindow):
         # Image/Mask editing layout:
         self._tool_panel = ToolPanel(image_stack, self._image_panel, self.generate_signal.emit)
         self._tool_tab = Tab('Tools', self._tool_panel)
+        self._tool_tab.setIcon(QIcon(TOOL_TAB_ICON))
 
         tab_box = self._get_tab_box(AppConfig().get(AppConfig.TOOL_TAB_BAR))
         if tab_box is None:
@@ -135,6 +139,7 @@ class MainWindow(QMainWindow):
 
         self._control_panel: Optional[QWidget] = None
         self._control_tab = Tab(CONTROL_TAB_NAME)
+        self._control_tab.setIcon(QIcon(TOOL_TAB_ICON))
 
         for panel in (self._image_panel, self._tool_panel):
             AppStateTracker.set_enabled_states(panel, [APP_STATE_EDITING])
@@ -245,11 +250,9 @@ class MainWindow(QMainWindow):
 
     def resizeEvent(self, unused_event: Optional[QResizeEvent]) -> None:
         """Applies the most appropriate layout when the window size changes."""
-        print(f'window size: {self.size()}')
         screen_size = get_screen_size(self, False)
         if not screen_size.isNull() and screen_size != self.maximumSize():
             self.setMaximumSize(screen_size)
-            print(f'max size = {self.maximumSize()}')
         if hasattr(self, '_loading_widget') and TIMELAPSE_MODE_FLAG not in sys.argv:
             loading_widget_size = int(self.height() / 8)
             loading_bounds = QRect(self.width() // 2 - loading_widget_size // 2, loading_widget_size * 3,

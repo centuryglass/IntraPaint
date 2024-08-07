@@ -287,17 +287,17 @@ class TabBar(BorderedWidget):
             if self._orientation == Qt.Orientation.Horizontal:
                 if self._at_parent_start:
                     edge_rect = QRect(box.x(), 0, box.width(), box.top() + 1)
-                    box.setTop(0)
+                    box.setTop(2)
                 else:
                     edge_rect = QRect(box.x(), box.bottom(), box.width(), self.height() - box.bottom() - 1)
-                    box.setBottom(self.height())
+                    box.setBottom(self.height() -2)
             else:
                 if self._at_parent_start:
                     edge_rect = QRect(0, box.y(), box.x() - 1, box.height())
-                    box.setLeft(0)
+                    box.setLeft(2)
                 else:
                     edge_rect = QRect(box.right() - 1, box.y(), self.width() - box.right() - 1,  box.height())
-                    box.setRight(self.width())
+                    box.setRight(self.width() - 2)
             painter.fillRect(edge_rect, foreground_color if widget == self._active_tab else Qt.GlobalColor.gray)
             painter.drawRect(box)
 

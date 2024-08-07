@@ -164,7 +164,6 @@ class ControlnetPanel(BorderedWidget):
         load_image_button = QPushButton()
         load_image_button.setText(CONTROL_IMAGE_LABEL)
         load_image_button.setEnabled(not use_generation_area)
-        load_image_button.clicked.connect(lambda: open_image_file(self))
         image_row.addWidget(load_image_button, stretch=10)
 
         image_path_edit = QLineEdit('' if use_generation_area or CONTROL_CONFIG_IMAGE_KEY not in initial_control_state
@@ -176,6 +175,16 @@ class ControlnetPanel(BorderedWidget):
         reuse_image_checkbox.setText(GENERATION_AREA_AS_CONTROL)
         image_row.addWidget(reuse_image_checkbox, stretch=10)
         reuse_image_checkbox.setChecked(use_generation_area)
+
+        def open_control_image_file() -> None:
+            """Select an image to use as the control image."""
+            image_path, _ = open_image_file(self)
+            if image_path is not None:
+                if isinstance(image_path, list):
+                    image_path = image_path[0]
+                if isinstance(image_path, str):
+                    image_path_edit.setText(image_path)
+        load_image_button.clicked.connect(open_control_image_file)
 
         def reuse_image_update(checked: bool):
             """Update config, disable/enable appropriate components if the 'reuse image as control' box changes."""

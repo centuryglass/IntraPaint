@@ -46,7 +46,6 @@ def get_screen_size(window: Optional[QMainWindow] = None, default_to_primary: bo
         display = app.primaryScreen()
     if display is None:
         return QSize(0, 0)
-    print(f'display: {display.name()}, size: {display.size()}')
     return display.size()
 
 

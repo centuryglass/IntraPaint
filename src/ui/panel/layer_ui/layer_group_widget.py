@@ -3,8 +3,9 @@ from typing import Dict, Optional, List
 import logging
 
 from PyQt6.QtCore import QPointF, QPoint, QLine, pyqtSignal, Qt
-from PyQt6.QtGui import QDragEnterEvent, QDragMoveEvent, QDragLeaveEvent, QDropEvent, QPaintEvent, QPainter
-from PyQt6.QtWidgets import QVBoxLayout, QWidget
+from PyQt6.QtGui import QDragEnterEvent, QDragMoveEvent, QDragLeaveEvent, QDropEvent, QPaintEvent, QPainter, \
+    QResizeEvent
+from PyQt6.QtWidgets import QVBoxLayout, QWidget, QSizePolicy
 
 from src.image.layers.image_stack import ImageStack
 from src.image.layers.layer import Layer
@@ -24,6 +25,7 @@ class LayerGroupWidget(CollapsibleBox):
 
     def __init__(self, layer_stack: LayerStack, image_stack: ImageStack) -> None:
         super().__init__(scrolling=False)
+        self.set_expanded_size_policy(QSizePolicy.Policy.Fixed)
         self._layer = layer_stack
         self._image_stack = image_stack
         self._layer_items: Dict[Layer, LayerGroupWidget | LayerWidget] = {}
@@ -99,6 +101,11 @@ class LayerGroupWidget(CollapsibleBox):
             self._insert_index = -1
             self._insert_pos = -1
             self.update()
+
+    def resizeEvent(self, event: Optional[QResizeEvent]) -> None:
+        """Keep child layers in line with the parent group layer"""
+        x_offset = self._parent_item.x() - self.x()
+        self._list_layout.setContentsMargins(x_offset + 2, 2, 2, 2)
 
     def dragEnterEvent(self, event: Optional[QDragEnterEvent]) -> None:
         """Accept drag events from layer widgets."""

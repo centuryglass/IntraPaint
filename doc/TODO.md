@@ -1,10 +1,6 @@
 # Development tasks
 
-- Bug: ControlNet preprocess responses at different resolutions throw an exception when compositing
-- Bug: ControlNet not working when using image as control with Txt2Img
-- Bug: Selected(Inverted) brush icons are sometimes missing or otherwise broken
 - Bug: First brush stroke sometimes not working (brush tool)
-- Bug: Control to delegate to color picker behaves oddly when the mouse cursor leaves the image
 - Bug: Composition mode not used when merging layers down (what about opacity?)
 - Bug(?): Smudge/blur brushes behave oddly when input doesn't have pressure data
 

@@ -8,7 +8,7 @@ from typing import Optional, Dict, List, cast, Any
 
 import requests
 from PyQt6.QtCore import pyqtSignal, QSize, QThread, pyqtBoundSignal
-from PyQt6.QtGui import QImage, QAction
+from PyQt6.QtGui import QImage, QAction, QIcon
 from PyQt6.QtWidgets import QInputDialog, QWidget, QApplication, QTabWidget
 
 from src.api.a1111_webservice import A1111Webservice, AuthError
@@ -78,12 +78,13 @@ SD_WEBUI_GENERATOR_SETUP = _tr('<h2>Installing the WebUI</h2><p>The <a href="htt
                                ' Once the WebUI starts successfully, you should be able to activate this IntraPaint'
                                ' generator.</p>')
 SD_PREVIEW_IMAGE = f'{PROJECT_DIR}/resources/generator_preview/stable-diffusion.png'
+CONTROLNET_TAB_ICON = f'{PROJECT_DIR}/resources/icons/hex.svg'
 DEFAULT_SD_URL = 'http://localhost:7860'
 STABLE_DIFFUSION_CONFIG_CATEGORY = 'Stable-Diffusion'
 AUTH_ERROR_DETAIL_KEY = 'detail'
 AUTH_ERROR_MESSAGE = _tr('Not authenticated')
 INTERROGATE_ERROR_MESSAGE_NO_IMAGE = _tr('Open or create an image first.')
-INTERROGATE_ERROR_MESSAGE_EXISTING_OPERATION = _tr('Existing operation currently in progress')
+ERROR_MESSAGE_EXISTING_OPERATION = _tr('Existing operation still in progress')
 INTERROGATE_ERROR_TITLE = _tr('Interrogate failure')
 INTERROGATE_LOADING_TEXT = _tr('Running CLIP interrogate')
 URL_REQUEST_TITLE = _tr('Inpainting UI')
@@ -114,6 +115,8 @@ LCM_LORA_1_5 = 'lcm-lora-sdv1-5'
 LCM_LORA_XL = 'lcm-lora-sdxl'
 
 MENU_STABLE_DIFFUSION = 'Stable-Diffusion'
+
+GEN_TAB_ICON = f'{PROJECT_DIR}/resources/icons/sparkle.svg'
 
 
 def _check_lcm_mode_available(_) -> bool:
@@ -269,6 +272,7 @@ class SDWebUIGenerator(ImageGenerator):
                                                          Cache().get(Cache.CONTROLNET_MODULES),
                                                          Cache().get(Cache.CONTROLNET_MODELS))
                 self._controlnet_tab = Tab(CONTROLNET_TITLE, controlnet_panel)
+                self._controlnet_tab.setIcon(QIcon(CONTROLNET_TAB_ICON))
 
             return True
         except AuthError:
@@ -548,7 +552,7 @@ class SDWebUIGenerator(ImageGenerator):
         assert self._webservice is not None
         init_data = self._webservice.progress_check()
         if init_data[PROGRESS_KEY_CURRENT_IMAGE] is not None:
-            raise RuntimeError('Image generation in progress, try again later.')
+            raise RuntimeError(ERROR_MESSAGE_EXISTING_OPERATION)
         self._async_progress_check(status_signal)
         try:
             if edit_mode == EDIT_MODE_TXT2IMG:
