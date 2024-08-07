@@ -86,6 +86,17 @@ class SizeField(QWidget):
                 self._layout.addWidget(box, row, 2)
                 row += 1
 
+    def sizeHint(self):
+        """Reduce the expected width."""
+        base_hint = super().sizeHint()
+        base_hint.setWidth(base_hint.width() // 2)
+        return base_hint
+
+    def set_labels_visible(self, should_show: bool) -> None:
+        """Show or hide width/height labels."""
+        self._width_label.setVisible(should_show)
+        self._height_label.setVisible(should_show)
+
     @property
     def orientation(self) -> Qt.Orientation:
         """Return whether boxes are stacked vertically or laid out horizontally."""

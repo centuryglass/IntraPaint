@@ -68,3 +68,4 @@ PIL_SCALING_MODES = {
     'Lanczos': Image.Resampling.LANCZOS,
     'Box': Image.Resampling.BOX
 }
+MAX_WIDGET_SIZE = 16777215

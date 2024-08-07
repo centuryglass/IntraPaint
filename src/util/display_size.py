@@ -35,17 +35,18 @@ def max_font_size(text: str, font: QFont, bounds: QSize) -> int:
     return max_pt
 
 
-def get_screen_size(window: Optional[QMainWindow] = None) -> QSize:
+def get_screen_size(window: Optional[QMainWindow] = None, default_to_primary: bool = True) -> QSize:
     """Returns the size of the display a window is in, or the size of the primary display if window is None."""
     display = None
     app = cast(QApplication, QApplication.instance())
     assert app is not None, 'Application instance must be created to get screen size'
     if window is not None:
         display = app.screenAt(window.pos())
-    if display is None:
+    if display is None and default_to_primary:
         display = app.primaryScreen()
     if display is None:
         return QSize(0, 0)
+    print(f'display: {display.name()}, size: {display.size()}')
     return display.size()
 
 

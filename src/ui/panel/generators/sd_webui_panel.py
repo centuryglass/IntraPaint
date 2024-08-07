@@ -1,22 +1,30 @@
 """A control panel for the Stable-Diffusion WebUI image generator."""
-from typing import cast, Optional
+from typing import Tuple
 
 from PyQt6.QtCore import Qt, pyqtSignal
-from PyQt6.QtWidgets import QWidget, QSizePolicy, QVBoxLayout, QHBoxLayout, QGridLayout, QLabel, QPushButton
+from PyQt6.QtWidgets import QSizePolicy, QGridLayout, QLabel, QPushButton, \
+    QApplication, QFrame
 
 from src.config.application_config import AppConfig
 from src.config.cache import Cache
-from src.ui.panel.controlnet_panel import ControlnetPanel
+from src.ui.input_fields.size_field import SizeField
+from src.ui.input_fields.slider_spinbox import IntSliderSpinbox, FloatSliderSpinbox
 from src.ui.widget.bordered_widget import BorderedWidget
-from src.ui.widget.collapsible_box import CollapsibleBox
 from src.util.application_state import APP_STATE_EDITING, AppStateTracker
-from src.util.shared_constants import GENERATE_BUTTON_TEXT, EDIT_MODE_INPAINT
+from src.util.parameter import DynamicFieldWidget
+from src.util.shared_constants import GENERATE_BUTTON_TEXT, EDIT_MODE_INPAINT, EDIT_MODE_TXT2IMG
 
-CONTROL_BOX_LABEL = 'Image Generation Controls'
-INTERROGATE_BUTTON_TEXT = 'Interrogate'
-INTERROGATE_BUTTON_TOOLTIP = 'Attempt to generate a prompt that describes the current image generation area'
-WIDTH_BOX_TOOLTIP = 'Resize image generation area content to this width before inpainting'
-HEIGHT_BOX_TOOLTIP = 'Resize image generation area content to this height before inpainting'
+# The `QCoreApplication.translate` context for strings in this file
+TR_ID = 'ui.panel.generators.sd_webui_panel'
+
+
+def _tr(*args):
+    """Helper to make `QCoreApplication.translate` more concise."""
+    return QApplication.translate(TR_ID, *args)
+
+
+INTERROGATE_BUTTON_TEXT = _tr('Interrogate')
+INTERROGATE_BUTTON_TOOLTIP = _tr('Attempt to generate a prompt that describes the current image generation area')
 
 
 class SDWebUIPanel(BorderedWidget):
@@ -27,156 +35,228 @@ class SDWebUIPanel(BorderedWidget):
 
     def __init__(self) -> None:
         super().__init__()
-        self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Maximum)
-        control_layout = QVBoxLayout(self)
+        self.setSizePolicy(QSizePolicy.Policy.MinimumExpanding, QSizePolicy.Policy.MinimumExpanding)
         config = AppConfig()
         AppStateTracker.set_enabled_states(self, [APP_STATE_EDITING])
 
-        main_control_box = CollapsibleBox(CONTROL_BOX_LABEL, self)
-        main_control_box.set_expanded_size_policy(QSizePolicy.Policy.Maximum)
-        main_controls = QHBoxLayout()
-        main_control_box.set_content_layout(main_controls)
-        control_layout.addWidget(main_control_box, stretch=20)
+        self._layout = QGridLayout(self)
+        self._orientation = Qt.Orientation.Horizontal
 
-        # Left side: sliders and other wide inputs:
-        wide_options = BorderedWidget()
-        main_controls.addWidget(wide_options, stretch=50)
-        wide_options_layout = QGridLayout()
-        wide_options_layout.setVerticalSpacing(max(2, self.height() // 200))
-        wide_options.setLayout(wide_options_layout)
+        def _get_control_with_label(config_key: str, **kwargs) -> Tuple[QLabel, DynamicFieldWidget]:
+            label = QLabel(config.get_label(config_key))
+            label.setWordWrap(True)
+            control = config.get_control_widget(config_key, **kwargs)
+            label.setBuddy(control)
+            return label, control
+
+        self._prompt_label, self._prompt_textbox = _get_control_with_label(AppConfig.PROMPT, multi_line=True)
+        self._negative_label, self._negative_textbox = _get_control_with_label(AppConfig.NEGATIVE_PROMPT,
+                                                                               multi_line=True)
         # Font size will be used to limit the height of the prompt boxes:
-        textbox_height = self.font().pixelSize() * 4
-        if textbox_height < 0:  # font uses pt, not px
-            textbox_height = self.font().pointSize() * 6
+        line_height = self.font().pixelSize()
+        if line_height < 0:  # font uses pt, not px
+            line_height = round(self.font().pointSize() * 1.5)
+        textbox_height = line_height * 4
+        for textbox in (self._prompt_textbox, self._negative_textbox):
+            textbox.setMaximumHeight(textbox_height)
 
-        # First column: prompt,negative:
-        wide_options_layout.setRowStretch(0, 2)
-        wide_options_layout.addWidget(QLabel(config.get_label(AppConfig.PROMPT)), 0, 0)
-        prompt_textbox = config.get_control_widget(AppConfig.PROMPT, multi_line=True)
-        prompt_textbox.setMaximumHeight(textbox_height)
-        wide_options_layout.addWidget(prompt_textbox, 0, 1)
+        self._gen_size_label, self._gen_size_input = _get_control_with_label(AppConfig.GENERATION_SIZE)
+        self._batch_size_label, self._batch_size_spinbox = _get_control_with_label(AppConfig.BATCH_SIZE)
+        self._batch_count_label, self._batch_count_spinbox = _get_control_with_label(AppConfig.BATCH_COUNT)
+        self._step_count_label, self._step_count_slider = _get_control_with_label(AppConfig.SAMPLING_STEPS)
+        self._guidance_scale_label, self._guidance_scale_slider = _get_control_with_label(AppConfig.GUIDANCE_SCALE)
+        self._denoising_strength_label, self._denoising_strength_slider = _get_control_with_label(
+            AppConfig.DENOISING_STRENGTH)
+        self._edit_mode_label, self._edit_mode_combobox = _get_control_with_label(AppConfig.EDIT_MODE)
+        self._sampler_label, self._sampler_combobox = _get_control_with_label(AppConfig.SAMPLING_METHOD)
+        self._full_res_label, self._full_res_checkbox = _get_control_with_label(AppConfig.INPAINT_FULL_RES)
+        self._full_res_checkbox.setText('')
+        self._padding_label, self._padding_slider = _get_control_with_label(AppConfig.INPAINT_FULL_RES_PADDING)
+        self._seed_label, self._seed_textbox = _get_control_with_label(AppConfig.SEED)
+        self._last_seed_label = QLabel(Cache().get_label(Cache.LAST_SEED))
+        self._last_seed_textbox = Cache().get_control_widget(Cache.LAST_SEED)
+        self._last_seed_textbox.setReadOnly(True)
 
-        wide_options_layout.setRowStretch(1, 2)
-        wide_options_layout.addWidget(QLabel(config.get_label(AppConfig.NEGATIVE_PROMPT)), 1, 0)
-        negative_prompt_textbox = config.get_control_widget(AppConfig.NEGATIVE_PROMPT, multi_line=True)
-        negative_prompt_textbox.setMaximumHeight(textbox_height)
-        wide_options_layout.addWidget(negative_prompt_textbox, 1, 1)
+        self._interrogate_button = QPushButton()
+        self._interrogate_button.setText(INTERROGATE_BUTTON_TEXT)
+        self._interrogate_button.setToolTip(INTERROGATE_BUTTON_TOOLTIP)
+        self._interrogate_button.clicked.connect(self.interrogate_signal)
+        self._generate_button = QPushButton()
+        self._generate_button.setText(GENERATE_BUTTON_TEXT)
+        self._generate_button.clicked.connect(self.generate_signal)
 
-        # width and height:
-        gen_size_input = config.get_control_widget(AppConfig.GENERATION_SIZE)
-        gen_size_input.orientation = Qt.Orientation.Vertical
-        wide_options_layout.addWidget(gen_size_input, 0, 2, 2, 4)
-
-        # batch size, count:
-        # NOTE: I'm sneaking these in to the gen_size layout to make sure the alignment is correct.
-        #       This is obviously not ideal, but is safe enough as long as the size field orientation
-        #       doesn't need to change.
-        spinbox_grid_layout = cast(QGridLayout, gen_size_input.layout())
-        spinbox_grid_layout.setColumnStretch(3, 1)
-        spinbox_grid_layout.setColumnStretch(4, 1)
-        spinbox_grid_layout.addWidget(QLabel(config.get_label(AppConfig.BATCH_SIZE)), 0, 3)
-        batch_size_spinbox = config.get_control_widget(AppConfig.BATCH_SIZE)
-        batch_size_spinbox.set_slider_included(False)
-        spinbox_grid_layout.addWidget(batch_size_spinbox, 0, 4)
-
-        # batch count:
-        spinbox_grid_layout.addWidget(QLabel(config.get_label(AppConfig.BATCH_COUNT)), 1, 3)
-        batch_count_spinbox = config.get_control_widget(AppConfig.BATCH_COUNT)
-        batch_count_spinbox.set_slider_included(False)
-        spinbox_grid_layout.addWidget(batch_count_spinbox, 1, 4)
-
-        # Misc. sliders:
-        for i, slider_key in enumerate((AppConfig.SAMPLING_STEPS, AppConfig.GUIDANCE_SCALE,
-                                        AppConfig.DENOISING_STRENGTH)):
-            row_num = i + 2
-            wide_options_layout.setRowStretch(row_num, 1)
-            slider = config.get_control_widget(slider_key)
-            assert hasattr(slider, 'setText')
-            slider.setText(config.get_label(slider_key))
-            wide_options_layout.addWidget(slider, row_num, 0, 1, 6)
-
-        # ControlNet panel, if controlnet is installed:
-        cache = Cache()
-        if cache.get(cache.CONTROLNET_VERSION) > 0:
-            controlnet_panel = ControlnetPanel(AppConfig.CONTROLNET_ARGS_0,
-                                               cache.get(Cache.CONTROLNET_CONTROL_TYPES),
-                                               cache.get(Cache.CONTROLNET_MODULES),
-                                               cache.get(Cache.CONTROLNET_MODELS))
-            controlnet_panel.set_expanded_size_policy(QSizePolicy.Policy.Maximum)
-            control_layout.addWidget(controlnet_panel, stretch=20)
-
-        # Right side: box of dropdown/checkbox options:
-        option_list = BorderedWidget()
-        main_controls.addWidget(option_list, stretch=10)
-        option_list_layout = QVBoxLayout()
-        option_list_layout.setSpacing(max(2, self.height() // 200))
-        option_list.setLayout(option_list_layout)
-
-        def add_option_line(label_text: str, widget: QWidget, tooltip: Optional[str] = None) -> QHBoxLayout:
-            """Handles labels and layout when adding a new line."""
-            option_line = QHBoxLayout()
-            option_list_layout.addLayout(option_line)
-            option_line.addWidget(QLabel(label_text), stretch=1)
-            if tooltip is not None:
-                widget.setToolTip(tooltip)
-            option_line.addWidget(widget, stretch=2)
-            return option_line
-
-        def add_combo_box(config_key: str, inpainting_only: bool, tooltip: Optional[str] = None) -> QHBoxLayout:
-            """Handles layout, labels, and config connections when adding a new combo box."""
-            label_text = config.get_label(config_key)
-            combobox = config.get_control_widget(config_key)
-            if inpainting_only:
-                config.connect(combobox, AppConfig.EDIT_MODE,
-                               lambda new_mode: combobox.setEnabled(new_mode == 'Inpaint'))
-            return add_option_line(label_text, combobox, tooltip)
-
-        add_combo_box(AppConfig.EDIT_MODE, False)
-        add_combo_box(AppConfig.MASKED_CONTENT, True)
-        add_combo_box(AppConfig.SAMPLING_METHOD, False)
-        padding_line_index = len(option_list_layout.children())
-        padding_line = QHBoxLayout()
-        padding_label = QLabel(config.get_label(AppConfig.INPAINT_FULL_RES_PADDING))
-        padding_line.addWidget(padding_label, stretch=1)
-        padding_spinbox = config.get_control_widget(AppConfig.INPAINT_FULL_RES_PADDING)
-        padding_line.addWidget(padding_spinbox, stretch=2)
-        option_list_layout.insertLayout(padding_line_index, padding_line)
+        def _edit_mode_control_update(edit_mode: str) -> None:
+            self._denoising_strength_label.setEnabled(edit_mode != EDIT_MODE_TXT2IMG)
+            self._denoising_strength_slider.setEnabled(edit_mode != EDIT_MODE_TXT2IMG)
+            self._full_res_label.setEnabled(edit_mode == EDIT_MODE_INPAINT)
+            self._full_res_checkbox.setEnabled(edit_mode == EDIT_MODE_INPAINT)
+            self._padding_label.setEnabled(edit_mode == EDIT_MODE_INPAINT)
+            self._padding_slider.setEnabled(edit_mode == EDIT_MODE_INPAINT)
+        _edit_mode_control_update(config.get(AppConfig.EDIT_MODE))
+        config.connect(self, AppConfig.EDIT_MODE, _edit_mode_control_update)
 
         def padding_layout_update(inpaint_full_res: bool) -> None:
             """Only show the 'full-res padding' spin box if 'inpaint full-res' is checked."""
-            padding_label.setVisible(inpaint_full_res)
-            padding_spinbox.setVisible(inpaint_full_res)
-
-        padding_layout_update(config.get(AppConfig.INPAINT_FULL_RES))
+            self._padding_label.setVisible(inpaint_full_res)
+            self._padding_slider.setVisible(inpaint_full_res)
         config.connect(self, AppConfig.INPAINT_FULL_RES, padding_layout_update)
-        config.connect(self, AppConfig.EDIT_MODE, lambda mode: padding_layout_update(mode == EDIT_MODE_INPAINT))
+        padding_layout_update(config.get(AppConfig.INPAINT_FULL_RES))
+        self._build_layout()
 
-        seed_input = config.get_control_widget(AppConfig.SEED)
-        add_option_line(config.get_label(AppConfig.SEED), seed_input, None)
+    def _build_layout(self) -> None:
+        grid = self._layout
+        for column in range(grid.columnCount()):
+            grid.setColumnStretch(column, 0)
+        for row in range(grid.rowCount()):
+            grid.setRowStretch(row, 0)
+        while grid.count() > 0:
+            item = grid.takeAt(0)
+            assert item is not None
+            widget = item.widget()
+            if widget is not None:
+                widget.setParent(None)
 
-        last_seed_box = cache.get_control_widget(cache.LAST_SEED)
-        last_seed_box.setReadOnly(True)
-        add_option_line(Cache().get_label(cache.LAST_SEED), last_seed_box, None)
+        # Horizontal setup:
+        if self._orientation == Qt.Orientation.Horizontal:
+            grid.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            label_columns = (0, 3, 6)
+            for col in label_columns:
+                grid.setColumnStretch(col, 1)
+            grid.setColumnStretch(1, 10)
+            grid.setColumnStretch(4, 2)
+            grid.setColumnStretch(7, 2)
 
-        control_layout.addStretch(255)
+            # prompt column:
+            grid.setColumnStretch(1, 6)
+            prompt_labels = (self._prompt_label, self._negative_label)
+            prompt_controls = (self._prompt_textbox, self._negative_textbox)
+            for row, label, control in zip(range(len(prompt_labels)), prompt_labels, prompt_controls):
+                grid.setRowStretch(row, 4)
+                grid.addWidget(label, row, 0)
+                grid.addWidget(control, row, 1, 1, 4)
 
-        # Put action buttons on the bottom:
-        button_bar = BorderedWidget(self)
-        button_bar_layout = QHBoxLayout()
-        button_bar.setLayout(button_bar_layout)
-        button_bar.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Maximum)
-        control_layout.addWidget(button_bar, stretch=5)
+            # sliders:
+            slider_labels = (self._step_count_label, self._guidance_scale_label, self._denoising_strength_label)
+            slider_controls = (self._step_count_slider, self._guidance_scale_slider, self._denoising_strength_slider)
+            for row, label, control in zip(range(len(slider_labels)), slider_labels, slider_controls):
+                grid.setRowStretch(row + len(prompt_controls), 1)
+                grid.addWidget(label, row + len(prompt_controls), 0)
+                grid.addWidget(control, row + len(prompt_controls), 1)
+                control.setSizePolicy(QSizePolicy.Policy.MinimumExpanding, QSizePolicy.Policy.MinimumExpanding)
 
-        # interrogate_button:
-        interrogate_button = QPushButton()
-        interrogate_button.setText(INTERROGATE_BUTTON_TEXT)
-        interrogate_button.setToolTip(INTERROGATE_BUTTON_TOOLTIP)
-        interrogate_button.clicked.connect(self.interrogate_signal)
-        button_bar_layout.addWidget(interrogate_button, stretch=1)
-        interrogate_button.resize(interrogate_button.width(), interrogate_button.height() * 2)
-        # Start generation button:
-        start_button = QPushButton()
-        start_button.setText(GENERATE_BUTTON_TEXT)
-        start_button.clicked.connect(self.generate_signal)
-        button_bar_layout.addWidget(start_button, stretch=2)
-        start_button.resize(start_button.width(), start_button.height() * 2)
+            slider_divider = _divider_widget(Qt.Orientation.Vertical)
+            grid.addWidget(slider_divider, len(prompt_controls), 2, len(slider_controls), 1)
+            grid.setColumnStretch(2, 1)
+
+            # second column:
+            assert isinstance(self._gen_size_input, SizeField)
+            self._gen_size_input.orientation = Qt.Orientation.Vertical
+            second_column_labels = (self._gen_size_label, self._batch_size_label, self._batch_count_label)
+            second_column_controls = (self._gen_size_input, self._batch_size_spinbox, self._batch_count_spinbox)
+            grid.setColumnStretch(len(prompt_controls), 3)
+
+            for row, label, control in zip(range(len(second_column_labels)), second_column_labels,
+                                                   second_column_controls):
+                grid.setRowStretch(row, 1)
+                grid.addWidget(label, row + len(prompt_controls), 3)
+                grid.addWidget(control, row + len(prompt_controls), 4)
+
+            second_col_divider = _divider_widget(Qt.Orientation.Vertical)
+            grid.addWidget(second_col_divider, 0, 5, 5, 1)
+
+            # third column:
+            third_column_labels = (self._edit_mode_label,
+                                   self._full_res_label,
+                                   self._padding_label,
+                                   self._seed_label,
+                                   self._last_seed_label)
+            third_column_controls = (self._edit_mode_combobox,
+                                     self._full_res_checkbox,
+                                     self._padding_slider,
+                                     self._seed_textbox,
+                                     self._last_seed_textbox)
+            for row, label, control in zip(range(len(third_column_labels)), third_column_labels, third_column_controls):
+                grid.addWidget(label, row, 6)
+                grid.addWidget(control, row, 7)
+
+            button_divider = _divider_widget(Qt.Orientation.Horizontal)
+            grid.setRowStretch(6, 0)
+            grid.setRowStretch(7, 1)
+            grid.addWidget(button_divider, 6, 1, 1, 7)
+            grid.addWidget(self._interrogate_button, 7, 0, 1, 3)
+            grid.addWidget(self._generate_button, 7, 3, 1, 5)
+
+        # Vertical setup:
+        else:
+            grid.setAlignment(Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignHCenter)
+            assert isinstance(self._gen_size_input, SizeField)
+            self._gen_size_input.orientation = Qt.Orientation.Horizontal
+            vertical_labels = (
+                self._edit_mode_label,
+                self._prompt_label,
+                self._negative_label,
+                self._gen_size_label,
+                (self._batch_size_label, self._batch_count_label),
+                self._step_count_label,
+                self._guidance_scale_label,
+                self._denoising_strength_label,
+                (self._full_res_label, self._padding_label),
+                self._sampler_label,
+                (self._seed_label, self._last_seed_label)
+            )
+            vertical_controls = (
+                self._edit_mode_combobox,
+                self._prompt_textbox,
+                self._negative_textbox,
+                self._gen_size_input,
+                (self._batch_size_spinbox, self._batch_count_spinbox),
+                self._step_count_slider,
+                self._guidance_scale_slider,
+                self._denoising_strength_slider,
+                (self._full_res_checkbox, self._padding_slider),
+                self._sampler_combobox,
+                (self._seed_textbox, self._last_seed_textbox)
+            )
+            for i in range(10):
+                grid.setColumnStretch(i, 1)
+            for row, label, control in zip(range(len(vertical_labels)), vertical_labels, vertical_controls):
+                grid.setRowStretch(row, 1)
+                if isinstance(label, tuple) and isinstance(control, tuple):
+                    label1, label2 = label
+                    control1, control2 = control
+                    grid.addWidget(label1, row, 0, 1, 2)
+                    grid.addWidget(control1, row, 2, 1, 3)
+                    grid.addWidget(label2, row, 5, 1, 2)
+                    grid.addWidget(control2, row, 7, 1, 3)
+                else:
+                    grid.addWidget(label, row, 0, 1, 2)
+                    grid.addWidget(control, row, 2, 1, 8)
+            # increase stretch for textbox rows:
+            for i in range(2):
+                grid.setRowStretch(i, 3)
+            grid.setRowStretch(len(vertical_labels), 1)
+            grid.addWidget(self._interrogate_button, len(vertical_labels), 0, 1, 2)
+            grid.addWidget(self._generate_button, len(vertical_labels), 2, 1, 8)
+
+    def set_orientation(self, new_orientation: Qt.Orientation) -> None:
+        """Sets panel orientation."""
+        if new_orientation == self._orientation:
+            return
+        self._orientation = new_orientation
+        self._build_layout()
+
+    @property
+    def orientation(self) -> Qt.Orientation:
+        """Access panel orientation."""
+        return self._orientation
+
+    @orientation.setter
+    def orientation(self, new_orientation: Qt.Orientation) -> None:
+        self.set_orientation(new_orientation)
+
+
+def _divider_widget(orientation: Qt.Orientation) -> QFrame:
+    divider = QFrame()
+    divider.setFrameShape(QFrame.Shape.HLine if orientation == Qt.Orientation.Horizontal else QFrame.Shape.VLine)
+    divider.setFrameShadow(QFrame.Shadow.Sunken)
+    return divider

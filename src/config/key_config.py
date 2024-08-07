@@ -68,7 +68,7 @@ class KeyConfig(Config, metaclass=Singleton):
             for modifier in keys:
                 if modifier == Qt.KeyboardModifier.NoModifier:
                     continue
-                test_value = held_keys if exclusive else (modifier & held_keys)
+                test_value = held_keys if exclusive else (modifier and held_keys)
                 if test_value == modifier:
                     return True
             return False
@@ -204,6 +204,10 @@ class KeyConfig(Config, metaclass=Singleton):
     IMAGE_TO_LAYERS_SHORTCUT: str
     IMAGE_WINDOW_SHORTCUT: str
     INVERT_SELECTION_SHORTCUT: str
+    LAYER_MIRROR_HORIZONTAL_SHORTCUT: str
+    LAYER_MIRROR_VERTICAL_SHORTCUT: str
+    LAYER_ROTATE_CCW_SHORTCUT: str
+    LAYER_ROTATE_CW_SHORTCUT: str
     LAYER_TO_IMAGE_SIZE_SHORTCUT: str
     LCM_MODE_SHORTCUT: str
     LINE_MODIFIER: str
@@ -213,6 +217,7 @@ class KeyConfig(Config, metaclass=Singleton):
     MERGE_LAYER_DOWN_SHORTCUT: str
     MOVE_DOWN: str
     MOVE_LAYER_DOWN_SHORTCUT: str
+    MOVE_LAYER_TO_TOP_SHORTCUT: str
     MOVE_LAYER_UP_SHORTCUT: str
     MOVE_LEFT: str
     MOVE_RIGHT: str

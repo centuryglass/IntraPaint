@@ -133,13 +133,15 @@ class ImageStack(QObject):
         if last_active == new_active_layer:
             return
 
-        def _set_active(layer):
+        def _set_active(layer=new_active_layer):
             self.active_layer_id = layer.id
             self.active_layer_changed.emit(layer)
 
-        UndoStack().commit_action(lambda layer=new_active_layer: _set_active(layer),
-                                  lambda layer=last_active: _set_active(layer),
-                                  'ImageStack.active_layer')
+        def _undo_set_active(layer=last_active):
+            self.active_layer_id = layer.id
+            self.active_layer_changed.emit(layer)
+
+        UndoStack().commit_action(_set_active, _undo_set_active, 'ImageStack.active_layer')
 
     @property
     def active_layer_id(self) -> int:
@@ -833,7 +835,6 @@ class ImageStack(QObject):
             layer = self.active_layer
         if layer.locked:
             return
-        saved_state = layer.save_state()
         transformed_mask = self.get_layer_mask(layer)
 
         if save_to_copy_buffer:
@@ -1046,7 +1047,7 @@ class ImageStack(QObject):
            of the list.
         3. If the parent is locked, move the new layer up until an unlocked parent is found.
         """
-        layer_index = 0
+        layer_index: Optional[int] = 0
         if layer_parent is None:
             active_layer = self.active_layer
             if isinstance(active_layer, LayerStack):
@@ -1061,7 +1062,7 @@ class ImageStack(QObject):
             assert layer_parent is not None, 'root layer stack was locked or layer stack was broken'
             if index_layer is not None:
                 layer_index = layer_parent.get_layer_index(index_layer)
-                assert layer_index is not None
+        assert layer_index is not None
         assert layer_parent is not None
         return layer_parent, layer_index
 
@@ -1228,7 +1229,7 @@ class ImageStack(QObject):
         return parent, current_index + 1
 
     def next_layer(self, layer: Layer) -> Optional[Layer]:
-        """Given a layer in the stack, return the layer directly below it, or None if its the bottom layer."""
+        """Given a layer in the stack, return the layer directly below it, or None if it's the bottom layer."""
         assert layer is not None and layer.layer_parent is not None and self._layer_stack.contains_recursive(layer)
         if isinstance(layer, LayerStack) and layer.count > 0:
             return layer.get_layer_by_index(0)
@@ -1245,7 +1246,7 @@ class ImageStack(QObject):
         return parent.get_layer_by_index(current_index + 1)
 
     def prev_layer(self, layer: Layer) -> Optional[Layer]:
-        """Given a layer in the stack, return the layer directly above it, or None if its the top layer."""
+        """Given a layer in the stack, return the layer directly above it, or None if it's the top layer."""
         assert layer is not None and layer.layer_parent is not None and self._layer_stack.contains_recursive(layer)
         parent = cast(LayerStack, layer.layer_parent)
         current_index = parent.get_layer_index(layer)

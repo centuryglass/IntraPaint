@@ -156,7 +156,7 @@ class SettingsModal(QDialog):
                 else:
                     if new_value is None:
                         new_value = 0
-                    assert isinstance(new_value, (int, float, bool))
+                    assert isinstance(new_value, (int, float, bool, str)), f'Key "{key}": unexpected type {type(new_value)}'
                     if isinstance(widget, (BigIntSpinbox, IntSliderSpinbox)):
                         widget.setValue(int(new_value))
                     elif isinstance(widget, CheckBox):

@@ -7,7 +7,7 @@ import os
 import re
 import sys
 from argparse import Namespace
-from typing import Optional, Any, List, Tuple, Callable
+from typing import Optional, Any, List, Tuple, Callable, Set
 
 from PIL import Image, UnidentifiedImageError, PngImagePlugin
 from PyQt6.QtCore import QSize
@@ -48,7 +48,7 @@ from src.util.application_state import AppStateTracker, APP_STATE_NO_IMAGE, APP_
     APP_STATE_SELECTION
 from src.util.display_size import get_screen_size
 from src.util.image_utils import pil_image_scaling, create_transparent_image
-from src.util.menu_builder import MenuBuilder, menu_action, MENU_DATA_ATTR, _MenuData
+from src.util.menu_builder import MenuBuilder, menu_action, MENU_DATA_ATTR, MenuData
 from src.util.optional_import import optional_import
 from src.util.qtexcepthook import QtExceptHook
 
@@ -95,6 +95,7 @@ NEW_IMAGE_CONFIRMATION_MESSAGE = _tr('This will discard all unsaved changes.')
 SAVE_ERROR_TITLE = _tr('Save failed')
 LOAD_ERROR_TITLE = _tr('Open failed')
 RELOAD_ERROR_TITLE = _tr('Reload failed')
+RELOAD_ERROR_MESSAGE_INVALID_FILE = _tr('Image path "{file_path}" is not a valid image file.')
 RELOAD_ERROR_MESSAGE_NO_IMAGE = _tr('Enter an image path or click "Open Image" first.')
 RELOAD_CONFIRMATION_TITLE = _tr('Reload image?')
 RELOAD_CONFIRMATION_MESSAGE = _tr('This will discard all unsaved changes.')
@@ -164,7 +165,7 @@ class AppController(MenuBuilder):
         self._glid_web_generator = Glid3WebserviceGenerator(self._window, self._image_stack, args)
         self._test_generator = TestGenerator(self._window, self._image_stack)
         self._null_generator = NullGenerator(self._window, self._image_stack)
-        self._generator = self._null_generator
+        self._generator: ImageGenerator = self._null_generator
 
         # Load settings:
         self._settings_modal = SettingsModal(self._window)
@@ -297,15 +298,18 @@ class AppController(MenuBuilder):
                               GENERATOR_LOAD_ERROR_MESSAGE.format(generator_name=generator.get_display_name()))
             return
         if self._generator is not None:
+            for tab in self._generator.get_extra_tabs():
+                self._window.remove_tab(tab)
             self._generator.unload_settings(self._settings_modal)
             self._generator.clear_menus()
             self._generator.disconnect_or_disable()
-            self._generator = None
         self._generator = generator
         self._generator.menu_window = self._window
         self._generator.init_settings(self._settings_modal)
         self._generator.build_menus()
         self._window.set_control_panel(self._generator.get_control_panel())
+        for tab in self._generator.get_extra_tabs():
+            self._window.add_tab(tab)
         if self._generator_window is not None:
             self._generator_window.mark_active_generator(generator)
 
@@ -358,20 +362,20 @@ class AppController(MenuBuilder):
             app_state = AppStateTracker.app_state()
             assert callable(menu_action_method) and hasattr(menu_action_method, MENU_DATA_ATTR)
             data = getattr(menu_action_method, MENU_DATA_ATTR, None)
-            assert isinstance(data, _MenuData)
+            assert isinstance(data, MenuData)
             if data.valid_app_states is None:
                 return True
             return app_state in data.valid_app_states
 
         selection_is_empty = self._image_stack.selection_layer.empty
-        selection_methods = {
+        selection_methods: Set[Callable[..., None]] = {
             self.cut,
             self.copy,
             self.clear,
             self.grow_selection,
             self.shrink_selection
         }
-        unlocked_layer_methods = {
+        unlocked_layer_methods: Set[Callable[..., None]] = {
             self.cut,
             self.clear,
             self.layer_mirror_horizontal,
@@ -384,16 +388,16 @@ class AppController(MenuBuilder):
             self.crop_layer_to_content
 
         }
-        not_bottom_layer_methods = {
+        not_bottom_layer_methods: Set[Callable[..., None]] = {
             self.select_next_layer,
             self.move_layer_down
         }
-        not_top_layer_methods = {
+        not_top_layer_methods: Set[Callable[..., None]] = {
             self.select_previous_layer,
             self.move_layer_up,
             self.move_layer_to_top
         }
-        not_layer_stack_methods = {
+        not_layer_stack_methods: Set[Callable[..., None]] = {
             self.select_previous_layer,
             self.move_layer_up,
             self.move_layer_down,
@@ -599,7 +603,8 @@ class AppController(MenuBuilder):
             show_error_dialog(self._window, RELOAD_ERROR_TITLE, RELOAD_ERROR_MESSAGE_NO_IMAGE)
             return
         if not os.path.isfile(file_path):
-            show_error_dialog(self._window, RELOAD_ERROR_TITLE, f'Image path "{file_path}" is not a valid file.')
+            show_error_dialog(self._window, RELOAD_ERROR_TITLE,
+                              RELOAD_ERROR_MESSAGE_INVALID_FILE.format(file_path=file_path))
             return
         if not self._image_stack.has_image or request_confirmation(self._window,
                                                                    RELOAD_CONFIRMATION_TITLE,
@@ -860,6 +865,7 @@ class AppController(MenuBuilder):
     def crop_layer_to_content(self) -> None:
         """Crop the active layer to remove fully transparent border pixels."""
         layer = self._image_stack.active_layer
+        assert isinstance(layer, (ImageLayer, LayerStack))
         layer.crop_to_content()
 
     # Tool menu:

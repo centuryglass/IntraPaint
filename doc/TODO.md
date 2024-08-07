@@ -1,5 +1,13 @@
 # Development tasks
 
+- Bug: ControlNet preprocess responses at different resolutions throw an exception when compositing
+- Bug: ControlNet not working when using image as control with Txt2Img
+- Bug: Selected(Inverted) brush icons are sometimes missing or otherwise broken
+- Bug: First brush stroke sometimes not working (brush tool)
+- Bug: Control to delegate to color picker behaves oddly when the mouse cursor leaves the image
+- Bug: Composition mode not used when merging layers down (what about opacity?)
+- Bug(?): Smudge/blur brushes behave oddly when input doesn't have pressure data
+
 # Misc
 - Color picker tool should show the "select screen color" button regardless of what tab is active.
 
@@ -13,9 +21,11 @@
 # General interface
 - When scaling, center scale on mouse position
 - Warning modal with "don't warn me again checkbox"
+- Improve appearance of draggable tabs
+- Add right click menu to move tabs to any bar
+- Test GLID with tab interface
 
 # Panels
-- Vertical control panel tabbed with tools? Always keep image visible
 - Put ToolPanel's layer panel in a tab widget with other new window/panel options
 - ColorPanel: tabbed color picker
 
@@ -81,11 +91,7 @@ Alternate brush tools that filter for certain brush types
 - Non-transitory selection tab?
 
 # ControlNet
-- Fix missing labels on default (strength, start step, end step) sliders
-- Make "use generation area as control" the default
-    - Don't allow it to be unchecked if no image is selected
-    - Automatically uncheck it on image selection
-- Add tabs for up to 3X control layers
+- Add vertical layout mode
 - Figure out a way to preview module preprocessing
 - Get extended controls working in Forge API (PR adding control type endpoint)?
 - Add tooltip descriptions for modules and models

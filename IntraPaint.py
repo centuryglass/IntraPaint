@@ -85,14 +85,14 @@ if not check_import('ldm'):
         # Newer versions of pytorch-lightning changed the location of one needed dependency, but latent-diffusion was
         # never updated. This only requires a single minor update, so make that change here if necessary:
         updated_file_path = f'{expected_ldm_path}/ldm/models/diffusion/ddpm.py'
-        with open(updated_file_path, 'r+') as file:
-            lines = file.readlines()
+        with open(updated_file_path, 'r+') as module_file:
+            lines = module_file.readlines()
             for i, line in enumerate(lines):
                 if 'from pytorch_lightning.utilities.distributed import rank_zero_only' in line:
                     lines[i] = 'from pytorch_lightning.utilities.rank_zero import rank_zero_only'
-                    file.seek(0)
-                    file.writelines(lines)
-                    file.truncate()
+                    module_file.seek(0)
+                    module_file.writelines(lines)
+                    module_file.truncate()
                     break
 
 if not check_import('taming'):

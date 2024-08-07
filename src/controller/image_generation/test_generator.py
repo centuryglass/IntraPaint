@@ -1,7 +1,7 @@
 """Mock generator for testing and development."""
 from typing import Optional
 
-from PyQt6.QtCore import pyqtSignal
+from PyQt6.QtCore import pyqtSignal, pyqtBoundSignal
 from PyQt6.QtGui import QImage
 from PyQt6.QtWidgets import QApplication, QWidget
 
@@ -69,7 +69,7 @@ class TestGenerator(ImageGenerator):
         return TestControlPanel()
 
     def generate(self,
-                 status_signal: pyqtSignal,
+                 status_signal: pyqtSignal | pyqtBoundSignal,
                  source_image: Optional[QImage] = None,
                  mask_image: Optional[QImage] = None) -> None:
         """Generates new images. Image size, image count, prompts, etc. should be loaded from AppConfig as needed.

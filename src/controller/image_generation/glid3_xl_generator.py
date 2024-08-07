@@ -4,7 +4,7 @@ import os
 from argparse import Namespace
 from typing import Optional, Any, Dict
 
-from PyQt6.QtCore import pyqtSignal, QSize
+from PyQt6.QtCore import pyqtSignal, QSize, pyqtBoundSignal
 from PyQt6.QtGui import QImage
 from PyQt6.QtWidgets import QApplication, QWidget
 
@@ -265,7 +265,7 @@ class Glid3XLGenerator(ImageGenerator):
         return self._control_panel
 
     def generate(self,
-                 status_signal: pyqtSignal,
+                 status_signal: pyqtSignal | pyqtBoundSignal,
                  source_image: Optional[QImage] = None,
                  mask_image: Optional[QImage] = None) -> None:
         """Generates new images. Image size, image count, prompts, etc. are loaded from AppConfig as needed.

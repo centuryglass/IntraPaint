@@ -49,7 +49,7 @@ def menu_action(menu_name: str, config_key: str, priority: int = INT_MAX,
                 num_positional_params += 1
             args = args[:num_positional_params]
             return func(*args, **kwargs)
-        menu_data = _MenuData(menu_name, config_key, priority, valid_app_states, condition_check)
+        menu_data = MenuData(menu_name, config_key, priority, valid_app_states, condition_check)
         setattr(_wrapper, IS_MENU_ACTION_ATTR, True)
         setattr(_wrapper, MENU_DATA_ATTR, menu_data)
         return _wrapper
@@ -171,7 +171,7 @@ class MenuBuilder:
     def build_menus(self) -> None:
         """Add all @menu_action methods from this class to the window as menu items."""
         assert self._menu_window is not None, 'Assign a window before building menus'
-        action_definitions: List[Tuple['_MenuData', Callable[..., None]]] = self._get_action_definitions()
+        action_definitions: List[Tuple['MenuData', Callable[..., None]]] = self._get_action_definitions()
         menu_bar = self._menu_window.menuBar()
         assert menu_bar is not None
         for menu_data, menu_action_method in action_definitions:
@@ -193,41 +193,46 @@ class MenuBuilder:
 
     def clear_menus(self) -> None:
         """Remove all @menu_action methods that this class added to the menu"""
-        action_definitions: List[Tuple['_MenuData', Callable[..., None]]] = self._get_action_definitions()
+        action_definitions: List[Tuple['MenuData', Callable[..., None]]] = self._get_action_definitions()
         for menu_data, menu_action_method in action_definitions:
             action_name = KeyConfig().get_label(menu_data.config_key)
             self.remove_menu_action(menu_data.menu_name, action_name)
 
-    def get_action_for_method(self, method: Callable[..., None]) -> Optional[QAction]:
+    def get_action_for_method(self, method: Callable[..., None]) -> QAction:
         """Returns the menu action defined by a method, or None if that action isn't present."""
         assert self._menu_window is not None, 'Assign a window before finding menus'
         if not callable(method) or not getattr(method, IS_MENU_ACTION_ATTR, False):
             raise TypeError(f'Invalid method: {method}')
         menu_data = getattr(method, MENU_DATA_ATTR, None)
-        assert isinstance(menu_data, _MenuData)
+        assert isinstance(menu_data, MenuData)
         action_name = KeyConfig().get_label(menu_data.config_key)
-        return self._find_action(menu_data.menu_name, action_name)
+        action = self._find_action(menu_data.menu_name, action_name)
+        if action is None:
+            raise ValueError('Failed to find menu action for method')
+        return action
 
     def _find_or_add_menu(self, menu_name: str, create_if_missing: bool = True) -> Optional[QMenu]:
         assert self._menu_window is not None, 'Assign a window before finding menus'
         if menu_name in self._menus:
             return self._menus[menu_name]
-        menu_iter: QMenuBar | QMenu = self._menu_window.menuBar()
-        assert menu_iter is not None
+        menu_bar = self._menu_window.menuBar()
+        assert menu_bar is not None
+        menu_iter: QMenuBar | QMenu = menu_bar
         full_menu_name = ''
         for submenu_name in menu_name.split('.'):
             if len(full_menu_name) > 0:
                 full_menu_name += '.'
             full_menu_name += submenu_name
-            next_menu = None
+            next_menu: Optional[QMenu] = None
             if full_menu_name in self._menus:
                 next_menu = self._menus[full_menu_name]
             else:
                 for action in menu_iter.actions():
-                    possible_menu = action.menu()
+                    possible_menu: Optional[QMenu] = action.menu()
                     if _action_has_title(possible_menu, submenu_name):
                         next_menu = possible_menu
                         if full_menu_name not in self._menus:
+                            assert next_menu is not None
                             self._menus[full_menu_name] = next_menu
                         break
                 if next_menu is None:
@@ -241,7 +246,7 @@ class MenuBuilder:
         assert menu_iter == self._menus[menu_name]
         return menu_iter
 
-    def _find_action(self, menu: str | QMenu, action_name: str) -> Optional[QAction]:
+    def _find_action(self, menu: Optional[str | QMenu], action_name: str) -> Optional[QAction]:
         if isinstance(menu, str):
             menu = self._find_or_add_menu(menu, False)
         if menu is None:
@@ -252,13 +257,13 @@ class MenuBuilder:
                 return action
         return None
 
-    def _get_action_definitions(self) -> List[Tuple['_MenuData', Callable[..., None]]]:
-        action_definitions: List[Tuple['_MenuData', Callable[..., None]]] = []
+    def _get_action_definitions(self) -> List[Tuple['MenuData', Callable[..., None]]]:
+        action_definitions: List[Tuple['MenuData', Callable[..., None]]] = []
         for attr_name in dir(self):
             attr = getattr(self, attr_name)
             if callable(attr) and getattr(attr, IS_MENU_ACTION_ATTR, False):
                 data = getattr(attr, MENU_DATA_ATTR, None)
-                assert isinstance(data, _MenuData)
+                assert isinstance(data, MenuData)
                 action_definitions.append((data, attr))
         action_definitions.sort(key=lambda action: action[0].priority)
         return action_definitions
@@ -281,7 +286,8 @@ def _action_has_title(action: Optional[QAction | QMenu], title: str) -> bool:
     return action_title.replace('&', '') == title
 
 
-class _MenuData:
+class MenuData:
+    """Defines how a method is used to construct a menu item."""
 
     def __init__(self,
                  menu_name: str,

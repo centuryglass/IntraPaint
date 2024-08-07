@@ -8,9 +8,9 @@ from typing import Optional
 
 from PyQt6.QtCore import Qt, QRect, QSize, pyqtSignal
 from PyQt6.QtGui import QIcon, QMouseEvent, QResizeEvent, QKeySequence, QCloseEvent, QImage
-from PyQt6.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, \
-    QStackedWidget, QBoxLayout, QApplication, QTabWidget, QSizePolicy
+from PyQt6.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QStackedWidget, QApplication, QSizePolicy
 
+from src.config.application_config import AppConfig
 from src.hotkey_filter import HotkeyFilter
 from src.image.layers.image_stack import ImageStack
 from src.ui.generated_image_selector import GeneratedImageSelector
@@ -18,6 +18,8 @@ from src.ui.panel.image_panel import ImagePanel
 from src.ui.panel.layer_ui.layer_panel import LayerPanel
 from src.ui.panel.tool_panel import ToolPanel
 from src.ui.widget.draggable_divider import DraggableDivider
+from src.ui.widget.draggable_tabs.tab import Tab
+from src.ui.widget.draggable_tabs.tab_box import TabBox
 from src.ui.widget.loading_widget import LoadingWidget
 from src.ui.window.image_window import ImageWindow
 from src.util.application_state import AppStateTracker, APP_STATE_LOADING, APP_STATE_NO_IMAGE, APP_STATE_EDITING, \
@@ -30,12 +32,17 @@ logger = logging.getLogger(__name__)
 
 MAIN_TAB_NAME = 'Main'
 CONTROL_TAB_NAME = 'Image Generation'
-CONTROL_PANEL_STRETCH = 5
-MAX_TABS = 2
-LAYOUT_SWAP_HEIGHT = 1000
-CONTROL_TAB_HEIGHT = 800
-LAYOUT_SWAP_BUFFER = 50
 DEFAULT_LOADING_MESSAGE = 'Loading...'
+TAB_BOX_STRETCH = 50
+IMAGE_PANEL_STRETCH = 300
+AUTO_TAB_MOVE_THRESHOLD = 1000
+USE_LOWER_CONTROL_TAB_THRESHOLD = 1500
+
+TOP_TAB_BOX_ID = 'TOP'
+BOTTOM_TAB_BOX_ID = 'BOTTOM'
+LEFT_TAB_BOX_ID = 'LEFT'
+RIGHT_TAB_BOX_ID = 'RIGHT'
+LOWER_TAB_BOX_ID = 'LOWER'
 
 
 class MainWindow(QMainWindow):
@@ -65,35 +72,20 @@ class MainWindow(QMainWindow):
         # Initialize UI/editing data model:
         self._image_stack = image_stack
         self._image_selector: Optional[GeneratedImageSelector] = None
-        self._orientation: Optional[Qt.Orientation] = None
 
         self._layer_panel: Optional[LayerPanel] = None
         self._image_window = ImageWindow(image_stack)
 
         # Create components, build layout:
-        self._main_widget = QTabWidget(self)
-        self._main_widget.setTabBarAutoHide(True)
-        self._main_page_tab = QWidget()
-        self._main_widget.addTab(self._main_page_tab, MAIN_TAB_NAME)
-        self._layout = QVBoxLayout(self._main_page_tab)
-        self._reactive_widget: Optional[QWidget] = None
-        self._reactive_layout: Optional[QBoxLayout] = None
+        self._main_widget = QWidget(self)
+        self._layout = QVBoxLayout(self._main_widget)
+        self._layout.setContentsMargins(0, 0, 0, 0)
         self._central_widget = QStackedWidget(self)
         self._central_widget.addWidget(self._main_widget)
         self.setCentralWidget(self._central_widget)
         self._central_widget.setCurrentWidget(self._main_widget)
 
-        # Connect number keys to tabs when tab widget is visible:
-        for i in range(min(MAX_TABS, 9)):
-            tab_index_key = QKeySequence(str(i + 1))
-
-            def _try_tab_focus(idx=i) -> bool:
-                if not self._central_widget.isVisible():
-                    return False
-                return self.focus_tab(idx)
-
-            HotkeyFilter.instance().register_keybinding(_try_tab_focus, tab_index_key, Qt.KeyboardModifier.NoModifier)
-        # Loading widget (for interrogate):
+        # Loading indicator:
         self._is_loading = False
         self._loading_widget = LoadingWidget()
         if TIMELAPSE_MODE_FLAG in sys.argv:
@@ -107,27 +99,42 @@ class MainWindow(QMainWindow):
             self._loading_widget.setGeometry(self.frameGeometry())
             self._loading_widget.hide()
 
-        def _show_spinner_when_busy(app_state: str) -> None:
-            self.set_is_loading(app_state == APP_STATE_LOADING)
-        AppStateTracker.signal().connect(_show_spinner_when_busy)
+            def _show_spinner_when_busy(app_state: str) -> None:
+                self.set_is_loading(app_state == APP_STATE_LOADING)
+            AppStateTracker.signal().connect(_show_spinner_when_busy)
+
+        # Main page contents:
+        self._top_tab_box = TabBox(Qt.Orientation.Horizontal, True)
+        self._layout.addWidget(self._top_tab_box, stretch=TAB_BOX_STRETCH)
+        self._layout.addWidget(DraggableDivider())
+
+        self._image_panel = ImagePanel(image_stack, True)
+        self._layout.addWidget(self._image_panel, stretch=IMAGE_PANEL_STRETCH)
+        self._layout.addWidget(DraggableDivider())
+
+        self._bottom_tab_box = TabBox(Qt.Orientation.Horizontal, False)
+        self._layout.addWidget(self._bottom_tab_box, stretch=TAB_BOX_STRETCH)
+        self._layout.addWidget(DraggableDivider())
+
+        self._second_bottom_tab_box = TabBox(Qt.Orientation.Horizontal, False)
+        self._layout.addWidget(self._second_bottom_tab_box, stretch=TAB_BOX_STRETCH)
+
+        # Create tabs:
+        # TODO: Connect tab placement to config
 
         # Image/Mask editing layout:
-        self._image_panel = ImagePanel(image_stack)
-        self._layout.addWidget(self._image_panel)
-
         self._tool_panel = ToolPanel(image_stack, self._image_panel, self.generate_signal.emit)
+        self._tool_tab = Tab('Tools', self._tool_panel)
 
-        def _tool_panel_toggle(panel_expanded: bool) -> None:
-            self._tool_divider.set_hidden(not panel_expanded)
-            if not panel_expanded and self._reactive_layout is not None:
-                panel_idx = self._reactive_layout.indexOf(self._tool_panel)
-                assert panel_idx > 0
-                self._reactive_layout.setStretch(panel_idx, 0)
-        self._tool_panel.panel_toggled.connect(_tool_panel_toggle)
+        tab_box = self._get_tab_box(AppConfig().get(AppConfig.TOOL_TAB_BAR))
+        if tab_box is None:
+            tab_box = self._bottom_tab_box if self.height() > AUTO_TAB_MOVE_THRESHOLD \
+                else self._image_panel.right_tab_box
+            assert tab_box is not None
+        tab_box.add_widget(self._tool_tab, 0)
 
-        self._tool_divider = DraggableDivider()
         self._control_panel: Optional[QWidget] = None
-        self._main_widget.addTab(self._control_panel, CONTROL_TAB_NAME)
+        self._control_tab = Tab(CONTROL_TAB_NAME)
 
         for panel in (self._image_panel, self._tool_panel):
             AppStateTracker.set_enabled_states(panel, [APP_STATE_EDITING])
@@ -136,92 +143,48 @@ class MainWindow(QMainWindow):
     def set_control_panel(self, control_panel: Optional[QWidget]) -> None:
         """Sets the image generation control panel."""
         assert control_panel is None or control_panel != self._control_panel
-        if self._control_panel is not None:
-            tab_names = [self._main_widget.tabText(i) for i in range(self._main_widget.count())]
-            self._control_panel.setVisible(False)
-            if CONTROL_TAB_NAME in tab_names:
-                self._main_widget.removeTab(tab_names.index(CONTROL_TAB_NAME))
-            elif self._control_panel in self._layout.children():
-                panel_index = self._layout.indexOf(self._control_panel)
-                self._layout.takeAt(panel_index)
         self._control_panel = control_panel
-        self.refresh_layout()
+        self._control_tab.content_widget = control_panel
+        tab_parent = self._control_tab.parent()
+        if tab_parent is None:
+            tab_box = self._get_tab_box(AppConfig().get(AppConfig.GENERATION_TAB_BAR))
+            if tab_box is None:
+                if self.height() > USE_LOWER_CONTROL_TAB_THRESHOLD:
+                    tab_box = self._second_bottom_tab_box
+                elif self.height() > AUTO_TAB_MOVE_THRESHOLD:
+                    tab_box = self._bottom_tab_box
+                else:
+                    tab_box = self._image_panel.right_tab_box
+                assert tab_box is not None
+            tab_box.add_widget(self._control_tab)
 
-    def _get_appropriate_orientation(self) -> Qt.Orientation:
-        """Returns whether the window's image and tool layout should be vertical or horizontal."""
-        if self._orientation == Qt.Orientation.Vertical:
-            height_threshold = LAYOUT_SWAP_HEIGHT - LAYOUT_SWAP_BUFFER
-        else:
-            height_threshold = LAYOUT_SWAP_HEIGHT + LAYOUT_SWAP_BUFFER
-        return Qt.Orientation.Vertical if self.height() > height_threshold else Qt.Orientation.Horizontal
+    def add_tab(self, tab: Tab, tab_box_key: str = '') -> None:
+        """Adds a new tab to one of the window's tab boxes."""
+        tab_box = self._get_tab_box(tab_box_key)
+        if tab_box is None:
+            if self.height() > USE_LOWER_CONTROL_TAB_THRESHOLD:
+                tab_box = self._second_bottom_tab_box
+            elif self.height() > AUTO_TAB_MOVE_THRESHOLD:
+                tab_box = self._bottom_tab_box
+            else:
+                tab_box = self._image_panel.right_tab_box
+            assert tab_box is not None
+        assert tab_box is not None
+        tab_box.add_widget(tab)
+
+    def remove_tab(self, tab: Tab) -> None:
+        """Removes a tab if it is found in any of the window's tab boxes."""
+        for tab_box in (self._top_tab_box, self._bottom_tab_box, self._second_bottom_tab_box,
+                        self._image_panel.left_tab_box, self._image_panel.right_tab_box):
+            assert tab_box is not None
+            if tab_box.contains_widget(tab):
+                tab_box.remove_widget(tab)
+                return
 
     def show_image_window(self) -> None:
         """Show or raise the image window."""
         self._image_window.show()
         self._image_window.raise_()
-
-    def refresh_layout(self) -> None:
-        """Update orientation and layout based on window dimensions."""
-
-        tab_names = [self._main_widget.tabText(i) for i in range(self._main_widget.count())]
-
-        # Flip the orientation if necessary:
-        orientation = self._get_appropriate_orientation()
-        if self._reactive_layout is None or (orientation != self._orientation):
-            self._orientation = orientation
-            last_reactive_widget = self._reactive_widget
-            if self._reactive_layout is not None:
-                for item in self._reactive_layout.children():
-                    self._reactive_layout.removeItem(item)
-            self._reactive_widget = QWidget(self)
-            reactive_layout = QVBoxLayout(self._reactive_widget) if orientation == Qt.Orientation.Vertical \
-                else QHBoxLayout(self._reactive_widget)
-            self._reactive_layout = reactive_layout
-            reactive_layout.setContentsMargins(0, 0, 0, 0)
-            reactive_layout.setSpacing(0)
-            reactive_layout.addWidget(self._image_panel, stretch=80)
-            reactive_layout.addWidget(self._tool_divider)
-            reactive_layout.addWidget(self._tool_panel, stretch=1)
-            self._tool_panel.set_orientation(Qt.Orientation.Vertical if orientation == Qt.Orientation.Horizontal
-                                             else Qt.Orientation.Horizontal)
-            self._tool_panel.show()
-            self._layout.insertWidget(0, self._reactive_widget)
-            self._reactive_widget.show()
-            if last_reactive_widget is not None:
-                last_reactive_widget.setParent(None)
-
-        # Include or tab control panel based on orientation:
-        if self._control_panel is not None:
-            if self._orientation == Qt.Orientation.Vertical:
-                if CONTROL_TAB_NAME in tab_names:
-                    self._main_widget.removeTab(tab_names.index(CONTROL_TAB_NAME))
-                if self._control_panel not in self._layout.children():
-                    self._layout.addWidget(self._control_panel)
-                    self._control_panel.setVisible(True)
-                self._tool_panel.show_generate_button(False)
-            else:  # horizontal
-                if self._control_panel in self._layout.children():
-                    self._layout.removeWidget(self._control_panel)
-                    self._control_panel.setParent(None)
-                if CONTROL_TAB_NAME not in tab_names:
-                    self._main_widget.addTab(self._control_panel, CONTROL_TAB_NAME)
-                self._tool_panel.show_generate_button(True)
-        else:
-            self._tool_panel.show_generate_button(True)  # Will trigger generator setup instead of generating
-
-        # Restrict the tool panel to a reasonable portion of the screen:
-        if self._orientation == Qt.Orientation.Vertical:
-            self._tool_panel.setMaximumSize(self.width(), self.height() // 3)
-        else:
-            self._tool_panel.setMaximumSize(self.width() // 2, self.height())
-
-    def focus_tab(self, tab_index: int) -> bool:
-        """Attempt to focus a tab index, returning whether changing focus was possible."""
-        if self.is_image_selector_visible() or not (0 <= tab_index < self._main_widget.count()) \
-                or tab_index == self._main_widget.currentIndex():
-            return False
-        self._main_widget.setCurrentIndex(tab_index)
-        return True
 
     def is_image_selector_visible(self) -> bool:
         """Returns whether the generated image selection screen is showing."""
@@ -282,22 +245,60 @@ class MainWindow(QMainWindow):
 
     def resizeEvent(self, unused_event: Optional[QResizeEvent]) -> None:
         """Applies the most appropriate layout when the window size changes."""
+        print(f'window size: {self.size()}')
+        screen_size = get_screen_size(self, False)
+        if not screen_size.isNull() and screen_size != self.maximumSize():
+            self.setMaximumSize(screen_size)
+            print(f'max size = {self.maximumSize()}')
         if hasattr(self, '_loading_widget') and TIMELAPSE_MODE_FLAG not in sys.argv:
             loading_widget_size = int(self.height() / 8)
             loading_bounds = QRect(self.width() // 2 - loading_widget_size // 2, loading_widget_size * 3,
                                    loading_widget_size, loading_widget_size)
             self._loading_widget.setGeometry(loading_bounds)
-        self.refresh_layout()
+        if AppConfig().get(AppConfig.AUTO_MOVE_TABS):
+            if self.height() > USE_LOWER_CONTROL_TAB_THRESHOLD and self._central_widget is not None \
+                    and not self._second_bottom_tab_box.contains_widget(self._control_tab):
+                self._second_bottom_tab_box.add_widget(self._control_tab)
+            left_tab_box = self._image_panel.left_tab_box
+            right_tab_box = self._image_panel.right_tab_box
+            assert left_tab_box is not None
+            assert right_tab_box is not None
+            if self.height() > AUTO_TAB_MOVE_THRESHOLD:
+                if any((tab_box.contains_widget(self._tool_tab) for tab_box in (left_tab_box, right_tab_box))):
+                    self._bottom_tab_box.add_widget(self._tool_tab)
+                if self._central_widget is not None and any((tab_box.contains_widget(self._control_tab)
+                                                            for tab_box in (left_tab_box, right_tab_box))):
+                    self._bottom_tab_box.add_widget(self._control_tab)
+            else:
+                if any((tab_box.contains_widget(self._tool_tab) for tab_box in (self._top_tab_box,
+                                                                                self._bottom_tab_box,
+                                                                                self._second_bottom_tab_box))):
+                    right_tab_box.add_widget(self._tool_tab)
+                if self._central_widget is not None and any((tab_box.contains_widget(self._control_tab)
+                                                            for tab_box in (self._top_tab_box,
+                                                                            self._bottom_tab_box,
+                                                                            self._second_bottom_tab_box))):
+                    right_tab_box.add_widget(self._control_tab)
 
     def mousePressEvent(self, event: Optional[QMouseEvent]) -> None:
         """Suppresses mouse events when the loading spinner is active."""
         if not self._is_loading:
             super().mousePressEvent(event)
 
-    def layout(self) -> QBoxLayout:
-        """Gets the window's layout as QBoxLayout."""
-        return self._layout
-
     def closeEvent(self, unused_event: Optional[QCloseEvent]) -> None:
         """Close the application when the main window is closed."""
         QApplication.exit()
+
+    def _get_tab_box(self, tab_box_key: str) -> Optional[TabBox]:
+        """Look up a tab box from its expected name in config."""
+        if tab_box_key == TOP_TAB_BOX_ID:
+            return self._top_tab_box
+        if tab_box_key == BOTTOM_TAB_BOX_ID:
+            return self._bottom_tab_box
+        if tab_box_key == LOWER_TAB_BOX_ID:
+            return self._second_bottom_tab_box
+        if tab_box_key == LEFT_TAB_BOX_ID:
+            return self._image_panel.left_tab_box
+        if tab_box_key == RIGHT_TAB_BOX_ID:
+            return self._image_panel.right_tab_box
+        return None

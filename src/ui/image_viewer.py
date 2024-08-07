@@ -147,10 +147,8 @@ class ImageViewer(ImageGraphicsView):
             self.zoom_to_generation_area()
 
     def sizeHint(self) -> QSize:
-        """Returns image size as ideal widget size."""
-        size = self.content_size
-        assert size is not None
-        return size
+        """Returns a null size to ensure the image viewer can be reduced as far as necessary."""
+        return QSize()
 
     def drawBackground(self, painter: Optional[QPainter], rect: QRectF) -> None:
         """Draw the background as a fixed size tiling image."""

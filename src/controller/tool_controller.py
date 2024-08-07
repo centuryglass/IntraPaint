@@ -1,25 +1,50 @@
-"""Passes ImageViewer input events to an active editing tool."""
-from typing import Optional, cast, Dict
+"""Manages available tools and handles tool input events."""
+from typing import Optional, cast, Dict, List
 import logging
 
 from PyQt6.QtCore import Qt, QObject, QEvent, QRect, QPoint, pyqtSignal
 from PyQt6.QtGui import QMouseEvent, QTabletEvent, QWheelEvent
 from PyQt6.QtWidgets import QApplication
 
+from src.config.cache import Cache
 from src.config.key_config import KeyConfig
 from src.hotkey_filter import HotkeyFilter
+from src.image.layers.image_stack import ImageStack
 from src.tools.base_tool import BaseTool
+from src.tools.eyedropper_tool import EyedropperTool
+from src.tools.fill_tool import FillTool
+from src.tools.generation_area_tool import GenerationAreaTool
+from src.tools.layer_transform_tool import LayerTransformTool
+from src.tools.selection_fill_tool import SelectionFillTool
+from src.tools.selection_tool import SelectionTool
+from src.tools.shape_selection_tool import ShapeSelectionTool
 from src.ui.image_viewer import ImageViewer
+from src.ui.modal.modal_utils import show_error_dialog
+from src.util.optional_import import optional_import
+
+BrushTool = optional_import('src.tools.brush_tool', attr_name='BrushTool')
 
 logger = logging.getLogger(__name__)
 
+# The `QCoreApplication.translate` context for strings in this file
+TR_ID = 'controller.tool_controller'
 
-class ToolEventHandler(QObject):
-    """Passes ImageViewer input events to an active editing tool."""
 
-    tool_changed = pyqtSignal(str)
+def _tr(*args):
+    """Helper to make `QCoreApplication.translate` more concise."""
+    return QApplication.translate(TR_ID, *args)
 
-    def __init__(self, image_viewer: ImageViewer):
+
+BRUSH_LOAD_ERROR_TITLE = _tr('Failed to load libmypaint brush library files')
+BRUSH_LOAD_ERROR_MESSAGE = _tr('The brush tool will not be available unless this is fixed.')
+
+
+class ToolController(QObject):
+    """Manages available tools and handles tool input events."""
+
+    tool_changed = pyqtSignal(QObject)
+
+    def __init__(self, image_stack: ImageStack, image_viewer: ImageViewer, load_all_tools: bool = True):
         """Installs itself as an event handler within an image viewer."""
         super().__init__()
         self._image_viewer = image_viewer
@@ -28,8 +53,63 @@ class ToolEventHandler(QObject):
         self._tool_modifier_delegates: Dict[BaseTool, Dict[Qt.KeyboardModifier, BaseTool]] = {}
         self._last_modifier_state = QApplication.keyboardModifiers()
         self._mouse_in_bounds = False
+        self._all_tools: List[BaseTool] = []
         image_viewer.setMouseTracking(True)
         image_viewer.installEventFilter(self)
+
+        if not load_all_tools:
+            return
+
+        # Set up tools:
+        self._add_tool(GenerationAreaTool(image_stack, image_viewer))
+        self._add_tool(LayerTransformTool(image_stack, image_viewer))
+        if BrushTool is not None:
+            brush_tool = BrushTool(image_stack, image_viewer)
+            self._add_tool(brush_tool)
+        else:
+            show_error_dialog(None, BRUSH_LOAD_ERROR_TITLE, BRUSH_LOAD_ERROR_MESSAGE)
+            brush_tool = None
+        fill_tool = FillTool(image_stack)
+        self._add_tool(fill_tool)
+        eyedropper_tool = EyedropperTool(image_stack)
+        self._add_tool(eyedropper_tool)
+        self._add_tool(SelectionTool(image_stack, image_viewer))
+        self._add_tool(SelectionFillTool(image_stack))
+        self._add_tool(ShapeSelectionTool(image_stack, image_viewer))
+
+        eyedropper_modifier = KeyConfig().get_modifier(KeyConfig.EYEDROPPER_OVERRIDE_MODIFIER)
+        if eyedropper_modifier != Qt.KeyboardModifier.NoModifier:
+            for tool in (brush_tool, fill_tool):
+                if tool is not None:
+                    if isinstance(eyedropper_modifier, list):
+                        for mod in eyedropper_modifier:
+                            self.register_tool_delegate(tool, eyedropper_tool, mod)
+                    else:
+                        assert isinstance(eyedropper_modifier, Qt.KeyboardModifier)
+                        self.register_tool_delegate(tool, eyedropper_tool, eyedropper_modifier)
+        last_active_tool = self.find_tool_by_label(Cache().get(Cache.LAST_ACTIVE_TOOL))
+        if last_active_tool is not None:
+            self.active_tool = last_active_tool
+
+    @property
+    def tools(self) -> List[BaseTool]:
+        """Return a list of available tools."""
+        return [*self._all_tools]
+
+    def find_tool_by_class(self, tool_class: type[BaseTool]) -> Optional[BaseTool]:
+        """Finds a tool using its tool class."""
+        for tool in self._all_tools:
+            if isinstance(tool, tool_class):
+
+                return tool
+        return None
+
+    def find_tool_by_label(self, tool_label: str) -> Optional[BaseTool]:
+        """Finds a tool using its label string"""
+        for tool in self._all_tools:
+            if tool.label == tool_label:
+                return tool
+        return None
 
     def register_hotkeys(self, tool: BaseTool) -> None:
         """Register key(s) that should load a specific tool."""
@@ -88,6 +168,8 @@ class ToolEventHandler(QObject):
     def active_tool(self, new_tool: BaseTool) -> None:
         """Sets a new active tool."""
         logger.info(f'active tool set: {new_tool}')
+        if new_tool not in self._all_tools:
+            self._add_tool(new_tool)
         if self._active_delegate is not None:
             self._active_delegate.is_active = False
             self._active_delegate = None
@@ -96,11 +178,12 @@ class ToolEventHandler(QObject):
         self._active_tool = new_tool
         if new_tool not in self._tool_modifier_delegates:
             self._tool_modifier_delegates[new_tool] = {}
+            Cache().set(Cache.LAST_ACTIVE_TOOL, new_tool.label)
         if new_tool is not None:
             new_tool.is_active = True
         self._mouse_in_bounds = False
         if new_tool is not None:
-            self.tool_changed.emit(new_tool.label)
+            self.tool_changed.emit(new_tool)
 
     def eventFilter(self, source: Optional[QObject], event: Optional[QEvent]):
         """Allow the active tool to intercept and handle events."""
@@ -146,3 +229,8 @@ class ToolEventHandler(QObject):
             case QEvent.Type.Wheel:
                 event_handled = active_tool.wheel_event(cast(QWheelEvent, event))
         return True if event_handled else super().eventFilter(source, event)
+
+    def _add_tool(self, new_tool: BaseTool) -> None:
+        """Adds a new tool to the list of available tools."""
+        self._all_tools.append(new_tool)
+        self.register_hotkeys(new_tool)

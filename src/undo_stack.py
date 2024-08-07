@@ -52,7 +52,7 @@ class _UndoGroup:
 class UndoStack(metaclass=Singleton):
     """Manages the application's shared undo history."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._undo_stack: List[_UndoAction | _UndoGroup] = []
         self._redo_stack: List[_UndoAction | _UndoGroup] = []
         self._access_lock = Lock()
@@ -149,7 +149,6 @@ class UndoStack(metaclass=Singleton):
             if self._open_group.count() > 0:
                 self._add_to_stack(self._open_group, self._undo_stack)
             self._open_group = None
-
 
     def undo(self) -> None:
         """Reverses the most recent action taken."""

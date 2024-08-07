@@ -4,11 +4,14 @@ Panel providing controls for the stable-diffusion ControlNet extension. Only sup
 import logging
 from typing import Optional
 
-from PyQt6.QtWidgets import QVBoxLayout, QHBoxLayout, QCheckBox, QPushButton, QLineEdit, QComboBox, QSizePolicy
+from PyQt6.QtWidgets import QVBoxLayout, QHBoxLayout, QCheckBox, QPushButton, QLineEdit, QComboBox, QApplication, \
+    QTabWidget
 
 from src.config.application_config import AppConfig
 from src.ui.input_fields.check_box import CheckBox
-from src.ui.widget.collapsible_box import CollapsibleBox
+from src.ui.input_fields.slider_spinbox import IntSliderSpinbox, FloatSliderSpinbox
+from src.ui.modal.modal_utils import open_image_file
+from src.ui.widget.bordered_widget import BorderedWidget
 from src.ui.widget.label_wrapper import LabelWrapper
 from src.util.parameter import Parameter, TYPE_FLOAT, TYPE_INT
 from src.util.shared_constants import CONTROLNET_REUSE_IMAGE_CODE
@@ -16,19 +19,30 @@ from src.util.validation import assert_type
 
 logger = logging.getLogger(__name__)
 
+# The `QCoreApplication.translate` context for strings in this file
+TR_ID = 'ui.panel.controlnet_panel'
+
+
+def _tr(*args):
+    """Helper to make `QCoreApplication.translate` more concise."""
+    return QApplication.translate(TR_ID, *args)
+
+
 # UI/Label text:
-ENABLE_CONTROLNET_CHECKBOX_LABEL = 'Enable ControlNet'
-LOW_VRAM_LABEL = 'Low VRAM'
-PX_PERFECT_CHECKBOX_LABEL = 'Pixel Perfect'
-CONTROL_IMAGE_LABEL = 'Set Control Image'
-GENERATION_AREA_AS_CONTROL = 'Generation Area as Control'
-CONTROL_TYPE_BOX_TITLE = 'Control Type'
-MODULE_BOX_TITLE = 'Control Module'
-MODEL_BOX_TITLE = 'Control Model'
-OPTION_BOX_TITLE = 'Options'
-CONTROL_WEIGHT_TITLE = 'Control Weight'
-CONTROL_START_STEP_TITLE = 'Starting Control Step'
-CONTROL_END_STEP_TITLE = 'Ending Control Step'
+CONTROLNET_TITLE = _tr('ControlNet')
+CONTROLNET_UNIT_TITLE = _tr('ControlNet Unit {unit_number}')
+ENABLE_CONTROLNET_CHECKBOX_LABEL = _tr('Enable ControlNet')
+LOW_VRAM_LABEL = _tr('Low VRAM')
+PX_PERFECT_CHECKBOX_LABEL = _tr('Pixel Perfect')
+CONTROL_IMAGE_LABEL = _tr('Set Control Image')
+GENERATION_AREA_AS_CONTROL = _tr('Generation Area as Control')
+CONTROL_TYPE_BOX_TITLE = _tr('Control Type')
+MODULE_BOX_TITLE = _tr('Control Module')
+MODEL_BOX_TITLE = _tr('Control Model')
+OPTION_BOX_TITLE = _tr('Options')
+CONTROL_WEIGHT_TITLE = _tr('Control Weight')
+CONTROL_START_STEP_TITLE = _tr('Starting Control Step')
+CONTROL_END_STEP_TITLE = _tr('Ending Control Step')
 
 # Config/request body keys:
 CONTROL_CONFIG_LOW_VRAM_KEY = 'low_vram'
@@ -67,15 +81,41 @@ DEFAULT_MODULE_NAME = 'none'
 DEFAULT_MODEL_NAME = 'none'
 
 
-class ControlnetPanel(CollapsibleBox):
+class TabbedControlnetPanel(QTabWidget):
+    """Tabbed ControlNet panel with three ControlNet units."""
+
+    def __init__(self,
+                 control_types: Optional[dict],
+                 module_detail: dict,
+                 model_list: dict):
+        """Initializes the panel based on data from the stable-diffusion-webui.
+
+        Parameters
+        ----------
+        control_types : dict or None
+            API data defining available control types. If none, only the module and model dropdowns are used.
+        module_detail : dict
+            API data defining available ControlNet modules.
+        model_list : dict
+            API data defining available ControlNet models.
+        """
+        super().__init__()
+        self._panel1 = ControlnetPanel(AppConfig.CONTROLNET_ARGS_0, control_types, module_detail, model_list)
+        self._panel2 = ControlnetPanel(AppConfig.CONTROLNET_ARGS_1, control_types, module_detail, model_list)
+        self._panel3 = ControlnetPanel(AppConfig.CONTROLNET_ARGS_2, control_types, module_detail, model_list)
+        self.addTab(self._panel1, CONTROLNET_UNIT_TITLE.format(unit_number='1'))
+        self.addTab(self._panel2, CONTROLNET_UNIT_TITLE.format(unit_number='2'))
+        self.addTab(self._panel3, CONTROLNET_UNIT_TITLE.format(unit_number='3'))
+
+
+class ControlnetPanel(BorderedWidget):
     """ControlnetPanel provides controls for the stable-diffusion ControlNet extension."""
 
     def __init__(self,
                  config_key: str,
                  control_types: Optional[dict],
                  module_detail: dict,
-                 model_list: dict,
-                 title: str = 'ControlNet'):
+                 model_list: dict):
         """Initializes the panel based on data from the stable-diffusion-webui.
 
         Parameters
@@ -88,10 +128,8 @@ class ControlnetPanel(CollapsibleBox):
             API data defining available ControlNet modules.
         model_list : dict
             API data defining available ControlNet models.
-        title : str, default = "ControlNet"
-            Title to display at the top of the panel.
         """
-        super().__init__(title=title, scrolling=False, start_closed=len(AppConfig().get(config_key)) == 0)
+        super().__init__()
         if isinstance(control_types, dict) and len(control_types) == 0:
             control_types = None
         assert_type(model_list, dict)
@@ -102,8 +140,7 @@ class ControlnetPanel(CollapsibleBox):
         self._saved_state = initial_control_state
 
         # Build layout:
-        layout = QVBoxLayout()
-        self.set_content_layout(layout)
+        layout = QVBoxLayout(self)
 
         # Basic checkboxes:
         checkbox_row = QHBoxLayout()
@@ -119,14 +156,15 @@ class ControlnetPanel(CollapsibleBox):
         checkbox_row.addWidget(px_perfect_checkbox)
 
         # Control image row:
-        use_generation_area = bool(CONTROL_CONFIG_IMAGE_KEY in initial_control_state
-                                   and initial_control_state[CONTROL_CONFIG_IMAGE_KEY] == CONTROLNET_REUSE_IMAGE_CODE)
+        use_generation_area = bool(CONTROL_CONFIG_IMAGE_KEY not in initial_control_state
+                                   or initial_control_state[CONTROL_CONFIG_IMAGE_KEY] == CONTROLNET_REUSE_IMAGE_CODE)
         image_row = QHBoxLayout()
         layout.addLayout(image_row)
 
         load_image_button = QPushButton()
         load_image_button.setText(CONTROL_IMAGE_LABEL)
         load_image_button.setEnabled(not use_generation_area)
+        load_image_button.clicked.connect(lambda: open_image_file(self))
         image_row.addWidget(load_image_button, stretch=10)
 
         image_path_edit = QLineEdit('' if use_generation_area or CONTROL_CONFIG_IMAGE_KEY not in initial_control_state
@@ -174,13 +212,7 @@ class ControlnetPanel(CollapsibleBox):
 
         model_combobox = QComboBox(self)
         selection_row.addWidget(LabelWrapper(model_combobox, MODEL_BOX_TITLE))
-
-        # Dynamic options section:
-        options_combobox = CollapsibleBox(OPTION_BOX_TITLE, start_closed=True)
-        options_combobox.set_expanded_size_policy(QSizePolicy.Policy.Maximum)
-        options_layout = QVBoxLayout()
-        options_combobox.set_content_layout(options_layout)
-        layout.addWidget(options_combobox)
+        self._fixed_layout_item_count = layout.count()
 
         # on model change, update config:
         def handle_model_change():
@@ -203,25 +235,22 @@ class ControlnetPanel(CollapsibleBox):
                     return
                 details = module_detail[MODULE_DETAIL_KEY][selected_module]
             config.set(config_key, selected_module, inner_key=CONTROL_MODULE_KEY)
-            while options_layout.count() > 0:
-                row = options_layout.itemAt(0)
+            while layout.count() > self._fixed_layout_item_count:
+                row = layout.takeAt(layout.count() - 1)
                 assert row is not None
                 row_layout = row.layout()
                 assert row_layout is not None
                 while row_layout.count() > 0:
-                    item = row_layout.itemAt(0)
+                    item = row_layout.takeAt(0)
                     assert item is not None
-                    row_layout.removeItem(item)
-                    if item.widget():
-                        widget = item.widget()
-                        assert widget is not None
+                    widget = item.widget()
+                    if widget is not None:
                         config.disconnect(widget, config_key)
                         if hasattr(widget, 'disconnect_config'):
                             widget.disconnect_config()
                         else:
                             config.disconnect(widget, config_key)
                         widget.deleteLater()
-                options_layout.removeItem(row)
                 row_layout.deleteLater()
             current_keys = list(config.get(config_key).keys())
             for param in current_keys:
@@ -295,21 +324,18 @@ class ControlnetPanel(CollapsibleBox):
                                               maximum=max_val,
                                               single_step=step)
                     slider = control_param.get_input_widget()
+                    assert isinstance(slider, (IntSliderSpinbox, FloatSliderSpinbox))
+                    slider.setText(slider_title)
 
                     def _update_value(new_value, inner_key=key):
                         config.set(config_key, new_value, inner_key=inner_key)
                     slider.valueChanged.connect(_update_value)
                     if slider_row.count() > 1:
-                        options_layout.addLayout(slider_row)
+                        layout.addLayout(slider_row)
                         slider_row = QHBoxLayout()
                     slider_row.addWidget(slider)
                 if slider_row.count() > 0:
-                    options_layout.addLayout(slider_row)
-            if options_layout.count() > 0:
-                options_combobox.setEnabled(True)
-            else:
-                options_combobox.set_expanded(False)
-                options_combobox.setEnabled(False)
+                    layout.addLayout(slider_row)
 
         def module_change_handler():
             """On module change, apply the new selected module."""
@@ -375,7 +401,6 @@ class ControlnetPanel(CollapsibleBox):
             for widget in [control_type_combobox, module_combobox, model_combobox]:
                 if widget is not None:
                     widget.setEnabled(checked)
-            options_combobox.setEnabled(checked and options_layout.count() > 0)
             if checked:
                 config.set(config_key, self._saved_state)
             else:
@@ -384,7 +409,6 @@ class ControlnetPanel(CollapsibleBox):
 
         set_enabled(CONTROL_MODEL_KEY in initial_control_state)
         enabled_checkbox.stateChanged.connect(set_enabled)
-        self.show_button_bar(True)
 
 
 class _ControlnetCheckbox(CheckBox):

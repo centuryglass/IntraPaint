@@ -68,6 +68,7 @@ class AppConfig(Config, metaclass=Singleton):
     # Generate with `python /home/anthony/Workspace/ML/IntraPaint/scripts/dynamic_import_typing.py src/config/application_config.py`
 
     ANIMATE_OUTLINES: str
+    AUTO_MOVE_TABS: str
     BATCH_COUNT: str
     BATCH_SIZE: str
     BRUSH_FAVORITES: str
@@ -85,6 +86,7 @@ class AppConfig(Config, metaclass=Singleton):
     EDIT_SIZE: str
     FONT_POINT_SIZE: str
     GENERATION_SIZE: str
+    GENERATION_TAB_BAR: str
     GUIDANCE_SCALE: str
     INPAINT_FULL_RES: str
     INPAINT_FULL_RES_PADDING: str
@@ -115,7 +117,10 @@ class AppConfig(Config, metaclass=Singleton):
     STYLE: str
     THEME: str
     TILING: str
+    TOOL_TAB_BAR: str
     UNDO_MERGE_INTERVAL: str
     UPSCALE_METHOD: str
     UPSCALE_MODE: str
     USE_ERROR_HANDLER: str
+    WARN_BEFORE_LAYERLESS_SAVE: str
+    WARN_ON_KEY_ERROR: str

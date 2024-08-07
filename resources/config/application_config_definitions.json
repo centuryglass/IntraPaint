@@ -73,6 +73,31 @@
         "default": false,
         "saved": true
     },
+    "auto_move_tabs": {
+        "label": "Automatically move tabs",
+        "category": "Interface",
+        "description": "Automatically reposition UI tabs when window size changes",
+        "type": "bool",
+        "default": true,
+        "saved":  true
+    },
+    "tool_tab_bar": {
+        "label": "Tool tab bar:",
+        "category": "Interface:",
+        "description": "Toolbar where the tool tab is placed by default (TOP|BOTTOM|LEFT|RIGHT|LOWER or empty)",
+        "type": "string",
+        "default": "",
+        "saved": true
+    },
+    "generation_tab_bar": {
+        "label": "Image generation tab bar:",
+        "category": "Interface:",
+        "description": "Toolbar where the image generation tab is placed by default (TOP|BOTTOM|LEFT|RIGHT|LOWER or empty)",
+        "type": "string",
+        "default": "",
+        "saved": true
+
+    },
     "default_image_size": {
         "label": "Default image size:",
         "category": "Editing",

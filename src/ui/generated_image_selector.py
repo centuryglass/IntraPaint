@@ -71,7 +71,7 @@ class GeneratedImageSelector(QWidget):
         self._loading_image = QImage()
         self._zoomed_in = False
         self._zoom_to_changes = AppConfig().get(AppConfig.SELECTION_SCREEN_ZOOMS_TO_CHANGED)
-        self._change_bounds = None
+        self._change_bounds: Optional[QRect] = None
         self._zoom_index = 0
         self._last_scroll_time = time.time() * 1000
 

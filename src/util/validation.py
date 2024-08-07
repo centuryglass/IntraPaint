@@ -1,10 +1,10 @@
 """Provides a convenience function for miscellaneous validation."""
 import json
-from typing import Any, Iterable
+from typing import Any, Iterable, Dict, Optional
 
 from PyQt6.QtCore import QSize
 from PyQt6.QtGui import QColor
-from PyQt6.QtWidgets import QWidget, QLayout, QSizePolicy
+from PyQt6.QtWidgets import QWidget, QLayout, QSizePolicy, QBoxLayout
 
 
 def assert_type(value: Any, expected_type: Any) -> None:
@@ -81,7 +81,7 @@ def debug_widget_bounds(widget: QWidget, color: QColor) -> None:
 
 def layout_debug(widget: QWidget) -> None:
     """Dump nested layout info to a JSON file for inspection."""
-    layout_data = {}
+    layout_data: Dict[str, Any] = {}
 
     def _policy_str(policy: QSizePolicy.Policy) -> str:
         match policy:
@@ -100,12 +100,12 @@ def layout_debug(widget: QWidget) -> None:
             case _:
                 return f'unknown ({policy})'
 
-    def _record_size(width_key: str, height_key: str, size: QSize, record: dict):
+    def _record_size(width_key: str, height_key: str, size: QSize, record: Dict[str, Any]):
         if size is not None and not size.isNull():
             record[width_key] = size.width()
             record[height_key] = size.height()
 
-    def _add_item(item: QLayout | QWidget, record: dict) -> None:
+    def _add_item(item: QLayout | QWidget, record: Dict[str, Any]) -> None:
         record['type'] = str(item.__class__)
         if hasattr(item, 'sizePolicy'):
             record['w_policy'] = _policy_str(item.sizePolicy().horizontalPolicy())
@@ -126,16 +126,18 @@ def layout_debug(widget: QWidget) -> None:
             record['children'] = []
             for i in range(item.count()):
                 child = item.itemAt(i)
+                assert child is not None
                 child_widget = child.widget()
+                data: Dict[str, Any] = {}
                 if child_widget is not None:
-                    data = {}
                     _add_item(child_widget, data)
                     record['children'].append(data)
                 else:
                     layout = child.layout()
                     if layout is not None:
-                        data = {}
                         _add_item(layout, data)
                         record['children'].append(data)
+                if isinstance(item, QBoxLayout):
+                    data['stretch'] = item.stretch(i)
     _add_item(widget, layout_data)
     json.dump(layout_data, open('layout-debug.json', 'w'), indent=2)

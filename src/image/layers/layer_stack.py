@@ -112,6 +112,7 @@ class LayerStack(Layer):
             for layer in self.recursive_child_layers:
                 if isinstance(layer, LayerStack) or layer.locked:
                     continue
+                assert isinstance(layer, (ImageLayer, LayerStack))
                 layer.crop_to_content(False)
 
     def get_qimage(self) -> QImage:

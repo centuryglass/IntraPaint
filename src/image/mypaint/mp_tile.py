@@ -70,6 +70,7 @@ class MPTile(QGraphicsItem):
         if self._lock_alpha and not locked:  # When unlocking, make sure suppressed alpha changes don't appear suddenly
             if not self._cache_valid:
                 self.update_cache()
+            assert self._cache_image is not None
             self.copy_image_into_pixel_buffer(self._pixels, self._cache_image, 0, 0, False)
         self._lock_alpha = locked
 
@@ -87,6 +88,7 @@ class MPTile(QGraphicsItem):
         if mask is not None:
             assert mask.size() == self._size, 'Mask size must match tile size'
         if self._mask_image is not None:  # Clear hidden changes suppressed by the old mask:
+            assert self._cache_image is not None
             self.copy_image_into_pixel_buffer(self._pixels, self._cache_image, 0, 0, False)
         self._mask_image = mask
         self.update_cache()

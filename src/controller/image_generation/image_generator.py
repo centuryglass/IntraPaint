@@ -2,7 +2,7 @@
 from typing import List, Dict, Optional, Any
 
 from PIL import Image, ImageFilter
-from PyQt6.QtCore import QPoint, QRect, QSize, pyqtSignal, QTimer, QObject
+from PyQt6.QtCore import QPoint, QRect, QSize, pyqtSignal, QTimer, QObject, pyqtBoundSignal
 from PyQt6.QtGui import QImage, QPainter
 from PyQt6.QtWidgets import QApplication, QWidget
 
@@ -11,6 +11,7 @@ from src.config.cache import Cache
 from src.image.layers.image_stack import ImageStack
 from src.ui.modal.modal_utils import show_error_dialog
 from src.ui.modal.settings_modal import SettingsModal
+from src.ui.widget.draggable_tabs.tab import Tab
 from src.ui.window.main_window import MainWindow
 from src.util.application_state import AppStateTracker, APP_STATE_LOADING, APP_STATE_EDITING
 from src.util.async_task import AsyncTask
@@ -71,6 +72,10 @@ class ImageGenerator(MenuBuilder, QObject):
            connect to required external services, returning whether the process completed correctly."""
         raise NotImplementedError()
 
+    def get_extra_tabs(self) -> List[Tab]:
+        """Returns any extra tabs that the generator will add to the main window."""
+        return []
+
     def disconnect_or_disable(self) -> None:
         """Closes any connections, unloads models, or otherwise turns off this generator."""
         raise NotImplementedError()
@@ -97,7 +102,7 @@ class ImageGenerator(MenuBuilder, QObject):
         return False
 
     def generate(self,
-                 status_signal: pyqtSignal,
+                 status_signal: pyqtSignal | pyqtBoundSignal,
                  source_image: Optional[QImage] = None,
                  mask_image: Optional[QImage] = None) -> None:
         """Generates new images. Image size, image count, prompts, etc. should be loaded from AppConfig as needed.
@@ -148,10 +153,11 @@ class ImageGenerator(MenuBuilder, QObject):
             status_signal = pyqtSignal(dict)
             error_signal = pyqtSignal(Exception)
 
-            def signals(self) -> List[pyqtSignal]:
+            def signals(self) -> List[pyqtSignal | pyqtBoundSignal]:
                 return [self.status_signal, self.error_signal]
 
-        def _do_inpaint(status_signal: pyqtSignal, error_signal: pyqtSignal, image=inpaint_image,
+        def _do_inpaint(status_signal: pyqtSignal | pyqtBoundSignal, error_signal: pyqtSignal | pyqtBoundSignal,
+                        image=inpaint_image,
                         mask=inpaint_mask) -> None:
             try:
                 self.generate(status_signal, image, mask)

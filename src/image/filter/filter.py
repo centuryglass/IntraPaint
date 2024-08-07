@@ -2,7 +2,7 @@
 and provides the information needed to add the function as a menu action."""
 from typing import Callable, List, Optional, Dict, Any
 
-from PyQt6.QtCore import QPoint, pyqtSignal
+from PyQt6.QtCore import QPoint, pyqtSignal, pyqtBoundSignal
 from PyQt6.QtGui import QImage, QPainter, QTransform
 
 from src.image.layers.image_stack import ImageStack
@@ -231,7 +231,7 @@ class ImageFilter:
         class _FilterTask(AsyncTask):
             images_ready = pyqtSignal(dict)
 
-            def signals(self) -> List[pyqtSignal]:
+            def signals(self) -> List[pyqtSignal | pyqtBoundSignal]:
                 return [self.images_ready]
 
         task = _FilterTask(_filter_images, True)

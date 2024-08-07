@@ -103,6 +103,7 @@ class ShapeSelectionTool(BaseTool):
 
     def mouse_click(self, event: Optional[QMouseEvent], image_coordinates: QPoint) -> bool:
         """Start selecting on click."""
+        assert event is not None
         if KeyConfig.modifier_held(KeyConfig.PAN_VIEW_MODIFIER, True):
             return False
         if self._selection_shape is not None:

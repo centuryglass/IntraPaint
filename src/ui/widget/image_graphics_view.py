@@ -6,7 +6,7 @@ from PyQt6.QtCore import Qt, QObject, QPoint, QPointF, QRect, QRectF, QSize, QMa
 from PyQt6.QtGui import QPixmap, QImage, QPainter, QPen, QTransform, QResizeEvent, QMouseEvent, QCursor, QWheelEvent, \
     QEnterEvent, QSurfaceFormat
 from PyQt6.QtOpenGLWidgets import QOpenGLWidget
-from PyQt6.QtWidgets import QWidget, QGraphicsView, QGraphicsScene, QGraphicsPixmapItem
+from PyQt6.QtWidgets import QWidget, QGraphicsView, QGraphicsScene, QGraphicsPixmapItem, QSizePolicy
 
 from src.config.application_config import AppConfig
 from src.config.key_config import KeyConfig
@@ -49,6 +49,7 @@ class ImageGraphicsView(QGraphicsView):
         self.setCacheMode(QGraphicsView.CacheModeFlag.CacheBackground)
         self.setTransformationAnchor(QGraphicsView.ViewportAnchor.NoAnchor)
         self.setViewportUpdateMode(QGraphicsView.ViewportUpdateMode.FullViewportUpdate)
+        self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
 
         if AppConfig().get(AppConfig.OPENGL_ACCELERATION):
             self._opengl_view: Optional[QOpenGLWidget] = QOpenGLWidget()

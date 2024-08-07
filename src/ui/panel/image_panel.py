@@ -3,13 +3,17 @@ from typing import Optional
 
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QResizeEvent
-from PyQt6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLabel, QDoubleSpinBox, QSlider, QPushButton
+from PyQt6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLabel, QDoubleSpinBox, QSlider, QPushButton, QSizePolicy
+
 from src.image.layers.image_stack import ImageStack
 from src.ui.image_viewer import ImageViewer
+from src.ui.widget.draggable_divider import DraggableDivider
+from src.ui.widget.draggable_tabs.tab_box import TabBox
 
 MIN_WIDTH_SHOWING_SCALE_SLIDER = 600
-
 MIN_WIDTH_SHOWING_HINT_TEXT = 900
+TAB_BOX_STRETCH = 50
+MAIN_CONTENT_STRETCH = 100
 
 SCALE_SLIDER_LABEL = 'Scale:'
 SCALE_RESET_BUTTON_LABEL = 'Reset View'
@@ -21,10 +25,26 @@ SCALE_ZOOM_BUTTON_TOOLTIP = 'Zoom in on the area selected for image generation'
 class ImagePanel(QWidget):
     """Displays the image panel with zoom controls and input hints."""
 
-    def __init__(self, image_stack: ImageStack) -> None:
+    def __init__(self, image_stack: ImageStack, include_tab_boxes: bool = False) -> None:
         super().__init__()
-        self._layout = QVBoxLayout(self)
-        self._image_viewer = ImageViewer(self, image_stack)
+        if include_tab_boxes:
+            self._outer_layout = QHBoxLayout(self)
+            self._outer_layout.setContentsMargins(0, 0, 0, 0)
+            self._left_tab_box: Optional[TabBox] = TabBox(Qt.Orientation.Vertical, True)
+            self._outer_layout.addWidget(self._left_tab_box, stretch=TAB_BOX_STRETCH)
+            self._outer_layout.addWidget(DraggableDivider())
+            self._inner_content = QWidget()
+            self._layout = QVBoxLayout(self._inner_content)
+            self._outer_layout.addWidget(self._inner_content, stretch=MAIN_CONTENT_STRETCH)
+            self._outer_layout.addWidget(DraggableDivider())
+            self._right_tab_box: Optional[TabBox] = TabBox(Qt.Orientation.Vertical, False)
+            self._outer_layout.addWidget(self._right_tab_box, stretch=TAB_BOX_STRETCH)
+        else:
+            self._layout = QVBoxLayout(self)
+            self._left_tab_box = None
+            self._right_tab_box = None
+
+        self._image_viewer = ImageViewer(None, image_stack)
         self._layout.addWidget(self._image_viewer, stretch=255)
         self._control_bar = QWidget()
         self._layout.addWidget(self._control_bar, stretch=1)
@@ -98,6 +118,7 @@ class ImagePanel(QWidget):
 
         for signal in scale_signals:
             signal.connect(on_scale_change)
+        self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
 
     @property
     def image_viewer(self) -> ImageViewer:
@@ -112,3 +133,13 @@ class ImagePanel(QWidget):
         """Hide non-essential UI elements if there's not enough space."""
         self._control_hint_label.setVisible(self.width() > MIN_WIDTH_SHOWING_HINT_TEXT)
         self._image_scale_slider.setVisible(self.width() > MIN_WIDTH_SHOWING_SCALE_SLIDER)
+
+    @property
+    def left_tab_box(self) -> Optional[TabBox]:
+        """Returns the left tab box, if used."""
+        return self._left_tab_box
+
+    @property
+    def right_tab_box(self) -> Optional[TabBox]:
+        """Returns the right tab box, if used."""
+        return self._right_tab_box

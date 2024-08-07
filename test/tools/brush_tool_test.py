@@ -1,6 +1,7 @@
 import os
 import sys
 import unittest
+from typing import Optional
 from unittest.mock import Mock, MagicMock, patch
 
 from PyQt6.QtCore import QSize, QPoint
@@ -35,7 +36,9 @@ class BrushToolTest(unittest.TestCase):
         self.tool_panel = self.window._tool_panel
         self.brush_tool = self.tool_panel._tools[BRUSH_LABEL]
         self.tool_handler = self.tool_panel._event_handler
-        self.scene = self.window._image_panel.image_viewer.scene()
+        scene = self.window._image_panel.image_viewer.scene()
+        assert scene is not None
+        self.scene = scene
 
     def test_activation_no_layers(self) -> None:
         self.assertEqual(self.image_stack.layer_stack.count, 0)
@@ -55,6 +58,7 @@ class BrushToolTest(unittest.TestCase):
                 layer_item = item
                 break
         self.assertIsInstance(layer_item, LayerGraphicsItem)
+        assert layer_item is not None
         self.assertEqual(layer_item.layer, layer)
         self.assertEqual(layer_item.zValue(), layer.z_value)
         # self.assertFalse(layer_item.hidden)  # TODO: Why is this failing? I'm not seeing issues in practice
@@ -81,8 +85,8 @@ class BrushToolTest(unittest.TestCase):
         layer1 = self.image_stack.create_layer()
         layer2 = self.image_stack.create_layer()
         self.assertFalse(self.brush_tool.is_active)
-        layer_item_1 = None
-        layer_item_2 = None
+        layer_item_1: Optional[LayerGraphicsItem] = None
+        layer_item_2: Optional[LayerGraphicsItem] = None
         for item in self.scene.items():
             if isinstance(item, LayerGraphicsItem):
                 if item.layer == layer1:
@@ -90,8 +94,10 @@ class BrushToolTest(unittest.TestCase):
                 elif item.layer == layer2:
                     layer_item_2 = item
         self.assertIsInstance(layer_item_1, LayerGraphicsItem)
-        self.assertEqual(layer_item_1.layer, layer1)
         self.assertIsInstance(layer_item_2, LayerGraphicsItem)
+        assert layer_item_1 is not None
+        assert layer_item_2 is not None
+        self.assertEqual(layer_item_1.layer, layer1)
         self.assertEqual(layer_item_2.layer, layer2)
         self.assertEqual(self.image_stack.active_layer, layer1)
 

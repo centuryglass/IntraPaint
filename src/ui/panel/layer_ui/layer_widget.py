@@ -275,7 +275,7 @@ class LayerWidget(BorderedWidget):
                 merge_option = _add_action(MENU_OPTION_MERGE_DOWN,
                                            lambda: self._image_stack.merge_layer_down(self.layer), True)
                 next_layer = self._image_stack.next_layer(self._layer)
-                if next_layer.locked or not next_layer.visible:
+                if next_layer is None or next_layer.locked or not next_layer.visible:
                     merge_option.setEnabled(False)
 
             _add_action(MENU_OPTION_CLEAR_SELECTED, lambda: self._image_stack.cut_selected(self.layer), True)

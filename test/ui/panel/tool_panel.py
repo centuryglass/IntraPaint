@@ -1,10 +1,11 @@
 import unittest
 import sys
 import os
+from typing import cast
 from unittest.mock import Mock
 
 from PyQt6.QtCore import Qt, QSize
-from PyQt6.QtWidgets import QApplication
+from PyQt6.QtWidgets import QApplication, QWidget
 from PyQt6.QtTest import QTest
 
 from src.config.application_config import AppConfig
@@ -17,7 +18,7 @@ from src.ui.panel.tool_panel import ToolPanel
 app = QApplication.instance() or QApplication(sys.argv)
 
 
-class ToolPanelTest(unittest.TestCase):
+class ToolPanelTest(unittest.TestCase, QTest):
     """Tool panel GUI testing"""
 
     def setUp(self) -> None:
@@ -44,7 +45,7 @@ class ToolPanelTest(unittest.TestCase):
         self.assertTrue(self._tool_panel._generate_button.isVisible())
         self.assertEqual(self._tool_panel.orientation, Qt.Orientation.Vertical)
         self.assertEqual(self._tool_panel._generate_button.text(), 'Generate')
-        QTest.mouseClick(self._tool_panel._generate_button, Qt.LeftButton)
+        self.mouseClick(self._tool_panel._generate_button, Qt.MouseButton.LeftButton)
         self._generate.assert_called()
         self._generate.reset_mock()
 
@@ -53,7 +54,7 @@ class ToolPanelTest(unittest.TestCase):
         self.assertTrue(self._tool_panel._generate_button.isVisible())
         self.assertEqual(self._tool_panel.orientation, Qt.Orientation.Horizontal)
         self.assertEqual(self._tool_panel._generate_button.text(), 'G\ne\nn\ne\nr\na\nt\ne')
-        QTest.mouseClick(self._tool_panel._generate_button, Qt.LeftButton)
+        self.mouseClick(self._tool_panel._generate_button, Qt.MouseButton.LeftButton)
         self._generate.assert_called()
         self._generate.reset_mock()
 
@@ -72,6 +73,6 @@ class ToolPanelTest(unittest.TestCase):
         self.assertTrue(self._tool_panel._generate_button.isVisible())
 
         # Button still works after the hide+show sequence:
-        QTest.mouseClick(self._tool_panel._generate_button, Qt.LeftButton)
+        self.mouseClick(self._tool_panel._generate_button, Qt.MouseButton.LeftButton)
         self._generate.assert_called()
         self._generate.reset_mock()

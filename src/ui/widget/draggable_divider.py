@@ -5,11 +5,11 @@ from typing import Optional
 
 from PyQt6.QtCore import Qt, QPoint, QSize, QRect, pyqtSignal
 from PyQt6.QtGui import QPainter, QPen, QResizeEvent, QMouseEvent, QPaintEvent, QCursor
-from PyQt6.QtWidgets import QWidget, QSizePolicy, QBoxLayout, QHBoxLayout, QVBoxLayout
+from PyQt6.QtWidgets import QWidget, QSizePolicy, QBoxLayout, QHBoxLayout, QVBoxLayout, QLayoutItem
 
 from src.util.contrast_color import contrast_color
 
-DIVIDER_SIZE = 8
+DIVIDER_SIZE = 4
 
 
 class DraggableDivider(QWidget):
@@ -17,10 +17,14 @@ class DraggableDivider(QWidget):
 
     dragged = pyqtSignal(QPoint)
 
-    def __init__(self) -> None:
+    def __init__(self, orientation=Qt.Orientation.Horizontal) -> None:
         super().__init__()
         self._dragging = False
-        self._mode = Qt.Orientation.Horizontal
+        self._mode = orientation
+        if orientation == Qt.Orientation.Horizontal:
+            self.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Expanding)
+        else:
+            self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
         self._hidden = False
         self._center_box = QRect(0, 0, 0, 0)
         self.resizeEvent(None)
@@ -32,14 +36,14 @@ class DraggableDivider(QWidget):
         """Puts the widget in horizontal mode, where it can be dragged left and right."""
         if self._mode != Qt.Orientation.Horizontal:
             self._mode = Qt.Orientation.Horizontal
-            self.setSizePolicy(QSizePolicy.Policy.Maximum, QSizePolicy.Policy.Expanding)
+            self.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Expanding)
             self.update()
 
     def set_vertical_mode(self) -> None:
         """Puts the widget in vertical mode, where it can be dragged up and down."""
         if self._mode != Qt.Orientation.Vertical:
             self._mode = Qt.Orientation.Vertical
-            self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Maximum)
+            self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
             self.update()
 
     def set_hidden(self, hidden: bool) -> None:
@@ -49,13 +53,10 @@ class DraggableDivider(QWidget):
             self.update()
 
     def sizeHint(self):
-        """Calculate preferred size based on orientation and parent size."""
-        parent = self.parent()
-        assert parent is not None
-        parent_size = parent.size()
+        """Calculate preferred size based on orientation."""
         if self._mode == Qt.Orientation.Horizontal:
-            return QSize(DIVIDER_SIZE, parent_size.height() - DIVIDER_SIZE)
-        return QSize(parent_size.width() - DIVIDER_SIZE, DIVIDER_SIZE)
+            return QSize(DIVIDER_SIZE, DIVIDER_SIZE * 3)
+        return QSize(DIVIDER_SIZE * 3, DIVIDER_SIZE)
 
     def resizeEvent(self, unused_event: Optional[QResizeEvent]) -> None:
         """Recalculate arrow placement when widget bounds change."""
@@ -103,28 +104,56 @@ class DraggableDivider(QWidget):
             if index == 0 or index == layout.count() - 1:
                 return
 
-            def _get_item_widget(idx: int) -> Optional[QWidget]:
+            def _get_item_widget(idx: int) -> Optional[QWidget | QLayoutItem]:
                 item = layout.itemAt(idx)
                 assert item is not None
-                return item.widget()
+                widget = item.widget()
+                return widget if widget is not None else item
             prev_item = _get_item_widget(index - 1)
             next_item = _get_item_widget(index + 1)
             if prev_item is None or next_item is None:
                 return
             if self._mode == Qt.Orientation.Horizontal:
+                divider_pos = self.x()
+                drag_pos = event.pos().x() + self.x()
+                prev_min = prev_item.minimumWidth()
+                prev_max = prev_item.maximumWidth()
+                prev_size = prev_item.width()
+                next_min = next_item.minimumWidth()
+                next_max = next_item.maximumWidth()
+                next_size = next_item.width()
                 prev_item_start = self.x() - prev_item.width()
                 next_item_end = self.x() + self.width() + next_item.width()
-                drag_pos = event.pos().x() + self.x()
             else:
+                divider_pos = self.y()
+                drag_pos = event.pos().y() + self.y()
+                prev_min = prev_item.minimumWidth()
+                prev_max = prev_item.maximumWidth()
+                prev_size = prev_item.width()
+                next_min = next_item.minimumWidth()
+                next_max = next_item.maximumWidth()
+                next_size = next_item.width()
                 prev_item_start = self.y() - prev_item.height()
                 next_item_end = self.y() + self.height() + next_item.height()
-                drag_pos = event.pos().y() + self.y()
             total_stretch = layout.stretch(index - 1) + layout.stretch(index + 1)
-            fraction = max(1, (drag_pos - prev_item_start)) / max(1, (next_item_end - prev_item_start))
-            stretch1 = max(1, int(total_stretch * fraction))
-            stretch2 = total_stretch - stretch1
-            layout.setStretch(index - 1, stretch1)
-            layout.setStretch(index + 1, stretch2)
+            assert total_stretch >= 2
+            # Don't continue if trying to resize a widget beyond its limits:
+            if ((prev_size == prev_min or next_size == next_max) and drag_pos < divider_pos) \
+                    or ((prev_size == prev_max or next_size == next_min) and drag_pos > divider_pos):
+                fraction = max(1, prev_size) / max(1, prev_size + next_size)
+            else:
+                fraction = max(1, (drag_pos - prev_item_start)) / max(1, (next_item_end - prev_item_start))
+
+            prev_item_stretch = max(1, int(total_stretch * fraction))
+            next_item_stretch = max(1, total_stretch - prev_item_stretch)
+            overflow = (prev_item_stretch + next_item_stretch) - total_stretch
+            if overflow > 0:
+                if prev_item_stretch > next_item_stretch:
+                    prev_item_stretch -= overflow
+                else:
+                    next_item_stretch -= overflow
+            layout.setStretch(index - 1, prev_item_stretch)
+            layout.setStretch(index + 1, next_item_stretch)
 
     def mouseReleaseEvent(self, unused_event: Optional[QMouseEvent]) -> None:
         """Exits the dragging state when the mouse is released. """

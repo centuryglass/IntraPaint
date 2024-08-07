@@ -7,9 +7,9 @@ from argparse import Namespace
 from typing import Optional, Dict, List, cast, Any
 
 import requests
-from PyQt6.QtCore import pyqtSignal, QSize, QThread
+from PyQt6.QtCore import pyqtSignal, QSize, QThread, pyqtBoundSignal
 from PyQt6.QtGui import QImage, QAction
-from PyQt6.QtWidgets import QInputDialog, QWidget, QApplication
+from PyQt6.QtWidgets import QInputDialog, QWidget, QApplication, QTabWidget
 
 from src.api.a1111_webservice import A1111Webservice, AuthError
 from src.config.a1111_config import A1111Config
@@ -19,7 +19,9 @@ from src.controller.image_generation.image_generator import ImageGenerator
 from src.image.layers.image_stack import ImageStack
 from src.ui.modal.modal_utils import show_error_dialog
 from src.ui.modal.settings_modal import SettingsModal
+from src.ui.panel.controlnet_panel import TabbedControlnetPanel, CONTROLNET_TITLE
 from src.ui.panel.generators.sd_webui_panel import SDWebUIPanel
+from src.ui.widget.draggable_tabs.tab import Tab
 from src.ui.window.extra_network_window import ExtraNetworkWindow
 from src.ui.window.main_window import MainWindow
 from src.ui.window.prompt_style_window import PromptStyleWindow
@@ -99,6 +101,8 @@ GENERATE_ERROR_MESSAGE_EMPTY_MASK = _tr('Nothing was selected in the image gener
                                         ' tool to mark part of the image generation area for inpainting, move the image'
                                         ' generation area to cover selected content, or switch to another image'
                                         ' generation mode.')
+CONTROLNET_TAB = _tr('ControlNet')
+CONTROLNET_UNIT_TAB = _tr('ControlNet Unit {unit_number}')
 AUTH_ERROR = _tr('Login cancelled.')
 
 MAX_ERROR_COUNT = 10
@@ -141,6 +145,8 @@ class SDWebUIGenerator(ImageGenerator):
         self._connected = False
         self._control_panel: Optional[SDWebUIPanel] = None
         self._preview = QImage(SD_PREVIEW_IMAGE)
+        self._controlnet_tab: Optional[Tab] = None
+        self._controlnet_panel: Optional[TabbedControlnetPanel] = None
 
     def get_display_name(self) -> str:
         """Returns a display name identifying the generator."""
@@ -157,6 +163,12 @@ class SDWebUIGenerator(ImageGenerator):
     def get_description(self) -> str:
         """Returns an extended description of this generator."""
         return SD_WEBUI_GENERATOR_DESCRIPTION
+
+    def get_extra_tabs(self) -> List[Tab]:
+        """Returns any extra tabs that the generator will add to the main window."""
+        if self._controlnet_tab is not None:
+            return [self._controlnet_tab]
+        return []
 
     def is_available(self) -> bool:
         """Returns whether the generator is supported on the current system."""
@@ -251,6 +263,13 @@ class SDWebUIGenerator(ImageGenerator):
                         cache.set(config_key, value)
                 except (KeyError, RuntimeError) as err:
                     logger.error(f'error loading {config_key} from {self._server_url}: {err}')
+            # Build ControlNet tab:
+            if cache.get(cache.CONTROLNET_VERSION) > 0 and self._controlnet_tab is None:
+                controlnet_panel = TabbedControlnetPanel(Cache().get(Cache.CONTROLNET_CONTROL_TYPES),
+                                                         Cache().get(Cache.CONTROLNET_MODULES),
+                                                         Cache().get(Cache.CONTROLNET_MODELS))
+                self._controlnet_tab = Tab(CONTROLNET_TITLE, controlnet_panel)
+
             return True
         except AuthError:
             return False
@@ -270,6 +289,11 @@ class SDWebUIGenerator(ImageGenerator):
         cache.set(Cache.CONTROLNET_MODULES, {})
         cache.set(Cache.CONTROLNET_MODELS, {})
         cache.set(Cache.LORA_MODELS, [])
+        if self._controlnet_tab is not None:
+            self._controlnet_tab.setParent(None)
+            self._controlnet_tab.deleteLater()
+            self._controlnet_tab = None
+            self._controlnet_panel = None
         self.clear_menus()
 
     def init_settings(self, settings_modal: SettingsModal) -> None:
@@ -278,11 +302,16 @@ class SDWebUIGenerator(ImageGenerator):
         web_config = A1111Config()
         web_config.load_all(self._webservice)
         settings_modal.load_from_config(web_config)
+        app_config = AppConfig()
+        settings_modal.load_from_config(app_config, [STABLE_DIFFUSION_CONFIG_CATEGORY])
 
     def refresh_settings(self, settings_modal: SettingsModal) -> None:
         """Reloads current values for this generator's settings, and updates them in the settings modal."""
         assert self._webservice is not None
         settings = self._webservice.get_config()
+        app_config = AppConfig()
+        for key in app_config.get_category_keys(STABLE_DIFFUSION_CONFIG_CATEGORY):
+            settings[key] = app_config.get(key)
         settings_modal.update_settings(settings)
 
     def update_settings(self, changed_settings: dict[str, Any]) -> None:
@@ -292,10 +321,13 @@ class SDWebUIGenerator(ImageGenerator):
         web_config = A1111Config()
         web_categories = web_config.get_categories()
         web_keys = [key for cat in web_categories for key in web_config.get_category_keys(cat)]
+        app_keys = AppConfig().get_category_keys(STABLE_DIFFUSION_CONFIG_CATEGORY)
         web_changes = {}
-        for key in changed_settings:
+        for key, value in changed_settings.items():
             if key in web_keys:
-                web_changes[key] = changed_settings[key]
+                web_changes[key] = value
+            elif key in app_keys and not isinstance(value, (list, dict)):
+                AppConfig().set(key, value)
         if len(web_changes) > 0:
             def _update_config() -> None:
                 assert self._webservice is not None
@@ -329,13 +361,15 @@ class SDWebUIGenerator(ImageGenerator):
             prompt_ready = pyqtSignal(str)
             error_signal = pyqtSignal(Exception)
 
-            def signals(self) -> List[pyqtSignal]:
+            def signals(self) -> List[pyqtSignal | pyqtBoundSignal]:
                 return [self.prompt_ready, self.error_signal]
 
-        def _interrogate(prompt_ready, error_signal):
+        def _interrogate(prompt_ready: pyqtSignal | pyqtBoundSignal,
+                         error_signal: pyqtSignal | pyqtBoundSignal) -> None:
             try:
+                assert self._webservice is not None
                 prompt_ready.emit(self._webservice.interrogate(image))
-            except RuntimeError as err:
+            except (RuntimeError, AssertionError) as err:
                 logger.error(f'err:{err}')
                 error_signal.emit(err)
 
@@ -364,7 +398,7 @@ class SDWebUIGenerator(ImageGenerator):
             self._control_panel.interrogate_signal.connect(self.interrogate)
         return self._control_panel
 
-    def _async_progress_check(self, external_status_signal: Optional[pyqtSignal] = None):
+    def _async_progress_check(self, external_status_signal: Optional[pyqtSignal | pyqtBoundSignal] = None):
         webservice = self._webservice
         assert webservice is not None
 
@@ -375,7 +409,7 @@ class SDWebUIGenerator(ImageGenerator):
                 super().__init__(self._check_progress)
                 self.should_stop = False
 
-            def signals(self) -> List[pyqtSignal]:
+            def signals(self) -> List[pyqtSignal | pyqtBoundSignal]:
                 return [external_status_signal if external_status_signal is not None else self.status_signal]
 
             def _check_progress(self, status_signal) -> None:
@@ -445,10 +479,11 @@ class SDWebUIGenerator(ImageGenerator):
             image_ready = pyqtSignal(QImage)
             error_signal = pyqtSignal(Exception)
 
-            def signals(self) -> List[pyqtSignal]:
+            def signals(self) -> List[pyqtSignal | pyqtBoundSignal]:
                 return [self.image_ready, self.error_signal]
 
-        def _upscale(image_ready: pyqtSignal, error_signal: pyqtSignal) -> None:
+        def _upscale(image_ready: pyqtSignal | pyqtBoundSignal,
+                     error_signal: pyqtSignal | pyqtBoundSignal) -> None:
             try:
                 assert self._webservice is not None
                 images, info = self._webservice.upscale(self._image_stack.qimage(), new_size.width(),
@@ -486,7 +521,7 @@ class SDWebUIGenerator(ImageGenerator):
         return True
 
     def generate(self,
-                 status_signal: pyqtSignal,
+                 status_signal: pyqtSignal | pyqtBoundSignal,
                  source_image: Optional[QImage] = None,
                  mask_image: Optional[QImage] = None) -> None:
         """Generates new images. Image size, image count, prompts, etc. are loaded from AppConfig as needed.
@@ -584,10 +619,10 @@ class SDWebUIGenerator(ImageGenerator):
             class _LoadingTask(AsyncTask):
                 status = pyqtSignal(str)
 
-                def signals(self) -> List[pyqtSignal]:
+                def signals(self) -> List[pyqtSignal | pyqtBoundSignal]:
                     return [self.status]
 
-            def _load_and_open(status_signal: pyqtSignal) -> None:
+            def _load_and_open(status_signal: pyqtSignal | pyqtBoundSignal) -> None:
                 for i, lora in enumerate(loras):
                     status_signal.emit(f'Loading thumbnail {i + 1}/{len(loras)}')
                     path = lora['path']

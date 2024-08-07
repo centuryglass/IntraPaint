@@ -110,10 +110,11 @@ class TestAppController(unittest.TestCase):
     @patch('src.controller.app_controller.SettingsModal')
     @patch('src.controller.app_controller.QtExceptHook')
     @patch('src.controller.app_controller.MainWindow')
+    @patch('src.controller.app_controller.AppController.clear_menus')
     @patch('src.controller.app_controller.AppController.add_menu_action')
     @patch('src.controller.app_controller.AppController.build_menus')
     @patch('src.controller.app_controller.SpacenavManager')
-    def test_start_app(self, MockSpacenavManager, mock_build_menus, mock_add_menu_action, MockMainWindow,
+    def test_start_app(self, MockSpacenavManager, mock_build_menus, mock_add_menu_action, mock_clear_menus, MockMainWindow,
                        MockQtExceptHook, MockSettingsModal, _):
         self.controller = AppController(self.args)
         self.controller.start_app()

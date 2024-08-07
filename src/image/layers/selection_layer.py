@@ -5,7 +5,7 @@ from typing import Optional, List
 import cv2
 import numpy as np
 from PIL import Image
-from PyQt6.QtCore import QRect, QPoint, QSize, pyqtSignal, QPointF
+from PyQt6.QtCore import QRect, QPoint, QSize, pyqtSignal, QPointF, pyqtBoundSignal
 from PyQt6.QtGui import QImage, QPolygonF, QPainter, QColor
 
 from src.config.application_config import AppConfig
@@ -38,7 +38,7 @@ class SelectionLayer(ImageLayer):
     - Contents are not saved.
     """
 
-    def __init__(self, size: QSize, generation_window_signal: pyqtSignal) -> None:
+    def __init__(self, size: QSize, generation_window_signal: pyqtSignal | pyqtBoundSignal) -> None:
         """
         Initializes a new selection layer.
         """

@@ -118,8 +118,8 @@ class Label(QLabel):
         """Re-renders the label text."""
         drawn_text = '     ' if self._text is None else (self._text + '     ')
         text_size = find_text_size(drawn_text, self._font)
-        w = int(text_size.height() * 1.1) if self._orientation == Qt.Orientation.Vertical else text_size.width()
-        h = text_size.width() if self._orientation == Qt.Orientation.Vertical else int(text_size.height() * 1.1)
+        w = text_size.height() if self._orientation == Qt.Orientation.Vertical else text_size.width()
+        h = text_size.width() if self._orientation == Qt.Orientation.Vertical else text_size.height()
         image_size = QSize(w, h)
 
         path = QPainterPath()
@@ -130,6 +130,12 @@ class Label(QLabel):
             rotation = QTransform()
             rotation.rotate(90)
             path = rotation.map(path)
+        path_bounds = path.boundingRect()
+        path_x = (w - path_bounds.width()) / 2
+        path_y = (h - path_bounds.height()) / 2
+        if path_bounds.x() != path_x or path_bounds.y() != path_y:
+            translate = QTransform.fromTranslate(path_x - path_bounds.x(), path_y - path_bounds.y())
+            path = translate.map(path)
 
         def draw(bg: QColor | Qt.GlobalColor, fg: QColor | Qt.GlobalColor) -> QPixmap:
             """Perform drawing operations on one of the internal label images."""
