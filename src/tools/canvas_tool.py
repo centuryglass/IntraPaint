@@ -257,6 +257,7 @@ class CanvasTool(BaseTool):
         if self._tablet_input == QPointingDevice.PointerType.Eraser:
             self._canvas.eraser = True
 
+
         if KeyConfig.modifier_held(KeyConfig.FIXED_ANGLE_MODIFIER) and self._last_pos is not None \
                 and self._last_pos != image_coordinates:
             closest_point = None
@@ -281,7 +282,6 @@ class CanvasTool(BaseTool):
                 assert isinstance(closest_point, QPointF)
                 closest_point = closest_point.toPoint()
             assert isinstance(closest_point, QPoint)
-            print(f"fixed aspect: {image_coordinates} => {closest_point}")
             image_coordinates = closest_point
         if KeyConfig.modifier_held(KeyConfig.LINE_MODIFIER) and self._last_pos is not None:
             pressure = None if self._tablet_pressure is None else max(self._tablet_pressure, MIN_LINE_PRESSURE)
@@ -357,6 +357,8 @@ class CanvasTool(BaseTool):
             self._tablet_input = event.pointerType()
         if event.pressure() > 0.0001:
             self._tablet_pressure = event.pressure()
+        else:
+            self._tablet_pressure = None
         self._tablet_x_tilt = event.xTilt()
         self._tablet_y_tilt = event.yTilt()
         return True

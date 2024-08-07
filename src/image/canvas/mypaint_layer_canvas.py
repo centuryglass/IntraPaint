@@ -163,7 +163,7 @@ class MyPaintLayerCanvas(LayerCanvas):
               y_tilt: Optional[float]) -> None:
         """Use active settings to draw to the canvas with the given inputs."""
         if pressure is not None or x_tilt is not None or y_tilt is not None:
-            pressure = 0.0 if pressure is None else pressure
+            pressure = 1.0 if pressure is None else pressure
             x_tilt = 0.0 if x_tilt is None else x_tilt
             y_tilt = 0.0 if y_tilt is None else y_tilt
             self._mp_surface.stroke_to(x, y, pressure, x_tilt, y_tilt)

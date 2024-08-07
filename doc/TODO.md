@@ -1,6 +1,5 @@
 # Development tasks
 
-- Bug: First brush stroke sometimes not working (brush tool)
 - Bug: Composition mode not used when merging layers down (what about opacity?)
 - Bug(?): Smudge/blur brushes behave oddly when input doesn't have pressure data
 
