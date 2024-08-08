@@ -3,8 +3,6 @@
 # Bugs
 - '.png' auto-appended onto '.ora' paths sometimes
 
-# Misc
-- Color picker tool should show the "select screen color" button regardless of what tab is active.
 
 # Files
 - ORA SVG support

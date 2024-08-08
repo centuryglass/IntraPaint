@@ -1,9 +1,9 @@
 """A Qt5 color dialog with alternate reduced layouts."""
-from typing import Optional, cast
+from typing import Optional, cast, Tuple
 
-from PyQt6.QtCore import QSize
+from PyQt6.QtCore import QSize, pyqtSignal, QTimer
 from PyQt6.QtWidgets import QColorDialog, QWidget, QVBoxLayout, QHBoxLayout, \
-    QTabWidget, QBoxLayout, QLayoutItem, QLayout, QSizePolicy
+    QTabWidget, QBoxLayout, QLayoutItem, QLayout, QSizePolicy, QPushButton, QLabel
 
 BASIC_PALETTE_TITLE = 'Basic Palette'
 
@@ -22,6 +22,7 @@ MODE_2X1 = '2x1'
 MODE_1X2 = '1x2'
 MODE_1X1 = '1x1'
 
+TIMER_INTERVAL = 100
 
 class ColorPicker(QColorDialog):
     """A Qt5 color dialog with alternate reduced layouts.
@@ -30,7 +31,10 @@ class ColorPicker(QColorDialog):
     this at some point.
     """
 
-    def __init__(self, parent: Optional[QWidget] = None) -> None:
+    _screen_color_picker_text_changed = pyqtSignal(str)
+    _stopped_color_picking = pyqtSignal()
+
+    def __init__(self, parent: Optional[QWidget] = None, always_show_pick_color_button=True) -> None:
         super().__init__(parent)
         self.setOption(QColorDialog.ColorDialogOption.ShowAlphaChannel, True)
         self.setOption(QColorDialog.ColorDialogOption.NoButtons, True)
@@ -39,6 +43,7 @@ class ColorPicker(QColorDialog):
         self.setSizePolicy(self._size_policy)
         self._main_layout: Optional[QBoxLayout] = None
         self._mode = ''
+        self._always_show_pick_color_button = always_show_pick_color_button
 
         assert isinstance(self.children()[0], QVBoxLayout)
         self._outer_layout = cast(QVBoxLayout, self.children()[0])
@@ -65,6 +70,38 @@ class ColorPicker(QColorDialog):
         self._basic_palette_panel = QWidget()
         self._basic_palette_panel.setSizePolicy(self._size_policy)
         self._basic_palette_layout = QVBoxLayout(self._basic_palette_panel)
+
+        # Save "pick screen color" button and connected label:
+        button_item = palette_layout.itemAt(2)
+        assert button_item is not None
+        button_widget = button_item.widget()
+        assert isinstance(button_widget, QPushButton)
+        self._pick_color_button = button_widget
+
+        pick_color_label_item = palette_layout.itemAt(3)
+        assert pick_color_label_item is not None
+        pick_color_label = pick_color_label_item.widget()
+        assert isinstance(pick_color_label, QLabel)
+        self._pick_color_label = pick_color_label
+
+        # Handle transmitting label changes to duplicate labels:
+        self._update_timer = QTimer(self)
+        self._last_text = pick_color_label.text()
+
+        def _check_text() -> None:
+            label_text = self._pick_color_label.text()
+            if label_text == self._last_text:
+                return
+            if label_text != self._last_text:
+                self._last_text = label_text
+                self._screen_color_picker_text_changed.emit(self._last_text)
+            if self._pick_color_button.isEnabled():
+                self._update_timer.stop()
+                self._stopped_color_picking.emit()
+
+        self._update_timer.timeout.connect(_check_text)
+        self._pick_color_button.clicked.connect(lambda: self._update_timer.start(TIMER_INTERVAL))
+
         for _ in range(3):
             _move_first_item(palette_layout, self._basic_palette_layout)
 
@@ -171,9 +208,39 @@ class ColorPicker(QColorDialog):
         self._clear_layouts()
         tab_names = (SPECTRUM_TAB_TITLE, COMPONENT_TAB_TITLE, BASIC_PALETTE_TITLE, CUSTOM_PALETTE_TITLE)
         for title, tab in zip(tab_names, self._panels()):
+            if self._always_show_pick_color_button and title != BASIC_PALETTE_TITLE:
+                widget = QWidget()
+                layout = QVBoxLayout(widget)
+                layout.addWidget(tab)
+                pick_button, pick_label = self._new_pick_screen_color_button()
+                if title != CUSTOM_PALETTE_TITLE:
+                    layout.addWidget(pick_label)
+                layout.addWidget(pick_button)
+                tab = widget
             self._tab_panel.addTab(tab, title)
         self._tab_panel.show()
         self._tab_panel.setEnabled(True)
+
+    def _new_pick_screen_color_button(self) -> Tuple[QPushButton, QLabel]:
+        """Make a new 'pick screen color' button"""
+
+        class _LinkedButton(QPushButton):
+            def __init__(self, source_button: QPushButton, finish_signal: pyqtSignal) -> None:
+                super().__init__(source_button.text())
+                self.clicked.connect(source_button.clicked)
+                source_button.clicked.connect(self._button_clicked_slot)
+                finish_signal.connect(self._color_picking_ended_slot)
+
+            def _button_clicked_slot(self) -> None:
+                self.setEnabled(False)
+
+            def _color_picking_ended_slot(self) -> None:
+                self.setEnabled(True)
+
+        button = _LinkedButton(self._pick_color_button, self._stopped_color_picking)
+        label = QLabel()
+        self._screen_color_picker_text_changed.connect(label.setText)
+        return button, label
 
     def _use_linear_layout(self, layout_class) -> None:
         self._clear_layouts()
@@ -186,11 +253,36 @@ class ColorPicker(QColorDialog):
 
     def _use_two_tab_layout(self, layout_class) -> None:
         self._clear_layouts()
+        if self._always_show_pick_color_button:
+            pick_color_button, pick_color_label = self._new_pick_screen_color_button()
+        else:
+            pick_color_button = None
+            pick_color_label = None
         component_widget = QWidget()
         component_widget.setSizePolicy(self._size_policy)
         component_layout = layout_class(component_widget)
-        component_layout.addWidget(self._spectrum_panel)
-        component_layout.addWidget(self._component_panel)
+        component_layout.setSpacing(0)
+        component_layout.setContentsMargins(1, 1, 1, 1)
+        if layout_class == QHBoxLayout and pick_color_button is not None and pick_color_label is not None:
+            left_panel_layout = QVBoxLayout()
+            left_panel_layout.setSpacing(0)
+            left_panel_layout.setContentsMargins(1, 1, 1, 1)
+            left_panel_layout.addWidget(self._spectrum_panel)
+            left_panel_layout.addWidget(pick_color_label)
+            component_layout.addLayout(left_panel_layout)
+
+            right_panel_layout = QVBoxLayout()
+            right_panel_layout.setSpacing(0)
+            right_panel_layout.setContentsMargins(1, 1, 1, 1)
+            right_panel_layout.addWidget(self._component_panel)
+            right_panel_layout.addWidget(pick_color_button)
+            component_layout.addLayout(right_panel_layout)
+        else:
+            component_layout.addWidget(self._spectrum_panel)
+            component_layout.addWidget(self._component_panel)
+            if pick_color_label is not None and pick_color_button is not None:
+                component_layout.addWidget(pick_color_label)
+                component_layout.addWidget(pick_color_button)
         self._tab_panel.addTab(component_widget, COMPONENT_TAB_TITLE)
         palette_tab = QWidget()
         palette_tab.setSizePolicy(self._size_policy)
@@ -203,20 +295,27 @@ class ColorPicker(QColorDialog):
             panel.show()
         self._tab_panel.setEnabled(True)
 
+    def keyPressEvent(self, a0) -> None:
+        """Override to prevent closing with escape."""
+
     def _panels(self) -> tuple[QWidget, QWidget, QWidget, QWidget]:
         return self._spectrum_panel, self._component_panel, self._basic_palette_panel, self._custom_palette_panel
 
     def _clear_layouts(self) -> None:
+
         def _clear_intermediate_item(inner_item: Optional[QWidget | QLayout | QLayoutItem]) -> None:
             if inner_item is None:
                 return
             if inner_item in self._panels():
-                inner_item.setParent(None)
+                inner_item.setParent(self)
                 return
             widget = None
             layout = None
             if isinstance(inner_item, QLayoutItem):
                 widget = inner_item.widget()
+                if widget in self._panels():
+                    widget.setParent(self)
+                    return
                 layout = inner_item.layout()
                 if widget is not None:
                     layout = widget.layout()
@@ -225,9 +324,7 @@ class ColorPicker(QColorDialog):
             elif isinstance(inner_item, QLayout):
                 widget = None
                 layout = inner_item
-            if widget is not None and widget in self._panels():
-                widget.setParent(None)
-                return
+            assert widget not in self._panels()
             if layout is not None:
                 while layout.count() > 0:
                     item = layout.itemAt(0)
@@ -237,13 +334,15 @@ class ColorPicker(QColorDialog):
                 layout.setParent(None)
                 layout.deleteLater()
             if widget is not None:
+                assert widget not in self._panels()
                 widget.setParent(None)
                 widget.deleteLater()
 
         while self._tab_panel.count() > 0:
             tab = self._tab_panel.widget(0)
             self._tab_panel.removeTab(0)
-            _clear_intermediate_item(tab)
+            if tab not in self._panels():
+                _clear_intermediate_item(tab)
         self._tab_panel.hide()
         if self._main_layout is not None:
             _clear_intermediate_item(self._main_layout)
