@@ -124,7 +124,7 @@ class ToolPanel(QWidget):
             self._toolbar_tool_widgets[tool.label] = toolbar_button
             button.tool_selected.connect(self._switch_active_tool)
             toolbar_button.tool_selected.connect(self._switch_active_tool)
-            self._build_tool_button_layout()
+        self._build_tool_button_layout()
         self._switch_active_tool(self._tool_controller.active_tool)
         self._build_layout()
 
@@ -265,11 +265,11 @@ class ToolPanel(QWidget):
             self._tool_button_layout.setRowMinimumHeight(row, button_size.height())
             for column in range(num_cols):
                 self._tool_button_layout.setColumnMinimumWidth(column, button_size.width())
+                if button_idx >= len(button_list):
+                    break
                 button = button_list[button_idx]
                 self._tool_button_layout.addWidget(button, row, column)
                 button_idx += 1
-                if button_idx >= len(button_list):
-                    return
 
     def resizeEvent(self, unused_event: Optional[QResizeEvent]) -> None:
         """Keep tool list sized correctly within the panel."""

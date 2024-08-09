@@ -1,7 +1,7 @@
 """Rearranges the Qt color dialog into a fixed panel widget."""
 from typing import Optional
 
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, QSize
 from PySide6.QtGui import QColor, QResizeEvent, QShowEvent
 
 from src.config.cache import Cache

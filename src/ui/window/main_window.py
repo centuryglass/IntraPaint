@@ -91,9 +91,9 @@ class MainWindow(QMainWindow):
         # Loading indicator:
         self._is_loading = False
         self._loading_widget = LoadingWidget()
+        screen_size = get_screen_size(self)
         if TIMELAPSE_MODE_FLAG in sys.argv:
             # Show spinner in a new window so timelapse footage isn't mostly loading screens:
-            screen_size = get_screen_size(self)
             self._loading_widget.setGeometry(50, screen_size.height() - 350, 300, 300)
             self._loading_widget.show()
             self._loading_widget.paused = True
@@ -132,7 +132,7 @@ class MainWindow(QMainWindow):
 
         tab_box = self._get_tab_box(AppConfig().get(AppConfig.TOOL_TAB_BAR))
         if tab_box is None:
-            tab_box = self._bottom_tab_box if self.height() > AUTO_TAB_MOVE_THRESHOLD \
+            tab_box = self._bottom_tab_box if screen_size.height() > AUTO_TAB_MOVE_THRESHOLD \
                 else self._image_panel.right_tab_box
             assert tab_box is not None
         tab_box.add_widget(self._tool_tab, 0)

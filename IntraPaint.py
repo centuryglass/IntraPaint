@@ -58,7 +58,7 @@ if args.verbose:
     handlers.append(stdout_handler)  # type: ignore
 
 logging.basicConfig(level=logging.INFO, handlers=handlers)
-print(f'Writing logs to {LOG_FILE_PATH}')
+print(f'Logs will be saved at {LOG_FILE_PATH}')
 logger = logging.getLogger(__name__)
 
 

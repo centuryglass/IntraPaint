@@ -74,8 +74,8 @@ class ToolController(QObject):
         eyedropper_tool = EyedropperTool(image_stack)
         self._add_tool(eyedropper_tool)
         self._add_tool(SelectionTool(image_stack, image_viewer))
-        self._add_tool(SelectionFillTool(image_stack))
         self._add_tool(ShapeSelectionTool(image_stack, image_viewer))
+        self._add_tool(SelectionFillTool(image_stack))
 
         eyedropper_modifier = KeyConfig().get_modifier(KeyConfig.EYEDROPPER_OVERRIDE_MODIFIER)
         if eyedropper_modifier != Qt.KeyboardModifier.NoModifier:
