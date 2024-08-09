@@ -56,7 +56,9 @@ if args.verbose:
     stdout_handler.setLevel(logging.INFO)
     stdout_handler.setFormatter(logging.Formatter('#%(levelname)s: %(name)s:  %(message)s'))
     handlers.append(stdout_handler)  # type: ignore
+
 logging.basicConfig(level=logging.INFO, handlers=handlers)
+print(f'Writing logs to {LOG_FILE_PATH}')
 logger = logging.getLogger(__name__)
 
 

@@ -4,7 +4,7 @@ from typing import Optional, List
 
 from PySide6.QtCore import Qt, Property, QPropertyAnimation, QObject, QPointF
 from PySide6.QtGui import QPen, QColor, QShowEvent, QHideEvent, QPolygonF, QTransform
-from PySide6.QtWidgets import QGraphicsItem, QGraphicsView, QGraphicsItemGroup, QGraphicsPolygonItem
+from PySide6.QtWidgets import QGraphicsItem, QGraphicsView, QGraphicsItemGroup, QGraphicsPolygonItem, QGraphicsScene
 
 from src.util.shared_constants import TIMELAPSE_MODE_FLAG
 
@@ -27,6 +27,7 @@ class PolygonOutline(QGraphicsItemGroup):
         self._view = view
         self._animated = True
         self._dash_offset = 0
+        self._scene: Optional[QGraphicsScene] = None
 
         class _Animator(QObject):
             def __init__(self, parent_outline: PolygonOutline) -> None:
@@ -54,6 +55,7 @@ class PolygonOutline(QGraphicsItemGroup):
             dash_offset = Property(int, dash_offset_getter, dash_offset_setter)
 
         self._animator = _Animator(self)
+
         self._pen = QPen()
         self._pen.setDashPattern([4, 4, 8, 4, 4, 4])
         self._pen.setCosmetic(True)
@@ -118,6 +120,14 @@ class PolygonOutline(QGraphicsItemGroup):
 
     @dash_offset.setter
     def dash_offset(self, offset: int) -> None:
+        # Check scene state, stop animation when removed from the scene:
+        scene = self.scene()
+        if scene is None and self._scene is not None:
+            self._animator.animation.stop()
+            self._scene = None
+            return
+        if self._scene is None and scene is not None:
+            self._scene = scene
         self._dash_offset = offset
         pen = self._get_pen()
         for polygon_item in self._polygons:

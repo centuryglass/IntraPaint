@@ -180,6 +180,8 @@ class GeneratedImageSelector(QWidget):
             assert isinstance(scene_item_list, list)
             while len(scene_item_list) > 0:
                 scene_item = scene_item_list.pop()
+                if hasattr(scene_item, 'animated'):
+                    scene_item.animated = False
                 if scene_item in scene.items():
                     scene.removeItem(scene_item)
 
@@ -224,9 +226,10 @@ class GeneratedImageSelector(QWidget):
 
         if self._zoomed_in and TIMELAPSE_MODE_FLAG not in sys.argv:
             self.toggle_zoom()
+            self._view.reset_scale()
         elif TIMELAPSE_MODE_FLAG in sys.argv:
             self._zoom_to_option(0)
-        self.resizeEvent(None)
+        self._apply_ideal_image_arrangement()
 
     def _add_option_selection_outline(self, idx: int) -> None:
         if len(self._options) <= idx:
@@ -261,9 +264,9 @@ class GeneratedImageSelector(QWidget):
                 self._add_option_selection_outline(idx)
         else:
             self._options[idx].image = image
-        self._outlines[idx].outlined_region = self._options[idx].bounds
-
-        self.resizeEvent(None)
+        if 0 <= idx < len(self._outlines):
+            self._outlines[idx].outlined_region = self._options[idx].bounds
+        self._apply_ideal_image_arrangement()
 
     def toggle_zoom(self, zoom_index: Optional[int] = None) -> None:
         """Toggle between zooming in on one option and showing all of them."""
