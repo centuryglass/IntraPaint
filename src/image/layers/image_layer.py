@@ -4,15 +4,14 @@ from contextlib import contextmanager
 from typing import Optional, Any, Tuple
 
 from PIL import Image
-from PyQt6.QtCore import QRect, QSize, QPoint, pyqtSignal, QObject
-from PyQt6.QtGui import QImage, QPainter, QPixmap, QTransform
+from PySide6.QtCore import QRect, QSize, QPoint, Signal, QObject
+from PySide6.QtGui import QImage, QPainter, QPixmap, QTransform
 
 from src.image.layers.transform_layer import TransformLayer
 from src.image.mypaint.numpy_image_utils import image_data_as_numpy_8bit, numpy_intersect
 from src.ui.modal.modal_utils import show_error_dialog
 from src.undo_stack import UndoStack
 from src.util.image_utils import image_content_bounds, create_transparent_image
-from src.util.validation import assert_type
 
 CROP_TO_CONTENT_ERROR_TITLE = 'Layer cropping failed'
 CROP_TO_CONTENT_ERROR_MESSAGE_EMPTY = 'Layer has no image content.'
@@ -22,7 +21,7 @@ CROP_TO_CONTENT_ERROR_MESSAGE_FULL = 'Layer is already cropped to fit image cont
 class ImageLayer(TransformLayer):
     """Represents an edited image layer."""
 
-    alpha_lock_changed = pyqtSignal(QObject, bool)
+    alpha_lock_changed = Signal(QObject, bool)
 
     def __init__(self, image_data: QImage | QSize, name: str):
         """
@@ -94,7 +93,7 @@ class ImageLayer(TransformLayer):
     def _image_prop_setter(self, new_image: QImage | Tuple[QImage, QPoint]) -> None:
         """Replaces the layer's QImage content.  Unlike other setters, subsequent changes won't be combined in the
            undo history."""
-        assert not self.locked, f'Tried to change image in a locked layer'
+        assert not self.locked, 'Tried to change image in a locked layer'
         if isinstance(new_image, tuple):
             new_image, offset = new_image
             undo_offset = None if offset is None else -offset
@@ -113,7 +112,7 @@ class ImageLayer(TransformLayer):
 
     def set_image(self, new_image: QImage, offset: Optional[QPoint] = None) -> None:
         """Updates the layer image."""
-        assert not self.locked, f'Tried to change image in a locked layer'
+        assert not self.locked, 'Tried to change image in a locked layer'
         size_changed = new_image.size() != self._size
         if size_changed:
             new_size = new_image.size()
@@ -129,7 +128,7 @@ class ImageLayer(TransformLayer):
     @contextmanager
     def borrow_image(self, change_bounds: Optional[QRect] = None) -> Generator[Optional[QImage], None, None]:
         """Provides direct access to the image for editing, automatically marking it as changed when complete."""
-        assert not self.locked, f'Tried to change image in a locked layer'
+        assert not self.locked, 'Tried to change image in a locked layer'
         if self.alpha_locked:
             initial_image = self.image.copy()
         else:
@@ -207,8 +206,8 @@ class ImageLayer(TransformLayer):
         register_to_undo_history: bool, default=True
             Whether the change should be saved to the undo history.
         """
-        assert_type(image_data, QImage)
-        assert_type(bounds_rect, QRect)
+        assert isinstance(image_data, QImage)
+        assert isinstance(bounds_rect, QRect)
         layer_bounds = self.bounds
         if not layer_bounds.contains(bounds_rect):
             merged_bounds = layer_bounds.united(bounds_rect)
@@ -277,10 +276,10 @@ class ImageLayer(TransformLayer):
         if self.alpha_locked:
             np_source = image_data_as_numpy_8bit(last_image)
             np_dst = image_data_as_numpy_8bit(image)
-            np_source, np_dst = numpy_intersect(np_source, np_dst)
-            if np_source is None or np_dst is None:
+            source_intersect, dst_intersect = numpy_intersect(np_source, np_dst)
+            if source_intersect is None or dst_intersect is None:
                 return
-            np_dst[:, :, 3] = np_source[:, :, 3]
+            dst_intersect[:, :, 3] = source_intersect[:, :, 3]
 
     def crop_to_content(self, show_warnings: bool = True):
         """Crops the layer to remove transparent areas."""
@@ -345,7 +344,7 @@ class ImageLayer(TransformLayer):
     # INTERNAL:
 
     def _validate_bounds(self, bounds_rect: QRect):
-        assert_type(bounds_rect, QRect)
+        assert isinstance(bounds_rect, QRect)
         if not self.bounds.contains(bounds_rect):
             raise ValueError(f'{bounds_rect} not within {self.bounds}')
 

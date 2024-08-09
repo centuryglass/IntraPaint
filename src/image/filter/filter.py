@@ -2,8 +2,8 @@
 and provides the information needed to add the function as a menu action."""
 from typing import Callable, List, Optional, Dict, Any
 
-from PyQt6.QtCore import QPoint, pyqtSignal, pyqtBoundSignal
-from PyQt6.QtGui import QImage, QPainter, QTransform
+from PySide6.QtCore import QPoint
+from PySide6.QtGui import QImage, QPainter, QTransform
 
 from src.image.layers.image_stack import ImageStack
 from src.image.layers.layer_stack import LayerStack
@@ -202,8 +202,9 @@ class ImageFilter:
             filter_param_values: list
                 Parameter values to use, fitting the definitions the filter provides through get_parameters.
         """
+        updated_layer_images: Dict[int, QImage] = {}
 
-        def _filter_images(images_ready) -> None:
+        def _filter_images() -> None:
             layer_images: Dict[int, QImage] = {}
             if self._filter_selection_only:
                 selection_bounds = self._image_stack.selection_layer.get_content_bounds()
@@ -212,35 +213,21 @@ class ImageFilter:
             else:
                 selection_bounds = None
             for layer in self._image_stack.image_layers:
-                if self._filter_active_layer_only and layer.id != self._image_stack.active_layer_id:
-                    continue
                 if selection_bounds is not None and not selection_bounds.intersects(layer.transformed_bounds):
                     continue
                 layer_image = layer.image
                 image_changed = self._filter_layer_image(filter_param_values, layer.id, layer_image)
                 if image_changed:
                     layer_images[layer.id] = layer_image
-            images_ready.emit(layer_images)
-
-        updated_layer_images: Dict[int, QImage] = {}
-
-        def _transfer_changes_from_thread(layer_images: Dict[int, QImage]) -> None:
             for layer_id, image in layer_images.items():
                 updated_layer_images[layer_id] = image
 
-        class _FilterTask(AsyncTask):
-            images_ready = pyqtSignal(dict)
+        task = AsyncTask(_filter_images, True)
 
-            def signals(self) -> List[pyqtSignal | pyqtBoundSignal]:
-                return [self.images_ready]
-
-        task = _FilterTask(_filter_images, True)
-        task.images_ready.connect(_transfer_changes_from_thread)
-
-        def _finish():
+        def _finish() -> None:
             AppStateTracker.set_app_state(APP_STATE_EDITING)
-            task.images_ready.disconnect(_transfer_changes_from_thread)
             task.finish_signal.disconnect(_finish)
+            print(f'finished, got {len(updated_layer_images)} images')
             if len(updated_layer_images) == 0:
                 return
             source_images: Dict[int, QImage] = {}
@@ -251,6 +238,7 @@ class ImageFilter:
 
             def _apply_filters():
                 for updated_id, image in updated_layer_images.items():
+                    image.save('filter-test.png')
                     updated_layer = self._image_stack.get_layer_by_id(updated_id)
                     updated_layer.set_image(image)
 

@@ -4,9 +4,9 @@ Draws content to an image layer.
 import math
 from typing import Optional, Set, List, cast
 
-from PyQt6.QtCore import QRect, QSize, QPoint, QRectF, QPointF
-from PyQt6.QtGui import QColor, QPainter, QTransform, QImage
-from PyQt6.QtWidgets import QGraphicsScene, QGraphicsItem
+from PySide6.QtCore import QRect, QSize, QPoint, QRectF, QPointF
+from PySide6.QtGui import QColor, QPainter, QTransform, QImage
+from PySide6.QtWidgets import QGraphicsScene, QGraphicsItem
 
 from src.image.canvas.layer_canvas import LayerCanvas
 from src.image.layers.image_layer import ImageLayer

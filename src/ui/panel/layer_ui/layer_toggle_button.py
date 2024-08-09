@@ -1,9 +1,9 @@
 """Icon button used to toggle a boolean layer attribute."""
 from typing import Optional
 
-from PyQt6.QtCore import QSize, pyqtSignal, pyqtBoundSignal
-from PyQt6.QtGui import QIcon, QMouseEvent
-from PyQt6.QtWidgets import QToolButton, QSizePolicy
+from PySide6.QtCore import QSize, Signal
+from PySide6.QtGui import QIcon, QMouseEvent
+from PySide6.QtWidgets import QToolButton, QSizePolicy
 
 from src.image.layers.layer import Layer
 
@@ -51,5 +51,5 @@ class LayerToggleButton(QToolButton):
     def _set_boolean(self, layer: Layer, value: bool) -> None:
         raise NotImplementedError()
 
-    def _get_signal(self, layer: Layer) -> pyqtSignal | pyqtBoundSignal:
+    def _get_signal(self, layer: Layer) -> Signal:
         raise NotImplementedError

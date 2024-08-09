@@ -1,9 +1,9 @@
 """Fill areas within an image."""
 from typing import Optional
 
-from PyQt6.QtCore import Qt, QPoint, QRect
-from PyQt6.QtGui import QIcon, QCursor, QMouseEvent, QKeySequence, QColor, QPainter, QTransform
-from PyQt6.QtWidgets import QWidget, QFormLayout, QApplication
+from PySide6.QtCore import Qt, QPoint, QRect
+from PySide6.QtGui import QIcon, QCursor, QMouseEvent, QKeySequence, QColor, QPainter, QTransform
+from PySide6.QtWidgets import QWidget, QFormLayout, QApplication
 
 from src.config.cache import Cache
 from src.config.key_config import KeyConfig

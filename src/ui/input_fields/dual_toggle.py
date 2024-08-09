@@ -2,16 +2,16 @@
 A fancier Qt toggle button implementation that allows selecting between two options.
 """
 from typing import Optional, cast
-from PyQt6.QtGui import QPixmap, QMouseEvent, QColor
-from PyQt6.QtWidgets import QWidget, QFrame, QSizePolicy, QApplication
-from PyQt6.QtCore import Qt, QSize, pyqtSignal, QEvent
+from PySide6.QtGui import QPixmap, QMouseEvent, QColor
+from PySide6.QtWidgets import QWidget, QFrame, QSizePolicy, QApplication
+from PySide6.QtCore import Qt, QSize, Signal, QEvent
 from src.ui.widget.label import Label
 
 
 class DualToggle(QWidget):
     """A fancier Qt toggle button implementation that allows selecting between two options."""
 
-    valueChanged = pyqtSignal(str)
+    valueChanged = Signal(str)
 
     def __init__(self,
                  parent: Optional[QWidget],

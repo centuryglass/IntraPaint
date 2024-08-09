@@ -1,14 +1,14 @@
 """A simple wrapper for QComboBox to give it an interface consistent with other input widgets."""
 from typing import Any, Optional
 
-from PyQt6.QtCore import pyqtSignal
-from PyQt6.QtWidgets import QComboBox, QWidget
+from PySide6.QtCore import Signal
+from PySide6.QtWidgets import QComboBox, QWidget
 
 
 class ComboBox(QComboBox):
     """A simple wrapper for QComboBox to give it an interface consistent with other input widgets."""
 
-    valueChanged = pyqtSignal(str)
+    valueChanged = Signal(str)
 
     def __init__(self, parent: Optional[QWidget] = None) -> None:
         super().__init__(parent)
@@ -16,7 +16,7 @@ class ComboBox(QComboBox):
         self.currentIndexChanged.connect(self._index_change_slot)
 
     # noinspection PyPep8Naming
-    def addItem(self, text: Optional[str], userData: Any = None) -> None:
+    def addItem(self, text: str, userData: Any = None, **kwargs) -> None:
         """Ensure options always have data attached."""
         if userData is None:
             userData = text

@@ -3,13 +3,13 @@ import logging
 import re
 from typing import Dict, Optional, List, cast
 
-from PyQt6.QtCore import Qt, QSize, QPoint, pyqtSignal
-from PyQt6.QtGui import QImage, QPainter, QMouseEvent, QIcon
-from PyQt6.QtWidgets import QDialog, QHBoxLayout, QLabel, QPushButton, \
+from PySide6.QtCore import Qt, QSize, QPoint, Signal
+from PySide6.QtGui import QImage, QPainter, QMouseEvent, QIcon
+from PySide6.QtWidgets import QDialog, QHBoxLayout, QLabel, QPushButton, \
     QVBoxLayout, QWidget, QScrollArea
 
 from src.config.application_config import AppConfig
-from src.ui.widget.bordered_widget import BorderedWidget
+from src.ui.layout.bordered_widget import BorderedWidget
 from src.ui.widget.image_widget import ImageWidget
 from src.util.display_size import max_font_size
 from src.util.shared_constants import APP_ICON_PATH
@@ -132,7 +132,7 @@ def _prompt_lora_match(lora: Dict[str, str]) -> Optional[re.Match[str]]:
 class _LoraItem(BorderedWidget):
     """Represents a Lora model"""
 
-    selected = pyqtSignal(BorderedWidget)
+    selected = Signal(BorderedWidget)
 
     def __init__(self, lora: Dict[str, str], thumbnail: QImage) -> None:
         super().__init__()

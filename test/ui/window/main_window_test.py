@@ -4,8 +4,8 @@ import sys
 import unittest
 from unittest.mock import Mock, patch
 
-from PyQt6.QtCore import QSize, QRect, QPoint, Qt
-from PyQt6.QtWidgets import QApplication
+from PySide6.QtCore import QSize, QRect, QPoint, Qt
+from PySide6.QtWidgets import QApplication
 
 from src.config.application_config import AppConfig
 from src.config.cache import Cache
@@ -41,8 +41,4 @@ class MainWindowTest(unittest.TestCase):
         assert self.window is not None
         self.assertTrue(self.window.isVisible())
         self.assertFalse(self.window.geometry().isEmpty())
-        control_panel = self.window._control_panel
-        assert control_panel is not None
-        self.assertFalse(control_panel.isVisible())
-
         # TODO: rewrite once tabbed layout design is stable

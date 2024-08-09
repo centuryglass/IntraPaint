@@ -1,8 +1,8 @@
 """Provides an input widget for setting a QSize value."""
 from typing import Optional
 
-from PyQt6.QtCore import pyqtSignal, QSize, Qt
-from PyQt6.QtWidgets import QWidget, QLabel, QSpinBox, QSlider, QGridLayout
+from PySide6.QtCore import Signal, QSize, Qt
+from PySide6.QtWidgets import QWidget, QLabel, QSpinBox, QSlider, QGridLayout
 
 from src.util.shared_constants import INT_MAX
 
@@ -13,7 +13,7 @@ HEIGHT_LABEL = 'H:'
 class SizeField(QWidget):
     """A QWidget input used to set a QSize value."""
 
-    valueChanged = pyqtSignal(QSize)
+    valueChanged = Signal(QSize)
 
     def __init__(self, parent: Optional[QWidget] = None, include_sliders: bool = False) -> None:
         super().__init__(parent)

@@ -1,13 +1,13 @@
 """Widget bar that accepts draggable tabs."""
 from typing import Optional, List
 
-from PyQt6.QtCore import pyqtSignal, Qt, QPointF, QRect, QLine, QSize
-from PyQt6.QtGui import QDragEnterEvent, QDragMoveEvent, QDragLeaveEvent, QDropEvent, QPaintEvent, QPainter
-from PyQt6.QtWidgets import QWidget, QBoxLayout, QHBoxLayout, QVBoxLayout, QToolButton, QSizePolicy, QFrame
+from PySide6.QtCore import Signal, Qt, QPointF, QRect, QLine, QSize
+from PySide6.QtGui import QDragEnterEvent, QDragMoveEvent, QDragLeaveEvent, QDropEvent, QPaintEvent, QPainter
+from PySide6.QtWidgets import QWidget, QBoxLayout, QHBoxLayout, QVBoxLayout, QToolButton, QSizePolicy, QFrame
 
 from src.ui.panel.layer_ui.layer_widget import LayerWidget
-from src.ui.widget.bordered_widget import BorderedWidget
-from src.ui.widget.draggable_tabs.tab import Tab
+from src.ui.layout.bordered_widget import BorderedWidget
+from src.ui.layout.draggable_tabs.tab import Tab
 from src.ui.widget.label import Label
 from src.util.shared_constants import MAX_WIDGET_SIZE
 
@@ -17,10 +17,10 @@ BASE_BAR_SIZE = 10
 class TabBar(BorderedWidget):
     """Widget bar that can accept dragged tabs."""
 
-    active_tab_content_replaced = pyqtSignal(QWidget)
-    tab_clicked = pyqtSignal(QWidget)
-    max_size_changed = pyqtSignal(QSize)
-    toggled = pyqtSignal(bool)
+    active_tab_content_replaced = Signal(QWidget)
+    tab_clicked = Signal(QWidget)
+    max_size_changed = Signal(QSize)
+    toggled = Signal(bool)
 
     def __init__(self, orientation: Qt.Orientation, at_parent_start: bool) -> None:
         super().__init__()
@@ -31,7 +31,9 @@ class TabBar(BorderedWidget):
         self._insert_pos: Optional[int] = None
         self._insert_index: Optional[int] = None
         self._layout: QBoxLayout = QHBoxLayout(self) if orientation == Qt.Orientation.Horizontal else QVBoxLayout(self)
-        self._toggle_button = QToolButton(checkable=True, checked=True)
+        self._toggle_button = QToolButton()
+        self._toggle_button.setCheckable(True)
+        self._toggle_button.setChecked(True)
         self._toggle_button.setStyleSheet('QToolButton { border: none; }')
         self._toggle_button.toggled.connect(self._toggle_button_slot)
         self._bar_size = BASE_BAR_SIZE
@@ -118,7 +120,7 @@ class TabBar(BorderedWidget):
         """Moves a widget to another position in the bar."""
         assert widget in self._widgets
         current_index = self._widgets.index(widget)
-        if index == current_index or index == (current_index + 1):
+        if index in (current_index, current_index + 1):
             return
         if index > current_index:
             index -= 1
@@ -156,15 +158,22 @@ class TabBar(BorderedWidget):
     def _alignment(self) -> Qt.AlignmentFlag:
         if self._orientation == Qt.Orientation.Horizontal:
             return Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter
-        else:  # Vertical:
-            return Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignHCenter
+        # Vertical:
+        return Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignHCenter
 
     def _size_policy(self, widget: QWidget) -> QSizePolicy:
-        long_side_policy = QSizePolicy.Policy.Expanding if widget == self else QSizePolicy.Policy.Preferred
-        if self._orientation == Qt.Orientation.Horizontal:
-            return QSizePolicy(long_side_policy, QSizePolicy.Policy.Fixed)
-        else:  # Vertical:
-            return QSizePolicy(QSizePolicy.Policy.Fixed, long_side_policy)
+        if widget == self:
+            if self._orientation == Qt.Orientation.Horizontal:
+                return QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+            # Vertical:
+            return QSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Expanding)
+        if widget in self._widgets or widget == self._toggle_button:
+            if self._orientation == Qt.Orientation.Horizontal:
+                return QSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
+            # Vertical:
+            return QSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Preferred)
+        # Panel widget:
+        return QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
 
     def _update_bar_size(self) -> None:
         bar_size = BASE_BAR_SIZE
@@ -215,6 +224,10 @@ class TabBar(BorderedWidget):
         self._layout.setAlignment(self._alignment())
         for widget in self._widgets:
             self._apply_widget_orientation(widget)
+            if isinstance(widget, Tab):
+                tab_widget = widget.content_widget
+                if tab_widget is not None:
+                    self._apply_widget_orientation(tab_widget)
         self._update_toggle_arrow(self._toggle_button.isChecked())
         max_size = QSize(self._max_width(), self._max_height())
         if max_size != self.maximumSize():
@@ -305,7 +318,7 @@ class TabBar(BorderedWidget):
                     box.setTop(2)
                 else:
                     edge_rect = QRect(box.x(), box.bottom(), box.width(), self.height() - box.bottom() - 1)
-                    box.setBottom(self.height() -2)
+                    box.setBottom(self.height() - 2)
             else:
                 if self._at_parent_start:
                     edge_rect = QRect(0, box.y(), box.x() - 1, box.height())

@@ -1,14 +1,15 @@
 """
 Minimal editing window meant for performing a single inpainting operation using GLID-3-XL.
 """
-from typing import Optional
-import io
 import sys
-from PyQt6.QtWidgets import QApplication, QMainWindow
-from PyQt6.QtCore import Qt, QPoint, QRect, QBuffer
-from PyQt6.QtGui import QPainter, QPen, QPixmap, QImage, QPaintEvent, QMouseEvent, QResizeEvent, QIcon
-from PIL import Image
+from typing import Optional
 
+from PIL import Image
+from PySide6.QtCore import Qt, QPoint, QRect
+from PySide6.QtGui import QPainter, QPen, QPixmap, QImage, QPaintEvent, QMouseEvent, QResizeEvent, QIcon
+from PySide6.QtWidgets import QApplication, QMainWindow
+
+from src.util.image_utils import qimage_to_pil_image
 from src.util.shared_constants import APP_ICON_PATH
 
 
@@ -80,11 +81,7 @@ class QuickEditWindow(QMainWindow):
     def get_mask(self) -> Image.Image:
         """Returns the image mask as a PIL Image."""
         image = self._canvas.toImage()
-        buffer = QBuffer()
-        buffer.open(QBuffer.ReadWrite)
-        image.save(buffer, 'PNG')
-        pil_im = Image.open(io.BytesIO(buffer.data()))
-        return pil_im
+        return qimage_to_pil_image(image)
 
     def resizeEvent(self, unused_event: Optional[QResizeEvent]) -> None:
         """adjust image and canvas scale on resize."""

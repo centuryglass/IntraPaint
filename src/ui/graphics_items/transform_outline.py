@@ -2,9 +2,9 @@
 import math
 from typing import Optional, Dict, Tuple, Any, Generator, Iterable
 
-from PyQt6.QtCore import Qt, QRectF, QPointF, QSizeF, pyqtSignal
-from PyQt6.QtGui import QPainter, QPen, QTransform, QIcon, QPainterPath, QPolygonF, QImage
-from PyQt6.QtWidgets import QWidget, QGraphicsItem, QStyleOptionGraphicsItem, \
+from PySide6.QtCore import Qt, QRectF, QPointF, QSizeF, Signal
+from PySide6.QtGui import QPainter, QPen, QTransform, QIcon, QPainterPath, QPolygonF, QImage
+from PySide6.QtWidgets import QWidget, QGraphicsItem, QStyleOptionGraphicsItem, \
     QGraphicsSceneMouseEvent, QGraphicsTransform, \
     QGraphicsObject, QGraphicsView
 
@@ -48,10 +48,10 @@ class TransformOutline(QGraphicsObject):
     - Export the final transformation as an image via the render method.
     """
 
-    transform_changed = pyqtSignal(QTransform)
-    offset_changed = pyqtSignal(float, float)
-    scale_changed = pyqtSignal(float, float)
-    angle_changed = pyqtSignal(float)
+    transform_changed = Signal(QTransform)
+    offset_changed = Signal(float, float)
+    scale_changed = Signal(float, float)
+    angle_changed = Signal(float)
 
     def __init__(self, initial_bounds: QRectF) -> None:
         super().__init__()
@@ -649,14 +649,16 @@ def _map_from_view(view_pt: QPointF, item: QGraphicsItem) -> QPointF:
 
 
 def _map_rect_to_view(local_rect: QRectF, item: QGraphicsItem) -> QRectF:
-    corners = (_map_to_view(pt, item) for pt in (local_rect.topLeft(), local_rect.bottomLeft(),
-                                                 local_rect.topRight(), local_rect.bottomRight()))
-    poly = QPolygonF(corners)
+    poly = QPolygonF()
+    for corner in (_map_to_view(pt, item) for pt in (local_rect.topLeft(), local_rect.bottomLeft(),
+                                                     local_rect.topRight(), local_rect.bottomRight())):
+        poly.append(corner)
     return poly.boundingRect()
 
 
 def _map_rect_from_view(view_rect: QRectF, item: QGraphicsItem) -> QRectF:
-    corners = (_map_from_view(pt, item) for pt in (view_rect.topLeft(), view_rect.bottomLeft(),
-                                                   view_rect.topRight(), view_rect.bottomRight()))
-    poly = QPolygonF(corners)
+    poly = QPolygonF()
+    for corner in (_map_from_view(pt, item) for pt in (view_rect.topLeft(), view_rect.bottomLeft(),
+                                                       view_rect.topRight(), view_rect.bottomRight())):
+        poly.append(corner)
     return poly.boundingRect()

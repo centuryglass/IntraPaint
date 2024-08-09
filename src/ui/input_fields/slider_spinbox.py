@@ -1,8 +1,8 @@
 """A horizontal slider and spinbox that both control the same value."""
 from typing import Optional
 
-from PyQt6.QtCore import pyqtSignal, Qt
-from PyQt6.QtWidgets import QWidget, QHBoxLayout, QLabel, QSlider, QDoubleSpinBox, QSpinBox
+from PySide6.QtCore import Signal, Qt
+from PySide6.QtWidgets import QWidget, QHBoxLayout, QLabel, QSlider, QDoubleSpinBox, QSpinBox
 
 
 class _SliderSpinbox(QWidget):
@@ -124,7 +124,7 @@ class _SliderSpinbox(QWidget):
 class IntSliderSpinbox(_SliderSpinbox):
     """A horizontal slider and spinbox that both control the same integer value."""
 
-    valueChanged = pyqtSignal(int)
+    valueChanged = Signal(int)
 
     def __init__(self, initial_value: Optional[int] = None, parent: Optional[QWidget] = None,
                  label: Optional[str] = None):
@@ -142,7 +142,7 @@ class IntSliderSpinbox(_SliderSpinbox):
 class FloatSliderSpinbox(_SliderSpinbox):
     """A horizontal slider and spinbox that both control the same float value."""
 
-    valueChanged = pyqtSignal(float)
+    valueChanged = Signal(float)
 
     def __init__(self, initial_value: Optional[float] = None, parent: Optional[QWidget] = None,
                  label: Optional[str] = None):

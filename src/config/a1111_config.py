@@ -1,7 +1,7 @@
 """Provides access to configurable options for the Automatic1111 or Forge Stable-Diffusion WebUI."""
 import logging
 
-from PyQt6.QtWidgets import QApplication
+from PySide6.QtWidgets import QApplication
 
 from src.api.a1111_webservice import A1111Webservice
 from src.config.config import Config

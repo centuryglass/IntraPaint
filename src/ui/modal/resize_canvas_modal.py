@@ -1,10 +1,10 @@
 """Popup modal window used for cropping or extending the edited image without scaling its contents."""
 from typing import Optional
 import math
-from PyQt6.QtWidgets import QWidget, QDialog, QVBoxLayout, QHBoxLayout, QPushButton
-from PyQt6.QtCore import Qt, QSize, QRect, QPoint
-from PyQt6.QtGui import QPainter, QPen, QImage, QResizeEvent, QPaintEvent, QIcon
-from src.ui.widget.labeled_spinbox import LabeledSpinbox
+from PySide6.QtWidgets import QWidget, QDialog, QVBoxLayout, QHBoxLayout, QPushButton
+from PySide6.QtCore import Qt, QSize, QRect, QPoint
+from PySide6.QtGui import QPainter, QPen, QImage, QResizeEvent, QPaintEvent, QIcon
+from src.ui.input_fields.labeled_spinbox import LabeledSpinbox
 from src.util.geometry_utils import get_scaled_placement
 from src.util.shared_constants import APP_ICON_PATH
 

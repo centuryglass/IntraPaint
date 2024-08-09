@@ -1,9 +1,9 @@
 """Fills in all bounds except an inner rectangular region with a solid color."""
 from typing import Optional
 
-from PyQt6.QtCore import Qt, QRectF, QPoint, QRect
-from PyQt6.QtGui import QPainter, QPainterPath, QColor
-from PyQt6.QtWidgets import QWidget, QGraphicsItem, QGraphicsScene, QStyleOptionGraphicsItem
+from PySide6.QtCore import Qt, QRectF, QPoint, QRect
+from PySide6.QtGui import QPainter, QPainterPath, QColor
+from PySide6.QtWidgets import QWidget, QGraphicsItem, QGraphicsScene, QStyleOptionGraphicsItem
 
 from src.ui.widget.image_graphics_view import ImageGraphicsView
 

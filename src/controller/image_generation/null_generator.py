@@ -1,6 +1,6 @@
 """Represents the option to run IntraPaint without an image generator."""
-from PyQt6.QtGui import QImage
-from PyQt6.QtWidgets import QApplication, QWidget
+from PySide6.QtGui import QImage
+from PySide6.QtWidgets import QApplication, QWidget
 
 from src.controller.image_generation.image_generator import ImageGenerator
 from src.image.layers.image_stack import ImageStack

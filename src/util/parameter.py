@@ -1,7 +1,7 @@
 """Represents a value with a fixed type, descriptive metadata, and optional limitations and defaults."""
 from typing import Any, Optional, TypeAlias, List, cast
 
-from PyQt6.QtCore import QSize
+from PySide6.QtCore import QSize
 
 from src.ui.input_fields.big_int_spinbox import BigIntSpinbox
 from src.ui.input_fields.check_box import CheckBox
@@ -249,8 +249,9 @@ class Parameter:
                 spin_box.set_slider_included(False)
             input_field = cast(DynamicFieldWidget, spin_box)
         elif self._type == TYPE_STR:
-            text_box = PlainTextEdit() if multi_line else LineEdit()
+            text_box: PlainTextEdit | LineEdit = PlainTextEdit() if multi_line else LineEdit()
             if self._default_value is not None:
+                assert isinstance(self._default_value, str)
                 text_box.setValue(self._default_value)
             input_field = cast(DynamicFieldWidget, text_box)
         elif self._type == TYPE_BOOL:
@@ -307,6 +308,6 @@ def _in_range(value: int | float | QSize,
         assert isinstance(value, QSize)
         return minimum.width() <= value.width() <= maximum.width() \
             and minimum.height() <= value.height() <= maximum.height()
-    assert minimum is not None
-    assert maximum is not None
+    assert isinstance(minimum, (int, float))
+    assert isinstance(maximum, (int, float))
     return minimum <= value <= maximum

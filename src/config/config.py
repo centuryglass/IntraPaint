@@ -15,15 +15,13 @@ from inspect import signature
 from threading import Lock
 from typing import Optional, Any, Callable, List, Dict
 
-from PyQt6.QtCore import QSize, QTimer, Qt
-from PyQt6.QtGui import QKeySequence
-from PyQt6.QtWidgets import QApplication
+from PySide6.QtCore import QSize, QTimer, Qt
+from PySide6.QtGui import QKeySequence
+from PySide6.QtWidgets import QApplication
 
 from src.config.config_entry import ConfigEntry, DefinitionKey, DefinitionType
 from src.ui.input_fields.check_box import CheckBox
 from src.util.parameter import ParamType, DynamicFieldWidget
-from src.util.validation import assert_type
-
 logger = logging.getLogger(__name__)
 
 # The `QCoreApplication.translate` context for strings in this file
@@ -87,7 +85,7 @@ class Config:
             with open(definition_path, encoding='utf-8') as file:
                 json_data = json.load(file)
                 for key, definition in json_data.items():
-                    assert_type(definition, dict)
+                    assert isinstance(definition, dict)
                     init_attr_name = key.upper()
                     if not hasattr(child_class, init_attr_name):
                         setattr(child_class, init_attr_name, key)
@@ -292,8 +290,9 @@ class Config:
 
                     self._save_timer.timeout.connect(write_change)
                     self._save_timer.start(100)
-        # Pass change to connected callback functions
-        for callback in self._connected[key].values():
+        # Pass change to connected callback functions:
+        callbacks = [*self._connected[key].values()]  # <- So callbacks can disconnect or replace themselves
+        for callback in callbacks:
             num_args = len(signature(callback).parameters)
             if num_args == 0 and inner_key is None:
                 callback()

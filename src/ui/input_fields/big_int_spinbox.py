@@ -3,16 +3,16 @@ QSpinbox implementation that supports a larger range of integer values.
 Adapted from https://stackoverflow.com/a/26861829
 """
 from typing import Optional, Any
-from PyQt6.QtWidgets import QAbstractSpinBox, QLineEdit, QWidget
-from PyQt6.QtCore import pyqtSignal, QRegularExpression
-from PyQt6.QtGui import QRegularExpressionValidator
+from PySide6.QtWidgets import QAbstractSpinBox, QLineEdit, QWidget
+from PySide6.QtCore import Signal, QRegularExpression
+from PySide6.QtGui import QRegularExpressionValidator
 
 
 class BigIntSpinbox(QAbstractSpinBox):
     """BigIntSpinbox is a QSpinBox supporting integers between -18446744073709551616 and 18446744073709551615."""
 
-    # Because pyqtSignal converts numeric values to C types, the signal needs to be a string to avoid overflow.
-    valueChanged = pyqtSignal(str)
+    # Because Signal converts numeric values to C types, the signal needs to be a string to avoid overflow.
+    valueChanged = Signal(str)
 
     MINIMUM = -18446744073709551616
     MAXIMUM = 18446744073709551615

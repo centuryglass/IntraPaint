@@ -4,9 +4,9 @@ import re
 from typing import Optional, Tuple, cast, List, Callable
 
 from PIL import Image
-from PyQt6.QtCore import QObject, QSize, QPoint, QRect, pyqtSignal, QRectF
-from PyQt6.QtGui import QPainter, QPixmap, QImage, QColor, QTransform, QPolygonF
-from PyQt6.QtWidgets import QApplication
+from PySide6.QtCore import QObject, QSize, QPoint, QRect, Signal, QRectF
+from PySide6.QtGui import QPainter, QPixmap, QImage, QColor, QTransform, QPolygonF
+from PySide6.QtWidgets import QApplication
 
 from src.config.application_config import AppConfig
 from src.config.cache import Cache
@@ -15,12 +15,11 @@ from src.image.layers.layer import Layer
 from src.image.layers.layer_stack import LayerStack
 from src.image.layers.selection_layer import SelectionLayer
 from src.image.layers.transform_layer import TransformLayer
-from src.undo_stack import UndoStack, _UndoAction
+from src.undo_stack import UndoStack, _UndoAction, _UndoGroup
 from src.util.application_state import AppStateTracker, APP_STATE_NO_IMAGE, APP_STATE_EDITING
 from src.util.cached_data import CachedData
 from src.util.geometry_utils import adjusted_placement_in_bounds
 from src.util.image_utils import qimage_to_pil_image, create_transparent_image, image_content_bounds
-from src.util.validation import assert_type
 
 # The `QCoreApplication.translate` context for strings in this file
 TR_ID = 'image.layers.image_stack'
@@ -30,17 +29,19 @@ def _tr(*args):
     """Helper to make `QCoreApplication.translate` more concise."""
     return QApplication.translate(TR_ID, *args)
 
+
 NEW_IMAGE_LAYER_GROUP_NAME = _tr('new image')
+
 
 class ImageStack(QObject):
     """Manages an edited image composed of multiple layers."""
-    generation_area_bounds_changed = pyqtSignal(QRect)
-    content_changed = pyqtSignal()
-    size_changed = pyqtSignal(QSize)
-    layer_added = pyqtSignal(Layer)
-    layer_removed = pyqtSignal(Layer)
-    active_layer_changed = pyqtSignal(Layer)
-    layer_order_changed = pyqtSignal()
+    generation_area_bounds_changed = Signal(QRect)
+    content_changed = Signal()
+    size_changed = Signal(QSize)
+    layer_added = Signal(Layer)
+    layer_removed = Signal(Layer)
+    active_layer_changed = Signal(Layer)
+    layer_order_changed = Signal()
 
     def __init__(self,
                  image_size: QSize,
@@ -85,7 +86,6 @@ class ImageStack(QObject):
                 return
             if not selection_bounds.contains(content_bounds) or (selection_bounds.width() * selection_bounds.height()) \
                     > (content_bounds.width() * content_bounds.height() * 10):
-                offset = content_bounds.topLeft() - selection_bounds.topLeft()
                 self._selection_layer.adjust_local_bounds(self._selection_layer.map_rect_from_image(content_bounds),
                                                           False)
                 assert self._selection_layer.transformed_bounds.contains(selection_bounds), \
@@ -208,7 +208,7 @@ class ImageStack(QObject):
     @size.setter
     def size(self, new_size) -> None:
         """Updates the full image size, scaling the mask layer."""
-        assert_type(new_size, QSize)
+        assert isinstance(new_size, QSize)
         if new_size == self._size:
             return
         self._size = QSize(new_size)
@@ -236,7 +236,7 @@ class ImageStack(QObject):
     @min_generation_area_size.setter
     def min_generation_area_size(self, new_min: QSize):
         """Sets the minimum size allowed for the selected editing region."""
-        assert_type(new_min, QSize)
+        assert isinstance(new_min, QSize)
         self._min_generation_area_size = new_min
         if new_min.width() > self._generation_area.width() or new_min.height() > self._generation_area.height():
             self._set_generation_area_internal(self._generation_area)
@@ -249,7 +249,7 @@ class ImageStack(QObject):
     @max_generation_area_size.setter
     def max_generation_area_size(self, new_max: QSize):
         """Sets the maximum size allowed for the selected editing region."""
-        assert_type(new_max, QSize)
+        assert isinstance(new_max, QSize)
         self._max_generation_area_size = new_max
         if new_max.width() < self._generation_area.width() or new_max.height() < self._generation_area.height():
             self._set_generation_area_internal(self._generation_area)
@@ -265,7 +265,7 @@ class ImageStack(QObject):
         Updates the bounds of the image generation area within the image. If `bounds_rect` exceeds the maximum  size
         or doesn't fit fully within the image bounds, the closest valid region will be selected.
         """
-        assert_type(bounds_rect, QRect)
+        assert isinstance(bounds_rect, QRect)
         bounds_rect = self._get_closest_valid_generation_area(bounds_rect)
         if bounds_rect != self._generation_area:
             last_bounds = self._generation_area
@@ -279,9 +279,9 @@ class ImageStack(QObject):
                         AppConfig().set(AppConfig.EDIT_SIZE, QSize(self._generation_area.size()))
 
             action_type = 'ImageStack.generation_area'
-            prev_action: Optional[_UndoAction]
+            prev_action: Optional[_UndoAction | _UndoGroup]
             with UndoStack().last_action() as prev_action:
-                if prev_action is not None and prev_action.type == action_type and prev_action.action_data is not None:
+                if isinstance(prev_action, _UndoAction) and prev_action.type == action_type and prev_action.action_data is not None:
                     last_bounds = prev_action.action_data['prev_bounds']
                     prev_action.redo = lambda: update_fn(last_bounds, bounds_rect)
                     prev_action.undo = lambda: update_fn(bounds_rect, last_bounds)
@@ -307,7 +307,7 @@ class ImageStack(QObject):
         y_offset: int
             Y offset where existing image content will be placed in the adjusted layer
         """
-        assert_type(new_size, QSize)
+        assert isinstance(new_size, QSize)
         last_size = self.size
         selection_state = self.selection_layer.save_state()
         layer_state = self._layer_stack.save_state()
@@ -392,7 +392,7 @@ class ImageStack(QObject):
 
     def cropped_qimage_content(self, bounds_rect: QRect) -> QImage:
         """Returns the contents of a bounding QRect as a QImage."""
-        assert_type(bounds_rect, QRect)
+        assert isinstance(bounds_rect, QRect)
         return self.qimage().copy(bounds_rect)
 
     def qimage_generation_area_content(self) -> QImage:
@@ -1086,8 +1086,8 @@ class ImageStack(QObject):
            not add the layer to the stack."""
         if layer_name is None:
             layer_name = self._get_default_new_layer_name()
-        assert_type(layer_name, str)
-        assert_type(image_data, (QImage, QSize))
+        assert isinstance(layer_name, str)
+        assert isinstance(image_data, (QImage, QSize))
         if image_data is None:
             layer = ImageLayer(self.size, layer_name)
         else:
@@ -1195,7 +1195,7 @@ class ImageStack(QObject):
     def _set_generation_area_internal(self, bounds_rect: QRect) -> None:
         """Updates the image generation area, adjusting as needed based on image bounds, and sending the
            selection_changed signal if any changes happened. Does not update undo history."""
-        assert_type(bounds_rect, QRect)
+        assert isinstance(bounds_rect, QRect)
         bounds_rect = self._get_closest_valid_generation_area(bounds_rect)
         if bounds_rect != self._generation_area:
             last_bounds = self._generation_area

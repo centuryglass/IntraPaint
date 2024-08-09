@@ -8,10 +8,10 @@ import logging
 import os
 from typing import Optional, List, Dict, Any
 
-import requests
-from PIL import Image
-from PyQt6.QtCore import QByteArray
-from PyQt6.QtGui import QImage
+import requests  # type: ignore
+from PIL import Image  # type: ignore
+from PySide6.QtCore import QByteArray
+from PySide6.QtGui import QImage
 from requests import Response
 
 from src.api.webservice import WebService
@@ -366,7 +366,7 @@ class A1111Webservice(WebService):
                         del controlnet['image']
                 else:
                     del controlnet['image']
-                empty_keys = [k for k in controlnet.keys() if controlnet[k] is None]
+                empty_keys = [k for k, value in controlnet.items() if value is None]
                 for empty_key in empty_keys:
                     del controlnet[empty_key]
             if scripts is None:

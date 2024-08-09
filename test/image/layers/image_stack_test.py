@@ -4,9 +4,9 @@ import sys
 import unittest
 from unittest.mock import MagicMock
 
-from PyQt6.QtCore import QSize, QRect, QPoint, Qt
-from PyQt6.QtGui import QImage, QPainter
-from PyQt6.QtWidgets import QApplication
+from PySide6.QtCore import QSize, QRect, QPoint, Qt
+from PySide6.QtGui import QImage, QPainter
+from PySide6.QtWidgets import QApplication
 
 from src.config.application_config import AppConfig
 from src.config.cache import Cache

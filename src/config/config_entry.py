@@ -2,8 +2,8 @@
 import logging
 from typing import Any, Optional, Dict
 
-from PyQt6.QtCore import QSize
-from PyQt6.QtWidgets import QApplication
+from PySide6.QtCore import QSize
+from PySide6.QtWidgets import QApplication
 
 from src.util.parameter import Parameter, get_parameter_type, TYPE_DICT, TYPE_INT, TYPE_FLOAT, TYPE_QSIZE
 

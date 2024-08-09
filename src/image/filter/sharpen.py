@@ -2,7 +2,7 @@
 from typing import List, Callable
 
 from PIL import ImageEnhance
-from PyQt6.QtGui import QImage
+from PySide6.QtGui import QImage
 
 from src.config.key_config import KeyConfig
 from src.image.filter.filter import ImageFilter

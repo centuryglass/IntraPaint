@@ -6,8 +6,8 @@ from ctypes import c_void_p, c_float, c_char_p, c_int
 from multiprocessing import Process, Pipe
 from typing import Optional, Any, Dict
 
-from PyQt6.QtCore import Qt, QByteArray, QFile, QIODevice
-from PyQt6.QtGui import QColor
+from PySide6.QtCore import Qt, QByteArray, QFile, QIODevice
+from PySide6.QtGui import QColor
 
 from src.image.mypaint.libmypaint import libmypaint, load_libmypaint, DEFAULT_LIBRARY_PATH
 
@@ -202,8 +202,8 @@ def _get_max_setting_index() -> int:
     def read_settings(connection: Any) -> None:
         """Send back valid settings IDs through a connection after validating each with libmypaint."""
         devnull = os.open(os.devnull, os.O_WRONLY)
-        sys.stdout = open(devnull, 'w')
-        sys.stderr = open(devnull, 'w')
+        sys.stdout = open(devnull, 'w', encoding='utf-8')
+        sys.stderr = open(devnull, 'w', encoding='utf-8')
         lib = load_libmypaint(DEFAULT_LIBRARY_PATH)
         for test_setting_id in range(999):  # 999 is an arbitrary finite limit.
             lib.mypaint_brush_setting_info(test_setting_id)

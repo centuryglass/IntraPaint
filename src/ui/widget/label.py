@@ -3,9 +3,9 @@ An extended QLabel implementation that supports vertical text.
 """
 from typing import Optional
 
-from PyQt6.QtCore import Qt, QSize, QPointF
-from PyQt6.QtGui import QPainter, QPixmap, QPainterPath, QTransform, QFont, QColor, QPalette, QIcon
-from PyQt6.QtWidgets import QLabel, QSizePolicy, QWidget
+from PySide6.QtCore import Qt, QSize, QPointF
+from PySide6.QtGui import QPainter, QPixmap, QPainterPath, QTransform, QFont, QColor, QPalette, QIcon
+from PySide6.QtWidgets import QLabel, QSizePolicy, QWidget
 
 from src.util.display_size import find_text_size
 

@@ -1,9 +1,9 @@
 """Samples colors within the image, setting brush color."""
 from typing import Optional
 
-from PyQt6.QtCore import Qt, QPoint
-from PyQt6.QtGui import QIcon, QCursor, QColor, QMouseEvent, QKeySequence
-from PyQt6.QtWidgets import QWidget, QColorDialog, QApplication
+from PySide6.QtCore import Qt, QPoint
+from PySide6.QtGui import QIcon, QCursor, QColor, QMouseEvent, QKeySequence
+from PySide6.QtWidgets import QWidget, QColorDialog, QApplication
 
 from src.config.cache import Cache
 from src.config.key_config import KeyConfig

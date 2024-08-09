@@ -1,10 +1,10 @@
 """Global stack for tracking undo/redo state."""
 import logging
 from contextlib import contextmanager
-from typing import Callable, Optional, Dict, Any, List, ContextManager
 from threading import Lock
+from typing import Callable, Optional, Dict, Any, List, Generator
 
-from PyQt6.QtCore import QObject, pyqtSignal
+from PySide6.QtCore import QObject, Signal
 
 from src.util.singleton import Singleton
 
@@ -59,17 +59,17 @@ class UndoStack(metaclass=Singleton):
         self._open_group: Optional[_UndoGroup] = None
 
         class _SignalManager(QObject):
-            undo_count_changed = pyqtSignal(int)
-            redo_count_changed = pyqtSignal(int)
+            undo_count_changed = Signal(int)
+            redo_count_changed = Signal(int)
         self._signal_manager = _SignalManager()
 
     @property
-    def undo_count_changed(self) -> pyqtSignal:
+    def undo_count_changed(self) -> Signal:
         """Returns the signal emitted whenever undo action count changes."""
         return self._signal_manager.undo_count_changed
 
     @property
-    def redo_count_changed(self) -> pyqtSignal:
+    def redo_count_changed(self) -> Signal:
         """Returns the signal emitted whenever redo action count changes."""
         return self._signal_manager.redo_count_changed
 
@@ -80,7 +80,7 @@ class UndoStack(metaclass=Singleton):
     def redo_count(self) -> int:
         """Returns the number of saved actions in the redo stack."""
         return len(self._redo_stack)
-    
+
     def commit_action(self, action: Callable[[], None], undo_action: Callable[[], None], action_type: str,
                       action_data: Optional[Dict[str, Any]] = None) -> bool:
         """Performs an action, then commits it to the undo stack.
@@ -123,7 +123,7 @@ class UndoStack(metaclass=Singleton):
         return True
 
     @contextmanager
-    def last_action(self) -> ContextManager[Optional[_UndoAction]]:
+    def last_action(self) -> Generator[Optional[_UndoAction | _UndoGroup], None, None]:
         """Access the most recent action, potentially updating it to combine actions."""
         if self._access_lock.locked():
             raise RuntimeError('Concurrent undo history changes detected!')
@@ -131,7 +131,7 @@ class UndoStack(metaclass=Singleton):
             yield None if len(self._undo_stack) == 0 else self._undo_stack[-1]
 
     @contextmanager
-    def combining_actions(self, action_type: str) -> None:
+    def combining_actions(self, action_type: str) -> Generator[None, None, None]:
         """Combines all actions added with commit_action until the context is exited."""
         if self._access_lock.locked():
             raise RuntimeError('Concurrent undo history changes detected!')

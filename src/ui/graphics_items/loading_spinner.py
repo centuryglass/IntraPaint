@@ -2,9 +2,9 @@
 Animated graphics item used to indicate a loading state.
 """
 from typing import Optional
-from PyQt6.QtWidgets import QGraphicsObject, QStyleOptionGraphicsItem, QWidget
-from PyQt6.QtGui import QPainter, QPen, QBrush, QColor, QPainterPath
-from PyQt6.QtCore import Qt, QRect, QRectF, QPointF, QPropertyAnimation, pyqtProperty
+from PySide6.QtWidgets import QGraphicsObject, QStyleOptionGraphicsItem, QWidget
+from PySide6.QtGui import QPainter, QPen, QBrush, QColor, QPainterPath
+from PySide6.QtCore import Qt, QRect, QRectF, QPointF, QPropertyAnimation, Property
 
 from src.util.display_size import max_font_size
 
@@ -37,7 +37,7 @@ class LoadingSpinner(QGraphicsObject):
     @property
     def paused(self) -> bool:
         """Whether the loading animation is currently paused."""
-        return self._anim.state() == QPropertyAnimation.Paused
+        return self._anim.state() == QPropertyAnimation.State.Paused
 
     @paused.setter
     def paused(self, should_pause: bool) -> None:
@@ -61,16 +61,16 @@ class LoadingSpinner(QGraphicsObject):
         self.paused = False
         self.update()
 
-    @pyqtProperty(int)
-    def rotation(self) -> int:
+    def rotation_getter(self) -> int:
         """Returns the current animation rotation in degrees."""
         return self._rotation
 
-    @rotation.setter
-    def rotation(self, rotation: int) -> None:
+    def rotation_setter(self, rotation: int) -> None:
         """Sets the current animation rotation in degrees."""
         self._rotation = rotation % 360
         self.update()
+
+    rotation = Property(int, rotation_getter, rotation_setter)
 
     @property
     def visible(self) -> bool:

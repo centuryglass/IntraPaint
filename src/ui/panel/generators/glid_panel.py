@@ -1,9 +1,9 @@
 """Control panel widget for GLID-3-XL inpainting."""
-from PyQt6.QtCore import pyqtSignal
-from PyQt6.QtWidgets import QPushButton, QHBoxLayout, QLabel, QGridLayout
+from PySide6.QtCore import Signal
+from PySide6.QtWidgets import QPushButton, QHBoxLayout, QLabel, QGridLayout
 
 from src.config.application_config import AppConfig
-from src.ui.widget.bordered_widget import BorderedWidget
+from src.ui.layout.bordered_widget import BorderedWidget
 
 INPAINT_BUTTON_TEXT = 'Start inpainting'
 
@@ -11,7 +11,7 @@ INPAINT_BUTTON_TEXT = 'Start inpainting'
 class GlidPanel(BorderedWidget):
     """Control panel widget for GLID-3-XL inpainting."""
 
-    generate_signal = pyqtSignal()
+    generate_signal = Signal()
 
     def __init__(self):
         super().__init__()

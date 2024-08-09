@@ -3,10 +3,10 @@
 import datetime
 from typing import Optional, cast, Callable
 
-from PyQt6.QtCore import QSize, Qt, QRect, QPoint, QMimeData, pyqtSignal
-from PyQt6.QtGui import QPixmap, QImage, QPainter, QTransform, QResizeEvent, QPaintEvent, QColor, QMouseEvent, QDrag, \
-    QAction
-from PyQt6.QtWidgets import QWidget, QHBoxLayout, QLabel, QSizePolicy, QMenu, QApplication
+from PySide6.QtCore import QSize, Qt, QRect, QPoint, QMimeData, Signal
+from PySide6.QtGui import (QPixmap, QImage, QPainter, QTransform, QResizeEvent, QPaintEvent, QColor, QMouseEvent, QDrag,
+                           QAction)
+from PySide6.QtWidgets import QWidget, QHBoxLayout, QLabel, QSizePolicy, QMenu, QApplication
 
 from src.config.cache import Cache
 from src.image.layers.image_layer import ImageLayer
@@ -21,7 +21,7 @@ from src.ui.panel.layer_ui.layer_lock_button import LayerLockButton
 from src.ui.panel.layer_ui.layer_toggle_button import ICON_SIZE
 
 from src.ui.panel.layer_ui.layer_visibility_button import LayerVisibilityButton
-from src.ui.widget.bordered_widget import BorderedWidget
+from src.ui.layout.bordered_widget import BorderedWidget
 from src.util.display_size import find_text_size
 from src.util.geometry_utils import get_scaled_placement
 from src.util.image_utils import get_transparency_tile_pixmap, crop_to_content
@@ -59,8 +59,8 @@ COPIED_LAYER_NAME = _tr('{src_layer_name} copied content')
 class LayerWidget(BorderedWidget):
     """A single layer's representation in the list"""
 
-    dragging = pyqtSignal()
-    drag_ended = pyqtSignal()
+    dragging = Signal()
+    drag_ended = Signal()
 
     # Shared transparency background pixmap. The first LayerGraphicsItem created initializes it, after that access is
     # strictly read-only.

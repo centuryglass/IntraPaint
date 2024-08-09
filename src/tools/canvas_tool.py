@@ -2,9 +2,9 @@
 import logging
 from typing import Optional
 
-from PyQt6.QtCore import Qt, QPoint, QSize, QRect, QLineF, QPointF
-from PyQt6.QtGui import QCursor, QTabletEvent, QMouseEvent, QColor, QIcon, QWheelEvent, QPointingDevice
-from PyQt6.QtWidgets import QWidget, QApplication
+from PySide6.QtCore import Qt, QPoint, QSize, QRect, QLineF, QPointF
+from PySide6.QtGui import QCursor, QTabletEvent, QMouseEvent, QColor, QIcon, QWheelEvent, QPointingDevice
+from PySide6.QtWidgets import QApplication
 
 from src.config.application_config import AppConfig
 from src.config.cache import Cache
@@ -71,7 +71,6 @@ class CanvasTool(BaseTool):
         image_viewer.scale_changed.connect(self.update_brush_cursor)
 
         # Create MyPaintLayerCanvas
-        self._control_panel = QWidget()
         self._image_stack = image_stack
         self._image_viewer = image_viewer
         self._canvas = canvas
@@ -160,7 +159,9 @@ class CanvasTool(BaseTool):
         if layer is None or not isinstance(layer, ImageLayer):
             self._canvas.connect_to_layer(None)
             self._image_viewer.hide_active_layer = False
-            self._control_panel.setEnabled(False)
+            control_panel = self.get_control_panel()
+            if control_panel is not None:
+                control_panel.setEnabled(False)
 
     def _layer_lock_slot(self, layer: Layer, locked: bool) -> None:
         if not self.is_active:
@@ -173,8 +174,9 @@ class CanvasTool(BaseTool):
             self._canvas.z_value = layer.z_value
             self._canvas.connect_to_layer(layer)
             self._image_viewer.stop_rendering_layer(layer)
-        if self._control_panel is not None:
-            self._control_panel.setEnabled(not locked)
+        control_panel = self.get_control_panel()
+        if control_panel is not None:
+            control_panel.setEnabled(not locked)
 
     @property
     def brush_size(self) -> int:
@@ -256,7 +258,6 @@ class CanvasTool(BaseTool):
             return
         if self._tablet_input == QPointingDevice.PointerType.Eraser:
             self._canvas.eraser = True
-
 
         if KeyConfig.modifier_held(KeyConfig.FIXED_ANGLE_MODIFIER) and self._last_pos is not None \
                 and self._last_pos != image_coordinates:

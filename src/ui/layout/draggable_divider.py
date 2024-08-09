@@ -3,9 +3,9 @@ Provides a widget that can be dragged to resize UI elements.
 """
 from typing import Optional
 
-from PyQt6.QtCore import Qt, QPoint, QSize, QRect, pyqtSignal
-from PyQt6.QtGui import QPainter, QPen, QResizeEvent, QMouseEvent, QPaintEvent, QCursor
-from PyQt6.QtWidgets import QWidget, QSizePolicy, QBoxLayout, QHBoxLayout, QVBoxLayout, QLayoutItem
+from PySide6.QtCore import Qt, QPoint, QSize, QRect, Signal
+from PySide6.QtGui import QPainter, QPen, QResizeEvent, QMouseEvent, QPaintEvent, QCursor
+from PySide6.QtWidgets import QWidget, QSizePolicy, QBoxLayout, QHBoxLayout, QVBoxLayout, QLayoutItem
 
 from src.util.contrast_color import contrast_color
 
@@ -15,7 +15,7 @@ DIVIDER_SIZE = 4
 class DraggableDivider(QWidget):
     """DraggableArrow is a widget that can be dragged along an axis to resize UI elements."""
 
-    dragged = pyqtSignal(QPoint)
+    dragged = Signal(QPoint)
 
     def __init__(self, orientation=Qt.Orientation.Horizontal) -> None:
         super().__init__()
@@ -101,7 +101,7 @@ class DraggableDivider(QWidget):
             layout = self._get_containing_layout()
             assert layout is not None
             index = layout.indexOf(self)
-            if index == 0 or index == layout.count() - 1:
+            if index in (0, index == layout.count() - 1):
                 return
 
             def _get_item_widget(idx: int) -> Optional[QWidget | QLayoutItem]:
@@ -170,4 +170,3 @@ class DraggableDivider(QWidget):
         assert isinstance(layout, QBoxLayout) and layout.indexOf(self) != -1, ('DraggableDivider must be'
                                                                                ' within a box layout')
         return layout
-

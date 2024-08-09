@@ -1,9 +1,9 @@
 """Select or deselect rectangular or ellipsoid areas."""
 from typing import Optional
 
-from PyQt6.QtCore import Qt, QPoint, QRect, QRectF, QSizeF, QPointF, QLineF
-from PyQt6.QtGui import QKeySequence, QIcon, QMouseEvent, QPainter, QColor
-from PyQt6.QtWidgets import QWidget, QLayout, QApplication, QHBoxLayout, QGraphicsRectItem, \
+from PySide6.QtCore import Qt, QPoint, QRect, QRectF, QSizeF, QPointF, QLineF
+from PySide6.QtGui import QKeySequence, QIcon, QMouseEvent, QPainter, QColor
+from PySide6.QtWidgets import QWidget, QLayout, QApplication, QGraphicsRectItem, \
     QGraphicsEllipseItem
 
 from src.config.application_config import AppConfig
@@ -11,7 +11,7 @@ from src.config.key_config import KeyConfig
 from src.image.layers.image_stack import ImageStack
 from src.tools.base_tool import BaseTool
 from src.ui.image_viewer import ImageViewer
-from src.ui.input_fields.dual_toggle import DualToggle
+from src.ui.panel.tool_control_panels.shape_selection_panel import ShapeSelectionPanel, MODE_RECT, MODE_ELLIPSE
 from src.util.shared_constants import PROJECT_DIR, FLOAT_MAX
 
 # The `QCoreApplication.translate` context for strings in this file
@@ -30,8 +30,6 @@ SHAPE_SELECTION_TOOLTIP = _tr('Select or de-select rectangles or ellipses')
 SHAPE_SELECTION_CONTROL_HINT = _tr('LMB:select - RMB:deselect - ')
 FIXED_ASPECT_CONTROL_HINT = _tr('')
 
-MODE_RECT = _tr('Rectangle')
-MODE_ELLIPSE = _tr('Ellipse')
 GRAPHICS_ITEM_OPACITY = 0.6
 
 
@@ -44,7 +42,7 @@ class ShapeSelectionTool(BaseTool):
         assert scene is not None
         self._scene = scene
         self._image_stack = image_stack
-        self._control_panel = QWidget()
+        self._control_panel = ShapeSelectionPanel(image_stack.selection_layer)
         self._control_layout: Optional[QLayout] = None
         self._selection_shape: Optional[QGraphicsRectItem | QGraphicsEllipseItem] = None
         self._dragging = False
@@ -52,6 +50,10 @@ class ShapeSelectionTool(BaseTool):
         self._icon = QIcon(RESOURCES_SHAPE_SELECT_ICON)
         self._mode = MODE_RECT
         self._color = QColor()
+
+        def _update_mode(mode_str: str) -> None:
+            self._mode = mode_str
+        self._control_panel.tool_mode_changed.connect(_update_mode)
 
         def _update_color(color_str: str) -> None:
             if color_str == self._color.name():
@@ -83,14 +85,6 @@ class ShapeSelectionTool(BaseTool):
 
     def get_control_panel(self) -> Optional[QWidget]:
         """Returns a panel providing controls for customizing tool behavior, or None if no such panel is needed."""
-        if self._control_layout is not None:
-            return self._control_panel
-        self._control_layout = QHBoxLayout(self._control_panel)
-        self._control_layout.setAlignment(Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignHCenter)
-        mode_toggle = DualToggle(self._control_panel, [MODE_RECT, MODE_ELLIPSE], Qt.Orientation.Horizontal)
-        mode_toggle.setValue(MODE_RECT)
-        mode_toggle.valueChanged.connect(self.set_shape_mode)
-        self._control_layout.addWidget(mode_toggle)
         return self._control_panel
 
     def set_shape_mode(self, mode: str) -> None:

@@ -1,8 +1,8 @@
 """Represents a group of linked image layers that can be manipulated as one in limited ways."""
 from typing import List, Optional, Dict, Any, Callable
 
-from PyQt6.QtCore import QRect, pyqtSignal, QPoint, QRectF
-from PyQt6.QtGui import QPainter, QImage, QPolygonF, QTransform
+from PySide6.QtCore import QRect, Signal, QPoint, QRectF
+from PySide6.QtGui import QPainter, QImage, QPolygonF, QTransform
 
 from src.image.layers.image_layer import ImageLayer, ImageLayerState
 from src.image.layers.layer import Layer
@@ -17,9 +17,9 @@ from src.util.validation import assert_valid_index
 class LayerStack(Layer):
     """Represents a group of linked image layers that can be manipulated as one in limited ways."""
 
-    bounds_changed = pyqtSignal(Layer, QRect)
-    layer_added = pyqtSignal(Layer)
-    layer_removed = pyqtSignal(Layer)
+    bounds_changed = Signal(Layer, QRect)
+    layer_added = Signal(Layer)
+    layer_removed = Signal(Layer)
 
     def __init__(self, name: str) -> None:
         """Initialize with no layer data."""

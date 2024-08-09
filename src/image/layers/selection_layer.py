@@ -5,8 +5,8 @@ from typing import Optional, List
 import cv2
 import numpy as np
 from PIL import Image
-from PyQt6.QtCore import QRect, QPoint, QSize, pyqtSignal, QPointF, pyqtBoundSignal
-from PyQt6.QtGui import QImage, QPolygonF, QPainter, QColor
+from PySide6.QtCore import QRect, QPoint, QSize, Signal, QPointF
+from PySide6.QtGui import QImage, QPolygonF, QPainter, QColor
 
 from src.config.application_config import AppConfig
 from src.image.layers.image_layer import ImageLayer
@@ -38,7 +38,9 @@ class SelectionLayer(ImageLayer):
     - Contents are not saved.
     """
 
-    def __init__(self, size: QSize, generation_window_signal: pyqtSignal | pyqtBoundSignal) -> None:
+    selection_cleared = Signal()
+
+    def __init__(self, size: QSize, generation_window_signal: Signal) -> None:
         """
         Initializes a new selection layer.
         """
@@ -90,7 +92,6 @@ class SelectionLayer(ImageLayer):
                 return
             image_ptr = image.bits()
             assert image_ptr is not None, 'Selection layer image was invalid'
-            image_ptr.setsize(image.sizeInBytes())
             np_image = np.ndarray(shape=(image.height(), image.width(), 4), dtype=np.uint8, buffer=image_ptr)
         pos = self.position
         generation_area = QRect(self._generation_area).translated(-pos.x(), -pos.y())
@@ -136,7 +137,6 @@ class SelectionLayer(ImageLayer):
         image = self.image
         image_ptr = image.bits()
         assert image_ptr is not None, 'Selection layer image was invalid'
-        image_ptr.setsize(image.sizeInBytes())
         np_image: AnyNpArray = np.ndarray(shape=(image.height(), image.width(), 4), dtype=np.uint8, buffer=image_ptr)
 
         masked = np_image[:, :, 3] > 0
@@ -171,26 +171,25 @@ class SelectionLayer(ImageLayer):
         """Gets the generation area mask content as a PIL image mask"""
         return qimage_to_pil_image(self.mask_image)
 
-    def _handle_content_change(self, image: QImage, initial_image: QImage,
+    def _handle_content_change(self, image: QImage, last_image: QImage,
                                change_bounds: Optional[QRect] = None) -> None:
         """When the image updates, ensure that it meets requirements, and recalculate bounds.
 
         Parameters:
             image: QImage
                 The new image being applied, which this method may directly change.
-            initial_image: QImage
+            last_image: QImage
                 Previous image state, not needed in this implementation.
             change_bounds: Optional[QRect] = None
                 If not None, this indicates the area (in local coordinates) within the image where the content has
                 changed.
         """
-        super()._handle_content_change(image, initial_image, change_bounds)
+        super()._handle_content_change(image, last_image, change_bounds)
         # Enforce fixed colors, alpha thresholds:
         if image.size().isEmpty():
             return
         image_ptr = image.bits()
         assert image_ptr is not None, 'Selection layer image was invalid'
-        image_ptr.setsize(image.sizeInBytes())
         np_image: AnyNpArray = np.ndarray(shape=(image.height(), image.width(), 4), dtype=np.uint8, buffer=image_ptr)
 
         # Update selection bounds, skip extra processing if selection is empty:
@@ -281,10 +280,10 @@ class SelectionLayer(ImageLayer):
         if (not ignore_config and not config.get(AppConfig.INPAINT_FULL_RES)) or self._bounding_box is None:
             return None
         padding = config.get(AppConfig.INPAINT_FULL_RES_PADDING)
-        top = self._bounding_box.top()
-        bottom = self._bounding_box.bottom()
-        left = self._bounding_box.left()
-        right = self._bounding_box.right()
+        top: int = self._bounding_box.top()
+        bottom: int = self._bounding_box.bottom()
+        left: int = self._bounding_box.left()
+        right: int = self._bounding_box.right()
         if top >= bottom:
             return None  # mask was empty
 
@@ -318,7 +317,7 @@ class SelectionLayer(ImageLayer):
             left -= d_left
             right += d_right
         else:
-            target_height = width // image_ratio
+            target_height = int(width // image_ratio)
             height_to_add = target_height - height
             assert height_to_add >= 0
             d_top = min(top - area_top, height_to_add // 2)

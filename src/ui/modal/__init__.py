@@ -1,1 +1,1 @@
-"""modal provides modules for creating PyQt6 popup windows."""
+"""modal provides modules for creating Qt6 popup windows."""

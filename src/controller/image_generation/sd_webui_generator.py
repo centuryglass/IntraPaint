@@ -7,9 +7,9 @@ from argparse import Namespace
 from typing import Optional, Dict, List, cast, Any
 
 import requests
-from PyQt6.QtCore import pyqtSignal, QSize, QThread, pyqtBoundSignal
-from PyQt6.QtGui import QImage, QAction, QIcon
-from PyQt6.QtWidgets import QInputDialog, QWidget, QApplication, QTabWidget
+from PySide6.QtCore import Signal, QSize, QThread
+from PySide6.QtGui import QImage, QAction, QIcon
+from PySide6.QtWidgets import QInputDialog, QWidget, QApplication
 
 from src.api.a1111_webservice import A1111Webservice, AuthError
 from src.config.a1111_config import A1111Config
@@ -21,7 +21,7 @@ from src.ui.modal.modal_utils import show_error_dialog
 from src.ui.modal.settings_modal import SettingsModal
 from src.ui.panel.controlnet_panel import TabbedControlnetPanel, CONTROLNET_TITLE
 from src.ui.panel.generators.sd_webui_panel import SDWebUIPanel
-from src.ui.widget.draggable_tabs.tab import Tab
+from src.ui.layout.draggable_tabs.tab import Tab
 from src.ui.window.extra_network_window import ExtraNetworkWindow
 from src.ui.window.main_window import MainWindow
 from src.ui.window.prompt_style_window import PromptStyleWindow
@@ -67,7 +67,7 @@ SD_WEBUI_GENERATOR_DESCRIPTION = _tr('<h2>Stable-Diffusion: via WebUI API</h2>'
                                      'WebUI instance can be run on the same computer as IntraPaint, or remotely on a '
                                      'separate server.</p>')
 
-
+# noinspection SpellCheckingInspection
 SD_WEBUI_GENERATOR_SETUP = _tr('<h2>Installing the WebUI</h2><p>The <a href="https://github.com/lllyasviel/'
                                'stable-diffusion-webui-forge">Forge WebUI</a> is the recommended version, but the'
                                ' original <a href="https://github.com/AUTOMATIC1111/stable-diffusion-webui">'
@@ -215,13 +215,13 @@ class SDWebUIGenerator(ImageGenerator):
                 self._webservice = A1111Webservice(self._server_url)
             while self._server_url == '' or not self.is_available():
                 prompt_text = URL_REQUEST_MESSAGE if self._server_url == '' else URL_REQUEST_RETRY_MESSAGE
-                new_url, url_entered = QInputDialog.getText(None, URL_REQUEST_TITLE, prompt_text)
+                new_url, url_entered = QInputDialog.getText(self.menu_window, URL_REQUEST_TITLE, prompt_text)
                 if not url_entered:
                     return False
                 return self.connect_to_url(new_url)
 
-            # If a login is required and none is defined in the environment, the webservice will automatically request one
-            # during the following setup process:
+            # If a login is required and none is defined in the environment, the webservice will automatically request
+            # one during the following setup process:
             cache = Cache()
             try:
                 model_list = self._webservice.get_controlnet_models()
@@ -362,14 +362,13 @@ class SDWebUIGenerator(ImageGenerator):
         image = self._image_stack.qimage_generation_area_content()
 
         class _InterrogateTask(AsyncTask):
-            prompt_ready = pyqtSignal(str)
-            error_signal = pyqtSignal(Exception)
+            prompt_ready = Signal(str)
+            error_signal = Signal(Exception)
 
-            def signals(self) -> List[pyqtSignal | pyqtBoundSignal]:
+            def signals(self) -> List[Signal]:
                 return [self.prompt_ready, self.error_signal]
 
-        def _interrogate(prompt_ready: pyqtSignal | pyqtBoundSignal,
-                         error_signal: pyqtSignal | pyqtBoundSignal) -> None:
+        def _interrogate(prompt_ready: Signal, error_signal: Signal) -> None:
             try:
                 assert self._webservice is not None
                 prompt_ready.emit(self._webservice.interrogate(image))
@@ -402,18 +401,18 @@ class SDWebUIGenerator(ImageGenerator):
             self._control_panel.interrogate_signal.connect(self.interrogate)
         return self._control_panel
 
-    def _async_progress_check(self, external_status_signal: Optional[pyqtSignal | pyqtBoundSignal] = None):
+    def _async_progress_check(self, external_status_signal: Optional[Signal] = None):
         webservice = self._webservice
         assert webservice is not None
 
         class _ProgressTask(AsyncTask):
-            status_signal = pyqtSignal(dict)
+            status_signal = Signal(dict)
 
             def __init__(self) -> None:
                 super().__init__(self._check_progress)
                 self.should_stop = False
 
-            def signals(self) -> List[pyqtSignal | pyqtBoundSignal]:
+            def signals(self) -> List[Signal]:
                 return [external_status_signal if external_status_signal is not None else self.status_signal]
 
             def _check_progress(self, status_signal) -> None:
@@ -480,14 +479,13 @@ class SDWebUIGenerator(ImageGenerator):
             return False
 
         class _UpscaleTask(AsyncTask):
-            image_ready = pyqtSignal(QImage)
-            error_signal = pyqtSignal(Exception)
+            image_ready = Signal(QImage)
+            error_signal = Signal(Exception)
 
-            def signals(self) -> List[pyqtSignal | pyqtBoundSignal]:
+            def signals(self) -> List[Signal]:
                 return [self.image_ready, self.error_signal]
 
-        def _upscale(image_ready: pyqtSignal | pyqtBoundSignal,
-                     error_signal: pyqtSignal | pyqtBoundSignal) -> None:
+        def _upscale(image_ready: Signal, error_signal: Signal) -> None:
             try:
                 assert self._webservice is not None
                 images, info = self._webservice.upscale(self._image_stack.qimage(), new_size.width(),
@@ -525,14 +523,14 @@ class SDWebUIGenerator(ImageGenerator):
         return True
 
     def generate(self,
-                 status_signal: pyqtSignal | pyqtBoundSignal,
+                 status_signal: Signal,
                  source_image: Optional[QImage] = None,
                  mask_image: Optional[QImage] = None) -> None:
         """Generates new images. Image size, image count, prompts, etc. are loaded from AppConfig as needed.
 
         Parameters
         ----------
-        status_signal : pyqtSignal[str]
+        status_signal : Signal[str]
             Signal to emit when status updates are available.
         source_image : QImage, optional
             Image used as a basis for the edited image.
@@ -621,12 +619,12 @@ class SDWebUIGenerator(ImageGenerator):
             AppStateTracker.set_app_state(APP_STATE_LOADING)
 
             class _LoadingTask(AsyncTask):
-                status = pyqtSignal(str)
+                status = Signal(str)
 
-                def signals(self) -> List[pyqtSignal | pyqtBoundSignal]:
+                def signals(self) -> List[Signal]:
                     return [self.status]
 
-            def _load_and_open(status_signal: pyqtSignal | pyqtBoundSignal) -> None:
+            def _load_and_open(status_signal: Signal) -> None:
                 for i, lora in enumerate(loras):
                     status_signal.emit(f'Loading thumbnail {i + 1}/{len(loras)}')
                     path = lora['path']

@@ -4,9 +4,9 @@ import os
 from argparse import Namespace
 from typing import Optional, Any, Dict
 
-from PyQt6.QtCore import pyqtSignal, QSize, pyqtBoundSignal
-from PyQt6.QtGui import QImage
-from PyQt6.QtWidgets import QApplication, QWidget
+from PySide6.QtCore import Signal, QSize
+from PySide6.QtGui import QImage
+from PySide6.QtWidgets import QApplication, QWidget
 
 from src.config.application_config import AppConfig
 from src.controller.image_generation.image_generator import ImageGenerator
@@ -187,7 +187,7 @@ class Glid3XLGenerator(ImageGenerator):
             self.status_signal.emit(MISSING_DEPS_ERROR.format(dependency_list=missing_modules))
             return False
         device = get_device()
-        (mem_free, mem_total) = torch.cuda.mem_get_info(device)
+        (mem_free, _) = torch.cuda.mem_get_info(device)
         if mem_free < MIN_GLID_VRAM:
             self.status_signal.emit(NOT_ENOUGH_VRAM_ERROR.format(mem_free=mem_free, min_vram=MIN_GLID_VRAM))
             return False
@@ -265,14 +265,14 @@ class Glid3XLGenerator(ImageGenerator):
         return self._control_panel
 
     def generate(self,
-                 status_signal: pyqtSignal | pyqtBoundSignal,
+                 status_signal: Signal,
                  source_image: Optional[QImage] = None,
                  mask_image: Optional[QImage] = None) -> None:
         """Generates new images. Image size, image count, prompts, etc. are loaded from AppConfig as needed.
 
         Parameters
         ----------
-        status_signal : pyqtSignal[str]
+        status_signal : Signal[str]
             Signal to emit when status updates are available.
         source_image : QImage, optional
             Image used as a basis for the edited image.

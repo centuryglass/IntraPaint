@@ -4,9 +4,9 @@ stable_diffusion_controller.
 """
 from typing import Any, Dict, List, Optional
 
-from PyQt6.QtCore import pyqtSignal, QSize
-from PyQt6.QtGui import QIcon
-from PyQt6.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QPushButton, QWidget, QTabWidget, QFormLayout, \
+from PySide6.QtCore import Signal, QSize, Qt
+from PySide6.QtGui import QIcon
+from PySide6.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QPushButton, QWidget, QTabWidget, QFormLayout, \
     QScrollArea
 
 from src.config.config import Config
@@ -18,15 +18,16 @@ from src.ui.input_fields.dual_toggle import DualToggle
 from src.ui.input_fields.line_edit import LineEdit
 from src.ui.input_fields.plain_text_edit import PlainTextEdit
 from src.ui.input_fields.size_field import SizeField
-from src.ui.widget.bordered_widget import BorderedWidget
+from src.ui.layout.bordered_widget import BorderedWidget
 from src.util.parameter import DynamicFieldWidget
 from src.util.shared_constants import APP_ICON_PATH
 
+WINDOW_PADDING = 50
 
 class SettingsModal(QDialog):
     """Manage remote settings."""
 
-    changes_saved = pyqtSignal(dict)
+    changes_saved = Signal(dict)
 
     def __init__(self, parent: QWidget):
         super().__init__(parent)
@@ -64,6 +65,7 @@ class SettingsModal(QDialog):
         save_button.clicked.connect(on_save)
         bottom_panel_layout.addWidget(save_button, stretch=1)
         layout.addWidget(bottom_panel, stretch=1)
+
 
     def load_from_config(self, config: Config, categories: Optional[List[str]] = None) -> None:
         """Load settings from a Config object, or from a subset of Config object categories."""
@@ -156,7 +158,8 @@ class SettingsModal(QDialog):
                 else:
                     if new_value is None:
                         new_value = 0
-                    assert isinstance(new_value, (int, float, bool, str)), f'Key "{key}": unexpected type {type(new_value)}'
+                    assert isinstance(new_value, (int, float, bool, str)), (f'Key "{key}": unexpected type '
+                                                                            f'{type(new_value)}')
                     if isinstance(widget, (BigIntSpinbox, IntSliderSpinbox)):
                         widget.setValue(int(new_value))
                     elif isinstance(widget, CheckBox):
@@ -173,6 +176,7 @@ class SettingsModal(QDialog):
         if tab_name not in self._tabs:
             tab_body = QWidget()
             tab_layout = QFormLayout(tab_body)
+            tab_layout.setAlignment(Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignLeft)
             tab = QScrollArea(self)
             tab.setWidgetResizable(True)
             tab.setWidget(tab_body)

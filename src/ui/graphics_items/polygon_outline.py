@@ -2,9 +2,9 @@
 import sys
 from typing import Optional, List
 
-from PyQt6.QtCore import Qt, pyqtProperty, QPropertyAnimation, QObject, QPointF
-from PyQt6.QtGui import QPen, QColor, QShowEvent, QHideEvent, QPolygonF, QTransform
-from PyQt6.QtWidgets import QGraphicsItem, QGraphicsView, QGraphicsItemGroup, QGraphicsPolygonItem
+from PySide6.QtCore import Qt, Property, QPropertyAnimation, QObject, QPointF
+from PySide6.QtGui import QPen, QColor, QShowEvent, QHideEvent, QPolygonF, QTransform
+from PySide6.QtWidgets import QGraphicsItem, QGraphicsView, QGraphicsItemGroup, QGraphicsPolygonItem
 
 from src.util.shared_constants import TIMELAPSE_MODE_FLAG
 
@@ -43,14 +43,15 @@ class PolygonOutline(QGraphicsItemGroup):
                 """Access the wrapped PropertyAnimation."""
                 return self._anim
 
-            @pyqtProperty(int)
-            def dash_offset(self) -> int:
+            def dash_offset_getter(self) -> int:
                 """Access the animation offset value."""
                 return self._parent.dash_offset
 
-            @dash_offset.setter
-            def dash_offset(self, offset: int) -> None:
+            def dash_offset_setter(self, offset: int) -> None:
+                """Updates the animation offset value."""
                 self._parent.dash_offset = offset
+
+            dash_offset = Property(int, dash_offset_getter, dash_offset_setter)
 
         self._animator = _Animator(self)
         self._pen = QPen()
@@ -96,6 +97,7 @@ class PolygonOutline(QGraphicsItemGroup):
         assert scene is not None
         for polygon_item in self._polygons:
             self.removeFromGroup(polygon_item)
+            scene.removeItem(polygon_item)
         self._polygons.clear()
         pen = self._get_pen()
         for polygon in polygons:

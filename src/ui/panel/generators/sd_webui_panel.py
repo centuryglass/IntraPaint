@@ -1,15 +1,15 @@
 """A control panel for the Stable-Diffusion WebUI image generator."""
-from typing import Tuple
+from typing import Tuple, List
 
-from PyQt6.QtCore import Qt, pyqtSignal
-from PyQt6.QtWidgets import QSizePolicy, QGridLayout, QLabel, QPushButton, \
-    QApplication, QFrame
+from PySide6.QtCore import Qt, Signal
+from PySide6.QtWidgets import QSizePolicy, QGridLayout, QLabel, QPushButton, \
+    QApplication, QWidget
 
 from src.config.application_config import AppConfig
 from src.config.cache import Cache
 from src.ui.input_fields.size_field import SizeField
-from src.ui.input_fields.slider_spinbox import IntSliderSpinbox, FloatSliderSpinbox
-from src.ui.widget.bordered_widget import BorderedWidget
+from src.ui.layout.bordered_widget import BorderedWidget
+from src.ui.layout.divider import Divider
 from src.util.application_state import APP_STATE_EDITING, AppStateTracker
 from src.util.parameter import DynamicFieldWidget
 from src.util.shared_constants import GENERATE_BUTTON_TEXT, EDIT_MODE_INPAINT, EDIT_MODE_TXT2IMG
@@ -30,8 +30,8 @@ INTERROGATE_BUTTON_TOOLTIP = _tr('Attempt to generate a prompt that describes th
 class SDWebUIPanel(BorderedWidget):
     """A control panel for the Stable-Diffusion WebUI image generator."""
 
-    interrogate_signal = pyqtSignal()
-    generate_signal = pyqtSignal()
+    interrogate_signal = Signal()
+    generate_signal = Signal()
 
     def __init__(self) -> None:
         super().__init__()
@@ -131,7 +131,6 @@ class SDWebUIPanel(BorderedWidget):
             prompt_labels = (self._prompt_label, self._negative_label)
             prompt_controls = (self._prompt_textbox, self._negative_textbox)
             for row, label, control in zip(range(len(prompt_labels)), prompt_labels, prompt_controls):
-                # grid.setRowStretch(row, 4)
                 grid.addWidget(label, row, 0)
                 grid.addWidget(control, row, 1, 1, 4)
 
@@ -139,12 +138,11 @@ class SDWebUIPanel(BorderedWidget):
             slider_labels = (self._step_count_label, self._guidance_scale_label, self._denoising_strength_label)
             slider_controls = (self._step_count_slider, self._guidance_scale_slider, self._denoising_strength_slider)
             for row, label, control in zip(range(len(slider_labels)), slider_labels, slider_controls):
-                # grid.setRowStretch(row + len(prompt_controls), 1)
                 grid.addWidget(label, row + len(prompt_controls), 0)
                 grid.addWidget(control, row + len(prompt_controls), 1)
                 control.setSizePolicy(QSizePolicy.Policy.MinimumExpanding, QSizePolicy.Policy.MinimumExpanding)
 
-            slider_divider = _divider_widget(Qt.Orientation.Vertical)
+            slider_divider = Divider(Qt.Orientation.Vertical)
             grid.addWidget(slider_divider, len(prompt_controls), 2, len(slider_controls), 1)
             grid.setColumnStretch(2, 1)
 
@@ -153,15 +151,16 @@ class SDWebUIPanel(BorderedWidget):
             self._gen_size_input.orientation = Qt.Orientation.Vertical
             second_column_labels = (self._gen_size_label, self._batch_size_label, self._batch_count_label)
             second_column_controls = (self._gen_size_input, self._batch_size_spinbox, self._batch_count_spinbox)
+            second_column_heights = (2, 1, 1)
             grid.setColumnStretch(len(prompt_controls), 3)
 
-            for row, label, control in zip(range(len(second_column_labels)), second_column_labels,
-                                                   second_column_controls):
-                grid.setRowStretch(row, 1)
-                grid.addWidget(label, row + len(prompt_controls), 3)
-                grid.addWidget(control, row + len(prompt_controls), 4)
+            second_column_row = len(prompt_controls)
+            for height, label, control in zip(second_column_heights, second_column_labels, second_column_controls):
+                grid.addWidget(label, second_column_row, 3, height, 1)
+                grid.addWidget(control, second_column_row, 4, height, 1)
+                second_column_row += height
 
-            second_col_divider = _divider_widget(Qt.Orientation.Vertical)
+            second_col_divider = Divider(Qt.Orientation.Vertical)
             grid.addWidget(second_col_divider, 0, 5, 5, 1)
 
             # third column:
@@ -179,7 +178,7 @@ class SDWebUIPanel(BorderedWidget):
                 grid.addWidget(label, row, 6)
                 grid.addWidget(control, row, 7)
 
-            button_divider = _divider_widget(Qt.Orientation.Horizontal)
+            button_divider = Divider(Qt.Orientation.Horizontal)
             grid.setRowStretch(6, 0)
             grid.setRowStretch(7, 1)
             grid.addWidget(button_divider, 6, 1, 1, 7)
@@ -188,10 +187,10 @@ class SDWebUIPanel(BorderedWidget):
 
         # Vertical setup:
         else:
-            grid.setAlignment(Qt.AlignmentFlag.AlignTop)
+            grid.setAlignment(Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignVCenter)
             assert isinstance(self._gen_size_input, SizeField)
             self._gen_size_input.orientation = Qt.Orientation.Horizontal
-            vertical_labels = (
+            vertical_labels: List[QWidget | Tuple[QWidget, QWidget]] = [
                 self._edit_mode_label,
                 self._prompt_label,
                 self._negative_label,
@@ -203,8 +202,8 @@ class SDWebUIPanel(BorderedWidget):
                 (self._full_res_label, self._padding_label),
                 self._sampler_label,
                 (self._seed_label, self._last_seed_label)
-            )
-            vertical_controls = (
+            ]
+            vertical_controls: List[QWidget | Tuple[QWidget, QWidget]] = [
                 self._edit_mode_combobox,
                 self._prompt_textbox,
                 self._negative_textbox,
@@ -216,21 +215,24 @@ class SDWebUIPanel(BorderedWidget):
                 (self._full_res_checkbox, self._padding_slider),
                 self._sampler_combobox,
                 (self._seed_textbox, self._last_seed_textbox)
-            )
+            ]
             for i in range(10):
                 grid.setColumnStretch(i, 1)
-            for row, label, control in zip(range(len(vertical_labels)), vertical_labels, vertical_controls):
+            for row, vertical_label, vertical_control in zip(range(len(vertical_labels)), vertical_labels,
+                                                             vertical_controls):
                 # grid.setRowStretch(row, 1)
-                if isinstance(label, tuple) and isinstance(control, tuple):
-                    label1, label2 = label
-                    control1, control2 = control
+                if isinstance(vertical_label, tuple) and isinstance(vertical_control, tuple):
+                    label1, label2 = vertical_label
+                    control1, control2 = vertical_control
                     grid.addWidget(label1, row, 0, 1, 2)
                     grid.addWidget(control1, row, 2, 1, 3)
                     grid.addWidget(label2, row, 5, 1, 2)
                     grid.addWidget(control2, row, 7, 1, 3)
                 else:
-                    grid.addWidget(label, row, 0, 1, 2)
-                    grid.addWidget(control, row, 2, 1, 8)
+                    assert isinstance(vertical_label, QWidget)
+                    assert isinstance(vertical_control, QWidget)
+                    grid.addWidget(vertical_label, row, 0, 1, 2)
+                    grid.addWidget(vertical_control, row, 2, 1, 8)
             # increase stretch for textbox rows:
             # for i in range(2):
                 # grid.setRowStretch(i, 3)
@@ -253,10 +255,3 @@ class SDWebUIPanel(BorderedWidget):
     @orientation.setter
     def orientation(self, new_orientation: Qt.Orientation) -> None:
         self.set_orientation(new_orientation)
-
-
-def _divider_widget(orientation: Qt.Orientation) -> QFrame:
-    divider = QFrame()
-    divider.setFrameShape(QFrame.Shape.HLine if orientation == Qt.Orientation.Horizontal else QFrame.Shape.VLine)
-    divider.setFrameShadow(QFrame.Shadow.Sunken)
-    return divider

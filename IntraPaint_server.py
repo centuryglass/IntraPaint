@@ -4,10 +4,10 @@ Starts the GLID-3-XL image inpainting server.
 import os.path
 import sys
 
-from src.glid_3_xl.load_models import load_models
-from src.glid_3_xl.ml_utils import get_device
+from src.glid_3_xl.load_models import load_models  # type: ignore
+from src.glid_3_xl.ml_utils import get_device  # type: ignore
 from src.util.arg_parser import build_arg_parser
-from colabFiles.server import start_server
+from colabFiles.server import start_server  # type: ignore
 from src.util.optional_import import check_import
 from src.util.shared_constants import PROJECT_DIR
 

@@ -3,9 +3,9 @@ A simple widget that just draws a border around its content.
 """
 from typing import Optional
 
-from PyQt6.QtCore import QMargins
-from PyQt6.QtGui import QColor, QPalette
-from PyQt6.QtWidgets import QFrame, QWidget
+from PySide6.QtCore import QMargins
+from PySide6.QtGui import QColor, QPalette
+from PySide6.QtWidgets import QFrame, QWidget
 
 from src.util.contrast_color import contrast_color
 

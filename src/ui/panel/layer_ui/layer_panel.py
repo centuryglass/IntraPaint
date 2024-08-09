@@ -2,9 +2,9 @@
 import logging
 from typing import Optional, List, Callable, Any
 
-from PyQt6.QtCore import Qt, QSize, QPointF, QTimer
-from PyQt6.QtGui import QIcon
-from PyQt6.QtWidgets import QWidget, QLabel, QVBoxLayout, QHBoxLayout, QScrollArea, QToolButton, QSlider, \
+from PySide6.QtCore import Qt, QSize, QPointF, QTimer
+from PySide6.QtGui import QIcon
+from PySide6.QtWidgets import QWidget, QLabel, QVBoxLayout, QHBoxLayout, QScrollArea, QToolButton, QSlider, \
     QDoubleSpinBox, QComboBox, QApplication
 
 from src.image.layers.image_stack import ImageStack
@@ -286,5 +286,3 @@ class LayerPanel(QWidget):
                        self._merge_down_button,
                        self._delete_button):
             widget.setEnabled(not is_locked)
-
-

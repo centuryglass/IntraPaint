@@ -4,19 +4,19 @@ Originally adapted from https://stackoverflow.com/a/52617714
 """
 from typing import Optional, cast
 
-from PyQt6.QtCore import Qt, QSize, pyqtSignal
-from PyQt6.QtGui import QResizeEvent
-from PyQt6.QtWidgets import QWidget, QScrollArea, QToolButton, QHBoxLayout, QVBoxLayout, QSizePolicy, QLayout, \
+from PySide6.QtCore import Qt, QSize, Signal
+from PySide6.QtGui import QResizeEvent
+from PySide6.QtWidgets import QWidget, QScrollArea, QToolButton, QHBoxLayout, QVBoxLayout, QSizePolicy, QLayout, \
     QBoxLayout, QScrollBar
 
-from src.ui.widget.bordered_widget import BorderedWidget
+from src.ui.layout.bordered_widget import BorderedWidget
 from src.ui.widget.label import Label
 
 
 class CollapsibleBox(BorderedWidget):
     """A container widget that can be expanded or collapsed."""
 
-    box_toggled = pyqtSignal(bool)
+    box_toggled = Signal(bool)
 
     def __init__(self,
                  title: str = '',
@@ -47,7 +47,10 @@ class CollapsibleBox(BorderedWidget):
         layout.setSpacing(0)
         layout.setContentsMargins(0, 0, 0, 0)
 
-        self._toggle_button = QToolButton(text=title, checkable=True, checked=not start_closed)
+        self._toggle_button = QToolButton()
+        self._toggle_button.setText(title)
+        self._toggle_button.setCheckable(True)
+        self._toggle_button.setChecked(not start_closed)
         self._toggle_button.setStyleSheet('QToolButton { border: none; }')
         self._button_bar = BorderedWidget()
         layout.addWidget(self._button_bar, stretch=0)
@@ -154,8 +157,8 @@ class CollapsibleBox(BorderedWidget):
             else:
                 self.setSizePolicy(self._expanded_size_policy, QSizePolicy.Policy.Expanding)
 
-    def toggled(self) -> pyqtSignal:
-        """Returns the internal pyqtSignal emitted when the box is expanded or collapsed."""
+    def toggled(self) -> Signal:
+        """Returns the internal Signal emitted when the box is expanded or collapsed."""
         return self._toggle_button.toggled
 
     def show_button_bar(self, show_bar: bool) -> None:

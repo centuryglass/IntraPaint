@@ -2,9 +2,9 @@
    in particular states."""
 from typing import List, Dict, Any
 
-from PyQt6.QtCore import QObject, pyqtSignal
-from PyQt6.QtGui import QAction
-from PyQt6.QtWidgets import QWidget
+from PySide6.QtCore import QObject, Signal
+from PySide6.QtGui import QAction
+from PySide6.QtWidgets import QWidget
 
 from src.util.singleton import Singleton
 
@@ -32,10 +32,10 @@ APP_STATE_NOT_LOADING = [APP_STATE_INIT, APP_STATE_NO_IMAGE, APP_STATE_EDITING, 
 class AppStateTracker(metaclass=Singleton):
     """Singleton QObject that tracks the current application state and sends signals on state change."""
 
-    def __init__(self):
+    def __init__(self) -> None:
 
         class _InnerQObject(QObject):
-            state_changed = pyqtSignal(str)
+            state_changed = Signal(str)
         self._signal_object = _InnerQObject()
         self._state_changed = self._signal_object.state_changed
         self._app_state = APP_STATE_INIT
@@ -79,7 +79,7 @@ class AppStateTracker(metaclass=Singleton):
         assert widget not in AppStateTracker()._connections
 
     @staticmethod
-    def signal() -> pyqtSignal:
+    def signal() -> Signal:
         """Accesses the state change signal."""
         return AppStateTracker()._state_changed
 

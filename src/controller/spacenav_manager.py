@@ -12,7 +12,7 @@ import logging
 from typing import Optional
 
 import spacenav
-from PyQt6.QtCore import QObject, QThread, QSize, QRect, pyqtSignal
+from PySide6.QtCore import QObject, QThread, QSize, QRect, Signal
 from src.image.layers.image_stack import ImageStack
 from src.ui.window.main_window import MainWindow
 from src.util.application_state import AppStateTracker, APP_STATE_EDITING
@@ -92,8 +92,11 @@ class SpacenavManager:
 
         def stop_loop():
             """Stop the event thread when the application finishes."""
+            print('spacenav exit')
             with self._thread_data.lock:
                 self._thread_data.read_events = False
+            if self._thread is not None:
+                self._thread.wait()
             logger.info('Spacenav connection terminating at exit.')
 
         atexit.register(stop_loop)
@@ -101,7 +104,7 @@ class SpacenavManager:
         class SpacenavThreadWorker(QObject):
             """SpacenavThreadWorker tracks spacenav events in its own thread."""
 
-            nav_event_signal = pyqtSignal(int, int)
+            nav_event_signal = Signal(int, int)
 
             def __init__(self, thread_data: ThreadData) -> None:
                 super().__init__()

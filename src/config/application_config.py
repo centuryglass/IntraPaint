@@ -2,7 +2,7 @@
 from argparse import Namespace
 from typing import Optional
 
-from PyQt6.QtWidgets import QStyleFactory
+from PySide6.QtWidgets import QStyleFactory
 
 from src.config.config import Config
 from src.util.optional_import import optional_import

@@ -2,8 +2,8 @@
 import math
 from typing import Tuple, Optional
 
-from PyQt6.QtCore import QRect, QSize, QRectF, QSizeF, QPoint, QPointF, QLineF
-from PyQt6.QtGui import QTransform, QPolygonF
+from PySide6.QtCore import QRect, QSize, QRectF, QSizeF, QPoint, QPointF, QLineF
+from PySide6.QtGui import QTransform, QPolygonF
 
 
 def get_scaled_placement(container_rect: QRect | QSize,

@@ -2,9 +2,9 @@
 Animated widget used to indicate a loading state.
 """
 from typing import Optional
-from PyQt6.QtWidgets import QWidget
-from PyQt6.QtGui import QPainter, QPen, QBrush, QColor, QShowEvent, QHideEvent, QPaintEvent
-from PyQt6.QtCore import Qt, QRect, QPointF, pyqtProperty, QPropertyAnimation
+from PySide6.QtWidgets import QWidget
+from PySide6.QtGui import QPainter, QPen, QBrush, QColor, QShowEvent, QHideEvent, QPaintEvent
+from PySide6.QtCore import Qt, QRect, QPointF, Property, QPropertyAnimation
 
 
 class LoadingWidget(QWidget):
@@ -58,16 +58,16 @@ class LoadingWidget(QWidget):
         self.paused = False
         self.update()
 
-    @pyqtProperty(int)
-    def rotation(self) -> int:
+    def rotation_getter(self) -> int:
         """Returns the current animation rotation in degrees."""
         return self._rotation
 
-    @rotation.setter
-    def rotation(self, rotation: int) -> None:
+    def rotation_setter(self, rotation: int) -> None:
         """Sets the current animation rotation in degrees."""
         self._rotation = rotation % 360
         self.update()
+
+    rotation = Property(int, rotation_getter, rotation_setter)
 
     def showEvent(self, unused_event: Optional[QShowEvent]) -> None:
         """Starts the animation when the widget is shown."""

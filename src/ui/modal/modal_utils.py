@@ -6,7 +6,7 @@ import traceback
 import logging
 from typing import Optional, List
 
-from PyQt6.QtWidgets import QMessageBox, QFileDialog, QWidget, QStyle
+from PySide6.QtWidgets import QMessageBox, QFileDialog, QWidget, QStyle
 from PIL import UnidentifiedImageError
 
 from src.util.image_utils import get_standard_qt_icon

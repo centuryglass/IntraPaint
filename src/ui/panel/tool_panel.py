@@ -1,9 +1,9 @@
 """Selects between image editing tools, and controls their settings."""
 from typing import Optional, Dict, Callable
 
-from PyQt6.QtCore import Qt, pyqtSignal, QRect, QSize, QMargins, QObject
-from PyQt6.QtGui import QMouseEvent, QPaintEvent, QPainter, QPen, QResizeEvent
-from PyQt6.QtWidgets import QWidget, QLabel, QHBoxLayout, QVBoxLayout, QSizePolicy, QScrollArea, QPushButton, \
+from PySide6.QtCore import Qt, Signal, QRect, QSize, QMargins, QObject
+from PySide6.QtGui import QMouseEvent, QPaintEvent, QPainter, QPen, QResizeEvent
+from PySide6.QtWidgets import QWidget, QLabel, QHBoxLayout, QVBoxLayout, QSizePolicy, QScrollArea, QPushButton, \
     QGridLayout, QLayout, QApplication, QTabWidget
 
 from src.controller.tool_controller import ToolController
@@ -12,9 +12,9 @@ from src.tools.base_tool import BaseTool
 from src.ui.panel.color_panel import ColorControlPanel
 from src.ui.panel.image_panel import ImagePanel
 from src.ui.panel.layer_ui.layer_panel import LayerPanel
-from src.ui.widget.draggable_divider import DraggableDivider
+from src.ui.layout.draggable_divider import DraggableDivider
 from src.ui.widget.key_hint_label import KeyHintLabel
-from src.ui.widget.reactive_layout_widget import ReactiveLayoutWidget
+from src.ui.layout.reactive_layout_widget import ReactiveLayoutWidget
 from src.ui.window.image_window import ImageWindow
 from src.util.display_size import get_window_size
 from src.util.geometry_utils import get_scaled_placement
@@ -46,7 +46,7 @@ MIN_SIZE_FOR_TOOL_LABEL = QSize(300, 200)
 class ToolPanel(QWidget):
     """Selects between image editing tools, and controls their settings."""
 
-    panel_toggled = pyqtSignal(bool)
+    panel_toggled = Signal(bool)
 
     def __init__(self, image_stack: ImageStack, image_panel: ImagePanel, generate_fn: Callable[[], None]) -> None:
         """Initializes instances of all Tool classes, connects them to image data, and sets up the tool interface.
@@ -71,7 +71,6 @@ class ToolPanel(QWidget):
         self._layout = QVBoxLayout(self)
         self._divider = DraggableDivider()
 
-        # TODO: Tabbed panel with other options
         self._control_panel = QTabWidget()
         self._layer_tab = LayerPanel(image_stack)
         self._color_tab = ColorControlPanel(disable_extended_layouts=True)
@@ -102,7 +101,7 @@ class ToolPanel(QWidget):
         self._tool_control_label = QLabel()
         self._tool_control_label.setWordWrap(True)
         self._tool_control_label.setStyleSheet('text-decoration: bold;')
-        self._tool_control_label.setAlignment(Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignTop)
+        self._tool_control_label.setAlignment(Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignTop)
         self._tool_control_layout.addWidget(self._tool_control_label, stretch=2)
         self._tool_control_layout.addStretch(2)
         self._tool_control_layout.setSizeConstraint(QLayout.SizeConstraint.SetNoConstraint)
@@ -157,6 +156,7 @@ class ToolPanel(QWidget):
             temp_widget = QWidget()
             temp_widget.setLayout(self._layout)
             self._layout = layout_class(self)
+        self._layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
         self._layout.setContentsMargins(QMargins(2, 2, 2, 2))
         if self._layout.count() == 0:
@@ -200,8 +200,8 @@ class ToolPanel(QWidget):
         """Reconfigures the panel for a new active tool."""
         assert active_tool is None or isinstance(active_tool, BaseTool)
         if self._active_tool_panel is not None:
-            while self._tool_control_layout.count() > 1:
-                self._tool_control_layout.takeAt(1)
+            while self._tool_control_layout.count() > 2:
+                self._tool_control_layout.takeAt(2)
             self._active_tool_panel.hide()
             self._active_tool_panel.setParent(None)
             self._active_tool_panel = None
@@ -287,7 +287,7 @@ class ToolPanel(QWidget):
 class _ToolButton(QWidget):
     """Displays a tool icon and label, indicates if the tool is selected."""
 
-    tool_selected = pyqtSignal(QObject)
+    tool_selected = Signal(QObject)
 
     def __init__(self, connected_tool: BaseTool) -> None:
         super().__init__()
@@ -296,7 +296,7 @@ class _ToolButton(QWidget):
         self.setSizePolicy(QSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed))
         label_text = connected_tool.label
         if connected_tool.get_hotkey() is not None:
-            self._key_hint: Optional[KeyHintLabel] = KeyHintLabel(connected_tool.get_hotkey(), self)
+            self._key_hint: Optional[KeyHintLabel] = KeyHintLabel(connected_tool.get_hotkey(), parent=self)
             self._key_hint.setAlignment(Qt.AlignmentFlag.AlignRight)
         else:
             self._key_hint = None

@@ -1,10 +1,11 @@
 """An image editing tool that moves the selected editing region."""
 from typing import Optional, Dict, Tuple, Callable
 
-from PyQt6.QtCore import Qt, QRect, QRectF, QSize, QPoint
-from PyQt6.QtGui import QCursor, QIcon, QKeySequence, QTransform, QPen, QPaintEvent, QPainter, QColor, \
-    QPolygon
-from PyQt6.QtWidgets import QWidget, QLabel, QSpinBox, QDoubleSpinBox, QCheckBox, QGridLayout, QPushButton, QSizePolicy, \
+from PySide6.QtCore import Qt, QRect, QRectF, QSize, QPoint
+from PySide6.QtGui import QCursor, QIcon, QKeySequence, QTransform, QPen, QPaintEvent, QPainter, QColor, \
+    QPolygonF
+from PySide6.QtWidgets import QWidget, QLabel, QSpinBox, QDoubleSpinBox, QCheckBox, QGridLayout, QPushButton, \
+    QSizePolicy, \
     QApplication
 
 from src.config.application_config import AppConfig
@@ -18,8 +19,8 @@ from src.image.layers.transform_layer import TransformLayer
 from src.tools.base_tool import BaseTool
 from src.ui.graphics_items.transform_outline import TransformOutline
 from src.ui.image_viewer import ImageViewer
+from src.ui.layout.reactive_layout_widget import ReactiveLayoutWidget
 from src.ui.widget.key_hint_label import KeyHintLabel
-from src.ui.widget.reactive_layout_widget import ReactiveLayoutWidget
 from src.undo_stack import UndoStack
 from src.util.display_size import find_text_size
 from src.util.geometry_utils import get_scaled_placement, get_rect_transformation
@@ -133,15 +134,13 @@ class LayerTransformTool(BaseTool):
             self._up_keys[control] = config.get_keycodes(up_key_code)
             self._down_keys[control] = config.get_keycodes(down_key_code)
 
-            def _step(steps: int, spinbox) -> bool:
-                if not self.is_active or image_stack.active_layer.locked:
-                    return False
-                spinbox.stepBy(steps)
-                return True
-
             for key, sign in ((up_key_code, 1), (down_key_code, -1)):
                 def _binding(mult, n=sign, box=control) -> bool:
-                    return _step(n * mult, box)
+                    steps = n * mult
+                    if not self.is_active or image_stack.active_layer.locked:
+                        return False
+                    box.stepBy(steps)
+                    return True
 
                 HotkeyFilter.instance().register_speed_modified_keybinding(_binding, key)
 
@@ -210,8 +209,8 @@ class LayerTransformTool(BaseTool):
         down_control_hints = [_get_down_hint(control) for control in controls]
         up_control_hints = [_get_up_hint(control) for control in controls]
         item_map = {}
-        for i in range(len(labels)):
-            item_map[labels[i]] = (controls[i], down_control_hints[i], up_control_hints[i])
+        for i, label in enumerate(labels):
+            item_map[label] = (controls[i], down_control_hints[i], up_control_hints[i])
         item_map[RESET_BUTTON_TEXT] = (self._reset_button, None, None)
         item_map[CLEAR_BUTTON_TEXT] = (self._clear_button, None, None)
 
@@ -599,7 +598,7 @@ class LayerTransformTool(BaseTool):
         self._update_control(self._y_pos_box, self._transform_outline.y_pos, self.set_y)
 
     def _scale_change_slot(self, x_scale: float, y_scale: float) -> None:
-        self._update_control(self._width_box, self._transform_outline.width, self.set_width),
+        self._update_control(self._width_box, self._transform_outline.width, self.set_width)
         self._update_control(self._height_box, self._transform_outline.height, self.set_height)
         self._update_control(self._x_scale_box, x_scale, self.set_x_scale)
         self._update_control(self._y_scale_box, y_scale, self.set_y_scale)
@@ -650,8 +649,8 @@ class _TransformPreview(QWidget):
         painter = QPainter(self)
         painter.drawTiledPixmap(QRect(QPoint(), self.size()), self._background)
         image_bounds = QRect(QPoint(), self._image_size)
-        final_image_poly = self._layer_transform.map(QPolygon(self._layer_bounds))
-        full_bounds = image_bounds.united(final_image_poly.boundingRect())
+        final_image_poly = self._layer_transform.map(QPolygonF(self._layer_bounds))
+        full_bounds = image_bounds.united(final_image_poly.boundingRect().toRect())
         scaled_full_bounds = get_scaled_placement(self.size(), full_bounds.size(), 4)
         initial_transform = get_rect_transformation(full_bounds, scaled_full_bounds)
         image_bounds_color = QColor(Qt.GlobalColor.black)

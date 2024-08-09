@@ -6,9 +6,9 @@ import logging
 import sys
 from typing import Optional
 
-from PyQt6.QtCore import Qt, QRect, QSize, pyqtSignal
-from PyQt6.QtGui import QIcon, QMouseEvent, QResizeEvent, QKeySequence, QCloseEvent, QImage
-from PyQt6.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QStackedWidget, QApplication, QSizePolicy
+from PySide6.QtCore import Qt, QRect, QSize, Signal
+from PySide6.QtGui import QIcon, QMouseEvent, QResizeEvent, QKeySequence, QCloseEvent, QImage
+from PySide6.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QStackedWidget, QApplication, QSizePolicy
 
 from src.config.application_config import AppConfig
 from src.hotkey_filter import HotkeyFilter
@@ -17,9 +17,9 @@ from src.ui.generated_image_selector import GeneratedImageSelector
 from src.ui.panel.image_panel import ImagePanel
 from src.ui.panel.layer_ui.layer_panel import LayerPanel
 from src.ui.panel.tool_panel import ToolPanel
-from src.ui.widget.draggable_divider import DraggableDivider
-from src.ui.widget.draggable_tabs.tab import Tab
-from src.ui.widget.draggable_tabs.tab_box import TabBox
+from src.ui.layout.draggable_divider import DraggableDivider
+from src.ui.layout.draggable_tabs.tab import Tab
+from src.ui.layout.draggable_tabs.tab_box import TabBox
 from src.ui.widget.loading_widget import LoadingWidget
 from src.ui.window.image_window import ImageWindow
 from src.util.application_state import AppStateTracker, APP_STATE_LOADING, APP_STATE_NO_IMAGE, APP_STATE_EDITING, \
@@ -51,7 +51,7 @@ GEN_TAB_ICON = f'{PROJECT_DIR}/resources/icons/tabs/sparkle.svg'
 class MainWindow(QMainWindow):
     """Main user interface for inpainting."""
 
-    generate_signal = pyqtSignal()
+    generate_signal = Signal()
 
     def __init__(self, image_stack: ImageStack):
         """Initializes the main application window and sets up the default UI layout and menu options.
@@ -70,7 +70,7 @@ class MainWindow(QMainWindow):
             def _dbg_layout():
                 layout_debug(self)
                 return True
-            HotkeyFilter.instance().register_keybinding(_dbg_layout, QKeySequence("U"))
+            HotkeyFilter.instance().register_keybinding(_dbg_layout, QKeySequence('U'))
 
         # Initialize UI/editing data model:
         self._image_stack = image_stack

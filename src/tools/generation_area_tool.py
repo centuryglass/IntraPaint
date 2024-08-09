@@ -2,9 +2,9 @@
 
 from typing import Optional, cast, List
 
-from PyQt6.QtCore import Qt, QRect, QPoint, QSize
-from PyQt6.QtGui import QMouseEvent, QKeyEvent, QCursor, QIcon, QKeySequence
-from PyQt6.QtWidgets import QWidget, QApplication, QPushButton, QGridLayout, QHBoxLayout, QLabel, QSlider, QSpinBox
+from PySide6.QtCore import Qt, QRect, QPoint, QSize
+from PySide6.QtGui import QMouseEvent, QKeyEvent, QCursor, QIcon, QKeySequence
+from PySide6.QtWidgets import QWidget, QApplication, QPushButton, QGridLayout, QHBoxLayout, QLabel, QSlider, QSpinBox
 
 from src.config.application_config import AppConfig
 from src.config.key_config import KeyConfig
@@ -12,6 +12,7 @@ from src.image.layers.image_stack import ImageStack
 from src.image.layers.transform_layer import TransformLayer
 from src.tools.base_tool import BaseTool
 from src.ui.image_viewer import ImageViewer
+from src.ui.layout.divider import Divider
 from src.util.shared_constants import PROJECT_DIR
 
 
@@ -80,10 +81,12 @@ class GenerationAreaTool(BaseTool):
             return self._control_panel
         self._control_panel = QWidget()
         self._control_layout = QGridLayout(self._control_panel)
-        self._control_layout.setSpacing(5)
-        self._control_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        for i, stretch in enumerate((1, 8, 1)):
+        self._control_layout.setSpacing(20)
+        self._control_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
+        for i, stretch in enumerate((0, 8, 1)):
             self._control_layout.setColumnStretch(i, stretch)
+        self._control_layout.addWidget(Divider(Qt.Orientation.Horizontal), 0, 0, 1, 3)
+        # self._control_layout.setRowMinimumHeight(0, 100)
 
         # wire x/y coordinate boxes to set image generation area coordinates:
         coordinate_controls = get_generation_area_control_boxes(self._image_stack, True)
@@ -94,6 +97,8 @@ class GenerationAreaTool(BaseTool):
             self._control_layout.addWidget(ctrl_label, row, 0)
             self._control_layout.addWidget(ctrl_slider, row, 1)
             self._control_layout.addWidget(ctrl_box, row, 2)
+        for row in range(1, self._control_layout.rowCount(), 1):
+            self._control_layout.setRowStretch(row, 1)
 
         def select_full_layer():
             """Expand the image generation area to fit the entire active layer."""
@@ -225,6 +230,7 @@ def get_generation_area_control_boxes(image_stack: ImageStack,
         layout.addWidget(spin_box)
         control_widgets.append(widget)
 
+    assert len(spin_boxes) == 4
     x_box, y_box, w_box, h_box = spin_boxes
     x_slider, y_slider, w_slider, h_slider = sliders if include_sliders else (None, None, None, None)
 

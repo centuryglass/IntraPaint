@@ -1,9 +1,9 @@
 """
 Finds appropriate contrast colors based on either QWidget palettes or calculated QColor luminance.
 """
-from PyQt6.QtCore import Qt
-from PyQt6.QtWidgets import QWidget
-from PyQt6.QtGui import QColor
+from PySide6.QtCore import Qt
+from PySide6.QtWidgets import QWidget
+from PySide6.QtGui import QColor
 
 LUMINANCE_THRESHOLD = 0.179
 

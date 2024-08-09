@@ -2,9 +2,9 @@
 from typing import Optional, Dict, Callable, List
 import logging
 
-from PyQt6.QtCore import QSize
-from PyQt6.QtGui import QResizeEvent, QShowEvent
-from PyQt6.QtWidgets import QWidget, QSizePolicy
+from PySide6.QtCore import QSize
+from PySide6.QtGui import QResizeEvent, QShowEvent
+from PySide6.QtWidgets import QWidget, QSizePolicy
 
 from src.util.shared_constants import INT_MAX
 

@@ -2,26 +2,26 @@
 import datetime
 from typing import Any, Callable, Optional
 
-from PyQt6.QtCore import QObject, pyqtSignal, QRect, QPoint, QSize
-from PyQt6.QtGui import QPainter, QImage, QPixmap
+from PySide6.QtCore import QObject, Signal, QRect, QPoint, QSize
+from PySide6.QtGui import QPainter, QImage, QPixmap
 
 from src.config.application_config import AppConfig
 from src.image.mypaint.numpy_image_utils import image_data_as_numpy_8bit, is_fully_transparent
-from src.undo_stack import UndoStack, _UndoAction
+from src.undo_stack import UndoStack, _UndoAction, _UndoGroup
 from src.util.cached_data import CachedData
 
 
 class Layer(QObject):
     """Interface for any entity that can exist within an image layer stack."""
 
-    name_changed = pyqtSignal(QObject, str)
-    visibility_changed = pyqtSignal(QObject, bool)
-    content_changed = pyqtSignal(QObject)
-    opacity_changed = pyqtSignal(QObject, float)
-    size_changed = pyqtSignal(QObject, QSize)
-    composition_mode_changed = pyqtSignal(QObject, QPainter.CompositionMode)
-    z_value_changed = pyqtSignal(QObject, int)
-    lock_changed = pyqtSignal(QObject, bool)
+    name_changed = Signal(QObject, str)
+    visibility_changed = Signal(QObject, bool)
+    content_changed = Signal(QObject)
+    opacity_changed = Signal(QObject, float)
+    size_changed = Signal(QObject, QSize)
+    composition_mode_changed = Signal(QObject, QPainter.CompositionMode)
+    z_value_changed = Signal(QObject, int)
+    lock_changed = Signal(QObject, bool)
 
     _next_layer_id = 0
 
@@ -329,11 +329,12 @@ class Layer(QObject):
         def _undo(value=last_value, setter=value_setter):
             setter(value)
 
-        prev_action: Optional[_UndoAction]
+        prev_action: Optional[_UndoAction | _UndoGroup]
         timestamp = datetime.datetime.now().timestamp()
         merge_interval = AppConfig().get(AppConfig.UNDO_MERGE_INTERVAL)
         with UndoStack().last_action() as prev_action:
-            if prev_action is not None and prev_action.type == change_type and prev_action.action_data is not None \
+            if isinstance(prev_action, _UndoAction) and prev_action.type == change_type \
+                    and prev_action.action_data is not None \
                     and prev_action.action_data['layer'] == self \
                     and timestamp - prev_action.action_data['timestamp'] < merge_interval:
                 prev_action.redo = _update

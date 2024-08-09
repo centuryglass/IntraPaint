@@ -6,10 +6,10 @@ from typing import Optional
 
 import cv2
 import numpy as np
-from PIL import Image
-from PyQt6.QtCore import QBuffer, QRect, QSize, Qt, QPoint, QFile, QIODevice, QByteArray
-from PyQt6.QtGui import QImage, QIcon, QPixmap, QPainter, QColor
-from PyQt6.QtWidgets import QStyle, QWidget, QApplication
+from PIL import Image, ImageQt
+from PySide6.QtCore import QBuffer, QRect, QSize, Qt, QPoint, QFile, QIODevice, QByteArray
+from PySide6.QtGui import QImage, QIcon, QPixmap, QPainter, QColor
+from PySide6.QtWidgets import QStyle, QWidget, QApplication
 
 from src.config.application_config import AppConfig
 from src.image.mypaint.numpy_image_utils import AnyNpArray, image_data_as_numpy_8bit, numpy_8bit_to_qimage
@@ -29,7 +29,7 @@ def create_transparent_image(size: QSize) -> QImage:
 
 
 def pil_image_to_qimage(pil_image: Image.Image) -> QImage:
-    """Convert a PIL Image to a PyQt6 QImage."""
+    """Convert a PIL Image to a Qt6 QImage."""
     if not isinstance(pil_image, Image.Image):
         raise TypeError('Invalid PIL Image parameter.')
     if pil_image.mode not in ('RGBA', 'RGB'):
@@ -51,14 +51,10 @@ def pil_image_to_qimage(pil_image: Image.Image) -> QImage:
 
 
 def qimage_to_pil_image(qimage: QImage) -> Image.Image:
-    """Convert a PyQt6 QImage to a PIL image, in PNG format."""
+    """Convert a Qt6 QImage to a PIL image, in PNG format."""
     if not isinstance(qimage, QImage):
         raise TypeError('Invalid QImage parameter.')
-    buffer = QBuffer()
-    buffer.open(QBuffer.OpenModeFlag.ReadWrite)
-    qimage.save(buffer, 'PNG')
-    pil_im = Image.open(io.BytesIO(buffer.data()))
-    return pil_im
+    return ImageQt.fromqimage(qimage)
 
 
 def pil_qsize(image: Image.Image) -> QSize:
@@ -147,7 +143,6 @@ def image_content_bounds(image: QImage | np.ndarray, search_bounds: Optional[QRe
     if isinstance(image, QImage):
         image_ptr = image.bits()
         assert image_ptr is not None
-        image_ptr.setsize(image.sizeInBytes())
         np_image: AnyNpArray = np.ndarray(shape=(image.height(), image.width(), 4), dtype=np.uint8, buffer=image_ptr)
     else:
         np_image = image
@@ -326,4 +321,3 @@ def flood_fill(image: QImage, pos: QPoint, color: QColor, threshold: float, in_p
     painter.drawImage(0, 0, mask)
     painter.end()
     return None
-

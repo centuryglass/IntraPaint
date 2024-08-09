@@ -6,13 +6,13 @@ from datetime import datetime
 from threading import Thread, Lock
 from typing import Any, Dict
 
-import flask
+import flask  # type: ignore
 from flask import Flask, request, jsonify, make_response, abort, current_app
 from flask_cors import CORS, cross_origin
 from src.util.image_utils import pil_image_from_base64, image_to_base64
-from src.glid_3_xl.ml_utils import foreach_image_in_sample
-from src.glid_3_xl.create_sample_function import create_sample_function
-from src.glid_3_xl.generate_samples import generate_samples
+from src.glid_3_xl.ml_utils import foreach_image_in_sample  # type: ignore
+from src.glid_3_xl.create_sample_function import create_sample_function  # type: ignore
+from src.glid_3_xl.generate_samples import generate_samples  # type: ignore
 
 
 def start_server(device, model_params, model, diffusion, ldm_model, bert_model, clip_model, clip_preprocess, normalize):

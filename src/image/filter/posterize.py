@@ -2,8 +2,8 @@
 from typing import List, Callable
 
 from PIL import ImageOps
-from PyQt6.QtCore import QRect
-from PyQt6.QtGui import QImage, QPainter
+from PySide6.QtCore import QRect
+from PySide6.QtGui import QImage, QPainter
 
 from src.config.key_config import KeyConfig
 from src.image.filter.filter import ImageFilter

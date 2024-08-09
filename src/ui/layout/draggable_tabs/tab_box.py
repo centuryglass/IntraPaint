@@ -2,19 +2,19 @@
 
 from typing import Optional
 
-from PyQt6.QtCore import pyqtSignal, Qt, QSize
-from PyQt6.QtWidgets import QHBoxLayout, QVBoxLayout, QWidget, QSizePolicy
+from PySide6.QtCore import Signal, Qt, QSize
+from PySide6.QtWidgets import QHBoxLayout, QVBoxLayout, QWidget, QSizePolicy
 
-from src.ui.widget.bordered_widget import BorderedWidget
-from src.ui.widget.draggable_tabs.tab import Tab
-from src.ui.widget.draggable_tabs.tab_bar import TabBar
+from src.ui.layout.bordered_widget import BorderedWidget
+from src.ui.layout.draggable_tabs.tab import Tab
+from src.ui.layout.draggable_tabs.tab_bar import TabBar
 from src.util.shared_constants import MAX_WIDGET_SIZE
 
 
 class TabBox(BorderedWidget):
     """Collapsible container widget that displays tab content."""
 
-    box_toggled = pyqtSignal(bool)
+    box_toggled = Signal(bool)
 
     def __init__(self, orientation: Qt.Orientation, at_parent_start: bool) -> None:
         super().__init__()
@@ -34,9 +34,15 @@ class TabBox(BorderedWidget):
         self.setSizePolicy(QSizePolicy.Policy.MinimumExpanding, QSizePolicy.Policy.MinimumExpanding)
         self._update_max_size()
         if orientation == Qt.Orientation.Horizontal:
-            self._layout.setAlignment(Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignVCenter)
+            if at_parent_start:
+                self._layout.setAlignment(Qt.AlignmentFlag.AlignBottom | Qt.AlignmentFlag.AlignVCenter)
+            else:
+                self._layout.setAlignment(Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignVCenter)
         else:
-            self._layout.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignHCenter)
+            if at_parent_start:
+                self._layout.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignHCenter)
+            else:
+                self._layout.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignHCenter)
 
     def add_widget(self, widget: QWidget, index: int = -1) -> None:
         """Add or insert a widget into the tab bar."""
@@ -63,20 +69,18 @@ class TabBox(BorderedWidget):
         """Add the active tab's widget to the box."""
         self._active_tab = tab
         new_tab_widget = None if tab is None else tab.content_widget
-        if tab is not None:
-            assert new_tab_widget is not None
         if new_tab_widget == self._open_tab_widget:
             return
         if self._open_tab_widget is not None:
             self._layout.removeWidget(self._open_tab_widget)
             self._open_tab_widget.setVisible(False)
         if new_tab_widget is not None:
+            self._update_widget_max_size(new_tab_widget)
             content_index = 0 if self._at_parent_start else 1
             self._layout.insertWidget(content_index, new_tab_widget)
             new_tab_widget.setVisible(self.is_open)
             if self.is_open:
                 new_tab_widget.show()
-            self._layout.setStretch(content_index, 1 if self.is_open else 0)
         self._open_tab_widget = new_tab_widget
         if self.is_open and self._open_tab_widget is None:
             self.is_open = False
@@ -93,6 +97,16 @@ class TabBox(BorderedWidget):
     def _update_tab_slot(self, new_tab_content: QWidget) -> None:
         assert self._active_tab is not None and new_tab_content == self._active_tab.content_widget
         self.set_active_tab(self._active_tab)
+
+    def _update_widget_max_size(self, tab_widget: QWidget) -> None:
+        if self._orientation == Qt.Orientation.Horizontal:
+            tab_widget.setMaximumHeight(MAX_WIDGET_SIZE if self.is_open else 0)
+            tab_widget.setMaximumWidth(MAX_WIDGET_SIZE)
+            tab_widget.setMinimumHeight(50 if self.is_open else 0)
+        else:
+            tab_widget.setMaximumWidth(MAX_WIDGET_SIZE if self.is_open else 0)
+            tab_widget.setMaximumHeight(MAX_WIDGET_SIZE)
+            tab_widget.setMinimumWidth(50 if self.is_open else 0)
 
     def _update_max_size(self, _=None) -> None:
         if not self.is_open or self._open_tab_widget is None:
@@ -112,14 +126,7 @@ class TabBox(BorderedWidget):
         tab_widget = self._open_tab_widget
         if tab_widget is None:
             return
-        if self._orientation == Qt.Orientation.Horizontal:
-            tab_widget.setMaximumHeight(MAX_WIDGET_SIZE if self.is_open else 0)
-            tab_widget.setMaximumWidth(MAX_WIDGET_SIZE)
-            tab_widget.setMinimumHeight(50 if self.is_open else 0)
-        else:
-            tab_widget.setMaximumWidth(MAX_WIDGET_SIZE if self.is_open else 0)
-            tab_widget.setMaximumHeight(MAX_WIDGET_SIZE)
-            tab_widget.setMinimumWidth(50 if self.is_open else 0)
+        self._update_widget_max_size(tab_widget)
 
     def _box_opened_slot(self, is_open: bool) -> None:
         tab_widget = self._open_tab_widget

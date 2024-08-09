@@ -1,8 +1,8 @@
 """A temporary layer class used to coordinate transformations applied to multiple layers."""
 from typing import List
 
-from PyQt6.QtCore import QRect
-from PyQt6.QtGui import QTransform
+from PySide6.QtCore import QRect
+from PySide6.QtGui import QTransform
 
 from src.image.layers.layer import Layer
 from src.image.layers.layer_stack import LayerStack

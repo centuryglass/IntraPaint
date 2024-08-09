@@ -4,15 +4,15 @@ import unittest
 from typing import Optional
 from unittest.mock import Mock, MagicMock, patch
 
-from PyQt6.QtCore import QSize, QPoint
-from PyQt6.QtWidgets import QApplication
+from PySide6.QtCore import QSize, QPoint
+from PySide6.QtWidgets import QApplication
 
 from src.config.application_config import AppConfig
 from src.config.cache import Cache
 from src.config.key_config import KeyConfig
 from src.image.layers.image_stack import ImageStack
 from src.image.mypaint.mp_tile import MPTile
-from src.tools.brush_tool import BRUSH_LABEL
+from src.tools.brush_tool import BRUSH_LABEL, BrushTool
 from src.ui.graphics_items.layer_graphics_item import LayerGraphicsItem
 from src.ui.window.main_window import MainWindow
 
@@ -34,13 +34,14 @@ class BrushToolTest(unittest.TestCase):
         self.window = MainWindow(self.image_stack)
         self.window.show()
         self.tool_panel = self.window._tool_panel
-        self.brush_tool = self.tool_panel._tools[BRUSH_LABEL]
-        self.tool_handler = self.tool_panel._event_handler
+        self.brush_tool = self.tool_panel._tool_controller.find_tool_by_class(BrushTool)
+        self.tool_handler = self.tool_panel._tool_controller
         scene = self.window._image_panel.image_viewer.scene()
         assert scene is not None
         self.scene = scene
 
     def test_activation_no_layers(self) -> None:
+        assert self.brush_tool is not None
         self.assertEqual(self.image_stack.layer_stack.count, 0)
         self.assertFalse(self.brush_tool.is_active)
         self.tool_handler.active_tool = self.brush_tool
@@ -50,6 +51,7 @@ class BrushToolTest(unittest.TestCase):
 
     def test_activation_one_layer(self) -> None:
         # Create one layer, confirm that layer property assumptions are true:
+        assert self.brush_tool is not None
         layer = self.image_stack.create_layer()
         self.assertFalse(self.brush_tool.is_active)
         layer_item = None
@@ -82,6 +84,7 @@ class BrushToolTest(unittest.TestCase):
 
     def test_activation_two_layer(self) -> None:
         # Create one layer, confirm that layer property assumptions are true:
+        assert self.brush_tool is not None
         layer1 = self.image_stack.create_layer()
         layer2 = self.image_stack.create_layer()
         self.assertFalse(self.brush_tool.is_active)

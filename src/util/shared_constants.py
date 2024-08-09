@@ -1,7 +1,7 @@
 """Assorted constants required in multiple areas."""
 import os.path
 
-from PyQt6.QtGui import QPainter
+from PySide6.QtGui import QPainter
 from PIL import Image
 from platformdirs import user_data_dir, user_log_dir
 

@@ -7,10 +7,10 @@ import time
 from typing import Callable, Optional, cast, List
 
 from PIL import Image
-from PyQt6.QtCore import Qt, QRect, QSize, QSizeF, QRectF, QEvent, pyqtSignal, QPointF, QObject, QPoint
-from PyQt6.QtGui import QImage, QResizeEvent, QPixmap, QPainter, QWheelEvent, QMouseEvent, \
+from PySide6.QtCore import Qt, QRect, QSize, QSizeF, QRectF, QEvent, Signal, QPointF, QObject, QPoint
+from PySide6.QtGui import QImage, QResizeEvent, QPixmap, QPainter, QWheelEvent, QMouseEvent, \
     QPainterPath, QKeyEvent, QPolygonF
-from PyQt6.QtWidgets import QWidget, QGraphicsPixmapItem, QVBoxLayout, QLabel, \
+from PySide6.QtWidgets import QWidget, QGraphicsPixmapItem, QVBoxLayout, QLabel, \
     QStyleOptionGraphicsItem, QHBoxLayout, QPushButton, QStyle
 
 from src.config.application_config import AppConfig
@@ -177,6 +177,7 @@ class GeneratedImageSelector(QWidget):
         assert scene is not None
         # Clear the scene:
         for scene_item_list in (self._selections, self._outlines, self._options):
+            assert isinstance(scene_item_list, list)
             while len(scene_item_list) > 0:
                 scene_item = scene_item_list.pop()
                 if scene_item in scene.items():
@@ -333,7 +334,7 @@ class GeneratedImageSelector(QWidget):
                 except ValueError:
                     return False
             return True
-        elif event.type() == QEvent.Type.MouseButtonPress:
+        if event.type() == QEvent.Type.MouseButtonPress:
             if KeyConfig.modifier_held(KeyConfig.PAN_VIEW_MODIFIER):
                 return False  # Ctrl+click is for panning, don't select options
             event = cast(QMouseEvent, event)
@@ -574,8 +575,8 @@ class _ImageOption(QGraphicsPixmapItem):
 class _SelectionView(ImageGraphicsView):
     """Minimal ImageGraphicsView controlled by the GeneratedImageSelector"""
 
-    zoom_toggled = pyqtSignal()
-    content_scrolled = pyqtSignal(int, int)
+    zoom_toggled = Signal()
+    content_scrolled = Signal(int, int)
 
     def __init__(self) -> None:
         super().__init__()

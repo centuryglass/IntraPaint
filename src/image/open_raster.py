@@ -13,8 +13,8 @@ import zipfile
 from typing import Optional, Dict, Any, cast
 from xml.etree.ElementTree import ElementTree, Element
 
-from PyQt6.QtCore import QSize
-from PyQt6.QtGui import QTransform, QPainter, QImage
+from PySide6.QtCore import QSize
+from PySide6.QtGui import QTransform, QPainter, QImage
 
 from src.image.layers.image_layer import ImageLayer
 from src.image.layers.image_stack import ImageStack

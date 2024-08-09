@@ -3,9 +3,9 @@ Draws content to an image layer.
 """
 from typing import Optional, List
 
-from PyQt6.QtCore import QRect, QSize
-from PyQt6.QtGui import QColor, QPainter, QTransform, QImage
-from PyQt6.QtWidgets import QGraphicsScene, QGraphicsItem
+from PySide6.QtCore import QRect, QSize
+from PySide6.QtGui import QColor, QPainter, QTransform, QImage
+from PySide6.QtWidgets import QGraphicsScene, QGraphicsItem
 
 from src.image.layers.image_layer import ImageLayer
 from src.image.layers.layer import Layer

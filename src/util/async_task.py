@@ -1,7 +1,7 @@
 """Perform an async task in another thread."""
 from typing import Callable, TypeAlias, List
 
-from PyQt6.QtCore import QObject, pyqtSignal, QRunnable, QThreadPool, pyqtBoundSignal
+from PySide6.QtCore import QObject, Signal, QRunnable, QThreadPool
 
 from src.util.application_state import AppStateTracker, APP_STATE_LOADING
 
@@ -10,7 +10,7 @@ ThreadAction: TypeAlias = Callable[..., None]
 
 class AsyncTask(QObject):
     """Run an async task in another thread."""
-    finish_signal = pyqtSignal()
+    finish_signal = Signal()
 
     def __init__(self, action: ThreadAction, set_loading_state: bool = False) -> None:
         super().__init__()
@@ -18,7 +18,7 @@ class AsyncTask(QObject):
         if set_loading_state:
             AppStateTracker.set_app_state(APP_STATE_LOADING)
 
-    def signals(self) -> List[pyqtSignal | pyqtBoundSignal]:
+    def signals(self) -> List[Signal]:
         """Return a list of Qt signals that will be passed to the worker."""
         return []
 

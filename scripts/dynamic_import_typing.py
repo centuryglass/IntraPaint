@@ -9,7 +9,7 @@ import re
 import sys
 from typing import Dict, Tuple, TypeAlias
 
-from PyQt6.QtWidgets import QApplication
+from PySide6.QtWidgets import QApplication
 
 app = QApplication(sys.argv)
 

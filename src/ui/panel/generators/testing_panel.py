@@ -1,15 +1,15 @@
 """Control panel widget for testing and debugging."""
-from PyQt6.QtWidgets import QVBoxLayout, QLabel, QPushButton
-from PyQt6.QtCore import pyqtSignal
+from PySide6.QtWidgets import QVBoxLayout, QLabel, QPushButton
+from PySide6.QtCore import Signal
 
 from src.config.application_config import AppConfig
-from src.ui.widget.bordered_widget import BorderedWidget
+from src.ui.layout.bordered_widget import BorderedWidget
 
 
 class TestControlPanel(BorderedWidget):
     """Control panel widget for testing and debugging."""
 
-    generate_signal = pyqtSignal()
+    generate_signal = Signal()
 
     def __init__(self):
         super().__init__()

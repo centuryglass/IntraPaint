@@ -3,9 +3,9 @@ import logging
 import math
 from typing import Optional, List, Tuple
 
-from PyQt6.QtCore import QSize, Qt, QRect
-from PyQt6.QtGui import QResizeEvent
-from PyQt6.QtWidgets import QWidget, QGridLayout
+from PySide6.QtCore import QSize, Qt, QRect
+from PySide6.QtGui import QResizeEvent
+from PySide6.QtWidgets import QWidget, QGridLayout
 
 from src.util.geometry_utils import get_scaled_placement
 
@@ -138,31 +138,8 @@ class GridContainer(QWidget):
         self._update_grid_flow()
 
     def sizeHint(self) -> QSize:
-        """Base sizeHint on smallest total area given item size, count, and grid size constraints."""
-        return self.actual_content_size()
-        # base_hint = super().sizeHint()
-        # num_children = len(self._children)
-        # if num_children == 0:
-        #     return base_hint
-        # child_size = self._children[-1].sizeHint()
-        # min_cols, max_cols, min_rows, max_rows = self._get_constrained_grid_bounds(True)
-        # best_size = None
-        # max_dim = None
-        # for n_cols in range(min_cols, max_cols + 1):
-        #     n_rows = math.ceil(num_children / n_cols)
-        #     if not min_rows <= n_rows <= max_rows:
-        #         continue
-        #     w = child_size.width() * n_cols
-        #     h = child_size.height() * n_rows
-        #     if not (self.minimumWidth() <= w <= self.maximumWidth()
-        #             and self.minimumHeight() <= h <= self.maximumHeight()):
-        #         continue
-        #     if max_dim is None or max(w, h) < max_dim:
-        #         max_dim = max(w, h)
-        #         best_size = QSize(w, h)
-        # if best_size is None:
-        #     return base_hint
-        # return best_size
+        """Return a null sizeHint so the grid adapts to available space as needed."""
+        return QSize()
 
     def _get_constrained_grid_bounds(self, ignore_bounds=False) -> Tuple[int, int, int, int]:
         # Rows/column count must be within range, can't be less than 1:
@@ -193,7 +170,7 @@ class GridContainer(QWidget):
         if len(self._children) == 0 or self.size().isEmpty():
             return
         min_cols, max_cols, min_rows, max_rows = self._get_constrained_grid_bounds()
-        column_count: Optional[int] = None
+        column_count = -1
 
         if self._fill_vertical:
             row_count = max(self.height() // self._children[-1].sizeHint().height(), 1)
@@ -217,7 +194,7 @@ class GridContainer(QWidget):
                 if fraction_used > best_fraction:
                     best_fraction = fraction_used
                     column_count = test_column_count
-        if column_count is None:
+        if column_count < 0:
             logger.error(f'{self._min_columns}-{self._max_columns} columns and {self._min_rows}-{self._max_rows} cannot'
                          f' fit {len(self._children)} with size {self._children[-1].sizeHint()} within {self.size()}')
             column_count = min_cols

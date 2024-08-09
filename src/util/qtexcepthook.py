@@ -50,20 +50,20 @@ __license__ = "Public Domain"
 import getpass, socket, sys, traceback
 from gettext import gettext as _
 from smtplib import SMTP, SMTPException
-from typing import Callable
+from typing import Callable, Optional
 
 # pylint: disable=no-name-in-module
-from PyQt6.QtCore import (QCommandLineOption, QCommandLineParser, QEvent,
-    pyqtSlot)
-from PyQt6.QtGui import QTextOption
-from PyQt6.QtWidgets import QApplication, QMessageBox, QSizePolicy, QTextEdit
+from PySide6.QtCore import (QCommandLineOption, QCommandLineParser, QEvent,
+                            Slot)
+from PySide6.QtGui import QTextOption
+from PySide6.QtWidgets import QApplication, QMessageBox, QSizePolicy, QTextEdit
 
 # pylint: disable=unused-import,wrong-import-order
 from typing import Dict  # noqa
-from PyQt6.QtWidgets import QPushButton  # noqa
+from PySide6.QtWidgets import QPushButton  # noqa
 
 #: The :meth:`QCoreApplication.translate` context for strings in this file
-TR_ID = "excepthook"
+TR_ID = 'excepthook'
 
 
 def _tr(*args):
@@ -85,7 +85,7 @@ class ResizableMessageBox(QMessageBox):  # pylint: disable=R0903
     """
     def __init__(self, *args, **kwargs):
         super(ResizableMessageBox, self).__init__(*args, *kwargs)
-        self.setStyleSheet("QTextEdit { font-family: monospace; }")
+        self.setStyleSheet('QTextEdit { font-family: monospace; }')
 
     def event(self, event):
         """Override :meth:`QWidget.event` to hook in our customizations *after*
@@ -121,7 +121,7 @@ class QtExceptHook(object):
         be added which will call ``reporting_cb`` when clicked.
     """
 
-    def __init__(self, reporting_cb: Callable[[str], None]=None):
+    def __init__(self, reporting_cb: Optional[Callable[[str], None]]=None): # type: ignore
         """Initialize as much as possible on application startup.
 
         (Maximize the chance that a bug in the exception handling system will
@@ -131,26 +131,25 @@ class QtExceptHook(object):
         self._reporting_cb = reporting_cb
 
         self._dialog = ResizableMessageBox(QMessageBox.Icon.Warning,
-            _tr("Bug Detected"),
-            _tr("<big><b>A programming error has been detected "
-                "during the execution of this program.</b></big>"))
+            _tr('Bug Detected'),
+            _tr('<big><b>A programming error has been detected '
+                'during the execution of this program.</b></big>'))
 
-        secondary = _tr("It probably isn't fatal, but should be "
-            "reported to the developers nonetheless.")
+        secondary = _tr('It probably isn\'t fatal, but should be '
+                        'reported to the developers nonetheless.')
 
         if self._reporting_cb is not None:
-            btn_report = self._dialog.addButton(_tr("Report Bug..."),
-                                              QMessageBox.ButtonRole.ActionRole)
+            btn_report = self._dialog.addButton(_tr('Report Bug...'), QMessageBox.ButtonRole.ActionRole)
             btn_report.clicked.disconnect()
             btn_report.clicked.connect(self._cb_report_bug)
         else:
-            btn_copy = self._dialog.addButton(_tr("Copy Traceback..."),
+            btn_copy = self._dialog.addButton(_tr('Copy Traceback...'),
                                               QMessageBox.ButtonRole.ActionRole)
             btn_copy.clicked.disconnect()
             btn_copy.clicked.connect(self._cb_copy_to_clipboard)
 
-            secondary += _tr("\n\nPlease remember to include the "
-                "traceback from the Details expander.")
+            secondary += _tr('\n\nPlease remember to include the '
+                             'traceback from the Details expander.')
 
         self._dialog.setInformativeText(secondary)
 
@@ -159,7 +158,7 @@ class QtExceptHook(object):
         btn_close = self._dialog.addButton(QMessageBox.StandardButton.Close)
         self._dialog.setEscapeButton(btn_close)
 
-        self.b_quit = self._dialog.addButton(_("Quit"), QMessageBox.ButtonRole.RejectRole)
+        self.b_quit = self._dialog.addButton(_('Quit'), QMessageBox.ButtonRole.RejectRole)
 
 
     def _cb_copy_to_clipboard(self):
@@ -168,11 +167,11 @@ class QtExceptHook(object):
             self._dialog.detailedText())
 
         QMessageBox(QMessageBox.Icon.Information,
-            _tr("Traceback Copied"),
-            _tr("The traceback has now been copied to the clipboard.")
+            _tr('Traceback Copied'),
+            _tr('The traceback has now been copied to the clipboard.')
                     ).exec_()
 
-    @pyqtSlot()
+    @Slot()
     def _cb_report_bug(self):
         """Qt slot for the :guilabel:`Report Bug...` button. """
         self._reporting_cb(self._dialog.detailedText())
@@ -203,7 +202,7 @@ class QtExceptHook(object):
         self._extra_info = text or ''
 
 
-def make_email_sender(from_address: str=None, smtp_host: str='localhost'
+def make_email_sender(from_address: Optional[str]=None, smtp_host: str='localhost'
                       ) -> Callable[[str], None]:
     """A factory function for building working examples of traceback-reporting
     handlers for :class:`QtExceptHook`'s ``reporting_cb`` constructor argument.
@@ -234,60 +233,12 @@ def make_email_sender(from_address: str=None, smtp_host: str='localhost'
             smtp.quit()
         except (socket.error, SMTPException):
             QMessageBox(QMessageBox.Icon.Information,
-                _tr("SMTP Failure"),
-                _tr("An error was encountered while attempting to send "
-                    "your bug report. Please submit it manually.")).exec()
+                _tr('SMTP Failure'),
+                _tr('An error was encountered while attempting to send '
+                    'your bug report. Please submit it manually.')).exec()
         else:
             QMessageBox(QMessageBox.Icon.Information,
-                _tr("Bug Reported"),
-                _tr("Your bug report was successfully sent.")).exec()
+                _tr('Bug Reported'),
+                _tr('Your bug report was successfully sent.')).exec()
     return send_email
-
-if __name__ == '__main__':
-    # Set up a mock application
-    app = QApplication(sys.argv)
-    app.setApplicationName("QtExceptHook Demo")
-
-    # Set up a simple command-line parser so no editing is needed to try both
-    # configurations
-    reportOption = QCommandLineOption('report-button',
-        _tr("Initialize the exception hook with a bug-reporting callback"))
-
-    parser = QCommandLineParser()
-    parser.addOption(reportOption)
-    parser.addHelpOption()
-    parser.process(app)
-
-    # Attach the exception handler
-    if parser.isSet(reportOption):
-        cb_mailer = make_email_sender()
-        ehook = QtExceptHook(cb_mailer)
-    else:
-        ehook = QtExceptHook()
-    ehook.enable()
-    ehook.set_extra_info("This is some extra info. Hello, world!")
-
-    # Set up some mock data
-    # pylint: disable=unused-variable,W0201,C0103,R0903
-    class X(object):
-        """Mock data for testing"""
-
-        y = 'Test'
-        z = None
-
-        def __repr__(self):
-            """.. todo: Figure out how to avoid recursion with z"""
-            return "X<y={!r}, z=...>".format(self.y)
-    x = X()
-    x.z = x  # type: ignore
-    w = ' e'
-
-    def testfunc(testarg):
-        """Function to demonstrate traceback"""
-        a = 'foo'  # NOQA
-        raise Exception(testarg.z.y + w)
-
-    # Raise an exception
-    testfunc(x)
-
 # vim: set sw=4 sts=4 expandtab :

@@ -10,9 +10,9 @@ from argparse import Namespace
 from typing import Optional, Any, List, Tuple, Callable, Set
 
 from PIL import Image, UnidentifiedImageError, PngImagePlugin
-from PyQt6.QtCore import QSize
-from PyQt6.QtGui import QImage
-from PyQt6.QtWidgets import QApplication, QMessageBox
+from PySide6.QtCore import QSize
+from PySide6.QtGui import QImage
+from PySide6.QtWidgets import QApplication, QMessageBox
 
 from src.config.application_config import AppConfig
 from src.config.cache import Cache
@@ -172,12 +172,14 @@ class AppController(MenuBuilder):
         self.init_settings(self._settings_modal)
         self._settings_modal.changes_saved.connect(self.update_settings)
 
-        # Configure support for spacemouse panning, if relevant:
-        if SpacenavManager is not None and self._window is not None:
-            assert SpacenavManager is not None
-            nav_manager = SpacenavManager(self._window, self._image_stack)
-            nav_manager.start_thread()
-            self._nav_manager = nav_manager
+        # TODO: Spacemouse support is broken due to some strange thread management issues that popped up around the
+        #       transition to Qt6. The feature was fairly underwhelming anyway, so fixing it is low priority.
+        # # Configure support for spacemouse panning, if relevant:
+        # if SpacenavManager is not None and self._window is not None:
+        #     assert SpacenavManager is not None
+        #     nav_manager = SpacenavManager(self._window, self._image_stack)
+        #     nav_manager.start_thread()
+        #     self._nav_manager = nav_manager
 
         # Set up menus:
         self.build_menus()
@@ -213,8 +215,8 @@ class AppController(MenuBuilder):
 
         self._image_stack.active_layer_changed.connect(_active_changed)
         self._image_stack.selection_layer.content_changed.connect(lambda _layer: self._update_enabled_actions())
-        UndoStack().undo_count_changed.connect(lambda _count: self._update_enabled_actions())
-        UndoStack().redo_count_changed.connect(lambda _count: self._update_enabled_actions())
+        UndoStack().undo_count_changed.connect(lambda _count: self._update_enabled_actions())  # type: ignore
+        UndoStack().redo_count_changed.connect(lambda _count: self._update_enabled_actions())  # type: ignore
 
         # Load and apply styling and themes:
 
@@ -274,7 +276,7 @@ class AppController(MenuBuilder):
                 if self._glid_web_generator.is_available():
                     self.load_image_generator(self._glid_generator)
                     return
-                elif args.dev:
+                if args.dev:
                     self.load_image_generator(self._test_generator)
                 else:
                     if self._glid_generator.is_available():
@@ -405,8 +407,8 @@ class AppController(MenuBuilder):
         }
         not_layer_group_methods = {self.merge_layer_down}
 
-        managed_menu_methods = selection_methods | unlocked_layer_methods | not_bottom_layer_methods | not_top_layer_methods \
-                               | not_layer_stack_methods | not_layer_group_methods
+        managed_menu_methods = selection_methods | unlocked_layer_methods | not_bottom_layer_methods \
+                               | not_top_layer_methods | not_layer_stack_methods | not_layer_group_methods
 
         active_layer = self._image_stack.active_layer
         is_top_layer = active_layer == self._image_stack.layer_stack or self._image_stack.prev_layer(active_layer) \

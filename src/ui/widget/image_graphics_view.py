@@ -2,18 +2,17 @@
 import math
 from typing import Optional, List, cast
 
-from PyQt6.QtCore import Qt, QObject, QPoint, QPointF, QRect, QRectF, QSize, QMarginsF, pyqtSignal, QEvent
-from PyQt6.QtGui import QPixmap, QImage, QPainter, QPen, QTransform, QResizeEvent, QMouseEvent, QCursor, QWheelEvent, \
-    QEnterEvent, QSurfaceFormat
-from PyQt6.QtOpenGLWidgets import QOpenGLWidget
-from PyQt6.QtWidgets import QWidget, QGraphicsView, QGraphicsScene, QGraphicsPixmapItem, QSizePolicy
+from PySide6.QtCore import Qt, QObject, QPoint, QPointF, QRect, QRectF, QSize, QMarginsF, Signal, QEvent
+from PySide6.QtGui import (QPixmap, QImage, QPainter, QPen, QTransform, QResizeEvent, QMouseEvent, QCursor, QWheelEvent,
+                           QEnterEvent, QSurfaceFormat)
+from PySide6.QtOpenGLWidgets import QOpenGLWidget
+from PySide6.QtWidgets import QWidget, QGraphicsView, QGraphicsScene, QGraphicsPixmapItem, QSizePolicy
 
 from src.config.application_config import AppConfig
 from src.config.key_config import KeyConfig
 from src.hotkey_filter import HotkeyFilter
 from src.util.contrast_color import contrast_color
 from src.util.geometry_utils import get_scaled_placement
-from src.util.validation import assert_type
 
 CURSOR_ITEM_Z_LEVEL = 9999
 BASE_ZOOM_OFFSET = 0.05
@@ -22,8 +21,8 @@ BASE_ZOOM_OFFSET = 0.05
 class ImageGraphicsView(QGraphicsView):
     """A QGraphicsView meant for displaying image content without using scrollbars."""
 
-    scale_changed = pyqtSignal(float)
-    offset_changed = pyqtSignal(QPoint)
+    scale_changed = Signal(float)
+    offset_changed = Signal(QPoint)
 
     def __init__(self, parent: Optional[QWidget] = None) -> None:
         super().__init__(parent)
@@ -196,7 +195,7 @@ class ImageGraphicsView(QGraphicsView):
     @content_size.setter
     def content_size(self, new_size: QSize) -> None:
         """Updates the actual (not displayed) size of the viewed content."""
-        assert_type(new_size, QSize)
+        assert isinstance(new_size, QSize)
         if new_size == self._content_size:
             return
         self._content_size.setWidth(new_size.width())
@@ -251,7 +250,7 @@ class ImageGraphicsView(QGraphicsView):
     @background.setter
     def background(self, new_background: Optional[QImage | QPixmap]) -> None:
         """Updates the background image content."""
-        assert_type(new_background, (QImage, QPixmap, None))
+        assert isinstance(new_background, (QImage, QPixmap, None))
         if isinstance(new_background, QImage):
             self._background = QPixmap.fromImage(new_background)
         else:

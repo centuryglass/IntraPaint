@@ -1,8 +1,8 @@
 """Utilities for managing Qt keycodes and strings."""
 from typing import Tuple, List
 
-from PyQt6.QtCore import Qt
-from PyQt6.QtGui import QKeySequence
+from PySide6.QtCore import Qt
+from PySide6.QtGui import QKeySequence
 
 _MODIFIERS = {
     Qt.Key.Key_Control: Qt.KeyboardModifier.ControlModifier,

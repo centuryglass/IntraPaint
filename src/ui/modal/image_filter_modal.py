@@ -1,9 +1,9 @@
 """Popup modal window that applies an arbitrary image filtering action."""
 from typing import List, Callable, Optional, TypeAlias, Any
 
-from PyQt6.QtCore import QSize, pyqtSignal
-from PyQt6.QtGui import QImage, QIcon
-from PyQt6.QtWidgets import QDialog, QFormLayout, QLabel, QWidget, QHBoxLayout, QPushButton
+from PySide6.QtCore import QSize, Signal
+from PySide6.QtGui import QImage, QIcon
+from PySide6.QtWidgets import QDialog, QFormLayout, QLabel, QWidget, QHBoxLayout, QPushButton
 
 from src.ui.input_fields.check_box import CheckBox
 from src.ui.widget.image_widget import ImageWidget
@@ -23,8 +23,8 @@ FilterFunction: TypeAlias = Callable[[List[Any]], Optional[QImage]]
 class ImageFilterModal(QDialog):
     """Popup modal window that applies an arbitrary image filtering action."""
 
-    filter_active_only = pyqtSignal(bool)
-    filter_selection_only = pyqtSignal(bool)
+    filter_active_only = Signal(bool)
+    filter_selection_only = Signal(bool)
 
     def __init__(self,
                  title: str,

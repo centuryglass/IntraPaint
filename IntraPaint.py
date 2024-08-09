@@ -8,8 +8,8 @@ import logging
 import os
 import sys
 
-from PyQt6.QtCore import QTranslator
-from PyQt6.QtWidgets import QApplication
+from PySide6.QtCore import QTranslator
+from PySide6.QtWidgets import QApplication
 
 from src.util.optional_import import check_import
 from src.util.shared_constants import TIMELAPSE_MODE_FLAG, PROJECT_DIR, LOG_DIR
@@ -55,7 +55,7 @@ if args.verbose:
     stdout_handler = logging.StreamHandler(sys.stdout)
     stdout_handler.setLevel(logging.INFO)
     stdout_handler.setFormatter(logging.Formatter('#%(levelname)s: %(name)s:  %(message)s'))
-    handlers.append(stdout_handler)
+    handlers.append(stdout_handler)  # type: ignore
 logging.basicConfig(level=logging.INFO, handlers=handlers)
 logger = logging.getLogger(__name__)
 

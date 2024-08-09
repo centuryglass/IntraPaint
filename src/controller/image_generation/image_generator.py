@@ -2,16 +2,16 @@
 from typing import List, Dict, Optional, Any
 
 from PIL import Image, ImageFilter
-from PyQt6.QtCore import QPoint, QRect, QSize, pyqtSignal, QTimer, QObject, pyqtBoundSignal
-from PyQt6.QtGui import QImage, QPainter
-from PyQt6.QtWidgets import QApplication, QWidget
+from PySide6.QtCore import QPoint, QRect, QSize, Signal, QTimer, QObject
+from PySide6.QtGui import QImage, QPainter
+from PySide6.QtWidgets import QApplication, QWidget
 
 from src.config.application_config import AppConfig
 from src.config.cache import Cache
 from src.image.layers.image_stack import ImageStack
+from src.ui.layout.draggable_tabs.tab import Tab
 from src.ui.modal.modal_utils import show_error_dialog
 from src.ui.modal.settings_modal import SettingsModal
-from src.ui.widget.draggable_tabs.tab import Tab
 from src.ui.window.main_window import MainWindow
 from src.util.application_state import AppStateTracker, APP_STATE_LOADING, APP_STATE_EDITING
 from src.util.async_task import AsyncTask
@@ -34,18 +34,25 @@ GENERATE_ERROR_TITLE_EXISTING_OP = _tr('Failed')
 GENERATE_ERROR_MESSAGE_EXISTING_OP = _tr('Existing image generation operation not yet finished, wait a little longer.')
 
 
-class ImageGenerator(MenuBuilder, QObject):
+class ImageGenerator(MenuBuilder):
     """Interface for providing image generation capabilities."""
 
     # Used to emit additional information when anything goes wrong with an active generator.
-    status_signal = pyqtSignal(str)
 
     def __init__(self, window: MainWindow, image_stack: ImageStack) -> None:
         super().__init__()
-        super(QObject, self).__init__()
         self._window = window
         self._image_stack = image_stack
         self._generated_images: List[QImage] = []
+
+        class _SignalObject(QObject):
+            status_signal = Signal(str)
+        self._signal_object = _SignalObject()
+
+    @property
+    def status_signal(self) -> Signal:
+        """Used to emit additional information when anything goes wrong with an active generator."""
+        return self._signal_object.status_signal
 
     def get_display_name(self) -> str:
         """Returns a display name identifying the generator."""
@@ -102,7 +109,7 @@ class ImageGenerator(MenuBuilder, QObject):
         return False
 
     def generate(self,
-                 status_signal: pyqtSignal | pyqtBoundSignal,
+                 status_signal: Signal,
                  source_image: Optional[QImage] = None,
                  mask_image: Optional[QImage] = None) -> None:
         """Generates new images. Image size, image count, prompts, etc. should be loaded from AppConfig as needed.
@@ -110,7 +117,7 @@ class ImageGenerator(MenuBuilder, QObject):
 
         Parameters
         ----------
-        status_signal : pyqtSignal[dict]
+        status_signal : Signal[dict]
             Signal to emit when status updates are available. Expected keys are 'seed' and 'progress'.
         source_image : QImage, optional
             Image used as a basis for the edited image.
@@ -150,13 +157,13 @@ class ImageGenerator(MenuBuilder, QObject):
             composite_base = None
 
         class _AsyncInpaintTask(AsyncTask):
-            status_signal = pyqtSignal(dict)
-            error_signal = pyqtSignal(Exception)
+            status_signal = Signal(dict)
+            error_signal = Signal(Exception)
 
-            def signals(self) -> List[pyqtSignal | pyqtBoundSignal]:
+            def signals(self) -> List[Signal]:
                 return [self.status_signal, self.error_signal]
 
-        def _do_inpaint(status_signal: pyqtSignal | pyqtBoundSignal, error_signal: pyqtSignal | pyqtBoundSignal,
+        def _do_inpaint(status_signal: Signal, error_signal: Signal,
                         image=inpaint_image,
                         mask=inpaint_mask) -> None:
             try:

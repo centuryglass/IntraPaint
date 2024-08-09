@@ -1,11 +1,11 @@
 """View, apply, and update saved stable-diffusion WebUI prompt info."""
 import json
 import logging
-from typing import Dict, Optional
+from typing import Dict, Optional, TypeAlias, List
 
-from PyQt6.QtGui import QIcon
-from PyQt6.QtCore import pyqtSignal
-from PyQt6.QtWidgets import QDialog, QHBoxLayout, QListWidget, QListWidgetItem, QLabel, QPushButton, \
+from PySide6.QtCore import Signal
+from PySide6.QtGui import QIcon
+from PySide6.QtWidgets import QDialog, QHBoxLayout, QListWidget, QListWidgetItem, QLabel, QPushButton, \
     QVBoxLayout
 
 from src.config.application_config import AppConfig
@@ -28,11 +28,13 @@ REPLACE_BUTTON_LABEL = 'Replace prompt'
 SAVE_BUTTON_LABEL = 'Save changes'
 CLOSE_BUTTON_LABEL = 'Close'
 
+TextField: TypeAlias = PlainTextEdit | LineEdit
+
 
 class PromptStyleWindow(QDialog):
     """View, apply, and update saved stable-diffusion WebUI prompt info."""
 
-    should_save_changes = pyqtSignal(list)
+    should_save_changes = Signal(list)
 
     def __init__(self, save_enabled: bool = False) -> None:
         """View, apply, and update saved stable-diffusion WebUI prompt info."""
@@ -85,7 +87,8 @@ class PromptStyleWindow(QDialog):
         button_layout.addWidget(replace_button, stretch=1)
         button_layout.addStretch(1)
 
-        for text_field in (self._name_box, self._prompt_box, self._negative_box):
+        text_fields: List[TextField] = [self._name_box, self._prompt_box, self._negative_box]
+        for text_field in text_fields:
             text_field.valueChanged.connect(self._update_cached_styles)
 
         if save_enabled:
@@ -127,7 +130,7 @@ class PromptStyleWindow(QDialog):
 
     def _update_preview(self) -> None:
         selected = self._get_selected_style()
-        text_fields = (self._name_box, self._prompt_box, self._negative_box)
+        text_fields: List[TextField] = [self._name_box, self._prompt_box, self._negative_box]
         field_keys = (NAME_KEY, PROMPT_KEY, NEGATIVE_KEY)
         if selected is None:
             for box in text_fields:
@@ -148,7 +151,7 @@ class PromptStyleWindow(QDialog):
         if selected is None:
             return
 
-        text_fields = (self._name_box, self._prompt_box, self._negative_box)
+        text_fields: List[TextField] = [self._name_box, self._prompt_box, self._negative_box]
         field_keys = (NAME_KEY, PROMPT_KEY, NEGATIVE_KEY)
         for box, key in zip(text_fields, field_keys):
             field_value = box.value()

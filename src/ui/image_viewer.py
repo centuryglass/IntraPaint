@@ -1,11 +1,11 @@
 """
-Interact with edited image layers through the PyQt6 2D graphics engine.
+Interact with edited image layers through the Qt6 2D graphics engine.
 """
 from typing import Optional, Dict
 
-from PyQt6.QtCore import Qt, QRect, QRectF, QSize
-from PyQt6.QtGui import QPainter, QColor, QTransform
-from PyQt6.QtWidgets import QWidget, QSizePolicy
+from PySide6.QtCore import Qt, QRect, QRectF, QSize
+from PySide6.QtGui import QPainter, QColor, QTransform
+from PySide6.QtWidgets import QWidget, QSizePolicy
 
 from src.config.application_config import AppConfig
 from src.hotkey_filter import HotkeyFilter
@@ -31,7 +31,9 @@ class ImageViewer(ImageGraphicsView):
 
     def __init__(self, parent: Optional[QWidget], image_stack: ImageStack) -> None:
         super().__init__(parent)
-        HotkeyFilter.instance().set_default_focus(self)
+        hotkey_filter = HotkeyFilter.instance()
+        if hotkey_filter.default_focus() is None:
+            hotkey_filter.set_default_focus(self)
         config = AppConfig()
 
         self._image_stack = image_stack
@@ -269,6 +271,7 @@ class ImageViewer(ImageGraphicsView):
                 self.update()
         for outline in (self._generation_area_outline, self._image_generation_area_outline, self._active_layer_outline,
                         self._generation_area_border):
+            assert isinstance(outline, (Outline, Border))
             outline.setZValue(max(self._generation_area_outline.zValue(), new_layer.z_value + 1))
 
     def _layer_removed_slot(self, removed_layer: Layer) -> None:

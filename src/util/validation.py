@@ -1,28 +1,10 @@
 """Provides a convenience function for miscellaneous validation."""
 import json
-from typing import Any, Iterable, Dict, Optional
+from typing import Any, Iterable, Dict
 
-from PyQt6.QtCore import QSize
-from PyQt6.QtGui import QColor
-from PyQt6.QtWidgets import QWidget, QLayout, QSizePolicy, QBoxLayout
-
-
-def assert_type(value: Any, expected_type: Any) -> None:
-    """Checks if a value's type matches expectations.
-
-    Parameters
-    ----------
-    value : any
-        The value to validate
-    expected_type : type or class or tuple of types or classes
-        Valid type or types that the value could match.
-    Raises
-    ------
-    TypeError
-        If the value is not of the expected type.
-    """
-    if not isinstance(value, expected_type):
-        raise TypeError(f'Expected value of type {expected_type}, got value {value}')
+from PySide6.QtCore import QSize
+from PySide6.QtGui import QColor
+from PySide6.QtWidgets import QWidget, QLayout, QSizePolicy, QBoxLayout
 
 
 def assert_types(values: Iterable[Any], expected_type: Any) -> None:
@@ -65,8 +47,8 @@ def assert_valid_index(index: Any, list_value: list[Any], allow_end: bool = Fals
     ValueError
         If the index is not within the list bounds.
     """
-    assert_type(index, int)
-    assert_type(list_value, list)
+    assert isinstance(index, int)
+    assert isinstance(list_value, list)
     if not 0 <= index < (len(list_value) + 1 if allow_end else len(list_value)):
         raise ValueError(f'index {index} is invalid, expected (0 <= index < {len(list_value)})')
 
@@ -140,4 +122,4 @@ def layout_debug(widget: QWidget) -> None:
                 if isinstance(item, QBoxLayout):
                     data['stretch'] = item.stretch(i)
     _add_item(widget, layout_data)
-    json.dump(layout_data, open('layout-debug.json', 'w'), indent=2)
+    json.dump(layout_data, open('layout-debug.json', 'w', encoding='utf-8'), indent=2)

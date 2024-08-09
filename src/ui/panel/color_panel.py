@@ -1,8 +1,8 @@
 """Rearranges the Qt color dialog into a fixed panel widget."""
 from typing import Optional
 
-from PyQt6.QtCore import Qt
-from PyQt6.QtGui import QColor, QResizeEvent, QShowEvent
+from PySide6.QtCore import Qt
+from PySide6.QtGui import QColor, QResizeEvent, QShowEvent
 
 from src.config.cache import Cache
 from src.ui.widget.color_picker import ColorPicker
@@ -27,7 +27,7 @@ class ColorControlPanel(ColorPicker):
     def _apply_config_color(self, color_str: str) -> None:
         self.setCurrentColor(QColor(color_str))
 
-    def set_orientation(self, orientation: Qt.Orientation):
+    def set_orientation(self, orientation: Optional[Qt.Orientation]):
         """Update the panel layout based on window size and requested orientation."""
         self._orientation = orientation
         if orientation is None:
@@ -35,14 +35,14 @@ class ColorControlPanel(ColorPicker):
         window_size = get_window_size()
         panel_size = self.panel_size()
         if orientation == Qt.Orientation.Vertical:
-            if not self._disable_extended_layouts and  window_size.height() > panel_size.height() * 6:
+            if not self._disable_extended_layouts and window_size.height() > panel_size.height() * 6:
                 self.set_vertical_mode()
             elif window_size.height() > panel_size.height() * 4:
                 self.set_vertical_two_tab_mode()
             else:
                 self.set_four_tab_mode()
         elif orientation == Qt.Orientation.Horizontal:
-            if not self._disable_extended_layouts and  window_size.width() > panel_size.width() * 6:
+            if not self._disable_extended_layouts and window_size.width() > panel_size.width() * 6:
                 self.set_horizontal_mode()
             elif window_size.width() > panel_size.width() * 4:
                 self.set_horizontal_two_tab_mode()
@@ -58,5 +58,6 @@ class ColorControlPanel(ColorPicker):
         self.set_orientation(self._orientation)
 
     def _update_config_color(self, color: QColor) -> None:
-        cache = Cache()
-        cache.set(self._config_key, color.name(QColor.NameFormat.HexArgb))
+        if self._config_key is not None:
+            cache = Cache()
+            cache.set(self._config_key, color.name(QColor.NameFormat.HexArgb))

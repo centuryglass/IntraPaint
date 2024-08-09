@@ -2,9 +2,9 @@
 import datetime
 from typing import Optional
 
-from PyQt6.QtCore import pyqtSignal, Qt, QMimeData
-from PyQt6.QtGui import QPalette, QMouseEvent, QDrag
-from PyQt6.QtWidgets import QWidget, QFrame
+from PySide6.QtCore import Signal, Qt, QMimeData
+from PySide6.QtGui import QPalette, QMouseEvent, QDrag
+from PySide6.QtWidgets import QWidget, QFrame
 
 from src.config.application_config import AppConfig
 from src.ui.widget.label import Label
@@ -13,8 +13,8 @@ from src.ui.widget.label import Label
 class Tab(Label):
     """Tab label that can be dragged between CollapsibleBox widgets."""
 
-    clicked = pyqtSignal(QWidget)
-    tab_content_replaced = pyqtSignal(QWidget, QWidget)
+    clicked = Signal(QWidget)
+    tab_content_replaced = Signal(QWidget, QWidget)
 
     def __init__(self, text: str, widget: Optional[QWidget] = None) -> None:
         super().__init__(text, size=AppConfig().get(AppConfig.TAB_FONT_POINT_SIZE))

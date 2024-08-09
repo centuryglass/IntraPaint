@@ -2,9 +2,9 @@
 from typing import Optional, cast, Dict, List
 import logging
 
-from PyQt6.QtCore import Qt, QObject, QEvent, QRect, QPoint, pyqtSignal
-from PyQt6.QtGui import QMouseEvent, QTabletEvent, QWheelEvent
-from PyQt6.QtWidgets import QApplication
+from PySide6.QtCore import Qt, QObject, QEvent, QRect, QPoint, Signal
+from PySide6.QtGui import QMouseEvent, QTabletEvent, QWheelEvent
+from PySide6.QtWidgets import QApplication
 
 from src.config.cache import Cache
 from src.config.key_config import KeyConfig
@@ -42,7 +42,7 @@ BRUSH_LOAD_ERROR_MESSAGE = _tr('The brush tool will not be available unless this
 class ToolController(QObject):
     """Manages available tools and handles tool input events."""
 
-    tool_changed = pyqtSignal(QObject)
+    tool_changed = Signal(QObject)
 
     def __init__(self, image_stack: ImageStack, image_viewer: ImageViewer, load_all_tools: bool = True):
         """Installs itself as an event handler within an image viewer."""
@@ -144,6 +144,8 @@ class ToolController(QObject):
 
     def _handle_modifier_delegation(self, modifiers: Qt.KeyboardModifier) -> None:
         """Check for changes in held key modifiers, and handle tool delegation."""
+        if self._active_tool is None:
+            return
         if self._active_delegate and self._tool_modifier_delegates[self._active_tool] != modifiers:
             self._active_delegate.is_active = False
             self._active_delegate = None

@@ -4,8 +4,8 @@ from ctypes import sizeof, pointer, byref, c_float, c_double, c_int, c_void_p
 from time import time
 from typing import Any, Optional
 
-from PyQt6.QtCore import QObject, QPoint, QSize, QRect, pyqtSignal, QPointF
-from PyQt6.QtGui import QImage, QColor, QTransform
+from PySide6.QtCore import QObject, QPoint, QSize, QRect, Signal, QPointF
+from PySide6.QtGui import QImage, QColor, QTransform
 
 from src.image.mypaint.libmypaint import libmypaint, MyPaintTiledSurface, MyPaintTileRequestStartFunction, \
     MyPaintTileRequestEndFunction, MyPaintSurfaceDestroyFunction, \
@@ -18,9 +18,9 @@ from src.util.image_utils import create_transparent_image
 
 class MPSurface(QObject):
     """A LibMyPaint surface that emits image tiles as QGraphicsItem objects."""
-    tile_created = pyqtSignal(MPTile)
-    tile_updated = pyqtSignal(MPTile)
-    surface_cleared = pyqtSignal()
+    tile_created = Signal(MPTile)
+    tile_updated = Signal(MPTile)
+    surface_cleared = Signal()
 
     def __init__(self, size: QSize) -> None:
         """Initialize the surface data."""
@@ -66,24 +66,24 @@ class MPSurface(QObject):
 
         def on_tile_request_start(_, request: c_void_p) -> None:
             """Locate or create the required tile and pass it back to libmypaint when a tile operation starts."""
-            tx = request[0].tx
-            ty = request[0].ty
+            tx = request[0].tx  # type: ignore
+            ty = request[0].ty  # type: ignore
             if tx >= self._tiles_width or ty >= self._tiles_height or tx < 0 or ty < 0:
                 tile = self._null_tile
             else:
                 tile = self.get_tile_from_idx(tx, ty, True)
-            request[0].buffer = c_uint16_p(tile.get_bits(False))
+            request[0].buffer = c_uint16_p(tile.get_bits(False))  # type: ignore
 
         def on_tile_request_end(_, request: c_void_p) -> None:
             """Update tile cache and send an update signal when a tile painting operation finishes."""
-            tx = request[0].tx
-            ty = request[0].ty
+            tx = request[0].tx  # type: ignore
+            ty = request[0].ty  # type: ignore
             tile = self.get_tile_from_idx(tx, ty)
             if tile is not None:
                 tile.update_cache()
             else:
                 tile = self._null_tile
-            request[0].buffer = c_uint16_p(tile.get_bits(False))
+            request[0].buffer = c_uint16_p(tile.get_bits(False))  # type: ignore
             if tile != self._null_tile:
                 self.tile_updated.emit(tile)
 

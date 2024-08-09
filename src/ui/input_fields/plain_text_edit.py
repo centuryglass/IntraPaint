@@ -1,14 +1,14 @@
 """A simple wrapper for QPlainTextEdit to give it an interface consistent with other input widgets."""
 from typing import Optional
 
-from PyQt6.QtCore import pyqtSignal
-from PyQt6.QtWidgets import QPlainTextEdit, QWidget
+from PySide6.QtCore import Signal
+from PySide6.QtWidgets import QPlainTextEdit, QWidget
 
 
 class PlainTextEdit(QPlainTextEdit):
     """A simple wrapper for QPlainTextEdit to give it an interface consistent with other input widgets."""
 
-    valueChanged = pyqtSignal(str)
+    valueChanged = Signal(str)
 
     def __init__(self, parent: Optional[QWidget] = None) -> None:
         super().__init__(parent)

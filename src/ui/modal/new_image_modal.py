@@ -1,10 +1,10 @@
 """Popup modal window used for creating a new image at an arbitrary size."""
 from typing import Optional
 
-from PyQt6.QtGui import QIcon
-from PyQt6.QtWidgets import QDialog, QLabel, QVBoxLayout, QPushButton
-from PyQt6.QtCore import QSize
-from src.ui.widget.labeled_spinbox import LabeledSpinbox
+from PySide6.QtGui import QIcon
+from PySide6.QtWidgets import QDialog, QLabel, QVBoxLayout, QPushButton
+from PySide6.QtCore import QSize
+from src.ui.input_fields.labeled_spinbox import LabeledSpinbox
 from src.util.shared_constants import APP_ICON_PATH
 
 CREATE_IMAGE_TITLE = 'Create new image'

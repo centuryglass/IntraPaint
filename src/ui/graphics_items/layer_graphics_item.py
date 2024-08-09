@@ -1,9 +1,8 @@
 """Renders an image layer into a QGraphicsScene."""
-from PyQt6.QtGui import QPainter
+from PySide6.QtGui import QPainter
 
 from src.image.layers.image_layer import ImageLayer
 from src.ui.graphics_items.pixmap_item import PixmapItem
-from src.util.validation import assert_type
 
 
 class LayerGraphicsItem(PixmapItem):
@@ -11,7 +10,7 @@ class LayerGraphicsItem(PixmapItem):
 
     def __init__(self, layer: ImageLayer):
         super().__init__()
-        assert_type(layer, ImageLayer)
+        assert isinstance(layer, ImageLayer)
         self._layer = layer
         self._hidden = False
         self.composition_mode = layer.composition_mode
@@ -28,13 +27,6 @@ class LayerGraphicsItem(PixmapItem):
         self.setVisible(layer.visible)
         self.setZValue(layer.z_value)
         self._update_pixmap(layer)
-
-    def __del__(self):
-        self._layer.visibility_changed.disconnect(self._update_visibility)
-        self._layer.content_changed.disconnect(self._update_pixmap)
-        self._layer.opacity_changed.disconnect(self._update_opacity)
-        self._layer.transform_changed.disconnect(self._update_transform)
-        self._layer.composition_mode_changed.disconnect(self._update_mode)
 
     @property
     def layer(self) -> ImageLayer:

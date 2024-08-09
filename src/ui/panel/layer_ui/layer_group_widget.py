@@ -2,16 +2,16 @@
 from typing import Dict, Optional, List
 import logging
 
-from PyQt6.QtCore import QPointF, QPoint, QLine, pyqtSignal, Qt
-from PyQt6.QtGui import QDragEnterEvent, QDragMoveEvent, QDragLeaveEvent, QDropEvent, QPaintEvent, QPainter, \
+from PySide6.QtCore import QPointF, QPoint, QLine, Qt, Signal
+from PySide6.QtGui import QDragEnterEvent, QDragMoveEvent, QDragLeaveEvent, QDropEvent, QPaintEvent, QPainter, \
     QResizeEvent
-from PyQt6.QtWidgets import QVBoxLayout, QWidget, QSizePolicy
+from PySide6.QtWidgets import QVBoxLayout, QWidget, QSizePolicy
 
 from src.image.layers.image_stack import ImageStack
 from src.image.layers.layer import Layer
 from src.image.layers.layer_stack import LayerStack
 from src.ui.panel.layer_ui.layer_widget import LayerWidget
-from src.ui.widget.collapsible_box import CollapsibleBox
+from src.ui.layout.collapsible_box import CollapsibleBox
 
 
 logger = logging.getLogger(__name__)
@@ -20,8 +20,8 @@ logger = logging.getLogger(__name__)
 class LayerGroupWidget(CollapsibleBox):
     """Represents a group of layers"""
 
-    dragging = pyqtSignal(QPointF)
-    drag_ended = pyqtSignal()
+    dragging = Signal(QPointF)
+    drag_ended = Signal()
 
     def __init__(self, layer_stack: LayerStack, image_stack: ImageStack) -> None:
         super().__init__(scrolling=False)

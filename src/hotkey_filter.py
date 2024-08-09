@@ -1,10 +1,10 @@
 """Passes ImageViewer input events to an active editing tool."""
-from typing import Optional, Dict, Callable, List, cast
+from typing import Optional, Dict, Callable, List, cast, Tuple
 import logging
 
-from PyQt6.QtCore import Qt, QObject, QEvent, pyqtSignal
-from PyQt6.QtGui import QKeyEvent, QKeySequence
-from PyQt6.QtWidgets import QApplication, QWidget, QTextEdit, QLineEdit, QPlainTextEdit, QAbstractSpinBox, QComboBox
+from PySide6.QtCore import Qt, QObject, QEvent, Signal
+from PySide6.QtGui import QKeyEvent, QKeySequence
+from PySide6.QtWidgets import QApplication, QWidget, QTextEdit, QLineEdit, QPlainTextEdit, QAbstractSpinBox, QComboBox
 
 from src.config.application_config import AppConfig
 from src.config.key_config import KeyConfig
@@ -17,7 +17,7 @@ class HotkeyFilter(QObject):
     """Registers and handles window-level hotkeys."""
 
     shared_instance: Optional['HotkeyFilter'] = None
-    modifiers_changed = pyqtSignal(Qt.KeyboardModifier)
+    modifiers_changed = Signal(Qt.KeyboardModifier)
 
     @staticmethod
     def instance() -> 'HotkeyFilter':
@@ -55,6 +55,11 @@ class HotkeyFilter(QObject):
         app.installEventFilter(self)
         self._default_focus: Optional[QWidget] = None
         self._last_modifier_state = QApplication.keyboardModifiers()
+        self._config_bindings: Dict[str, Qt.Key | int] = {}
+
+    def default_focus(self) -> Optional[QWidget]:
+        """Returns the widget set as the default input focus, if any."""
+        return self._default_focus
 
     def set_default_focus(self, focus_widget: Optional[QWidget]) -> None:
         """Sets or clears the default focus widget. If a focus widget is set, pressing escape within a text input
@@ -62,7 +67,8 @@ class HotkeyFilter(QObject):
         self._default_focus = focus_widget
 
     def register_keybinding(self, action: Callable[[], bool], keys: QKeySequence,
-                            modifiers: Qt.KeyboardModifier = Qt.KeyboardModifier.NoModifier) -> None:
+                            modifiers: Qt.KeyboardModifier = Qt.KeyboardModifier.NoModifier
+                            ) -> List[Tuple[Qt.Key, 'HotkeyFilter.KeyBinding']]:
         """Register a keystroke that should invoke an action.
 
         If keybindings share a key, newer ones will be checked before older ones. This makes it easier to add
@@ -77,7 +83,8 @@ class HotkeyFilter(QObject):
         modifiers: Qt.KeyboardModifiers, optional
             Exact keyboard modifiers required to invoke the action, defaults to Qt.NoModifier.
         """
-        for key in keys:
+        new_bindings: List[Tuple[Qt.Key, 'HotkeyFilter.KeyBinding']] = []
+        for key in (keys[i] for i in range(keys.count())):
             key = key.key()
             assert key != Qt.Key.Key_unknown, 'Invalid keybinding'
             key_string = get_key_string(key)
@@ -93,6 +100,8 @@ class HotkeyFilter(QObject):
             if key not in self._bindings:
                 self._bindings[key] = []
             self._bindings[key].insert(0, keybinding)
+            new_bindings.append((key, keybinding))
+        return new_bindings
 
     def register_config_keybinding(self, action: Callable[[], bool], config_key: str) -> None:
         """Register a keybinding defined in application config.
@@ -107,9 +116,24 @@ class HotkeyFilter(QObject):
         key_text = KeyConfig().get(config_key)
         assert isinstance(key_text, str)
         keys = key_text.split(',')
+        new_bindings = []
         for binding_str in keys:
             key, modifiers = get_key_with_modifiers(binding_str)
-            self.register_keybinding(action, QKeySequence(key), modifiers)
+            new_bindings += self.register_keybinding(action, QKeySequence(key), modifiers)
+        if len(new_bindings) == 0:
+
+            return
+        connected_binding = new_bindings[0][1]
+        connected_key = config_key
+
+        def _update_config(_) -> None:
+            # Remove and replace bindings when the config key changes:
+            for prev_key, binding in new_bindings:
+                self._bindings[prev_key].remove(binding)
+            KeyConfig().disconnect(connected_binding, connected_key)
+            assert isinstance(connected_binding, HotkeyFilter.KeyBinding)
+            self.register_config_keybinding(connected_binding.action, connected_key)
+        KeyConfig().connect(connected_binding, connected_key, _update_config)
 
     def register_speed_modified_keybinding(self, scaling_action: Callable[[int], bool], config_key: str) -> None:
         """Register a keybinding defined in application config that's affected by the speed modifier.
@@ -145,7 +169,7 @@ class HotkeyFilter(QObject):
     def eventFilter(self, source: Optional[QObject], event: Optional[QEvent]) -> bool:
         """Check for registered keys and trigger associated actions."""
         self._check_modifiers()
-        if event is None:
+        if event is None or (source is not None and not isinstance(source, QObject)):
             return False
         if event.type() != QEvent.Type.KeyPress:
             return super().eventFilter(source, event)

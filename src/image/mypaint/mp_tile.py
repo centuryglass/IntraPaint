@@ -3,9 +3,9 @@ from ctypes import sizeof, memset
 from typing import Optional
 
 import numpy as np
-from PyQt6.QtCore import Qt, QRectF, QRect, QSize
-from PyQt6.QtGui import QImage, QPainter, QPainterPath
-from PyQt6.QtWidgets import QWidget, QGraphicsItem, QStyleOptionGraphicsItem
+from PySide6.QtCore import Qt, QRectF, QRect, QSize
+from PySide6.QtGui import QImage, QPainter, QPainterPath
+from PySide6.QtWidgets import QWidget, QGraphicsItem, QStyleOptionGraphicsItem
 
 from src.image.mypaint.libmypaint import TILE_DIM, TilePixelBuffer
 from src.image.mypaint.numpy_image_utils import pixel_data_as_numpy_16bit, image_data_as_numpy_8bit, \
@@ -23,14 +23,14 @@ class MPTile(QGraphicsItem):
     """A Python wrapper for libmypaint image tile data."""
 
     def __init__(self,
-                 tile_buffer: TilePixelBuffer,
+                 tile_buffer: TilePixelBuffer,  # type: ignore
                  clear_buffer: bool = True,
                  size: QSize = QSize(TILE_DIM, TILE_DIM),
                  parent: Optional[QGraphicsItem] = None):
         """Initialize tile data."""
         super().__init__(parent)
         self._lock_alpha = False
-        self._pixels: Optional[TilePixelBuffer] = tile_buffer
+        self._pixels: Optional[TilePixelBuffer] = tile_buffer  # type: ignore
         self._size = size
         self._cache_image: Optional[QImage] = QImage(size, QImage.Format.Format_ARGB32_Premultiplied)
         self._mask_image: Optional[QImage] = None
@@ -140,7 +140,7 @@ class MPTile(QGraphicsItem):
         painter.drawImage(bounds, self._cache_image)
         painter.restore()
 
-    def get_bits(self, read_only: bool) -> TilePixelBuffer:
+    def get_bits(self, read_only: bool) -> TilePixelBuffer:  # type: ignore
         """Access the image data array."""
         self._assert_is_valid()
         assert self._pixels is not None
@@ -295,13 +295,12 @@ class MPTile(QGraphicsItem):
         self._assert_is_valid()
         tile_size = self.boundingRect().size()
         if tile_size != image.size():
-            image = image.scaled(tile_size)
+            image = image.scaled(tile_size.toSize())
         if image.format() != QImage.Format.Format_ARGB32_Premultiplied:
             image = image.convertToFormat(QImage.Format.Format_ARGB32_Premultiplied)
-        self._cache_image = image.scaled(tile_size)
+        self._cache_image = image.scaled(tile_size.toSize())
         image_ptr = image.bits()
         assert image_ptr is not None, 'Invalid image given'
-        image_ptr.setsize(image.byteCount())
         np_image: AnyNpArray = np.ndarray(shape=(TILE_DIM, TILE_DIM, 4), dtype=np.uint8, buffer=image_ptr)
         np_pixels = (np_image.astype(np.float32) / 255 * (1 << 15)).astype(np.uint16)
         np.ctypeslib.as_array(self._pixels, shape=(TILE_DIM, TILE_DIM, 4))[:] = np_pixels

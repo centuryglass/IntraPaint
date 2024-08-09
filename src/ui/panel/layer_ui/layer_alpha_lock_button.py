@@ -1,7 +1,7 @@
 """Icon button used to lock or unlock image layer alpha."""
 
-from PyQt6.QtCore import pyqtSignal, pyqtBoundSignal
-from PyQt6.QtWidgets import QApplication
+from PySide6.QtCore import Signal
+from PySide6.QtWidgets import QApplication
 
 from src.image.layers.image_layer import ImageLayer
 from src.image.layers.layer import Layer
@@ -39,6 +39,6 @@ class LayerAlphaLockButton(LayerToggleButton):
         assert isinstance(layer, ImageLayer)
         layer.alpha_locked = value
 
-    def _get_signal(self, layer: Layer) -> pyqtSignal | pyqtBoundSignal:
+    def _get_signal(self, layer: Layer) -> Signal:
         assert isinstance(layer, ImageLayer)
         return layer.alpha_lock_changed

@@ -1,9 +1,9 @@
 """A label that can be double-clicked for editing."""
 from typing import Optional
 
-from PyQt6.QtCore import pyqtSignal, Qt
-from PyQt6.QtGui import QKeyEvent
-from PyQt6.QtWidgets import QWidget, QLabel, QHBoxLayout, QLineEdit, QToolButton, QStyle
+from PySide6.QtCore import Signal, Qt
+from PySide6.QtGui import QKeyEvent
+from PySide6.QtWidgets import QWidget, QLabel, QHBoxLayout, QLineEdit, QToolButton, QStyle
 
 from src.util.image_utils import get_standard_qt_icon
 
@@ -11,7 +11,7 @@ from src.util.image_utils import get_standard_qt_icon
 class EditableLabel(QWidget):
     """A label that can be double-clicked for editing."""
 
-    text_changed = pyqtSignal(str)
+    text_changed = Signal(str)
 
     def __init__(self, text: str = '', parent: Optional[QWidget] = None) -> None:
         super().__init__(parent)

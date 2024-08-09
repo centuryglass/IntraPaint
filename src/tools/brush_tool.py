@@ -1,9 +1,8 @@
 """Implements brush controls using a MyPaint surface."""
-from typing import Optional, cast
+from typing import Optional
 
-from PyQt6.QtCore import QSize
-from PyQt6.QtGui import QPixmap, QColor, QIcon, QKeySequence
-from PyQt6.QtWidgets import QVBoxLayout, QPushButton, QColorDialog, QWidget, QApplication, QHBoxLayout
+from PySide6.QtGui import QColor, QIcon, QKeySequence
+from PySide6.QtWidgets import QWidget, QApplication
 
 from src.config.application_config import AppConfig
 from src.config.cache import Cache
@@ -16,10 +15,8 @@ from src.image.layers.layer import Layer
 from src.tools.base_tool import BaseTool
 from src.tools.canvas_tool import CanvasTool
 from src.ui.image_viewer import ImageViewer
-from src.ui.input_fields.slider_spinbox import IntSliderSpinbox
-from src.ui.panel.mypaint_brush_panel import MypaintBrushPanel
+from src.ui.panel.tool_control_panels.brush_control_panel import BrushControlPanel
 from src.util.shared_constants import PROJECT_DIR
-
 
 # The `QCoreApplication.translate` context for strings in this file
 TR_ID = 'tools.brush_tool'
@@ -33,11 +30,8 @@ def _tr(*args):
 RESOURCES_BRUSH_ICON = f'{PROJECT_DIR}/resources/icons/tools/brush_icon.svg'
 BRUSH_LABEL = _tr('Brush')
 BRUSH_TOOLTIP = _tr('Paint into the image')
-COLOR_BUTTON_LABEL = _tr('Color')
-COLOR_BUTTON_TOOLTIP = _tr('Select sketch brush color')
 BRUSH_CONTROL_HINT = _tr('LMB:draw - RMB:1px draw - ')
 COLOR_PICK_HINT = _tr('{modifier_or_modifiers}:pick color - ')
-SELECTION_ONLY_LABEL = _tr('Paint selection only')
 
 
 class BrushTool(CanvasTool):
@@ -48,7 +42,7 @@ class BrushTool(CanvasTool):
         assert scene is not None
         super().__init__(image_stack, image_viewer, MyPaintLayerCanvas(scene))
         self._last_click = None
-        self._control_layout: Optional[QVBoxLayout] = None
+        self._control_panel = BrushControlPanel()
         self._active = False
         self._drawing = False
         self._cached_size = None
@@ -56,8 +50,27 @@ class BrushTool(CanvasTool):
 
         # Load brush and size from config
         config = AppConfig()
+        cache = Cache()
         self.brush_path = config.get(AppConfig.MYPAINT_BRUSH)
         self.brush_size = config.get(AppConfig.SKETCH_BRUSH_SIZE)
+        self.brush_color = QColor(cache.get(Cache.LAST_BRUSH_COLOR))
+
+        def apply_brush_size(size: int) -> None:
+            """Update brush size for the canvas and cursor when it changes in config."""
+            self._canvas.brush_size = size
+            self.update_brush_cursor()
+        config.connect(self, AppConfig.SKETCH_BRUSH_SIZE, apply_brush_size)
+
+        def set_brush_color(color_str: str) -> None:
+            """Update the brush color within the canvas when it changes in config."""
+            color = QColor(color_str)
+            self.brush_color = color
+        cache.connect(self, Cache.LAST_BRUSH_COLOR, set_brush_color)
+
+        def set_active_brush(brush_path: str) -> None:
+            """Update the active MyPaint brush when it changes in config."""
+            self.brush_path = brush_path
+        config.connect(self, AppConfig.MYPAINT_BRUSH, set_active_brush)
 
         image_stack.active_layer_changed.connect(self._active_layer_change_slot)
         self.layer = image_stack.active_layer
@@ -87,61 +100,6 @@ class BrushTool(CanvasTool):
 
     def get_control_panel(self) -> Optional[QWidget]:
         """Returns the brush control panel."""
-        if self._control_layout is not None:
-            return self._control_panel
-        config = AppConfig()
-        # Initialize control panel on first request:
-        control_layout = QVBoxLayout(self._control_panel)
-        self._control_layout = control_layout
-
-        # Size slider:
-
-        brush_size_slider = cast(IntSliderSpinbox, config.get_control_widget(AppConfig.SKETCH_BRUSH_SIZE))
-        brush_size_slider.setText(config.get_label(AppConfig.SKETCH_BRUSH_SIZE))
-        control_layout.addWidget(brush_size_slider)
-
-        def update_brush_size(size: int) -> None:
-            """Updates the active brush size."""
-            self._canvas.brush_size = size
-            self.update_brush_cursor()
-
-        AppConfig().connect(self, AppConfig.SKETCH_BRUSH_SIZE, update_brush_size)
-        control_layout.addWidget(brush_size_slider, stretch=2)
-        second_row = QHBoxLayout()
-        control_layout.addLayout(second_row, stretch=2)
-        color_picker_button = QPushButton()
-        color_picker_button.setText(COLOR_BUTTON_LABEL)
-        color_picker_button.setToolTip(COLOR_BUTTON_TOOLTIP)
-
-        # Color picker:
-        def set_brush_color(color: QColor) -> None:
-            """Update the brush color within the canvas."""
-            if color == self.brush_color:
-                return
-            self.brush_color = color
-            icon = QPixmap(QSize(64, 64))
-            icon.fill(color)
-            color_picker_button.setIcon(QIcon(icon))
-            Cache().set(Cache.LAST_BRUSH_COLOR, color.name(QColor.NameFormat.HexArgb))
-
-        color_dialog = QColorDialog()
-        color_dialog.setOption(QColorDialog.ColorDialogOption.ShowAlphaChannel, True)
-        color_dialog.setOption(QColorDialog.ColorDialogOption.DontUseNativeDialog, True)
-        color_picker_button.clicked.connect(lambda: set_brush_color(color_dialog.getColor(self.brush_color)))
-        Cache().connect(color_picker_button, Cache.LAST_BRUSH_COLOR,
-                                     lambda color_str: set_brush_color(QColor(color_str)))
-        set_brush_color(self.brush_color)
-        second_row.addWidget(color_picker_button, stretch=2)
-
-        selection_only_checkbox = Cache().get_control_widget(Cache.PAINT_SELECTION_ONLY)
-        selection_only_checkbox.setText(SELECTION_ONLY_LABEL)
-        second_row.addWidget(selection_only_checkbox)
-
-        # Brush selection:
-        canvas = cast(MyPaintLayerCanvas, self._canvas)
-        brush_panel = MypaintBrushPanel(canvas.brush)
-        control_layout.addWidget(brush_panel, stretch=8)
-        control_layout.addStretch(255)
         return self._control_panel
 
     def set_brush_size(self, new_size: int) -> None:

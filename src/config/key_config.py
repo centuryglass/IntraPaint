@@ -1,9 +1,9 @@
 """Provides access to the user-editable application keybinding config."""
 from typing import Optional
 
-from PyQt6.QtCore import Qt
-from PyQt6.QtGui import QKeySequence
-from PyQt6.QtWidgets import QMessageBox, QStyle, QApplication
+from PySide6.QtCore import Qt
+from PySide6.QtGui import QKeySequence
+from PySide6.QtWidgets import QMessageBox, QStyle, QApplication
 
 from src.util.image_utils import get_standard_qt_icon
 from src.config.config import Config
@@ -85,7 +85,7 @@ class KeyConfig(Config, metaclass=Singleton):
 
     def validate_keybindings(self) -> None:
         """Checks all keybindings for conflicts, and shows a warning message if any are found."""
-        key_binding_options = self.get_category_keys('Keybindings')
+        key_binding_options = self.get_category_keys('Keybindings') + self.get_category_keys('Menu Shortcuts')
         duplicate_map = {}
         errors = []
         modifiers = ('Ctrl', 'Alt', 'Shift')
@@ -255,6 +255,7 @@ class KeyConfig(Config, metaclass=Singleton):
     SHOW_LAYER_MENU_SHORTCUT: str
     SHRINK_SELECTION_SHORTCUT: str
     SPEED_MODIFIER: str
+    TOOL_ACTION_HOTKEY: str
     TRANSFORM_TOOL_KEY: str
     UNDO_SHORTCUT: str
     UPDATE_METADATA_SHORTCUT: str

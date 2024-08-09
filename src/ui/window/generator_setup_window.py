@@ -1,14 +1,14 @@
 """Preview, configure, and activate different image generators."""
 from typing import List, Optional
 
-from PyQt6.QtCore import pyqtSignal, Qt
-from PyQt6.QtGui import QMouseEvent, QImage, QFont, QResizeEvent, QIcon
-from PyQt6.QtWidgets import QWidget, QHBoxLayout, QVBoxLayout, QApplication, QLabel, QScrollArea, QSizePolicy, \
+from PySide6.QtCore import Signal, Qt
+from PySide6.QtGui import QMouseEvent, QImage, QFont, QResizeEvent, QIcon
+from PySide6.QtWidgets import QWidget, QHBoxLayout, QVBoxLayout, QApplication, QLabel, QScrollArea, QSizePolicy, \
     QPushButton
 
 from src.controller.image_generation.image_generator import ImageGenerator
-from src.ui.widget.bordered_widget import BorderedWidget
-from src.ui.widget.draggable_divider import DraggableDivider
+from src.ui.layout.bordered_widget import BorderedWidget
+from src.ui.layout.draggable_divider import DraggableDivider
 from src.ui.widget.image_widget import ImageWidget
 from src.util.shared_constants import APP_ICON_PATH
 
@@ -34,9 +34,9 @@ SCROLL_CONTENT_MARGIN = 25
 class GeneratorSetupWindow(QWidget):
     """Preview, configure, and activate different image generators."""
 
-    activate_signal = pyqtSignal(ImageGenerator)
+    activate_signal = Signal(ImageGenerator)
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
         self._layout = QHBoxLayout(self)
         self._option_list = BorderedWidget()
@@ -62,6 +62,7 @@ class GeneratorSetupWindow(QWidget):
         def _setup_scrolling_text():
             label = QLabel()
             label.setWordWrap(True)
+            label.setOpenExternalLinks(True)
             label.setAlignment(Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignLeft)
             scroll_area = QScrollArea()
             scroll_area.setWidget(label)
@@ -191,4 +192,3 @@ class _GeneratorWidget(QPushButton):
     def mousePressEvent(self, event: Optional[QMouseEvent]) -> None:
         """Selects this item's generator to show details"""
         self.set_selected(True)
-

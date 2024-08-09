@@ -1,9 +1,9 @@
 """A Qt5 color dialog with alternate reduced layouts."""
 from typing import Optional, cast, Tuple
 
-from PyQt6.QtCore import QSize, pyqtSignal, QTimer
-from PyQt6.QtWidgets import QColorDialog, QWidget, QVBoxLayout, QHBoxLayout, \
-    QTabWidget, QBoxLayout, QLayoutItem, QLayout, QSizePolicy, QPushButton, QLabel
+from PySide6.QtCore import QSize, Signal, QTimer
+from PySide6.QtWidgets import QColorDialog, QWidget, QVBoxLayout, QHBoxLayout, \
+    QTabWidget, QBoxLayout, QSizePolicy, QPushButton, QLabel
 
 BASIC_PALETTE_TITLE = 'Basic Palette'
 
@@ -24,6 +24,7 @@ MODE_1X1 = '1x1'
 
 TIMER_INTERVAL = 100
 
+
 class ColorPicker(QColorDialog):
     """A Qt5 color dialog with alternate reduced layouts.
 
@@ -31,8 +32,8 @@ class ColorPicker(QColorDialog):
     this at some point.
     """
 
-    _screen_color_picker_text_changed = pyqtSignal(str)
-    _stopped_color_picking = pyqtSignal()
+    _screen_color_picker_text_changed = Signal(str)
+    _stopped_color_picking = Signal()
 
     def __init__(self, parent: Optional[QWidget] = None, always_show_pick_color_button=True) -> None:
         super().__init__(parent)
@@ -52,10 +53,9 @@ class ColorPicker(QColorDialog):
         main_layout = cast(QHBoxLayout, self._outer_layout.children()[0])
 
         def _move_first_item(source_layout: QBoxLayout, destination_layout: QBoxLayout) -> None:
-            item = source_layout.itemAt(0)
+            item = source_layout.takeAt(0)
             if item is None:
                 return
-            source_layout.removeItem(item)
             item_widget = item.widget()
             item_layout = item.layout()
             if item_widget is not None:
@@ -135,12 +135,12 @@ class ColorPicker(QColorDialog):
         self._tab_panel.setVisible(False)
 
         # Discard original layout:
-        main_layout.removeItem(component_layout)
-        component_layout.setParent(None)
-        main_layout.removeItem(palette_layout)
-        palette_layout.setParent(None)
-        self._outer_layout.removeItem(main_layout)
-        main_layout.setParent(None)
+        # main_layout.removeItem(component_layout)
+        # component_layout.setParent(None)
+        # main_layout.removeItem(palette_layout)
+        # palette_layout.setParent(None)
+        # self._outer_layout.removeItem(main_layout)
+        # main_layout.setParent(None)
         self.set_default_mode()
 
     def panel_size(self) -> QSize:
@@ -225,7 +225,7 @@ class ColorPicker(QColorDialog):
         """Make a new 'pick screen color' button"""
 
         class _LinkedButton(QPushButton):
-            def __init__(self, source_button: QPushButton, finish_signal: pyqtSignal) -> None:
+            def __init__(self, source_button: QPushButton, finish_signal: Signal) -> None:
                 super().__init__(source_button.text())
                 self.clicked.connect(source_button.clicked)
                 source_button.clicked.connect(self._button_clicked_slot)
@@ -302,49 +302,12 @@ class ColorPicker(QColorDialog):
         return self._spectrum_panel, self._component_panel, self._basic_palette_panel, self._custom_palette_panel
 
     def _clear_layouts(self) -> None:
-
-        def _clear_intermediate_item(inner_item: Optional[QWidget | QLayout | QLayoutItem]) -> None:
-            if inner_item is None:
-                return
-            if inner_item in self._panels():
-                inner_item.setParent(self)
-                return
-            widget = None
-            layout = None
-            if isinstance(inner_item, QLayoutItem):
-                widget = inner_item.widget()
-                if widget in self._panels():
-                    widget.setParent(self)
-                    return
-                layout = inner_item.layout()
-                if widget is not None:
-                    layout = widget.layout()
-            elif isinstance(inner_item, QWidget):
-                widget = inner_item
-            elif isinstance(inner_item, QLayout):
-                widget = None
-                layout = inner_item
-            assert widget not in self._panels()
-            if layout is not None:
-                while layout.count() > 0:
-                    item = layout.itemAt(0)
-                    assert item is not None
-                    layout.removeItem(item)
-                    _clear_intermediate_item(item)
-                layout.setParent(None)
-                layout.deleteLater()
-            if widget is not None:
-                assert widget not in self._panels()
-                widget.setParent(None)
-                widget.deleteLater()
+        for panel in self._panels():
+            panel.setParent(self)
 
         while self._tab_panel.count() > 0:
-            tab = self._tab_panel.widget(0)
             self._tab_panel.removeTab(0)
-            if tab not in self._panels():
-                _clear_intermediate_item(tab)
         self._tab_panel.hide()
         if self._main_layout is not None:
-            _clear_intermediate_item(self._main_layout)
             self._outer_layout.removeItem(self._main_layout)
             self._main_layout = None

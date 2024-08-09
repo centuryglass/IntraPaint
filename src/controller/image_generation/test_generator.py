@@ -1,9 +1,9 @@
 """Mock generator for testing and development."""
 from typing import Optional
 
-from PyQt6.QtCore import pyqtSignal, pyqtBoundSignal
-from PyQt6.QtGui import QImage
-from PyQt6.QtWidgets import QApplication, QWidget
+from PySide6.QtCore import Signal
+from PySide6.QtGui import QImage
+from PySide6.QtWidgets import QApplication, QWidget
 
 from src.config.application_config import AppConfig
 from src.controller.image_generation.image_generator import ImageGenerator
@@ -69,7 +69,7 @@ class TestGenerator(ImageGenerator):
         return TestControlPanel()
 
     def generate(self,
-                 status_signal: pyqtSignal | pyqtBoundSignal,
+                 status_signal: Signal,
                  source_image: Optional[QImage] = None,
                  mask_image: Optional[QImage] = None) -> None:
         """Generates new images. Image size, image count, prompts, etc. should be loaded from AppConfig as needed.
@@ -77,7 +77,7 @@ class TestGenerator(ImageGenerator):
 
         Parameters
         ----------
-        status_signal : pyqtSignal[dict]
+        status_signal : Signal[dict]
             Signal to emit when status updates are available. Expected keys are 'seed' and 'progress'.
         source_image : QImage, optional
             Image used as a basis for the edited image.

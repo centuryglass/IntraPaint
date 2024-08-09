@@ -2,9 +2,9 @@
 import logging
 from typing import Optional, cast
 
-from PyQt6.QtCore import QSize
-from PyQt6.QtGui import QFont, QFontMetrics
-from PyQt6.QtWidgets import QApplication, QMainWindow
+from PySide6.QtCore import QSize
+from PySide6.QtGui import QFont, QFontMetrics
+from PySide6.QtWidgets import QApplication, QMainWindow
 
 MAX_FONT_PT = 240
 logger = logging.getLogger(__name__)

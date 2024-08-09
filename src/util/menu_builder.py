@@ -1,11 +1,11 @@
-"""Defines the @menu_action decorator and the MenuBuilder class for more convenient PyQt6 menu initialization."""
+"""Defines the @menu_action decorator and the MenuBuilder class for more convenient Qt6 menu initialization."""
 import inspect
 from functools import wraps
 from inspect import signature
 from typing import Callable, Any, Optional, TypeVar, Dict, List, Tuple
 
-from PyQt6.QtGui import QAction
-from PyQt6.QtWidgets import QMainWindow, QMenu, QMenuBar
+from PySide6.QtGui import QAction
+from PySide6.QtWidgets import QMainWindow, QMenu, QMenuBar
 
 from src.config.key_config import KeyConfig
 from src.util.application_state import AppStateTracker
@@ -260,6 +260,8 @@ class MenuBuilder:
     def _get_action_definitions(self) -> List[Tuple['MenuData', Callable[..., None]]]:
         action_definitions: List[Tuple['MenuData', Callable[..., None]]] = []
         for attr_name in dir(self):
+            if not hasattr(self, attr_name):
+                continue
             attr = getattr(self, attr_name)
             if callable(attr) and getattr(attr, IS_MENU_ACTION_ATTR, False):
                 data = getattr(attr, MENU_DATA_ATTR, None)
@@ -300,4 +302,3 @@ class MenuData:
         self.priority = priority
         self.valid_app_states = valid_app_states
         self.condition_check = condition_check
-

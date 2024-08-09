@@ -2,5 +2,5 @@ opencv-python-headless
 numpy~=2.0.0
 pillow~=10.3.0
 requests~=2.32.01
-PyQt6~=6.7.0
+PySide6
 platformdirs

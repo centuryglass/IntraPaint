@@ -3,9 +3,9 @@ from argparse import Namespace
 from typing import Optional, Dict, Any
 
 import requests
-from PyQt6.QtCore import pyqtSignal, QThread, QSize, pyqtBoundSignal
-from PyQt6.QtGui import QImage
-from PyQt6.QtWidgets import QApplication, QInputDialog, QWidget
+from PySide6.QtCore import Signal, QThread, QSize
+from PySide6.QtGui import QImage
+from PySide6.QtWidgets import QApplication, QInputDialog, QWidget
 
 from src.config.application_config import AppConfig
 from src.controller.image_generation.glid3_xl_generator import GLID_PREVIEW_IMAGE, GLID_GENERATOR_DESCRIPTION
@@ -171,9 +171,10 @@ class Glid3WebserviceGenerator(ImageGenerator):
            connect to required external services, returning whether the process completed correctly."""
         while self._server_url == '' or not self.is_available():
             prompt_text = URL_REQUEST_MESSAGE if self._server_url == '' else URL_REQUEST_RETRY_MESSAGE
-            new_url, url_entered = QInputDialog.getText(None, URL_REQUEST_TITLE, prompt_text)
+            new_url, url_entered = QInputDialog.getText(self.menu_window, URL_REQUEST_TITLE, prompt_text)
             if not url_entered:
                 return False
+            self._server_url = new_url
         AppConfig().set(AppConfig.GENERATION_SIZE, QSize(256, 256))
         AppConfig().set(AppConfig.EDIT_MODE, EDIT_MODE_INPAINT)
         return True
@@ -214,14 +215,14 @@ class Glid3WebserviceGenerator(ImageGenerator):
         return self._control_panel
 
     def generate(self,
-                 status_signal: pyqtSignal | pyqtBoundSignal,
+                 status_signal: Signal,
                  source_image: Optional[QImage] = None,
                  mask_image: Optional[QImage] = None) -> None:
         """Generates new images. Image size, image count, prompts, etc. are loaded from AppConfig as needed.
 
         Parameters
         ----------
-        status_signal : pyqtSignal[str]
+        status_signal : Signal[str]
             Signal to emit when status updates are available.
         source_image : QImage, optional
             Image used as a basis for the edited image.

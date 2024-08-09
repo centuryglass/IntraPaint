@@ -231,9 +231,17 @@
         "default": "p",
         "saved": true
     },
+    "tool_action_hotkey": {
+        "label": "Tool action hotkey",
+        "category": "Keybindings",
+        "description": "Performs some context-specific action based on the active tool.",
+        "type": "string",
+        "default": "x",
+        "saved": true
+    },
     "new_image_shortcut": {
         "label": "New Image",
-        "category": "Keybindings",
+        "category": "Menu Shortcuts",
         "description": "Open a new image for editing.",
         "type": "string",
         "default": "Ctrl+N",
@@ -241,7 +249,7 @@
     },
     "save_shortcut": {
         "label": "Save",
-        "category": "Keybindings",
+        "category": "Menu Shortcuts",
         "description": "Save current image as .png or .ora.",
         "type": "string",
         "default": "Ctrl+S",
@@ -249,7 +257,7 @@
     },
     "save_as_shortcut": {
         "label": "Save as",
-        "category": "Keybindings",
+        "category": "Menu Shortcuts",
         "description": "Save current image as .png or .inpt at a new file path.",
         "type": "string",
         "default": "Ctrl+Alt+S",
@@ -257,7 +265,7 @@
     },
     "load_shortcut": {
         "label": "Load Image",
-        "category": "Keybindings",
+        "category": "Menu Shortcuts",
         "description": "Open an image file for editing.",
         "type": "string",
         "default": "Ctrl+O",
@@ -265,7 +273,7 @@
     },
     "load_layers_shortcut": {
         "label": "Open as Layers",
-        "category": "Keybindings",
+        "category": "Menu Shortcuts",
         "description": "Open images as new layers.",
         "type": "string",
         "default": "Ctrl+Shift+O",
@@ -273,7 +281,7 @@
     },
     "reload_shortcut": {
         "label": "Reload",
-        "category": "Keybindings",
+        "category": "Menu Shortcuts",
         "description": "Reload the image from its file.",
         "type": "string",
         "default": "F5",
@@ -281,7 +289,7 @@
     },
     "quit_shortcut": {
         "label": "Quit",
-        "category": "Keybindings",
+        "category": "Menu Shortcuts",
         "description": "Closes the application.",
         "type": "string",
         "default": "Ctrl+Q",
@@ -289,7 +297,7 @@
     },
     "undo_shortcut": {
         "label": "Undo",
-        "category": "Keybindings",
+        "category": "Menu Shortcuts",
         "description": "Undo the last action taken",
         "type": "string",
         "default": "Ctrl+Z",
@@ -297,7 +305,7 @@
     },
     "redo_shortcut": {
         "label": "Redo",
-        "category": "Keybindings",
+        "category": "Menu Shortcuts",
         "description": "Re-apply the last action reversed with undo.",
         "type": "string",
         "default": "Ctrl+Shift+Z",
@@ -305,7 +313,7 @@
     },
     "cut_shortcut": {
         "label": "Cut",
-        "category": "Keybindings",
+        "category": "Menu Shortcuts",
         "description": "Remove selected image content in the active layer.",
         "type": "string",
         "default": "Ctrl+X",
@@ -313,7 +321,7 @@
     },
     "copy_shortcut": {
         "label": "Copy",
-        "category": "Keybindings",
+        "category": "Menu Shortcuts",
         "description": "Copy selected image content in the active layer.",
         "type": "string",
         "default": "Ctrl+C",
@@ -321,7 +329,7 @@
     },
     "paste_shortcut": {
         "label": "Paste",
-        "category": "Keybindings",
+        "category": "Menu Shortcuts",
         "description": "Insert copied image data into a new layer.",
         "type": "string",
         "default": "Ctrl+V",
@@ -329,7 +337,7 @@
     },
     "clear_shortcut": {
         "label": "Clear",
-        "category": "Keybindings",
+        "category": "Menu Shortcuts",
         "description": "Delete selected image content in the active layer.",
         "type": "string",
         "default": "Delete",
@@ -337,7 +345,7 @@
     },
     "resize_canvas_shortcut": {
         "label": "Resize canvas",
-        "category": "Keybindings",
+        "category": "Menu Shortcuts",
         "description": "Change the image size without scaling layers.",
         "type": "string",
         "default": "F2",
@@ -345,7 +353,7 @@
     },
     "scale_image_shortcut": {
         "label": "Scale image",
-        "category": "Keybindings",
+        "category": "Menu Shortcuts",
         "description": "Scale image content to a new size.",
         "type": "string",
         "default": "F3",
@@ -353,7 +361,7 @@
     },
     "image_to_layers_shortcut": {
         "label": "Resize image to content",
-        "category": "Keybindings",
+        "category": "Menu Shortcuts",
         "description": "Resize the image to fit all layers",
         "type": "string",
         "default": "Ctrl+Alt+R",
@@ -361,7 +369,7 @@
     },
     "update_metadata_shortcut": {
         "label": "Update metadata",
-        "category": "Keybindings",
+        "category": "Menu Shortcuts",
         "description": "Update image metadata that will be saved with the file.",
         "type": "string",
         "default": "Ctrl+Alt+D",
@@ -369,7 +377,7 @@
     },
     "generate_shortcut": {
         "label": "Generate",
-        "category": "Keybindings",
+        "category": "Menu Shortcuts",
         "description": "Start AI image generation.",
         "type": "string",
         "default": "F4",
@@ -377,7 +385,7 @@
     },
     "select_all_shortcut": {
         "label": "Select All",
-        "category": "Keybindings",
+        "category": "Menu Shortcuts",
         "description": "Select the entire image",
         "type": "string",
         "default": "Ctrl+A",
@@ -385,7 +393,7 @@
     },
     "select_none_shortcut": {
         "label": "Deselect All",
-        "category": "Keybindings",
+        "category": "Menu Shortcuts",
         "description": "Clear the selection",
         "type": "string",
         "default": "Ctrl+D",
@@ -393,7 +401,7 @@
     },
     "invert_selection_shortcut": {
         "label": "Invert selection",
-        "category": "Keybindings",
+        "category": "Menu Shortcuts",
         "description": "Swap selected and unselected areas",
         "type": "string",
         "default": "Ctrl+I",
@@ -401,7 +409,7 @@
     },
     "select_layer_content_shortcut": {
         "label": "Select layer content",
-        "category": "Keybindings",
+        "category": "Menu Shortcuts",
         "description": "Select all non-transparent pixels in the active layer",
         "type": "string",
         "default": "Ctrl+Shift+A",
@@ -409,7 +417,7 @@
     },
     "grow_selection_shortcut": {
         "label": "Expand selection",
-        "category": "Keybindings",
+        "category": "Menu Shortcuts",
         "description": "Expand the selection bounds",
         "type": "string",
         "default": "Ctrl+=",
@@ -417,7 +425,7 @@
     },
     "shrink_selection_shortcut": {
         "label": "Shrink selection",
-        "category": "Keybindings",
+        "category": "Menu Shortcuts",
         "description": "Shrink the selection bounds",
         "type": "string",
         "default": "Ctrl+-",
@@ -425,7 +433,7 @@
     },
     "new_layer_shortcut": {
         "label": "New layer",
-        "category": "Keybindings",
+        "category": "Menu Shortcuts",
         "description": "Create a new layer above the active layer.",
         "type": "string",
         "default": "Ctrl+Shift+N",
@@ -433,7 +441,7 @@
     },
     "new_layer_group_shortcut": {
         "label": "New layer group",
-        "category": "Keybindings",
+        "category": "Menu Shortcuts",
         "description": "Create a new layer group above the active layer.",
         "type": "string",
         "default": "Ctrl+Shift+G",
@@ -441,7 +449,7 @@
     },
     "copy_layer_shortcut": {
         "label": "Copy layer",
-        "category": "Keybindings",
+        "category": "Menu Shortcuts",
         "description": "Create a copy of the active layer.",
         "type": "string",
         "default": "Ctrl+Shift+C",
@@ -449,7 +457,7 @@
     },
     "delete_layer_shortcut": {
         "label": "Delete layer",
-        "category": "Keybindings",
+        "category": "Menu Shortcuts",
         "description": "Delete the active layer.",
         "type": "string",
         "default": "Ctrl+Shift+D",
@@ -457,7 +465,7 @@
     },
     "select_previous_layer_shortcut": {
         "label": "Select previous layer",
-        "category": "Keybindings",
+        "category": "Menu Shortcuts",
         "description": "Switch to the next layer up.",
         "type": "string",
         "default": "Ctrl+PgUp",
@@ -465,7 +473,7 @@
     },
     "select_next_layer_shortcut": {
         "label": "Select next layer",
-        "category": "Keybindings",
+        "category": "Menu Shortcuts",
         "description": "Switch to the next layer down.",
         "type": "string",
         "default": "Ctrl+PgDown",
@@ -473,7 +481,7 @@
     },
     "move_layer_up_shortcut": {
         "label": "Move layer up",
-        "category": "Keybindings",
+        "category": "Menu Shortcuts",
         "description": "Move the active layer up",
         "type": "string",
         "default": "Ctrl+Home",
@@ -481,7 +489,7 @@
     },
     "move_layer_down_shortcut": {
         "label": "Move layer down",
-        "category": "Keybindings",
+        "category": "Menu Shortcuts",
         "description": "Move the active layer down",
         "type": "string",
         "default": "Ctrl+End",
@@ -489,7 +497,7 @@
     },
     "move_layer_to_top_shortcut": {
         "label": "Move layer to top",
-        "category": "Keybindings",
+        "category": "Menu Shortcuts",
         "description": "Move the active layer above all others",
         "type": "string",
         "default": "Ctrl+Shift+Home",
@@ -497,7 +505,7 @@
     },
     "merge_layer_down_shortcut": {
         "label": "Merge layer down",
-        "category": "Keybindings",
+        "category": "Menu Shortcuts",
         "description": "Merge the active layer with the one below it",
         "type": "string",
         "default": "Ctrl+Shift+M",
@@ -505,7 +513,7 @@
     },
     "layer_to_image_size_shortcut": {
         "label": "Layer to image size",
-        "category": "Keybindings",
+        "category": "Menu Shortcuts",
         "description": "Expand or crop the active layer to match the image bounds.",
         "type": "string",
         "default": "Ctrl+Shift+I",
@@ -513,7 +521,7 @@
     },
     "crop_to_content_shortcut": {
         "label": "Crop layer to contents",
-        "category": "Keybindings",
+        "category": "Menu Shortcuts",
         "description": "Crop transparent borders in the active layer.",
         "type": "string",
         "default": "Ctrl+Shift+P",
@@ -521,28 +529,28 @@
     },
     "layer_mirror_horizontal_shortcut": {
         "label": "Mirror layer horizontally",
-        "category": "Keybindings",
+        "category": "Menu Shortcuts",
         "description": "Flip layer content horizontally",
         "type": "string",
         "default": "Ctrl+Shift+H",
         "saved": true
     },"layer_mirror_vertical_shortcut": {
         "label": "Mirror layer vertically",
-        "category": "Keybindings",
+        "category": "Menu Shortcuts",
         "description": "Flip layer content vertically",
         "type": "string",
         "default": "Ctrl+Shift+V",
         "saved": true
     },"layer_rotate_cw_shortcut": {
         "label": "Rotate layer 90° CW",
-        "category": "Keybindings",
+        "category": "Menu Shortcuts",
         "description": "Rotate the active layer 90 degrees clockwise.",
         "type": "string",
         "default": "Ctrl+Shift+R",
         "saved": true
     },"layer_rotate_ccw_shortcut": {
         "label": "Rotate layer 90° CCW",
-        "category": "Keybindings",
+        "category": "Menu Shortcuts",
         "description": "Rotate the active layer 90 degrees counter-clockwise.",
         "type": "string",
         "default": "Ctrl+Shift+L",
@@ -550,7 +558,7 @@
     },
     "show_layer_menu_shortcut": {
         "label": "Show layer window",
-        "category": "Keybindings",
+        "category": "Menu Shortcuts",
         "description": "Open the image layer panel in a new window.",
         "type": "string",
         "default": "F7",
@@ -558,7 +566,7 @@
     },
     "settings_shortcut": {
         "label": "Settings",
-        "category": "Keybindings",
+        "category": "Menu Shortcuts",
         "description": "Open the application settings window.",
         "type": "string",
         "default": "F9",
@@ -566,7 +574,7 @@
     },
     "lcm_mode_shortcut": {
         "label": "LCM Mode",
-        "category": "Keybindings",
+        "category": "Menu Shortcuts",
         "description": "Apply appropriate settings for the LCM LORA.",
         "type": "string",
         "default": "F10",
@@ -574,7 +582,7 @@
     },
     "image_window_shortcut": {
         "label": "Show Image Window",
-        "category": "Keybindings",
+        "category": "Menu Shortcuts",
         "description": "Open a new window showing the edited image.",
         "type": "string",
         "default": "Ctrl+Alt+W",
@@ -582,7 +590,7 @@
     },
     "generator_select_shortcut": {
         "label": "Select Image Generator",
-        "category": "Keybindings",
+        "category": "Menu Shortcuts",
         "description": "Selects an AI image generator",
         "type": "string",
         "default": "F11",
@@ -590,7 +598,7 @@
     },
     "color_balance_shortcut": {
         "label": "RGBA Color Balance",
-        "category": "Keybindings",
+        "category": "Menu Shortcuts",
         "description": "Adjust RGBA color channels",
         "type": "string",
         "default": "Ctrl+1",
@@ -598,7 +606,7 @@
     },
     "brightness_contrast_shortcut": {
         "label": "Brightness/Contrast",
-        "category": "Keybindings",
+        "category": "Menu Shortcuts",
         "description": "Adjust image brightness/contrast",
         "type": "string",
         "default": "Ctrl+2",
@@ -606,7 +614,7 @@
     },
     "blur_shortcut": {
         "label": "Blur",
-        "category": "Keybindings",
+        "category": "Menu Shortcuts",
         "description": "Image blurring",
         "type": "string",
         "default": "Ctrl+3",
@@ -614,7 +622,7 @@
     },
     "sharpen_shortcut": {
         "label": "Sharpen",
-        "category": "Keybindings",
+        "category": "Menu Shortcuts",
         "description": "Sharpen image details",
         "type": "string",
         "default": "Ctrl+4",
@@ -622,7 +630,7 @@
     },
     "posterize_shortcut": {
         "label": "Posterize",
-        "category": "Keybindings",
+        "category": "Menu Shortcuts",
         "description": "Simplify layer color palette",
         "type": "string",
         "default": "Ctrl+5",
@@ -630,7 +638,7 @@
     },
     "prompt_style_shortcut": {
         "label": "View saved prompt styles",
-        "category": "Keybindings",
+        "category": "Menu Shortcuts",
         "description": "Access saved stable-diffusion prompt styles",
         "type": "string",
         "default": "Ctrl+Alt+1",
@@ -638,7 +646,7 @@
     },
     "lora_shortcut": {
         "label": "View Lora models",
-        "category": "Keybindings",
+        "category": "Menu Shortcuts",
         "description": "Access available Lora models.",
         "type": "string",
         "default": "Ctrl+Alt+2",

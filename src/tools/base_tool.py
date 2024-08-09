@@ -8,9 +8,9 @@ Supports the following:
 """
 from typing import Optional
 
-from PyQt6.QtCore import QObject, pyqtSignal, QPoint, QEvent, Qt
-from PyQt6.QtGui import QCursor, QPixmap, QMouseEvent, QTabletEvent, QWheelEvent, QIcon, QKeySequence
-from PyQt6.QtWidgets import QWidget, QApplication
+from PySide6.QtCore import QObject, Signal, QPoint, QEvent, Qt
+from PySide6.QtGui import QCursor, QPixmap, QMouseEvent, QTabletEvent, QWheelEvent, QIcon, QKeySequence
+from PySide6.QtWidgets import QWidget, QApplication
 
 from src.config.key_config import KeyConfig
 
@@ -77,7 +77,7 @@ class BaseTool(QObject):
     6. When a tool exits active use, set tool.is_active=False and disconnect from the cursor_changed signal.
     """
 
-    cursor_change = pyqtSignal()
+    cursor_change = Signal()
 
     def __init__(self) -> None:
         super().__init__()

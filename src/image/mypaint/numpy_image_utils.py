@@ -1,6 +1,6 @@
 """Utility functions for speeding up image operations using numpy."""
 from typing import Tuple, TypeAlias, Any, Optional
-from PyQt6.QtGui import QImage
+from PySide6.QtGui import QImage
 import numpy as np
 from numpy import ndarray, dtype
 
@@ -10,7 +10,7 @@ AnyNpArray: TypeAlias = ndarray[Any, dtype[Any]]
 OptionalNpArray: TypeAlias = Optional[AnyNpArray]
 
 
-def pixel_data_as_numpy_16bit(pixel_data: TilePixelBuffer) -> AnyNpArray:
+def pixel_data_as_numpy_16bit(pixel_data: TilePixelBuffer) -> AnyNpArray:  # type: ignore
     """Returns a numpy array interface for a tile pixel buffer."""
     return np.ctypeslib.as_array(pixel_data, shape=(TILE_DIM, TILE_DIM, 4))
 
@@ -22,7 +22,6 @@ def image_data_as_numpy_8bit(image: QImage) -> AnyNpArray:
     image_ptr = image.bits()
     if image_ptr is None:
         raise ValueError("Invalid image parameter")
-    image_ptr.setsize(image.sizeInBytes())
     return np.ndarray(shape=(image.height(), image.width(), 4), dtype=np.uint8, buffer=image_ptr)
 
 
@@ -57,7 +56,6 @@ def zero_image(image: QImage) -> None:
     image_ptr = image.bits()
     if image_ptr is None:
         return
-    image_ptr.setsize(image.sizeInBytes())
     img_arr: AnyNpArray = np.ndarray(shape=(image.height(), image.width(), 4), dtype=np.uint8, buffer=image_ptr)
     img_arr[:, :, [3]] = 0
 

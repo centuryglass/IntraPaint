@@ -1,14 +1,14 @@
 """Displays the image panel with zoom controls and input hints."""
 from typing import Optional
 
-from PyQt6.QtCore import Qt
-from PyQt6.QtGui import QResizeEvent
-from PyQt6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLabel, QDoubleSpinBox, QSlider, QPushButton, QSizePolicy
+from PySide6.QtCore import Qt
+from PySide6.QtGui import QResizeEvent
+from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLabel, QDoubleSpinBox, QSlider, QPushButton, QSizePolicy
 
 from src.image.layers.image_stack import ImageStack
 from src.ui.image_viewer import ImageViewer
-from src.ui.widget.draggable_divider import DraggableDivider
-from src.ui.widget.draggable_tabs.tab_box import TabBox
+from src.ui.layout.draggable_divider import DraggableDivider
+from src.ui.layout.draggable_tabs.tab_box import TabBox
 
 MIN_WIDTH_SHOWING_SCALE_SLIDER = 600
 MIN_WIDTH_SHOWING_HINT_TEXT = 900
@@ -119,6 +119,11 @@ class ImagePanel(QWidget):
         for signal in scale_signals:
             signal.connect(on_scale_change)
         self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+
+    def setEnabled(self, enabled: bool) -> None:
+        """Override setEnabled to ensure it does not apply to tab bars."""
+        self._image_viewer.setEnabled(enabled)
+        self._control_bar.setEnabled(enabled)
 
     @property
     def image_viewer(self) -> ImageViewer:

@@ -2,9 +2,9 @@
 import sys
 from typing import Optional, List
 
-from PyQt6.QtCore import Qt, pyqtProperty, QPropertyAnimation, QRectF, QRect
-from PyQt6.QtGui import QPainter, QPen, QPainterPath, QColor, QShowEvent, QHideEvent
-from PyQt6.QtWidgets import QWidget, QGraphicsItem, QGraphicsView, QGraphicsScene, QStyleOptionGraphicsItem, \
+from PySide6.QtCore import Qt, QPropertyAnimation, QRectF, QRect, Property
+from PySide6.QtGui import QPainter, QPen, QPainterPath, QColor, QShowEvent, QHideEvent
+from PySide6.QtWidgets import QWidget, QGraphicsItem, QGraphicsView, QGraphicsScene, QStyleOptionGraphicsItem, \
     QGraphicsObject
 
 from src.util.shared_constants import TIMELAPSE_MODE_FLAG
@@ -42,14 +42,15 @@ class Outline(QGraphicsObject):
         self._anim.setDuration(1000)
         scene.addItem(self)
 
-    @pyqtProperty(int)
-    def dash_offset(self) -> int:
+    def dash_offset_getter(self) -> int:
         """Animate dash offset to make the image generation area more visible."""
         return self._dash_offset
 
-    @dash_offset.setter
-    def dash_offset(self, offset: int) -> None:
+    def dash_offset_setter(self, offset: int) -> None:
+        """Update the animated dash offset."""
         self._dash_offset = offset
+
+    dash_offset = Property(int, dash_offset_getter, dash_offset_setter)
 
     @property
     def dash_pattern(self) -> List[int]:
@@ -95,7 +96,7 @@ class Outline(QGraphicsObject):
         if self.scene() is None or self._view is None or self._rect.isEmpty():
             return 0.0
         view_scale = self._view.transform().m11()
-        return max(1, 6 / view_scale)
+        return max(1.0, 6.0 / view_scale)
 
     def paint(self,
               painter: Optional[QPainter],
