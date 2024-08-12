@@ -1,24 +1,30 @@
 """Widget bar that accepts draggable tabs."""
 from typing import Optional, List
 
-from PySide6.QtCore import Signal, Qt, QPointF, QRect, QLine, QSize
+from PySide6.QtCore import Signal, Qt, QPointF, QLine, QSize
 from PySide6.QtGui import QDragEnterEvent, QDragMoveEvent, QDragLeaveEvent, QDropEvent, QPaintEvent, QPainter
-from PySide6.QtWidgets import QWidget, QBoxLayout, QHBoxLayout, QVBoxLayout, QToolButton, QSizePolicy, QFrame
+from PySide6.QtWidgets import QWidget, QBoxLayout, QHBoxLayout, QVBoxLayout, QToolButton, QSizePolicy, QTabBar
 
-from src.ui.panel.layer_ui.layer_widget import LayerWidget
-from src.ui.layout.bordered_widget import BorderedWidget
 from src.ui.layout.draggable_tabs.tab import Tab
+from src.ui.panel.layer_ui.layer_widget import LayerWidget
 from src.ui.widget.label import Label
 from src.util.shared_constants import MAX_WIDGET_SIZE
 
 BASE_BAR_SIZE = 10
 
 
-class TabBar(BorderedWidget):
-    """Widget bar that can accept dragged tabs."""
+class TabBar(QTabBar):
+    """Widget bar that can accept dragged tabs.
 
-    active_tab_content_replaced = Signal(QWidget)
-    tab_clicked = Signal(QWidget)
+    TODO: TabBar inheritance is only being used for styling purposes here, actually using any of the tab-related methods
+          is going to cause odd conflicts. Switch this back to a more generic class (QFrame?) and fix the styling
+          issues so that this doesn't cause confusion.
+    """
+
+    active_tab_content_replaced = Signal(Tab)
+    tab_clicked = Signal(Tab)
+    tab_added = Signal(Tab)
+    tab_removed = Signal(Tab)
     max_size_changed = Signal(QSize)
     toggled = Signal(bool)
 
@@ -84,7 +90,9 @@ class TabBar(BorderedWidget):
         self._update_bar_size()
         if isinstance(widget, Tab):
             widget.clicked.connect(self._tab_clicked_slot)
+            widget.double_clicked.connect(self._tab_double_clicked_slot)
             widget.tab_content_replaced.connect(self._tab_widget_change_slot)
+            self.tab_added.emit(widget)
             if self._active_tab is None:
                 self._active_tab = widget
                 self.tab_clicked.emit(widget)
@@ -96,7 +104,9 @@ class TabBar(BorderedWidget):
         assert widget in self._widgets
         if isinstance(widget, Tab):
             widget.clicked.disconnect(self._tab_clicked_slot)
+            widget.double_clicked.disconnect(self._tab_double_clicked_slot)
             widget.tab_content_replaced.disconnect(self._tab_widget_change_slot)
+            self.tab_removed.emit(widget)
         self._widgets.remove(widget)
         self._layout.removeWidget(widget)
         widget.setParent(None)
@@ -150,6 +160,15 @@ class TabBar(BorderedWidget):
             self._active_tab = tab
             self.tab_clicked.emit(tab)
             self.update()
+
+    def _tab_double_clicked_slot(self, tab: QWidget) -> None:
+        assert isinstance(tab, Tab)
+        if self._active_tab != tab:
+            self._tab_clicked_slot(tab)
+        else:
+            self.is_open = not self.is_open
+            self.update()
+
 
     def _tab_widget_change_slot(self, tab: QWidget, tab_widget: QWidget) -> None:
         if self._active_tab == tab:
@@ -233,14 +252,6 @@ class TabBar(BorderedWidget):
         if max_size != self.maximumSize():
             self.setMaximumSize(max_size)
             self.max_size_changed.emit(max_size)
-        # Update frame based on whether the bar is empty:
-        self.setLineWidth(4)
-        if len(self._widgets) > 0:
-            self.setFrameStyle(QFrame.Shape.Panel | QFrame.Shadow.Plain)
-        elif self.width() > self.height():
-            self.setFrameStyle(QFrame.Shape.HLine | QFrame.Shadow.Plain)
-        else:
-            self.setFrameStyle(QFrame.Shape.VLine | QFrame.Shadow.Plain)
 
     def _update_insert_pos(self, point: QPointF):
         if len(self._widgets) == 0:
@@ -307,27 +318,23 @@ class TabBar(BorderedWidget):
         painter = QPainter(self)
         foreground_color = self.palette().color(self.foregroundRole())
         painter.setPen(foreground_color)
-        for widget in self._widgets:
-            if not isinstance(widget, Tab):
-                continue
-            box = widget.geometry()
-            box.adjust(-1, -1, 1, 1)
+        if self._active_tab is not None:
+            active_rect = self._active_tab.geometry()
             if self._orientation == Qt.Orientation.Horizontal:
                 if self._at_parent_start:
-                    edge_rect = QRect(box.x(), 0, box.width(), box.top() + 1)
-                    box.setTop(2)
+                    active_rect.setBottom(self.height() - 2)
+                    active_rect.setY(self._active_tab.y() + self._active_tab.height() + 2)
                 else:
-                    edge_rect = QRect(box.x(), box.bottom(), box.width(), self.height() - box.bottom() - 1)
-                    box.setBottom(self.height() - 2)
+                    active_rect.setY(2)
+                    active_rect.setBottom(self._active_tab.y() - 2)
             else:
                 if self._at_parent_start:
-                    edge_rect = QRect(0, box.y(), box.x() - 1, box.height())
-                    box.setLeft(2)
+                    active_rect.setRight(self.width() - 2)
+                    active_rect.setX(self._active_tab.x() + self._active_tab.width() + 2)
                 else:
-                    edge_rect = QRect(box.right() - 1, box.y(), self.width() - box.right() - 1,  box.height())
-                    box.setRight(self.width() - 2)
-            painter.fillRect(edge_rect, foreground_color if widget == self._active_tab else Qt.GlobalColor.gray)
-            painter.drawRect(box)
+                    active_rect.setX(2)
+                    active_rect.setRight(self._active_tab.x() - 2)
+            painter.fillRect(active_rect, foreground_color)
 
         if self._insert_pos is not None:
             if self._orientation == Qt.Orientation.Horizontal:

@@ -115,12 +115,12 @@ class MainWindow(QMainWindow):
         self._layout.addWidget(self._image_panel, stretch=IMAGE_PANEL_STRETCH)
         self._layout.addWidget(DraggableDivider())
 
-        self._bottom_tab_box = TabBox(Qt.Orientation.Horizontal, False)
-        self._layout.addWidget(self._bottom_tab_box, stretch=TAB_BOX_STRETCH)
+        self._lower_tab_box = TabBox(Qt.Orientation.Horizontal, False)
+        self._layout.addWidget(self._lower_tab_box, stretch=TAB_BOX_STRETCH)
         self._layout.addWidget(DraggableDivider())
 
-        self._second_bottom_tab_box = TabBox(Qt.Orientation.Horizontal, False)
-        self._layout.addWidget(self._second_bottom_tab_box, stretch=TAB_BOX_STRETCH)
+        self._bottom_tab_box = TabBox(Qt.Orientation.Horizontal, False)
+        self._layout.addWidget(self._bottom_tab_box, stretch=TAB_BOX_STRETCH)
 
         # Create tabs:
         # TODO: Connect tab placement to config
@@ -132,7 +132,7 @@ class MainWindow(QMainWindow):
 
         tab_box = self._get_tab_box(AppConfig().get(AppConfig.TOOL_TAB_BAR))
         if tab_box is None:
-            tab_box = self._bottom_tab_box if screen_size.height() > AUTO_TAB_MOVE_THRESHOLD \
+            tab_box = self._lower_tab_box if screen_size.height() > AUTO_TAB_MOVE_THRESHOLD \
                 else self._image_panel.right_tab_box
             assert tab_box is not None
         tab_box.add_widget(self._tool_tab, 0)
@@ -140,6 +140,22 @@ class MainWindow(QMainWindow):
         self._control_panel: Optional[QWidget] = None
         self._control_tab = Tab(CONTROL_TAB_NAME)
         self._control_tab.setIcon(QIcon(GEN_TAB_ICON))
+
+        for tab_box, tab_box_key in ((self._top_tab_box, TOP_TAB_BOX_ID),
+                                     (self._lower_tab_box, LOWER_TAB_BOX_ID),
+                                     (self._bottom_tab_box, BOTTOM_TAB_BOX_ID),
+                                     (self._image_panel.left_tab_box, LEFT_TAB_BOX_ID),
+                                     (self._image_panel.right_tab_box, RIGHT_TAB_BOX_ID)):
+            assert tab_box is not None
+
+            def _tab_added(tab, key=tab_box_key):
+                if tab == self._tool_tab:
+                    AppConfig().set(AppConfig.TOOL_TAB_BAR, key)
+                elif tab == self._control_tab:
+                    AppConfig().set(AppConfig.GENERATION_TAB_BAR, key)
+                else:
+                    AppConfig().set(AppConfig.CONTROLNET_TAB_BAR, key)
+            tab_box.tab_added.connect(_tab_added)
 
         for panel in (self._image_panel, self._tool_panel):
             AppStateTracker.set_enabled_states(panel, [APP_STATE_EDITING])
@@ -155,9 +171,9 @@ class MainWindow(QMainWindow):
             tab_box = self._get_tab_box(AppConfig().get(AppConfig.GENERATION_TAB_BAR))
             if tab_box is None:
                 if self.height() > USE_LOWER_CONTROL_TAB_THRESHOLD:
-                    tab_box = self._second_bottom_tab_box
-                elif self.height() > AUTO_TAB_MOVE_THRESHOLD:
                     tab_box = self._bottom_tab_box
+                elif self.height() > AUTO_TAB_MOVE_THRESHOLD:
+                    tab_box = self._lower_tab_box
                 else:
                     tab_box = self._image_panel.right_tab_box
                 assert tab_box is not None
@@ -168,9 +184,9 @@ class MainWindow(QMainWindow):
         tab_box = self._get_tab_box(tab_box_key)
         if tab_box is None:
             if self.height() > USE_LOWER_CONTROL_TAB_THRESHOLD:
-                tab_box = self._second_bottom_tab_box
-            elif self.height() > AUTO_TAB_MOVE_THRESHOLD:
                 tab_box = self._bottom_tab_box
+            elif self.height() > AUTO_TAB_MOVE_THRESHOLD:
+                tab_box = self._lower_tab_box
             else:
                 tab_box = self._image_panel.right_tab_box
             assert tab_box is not None
@@ -179,7 +195,7 @@ class MainWindow(QMainWindow):
 
     def remove_tab(self, tab: Tab) -> None:
         """Removes a tab if it is found in any of the window's tab boxes."""
-        for tab_box in (self._top_tab_box, self._bottom_tab_box, self._second_bottom_tab_box,
+        for tab_box in (self._top_tab_box, self._lower_tab_box, self._bottom_tab_box,
                         self._image_panel.left_tab_box, self._image_panel.right_tab_box):
             assert tab_box is not None
             if tab_box.contains_widget(tab):
@@ -258,30 +274,6 @@ class MainWindow(QMainWindow):
             loading_bounds = QRect(self.width() // 2 - loading_widget_size // 2, loading_widget_size * 3,
                                    loading_widget_size, loading_widget_size)
             self._loading_widget.setGeometry(loading_bounds)
-        if AppConfig().get(AppConfig.AUTO_MOVE_TABS):
-            if self.height() > USE_LOWER_CONTROL_TAB_THRESHOLD and self._central_widget is not None \
-                    and not self._second_bottom_tab_box.contains_widget(self._control_tab):
-                self._second_bottom_tab_box.add_widget(self._control_tab)
-            left_tab_box = self._image_panel.left_tab_box
-            right_tab_box = self._image_panel.right_tab_box
-            assert left_tab_box is not None
-            assert right_tab_box is not None
-            if self.height() > AUTO_TAB_MOVE_THRESHOLD:
-                if any((tab_box.contains_widget(self._tool_tab) for tab_box in (left_tab_box, right_tab_box))):
-                    self._bottom_tab_box.add_widget(self._tool_tab)
-                if self._central_widget is not None and any((tab_box.contains_widget(self._control_tab)
-                                                            for tab_box in (left_tab_box, right_tab_box))):
-                    self._bottom_tab_box.add_widget(self._control_tab)
-            else:
-                if any((tab_box.contains_widget(self._tool_tab) for tab_box in (self._top_tab_box,
-                                                                                self._bottom_tab_box,
-                                                                                self._second_bottom_tab_box))):
-                    right_tab_box.add_widget(self._tool_tab)
-                if self._central_widget is not None and any((tab_box.contains_widget(self._control_tab)
-                                                            for tab_box in (self._top_tab_box,
-                                                                            self._bottom_tab_box,
-                                                                            self._second_bottom_tab_box))):
-                    right_tab_box.add_widget(self._control_tab)
 
     def mousePressEvent(self, event: Optional[QMouseEvent]) -> None:
         """Suppresses mouse events when the loading spinner is active."""
@@ -296,10 +288,10 @@ class MainWindow(QMainWindow):
         """Look up a tab box from its expected name in config."""
         if tab_box_key == TOP_TAB_BOX_ID:
             return self._top_tab_box
+        if tab_box_key == LOWER_TAB_BOX_ID:
+            return self._lower_tab_box
         if tab_box_key == BOTTOM_TAB_BOX_ID:
             return self._bottom_tab_box
-        if tab_box_key == LOWER_TAB_BOX_ID:
-            return self._second_bottom_tab_box
         if tab_box_key == LEFT_TAB_BOX_ID:
             return self._image_panel.left_tab_box
         if tab_box_key == RIGHT_TAB_BOX_ID:

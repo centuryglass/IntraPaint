@@ -10,10 +10,14 @@ from src.config.application_config import AppConfig
 from src.ui.widget.label import Label
 
 
+SECONDS_UNTIL_DRAG_START = 0.3
+
+
 class Tab(Label):
     """Tab label that can be dragged between CollapsibleBox widgets."""
 
     clicked = Signal(QWidget)
+    double_clicked = Signal(QWidget)
     tab_content_replaced = Signal(QWidget, QWidget)
 
     def __init__(self, text: str, widget: Optional[QWidget] = None) -> None:
@@ -47,17 +51,23 @@ class Tab(Label):
         if self._widget is not None and hasattr(self._widget, 'set_orientation'):
             self._widget.set_orientation(orientation)
 
+    def mouseDoubleClickEvent(self, event: Optional[QMouseEvent]) -> None:
+        """Send the double-click signal on left-click."""
+        if event.buttons() == Qt.MouseButton.LeftButton:
+            self.double_clicked.emit(self)
+
     def mousePressEvent(self, event: Optional[QMouseEvent]) -> None:
         """Prepare to activate or drag on click."""
         assert event is not None
         self._dragging = False
         self._clicking = event.buttons() == Qt.MouseButton.LeftButton
+        self._click_time = datetime.datetime.now().timestamp()
 
     def mouseMoveEvent(self, event: Optional[QMouseEvent]) -> None:
         """Allow click and drag."""
         assert event is not None
         click_duration = datetime.datetime.now().timestamp() - self._click_time
-        if self._clicking and click_duration > 0.2:
+        if self._clicking and click_duration > SECONDS_UNTIL_DRAG_START:
             self._dragging = True
             drag = QDrag(self)
             drag.setMimeData(QMimeData())

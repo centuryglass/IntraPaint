@@ -68,7 +68,6 @@ class AppConfig(Config, metaclass=Singleton):
     # Generate with `python /home/anthony/Workspace/ML/IntraPaint/scripts/dynamic_import_typing.py src/config/application_config.py`
 
     ANIMATE_OUTLINES: str
-    AUTO_MOVE_TABS: str
     BATCH_COUNT: str
     BATCH_SIZE: str
     BRUSH_FAVORITES: str
@@ -76,6 +75,7 @@ class AppConfig(Config, metaclass=Singleton):
     CONTROLNET_ARGS_1: str
     CONTROLNET_ARGS_2: str
     CONTROLNET_DOWNSAMPLE_RATE: str
+    CONTROLNET_TAB_BAR: str
     CONTROLNET_TILE_MODEL: str
     CONTROLNET_UPSCALING: str
     CUTN: str

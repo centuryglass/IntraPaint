@@ -37,7 +37,7 @@ class SelectionPanel(QWidget):
         self._insert_index = 0
 
         select_all_key = KeyConfig().get_keycodes(KeyConfig.SELECT_ALL_SHORTCUT)
-        clear_key = KeyConfig().get_keycodes(KeyConfig.CLEAR_SHORTCUT)
+        clear_key = KeyConfig().get_keycodes(KeyConfig.SELECT_NONE_SHORTCUT)
         select_all_shortcut = None if select_all_key == '' else get_key_display_string(select_all_key)
         clear_shortcut = None if clear_key == '' else get_key_display_string(clear_key)
 

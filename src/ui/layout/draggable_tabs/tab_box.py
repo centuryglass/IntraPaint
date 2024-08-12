@@ -15,6 +15,8 @@ class TabBox(BorderedWidget):
     """Collapsible container widget that displays tab content."""
 
     box_toggled = Signal(bool)
+    tab_added = Signal(Tab)
+    tab_removed = Signal(Tab)
 
     def __init__(self, orientation: Qt.Orientation, at_parent_start: bool) -> None:
         super().__init__()
@@ -28,6 +30,8 @@ class TabBox(BorderedWidget):
         self._tab_bar.toggled.connect(self._box_opened_slot)
         self._tab_bar.tab_clicked.connect(self._tab_clicked_slot)
         self._tab_bar.active_tab_content_replaced.connect(self._update_tab_slot)
+        self._tab_bar.tab_added.connect(self.tab_added)
+        self._tab_bar.tab_removed.connect(self.tab_removed)
         self._tab_bar.max_size_changed.connect(self._update_max_size)
         self._layout.setSpacing(0)
         self._layout.setContentsMargins(0, 0, 0, 0)

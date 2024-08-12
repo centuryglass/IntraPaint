@@ -311,7 +311,8 @@ class AppController(MenuBuilder):
         self._generator.build_menus()
         self._window.set_control_panel(self._generator.get_control_panel())
         for tab in self._generator.get_extra_tabs():
-            self._window.add_tab(tab)
+            # Remember to adjust this if you add any other generator-specific tabs
+            self._window.add_tab(tab, AppConfig().get(AppConfig.CONTROLNET_TAB_BAR))
         if self._generator_window is not None:
             self._generator_window.mark_active_generator(generator)
 
