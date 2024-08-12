@@ -24,6 +24,7 @@ from src.util.shared_constants import APP_ICON_PATH
 
 WINDOW_PADDING = 50
 
+
 class SettingsModal(QDialog):
     """Manage remote settings."""
 
@@ -66,7 +67,6 @@ class SettingsModal(QDialog):
         bottom_panel_layout.addWidget(save_button, stretch=1)
         layout.addWidget(bottom_panel, stretch=1)
 
-
     def load_from_config(self, config: Config, categories: Optional[List[str]] = None) -> None:
         """Load settings from a Config object, or from a subset of Config object categories."""
         if categories is None:
@@ -86,10 +86,10 @@ class SettingsModal(QDialog):
 
                 def _add_change(new_value: Any, name=key):
                     self._add_change(name, new_value)
+
                 control_widget.valueChanged.connect(_add_change)
-                self._add_setting(key, category, control_widget, label)\
-
-
+                self._add_setting(key, category, control_widget, label)
+                
     def remove_category(self, config: Config, category: str) -> None:
         """Remove a category from the modal"""
         if category not in self._tabs:

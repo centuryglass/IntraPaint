@@ -4,10 +4,10 @@ inpainting modes.  Other editing modes should provide subclasses with implementa
 """
 import logging
 import sys
-from typing import Optional
+from typing import Optional, Dict
 
 from PySide6.QtCore import Qt, QRect, QSize, Signal
-from PySide6.QtGui import QIcon, QMouseEvent, QResizeEvent, QKeySequence, QCloseEvent, QImage
+from PySide6.QtGui import QIcon, QMouseEvent, QResizeEvent, QKeySequence, QCloseEvent, QImage, QAction
 from PySide6.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QStackedWidget, QApplication, QSizePolicy
 
 from src.config.application_config import AppConfig
@@ -30,9 +30,26 @@ from src.util.validation import layout_debug
 
 logger = logging.getLogger(__name__)
 
-MAIN_TAB_NAME = 'Main'
-CONTROL_TAB_NAME = 'Image Generation'
-DEFAULT_LOADING_MESSAGE = 'Loading...'
+# The `QCoreApplication.translate` context for strings in this file
+TR_ID = 'ui.window.main_window'
+
+
+def _tr(*args):
+    """Helper to make `QCoreApplication.translate` more concise."""
+    return QApplication.translate(TR_ID, *args)
+
+
+CONTROL_TAB_NAME = _tr('Image Generation')
+TOOL_TAB_NAME = _tr('Tools')
+MOVE_TOP_ACTION = _tr('Move to top panel')
+MOVE_BOTTOM_ACTION = _tr('Move to bottom panel')
+MOVE_LEFT_ACTION = _tr('Move to left panel')
+MOVE_RIGHT_ACTION = _tr('Move to right panel')
+MOVE_LOWER_ACTION = _tr('Move to lower panel')
+
+
+DEFAULT_LOADING_MESSAGE = _tr('Loading...')
+
 TAB_BOX_STRETCH = 50
 IMAGE_PANEL_STRETCH = 300
 AUTO_TAB_MOVE_THRESHOLD = 1200
@@ -123,38 +140,43 @@ class MainWindow(QMainWindow):
         self._layout.addWidget(self._bottom_tab_box, stretch=TAB_BOX_STRETCH)
 
         # Create tabs:
-        # TODO: Connect tab placement to config
+        self._tab_actions: Dict[Tab, Dict[str, QAction]] = {}
 
         # Image/Mask editing layout:
         self._tool_panel = ToolPanel(image_stack, self._image_panel, self.generate_signal.emit)
-        self._tool_tab = Tab('Tools', self._tool_panel)
+        self._tool_tab = Tab(TOOL_TAB_NAME, self._tool_panel)
         self._tool_tab.setIcon(QIcon(TOOL_TAB_ICON))
 
-        tab_box = self._get_tab_box(AppConfig().get(AppConfig.TOOL_TAB_BAR))
-        if tab_box is None:
-            tab_box = self._lower_tab_box if screen_size.height() > AUTO_TAB_MOVE_THRESHOLD \
-                else self._image_panel.right_tab_box
-            assert tab_box is not None
-        tab_box.add_widget(self._tool_tab, 0)
+        tab_box_id = AppConfig().get(AppConfig.TOOL_TAB_BAR)
+        if tab_box_id not in [TOP_TAB_BOX_ID, BOTTOM_TAB_BOX_ID, LOWER_TAB_BOX_ID, LEFT_TAB_BOX_ID, RIGHT_TAB_BOX_ID]:
+            tab_box_id = LOWER_TAB_BOX_ID if screen_size.height() > AUTO_TAB_MOVE_THRESHOLD \
+                else RIGHT_TAB_BOX_ID
+        self.add_tab(self._tool_tab, tab_box_id)
 
         self._control_panel: Optional[QWidget] = None
         self._control_tab = Tab(CONTROL_TAB_NAME)
         self._control_tab.setIcon(QIcon(GEN_TAB_ICON))
 
-        for tab_box, tab_box_key in ((self._top_tab_box, TOP_TAB_BOX_ID),
+        for tab_box, tab_box_id in ((self._top_tab_box, TOP_TAB_BOX_ID),
                                      (self._lower_tab_box, LOWER_TAB_BOX_ID),
                                      (self._bottom_tab_box, BOTTOM_TAB_BOX_ID),
                                      (self._image_panel.left_tab_box, LEFT_TAB_BOX_ID),
                                      (self._image_panel.right_tab_box, RIGHT_TAB_BOX_ID)):
             assert tab_box is not None
 
-            def _tab_added(tab, key=tab_box_key):
+            def _tab_added(tab, box_id=tab_box_id):
+                # Remember to update this after adding any new tabs
                 if tab == self._tool_tab:
-                    AppConfig().set(AppConfig.TOOL_TAB_BAR, key)
+                    AppConfig().set(AppConfig.TOOL_TAB_BAR, box_id)
                 elif tab == self._control_tab:
-                    AppConfig().set(AppConfig.GENERATION_TAB_BAR, key)
+                    AppConfig().set(AppConfig.GENERATION_TAB_BAR, box_id)
                 else:
-                    AppConfig().set(AppConfig.CONTROLNET_TAB_BAR, key)
+                    AppConfig().set(AppConfig.CONTROLNET_TAB_BAR, box_id)
+                for tab_move_action in self._tab_actions[tab].values():
+                    tab.removeAction(tab_move_action)
+                for other_tab_box_id, tab_move_action in self._tab_actions[tab].items():
+                    if other_tab_box_id != box_id:
+                        tab.addAction(tab_move_action)
             tab_box.tab_added.connect(_tab_added)
 
         for panel in (self._image_panel, self._tool_panel):
@@ -168,16 +190,13 @@ class MainWindow(QMainWindow):
         self._control_tab.content_widget = control_panel
         tab_parent = self._control_tab.parent()
         if tab_parent is None:
-            tab_box = self._get_tab_box(AppConfig().get(AppConfig.GENERATION_TAB_BAR))
-            if tab_box is None:
-                if self.height() > USE_LOWER_CONTROL_TAB_THRESHOLD:
-                    tab_box = self._bottom_tab_box
-                elif self.height() > AUTO_TAB_MOVE_THRESHOLD:
-                    tab_box = self._lower_tab_box
-                else:
-                    tab_box = self._image_panel.right_tab_box
-                assert tab_box is not None
-            tab_box.add_widget(self._control_tab)
+            screen_size = get_screen_size(self)
+            tab_box_id = AppConfig().get(AppConfig.GENERATION_TAB_BAR)
+            if tab_box_id not in [TOP_TAB_BOX_ID, BOTTOM_TAB_BOX_ID, LOWER_TAB_BOX_ID, LEFT_TAB_BOX_ID,
+                                  RIGHT_TAB_BOX_ID]:
+                tab_box_id = BOTTOM_TAB_BOX_ID if screen_size.height() > AUTO_TAB_MOVE_THRESHOLD \
+                    else RIGHT_TAB_BOX_ID
+            self.add_tab(self._control_tab, tab_box_id)
 
     def add_tab(self, tab: Tab, tab_box_key: str = '') -> None:
         """Adds a new tab to one of the window's tab boxes."""
@@ -191,6 +210,23 @@ class MainWindow(QMainWindow):
                 tab_box = self._image_panel.right_tab_box
             assert tab_box is not None
         assert tab_box is not None
+        if tab not in self._tab_actions:
+            self._tab_actions[tab] = {}
+            for panel_key, action_text in ((TOP_TAB_BOX_ID, MOVE_TOP_ACTION),
+                                           (BOTTOM_TAB_BOX_ID, MOVE_BOTTOM_ACTION),
+                                           (LEFT_TAB_BOX_ID, MOVE_LEFT_ACTION),
+                                           (RIGHT_TAB_BOX_ID, MOVE_RIGHT_ACTION),
+                                           (LOWER_TAB_BOX_ID, MOVE_LOWER_ACTION)):
+                new_tab_box = self._get_tab_box(panel_key)
+                assert new_tab_box is not None
+
+                def _move_to_panel(_, moving_tab=tab, destination_box=new_tab_box) -> None:
+                    destination_box.add_widget(moving_tab)
+                action = QAction(action_text)
+                action.triggered.connect(_move_to_panel)
+                self._tab_actions[tab][panel_key] = action
+                if new_tab_box != tab_box:
+                    tab.addAction(action)
         tab_box.add_widget(tab)
 
     def remove_tab(self, tab: Tab) -> None:

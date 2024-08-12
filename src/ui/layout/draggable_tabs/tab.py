@@ -9,7 +9,6 @@ from PySide6.QtWidgets import QWidget, QFrame
 from src.config.application_config import AppConfig
 from src.ui.widget.label import Label
 
-
 SECONDS_UNTIL_DRAG_START = 0.3
 
 
@@ -31,6 +30,7 @@ class Tab(Label):
         self._clicking = False
         self._dragging = False
         self._click_time = 0.0
+        self.setContextMenuPolicy(Qt.ContextMenuPolicy.ActionsContextMenu)
 
     @property
     def content_widget(self):
