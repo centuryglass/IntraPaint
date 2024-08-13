@@ -469,9 +469,9 @@ class AppController(MenuBuilder):
         cache = Cache()
         try:
             if not isinstance(file_path, str):
-                selected_path, file_selected = open_image_file(self._window, mode='save',
-                                                               selected_file=cache.get(Cache.LAST_FILE_PATH))
-                if not file_selected or not isinstance(selected_path, str):
+                selected_path = open_image_file(self._window, mode='save',
+                                                selected_file=cache.get(Cache.LAST_FILE_PATH))
+                if not isinstance(selected_path, str):
                     return
                 file_path = selected_path
             assert isinstance(file_path, str)
@@ -505,8 +505,8 @@ class AppController(MenuBuilder):
         cache = Cache()
         config = AppConfig()
         if file_path is None:
-            selected_path, file_selected = open_image_file(self._window)
-            if not file_selected or not isinstance(selected_path, (str, list)):
+            selected_path = open_image_file(self._window)
+            if not isinstance(selected_path, (str, list)):
                 return
             file_path = selected_path
         if isinstance(file_path, list):

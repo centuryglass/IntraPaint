@@ -34,9 +34,9 @@ SAVE_FILE_FORMATS = '(*.png *.ora)'
 LOAD_FILE_FORMATS = '(*.bmp *.gif *.jpg *.jpeg *.png *.pbm *.pgm *.ppm *.xbm *.xpm *.ora)'
 LOAD_LAYER_FORMATS = '(*.bmp *.gif *.jpg *.jpeg *.png *.pbm *.pgm *.ppm *.xbm *.xpm)'
 
-IMAGE_SAVE_FILTER = f'{IMAGE_FORMATS_DESCRIPTION} ({SAVE_FILE_FORMATS})'
-IMAGE_LOAD_FILTER = f'{IMAGE_FORMATS_DESCRIPTION} ({LOAD_FILE_FORMATS})'
-LAYER_LOAD_FILTER = f'{LAYER_FORMATS_DESCRIPTION} ({LOAD_LAYER_FORMATS})'
+IMAGE_SAVE_FILTER = f'{IMAGE_FORMATS_DESCRIPTION} {SAVE_FILE_FORMATS}'
+IMAGE_LOAD_FILTER = f'{IMAGE_FORMATS_DESCRIPTION} {LOAD_FILE_FORMATS}'
+LAYER_LOAD_FILTER = f'{LAYER_FORMATS_DESCRIPTION} {LOAD_LAYER_FORMATS}'
 
 LOAD_IMAGE_MODE = 'load'
 SAVE_IMAGE_MODE = 'save'
@@ -68,19 +68,29 @@ def request_confirmation(parent: QWidget, title: str, message: str) -> bool:
 
 
 def open_image_file(parent: QWidget, mode: str = 'load',
-                    selected_file: str = '') -> tuple[str, str] | tuple[List[str], str] | tuple[None, None]:
+                    selected_file: str = '') -> Optional[str]:
     """Opens an image file for editing, saving, etc."""
     is_pyinstaller_bundle = getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS')
+    file_filter = IMAGE_LOAD_FILTER if mode == LOAD_IMAGE_MODE else IMAGE_SAVE_FILTER
+    file_dialog = QFileDialog(parent, filter=file_filter)
+    if mode == LOAD_IMAGE_MODE:
+        file_dialog.setFileMode(QFileDialog.FileMode.ExistingFile)
+        file_dialog.setAcceptMode(QFileDialog.AcceptMode.AcceptOpen)
+        file_dialog.setViewMode(QFileDialog.ViewMode.Detail)
+    else:
+        assert mode == SAVE_IMAGE_MODE
+        file_dialog.setFileMode(QFileDialog.FileMode.AnyFile)
+        file_dialog.setAcceptMode(QFileDialog.AcceptMode.AcceptSave)
+    if is_pyinstaller_bundle:
+        file_dialog.setOption(QFileDialog.Option.DontUseNativeDialog, True)
     options = str(QFileDialog.Option.DontUseNativeDialog) if is_pyinstaller_bundle else None
     try:
-        if mode == LOAD_IMAGE_MODE:
-            return QFileDialog.getOpenFileNames(parent, LOAD_IMAGE_TITLE, options, filter=IMAGE_LOAD_FILTER)
-        if mode == SAVE_IMAGE_MODE:
-            return QFileDialog.getSaveFileName(parent, SAVE_IMAGE_TITLE, selected_file, filter=IMAGE_SAVE_FILTER)
-        raise ValueError(f'invalid file access mode {mode}')
+        if file_dialog.exec():
+            return file_dialog.selectedFiles()[0]
+        return None
     except (ValueError, UnidentifiedImageError) as err:
         show_error_dialog(parent, LOAD_IMAGE_ERROR_MSG, err)
-    return None, None
+    return None
 
 
 def open_image_layers(parent: QWidget) -> tuple[list[str], str] | tuple[None, None]:

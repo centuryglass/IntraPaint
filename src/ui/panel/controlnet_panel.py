@@ -188,7 +188,7 @@ class ControlnetPanel(BorderedWidget):
 
         def open_control_image_file() -> None:
             """Select an image to use as the control image."""
-            image_path, _ = open_image_file(self)
+            image_path = open_image_file(self)
             if image_path is not None:
                 if isinstance(image_path, list):
                     image_path = image_path[0]

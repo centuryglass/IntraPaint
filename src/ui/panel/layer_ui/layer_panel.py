@@ -279,7 +279,7 @@ class LayerPanel(QWidget):
                 self._mode_box.setCurrentIndex(mode_index)
 
     def _lock_change_slot(self, layer: Layer, is_locked: bool) -> None:
-        assert layer == self._image_stack.active_layer
+        assert layer == self._image_stack.active_layer, f'active is {self._image_stack.active_layer.name}, got {layer.name}'
         for widget in (self._opacity_spinbox,
                        self._opacity_slider,
                        self._mode_box,

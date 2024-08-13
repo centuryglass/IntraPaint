@@ -1,13 +1,8 @@
 # Development tasks
 
-# Bugs
-- '.png' auto-appended onto '.ora' paths sometimes
-
 
 # Files
 - ORA SVG support
-- Move non-standard ORA data to new xml file
-- Add layer locks to ORA extended data
 - Support saving in formats other than .png (metadata fixes?)
 - Warn when saving would merge layers, discard metadata, discard alpha
 

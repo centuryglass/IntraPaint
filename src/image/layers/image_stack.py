@@ -916,7 +916,8 @@ class ImageStack(QObject):
                 image_data = transformed_image
             layer.insert_image_content(image_data, target_bounds, composition_mode)
 
-    def load_layer_stack(self, layer_stack: LayerStack, new_size: QSize) -> None:
+    def load_layer_stack(self, layer_stack: LayerStack, new_size: QSize,
+                         new_active_layer: Optional[Layer] = None) -> None:
         """Loads a new image from layer data."""
         assert not self._layer_stack.contains_recursive(layer_stack)
         saved_state = self._layer_stack.save_state()
@@ -929,9 +930,15 @@ class ImageStack(QObject):
         while layer_stack.count > 0:
             new_layers.append(layer_stack.get_layer_by_index(0))
             layer_stack.remove_layer(new_layers[-1])
+        if new_active_layer is not None:
+            new_active_id = new_active_layer.id
+        elif len(new_layers) > 0:
+            new_active_id = new_layers[0].id
+        else:
+            new_active_id = self._layer_stack.id
 
         @self._with_batch_content_update
-        def _load(loaded=layer_stack, size=new_size):
+        def _load(loaded=layer_stack, size=new_size, next_active_id=new_active_id):
             self.selection_layer.clear(False)
             self.selection_layer.adjust_local_bounds(QRect(QPoint(), size), False)
             self.selection_layer.set_transform(QTransform())
@@ -946,11 +953,9 @@ class ImageStack(QObject):
             self.size = size
             for new_layer in new_layers:
                 self._insert_layer_internal(new_layer, self._layer_stack, self._layer_stack.count)
-            if len(new_layers) > 0:
-                self._active_layer_id = new_layers[0].id
-            else:
-                self._active_layer_id = self._layer_stack.id
-            active_layer = self._layer_stack.get_layer_by_id(self._active_layer_id)
+            active_layer = self._layer_stack.get_layer_by_id(next_active_id)
+            assert active_layer is not None, f'failed to find layer {next_active_id}'
+            self._active_layer_id = next_active_id
             self.active_layer_changed.emit(active_layer)
 
         @self._with_batch_content_update

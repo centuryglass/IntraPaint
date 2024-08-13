@@ -177,18 +177,18 @@ class SDWebUIGenerator(ImageGenerator):
         """Returns whether the generator is supported on the current system."""
         if self._webservice is None:
             self._webservice = A1111Webservice(self._server_url)
-        # Login automatically if username/password are defined as env variables.
-        # Obviously this isn't terribly secure, but A1111 auth security is already pretty minimal, and I'm just using
-        # this for testing.
-        if 'SD_UNAME' in os.environ and 'SD_PASS' in os.environ:
-            self._webservice.login(os.environ['SD_UNAME'], os.environ['SD_PASS'])
-            self._webservice.set_auth((os.environ['SD_UNAME'], os.environ['SD_PASS']))
         try:
+            # Login automatically if username/password are defined as env variables.
+            # Obviously this isn't terribly secure, but A1111 auth security is already pretty minimal, and I'm just using
+            # this for testing.
+            if 'SD_UNAME' in os.environ and 'SD_PASS' in os.environ:
+                self._webservice.login(os.environ['SD_UNAME'], os.environ['SD_PASS'])
+                self._webservice.set_auth((os.environ['SD_UNAME'], os.environ['SD_PASS']))
             health_check_res = self._webservice.login_check()
             if health_check_res.ok or (health_check_res.status_code == 401
                                        and health_check_res.json()[AUTH_ERROR_DETAIL_KEY] == AUTH_ERROR_MESSAGE):
                 return True
-        except requests.exceptions.RequestException as req_err:
+        except (requests.exceptions.RequestException, requests.exceptions.ConnectionError) as req_err:
             logger.error(f'Login check connection failed: {req_err}')
         except AuthError:
             self.status_signal.emit(AUTH_ERROR)
