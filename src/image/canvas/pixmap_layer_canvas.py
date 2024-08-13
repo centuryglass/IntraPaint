@@ -12,7 +12,6 @@ from src.image.layers.image_layer import ImageLayer
 from src.ui.graphics_items.pixmap_item import PixmapItem
 
 ACTIVE_PIXMAP_OPACITY = 0.4
-
 INACTIVE_PIXMAP_OPACITY = 0.2
 
 

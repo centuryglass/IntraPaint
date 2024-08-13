@@ -2,6 +2,7 @@
 from typing import Callable, List
 
 import numpy as np
+from PyQt5.QtWidgets import QApplication
 from PySide6.QtGui import QImage
 
 from src.config.key_config import KeyConfig
@@ -9,13 +10,22 @@ from src.image.filter.filter import ImageFilter
 from src.image.mypaint.numpy_image_utils import image_data_as_numpy_8bit
 from src.util.parameter import Parameter, TYPE_FLOAT
 
-COLOR_BALANCE_TITLE = 'RGBA Color Balance'
-COLOR_BALANCE_DESCRIPTION = 'Adjust color balance'
+# The `QCoreApplication.translate` context for strings in this file
+TR_ID = 'image.filter.rgb_color_balance'
 
-RED_LABEL = 'Red'
-GREEN_LABEL = 'Green'
-BLUE_LABEL = 'Blue'
-ALPHA_LABEL = 'Alpha'
+
+def _tr(*args):
+    """Helper to make `QCoreApplication.translate` more concise."""
+    return QApplication.translate(TR_ID, *args)
+
+
+COLOR_BALANCE_TITLE = _tr('RGBA Color Balance')
+COLOR_BALANCE_DESCRIPTION = _tr('Adjust color balance')
+
+RED_LABEL = _tr('Red')
+GREEN_LABEL = _tr('Green')
+BLUE_LABEL = _tr('Blue')
+ALPHA_LABEL = _tr('Alpha')
 MAX_VALUE = 8.0
 
 

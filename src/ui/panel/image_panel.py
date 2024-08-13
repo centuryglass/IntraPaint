@@ -3,23 +3,32 @@ from typing import Optional
 
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QResizeEvent
-from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLabel, QDoubleSpinBox, QSlider, QPushButton, QSizePolicy
+from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLabel, QDoubleSpinBox, QSlider, QPushButton, \
+    QSizePolicy, QApplication
 
 from src.image.layers.image_stack import ImageStack
 from src.ui.image_viewer import ImageViewer
 from src.ui.layout.draggable_divider import DraggableDivider
 from src.ui.layout.draggable_tabs.tab_box import TabBox
 
+# The `QCoreApplication.translate` context for strings in this file
+TR_ID = 'ui.panel.image_panel'
+
+
+def _tr(*args):
+    """Helper to make `QCoreApplication.translate` more concise."""
+    return QApplication.translate(TR_ID, *args)
+
+SCALE_SLIDER_LABEL = _tr('Scale:')
+SCALE_RESET_BUTTON_LABEL = _tr('Reset View')
+SCALE_RESET_BUTTON_TOOLTIP = _tr('Restore default image zoom and offset')
+SCALE_ZOOM_BUTTON_LABEL = _tr('Zoom in')
+SCALE_ZOOM_BUTTON_TOOLTIP = _tr('Zoom in on the area selected for image generation')
+
 MIN_WIDTH_SHOWING_SCALE_SLIDER = 600
 MIN_WIDTH_SHOWING_HINT_TEXT = 900
 TAB_BOX_STRETCH = 50
 MAIN_CONTENT_STRETCH = 100
-
-SCALE_SLIDER_LABEL = 'Scale:'
-SCALE_RESET_BUTTON_LABEL = 'Reset View'
-SCALE_RESET_BUTTON_TOOLTIP = 'Restore default image zoom and offset'
-SCALE_ZOOM_BUTTON_LABEL = 'Zoom in'
-SCALE_ZOOM_BUTTON_TOOLTIP = 'Zoom in on the area selected for image generation'
 
 
 class ImagePanel(QWidget):

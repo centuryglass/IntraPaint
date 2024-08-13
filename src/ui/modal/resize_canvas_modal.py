@@ -1,29 +1,39 @@
 """Popup modal window used for cropping or extending the edited image without scaling its contents."""
 from typing import Optional
 import math
-from PySide6.QtWidgets import QWidget, QDialog, QVBoxLayout, QHBoxLayout, QPushButton
+from PySide6.QtWidgets import QWidget, QDialog, QVBoxLayout, QHBoxLayout, QPushButton, QApplication
 from PySide6.QtCore import Qt, QSize, QRect, QPoint
 from PySide6.QtGui import QPainter, QPen, QImage, QResizeEvent, QPaintEvent, QIcon
 from src.ui.input_fields.labeled_spinbox import LabeledSpinbox
 from src.util.geometry_utils import get_scaled_placement
 from src.util.shared_constants import APP_ICON_PATH
 
-WINDOW_TITLE = 'Resize image canvas'
+# The `QCoreApplication.translate` context for strings in this file
+TR_ID = 'ui.modal.resize_canvas_modal'
+
+
+def _tr(*args):
+    """Helper to make `QCoreApplication.translate` more concise."""
+    return QApplication.translate(TR_ID, *args)
+
+
+WINDOW_TITLE = _tr('Resize image canvas')
+WIDTH_LABEL = _tr('Width:')
+WIDTH_TOOLTIP = _tr('New image width in pixels')
+HEIGHT_LABEL = _tr('Height:')
+HEIGHT_TOOLTIP = _tr('New image height in pixels')
+X_OFFSET_LABEL = _tr('X Offset:')
+X_OFFSET_TOOLTIP = _tr('Distance in pixels from the left edge of the resized canvas to the left edge of the current'
+                       ' image content')
+Y_OFFSET_LABEL = _tr('Y Offset:')
+Y_OFFSET_TOOLTIP = _tr('Distance in pixels from the top edge of the resized canvas to the top edge of the current '
+                       'image content')
+CENTER_BUTTON_LABEL = _tr('Center')
+CANCEL_BUTTON_LABEL = _tr('Cancel')
+RESIZE_BUTTON_LABEL = _tr('Resize image canvas')
+
 MIN_PX_VALUE = 8
 MAX_PX_VALUE = 20000
-WIDTH_LABEL = 'Width:'
-WIDTH_TOOLTIP = 'New image width in pixels'
-HEIGHT_LABEL = 'Height:'
-HEIGHT_TOOLTIP = 'New image height in pixels'
-X_OFFSET_LABEL = 'X Offset:'
-X_OFFSET_TOOLTIP = ('Distance in pixels from the left edge of the resized canvas to the left edge of the current image '
-                    'content')
-Y_OFFSET_LABEL = 'Y Offset:'
-Y_OFFSET_TOOLTIP = ('Distance in pixels from the top edge of the resized canvas to the top edge of the current image '
-                    'content')
-CENTER_BUTTON_LABEL = 'Center'
-CANCEL_BUTTON_LABEL = 'Cancel'
-RESIZE_BUTTON_LABEL = 'Resize image canvas'
 
 
 class ResizeCanvasModal(QDialog):

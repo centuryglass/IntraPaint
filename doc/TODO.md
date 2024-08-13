@@ -43,8 +43,6 @@
 - Add checkboxes to limit generation size to edit size, force restricted aspect ratio.
 - Fix issues with gen area recalculation when loading a smaller image.
 
-## Selection tool
-- Add mask draw/erase hotkey
 
 ## Lasso tool
 - Vector-based selection tool
@@ -81,13 +79,9 @@ Alternate brush tools that filter for certain brush types
 - Non-transitory selection tab?
 
 # ControlNet
-- Add vertical layout mode
 - Figure out a way to preview module preprocessing
 - Get extended controls working in Forge API (PR adding control type endpoint)?
 - Add tooltip descriptions for modules and models
-
-# Code cleanup
-- Localization support: continue removing hard-coded strings
 
 # sketch canvas/libmypaint
 - Cleanup and release libmypaint-pyqt package

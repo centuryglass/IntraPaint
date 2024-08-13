@@ -1416,6 +1416,174 @@ Please remember to include the traceback from the Details expander.</translation
     </message>
   </context>
   <context>
+    <name>image.filter.blur</name>
+    <message>
+      <location filename="../../src/image/filter/blur.py" line="21"/>
+      <source>Simple</source>
+      <translation>Simple</translation>
+    </message>
+    <message>
+      <location filename="../../src/image/filter/blur.py" line="22"/>
+      <source>Box</source>
+      <translation>Box</translation>
+    </message>
+    <message>
+      <location filename="../../src/image/filter/blur.py" line="23"/>
+      <source>Gaussian</source>
+      <translation>Gaussian</translation>
+    </message>
+    <message>
+      <location filename="../../src/image/filter/blur.py" line="25"/>
+      <source>Blur</source>
+      <translation>Blur</translation>
+    </message>
+    <message>
+      <location filename="../../src/image/filter/blur.py" line="26"/>
+      <source>Blur the image</source>
+      <translation>Blur the image</translation>
+    </message>
+    <message>
+      <location filename="../../src/image/filter/blur.py" line="28"/>
+      <source>Blurring mode</source>
+      <translation>Blurring mode</translation>
+    </message>
+    <message>
+      <location filename="../../src/image/filter/blur.py" line="29"/>
+      <source>Image blurring algorithm</source>
+      <translation>Image blurring algorithm</translation>
+    </message>
+    <message>
+      <location filename="../../src/image/filter/blur.py" line="31"/>
+      <source>Radius</source>
+      <translation>Radius</translation>
+    </message>
+    <message>
+      <location filename="../../src/image/filter/blur.py" line="32"/>
+      <source>Pixel blur radius (no effect in simple mode).</source>
+      <translation>Pixel blur radius (no effect in simple mode).</translation>
+    </message>
+  </context>
+  <context>
+    <name>image.filter.brightness_contrast</name>
+    <message>
+      <location filename="../../src/image/filter/brightness_contrast.py" line="21"/>
+      <source>Brightness/Contrast</source>
+      <translation>Brightness/Contrast</translation>
+    </message>
+    <message>
+      <location filename="../../src/image/filter/brightness_contrast.py" line="22"/>
+      <source>Adjust image brightness and contrast.</source>
+      <translation>Adjust image brightness and contrast.</translation>
+    </message>
+    <message>
+      <location filename="../../src/image/filter/brightness_contrast.py" line="24"/>
+      <source>Brightness:</source>
+      <translation>Brightness:</translation>
+    </message>
+    <message>
+      <location filename="../../src/image/filter/brightness_contrast.py" line="25"/>
+      <source>Contrast</source>
+      <translation>Contrast</translation>
+    </message>
+  </context>
+  <context>
+    <name>image.filter.posterize</name>
+    <message>
+      <location filename="../../src/image/filter/posterize.py" line="23"/>
+      <source>Posterize</source>
+      <translation>Posterize</translation>
+    </message>
+    <message>
+      <location filename="../../src/image/filter/posterize.py" line="24"/>
+      <source>Reduce color range by reducing image color bit count.</source>
+      <translation>Reduce color range by reducing image color bit count.</translation>
+    </message>
+    <message>
+      <location filename="../../src/image/filter/posterize.py" line="25"/>
+      <source>Bit Count:</source>
+      <translation>Bit Count:</translation>
+    </message>
+    <message>
+      <location filename="../../src/image/filter/posterize.py" line="26"/>
+      <source>Image color bits to preserve (1-8)</source>
+      <translation>Image color bits to preserve (1-8)</translation>
+    </message>
+  </context>
+  <context>
+    <name>image.filter.rgb_color_balance</name>
+    <message>
+      <location filename="../../src/image/filter/rgb_color_balance.py" line="22"/>
+      <source>RGBA Color Balance</source>
+      <translation>RGBA Color Balance</translation>
+    </message>
+    <message>
+      <location filename="../../src/image/filter/rgb_color_balance.py" line="23"/>
+      <source>Adjust color balance</source>
+      <translation>Adjust color balance</translation>
+    </message>
+    <message>
+      <location filename="../../src/image/filter/rgb_color_balance.py" line="25"/>
+      <source>Red</source>
+      <translation>Red</translation>
+    </message>
+    <message>
+      <location filename="../../src/image/filter/rgb_color_balance.py" line="26"/>
+      <source>Green</source>
+      <translation>Green</translation>
+    </message>
+    <message>
+      <location filename="../../src/image/filter/rgb_color_balance.py" line="27"/>
+      <source>Blue</source>
+      <translation>Blue</translation>
+    </message>
+    <message>
+      <location filename="../../src/image/filter/rgb_color_balance.py" line="28"/>
+      <source>Alpha</source>
+      <translation>Alpha</translation>
+    </message>
+  </context>
+  <context>
+    <name>image.filter.sharpen</name>
+    <message>
+      <location filename="../../src/image/filter/sharpen.py" line="23"/>
+      <source>Sharpen</source>
+      <translation>Sharpen</translation>
+    </message>
+    <message>
+      <location filename="../../src/image/filter/sharpen.py" line="24"/>
+      <source>Sharpen the image</source>
+      <translation>Sharpen the image</translation>
+    </message>
+    <message>
+      <location filename="../../src/image/filter/sharpen.py" line="26"/>
+      <source>Factor</source>
+      <translation>Factor</translation>
+    </message>
+    <message>
+      <location filename="../../src/image/filter/sharpen.py" line="27"/>
+      <source>Sharpness factor (1.0: no change)</source>
+      <translation>Sharpness factor (1.0: no change)</translation>
+    </message>
+  </context>
+  <context>
+    <name>image.layers.image_layer</name>
+    <message>
+      <location filename="../../src/image/layers/image_layer.py" line="26"/>
+      <source>Layer cropping failed</source>
+      <translation>Layer cropping failed</translation>
+    </message>
+    <message>
+      <location filename="../../src/image/layers/image_layer.py" line="27"/>
+      <source>Layer has no image content.</source>
+      <translation>Layer has no image content.</translation>
+    </message>
+    <message>
+      <location filename="../../src/image/layers/image_layer.py" line="28"/>
+      <source>Layer is already cropped to fit image content.</source>
+      <translation>Layer is already cropped to fit image content.</translation>
+    </message>
+  </context>
+  <context>
     <name>image.layers.image_stack</name>
     <message>
       <location filename="../../src/image/layers/image_stack.py" line="33"/>
@@ -1521,13 +1689,75 @@ Please remember to include the traceback from the Details expander.</translation
   <context>
     <name>tools.generation_area_tool</name>
     <message>
+      <location filename="../../src/tools/generation_area_tool.py" line="29"/>
+      <source>Select Image Generation Area</source>
+      <translation>Select Image Generation Area</translation>
+    </message>
+    <message>
+      <location filename="../../src/tools/generation_area_tool.py" line="30"/>
+      <source>Select an image region for AI image generation</source>
+      <translation>Select an image region for AI image generation</translation>
+    </message>
+    <message>
+      <location filename="../../src/tools/generation_area_tool.py" line="31"/>
+      <source>Full image as generation area</source>
+      <translation>Full image as generation area</translation>
+    </message>
+    <message>
+      <location filename="../../src/tools/generation_area_tool.py" line="32"/>
+      <source>Send the entire image during image generation.</source>
+      <translation>Send the entire image during image generation.</translation>
+    </message>
+    <message>
+      <location filename="../../src/tools/generation_area_tool.py" line="33"/>
+      <source>LMB:move area - RMB:resize area - </source>
+      <translation>LMB:move area - RMB:resize area - </translation>
+    </message>
+    <message>
       <location filename="../../src/tools/generation_area_tool.py" line="35"/>
-      <location filename="../../src/tools/layer_transform_tool.py" line="39"/>
       <source>X:</source>
       <translation>X:</translation>
     </message>
     <message>
       <location filename="../../src/tools/generation_area_tool.py" line="36"/>
+      <source>Y:</source>
+      <translation>Y:</translation>
+    </message>
+    <message>
+      <location filename="../../src/tools/generation_area_tool.py" line="37"/>
+      <source>W:</source>
+      <translation>W:</translation>
+    </message>
+    <message>
+      <location filename="../../src/tools/generation_area_tool.py" line="38"/>
+      <source>H:</source>
+      <translation>H:</translation>
+    </message>
+    <message>
+      <location filename="../../src/tools/generation_area_tool.py" line="39"/>
+      <source>Set the left edge position of the image generation area.</source>
+      <translation>Set the left edge position of the image generation area.</translation>
+    </message>
+    <message>
+      <location filename="../../src/tools/generation_area_tool.py" line="42"/>
+      <location filename="../../src/tools/generation_area_tool.py" line="40"/>
+      <source>Set the top edge position of the image generation area.</source>
+      <translation>Set the top edge position of the image generation area.</translation>
+    </message>
+    <message>
+      <location filename="../../src/tools/generation_area_tool.py" line="41"/>
+      <source>Set the width of the image generation area.</source>
+      <translation>Set the width of the image generation area.</translation>
+    </message>
+  </context>
+  <context>
+    <name>tools.layer_transform_tool</name>
+    <message>
+      <location filename="../../src/tools/layer_transform_tool.py" line="39"/>
+      <source>X:</source>
+      <translation>X:</translation>
+    </message>
+    <message>
       <location filename="../../src/tools/layer_transform_tool.py" line="40"/>
       <source>Y:</source>
       <translation>Y:</translation>
@@ -1543,13 +1773,11 @@ Please remember to include the traceback from the Details expander.</translation
       <translation>Y-Scale:</translation>
     </message>
     <message>
-      <location filename="../../src/tools/generation_area_tool.py" line="37"/>
       <location filename="../../src/tools/layer_transform_tool.py" line="43"/>
       <source>W:</source>
       <translation>W:</translation>
     </message>
     <message>
-      <location filename="../../src/tools/generation_area_tool.py" line="38"/>
       <location filename="../../src/tools/layer_transform_tool.py" line="44"/>
       <source>H:</source>
       <translation>H:</translation>
@@ -1588,47 +1816,6 @@ Please remember to include the traceback from the Details expander.</translation
       <location filename="../../src/tools/layer_transform_tool.py" line="52"/>
       <source>LMB+drag:move layer - </source>
       <translation>LMB+drag:move layer - </translation>
-    </message>
-    <message>
-      <location filename="../../src/tools/generation_area_tool.py" line="29"/>
-      <source>Select Image Generation Area</source>
-      <translation>Select Image Generation Area</translation>
-    </message>
-    <message>
-      <location filename="../../src/tools/generation_area_tool.py" line="30"/>
-      <source>Select an image region for AI image generation</source>
-      <translation>Select an image region for AI image generation</translation>
-    </message>
-    <message>
-      <location filename="../../src/tools/generation_area_tool.py" line="31"/>
-      <source>Full image as generation area</source>
-      <translation>Full image as generation area</translation>
-    </message>
-    <message>
-      <location filename="../../src/tools/generation_area_tool.py" line="32"/>
-      <source>Send the entire image during image generation.</source>
-      <translation>Send the entire image during image generation.</translation>
-    </message>
-    <message>
-      <location filename="../../src/tools/generation_area_tool.py" line="33"/>
-      <source>LMB:move area - RMB:resize area - </source>
-      <translation>LMB:move area - RMB:resize area - </translation>
-    </message>
-    <message>
-      <location filename="../../src/tools/generation_area_tool.py" line="39"/>
-      <source>Set the left edge position of the image generation area.</source>
-      <translation>Set the left edge position of the image generation area.</translation>
-    </message>
-    <message>
-      <location filename="../../src/tools/generation_area_tool.py" line="42"/>
-      <location filename="../../src/tools/generation_area_tool.py" line="40"/>
-      <source>Set the top edge position of the image generation area.</source>
-      <translation>Set the top edge position of the image generation area.</translation>
-    </message>
-    <message>
-      <location filename="../../src/tools/generation_area_tool.py" line="41"/>
-      <source>Set the width of the image generation area.</source>
-      <translation>Set the width of the image generation area.</translation>
     </message>
   </context>
   <context>
@@ -1686,6 +1873,179 @@ Please remember to include the traceback from the Details expander.</translation
     </message>
   </context>
   <context>
+    <name>ui.generated_image_selector</name>
+    <message>
+      <location filename="../../src/ui/generated_image_selector.py" line="42"/>
+      <source>Zoom to changes</source>
+      <translation>Zoom to changes</translation>
+    </message>
+    <message>
+      <location filename="../../src/ui/generated_image_selector.py" line="43"/>
+      <source>Show selection</source>
+      <translation>Show selection</translation>
+    </message>
+    <message>
+      <location filename="../../src/ui/generated_image_selector.py" line="44"/>
+      <source>Inpaint</source>
+      <translation>Inpaint</translation>
+    </message>
+    <message>
+      <location filename="../../src/ui/generated_image_selector.py" line="45"/>
+      <source>Cancel</source>
+      <translation>Cancel</translation>
+    </message>
+    <message>
+      <location filename="../../src/ui/generated_image_selector.py" line="46"/>
+      <source>This will discard all generated images.</source>
+      <translation>This will discard all generated images.</translation>
+    </message>
+    <message>
+      <location filename="../../src/ui/generated_image_selector.py" line="47"/>
+      <source>Previous</source>
+      <translation>Previous</translation>
+    </message>
+    <message>
+      <location filename="../../src/ui/generated_image_selector.py" line="48"/>
+      <source>Toggle zoom</source>
+      <translation>Toggle zoom</translation>
+    </message>
+    <message>
+      <location filename="../../src/ui/generated_image_selector.py" line="49"/>
+      <source>Next</source>
+      <translation>Next</translation>
+    </message>
+    <message>
+      <location filename="../../src/ui/generated_image_selector.py" line="51"/>
+      <source>Original image content</source>
+      <translation>Original image content</translation>
+    </message>
+    <message>
+      <location filename="../../src/ui/generated_image_selector.py" line="52"/>
+      <source>Loading...</source>
+      <translation>Loading...</translation>
+    </message>
+    <message>
+      <location filename="../../src/ui/generated_image_selector.py" line="54"/>
+      <source>Select from generated image options.</source>
+      <translation>Select from generated image options.</translation>
+    </message>
+    <message>
+      <location filename="../../src/ui/generated_image_selector.py" line="59"/>
+      <source>Ctrl+LMB or MMB and drag: pan view, mouse wheel: zoom, Esc: discard all options</source>
+      <translation>Ctrl+LMB or MMB and drag: pan view, mouse wheel: zoom, Esc: discard all options</translation>
+    </message>
+    <message>
+      <location filename="../../src/ui/generated_image_selector.py" line="60"/>
+      <source>Ctrl+LMB or MMB and drag: pan view, mouse wheel: zoom, Enter: select option, Esc: return to full view</source>
+      <translation>Ctrl+LMB or MMB and drag: pan view, mouse wheel: zoom, Enter: select option, Esc: return to full view</translation>
+    </message>
+  </context>
+  <context>
+    <name>ui.input_fields.size_field</name>
+    <message>
+      <location filename="../../src/ui/input_fields/size_field.py" line="16"/>
+      <source>W:</source>
+      <translation>W:</translation>
+    </message>
+    <message>
+      <location filename="../../src/ui/input_fields/size_field.py" line="17"/>
+      <source>H:</source>
+      <translation>H:</translation>
+    </message>
+  </context>
+  <context>
+    <name>ui.modal.image_filter_modal</name>
+    <message>
+      <location filename="../../src/ui/modal/image_filter_modal.py" line="22"/>
+      <source>Change selected areas only</source>
+      <translation>Change selected areas only</translation>
+    </message>
+    <message>
+      <location filename="../../src/ui/modal/image_filter_modal.py" line="23"/>
+      <source>Change active layer only</source>
+      <translation>Change active layer only</translation>
+    </message>
+    <message>
+      <location filename="../../src/ui/modal/image_filter_modal.py" line="24"/>
+      <source>Cancel</source>
+      <translation>Cancel</translation>
+    </message>
+    <message>
+      <location filename="../../src/ui/modal/image_filter_modal.py" line="25"/>
+      <source>Apply</source>
+      <translation>Apply</translation>
+    </message>
+  </context>
+  <context>
+    <name>ui.modal.image_scale_modal</name>
+    <message>
+      <location filename="../../src/ui/modal/image_scale_modal.py" line="36"/>
+      <location filename="../../src/ui/modal/image_scale_modal.py" line="24"/>
+      <source>Scale image</source>
+      <translation>Scale image</translation>
+    </message>
+    <message>
+      <location filename="../../src/ui/modal/image_scale_modal.py" line="25"/>
+      <source>Width:</source>
+      <translation>Width:</translation>
+    </message>
+    <message>
+      <location filename="../../src/ui/modal/image_scale_modal.py" line="26"/>
+      <source>New image width in pixels</source>
+      <translation>New image width in pixels</translation>
+    </message>
+    <message>
+      <location filename="../../src/ui/modal/image_scale_modal.py" line="27"/>
+      <source>Height:</source>
+      <translation>Height:</translation>
+    </message>
+    <message>
+      <location filename="../../src/ui/modal/image_scale_modal.py" line="28"/>
+      <source>New image height in pixels</source>
+      <translation>New image height in pixels</translation>
+    </message>
+    <message>
+      <location filename="../../src/ui/modal/image_scale_modal.py" line="29"/>
+      <source>Width scale:</source>
+      <translation>Width scale:</translation>
+    </message>
+    <message>
+      <location filename="../../src/ui/modal/image_scale_modal.py" line="30"/>
+      <source>New image width (as multiplier)</source>
+      <translation>New image width (as multiplier)</translation>
+    </message>
+    <message>
+      <location filename="../../src/ui/modal/image_scale_modal.py" line="31"/>
+      <source>Height scale:</source>
+      <translation>Height scale:</translation>
+    </message>
+    <message>
+      <location filename="../../src/ui/modal/image_scale_modal.py" line="32"/>
+      <source>New image height (as multiplier)</source>
+      <translation>New image height (as multiplier)</translation>
+    </message>
+    <message>
+      <location filename="../../src/ui/modal/image_scale_modal.py" line="33"/>
+      <source>Upscale Method:</source>
+      <translation>Upscale Method:</translation>
+    </message>
+    <message>
+      <location filename="../../src/ui/modal/image_scale_modal.py" line="34"/>
+      <source>Use ControlNet Tiles</source>
+      <translation>Use ControlNet Tiles</translation>
+    </message>
+    <message>
+      <location filename="../../src/ui/modal/image_scale_modal.py" line="35"/>
+      <source>ControlNet Downsample:</source>
+      <translation>ControlNet Downsample:</translation>
+    </message>
+    <message>
+      <location filename="../../src/ui/modal/image_scale_modal.py" line="37"/>
+      <source>Cancel</source>
+      <translation>Cancel</translation>
+    </message>
+  </context>
+  <context>
     <name>ui.modal.login_modal</name>
     <message>
       <location filename="../../src/ui/modal/login_modal.py" line="21"/>
@@ -1721,6 +2081,149 @@ Please remember to include the traceback from the Details expander.</translation
       <location filename="../../src/ui/modal/login_modal.py" line="28"/>
       <source>Unknown error, try again.</source>
       <translation>Unknown error, try again.</translation>
+    </message>
+  </context>
+  <context>
+    <name>ui.modal.modal_utils</name>
+    <message>
+      <location filename="../../src/ui/modal/modal_utils.py" line="25"/>
+      <source>Open Image</source>
+      <translation>Open Image</translation>
+    </message>
+    <message>
+      <location filename="../../src/ui/modal/modal_utils.py" line="26"/>
+      <source>Open Images as Layers</source>
+      <translation>Open Images as Layers</translation>
+    </message>
+    <message>
+      <location filename="../../src/ui/modal/modal_utils.py" line="27"/>
+      <source>Save Image</source>
+      <translation>Save Image</translation>
+    </message>
+    <message>
+      <location filename="../../src/ui/modal/modal_utils.py" line="28"/>
+      <source>Open failed</source>
+      <translation>Open failed</translation>
+    </message>
+    <message>
+      <location filename="../../src/ui/modal/modal_utils.py" line="30"/>
+      <source>Images and IntraPaint projects</source>
+      <translation>Images and IntraPaint projects</translation>
+    </message>
+    <message>
+      <location filename="../../src/ui/modal/modal_utils.py" line="31"/>
+      <source>Images</source>
+      <translation>Images</translation>
+    </message>
+  </context>
+  <context>
+    <name>ui.modal.new_image_modal</name>
+    <message>
+      <location filename="../../src/ui/modal/new_image_modal.py" line="19"/>
+      <source>Create new image</source>
+      <translation>Create new image</translation>
+    </message>
+    <message>
+      <location filename="../../src/ui/modal/new_image_modal.py" line="20"/>
+      <source>Width:</source>
+      <translation>Width:</translation>
+    </message>
+    <message>
+      <location filename="../../src/ui/modal/new_image_modal.py" line="21"/>
+      <source>New image width in pixels</source>
+      <translation>New image width in pixels</translation>
+    </message>
+    <message>
+      <location filename="../../src/ui/modal/new_image_modal.py" line="22"/>
+      <source>Height:</source>
+      <translation>Height:</translation>
+    </message>
+    <message>
+      <location filename="../../src/ui/modal/new_image_modal.py" line="23"/>
+      <source>New image height in pixels</source>
+      <translation>New image height in pixels</translation>
+    </message>
+    <message>
+      <location filename="../../src/ui/modal/new_image_modal.py" line="24"/>
+      <source>Create</source>
+      <translation>Create</translation>
+    </message>
+    <message>
+      <location filename="../../src/ui/modal/new_image_modal.py" line="25"/>
+      <source>Cancel</source>
+      <translation>Cancel</translation>
+    </message>
+  </context>
+  <context>
+    <name>ui.modal.resize_canvas_modal</name>
+    <message>
+      <location filename="../../src/ui/modal/resize_canvas_modal.py" line="33"/>
+      <location filename="../../src/ui/modal/resize_canvas_modal.py" line="20"/>
+      <source>Resize image canvas</source>
+      <translation>Resize image canvas</translation>
+    </message>
+    <message>
+      <location filename="../../src/ui/modal/resize_canvas_modal.py" line="21"/>
+      <source>Width:</source>
+      <translation>Width:</translation>
+    </message>
+    <message>
+      <location filename="../../src/ui/modal/resize_canvas_modal.py" line="22"/>
+      <source>New image width in pixels</source>
+      <translation>New image width in pixels</translation>
+    </message>
+    <message>
+      <location filename="../../src/ui/modal/resize_canvas_modal.py" line="23"/>
+      <source>Height:</source>
+      <translation>Height:</translation>
+    </message>
+    <message>
+      <location filename="../../src/ui/modal/resize_canvas_modal.py" line="24"/>
+      <source>New image height in pixels</source>
+      <translation>New image height in pixels</translation>
+    </message>
+    <message>
+      <location filename="../../src/ui/modal/resize_canvas_modal.py" line="25"/>
+      <source>X Offset:</source>
+      <translation>X Offset:</translation>
+    </message>
+    <message>
+      <location filename="../../src/ui/modal/resize_canvas_modal.py" line="26"/>
+      <source>Distance in pixels from the left edge of the resized canvas to the left edge of the current image content</source>
+      <translation>Distance in pixels from the left edge of the resized canvas to the left edge of the current image content</translation>
+    </message>
+    <message>
+      <location filename="../../src/ui/modal/resize_canvas_modal.py" line="28"/>
+      <source>Y Offset:</source>
+      <translation>Y Offset:</translation>
+    </message>
+    <message>
+      <location filename="../../src/ui/modal/resize_canvas_modal.py" line="29"/>
+      <source>Distance in pixels from the top edge of the resized canvas to the top edge of the current image content</source>
+      <translation>Distance in pixels from the top edge of the resized canvas to the top edge of the current image content</translation>
+    </message>
+    <message>
+      <location filename="../../src/ui/modal/resize_canvas_modal.py" line="31"/>
+      <source>Center</source>
+      <translation>Center</translation>
+    </message>
+    <message>
+      <location filename="../../src/ui/modal/resize_canvas_modal.py" line="32"/>
+      <source>Cancel</source>
+      <translation>Cancel</translation>
+    </message>
+  </context>
+  <context>
+    <name>ui.modal.settings_modal</name>
+    <message>
+      <location filename="../../src/ui/modal/settings_modal.py" line="34"/>
+      <source>Cancel</source>
+      <translation>Cancel</translation>
+    </message>
+    <message>
+      <location filename="../../src/ui/modal/settings_modal.py" line="35"/>
+      <source>Save</source>
+      <translation>Save</translation>
     </message>
   </context>
   <context>
@@ -1812,6 +2315,34 @@ Please remember to include the traceback from the Details expander.</translation
       <location filename="../../src/ui/panel/generators/sd_webui_panel.py" line="27"/>
       <source>Attempt to generate a prompt that describes the current image generation area</source>
       <translation>Attempt to generate a prompt that describes the current image generation area</translation>
+    </message>
+  </context>
+  <context>
+    <name>ui.panel.image_panel</name>
+    <message>
+      <location filename="../../src/ui/panel/image_panel.py" line="22"/>
+      <source>Scale:</source>
+      <translation>Scale:</translation>
+    </message>
+    <message>
+      <location filename="../../src/ui/panel/image_panel.py" line="23"/>
+      <source>Reset View</source>
+      <translation>Reset View</translation>
+    </message>
+    <message>
+      <location filename="../../src/ui/panel/image_panel.py" line="24"/>
+      <source>Restore default image zoom and offset</source>
+      <translation>Restore default image zoom and offset</translation>
+    </message>
+    <message>
+      <location filename="../../src/ui/panel/image_panel.py" line="25"/>
+      <source>Zoom in</source>
+      <translation>Zoom in</translation>
+    </message>
+    <message>
+      <location filename="../../src/ui/panel/image_panel.py" line="26"/>
+      <source>Zoom in on the area selected for image generation</source>
+      <translation>Zoom in on the area selected for image generation</translation>
     </message>
   </context>
   <context>
@@ -2099,6 +2630,62 @@ Please remember to include the traceback from the Details expander.</translation
     </message>
   </context>
   <context>
+    <name>ui.widget.color_picker</name>
+    <message>
+      <location filename="../../src/ui/widget/color_picker.py" line="16"/>
+      <source>Basic Palette</source>
+      <translation>Basic Palette</translation>
+    </message>
+    <message>
+      <location filename="../../src/ui/widget/color_picker.py" line="17"/>
+      <source>Custom Palette</source>
+      <translation>Custom Palette</translation>
+    </message>
+    <message>
+      <location filename="../../src/ui/widget/color_picker.py" line="18"/>
+      <source>Spectrum</source>
+      <translation>Spectrum</translation>
+    </message>
+    <message>
+      <location filename="../../src/ui/widget/color_picker.py" line="19"/>
+      <source>Palette</source>
+      <translation>Palette</translation>
+    </message>
+    <message>
+      <location filename="../../src/ui/widget/color_picker.py" line="20"/>
+      <source>Color Component</source>
+      <translation>Color Component</translation>
+    </message>
+  </context>
+  <context>
+    <name>ui.window.extra_network_window</name>
+    <message>
+      <location filename="../../src/ui/window/extra_network_window.py" line="29"/>
+      <source>Lora Models</source>
+      <translation>Lora Models</translation>
+    </message>
+    <message>
+      <location filename="../../src/ui/window/extra_network_window.py" line="31"/>
+      <source>Add to prompt</source>
+      <translation>Add to prompt</translation>
+    </message>
+    <message>
+      <location filename="../../src/ui/window/extra_network_window.py" line="32"/>
+      <source>Remove from prompt</source>
+      <translation>Remove from prompt</translation>
+    </message>
+    <message>
+      <location filename="../../src/ui/window/extra_network_window.py" line="33"/>
+      <source>Close</source>
+      <translation>Close</translation>
+    </message>
+    <message>
+      <location filename="../../src/ui/window/extra_network_window.py" line="34"/>
+      <source>LORA</source>
+      <translation>LORA</translation>
+    </message>
+  </context>
+  <context>
     <name>ui.window.generator_setup_window</name>
     <message>
       <location filename="../../src/ui/window/generator_setup_window.py" line="24"/>
@@ -2129,6 +2716,240 @@ Please remember to include the traceback from the Details expander.</translation
       <location filename="../../src/ui/window/generator_setup_window.py" line="29"/>
       <source>&lt;h1&gt;Generator Options:&lt;/h1&gt;</source>
       <translation>&lt;h1&gt;Generator Options:&lt;/h1&gt;</translation>
+    </message>
+  </context>
+  <context>
+    <name>ui.window.main_window</name>
+    <message>
+      <location filename="../../src/ui/window/main_window.py" line="42"/>
+      <source>Image Generation</source>
+      <translation>Image Generation</translation>
+    </message>
+    <message>
+      <location filename="../../src/ui/window/main_window.py" line="43"/>
+      <source>Tools</source>
+      <translation>Tools</translation>
+    </message>
+    <message>
+      <location filename="../../src/ui/window/main_window.py" line="44"/>
+      <source>Move to top panel</source>
+      <translation>Move to top panel</translation>
+    </message>
+    <message>
+      <location filename="../../src/ui/window/main_window.py" line="45"/>
+      <source>Move to bottom panel</source>
+      <translation>Move to bottom panel</translation>
+    </message>
+    <message>
+      <location filename="../../src/ui/window/main_window.py" line="46"/>
+      <source>Move to left panel</source>
+      <translation>Move to left panel</translation>
+    </message>
+    <message>
+      <location filename="../../src/ui/window/main_window.py" line="47"/>
+      <source>Move to right panel</source>
+      <translation>Move to right panel</translation>
+    </message>
+    <message>
+      <location filename="../../src/ui/window/main_window.py" line="48"/>
+      <source>Move to lower panel</source>
+      <translation>Move to lower panel</translation>
+    </message>
+    <message>
+      <location filename="../../src/ui/window/main_window.py" line="51"/>
+      <source>Loading...</source>
+      <translation>Loading...</translation>
+    </message>
+  </context>
+  <context>
+    <name>ui.window.prompt_style_window</name>
+    <message>
+      <location filename="../../src/ui/window/prompt_style_window.py" line="28"/>
+      <source>Name:</source>
+      <translation>Name:</translation>
+    </message>
+    <message>
+      <location filename="../../src/ui/window/prompt_style_window.py" line="29"/>
+      <source>Prompt:</source>
+      <translation>Prompt:</translation>
+    </message>
+    <message>
+      <location filename="../../src/ui/window/prompt_style_window.py" line="30"/>
+      <source>Negative:</source>
+      <translation>Negative:</translation>
+    </message>
+    <message>
+      <location filename="../../src/ui/window/prompt_style_window.py" line="31"/>
+      <source>Add to prompt</source>
+      <translation>Add to prompt</translation>
+    </message>
+    <message>
+      <location filename="../../src/ui/window/prompt_style_window.py" line="32"/>
+      <source>Replace prompt</source>
+      <translation>Replace prompt</translation>
+    </message>
+    <message>
+      <location filename="../../src/ui/window/prompt_style_window.py" line="33"/>
+      <source>Save changes</source>
+      <translation>Save changes</translation>
+    </message>
+    <message>
+      <location filename="../../src/ui/window/prompt_style_window.py" line="34"/>
+      <source>Close</source>
+      <translation>Close</translation>
+    </message>
+  </context>
+  <context>
+    <name>util.shared_constants</name>
+    <message>
+      <location filename="../../src/util/shared_constants.py" line="36"/>
+      <source>Inpaint</source>
+      <translation>Inpaint</translation>
+    </message>
+    <message>
+      <location filename="../../src/util/shared_constants.py" line="37"/>
+      <source>Text to Image</source>
+      <translation>Text to Image</translation>
+    </message>
+    <message>
+      <location filename="../../src/util/shared_constants.py" line="38"/>
+      <source>Image to Image</source>
+      <translation>Image to Image</translation>
+    </message>
+    <message>
+      <location filename="../../src/util/shared_constants.py" line="44"/>
+      <source>Generate</source>
+      <translation>Generate</translation>
+    </message>
+    <message>
+      <location filename="../../src/util/shared_constants.py" line="51"/>
+      <source>Normal</source>
+      <translation>Normal</translation>
+    </message>
+    <message>
+      <location filename="../../src/util/shared_constants.py" line="52"/>
+      <source>Plus</source>
+      <translation>Plus</translation>
+    </message>
+    <message>
+      <location filename="../../src/util/shared_constants.py" line="53"/>
+      <source>Multiply</source>
+      <translation>Multiply</translation>
+    </message>
+    <message>
+      <location filename="../../src/util/shared_constants.py" line="54"/>
+      <source>Screen</source>
+      <translation>Screen</translation>
+    </message>
+    <message>
+      <location filename="../../src/util/shared_constants.py" line="55"/>
+      <source>Overlay</source>
+      <translation>Overlay</translation>
+    </message>
+    <message>
+      <location filename="../../src/util/shared_constants.py" line="56"/>
+      <source>Darken</source>
+      <translation>Darken</translation>
+    </message>
+    <message>
+      <location filename="../../src/util/shared_constants.py" line="57"/>
+      <source>Lighten</source>
+      <translation>Lighten</translation>
+    </message>
+    <message>
+      <location filename="../../src/util/shared_constants.py" line="58"/>
+      <source>Color Dodge</source>
+      <translation>Color Dodge</translation>
+    </message>
+    <message>
+      <location filename="../../src/util/shared_constants.py" line="59"/>
+      <source>Color Burn</source>
+      <translation>Color Burn</translation>
+    </message>
+    <message>
+      <location filename="../../src/util/shared_constants.py" line="60"/>
+      <source>Hard Light</source>
+      <translation>Hard Light</translation>
+    </message>
+    <message>
+      <location filename="../../src/util/shared_constants.py" line="61"/>
+      <source>Soft Light</source>
+      <translation>Soft Light</translation>
+    </message>
+    <message>
+      <location filename="../../src/util/shared_constants.py" line="62"/>
+      <source>Difference</source>
+      <translation>Difference</translation>
+    </message>
+    <message>
+      <location filename="../../src/util/shared_constants.py" line="63"/>
+      <source>Exclusion</source>
+      <translation>Exclusion</translation>
+    </message>
+    <message>
+      <location filename="../../src/util/shared_constants.py" line="64"/>
+      <source>Destination over</source>
+      <translation>Destination over</translation>
+    </message>
+    <message>
+      <location filename="../../src/util/shared_constants.py" line="65"/>
+      <source>Clear</source>
+      <translation>Clear</translation>
+    </message>
+    <message>
+      <location filename="../../src/util/shared_constants.py" line="66"/>
+      <source>Replace</source>
+      <translation>Replace</translation>
+    </message>
+    <message>
+      <location filename="../../src/util/shared_constants.py" line="67"/>
+      <source>Destination In</source>
+      <translation>Destination In</translation>
+    </message>
+    <message>
+      <location filename="../../src/util/shared_constants.py" line="68"/>
+      <source>Destination Out</source>
+      <translation>Destination Out</translation>
+    </message>
+    <message>
+      <location filename="../../src/util/shared_constants.py" line="69"/>
+      <source>Source Atop</source>
+      <translation>Source Atop</translation>
+    </message>
+    <message>
+      <location filename="../../src/util/shared_constants.py" line="70"/>
+      <source>Destination Atop</source>
+      <translation>Destination Atop</translation>
+    </message>
+    <message>
+      <location filename="../../src/util/shared_constants.py" line="74"/>
+      <source>Bilinear</source>
+      <translation>Bilinear</translation>
+    </message>
+    <message>
+      <location filename="../../src/util/shared_constants.py" line="75"/>
+      <source>Nearest</source>
+      <translation>Nearest</translation>
+    </message>
+    <message>
+      <location filename="../../src/util/shared_constants.py" line="76"/>
+      <source>Hamming</source>
+      <translation>Hamming</translation>
+    </message>
+    <message>
+      <location filename="../../src/util/shared_constants.py" line="77"/>
+      <source>Bicubic</source>
+      <translation>Bicubic</translation>
+    </message>
+    <message>
+      <location filename="../../src/util/shared_constants.py" line="78"/>
+      <source>Lanczos</source>
+      <translation>Lanczos</translation>
+    </message>
+    <message>
+      <location filename="../../src/util/shared_constants.py" line="79"/>
+      <source>Box</source>
+      <translation>Box</translation>
     </message>
   </context>
   <context>

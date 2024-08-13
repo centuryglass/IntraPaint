@@ -1,6 +1,7 @@
 """Adjust image brightness/contrast."""
 from typing import List, Callable
 from PIL import ImageEnhance
+from PyQt5.QtWidgets import QApplication
 from PySide6.QtGui import QImage
 
 from src.config.key_config import KeyConfig
@@ -8,11 +9,20 @@ from src.image.filter.filter import ImageFilter
 from src.util.image_utils import qimage_to_pil_image, pil_image_to_qimage
 from src.util.parameter import Parameter, TYPE_FLOAT
 
-BRIGHTNESS_CONTRAST_FILTER_TITLE = 'Brightness/Contrast'
-BRIGHTNESS_CONTRAST_FILTER_DESCRIPTION = 'Adjust image brightness and contrast.'
+# The `QCoreApplication.translate` context for strings in this file
+TR_ID = 'image.filter.brightness_contrast'
 
-BRIGHTNESS_LABEL = 'Brightness:'
-CONTRAST_LABEL = 'Contrast'
+
+def _tr(*args):
+    """Helper to make `QCoreApplication.translate` more concise."""
+    return QApplication.translate(TR_ID, *args)
+
+
+BRIGHTNESS_CONTRAST_FILTER_TITLE = _tr('Brightness/Contrast')
+BRIGHTNESS_CONTRAST_FILTER_DESCRIPTION = _tr('Adjust image brightness and contrast.')
+
+BRIGHTNESS_LABEL = _tr('Brightness:')
+CONTRAST_LABEL = _tr('Contrast')
 
 
 class BrightnessContrastFilter(ImageFilter):

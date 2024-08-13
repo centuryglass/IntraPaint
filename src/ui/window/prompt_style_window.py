@@ -6,7 +6,7 @@ from typing import Dict, Optional, TypeAlias, List
 from PySide6.QtCore import Signal
 from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import QDialog, QHBoxLayout, QListWidget, QListWidgetItem, QLabel, QPushButton, \
-    QVBoxLayout
+    QVBoxLayout, QApplication
 
 from src.config.application_config import AppConfig
 from src.config.cache import Cache
@@ -16,18 +16,26 @@ from src.util.shared_constants import APP_ICON_PATH
 
 logger = logging.getLogger(__name__)
 
+# The `QCoreApplication.translate` context for strings in this file
+TR_ID = 'ui.window.prompt_style_window'
+
+
+def _tr(*args):
+    """Helper to make `QCoreApplication.translate` more concise."""
+    return QApplication.translate(TR_ID, *args)
+
+
+NAME_LABEL = _tr('Name:')
+PROMPT_LABEL = _tr('Prompt:')
+NEGATIVE_LABEL = _tr('Negative:')
+ADD_BUTTON_LABEL = _tr('Add to prompt')
+REPLACE_BUTTON_LABEL = _tr('Replace prompt')
+SAVE_BUTTON_LABEL = _tr('Save changes')
+CLOSE_BUTTON_LABEL = _tr('Close')
+
 NAME_KEY = 'name'
 PROMPT_KEY = 'prompt'
 NEGATIVE_KEY = 'negative_prompt'
-
-NAME_LABEL = 'Name:'
-PROMPT_LABEL = 'Prompt:'
-NEGATIVE_LABEL = 'Negative:'
-ADD_BUTTON_LABEL = 'Add to prompt'
-REPLACE_BUTTON_LABEL = 'Replace prompt'
-SAVE_BUTTON_LABEL = 'Save changes'
-CLOSE_BUTTON_LABEL = 'Close'
-
 TextField: TypeAlias = PlainTextEdit | LineEdit
 
 

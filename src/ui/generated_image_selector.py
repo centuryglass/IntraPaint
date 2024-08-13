@@ -7,6 +7,7 @@ import time
 from typing import Callable, Optional, cast, List
 
 from PIL import Image
+from PyQt6.QtWidgets import QApplication
 from PySide6.QtCore import Qt, QRect, QSize, QSizeF, QRectF, QEvent, Signal, QPointF, QObject, QPoint
 from PySide6.QtGui import QImage, QResizeEvent, QPixmap, QPainter, QWheelEvent, QMouseEvent, \
     QPainterPath, QKeyEvent, QPolygonF
@@ -29,29 +30,35 @@ from src.util.key_code_utils import get_key_display_string
 from src.util.shared_constants import TIMELAPSE_MODE_FLAG
 from src.util.validation import assert_valid_index
 
-CHANGE_ZOOM_CHECKBOX_LABEL = 'Zoom to changes'
+# The `QCoreApplication.translate` context for strings in this file
+TR_ID = 'ui.generated_image_selector'
 
-SHOW_SELECTION_OUTLINES_LABEL = 'Show selection'
 
-MODE_INPAINT = 'Inpaint'
+def _tr(*args):
+    """Helper to make `QCoreApplication.translate` more concise."""
+    return QApplication.translate(TR_ID, *args)
 
-CANCEL_BUTTON_TEXT = 'Cancel'
-CANCEL_BUTTON_TOOLTIP = 'This will discard all generated images.'
-PREVIOUS_BUTTON_TEXT = 'Previous'
-ZOOM_BUTTON_TEXT = 'Toggle zoom'
-NEXT_BUTTON_TEXT = 'Next'
 
-ORIGINAL_CONTENT_LABEL = 'Original image content'
-LOADING_IMG_TEXT = 'Loading...'
+CHANGE_ZOOM_CHECKBOX_LABEL = _tr('Zoom to changes')
+SHOW_SELECTION_OUTLINES_LABEL = _tr('Show selection')
+MODE_INPAINT = _tr('Inpaint')
+CANCEL_BUTTON_TEXT = _tr('Cancel')
+CANCEL_BUTTON_TOOLTIP = _tr('This will discard all generated images.')
+PREVIOUS_BUTTON_TEXT = _tr('Previous')
+ZOOM_BUTTON_TEXT = _tr('Toggle zoom')
+NEXT_BUTTON_TEXT = _tr('Next')
 
-SELECTION_TITLE = 'Select from generated image options.'
+ORIGINAL_CONTENT_LABEL = _tr('Original image content')
+LOADING_IMG_TEXT = _tr('Loading...')
+
+SELECTION_TITLE = _tr('Select from generated image options.')
 VIEW_MARGIN = 6
 IMAGE_MARGIN_FRACTION = 1 / 6
 SCROLL_DEBOUNCE_MS = 100
 
-DEFAULT_CONTROL_HINT = 'Ctrl+LMB or MMB and drag: pan view, mouse wheel: zoom, Esc: discard all options'
-ZOOM_CONTROL_HINT = ('Ctrl+LMB or MMB and drag: pan view, mouse wheel: zoom, Enter: select option, Esc: return to full'
-                     ' view')
+DEFAULT_CONTROL_HINT = _tr('Ctrl+LMB or MMB and drag: pan view, mouse wheel: zoom, Esc: discard all options')
+ZOOM_CONTROL_HINT = _tr('Ctrl+LMB or MMB and drag: pan view, mouse wheel: zoom, Enter: select option, Esc: return to'
+                        ' full view')
 
 VIEW_BACKGROUND = Qt.GlobalColor.black
 

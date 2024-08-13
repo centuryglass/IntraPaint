@@ -32,7 +32,8 @@ class QuickEditWindow(QMainWindow):
         if isinstance(im, str):
             self.qim = QImage(im)
         elif isinstance(im, Image.Image):
-            self.qim = QImage(im.tobytes('raw', 'RGB'), im.width, im.height, QImage.Format.Format_RGB888)
+            self.qim = QImage(im.tobytes('raw', 'RGB'), im.width, im.height,
+                              QImage.Format.Format_RGB888)
         else:
             raise TypeError(f'Invalid source image type: {im}')
         self._image = QPixmap.fromImage(self.qim)

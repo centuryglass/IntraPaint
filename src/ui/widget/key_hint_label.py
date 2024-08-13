@@ -43,7 +43,7 @@ class KeyHintLabel(QLabel):
 
     def _update_text(self, key_codes: Optional[QKeySequence]) -> None:
         if key_codes is None:
-            self._base_text = 'empty'
+            self._base_text = ''
             self.setText(self._base_text)
             return
         key_display_str = get_key_display_string(key_codes)

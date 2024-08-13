@@ -227,7 +227,6 @@ class ImageFilter:
         def _finish() -> None:
             AppStateTracker.set_app_state(APP_STATE_EDITING)
             task.finish_signal.disconnect(_finish)
-            print(f'finished, got {len(updated_layer_images)} images')
             if len(updated_layer_images) == 0:
                 return
             source_images: Dict[int, QImage] = {}
@@ -238,7 +237,6 @@ class ImageFilter:
 
             def _apply_filters():
                 for updated_id, image in updated_layer_images.items():
-                    image.save('filter-test.png')
                     updated_layer = self._image_stack.get_layer_by_id(updated_id)
                     updated_layer.set_image(image)
 

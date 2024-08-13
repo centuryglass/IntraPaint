@@ -2,18 +2,28 @@
 from typing import Optional
 
 from PySide6.QtGui import QIcon
-from PySide6.QtWidgets import QDialog, QLabel, QVBoxLayout, QPushButton
+from PySide6.QtWidgets import QDialog, QLabel, QVBoxLayout, QPushButton, QApplication
 from PySide6.QtCore import QSize
 from src.ui.input_fields.labeled_spinbox import LabeledSpinbox
 from src.util.shared_constants import APP_ICON_PATH
 
-CREATE_IMAGE_TITLE = 'Create new image'
-WIDTH_LABEL = 'Width:'
-WIDTH_TOOLTIP = 'New image width in pixels'
-HEIGHT_LABEL = 'Height:'
-HEIGHT_TOOLTIP = 'New image height in pixels'
-CREATE_BUTTON_TEXT = 'Create'
-CANCEL_BUTTON_TEXT = 'Cancel'
+# The `QCoreApplication.translate` context for strings in this file
+TR_ID = 'ui.modal.new_image_modal'
+
+
+def _tr(*args):
+    """Helper to make `QCoreApplication.translate` more concise."""
+    return QApplication.translate(TR_ID, *args)
+
+
+CREATE_IMAGE_TITLE = _tr('Create new image')
+WIDTH_LABEL = _tr('Width:')
+WIDTH_TOOLTIP = _tr('New image width in pixels')
+HEIGHT_LABEL = _tr('Height:')
+HEIGHT_TOOLTIP = _tr('New image height in pixels')
+CREATE_BUTTON_TEXT = _tr('Create')
+CANCEL_BUTTON_TEXT = _tr('Cancel')
+
 MIN_PX_VALUE = 8
 MAX_PX_VALUE = 20000
 

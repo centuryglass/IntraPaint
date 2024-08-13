@@ -4,6 +4,7 @@ from contextlib import contextmanager
 from typing import Optional, Any, Tuple
 
 from PIL import Image
+from PyQt5.QtWidgets import QApplication
 from PySide6.QtCore import QRect, QSize, QPoint, Signal, QObject
 from PySide6.QtGui import QImage, QPainter, QPixmap, QTransform
 
@@ -13,9 +14,18 @@ from src.ui.modal.modal_utils import show_error_dialog
 from src.undo_stack import UndoStack
 from src.util.image_utils import image_content_bounds, create_transparent_image
 
-CROP_TO_CONTENT_ERROR_TITLE = 'Layer cropping failed'
-CROP_TO_CONTENT_ERROR_MESSAGE_EMPTY = 'Layer has no image content.'
-CROP_TO_CONTENT_ERROR_MESSAGE_FULL = 'Layer is already cropped to fit image content.'
+# The `QCoreApplication.translate` context for strings in this file
+TR_ID = 'image.layers.image_layer'
+
+
+def _tr(*args):
+    """Helper to make `QCoreApplication.translate` more concise."""
+    return QApplication.translate(TR_ID, *args)
+
+
+CROP_TO_CONTENT_ERROR_TITLE = _tr('Layer cropping failed')
+CROP_TO_CONTENT_ERROR_MESSAGE_EMPTY = _tr('Layer has no image content.')
+CROP_TO_CONTENT_ERROR_MESSAGE_FULL = _tr('Layer is already cropped to fit image content.')
 
 
 class ImageLayer(TransformLayer):

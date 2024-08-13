@@ -6,23 +6,40 @@ import traceback
 import logging
 from typing import Optional, List
 
-from PySide6.QtWidgets import QMessageBox, QFileDialog, QWidget, QStyle
+from PySide6.QtWidgets import QMessageBox, QFileDialog, QWidget, QStyle, QApplication
 from PIL import UnidentifiedImageError
 
 from src.util.image_utils import get_standard_qt_icon
 
 logger = logging.getLogger(__name__)
 
+# The `QCoreApplication.translate` context for strings in this file
+TR_ID = 'ui.modal.modal_utils'
+
+
+def _tr(*args):
+    """Helper to make `QCoreApplication.translate` more concise."""
+    return QApplication.translate(TR_ID, *args)
+
+
+LOAD_IMAGE_TITLE = _tr('Open Image')
+LOAD_LAYER_TITLE = _tr('Open Images as Layers')
+SAVE_IMAGE_TITLE = _tr('Save Image')
+LOAD_IMAGE_ERROR_MSG = _tr('Open failed')
+
+IMAGE_FORMATS_DESCRIPTION = _tr('Images and IntraPaint projects')
+LAYER_FORMATS_DESCRIPTION = _tr('Images')
+
+SAVE_FILE_FORMATS = '(*.png *.ora)'
+LOAD_FILE_FORMATS = '(*.bmp *.gif *.jpg *.jpeg *.png *.pbm *.pgm *.ppm *.xbm *.xpm *.ora)'
+LOAD_LAYER_FORMATS = '(*.bmp *.gif *.jpg *.jpeg *.png *.pbm *.pgm *.ppm *.xbm *.xpm)'
+
+IMAGE_SAVE_FILTER = f'{IMAGE_FORMATS_DESCRIPTION} ({SAVE_FILE_FORMATS})'
+IMAGE_LOAD_FILTER = f'{IMAGE_FORMATS_DESCRIPTION} ({LOAD_FILE_FORMATS})'
+LAYER_LOAD_FILTER = f'{LAYER_FORMATS_DESCRIPTION} ({LOAD_LAYER_FORMATS})'
+
 LOAD_IMAGE_MODE = 'load'
 SAVE_IMAGE_MODE = 'save'
-LOAD_IMAGE_TITLE = 'Open Image'
-LOAD_LAYER_TITLE = 'Open Images as Layers'
-SAVE_IMAGE_TITLE = 'Save Image'
-LOAD_IMAGE_ERROR_MSG = 'Open failed'
-IMAGE_SAVE_FILTER = 'Images and IntraPaint projects (*.png *.ora)'
-IMAGE_LOAD_FILTER = ('Images and IntraPaint projects (*.bmp *.gif *.jpg *.jpeg *.png *.pbm *.pgm *.ppm *.xbm *.xpm'
-                     ' *.ora)')
-LAYER_LOAD_FILTER = 'Images (*.bmp *.gif *.jpg *.jpeg *.png *.pbm *.pgm *.ppm *.xbm *.xpm)'
 
 
 def show_error_dialog(parent: Optional[QWidget], title: str, error: str | BaseException) -> None:

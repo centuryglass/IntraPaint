@@ -3,17 +3,21 @@ from typing import Optional, cast, Tuple
 
 from PySide6.QtCore import QSize, Signal, QTimer
 from PySide6.QtWidgets import QColorDialog, QWidget, QVBoxLayout, QHBoxLayout, \
-    QTabWidget, QBoxLayout, QSizePolicy, QPushButton, QLabel
+    QTabWidget, QBoxLayout, QSizePolicy, QPushButton, QLabel, QApplication
 
-BASIC_PALETTE_TITLE = 'Basic Palette'
+# The `QCoreApplication.translate` context for strings in this file
+TR_ID = 'ui.widget.color_picker'
 
-CUSTOM_PALETTE_TITLE = 'Custom Palette'
 
-SPECTRUM_TAB_TITLE = 'Spectrum'
+def _tr(*args):
+    """Helper to make `QCoreApplication.translate` more concise."""
+    return QApplication.translate(TR_ID, *args)
 
-PALETTE_TAB_TITLE = 'Palette'
-
-COMPONENT_TAB_TITLE = 'Color Component'
+BASIC_PALETTE_TITLE = _tr('Basic Palette')
+CUSTOM_PALETTE_TITLE = _tr('Custom Palette')
+SPECTRUM_TAB_TITLE = _tr('Spectrum')
+PALETTE_TAB_TITLE = _tr('Palette')
+COMPONENT_TAB_TITLE = _tr('Color Component')
 
 MODE_2X2 = '2x2'
 MODE_4X1 = '4x1'

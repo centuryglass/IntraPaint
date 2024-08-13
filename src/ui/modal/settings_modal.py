@@ -7,7 +7,7 @@ from typing import Any, Dict, List, Optional
 from PySide6.QtCore import Signal, QSize, Qt
 from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QPushButton, QWidget, QTabWidget, QFormLayout, \
-    QScrollArea
+    QScrollArea, QApplication
 
 from src.config.config import Config
 from src.ui.input_fields.big_int_spinbox import BigIntSpinbox
@@ -21,6 +21,18 @@ from src.ui.input_fields.size_field import SizeField
 from src.ui.layout.bordered_widget import BorderedWidget
 from src.util.parameter import DynamicFieldWidget
 from src.util.shared_constants import APP_ICON_PATH
+
+# The `QCoreApplication.translate` context for strings in this file
+TR_ID = 'ui.modal.settings_modal'
+
+
+def _tr(*args):
+    """Helper to make `QCoreApplication.translate` more concise."""
+    return QApplication.translate(TR_ID, *args)
+
+
+CANCEL_BUTTON_LABEL = _tr('Cancel')
+SAVE_BUTTON_LABEL = _tr('Save')
 
 WINDOW_PADDING = 50
 
@@ -51,12 +63,12 @@ class SettingsModal(QDialog):
         bottom_panel.setLayout(bottom_panel_layout)
 
         cancel_button = QPushButton()
-        cancel_button.setText('Cancel')
+        cancel_button.setText(CANCEL_BUTTON_LABEL)
         cancel_button.clicked.connect(self.hide)
         bottom_panel_layout.addWidget(cancel_button, stretch=1)
 
         save_button = QPushButton()
-        save_button.setText('Save')
+        save_button.setText(SAVE_BUTTON_LABEL)
 
         def on_save():
             """Apply changes and close when the save button is clicked."""
@@ -89,7 +101,7 @@ class SettingsModal(QDialog):
 
                 control_widget.valueChanged.connect(_add_change)
                 self._add_setting(key, category, control_widget, label)
-                
+
     def remove_category(self, config: Config, category: str) -> None:
         """Remove a category from the modal"""
         if category not in self._tabs:

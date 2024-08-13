@@ -6,7 +6,7 @@ from typing import Dict, Optional, List, cast
 from PySide6.QtCore import Qt, QSize, QPoint, Signal
 from PySide6.QtGui import QImage, QPainter, QMouseEvent, QIcon
 from PySide6.QtWidgets import QDialog, QHBoxLayout, QLabel, QPushButton, \
-    QVBoxLayout, QWidget, QScrollArea
+    QVBoxLayout, QWidget, QScrollArea, QApplication
 
 from src.config.application_config import AppConfig
 from src.ui.layout.bordered_widget import BorderedWidget
@@ -17,17 +17,26 @@ from src.util.shared_constants import APP_ICON_PATH
 logger = logging.getLogger(__name__)
 
 
-PAGE_TITLE = 'Lora Models'
+# The `QCoreApplication.translate` context for strings in this file
+TR_ID = 'ui.window.extra_network_window'
 
-ADD_BUTTON_LABEL = 'Add to prompt'
-REMOVE_BUTTON_LABEL = 'Remove from prompt'
-CLOSE_BUTTON_LABEL = 'Close'
+
+def _tr(*args):
+    """Helper to make `QCoreApplication.translate` more concise."""
+    return QApplication.translate(TR_ID, *args)
+
+
+PAGE_TITLE = _tr('Lora Models')
+
+ADD_BUTTON_LABEL = _tr('Add to prompt')
+REMOVE_BUTTON_LABEL = _tr('Remove from prompt')
+CLOSE_BUTTON_LABEL = _tr('Close')
+PLACEHOLDER_TEXT = _tr('LORA')
 
 LORA_KEY_NAME = 'name'
 LORA_KEY_ALIAS = 'alias'
 LORA_KEY_PATH = 'path'
 LORA_KEY_METADATA = 'metadata'
-PLACEHOLDER_TEXT = 'LORA'
 
 PREVIEW_SIZE = 150
 

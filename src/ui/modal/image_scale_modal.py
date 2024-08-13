@@ -4,7 +4,7 @@ from typing import Optional, cast, TypeAlias
 from PySide6.QtCore import QSize
 from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import QDialog, QFormLayout, QPushButton, QComboBox, QSpinBox, QHBoxLayout, QDoubleSpinBox, \
-    QWidget
+    QWidget, QApplication
 
 from src.config.application_config import AppConfig
 from src.config.cache import Cache
@@ -12,20 +12,29 @@ from src.ui.input_fields.check_box import CheckBox
 from src.ui.input_fields.slider_spinbox import FloatSliderSpinbox
 from src.util.shared_constants import APP_ICON_PATH
 
-TITLE_TEXT = 'Scale image'
-WIDTH_PX_BOX_LABEL = 'Width:'
-WIDTH_PX_BOX_TOOLTIP = 'New image width in pixels'
-HEIGHT_PX_BOX_LABEL = 'Height:'
-HEIGHT_PX_BOX_TOOLTIP = 'New image height in pixels'
-WIDTH_MULT_BOX_LABEL = 'Width scale:'
-WIDTH_MULT_BOX_TOOLTIP = 'New image width (as multiplier)'
-HEIGHT_MULT_BOX_LABEL = 'Height scale:'
-HEIGHT_MULT_BOX_TOOLTIP = 'New image height (as multiplier)'
-UPSCALE_METHOD_LABEL = 'Upscale Method:'
-CONTROLNET_TILE_LABEL = 'Use ControlNet Tiles'
-CONTROLNET_DOWNSAMPLE_LABEL = 'ControlNet Downsample:'
-SCALE_BUTTON_LABEL = 'Scale image'
-CANCEL_BUTTON_LABEL = 'Cancel'
+# The `QCoreApplication.translate` context for strings in this file
+TR_ID = 'ui.modal.image_scale_modal'
+
+
+def _tr(*args):
+    """Helper to make `QCoreApplication.translate` more concise."""
+    return QApplication.translate(TR_ID, *args)
+
+
+TITLE_TEXT = _tr('Scale image')
+WIDTH_PX_BOX_LABEL = _tr('Width:')
+WIDTH_PX_BOX_TOOLTIP = _tr('New image width in pixels')
+HEIGHT_PX_BOX_LABEL = _tr('Height:')
+HEIGHT_PX_BOX_TOOLTIP = _tr('New image height in pixels')
+WIDTH_MULT_BOX_LABEL = _tr('Width scale:')
+WIDTH_MULT_BOX_TOOLTIP = _tr('New image width (as multiplier)')
+HEIGHT_MULT_BOX_LABEL = _tr('Height scale:')
+HEIGHT_MULT_BOX_TOOLTIP = _tr('New image height (as multiplier)')
+UPSCALE_METHOD_LABEL = _tr('Upscale Method:')
+CONTROLNET_TILE_LABEL = _tr('Use ControlNet Tiles')
+CONTROLNET_DOWNSAMPLE_LABEL = _tr('ControlNet Downsample:')
+SCALE_BUTTON_LABEL = _tr('Scale image')
+CANCEL_BUTTON_LABEL = _tr('Cancel')
 
 MIN_PX_VALUE = 8
 MAX_PX_VALUE = 20000

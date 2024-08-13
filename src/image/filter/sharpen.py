@@ -2,6 +2,7 @@
 from typing import List, Callable
 
 from PIL import ImageEnhance
+from PyQt5.QtWidgets import QApplication
 from PySide6.QtGui import QImage
 
 from src.config.key_config import KeyConfig
@@ -9,11 +10,21 @@ from src.image.filter.filter import ImageFilter
 from src.util.image_utils import qimage_to_pil_image, pil_image_to_qimage
 from src.util.parameter import Parameter, TYPE_FLOAT
 
-SHARPEN_FILTER_TITLE = 'Sharpen'
-SHARPEN_FILTER_DESCRIPTION = 'Sharpen the image'
 
-FACTOR_LABEL = 'Factor'
-FACTOR_DESCRIPTION = 'Sharpness factor (1.0: no change)'
+# The `QCoreApplication.translate` context for strings in this file
+TR_ID = 'image.filter.sharpen'
+
+
+def _tr(*args):
+    """Helper to make `QCoreApplication.translate` more concise."""
+    return QApplication.translate(TR_ID, *args)
+
+
+SHARPEN_FILTER_TITLE = _tr('Sharpen')
+SHARPEN_FILTER_DESCRIPTION = _tr('Sharpen the image')
+
+FACTOR_LABEL = _tr('Factor')
+FACTOR_DESCRIPTION = _tr('Sharpness factor (1.0: no change)')
 
 
 class SharpenFilter(ImageFilter):

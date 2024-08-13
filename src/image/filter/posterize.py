@@ -2,6 +2,7 @@
 from typing import List, Callable
 
 from PIL import ImageOps
+from PyQt5.QtWidgets import QApplication
 from PySide6.QtCore import QRect
 from PySide6.QtGui import QImage, QPainter
 
@@ -10,10 +11,19 @@ from src.image.filter.filter import ImageFilter
 from src.util.image_utils import qimage_to_pil_image, pil_image_to_qimage
 from src.util.parameter import Parameter, TYPE_INT
 
-POSTERIZE_FILTER_TITLE = 'Posterize'
-POSTERIZE_FILTER_DESCRIPTION = 'Reduce color range by reducing image color bit count.'
-PARAM_LABEL = 'Bit Count:'
-PARAM_TEXT = 'Image color bits to preserve (1-8)'
+# The `QCoreApplication.translate` context for strings in this file
+TR_ID = 'image.filter.posterize'
+
+
+def _tr(*args):
+    """Helper to make `QCoreApplication.translate` more concise."""
+    return QApplication.translate(TR_ID, *args)
+
+
+POSTERIZE_FILTER_TITLE = _tr('Posterize')
+POSTERIZE_FILTER_DESCRIPTION = _tr('Reduce color range by reducing image color bit count.')
+PARAM_LABEL = _tr('Bit Count:')
+PARAM_TEXT = _tr('Image color bits to preserve (1-8)')
 
 
 class PosterizeFilter(ImageFilter):

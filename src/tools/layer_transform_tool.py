@@ -28,7 +28,7 @@ from src.util.image_utils import get_transparency_tile_pixmap
 from src.util.shared_constants import FLOAT_MIN, FLOAT_MAX, MIN_NONZERO, INT_MAX, PROJECT_DIR
 
 # The `QCoreApplication.translate` context for strings in this file
-TR_ID = 'tools.generation_area_tool'
+TR_ID = 'tools.layer_transform_tool'
 
 
 def _tr(*args):

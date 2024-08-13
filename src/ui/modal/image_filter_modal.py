@@ -3,18 +3,27 @@ from typing import List, Callable, Optional, TypeAlias, Any
 
 from PySide6.QtCore import QSize, Signal
 from PySide6.QtGui import QImage, QIcon
-from PySide6.QtWidgets import QDialog, QFormLayout, QLabel, QWidget, QHBoxLayout, QPushButton
+from PySide6.QtWidgets import QDialog, QFormLayout, QLabel, QWidget, QHBoxLayout, QPushButton, QApplication
 
 from src.ui.input_fields.check_box import CheckBox
 from src.ui.widget.image_widget import ImageWidget
 from src.util.parameter import Parameter, DynamicFieldWidget
 from src.util.shared_constants import APP_ICON_PATH
 
-SELECTED_ONLY_LABEL = 'Change selected areas only'
-ACTIVE_ONLY_LABEL = 'Change active layer only'
+# The `QCoreApplication.translate` context for strings in this file
+TR_ID = 'ui.modal.image_filter_modal'
+
+
+def _tr(*args):
+    """Helper to make `QCoreApplication.translate` more concise."""
+    return QApplication.translate(TR_ID, *args)
+
+
+SELECTED_ONLY_LABEL = _tr('Change selected areas only')
+ACTIVE_ONLY_LABEL = _tr('Change active layer only')
+CANCEL_BUTTON_TEXT = _tr('Cancel')
+APPLY_BUTTON_TEXT = _tr('Apply')
 MIN_PREVIEW_SIZE = 450
-CANCEL_BUTTON_TEXT = 'Cancel'
-APPLY_BUTTON_TEXT = 'Apply'
 
 # parameters: filter_param_values: list
 FilterFunction: TypeAlias = Callable[[List[Any]], Optional[QImage]]
