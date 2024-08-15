@@ -24,7 +24,7 @@ class ImageGraphicsView(QGraphicsView):
     scale_changed = Signal(float)
     offset_changed = Signal(QPoint)
 
-    def __init__(self, parent: Optional[QWidget] = None) -> None:
+    def __init__(self, parent: Optional[QWidget] = None, use_keybindings=True) -> None:
         super().__init__(parent)
         self._scene = QGraphicsScene()
         self._content_size: QSize = QSize(0, 0)
@@ -61,51 +61,52 @@ class ImageGraphicsView(QGraphicsView):
         self.setScene(self._scene)
         self.installEventFilter(self)
 
-        # Bind directional navigation and image generation area keys:
-        zoom_key = KeyConfig().get_keycodes(KeyConfig.ZOOM_TOGGLE)
+        if use_keybindings:
+            # Bind directional navigation and image generation area keys:
+            zoom_key = KeyConfig().get_keycodes(KeyConfig.ZOOM_TOGGLE)
 
-        def _toggle_zoom_if_visible() -> bool:
-            if not self.isVisible():
-                return False
-            self.toggle_zoom()
-            return True
-        HotkeyFilter.instance().register_keybinding(_toggle_zoom_if_visible, zoom_key)
-        for pan_key, scroll_key, offset in ((KeyConfig.PAN_LEFT, KeyConfig.MOVE_LEFT, (-1.0, 0.0)),
-                                            (KeyConfig.PAN_RIGHT, KeyConfig.MOVE_RIGHT, (1.0, 0.0)),
-                                            (KeyConfig.PAN_UP, KeyConfig.MOVE_UP, (0.0, -1.0)),
-                                            (KeyConfig.PAN_DOWN, KeyConfig.MOVE_DOWN, (0.0, 1.0))):
-            dx, dy = offset
-            # Bind view panning:
-
-            def _pan(mult, x=dx, y=dy) -> bool:
+            def _toggle_zoom_if_visible() -> bool:
                 if not self.isVisible():
                     return False
-                self.offset = QPointF(self.offset.x() + x * mult, self.offset.y() + y * mult)
-                self.resizeEvent(None)
+                self.toggle_zoom()
                 return True
+            HotkeyFilter.instance().register_keybinding(_toggle_zoom_if_visible, zoom_key)
+            for pan_key, scroll_key, offset in ((KeyConfig.PAN_LEFT, KeyConfig.MOVE_LEFT, (-1.0, 0.0)),
+                                                (KeyConfig.PAN_RIGHT, KeyConfig.MOVE_RIGHT, (1.0, 0.0)),
+                                                (KeyConfig.PAN_UP, KeyConfig.MOVE_UP, (0.0, -1.0)),
+                                                (KeyConfig.PAN_DOWN, KeyConfig.MOVE_DOWN, (0.0, 1.0))):
+                dx, dy = offset
+                # Bind view panning:
 
-            HotkeyFilter.instance().register_speed_modified_keybinding(_pan, pan_key)
+                def _pan(mult, x=dx, y=dy) -> bool:
+                    if not self.isVisible():
+                        return False
+                    self.offset = QPointF(self.offset.x() + x * mult, self.offset.y() + y * mult)
+                    self.resizeEvent(None)
+                    return True
 
-            # Bind image generation area offset:
-            def _scroll(mult, x=dx, y=dy) -> bool:
-                if not self.isVisible():
-                    return False
-                return self.scroll_content(x * mult, y * mult)
+                HotkeyFilter.instance().register_speed_modified_keybinding(_pan, pan_key)
 
-            HotkeyFilter.instance().register_speed_modified_keybinding(_scroll, scroll_key)
+                # Bind image generation area offset:
+                def _scroll(mult, x=dx, y=dy) -> bool:
+                    if not self.isVisible():
+                        return False
+                    return self.scroll_content(x * mult, y * mult)
 
-        # Bind zoom keys:
-        for config_key, direction in ((KeyConfig.ZOOM_IN, 1), (KeyConfig.ZOOM_OUT, -1)):
-            zoom_offset = BASE_ZOOM_OFFSET * direction
+                HotkeyFilter.instance().register_speed_modified_keybinding(_scroll, scroll_key)
 
-            def _zoom(mult, change=zoom_offset) -> bool:
-                if not self.isVisible():
-                    return False
-                self.scene_scale = self.scene_scale + change * mult
-                self.resizeEvent(None)
-                return True
+            # Bind zoom keys:
+            for config_key, direction in ((KeyConfig.ZOOM_IN, 1), (KeyConfig.ZOOM_OUT, -1)):
+                zoom_offset = BASE_ZOOM_OFFSET * direction
 
-            HotkeyFilter.instance().register_speed_modified_keybinding(_zoom, config_key)
+                def _zoom(mult, change=zoom_offset) -> bool:
+                    if not self.isVisible():
+                        return False
+                    self.scene_scale = self.scene_scale + change * mult
+                    self.resizeEvent(None)
+                    return True
+
+                HotkeyFilter.instance().register_speed_modified_keybinding(_zoom, config_key)
 
     @property
     def mouse_navigation_enabled(self) -> bool:

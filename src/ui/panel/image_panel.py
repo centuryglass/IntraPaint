@@ -35,7 +35,7 @@ MAIN_CONTENT_STRETCH = 100
 class ImagePanel(QWidget):
     """Displays the image panel with zoom controls and input hints."""
 
-    def __init__(self, image_stack: ImageStack, include_tab_boxes: bool = False) -> None:
+    def __init__(self, image_stack: ImageStack, include_tab_boxes: bool = False, use_keybindings=True) -> None:
         super().__init__()
         if include_tab_boxes:
             self._outer_layout = QHBoxLayout(self)
@@ -54,7 +54,7 @@ class ImagePanel(QWidget):
             self._left_tab_box = None
             self._right_tab_box = None
 
-        self._image_viewer = ImageViewer(None, image_stack)
+        self._image_viewer = ImageViewer(None, image_stack, use_keybindings)
         self._layout.addWidget(self._image_viewer, stretch=255)
         self._control_bar = QWidget()
         self._layout.addWidget(self._control_bar, stretch=1)

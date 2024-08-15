@@ -75,7 +75,7 @@ class ToolPanel(QWidget):
         self._layer_tab = LayerPanel(image_stack)
         self._color_tab = ColorControlPanel(disable_extended_layouts=True)
         self._color_tab.set_orientation(self._orientation)
-        self._navigation_tab = ImageWindow(image_stack)
+        self._navigation_tab = ImageWindow(image_stack, False)
         self._control_panel.addTab(self._layer_tab, LAYER_TAB)
         self._control_panel.addTab(self._color_tab, COLOR_TAB)
         self._control_panel.addTab(self._navigation_tab, NAV_TAB)

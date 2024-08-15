@@ -11,8 +11,8 @@ from src.util.shared_constants import APP_ICON_PATH
 class ImageWindow(ImagePanel):
     """Shows the edited image in its own window."""
 
-    def __init__(self, image_stack: ImageStack) -> None:
-        super().__init__(image_stack)
+    def __init__(self, image_stack: ImageStack, use_keybindings=True) -> None:
+        super().__init__(image_stack, use_keybindings=use_keybindings)
         self.setWindowIcon(QIcon(APP_ICON_PATH))
         self._image_stack = image_stack
         self._tool_controller = ToolController(image_stack, self.image_viewer, False)
