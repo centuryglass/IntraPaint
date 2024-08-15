@@ -1,3 +1,12 @@
 {
-    "last_active_tool": "Selection"
+    "styles": "None",
+    "last_active_tool": "Select Image Generation Area",
+    "fill_threshold": {
+        "min": 0.0,
+        "max": 30.0,
+        "step": 10.0,
+        "value": 0.0
+    },
+    "sample_merged": false,
+    "paint_selection_only": false
 }

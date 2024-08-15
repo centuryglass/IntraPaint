@@ -250,7 +250,6 @@ class ImageGraphicsView(QGraphicsView):
     @background.setter
     def background(self, new_background: Optional[QImage | QPixmap]) -> None:
         """Updates the background image content."""
-        assert isinstance(new_background, (QImage, QPixmap, None))
         if isinstance(new_background, QImage):
             self._background = QPixmap.fromImage(new_background)
         else:

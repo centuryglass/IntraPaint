@@ -34,6 +34,9 @@ THUMBNAIL_DIRECTORY_NAME = 'Thumbnails'
 THUMBNAIL_FILE_NAME = 'thumbnail.png'
 MERGED_IMAGE_FILE_NAME = 'mergedimage'
 
+BOOLEAN_TRUE_STR = 'true'
+BOOLEAN_FALSE_STR = 'false'
+
 # XML tags and constants:
 ORA_SPEC_VERSION = '0.0.3'
 
@@ -133,7 +136,7 @@ def save_ora_image(image_stack: ImageStack, file_path: str,  metadata: str) -> N
     os.mkdir(thumbnail_dir_path)
 
     # Save layers and build xml data file:
-    extended_data: Dict[str, Tuple[str, str]] = {}
+    extended_data: Dict[str, Dict[str, str]] = {}
 
     def _get_composite_op(mode: QPainter.CompositionMode) -> Optional[str]:
         mode_name = None
@@ -163,9 +166,9 @@ def save_ora_image(image_stack: ImageStack, file_path: str,  metadata: str) -> N
         if composite_op_type is not None:
             layer_data[ATTR_TAG_COMPOSITE] = composite_op_type
         if layer.locked:
-            layer_data[ATTR_TAG_EDIT_LOCKED] = 'true'
+            layer_data[ATTR_TAG_EDIT_LOCKED] = BOOLEAN_TRUE_STR
         if layer == image_stack.active_layer:
-            layer_data[ATTR_TAG_SELECTED] = 'true'
+            layer_data[ATTR_TAG_SELECTED] = BOOLEAN_TRUE_STR
         layer_data[ATTR_TAG_OPACITY] = layer.opacity
         layer_data[ATTR_TAG_VISIBILITY] = ATTR_VISIBLE if layer.visible else ATTR_HIDDEN
         image_path = os.path.join(DATA_DIRECTORY_NAME, f'{layer.name}_{layer.id}.png')
@@ -178,12 +181,13 @@ def save_ora_image(image_stack: ImageStack, file_path: str,  metadata: str) -> N
         # Store untransformed images and transformations in a separate extended data section:
         layer_transform = layer.transform
         if layer_transform != offset_transform or layer.alpha_locked:
-            extended_layer_data = {}
+            extended_layer_data: dict[str, str] = {}
             if layer.alpha_locked:
-                extended_layer_data[ATTR_TAG_ALPHA_LOCKED] = 'true'
+                extended_layer_data[ATTR_TAG_ALPHA_LOCKED] = BOOLEAN_TRUE_STR
             if layer_transform != offset_transform:
                 layer_transform_str = _get_transform_str(layer_transform)
-                layer_untransformed_path = os.path.join(DATA_DIRECTORY_NAME, f'{layer.name}_{layer.id}-untransformed.png')
+                layer_untransformed_path = os.path.join(DATA_DIRECTORY_NAME,
+                                                        f'{layer.name}_{layer.id}-untransformed.png')
                 layer.image.save(os.path.join(tmpdir, layer_untransformed_path))
                 extended_layer_data[TRANSFORM_SRC_TAG] = layer_untransformed_path
                 extended_layer_data[TRANSFORM_TAG] = layer_transform_str
@@ -200,9 +204,9 @@ def save_ora_image(image_stack: ImageStack, file_path: str,  metadata: str) -> N
         if composite_op_type is not None:
             stack_data[ATTR_TAG_COMPOSITE] = composite_op_type
         if layer.locked:
-            stack_data[ATTR_TAG_EDIT_LOCKED] = 'true'
+            stack_data[ATTR_TAG_EDIT_LOCKED] = BOOLEAN_TRUE_STR
         if layer == image_stack.active_layer:
-            stack_data[ATTR_TAG_SELECTED] = 'true'
+            stack_data[ATTR_TAG_SELECTED] = BOOLEAN_TRUE_STR
         stack_data[ATTR_TAG_OPACITY] = layer.opacity
         stack_data[ATTR_TAG_VISIBILITY] = ATTR_VISIBLE if layer.visible else ATTR_HIDDEN
         # TODO: properly support 'isolate' attribute in layer stacks
@@ -318,6 +322,7 @@ def read_ora_image(image_stack: ImageStack, file_path: str) -> Optional[str]:
         for extended_layer in extended_xml_root:
             extended_layer_data = {}
             flattened_image_path = extended_layer.get(LAYER_TAG_SRC)
+            assert flattened_image_path is not None
             transform_image_path = extended_layer.get(TRANSFORM_SRC_TAG)
             if transform_image_path is not None:
                 transform_image = QImage(os.path.join(tmpdir, transform_image_path))
@@ -335,7 +340,7 @@ def read_ora_image(image_stack: ImageStack, file_path: str) -> Optional[str]:
         if ATTR_TAG_VISIBILITY in element.keys():
             visible = element.get(ATTR_TAG_VISIBILITY) == ATTR_VISIBLE
             layer.set_visible(visible)
-        if element.get(ATTR_TAG_EDIT_LOCKED, 'false') == 'true':
+        if element.get(ATTR_TAG_EDIT_LOCKED) == BOOLEAN_TRUE_STR:
             layer.set_locked(True)
         if ATTR_TAG_OPACITY in element.keys():
             opacity = float(str(element.get(ATTR_TAG_OPACITY)))
@@ -343,12 +348,13 @@ def read_ora_image(image_stack: ImageStack, file_path: str) -> Optional[str]:
         if ATTR_TAG_COMPOSITE in element.keys():
             comp_mode = COMPOSITION_MODES[ORA_COMPOSITION_MODES[str(element.get(ATTR_TAG_COMPOSITE))]]
             layer.set_composition_mode(comp_mode)
-        return element.get(ATTR_TAG_SELECTED, 'false') == 'true'
+        return element.get(ATTR_TAG_SELECTED) == BOOLEAN_TRUE_STR
 
     def parse_image_element(element: Element) -> Tuple[ImageLayer, bool]:
         """Load an image layer from its saved XML definition, return whether this layer is selected."""
         assert element.tag == LAYER_ELEMENT
         base_image_path = element.get(LAYER_TAG_SRC)
+        assert base_image_path is not None
         layer_image = QImage()
         layer_transform = QTransform()
         alpha_locked = None
@@ -362,7 +368,7 @@ def read_ora_image(image_stack: ImageStack, file_path: str) -> Optional[str]:
             layer_image = QImage(os.path.join(tmpdir, base_image_path))
         layer = ImageLayer(layer_image, '')
         is_active = _parse_common_attributes(layer, element)
-        if alpha_locked == 'true':
+        if alpha_locked == BOOLEAN_TRUE_STR:
             layer.set_alpha_locked(True)
         if not layer_transform.isIdentity():
             layer.set_transform(layer_transform)
@@ -381,8 +387,9 @@ def read_ora_image(image_stack: ImageStack, file_path: str) -> Optional[str]:
         if _parse_common_attributes(layer, element):
             active_layer = layer
         for child_element in element:
+            is_active = False
             if child_element.tag == STACK_ELEMENT:
-                child_layer, is_active = parse_stack_element(child_element)
+                child_layer, active_layer = parse_stack_element(child_element)
             elif child_element.tag == LAYER_ELEMENT:
                 child_layer, is_active = parse_image_element(child_element)
             else:

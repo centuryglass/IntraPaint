@@ -2,7 +2,7 @@
 from typing import List, Callable
 
 from PIL import ImageOps
-from PyQt5.QtWidgets import QApplication
+from PySide6.QtWidgets import QApplication
 from PySide6.QtCore import QRect
 from PySide6.QtGui import QImage, QPainter
 

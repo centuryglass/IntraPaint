@@ -169,7 +169,6 @@ class TabBar(QTabBar):
             self.is_open = not self.is_open
             self.update()
 
-
     def _tab_widget_change_slot(self, tab: QWidget, tab_widget: QWidget) -> None:
         if self._active_tab == tab:
             self.active_tab_content_replaced.emit(tab_widget)

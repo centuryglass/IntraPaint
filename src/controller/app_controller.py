@@ -7,9 +7,11 @@ import os
 import re
 import sys
 from argparse import Namespace
+from collections.abc import Buffer
 from typing import Optional, Any, List, Tuple, Callable, Set
 
-from PIL import Image, UnidentifiedImageError, PngImagePlugin
+from PIL import Image, UnidentifiedImageError, ExifTags
+from PIL.ExifTags import IFD
 from PySide6.QtCore import QSize
 from PySide6.QtGui import QImage
 from PySide6.QtWidgets import QApplication, QMessageBox
@@ -36,7 +38,8 @@ from src.image.layers.transform_group import TransformGroup
 from src.image.layers.transform_layer import TransformLayer
 from src.image.open_raster import save_ora_image, read_ora_image
 from src.ui.modal.image_scale_modal import ImageScaleModal
-from src.ui.modal.modal_utils import show_error_dialog, request_confirmation, open_image_file, open_image_layers
+from src.ui.modal.modal_utils import show_error_dialog, request_confirmation, open_image_file, open_image_layers, \
+    show_warning_dialog
 from src.ui.modal.new_image_modal import NewImageModal
 from src.ui.modal.resize_canvas_modal import ResizeCanvasModal
 from src.ui.modal.settings_modal import SettingsModal
@@ -47,7 +50,11 @@ from src.undo_stack import UndoStack
 from src.util.application_state import AppStateTracker, APP_STATE_NO_IMAGE, APP_STATE_EDITING, APP_STATE_LOADING, \
     APP_STATE_SELECTION
 from src.util.display_size import get_screen_size
-from src.util.image_utils import pil_image_scaling, create_transparent_image
+from src.util.image_utils import pil_image_scaling, create_transparent_image, METADATA_PARAMETER_KEY, load_image, \
+    METADATA_COMMENT_KEY, IMAGE_FORMATS_SUPPORTING_ALPHA, image_is_fully_opaque, IMAGE_FORMATS_SUPPORTING_METADATA, \
+    save_image_with_metadata, save_image, IMAGE_WRITE_FORMATS, IMAGE_READ_FORMATS, \
+    IMAGE_FORMATS_SUPPORTING_PARTIAL_ALPHA, image_has_partial_alpha, IMAGE_FORMATS_WITH_FIXED_SIZE, \
+    GREYSCALE_IMAGE_FORMATS
 from src.util.menu_builder import MenuBuilder, menu_action, MENU_DATA_ATTR, MenuData
 from src.util.optional_import import optional_import
 from src.util.qtexcepthook import QtExceptHook
@@ -111,7 +118,31 @@ SETTINGS_ERROR_TITLE = _tr('Failed to open settings')
 LOAD_LAYER_ERROR_TITLE = _tr('Opening layers failed')
 LOAD_LAYER_ERROR_MESSAGE = _tr('Could not open the following images: ')
 
-METADATA_PARAMETER_KEY = 'parameters'
+# Warnings when saving images cause data loss:
+LAYERS_NOT_SAVED_TITLE = _tr('Image saved without layer data')
+LAYERS_NOT_SAVED_MESSAGE = _tr('To save layer data, images must be saved in .ora format.')
+
+ALPHA_NOT_SAVED_TITLE = _tr('Image saved without full transparency')
+ALPHA_NOT_SAVED_MESSAGE = _tr('To preserve transparency, save using one of the following file formats:'
+                              ' {alpha_formats}')
+
+METADATA_NOT_SAVED_TITLE = _tr('Image saved without image generation metadata')
+METADATA_NOT_SAVED_MESSAGE = _tr('To preserve image generation metadata, save using one of the following file formats:'
+                                 ' {metadata_formats}')
+
+WRITE_ONLY_SAVE_TITLE = _tr('Image saved in a write-only format')
+WRITE_ONLY_SAVE_MESSAGE = _tr('IntraPaint can write images in the {file_format} format, but cannot load them. Use '
+                              'another file format if you want to be able to load this image in IntraPaint again.')
+
+FIXED_SIZE_SAVE_TITLE = _tr('Image saved in a format that changes size')
+FIXED_SIZE_SAVE_MESSAGE = _tr('The image is {width_px}x{height_px}, but the {file_format} format saves all images at'
+                              ' {saved_width_px}x{saved_height_px} resolution. Use another file format if you want'
+                              ' to preserve the original image size.')
+
+NO_COLOR_SAVE_TITLE = _tr('Image saved without color')
+NO_COLOR_SAVE_MESSAGE = _tr('The {file_format} format saves the image without color. Use another format if you want'
+                            ' to preserve image colors.')
+
 IGNORED_APPCONFIG_CATEGORIES = ('Stable-Diffusion', 'GLID-3-XL')
 DEV_APPCONFIG_CATEGORY = 'Developer'
 
@@ -142,6 +173,7 @@ class AppController(MenuBuilder):
                                        config.get(AppConfig.MIN_EDIT_SIZE), config.get(AppConfig.MAX_EDIT_SIZE))
 
         self._metadata: Optional[dict[str, Any]] = None
+        self._exif: Optional[Image.Exif] = None
 
         # Initialize main window:
         self._window = MainWindow(self._image_stack)
@@ -451,6 +483,7 @@ class AppController(MenuBuilder):
             new_image = create_transparent_image(image_size)
             self._image_stack.load_image(new_image)
             self._metadata = None
+            self._exif = None
             AppStateTracker.set_app_state(APP_STATE_EDITING)
 
     @menu_action(MENU_FILE, 'save_shortcut', priority=1,
@@ -467,6 +500,7 @@ class AppController(MenuBuilder):
     def save_image_as(self, file_path: Optional[str] = None) -> None:
         """Open a save dialog, and save the edited image to disk, preserving any metadata."""
         cache = Cache()
+        config = AppConfig()
         try:
             if not isinstance(file_path, str):
                 selected_path = open_image_file(self._window, mode='save',
@@ -475,24 +509,90 @@ class AppController(MenuBuilder):
                     return
                 file_path = selected_path
             assert isinstance(file_path, str)
-            if file_path.endswith('.ora'):
+            if file_path.lower().endswith('.ora'):
                 save_ora_image(self._image_stack, file_path, json.dumps(self._metadata))
             else:
-                image = self._image_stack.pil_image()
-                if self._metadata is not None:
-                    info = PngImagePlugin.PngInfo()
-                    for key in self._metadata:
-                        try:
-                            info.add_itxt(key, self._metadata[key])
-                        except AttributeError as png_err:
-                            # Encountered some sort of image metadata that PIL knows how to read but not how to write.
-                            # I've seen this a few times, mostly with images edited in Krita. This data isn't important
-                            # to me, so it'll just be discarded. If it's important to you, open a GitHub issue with
-                            # details or submit a PR, and I'll take care of it.
-                            logger.error(f'failed to preserve "{key}" in metadata: {png_err}')
-                    image.save(file_path, 'PNG', pnginfo=info)
+                delimiter_index = file_path.rfind('.')
+                if delimiter_index < 0:
+                    raise ValueError(f'Invalid path {file_path} missing extension')
+                file_format = file_path[delimiter_index + 1:].upper()
+                image = self._image_stack.qimage()
+
+                # Check for data loss conditions that should be mentioned:
+                warn_save_discards_layers = (config.get(AppConfig.WARN_BEFORE_LAYERLESS_SAVE)
+                                             and self._image_stack.layer_stack.count > 1)
+                warn_save_discards_alpha = (config.get(AppConfig.WARN_BEFORE_RGB_SAVE)
+                                            and ((file_format not in IMAGE_FORMATS_SUPPORTING_ALPHA
+                                                  and not image_is_fully_opaque(image))
+                                                 or (file_format in IMAGE_FORMATS_SUPPORTING_PARTIAL_ALPHA
+                                                     and image_has_partial_alpha(image))))
+                warn_save_discards_metadata = (config.get(AppConfig.WARN_BEFORE_SAVE_WITHOUT_METADATA)
+                                               and self._metadata is not None
+                                               and METADATA_PARAMETER_KEY in self._metadata
+                                               and file_format not in IMAGE_FORMATS_SUPPORTING_METADATA)
+                warn_save_is_write_only = (config.get(AppConfig.WARN_BEFORE_WRITE_ONLY_SAVE)
+                                           and file_format in IMAGE_WRITE_FORMATS
+                                           and file_format not in IMAGE_READ_FORMATS)
+                warn_save_changes_size = (config.get(AppConfig.WARN_BEFORE_FIXED_SIZE_SAVE)
+                                          and file_format in IMAGE_FORMATS_WITH_FIXED_SIZE
+                                          and image.size() != IMAGE_FORMATS_WITH_FIXED_SIZE[file_format])
+                warn_save_removes_color = (config.get(AppConfig.WARN_BEFORE_COLOR_LOSS)
+                                           and file_format in GREYSCALE_IMAGE_FORMATS)
+
+                if file_format in IMAGE_FORMATS_SUPPORTING_METADATA:
+                    try:
+                        save_image_with_metadata(image, file_path, self._metadata, self._exif)
+                    except ValueError:
+                        logger.error(f'Format {file_format} should support metadata, but saving with metadata failed.')
+                        warn_save_discards_metadata = config.get(AppConfig.WARN_BEFORE_SAVE_WITHOUT_METADATA)
+                        save_image(image, file_path, self._exif)
                 else:
-                    image.save(file_path, 'PNG')
+                    save_image(image, file_path, self._exif)
+
+                # Show data loss warnings, if not disabled:
+                alpha_loss_message = ALPHA_NOT_SAVED_MESSAGE
+                metadata_loss_message = METADATA_NOT_SAVED_MESSAGE
+                fixed_size_message = FIXED_SIZE_SAVE_MESSAGE
+                color_loss_message = NO_COLOR_SAVE_MESSAGE
+                write_only_message = WRITE_ONLY_SAVE_MESSAGE
+
+                def _extension_str(extensions: Tuple[str, ...]) -> str:
+                    return ', '.join((f'.{ext.lower()}' for ext in extensions))
+                format_str = f'.{file_format.lower()}'
+
+                if warn_save_discards_alpha:
+                    alpha_loss_message = alpha_loss_message.format(
+                        alpha_formats=_extension_str(IMAGE_FORMATS_SUPPORTING_ALPHA))
+                if warn_save_discards_metadata:
+                    metadata_loss_message = metadata_loss_message.format(
+                        metadata_formats=_extension_str(IMAGE_FORMATS_SUPPORTING_METADATA))
+                if warn_save_changes_size:
+                    final_size = IMAGE_FORMATS_WITH_FIXED_SIZE[file_format]
+                    fixed_size_message = fixed_size_message.format(width_px=image.width(),
+                                                                   height_px=image.height(),
+                                                                   file_format=format_str,
+                                                                   saved_width_px=final_size.width(),
+                                                                   saved_height_px=final_size.height())
+                if warn_save_is_write_only:
+                    write_only_message = write_only_message.format(file_format=format_str)
+                if warn_save_removes_color:
+                    color_loss_message = color_loss_message.format(file_format=format_str)
+
+                for loss_condition, warn_on_save_config_key, title, message in (
+                        (warn_save_discards_layers, AppConfig.WARN_BEFORE_LAYERLESS_SAVE, LAYERS_NOT_SAVED_TITLE,
+                         LAYERS_NOT_SAVED_MESSAGE),
+                        (warn_save_discards_alpha, AppConfig.WARN_BEFORE_RGB_SAVE, ALPHA_NOT_SAVED_TITLE,
+                         alpha_loss_message),
+                        (warn_save_discards_metadata, AppConfig.WARN_BEFORE_SAVE_WITHOUT_METADATA,
+                         METADATA_NOT_SAVED_TITLE, metadata_loss_message),
+                        (warn_save_is_write_only, AppConfig.WARN_BEFORE_WRITE_ONLY_SAVE, WRITE_ONLY_SAVE_TITLE,
+                         write_only_message),
+                        (warn_save_changes_size, AppConfig.WARN_BEFORE_FIXED_SIZE_SAVE, FIXED_SIZE_SAVE_TITLE,
+                         fixed_size_message),
+                        (warn_save_removes_color, AppConfig.WARN_BEFORE_COLOR_LOSS, NO_COLOR_SAVE_TITLE,
+                         color_loss_message)):
+                    if loss_condition:
+                        show_warning_dialog(self._window, title, message, warn_on_save_config_key)
             cache.set(Cache.LAST_FILE_PATH, file_path)
         except (IOError, TypeError) as save_err:
             show_error_dialog(self._window, SAVE_ERROR_TITLE, str(save_err))
@@ -514,25 +614,47 @@ class AppController(MenuBuilder):
                 logger.warning(f'Expected single image, got list with length {len(file_path)}')
             file_path = file_path[0]
         assert isinstance(file_path, str)
+        self._exif = Image.Exif()
+        self._metadata = None
         try:
             assert file_path is not None
-            if file_path.endswith('.ora'):
+            if file_path.lower().endswith('.ora'):
                 metadata = read_ora_image(self._image_stack, file_path)
                 if metadata is not None and len(metadata) > 0:
                     self._metadata = json.loads(metadata)
             else:
-                image = Image.open(file_path)
+                image, exif, image_info = load_image(file_path)
                 # try and load metadata:
-                if hasattr(image, 'info') and image.info is not None:
-                    self._metadata = image.info
-                else:
-                    self._metadata = None
+                if image_info is not None:
+                    if METADATA_COMMENT_KEY in image_info and METADATA_PARAMETER_KEY not in image_info:
+                        image_info[METADATA_PARAMETER_KEY] = image_info[METADATA_COMMENT_KEY]
+                    self._metadata = image_info
+                if exif is not None:
+                    if isinstance(exif, Image.Exif):
+                        self._exif = exif
+                    elif (self._metadata is None or METADATA_PARAMETER_KEY
+                          not in self._metadata) and isinstance(exif, dict):
+                        self._metadata = exif
+                        if 'exif' in exif:
+                            self._exif.load(exif['exif'])
+                if (self._metadata is None or METADATA_PARAMETER_KEY not in self._metadata) and self._exif is not None:
+                    exif_tags = self._exif.get_ifd(IFD.Exif)
+                    description = exif_tags.get(ExifTags.Base.ImageDescription)
+                    if description is None:
+                        description = self._exif.get(ExifTags.Base.ImageDescription)
+                    if description is not None:
+                        if self._metadata is None:
+                            self._metadata = {}
+                        self._metadata[METADATA_PARAMETER_KEY] = description
                 self._image_stack.load_image(QImage(file_path))
             cache.set(Cache.LAST_FILE_PATH, file_path)
 
             # File loaded, attempt to apply metadata:
             if self._metadata is not None and METADATA_PARAMETER_KEY in self._metadata:
                 param_str = self._metadata[METADATA_PARAMETER_KEY]
+                if param_str is not None and not isinstance(param_str, str):
+                    assert isinstance(param_str, Buffer)
+                    param_str = str(param_str, encoding='utf-8')
                 match = re.match(r'^(.*\n?.*)\nSteps: ?(\d+), Sampler: ?(.*), CFG scale: ?(.*), Seed: ?(.+), Size.*',
                                  param_str)
                 if match:
@@ -578,7 +700,7 @@ class AppController(MenuBuilder):
         errors: List[str] = []
         for layer_path in layer_paths:
             try:
-                image = QImage(layer_path)
+                image, _, _ = load_image(layer_path)
                 layers.append((image, layer_path))
             except IOError:
                 errors.append(layer_path)
@@ -711,6 +833,10 @@ class AppController(MenuBuilder):
         if self._metadata is None:
             self._metadata = {}
         self._metadata[METADATA_PARAMETER_KEY] = params
+        if self._exif is None:
+            self._exif = Image.Exif()
+        exif_tags = self._exif.get_ifd(IFD.Exif)
+        exif_tags[ExifTags.Base.ImageDescription.value] = params
         if show_messagebox:
             message_box = QMessageBox()
             message_box.setWindowTitle(METADATA_UPDATE_TITLE)

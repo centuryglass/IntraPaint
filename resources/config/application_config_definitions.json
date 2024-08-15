@@ -538,7 +538,47 @@
     "warn_before_layerless_save": {
         "label": "Warn when saving without layers:",
         "category": "Alerts",
-        "description": "Warn the user when saving in a format that discards layer data.",
+        "description": "Show a warning popup when saving a multi-layer image in a format that discards layer data.",
+        "type": "bool",
+        "default": true,
+        "saved": true
+    },
+    "warn_before_rgb_save": {
+        "label": "Warn when saving without transparency:",
+        "category": "Alerts",
+        "description": "Show a warning popup when saving an image with transparency in a format that doesn't support it.",
+        "type": "bool",
+        "default": true,
+        "saved": true
+    },
+    "warn_before_save_without_metadata": {
+        "label": "Warn when saving without metadata:",
+        "category": "Alerts",
+        "description": "Show a warning popup when saving an image in a format that discards metadata.",
+        "type": "bool",
+        "default": true,
+        "saved": true
+    },
+    "warn_before_write_only_save": {
+        "label": "Warn when saving in a format that cannot be loaded:",
+        "category": "Alerts",
+        "description": "Show a warning popup when saving an image in a format that can't be loaded.",
+        "type": "bool",
+        "default": true,
+        "saved": true
+    },
+    "warn_before_fixed_size_save": {
+        "label": "Warn when saving in a format that changes image size:",
+        "category": "Alerts",
+        "description": "Show a warning popup when saving an image in a format requires a specific resolution.",
+        "type": "bool",
+        "default": true,
+        "saved": true
+    },
+    "warn_before_color_loss": {
+        "label": "Warn when saving in a format that removes color:",
+        "category": "Alerts",
+        "description": "Show a warning popup when saving an image in a format that does not support color..",
         "type": "bool",
         "default": true,
         "saved": true

@@ -9,9 +9,11 @@ from src.util.shared_constants import INT_MAX
 # The `QCoreApplication.translate` context for strings in this file
 TR_ID = 'ui.input_fields.size_field'
 
+
 def _tr(*args):
     """Helper to make `QCoreApplication.translate` more concise."""
     return QApplication.translate(TR_ID, *args)
+
 
 WIDTH_LABEL = _tr('W:')
 HEIGHT_LABEL = _tr('H:')

@@ -4,7 +4,7 @@ from contextlib import contextmanager
 from typing import Optional, Any, Tuple
 
 from PIL import Image
-from PyQt5.QtWidgets import QApplication
+from PySide6.QtWidgets import QApplication
 from PySide6.QtCore import QRect, QSize, QPoint, Signal, QObject
 from PySide6.QtGui import QImage, QPainter, QPixmap, QTransform
 

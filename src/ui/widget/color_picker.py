@@ -13,6 +13,7 @@ def _tr(*args):
     """Helper to make `QCoreApplication.translate` more concise."""
     return QApplication.translate(TR_ID, *args)
 
+
 BASIC_PALETTE_TITLE = _tr('Basic Palette')
 CUSTOM_PALETTE_TITLE = _tr('Custom Palette')
 SPECTRUM_TAB_TITLE = _tr('Spectrum')

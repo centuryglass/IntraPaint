@@ -19,6 +19,7 @@ def _tr(*args):
     """Helper to make `QCoreApplication.translate` more concise."""
     return QApplication.translate(TR_ID, *args)
 
+
 SCALE_SLIDER_LABEL = _tr('Scale:')
 SCALE_RESET_BUTTON_LABEL = _tr('Reset View')
 SCALE_RESET_BUTTON_TOOLTIP = _tr('Restore default image zoom and offset')

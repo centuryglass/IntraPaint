@@ -88,8 +88,8 @@ class ImageStack(QObject):
                     > (content_bounds.width() * content_bounds.height() * 10):
                 self._selection_layer.adjust_local_bounds(self._selection_layer.map_rect_from_image(content_bounds),
                                                           False)
-                assert self._selection_layer.transformed_bounds.contains(selection_bounds), \
-                    f'expected {content_bounds}, got {self._selection_layer.transformed_bounds}'
+                assert self._selection_layer.transformed_bounds.contains(content_bounds, proper=False), \
+                    f'expected containing {content_bounds}, got {self._selection_layer.transformed_bounds}'
             self._image.invalidate()
             self._emit_content_changed()
         self._layer_stack.content_changed.connect(_content_change)

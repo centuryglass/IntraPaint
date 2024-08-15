@@ -3,8 +3,6 @@
 
 # Files
 - ORA SVG support
-- Support saving in formats other than .png (metadata fixes?)
-- Warn when saving would merge layers, discard metadata, discard alpha
 
 # General interface
 - When scaling, center scale on mouse position

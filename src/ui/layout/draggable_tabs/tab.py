@@ -52,7 +52,8 @@ class Tab(Label):
             self._widget.set_orientation(orientation)
 
     def mouseDoubleClickEvent(self, event: Optional[QMouseEvent]) -> None:
-        """Send the double-click signal on left-click."""
+        """Send the double click signal on left-click."""
+        assert event is not None
         if event.buttons() == Qt.MouseButton.LeftButton:
             self.double_clicked.emit(self)
 

@@ -7,7 +7,7 @@ import time
 from typing import Callable, Optional, cast, List
 
 from PIL import Image
-from PyQt6.QtWidgets import QApplication
+from PySide6.QtWidgets import QApplication
 from PySide6.QtCore import Qt, QRect, QSize, QSizeF, QRectF, QEvent, Signal, QPointF, QObject, QPoint
 from PySide6.QtGui import QImage, QResizeEvent, QPixmap, QPainter, QWheelEvent, QMouseEvent, \
     QPainterPath, QKeyEvent, QPolygonF

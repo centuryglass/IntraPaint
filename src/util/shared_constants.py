@@ -10,6 +10,7 @@ from platformdirs import user_data_dir, user_log_dir
 # The `QCoreApplication.translate` context for strings in this file
 TR_ID = 'util.shared_constants'
 
+
 def _tr(*args):
     """Helper to make `QCoreApplication.translate` more concise."""
     return QApplication.translate(TR_ID, *args)

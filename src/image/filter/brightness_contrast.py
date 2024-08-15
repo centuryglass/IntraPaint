@@ -1,7 +1,7 @@
 """Adjust image brightness/contrast."""
 from typing import List, Callable
 from PIL import ImageEnhance
-from PyQt5.QtWidgets import QApplication
+from PySide6.QtWidgets import QApplication
 from PySide6.QtGui import QImage
 
 from src.config.key_config import KeyConfig

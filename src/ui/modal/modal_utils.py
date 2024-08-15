@@ -1,15 +1,18 @@
 """
 Provides simple popup windows for error messages, requesting confirmation, and loading images.
 """
+import logging
+import os
 import sys
 import traceback
-import logging
-from typing import Optional, List
+from typing import Optional, Set
 
-from PySide6.QtWidgets import QMessageBox, QFileDialog, QWidget, QStyle, QApplication
 from PIL import UnidentifiedImageError
+from PySide6.QtWidgets import QMessageBox, QFileDialog, QWidget, QStyle, QApplication
 
-from src.util.image_utils import get_standard_qt_icon
+from src.config.application_config import AppConfig
+from src.ui.input_fields.check_box import CheckBox
+from src.util.image_utils import get_standard_qt_icon, IMAGE_WRITE_FORMATS, IMAGE_READ_FORMATS, OPENRASTER_FORMAT
 
 logger = logging.getLogger(__name__)
 
@@ -30,9 +33,19 @@ LOAD_IMAGE_ERROR_MSG = _tr('Open failed')
 IMAGE_FORMATS_DESCRIPTION = _tr('Images and IntraPaint projects')
 LAYER_FORMATS_DESCRIPTION = _tr('Images')
 
-SAVE_FILE_FORMATS = '(*.png *.ora)'
-LOAD_FILE_FORMATS = '(*.bmp *.gif *.jpg *.jpeg *.png *.pbm *.pgm *.ppm *.xbm *.xpm *.ora)'
-LOAD_LAYER_FORMATS = '(*.bmp *.gif *.jpg *.jpeg *.png *.pbm *.pgm *.ppm *.xbm *.xpm)'
+DO_NOT_WARN_AGAIN_CHECKBOX_MESSAGE = _tr('Don\'t show this again')
+
+
+def _extension_set_to_filter_string(str_set: Set[str]) -> str:
+    format_list = [f'*.{file_format.lower()}' for file_format in str_set]
+    format_list.sort()
+    return f'({' '.join(format_list)})'
+
+
+SAVE_FILE_FORMATS = _extension_set_to_filter_string(IMAGE_WRITE_FORMATS)
+LOAD_FILE_FORMATS = _extension_set_to_filter_string(IMAGE_READ_FORMATS)
+LOAD_LAYER_FORMATS = _extension_set_to_filter_string({file_format for file_format in IMAGE_READ_FORMATS
+                                                      if file_format != OPENRASTER_FORMAT})
 
 IMAGE_SAVE_FILTER = f'{IMAGE_FORMATS_DESCRIPTION} {SAVE_FILE_FORMATS}'
 IMAGE_LOAD_FILTER = f'{IMAGE_FORMATS_DESCRIPTION} {LOAD_FILE_FORMATS}'
@@ -56,6 +69,25 @@ def show_error_dialog(parent: Optional[QWidget], title: str, error: str | BaseEx
     messagebox.exec()
 
 
+def show_warning_dialog(parent: Optional[QWidget], title: str, message: str,
+                        reminder_config_key: Optional[str]) -> None:
+    """Show a warning dialog, optionally with a 'don't show again' checkbox"""
+    if reminder_config_key is not None and not AppConfig().get(reminder_config_key):
+        return  # Warning already disabled
+    messagebox = QMessageBox(parent)
+    messagebox.setWindowTitle(title)
+    messagebox.setText(message)
+    messagebox.setWindowIcon(get_standard_qt_icon(QStyle.StandardPixmap.SP_MessageBoxWarning, parent))
+    messagebox.setIcon(QMessageBox.Icon.Critical)
+    if reminder_config_key is not None:
+        checkbox = CheckBox()
+        checkbox.setText(DO_NOT_WARN_AGAIN_CHECKBOX_MESSAGE)
+        checkbox.valueChanged.connect(lambda is_checked: AppConfig().set(reminder_config_key, not is_checked))
+        messagebox.setCheckBox(checkbox)
+    messagebox.setStandardButtons(QMessageBox.StandardButton.Ok)
+    messagebox.exec()
+
+
 def request_confirmation(parent: QWidget, title: str, message: str) -> bool:
     """Requests confirmation from the user, returns whether that confirmation was granted."""
     confirm_box = QMessageBox(parent)
@@ -73,6 +105,8 @@ def open_image_file(parent: QWidget, mode: str = 'load',
     is_pyinstaller_bundle = getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS')
     file_filter = IMAGE_LOAD_FILTER if mode == LOAD_IMAGE_MODE else IMAGE_SAVE_FILTER
     file_dialog = QFileDialog(parent, filter=file_filter)
+    if os.path.isfile(selected_file):
+        file_dialog.selectFile(selected_file)
     if mode == LOAD_IMAGE_MODE:
         file_dialog.setFileMode(QFileDialog.FileMode.ExistingFile)
         file_dialog.setAcceptMode(QFileDialog.AcceptMode.AcceptOpen)
@@ -83,7 +117,6 @@ def open_image_file(parent: QWidget, mode: str = 'load',
         file_dialog.setAcceptMode(QFileDialog.AcceptMode.AcceptSave)
     if is_pyinstaller_bundle:
         file_dialog.setOption(QFileDialog.Option.DontUseNativeDialog, True)
-    options = str(QFileDialog.Option.DontUseNativeDialog) if is_pyinstaller_bundle else None
     try:
         if file_dialog.exec():
             return file_dialog.selectedFiles()[0]

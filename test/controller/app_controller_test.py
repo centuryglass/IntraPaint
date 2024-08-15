@@ -14,10 +14,12 @@ from src.controller.image_generation.test_generator import TestGenerator
 from src.ui.modal.settings_modal import SettingsModal
 from src.ui.window.main_window import MainWindow
 from src.util.arg_parser import build_arg_parser
+from src.util.image_utils import IMAGE_WRITE_FORMATS, IMAGE_READ_FORMATS, IMAGE_FORMATS_SUPPORTING_METADATA
 
 app = QApplication.instance() or QApplication(sys.argv)
 exec_mock = MagicMock()
 
+LAYER_IMAGE = 'test/resources/test_images/layer_test.ora'
 
 @patch('PyQt6.QtWidgets.QApplication.exec', new=exec_mock)
 class TestAppController(unittest.TestCase):
@@ -125,3 +127,40 @@ class TestAppController(unittest.TestCase):
         self.assertTrue(MockQtExceptHook.called)
         self.assertTrue(exec_mock.called)
 
+    def test_image_save_and_load(self):
+        AppConfig()._reset()
+        AppConfig().set(AppConfig.WARN_BEFORE_RGB_SAVE, False)
+        AppConfig().set(AppConfig.WARN_BEFORE_LAYERLESS_SAVE, False)
+        AppConfig().set(AppConfig.WARN_BEFORE_SAVE_WITHOUT_METADATA, False)
+        AppConfig().set(AppConfig.WARN_BEFORE_WRITE_ONLY_SAVE, False)
+        AppConfig().set(AppConfig.WARN_BEFORE_COLOR_LOSS, False)
+        AppConfig().set(AppConfig.WARN_BEFORE_FIXED_SIZE_SAVE, False)
+        self.controller.load_image(LAYER_IMAGE)
+        self.assertTrue(self.controller._image_stack.has_image)
+
+        # These may work on some systems, but require additional plugins.
+        optional_formats = {'WMF', 'BUFR', 'GRIB', 'EMF', 'PNM'}
+
+        sorted_formats = [*IMAGE_WRITE_FORMATS]
+        sorted_formats.sort()
+        for file_format in sorted_formats:
+            self.controller.load_image(LAYER_IMAGE)
+            if file_format in optional_formats:
+                continue
+            save_path = f'save_test_{file_format}.{file_format.lower()}'
+            test_prompt_str = f'{file_format} R/W test'
+            AppConfig().set(AppConfig.PROMPT, test_prompt_str)
+            self.controller.update_metadata(show_messagebox=False)
+            self.controller.save_image_as(save_path)
+            self.assertTrue(os.path.isfile(save_path), f'{file_format} save test failed')
+            AppConfig().set(AppConfig.PROMPT, '')
+            if file_format in IMAGE_READ_FORMATS:
+                self.controller.load_image(save_path)
+                prompt = AppConfig().get(AppConfig.PROMPT)
+                expected_metadata = file_format in IMAGE_FORMATS_SUPPORTING_METADATA
+                if prompt == test_prompt_str:
+                    self.assertTrue(expected_metadata, f'Metadata found but not expected for format {file_format}')
+                else:
+                    self.assertFalse(expected_metadata,
+                                     f'Metadata expected but not found for format {file_format}')
+            os.remove(save_path)
