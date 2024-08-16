@@ -32,6 +32,7 @@ class ImageGraphicsView(QGraphicsView):
         self._background: Optional[QPixmap] = None
         self._event_filters: List[QObject] = []
         self._last_cursor_pos: Optional[QPoint] = None
+        self._last_scene_cursor_pos: Optional[QPointF] = None
         self._cursor_pixmap: Optional[QPixmap] = None
         self._cursor_pixmap_item: Optional[QGraphicsPixmapItem] = None
         self._centered_on = QPointF(self.width() // 2, self.height() // 2)
@@ -87,7 +88,7 @@ class ImageGraphicsView(QGraphicsView):
 
                 HotkeyFilter.instance().register_speed_modified_keybinding(_pan, pan_key)
 
-                # Bind image generation area offset:
+                # Bind to abstract content scrolling method:
                 def _scroll(mult, x=dx, y=dy) -> bool:
                     if not self.isVisible():
                         return False
@@ -160,17 +161,18 @@ class ImageGraphicsView(QGraphicsView):
 
     def set_cursor_pos(self, cursor_pos: Optional[QPoint | QPointF]) -> None:
         """Updates the last cursor position within the widget so that pixmap cursor rendering stays active."""
+        if isinstance(cursor_pos, QPointF):
+            cursor_pos = cursor_pos.toPoint()
         self._last_cursor_pos = cursor_pos
+        scene_cursor_pos = None if cursor_pos is None else self.mapToScene(cursor_pos)
+        self._last_scene_cursor_pos = scene_cursor_pos
         if self._cursor_pixmap_item is not None and self._cursor_pixmap_item.scene() is not None:
             self._cursor_pixmap_item.setVisible(cursor_pos is not None)
-            if cursor_pos is None:
+            if scene_cursor_pos is None:
                 return
-            if isinstance(cursor_pos, QPointF):
-                cursor_pos = cursor_pos.toPoint()
-            scene_pos = self.mapToScene(cursor_pos)
-            self._cursor_pixmap_item.setPos(scene_pos.x() - self._cursor_pixmap_item.pixmap().width()
+            self._cursor_pixmap_item.setPos(scene_cursor_pos.x() - self._cursor_pixmap_item.pixmap().width()
                                             * self._cursor_pixmap_item.scale() / 2,
-                                            scene_pos.y() - self._cursor_pixmap_item.pixmap().height()
+                                            scene_cursor_pos.y() - self._cursor_pixmap_item.pixmap().height()
                                             * self._cursor_pixmap_item.scale() / 2)
 
     def reset_scale(self) -> None:
@@ -178,8 +180,8 @@ class ImageGraphicsView(QGraphicsView):
         scale_will_change = self._scale_adjustment != 0.0
         self._scale_adjustment = 0.0
         self.offset = QPoint(0, 0)
-        self.resizeEvent(None)
         self.center_on_point(QPointF(self._content_size.width() / 2, self._content_size.height() / 2))
+        self._update_scale_and_transform()
         if scale_will_change:
             self.scale_changed.emit(self.scene_scale)
 
@@ -202,7 +204,7 @@ class ImageGraphicsView(QGraphicsView):
         self._content_size.setWidth(new_size.width())
         self._content_size.setHeight(new_size.height())
         self.center_on_point(QPointF(new_size.width() / 2, new_size.height() / 2))
-        self.resizeEvent(None)
+        self._update_scale_and_transform()
         self.resetCachedContent()
         self.update()
 
@@ -221,11 +223,48 @@ class ImageGraphicsView(QGraphicsView):
     @scene_scale.setter
     def scene_scale(self, new_scale: float) -> None:
         """Updates the image content scale, limiting minimum scale to 0.01."""
+        initial_scale = self.scene_scale
+        mouse_scene_point = self._last_scene_cursor_pos
         new_scale = max(new_scale, 0.001)
         self._scale_adjustment = new_scale - self._scale
-        self.center_on_point(QPointF(self._content_size.width() / 2 + self._offset.x(),
-                                     self._content_size.height() / 2 + self._offset.y()))
-        self.resizeEvent(None)
+
+        # Zoom so that the mouse pointer stays over the same scene pixel:
+        if mouse_scene_point is not None:
+            assert self._last_cursor_pos is not None
+            last_cursor_pos = self._last_cursor_pos
+            scale_change = new_scale / initial_scale
+            widget_cursor_pos = QPointF(last_cursor_pos)
+            widget_center = QPointF(self.width() / 2, self.height() / 2)
+            cursor_to_center = widget_center - widget_cursor_pos
+            cursor_to_center.setX(cursor_to_center.x() / scale_change)
+            cursor_to_center.setY(cursor_to_center.y() / scale_change)
+            new_widget_center = widget_cursor_pos + cursor_to_center
+            new_scene_center = self.mapToScene(new_widget_center.toPoint())
+            self.center_on_point(new_scene_center)
+            self._update_scale_and_transform()
+
+            new_mouse_scene_point = QPointF(self.mapToScene(last_cursor_pos))
+            rounding_error = new_mouse_scene_point - mouse_scene_point
+            # Tweak offset/scale to deal with rounding errors:
+            if abs(rounding_error.x()) > 0.01 or abs(rounding_error.y() > 0.01):
+                horizontal_scroll = self.horizontalScrollBar()
+                vertical_scroll = self.verticalScrollBar()
+                x_scroll = int(horizontal_scroll.value() - rounding_error.x())
+                y_scroll = int(vertical_scroll.value() - rounding_error.y())
+                if horizontal_scroll.minimum() <= x_scroll <= horizontal_scroll.maximum() \
+                        and vertical_scroll.minimum() <= y_scroll <= vertical_scroll.maximum():
+                    self.horizontalScrollBar().setValue(x_scroll)
+                    self.verticalScrollBar().setValue(y_scroll)
+                    self._offset -= rounding_error
+                    self._centered_on -= rounding_error
+                    self.offset_changed.emit(self._offset.toPoint())
+                else:
+                    self.offset -= rounding_error
+
+        else:
+            self.center_on_point(QPointF(self._content_size.width() / 2 + self._offset.x(),
+                                         self._content_size.height() / 2 + self._offset.y()))
+        self._update_scale_and_transform()
         self.scale_changed.emit(new_scale)
 
     @property
@@ -241,7 +280,7 @@ class ImageGraphicsView(QGraphicsView):
         self._offset.setY(float(new_offset.y()))
         self.center_on_point(self._centered_on + change)
         self.offset_changed.emit(self._offset.toPoint())
-        self.resizeEvent(None)
+        self._update_scale_and_transform()
 
     @property
     def background(self) -> QPixmap | None:
@@ -256,14 +295,6 @@ class ImageGraphicsView(QGraphicsView):
         else:
             self._background = new_background
         self.resetCachedContent()
-
-    def widget_to_scene_coordinates(self, point: QPoint) -> QPointF:
-        """Returns a point within the scene content corresponding to some point within the widget bounds."""
-        return self.mapToScene(point)
-
-    def scene_to_widget_coordinates(self, point: QPointF) -> QPoint:
-        """Returns a point within the widget bounds corresponding to some point within the scene content."""
-        return self.mapFromScene(point)
 
     def drawBackground(self, painter: Optional[QPainter], unused_rect: QRectF) -> None:
         """Renders any background image behind all scene contents."""
@@ -290,14 +321,12 @@ class ImageGraphicsView(QGraphicsView):
         pixmap_rect.moveCenter(center_point.toPoint())
         painter.drawPixmap(pixmap_rect, self._cursor_pixmap)
 
-    def resizeEvent(self, event: Optional[QResizeEvent]) -> None:
-        """Recalculate content size when the widget is resized."""
-        super().resizeEvent(event)
+    def _update_scale_and_transform(self):
         if self.content_size is None:
             raise RuntimeError('ImageGraphicsView implementations must set content_size in __init__ before the ' +
                                'first resizeEvent is triggered')
-
-        # Handle scale adjustments when the widget size changes:
+        # Calculate default scale: Scene content is centered in the widget, and scaled evenly to the largest size with
+        # the same aspect ratio that would fit within the widget bounds while leaving `self._border_size()` px empty:
         border_size = self._border_size()
         content_size = self._content_size
         if content_size is None:
@@ -307,6 +336,9 @@ class ImageGraphicsView(QGraphicsView):
         new_scale = displayed_content_size.width() / content_size.width()
         scale_changed = new_scale != self._scale
         self._scale = new_scale
+
+        # Apply scale changes and offset on top of the default scale. This approach means that changes to content size
+        # will adjust the overall scale, while leaving the offset relative to the default scale unchanged:
         adjusted_scale = self._scale + self._scale_adjustment
 
         # Adjust the scene viewpoint/scrolling based on scale and offset:
@@ -317,14 +349,16 @@ class ImageGraphicsView(QGraphicsView):
                                 scene_window_width, scene_window_height)
         if content_rect_f != self._scene.sceneRect():
             self._scene.setSceneRect(content_rect_f)
-
-        transformation = QTransform()
-        transformation.translate(self._offset.x(), self._offset.y())
-        transformation.scale(adjusted_scale, adjusted_scale)
-        self.setTransform(transformation)
+        self.setTransform(QTransform.fromTranslate(self._offset.x(), self._offset.y())
+                          * QTransform.fromScale(adjusted_scale, adjusted_scale))
         if scale_changed:
             self.scale_changed.emit(adjusted_scale)
         self.update()
+
+    def resizeEvent(self, event: Optional[QResizeEvent]) -> None:
+        """Recalculate content size when the widget is resized."""
+        super().resizeEvent(event)
+        self._update_scale_and_transform()
 
     def _border_size(self) -> int:
         return (min(self.width(), self.height()) // 40) + 1
@@ -413,8 +447,7 @@ class ImageGraphicsView(QGraphicsView):
                 self.scene_scale = self.scene_scale + 0.05
             elif event.angleDelta().y() < 0 and self.scene_scale > 0.05:
                 self.scene_scale = self.scene_scale - 0.05
-
-            self.resizeEvent(None)
+            self._update_scale_and_transform()
         return False
 
     def leaveEvent(self, event: Optional[QEvent]):
@@ -438,6 +471,9 @@ class ImageGraphicsView(QGraphicsView):
         assert content_size is not None
         self.offset = QPoint(int(bounds.center().x() - (content_size.width() // 2)),
                              int(bounds.center().y() - (content_size.height() // 2)))
-        self.scene_scale = (get_scaled_placement(self.size(), bounds.size(), 0).width()
-                            / (bounds.width() + margin))
-        self.resizeEvent(None)
+        self._scale_adjustment = (get_scaled_placement(self.size(), bounds.size(), 0).width()
+                                  / (bounds.width() + margin)) - self._scale
+        self.scale_changed.emit(self.scene_scale)
+        self.center_on_point(QPointF(self._content_size.width() / 2 + self._offset.x(),
+                                     self._content_size.height() / 2 + self._offset.y()))
+        self._update_scale_and_transform()

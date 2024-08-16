@@ -10,7 +10,7 @@ from PIL import Image
 from PySide6.QtWidgets import QApplication
 from PySide6.QtCore import Qt, QRect, QSize, QSizeF, QRectF, QEvent, Signal, QPointF, QObject, QPoint
 from PySide6.QtGui import QImage, QResizeEvent, QPixmap, QPainter, QWheelEvent, QMouseEvent, \
-    QPainterPath, QKeyEvent, QPolygonF
+    QPainterPath, QKeyEvent, QPolygonF, QSinglePointEvent
 from PySide6.QtWidgets import QWidget, QGraphicsPixmapItem, QVBoxLayout, QLabel, \
     QStyleOptionGraphicsItem, QHBoxLayout, QPushButton, QStyle
 
@@ -99,7 +99,7 @@ class GeneratedImageSelector(QWidget):
         self._view = _SelectionView()
         self._view.scale_changed.connect(self._scale_change_slot)
         self._view.offset_changed.connect(self._offset_change_slot)
-
+        self._view.setMouseTracking(True)
         self._view.installEventFilter(self)
         config = AppConfig()
 
@@ -345,19 +345,30 @@ class GeneratedImageSelector(QWidget):
                     return False
             return True
         if event.type() == QEvent.Type.MouseButtonPress:
-            if KeyConfig.modifier_held(KeyConfig.PAN_VIEW_MODIFIER):
-                return False  # Ctrl+click is for panning, don't select options
             event = cast(QMouseEvent, event)
-            if event.button() != Qt.MouseButton.LeftButton or AppStateTracker.app_state() == APP_STATE_LOADING:
-                return False
             if source == self._view:
                 view_pos = event.pos()
             else:
                 view_pos = QPoint(self._view.x() + event.pos().x(), self._view.y() + event.pos().y())
+            self._view.set_cursor_pos(view_pos)
+            if KeyConfig.modifier_held(KeyConfig.PAN_VIEW_MODIFIER):
+                return False  # Ctrl+click is for panning, don't select options
+            if event.button() != Qt.MouseButton.LeftButton or AppStateTracker.app_state() == APP_STATE_LOADING:
+                return False
             scene_pos = self._view.mapToScene(view_pos).toPoint()
             for i, option in enumerate(self._options):
                 if option.bounds.contains(scene_pos):
                     self._select_option(i)
+        if event.type() in (QEvent.Type.Enter, QEvent.Type.MouseMove, QEvent.Type.MouseButtonRelease):
+            event = cast(QSinglePointEvent, event)
+            if source == self._view:
+                view_pos = event.position().toPoint()
+            else:
+                view_pos = event.position().toPoint() + self._view.geometry().topLeft()
+            self._view.set_cursor_pos(view_pos)
+            return False
+        if event.type() == QEvent.Type.Leave:
+            self._view.set_cursor_pos(None)
         return False
 
     def _offset_change_slot(self, offset: QPointF) -> None:
@@ -415,8 +426,9 @@ class GeneratedImageSelector(QWidget):
         self._view.zoom_to_bounds(bounds)
         self._base_option_offset = self._view.offset
         self._base_option_scale = self._view.scene_scale
-        self._view.offset = self._view.offset + self._option_pos_offset
+        self._view.set_cursor_pos(None)   # Disable cursor tracking when manually adjusting option zoom/offset
         self._view.scene_scale = self._view.scene_scale + self._option_scale_offset
+        self._view.offset = self._base_option_offset + self._option_pos_offset
         self._view.scale_changed.connect(self._scale_change_slot)
         self._view.offset_changed.connect(self._offset_change_slot)
         for i, option in enumerate(self._options):

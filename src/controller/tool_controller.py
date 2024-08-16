@@ -196,7 +196,7 @@ class ToolController(QObject):
             self._image_viewer.set_cursor_pos(pos)
             image_size = self._image_viewer.content_size
             assert image_size is not None
-            image_coordinates = self._image_viewer.widget_to_scene_coordinates(pos).toPoint()
+            image_coordinates = self._image_viewer.mapToScene(pos).toPoint()
             point_in_image = QRect(QPoint(0, 0), image_size).contains(image_coordinates)
             if point_in_image and not self._mouse_in_bounds:
                 self._mouse_in_bounds = True

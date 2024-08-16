@@ -5,10 +5,6 @@
 - ORA SVG support
 
 # General interface
-- When scaling, center scale on mouse position
-- Warning modal with "don't warn me again checkbox"
-- Improve appearance of draggable tabs
-- Add right click menu to move tabs to any bar
 - Test GLID with tab interface
 
 # Layers

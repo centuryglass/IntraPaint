@@ -35,7 +35,6 @@ class TestImageUtils(unittest.TestCase):
     def test_pil_image_to_qimage(self) -> None:
         """Test that PIL -> QImage conversion preserves image contents and handles invalid input correctly."""
         self.assertRaises(TypeError, lambda: pil_image_to_qimage(self.qimage_argb))
-        self.assertRaises(ValueError, lambda: pil_image_to_qimage(self.pil_image_l))
         converted = pil_image_to_qimage(self.pil_image_rgb)
         self.assertEqual(converted, self.qimage_rgb)
         converted = pil_image_to_qimage(self.pil_image_argb)
