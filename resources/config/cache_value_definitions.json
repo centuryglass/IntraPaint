@@ -74,6 +74,22 @@
         "default": "#ff000000",
         "saved": false
     },
+    "background_color": {
+        "label": "Background color:",
+        "category": "Cache",
+        "description": "Last background color (text tool)",
+        "type": "string",
+        "default": "#ffffffff",
+        "saved": false
+    },
+    "last_font_family": {
+        "label": "Last font family:",
+        "category": "Cache",
+        "description": "Last text tool font family",
+        "type": "string",
+        "default": "",
+        "saved": true
+    },
     "last_active_tool": {
         "label": "Last active tool:",
         "category": "Cache",

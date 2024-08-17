@@ -10,13 +10,32 @@ MAX_FONT_PT = 240
 logger = logging.getLogger(__name__)
 
 
-def find_text_size(text: str, font: Optional[QFont] = None) -> QSize:
+def _find_line_size(font: QFont, text: str) -> QSize:
+    metric = QFontMetrics(font)
+    line_size = metric.boundingRect(text).size()
+    max_height = metric.ascent() + metric.descent()
+    line_size.setHeight(max(line_size.height(), max_height) + 2)
+    line_size.setWidth(line_size.width() + 2)
+    return line_size
+
+
+def find_text_size(text: str, font: Optional[QFont] = None, multiline=True) -> QSize:
     """Returns the size in pixels required to render the text with the given font."""
     if font is None:  # Use application default
         app = cast(QApplication, QApplication.instance())
         assert app is not None
         font = app.font()
-    return QFontMetrics(font).boundingRect(text).size()
+    if not multiline:
+        return _find_line_size(font, text)
+    lines = text.split('\n')
+    size = QSize()
+    for line in lines:
+        if len(line) == 0:
+            line = ' '
+        line_size = _find_line_size(font, line)
+        size.setWidth(max(size.width(), line_size.width()))
+        size.setHeight(size.height() + line_size.height())
+    return size
 
 
 def max_font_size(text: str, font: QFont, bounds: QSize) -> int:

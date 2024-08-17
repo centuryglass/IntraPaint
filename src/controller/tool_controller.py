@@ -18,6 +18,7 @@ from src.tools.layer_transform_tool import LayerTransformTool
 from src.tools.selection_fill_tool import SelectionFillTool
 from src.tools.selection_tool import SelectionTool
 from src.tools.shape_selection_tool import ShapeSelectionTool
+from src.tools.text_tool import TextTool
 from src.ui.image_viewer import ImageViewer
 from src.ui.modal.modal_utils import show_error_dialog
 from src.util.optional_import import optional_import
@@ -73,6 +74,7 @@ class ToolController(QObject):
         self._add_tool(fill_tool)
         eyedropper_tool = EyedropperTool(image_stack)
         self._add_tool(eyedropper_tool)
+        self._add_tool(TextTool(image_stack))
         self._add_tool(SelectionTool(image_stack, image_viewer))
         self._add_tool(ShapeSelectionTool(image_stack, image_viewer))
         self._add_tool(SelectionFillTool(image_stack))

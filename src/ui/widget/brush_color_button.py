@@ -1,4 +1,6 @@
 """Opens a color picker to set the brush color."""
+from typing import Optional
+
 from PySide6.QtCore import QSize
 from PySide6.QtGui import QColor, QIcon, QPixmap
 from PySide6.QtWidgets import QPushButton, QColorDialog, QApplication
@@ -22,13 +24,16 @@ COLOR_BUTTON_TOOLTIP = _tr('Select paint color')
 class BrushColorButton(QPushButton):
     """Opens a color picker to set the brush color."""
 
-    def __init__(self):
+    def __init__(self, cache_key: Optional[str] = None):
         super().__init__()
+        if cache_key is None:
+            cache_key = Cache.LAST_BRUSH_COLOR
         self._color = QColor()
         self._icon = QPixmap(QSize(64, 64))
+        self._cache_key = cache_key
         cache = Cache()
-        cache.connect(self, Cache.LAST_BRUSH_COLOR, self._update_color)
-        self._update_color(cache.get(Cache.LAST_BRUSH_COLOR))
+        cache.connect(self, cache_key, self._update_color)
+        self._update_color(cache.get(cache_key))
         self.clicked.connect(self.select_color)
         self.setText(COLOR_BUTTON_LABEL)
         self.setToolTip(COLOR_BUTTON_TOOLTIP)
@@ -46,4 +51,9 @@ class BrushColorButton(QPushButton):
         color_dialog.setOption(QColorDialog.ColorDialogOption.DontUseNativeDialog, True)
         selection = color_dialog.getColor(self._color)
         if selection != self._color:
-            Cache().set(Cache.LAST_BRUSH_COLOR, selection.name())
+            Cache().set(self._cache_key, selection.name())
+
+    @property
+    def color(self) -> QColor:
+        """Returns the current selected color."""
+        return QColor(self._color)

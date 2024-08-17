@@ -12,7 +12,7 @@ from src.ui.layout.bordered_widget import BorderedWidget
 from src.ui.layout.divider import Divider
 from src.util.application_state import APP_STATE_EDITING, AppStateTracker
 from src.util.parameter import DynamicFieldWidget
-from src.util.shared_constants import GENERATE_BUTTON_TEXT, EDIT_MODE_INPAINT, EDIT_MODE_TXT2IMG
+from src.util.shared_constants import BUTTON_TEXT_GENERATE, EDIT_MODE_INPAINT, EDIT_MODE_TXT2IMG
 
 # The `QCoreApplication.translate` context for strings in this file
 TR_ID = 'ui.panel.generators.sd_webui_panel'
@@ -82,7 +82,7 @@ class SDWebUIPanel(BorderedWidget):
         self._interrogate_button.setToolTip(INTERROGATE_BUTTON_TOOLTIP)
         self._interrogate_button.clicked.connect(self.interrogate_signal)
         self._generate_button = QPushButton()
-        self._generate_button.setText(GENERATE_BUTTON_TEXT)
+        self._generate_button.setText(BUTTON_TEXT_GENERATE)
         self._generate_button.clicked.connect(self.generate_signal)
 
         def _edit_mode_control_update(edit_mode: str) -> None:

@@ -207,6 +207,14 @@
         "default": "F",
         "saved": true
     },
+    "text_tool_key": {
+        "label": "Switch to the text tool:",
+        "category": "Keybindings",
+        "description": "Activate the text tool.",
+        "type": "string",
+        "default": "X",
+        "saved": true
+    },
     "generation_area_tool_key": {
         "label": "Switch to the image generation area selection tool:",
         "category": "Keybindings",
@@ -236,7 +244,7 @@
         "category": "Keybindings",
         "description": "Performs some context-specific action based on the active tool.",
         "type": "string",
-        "default": "x",
+        "default": "q",
         "saved": true
     },
     "new_image_shortcut": {

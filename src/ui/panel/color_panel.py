@@ -16,6 +16,7 @@ class ColorControlPanel(ColorPicker):
         self._orientation: Optional[Qt.Orientation] = Qt.Orientation.Horizontal
         self._config_key = config_key
         self._disable_extended_layouts = disable_extended_layouts
+        self.layout().setAlignment(Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignHCenter)
 
         if config_key is not None:
             cache = Cache()
@@ -37,7 +38,7 @@ class ColorControlPanel(ColorPicker):
         if orientation == Qt.Orientation.Vertical:
             if not self._disable_extended_layouts and window_size.height() > panel_size.height() * 6:
                 self.set_vertical_mode()
-            elif window_size.height() > panel_size.height() * 4:
+            elif not self._disable_extended_layouts and window_size.height() > panel_size.height() * 4:
                 self.set_vertical_two_tab_mode()
             else:
                 self.set_four_tab_mode()

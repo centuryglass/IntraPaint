@@ -2,8 +2,8 @@
 import math
 from typing import Tuple, Optional
 
-from PySide6.QtCore import QRect, QSize, QRectF, QSizeF, QPoint, QPointF, QLineF
-from PySide6.QtGui import QTransform, QPolygonF
+from PySide6.QtCore import QRect, QSize, QRectF, QSizeF, QPoint, QPointF, QLineF, Qt
+from PySide6.QtGui import QTransform, QPolygonF, QPainter, QColor
 
 
 def get_scaled_placement(container_rect: QRect | QSize,
@@ -202,3 +202,24 @@ def adjusted_placement_in_bounds(rect: QRect, bounds: QRect) -> QRect:
 def is_smaller_size(size1: QSize, size2: QSize) -> bool:
     """Returns whether size1 is smaller than size2"""
     return size1.width() * size1.height() < size2.width() * size2.height()
+
+
+def fill_outside_rect(painter: QPainter, bounds: QRect, excluded: QRect, color: QColor | Qt.GlobalColor) -> None:
+    """Paint all content within a given bounds, excluding one rectangle"""
+    if bounds.isEmpty():
+        return
+    if excluded.isEmpty() or not bounds.intersects(excluded):
+        painter.fillRect(bounds, color)
+        return
+    bounds = bounds.normalized()
+    excluded = excluded.normalized().intersected(bounds)
+    right = QRect(excluded.x() + excluded.width(), bounds.y(),
+                  (bounds.x() + bounds.width()) - (excluded.x() + excluded.width()), bounds.height())
+    left = QRect(bounds.x(), bounds.y(), excluded.x() - bounds.x(), bounds.height())
+    top = QRect(left.x() + left.width(), bounds.y(), right.x() - (left.x() + left.width()), excluded.y() - bounds.y())
+    bottom = QRect(top.x(), excluded.y() + excluded.height(), top.width(),
+                   bounds.height() - (excluded.y() + excluded.height()))
+    for border_rect in (left, right, top, bottom):
+        assert bounds.contains(border_rect)
+        if not border_rect.isEmpty():
+            painter.fillRect(border_rect, color)

@@ -255,6 +255,7 @@ class KeyConfig(Config, metaclass=Singleton):
     SHOW_LAYER_MENU_SHORTCUT: str
     SHRINK_SELECTION_SHORTCUT: str
     SPEED_MODIFIER: str
+    TEXT_TOOL_KEY: str
     TOOL_ACTION_HOTKEY: str
     TRANSFORM_TOOL_KEY: str
     UNDO_SHORTCUT: str

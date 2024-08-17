@@ -42,7 +42,20 @@ EDIT_MODE_IMG2IMG = _tr('Image to Image')
 CONTROLNET_REUSE_IMAGE_CODE = 'SELECTION'
 
 # Display text:
-GENERATE_BUTTON_TEXT = _tr('Generate')
+BUTTON_TEXT_GENERATE = _tr('Generate')
+SHORT_LABEL_WIDTH = _tr('W:')
+SHORT_LABEL_HEIGHT = _tr('H:')
+SHORT_LABEL_X_POS = _tr('X:')
+SHORT_LABEL_Y_POS = _tr('Y:')
+
+LABEL_TEXT_WIDTH = _tr('Width:')
+LABEL_TEXT_HEIGHT = _tr('Height:')
+LABEL_TEXT_COLOR = _tr('Color:')
+LABEL_TEXT_SIZE = _tr('Size:')
+LABEL_TEXT_SCALE = _tr('Scale:')
+LABEL_TEXT_IMAGE_PADDING = _tr('Padding:')
+BUTTON_TEXT_ZOOM_IN = _tr('Zoom In')
+BUTTON_TEXT_RESET_ZOOM = _tr('Reset Zoom')
 
 # Argument used to disable or alter certain UI elements for better use in timelapse footage:
 TIMELAPSE_MODE_FLAG = '--timelapse_mode'
