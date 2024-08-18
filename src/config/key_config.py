@@ -127,6 +127,7 @@ class KeyConfig(Config, metaclass=Singleton):
                     if _is_modifier(standardized_key):
                         errors.append(UNEXPECTED_MODIFIER_ERROR.format(key_binding_name=key_binding_name,
                                                                        key_value=key_value))
+                # noinspection PyUnresolvedReferences
                 if key_value != '' and key_value not in modifiers and QKeySequence(key_value)[0] == Qt.Key.Key_unknown:
                     errors.append(UNKNOWN_KEY_CODE_ERROR.format(key_binding_name=key_binding_name,
                                                                 key_value=key_value))

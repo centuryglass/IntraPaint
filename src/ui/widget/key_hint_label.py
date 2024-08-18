@@ -9,6 +9,7 @@ from PySide6.QtWidgets import QLabel, QWidget
 from src.config.key_config import KeyConfig
 from src.util.display_size import max_font_size
 from src.util.key_code_utils import get_key_display_string
+from src.util.math_utils import clamp
 
 
 class KeyHintLabel(QLabel):
@@ -36,7 +37,7 @@ class KeyHintLabel(QLabel):
     def resizeEvent(self, unused_event: Optional[QResizeEvent]) -> None:
         """Scale font as needed to stay in the bounds."""
         font = self.font()
-        max_size = max(1, min(max_font_size(self._base_text, font, self.size()), self._default_size))
+        max_size = int(clamp(max_font_size(self._base_text, font, self.size()), 1, self._default_size))
         if max_size != font.pointSize():
             font.setPointSize(max_size)
             self.setFont(font)

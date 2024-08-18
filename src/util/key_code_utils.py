@@ -14,8 +14,10 @@ _MODIFIERS = {
 def get_key_code(key_string: str) -> Qt.Key:
     """Get a key code for a given key string, or throw ValueError if the key string was invalid."""
     key = QKeySequence(key_string)
+    # noinspection PyUnresolvedReferences
     if key.count() != 1 or key[0] == Qt.Key.Key_unknown:
         raise ValueError(f'Expected a single key string, got "{str}" (key count={key.count()})')
+    # noinspection PyUnresolvedReferences
     return key[0]
 
 

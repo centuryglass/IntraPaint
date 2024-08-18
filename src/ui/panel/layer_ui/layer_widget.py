@@ -149,6 +149,9 @@ class LayerWidget(BorderedWidget):
         self._layer_image = crop_to_content(layer_image)
         self._update_pixmap()
 
+    def _layer_name_change_slot(self, _, name: str) -> None:
+        self._label.set_text(name)
+
     def resizeEvent(self, event: Optional[QResizeEvent]) -> None:
         """Resize the layer pixmap on resize"""
         self._update_pixmap(True)
@@ -296,6 +299,8 @@ class LayerWidget(BorderedWidget):
 
         if isinstance(self._layer, ImageLayer):
             _add_action(MENU_OPTION_CROP_TO_CONTENT, self._layer.crop_to_content, True)
+
+        if isinstance(self._layer, TransformLayer):
             _add_action(MENU_OPTION_MIRROR_HORIZONTAL, self._layer.flip_horizontal, True)
             _add_action(MENU_OPTION_MIRROR_VERTICAL, self._layer.flip_vertical, True)
 

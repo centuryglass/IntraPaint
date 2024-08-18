@@ -5,6 +5,7 @@ from typing import Callable, List, Optional, Dict, Any
 from PySide6.QtCore import QPoint
 from PySide6.QtGui import QImage, QPainter, QTransform
 
+from src.image.layers.image_layer import ImageLayer
 from src.image.layers.image_stack import ImageStack
 from src.image.layers.layer_stack import LayerStack
 from src.image.layers.transform_layer import TransformLayer
@@ -103,7 +104,10 @@ class ImageFilter:
                                                     and active_layer.contains_recursive(layer)):
                 return False
         if self._filter_selection_only:
-            layer_bounds = layer.bounds if not isinstance(layer, TransformLayer) else layer.transformed_bounds
+            if isinstance(layer, TransformLayer):
+                layer_bounds = layer.transformed_bounds
+            else:
+                layer_bounds = layer.bounds
             selection_bounds = self._image_stack.selection_layer.map_rect_from_image(layer_bounds)
             if self._image_stack.selection_layer.is_empty(selection_bounds):
                 return False
@@ -238,12 +242,14 @@ class ImageFilter:
             def _apply_filters():
                 for updated_id, image in updated_layer_images.items():
                     updated_layer = self._image_stack.get_layer_by_id(updated_id)
-                    updated_layer.set_image(image)
+                    if isinstance(updated_layer, (ImageLayer, LayerStack)):
+                        updated_layer.set_image(image)
 
             def _undo_filters():
                 for updated_id, image in source_images.items():
                     updated_layer = self._image_stack.get_layer_by_id(updated_id)
-                    updated_layer.set_image(image)
+                    if isinstance(updated_layer, (ImageLayer, LayerStack)):
+                        updated_layer.set_image(image)
 
             UndoStack().commit_action(_apply_filters, _undo_filters, 'ImageFilter.apply_filters')
 

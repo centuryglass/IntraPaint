@@ -84,6 +84,7 @@ class HotkeyFilter(QObject):
             Exact keyboard modifiers required to invoke the action, defaults to Qt.NoModifier.
         """
         new_bindings: List[Tuple[Qt.Key, 'HotkeyFilter.KeyBinding']] = []
+        # noinspection PyUnresolvedReferences
         for key in (keys[i] for i in range(keys.count())):
             key = key.key()
             assert key != Qt.Key.Key_unknown, 'Invalid keybinding'
@@ -94,6 +95,7 @@ class HotkeyFilter(QObject):
                     key_modifiers = Qt.KeyboardModifier.NoModifier
                 key_strings = key_string.split('+')
                 key_modifiers = key_modifiers | get_modifiers(key_strings[:-1])
+                # noinspection PyUnresolvedReferences
                 key = QKeySequence(key_strings[-1])[0]
 
             keybinding = HotkeyFilter.KeyBinding(action, key, key_modifiers)

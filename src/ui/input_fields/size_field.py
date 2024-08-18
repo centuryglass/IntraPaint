@@ -4,6 +4,7 @@ from typing import Optional
 from PySide6.QtCore import Signal, QSize, Qt
 from PySide6.QtWidgets import QWidget, QLabel, QSpinBox, QSlider, QGridLayout, QApplication
 
+from src.util.math_utils import clamp
 from src.util.shared_constants import INT_MAX
 
 # The `QCoreApplication.translate` context for strings in this file
@@ -183,8 +184,8 @@ class SizeField(QWidget):
         if maximum.width() < minimum.width() or maximum.height() < minimum.height():
             raise ValueError(f'Maximum {maximum} not equal to or greater than {minimum}')
         size_value = self.value()
-        size_value.setWidth(min(maximum.width(), max(minimum.width(), size_value.width())))
-        size_value.setHeight(min(maximum.height(), max(minimum.height(), size_value.height())))
+        size_value.setWidth(int(clamp(size_value.width(), minimum.width(), maximum.width())))
+        size_value.setHeight(int(clamp(size_value.height(), minimum.height(), maximum.height())))
         self._min_height = minimum.height()
         self._max_height = maximum.height()
         self._min_width = minimum.width()

@@ -20,6 +20,7 @@ from src.image.layers.image_layer import ImageLayer
 from src.image.layers.image_stack import ImageStack
 from src.image.layers.layer import Layer
 from src.image.layers.layer_stack import LayerStack
+from src.image.layers.text_layer import TextLayer
 from src.util.geometry_utils import get_scaled_placement
 from src.util.shared_constants import COMPOSITION_MODES
 
@@ -156,7 +157,7 @@ def save_ora_image(image_stack: ImageStack, file_path: str,  metadata: str) -> N
                 f'{transform.m21()},{transform.m22()},{transform.m23()},'
                 f'{transform.m31()},{transform.m32()},{transform.m33()}')
 
-    def encode_image_layer(layer: ImageLayer) -> Dict[str, Any]:
+    def encode_image_layer(layer: ImageLayer | TextLayer) -> Dict[str, Any]:
         """Encode an ImageLayer as image data."""
         layer_data: Dict[str, Any] = {
             DICT_ELEMENT_NAME: LAYER_ELEMENT,
@@ -216,7 +217,7 @@ def save_ora_image(image_stack: ImageStack, file_path: str,  metadata: str) -> N
             if isinstance(child_layer, LayerStack):
                 stack_data[DICT_NESTED_CONTENT_NAME].append(encode_layer_group(child_layer))
             else:
-                assert isinstance(child_layer, ImageLayer)
+                assert isinstance(child_layer, (ImageLayer, TextLayer))
                 stack_data[DICT_NESTED_CONTENT_NAME].append(encode_image_layer(child_layer))
         return stack_data
 

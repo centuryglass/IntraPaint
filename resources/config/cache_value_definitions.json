@@ -82,10 +82,10 @@
         "default": "#ffffffff",
         "saved": false
     },
-    "last_font_family": {
-        "label": "Last font family:",
+    "text_tool_params": {
+        "label": "Text tool parameters:",
         "category": "Cache",
-        "description": "Last text tool font family",
+        "description": "Last text tool font and settings",
         "type": "string",
         "default": "",
         "saved": true

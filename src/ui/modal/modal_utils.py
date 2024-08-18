@@ -88,7 +88,7 @@ def show_warning_dialog(parent: Optional[QWidget], title: str, message: str,
     messagebox.exec()
 
 
-def request_confirmation(parent: QWidget, title: str, message: str) -> bool:
+def request_confirmation(parent: Optional[QWidget], title: str, message: str) -> bool:
     """Requests confirmation from the user, returns whether that confirmation was granted."""
     confirm_box = QMessageBox(parent)
     confirm_box.setWindowTitle(title)

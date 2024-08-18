@@ -4,15 +4,16 @@ from typing import Optional, Callable
 from PySide6.QtCore import Signal, QSize, QPoint, QRect
 from PySide6.QtGui import QFont, QFontDatabase, Qt, QImage, QColor, QPainter, QResizeEvent, QIcon
 from PySide6.QtWidgets import QApplication, QWidget, QListWidget, QGridLayout, QLabel, QSizePolicy, QComboBox, \
-    QVBoxLayout, QScrollArea, QPushButton
+    QVBoxLayout, QScrollArea
 
 from src.config.cache import Cache
+from src.image.text_rect import TextRect
 from src.ui.input_fields.check_box import CheckBox
 from src.ui.input_fields.plain_text_edit import PlainTextEdit
 from src.ui.input_fields.slider_spinbox import IntSliderSpinbox
 from src.ui.widget.brush_color_button import BrushColorButton
 from src.ui.widget.image_widget import ImageWidget
-from src.util.display_size import find_text_size, max_font_size
+from src.util.display_size import find_text_size
 from src.util.geometry_utils import get_scaled_placement, fill_outside_rect
 from src.util.image_utils import create_transparent_image
 from src.util.shared_constants import PROJECT_DIR, SHORT_LABEL_X_POS, SHORT_LABEL_Y_POS, SHORT_LABEL_WIDTH, \
@@ -33,9 +34,7 @@ LABEL_TEXT_TEXT_INPUT = _tr('Enter Text:')
 LABEL_TEXT_FONT_STRETCH = _tr('Stretch')
 BUTTON_TEXT_FONT_COLOR = _tr('Text Color')
 BUTTON_TEXT_BACKGROUND_COLOR = _tr('Background Color')
-BUTTON_TEXT_BOUNDS_TO_TEXT = _tr('Bounds to Text Size')
 TOOLTIP_BOUNDS_TO_TEXT = _tr('Update width and height to fit the current text exactly.')
-BUTTON_TEXT_FONT_SIZE_TO_BOUNDS = _tr('Resize Font to Bounds')
 TOOLTIP_FONT_SIZE_TO_BOUNDS = _tr('Change the font size to the largest size that will fit in the text bounds.')
 TOOLTIP_COLOR = _tr('Set text color')
 TOOLTIP_BACKGROUND_COLOR = _tr('Set text background color')
@@ -57,6 +56,8 @@ CHECKBOX_LABEL_UNDERLINE = _tr('Underline')
 CHECKBOX_LABEL_FIXED_PITCH = _tr('Fixed Pitch')
 CHECKBOX_LABEL_KERNING = _tr('Kerning')
 CHECKBOX_LABEL_FILL_BACKGROUND = _tr('Fill Background')
+CHECKBOX_LABEL_RESIZE_FONT = _tr('Resize Font to Bounds')
+CHECKBOX_LABEL_RESIZE_BOUNDS = _tr('Resize Bounds to Text')
 
 
 # Icons:
@@ -68,6 +69,8 @@ ICON_UNDERLINE = f'{PROJECT_DIR}/resources/icons/text/underline.svg'
 ICON_FIXED_PITCH = f'{PROJECT_DIR}/resources/icons/text/fixed_pitch.svg'
 ICON_KERNING = f'{PROJECT_DIR}/resources/icons/text/kerning.svg'
 ICON_FILL_BACKGROUND = f'{PROJECT_DIR}/resources/icons/text/fill_background.svg'
+ICON_BOUNDS_TO_TEXT = f'{PROJECT_DIR}/resources/icons/text/scale_bounds_to_text.svg'
+ICON_TEXT_TO_BOUNDS = f'{PROJECT_DIR}/resources/icons/text/scale_text_to_bounds.svg'
 
 ICON_LEFT = f'{PROJECT_DIR}/resources/icons/text/left.svg'
 ICON_RIGHT = f'{PROJECT_DIR}/resources/icons/text/right.svg'
@@ -77,107 +80,11 @@ MAX_FONT_SIZE = 1000
 MAX_STRETCH = 4000
 
 
-class TextRect:
-    """Data class specifying a block of text, along with exactly where and how it should be rendered."""
-
-    def __init__(self, to_copy: Optional['TextRect'] = None) -> None:
-        if to_copy is not None:
-            self._text = to_copy.text
-            self._font = to_copy.font
-            self._text_color = to_copy.text_color
-            self._background_color = to_copy.background_color
-            self._bounds = to_copy.bounds
-            self._text_alignment = to_copy.text_alignment
-            self._fill_background = to_copy.fill_background
-        else:
-            self._text = ''
-            self._font = QApplication.font()
-            self._text_color = QColor()
-            self._background_color = QColor()
-            self._bounds = QRect()
-            self._text_alignment = Qt.AlignmentFlag.AlignLeft
-            self._fill_background = False
-
-    @property
-    def text(self) -> str:
-        """Returns the rendered text."""
-        return self._text
-
-    @text.setter
-    def text(self, new_text: str) -> None:
-        self._text = new_text
-
-    @property
-    def font(self) -> QFont:
-        """Returns a copy of the text drawing font."""
-        return QFont(self._font)
-
-    @font.setter
-    def font(self, new_font: QFont) -> None:
-        self._font = QFont(new_font)
-
-    @property
-    def text_color(self) -> QColor:
-        """Returns the text color."""
-        return QColor(self._text_color)
-
-    @text_color.setter
-    def text_color(self, new_color: QColor) -> None:
-        self._text_color = QColor(new_color)
-
-    @property
-    def background_color(self) -> QColor:
-        """Returns the text background color (possibly not rendered)."""
-        return QColor(self._background_color)
-
-    @background_color.setter
-    def background_color(self, new_color: QColor) -> None:
-        self._background_color = QColor(new_color)
-
-    @property
-    def bounds(self) -> QRect:
-        """Returns the text bounds."""
-        return QRect(self._bounds)
-
-    @bounds.setter
-    def bounds(self, new_bounds: QRect) -> None:
-        self._bounds = QRect(new_bounds)
-
-    @property
-    def text_alignment(self) -> Qt.AlignmentFlag:
-        """Returns the text alignment."""
-        return self._text_alignment
-
-    @text_alignment.setter
-    def text_alignment(self, new_alignment: Qt.AlignmentFlag) -> None:
-        self._text_alignment = new_alignment
-
-    @property
-    def fill_background(self) -> bool:
-        """Returns whether the background should be filled."""
-        return self._fill_background
-
-    @fill_background.setter
-    def fill_background(self, should_fill: bool) -> None:
-        self._fill_background = should_fill
-
-    def render(self, painter: QPainter) -> None:
-        """Renders the text into a painter."""
-        painter.save()
-        if self._fill_background:
-            painter.fillRect(self._bounds, self._background_color)
-        painter.setFont(self._font)
-        painter.setPen(self._text_color)
-        painter.setRenderHint(QPainter.RenderHint.LosslessImageRendering, True)
-        painter.setRenderHint(QPainter.RenderHint.SmoothPixmapTransform, True)
-        painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
-        painter.drawText(self._bounds, self._text, self._text_alignment)
-
-
 class TextToolPanel(QWidget):
     """Provides a control panel class for the text tool."""
 
     text_rect_changed = Signal(TextRect)
+    offset_changed = Signal(QPoint)
 
     def __init__(self) -> None:
         super().__init__()
@@ -186,19 +93,11 @@ class TextToolPanel(QWidget):
         self._orientation = Qt.Orientation.Horizontal
         self._change_signal_enabled = True
         self._calculated_size = QSize()
+        self._offset = QPoint()
         self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
 
-        # Load cached font:
-        cache = Cache()
-        selected_font_family = cache.get(Cache.LAST_FONT_FAMILY)
-        if len(selected_font_family) == 0:
-            selected_font = QApplication.font()
-            selected_font_family = selected_font.family()
-            cache.set(Cache.LAST_FONT_FAMILY, selected_font_family)
-        else:
-            selected_font = QFont(selected_font_family)
-        self._text_rect.font = selected_font
-        cache.connect(self, Cache.LAST_FONT_FAMILY, self._font_family_config_change_slot)
+        selected_font = QApplication.font()
+        self._text_rect.font = QApplication.font()
 
         # Text entry and previewing:
         self._preview = ImageWidget(QImage())
@@ -236,34 +135,39 @@ class TextToolPanel(QWidget):
         self._stretch_spinbox.set_slider_included(False)
         self._stretch_spinbox.setMinimum(0)
         self._stretch_spinbox.setMaximum(MAX_STRETCH)
-        self._stretch_spinbox.setValue(selected_font.stretch())
+        self._stretch_spinbox.setValue(100)
         self._stretch_spinbox.setEnabled(not QFontDatabase.isBitmapScalable(selected_font.family()))
         self._stretch_spinbox.valueChanged.connect(self._stretch_change_slot)
 
         # Text placement:
-        def _init_spinbox(label: str, change_slot: Callable[[int], None], allow_negative: bool) -> IntSliderSpinbox:
+        def _init_spinbox(label: str, change_slot: Callable[[int], None], value: int,
+                          allow_negative: bool) -> IntSliderSpinbox:
             spinbox = IntSliderSpinbox()
             spinbox.setText(label)
             spinbox.set_slider_included(False)
             if not allow_negative:
                 spinbox.setMinimum(0)
             spinbox.setMaximum(INT_MAX)
+            spinbox.setValue(value)
             spinbox.valueChanged.connect(change_slot)
             return spinbox
-        self._x_input = _init_spinbox(SHORT_LABEL_X_POS, self._text_x_changed_slot, True)
-        self._y_input = _init_spinbox(SHORT_LABEL_Y_POS, self._text_y_changed_slot, True)
-        self._width_input = _init_spinbox(SHORT_LABEL_WIDTH, self._text_width_changed_slot, False)
-        self._height_input = _init_spinbox(SHORT_LABEL_HEIGHT, self._text_height_changed_slot, False)
+        initial_size = self._text_rect.size
+        self._x_input = _init_spinbox(SHORT_LABEL_X_POS, self._text_x_changed_slot, 0, True)
+        self._y_input = _init_spinbox(SHORT_LABEL_Y_POS, self._text_y_changed_slot, 0, True)
+        self._width_input = _init_spinbox(SHORT_LABEL_WIDTH, self._text_width_changed_slot, initial_size.width(),
+                                          False)
+        self._height_input = _init_spinbox(SHORT_LABEL_HEIGHT, self._text_height_changed_slot, initial_size.height(),
+                                           False)
 
-        self._bounds_to_font_size_button = QPushButton()
-        self._bounds_to_font_size_button.setText(BUTTON_TEXT_BOUNDS_TO_TEXT)
-        self._bounds_to_font_size_button.setToolTip(TOOLTIP_BOUNDS_TO_TEXT)
-        self._bounds_to_font_size_button.clicked.connect(self._resize_bounds_to_font)
+        self._scale_bounds_to_text_checkbox = CheckBox()
+        self._scale_bounds_to_text_checkbox.setText(CHECKBOX_LABEL_RESIZE_BOUNDS)
+        self._scale_bounds_to_text_checkbox.setIcon(QIcon(ICON_BOUNDS_TO_TEXT))
+        self._scale_bounds_to_text_checkbox.valueChanged.connect(self._scale_bounds_to_text_slot)
 
-        self._font_size_to_bounds_button = QPushButton()
-        self._font_size_to_bounds_button.setText(BUTTON_TEXT_FONT_SIZE_TO_BOUNDS)
-        self._font_size_to_bounds_button.setToolTip(TOOLTIP_FONT_SIZE_TO_BOUNDS)
-        self._font_size_to_bounds_button.clicked.connect(self._resize_font_to_bounds)
+        self._scale_text_to_bounds_checkbox = CheckBox()
+        self._scale_text_to_bounds_checkbox.setText(CHECKBOX_LABEL_RESIZE_FONT)
+        self._scale_text_to_bounds_checkbox.setIcon(QIcon(ICON_TEXT_TO_BOUNDS))
+        self._scale_text_to_bounds_checkbox.valueChanged.connect(self._scale_text_to_bounds_slot)
 
         # Text feature checkboxes:
         self._checkbox_label = QLabel(LABEL_TEXT_CHECKBOX_CONTAINER)
@@ -333,8 +237,9 @@ class TextToolPanel(QWidget):
         self._background_color_button.setText(BUTTON_TEXT_BACKGROUND_COLOR)
         self._background_color_button.setToolTip(TOOLTIP_BACKGROUND_COLOR)
 
-        self._color = self._color_button.color
-        self._background_color = self._background_color_button.color
+        self._text_rect.text_color = self._color_button.color
+        self._text_rect.background_color = self._background_color_button.color
+        cache = Cache()
         cache.connect(self, Cache.LAST_BRUSH_COLOR, self._color_change_slot)
         cache.connect(self, Cache.BACKGROUND_COLOR, self._background_color_change_slot)
 
@@ -352,10 +257,19 @@ class TextToolPanel(QWidget):
             new_item = self._font_list.item(self._font_list.count() - 1)
             new_item.setFont(font)
             new_item.setToolTip(font_family)
-            if selected_font_family == font_family:
-                self._font_list.setCurrentItem(new_item)
         self._font_list.currentTextChanged.connect(self._font_family_change_slot)
         self._font_list.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+
+        # Load cached font data:
+        serialized_text = cache.get(Cache.TEXT_TOOL_PARAMS)
+        if len(serialized_text) == 0:
+            serialized_text = self._text_rect.serialize(True)
+            cache.set(Cache.TEXT_TOOL_PARAMS, serialized_text)
+        else:
+            try:
+                self.text_rect = TextRect.deserialize(serialized_text)
+            except (KeyError, AssertionError):
+                cache.set(Cache.TEXT_TOOL_PARAMS, self._text_rect.serialize(True))
 
         # Final layout:
         self._build_layout()
@@ -377,8 +291,8 @@ class TextToolPanel(QWidget):
             self._layout.addWidget(self._size_slider, 6, 4, 1, 3)
             self._layout.addWidget(self._size_type_dropdown, 6, 7)
 
-            self._layout.addWidget(self._font_size_to_bounds_button, 3, 8)
-            self._layout.addWidget(self._bounds_to_font_size_button, 4, 8)
+            self._layout.addWidget(self._scale_text_to_bounds_checkbox, 3, 8)
+            self._layout.addWidget(self._scale_bounds_to_text_checkbox, 4, 8)
             self._layout.addWidget(self._color_button, 3, 9)
             self._layout.addWidget(self._background_color_button, 4, 9)
             self._layout.addWidget(self._alignment_label, 5, 8)
@@ -408,10 +322,10 @@ class TextToolPanel(QWidget):
             self._layout.addWidget(self._width_input, 7, 1)
             self._layout.addWidget(self._height_input, 8, 1)
 
-            self._layout.addWidget(self._font_size_to_bounds_button, 7, 2, 1, 2)
-            self._layout.addWidget(self._bounds_to_font_size_button, 8, 2, 1, 2)
+            self._layout.addWidget(self._scale_text_to_bounds_checkbox, 7, 2, 1, 2)
+            self._layout.addWidget(self._scale_bounds_to_text_checkbox, 8, 2, 1, 2)
 
-            self._layout.setAlignment(Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignLeft \
+            self._layout.setAlignment(Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignLeft
                                       | Qt.AlignmentFlag.AlignTop)
             self._layout.addWidget(self._font_list_label, 10, 0)
             self._layout.addWidget(self._font_list, 11, 0, 7, 2)
@@ -423,6 +337,25 @@ class TextToolPanel(QWidget):
             self._layout.addWidget(self._stretch_spinbox, 15, 2, 1, 2)
 
         self._font_list.scrollToItem(self._font_list.currentItem())
+
+    def focus_text_input(self) -> None:
+        """Pass keyboard focus to the text input field."""
+        self._text_box.focusWidget()
+
+    @property
+    def offset(self) -> QPoint:
+        """Accesses the text layer offset."""
+        return QPoint(self._offset)
+
+    @offset.setter
+    def offset(self, new_offset: QPoint) -> None:
+        if self._x_input.value() != new_offset.x():
+            self._x_input.setValue(new_offset.x())
+        if self._y_input.value() != new_offset.y():
+            self._y_input.setValue(new_offset.y())
+        if self._offset != new_offset:
+            self._offset = QPoint(new_offset)
+            self.offset_changed.emit(new_offset)
 
     @property
     def text_rect(self) -> TextRect:
@@ -459,12 +392,13 @@ class TextToolPanel(QWidget):
         self._stretch_spinbox.setValue(new_font.stretch())
         self._stretch_spinbox.setEnabled(not QFontDatabase.isBitmapScalable(new_font.family()))
 
-        # Update bounds:
-        new_bounds = self._text_rect.bounds
-        self._x_input.setValue(new_bounds.x())
-        self._y_input.setValue(new_bounds.y())
-        self._width_input.setValue(new_bounds.width())
-        self._height_input.setValue(new_bounds.height())
+        # Update size:
+        new_size = self._text_rect.size
+        self._width_input.setValue(new_size.width())
+        self._height_input.setValue(new_size.height())
+
+        self._scale_bounds_to_text_checkbox.setChecked(self._text_rect.scale_bounds_to_text)
+        self._scale_text_to_bounds_checkbox.setChecked(self._text_rect.scale_text_to_bounds)
 
         # Alignment:
         align_index = self._alignment_dropdown.findData(self._text_rect.text_alignment)
@@ -491,16 +425,17 @@ class TextToolPanel(QWidget):
         """Redraws the text preview image."""
         entered_text = self._text_rect.text
         selected_font = self._text_rect.font
-        text_bounds = self._text_rect.bounds
+        base_text_size = self._text_rect.size
         text_alignment = self._text_rect.text_alignment
         text = '       ' if len(entered_text) == 0 else entered_text
         text_size = find_text_size(text, selected_font)
         self._calculated_size = text_size
         if text_size.width() == 0:
-            if not self._preview.image.isNull():
-                self._preview.image.fill(self._background_color)
+            image = self._preview.image
+            if image is not None and not image.isNull():
+                image.fill(self._text_rect.background_color)
             return
-        image_size = QSize(text_bounds.size())
+        image_size = QSize(base_text_size)
         image_size.setWidth(max(image_size.width(), text_size.width()))
         image_size.setHeight(max(image_size.height(), text_size.height()))
         scaled_size = get_scaled_placement(self._preview.size(), image_size).size()
@@ -510,9 +445,10 @@ class TextToolPanel(QWidget):
             scaled_size = image_size
         assert not scaled_size.isEmpty()
         preview_image = self._preview.image
+        assert isinstance(preview_image, QImage)
         if preview_image.isNull() or preview_image.size() != scaled_size:
             preview_image = create_transparent_image(scaled_size)
-        preview_image.fill(self._background_color)
+        preview_image.fill(self._text_rect.background_color)
 
         drawn_font = QFont(selected_font)
         if self._size_type_dropdown.currentText() == OPTION_TEXT_PIXEL_SIZE_FORMAT:
@@ -526,10 +462,13 @@ class TextToolPanel(QWidget):
         painter.setRenderHint(QPainter.RenderHint.SmoothPixmapTransform, True)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
         painter.setPen(self._text_rect.text_color)
-        painter.drawText(QRect(QPoint(1, 1), scaled_size), text, text_alignment | Qt.AlignmentFlag.AlignVCenter)
+        preview_text_bounds = QRect(QPoint(1, 1), scaled_size)
+        if self._text_rect.fill_background:
+            painter.fillRect(preview_text_bounds, self._text_rect.background_color)
+        painter.drawText(preview_text_bounds, text, text_alignment | Qt.AlignmentFlag.AlignVCenter)
         painter.drawRect(QRect(QPoint(), scaled_size))
-        if not text_bounds.isEmpty() and text_size != text_bounds.size():
-            preview_text_size = text_bounds.size() * scale
+        if not base_text_size.isEmpty() and text_size != base_text_size:
+            preview_text_size = base_text_size * scale
             painter.setPen(Qt.GlobalColor.red)
             painter.drawRect(QRect(QPoint(), preview_text_size))
             painter.setOpacity(0.5)
@@ -540,57 +479,43 @@ class TextToolPanel(QWidget):
         self._preview.image = preview_image
 
         preview_palette = self._preview.palette()
-        preview_palette.setColor(self._preview.backgroundRole(), self._background_color)
+        preview_palette.setColor(self._preview.backgroundRole(), self._text_rect.background_color)
         self._preview.setPalette(preview_palette)
         self._preview.setAutoFillBackground(True)
         self.update()
 
     # Signal handlers for text controls:
-
-    def _resize_bounds_to_font(self) -> None:
-        if self._calculated_size.isEmpty():
-            self._draw_preview()
-            assert self._calculated_size.width() > 0 and self._calculated_size.height() > 0
-        text_bounds = self._text_rect.bounds
-        self._text_rect.bounds = QRect(text_bounds.topLeft(), self._calculated_size)
-        self._width_input.setValue(self._calculated_size.width())
-        self._height_input.setValue(self._calculated_size.height())
+    def _scale_bounds_to_text_slot(self, should_scale: bool) -> None:
+        """Set whether to update bounds to fit the text as text content updates."""
+        if should_scale == self._text_rect.scale_bounds_to_text:
+            return
+        if should_scale:
+            self._scale_text_to_bounds_checkbox.setChecked(False)
+        self._text_rect.scale_bounds_to_text = should_scale
         self._handle_change()
 
-    def _resize_font_to_bounds(self) -> None:
-        entered_text = self._text_rect.text
-        selected_font = self._text_rect.font
-        text_bounds = self._text_rect.bounds
-        max_pt_size = max_font_size(entered_text, selected_font, text_bounds.size())
-        if self._size_type_dropdown.currentText() == OPTION_TEXT_PIXEL_SIZE_FORMAT:
-            pixel_size = round(max_pt_size / 0.75)
-            if pixel_size > 0:
-                self._size_slider.setValue(pixel_size)
-        elif max_pt_size > 0:
-            self._size_slider.setValue(max_pt_size)
+    def _scale_text_to_bounds_slot(self, should_scale: bool) -> None:
+        """Set whether to update text size to fill bounds as text bounds change."""
+        if should_scale == self._text_rect.scale_text_to_bounds:
+            return
+        if should_scale:
+            self._scale_bounds_to_text_checkbox.setChecked(False)
+        self._text_rect.scale_text_to_bounds = should_scale
+        self._handle_change()
 
     def _handle_change(self) -> None:
         if self._change_signal_enabled:
             self._draw_preview()
-            self.text_rect_changed.emit(self._text_rect)
+            Cache().set(Cache.TEXT_TOOL_PARAMS, self._text_rect.serialize(True))
+            self.text_rect_changed.emit(TextRect(self._text_rect))
 
     def _font_family_change_slot(self, font_family: str) -> None:
-        Cache().set(Cache.LAST_FONT_FAMILY, font_family)
         font = self._text_rect.font
         if font.family() != font_family:
             font.setFamily(font_family)
             self._stretch_spinbox.setEnabled(not QFontDatabase.isBitmapScalable(font_family))
             self._text_rect.font = font
             self._handle_change()
-
-    def _font_family_config_change_slot(self, font_family: str) -> None:
-        selected_in_list = self._font_list.selectedItems()[0].text()
-        if selected_in_list != font_family:
-            list_items = self._font_list.findItems(font_family, Qt.MatchFlag.MatchExactly)
-            if len(list_items) == 0:  # Invalid cache item
-                Cache().set(Cache.LAST_FONT_FAMILY, selected_in_list)
-                return
-            self._font_list.setCurrentItem(list_items[0])
 
     def _text_changed_slot(self, text: str) -> None:
         if self._text_rect.text != text:
@@ -648,21 +573,15 @@ class TextToolPanel(QWidget):
             self._handle_change()
 
     def _size_format_change_slot(self, _) -> None:
-        self._size_change_slot(self._size_slider.value())
+        self._size_change_slot(int(self._size_slider.value()))
 
     def _text_x_changed_slot(self, x_coordinate: int) -> None:
-        text_bounds = self._text_rect.bounds
-        if x_coordinate != text_bounds.x():
-            text_bounds.moveLeft(x_coordinate)
-            self._text_rect.bounds = text_bounds
-            self._handle_change()
+        if x_coordinate != self._offset.x():
+            self.offset = QPoint(x_coordinate, self._offset.y())
 
     def _text_y_changed_slot(self, y_coordinate: int) -> None:
-        text_bounds = self._text_rect.bounds
-        if y_coordinate != text_bounds.y():
-            text_bounds.moveTop(y_coordinate)
-            self._text_rect.bounds = text_bounds
-            self._handle_change()
+        if y_coordinate != self._offset.y():
+            self.offset = QPoint(self._offset.x(), y_coordinate)
 
     def _text_width_changed_slot(self, width: int) -> None:
         text_bounds = self._text_rect.bounds

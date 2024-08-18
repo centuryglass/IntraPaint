@@ -56,6 +56,12 @@ def get_rect_transformation(source: QRect | QRectF | QSize, destination: QRect |
     return transform
 
 
+def map_rect_precise(rect: QRect, transform: QTransform) -> QRectF:
+    """Returns the bounds of a rectangle after applying a transformation, converted to floating point to prevent
+     rounding errors."""
+    return transform.map(QPolygonF(QRectF(rect))).boundingRect()
+
+
 def translate_to_point(transform: QTransform,
                        new_origin: Optional[QPointF | QPoint] = None) -> QTransform:
     """Creates an adjusted transformation by adding a final translation to ensure (0, 0) lands on a specific point."""
@@ -119,15 +125,18 @@ def transform_scale(transformation: QTransform) -> Tuple[float, float]:
     return scale_x, scale_y
 
 
-def extract_transform_parameters(transform: QTransform, origin: QPointF) -> Tuple[float, float, float, float, float]:
+def extract_transform_parameters(transform: QTransform,
+                                 origin: Optional[QPointF] = None) -> Tuple[float, float, float, float, float]:
     """Break a matrix down into a scale, rotation, and translation at an arbitrary origin, returning
      x_offset, y_offset, x_scale, y_scale, rotation_degrees"""
-
     # Not all transformations can be decomposed this way, throw an error if this one can't be:
     assert transform.isInvertible(), f'Non-invertible transform {transform_str(transform)}'
     assert transform.m13() == 0.0
     assert transform.m23() == 0.0
     assert transform.m33() == 1.0
+
+    if origin is None:
+        origin = QPointF()
 
     # Calculate scales (absolute values)
     x_scale = math.sqrt(transform.m11() ** 2 + transform.m21() ** 2)
@@ -161,8 +170,10 @@ def extract_transform_parameters(transform: QTransform, origin: QPointF) -> Tupl
 
 
 def combine_transform_parameters(x_offset: float, y_offset: float, x_scale: float, y_scale: float,
-                                 degrees: float, origin: QPointF) -> QTransform:
+                                 degrees: float, origin: Optional[QPointF] = None) -> QTransform:
     """Combine a scale, rotation, and translation about an arbitrary origin into a single transformation"""
+    if origin is None:
+        origin = QPointF()
     assert x_scale != 0.0 and y_scale != 0.0, 'Non-invertible transformation parameters used'
     matrix = QTransform.fromTranslate(-origin.x(), -origin.y())
     matrix *= QTransform().rotate(degrees)

@@ -27,9 +27,9 @@ class Cache(Config, metaclass=Singleton):
     LAST_ACTIVE_TOOL: str
     LAST_BRUSH_COLOR: str
     LAST_FILE_PATH: str
-    LAST_FONT_FAMILY: str
     LAST_SEED: str
     LORA_MODELS: str
     PAINT_SELECTION_ONLY: str
     SAMPLE_MERGED: str
     STYLES: str
+    TEXT_TOOL_PARAMS: str

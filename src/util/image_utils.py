@@ -5,6 +5,7 @@ import logging
 from collections.abc import Buffer
 from typing import Optional, Dict, Any, Tuple
 
+# noinspection PyPackageRequirements
 import cv2
 import numpy as np
 from PIL import Image, ImageQt, PngImagePlugin, ExifTags, TiffTags, TiffImagePlugin

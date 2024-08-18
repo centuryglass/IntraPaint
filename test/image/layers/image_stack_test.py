@@ -15,6 +15,7 @@ from src.image.layers.image_layer import ImageLayer
 from src.image.layers.image_stack import ImageStack
 from src.image.layers.layer_stack import LayerStack
 from src.image.layers.selection_layer import SelectionLayer
+from src.image.layers.transform_layer import TransformLayer
 from src.image.open_raster import read_ora_image
 
 IMG_SIZE = QSize(512, 512)
@@ -245,7 +246,7 @@ class ImageStackTest(unittest.TestCase):
         image_count = 0
         for layer in self.image_stack.layers:
             # Confirm that all the layers have transformations:
-            if isinstance(layer, ImageLayer):
+            if isinstance(layer, TransformLayer):
                 self.assertFalse(layer.transform.isIdentity())
                 image_count += 1
             elif isinstance(layer, LayerStack):

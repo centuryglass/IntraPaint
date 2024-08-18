@@ -1,11 +1,11 @@
 """Interface for layers that have a persistent transformation."""
 from typing import Tuple
 
-from PySide6.QtCore import QObject, Signal, QRect, QPoint, QRectF, QPointF
-from PySide6.QtGui import QPainter, QImage, QTransform, QPolygonF
+from PySide6.QtCore import QObject, Signal, QRect, QPoint, QPointF
+from PySide6.QtGui import QPainter, QImage, QTransform
 
 from src.image.layers.layer import Layer
-from src.util.geometry_utils import extract_transform_parameters, combine_transform_parameters
+from src.util.geometry_utils import extract_transform_parameters, combine_transform_parameters, map_rect_precise
 from src.util.image_utils import create_transparent_image
 
 
@@ -22,10 +22,13 @@ class TransformLayer(Layer):
     # All changes made through property setters are registered in the undo history, and are broadcast through
     # appropriate signals.
 
+    def _get_transform(self) -> QTransform:
+        return QTransform(self._transform)
+
     @property
     def transform(self) -> QTransform:
         """Returns the layer's matrix transformation."""
-        return QTransform(self._transform)
+        return self._get_transform()
 
     @transform.setter
     def transform(self, new_transform: QTransform) -> None:
@@ -35,7 +38,7 @@ class TransformLayer(Layer):
     def transformed_bounds(self) -> QRect:
         """Returns the layer's bounds after applying its transformation."""
         bounds = self.bounds
-        return self._transform.map(QPolygonF(QRectF(bounds))).boundingRect().toAlignedRect()
+        return map_rect_precise(bounds, self._transform).toAlignedRect()
 
     def set_transform(self, transform: QTransform, send_signals: bool = True) -> None:
         """Updates the layer's matrix transformation."""
@@ -74,7 +77,7 @@ class TransformLayer(Layer):
         inverse, invert_success = self.transform.inverted()
         assert invert_success
         assert isinstance(inverse, QTransform)
-        return inverse.map(QPolygonF(QRectF(image_rect))).boundingRect().toAlignedRect()
+        return map_rect_precise(image_rect, inverse).toAlignedRect()
 
     def map_to_image(self, layer_point: QPoint) -> QPoint:
         """Map a point in the layer image to its final spot in the top level image."""
@@ -82,7 +85,7 @@ class TransformLayer(Layer):
 
     def map_rect_to_image(self, layer_rect: QRect) -> QRect:
         """Map a rectangle in the layer image to its final spot in the top level image."""
-        return self.transform.map(QPolygonF(QRectF(layer_rect))).boundingRect().toAlignedRect()
+        return map_rect_precise(layer_rect, self.transform).toAlignedRect()
 
     def rotate(self, degrees: int) -> None:
         """Rotate the layer by an arbitrary degree count, on top of any previous transformations."""

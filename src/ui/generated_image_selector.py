@@ -27,6 +27,7 @@ from src.util.geometry_utils import get_scaled_placement
 from src.util.image_utils import get_standard_qt_icon, pil_image_scaling, get_transparency_tile_pixmap, \
     pil_image_to_qimage
 from src.util.key_code_utils import get_key_display_string
+from src.util.math_utils import clamp
 from src.util.shared_constants import TIMELAPSE_MODE_FLAG
 from src.util.validation import assert_valid_index
 
@@ -584,7 +585,7 @@ class _ImageOption(QGraphicsPixmapItem):
         painter.fillPath(text_background, Qt.GlobalColor.black)
         painter.setPen(Qt.GlobalColor.white)
         font = painter.font()
-        font_size = max(1, min(font.pointSize(), max_font_size(self._label_text, font, text_bounds.size())))
+        font_size = int(clamp(font.pointSize(), 1, max_font_size(self._label_text, font, text_bounds.size())))
         font.setPointSize(font_size)
         painter.setFont(font)
         painter.drawText(text_bounds, Qt.AlignmentFlag.AlignCenter, self._label_text)

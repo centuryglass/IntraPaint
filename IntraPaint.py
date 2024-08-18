@@ -103,7 +103,9 @@ if not check_import('taming'):
         sys.path.append(expected_taming_path)
 
 # These imports need to be delayed until after logging setup, translation, and import path tweaks:
+# noinspection PyPep8
 from src.controller.app_controller import AppController
+# noinspection PyPep8
 from src.ui.modal.modal_utils import show_error_dialog
 
 if __name__ == '__main__':
@@ -111,6 +113,7 @@ if __name__ == '__main__':
         controller = AppController(args)
 
         try:
+            # noinspection PyUnresolvedReferences
             import pyi_splash
 
             pyi_splash.close()

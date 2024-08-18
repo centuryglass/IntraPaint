@@ -7,6 +7,7 @@ from PySide6.QtGui import QPainter, QPen, QBrush, QColor, QPainterPath
 from PySide6.QtCore import Qt, QRect, QRectF, QPointF, QPropertyAnimation, Property
 
 from src.util.display_size import max_font_size
+from src.util.math_utils import clamp
 
 ANIM_DURATION_MS = 2000
 
@@ -131,7 +132,8 @@ class LoadingSpinner(QGraphicsObject):
                             int(scene.width()), ellipse_radius // 4)
         font = painter.font()
         if self._font_size is None:
-            self._font_size = max(1, min(font.pointSize(), max_font_size(self._message, font, text_bounds.size())))
+            self._font_size = int(clamp(font.pointSize(), 1,
+                                        max_font_size(self._message, font, text_bounds.size())))
         font.setPointSize(self._font_size)
         painter.setFont(font)
         painter.drawText(text_bounds, Qt.AlignmentFlag.AlignCenter, self._message)

@@ -11,6 +11,38 @@ from src.undo_stack import UndoStack, _UndoAction, _UndoGroup
 from src.util.cached_data import CachedData
 
 
+class LayerParent:
+    """Defines the interface expected within layer parents.  LayerParent classes should also be Layers."""
+
+    def get_layer_index(self, layer: 'Layer | int') -> Optional[int]:
+        """Returns a layer's index in the stack, or None if it isn't found."""
+        raise NotImplementedError
+
+    def get_layer_by_index(self, index: int) -> 'Layer':
+        """Returns a layer within the parent."""
+        raise NotImplementedError()
+
+    def get_layer_by_id(self, layer_id: Optional[int]) -> Optional['Layer']:
+        """Returns a layer within the parent, or None if no matching layer was found."""
+        raise NotImplementedError()
+
+    def contains(self, child_layer: 'Layer') -> bool:
+        """Returns whether this parent contains a given child layer."""
+        raise NotImplementedError()
+
+    def contains_recursive(self, child_layer: 'Layer') -> bool:
+        """Returns whether child_layer is underneath this parent in the layer tree."""
+        raise NotImplementedError()
+
+    def remove_layer(self, layer: 'Layer') -> None:
+        """Removes a layer."""
+        raise NotImplementedError()
+
+    def insert_layer(self, layer: 'Layer', index: Optional[int]) -> None:
+        """Insert a layer within this parent."""
+        raise NotImplementedError()
+
+
 class Layer(QObject):
     """Interface for any entity that can exist within an image layer stack."""
 
@@ -34,7 +66,7 @@ class Layer(QObject):
         self._mode = QPainter.CompositionMode.CompositionMode_SourceOver
         self._pixmap = CachedData(None)
         self._id = Layer._next_layer_id
-        self._parent: Optional[Layer] = None
+        self._parent: Optional[LayerParent] = None
         self._locked = False
         self._z_value = 0
         Layer._next_layer_id += 1
@@ -54,18 +86,20 @@ class Layer(QObject):
         self._apply_combinable_change(new_name, self._name, self.set_name, 'layer.name')
 
     @property
-    def layer_parent(self) -> Optional['Layer']:
+    def layer_parent(self) -> Optional[LayerParent]:
         """Gets the layer this layer is contained within, if any."""
         return self._parent
 
     @layer_parent.setter
-    def layer_parent(self, new_parent: Optional['Layer']) -> None:
+    def layer_parent(self, new_parent: Optional[LayerParent]) -> None:
         """Sets or clears this layer's parent layer."""
         if new_parent is None and self._parent is not None:
+            assert isinstance(self._parent, Layer)
             assert not self._parent.contains(self), (f'Layer {self.name}:{self.id} not removed from '
                                                      f'parent {self._parent.name}:{self._parent.id} before clearing'
                                                      ' parent property.')
         if new_parent is not None:
+            assert isinstance(new_parent, Layer)
             assert new_parent.contains(self), (f'Layer {self.name}:{self.id} parent set'
                                                f' to {new_parent.name}:{new_parent.id}), but that layer does not '
                                                 'contain this one.')
@@ -96,6 +130,7 @@ class Layer(QObject):
         """Return whether any of this layer's parents are locked."""
         parent_iter = self.layer_parent
         while parent_iter is not None:
+            assert isinstance(parent_iter, Layer)
             if parent_iter.locked:
                 return True
             parent_iter = parent_iter.layer_parent
@@ -173,7 +208,9 @@ class Layer(QObject):
         while stack_iter is not None:
             if not stack_iter._visible:
                 return False
-            stack_iter = stack_iter.layer_parent
+            parent = stack_iter.layer_parent
+            assert parent is None or isinstance(parent, Layer)
+            stack_iter = parent
         return True
 
     @visible.setter

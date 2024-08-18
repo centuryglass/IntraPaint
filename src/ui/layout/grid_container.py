@@ -8,6 +8,7 @@ from PySide6.QtGui import QResizeEvent
 from PySide6.QtWidgets import QWidget, QGridLayout
 
 from src.util.geometry_utils import get_scaled_placement
+from src.util.math_utils import clamp
 
 DEFAULT_MAX = 999
 logger = logging.getLogger(__name__)
@@ -158,7 +159,7 @@ class GridContainer(QWidget):
                                                                                            max_rows, height,
                                                                                            child_height)))
             # dimensions shouldn't exceed the total number of items:
-            max_cols, max_rows = (max(min(edge, len(self._children)), 1) for edge in (max_cols, max_rows))
+            max_cols, max_rows = (int(clamp(edge, 1, len(self._children))) for edge in (max_cols, max_rows))
 
         # minimums can't exceed maximums:
         min_cols, min_rows = (min(edge_min, edge_max) for edge_min, edge_max in ((min_cols, max_cols),
@@ -174,10 +175,10 @@ class GridContainer(QWidget):
 
         if self._fill_vertical:
             row_count = max(self.height() // self._children[-1].sizeHint().height(), 1)
-            column_count = max(min_cols, min(max_cols, math.ceil(len(self._children) / row_count)))
+            column_count = int(clamp(math.ceil(len(self._children) / row_count), min_cols, max_cols))
         elif self._fill_horizontal:
             child_width = max(self._children[-1].sizeHint().width(), self._children[-1].width())
-            column_count = max(min_cols, min(max_cols, self.width() // child_width))
+            column_count = int(clamp(self.width() // child_width, min_cols, max_cols))
             while (child_width * column_count) >= self.width() and column_count > min_cols:
                 column_count -= 1
         else:

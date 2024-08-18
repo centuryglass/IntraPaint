@@ -34,6 +34,7 @@ from src.image.layers.image_layer import ImageLayer
 from src.image.layers.image_stack import ImageStack
 from src.image.layers.layer import Layer
 from src.image.layers.layer_stack import LayerStack
+from src.image.layers.text_layer import TextLayer
 from src.image.layers.transform_group import TransformGroup
 from src.image.layers.transform_layer import TransformLayer
 from src.image.open_raster import save_ora_image, read_ora_image
@@ -438,7 +439,9 @@ class AppController(MenuBuilder):
             self.move_layer_down,
             self.move_layer_to_top
         }
-        not_layer_group_methods = {self.merge_layer_down}
+        not_layer_group_methods: Set[Callable[..., None]] = {self.merge_layer_down}
+
+        not_text_layer_methods: Set[Callable[..., None]] = {self.crop_layer_to_content}
 
         managed_menu_methods = selection_methods | unlocked_layer_methods | not_bottom_layer_methods \
                                | not_top_layer_methods | not_layer_stack_methods | not_layer_group_methods
@@ -461,7 +464,8 @@ class AppController(MenuBuilder):
                                                   (not_top_layer_methods, is_top_layer),
                                                   (not_layer_stack_methods,
                                                    active_layer == self._image_stack.layer_stack),
-                                                  (not_layer_group_methods, isinstance(active_layer, LayerStack))):
+                                                  (not_layer_group_methods, isinstance(active_layer, LayerStack)),
+                                                  (not_text_layer_methods, isinstance(active_layer, TextLayer))):
                 if menu_method in method_set and disable_condition:
                     action.setEnabled(False)
                     break

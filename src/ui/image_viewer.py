@@ -13,6 +13,7 @@ from src.image.layers.image_layer import ImageLayer
 from src.image.layers.image_stack import ImageStack
 from src.image.layers.layer import Layer
 from src.image.layers.layer_stack import LayerStack
+from src.image.layers.text_layer import TextLayer
 from src.image.layers.transform_layer import TransformLayer
 from src.ui.graphics_items.border import Border
 from src.ui.graphics_items.layer_graphics_item import LayerGraphicsItem
@@ -126,7 +127,7 @@ class ImageViewer(ImageGraphicsView):
                 self.resume_rendering_layer(child)
         self.update()
 
-    def set_layer_opacity(self, layer: ImageLayer, opacity: float) -> None:
+    def set_layer_opacity(self, layer: ImageLayer | TextLayer, opacity: float) -> None:
         """Updates the rendered opacity of a layer."""
         if layer not in self._layer_items:
             raise KeyError('Layer not yet present in the imageViewer')
@@ -258,7 +259,7 @@ class ImageViewer(ImageGraphicsView):
         if self._image_border.windowed_area.isEmpty() and self._image_stack.has_image:
             self._image_border.windowed_area = self._image_stack.bounds if self._image_stack.has_image else QRect()
             self._image_outline.outlined_region = self._image_border.windowed_area
-        if isinstance(new_layer, ImageLayer):
+        if isinstance(new_layer, (ImageLayer, TextLayer)):
             layer_item = LayerGraphicsItem(new_layer)
             scene = self.scene()
             assert scene is not None

@@ -2,15 +2,16 @@
 from PySide6.QtGui import QPainter
 
 from src.image.layers.image_layer import ImageLayer
+from src.image.layers.text_layer import TextLayer
 from src.ui.graphics_items.pixmap_item import PixmapItem
 
 
 class LayerGraphicsItem(PixmapItem):
-    """Renders an image layer into a QGraphicsScene."""
+    """Renders an image layer or text layer into a QGraphicsScene."""
 
-    def __init__(self, layer: ImageLayer):
+    def __init__(self, layer: ImageLayer | TextLayer):
         super().__init__()
-        assert isinstance(layer, ImageLayer)
+        assert isinstance(layer, (ImageLayer, TextLayer))
         self._layer = layer
         self._hidden = False
         self.composition_mode = layer.composition_mode
@@ -29,7 +30,7 @@ class LayerGraphicsItem(PixmapItem):
         self._update_pixmap(layer)
 
     @property
-    def layer(self) -> ImageLayer:
+    def layer(self) -> ImageLayer | TextLayer:
         """Returns the rendered image layer."""
         return self._layer
 

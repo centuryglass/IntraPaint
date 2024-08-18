@@ -1,20 +1,22 @@
 """Represents a group of linked image layers that can be manipulated as one in limited ways."""
 from typing import List, Optional, Dict, Any, Callable
 
-from PySide6.QtCore import QRect, Signal, QPoint, QRectF
-from PySide6.QtGui import QPainter, QImage, QPolygonF, QTransform
+from PySide6.QtCore import QRect, Signal, QPoint
+from PySide6.QtGui import QPainter, QImage, QTransform
 
 from src.image.layers.image_layer import ImageLayer, ImageLayerState
-from src.image.layers.layer import Layer
+from src.image.layers.layer import Layer, LayerParent
+from src.image.layers.text_layer import TextLayer
 from src.image.layers.transform_layer import TransformLayer
 from src.undo_stack import UndoStack
 from src.util.application_state import APP_STATE_NO_IMAGE, APP_STATE_EDITING, AppStateTracker
 from src.util.cached_data import CachedData
+from src.util.geometry_utils import map_rect_precise
 from src.util.image_utils import create_transparent_image
 from src.util.validation import assert_valid_index
 
 
-class LayerStack(Layer):
+class LayerStack(Layer, LayerParent):
     """Represents a group of linked image layers that can be manipulated as one in limited ways."""
 
     bounds_changed = Signal(Layer, QRect)
@@ -110,7 +112,7 @@ class LayerStack(Layer):
         """Crops the layer to remove transparent areas."""
         with UndoStack().combining_actions('image.layers.layer_stack.crop_to_content'):
             for layer in self.recursive_child_layers:
-                if isinstance(layer, LayerStack) or layer.locked:
+                if isinstance(layer, (LayerStack, TextLayer)) or layer.locked:
                     continue
                 assert isinstance(layer, (ImageLayer, LayerStack))
                 layer.crop_to_content(False)
@@ -238,7 +240,10 @@ class LayerStack(Layer):
         while parent is not None:
             if parent == self:
                 return True
-            parent = parent.layer_parent
+            if isinstance(parent, Layer):
+                parent = parent.layer_parent
+            else:
+                parent = None
         return False
 
     def remove_layer(self, layer: Layer) -> None:
@@ -272,8 +277,8 @@ class LayerStack(Layer):
         self._layers.pop(index)
         layer.layer_parent = None
         if layer.visible:
-            self.invalidate_pixmap()
             self._image_cache.invalidate()
+            self.invalidate_pixmap()
             self.content_changed.emit(self)
         self._get_local_bounds()  # Ensure size is correct
         self.layer_removed.emit(layer)
@@ -347,28 +352,27 @@ class LayerStack(Layer):
            bounding rectangle."""
         for layer in self._layers:
             if bounds is not None and isinstance(layer, TransformLayer):
-                layer_bounds = layer.transform.inverted()[0].map(QPolygonF(QRectF(bounds))).boundingRect()\
-                    .toAlignedRect()
+                layer_bounds = map_rect_precise(bounds, layer.transform.inverted()[0]).toAlignedRect()
             else:
                 layer_bounds = bounds
             if not layer.is_empty(layer_bounds):
                 return False
         return True
 
-    def _layer_content_change_slot(self, layer: ImageLayer, _=None) -> None:
+    def _layer_content_change_slot(self, layer: ImageLayer | TextLayer, _=None) -> None:
         if layer.visible and layer in self._layers:
             self._image_cache.invalidate()
             self.invalidate_pixmap()
             self._get_local_bounds()  # Ensure size is correct
             self.content_changed.emit(self)
 
-    def _layer_visibility_change_slot(self, layer: ImageLayer, _) -> None:
+    def _layer_visibility_change_slot(self, layer: ImageLayer | TextLayer, _) -> None:
         if layer in self._layers:
             self._image_cache.invalidate()
             self.invalidate_pixmap()
             self.content_changed.emit(self)
 
-    def _layer_bounds_change_slot(self, layer: ImageLayer, _) -> None:
+    def _layer_bounds_change_slot(self, layer: ImageLayer | TextLayer, _) -> None:
         if layer in self._layers:
             self._image_cache.invalidate()
             self.invalidate_pixmap()
