@@ -221,7 +221,7 @@ class TextToolPanel(QWidget):
         self._alignment_label.setBuddy(self._alignment_dropdown)
         self._alignment_dropdown.addItem(QIcon(ICON_LEFT), OPTION_TEXT_LEFT_ALIGN, userData=Qt.AlignmentFlag.AlignLeft)
         self._alignment_dropdown.addItem(QIcon(ICON_CENTER), OPTION_TEXT_CENTER_ALIGN,
-                                         userData=Qt.AlignmentFlag.AlignVCenter)
+                                         userData=Qt.AlignmentFlag.AlignHCenter)
         self._alignment_dropdown.addItem(QIcon(ICON_RIGHT), OPTION_TEXT_RIGHT_ALIGN,
                                          userData=Qt.AlignmentFlag.AlignRight)
         align_index = self._alignment_dropdown.findData(self._text_rect.text_alignment)
@@ -340,7 +340,8 @@ class TextToolPanel(QWidget):
 
     def focus_text_input(self) -> None:
         """Pass keyboard focus to the text input field."""
-        self._text_box.focusWidget()
+        if not self._text_box.hasFocus():
+            self._text_box.setFocus()
 
     @property
     def offset(self) -> QPoint:
@@ -350,9 +351,13 @@ class TextToolPanel(QWidget):
     @offset.setter
     def offset(self, new_offset: QPoint) -> None:
         if self._x_input.value() != new_offset.x():
+            self._x_input.valueChanged.disconnect(self._text_x_changed_slot)
             self._x_input.setValue(new_offset.x())
+            self._x_input.valueChanged.connect(self._text_x_changed_slot)
         if self._y_input.value() != new_offset.y():
+            self._y_input.valueChanged.disconnect(self._text_y_changed_slot)
             self._y_input.setValue(new_offset.y())
+            self._y_input.valueChanged.connect(self._text_y_changed_slot)
         if self._offset != new_offset:
             self._offset = QPoint(new_offset)
             self.offset_changed.emit(new_offset)
@@ -366,22 +371,25 @@ class TextToolPanel(QWidget):
     def text_rect(self, new_params: TextRect) -> None:
         self._change_signal_enabled = False
         self._text_rect = TextRect(new_params)
-
-        self._text_box.setPlainText(new_params.text)
+        if self._text_box.value() != new_params.text:
+            self._text_box.setPlainText(new_params.text)
 
         # Update font controls:
         new_font = self._text_rect.font
         list_items = self._font_list.findItems(new_font.family(), Qt.MatchFlag.MatchExactly)
         assert len(list_items) > 0
-        self._font_list.setCurrentItem(list_items[0])
-        self._font_list.scrollToItem(list_items[0])
+        if self._font_list.currentItem() != list_items[0]:
+            self._font_list.setCurrentItem(list_items[0])
+            self._font_list.scrollToItem(list_items[0])
         font_size_format = OPTION_TEXT_PIXEL_SIZE_FORMAT
         font_size = new_font.pixelSize()
         if font_size <= 0:
             font_size = new_font.pointSize()
             font_size_format = OPTION_TEXT_POINT_SIZE_FORMAT
-        self._size_slider.setValue(font_size)
-        self._size_type_dropdown.setCurrentText(font_size_format)
+        if self._size_slider.value() != font_size:
+            self._size_slider.setValue(font_size)
+        if self._size_type_dropdown.currentText() != font_size_format:
+            self._size_type_dropdown.setCurrentText(font_size_format)
         self._bold_checkbox.setChecked(new_font.bold())
         self._italic_checkbox.setChecked(new_font.italic())
         self._overline_checkbox.setChecked(new_font.overline())
@@ -389,13 +397,17 @@ class TextToolPanel(QWidget):
         self._underline_checkbox.setChecked(new_font.underline())
         self._fixed_pitch_checkbox.setChecked(new_font.fixedPitch())
         self._kerning_checkbox.setChecked(new_font.kerning())
-        self._stretch_spinbox.setValue(new_font.stretch())
+        stretch = new_font.stretch() if new_font.stretch() != 0 else 100
+        if stretch != self._stretch_spinbox.value():
+            self._stretch_spinbox.setValue(stretch)
         self._stretch_spinbox.setEnabled(not QFontDatabase.isBitmapScalable(new_font.family()))
 
         # Update size:
         new_size = self._text_rect.size
-        self._width_input.setValue(new_size.width())
-        self._height_input.setValue(new_size.height())
+        if self._width_input.value() != new_size.width():
+            self._width_input.setValue(new_size.width())
+        if self._height_input.value() != new_size.height():
+            self._height_input.setValue(new_size.height())
 
         self._scale_bounds_to_text_checkbox.setChecked(self._text_rect.scale_bounds_to_text)
         self._scale_text_to_bounds_checkbox.setChecked(self._text_rect.scale_text_to_bounds)
@@ -403,7 +415,8 @@ class TextToolPanel(QWidget):
         # Alignment:
         align_index = self._alignment_dropdown.findData(self._text_rect.text_alignment)
         assert align_index >= 0
-        self._alignment_dropdown.setCurrentIndex(align_index)
+        if self._alignment_dropdown.currentIndex() != align_index:
+            self._alignment_dropdown.setCurrentIndex(align_index)
 
         self._fill_background_checkbox.setChecked(self._text_rect.fill_background)
         self._change_signal_enabled = True
@@ -584,15 +597,15 @@ class TextToolPanel(QWidget):
             self.offset = QPoint(self._offset.x(), y_coordinate)
 
     def _text_width_changed_slot(self, width: int) -> None:
-        text_bounds = self._text_rect.bounds
-        if width != text_bounds.width():
-            text_bounds.setWidth(width)
-            self._text_rect.bounds = text_bounds
+        text_size = self._text_rect.size
+        if width != text_size.width():
+            text_size.setWidth(width)
+            self._text_rect.size = text_size
             self._handle_change()
 
     def _text_height_changed_slot(self, height: int) -> None:
-        text_bounds = self._text_rect.bounds
-        if height != text_bounds.width():
-            text_bounds.setHeight(height)
-            self._text_rect.bounds = text_bounds
+        text_size = self._text_rect.size
+        if height != text_size.width():
+            text_size.setHeight(height)
+            self._text_rect.size = text_size
             self._handle_change()

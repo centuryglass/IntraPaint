@@ -1,7 +1,7 @@
 """Represents a layer in the image holding text data."""
 from typing import Any, List, Optional
 
-from PySide6.QtCore import Signal
+from PySide6.QtCore import Signal, QPoint, QPointF
 from PySide6.QtGui import QImage, QPainter, QTransform
 from PySide6.QtWidgets import QApplication
 
@@ -11,6 +11,7 @@ from src.image.text_rect import TextRect
 from src.ui.modal.modal_utils import request_confirmation
 from src.undo_stack import UndoStack
 from src.util.cached_data import CachedData
+from src.util.geometry_utils import extract_transform_parameters, combine_transform_parameters
 
 # The `QCoreApplication.translate` context for strings in this file
 TR_ID = 'image.layers.text_layer'
@@ -67,6 +68,17 @@ class TextLayer(TransformLayer):
             message = CONFIRM_MULTI_CONVERT_TO_IMAGE_MESSAGE.format(action_name=action_name,
                                                                     num_text_layers=len(layer_names))
         return request_confirmation(None, title, message)
+
+    @property
+    def offset(self) -> QPointF:
+        """Access the offset component of the layer transformation."""
+        x_off, y_off, _, _, _ = extract_transform_parameters(self.transform)
+        return QPointF(x_off, y_off)
+
+    @offset.setter
+    def offset(self, new_offset: QPoint | QPointF) -> None:
+        _, _, x_scale, y_scale, angle = extract_transform_parameters(self.transform)
+        self.transform = combine_transform_parameters(new_offset.x(), new_offset.y(), x_scale, y_scale, angle)
 
     @property
     def text_rect(self) -> TextRect:

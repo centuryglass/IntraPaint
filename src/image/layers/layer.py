@@ -369,7 +369,7 @@ class Layer(QObject):
         prev_action: Optional[_UndoAction | _UndoGroup]
         timestamp = datetime.datetime.now().timestamp()
         merge_interval = AppConfig().get(AppConfig.UNDO_MERGE_INTERVAL)
-        with UndoStack().last_action() as prev_action:
+        with UndoStack().last_action(change_type) as prev_action:
             if isinstance(prev_action, _UndoAction) and prev_action.type == change_type \
                     and prev_action.action_data is not None \
                     and prev_action.action_data['layer'] == self \

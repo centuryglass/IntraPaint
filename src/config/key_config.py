@@ -56,11 +56,13 @@ class KeyConfig(Config, metaclass=Singleton):
         self.validate_keybindings()
 
     @staticmethod
-    def modifier_held(modifier_key: str, exclusive=False) -> bool:
+    def modifier_held(modifier_key: str, exclusive=False,
+                      held_modifiers: Optional[Qt.KeyboardModifier] = None) -> bool:
         """Returns whether a KeyConfig modifier is held, or false if modifier key is invalid or unbound."""
         try:
-            held_keys = QApplication.keyboardModifiers()
-            if held_keys == Qt.KeyboardModifier.NoModifier:
+            if held_modifiers is None:
+                held_modifiers = QApplication.keyboardModifiers()
+            if held_modifiers == Qt.KeyboardModifier.NoModifier:
                 return False
             keys = KeyConfig().get_modifier(modifier_key)
             if not isinstance(keys, list):
@@ -68,7 +70,7 @@ class KeyConfig(Config, metaclass=Singleton):
             for modifier in keys:
                 if modifier == Qt.KeyboardModifier.NoModifier:
                     continue
-                test_value = held_keys if exclusive else (modifier and held_keys)
+                test_value = held_modifiers if exclusive else (modifier and held_modifiers)
                 if test_value == modifier:
                     return True
             return False

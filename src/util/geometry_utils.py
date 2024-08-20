@@ -5,6 +5,8 @@ from typing import Tuple, Optional
 from PySide6.QtCore import QRect, QSize, QRectF, QSizeF, QPoint, QPointF, QLineF, Qt
 from PySide6.QtGui import QTransform, QPolygonF, QPainter, QColor
 
+from src.util.shared_constants import MIN_NONZERO, FLOAT_MAX
+
 
 def get_scaled_placement(container_rect: QRect | QSize,
                          inner_size: QSize, margin_width: int = 0) -> QRect:
@@ -234,3 +236,45 @@ def fill_outside_rect(painter: QPainter, bounds: QRect, excluded: QRect, color: 
         assert bounds.contains(border_rect)
         if not border_rect.isEmpty():
             painter.fillRect(border_rect, color)
+
+
+def closest_point_keeping_aspect_ratio(moving_point: QPointF, source_point: QPointF, aspect_ratio: float) -> QPointF:
+    """
+    Given a moving_point, a source_point, and an aspect_ratio, find the adjusted point closest to the moving point where
+    the absolute aspect ratio of the rectangle created by source_point, adjusted_point is equal to abs(aspect_ratio).
+
+    Parameters:
+    -----------
+    moving_point: QPointF
+        The point to adjust.
+    source_point: QPointF
+        The fixed initial point used in calculating the aspect ratio.
+    aspect_ratio: float
+        The expected aspect ratio, as width/height. If the value is closer to zero than MIN_NONZERO, it will be adjusted
+        to MIN_NONZERO.
+    Returns:
+    --------
+    adjusted_point: QPointF
+        Given that rect_final = QRectF(source_point, adjusted_point), adjusted_point is the closest point to
+        moving_point where abs(aspect_ratio) equals abs(final_rect.width() / final_rect.height()).
+    """
+    aspect_ratio = max(abs(aspect_ratio), MIN_NONZERO)
+    width = abs(moving_point.x() - source_point.x())
+    height = abs(moving_point.y() - source_point.y())
+    adjusted_height = width / aspect_ratio
+    adjusted_width = height / aspect_ratio
+    point_options = [
+        QPointF(moving_point.x(), source_point.y() + adjusted_height),
+        QPointF(moving_point.x(), source_point.y() - adjusted_height),
+        QPointF(source_point.x() + adjusted_width, moving_point.y()),
+        QPointF(source_point.x() - adjusted_width, moving_point.y())
+    ]
+    min_distance = FLOAT_MAX
+    adjusted_point = None
+    for point in point_options:
+        distance = QLineF(moving_point, point).length()
+        if distance < min_distance:
+            min_distance = distance
+            adjusted_point = point
+    assert adjusted_point is not None
+    return adjusted_point

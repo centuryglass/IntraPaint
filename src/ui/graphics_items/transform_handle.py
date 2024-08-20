@@ -23,7 +23,7 @@ MIN_SCENE_DIM = 5
 class TransformHandle(QGraphicsObject):
     """Small square the user can drag to adjust the item properties."""
 
-    dragged = Signal(str, QPointF)
+    dragged = Signal(str, QPointF, QPointF)
 
     def __init__(self, parent: QGraphicsItem, handle_id: str, base_angle: int = 0, draw_arrows: bool = True) -> None:
         super().__init__(parent)
@@ -144,25 +144,28 @@ class TransformHandle(QGraphicsObject):
         offset_vector.setAngle(-self._base_angle)
         return adjusted_bounds.translated(offset_vector.p2().x(), offset_vector.p2().y())
 
-    def _update_and_send_pos(self, pos: QPointF) -> None:
-        self.dragged.emit(self._handle_id, pos)
-
     def mousePressEvent(self, event: Optional[QGraphicsSceneMouseEvent]) -> None:
         """Select the clicked handle, start sending handle position changes."""
         assert event is not None
         super().mousePressEvent(event)
         self.setSelected(True)
-        self._update_and_send_pos(event.pos())
+        self.dragged.emit(self._handle_id, event.scenePos(), event.lastScenePos())
 
     def mouseMoveEvent(self, event: Optional[QGraphicsSceneMouseEvent]) -> None:
         """Continue sending handle position changes."""
         assert event is not None
-        self._update_and_send_pos(event.pos())
+        if not self.isSelected():
+            self.parentItem().mouseMoveEvent(event)
+            return
+        self.dragged.emit(self._handle_id, event.scenePos(), event.lastScenePos())
 
     def mouseReleaseEvent(self, event: Optional[QGraphicsSceneMouseEvent]) -> None:
         """Send the final handle position change to the transformation outline, and de-select the handle."""
         assert event is not None
-        self._update_and_send_pos(event.pos())
+        if not self.isSelected():
+            self.parentItem().mouseMoveEvent(event)
+            return
+        self.dragged.emit(self._handle_id, event.scenePos(), event.lastScenePos())
         self.setSelected(False)
 
 

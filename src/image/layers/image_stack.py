@@ -287,7 +287,7 @@ class ImageStack(QObject):
 
             action_type = 'ImageStack.generation_area'
             prev_action: Optional[_UndoAction | _UndoGroup]
-            with UndoStack().last_action() as prev_action:
+            with UndoStack().last_action(action_type) as prev_action:
                 if isinstance(prev_action, _UndoAction) and prev_action.type == action_type and prev_action.action_data is not None:
                     last_bounds = prev_action.action_data['prev_bounds']
                     prev_action.redo = lambda: update_fn(last_bounds, bounds_rect)

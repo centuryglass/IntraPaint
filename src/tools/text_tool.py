@@ -1,19 +1,22 @@
 """Add text to an image."""
 from typing import Optional
 
-from PySide6.QtCore import QPoint
-from PySide6.QtGui import QIcon, QKeySequence, QMouseEvent, Qt
+from PySide6.QtCore import QPoint, QPointF, QSizeF, QSize
+from PySide6.QtGui import QIcon, QKeySequence, QMouseEvent, Qt, QTransform
 from PySide6.QtWidgets import QWidget, QApplication
 
 from src.config.key_config import KeyConfig
 from src.image.layers.image_stack import ImageStack
 from src.image.layers.layer import Layer
 from src.image.layers.text_layer import TextLayer
+from src.image.layers.transform_layer import TransformLayer
 from src.image.text_rect import TextRect
 from src.tools.base_tool import BaseTool
 from src.ui.graphics_items.click_and_drag_selection import ClickAndDragSelection
+from src.ui.graphics_items.placement_outline import PlacementOutline
 from src.ui.image_viewer import ImageViewer
 from src.ui.panel.tool_control_panels.text_tool_panel import TextToolPanel
+from src.undo_stack import UndoStack
 from src.util.shared_constants import PROJECT_DIR
 
 # The `QCoreApplication.translate` context for strings in this file
@@ -43,12 +46,12 @@ class TextTool(BaseTool):
         self._scene = scene
         self._control_panel = TextToolPanel()
         self._image_stack = image_stack
+        self._placement_outline: Optional[PlacementOutline] = None
         self._text_layer: Optional[TextLayer] = None
         self._selection_handler = ClickAndDragSelection(scene)
         self._dragging = False
         self._icon = QIcon(RESOURCES_TEXT_ICON)
-        self._control_panel.text_rect_changed.connect(self._update_layer_text_slot)
-        image_stack.active_layer_changed.connect(self._active_layer_change_slot)
+        self._image_stack.active_layer_changed.connect(self._active_layer_change_slot)
 
     def get_hotkey(self) -> QKeySequence:
         """Returns the hotkey(s) that should activate this tool."""
@@ -79,67 +82,178 @@ class TextTool(BaseTool):
         """Updates text placement or selects a text layer on click."""
         assert event is not None
         if self._text_layer is not None:
-            if event.buttons() == Qt.MouseButton.LeftButton:
-                self._update_position(image_coordinates)
-                return True
-            if event.buttons() == Qt.MouseButton.RightButton:
-                self._update_size(image_coordinates)
-                return True
-        else:
+            return False
+        elif event.buttons() == Qt.MouseButton.LeftButton:
             clicked_layer = self._image_stack.top_layer_at_point(image_coordinates)
             if isinstance(clicked_layer, TextLayer):
-                self._image_stack.active_layer = clicked_layer
+                self._connect_text_layer(clicked_layer)
                 return True
+            else:
+                self._dragging = True
+                self._selection_handler.start_selection(image_coordinates)
         return False
 
     def mouse_move(self, event: Optional[QMouseEvent], image_coordinates: QPoint) -> bool:
         """Updates text placement while dragging when a text layer is active."""
         assert event is not None
         if self._text_layer is not None:
-            if event.buttons() == Qt.MouseButton.LeftButton:
-                self._update_position(image_coordinates)
-                return True
-            if event.buttons() == Qt.MouseButton.RightButton:
-                self._update_size(image_coordinates)
-                return True
+            if self._dragging:
+                self._selection_handler.end_selection(image_coordinates)
+                self._dragging = False
+            return False
+        elif event.buttons() == Qt.MouseButton.LeftButton and self._dragging:
+            self._selection_handler.drag_to(image_coordinates)
+            return True
+        elif self._dragging:
+            self._selection_handler.end_selection(image_coordinates)
+            self._dragging = False
+            return True
         return False
 
-    def _update_position(self, image_coordinates: QPoint) -> None:
-        text_data = self._control_panel.text_rect
-        text_bounds = text_data.bounds
-        if image_coordinates != text_bounds.topLeft():
-            text_bounds.moveTopLeft(image_coordinates)
-            text_data.bounds = text_bounds
-            self._control_panel.text_rect = text_data
+    def mouse_release(self, event: Optional[QMouseEvent], image_coordinates: QPoint) -> bool:
+        """If dragging, finish and create a new text layer."""
+        if self._dragging:
+            new_bounds = self._selection_handler.end_selection(image_coordinates).boundingRect().toAlignedRect()
+            self._dragging = False
+            self._control_panel.offset = new_bounds.topLeft()
+            text_rect = self._control_panel.text_rect
+            text_rect.size = new_bounds.size()
+            self._control_panel.text_rect = text_rect
+            self._create_and_activate_text_layer(text_rect, new_bounds.topLeft())
+            return True
+        return False
 
-    def _update_size(self, image_coordinates: QPoint) -> None:
-        text_data = self._control_panel.text_rect
-        text_bounds = text_data.bounds
-        bottom_right = text_bounds.topLeft() + QPoint(text_bounds.width(), text_bounds.height())
-        if image_coordinates != bottom_right:
-            text_bounds.setWidth(max(0, image_coordinates.x() - text_bounds.x()))
-            text_bounds.setHeight(max(0, image_coordinates.y() - text_bounds.y()))
-            text_data.bounds = text_bounds
-            self._control_panel.text_rect = text_data
+    def _on_activate(self) -> None:
+        """Called when the tool becomes active, implement to handle any setup that needs to be done."""
+        active_layer = self._image_stack.active_layer
+        if isinstance(active_layer, TextLayer):
+            self._connect_text_layer(active_layer)
 
-    def _create_and_activate_text_layer(self, layer_data: Optional[TextRect]) -> None:
-        self._text_layer = self._image_stack.create_text_layer(layer_data)
-        self._image_stack.active_layer = self._text_layer
+    def _on_deactivate(self) -> None:
+        """Called when the tool stops being active, implement to handle any cleanup that needs to be done."""
+        if self._text_layer is not None:
+            self._disconnect_text_layer()
+        else:
+            self._disconnect_signals()
+        if self._dragging:
+            self._selection_handler.end_selection(QPoint())
+            self._dragging = False
 
-    def _update_layer_text_slot(self, text_data: TextRect) -> None:
+    def _connect_text_layer(self, layer: TextLayer) -> None:
+        if self._text_layer is not None:
+            self._disconnect_text_layer()
+        else:
+            self._disconnect_signals()
+        self._text_layer = layer
+        if self._image_stack.active_layer != layer:
+            self._image_stack.active_layer = layer
+        text_rect = layer.text_rect
+        self._control_panel.text_rect = text_rect
+        self._control_panel.offset = layer.offset.toPoint()
+        self._placement_outline = PlacementOutline(layer.offset, QSizeF(text_rect.size))
+        self._scene.addItem(self._placement_outline)
+        self._placement_outline.setTransform(layer.transform)
+        self._placement_outline.setZValue(layer.z_value - 1)
+        self._connect_signals()
+        self._control_panel.focus_text_input()
+
+    def _disconnect_text_layer(self) -> None:
+        if self._text_layer is not None:
+            self._disconnect_signals()
+            self._text_layer = None
+            text_rect = self._control_panel.text_rect
+            text_rect.text = ''
+            self._control_panel.text_rect = text_rect
+            if self._placement_outline is not None:
+                self._scene.removeItem(self._placement_outline)
+                self._placement_outline = None
+
+    def _disconnect_signals(self) -> None:
+        self._image_stack.active_layer_changed.disconnect(self._active_layer_change_slot)
+        if self._text_layer is not None:
+            self._text_layer.transform_changed.disconnect(self._layer_transform_change_slot)
+            self._text_layer.size_changed.disconnect(self._layer_size_change_slot)
+        self._control_panel.text_rect_changed.disconnect(self._control_text_data_changed_slot)
+        self._control_panel.offset_changed.disconnect(self._control_offset_changed_slot)
+        if self._placement_outline is not None:
+            self._placement_outline.placement_changed.disconnect(self._placement_outline_changed_slot)
+
+    def _connect_signals(self):
+        if self._text_layer is not None:
+            self._text_layer.transform_changed.connect(self._layer_transform_change_slot)
+            self._text_layer.size_changed.connect(self._layer_size_change_slot)
+        self._control_panel.text_rect_changed.connect(self._control_text_data_changed_slot)
+        self._control_panel.offset_changed.connect(self._control_offset_changed_slot)
+        if self._placement_outline is not None:
+            self._placement_outline.placement_changed.connect(self._placement_outline_changed_slot)
+
+    def _create_and_activate_text_layer(self, layer_data: Optional[TextRect], offset: QPoint) -> None:
+        with UndoStack().combining_actions('TextTool._create_and_activate_text_layer'):
+            text_layer = self._image_stack.create_text_layer(layer_data)
+            text_layer.transform = QTransform.fromTranslate(offset.x(), offset.y())
+            self._connect_text_layer(text_layer)
+
+    def _control_text_data_changed_slot(self, text_data: TextRect) -> None:
         if not self.is_active:
             return
-        if len(text_data.text) > 0 and self._text_layer is None:
-            self._create_and_activate_text_layer(text_data)
         elif self._text_layer is not None:
-            self._text_layer.set_text_rect(text_data)
+            self._disconnect_signals()
+            self._text_layer.text_rect = text_data
+            self._placement_outline.outline_size = text_data.size
+            self._connect_signals()
+
+    def _control_offset_changed_slot(self, offset: QPoint) -> None:
+        if self._text_layer is not None and self.is_active:
+            self._disconnect_signals()
+            if offset != self._text_layer.offset.toPoint():
+                self._text_layer.offset = offset
+            self._placement_outline.setTransform(self._text_layer.transform)
+            self._connect_signals()
+
+    def _placement_outline_changed_slot(self, offset: QPointF, size: QSizeF) -> None:
+        if not self.is_active:
+            return
+        assert self._placement_outline is not None and self._text_layer is not None
+        self._disconnect_signals()
+        text_rect = self._control_panel.text_rect
+        text_rect.size = size.toSize()
+        self._control_panel.offset = offset.toPoint()
+        self._control_panel.text_rect = text_rect
+        self._text_layer.offset = offset
+        self._text_layer.text_rect = text_rect
+        self._connect_signals()
+
+    def _layer_size_change_slot(self, layer: Layer, size: QSize) -> None:
+        if layer != self._text_layer:
+            layer.size_changed.disconnect(self._layer_size_change_slot)
+            return
+        if not self.is_active:
+            return
+        assert isinstance(layer, TextLayer)
+        self._disconnect_signals()
+        text_rect = self._control_panel.text_rect
+        text_rect.size = size
+        self._control_panel.text_rect = text_rect
+        self._placement_outline.outline_size = QSizeF(size)
+        self._connect_signals()
+
+    def _layer_transform_change_slot(self, layer: TransformLayer, transform: QTransform) -> None:
+        if layer != self._text_layer:
+            layer.transform_changed.disconnect(self._layer_transform_change_slot)
+            return
+        if not self.is_active:
+            return
+        assert isinstance(layer, TextLayer)
+        self._disconnect_signals()
+        self._control_panel.offset = layer.offset.toPoint()
+        self._placement_outline.setTransform(transform)
+        self._connect_signals()
 
     def _active_layer_change_slot(self, active_layer: Layer) -> None:
+        if active_layer == self._text_layer or not self.is_active:
+            return
         if isinstance(active_layer, TextLayer):
-            self._text_layer = active_layer
-            self._control_panel.text_rect = active_layer.text_rect
-            if self.is_active and self._control_panel.isVisible():
-                self._control_panel.focus_text_input()
+            assert self.is_active
+            self._connect_text_layer(active_layer)
         else:
-            self._text_layer = None
-            self._control_panel.text_rect = TextRect()
+            self._disconnect_text_layer()

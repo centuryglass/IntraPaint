@@ -31,8 +31,8 @@ class _UndoGroup:
 
     def add_to_group(self, undo_action: Callable[[], None], redo_action: Callable[[], None]):
         """Add a new action to the set of grouped actions."""
-        self._undo_actions.append(undo_action)
-        self._redo_actions.insert(0, redo_action)
+        self._undo_actions.insert(0, undo_action)
+        self._redo_actions.append(redo_action)
 
     def undo(self):
         """Undo all actions in the group."""
@@ -57,6 +57,7 @@ class UndoStack(metaclass=Singleton):
         self._redo_stack: List[_UndoAction | _UndoGroup] = []
         self._access_lock = Lock()
         self._open_group: Optional[_UndoGroup] = None
+        self._in_progress_change = 'none'
 
         class _SignalManager(QObject):
             undo_count_changed = Signal(int)
@@ -107,10 +108,12 @@ class UndoStack(metaclass=Singleton):
             Arbitrary data to use for merging actions.
         """
         if self._access_lock.locked():
-            raise RuntimeError('Concurrent undo history changes detected!')
+            raise RuntimeError(f'Concurrent undo history changes detected! Attempted: {action_type}, '
+                               f'in-progress: {self._in_progress_change}')
         with self._access_lock:
             logger.info(f'ADD ACTION:{action_type}, UNDO_COUNT={len(self._undo_stack)},'
                         f' REDO_COUNT={len(self._redo_stack)}')
+            self._in_progress_change = action_type
             action()
             if self._open_group is not None:
                 self._open_group.add_to_group(undo_action, action)
@@ -120,13 +123,15 @@ class UndoStack(metaclass=Singleton):
             if len(self._redo_stack) > 0:
                 self._redo_stack.clear()
                 self.redo_count_changed.emit(0)
+            self._in_progress_change = 'none'
         return True
 
     @contextmanager
-    def last_action(self) -> Generator[Optional[_UndoAction | _UndoGroup], None, None]:
+    def last_action(self, action_type: str) -> Generator[Optional[_UndoAction | _UndoGroup], None, None]:
         """Access the most recent action, potentially updating it to combine actions."""
         if self._access_lock.locked():
-            raise RuntimeError('Concurrent undo history changes detected!')
+            raise RuntimeError(f'Concurrent undo history changes detected! Attempted: {action_type}, '
+                               f'in-progress: {self._in_progress_change}')
         with self._access_lock:
             yield None if len(self._undo_stack) == 0 else self._undo_stack[-1]
 
@@ -134,7 +139,8 @@ class UndoStack(metaclass=Singleton):
     def combining_actions(self, action_type: str) -> Generator[None, None, None]:
         """Combines all actions added with commit_action until the context is exited."""
         if self._access_lock.locked():
-            raise RuntimeError('Concurrent undo history changes detected!')
+            raise RuntimeError(f'Concurrent undo history changes detected! Attempted: {action_type}, '
+                               f'in-progress: {self._in_progress_change}')
         with self._access_lock:
             if self._open_group is not None:
                 raise RuntimeError(f'Tried to create {action_type} combined action group, but '
@@ -143,7 +149,8 @@ class UndoStack(metaclass=Singleton):
         assert not self._access_lock.locked()
         yield
         if self._access_lock.locked():
-            raise RuntimeError('Concurrent undo history changes detected!')
+            raise RuntimeError(f'Concurrent undo history changes detected! Attempted: {action_type}, '
+                               f'in-progress: {self._in_progress_change}')
         with self._access_lock:
             assert self._open_group is not None and self._open_group.type == action_type
             if self._open_group.count() > 0:

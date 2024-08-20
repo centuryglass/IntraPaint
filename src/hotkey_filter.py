@@ -1,8 +1,8 @@
 """Passes ImageViewer input events to an active editing tool."""
-from typing import Optional, Dict, Callable, List, cast, Tuple
 import logging
+from typing import Optional, Dict, Callable, List, cast, Tuple
 
-from PySide6.QtCore import Qt, QObject, QEvent, Signal
+from PySide6.QtCore import Qt, QObject, QEvent, Signal, QTimer
 from PySide6.QtGui import QKeyEvent, QKeySequence
 from PySide6.QtWidgets import QApplication, QWidget, QTextEdit, QLineEdit, QPlainTextEdit, QAbstractSpinBox, QComboBox
 
@@ -11,6 +11,8 @@ from src.config.key_config import KeyConfig
 from src.util.key_code_utils import get_modifiers, get_modifier_string, get_key_string, get_key_with_modifiers
 
 logger = logging.getLogger(__name__)
+
+MODIFIER_TIMER_INTERVAL_MS = 100
 
 
 class HotkeyFilter(QObject):
@@ -56,6 +58,10 @@ class HotkeyFilter(QObject):
         self._default_focus: Optional[QWidget] = None
         self._last_modifier_state = QApplication.keyboardModifiers()
         self._config_bindings: Dict[str, Qt.Key | int] = {}
+        self._hotkey_timer = QTimer(self)
+        self._hotkey_timer.setInterval(MODIFIER_TIMER_INTERVAL_MS)
+        self._hotkey_timer.timeout.connect(self._check_modifiers)
+        self._hotkey_timer.start()
 
     def default_focus(self) -> Optional[QWidget]:
         """Returns the widget set as the default input focus, if any."""
@@ -170,7 +176,7 @@ class HotkeyFilter(QObject):
 
     def eventFilter(self, source: Optional[QObject], event: Optional[QEvent]) -> bool:
         """Check for registered keys and trigger associated actions."""
-        self._check_modifiers()
+        # self._check_modifiers(QApplication.keyboardModifiers())
         if event is None or (source is not None and not isinstance(source, QObject)):
             return False
         if event.type() != QEvent.Type.KeyPress:
@@ -204,7 +210,7 @@ class HotkeyFilter(QObject):
 
     def _check_modifiers(self):
         """Check for changes in held key modifiers, notifying any registered listeners."""
-        modifiers = QApplication.keyboardModifiers()
+        modifiers = QApplication.queryKeyboardModifiers()
         if modifiers == self._last_modifier_state:
             return
         self._last_modifier_state = modifiers

@@ -107,8 +107,22 @@ class LayerTransformTool(BaseTool):
         self._rotate_box = _init_control(0.0, FLOAT_MIN, FLOAT_MAX, self.set_rotation)
         self._aspect_ratio_checkbox = QCheckBox()
         self._aspect_ratio_checkbox.setText(ASPECT_RATIO_CHECK_LABEL)
-        self._down_keys: Dict[QWidget, QKeySequence] = {}
-        self._up_keys: Dict[QWidget, QKeySequence] = {}
+        self._modifier_set_aspect_ratio = False
+
+        # Holding the aspect ratio modifier should enable fixed aspect ratio and releasing it should reset it, but
+        # make sure the modifier is ignored if it's explicitly checked.
+        def _set_checkbox_when_modifier_held(modifiers: Qt.KeyboardModifier) -> None:
+            if self.is_active and not self._aspect_ratio_checkbox.isChecked() and \
+                    KeyConfig.modifier_held(KeyConfig.FIXED_ASPECT_MODIFIER, held_modifiers=modifiers):
+                self._modifier_set_aspect_ratio = True
+                self._aspect_ratio_checkbox.setChecked(True)
+            elif self.is_active and self._aspect_ratio_checkbox.isChecked() and self._modifier_set_aspect_ratio \
+                    and not KeyConfig.modifier_held(KeyConfig.FIXED_ASPECT_MODIFIER, held_modifiers=modifiers):
+                self._aspect_ratio_checkbox.setChecked(False)
+        HotkeyFilter.instance().modifiers_changed.connect(_set_checkbox_when_modifier_held)
+
+        self._down_keys: Dict[QWidget, Tuple[QKeySequence, str]] = {}
+        self._up_keys: Dict[QWidget, Tuple[QKeySequence, str]] = {}
 
         self._reset_button = QPushButton()
         self._reset_button.setText(RESET_BUTTON_TEXT)
@@ -120,6 +134,8 @@ class LayerTransformTool(BaseTool):
 
         def _restore_aspect_ratio() -> None:
             self._transform_outline.preserve_aspect_ratio = self._aspect_ratio_checkbox.isChecked()
+            if not self._transform_outline.preserve_aspect_ratio:
+                self._modifier_set_aspect_ratio = False
 
         self._aspect_ratio_checkbox.clicked.connect(_restore_aspect_ratio)
 
@@ -131,8 +147,8 @@ class LayerTransformTool(BaseTool):
                                                     (self._height_box, KeyConfig.PAN_UP, KeyConfig.PAN_DOWN),
                                                     (self._rotate_box, KeyConfig.ROTATE_CW_KEY,
                                                      KeyConfig.ROTATE_CCW_KEY)):
-            self._up_keys[control] = config.get_keycodes(up_key_code)
-            self._down_keys[control] = config.get_keycodes(down_key_code)
+            self._up_keys[control] = (config.get_keycodes(up_key_code), up_key_code)
+            self._down_keys[control] = (config.get_keycodes(down_key_code), down_key_code)
 
             for key, sign in ((up_key_code, 1), (down_key_code, -1)):
                 def _binding(mult, n=sign, box=control) -> bool:
@@ -191,17 +207,23 @@ class LayerTransformTool(BaseTool):
             text_size = find_text_size(label)
             label_width = max(text_size.width(), label_width)
             label_height = max(text_size.height(), label_height)
+        aspect_ratio_hint = KeyHintLabel(KeyConfig().get_keycodes(KeyConfig.FIXED_ASPECT_MODIFIER),
+                                         KeyConfig.FIXED_ANGLE_MODIFIER)
 
         def _get_down_hint(control: QWidget) -> Optional[KeyHintLabel]:
+            if control == self._aspect_ratio_checkbox:
+                return aspect_ratio_hint
             if control in self._down_keys:
-                down_hint_widget = KeyHintLabel(self._down_keys[control])
+                down_keycode, down_config_key = self._down_keys[control]
+                down_hint_widget = KeyHintLabel(down_keycode, down_config_key)
                 down_hint_widget.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
                 return down_hint_widget
             return None
 
         def _get_up_hint(control: QWidget) -> Optional[KeyHintLabel]:
             if control in self._up_keys:
-                up_hint_widget = KeyHintLabel(self._up_keys[control])
+                up_keycode, up_config_key = self._up_keys[control]
+                up_hint_widget = KeyHintLabel(up_keycode, up_config_key)
                 up_hint_widget.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
                 return up_hint_widget
             return None

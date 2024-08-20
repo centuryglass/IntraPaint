@@ -2,7 +2,7 @@
 import math
 from typing import Optional, Dict, Tuple, Any, Generator, Iterable
 
-from PySide6.QtCore import Qt, QRectF, QPointF, Signal
+from PySide6.QtCore import Qt, QRectF, QPointF, Signal, QSizeF
 from PySide6.QtGui import QPainter, QPen, QTransform, QPainterPath, QImage
 from PySide6.QtWidgets import QWidget, QGraphicsItem, QStyleOptionGraphicsItem, \
     QGraphicsSceneMouseEvent, QGraphicsTransform, \
@@ -13,7 +13,7 @@ from src.util.geometry_utils import extract_transform_parameters, combine_transf
 from src.util.graphics_scene_utils import get_view_bounds_of_scene_item_rect, map_scene_item_point_to_view_point, \
     get_scene_item_bounds_of_view_rect, get_view, get_scene_bounds_of_scene_item_rect
 from src.util.image_utils import create_transparent_image
-from src.util.math_utils import clamp
+from src.util.math_utils import clamp, avoiding_zero
 from src.util.shared_constants import MIN_NONZERO
 
 MIN_SCENE_DIM = 5
@@ -50,7 +50,12 @@ class TransformOutline(QGraphicsObject):
     scale_changed = Signal(float, float)
     angle_changed = Signal(float)
 
-    def __init__(self, initial_bounds: QRectF, allow_rotate=True, include_origin_handle=True) -> None:
+    # Signal specifically meant for using TransformOutline for rectangle positioning within a transformed layer:
+    # Emitted rectangle factors in transform scale and offset, but ignores rotation.
+    transformed_rect_changed = Signal(QRectF)
+
+    def __init__(self, initial_bounds: QRectF, allow_rotate=True, include_origin_handle=True,
+                 fixed_scale=False) -> None:
         super().__init__()
 
         self.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsSelectable, True)
@@ -65,7 +70,9 @@ class TransformOutline(QGraphicsObject):
         self._y_scale = 0.0
         self._degrees = 0.0
         self._pen = QPen(LINE_COLOR, LINE_WIDTH)
+        self._pen.setCosmetic(True)
         self._preserve_aspect_ratio = False
+        self._fixed_scale = fixed_scale
         self._mode = TRANSFORM_MODE_SCALE
 
         for handle_id in (TL_HANDLE_ID, TR_HANDLE_ID, BL_HANDLE_ID, BR_HANDLE_ID, ORIGIN_HANDLE_ID):
@@ -107,12 +114,16 @@ class TransformOutline(QGraphicsObject):
             self.scale_changed.emit(sx, sy)
         if angle_changed:
             self.angle_changed.emit(angle)
+        if offset_changed or scale_changed:
+            transformed_rect = QRectF(self.mapToScene(self._rect.topLeft()),
+                                      QSizeF(abs(sx) * self._rect.width(), abs(sy) * self._rect.height()))
+            self.transformed_rect_changed.emit(transformed_rect)
 
     def setZValue(self, z: float) -> None:
         """Ensure handle z-values stay in sync with the outline."""
         super().setZValue(z)
         for handle in self._handles.values():
-            handle.setZValue(z + 2)
+            handle.setZValue(z - 2)
 
     @property
     def preserve_aspect_ratio(self) -> bool:
@@ -343,6 +354,7 @@ class TransformOutline(QGraphicsObject):
     def move_transformation_handle(self, handle_id: str, pos: QPointF) -> None:
         """Perform required changes whenever one of the handles moves."""
         assert handle_id in self._handles, str(self._handles)
+        pos = self.mapFromScene(pos)
         if handle_id == ORIGIN_HANDLE_ID:
             self.transformation_origin = pos
         elif handle_id in (TL_HANDLE_ID, TR_HANDLE_ID, BL_HANDLE_ID, BR_HANDLE_ID):
@@ -350,7 +362,7 @@ class TransformOutline(QGraphicsObject):
         else:
             raise RuntimeError(f'Invalid handle id {handle_id}')
 
-    def move_corner(self, corner_id: str, corner_pos) -> None:
+    def move_corner(self, corner_id: str, corner_pos: QPointF, _=None) -> None:
         """Move one of the corners, leaving the position of the opposite corner unchanged. If Ctrl is held, also
            preserve aspect ratio."""
         initial_rect = self.rect()
@@ -367,6 +379,7 @@ class TransformOutline(QGraphicsObject):
             assert corner_id in adjustment_params, f'Invalid corner ID {corner_id}'
             move_corner, get_fixed_corner = adjustment_params[corner_id]
             move_corner(corner_pos)
+
             if abs(final_rect.width()) < MIN_NONZERO:
                 final_rect.setWidth(MIN_NONZERO)
             if abs(final_rect.height()) < MIN_NONZERO:
@@ -374,6 +387,20 @@ class TransformOutline(QGraphicsObject):
             x_scale = final_rect.width() / initial_rect.width()
             y_scale = final_rect.height() / initial_rect.height()
             current_x_scale, current_y_scale = self.transform_scale
+
+            if self._fixed_scale:
+                offset = final_rect.topLeft() - initial_rect.topLeft()
+                self.setRect(final_rect.normalized())
+                if offset != QPointF():
+                    transform = self.transform() * QTransform.fromTranslate(offset.x(), offset.y())
+                    self.setTransform(transform)
+                else:
+                    transformed_rect = QRectF(self.mapToScene(self._rect.topLeft()),
+                                              QSizeF(abs(current_x_scale) * self._rect.width(),
+                                                     abs(current_y_scale) * self._rect.height()))
+                    self.transformed_rect_changed.emit(transformed_rect)
+                return
+
             final_x_scale = x_scale * current_x_scale
             final_y_scale = y_scale * current_y_scale
             if self._preserve_aspect_ratio:
@@ -384,12 +411,12 @@ class TransformOutline(QGraphicsObject):
                         y_scale = math.copysign(y_scale * final_x_scale / final_y_scale, y_scale)
             origin = get_fixed_corner()
 
-            def _avoid_minimums(scale_change, current_scale, final_scale):
+            def _scale_change_avoiding_minimums(scale_change: float, current_scale: float, final_scale: float) -> float:
                 if abs(final_scale) >= MIN_NONZERO:
                     return scale_change
                 return MIN_NONZERO / current_scale
-            x_scale = _avoid_minimums(x_scale, current_x_scale, final_x_scale)
-            y_scale = _avoid_minimums(y_scale, current_y_scale, final_y_scale)
+            x_scale = _scale_change_avoiding_minimums(x_scale, current_x_scale, final_x_scale)
+            y_scale = _scale_change_avoiding_minimums(y_scale, current_y_scale, final_y_scale)
             if x_scale != 1.0 or y_scale != 1.0:
                 scale = self.transform()
                 scale.translate(origin.x(), origin.y())
@@ -448,7 +475,8 @@ class TransformOutline(QGraphicsObject):
     def setRect(self, rect: QRectF) -> None:
         """Set the transformed area's original bounds."""
         self.prepareGeometryChange()
-        self.setTransform(QTransform())
+        rect.setWidth(avoiding_zero(rect.width()))
+        rect.setHeight(avoiding_zero(rect.height()))
         self._rect = QRectF(rect)
         self._origin = QPointF(rect.x() + rect.width() * self._relative_origin.x(),
                                rect.y() + rect.height() * self._relative_origin.y())
@@ -468,7 +496,8 @@ class TransformOutline(QGraphicsObject):
             self._handles[handle_id].move_rect_center(point)
         origin_x = bounds.x() + bounds.width() * self._relative_origin.x()
         origin_y = bounds.y() + bounds.height() * self._relative_origin.y()
-        self._handles[ORIGIN_HANDLE_ID].move_rect_center(QPointF(origin_x, origin_y))
+        if ORIGIN_HANDLE_ID in self._handles:
+            self._handles[ORIGIN_HANDLE_ID].move_rect_center(QPointF(origin_x, origin_y))
 
 
 class _Handle(TransformHandle):

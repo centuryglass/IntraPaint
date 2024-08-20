@@ -1,13 +1,13 @@
 """An object that creates a temporary graphics item used to visualize clicking and dragging to select a region."""
 from typing import Optional
 
-from PySide6.QtCore import QRect, QPoint, QSize, QPointF, QLineF
+from PySide6.QtCore import QRect, QPoint, QSize, QPointF
 from PySide6.QtCore import Qt, QRectF
 from PySide6.QtGui import QPen, QBrush, QColor, QTransform, QPolygonF, QPainterPath
 from PySide6.QtWidgets import QGraphicsScene, QGraphicsRectItem, QGraphicsEllipseItem, QApplication
 
 from src.config.key_config import KeyConfig
-from src.util.shared_constants import FLOAT_MAX
+from src.util.geometry_utils import closest_point_keeping_aspect_ratio
 
 DEFAULT_SELECTION_LINE_COLOR = Qt.GlobalColor.black
 DEFAULT_SELECTION_LINE_WIDTH = 2.0
@@ -108,22 +108,8 @@ class ClickAndDragSelection:
         assert self._selection_shape is not None
         rect = self._selection_shape.rect()
         if KeyConfig.modifier_held(KeyConfig.FIXED_ASPECT_MODIFIER):
-            x_size = drag_point.x() - rect.x()
-            y_size = drag_point.y() - rect.y()
-            point_options = [
-                QPointF(drag_point.x(), rect.y() + x_size),
-                QPointF(drag_point.x(), rect.y() - x_size),
-                QPointF(rect.x() + y_size, drag_point.y()),
-                QPointF(rect.x() - y_size, drag_point.y())
-            ]
-            min_distance = FLOAT_MAX
-            bottom_right = None
-            for point in point_options:
-                distance_from_mouse = QLineF(QPointF(drag_point), point).length()
-                if distance_from_mouse < min_distance:
-                    min_distance = distance_from_mouse
-                    bottom_right = point
-            assert bottom_right is not None
+            bottom_right = closest_point_keeping_aspect_ratio(QPointF(drag_point), rect.topLeft(),
+                                                              1.0).toPoint()
         else:
             bottom_right = drag_point
         rect.setCoords(rect.x(), rect.y(), bottom_right.x(), bottom_right.y())
