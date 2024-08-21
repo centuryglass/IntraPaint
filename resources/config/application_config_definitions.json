@@ -590,5 +590,21 @@
         "type": "bool",
         "default": true,
         "saved": true
+    },
+    "always_init_metadata_on_save": {
+        "label": "Always save metadata:",
+        "category": "Alerts",
+        "description": "Always save metadata when no previous metadata exists(confirm), never do that(cancel), or ask every time(always_ask).",
+        "type": "string",
+        "default": "always_ask",
+        "saved": true
+    },
+    "always_update_metadata_on_save": {
+        "label": "Always update metadata:",
+        "category": "Alerts",
+        "description": "Always update metadata when images are saved(confirm), never do that(cancel), or ask every time(always_ask).",
+        "type": "string",
+        "default": "always_ask",
+        "saved": true
     }
 }

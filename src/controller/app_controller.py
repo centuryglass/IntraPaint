@@ -118,6 +118,13 @@ SETTINGS_ERROR_TITLE = _tr('Failed to open settings')
 LOAD_LAYER_ERROR_TITLE = _tr('Opening layers failed')
 LOAD_LAYER_ERROR_MESSAGE = _tr('Could not open the following images: ')
 
+TITLE_CONFIRM_METADATA_INIT = _tr('Save image generation metadata?')
+MESSAGE_CONFIRM_METADATA_INIT = _tr('No image metadata is cached, would you like to save image generation parameters to'
+                                    ' this image?')
+TITLE_CONFIRM_METADATA_UPDATE = _tr('Update image generation metadata?')
+MESSAGE_CONFIRM_METADATA_UPDATE = _tr('Image generation parameters have changed, would you like this image to be saved'
+                                      ' with the most recent values?')
+
 # Warnings when saving images cause data loss:
 LAYERS_NOT_SAVED_TITLE = _tr('Image saved without layer data')
 LAYERS_NOT_SAVED_MESSAGE = _tr('To save layer data, images must be saved in .ora format.')
@@ -484,6 +491,7 @@ class AppController(MenuBuilder):
                                                                                    NEW_IMAGE_CONFIRMATION_TITLE,
                                                                                    NEW_IMAGE_CONFIRMATION_MESSAGE)):
             new_image = create_transparent_image(image_size)
+            Cache().set(Cache.LAST_FILE_PATH, '')
             self._image_stack.load_image(new_image)
             self._metadata = None
             self._exif = None
@@ -512,13 +520,33 @@ class AppController(MenuBuilder):
                     return
                 file_path = selected_path
             assert isinstance(file_path, str)
+            delimiter_index = file_path.rfind('.')
+            if delimiter_index < 0:
+                raise ValueError(f'Invalid path {file_path} missing extension')
+            file_format = file_path[delimiter_index + 1:].upper()
+
+            # Check if metadata is out of date, ask if it should update:
+            if file_format in IMAGE_FORMATS_SUPPORTING_METADATA and not isinstance(self._generator, NullGenerator):
+                if not self._metadata_will_be_saved():
+                    update_metadata = request_confirmation(self._window, TITLE_CONFIRM_METADATA_INIT,
+                                                           MESSAGE_CONFIRM_METADATA_INIT,
+                                                           AppConfig.ALWAYS_INIT_METADATA_ON_SAVE,
+                                                           QMessageBox.StandardButton.Yes,
+                                                           QMessageBox.StandardButton.No)
+                elif not self._metadata_is_latest():
+                    update_metadata = request_confirmation(self._window, TITLE_CONFIRM_METADATA_UPDATE,
+                                                           MESSAGE_CONFIRM_METADATA_UPDATE,
+                                                           AppConfig.ALWAYS_UPDATE_METADATA_ON_SAVE,
+                                                           QMessageBox.StandardButton.Yes,
+                                                           QMessageBox.StandardButton.No)
+                else:
+                    update_metadata = False
+                if update_metadata:
+                    self.update_metadata(False)
+
             if file_path.lower().endswith('.ora'):
                 save_ora_image(self._image_stack, file_path, json.dumps(self._metadata))
             else:
-                delimiter_index = file_path.rfind('.')
-                if delimiter_index < 0:
-                    raise ValueError(f'Invalid path {file_path} missing extension')
-                file_format = file_path[delimiter_index + 1:].upper()
                 image = self._image_stack.qimage()
 
                 # Check for data loss conditions that should be mentioned:
@@ -541,8 +569,8 @@ class AppController(MenuBuilder):
                                           and image.size() != IMAGE_FORMATS_WITH_FIXED_SIZE[file_format])
                 warn_save_removes_color = (config.get(AppConfig.WARN_BEFORE_COLOR_LOSS)
                                            and file_format in GREYSCALE_IMAGE_FORMATS)
-
                 if file_format in IMAGE_FORMATS_SUPPORTING_METADATA:
+
                     try:
                         save_image_with_metadata(image, file_path, self._metadata, self._exif)
                     except ValueError:
@@ -658,8 +686,8 @@ class AppController(MenuBuilder):
                 if param_str is not None and not isinstance(param_str, str):
                     # noinspection PyTypeChecker
                     param_str = str(param_str, encoding='utf-8')
-                match = re.match(r'^(.*\n?.*)\nSteps: ?(\d+), Sampler: ?(.*), CFG scale: ?(.*), Seed: ?(.+), Size.*',
-                                 param_str)
+                match = re.match(r'^(.*\n?.*)\nSteps: ?(\d+), Sampler: ?(.*), CFG scale: ?(.*), Seed: ?(.+),'
+                                 r' Size: ?(.+)x(.+)',  param_str)
                 if match:
                     prompt = match.group(1)
                     negative = ''
@@ -667,6 +695,8 @@ class AppController(MenuBuilder):
                     sampler = match.group(3)
                     cfg_scale = float(match.group(4))
                     seed = int(match.group(5))
+                    width = int(match.group(6))
+                    height = int(match.group(7))
                     divider_match = re.match('^(.*)\nNegative prompt: ?(.*)$', prompt)
                     if divider_match:
                         prompt = divider_match.group(1)
@@ -682,6 +712,7 @@ class AppController(MenuBuilder):
                             logger.error(f'sampler "{sampler}" used to generate this image is not supported.')
                         config.set(AppConfig.GUIDANCE_SCALE, cfg_scale)
                         config.set(AppConfig.SEED, seed)
+                        config.set(AppConfig.GENERATION_SIZE, QSize(width, height))
                     except (TypeError, RuntimeError) as err:
                         logger.error(f'Failed to load image gen data from metadata: {err}')
                 else:
@@ -812,6 +843,27 @@ class AppController(MenuBuilder):
                     return
             self._scale(new_size)
 
+    def _metadata_will_be_saved(self) -> bool:
+        return self._metadata is not None and METADATA_PARAMETER_KEY in self._metadata
+
+    @staticmethod
+    def _updated_metadata_params() -> str:
+        config = AppConfig()
+        prompt = config.get(AppConfig.PROMPT)
+        negative = config.get(AppConfig.NEGATIVE_PROMPT)
+        steps = config.get(AppConfig.SAMPLING_STEPS)
+        sampler = config.get(AppConfig.SAMPLING_METHOD)
+        cfg_scale = config.get(AppConfig.GUIDANCE_SCALE)
+        seed = config.get(AppConfig.SEED)
+        size = config.get(AppConfig.GENERATION_SIZE)
+        return f'{prompt}\nNegative prompt: {negative}\nSteps: {steps}, Sampler: {sampler}, CFG scale:' + \
+               f'{cfg_scale}, Seed: {seed}, Size: {size.width()}x{size.height()}'
+
+    def _metadata_is_latest(self) -> bool:
+        if not self._metadata_will_be_saved():
+            return False
+        return self._updated_metadata_params() == self._metadata[METADATA_PARAMETER_KEY]
+
     @menu_action(MENU_IMAGE, 'update_metadata_shortcut', 202,
                  valid_app_states=[APP_STATE_EDITING, APP_STATE_SELECTION])
     def update_metadata(self, show_messagebox: bool = True) -> None:
@@ -824,15 +876,7 @@ class AppController(MenuBuilder):
         show_messagebox: bool
             If true, show a messagebox after the update to let the user know what happened.
         """
-        config = AppConfig()
-        prompt = config.get(AppConfig.PROMPT)
-        negative = config.get(AppConfig.NEGATIVE_PROMPT)
-        steps = config.get(AppConfig.SAMPLING_STEPS)
-        sampler = config.get(AppConfig.SAMPLING_METHOD)
-        cfg_scale = config.get(AppConfig.GUIDANCE_SCALE)
-        seed = config.get(AppConfig.SEED)
-        params = f'{prompt}\nNegative prompt: {negative}\nSteps: {steps}, Sampler: {sampler}, CFG scale:' + \
-                 f'{cfg_scale}, Seed: {seed}, Size: 512x512'
+        params = self._updated_metadata_params()
         if self._metadata is None:
             self._metadata = {}
         self._metadata[METADATA_PARAMETER_KEY] = params

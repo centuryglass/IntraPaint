@@ -14,6 +14,7 @@
 - support for missing OpenRaster composition modes
 - Add selection layer back to layer panel
 - Add "merge group" and "merge all" options
+- Add "convert to image" option to text layers
 
 # Menus
 - open mypaint brush panel
@@ -21,9 +22,6 @@
 - Filters: just throw in whatever fun stuff PIL/CV2 have to offer
 - Enable/disable menus based on arbitrary context, not just app state
 
-# Config
-- Hide startup warnings option
-- Automatic metadata update option
 
 # Tools
 ## Image gen area tool
@@ -55,8 +53,7 @@ Alternate brush tools that filter for certain brush types
 - Blur tool
 
 # Text tool
-- Font selection
-- Size setting
+- fix mouse placement arrows
 
 # Shape tool
 - Circle, polygons with n sides

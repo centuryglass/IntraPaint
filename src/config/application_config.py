@@ -67,6 +67,8 @@ class AppConfig(Config, metaclass=Singleton):
     # DYNAMIC PROPERTIES:
     # Generate with `python /home/anthony/Workspace/ML/IntraPaint/scripts/dynamic_import_typing.py src/config/application_config.py`
 
+    ALWAYS_INIT_METADATA_ON_SAVE: str
+    ALWAYS_UPDATE_METADATA_ON_SAVE: str
     ANIMATE_OUTLINES: str
     BATCH_COUNT: str
     BATCH_SIZE: str
