@@ -147,12 +147,10 @@ class ImageStack(QObject):
             return
 
         def _set_active(layer=new_active_layer):
-            self.active_layer_id = layer.id
-            self.active_layer_changed.emit(layer)
+            self._set_active_layer_internal(layer)
 
         def _undo_set_active(layer=last_active):
-            self.active_layer_id = layer.id
-            self.active_layer_changed.emit(layer)
+            self._set_active_layer_internal(layer)
 
         UndoStack().commit_action(_set_active, _undo_set_active, 'ImageStack.active_layer')
 
@@ -596,11 +594,36 @@ class ImageStack(QObject):
         def _undo_remove(parent=layer_parent, restored=layer, idx=layer_index, active_id=last_active_id):
             self._insert_layer_internal(restored, parent, idx)
             if active_id != self.active_layer_id:
-                self.active_layer_id = active_id
-                active = self._layer_stack.get_layer_by_id(active_id)
-                self.active_layer_changed.emit(active)
+                self._set_active_layer_internal(active_id)
 
         UndoStack().commit_action(_remove, _undo_remove, 'ImageStack.remove_layer')
+
+    def replace_layer(self, removed_layer: Layer, replacement_layer: Layer) -> None:
+        """Removes a layer from the layer stack, replacing it with another that's not in the layer stack."""
+
+        def _replace(to_remove: Layer, to_insert: Layer) -> None:
+            assert self._layer_stack.contains_recursive(to_remove), (f'removed layer {to_remove.name} was not in the'
+                                                                     f' layer stack.')
+            assert to_insert.layer_parent is None and not self._layer_stack.contains_recursive(to_insert)
+            layer_parent = to_remove.layer_parent
+            assert isinstance(layer_parent, LayerStack)
+            layer_index = layer_parent.get_layer_index(to_remove)
+            assert layer_index is not None
+            self._insert_layer_internal(to_insert, layer_parent, layer_index)
+            if self.active_layer == to_remove:
+                self._set_active_layer_internal(to_insert)
+            self._remove_layer_internal(to_remove)
+
+        UndoStack().commit_action(lambda old=removed_layer, new=replacement_layer: _replace(old, new),
+                                  lambda old=replacement_layer, new=removed_layer: _replace(old, new),
+                                  "ImageStack.replace_layer")
+
+    def replace_text_layer_with_image(self, text_layer: TextLayer) -> ImageLayer:
+        """Convert a text layer into an image layer, replacing it in the layer stack and returning the new layer.."""
+        assert self._layer_stack.contains_recursive(text_layer)
+        image_layer = text_layer.copy_as_image_layer()
+        self.replace_layer(text_layer, image_layer)
+        return image_layer
 
     def offset_active_selection(self, offset: int) -> None:
         """Picks a new active layer relative to the index of the previous active layer."""
@@ -648,8 +671,7 @@ class ImageStack(QObject):
                 self._remove_layer_internal(moving)
                 self._insert_layer_internal(moving, parent, idx)
                 if is_active:
-                    self.active_layer_id = moving.id
-                    self.active_layer_changed.emit(moving)
+                    self._set_active_layer_internal(moving)
 
         @self._with_batch_content_update
         def _move_back(moving=layer, parent=layer_parent, idx=layer_index):
@@ -661,8 +683,7 @@ class ImageStack(QObject):
                 self._remove_layer_internal(moving)
                 self._insert_layer_internal(moving, parent, idx)
                 if is_active:
-                    self.active_layer_id = moving.id
-                    self.active_layer_changed.emit(moving)
+                    self._set_active_layer_internal(moving)
 
         UndoStack().commit_action(_move, _move_back, 'ImageStack.move_layer')
 
@@ -739,9 +760,9 @@ class ImageStack(QObject):
                 if not TextLayer.confirm_or_cancel_render_to_image(text_layer_names, ACTION_NAME_MERGE_LAYERS):
                     return
                 if isinstance(base_layer, TextLayer):
-                    base_layer = base_layer.replace_with_image_layer()
+                    base_layer = self.replace_text_layer_with_image(base_layer)
                 if isinstance(top_layer, TextLayer):
-                    top_layer = top_layer.replace_with_image_layer()
+                    top_layer = self.replace_text_layer_with_image(top_layer)
             assert isinstance(base_layer, ImageLayer)
             assert isinstance(top_layer, ImageLayer)
 
@@ -777,16 +798,14 @@ class ImageStack(QObject):
                 if removed.visible != base.visible:
                     self._emit_content_changed()
                 if update_active:
-                    self.active_layer_id = base.id
-                    self.active_layer_changed.emit(base)
+                    self._set_active_layer_internal(base)
 
             def _undo_merge(parent=layer_parent, restored=top_layer, base=base_layer, state=base_layer_state,
                             idx=layer_index, update_active=is_active_layer) -> None:
                 base.restore_state(state)
                 self._insert_layer_internal(restored, parent, idx)
                 if update_active:
-                    self.active_layer_id = restored.id
-                    self.active_layer_changed.emit(restored)
+                    self._set_active_layer_internal(restored)
                 if restored.visible != base.visible:
                     self._emit_content_changed()
 
@@ -810,7 +829,7 @@ class ImageStack(QObject):
                 if self.bounds.contains(layer_bounds):
                     return  # No need to alter text layers that are already fully in the image bounds.
                 if TextLayer.confirm_or_cancel_render_to_image([layer.name], ACTION_NAME_LAYER_TO_IMAGE_SIZE):
-                    layer = layer.replace_with_image_layer()
+                    layer = self.replace_text_layer_with_image(layer)
             if not isinstance(layer, ImageLayer):
                 assert isinstance(layer, LayerStack)
                 layers = layer.recursive_child_layers
@@ -933,7 +952,7 @@ class ImageStack(QObject):
                 return  # cutting selection changes nothing, no need to render to image.
             if TextLayer.confirm_or_cancel_render_to_image([layer.name], ACTION_NAME_CLEAR_SELECTED):
                 with UndoStack().combining_actions('ImageStack.clear_selected'):
-                    layer = layer.replace_with_image_layer()
+                    layer = self.replace_text_layer_with_image(layer)
                     layer.cut_masked(transformed_mask)
             else:
                 self._copy_buffer = copy_buffer_backup
@@ -1108,8 +1127,7 @@ class ImageStack(QObject):
             self.size = size
             self._insert_layer_internal(new_layer, self._layer_stack, 0)
             self._set_generation_area_internal(gen_rect)
-            self.active_layer_id = loaded.id
-            self.active_layer_changed.emit(self.active_layer)
+            self._set_active_layer_internal(loaded)
 
         # noinspection PyDefaultArgument
         @self._with_batch_content_update
@@ -1125,8 +1143,7 @@ class ImageStack(QObject):
             self._layer_stack.restore_state(state)
             self.selection_layer.restore_state(selection_state)
             self._set_generation_area_internal(gen_rect)
-            self.active_layer_id = active_id
-            self.active_layer_changed.emit(self.active_layer)
+            self._set_active_layer_internal(active_id)
 
         UndoStack().commit_action(_load, _undo_load, 'ImageStack.set_image')
 
@@ -1271,9 +1288,7 @@ class ImageStack(QObject):
         else:
             next_active_id = self.active_layer_id
         if next_active_id != self.active_layer_id:
-            self.active_layer_id = next_active_id
-            active = self._layer_stack.get_layer_by_id(next_active_id)
-            self.active_layer_changed.emit(active)
+            self._set_active_layer_internal(next_active_id)
         layer_parent.remove_layer(layer)
         self._update_z_values()
         self.layer_removed.emit(layer)
@@ -1287,6 +1302,23 @@ class ImageStack(QObject):
         if layer.visible and not layer.empty:
             self._image.invalidate()
             self._emit_content_changed()
+
+    def _set_active_layer_internal(self, new_active_layer: Layer | int) -> None:
+        if isinstance(new_active_layer, Layer):
+            layer = new_active_layer
+            layer_id = new_active_layer.id
+        else:
+            assert isinstance(new_active_layer, int)
+            layer_id = new_active_layer
+            if layer_id == self._layer_stack.id:
+                layer = self._layer_stack
+            else:
+                layer = self._layer_stack.get_layer_by_id(layer_id)
+                assert layer is not None
+        if layer == self.active_layer:
+            return
+        self._active_layer_id = layer_id
+        self.active_layer_changed.emit(layer)
 
     def _get_closest_valid_generation_area(self, initial_area: QRect) -> QRect:
         adjusted_area = QRect(initial_area)

@@ -23,12 +23,12 @@ def _tr(*args):
 
 
 CONFIRM_SINGLE_CONVERT_TO_IMAGE_TITLE = _tr('Convert text layer to image?')
-CONFIRM_SINGLE_CONVERT_TO_IMAGE_MESSAGE = _tr('Attempted action: {action_name}. To complete this action,'
+CONFIRM_SINGLE_CONVERT_TO_IMAGE_MESSAGE = _tr('Attempted action: <b>{action_name}</b>. To complete this action,'
                                               ' layer "{layer_name}" must be converted to an image layer, and you will'
                                               ' no longer be able to edit it with the text tool. Continue?')
 
 CONFIRM_MULTI_CONVERT_TO_IMAGE_TITLE = _tr('Convert text layers to image?')
-CONFIRM_MULTI_CONVERT_TO_IMAGE_MESSAGE = _tr('Attempted action: {action_name}. To complete this action,'
+CONFIRM_MULTI_CONVERT_TO_IMAGE_MESSAGE = _tr('Attempted action: <b>{action_name}</b>. To complete this action,'
                                               '{num_text_layers} text layers must be converted to image'
                                              ' layers, and you will no longer be able to edit them with the text tool.'
                                              ' Continue?')
@@ -130,7 +130,7 @@ class TextLayer(TransformLayer):
 
     def copy_as_image_layer(self) -> ImageLayer:
         """Creates a copy of this layer, rendered as an image layer."""
-        layer = ImageLayer(self.get_qimage(), self.name + ' copy')
+        layer = ImageLayer(self.get_qimage(), self.name)
         layer.set_opacity(self.opacity)
         layer.set_visible(self.visible)
         layer.set_composition_mode(self.composition_mode)

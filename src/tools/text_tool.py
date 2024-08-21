@@ -51,7 +51,6 @@ class TextTool(BaseTool):
         self._selection_handler = ClickAndDragSelection(scene)
         self._dragging = False
         self._icon = QIcon(RESOURCES_TEXT_ICON)
-        self._image_stack.active_layer_changed.connect(self._active_layer_change_slot)
 
     def get_hotkey(self) -> QKeySequence:
         """Returns the hotkey(s) that should activate this tool."""
@@ -179,6 +178,7 @@ class TextTool(BaseTool):
             self._placement_outline.placement_changed.disconnect(self._placement_outline_changed_slot)
 
     def _connect_signals(self):
+        self._image_stack.active_layer_changed.connect(self._active_layer_change_slot)
         if self._text_layer is not None:
             self._text_layer.transform_changed.connect(self._layer_transform_change_slot)
             self._text_layer.size_changed.connect(self._layer_size_change_slot)

@@ -4,10 +4,12 @@ from typing import Callable, List, Optional, Dict, Any
 
 from PySide6.QtCore import QPoint
 from PySide6.QtGui import QImage, QPainter, QTransform
+from PySide6.QtWidgets import QApplication
 
 from src.image.layers.image_layer import ImageLayer
 from src.image.layers.image_stack import ImageStack
 from src.image.layers.layer_stack import LayerStack
+from src.image.layers.text_layer import TextLayer
 from src.image.layers.transform_layer import TransformLayer
 from src.ui.modal.image_filter_modal import ImageFilterModal
 from src.undo_stack import UndoStack
@@ -16,6 +18,18 @@ from src.util.async_task import AsyncTask
 from src.util.geometry_utils import adjusted_placement_in_bounds
 from src.util.image_utils import get_transparency_tile_pixmap, image_content_bounds
 from src.util.parameter import Parameter
+
+# The `QCoreApplication.translate` context for strings in this file
+TR_ID = 'image.filter.filter'
+
+
+def _tr(*args):
+    """Helper to make `QCoreApplication.translate` more concise."""
+    return QApplication.translate(TR_ID, *args)
+
+
+ACTION_NAME_FILTER = _tr('Apply image filter')
+
 
 MAX_PREVIEW_SIZE = 800
 MIN_PREVIEW_SIZE = 200
@@ -207,6 +221,28 @@ class ImageFilter:
                 Parameter values to use, fitting the definitions the filter provides through get_parameters.
         """
         updated_layer_images: Dict[int, QImage] = {}
+
+        changed_text_layers: List[TextLayer] = []
+        changed_parent_group: Optional[LayerStack] = None
+        if self._filter_active_layer_only:
+            active_layer = self._image_stack.active_layer
+            if isinstance(active_layer, LayerStack):
+                changed_parent_group = active_layer
+            elif isinstance(active_layer, TextLayer) and not active_layer.locked:
+                changed_text_layers.append(active_layer)
+        else:
+            changed_parent_group = self._image_stack.layer_stack
+        if changed_parent_group is not None:
+            for child_layer in changed_parent_group.recursive_child_layers:
+                if isinstance(child_layer, TextLayer) and not child_layer.locked:
+                    changed_text_layers.append(child_layer)
+
+        text_layer_names = [layer.name for layer in changed_text_layers]
+        if len(changed_text_layers) > 0 and not TextLayer.confirm_or_cancel_render_to_image(text_layer_names,
+                                                                                            ACTION_NAME_FILTER):
+            return
+        for text_layer in changed_text_layers:
+            self._image_stack.replace_text_layer_with_image(text_layer)
 
         def _filter_images() -> None:
             layer_images: Dict[int, QImage] = {}

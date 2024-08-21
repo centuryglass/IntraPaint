@@ -1,11 +1,13 @@
 """Global stack for tracking undo/redo state."""
 import logging
 from contextlib import contextmanager
+import datetime
 from threading import Lock
 from typing import Callable, Optional, Dict, Any, List, Generator
 
 from PySide6.QtCore import QObject, Signal
 
+from src.config.application_config import AppConfig
 from src.util.singleton import Singleton
 
 logger = logging.getLogger(__name__)
@@ -21,18 +23,23 @@ class _UndoAction:
         self.redo = redo_action
         self.type = action_type
         self.action_data = action_data
+        self.timestamp = datetime.datetime.now().timestamp()
 
 
 class _UndoGroup:
     def __init__(self, action_type: str) -> None:
         self.type = action_type
+        self.timestamp = datetime.datetime.now().timestamp()
         self._undo_actions: List[Callable[[], None]] = []
         self._redo_actions: List[Callable[[], None]] = []
 
-    def add_to_group(self, undo_action: Callable[[], None], redo_action: Callable[[], None]):
+    def add_to_group(self, undo_action: Callable[[], None], redo_action: Callable[[], None], action_type: str):
         """Add a new action to the set of grouped actions."""
         self._undo_actions.insert(0, undo_action)
         self._redo_actions.append(redo_action)
+        self.timestamp = datetime.datetime.now().timestamp()
+        if action_type not in self.type:
+            self.type = f'{self.type},{action_type}'
 
     def undo(self):
         """Undo all actions in the group."""
@@ -116,10 +123,22 @@ class UndoStack(metaclass=Singleton):
             self._in_progress_change = action_type
             action()
             if self._open_group is not None:
-                self._open_group.add_to_group(undo_action, action)
+                self._open_group.add_to_group(undo_action, action, action_type)
             else:
                 undo_entry = _UndoAction(undo_action, action, action_type, action_data)
-                self._add_to_stack(undo_entry, self._undo_stack)
+                prev_action = None if len(self._undo_stack) == 0 else self._undo_stack[-1]
+                if prev_action is not None and undo_entry.timestamp - prev_action.timestamp \
+                        < AppConfig().get(AppConfig.UNDO_MERGE_INTERVAL):
+                    if isinstance(prev_action, _UndoGroup):
+                        prev_action.add_to_group(undo_action, action, action_type)
+                    else:
+                        self._undo_stack.remove(prev_action)
+                        new_group = _UndoGroup(prev_action.type)
+                        new_group.add_to_group(prev_action.undo, prev_action.redo, prev_action.type)
+                        new_group.add_to_group(undo_action, action, action_type)
+                        self._add_to_stack(new_group, self._undo_stack)
+                else:
+                    self._add_to_stack(undo_entry, self._undo_stack)
             if len(self._redo_stack) > 0:
                 self._redo_stack.clear()
                 self.redo_count_changed.emit(0)
@@ -152,7 +171,7 @@ class UndoStack(metaclass=Singleton):
             raise RuntimeError(f'Concurrent undo history changes detected! Attempted: {action_type}, '
                                f'in-progress: {self._in_progress_change}')
         with self._access_lock:
-            assert self._open_group is not None and self._open_group.type == action_type
+            assert self._open_group is not None and self._open_group.type.startswith(action_type)
             if self._open_group.count() > 0:
                 self._add_to_stack(self._open_group, self._undo_stack)
             self._open_group = None
