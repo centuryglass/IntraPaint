@@ -1,5 +1,5 @@
 """Utilities for managing Qt keycodes and strings."""
-from typing import Tuple, List
+from typing import Tuple, List, Optional
 
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QKeySequence
@@ -26,14 +26,18 @@ def get_key_string(key: Qt.Key) -> str:
     return QKeySequence(key).toString()
 
 
-def get_key_with_modifiers(key_string: str) -> Tuple[Qt.Key, Qt.KeyboardModifier]:
+def get_key_with_modifiers(key_string: str) -> Tuple[Optional[Qt.Key], Qt.KeyboardModifier]:
     """Converts a key string to a key code and a set of key modifiers."""
     assert ',' not in key_string, f'Expected single key with possible modifiers, got key list {key_string}'
     modifiers = Qt.KeyboardModifier.NoModifier
     keys = key_string.split('+')
     if len(keys) > 1:
         modifiers = get_modifiers(keys[:-1])
-    key = get_key_code(keys[-1])
+    try:
+        key = get_key_code(keys[-1])
+    except ValueError as err:
+        modifiers = get_modifiers(keys)
+        key = None
     return key, modifiers
 
 
@@ -43,12 +47,12 @@ def get_modifiers(modifier_str: str | List[str]) -> Qt.KeyboardModifier:
     if not isinstance(modifier_str, list):
         modifier_str = modifier_str.split('+')
     for mod_str in modifier_str:
-        match mod_str:
-            case 'Control' | 'Ctrl':
+        match mod_str.lower():
+            case 'control' | 'ctrl':
                 modifiers = modifiers | Qt.KeyboardModifier.ControlModifier
-            case 'Shift':
+            case 'shift':
                 modifiers = modifiers | Qt.KeyboardModifier.ShiftModifier
-            case 'Alt':
+            case 'alt':
                 modifiers = modifiers | Qt.KeyboardModifier.AltModifier
             case _:
                 raise RuntimeError(f'Unexpected modifier key string {mod_str}')

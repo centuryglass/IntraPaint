@@ -207,8 +207,7 @@ class LayerTransformTool(BaseTool):
             text_size = find_text_size(label)
             label_width = max(text_size.width(), label_width)
             label_height = max(text_size.height(), label_height)
-        aspect_ratio_hint = KeyHintLabel(KeyConfig().get_keycodes(KeyConfig.FIXED_ASPECT_MODIFIER),
-                                         KeyConfig.FIXED_ANGLE_MODIFIER)
+        aspect_ratio_hint = KeyHintLabel(None, KeyConfig.FIXED_ASPECT_MODIFIER)
 
         def _get_down_hint(control: QWidget) -> Optional[KeyHintLabel]:
             if control == self._aspect_ratio_checkbox:

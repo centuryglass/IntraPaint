@@ -36,7 +36,7 @@
         "category": "Keybindings",
         "description": "When held, shape and transform tools will keep a fixed aspect ratio.",
         "type": "string",
-        "default": "Ctrl",
+        "default": "Shift",
         "saved": true
     },
     "eyedropper_override_modifier": {
