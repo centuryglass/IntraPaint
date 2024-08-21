@@ -3,14 +3,14 @@ from typing import Optional
 
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QKeySequence
-from PySide6.QtWidgets import QMessageBox, QStyle, QApplication
+from PySide6.QtWidgets import QApplication
 
-from src.util.image_utils import get_standard_qt_icon
+from src.config.application_config import AppConfig
 from src.config.config import Config
+from src.ui.modal.modal_utils import show_warning_dialog
 from src.util.key_code_utils import get_modifiers
 from src.util.shared_constants import PROJECT_DIR, DATA_DIR
 from src.util.singleton import Singleton
-
 
 # The `QCoreApplication.translate` context for strings in this file
 TR_ID = 'config.key_config'
@@ -172,13 +172,7 @@ class KeyConfig(Config, metaclass=Singleton):
             # Error messages can be fairly long, apply HTML to make them a bit more readable.
             lines = ['<li>' + err + '</li>\n' for err in errors]
             error_message = '<b>' + KEY_CONFIG_ERROR_MESSAGE + '</b><br><ul>' + ''.join(lines) + '</ul>'
-            message_box = QMessageBox()
-            message_box.setTextFormat(Qt.TextFormat.RichText)
-            message_box.setWindowTitle(KEY_CONFIG_ERROR_TITLE)
-            message_box.setText(error_message)
-            message_box.setWindowIcon(get_standard_qt_icon(QStyle.StandardPixmap.SP_MessageBoxWarning, message_box))
-            message_box.setStandardButtons(QMessageBox.StandardButton.Ok)
-            message_box.exec()
+            show_warning_dialog(None, KEY_CONFIG_ERROR_TITLE, error_message, AppConfig.WARN_ON_KEY_ERROR)
 
     # DYNAMIC PROPERTIES:
     # Generate with `python /home/anthony/Workspace/ML/IntraPaint/scripts/dynamic_import_typing.py src/config/key_config.py`

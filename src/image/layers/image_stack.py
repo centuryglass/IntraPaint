@@ -614,12 +614,16 @@ class ImageStack(QObject):
                 self._set_active_layer_internal(to_insert)
             self._remove_layer_internal(to_remove)
 
-        UndoStack().commit_action(lambda old=removed_layer, new=replacement_layer: _replace(old, new),
-                                  lambda old=replacement_layer, new=removed_layer: _replace(old, new),
-                                  "ImageStack.replace_layer")
+        def _text_to_image(old: Layer = removed_layer, new: Layer = replacement_layer) -> None:
+            _replace(old, new)
+
+        def _image_to_text(old: Layer = replacement_layer, new: Layer = removed_layer) -> None:
+            _replace(old, new)
+
+        UndoStack().commit_action(_text_to_image, _image_to_text, 'ImageStack.replace_layer')
 
     def replace_text_layer_with_image(self, text_layer: TextLayer) -> ImageLayer:
-        """Convert a text layer into an image layer, replacing it in the layer stack and returning the new layer.."""
+        """Convert a text layer into an image layer, replacing it in the layer stack and returning the new layer."""
         assert self._layer_stack.contains_recursive(text_layer)
         image_layer = text_layer.copy_as_image_layer()
         self.replace_layer(text_layer, image_layer)
@@ -1313,8 +1317,9 @@ class ImageStack(QObject):
             if layer_id == self._layer_stack.id:
                 layer = self._layer_stack
             else:
-                layer = self._layer_stack.get_layer_by_id(layer_id)
-                assert layer is not None
+                layer_from_id = self._layer_stack.get_layer_by_id(layer_id)
+                assert layer_from_id is not None
+                layer = layer_from_id
         if layer == self.active_layer:
             return
         self._active_layer_id = layer_id

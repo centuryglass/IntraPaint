@@ -35,7 +35,7 @@ def get_key_with_modifiers(key_string: str) -> Tuple[Optional[Qt.Key], Qt.Keyboa
         modifiers = get_modifiers(keys[:-1])
     try:
         key = get_key_code(keys[-1])
-    except ValueError as err:
+    except ValueError:
         modifiers = get_modifiers(keys)
         key = None
     return key, modifiers

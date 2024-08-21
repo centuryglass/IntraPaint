@@ -53,7 +53,7 @@ class TextLayer(TransformLayer):
         super().__init__(self._get_name_from_text(text_rect))
         self._text_rect = text_rect if text_rect is not None else TextRect()
         self._image_cache = CachedData(self._text_rect.render_to_image())
-        self.set_size(text_rect.size)
+        self.set_size(self._text_rect.size)
 
     @staticmethod
     def confirm_or_cancel_render_to_image(layer_names: List[str], action_name: str) -> bool:

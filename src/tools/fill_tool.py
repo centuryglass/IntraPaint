@@ -11,10 +11,9 @@ from src.image.layers.image_layer import ImageLayer
 from src.image.layers.image_stack import ImageStack
 from src.image.layers.layer import Layer
 from src.tools.base_tool import BaseTool
-from src.tools.brush_tool import COLOR_PICK_HINT
 from src.ui.widget.brush_color_button import BrushColorButton
 from src.util.image_utils import flood_fill, create_transparent_image
-from src.util.shared_constants import PROJECT_DIR
+from src.util.shared_constants import PROJECT_DIR, COLOR_PICK_HINT
 
 # The `QCoreApplication.translate` context for strings in this file
 TR_ID = 'tools.fill_tool'

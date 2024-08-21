@@ -6,7 +6,7 @@ from PySide6.QtCore import QObject, Signal, QRect, QPoint, QSize
 from PySide6.QtGui import QPainter, QImage, QPixmap
 
 from src.config.application_config import AppConfig
-from src.image.mypaint.numpy_image_utils import image_data_as_numpy_8bit, is_fully_transparent
+from src.util.image_utils import image_data_as_numpy_8bit, is_fully_transparent
 from src.undo_stack import UndoStack, _UndoAction, _UndoGroup
 from src.util.cached_data import CachedData
 

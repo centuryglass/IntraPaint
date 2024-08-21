@@ -197,6 +197,7 @@ class TextTool(BaseTool):
         if not self.is_active:
             return
         elif self._text_layer is not None:
+            assert self._placement_outline is not None
             self._disconnect_signals()
             self._text_layer.text_rect = text_data
             self._placement_outline.outline_size = text_data.size
@@ -204,6 +205,7 @@ class TextTool(BaseTool):
 
     def _control_offset_changed_slot(self, offset: QPoint) -> None:
         if self._text_layer is not None and self.is_active:
+            assert self._placement_outline is not None
             self._disconnect_signals()
             if offset != self._text_layer.offset.toPoint():
                 self._text_layer.offset = offset
@@ -230,6 +232,7 @@ class TextTool(BaseTool):
         if not self.is_active:
             return
         assert isinstance(layer, TextLayer)
+        assert self._placement_outline is not None
         self._disconnect_signals()
         text_rect = self._control_panel.text_rect
         text_rect.size = size
@@ -244,6 +247,7 @@ class TextTool(BaseTool):
         if not self.is_active:
             return
         assert isinstance(layer, TextLayer)
+        assert self._placement_outline is not None
         self._disconnect_signals()
         self._control_panel.offset = layer.offset.toPoint()
         self._placement_outline.setTransform(transform)

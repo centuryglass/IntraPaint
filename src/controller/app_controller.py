@@ -656,6 +656,7 @@ class AppController(MenuBuilder):
             if self._metadata is not None and METADATA_PARAMETER_KEY in self._metadata:
                 param_str = self._metadata[METADATA_PARAMETER_KEY]
                 if param_str is not None and not isinstance(param_str, str):
+                    # noinspection PyTypeChecker
                     param_str = str(param_str, encoding='utf-8')
                 match = re.match(r'^(.*\n?.*)\nSteps: ?(\d+), Sampler: ?(.*), CFG scale: ?(.*), Seed: ?(.+), Size.*',
                                  param_str)

@@ -9,10 +9,10 @@ from PySide6.QtCore import QRect, QSize, QPoint, Signal, QObject
 from PySide6.QtGui import QImage, QPainter, QPixmap, QTransform
 
 from src.image.layers.transform_layer import TransformLayer
-from src.image.mypaint.numpy_image_utils import image_data_as_numpy_8bit, numpy_intersect
 from src.ui.modal.modal_utils import show_error_dialog
 from src.undo_stack import UndoStack
-from src.util.image_utils import image_content_bounds, create_transparent_image
+from src.util.image_utils import image_content_bounds, create_transparent_image, image_data_as_numpy_8bit, \
+    numpy_intersect
 
 # The `QCoreApplication.translate` context for strings in this file
 TR_ID = 'image.layers.image_layer'

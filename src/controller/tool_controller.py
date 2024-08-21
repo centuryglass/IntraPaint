@@ -1,11 +1,12 @@
 """Manages available tools and handles tool input events."""
-from typing import Optional, cast, Dict, List
 import logging
+from typing import Optional, cast, Dict, List
 
 from PySide6.QtCore import Qt, QObject, QEvent, QRect, QPoint, Signal
 from PySide6.QtGui import QMouseEvent, QTabletEvent, QWheelEvent
 from PySide6.QtWidgets import QApplication
 
+from src.config.application_config import AppConfig
 from src.config.cache import Cache
 from src.config.key_config import KeyConfig
 from src.hotkey_filter import HotkeyFilter
@@ -20,7 +21,7 @@ from src.tools.selection_tool import SelectionTool
 from src.tools.shape_selection_tool import ShapeSelectionTool
 from src.tools.text_tool import TextTool
 from src.ui.image_viewer import ImageViewer
-from src.ui.modal.modal_utils import show_error_dialog
+from src.ui.modal.modal_utils import show_warning_dialog
 from src.util.optional_import import optional_import
 
 BrushTool = optional_import('src.tools.brush_tool', attr_name='BrushTool')
@@ -68,7 +69,8 @@ class ToolController(QObject):
             brush_tool = BrushTool(image_stack, image_viewer)
             self._add_tool(brush_tool)
         else:
-            show_error_dialog(None, BRUSH_LOAD_ERROR_TITLE, BRUSH_LOAD_ERROR_MESSAGE)
+            show_warning_dialog(None, BRUSH_LOAD_ERROR_TITLE, BRUSH_LOAD_ERROR_MESSAGE,
+                                AppConfig.WARN_ON_LIBMYPAINT_ERROR)
             brush_tool = None
         fill_tool = FillTool(image_stack)
         self._add_tool(fill_tool)

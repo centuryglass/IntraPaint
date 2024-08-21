@@ -7,7 +7,7 @@ from PySide6.QtGui import QImage
 
 from src.config.key_config import KeyConfig
 from src.image.filter.filter import ImageFilter
-from src.image.mypaint.numpy_image_utils import image_data_as_numpy_8bit
+from src.util.image_utils import image_data_as_numpy_8bit
 from src.util.parameter import Parameter, TYPE_FLOAT
 
 # The `QCoreApplication.translate` context for strings in this file

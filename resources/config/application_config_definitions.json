@@ -578,7 +578,15 @@
     "warn_before_color_loss": {
         "label": "Warn when saving in a format that removes color:",
         "category": "Alerts",
-        "description": "Show a warning popup when saving an image in a format that does not support color..",
+        "description": "Show a warning popup when saving an image in a format that does not support color.",
+        "type": "bool",
+        "default": true,
+        "saved": true
+    },
+    "warn_on_libmypaint_error": {
+        "label": "Warn when loading libmypaint fails:",
+        "category": "Alerts",
+        "description": "Show a warning popup when the brush tool cannot be used because of missing libraries.",
         "type": "bool",
         "default": true,
         "saved": true

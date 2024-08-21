@@ -130,3 +130,4 @@ class AppConfig(Config, metaclass=Singleton):
     WARN_BEFORE_SAVE_WITHOUT_METADATA: str
     WARN_BEFORE_WRITE_ONLY_SAVE: str
     WARN_ON_KEY_ERROR: str
+    WARN_ON_LIBMYPAINT_ERROR: str

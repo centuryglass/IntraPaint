@@ -138,16 +138,20 @@ class MyPaintBrushSettingInfo(Structure):
 
 def load_libmypaint(default_library_path: Optional[str]) -> CDLL:
     """Returns a libmypaint library instance with function types defined."""
-    library_path = find_library(LIBRARY_NAME)
-    if library_path is None:
-        library_path = default_library_path
-    if os.name == 'nt':
-        cdll.LoadLibrary(f'{PROJECT_DIR}/lib/libiconv-2.dll')
-        cdll.LoadLibrary(f'{PROJECT_DIR}/lib/libintl-8.dll')
-        cdll.LoadLibrary(f'{PROJECT_DIR}/lib/libjson-c-2.dll')
-        lib = cdll.LoadLibrary(f'{PROJECT_DIR}/lib/libmypaint-1-4-0.dll')
-    else:
-        lib = CDLL(library_path)
+    library_path: Optional[str] = ''
+    try:
+        library_path = find_library(LIBRARY_NAME)
+        if library_path is None:
+            library_path = default_library_path
+        if os.name == 'nt':
+            cdll.LoadLibrary(f'{PROJECT_DIR}/lib/libiconv-2.dll')
+            cdll.LoadLibrary(f'{PROJECT_DIR}/lib/libintl-8.dll')
+            cdll.LoadLibrary(f'{PROJECT_DIR}/lib/libjson-c-2.dll')
+            lib = cdll.LoadLibrary(f'{PROJECT_DIR}/lib/libmypaint-1-4-0.dll')
+        else:
+            lib = CDLL(library_path)
+    except OSError as err:
+        raise ImportError(f'Failed to find {LIBRARY_NAME} library: last path tried: {library_path}') from err
     # Brush functions:
     lib.mypaint_brush_new.restype = c_void_p
     lib.mypaint_brush_new.argtypes = []

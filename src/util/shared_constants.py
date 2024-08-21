@@ -6,7 +6,6 @@ from PIL import Image
 from PySide6.QtWidgets import QApplication
 from platformdirs import user_data_dir, user_log_dir
 
-
 # The `QCoreApplication.translate` context for strings in this file
 TR_ID = 'util.shared_constants'
 
@@ -93,3 +92,4 @@ PIL_SCALING_MODES = {
     _tr('Box'): Image.Resampling.BOX
 }
 MAX_WIDGET_SIZE = 16777215
+COLOR_PICK_HINT = _tr('{modifier_or_modifiers}:pick color - ')

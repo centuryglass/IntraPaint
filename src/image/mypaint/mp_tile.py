@@ -8,9 +8,8 @@ from PySide6.QtGui import QImage, QPainter, QPainterPath
 from PySide6.QtWidgets import QWidget, QGraphicsItem, QStyleOptionGraphicsItem
 
 from src.image.mypaint.libmypaint import TILE_DIM, TilePixelBuffer
-from src.image.mypaint.numpy_image_utils import pixel_data_as_numpy_16bit, image_data_as_numpy_8bit, \
-    numpy_8bit_to_16bit, numpy_16bit_to_8bit, numpy_intersect, \
-    is_fully_transparent, AnyNpArray
+from src.image.mypaint.numpy_image_utils import pixel_data_as_numpy_16bit, numpy_8bit_to_16bit, numpy_16bit_to_8bit
+from src.util.image_utils import AnyNpArray, image_data_as_numpy_8bit, is_fully_transparent, numpy_intersect
 from src.ui.graphics_items.layer_graphics_item import LayerGraphicsItem
 
 RED = 0

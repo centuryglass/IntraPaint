@@ -16,7 +16,7 @@ from src.tools.base_tool import BaseTool
 from src.tools.canvas_tool import CanvasTool
 from src.ui.image_viewer import ImageViewer
 from src.ui.panel.tool_control_panels.brush_control_panel import BrushControlPanel
-from src.util.shared_constants import PROJECT_DIR
+from src.util.shared_constants import PROJECT_DIR, COLOR_PICK_HINT
 
 # The `QCoreApplication.translate` context for strings in this file
 TR_ID = 'tools.brush_tool'
@@ -31,7 +31,6 @@ RESOURCES_BRUSH_ICON = f'{PROJECT_DIR}/resources/icons/tools/brush_icon.svg'
 BRUSH_LABEL = _tr('Brush')
 BRUSH_TOOLTIP = _tr('Paint into the image')
 BRUSH_CONTROL_HINT = _tr('LMB:draw - RMB:1px draw - ')
-COLOR_PICK_HINT = _tr('{modifier_or_modifiers}:pick color - ')
 
 
 class BrushTool(CanvasTool):
