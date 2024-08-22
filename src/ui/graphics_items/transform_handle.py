@@ -45,6 +45,12 @@ class TransformHandle(QGraphicsObject):
         self._saved_arrow_bounds = None
         self._icon = self._arrow_icon
 
+    def set_draw_arrows(self, should_draw: bool) -> None:
+        """Sets whether the handle arrows will be drawn."""
+        if should_draw != self._draw_arrows:
+            self._draw_arrows = should_draw
+            self.update()
+
     def rect(self) -> QRectF:
         """Gets the handle's rough placement in local coordinates"""
         return self._rect
@@ -57,6 +63,12 @@ class TransformHandle(QGraphicsObject):
         if rect.height() < MIN_NONZERO:
             rect.setHeight(MIN_NONZERO)
         self._rect = rect
+
+    def scene_pos(self) -> QPointF:
+        """Returns the handle's placement in the scene."""
+        scene = self.scene()
+        assert scene is not None
+        return self.mapToScene(self._rect.center())
 
     def move_rect_center(self, center: QPointF) -> None:
         """Moves the handle rectangle so that it is centered on a given point in local coordinates."""
@@ -75,6 +87,8 @@ class TransformHandle(QGraphicsObject):
     def boundingRect(self) -> QRectF:
         """Ensure handle bounds within the scene are large enough for the handle to remain clickable within extreme
            transforms."""
+        if self.scene() is None:
+            return self._rect
         bounds = self._adjusted_bounds()
         return bounds.united(self._arrow_bounds(bounds))
 
@@ -98,29 +112,32 @@ class TransformHandle(QGraphicsObject):
         """When painting, ignore all transformations besides center point translation."""
         assert painter is not None
         painter.save()
-        transform = painter.transform()
-        inverse = transform.inverted()[0]
-        painter.setTransform(inverse, True)
-        pos = transform.map(self.rect().center())
-        painter.translate(pos)
-        rect = _get_handle_rect(QPointF())
-        painter.fillRect(rect, self._brush)
-        painter.setPen(self._pen)
-        painter.drawRect(rect)
+        try:
+            transform = painter.transform()
+            inverse = transform.inverted()[0]
+            painter.setTransform(inverse, True)
+            pos = transform.map(self.rect().center())
+            painter.translate(pos)
+            rect = _get_handle_rect(QPointF())
+            painter.fillRect(rect, self._brush)
+            painter.setPen(self._pen)
+            painter.drawRect(rect)
 
-        if self._draw_arrows and self.parentItem() is not None:
-            arrow_pixmap = self._icon.pixmap(rect.size().toSize())
-            arrow_bounds = QRectF(rect.topLeft() - QPointF(rect.width(), rect.height()), rect.size())
-            # get base rotation:
+            if self._draw_arrows and self.parentItem() is not None:
+                arrow_pixmap = self._icon.pixmap(rect.size().toSize())
+                arrow_bounds = QRectF(rect.topLeft() - QPointF(rect.width(), rect.height()), rect.size())
+                # get base rotation:
 
-            scale_x, scale_y, angle = self._get_parent_transform_params()
-            if scale_x < 0 or scale_y < 0:
-                angle *= -1
-                angle += -(self._base_angle + 135) + (90 if scale_x < 0 else 270)
-            else:
-                angle += 135 + self._base_angle
-            painter.rotate(angle)
-            painter.drawPixmap(arrow_bounds.toAlignedRect(), arrow_pixmap)
+                scale_x, scale_y, angle = self._get_parent_transform_params()
+                if scale_x < 0 or scale_y < 0:
+                    angle *= -1
+                    angle += -(self._base_angle + 135) + (90 if scale_x < 0 else 270)
+                else:
+                    angle += 135 + self._base_angle
+                painter.rotate(angle)
+                painter.drawPixmap(arrow_bounds.toAlignedRect(), arrow_pixmap)
+        except AssertionError:
+            pass  # Occasionally happens while the parent is being removed, just skip painting if this happens.
         painter.restore()
 
     def _adjusted_bounds(self) -> QRectF:

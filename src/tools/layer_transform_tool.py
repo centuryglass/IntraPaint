@@ -561,7 +561,7 @@ class LayerTransformTool(BaseTool):
         self._control_panel.setEnabled(layer is not None and not layer.locked and not self._layer.size.isEmpty())
         self._update_all_controls()
 
-    def _on_activate(self) -> None:
+    def _on_activate(self, restoring_after_delegation=False) -> None:
         """Connect to the active layer."""
         self._image_stack.active_layer_changed.connect(self._active_layer_change_slot)
         self.set_layer(self._image_stack.active_layer)

@@ -492,6 +492,7 @@ def save_image_with_metadata(image: Image.Image | QImage, file_path: str, metada
             parameter_text = metadata[METADATA_COMMENT_KEY]
     if parameter_text is not None:
         if not isinstance(parameter_text, str):
+            # noinspection PyTypeChecker
             parameter_text = str(parameter_text, encoding='utf-8')
     if file_format not in IMAGE_FORMATS_SUPPORTING_METADATA:
         raise ValueError(f'Format {file_format} cannot be used to store metadata.')

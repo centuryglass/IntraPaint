@@ -37,7 +37,6 @@
 - Vector-based selection tool
 
 ## Transform tool
-- Why do angles look off when rotating scaled layers?
 - Unique look for origin point
 - Toggle switch for scale/rotate modes
 

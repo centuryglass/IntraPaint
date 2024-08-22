@@ -63,6 +63,7 @@ class ToolController(QObject):
             return
 
         # Set up tools:
+        last_active_tool_name = Cache().get(Cache.LAST_ACTIVE_TOOL)
         self._add_tool(GenerationAreaTool(image_stack, image_viewer))
         self._add_tool(LayerTransformTool(image_stack, image_viewer))
         if BrushTool is not None:
@@ -76,14 +77,15 @@ class ToolController(QObject):
         self._add_tool(fill_tool)
         eyedropper_tool = EyedropperTool(image_stack)
         self._add_tool(eyedropper_tool)
-        self._add_tool(TextTool(image_stack, image_viewer))
+        text_tool = TextTool(image_stack, image_viewer)
+        self._add_tool(text_tool)
         self._add_tool(SelectionTool(image_stack, image_viewer))
         self._add_tool(ShapeSelectionTool(image_stack, image_viewer))
         self._add_tool(SelectionFillTool(image_stack))
 
         eyedropper_modifier = KeyConfig().get_modifier(KeyConfig.EYEDROPPER_OVERRIDE_MODIFIER)
         if eyedropper_modifier != Qt.KeyboardModifier.NoModifier:
-            for tool in (brush_tool, fill_tool):
+            for tool in (brush_tool, fill_tool, text_tool):
                 if tool is not None:
                     if isinstance(eyedropper_modifier, list):
                         for mod in eyedropper_modifier:
@@ -91,7 +93,7 @@ class ToolController(QObject):
                     else:
                         assert isinstance(eyedropper_modifier, Qt.KeyboardModifier)
                         self.register_tool_delegate(tool, eyedropper_tool, eyedropper_modifier)
-        last_active_tool = self.find_tool_by_label(Cache().get(Cache.LAST_ACTIVE_TOOL))
+        last_active_tool = self.find_tool_by_label(last_active_tool_name)
         if last_active_tool is not None:
             self.active_tool = last_active_tool
 
@@ -153,7 +155,7 @@ class ToolController(QObject):
         if self._active_delegate and self._tool_modifier_delegates[self._active_tool] != modifiers:
             self._active_delegate.is_active = False
             self._active_delegate = None
-            self._active_tool.is_active = True
+            self._active_tool.reactivate_after_delegation()
             self.tool_changed.emit(self._active_tool)
         if modifiers in self._tool_modifier_delegates[self._active_tool]:
             self._active_tool.is_active = False
@@ -180,6 +182,7 @@ class ToolController(QObject):
         self._active_tool = new_tool
         if new_tool not in self._tool_modifier_delegates:
             self._tool_modifier_delegates[new_tool] = {}
+        if len(self._all_tools) > 1:
             Cache().set(Cache.LAST_ACTIVE_TOOL, new_tool.label)
         if new_tool is not None:
             new_tool.is_active = True

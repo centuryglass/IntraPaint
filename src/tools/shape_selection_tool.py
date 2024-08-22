@@ -28,7 +28,7 @@ RESOURCES_SHAPE_SELECT_ICON = f'{PROJECT_DIR}/resources/icons/tools/shape_select
 
 SHAPE_SELECTION_LABEL = _tr('Rectangle/Ellipse selection')
 SHAPE_SELECTION_TOOLTIP = _tr('Select or de-select rectangles or ellipses')
-SHAPE_SELECTION_CONTROL_HINT = _tr('LMB:select - RMB:deselect - ')
+SHAPE_SELECTION_CONTROL_HINT = _tr('LMB+drag:select - RMB+drag:deselect - ')
 
 GRAPHICS_ITEM_OPACITY = 0.6
 ERASING_COLOR = Qt.GlobalColor.white

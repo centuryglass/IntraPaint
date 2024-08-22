@@ -101,7 +101,7 @@ class SelectionTool(CanvasTool):
         super().set_brush_size(new_size)
         AppConfig().set(AppConfig.SELECTION_BRUSH_SIZE, max(1, new_size))
 
-    def _on_activate(self) -> None:
+    def _on_activate(self, restoring_after_delegation=False) -> None:
         """Override base canvas tool to keep mask layer visible."""
         super()._on_activate()
         layer = self.layer

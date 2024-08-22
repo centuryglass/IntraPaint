@@ -4,7 +4,7 @@ import json
 import logging
 import os
 from argparse import Namespace
-from typing import Optional, Dict, List, cast, Any
+from typing import Optional, Dict, List, cast, Any, Callable, Tuple
 
 import requests
 from PySide6.QtCore import Signal, QSize, QThread
@@ -128,7 +128,7 @@ def _check_lcm_mode_available(_) -> bool:
 
 def _check_prompt_styles_available(_) -> bool:
     cache = Cache()
-    return len(cache.get_options(Cache.STYLES)) > 0
+    return len(cache.get(Cache.STYLES)) > 0
 
 
 def _check_lora_available(_) -> bool:
@@ -234,8 +234,7 @@ class SDWebUIGenerator(ImageGenerator):
                 logger.error(f'Loading controlnet config failed: {err}')
                 cache.set(Cache.CONTROLNET_VERSION, -1.0)
 
-            option_loading_params = (
-                (Cache.STYLES, self._webservice.get_styles),
+            option_loading_params: Tuple[Tuple[str, Callable[[], List[str]]], ...] = (
                 (AppConfig.SAMPLING_METHOD, self._webservice.get_samplers),
                 (AppConfig.UPSCALE_METHOD, self._webservice.get_upscalers)
             )
@@ -243,7 +242,7 @@ class SDWebUIGenerator(ImageGenerator):
             # load various option lists:
             for config_key, option_loading_fn in option_loading_params:
                 try:
-                    options = option_loading_fn()
+                    options = cast(List[ParamType], option_loading_fn())
                     if options is not None and len(options) > 0:
                         if config_key in cache.get_keys():
                             cache.update_options(config_key, options)
@@ -253,6 +252,7 @@ class SDWebUIGenerator(ImageGenerator):
                     logger.error(f'error loading {config_key} from {self._server_url}: {err}')
 
             data_params = (
+                (Cache.STYLES, self._webservice.get_styles),
                 (Cache.CONTROLNET_CONTROL_TYPES, self._webservice.get_controlnet_control_types),
                 (Cache.CONTROLNET_MODULES, self._webservice.get_controlnet_modules),
                 (Cache.CONTROLNET_MODELS, self._webservice.get_controlnet_models),

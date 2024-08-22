@@ -1,7 +1,7 @@
 """Extends QGraphicsPixmapItem to add alternate composition modes."""
 from typing import Optional
 
-from PySide6.QtGui import QPainter, QPixmap
+from PySide6.QtGui import QPainter, QPixmap, Qt
 from PySide6.QtWidgets import QGraphicsPixmapItem, QGraphicsItem, QStyleOptionGraphicsItem, QWidget
 
 
@@ -13,6 +13,7 @@ class PixmapItem(QGraphicsPixmapItem):
             super().__init__(parent)
         else:
             super().__init__(pixmap, parent)
+        self.setTransformationMode(Qt.TransformationMode.SmoothTransformation)
         self._mode = QPainter.CompositionMode.CompositionMode_SourceOver
 
     @property

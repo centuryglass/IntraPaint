@@ -53,7 +53,7 @@ class PromptStyleWindow(QDialog):
 
         cache = Cache()
         self._style_options = []
-        for style in cache.get_options(Cache.STYLES):
+        for style in cache.get(Cache.STYLES):
             assert isinstance(style, str)
             try:
                 self._style_options.append(json.loads(style))

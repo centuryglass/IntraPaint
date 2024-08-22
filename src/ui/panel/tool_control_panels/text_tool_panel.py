@@ -402,6 +402,10 @@ class TextToolPanel(QWidget):
             self._stretch_spinbox.setValue(stretch)
         self._stretch_spinbox.setEnabled(not QFontDatabase.isBitmapScalable(new_font.family()))
 
+        # Update colors:
+        self._color_button.color = new_params.text_color
+        self._background_color_button.color = new_params.background_color
+
         # Update size:
         new_size = self._text_rect.size
         if self._width_input.value() != new_size.width():
@@ -538,6 +542,7 @@ class TextToolPanel(QWidget):
     def _color_change_slot(self, color_str: str) -> None:
         color = QColor(color_str)
         if self._text_rect.text_color != color:
+            self._color_button.color = color
             self._text_rect.text_color = color
             self._handle_change()
 

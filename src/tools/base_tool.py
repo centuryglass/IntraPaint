@@ -124,6 +124,12 @@ class BaseTool(QObject):
         else:
             self._on_deactivate()
 
+    def reactivate_after_delegation(self) -> None:
+        """Sets the tool as active again after temporarily disabling it to delegate inputs to another tool."""
+        assert not self._active
+        self._active = True
+        self._on_activate(True)
+
     def get_hotkey(self) -> QKeySequence:
         """Returns a hotkey or list of keys that should activate this tool."""
         raise NotImplementedError('BaseTool.get_hotkey needs to be implemented to return a QKeySequence.')
@@ -153,7 +159,7 @@ class BaseTool(QObject):
         """Returns a panel providing controls for customizing tool behavior, or None if no such panel is needed."""
         return None
 
-    def _on_activate(self) -> None:
+    def _on_activate(self, restoring_after_delegation=False) -> None:
         """Called when the tool becomes active, implement to handle any setup that needs to be done."""
 
     def _on_deactivate(self) -> None:

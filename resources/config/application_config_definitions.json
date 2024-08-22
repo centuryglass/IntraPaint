@@ -75,8 +75,8 @@
     },
     "opengl_acceleration": {
         "label": "OpenGL acceleration:",
-        "category": "Interface",
-        "description": "Use OpenGL to accelerate image manipulation",
+        "category": "Developer",
+        "description": "Use OpenGL to accelerate image rendering.  Currently somewhat buggy, breaks several layer rendering modes.",
         "type": "bool",
         "default": false,
         "saved": true

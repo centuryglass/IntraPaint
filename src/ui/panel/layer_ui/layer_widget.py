@@ -88,6 +88,7 @@ class LayerWidget(BorderedWidget):
         self._layout.addWidget(self._label, stretch=40)
         image_stack.active_layer_changed.connect(self._active_layer_change_slot)
         self._layer.content_changed.connect(self._layer_content_change_slot)
+        self._layer.name_changed.connect(self._layer_name_change_slot)
         self._layer.visibility_changed.connect(self.update)
         if isinstance(self._layer, TransformLayer):
             self._layer.transform_changed.connect(self._layer_content_change_slot)

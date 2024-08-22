@@ -289,7 +289,7 @@ class Config:
                         self._save_timer.timeout.disconnect(write_change)
 
                     self._save_timer.timeout.connect(write_change)
-                    self._save_timer.start(100)
+                    self._save_timer.start(10)
         # Pass change to connected callback functions:
         callbacks = [*self._connected[key].values()]  # <- So callbacks can disconnect or replace themselves
         for callback in callbacks:

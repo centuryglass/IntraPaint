@@ -862,7 +862,7 @@ class AppController(MenuBuilder):
     def _metadata_is_latest(self) -> bool:
         if not self._metadata_will_be_saved():
             return False
-        return self._updated_metadata_params() == self._metadata[METADATA_PARAMETER_KEY]
+        return self._metadata is not None and self._updated_metadata_params() == self._metadata[METADATA_PARAMETER_KEY]
 
     @menu_action(MENU_IMAGE, 'update_metadata_shortcut', 202,
                  valid_app_states=[APP_STATE_EDITING, APP_STATE_SELECTION])

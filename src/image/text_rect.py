@@ -6,6 +6,7 @@ from PySide6.QtCore import QRect, QSize, QPoint
 from PySide6.QtGui import QColor, Qt, QFont, QPainter, QImage
 from PySide6.QtWidgets import QApplication
 
+from src.config.cache import Cache
 from src.util.display_size import find_text_size, max_font_size
 from src.util.image_utils import create_transparent_image
 
@@ -58,8 +59,8 @@ class TextRect:
         else:
             self._text = ''
             self._font = QApplication.font()
-            self._text_color = QColor(Qt.GlobalColor.black)
-            self._background_color = QColor(Qt.GlobalColor.white)
+            self._text_color = QColor(Cache().get(Cache.LAST_BRUSH_COLOR))
+            self._background_color = QColor(Cache().get(Cache.BACKGROUND_COLOR))
             self._size = QSize(DEFAULT_SIZE)
             self._text_alignment = Qt.AlignmentFlag.AlignLeft
             self._fill_background = False

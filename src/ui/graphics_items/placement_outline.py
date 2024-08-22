@@ -8,9 +8,11 @@ from PySide6.QtWidgets import QWidget, QGraphicsItem, QStyleOptionGraphicsItem, 
     QGraphicsObject
 
 from src.ui.graphics_items.transform_handle import TransformHandle
-from src.util.geometry_utils import extract_transform_parameters, combine_transform_parameters
+from src.util.geometry_utils import combine_transform_parameters, closest_size_keeping_aspect_ratio
 from src.util.graphics_scene_utils import get_view_bounds_of_scene_item_rect, map_scene_item_point_to_view_point, \
     get_scene_item_bounds_of_view_rect, get_view
+from src.util.math_utils import clamp, avoiding_zero
+from src.util.shared_constants import MIN_NONZERO, FLOAT_MIN, FLOAT_MAX
 
 MIN_SCENE_DIM = 5
 
@@ -33,7 +35,7 @@ class PlacementOutline(QGraphicsObject):
 
         self.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsSelectable, True)
         self._handles: Dict[str, _Handle] = {}
-        self._size = QSizeF(size)
+        self._size = QSizeF(avoiding_zero(size.width()), avoiding_zero(size.height()))
         self._aspect_ratio = 1.0
         self._preserve_aspect_ratio = False
         self._pen = QPen(LINE_COLOR, LINE_WIDTH)
@@ -47,7 +49,8 @@ class PlacementOutline(QGraphicsObject):
     def setTransform(self, matrix: QTransform, combine: bool = False) -> None:
         """Store the offset when updating the transform."""
         super().setTransform(matrix, combine)
-        x_off, y_off, _, _, _, = extract_transform_parameters(self.transform())
+        x_off = self.transform().dx()
+        y_off = self.transform().dy()
         if x_off != self._offset.x() or y_off != self._offset.y():
             self._offset = QPointF(x_off, y_off)
         self._update_handles()
@@ -78,8 +81,8 @@ class PlacementOutline(QGraphicsObject):
 
     @offset.setter
     def offset(self, new_offset: QPointF) -> None:
-        _, _, x_scale, y_scale, angle = extract_transform_parameters(self.transform())
-        self.setTransform(combine_transform_parameters(new_offset.x(), new_offset.y(), x_scale, y_scale, angle))
+        self.setTransform(self.transform() * QTransform.fromTranslate(new_offset.x() - self._offset.x(),
+                                                                      new_offset.y() - self._offset.y()))
 
     @property
     def outline_size(self) -> QSizeF:
@@ -88,6 +91,12 @@ class PlacementOutline(QGraphicsObject):
 
     @outline_size.setter
     def outline_size(self, new_size: QSizeF) -> None:
+        new_size.setWidth(avoiding_zero(new_size.width()))
+        new_size.setHeight(avoiding_zero(new_size.height()))
+        if self.preserve_aspect_ratio:
+            new_size = closest_size_keeping_aspect_ratio(new_size, self._aspect_ratio)
+        else:
+            self._aspect_ratio = new_size.width() / new_size.height()
         self._size = QSizeF(new_size)
         self._update_handles()
 
@@ -129,9 +138,58 @@ class PlacementOutline(QGraphicsObject):
                 handle.mouseReleaseEvent(event)
         self.setSelected(False)
 
-    def move_corner(self, corner_id: str, scene_pos: QPointF, last_scene_pos: QPointF) -> None:
+    def _get_local_rect(self) -> QRectF:
+        return QRectF(QPointF(), self._size)
+
+    def _set_local_rect(self, new_rect: QRectF) -> None:
+        assert new_rect.width() > 0 and new_rect.height() > 0
+        if new_rect.topLeft() == self._offset and new_rect.size() == self._size:
+            return
+        if new_rect.topLeft() != self._offset:
+            self.offset = new_rect.topLeft()
+        if new_rect.size() != self._size:
+            self.outline_size = new_rect.size()
+        self._update_handles()
+        self.placement_changed.emit(self.offset, self.outline_size)
+
+    def move_corner(self, corner_id: str, scene_pos: QPointF, _) -> None:
         """Move one of the corners, leaving the position of the opposite corner unchanged."""
-        print('TODO: fix corners')
+        local_pos = self.mapFromScene(scene_pos)
+        local_rect = self._get_local_rect()
+
+        # update offset based on scene coordinates:
+        offset_change_vector = scene_pos - self._handles[corner_id].scene_pos()
+        transform_at_origin = self.transform() * QTransform.fromTranslate(-self._offset.x(), -self._offset.y())
+        inverse_transform_at_origin = transform_at_origin.inverted()[0]
+
+        scene_offset_change_vector = inverse_transform_at_origin.map(offset_change_vector)
+        x_off_min = 0.0 if corner_id in (TR_HANDLE_ID, BR_HANDLE_ID) else FLOAT_MIN
+        x_off_max = 0.0 if corner_id in (TR_HANDLE_ID, BR_HANDLE_ID) else (local_rect.width() - MIN_NONZERO)
+        y_off_min = 0.0 if corner_id in (BL_HANDLE_ID, BR_HANDLE_ID) else FLOAT_MIN
+        y_off_max = 0.0 if corner_id in (BL_HANDLE_ID, BR_HANDLE_ID) else (local_rect.height() - MIN_NONZERO)
+
+        scene_offset_change_vector.setX(clamp(scene_offset_change_vector.x(), x_off_min, x_off_max))
+        scene_offset_change_vector.setY(clamp(scene_offset_change_vector.y(), y_off_min, y_off_max))
+        offset = self._offset + transform_at_origin.map(scene_offset_change_vector)
+
+        # update size using local coordinates:
+        x_min = MIN_NONZERO if corner_id in (TR_HANDLE_ID, BR_HANDLE_ID) else FLOAT_MIN
+        x_max = FLOAT_MAX if corner_id in (TR_HANDLE_ID, BR_HANDLE_ID) else self._size.width() - MIN_NONZERO
+        y_min = MIN_NONZERO if corner_id in (BL_HANDLE_ID, BR_HANDLE_ID) else FLOAT_MIN
+        y_max = FLOAT_MAX if corner_id in (BL_HANDLE_ID, BR_HANDLE_ID) else self._size.height() - MIN_NONZERO
+        local_pos.setX(clamp(local_pos.x(), x_min, x_max))
+        local_pos.setY(clamp(local_pos.y(), y_min, y_max))
+        if corner_id == TL_HANDLE_ID:
+            local_rect.setTopLeft(local_pos)
+        elif corner_id == TR_HANDLE_ID:
+            local_rect.setTopRight(local_pos)
+        elif corner_id == BL_HANDLE_ID:
+            local_rect.setBottomLeft(local_pos)
+        elif corner_id == BR_HANDLE_ID:
+            local_rect.setBottomRight(local_pos)
+        local_rect.moveTopLeft(offset)
+
+        self._set_local_rect(local_rect)
 
     def paint(self,
               painter: Optional[QPainter],
@@ -147,6 +205,8 @@ class PlacementOutline(QGraphicsObject):
     def boundingRect(self) -> QRectF:
         """Set bounding rect to the scene item size, preserving minimums so that mouse input still works at small
            scales."""
+        if self.scene() is None:
+            return self._get_local_rect()
         rect = get_view_bounds_of_scene_item_rect(QRectF(QPointF(), self._size), self)
         if rect.width() < MIN_SCENE_DIM:
             rect.adjust(-(MIN_SCENE_DIM - rect.width()) / 2, 0.0, (MIN_SCENE_DIM - rect.width()) / 2, 0.0)
@@ -163,10 +223,11 @@ class PlacementOutline(QGraphicsObject):
 
     def _update_handles(self) -> None:
         """Keep the corners and origin positioned and sized correctly as the rectangle transforms."""
-        bounds = QRectF(QPointF(), self._size)
+        bounds = self._get_local_rect()
         for handle_id, point in ((TL_HANDLE_ID, bounds.topLeft()), (TR_HANDLE_ID, bounds.topRight()),
                                  (BL_HANDLE_ID, bounds.bottomLeft()), (BR_HANDLE_ID, bounds.bottomRight())):
-            self._handles[handle_id].move_rect_center(point)
+            handle_pos = self._handles[handle_id].mapFromScene(self.mapToScene(point))
+            self._handles[handle_id].move_rect_center(handle_pos)
 
 
 class _Handle(TransformHandle):

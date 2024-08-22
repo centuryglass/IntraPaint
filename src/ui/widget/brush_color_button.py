@@ -57,3 +57,7 @@ class BrushColorButton(QPushButton):
     def color(self) -> QColor:
         """Returns the current selected color."""
         return QColor(self._color)
+
+    @color.setter
+    def color(self, new_color: QColor) -> None:
+        self._update_color(new_color)

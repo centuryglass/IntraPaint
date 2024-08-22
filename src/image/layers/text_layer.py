@@ -11,7 +11,6 @@ from src.image.text_rect import TextRect
 from src.ui.modal.modal_utils import request_confirmation
 from src.undo_stack import UndoStack
 from src.util.cached_data import CachedData
-from src.util.geometry_utils import extract_transform_parameters, combine_transform_parameters
 
 # The `QCoreApplication.translate` context for strings in this file
 TR_ID = 'image.layers.text_layer'
@@ -72,13 +71,15 @@ class TextLayer(TransformLayer):
     @property
     def offset(self) -> QPointF:
         """Access the offset component of the layer transformation."""
-        x_off, y_off, _, _, _ = extract_transform_parameters(self.transform)
+        x_off = self.transform.dx()
+        y_off = self.transform.dy()
         return QPointF(x_off, y_off)
 
     @offset.setter
     def offset(self, new_offset: QPoint | QPointF) -> None:
-        _, _, x_scale, y_scale, angle = extract_transform_parameters(self.transform)
-        self.transform = combine_transform_parameters(new_offset.x(), new_offset.y(), x_scale, y_scale, angle)
+        transform = self.transform
+        transform *= QTransform.fromTranslate(new_offset.x() - transform.dx(), new_offset.y() - transform.dy())
+        self.transform = transform
 
     @property
     def text_rect(self) -> TextRect:
@@ -193,7 +194,7 @@ class TextLayer(TransformLayer):
         else:
             name = self._text_rect.text if text_rect is None else text_rect.text
         if len(name) > MAX_NAME_LENGTH_BEFORE_TRUNC:
-            name = f'{name[MAX_NAME_LENGTH_BEFORE_TRUNC:]}...'
+            name = f'{name[:MAX_NAME_LENGTH_BEFORE_TRUNC]}...'
         return f'"{name}"'
 
 

@@ -227,7 +227,7 @@ class CanvasTool(BaseTool):
         """Updates the active brush color."""
         self._canvas.brush_color = QColor(new_color)
 
-    def _on_activate(self) -> None:
+    def _on_activate(self, restoring_after_delegation=False) -> None:
         """Connect the canvas to the active layer."""
         if self._layer is not None:
             self.layer = self._layer  # Re-apply the connection

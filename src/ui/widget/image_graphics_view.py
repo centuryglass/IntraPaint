@@ -51,14 +51,21 @@ class ImageGraphicsView(QGraphicsView):
         self.setViewportUpdateMode(QGraphicsView.ViewportUpdateMode.FullViewportUpdate)
         self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
 
-        if AppConfig().get(AppConfig.OPENGL_ACCELERATION):
-            self._opengl_view: Optional[QOpenGLWidget] = QOpenGLWidget()
-            surface_format = QSurfaceFormat()
-            surface_format.setSamples(4)
-            self._opengl_view.setFormat(surface_format)
-            self.setViewport(self._opengl_view)
-        else:
-            self._opengl_view = None
+        self._opengl_view: Optional[QOpenGLWidget] = None
+
+        def _update_render_mode(use_opengl: bool) -> None:
+            if use_opengl and self._opengl_view is None:
+                self._opengl_view = QOpenGLWidget()
+                surface_format = QSurfaceFormat()
+                surface_format.setSamples(4)
+                self._opengl_view.setFormat(surface_format)
+                self.setViewport(self._opengl_view)
+            elif not use_opengl and self._opengl_view is not None:
+                self.setViewport(None)
+                self._opengl_view = None
+        _update_render_mode(AppConfig().get(AppConfig.OPENGL_ACCELERATION))
+        AppConfig().connect(self, AppConfig.OPENGL_ACCELERATION, _update_render_mode)
+
         self.setScene(self._scene)
         self.installEventFilter(self)
 

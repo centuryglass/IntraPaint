@@ -5,6 +5,7 @@ from typing import Tuple, Optional
 from PySide6.QtCore import QRect, QSize, QRectF, QSizeF, QPoint, QPointF, QLineF, Qt
 from PySide6.QtGui import QTransform, QPolygonF, QPainter, QColor
 
+from src.util.math_utils import convert_degrees
 from src.util.shared_constants import MIN_NONZERO, FLOAT_MAX
 
 
@@ -140,34 +141,31 @@ def extract_transform_parameters(transform: QTransform,
     if origin is None:
         origin = QPointF()
 
-    # Calculate scales (absolute values)
-    x_scale = math.sqrt(transform.m11() ** 2 + transform.m21() ** 2)
-    y_scale = math.sqrt(transform.m12() ** 2 + transform.m22() ** 2)
-
-    # Calculate angles (negated because the Qt y-axis points down):
-    angle_radians = math.atan2(-transform.m21(), transform.m11())
-    angle_degrees = math.degrees(angle_radians) % 360.0
-
     # Calculate offset:
     transform_at_origin = QTransform.fromTranslate(origin.x(), origin.y()) * transform \
                           * QTransform.fromTranslate(-origin.x(), -origin.y())
     x_offset = transform_at_origin.dx()
     y_offset = transform_at_origin.dy()
 
-    # One of the scales is flipped if the determinant is negative:
-    determinant = transform.m11() * transform.m22() - transform.m12() * transform.m21()
-    if determinant < 0:
-        while angle_degrees >= 180.0:
-            # Mirroring x is equivalent to mirroring y and rotating 180 degrees, so standardize
-            # by picking the option with the smaller angle.
-            angle_degrees -= 180.0
-        # TODO: I'm sure that there's a better way to do this than guess and check.
-        test_matrix = combine_transform_parameters(x_offset, y_offset, -x_scale, y_scale, angle_degrees, origin)
-        if transforms_approx_equal(transform, test_matrix, 5):
-            x_scale = -x_scale
-        else:
-            y_scale = -y_scale
+    # Calculate approximate angles (negated because the Qt y-axis points down):
+    angle_line = QLineF(transform.map(origin), transform.map(QPointF(origin.x() + 1.0, origin.y())))
+    angle_degrees = convert_degrees(-angle_line.angle())
 
+    # Calculate scale:
+    scaling_transform_at_origin = QTransform.fromTranslate(origin.x(), origin.y()) \
+            * transform * QTransform.fromTranslate(-origin.x() - x_offset, -origin.y() - y_offset) \
+            * QTransform().rotate(-angle_degrees)
+    x_scale = scaling_transform_at_origin.m11()
+    y_scale = scaling_transform_at_origin.m22()
+
+    # x_scale, y_scale, rotation equals -x_scale, -y_scale, rotation+180deg, so standardize as follows:
+    # - x_scale and Y_scale will never both be negative.
+    # - If one of the two values must be negative, choose the option that results in a rotation that's less than 180
+    #   degrees.
+    if (x_scale < 0 and y_scale < 0) or ((x_scale < 0 or y_scale < 0) and angle_degrees >= 180.0):
+        x_scale *= -1
+        y_scale *= -1
+        angle_degrees = convert_degrees(angle_degrees - 180.0)
     return x_offset, y_offset, x_scale, y_scale, angle_degrees
 
 
@@ -178,8 +176,8 @@ def combine_transform_parameters(x_offset: float, y_offset: float, x_scale: floa
         origin = QPointF()
     assert x_scale != 0.0 and y_scale != 0.0, 'Non-invertible transformation parameters used'
     matrix = QTransform.fromTranslate(-origin.x(), -origin.y())
-    matrix *= QTransform().rotate(degrees)
     matrix *= QTransform.fromScale(x_scale, y_scale)
+    matrix *= QTransform().rotate(degrees)
     matrix *= QTransform.fromTranslate(x_offset + origin.x(), y_offset + origin.y())
     return matrix
 
@@ -278,3 +276,10 @@ def closest_point_keeping_aspect_ratio(moving_point: QPointF, source_point: QPoi
             adjusted_point = point
     assert adjusted_point is not None
     return adjusted_point
+
+
+def closest_size_keeping_aspect_ratio(new_size: QSizeF, aspect_ratio: float) -> QSizeF:
+    """Given a new size and an aspect ratio, return the size with the same aspect ratio that's closes to new_size."""
+    closest_point = closest_point_keeping_aspect_ratio(QPointF(new_size.width(), new_size.height()), QPointF(),
+                                                       aspect_ratio)
+    return QSizeF(closest_point.x(), closest_point.y())
