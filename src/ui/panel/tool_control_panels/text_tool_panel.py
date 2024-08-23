@@ -179,7 +179,7 @@ class TextToolPanel(QWidget):
         self._checkbox_label.setBuddy(self._checkbox_container)
         self._checkbox_container.setSizePolicy(QSizePolicy.Policy.Preferred,
                                                QSizePolicy.Policy.MinimumExpanding)
-        self._checkbox_scroll.setSizePolicy(QSizePolicy.Policy.Preferred,
+        self._checkbox_scroll.setSizePolicy(QSizePolicy.Policy.MinimumExpanding,
                                                QSizePolicy.Policy.Expanding)
 
         def _init_checkbox(label: str, icon_path: str, getter: Callable[[QFont], bool],
@@ -258,7 +258,7 @@ class TextToolPanel(QWidget):
             new_item.setFont(font)
             new_item.setToolTip(font_family)
         self._font_list.currentTextChanged.connect(self._font_family_change_slot)
-        self._font_list.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+        self._font_list.setSizePolicy(QSizePolicy.Policy.MinimumExpanding, QSizePolicy.Policy.Expanding)
 
         # Load cached font data:
         serialized_text = cache.get(Cache.TEXT_TOOL_PARAMS)
@@ -377,10 +377,10 @@ class TextToolPanel(QWidget):
         # Update font controls:
         new_font = self._text_rect.font
         list_items = self._font_list.findItems(new_font.family(), Qt.MatchFlag.MatchExactly)
-        assert len(list_items) > 0
-        if self._font_list.currentItem() != list_items[0]:
-            self._font_list.setCurrentItem(list_items[0])
-            self._font_list.scrollToItem(list_items[0])
+        if len(list_items) > 0:
+            if self._font_list.currentItem() != list_items[0]:
+                self._font_list.setCurrentItem(list_items[0])
+                self._font_list.scrollToItem(list_items[0])
         font_size_format = OPTION_TEXT_PIXEL_SIZE_FORMAT
         font_size = new_font.pixelSize()
         if font_size <= 0:
