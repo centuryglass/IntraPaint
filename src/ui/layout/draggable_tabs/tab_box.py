@@ -1,8 +1,9 @@
 """Collapsible container widget that displays tab content."""
 
-from typing import Optional
+from typing import Optional, List
 
 from PySide6.QtCore import Signal, Qt, QSize
+from PySide6.QtGui import QAction
 from PySide6.QtWidgets import QHBoxLayout, QVBoxLayout, QWidget, QSizePolicy
 
 from src.ui.layout.bordered_widget import BorderedWidget
@@ -37,6 +38,7 @@ class TabBox(BorderedWidget):
         self._layout.setContentsMargins(0, 0, 0, 0)
         self.setSizePolicy(QSizePolicy.Policy.MinimumExpanding, QSizePolicy.Policy.MinimumExpanding)
         self._update_max_size()
+        self.setContextMenuPolicy(Qt.ContextMenuPolicy.ActionsContextMenu)
         if orientation == Qt.Orientation.Horizontal:
             if at_parent_start:
                 self._layout.setAlignment(Qt.AlignmentFlag.AlignBottom | Qt.AlignmentFlag.AlignVCenter)
@@ -59,6 +61,21 @@ class TabBox(BorderedWidget):
     def contains_widget(self, widget: QWidget) -> bool:
         """Returns whether a widget is in the tab bar."""
         return widget.parent() == self._tab_bar
+
+    @property
+    def tabs(self) -> List[Tab]:
+        """Returns all tabs in this tab box."""
+        return self._tab_bar.tabs
+
+    def addAction(self, action: QAction) -> None:
+        """Shares its actions with its TabBar."""
+        super().addAction(action)
+        self._tab_bar.addAction(action)
+
+    def removeAction(self, action: QAction) -> None:
+        """Removes its actions from both itself and its TabBar."""
+        super().removeAction(action)
+        self._tab_bar.removeAction(action)
 
     @property
     def is_open(self) -> bool:

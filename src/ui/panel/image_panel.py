@@ -2,10 +2,11 @@
 from typing import Optional
 
 from PySide6.QtCore import Qt
-from PySide6.QtGui import QResizeEvent
+from PySide6.QtGui import QResizeEvent, QAction
 from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLabel, QDoubleSpinBox, QSlider, QPushButton, \
     QSizePolicy, QApplication
 
+from src.config.application_config import AppConfig
 from src.image.layers.image_stack import ImageStack
 from src.ui.image_viewer import ImageViewer
 from src.ui.layout.draggable_divider import DraggableDivider
@@ -25,6 +26,9 @@ SCALE_RESET_BUTTON_LABEL = _tr('Reset View')
 SCALE_RESET_BUTTON_TOOLTIP = _tr('Restore default image zoom and offset')
 SCALE_ZOOM_BUTTON_LABEL = _tr('Zoom in')
 SCALE_ZOOM_BUTTON_TOOLTIP = _tr('Zoom in on the area selected for image generation')
+
+MENU_ACTION_SHOW_HINTS = _tr('Show tool control hints')
+MENU_ACTION_HIDE_HINTS = _tr('Hide tool control hints')
 
 MIN_WIDTH_SHOWING_SCALE_SLIDER = 600
 MIN_WIDTH_SHOWING_HINT_TEXT = 900
@@ -57,6 +61,24 @@ class ImagePanel(QWidget):
         self._image_viewer = ImageViewer(None, image_stack, use_keybindings)
         self._layout.addWidget(self._image_viewer, stretch=255)
         self._control_bar = QWidget()
+        self._control_bar.setContextMenuPolicy(Qt.ContextMenuPolicy.ActionsContextMenu)
+
+        # Show/hide control hints:
+        def _show_hints() -> None:
+            AppConfig().set(AppConfig.SHOW_TOOL_CONTROL_HINTS, True)
+        self._show_hint_action = QAction()
+        self._show_hint_action.setText(MENU_ACTION_SHOW_HINTS)
+        self._show_hint_action.triggered.connect(_show_hints)
+
+        def _hide_hints() -> None:
+            AppConfig().set(AppConfig.SHOW_TOOL_CONTROL_HINTS, False)
+        self._hide_hint_action = QAction()
+        self._hide_hint_action.setText(MENU_ACTION_HIDE_HINTS)
+        self._hide_hint_action.triggered.connect(_hide_hints)
+
+        AppConfig().connect(self, AppConfig.SHOW_TOOL_CONTROL_HINTS, self._show_control_hint_config_slot)
+        self._control_bar.addAction(self._hide_hint_action if AppConfig().get(AppConfig.SHOW_TOOL_CONTROL_HINTS)
+                                    else self._show_hint_action)
         self._layout.addWidget(self._control_bar, stretch=1)
         self._control_layout = QHBoxLayout(self._control_bar)
         self._control_hint_label = QLabel('')
@@ -146,8 +168,7 @@ class ImagePanel(QWidget):
 
     def resizeEvent(self, event: Optional[QResizeEvent]) -> None:
         """Hide non-essential UI elements if there's not enough space."""
-        self._control_hint_label.setVisible(self.width() > MIN_WIDTH_SHOWING_HINT_TEXT)
-        self._image_scale_slider.setVisible(self.width() > MIN_WIDTH_SHOWING_SCALE_SLIDER)
+        self._update_widget_visibility()
 
     @property
     def left_tab_box(self) -> Optional[TabBox]:
@@ -158,3 +179,17 @@ class ImagePanel(QWidget):
     def right_tab_box(self) -> Optional[TabBox]:
         """Returns the right tab box, if used."""
         return self._right_tab_box
+
+    def _show_control_hint_config_slot(self, show_hints: bool):
+        if show_hints:
+            self._control_bar.removeAction(self._show_hint_action)
+            self._control_bar.addAction(self._hide_hint_action)
+        else:
+            self._control_bar.removeAction(self._hide_hint_action)
+            self._control_bar.addAction(self._show_hint_action)
+        self._update_widget_visibility()
+
+    def _update_widget_visibility(self) -> None:
+        self._control_hint_label.setVisible(AppConfig().get(AppConfig.SHOW_TOOL_CONTROL_HINTS)
+                                            and self.width() > MIN_WIDTH_SHOWING_HINT_TEXT)
+        self._image_scale_slider.setVisible(self.width() > MIN_WIDTH_SHOWING_SCALE_SLIDER)

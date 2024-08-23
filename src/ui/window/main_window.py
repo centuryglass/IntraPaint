@@ -4,7 +4,8 @@ inpainting modes.  Other editing modes should provide subclasses with implementa
 """
 import logging
 import sys
-from typing import Optional, Dict
+from enum import Enum, StrEnum
+from typing import Optional, Dict, List
 
 from PySide6.QtCore import Qt, QRect, QSize, Signal
 from PySide6.QtGui import QIcon, QMouseEvent, QResizeEvent, QKeySequence, QCloseEvent, QImage, QAction
@@ -14,12 +15,12 @@ from src.config.application_config import AppConfig
 from src.hotkey_filter import HotkeyFilter
 from src.image.layers.image_stack import ImageStack
 from src.ui.generated_image_selector import GeneratedImageSelector
-from src.ui.panel.image_panel import ImagePanel
-from src.ui.panel.layer_ui.layer_panel import LayerPanel
-from src.ui.panel.tool_panel import ToolPanel
 from src.ui.layout.draggable_divider import DraggableDivider
 from src.ui.layout.draggable_tabs.tab import Tab
 from src.ui.layout.draggable_tabs.tab_box import TabBox
+from src.ui.panel.image_panel import ImagePanel
+from src.ui.panel.layer_ui.layer_panel import LayerPanel
+from src.ui.panel.tool_panel import ToolPanel
 from src.ui.widget.loading_widget import LoadingWidget
 from src.ui.window.image_window import ImageWindow
 from src.util.application_state import AppStateTracker, APP_STATE_LOADING, APP_STATE_NO_IMAGE, APP_STATE_EDITING, \
@@ -41,11 +42,11 @@ def _tr(*args):
 
 CONTROL_TAB_NAME = _tr('Image Generation')
 TOOL_TAB_NAME = _tr('Tools')
-MOVE_TOP_ACTION = _tr('Move to top panel')
-MOVE_BOTTOM_ACTION = _tr('Move to bottom panel')
-MOVE_LEFT_ACTION = _tr('Move to left panel')
-MOVE_RIGHT_ACTION = _tr('Move to right panel')
-MOVE_LOWER_ACTION = _tr('Move to lower panel')
+ACTION_NAME_MOVE_UP = _tr('Move up')
+ACTION_NAME_MOVE_DOWN = _tr('Move down')
+ACTION_NAME_MOVE_LEFT = _tr('Move left')
+ACTION_NAME_MOVE_RIGHT = _tr('Move right')
+ACTION_NAME_MOVE_ALL = _tr('Move all tabs here')
 
 
 DEFAULT_LOADING_MESSAGE = _tr('Loading...')
@@ -55,11 +56,71 @@ IMAGE_PANEL_STRETCH = 300
 AUTO_TAB_MOVE_THRESHOLD = 1200
 USE_LOWER_CONTROL_TAB_THRESHOLD = 1600
 
-TOP_TAB_BOX_ID = 'TOP'
-BOTTOM_TAB_BOX_ID = 'BOTTOM'
-LEFT_TAB_BOX_ID = 'LEFT'
-RIGHT_TAB_BOX_ID = 'RIGHT'
-LOWER_TAB_BOX_ID = 'LOWER'
+
+class TabBoxID(StrEnum):
+    """Identifies all available tab box containers."""
+    TOP_TAB_BOX_ID = 'TOP'
+    BOTTOM_TAB_BOX_ID = 'BOTTOM'
+    LEFT_TAB_BOX_ID = 'LEFT'
+    RIGHT_TAB_BOX_ID = 'RIGHT'
+    LOWER_TAB_BOX_ID = 'LOWER'
+
+
+class TabMoveActions(Enum):
+    """Identifies the menu actions used to move tabs."""
+    MOVE_LEFT = 0
+    MOVE_RIGHT = 1
+    MOVE_UP_TO_TOP = 2
+    MOVE_UP_TO_LOWER = 3
+    MOVE_DOWN_TO_LOWER = 4
+    MOVE_DOWN_TO_BOTTOM = 5
+
+    def display_name(self) -> str:
+        """Returns the appropriate action display name."""
+        match self:
+            case TabMoveActions.MOVE_LEFT:
+                return ACTION_NAME_MOVE_LEFT
+            case TabMoveActions.MOVE_RIGHT:
+                return ACTION_NAME_MOVE_RIGHT
+            case TabMoveActions.MOVE_UP_TO_LOWER | TabMoveActions.MOVE_UP_TO_TOP:
+                return ACTION_NAME_MOVE_UP
+            case _:
+                return ACTION_NAME_MOVE_DOWN
+
+    def is_valid_for_tab_box(self, box_id: TabBoxID) -> bool:
+        """Returns whether the action type is valid for a tab within a particular tab box"""
+        match self:
+            case TabMoveActions.MOVE_LEFT:
+                return box_id != TabBoxID.LEFT_TAB_BOX_ID
+            case TabMoveActions.MOVE_RIGHT:
+                return box_id != TabBoxID.RIGHT_TAB_BOX_ID
+            case TabMoveActions.MOVE_UP_TO_LOWER:
+                return box_id == TabBoxID.BOTTOM_TAB_BOX_ID
+            case TabMoveActions.MOVE_UP_TO_TOP:
+                return box_id not in (TabBoxID.BOTTOM_TAB_BOX_ID, TabBoxID.TOP_TAB_BOX_ID)
+            case TabMoveActions.MOVE_DOWN_TO_BOTTOM:
+                return box_id == TabBoxID.LOWER_TAB_BOX_ID
+            case _:
+                assert self == TabMoveActions.MOVE_DOWN_TO_LOWER
+                return box_id not in (TabBoxID.BOTTOM_TAB_BOX_ID, TabBoxID.LOWER_TAB_BOX_ID)
+
+    def destination_tab_box_id(self) -> TabBoxID:
+        """Returns the tab box the action moves tabs into."""
+        match self:
+            case TabMoveActions.MOVE_LEFT:
+                return TabBoxID.LEFT_TAB_BOX_ID
+            case TabMoveActions.MOVE_RIGHT:
+                return TabBoxID.RIGHT_TAB_BOX_ID
+            case TabMoveActions.MOVE_UP_TO_LOWER:
+                return TabBoxID.LOWER_TAB_BOX_ID
+            case TabMoveActions.MOVE_UP_TO_TOP:
+                return TabBoxID.TOP_TAB_BOX_ID
+            case TabMoveActions.MOVE_DOWN_TO_BOTTOM:
+                return TabBoxID.BOTTOM_TAB_BOX_ID
+            case _:
+                assert self == TabMoveActions.MOVE_DOWN_TO_LOWER
+                return TabBoxID.LOWER_TAB_BOX_ID
+
 
 TOOL_TAB_ICON = f'{PROJECT_DIR}/resources/icons/tabs/wrench.svg'
 GEN_TAB_ICON = f'{PROJECT_DIR}/resources/icons/tabs/sparkle.svg'
@@ -139,7 +200,7 @@ class MainWindow(QMainWindow):
         self._bottom_tab_box = TabBox(Qt.Orientation.Horizontal, False)
         self._layout.addWidget(self._bottom_tab_box, stretch=TAB_BOX_STRETCH)
 
-        # Create tabs:
+        # Create tab actions:
         self._tab_actions: Dict[Tab, Dict[str, QAction]] = {}
 
         # Image/Mask editing layout:
@@ -147,22 +208,22 @@ class MainWindow(QMainWindow):
         self._tool_tab = Tab(TOOL_TAB_NAME, self._tool_panel)
         self._tool_tab.setIcon(QIcon(TOOL_TAB_ICON))
 
-        tab_box_id = AppConfig().get(AppConfig.TOOL_TAB_BAR)
-        if tab_box_id not in [TOP_TAB_BOX_ID, BOTTOM_TAB_BOX_ID, LOWER_TAB_BOX_ID, LEFT_TAB_BOX_ID, RIGHT_TAB_BOX_ID]:
-            tab_box_id = LOWER_TAB_BOX_ID if screen_size.height() > AUTO_TAB_MOVE_THRESHOLD \
-                else RIGHT_TAB_BOX_ID
+        try:
+            tab_box_id = TabBoxID(AppConfig().get(AppConfig.TOOL_TAB_BAR))
+        except ValueError:
+            tab_box_id = TabBoxID.LOWER_TAB_BOX_ID if screen_size.height() > AUTO_TAB_MOVE_THRESHOLD \
+                else TabBoxID.RIGHT_TAB_BOX_ID
         self.add_tab(self._tool_tab, tab_box_id)
 
         self._control_panel: Optional[QWidget] = None
         self._control_tab = Tab(CONTROL_TAB_NAME)
         self._control_tab.setIcon(QIcon(GEN_TAB_ICON))
 
-        for tab_box, tab_box_id in ((self._top_tab_box, TOP_TAB_BOX_ID),
-                                     (self._lower_tab_box, LOWER_TAB_BOX_ID),
-                                     (self._bottom_tab_box, BOTTOM_TAB_BOX_ID),
-                                     (self._image_panel.left_tab_box, LEFT_TAB_BOX_ID),
-                                     (self._image_panel.right_tab_box, RIGHT_TAB_BOX_ID)):
-            assert tab_box is not None
+        self._tab_actions: Dict[Tab, Dict[TabMoveActions, QAction]] = {}
+        self._tab_bar_actions: List[QAction] = []
+        for tab_box_id in TabBoxID:
+            assert isinstance(tab_box_id, TabBoxID)
+            tab_box = self._get_tab_box(tab_box_id)
 
             def _tab_added(tab, box_id=tab_box_id):
                 # Remember to update this after adding any new tabs
@@ -172,12 +233,24 @@ class MainWindow(QMainWindow):
                     AppConfig().set(AppConfig.GENERATION_TAB_BAR, box_id)
                 else:
                     AppConfig().set(AppConfig.CONTROLNET_TAB_BAR, box_id)
-                for tab_move_action in self._tab_actions[tab].values():
-                    tab.removeAction(tab_move_action)
-                for other_tab_box_id, tab_move_action in self._tab_actions[tab].items():
-                    if other_tab_box_id != box_id:
-                        tab.addAction(tab_move_action)
+                self._update_tab_actions(tab, box_id)
             tab_box.tab_added.connect(_tab_added)
+
+            def _move_all(_, box=tab_box, box_id=tab_box_id) -> None:
+                all_tabs: List[Tab] = []
+                for other_box_id in TabBoxID:
+                    assert isinstance(other_box_id, TabBoxID)
+                    if other_box_id == box_id:
+                        continue
+                    other_tab_box = self._get_tab_box(other_box_id)
+                    all_tabs += other_tab_box.tabs
+                for tab in all_tabs:
+                    box.add_widget(tab)
+            move_all_action = QAction()
+            move_all_action.setText(ACTION_NAME_MOVE_ALL)
+            move_all_action.triggered.connect(_move_all)
+            tab_box.addAction(move_all_action)
+            self._tab_bar_actions.append(move_all_action)
 
         for panel in (self._image_panel, self._tool_panel):
             AppStateTracker.set_enabled_states(panel, [APP_STATE_EDITING])
@@ -191,42 +264,50 @@ class MainWindow(QMainWindow):
         tab_parent = self._control_tab.parent()
         if tab_parent is None:
             screen_size = get_screen_size(self)
-            tab_box_id = AppConfig().get(AppConfig.GENERATION_TAB_BAR)
-            if tab_box_id not in [TOP_TAB_BOX_ID, BOTTOM_TAB_BOX_ID, LOWER_TAB_BOX_ID, LEFT_TAB_BOX_ID,
-                                  RIGHT_TAB_BOX_ID]:
-                tab_box_id = BOTTOM_TAB_BOX_ID if screen_size.height() > AUTO_TAB_MOVE_THRESHOLD \
-                    else RIGHT_TAB_BOX_ID
+            try:
+                tab_box_id = TabBoxID(AppConfig().get(AppConfig.GENERATION_TAB_BAR))
+            except ValueError:
+                tab_box_id = TabBoxID.BOTTOM_TAB_BOX_ID if screen_size.height() > AUTO_TAB_MOVE_THRESHOLD \
+                    else TabBoxID.RIGHT_TAB_BOX_ID
             self.add_tab(self._control_tab, tab_box_id)
 
-    def add_tab(self, tab: Tab, tab_box_key: str = '') -> None:
-        """Adds a new tab to one of the window's tab boxes."""
-        tab_box = self._get_tab_box(tab_box_key)
-        if tab_box is None:
-            if self.height() > USE_LOWER_CONTROL_TAB_THRESHOLD:
-                tab_box = self._bottom_tab_box
-            elif self.height() > AUTO_TAB_MOVE_THRESHOLD:
-                tab_box = self._lower_tab_box
-            else:
-                tab_box = self._image_panel.right_tab_box
-            assert tab_box is not None
-        assert tab_box is not None
+    def _init_tab_actions(self, tab: Tab) -> None:
         if tab not in self._tab_actions:
             self._tab_actions[tab] = {}
-            for panel_key, action_text in ((TOP_TAB_BOX_ID, MOVE_TOP_ACTION),
-                                           (BOTTOM_TAB_BOX_ID, MOVE_BOTTOM_ACTION),
-                                           (LEFT_TAB_BOX_ID, MOVE_LEFT_ACTION),
-                                           (RIGHT_TAB_BOX_ID, MOVE_RIGHT_ACTION),
-                                           (LOWER_TAB_BOX_ID, MOVE_LOWER_ACTION)):
-                new_tab_box = self._get_tab_box(panel_key)
-                assert new_tab_box is not None
+        for action_type in TabMoveActions:
+            if action_type in self._tab_actions[tab]:
+                continue
+            new_tab_box = self._get_tab_box(action_type.destination_tab_box_id())
+            action_text = action_type.display_name()
 
-                def _move_to_panel(_, moving_tab=tab, destination_box=new_tab_box) -> None:
-                    destination_box.add_widget(moving_tab)
-                action = QAction(action_text)
-                action.triggered.connect(_move_to_panel)
-                self._tab_actions[tab][panel_key] = action
-                if new_tab_box != tab_box:
-                    tab.addAction(action)
+            def _move_to_panel(_, moving_tab=tab, destination_box=new_tab_box) -> None:
+                destination_box.add_widget(moving_tab)
+            action = QAction(action_text)
+            action.triggered.connect(_move_to_panel)
+            self._tab_actions[tab][action_type] = action
+
+    def _update_tab_actions(self, tab: Tab, tab_box_key: TabBoxID) -> None:
+        self._init_tab_actions(tab)
+        for action_type in TabMoveActions:
+            action = self._tab_actions[tab][action_type]
+            action_included = action in tab.actions()
+            should_include = action_type.is_valid_for_tab_box(tab_box_key)
+            if action_included and not should_include:
+                tab.removeAction(action)
+            elif not action_included and should_include:
+                tab.addAction(action)
+
+    def add_tab(self, tab: Tab, tab_box_key: Optional[TabBoxID]) -> None:
+        """Adds a new tab to one of the window's tab boxes."""
+        if tab_box_key is None:
+            if self.height() > USE_LOWER_CONTROL_TAB_THRESHOLD:
+                tab_box_key = TabBoxID.BOTTOM_TAB_BOX_ID
+            elif self.height() > AUTO_TAB_MOVE_THRESHOLD:
+                tab_box_key = TabBoxID.LOWER_TAB_BOX_ID
+            else:
+                tab_box_key = TabBoxID.RIGHT_TAB_BOX_ID
+        tab_box = self._get_tab_box(tab_box_key)
+        self._update_tab_actions(tab, tab_box_key)
         tab_box.add_widget(tab)
 
     def remove_tab(self, tab: Tab) -> None:
@@ -320,16 +401,21 @@ class MainWindow(QMainWindow):
         """Close the application when the main window is closed."""
         QApplication.exit()
 
-    def _get_tab_box(self, tab_box_key: str) -> Optional[TabBox]:
+    def _get_tab_box(self, tab_box_id: TabBoxID) -> TabBox:
         """Look up a tab box from its expected name in config."""
-        if tab_box_key == TOP_TAB_BOX_ID:
-            return self._top_tab_box
-        if tab_box_key == LOWER_TAB_BOX_ID:
-            return self._lower_tab_box
-        if tab_box_key == BOTTOM_TAB_BOX_ID:
-            return self._bottom_tab_box
-        if tab_box_key == LEFT_TAB_BOX_ID:
-            return self._image_panel.left_tab_box
-        if tab_box_key == RIGHT_TAB_BOX_ID:
-            return self._image_panel.right_tab_box
-        return None
+        match tab_box_id:
+            case TabBoxID.TOP_TAB_BOX_ID:
+                return self._top_tab_box
+            case TabBoxID.LOWER_TAB_BOX_ID:
+                return self._lower_tab_box
+            case TabBoxID.BOTTOM_TAB_BOX_ID:
+                return self._bottom_tab_box
+            case TabBoxID.LEFT_TAB_BOX_ID:
+                left_box = self._image_panel.left_tab_box
+                assert left_box is not None
+                return left_box
+            case _:
+                assert tab_box_id == TabBoxID.RIGHT_TAB_BOX_ID
+                right_box = self._image_panel.right_tab_box
+                assert right_box is not None
+                return right_box

@@ -3,7 +3,7 @@ from typing import Optional, List
 
 from PySide6.QtCore import Signal, Qt, QPointF, QLine, QSize
 from PySide6.QtGui import QDragEnterEvent, QDragMoveEvent, QDragLeaveEvent, QDropEvent, QPaintEvent, QPainter
-from PySide6.QtWidgets import QWidget, QBoxLayout, QHBoxLayout, QVBoxLayout, QToolButton, QSizePolicy, QTabBar
+from PySide6.QtWidgets import QWidget, QBoxLayout, QHBoxLayout, QVBoxLayout, QToolButton, QSizePolicy, QTabBar, QFrame
 
 from src.ui.layout.draggable_tabs.tab import Tab
 from src.ui.panel.layer_ui.layer_widget import LayerWidget
@@ -13,7 +13,7 @@ from src.util.shared_constants import MAX_WIDGET_SIZE
 BASE_BAR_SIZE = 10
 
 
-class TabBar(QTabBar):
+class TabBar(QFrame):
     """Widget bar that can accept dragged tabs.
 
     TODO: TabBar inheritance is only being used for styling purposes here, actually using any of the tab-related methods
@@ -43,6 +43,7 @@ class TabBar(QTabBar):
         self._toggle_button.setStyleSheet('QToolButton { border: none; }')
         self._toggle_button.toggled.connect(self._toggle_button_slot)
         self._bar_size = BASE_BAR_SIZE
+        self.setContextMenuPolicy(Qt.ContextMenuPolicy.ActionsContextMenu)
 
         self._toggle_button.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonIconOnly)
         self._toggle_button.setChecked(False)
@@ -139,6 +140,11 @@ class TabBar(QTabBar):
         self._widgets.insert(index, widget)
         self._layout.insertWidget(index + 1, widget)
         self.update()
+
+    @property
+    def tabs(self) -> List[Tab]:
+        """Returns all tabs in this tab bar."""
+        return [widget for widget in self._widgets if isinstance(widget, Tab)]
 
     def _update_toggle_arrow(self, checked: bool):
         if self._orientation == Qt.Orientation.Horizontal:

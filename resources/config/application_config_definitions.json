@@ -33,6 +33,14 @@
         "default": 12,
         "saved": true
     },
+    "show_tool_control_hints": {
+        "label": "Show active tool control hints:",
+        "category": "Interface",
+        "description": "Show control hints for the active tool below the image.",
+        "type": "bool",
+        "default": true,
+        "saved": true
+    },
     "animate_outlines": {
         "label": "Animate outlines and selections:",
         "category": "Interface",
