@@ -1,8 +1,5 @@
 # Development tasks
 
-- Change tab actions to simple directional 'move up/down/left/right'
-- Tab bar right click option: "Move all tabs here"
-
 # Files
 - ORA SVG support
 

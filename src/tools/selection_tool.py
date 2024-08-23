@@ -24,15 +24,16 @@ def _tr(*args):
     return QApplication.translate(TR_ID, *args)
 
 
-SELECTION_TOOL_LABEL = _tr('Selection')
-SELECTION_TOOL_TOOLTIP = _tr('Select areas for editing or inpainting.')
-SELECTION_CONTROL_HINT = _tr('LMB:select - RMB:1px select - ')
+LABEL_TEXT_SELECTION_TOOL = _tr('Selection')
+TOOLTIP_SELECTION_TOOL = _tr('Select areas for editing or inpainting.')
+CONTROL_HINT_SELECTION_TOOL = _tr('LMB:select - RMB:1px select - ')
 
-SELECTION_CONTROL_LAYOUT_SPACING = 4
-RESOURCES_PEN_PNG = f'{PROJECT_DIR}/resources/icons/pen_small.svg'
-RESOURCES_ERASER_PNG = f'{PROJECT_DIR}/resources/icons/eraser_small.svg'
-RESOURCES_SELECTION_CURSOR = f'{PROJECT_DIR}/resources/cursors/selection_cursor.svg'
-RESOURCES_SELECTION_ICON = f'{PROJECT_DIR}/resources/icons/tools/selection_icon.svg'
+CURSOR_SELECTION_TOOL = f'{PROJECT_DIR}/resources/cursors/selection_cursor.svg'
+ICON_SELECTION_TOOL = f'{PROJECT_DIR}/resources/icons/tools/selection_icon.svg'
+
+
+ACTIVE_PIXMAP_OPACITY = 0.4
+INACTIVE_PIXMAP_OPACITY = 0.2
 
 
 class SelectionTool(CanvasTool):
@@ -41,15 +42,18 @@ class SelectionTool(CanvasTool):
     def __init__(self, image_stack: ImageStack, image_viewer: ImageViewer) -> None:
         scene = image_viewer.scene()
         assert scene is not None
-        super().__init__(image_stack, image_viewer, PixmapLayerCanvas(scene))
+        canvas = PixmapLayerCanvas(scene)
+        canvas.active_opacity = ACTIVE_PIXMAP_OPACITY
+        canvas.inactive_opacity = INACTIVE_PIXMAP_OPACITY
+        super().__init__(image_stack, image_viewer, canvas)
         self._last_click = None
         self._control_panel = CanvasSelectionPanel(image_stack.selection_layer)
         self._control_panel.tool_mode_changed.connect(self._tool_toggle_slot)
         self._active = False
         self._drawing = False
         self._cached_size: Optional[int] = None
-        self._icon = QIcon(RESOURCES_SELECTION_ICON)
-        self.set_scaling_icon_cursor(QIcon(RESOURCES_SELECTION_CURSOR))
+        self._icon = QIcon(ICON_SELECTION_TOOL)
+        self.set_scaling_icon_cursor(QIcon(CURSOR_SELECTION_TOOL))
 
         # Setup brush, load size from config
         self.brush_color = QColor()
@@ -77,15 +81,15 @@ class SelectionTool(CanvasTool):
 
     def get_label_text(self) -> str:
         """Returns label text used to represent this tool."""
-        return SELECTION_TOOL_LABEL
+        return LABEL_TEXT_SELECTION_TOOL
 
     def get_input_hint(self) -> str:
         """Return text describing different input functionality."""
-        return f'{SELECTION_CONTROL_HINT}{CanvasTool.canvas_control_hints()}{super().get_input_hint()}'
+        return f'{CONTROL_HINT_SELECTION_TOOL}{CanvasTool.canvas_control_hints()}{super().get_input_hint()}'
 
     def get_tooltip_text(self) -> str:
         """Returns tooltip text used to describe this tool."""
-        return SELECTION_TOOL_TOOLTIP
+        return TOOLTIP_SELECTION_TOOL
 
     def get_control_panel(self) -> Optional[QWidget]:
         """Returns the selection control panel."""

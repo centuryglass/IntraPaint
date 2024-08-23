@@ -12,6 +12,7 @@ from src.config.key_config import KeyConfig
 from src.hotkey_filter import HotkeyFilter
 from src.image.layers.image_stack import ImageStack
 from src.tools.base_tool import BaseTool
+from src.tools.draw_tool import DrawTool
 from src.tools.eyedropper_tool import EyedropperTool
 from src.tools.fill_tool import FillTool
 from src.tools.generation_area_tool import GenerationAreaTool
@@ -73,6 +74,8 @@ class ToolController(QObject):
             show_warning_dialog(None, BRUSH_LOAD_ERROR_TITLE, BRUSH_LOAD_ERROR_MESSAGE,
                                 AppConfig.WARN_ON_LIBMYPAINT_ERROR)
             brush_tool = None
+        draw_tool = DrawTool(image_stack, image_viewer)
+        self._add_tool(draw_tool)
         fill_tool = FillTool(image_stack)
         self._add_tool(fill_tool)
         eyedropper_tool = EyedropperTool(image_stack)
@@ -85,7 +88,7 @@ class ToolController(QObject):
 
         eyedropper_modifier = KeyConfig().get_modifier(KeyConfig.EYEDROPPER_OVERRIDE_MODIFIER)
         if eyedropper_modifier != Qt.KeyboardModifier.NoModifier:
-            for tool in (brush_tool, fill_tool, text_tool):
+            for tool in (brush_tool, fill_tool, text_tool, draw_tool):
                 if tool is not None:
                     if isinstance(eyedropper_modifier, list):
                         for mod in eyedropper_modifier:

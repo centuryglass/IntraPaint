@@ -19,12 +19,11 @@ from src.image.mypaint.mp_tile import MPTile
 class MyPaintLayerCanvas(LayerCanvas):
     """Connects a MyPaint surface with an image layer."""
 
-    def __init__(self, scene: QGraphicsScene, layer: Optional[ImageLayer] = None,
-                 edit_region: Optional[QRect] = None) -> None:
+    def __init__(self, scene: QGraphicsScene, layer: Optional[ImageLayer] = None) -> None:
         """Initialize a MyPaint surface, and connect to the image layer."""
-        super().__init__(scene, layer, edit_region)
+        super().__init__(scene, layer)
         self._mask: Optional[QImage] = None
-        self._mp_surface = MPSurface(QSize() if self.edit_region is None else self.edit_region.size())
+        self._mp_surface = MPSurface(QSize() if layer is None else layer.size)
         self._last_stroke_bounds = QRect()
         self._last_stroke_tiles: Set[MPTile] = set()
         self._last_eraser_value: Optional[float] = None
@@ -172,12 +171,11 @@ class MyPaintLayerCanvas(LayerCanvas):
 
     def _layer_content_change_slot(self, layer: Optional[ImageLayer]) -> None:
         """Refreshes the layer content within the canvas, or clears it if the layer is hidden."""
-        assert layer == self._layer
-        if layer is None or not layer.visible or self._edit_region is None or self._edit_region.isEmpty():
+        assert layer == self.layer
+        if layer is None or not layer.visible or layer.size.isEmpty():
             self._mp_surface.clear()
         else:
-            image = layer.cropped_image_content(self._edit_region)
-            self._mp_surface.load_image(image)
+            self._mp_surface.load_image(layer.image)
 
     def _layer_composition_mode_change_slot(self, layer: ImageLayer, mode: QPainter.CompositionMode) -> None:
         assert layer == self._layer
@@ -193,8 +191,7 @@ class MyPaintLayerCanvas(LayerCanvas):
 
     def _copy_changes_to_layer(self, layer: ImageLayer):
         """Copies content back to the connected layer."""
-        if self._layer is not None and self._layer.visible and self._edit_region is not None \
-                and not self._edit_region.isEmpty() and not self._last_stroke_bounds.isEmpty():
+        if self.layer is not None and self.layer.visible:
             self._last_stroke_bounds = self._last_stroke_bounds.intersected(self._layer.bounds)
             tile_change_image = self._layer.cropped_image_content(self._last_stroke_bounds)
             for tile in self._last_stroke_tiles:

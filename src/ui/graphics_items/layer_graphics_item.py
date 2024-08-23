@@ -1,4 +1,5 @@
 """Renders an image layer into a QGraphicsScene."""
+from PySide6.QtWidgets import QGraphicsItem
 from PySide6.QtGui import QPainter
 
 from src.image.layers.image_layer import ImageLayer
@@ -22,7 +23,7 @@ class LayerGraphicsItem(PixmapItem):
         layer.transform_changed.connect(self._update_transform)
         layer.z_value_changed.connect(lambda _, z_value: self.setZValue(z_value))
         layer.composition_mode_changed.connect(self._update_mode)
-        self.setFlag(LayerGraphicsItem.GraphicsItemFlag.ItemStacksBehindParent, True)
+        self.setFlag(QGraphicsItem.GraphicsItemFlag.ItemStacksBehindParent, True)
         self.setOpacity(layer.opacity)
         self.setTransform(layer.transform)
         self.setVisible(layer.visible)

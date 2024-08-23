@@ -85,19 +85,20 @@ class SelectionFillTool(BaseTool):
         if event.buttons() == Qt.MouseButton.LeftButton or event.buttons() == Qt.MouseButton.RightButton:
             clear_mode = event.buttons() == Qt.MouseButton.RightButton
             layer = self._image_stack.active_layer
+            layer_bounds = layer.bounds
             mask_pos = self._image_stack.selection_layer.position
             merged_pos = self._image_stack.merged_layer_bounds.topLeft()
             threshold = Cache().get(Cache.FILL_THRESHOLD)
             sample_merged = Cache().get(Cache.SAMPLE_MERGED)
             fill_by_selection = self._control_panel.fill_by_selection
             if isinstance(layer, TransformLayer):
-                layer_pos = layer.map_to_image(QPoint())
+                layer_pos = layer.map_to_image(layer_bounds.topLeft())
             else:
-                layer_pos = QPoint()
+                layer_pos = layer_bounds.topLeft()
             if fill_by_selection:
                 image = self._image_stack.selection_layer.image
                 paint_transform = QTransform()
-                sample_point = image_coordinates + mask_pos
+                sample_point = image_coordinates - mask_pos
             elif sample_merged:
                 image = self._image_stack.qimage(crop_to_image=False)
                 sample_point = image_coordinates - merged_pos
@@ -109,8 +110,8 @@ class SelectionFillTool(BaseTool):
                     sample_point = layer.map_from_image(image_coordinates)
                     paint_transform = layer.transform
                 else:
-                    sample_point = image_coordinates
                     paint_transform = QTransform()
+                    sample_point = image_coordinates - layer_bounds.topLeft()
                 layer_pos_in_mask = layer_pos - mask_pos
                 transformed_origin = paint_transform.map(QPoint(0, 0))
                 img_offset = layer_pos_in_mask - transformed_origin

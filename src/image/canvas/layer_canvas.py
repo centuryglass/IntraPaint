@@ -14,16 +14,9 @@ from src.image.layers.layer import Layer
 class LayerCanvas:
     """Connects a MyPaint surface with an image layer."""
 
-    def __init__(self, scene: QGraphicsScene, layer: Optional[ImageLayer] = None,
-                 edit_region: Optional[QRect] = None) -> None:
+    def __init__(self, scene: QGraphicsScene, layer: Optional[ImageLayer] = None) -> None:
         """Initialize a MyPaint surface, and connect to the image layer."""
         self._layer: Optional[ImageLayer] = None
-        if edit_region is not None:
-            self._edit_region: Optional[QRect] = edit_region
-        elif layer is not None:
-            self._edit_region = QRect(0, 0, layer.width, layer.height)
-        else:
-            self._edit_region = None
         self._eraser = False
         self._color = QColor(0, 0, 0)
         self._brush_size = 1
@@ -43,10 +36,7 @@ class LayerCanvas:
             new_layer = None
         self._layer = new_layer
         if self._layer is not None:
-            if self.edit_region is None:
-                self._edit_region = self._layer.bounds
-            assert self._edit_region is not None
-            self._update_scene_content_bounds(self._edit_region)
+            self._update_scene_content_bounds(self._layer.bounds)
             self.connect_layer_signals()
             self._layer_size_change_slot(self._layer, self._layer.size)
             self._update_canvas_transform(self._layer, self._layer.transform)
@@ -106,18 +96,14 @@ class LayerCanvas:
         self._set_brush_color(new_color)
 
     @property
-    def edit_region(self) -> Optional[QRect]:
-        """Returns the bounds within the layer that the canvas is editing."""
-        return self._edit_region
+    def drawing(self) -> bool:
+        """Returns whether the stroke is still in-progress."""
+        return self._drawing
 
-    @edit_region.setter
-    def edit_region(self, new_region: Optional[QRect]) -> None:
-        """Updates the bounds within the layer that the canvas is editing."""
-        self._edit_region = new_region
-        if new_region is not None and not new_region.isEmpty():
-            self._update_scene_content_bounds(new_region)
-            if self._layer is not None:
-                self._layer_content_change_slot(self._layer)
+    @property
+    def layer(self) -> Optional[ImageLayer]:
+        """Returns the active ImageLayer, or None if no ImageLayer is active."""
+        return self._layer
 
     def start_stroke(self) -> None:
         """Signals the start of a brush stroke, to be called once whenever user input starts or resumes."""
@@ -216,22 +202,16 @@ class LayerCanvas:
 
     # noinspection PyUnusedLocal
     def _layer_size_change_slot(self, layer: ImageLayer, size: QSize) -> None:
-        assert self._edit_region is not None
-        new_bounds = layer.bounds
-        if new_bounds.size() != self._edit_region.size():
-            self._update_scene_content_bounds(QRect(self._edit_region.topLeft(), new_bounds.size()))
-        self._edit_region = new_bounds
+        assert layer == self._layer
+        self._update_scene_content_bounds(layer.bounds)
 
     def _layer_transform_change_slot(self, layer: ImageLayer, _):
         self._update_canvas_transform(layer, layer.transform)
 
     # noinspection PyUnusedLocal
     def _layer_bounds_change_slot(self, layer: ImageLayer, *args) -> None:
-        assert self._edit_region is not None
-        new_bounds = layer.bounds
-        if new_bounds.size() != self._edit_region.size():
-            self._update_scene_content_bounds(QRect(self._edit_region.topLeft(), new_bounds.size()))
-        self._edit_region = new_bounds
+        assert layer == self._layer
+        self._update_scene_content_bounds(layer.bounds)
 
     def _layer_z_value_change_slot(self, layer: ImageLayer, z_value: int) -> None:
         assert layer == self._layer

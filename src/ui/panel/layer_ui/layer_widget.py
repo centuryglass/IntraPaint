@@ -14,7 +14,7 @@ from src.image.layers.image_stack import ImageStack
 from src.image.layers.layer import Layer
 from src.image.layers.layer_stack import LayerStack
 from src.image.layers.transform_layer import TransformLayer
-from src.tools.selection_tool import SELECTION_TOOL_LABEL
+from src.tools.selection_tool import LABEL_TEXT_SELECTION_TOOL
 from src.ui.input_fields.editable_label import EditableLabel
 from src.ui.panel.layer_ui.layer_alpha_lock_button import LayerAlphaLockButton
 from src.ui.panel.layer_ui.layer_lock_button import LayerLockButton
@@ -216,7 +216,7 @@ class LayerWidget(BorderedWidget):
         self._clicking = True
         self._click_time = datetime.datetime.now().timestamp()
         if self._layer == self._image_stack.selection_layer:
-            Cache().set(Cache.LAST_ACTIVE_TOOL, SELECTION_TOOL_LABEL)
+            Cache().set(Cache.LAST_ACTIVE_TOOL, LABEL_TEXT_SELECTION_TOOL)
         elif not self.active and event.button() == Qt.MouseButton.LeftButton:
             self._image_stack.active_layer = self._layer
             self.active = True

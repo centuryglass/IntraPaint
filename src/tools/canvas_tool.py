@@ -163,6 +163,11 @@ class CanvasTool(BaseTool):
             if control_panel is not None:
                 control_panel.setEnabled(False)
 
+    @property
+    def canvas(self) -> LayerCanvas:
+        """Access the tool's edited canvas."""
+        return self._canvas
+
     def _layer_lock_slot(self, layer: Layer, locked: bool) -> None:
         if not self.is_active:
             return

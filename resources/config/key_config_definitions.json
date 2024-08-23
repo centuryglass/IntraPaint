@@ -154,9 +154,17 @@
     "brush_tool_key": {
         "label": "Switch to the brush tool:",
         "category": "Keybindings",
-        "description": "Activate the brush tool to draw into the image.",
+        "description": "Activate the brush tool to paint into the image.",
         "type": "string",
         "default": "B",
+        "saved": true
+    },
+    "draw_tool_key": {
+        "label": "Switch to the draw tool:",
+        "category": "Keybindings",
+        "description": "Activate the draw tool to draw into the image.",
+        "type": "string",
+        "default": "D",
         "saved": true
     },
     "eyedropper_tool_key": {

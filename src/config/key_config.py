@@ -189,6 +189,7 @@ class KeyConfig(Config, metaclass=Singleton):
     CROP_TO_CONTENT_SHORTCUT: str
     CUT_SHORTCUT: str
     DELETE_LAYER_SHORTCUT: str
+    DRAW_TOOL_KEY: str
     EYEDROPPER_OVERRIDE_MODIFIER: str
     EYEDROPPER_TOOL_KEY: str
     FILL_TOOL_KEY: str
