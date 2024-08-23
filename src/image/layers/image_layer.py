@@ -75,6 +75,14 @@ class ImageLayer(TransformLayer):
 
         UndoStack().commit_action(_update_lock, _undo, 'src.layers.image_layer.alpha_locked')
 
+    @contextmanager
+    def with_alpha_lock_disabled(self) -> Generator[None, None, None]:
+        """Temporarily disables transparency locking while the context is held."""
+        alpha_lock_state = self._alpha_locked
+        self._alpha_locked = False
+        yield
+        self._alpha_locked = alpha_lock_state
+
     def get_qimage(self) -> QImage:
         """Return layer image data as an ARGB32 formatted QImage."""
         return self._image
@@ -309,12 +317,14 @@ class ImageLayer(TransformLayer):
             crop_transform.translate(float(cropped_bounds.x()), float(cropped_bounds.y()))
 
             def _do_crop(img=cropped_image, matrix=crop_transform):
-                self.set_image(img)
-                self.set_transform(matrix)
+                with self.with_alpha_lock_disabled():
+                    self.set_image(img)
+                    self.set_transform(matrix)
 
             def _undo_crop(img=full_image, matrix=transform):
-                self.set_image(img)
-                self.set_transform(matrix)
+                with self.with_alpha_lock_disabled():
+                    self.set_image(img)
+                    self.set_transform(matrix)
 
             UndoStack().commit_action(_do_crop, _undo_crop, 'ImageLayer.crop_to_content')
 
@@ -342,14 +352,15 @@ class ImageLayer(TransformLayer):
     def restore_state(self, saved_state: Any) -> None:
         """Restore the layer state from a previous saved state."""
         assert isinstance(saved_state, ImageLayerState)
-        self.set_name(saved_state.name)
-        self.set_visible(saved_state.visible)
-        self.set_opacity(saved_state.opacity)
-        self.set_composition_mode(saved_state.mode)
-        self.set_transform(saved_state.transform)
-        self.set_image(saved_state.image)
-        self.set_alpha_locked(saved_state.alpha_locked)
-        self.set_locked(saved_state.locked)
+        with self.with_alpha_lock_disabled():
+            self.set_name(saved_state.name)
+            self.set_visible(saved_state.visible)
+            self.set_opacity(saved_state.opacity)
+            self.set_composition_mode(saved_state.mode)
+            self.set_transform(saved_state.transform)
+            self.set_image(saved_state.image)
+            self.set_alpha_locked(saved_state.alpha_locked)
+            self.set_locked(saved_state.locked)
 
     # INTERNAL:
 

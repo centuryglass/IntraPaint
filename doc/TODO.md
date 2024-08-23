@@ -7,7 +7,6 @@
 - Test GLID with tab interface
 
 # Layers
-- Transparency locking: adjust for transformation offset (temp disable when resizing/cropping layers, probably)
 - support for missing OpenRaster composition modes
 - Add selection layer back to layer panel
 - Add "merge group" and "merge all" options

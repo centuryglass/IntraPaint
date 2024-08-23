@@ -328,9 +328,10 @@ class ImageStack(QObject):
             for layer in self.image_layers:
                 if layer.locked:
                     continue
-                layer.set_transform(layer.transform * translate)
-                mapped_bounds = layer.map_rect_from_image(bounds)
-                layer.adjust_local_bounds(mapped_bounds, False)
+                with layer.with_alpha_lock_disabled():
+                    layer.set_transform(layer.transform * translate)
+                    mapped_bounds = layer.map_rect_from_image(bounds)
+                    layer.adjust_local_bounds(mapped_bounds, False)
 
         @self._with_batch_content_update
         def _undo_resize(size=last_size, sel_state=selection_state, stack_state=layer_state):
@@ -790,6 +791,10 @@ class ImageStack(QObject):
             painter.setOpacity(top_layer.opacity)
             painter.setCompositionMode(top_layer.composition_mode)
             painter.drawImage(top_layer.bounds, top_layer.image)
+            if base_layer.alpha_locked:
+                painter.setTransform(base_paint_transform)
+                painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_DestinationIn)
+                painter.drawImage(QPoint(), base_layer.image)
             painter.end()
 
             final_transform = QTransform.fromTranslate(-offset.x(), -offset.y()) * base_layer.transform
@@ -797,7 +802,8 @@ class ImageStack(QObject):
             def _do_merge(removed=top_layer, base=base_layer, matrix=final_transform,
                           img=merged_image, update_active=is_active_layer) -> None:
                 self._remove_layer_internal(removed)
-                base.set_image(img)
+                with base.with_alpha_lock_disabled():
+                    base.set_image(img)
                 base.set_transform(matrix)
                 if removed.visible != base.visible:
                     self._emit_content_changed()
@@ -856,9 +862,11 @@ class ImageStack(QObject):
             content_changed = layer.visible and not layer.empty
 
             def _resize(resized=layer, img=resized_image, changed=content_changed) -> None:
-                resized.set_image(img)
-                if isinstance(resized, TransformLayer):
-                    resized.set_transform(QTransform())
+                assert isinstance(resized, ImageLayer)
+                with resized.with_alpha_lock_disabled():
+                    resized.set_image(img)
+                    if isinstance(resized, TransformLayer):
+                        resized.set_transform(QTransform())
                 if changed:
                     self._emit_content_changed()
 
