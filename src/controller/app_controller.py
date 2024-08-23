@@ -687,7 +687,7 @@ class AppController(MenuBuilder):
                     # noinspection PyTypeChecker
                     param_str = str(param_str, encoding='utf-8')
                 match = re.match(r'^(.*\n?.*)\nSteps: ?(\d+), Sampler: ?(.*), CFG scale: ?(.*), Seed: ?(.+),'
-                                 r' Size: ?(.+)x(.+)',  param_str)
+                                 r' Size: ?(\d+)x?(\d+)',  param_str)
                 if match:
                     prompt = match.group(1)
                     negative = ''
