@@ -31,8 +31,10 @@ def map_view_point_to_scene_item_point(view_pt: QPointF, item: QGraphicsItem) ->
 def get_view_bounds_of_scene_item_rect(local_rect: QRectF, item: QGraphicsItem) -> QRectF:
     """Returns a scene item rectangle's bounds in the view."""
     poly = QPolygonF()
-    for corner in (map_scene_item_point_to_view_point(pt, item) for pt in (local_rect.topLeft(), local_rect.bottomLeft(),
-                                                                           local_rect.topRight(), local_rect.bottomRight())):
+    for corner in (map_scene_item_point_to_view_point(pt, item) for pt in (local_rect.topLeft(),
+                                                                           local_rect.bottomLeft(),
+                                                                           local_rect.topRight(),
+                                                                           local_rect.bottomRight())):
         poly.append(corner)
     return poly.boundingRect()
 
@@ -40,8 +42,10 @@ def get_view_bounds_of_scene_item_rect(local_rect: QRectF, item: QGraphicsItem) 
 def get_scene_item_bounds_of_view_rect(view_rect: QRectF, item: QGraphicsItem) -> QRectF:
     """Returns a view rectangle's bounds in a graphics scene item's coordinate."""
     poly = QPolygonF()
-    for corner in (map_view_point_to_scene_item_point(pt, item) for pt in (view_rect.topLeft(), view_rect.bottomLeft(),
-                                                                           view_rect.topRight(), view_rect.bottomRight())):
+    for corner in (map_view_point_to_scene_item_point(pt, item) for pt in (view_rect.topLeft(),
+                                                                           view_rect.bottomLeft(),
+                                                                           view_rect.topRight(),
+                                                                           view_rect.bottomRight())):
         poly.append(corner)
     return poly.boundingRect()
 
@@ -50,6 +54,6 @@ def get_scene_bounds_of_scene_item_rect(local_rect: QRectF, item: QGraphicsItem)
     """Returns a scene item rectangle's bounds in the scene."""
     poly = QPolygonF()
     for corner in (item.mapToScene(pt) for pt in (local_rect.topLeft(), local_rect.bottomLeft(),
-                                                                        local_rect.topRight(), local_rect.bottomRight())):
+                                                  local_rect.topRight(), local_rect.bottomRight())):
         poly.append(corner)
     return poly.boundingRect()

@@ -22,6 +22,9 @@ from src.util.shared_constants import PIL_SCALING_MODES
 logger = logging.getLogger(__name__)
 DEFAULT_ICON_SIZE = QSize(64, 64)
 
+AnyNpArray: TypeAlias = ndarray[Any, dtype[Any]]
+
+
 METADATA_PARAMETER_KEY = 'parameters'
 METADATA_COMMENT_KEY = 'comment'
 TIFF_DESCRIPTION_TAG = 'ImageDescription'
@@ -441,7 +444,7 @@ def _save_pil(image: Image.Image, file_path: str, file_format: Optional[str] = N
             raise ValueError(f'Invalid path {file_path} missing extension')
         file_format = file_path[delimiter_index + 1:].upper()
     if file_format in RENAMED_FORMATS:
-        file_format = RENAMED_FORMATS[file_format]
+        file_format = RENAMED_FORMATS.get(file_format)
     if file_format in PALETTE_FORMATS:
         image = image.convert('P')
         if file_format == 'PALM':
@@ -584,16 +587,13 @@ def load_image(file_path: str) -> Tuple[QImage, Optional[Dict[str, Any]], Option
     return QImage(file_path), None, None
 
 
-AnyNpArray: TypeAlias = ndarray[Any, dtype[Any]]
-
-
 def image_data_as_numpy_8bit(image: QImage) -> AnyNpArray:
     """Returns a numpy array interface for a QImage's internal data buffer."""
     assert image.format() == QImage.Format.Format_ARGB32_Premultiplied, \
         f'Image must be pre-converted to ARGB32_premultiplied, format was {image.format()}'
     image_ptr = image.bits()
     if image_ptr is None:
-        raise ValueError("Invalid image parameter")
+        raise ValueError('Invalid image parameter')
     return np.ndarray(shape=(image.height(), image.width(), 4), dtype=np.uint8, buffer=image_ptr)
 
 

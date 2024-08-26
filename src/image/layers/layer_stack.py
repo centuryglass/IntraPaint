@@ -4,6 +4,7 @@ from typing import List, Optional, Dict, Any, Callable
 from PySide6.QtCore import QRect, Signal, QPoint
 from PySide6.QtGui import QPainter, QImage, QTransform
 
+from src.image.composite_mode import CompositeMode
 from src.image.layers.image_layer import ImageLayer, ImageLayerState
 from src.image.layers.layer import Layer, LayerParent
 from src.image.layers.text_layer import TextLayer
@@ -126,8 +127,7 @@ class LayerStack(Layer, LayerParent):
         return image
 
     def render(self, base_image: Optional[QImage] = None,
-                      paint_param_adjuster: Optional[Callable[[int, QImage, QRect, QPainter], Optional[QImage]]]
-                      = None) -> QImage:
+               paint_param_adjuster: Optional[Callable[[int, QImage, QRect, QPainter], Optional[QImage]]] = None) -> QImage:
         """Render all layers to a QImage with a custom base image and accepting a function to control layer painting on
         a per-layer basis.
 
@@ -149,45 +149,38 @@ class LayerStack(Layer, LayerParent):
             base_image = create_transparent_image(image_bounds.size())
         else:
             image_bounds = QRect(QPoint(), base_image.size())
-        if not self.visible:
+        if not self.visible or self.opacity == 0.0 or image_bounds.isEmpty():
             return base_image
-        if self.opacity != 1.0 or self.composition_mode != QPainter.CompositionMode.CompositionMode_SourceOver:
+        if self.opacity != 1.0 or self.composition_mode != CompositeMode.NORMAL:
             final_base_image = base_image
-            base_image = create_transparent_image(image_bounds.size())
+            base_image = create_transparent_image(base_image.size())
         else:
             final_base_image = None
 
         offset = -image_bounds.topLeft()
-        if not image_bounds.isEmpty():
-            painter = QPainter(base_image)
-            for layer in reversed(self._layers):
-                if not layer.visible:
-                    continue
-                if isinstance(layer, LayerStack):
-                    layer_image = layer.render(None, paint_param_adjuster)
-                else:
-                    layer_image = layer.image
-                if layer_image is not None:
-                    painter.save()
-                    painter.setOpacity(layer.opacity)
-                    painter.setCompositionMode(layer.composition_mode)
-                    if isinstance(layer, TransformLayer):
-                        painter.setTransform(layer.transform * QTransform.fromTranslate(offset.x(), offset.y()))
-                    else:
-                        painter.setTransform(QTransform.fromTranslate(offset.x(), offset.y()))
-                    layer_bounds = layer.bounds
+        for layer in reversed(self._layers):
+            if offset != QPoint():
+                def _offset_adjuster(layer_id: int, layer_image: QImage, paint_bounds: QRect,
+                                     layer_painter: QPainter) -> Optional[QImage]:
+                    layer_painter.setTransform(layer_painter.transform() * QTransform.fromTranslate(offset.x(),
+                                                                                                    offset.y()))
                     if paint_param_adjuster is not None:
-                        new_image = paint_param_adjuster(layer.id, layer_image, layer_bounds, painter)
-                        if new_image is not None:
-                            layer_image = new_image
-                    painter.drawImage(layer_bounds, layer_image)
-                    painter.restore()
-            painter.end()
+                        return paint_param_adjuster(layer_id, layer_image, paint_bounds, layer_painter)
+                    return None
+                layer.render(base_image, _offset_adjuster)
+            else:
+                layer.render(base_image, paint_param_adjuster)
         if final_base_image is not None:
             painter = QPainter(final_base_image)
             painter.setOpacity(self.opacity)
-            painter.setCompositionMode(self.composition_mode)
-            painter.drawImage(image_bounds, base_image)
+            final_bounds = QRect(QPoint(), final_base_image.size())
+            qt_composite_mode = self.composition_mode.qt_composite_mode()
+            if qt_composite_mode is not None:
+                painter.setCompositionMode(qt_composite_mode)
+            else:
+                composite_op = self.composition_mode.custom_composite_op()
+                composite_op(base_image, final_base_image, final_bounds, final_bounds, None)
+            painter.drawImage(final_bounds, base_image)
             painter.end()
             return final_base_image
         return base_image
@@ -270,6 +263,8 @@ class LayerStack(Layer, LayerParent):
         layer.visibility_changed.disconnect(self._layer_visibility_change_slot)
         if isinstance(layer, TransformLayer):
             layer.transform_changed.disconnect(self._layer_bounds_change_slot)
+        elif isinstance(layer, LayerStack):
+            layer.bounds_changed.disconnect(self._layer_bounds_change_slot)
         layer.size_changed.disconnect(self._layer_bounds_change_slot)
 
         index = self.get_layer_index(layer)
@@ -281,6 +276,12 @@ class LayerStack(Layer, LayerParent):
             self.invalidate_pixmap()
             self.content_changed.emit(self)
         self._get_local_bounds()  # Ensure size is correct
+        if isinstance(layer, LayerStack):
+            child_layers = layer.child_layers
+            for child_layer in child_layers:
+                self.layer_removed.emit(child_layer)
+            layer.layer_added.disconnect(self.layer_added)
+            layer.layer_removed.disconnect(self.layer_removed)
         self.layer_removed.emit(layer)
 
     def insert_layer(self, layer: Layer, index: Optional[int]) -> None:
@@ -295,8 +296,13 @@ class LayerStack(Layer, LayerParent):
         layer.opacity_changed.connect(self._layer_content_change_slot)
         layer.composition_mode_changed.connect(self._layer_content_change_slot)
         layer.visibility_changed.connect(self._layer_visibility_change_slot)
+        layer_bounds = layer.bounds
         if isinstance(layer, TransformLayer):
+            layer_bounds = layer.transformed_bounds
             layer.transform_changed.connect(self._layer_bounds_change_slot)
+        elif isinstance(layer, LayerStack):
+            layer.bounds_changed.connect(self._layer_bounds_change_slot)
+        bounds_changing = not layer_bounds.isEmpty() and not self._get_local_bounds().contains(layer_bounds)
         layer.size_changed.connect(self._layer_bounds_change_slot)
         self._layers.insert(index, layer)
         layer.layer_parent = self
@@ -306,8 +312,14 @@ class LayerStack(Layer, LayerParent):
             self._image_cache.invalidate()
             self.invalidate_pixmap()
             self.content_changed.emit(self)
-        self._get_local_bounds()  # Ensure size is correct
         self.layer_added.emit(layer)
+        if bounds_changing:
+            self._layer_bounds_change_slot(layer)
+        if isinstance(layer, LayerStack):
+            for child_layer in layer.recursive_child_layers:
+                self.layer_added.emit(child_layer)
+            layer.layer_added.connect(self.layer_added)
+            layer.layer_removed.connect(self.layer_removed)
 
     def move_layer(self, layer: Layer, new_index: int) -> None:
         """Moves a layer to a new index.  This does not emit any signals or alter the undo history."""
@@ -332,15 +344,19 @@ class LayerStack(Layer, LayerParent):
         self.set_visible(saved_state.visible)
         self.set_opacity(saved_state.opacity)
         self.set_composition_mode(saved_state.mode)
-        restore_list = list(saved_state.child_states.keys())
-        for layer in self._layers:
-            if layer.id in saved_state.child_states:
-                layer.restore_state(saved_state.child_states[layer.id])
-                restore_list.remove(layer.id)
-            else:
-                raise RuntimeError(f'Found extra layer {layer.name}:{layer.id} when restoring {self.name}:{self.id}')
-        if len(restore_list) > 0:
-            raise RuntimeError(f'Missing {len(restore_list)} layers when restoring {self.name}:{self.id}')
+        for i, layer in enumerate(saved_state.child_layers):
+            layer_at_idx = None if self.count <= i else self.get_layer_by_index(i)
+            if layer != layer_at_idx:
+                if layer.layer_parent == self:
+                    self.move_layer(layer, i)
+                else:
+                    self.insert_layer(layer, i)
+            assert layer.id in saved_state.child_states
+            layer.restore_state(saved_state.child_states[layer.id])
+        while self.count > len(saved_state.child_layers):
+            extra_layer = self.get_layer_by_index(len(saved_state.child_layers))
+            assert extra_layer is not None
+            self.remove_layer(extra_layer)
 
     def set_visible(self, visible: bool, send_signals: bool = True) -> None:
         super().set_visible(visible, send_signals)
@@ -359,25 +375,26 @@ class LayerStack(Layer, LayerParent):
                 return False
         return True
 
-    def _layer_content_change_slot(self, layer: ImageLayer | TextLayer, _=None) -> None:
+    def _layer_content_change_slot(self, layer: Layer, _=None) -> None:
         if layer.visible and layer in self._layers:
             self._image_cache.invalidate()
             self.invalidate_pixmap()
             self._get_local_bounds()  # Ensure size is correct
             self.content_changed.emit(self)
 
-    def _layer_visibility_change_slot(self, layer: ImageLayer | TextLayer, _) -> None:
+    def _layer_visibility_change_slot(self, layer: Layer, _=None) -> None:
         if layer in self._layers:
             self._image_cache.invalidate()
             self.invalidate_pixmap()
             self.content_changed.emit(self)
 
-    def _layer_bounds_change_slot(self, layer: ImageLayer | TextLayer, _) -> None:
+    def _layer_bounds_change_slot(self, layer: Layer, _=None) -> None:
         if layer in self._layers:
             self._image_cache.invalidate()
             self.invalidate_pixmap()
-            self._get_local_bounds()  # Ensure size is correct
+            bounds = self._get_local_bounds()  # Ensure size is correct
             self.content_changed.emit(self)
+            self.bounds_changed.emit(self, bounds)
 
 
 class LayerStackState:
@@ -390,6 +407,8 @@ class LayerStackState:
         self.opacity = layer.opacity
         self.mode = layer.composition_mode
         self.child_states: Dict[int, ImageLayerState | LayerStackState] = {}
+        self.child_layers: List[Layer] = []
         for i in range(layer.count):
             child = layer.get_layer_by_index(i)
+            self.child_layers.append(child)
             self.child_states[child.id] = child.save_state()

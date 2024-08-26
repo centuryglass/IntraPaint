@@ -4,8 +4,13 @@ inpainting modes.  Other editing modes should provide subclasses with implementa
 """
 import logging
 import sys
-from enum import Enum, StrEnum
 from typing import Optional, Dict, List
+from enum import Enum
+try:
+    from enum import StrEnum
+except ImportError:  # Use third-party StrEnum if python version < 3.11
+    # noinspection PyUnresolvedReferences
+    from strenum import StrEnum  # type: ignore
 
 from PySide6.QtCore import Qt, QRect, QSize, Signal
 from PySide6.QtGui import QIcon, QMouseEvent, QResizeEvent, QKeySequence, QCloseEvent, QImage, QAction
@@ -200,14 +205,12 @@ class MainWindow(QMainWindow):
         self._bottom_tab_box = TabBox(Qt.Orientation.Horizontal, False)
         self._layout.addWidget(self._bottom_tab_box, stretch=TAB_BOX_STRETCH)
 
-        # Create tab actions:
-        self._tab_actions: Dict[Tab, Dict[str, QAction]] = {}
-
         # Image/Mask editing layout:
         self._tool_panel = ToolPanel(image_stack, self._image_panel, self.generate_signal.emit)
         self._tool_tab = Tab(TOOL_TAB_NAME, self._tool_panel)
         self._tool_tab.setIcon(QIcon(TOOL_TAB_ICON))
 
+        self._tab_actions: Dict[Tab, Dict[TabMoveActions, QAction]] = {}
         try:
             tab_box_id = TabBoxID(AppConfig().get(AppConfig.TOOL_TAB_BAR))
         except ValueError:
@@ -219,7 +222,6 @@ class MainWindow(QMainWindow):
         self._control_tab = Tab(CONTROL_TAB_NAME)
         self._control_tab.setIcon(QIcon(GEN_TAB_ICON))
 
-        self._tab_actions: Dict[Tab, Dict[TabMoveActions, QAction]] = {}
         self._tab_bar_actions: List[QAction] = []
         for tab_box_id in TabBoxID:
             assert isinstance(tab_box_id, TabBoxID)
@@ -249,7 +251,7 @@ class MainWindow(QMainWindow):
             move_all_action = QAction()
             move_all_action.setText(ACTION_NAME_MOVE_ALL)
             move_all_action.triggered.connect(_move_all)
-            tab_box.addAction(move_all_action)
+            tab_box.add_tab_bar_action(move_all_action)
             self._tab_bar_actions.append(move_all_action)
 
         for panel in (self._image_panel, self._tool_panel):

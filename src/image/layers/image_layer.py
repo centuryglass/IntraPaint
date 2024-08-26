@@ -8,6 +8,7 @@ from PySide6.QtWidgets import QApplication
 from PySide6.QtCore import QRect, QSize, QPoint, Signal, QObject
 from PySide6.QtGui import QImage, QPainter, QPixmap, QTransform
 
+from src.image.composite_mode import CompositeMode
 from src.image.layers.transform_layer import TransformLayer
 from src.ui.modal.modal_utils import show_error_dialog
 from src.undo_stack import UndoStack
@@ -213,7 +214,7 @@ class ImageLayer(TransformLayer):
         Parameters
         ----------
         image_data: QImage
-            Image data to draw into the image generation area. If the size of the image doesn't match the size of the
+            Image data to draw into the layer. If the size of the image doesn't match the size of the
             bounds_rect, it will be scaled to fit.
         bounds_rect: QRect
             Area where image data will be inserted. if this is not fully contained within the layer bounds, the layer
@@ -239,7 +240,8 @@ class ImageLayer(TransformLayer):
             if merged_bounds.top() < layer_bounds.top():
                 offset.setY(merged_bounds.top() - layer_bounds.top())
             bounds_rect = QRect(bounds_rect.topLeft() - merged_bounds.topLeft(), bounds_rect.size())
-            assert QRect(QPoint(), updated_image.size()).contains(bounds_rect)
+            assert QRect(QPoint(), updated_image.size()).contains(bounds_rect), (f'{bounds_rect} not contained within'
+                                                                                 f' {updated_image.size()} image')
         elif register_to_undo_history:
             # Used instead of self.image to ensure post-processing is restricted to the change bounds:
             src_image = self.get_qimage().copy(bounds_rect)
@@ -373,7 +375,7 @@ class ImageLayer(TransformLayer):
 class ImageLayerState:
     """Preserves a copy of an image layer's state."""
 
-    def __init__(self, name: str, visible: bool, opacity: float, mode: QPainter.CompositionMode,
+    def __init__(self, name: str, visible: bool, opacity: float, mode: CompositeMode,
                  transform: QTransform, image: QImage, locked: bool, alpha_locked: bool) -> None:
         self.name = name
         self.visible = visible

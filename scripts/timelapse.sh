@@ -1,4 +1,5 @@
 #!/bin/bash
+# Record timelapse videos with ffmpeg, running IntraPaint with animations turned off to suppress excess frame updates.
 
 NAME=${*: -1}
 echo "click on a window to start recording ${NAME}.mp4"

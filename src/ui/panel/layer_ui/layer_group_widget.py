@@ -190,8 +190,10 @@ class LayerGroupWidget(CollapsibleBox):
             return  # Layer is already there.
         index = self._layer.get_layer_index(layer)
         if index is None:
-            logger.warning(f'Tried to add layer {layer.name}:{layer.id} to unrelated group'
-                           f' {self._layer.name}:{self._layer.id}')
+            # Signal was probably passed on from a nested group, ignore it unless that's not true:
+            if not self._layer.contains_recursive(layer):
+                logger.warning(f'Tried to add layer {layer.name}:{layer.id} to unrelated group'
+                               f' {self._layer.name}:{self._layer.id}')
             return
         if isinstance(layer, LayerStack):
             child_widget = LayerGroupWidget(layer, self._image_stack)

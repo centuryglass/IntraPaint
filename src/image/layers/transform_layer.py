@@ -1,5 +1,5 @@
 """Interface for layers that have a persistent transformation."""
-from typing import Tuple
+from typing import Tuple, Optional, Callable
 
 from PySide6.QtCore import QObject, Signal, QRect, QPoint, QPointF
 from PySide6.QtGui import QPainter, QImage, QTransform
@@ -111,3 +111,30 @@ class TransformLayer(Layer):
     def flip_vertical(self) -> None:
         """Flip the layer vertically, on top of any previous transformations."""
         self._flip(False)
+
+    def render(self, base_image: Optional[QImage] = None,
+               paint_param_adjuster: Optional[Callable[[int, QImage, QRect, QPainter], Optional[QImage]]]
+               = None) -> QImage:
+        """Render all layers to a QImage with a custom base image and accepting a function to control layer painting on
+        a per-layer basis.
+
+        Parameters
+        ----------
+        base_image: QImage, optional, default=None.
+            The base image that all layer content will be painted onto.  If None, a new image will be created that's
+            large enough to fit all layers.
+        paint_param_adjuster: Optional[Callable[[int, QImage, QRect, QPainter) -> Optional[QImage]]
+            Default=None. If provided, it will be called before each layer is painted, allowing it to directly make
+            changes to the image, paint bounds, or painter as needed. Parameters are layer_id, layer_image,
+            paint_bounds and layer_painter.  If it returns a QImage, that image will replace the layer image.
+        Returns
+        -------
+        QImage: The final rendered image.
+        """
+        def _transform_adjuster(layer_id: int, layer_image: QImage, paint_bounds: QRect,
+                                painter: QPainter) -> Optional[QImage]:
+            painter.setTransform(self.transform)
+            if paint_param_adjuster is not None:
+                return paint_param_adjuster(layer_id, layer_image, paint_bounds, painter)
+            return None
+        return super().render(base_image, _transform_adjuster)

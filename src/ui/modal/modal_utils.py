@@ -44,7 +44,7 @@ REMEMBER_OPTION_CANCEL = 'cancel'
 def _extension_set_to_filter_string(str_set: Set[str]) -> str:
     format_list = [f'*.{file_format.lower()}' for file_format in str_set]
     format_list.sort()
-    return f'({' '.join(format_list)})'
+    return f'({" ".join(format_list)})'
 
 
 SAVE_FILE_FORMATS = _extension_set_to_filter_string(IMAGE_WRITE_FORMATS)

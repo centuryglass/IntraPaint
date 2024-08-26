@@ -99,6 +99,8 @@ class ToolController(QObject):
         last_active_tool = self.find_tool_by_label(last_active_tool_name)
         if last_active_tool is not None:
             self.active_tool = last_active_tool
+        else:
+            self.active_tool = self.find_tool_by_class(GenerationAreaTool)
 
     @property
     def tools(self) -> List[BaseTool]:
@@ -230,7 +232,7 @@ class ToolController(QObject):
                 event = cast(QMouseEvent, event)
                 event_handled = active_tool.mouse_release(event, find_image_coordinates(event))
             case QEvent.Type.TabletMove | QEvent.Type.TabletEnterProximity | QEvent.Type.TabletLeaveProximity | \
-                 QEvent.Type.TabletPress | QEvent.Type.TabletRelease:
+                   QEvent.Type.TabletPress | QEvent.Type.TabletRelease:
                 event = cast(QTabletEvent, event)
                 event_handled = active_tool.tablet_event(event, find_image_coordinates(event))
             case QEvent.Type.Wheel:

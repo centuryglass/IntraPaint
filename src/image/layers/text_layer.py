@@ -2,9 +2,10 @@
 from typing import Any, List, Optional
 
 from PySide6.QtCore import Signal, QPoint, QPointF
-from PySide6.QtGui import QImage, QPainter, QTransform
+from PySide6.QtGui import QImage, QTransform
 from PySide6.QtWidgets import QApplication
 
+from src.image.composite_mode import CompositeMode
 from src.image.layers.image_layer import ImageLayer
 from src.image.layers.transform_layer import TransformLayer
 from src.image.text_rect import TextRect
@@ -28,7 +29,7 @@ CONFIRM_SINGLE_CONVERT_TO_IMAGE_MESSAGE = _tr('Attempted action: <b>{action_name
 
 CONFIRM_MULTI_CONVERT_TO_IMAGE_TITLE = _tr('Convert text layers to image?')
 CONFIRM_MULTI_CONVERT_TO_IMAGE_MESSAGE = _tr('Attempted action: <b>{action_name}</b>. To complete this action,'
-                                              '{num_text_layers} text layers must be converted to image'
+                                             '{num_text_layers} text layers must be converted to image'
                                              ' layers, and you will no longer be able to edit them with the text tool.'
                                              ' Continue?')
 
@@ -168,12 +169,12 @@ class TextLayer(TransformLayer):
     def save_state(self) -> Any:
         """Export the current layer state, so it can be restored later."""
         return TextLayerState(self.name,
-                               self.visible,
-                               self.opacity,
-                               self.composition_mode,
-                               super()._get_transform(),
-                               self.locked,
-                               self.text_rect)
+                              self.visible,
+                              self.opacity,
+                              self.composition_mode,
+                              super()._get_transform(),
+                              self.locked,
+                              self.text_rect)
 
     def restore_state(self, saved_state: Any) -> None:
         """Restore the layer state from a previous saved state."""
@@ -201,7 +202,7 @@ class TextLayer(TransformLayer):
 class TextLayerState:
     """Preserves a copy of a text layer's state."""
 
-    def __init__(self, name: str, visible: bool, opacity: float, mode: QPainter.CompositionMode,
+    def __init__(self, name: str, visible: bool, opacity: float, mode: CompositeMode,
                  transform: QTransform, locked: bool, text_rect: TextRect) -> None:
         self.name = name
         self.visible = visible

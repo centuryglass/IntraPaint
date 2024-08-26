@@ -2,7 +2,7 @@
 import logging
 from typing import Optional
 
-from PySide6.QtCore import Qt, QPoint, QSize, QRect, QLineF, QPointF
+from PySide6.QtCore import Qt, QPoint, QLineF, QPointF
 from PySide6.QtGui import QCursor, QTabletEvent, QMouseEvent, QColor, QIcon, QWheelEvent, QPointingDevice
 from PySide6.QtWidgets import QApplication
 
@@ -74,11 +74,6 @@ class CanvasTool(BaseTool):
         self._image_stack = image_stack
         self._image_viewer = image_viewer
         self._canvas = canvas
-
-        def update_size(new_size: QSize) -> None:
-            """Sync canvas size with image size."""
-            self._canvas.edit_region = QRect(QPoint(0, 0), new_size)
-        self._image_stack.size_changed.connect(update_size)
 
         for key, sign in ((KeyConfig.BRUSH_SIZE_DECREASE, -1), (KeyConfig.BRUSH_SIZE_INCREASE, 1)):
             def _size_change(mult, step=sign) -> bool:
@@ -174,6 +169,7 @@ class CanvasTool(BaseTool):
         assert layer == self._layer
         if locked:
             self._canvas.connect_to_layer(None)
+            self._image_viewer.resume_rendering_layer(layer)
             self._image_viewer.hide_active_layer = False
         else:
             self._canvas.z_value = layer.z_value

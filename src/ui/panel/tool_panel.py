@@ -125,7 +125,9 @@ class ToolPanel(QWidget):
             button.tool_selected.connect(self._switch_active_tool)
             toolbar_button.tool_selected.connect(self._switch_active_tool)
         self._build_tool_button_layout()
-        self._switch_active_tool(self._tool_controller.active_tool)
+        active_tool = self._tool_controller.active_tool
+        if active_tool is not None:
+            self._switch_active_tool(active_tool)
         self._build_layout()
 
     @property
@@ -205,7 +207,6 @@ class ToolPanel(QWidget):
             self._active_tool_panel.hide()
             self._active_tool_panel.setParent(None)
             self._active_tool_panel = None
-        self._active_tool = active_tool
         if active_tool is not None:
             self._tool_control_label.setText(f'{active_tool.label} - {active_tool.get_tooltip_text()}')
             self._tool_control_box.setToolTip(active_tool.get_tooltip_text())
@@ -230,9 +231,9 @@ class ToolPanel(QWidget):
 
     def _update_cursor(self) -> None:
         """Apply a cursor to the image viewer, or resets to the default."""
-        if self._active_tool is None:
+        if self._tool_controller.active_tool is None:
             return
-        new_cursor = self._active_tool.cursor
+        new_cursor = self._tool_controller.active_tool.cursor
         self._image_viewer.set_cursor(new_cursor)
 
     def _build_tool_button_layout(self) -> None:

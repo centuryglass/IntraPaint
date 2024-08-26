@@ -103,9 +103,8 @@ class TextTool(BaseTool):
             if isinstance(clicked_layer, TextLayer):
                 self._connect_text_layer(clicked_layer)
                 return True
-            else:
-                self._dragging = True
-                self._selection_handler.start_selection(image_coordinates)
+            self._dragging = True
+            self._selection_handler.start_selection(image_coordinates)
         return False
 
     def mouse_move(self, event: Optional[QMouseEvent], image_coordinates: QPoint) -> bool:
@@ -118,7 +117,7 @@ class TextTool(BaseTool):
         if event.buttons() == Qt.MouseButton.LeftButton and self._dragging:
             self._selection_handler.drag_to(image_coordinates)
             return True
-        elif self._dragging:
+        if self._dragging:
             self._selection_handler.end_selection(image_coordinates)
             self._dragging = False
             return True
@@ -212,7 +211,7 @@ class TextTool(BaseTool):
     def _control_text_data_changed_slot(self, text_data: TextRect) -> None:
         if not self.is_active:
             return
-        elif self._text_layer is not None:
+        if self._text_layer is not None:
             self._disconnect_signals()
             self._text_layer.text_rect = text_data
             self._placement_outline.outline_size = text_data.size

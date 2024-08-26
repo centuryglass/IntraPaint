@@ -9,9 +9,10 @@ from PySide6.QtWidgets import QWidget, QLabel, QVBoxLayout, QHBoxLayout, QScroll
 
 from src.image.layers.image_stack import ImageStack
 from src.image.layers.layer import Layer
-from src.ui.panel.layer_ui.layer_widget import PREVIEW_SIZE, LAYER_PADDING, MAX_WIDTH, LayerWidget, ICON_SIZE
 from src.ui.panel.layer_ui.layer_group_widget import LayerGroupWidget
-from src.util.shared_constants import COMPOSITION_MODES, PROJECT_DIR, APP_ICON_PATH
+from src.ui.panel.layer_ui.layer_widget import PREVIEW_SIZE, LAYER_PADDING, MAX_WIDTH, LayerWidget, ICON_SIZE
+from src.util.shared_constants import PROJECT_DIR, APP_ICON_PATH
+from src.image.composite_mode import CompositeMode
 
 logger = logging.getLogger(__name__)
 
@@ -100,8 +101,10 @@ class LayerPanel(QWidget):
         self._mode_layout.addWidget((QLabel(MODE_LABEL_TEXT)))
         self._mode_box = QComboBox()
         self._mode_layout.addWidget(self._mode_box)
-        for mode_name, mode in COMPOSITION_MODES.items():
-            self._mode_box.addItem(mode_name, mode)
+        for mode_name in CompositeMode:
+            mode = CompositeMode(mode_name)
+            qt_mode = mode.qt_composite_mode()
+            self._mode_box.addItem(mode_name, qt_mode)
         self._mode_box.currentIndexChanged.connect(self._mode_change_slot)
 
         # Scrolling layer list:
@@ -248,8 +251,7 @@ class LayerPanel(QWidget):
 
     def _mode_change_slot(self, _) -> None:
         mode_text = self._mode_box.currentText()
-        assert mode_text in COMPOSITION_MODES
-        mode = COMPOSITION_MODES[mode_text]
+        mode = CompositeMode(mode_text)
         active_layer = self._image_stack.active_layer
         if active_layer.composition_mode != mode:
             active_layer.composition_mode = mode
@@ -274,12 +276,13 @@ class LayerPanel(QWidget):
         if new_active_layer is not None:
             self._update_opacity_slot(new_active_layer.opacity)
             image_mode = new_active_layer.composition_mode
-            mode_index = self._mode_box.findData(image_mode)
+            mode_index = self._mode_box.findText(image_mode)
             if mode_index >= 0:
                 self._mode_box.setCurrentIndex(mode_index)
 
     def _lock_change_slot(self, layer: Layer, is_locked: bool) -> None:
-        assert layer == self._image_stack.active_layer, f'active is {self._image_stack.active_layer.name}, got {layer.name}'
+        assert layer == self._image_stack.active_layer, (f'active is {self._image_stack.active_layer.name},'
+                                                         f' got {layer.name}')
         for widget in (self._opacity_spinbox,
                        self._opacity_slider,
                        self._mode_box,

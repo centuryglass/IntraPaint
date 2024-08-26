@@ -210,7 +210,8 @@ def get_generation_area_control_boxes(image_stack: ImageStack,
     sliders = []
     spin_boxes = []
     for label_text, tooltip in (
-            (GENERATION_AREA_X_LABEL, GENERATION_AREA_X_TOOLTIP), (GENERATION_AREA_Y_LABEL, GENERATION_AREA_Y_TOOLTIP),
+            (GENERATION_AREA_X_LABEL, GENERATION_AREA_X_TOOLTIP),
+            (GENERATION_AREA_Y_LABEL, GENERATION_AREA_Y_TOOLTIP),
             (GENERATION_AREA_WIDTH_LABEL, GENERATION_AREA_WIDTH_TOOLTIP),
             (GENERATION_AREA_HEIGHT_LABEL, GENERATION_AREA_HEIGHT_TOOLTIP)):
         widget = QWidget()

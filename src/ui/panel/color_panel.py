@@ -10,6 +10,7 @@ from src.util.display_size import get_window_size
 
 
 class ColorControlPanel(ColorPicker):
+    """Rearranges the Qt color dialog into a fixed panel widget."""
 
     def __init__(self, config_key: Optional[str] = 'last_brush_color', disable_extended_layouts=False) -> None:
         super().__init__()

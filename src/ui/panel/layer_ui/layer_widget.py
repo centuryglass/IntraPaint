@@ -166,7 +166,9 @@ class LayerWidget(BorderedWidget):
             painter.drawRect(paint_bounds)
             painter.save()
             painter.setOpacity(self._layer.opacity)
-            painter.setCompositionMode(self._layer.composition_mode)
+            qt_composite_mode = self._layer.composition_mode.qt_composite_mode()
+            if qt_composite_mode is not None:
+                painter.setCompositionMode(qt_composite_mode)
             painter.drawPixmap(paint_bounds, self._preview_pixmap)
             painter.restore()
             if not self._layer.visible:

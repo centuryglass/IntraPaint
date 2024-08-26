@@ -68,17 +68,17 @@ class TransformGroup(TransformLayer):
     def _layer_added_slot(self, layer: Layer) -> None:
         assert isinstance(layer, (TransformLayer, LayerStack))
         if isinstance(layer, TransformLayer):
-            assert layer not in self._transform_layers
-            layer.set_transform(layer.transform * self.transform)
-            self._transform_layers.append(layer)
+            if layer not in self._transform_layers:
+                layer.set_transform(layer.transform * self.transform)
+                self._transform_layers.append(layer)
         else:
             assert isinstance(layer, LayerStack)
-            assert layer not in self._groups
-            layer.layer_added.connect(self._layer_added_slot)
-            layer.layer_removed.connect(self._layer_removed_slot)
-            self._groups.append(layer)
-            for child in layer.child_layers:
-                self._layer_added_slot(child)
+            if layer not in self._groups:
+                layer.layer_added.connect(self._layer_added_slot)
+                layer.layer_removed.connect(self._layer_removed_slot)
+                self._groups.append(layer)
+                for child in layer.child_layers:
+                    self._layer_added_slot(child)
         self._get_local_bounds()  # Updates size, emits size_changed if needed
 
     def _layer_removed_slot(self, layer: Layer) -> None:

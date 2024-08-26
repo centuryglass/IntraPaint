@@ -8,6 +8,7 @@ from PySide6.QtGui import QPainter, QPixmap, QPen, QTransform, QImage
 from PySide6.QtWidgets import QGraphicsScene, QGraphicsItem
 
 from src.image.canvas.layer_canvas import LayerCanvas
+from src.image.composite_mode import CompositeMode
 from src.image.layers.image_layer import ImageLayer
 from src.ui.graphics_items.pixmap_item import PixmapItem
 
@@ -116,6 +117,7 @@ class PixmapLayerCanvas(LayerCanvas):
             buffer: Optional[QPixmap] = pixmap.copy(change_bounds.toAlignedRect())
             painter = QPainter(buffer)
             offset: Optional[QPoint] = change_bounds.toAlignedRect().topLeft()
+            assert isinstance(offset, QPoint)
             painter.setTransform(QTransform.fromTranslate(-offset.x(), -offset.y()))
         else:
             buffer = None
@@ -157,7 +159,7 @@ class PixmapLayerCanvas(LayerCanvas):
             pixmap.fill(Qt.GlobalColor.transparent)
         self._pixmap_item.setPixmap(pixmap)
 
-    def _layer_composition_mode_change_slot(self, layer: ImageLayer, mode: QPainter.CompositionMode) -> None:
+    def _layer_composition_mode_change_slot(self, layer: ImageLayer, mode: CompositeMode) -> None:
         assert layer == self.layer
         assert self._pixmap_item is not None
         self._pixmap_item.composition_mode = mode

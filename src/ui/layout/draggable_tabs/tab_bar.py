@@ -3,7 +3,7 @@ from typing import Optional, List
 
 from PySide6.QtCore import Signal, Qt, QPointF, QLine, QSize
 from PySide6.QtGui import QDragEnterEvent, QDragMoveEvent, QDragLeaveEvent, QDropEvent, QPaintEvent, QPainter
-from PySide6.QtWidgets import QWidget, QBoxLayout, QHBoxLayout, QVBoxLayout, QToolButton, QSizePolicy, QTabBar, QFrame
+from PySide6.QtWidgets import QWidget, QBoxLayout, QHBoxLayout, QVBoxLayout, QToolButton, QSizePolicy, QFrame
 
 from src.ui.layout.draggable_tabs.tab import Tab
 from src.ui.panel.layer_ui.layer_widget import LayerWidget

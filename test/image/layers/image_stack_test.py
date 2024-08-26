@@ -11,7 +11,6 @@ from PySide6.QtWidgets import QApplication
 from src.config.application_config import AppConfig
 from src.config.cache import Cache
 from src.config.key_config import KeyConfig
-from src.image.layers.image_layer import ImageLayer
 from src.image.layers.image_stack import ImageStack
 from src.image.layers.layer_stack import LayerStack
 from src.image.layers.selection_layer import SelectionLayer
@@ -255,10 +254,13 @@ class ImageStackTest(unittest.TestCase):
         self.assertEqual(8, image_count)
         expected_output = QImage(LAYER_IMAGE_PNG).convertToFormat(QImage.Format.Format_ARGB32_Premultiplied)
         output_image = self.image_stack.qimage()
+        test_path = LAYER_IMAGE_PNG + '_tested.png'
+        output_image.save(test_path)
         self.assertEqual(expected_output.size(), self.image_stack.size)
         self.assertEqual(output_image.size(), self.image_stack.size)
         self.assertEqual(output_image.format(), expected_output.format())
         self.assertEqual(output_image, expected_output)
+        os.remove(test_path)
 
     def test_copy_paste_selected(self) -> None:
         """Confirm that copying selected layer content properly supports complex transformed nested layer groups."""
@@ -275,9 +277,12 @@ class ImageStackTest(unittest.TestCase):
         expected_content = QImage(SELECTION_PNG).convertToFormat(QImage.Format.Format_ARGB32_Premultiplied)
         self.assertEqual(pasted_layer.name, 'Paste layer')
         image = pasted_layer.image
+        test_path = SELECTION_PNG + '_tested.png'
+        image.save(test_path)
         self.assertEqual(image.size(), expected_content.size())
         self.assertEqual(image.format(), expected_content.format())
         self.assertEqual(image, expected_content)
+        os.remove(test_path)
 
     def test_clear_selected(self) -> None:
         """Confirm that clearing selected layer content properly supports complex transformed nested layer groups."""
@@ -290,7 +295,10 @@ class ImageStackTest(unittest.TestCase):
         self.image_stack.active_layer = self.image_stack.layer_stack
         self.image_stack.clear_selected()
         image = self.image_stack.render()
+        test_path = SELECTION_CLEARED_PNG + '_tested.png'
+        image.save(test_path)
         expected_content = QImage(SELECTION_CLEARED_PNG).convertToFormat(QImage.Format.Format_ARGB32_Premultiplied)
         self.assertEqual(image.size(), expected_content.size())
         self.assertEqual(image.format(), expected_content.format())
         self.assertEqual(image, expected_content)
+        os.remove(test_path)

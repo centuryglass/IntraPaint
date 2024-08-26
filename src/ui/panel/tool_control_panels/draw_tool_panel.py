@@ -2,7 +2,7 @@
 from typing import cast
 
 from PySide6.QtCore import Signal, Qt
-from PySide6.QtWidgets import QApplication, QWidget, QGridLayout, QLabel, QVBoxLayout, QHBoxLayout
+from PySide6.QtWidgets import QApplication, QWidget, QLabel, QVBoxLayout, QHBoxLayout
 
 from src.config.application_config import AppConfig
 from src.config.cache import Cache
@@ -10,8 +10,8 @@ from src.config.key_config import KeyConfig
 from src.hotkey_filter import HotkeyFilter
 from src.ui.input_fields.dual_toggle import DualToggle
 from src.ui.input_fields.slider_spinbox import IntSliderSpinbox
-from src.ui.panel.tool_control_panels.canvas_selection_panel import TOOL_MODE_DRAW, TOOL_MODE_ERASE, RESOURCES_PEN_PNG, \
-    RESOURCES_ERASER_PNG
+from src.ui.panel.tool_control_panels.canvas_selection_panel import (TOOL_MODE_DRAW, TOOL_MODE_ERASE,
+                                                                     RESOURCES_PEN_PNG, RESOURCES_ERASER_PNG)
 from src.ui.widget.brush_color_button import BrushColorButton
 from src.ui.widget.key_hint_label import KeyHintLabel
 

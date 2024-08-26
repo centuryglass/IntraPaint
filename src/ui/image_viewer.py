@@ -259,12 +259,14 @@ class ImageViewer(ImageGraphicsView):
         if self._image_border.windowed_area.isEmpty() and self._image_stack.has_image:
             self._image_border.windowed_area = self._image_stack.bounds if self._image_stack.has_image else QRect()
             self._image_outline.outlined_region = self._image_border.windowed_area
-        if isinstance(new_layer, (ImageLayer, TextLayer)):
+        if not isinstance(new_layer, LayerStack):
+            assert new_layer.id not in self._layer_items
             layer_item = LayerGraphicsItem(new_layer)
             scene = self.scene()
             assert scene is not None
             self._layer_items[new_layer.id] = layer_item
             scene.addItem(layer_item)
+            assert new_layer.id in self._layer_items
             if new_layer.id in self._hidden:
                 layer_item.hidden = True
             if layer_item.isVisible():

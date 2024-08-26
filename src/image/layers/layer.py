@@ -3,12 +3,13 @@ import datetime
 from typing import Any, Callable, Optional
 
 from PySide6.QtCore import QObject, Signal, QRect, QPoint, QSize
-from PySide6.QtGui import QPainter, QImage, QPixmap
+from PySide6.QtGui import QImage, QPixmap, QPainter
 
 from src.config.application_config import AppConfig
-from src.util.image_utils import image_data_as_numpy_8bit, is_fully_transparent
+from src.image.composite_mode import CompositeMode
 from src.undo_stack import UndoStack, _UndoAction, _UndoGroup
 from src.util.cached_data import CachedData
+from src.util.image_utils import image_data_as_numpy_8bit, is_fully_transparent, create_transparent_image
 
 
 class LayerParent:
@@ -51,7 +52,7 @@ class Layer(QObject):
     content_changed = Signal(QObject)
     opacity_changed = Signal(QObject, float)
     size_changed = Signal(QObject, QSize)
-    composition_mode_changed = Signal(QObject, QPainter.CompositionMode)
+    composition_mode_changed = Signal(QObject, CompositeMode)
     z_value_changed = Signal(QObject, int)
     lock_changed = Signal(QObject, bool)
 
@@ -63,7 +64,7 @@ class Layer(QObject):
         self._visible = True
         self._opacity = 1.0
         self._size = QSize()
-        self._mode = QPainter.CompositionMode.CompositionMode_SourceOver
+        self._mode = CompositeMode.NORMAL
         self._pixmap = CachedData(None)
         self._id = Layer._next_layer_id
         self._parent: Optional[LayerParent] = None
@@ -99,6 +100,7 @@ class Layer(QObject):
                                                      f'parent {self._parent.name}:{self._parent.id} before clearing'
                                                      ' parent property.')
         if new_parent is not None:
+            assert new_parent != self
             assert isinstance(new_parent, Layer)
             assert new_parent.contains(self), (f'Layer {self.name}:{self.id} parent set'
                                                f' to {new_parent.name}:{new_parent.id}), but that layer does not '
@@ -163,13 +165,13 @@ class Layer(QObject):
         self._apply_combinable_change(new_opacity, self._opacity, self.set_opacity, 'layer.opacity')
 
     @property
-    def composition_mode(self) -> QPainter.CompositionMode:
+    def composition_mode(self) -> CompositeMode:
         """Access the layer's rendering mode."""
         return self._mode
 
     @composition_mode.setter
-    def composition_mode(self, new_mode: QPainter.CompositionMode) -> None:
-        assert isinstance(new_mode, QPainter.CompositionMode)
+    def composition_mode(self, new_mode: CompositeMode) -> None:
+        assert isinstance(new_mode, CompositeMode)
         self._apply_combinable_change(new_mode, self._mode, self.set_composition_mode, 'layer.composition_mode')
 
     def _get_local_bounds(self) -> QRect:
@@ -204,13 +206,12 @@ class Layer(QObject):
     @property
     def visible(self) -> bool:
         """Returns whether this layer is marked as visible."""
-        stack_iter: Optional[Layer] = self
-        while stack_iter is not None:
-            if not stack_iter._visible:
-                return False
-            parent = stack_iter.layer_parent
-            assert parent is None or isinstance(parent, Layer)
-            stack_iter = parent
+        if not self._visible:
+            return False
+        parent = self.layer_parent
+        if parent is not None:
+            assert isinstance(parent, Layer)
+            return parent.visible
         return True
 
     @visible.setter
@@ -278,7 +279,7 @@ class Layer(QObject):
             if send_signals:
                 self.opacity_changed.emit(self, opacity)
 
-    def set_composition_mode(self, mode: QPainter.CompositionMode, send_signals: bool = True) -> None:
+    def set_composition_mode(self, mode: CompositeMode, send_signals: bool = True) -> None:
         """Set the layer's composition mode."""
         if mode != self._mode:
             self._mode = mode
@@ -337,6 +338,51 @@ class Layer(QObject):
         return False
 
     # Misc. utility:
+    def render(self, base_image: Optional[QImage] = None,
+               paint_param_adjuster: Optional[Callable[[int, QImage, QRect, QPainter], Optional[QImage]]]
+               = None) -> QImage:
+        """Render all layers to a QImage with a custom base image and accepting a function to control layer painting on
+        a per-layer basis.
+
+        Parameters
+        ----------
+        base_image: QImage, optional, default=None.
+            The base image that all layer content will be painted onto.  If None, a new image will be created that's
+            large enough to fit all layers.
+        paint_param_adjuster: Optional[Callable[[int, QImage, QRect, QPainter) -> Optional[QImage]]
+            Default=None. If provided, it will be called before each layer is painted, allowing it to directly make
+            changes to the image, paint bounds, or painter as needed. Parameters are layer_id, layer_image,
+            paint_bounds and layer_painter.  If it returns a QImage, that image will replace the layer image.
+        Returns
+        -------
+        QImage: The final rendered image.
+        """
+        if base_image is None:
+            image_bounds = self.bounds
+            base_image = create_transparent_image(image_bounds.size())
+        else:
+            image_bounds = QRect(QPoint(), base_image.size())
+        layer_image = self.get_qimage()
+        if not self.visible or self.opacity == 0.0 or image_bounds.isEmpty() or layer_image is None \
+                or layer_image.isNull():
+            return base_image
+        painter = QPainter(base_image)
+        painter.setOpacity(self.opacity)
+        layer_bounds = self.bounds
+        if paint_param_adjuster is not None:
+            new_image = paint_param_adjuster(self.id, layer_image, layer_bounds, painter)
+            if new_image is not None:
+                layer_image = new_image
+        qt_composite_mode = self.composition_mode.qt_composite_mode()
+        if qt_composite_mode is None:
+            qt_composite_mode = CompositeMode.NORMAL.qt_composite_mode()
+            composite_op = self.composition_mode.custom_composite_op()
+            layer_image = layer_image.copy()
+            composite_op(layer_image, base_image, QRect(), layer_bounds, painter.transform())
+        painter.setCompositionMode(qt_composite_mode)
+        painter.drawImage(layer_bounds, layer_image)
+        painter.end()
+        return base_image
 
     def cropped_image_content(self, bounds_rect: QRect) -> QImage:
         """Returns the contents of a bounding QRect as a QImage."""

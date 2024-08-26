@@ -1,7 +1,6 @@
 """Assorted constants required in multiple areas."""
 import os.path
 
-from PySide6.QtGui import QPainter
 from PIL import Image
 from PySide6.QtWidgets import QApplication
 from platformdirs import user_data_dir, user_log_dir
@@ -58,30 +57,6 @@ BUTTON_TEXT_RESET_ZOOM = _tr('Reset Zoom')
 
 # Argument used to disable or alter certain UI elements for better use in timelapse footage:
 TIMELAPSE_MODE_FLAG = '--timelapse_mode'
-
-# Image composition modes: display strings mapped to mode values.
-COMPOSITION_MODES = {
-    _tr('Normal'): QPainter.CompositionMode.CompositionMode_SourceOver,
-    _tr('Plus'): QPainter.CompositionMode.CompositionMode_Plus,
-    _tr('Multiply'): QPainter.CompositionMode.CompositionMode_Multiply,
-    _tr('Screen'): QPainter.CompositionMode.CompositionMode_Screen,
-    _tr('Overlay'): QPainter.CompositionMode.CompositionMode_Overlay,
-    _tr('Darken'): QPainter.CompositionMode.CompositionMode_Darken,
-    _tr('Lighten'): QPainter.CompositionMode.CompositionMode_Lighten,
-    _tr('Color Dodge'): QPainter.CompositionMode.CompositionMode_ColorDodge,
-    _tr('Color Burn'): QPainter.CompositionMode.CompositionMode_ColorBurn,
-    _tr('Hard Light'): QPainter.CompositionMode.CompositionMode_HardLight,
-    _tr('Soft Light'): QPainter.CompositionMode.CompositionMode_SoftLight,
-    _tr('Difference'): QPainter.CompositionMode.CompositionMode_Difference,
-    _tr('Exclusion'): QPainter.CompositionMode.CompositionMode_Exclusion,
-    _tr('Destination over'): QPainter.CompositionMode.CompositionMode_DestinationOver,
-    _tr('Clear'): QPainter.CompositionMode.CompositionMode_Clear,
-    _tr('Replace'): QPainter.CompositionMode.CompositionMode_Source,
-    _tr('Destination In'): QPainter.CompositionMode.CompositionMode_DestinationIn,
-    _tr('Destination Out'): QPainter.CompositionMode.CompositionMode_DestinationOut,
-    _tr('Source Atop'): QPainter.CompositionMode.CompositionMode_SourceAtop,
-    _tr('Destination Atop'): QPainter.CompositionMode.CompositionMode_DestinationAtop
-}
 
 PIL_SCALING_MODES = {
     _tr('Bilinear'): Image.Resampling.BILINEAR,

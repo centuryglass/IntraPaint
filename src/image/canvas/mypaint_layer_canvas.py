@@ -5,10 +5,11 @@ import math
 from typing import Optional, Set, List, cast
 
 from PySide6.QtCore import QRect, QSize, QPoint, QRectF, QPointF
-from PySide6.QtGui import QColor, QPainter, QTransform, QImage
+from PySide6.QtGui import QColor, QTransform, QImage
 from PySide6.QtWidgets import QGraphicsScene, QGraphicsItem
 
 from src.image.canvas.layer_canvas import LayerCanvas
+from src.image.composite_mode import CompositeMode
 from src.image.layers.image_layer import ImageLayer
 from src.image.layers.transform_layer import TransformLayer
 from src.image.mypaint.mp_brush import MPBrush
@@ -111,6 +112,7 @@ class MyPaintLayerCanvas(LayerCanvas):
             tile.composition_mode = self._layer.composition_mode
             tile.alpha_lock = self._layer.alpha_locked
         tile.update()
+        tile.update_change_timestamp()
         # If currently drawing, use tiles to track the stroke bounds:
         if self._drawing:
             assert self._layer is not None
@@ -177,7 +179,7 @@ class MyPaintLayerCanvas(LayerCanvas):
         else:
             self._mp_surface.load_image(layer.image)
 
-    def _layer_composition_mode_change_slot(self, layer: ImageLayer, mode: QPainter.CompositionMode) -> None:
+    def _layer_composition_mode_change_slot(self, layer: ImageLayer, mode: CompositeMode) -> None:
         assert layer == self._layer
         for tile in self.scene_items():
             tile = cast(MPTile, tile)
@@ -191,7 +193,7 @@ class MyPaintLayerCanvas(LayerCanvas):
 
     def _copy_changes_to_layer(self, layer: ImageLayer):
         """Copies content back to the connected layer."""
-        if self.layer is not None and self.layer.visible:
+        if self._layer is not None and self._layer.visible:
             self._last_stroke_bounds = self._last_stroke_bounds.intersected(self._layer.bounds)
             tile_change_image = self._layer.cropped_image_content(self._last_stroke_bounds)
             for tile in self._last_stroke_tiles:

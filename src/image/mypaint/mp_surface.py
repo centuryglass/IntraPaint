@@ -80,7 +80,7 @@ class MPSurface(QObject):
             ty = request[0].ty  # type: ignore
             tile = self.get_tile_from_idx(tx, ty)
             if tile is not None:
-                tile.update_cache()
+                tile.update_tile_image_cache()
             else:
                 tile = self._null_tile
             request[0].buffer = c_uint16_p(tile.get_bits(False))  # type: ignore

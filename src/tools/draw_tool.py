@@ -8,7 +8,6 @@ from src.config.application_config import AppConfig
 from src.config.cache import Cache
 from src.config.config_entry import RangeKey
 from src.config.key_config import KeyConfig
-from src.image.canvas.mypaint_layer_canvas import MyPaintLayerCanvas
 from src.image.canvas.pixmap_layer_canvas import PixmapLayerCanvas
 from src.image.layers.image_layer import ImageLayer
 from src.image.layers.image_stack import ImageStack
@@ -16,7 +15,6 @@ from src.image.layers.layer import Layer
 from src.tools.base_tool import BaseTool
 from src.tools.canvas_tool import CanvasTool
 from src.ui.image_viewer import ImageViewer
-from src.ui.panel.tool_control_panels.brush_control_panel import BrushControlPanel
 from src.ui.panel.tool_control_panels.draw_tool_panel import DrawToolPanel
 from src.util.shared_constants import PROJECT_DIR, COLOR_PICK_HINT
 

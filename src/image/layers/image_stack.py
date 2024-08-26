@@ -10,6 +10,7 @@ from PySide6.QtWidgets import QApplication
 
 from src.config.application_config import AppConfig
 from src.config.cache import Cache
+from src.image.composite_mode import CompositeMode
 from src.image.layers.image_layer import ImageLayer
 from src.image.layers.layer import Layer, LayerParent
 from src.image.layers.layer_stack import LayerStack
@@ -103,6 +104,8 @@ class ImageStack(QObject):
         self._layer_stack.visibility_changed.connect(_content_change)
         self._layer_stack.opacity_changed.connect(_content_change)
         self._layer_stack.composition_mode_changed.connect(_content_change)
+        self._layer_stack.layer_added.connect(self._layer_added_slot)
+        self._layer_stack.layer_removed.connect(self._layer_removed_slot)
 
         # Selection update handling:
 
@@ -286,7 +289,8 @@ class ImageStack(QObject):
             action_type = 'ImageStack.generation_area'
             prev_action: Optional[_UndoAction | _UndoGroup]
             with UndoStack().last_action(action_type) as prev_action:
-                if isinstance(prev_action, _UndoAction) and prev_action.type == action_type and prev_action.action_data is not None:
+                if isinstance(prev_action, _UndoAction) and prev_action.type == action_type \
+                        and prev_action.action_data is not None:
                     last_bounds = prev_action.action_data['prev_bounds']
                     prev_action.redo = lambda: update_fn(last_bounds, bounds_rect)
                     prev_action.undo = lambda: update_fn(bounds_rect, last_bounds)
@@ -479,11 +483,11 @@ class ImageStack(QObject):
 
         @self._with_batch_content_update
         def _create_new(parent=layer_parent, new_layer=layer, i=layer_index) -> None:
-            self._insert_layer_internal(new_layer, parent, i, True)
+            self._insert_layer_internal(new_layer, parent, i)
 
         @self._with_batch_content_update
         def _remove_new(new_layer=layer):
-            self._remove_layer_internal(new_layer, True)
+            self._remove_layer_internal(new_layer)
 
         UndoStack().commit_action(_create_new, _remove_new, 'ImageStack.create_layer')
         return layer
@@ -564,10 +568,10 @@ class ImageStack(QObject):
         layer_copy.set_name(layer.name + ' copy')
 
         def _add_copy(parent=layer_parent, new_layer=layer_copy, idx=layer_index):
-            self._insert_layer_internal(new_layer, parent, idx, True)
+            self._insert_layer_internal(new_layer, parent, idx)
 
         def _remove_copy(new_layer=layer_copy):
-            self._remove_layer_internal(new_layer, True)
+            self._remove_layer_internal(new_layer)
 
         UndoStack().commit_action(_add_copy, _remove_copy, 'ImageStack.copy_layer')
 
@@ -789,8 +793,16 @@ class ImageStack(QObject):
 
             painter.setTransform(top_to_base_transform * base_paint_transform)
             painter.setOpacity(top_layer.opacity)
-            painter.setCompositionMode(top_layer.composition_mode)
-            painter.drawImage(top_layer.bounds, top_layer.image)
+            top_image = top_layer.image
+            qt_composite_mode = top_layer.composition_mode.qt_composite_mode()
+            if qt_composite_mode is not None:
+                print(f'merge mode: {qt_composite_mode}')
+                painter.setCompositionMode(qt_composite_mode)
+            else:
+                painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_SourceOver)
+                composite_op = top_layer.composition_mode.custom_composite_op()
+                composite_op(top_image, merged_image, top_layer.bounds, top_layer.bounds, painter.transform())
+            painter.drawImage(top_layer.bounds, top_image)
             if base_layer.alpha_locked:
                 painter.setTransform(base_paint_transform)
                 painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_DestinationIn)
@@ -1096,6 +1108,7 @@ class ImageStack(QObject):
             for restored_layer in old_layers:
                 self._insert_layer_internal(restored_layer, self._layer_stack, self._layer_stack.count)
             self._layer_stack.restore_state(stack_state)
+            self._update_z_values()
             self._active_layer_id = active
             active_layer = self._layer_stack.get_layer_by_id(self._active_layer_id)
             self.active_layer_changed.emit(active_layer)
@@ -1115,8 +1128,6 @@ class ImageStack(QObject):
         saved_state = self._layer_stack.save_state()
         saved_selection_state = self.selection_layer.save_state()
         old_size = self.size
-        old_layers = self.layers
-        old_layers.remove(self._layer_stack)
 
         new_layer = self._create_layer_internal(None, image_data)
         new_size = new_layer.size
@@ -1135,7 +1146,7 @@ class ImageStack(QObject):
                 self._remove_layer_internal(self._layer_stack.child_layers[0])
             self._layer_stack.set_visible(True)
             self._layer_stack.set_opacity(1.0)
-            self._layer_stack.set_composition_mode(QPainter.CompositionMode.CompositionMode_SourceOver)
+            self._layer_stack.set_composition_mode(CompositeMode.NORMAL)
             self.size = size
             self._insert_layer_internal(new_layer, self._layer_stack, 0)
             self._set_generation_area_internal(gen_rect)
@@ -1144,15 +1155,13 @@ class ImageStack(QObject):
         # noinspection PyDefaultArgument
         @self._with_batch_content_update
         def _undo_load(unloaded=new_layer, state=saved_state, selection_state=saved_selection_state, gen_rect=gen_area,
-                       size=old_size, active_id=last_active_id, restored_layers=old_layers):
+                       size=old_size, active_id=last_active_id):
             assert self.count == 1, f'Unexpected layer count {self.count} when reversing image load!'
             self._remove_layer_internal(unloaded)
             self.size = size
             self._active_layer_id = self._layer_stack.id
-            for layer in restored_layers:
-                self._insert_layer_internal(layer, self._layer_stack, self._layer_stack.count)
-            self.layer_removed.emit(unloaded)
             self._layer_stack.restore_state(state)
+            self._update_z_values()
             self.selection_layer.restore_state(selection_state)
             self._set_generation_area_internal(gen_rect)
             self._set_active_layer_internal(active_id)
@@ -1239,6 +1248,9 @@ class ImageStack(QObject):
         if isinstance(layer, TransformLayer):
             layer.transform_changed.connect(self._layer_content_change_slot)
         layer.visibility_changed.connect(self._layer_visibility_change_slot)
+        if isinstance(layer, LayerStack):
+            for child_layer in layer.recursive_child_layers:
+                self._connect_layer(child_layer)
 
     def _disconnect_layer(self, layer: Layer) -> None:
         layer.size_changed.disconnect(self._layer_content_change_slot)
@@ -1248,21 +1260,25 @@ class ImageStack(QObject):
         if isinstance(layer, TransformLayer):
             layer.transform_changed.disconnect(self._layer_content_change_slot)
         layer.visibility_changed.disconnect(self._layer_visibility_change_slot)
+        if isinstance(layer, LayerStack):
+            for child_layer in layer.recursive_child_layers:
+                self._disconnect_layer(child_layer)
 
-    def _insert_layer_internal(self, layer: Layer, parent: LayerStack, index: int, connect_signals=True):
+    def _layer_added_slot(self, layer: Layer) -> None:
+        self._connect_layer(layer)
+        self.layer_added.emit(layer)
+
+    def _layer_removed_slot(self, layer: Layer) -> None:
+        self._disconnect_layer(layer)
+        self.layer_removed.emit(layer)
+
+    def _insert_layer_internal(self, layer: Layer, parent: LayerStack, index: int):
         assert layer is not None and layer.layer_parent is None and not self._layer_stack.contains_recursive(layer)
         assert parent is not None and (parent == self._layer_stack or self._layer_stack.contains_recursive(parent))
         layer.z_value = parent.z_value - (index + 1)
         parent.insert_layer(layer, index)
-        if connect_signals:
-            self._connect_layer(layer)
+        self._connect_layer(layer)
         self._update_z_values()
-        self.layer_added.emit(layer)
-        if isinstance(layer, LayerStack):
-            for child_layer in layer.recursive_child_layers:
-                if connect_signals:
-                    self._connect_layer(child_layer)
-                self.layer_added.emit(child_layer)
         if self._layer_stack.count == 1:
             AppStateTracker.set_app_state(APP_STATE_EDITING)
             if self._active_layer_id is self._layer_stack.id:
@@ -1272,15 +1288,14 @@ class ImageStack(QObject):
             self._image.invalidate()
             self._emit_content_changed()
 
-    def _remove_layer_internal(self, layer: Layer, disconnect_signals=True) -> None:
+    def _remove_layer_internal(self, layer: Layer) -> None:
         """Removes a layer from the stack, optionally disconnect layer signals, and emit all required image stack
            signals. This does not alter the undo history."""
         assert layer is not None
         layer_parent = cast(LayerStack, layer.layer_parent)
         assert layer_parent is not None
         assert layer_parent.contains(layer)
-        if disconnect_signals:
-            self._disconnect_layer(layer)
+        self._disconnect_layer(layer)
         if self.active_layer_id == layer.id:
             active_layer = self.active_layer
             next_active_layer = self.next_layer(active_layer)
@@ -1303,12 +1318,6 @@ class ImageStack(QObject):
             self._set_active_layer_internal(next_active_id)
         layer_parent.remove_layer(layer)
         self._update_z_values()
-        self.layer_removed.emit(layer)
-        if isinstance(layer, LayerStack):
-            for child_layer in layer.recursive_child_layers:
-                if disconnect_signals:
-                    self._disconnect_layer(child_layer)
-                self.layer_removed.emit(child_layer)
         if self._layer_stack.count == 0:
             AppStateTracker.set_app_state(APP_STATE_NO_IMAGE)
         if layer.visible and not layer.empty:

@@ -67,15 +67,9 @@ class TabBox(BorderedWidget):
         """Returns all tabs in this tab box."""
         return self._tab_bar.tabs
 
-    def addAction(self, action: QAction) -> None:
-        """Shares its actions with its TabBar."""
-        super().addAction(action)
+    def add_tab_bar_action(self, action: QAction) -> None:
+        """Adds a right-click menu option to the tab bar."""
         self._tab_bar.addAction(action)
-
-    def removeAction(self, action: QAction) -> None:
-        """Removes its actions from both itself and its TabBar."""
-        super().removeAction(action)
-        self._tab_bar.removeAction(action)
 
     @property
     def is_open(self) -> bool:

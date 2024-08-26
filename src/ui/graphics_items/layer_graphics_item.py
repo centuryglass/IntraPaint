@@ -1,18 +1,19 @@
 """Renders an image layer into a QGraphicsScene."""
+from PySide6.QtGui import QTransform
 from PySide6.QtWidgets import QGraphicsItem
-from PySide6.QtGui import QPainter
 
-from src.image.layers.image_layer import ImageLayer
-from src.image.layers.text_layer import TextLayer
+from src.image.composite_mode import CompositeMode
+from src.image.layers.layer import Layer
+from src.image.layers.layer_stack import LayerStack
+from src.image.layers.transform_layer import TransformLayer
 from src.ui.graphics_items.pixmap_item import PixmapItem
 
 
 class LayerGraphicsItem(PixmapItem):
     """Renders an image layer or text layer into a QGraphicsScene."""
 
-    def __init__(self, layer: ImageLayer | TextLayer):
+    def __init__(self, layer: Layer):
         super().__init__()
-        assert isinstance(layer, (ImageLayer, TextLayer))
         self._layer = layer
         self._hidden = False
         self.composition_mode = layer.composition_mode
@@ -20,18 +21,25 @@ class LayerGraphicsItem(PixmapItem):
         layer.visibility_changed.connect(self._update_visibility)
         layer.content_changed.connect(self._update_pixmap)
         layer.opacity_changed.connect(self._update_opacity)
-        layer.transform_changed.connect(self._update_transform)
+        if isinstance(layer, TransformLayer):
+            layer.transform_changed.connect(self._update_transform)
+        elif isinstance(layer, LayerStack):
+            layer.bounds_changed.connect(self._update_bounds)
         layer.z_value_changed.connect(lambda _, z_value: self.setZValue(z_value))
         layer.composition_mode_changed.connect(self._update_mode)
         self.setFlag(QGraphicsItem.GraphicsItemFlag.ItemStacksBehindParent, True)
         self.setOpacity(layer.opacity)
-        self.setTransform(layer.transform)
+        if isinstance(layer, TransformLayer):
+            self.setTransform(layer.transform)
+        elif isinstance(layer, LayerStack):
+            bounds = layer.bounds
+            self.setTransform(QTransform.fromTranslate(bounds.x(), bounds.y()))
         self.setVisible(layer.visible)
         self.setZValue(layer.z_value)
         self._update_pixmap(layer)
 
     @property
-    def layer(self) -> ImageLayer | TextLayer:
+    def layer(self) -> Layer:
         """Returns the rendered image layer."""
         return self._layer
 
@@ -57,9 +65,15 @@ class LayerGraphicsItem(PixmapItem):
     def _update_opacity(self, _, opacity: float) -> None:
         self.setOpacity(opacity)
 
-    def _update_mode(self, _, mode: QPainter.CompositionMode) -> None:
+    def _update_mode(self, _, mode: CompositeMode) -> None:
         self.composition_mode = mode
 
     # noinspection PyUnusedLocal
     def _update_transform(self, *args) -> None:
+        assert isinstance(self._layer, TransformLayer)
         self.setTransform(self._layer.transform)
+
+    # noinspection PyUnusedLocal
+    def _update_bounds(self, *args) -> None:
+        bounds = self._layer.bounds
+        self.setTransform(QTransform.fromTranslate(bounds.x(), bounds.y()))

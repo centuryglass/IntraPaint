@@ -52,6 +52,7 @@ xml_root = tree.parse(TS_PATH)
 assert xml_root.tag == 'TS'
 xml_root.set('language', 'en_US')
 
+
 def find_or_add_context(context_name):
     for context_elem in xml_root:
         if not context_elem.tag == 'context':
@@ -66,6 +67,7 @@ def find_or_add_context(context_name):
     new_context_element.append(name_element)
     xml_root.append(new_context_element)
     return new_context_element
+
 
 def add_message(context_elem, filename, message, line=None):
     message_elem = Element('message')

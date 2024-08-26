@@ -59,7 +59,7 @@ def get_rect_transformation(source: QRect | QRectF | QSize, destination: QRect |
     return transform
 
 
-def map_rect_precise(rect: QRect, transform: QTransform) -> QRectF:
+def map_rect_precise(rect: QRect | QRectF, transform: QTransform) -> QRectF:
     """Returns the bounds of a rectangle after applying a transformation, converted to floating point to prevent
      rounding errors."""
     return transform.map(QPolygonF(QRectF(rect))).boundingRect()
@@ -153,8 +153,8 @@ def extract_transform_parameters(transform: QTransform,
 
     # Calculate scale:
     scaling_transform_at_origin = QTransform.fromTranslate(origin.x(), origin.y()) \
-            * transform * QTransform.fromTranslate(-origin.x() - x_offset, -origin.y() - y_offset) \
-            * QTransform().rotate(-angle_degrees)
+                                  * transform * QTransform.fromTranslate(-origin.x() - x_offset, -origin.y() - y_offset) \
+                                  * QTransform().rotate(-angle_degrees)
     x_scale = scaling_transform_at_origin.m11()
     y_scale = scaling_transform_at_origin.m22()
 

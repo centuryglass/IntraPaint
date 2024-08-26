@@ -6,6 +6,7 @@ https://www.openraster.org/baseline/file-layout-spec.html
 XML file spec:
 https://invent.kde.org/documentation/openraster-org/-/blob/master/openraster-standard/schema.rnc
 """
+import logging
 import os.path
 import shutil
 import tempfile
@@ -14,15 +15,17 @@ from typing import Optional, Dict, Any, cast, Tuple
 from xml.etree.ElementTree import ElementTree, Element
 
 from PySide6.QtCore import QSize
-from PySide6.QtGui import QTransform, QPainter, QImage
+from PySide6.QtGui import QTransform, QImage
 
+from src.image.composite_mode import CompositeMode
 from src.image.layers.image_layer import ImageLayer
 from src.image.layers.image_stack import ImageStack
 from src.image.layers.layer import Layer
 from src.image.layers.layer_stack import LayerStack
 from src.image.layers.text_layer import TextLayer
 from src.util.geometry_utils import get_scaled_placement
-from src.util.shared_constants import COMPOSITION_MODES
+
+logger = logging.getLogger(__name__)
 
 # Zipped file directory structure:
 ORA_FILE_EXTENSION = '.ora'
@@ -82,34 +85,6 @@ LAYER_ELEMENT = 'layer'
 LAYER_TAG_SRC = 'src'  # str
 # Also: anything within layerCommonAttributes, positionAttributes
 
-# Composition modes:
-# Mapped to the equivalent key string in src.util.shared_constants.COMPOSITION_MODES.
-# Some of these are not yet supported, so check before indexing into COMPOSITION_MODES
-ORA_COMPOSITION_MODES = {
-    'svg:src-over': 'Normal',
-    'svg:multiply': 'Multiply',
-    'svg:screen': 'Screen',
-    'svg:overlay': 'Overlay',
-    'svg:darken': 'Darken',
-    'svg:lighten': 'Lighten',
-    'svg:color-dodge': 'Color Dodge',
-    'svg:color-burn': 'Color Burn',
-    'svg:hard-light': 'Hard Light',
-    'svg:soft-light': 'Soft Light',
-    'svg:difference': 'Difference',
-    'svg:plus': 'Plus',
-    'svg:dst-in': 'Destination In',
-    'svg:dst-out': 'Destination Out',
-    'svg:src-atop': 'Source Atop',
-    'svg:dst-atop': 'Destination Atop',
-    # The following have no direct implementation available via QPainter.CompositionMode.
-    # TODO: look into alternative ways to implement.
-    'svg:color': 'Color',
-    'svg:luminosity': 'Luminosity',
-    'svg:hue': 'Hue',
-    'svg:saturation': 'Saturation'
-}
-
 # IntraPaint extensions to the format:
 
 # Extended transformation support:
@@ -139,19 +114,6 @@ def save_ora_image(image_stack: ImageStack, file_path: str,  metadata: str) -> N
     # Save layers and build xml data file:
     extended_data: Dict[str, Dict[str, str]] = {}
 
-    def _get_composite_op(mode: QPainter.CompositionMode) -> Optional[str]:
-        mode_name = None
-        for name, mode_type in COMPOSITION_MODES.items():
-            if mode_type == mode:
-                mode_name = name
-                break
-        if mode_name is None:
-            return None
-        for tag_value, display_name in ORA_COMPOSITION_MODES.items():
-            if display_name == mode_name:
-                return tag_value
-        return None
-
     def _get_transform_str(transform: QTransform) -> str:
         return (f'{transform.m11()},{transform.m12()},{transform.m13()},'
                 f'{transform.m21()},{transform.m22()},{transform.m23()},'
@@ -163,9 +125,9 @@ def save_ora_image(image_stack: ImageStack, file_path: str,  metadata: str) -> N
             DICT_ELEMENT_NAME: LAYER_ELEMENT,
             IMAGE_TAG_NAME: layer.name
         }
-        composite_op_type = _get_composite_op(layer.composition_mode)
+        composite_op_type = layer.composition_mode
         if composite_op_type is not None:
-            layer_data[ATTR_TAG_COMPOSITE] = composite_op_type
+            layer_data[ATTR_TAG_COMPOSITE] = composite_op_type.openraster_composite_mode()
         if layer.locked:
             layer_data[ATTR_TAG_EDIT_LOCKED] = BOOLEAN_TRUE_STR
         if layer == image_stack.active_layer:
@@ -201,7 +163,7 @@ def save_ora_image(image_stack: ImageStack, file_path: str,  metadata: str) -> N
             DICT_ELEMENT_NAME: STACK_ELEMENT,
             ATTR_TAG_NAME: layer.name
         }
-        composite_op_type = _get_composite_op(layer.composition_mode)
+        composite_op_type = layer.composition_mode.openraster_composite_mode()
         if composite_op_type is not None:
             stack_data[ATTR_TAG_COMPOSITE] = composite_op_type
         if layer.locked:
@@ -347,8 +309,15 @@ def read_ora_image(image_stack: ImageStack, file_path: str) -> Optional[str]:
             opacity = float(str(element.get(ATTR_TAG_OPACITY)))
             layer.set_opacity(opacity)
         if ATTR_TAG_COMPOSITE in element.keys():
-            comp_mode = COMPOSITION_MODES[ORA_COMPOSITION_MODES[str(element.get(ATTR_TAG_COMPOSITE))]]
-            layer.set_composition_mode(comp_mode)
+            composite_op = str(element.get(ATTR_TAG_COMPOSITE))
+            try:
+                comp_mode = CompositeMode.from_ora_name(composite_op)
+                if comp_mode is None:
+                    logger.error(f'Unsupported layer composite mode {composite_op} ignored')
+                else:
+                    layer.set_composition_mode(comp_mode)
+            except ValueError:
+                logger.error(f'Unrecognised layer composite mode {composite_op} ignored')
         return element.get(ATTR_TAG_SELECTED) == BOOLEAN_TRUE_STR
 
     def parse_image_element(element: Element) -> Tuple[ImageLayer, bool]:

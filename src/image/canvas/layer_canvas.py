@@ -4,9 +4,10 @@ Draws content to an image layer.
 from typing import Optional, List
 
 from PySide6.QtCore import QRect, QSize
-from PySide6.QtGui import QColor, QPainter, QTransform, QImage
+from PySide6.QtGui import QColor, QTransform, QImage
 from PySide6.QtWidgets import QGraphicsScene, QGraphicsItem
 
+from src.image.composite_mode import CompositeMode
 from src.image.layers.image_layer import ImageLayer
 from src.image.layers.layer import Layer
 
@@ -194,7 +195,7 @@ class LayerCanvas:
         """Refreshes the layer content within the canvas, or clears it if the layer is hidden."""
         raise NotImplementedError('implement _load_layer_content to copy layer content to the canvas.')
 
-    def _layer_composition_mode_change_slot(self, layer: ImageLayer, mode: QPainter.CompositionMode) -> None:
+    def _layer_composition_mode_change_slot(self, layer: ImageLayer, mode: CompositeMode) -> None:
         raise NotImplementedError('Implement _layer_composition_mode_change_slot to change the canvas rendering mode.')
 
     def _layer_alpha_lock_change_slot(self, layer: ImageLayer, locked: bool):
