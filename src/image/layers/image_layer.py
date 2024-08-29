@@ -3,6 +3,7 @@ from collections.abc import Generator
 from contextlib import contextmanager
 from typing import Optional, Any, Tuple
 
+import numpy as np
 from PIL import Image
 from PySide6.QtWidgets import QApplication
 from PySide6.QtCore import QRect, QSize, QPoint, Signal, QObject
@@ -13,7 +14,7 @@ from src.image.layers.transform_layer import TransformLayer
 from src.ui.modal.modal_utils import show_error_dialog
 from src.undo_stack import UndoStack
 from src.util.image_utils import image_content_bounds, create_transparent_image, image_data_as_numpy_8bit, \
-    numpy_intersect
+    numpy_intersect, numpy_bounds_index
 
 # The `QCoreApplication.translate` context for strings in this file
 TR_ID = 'image.layers.image_layer'
@@ -133,31 +134,48 @@ class ImageLayer(TransformLayer):
         """Updates the layer image."""
         assert not self.locked, 'Tried to change image in a locked layer'
         size_changed = new_image.size() != self._size
+        send_size_change_signal = size_changed and not self._size.isNull()
         if size_changed:
             new_size = new_image.size()
-            self.set_size(new_size)
+            self.set_size(new_size, False)
         if offset is not None and not offset.isNull():
             transform = self.transform
             transform.translate(offset.x(), offset.y())
             self.set_transform(transform)
         self.set_qimage(new_image)
         self._pixmap.invalidate()
-        self.content_changed.emit(self)
+        self.content_changed.emit(self, self.bounds)
+        if send_size_change_signal:
+            self.size_changed.emit(self, self.size)
 
     @contextmanager
     def borrow_image(self, change_bounds: Optional[QRect] = None) -> Generator[Optional[QImage], None, None]:
         """Provides direct access to the image for editing, automatically marking it as changed when complete."""
         assert not self.locked, 'Tried to change image in a locked layer'
-        if self.alpha_locked:
-            initial_image = self.image.copy()
-        else:
-            initial_image = self._image
+        if change_bounds is None or change_bounds.isEmpty():
+            change_bounds = self.bounds
+        initial_image = self.image
         try:
             yield self._image
         finally:
             self._pixmap.invalidate()
             self._handle_content_change(self._image, initial_image, change_bounds)
-            self.content_changed.emit(self)
+            if change_bounds is None:
+                change_bounds = self.bounds
+            initial_bounds_content = initial_image if change_bounds == self.bounds \
+                else initial_image.copy(change_bounds)
+            updated_content = self._image.copy(change_bounds)
+
+            def _apply_change(content: QImage, bounds: QRect) -> None:
+                np_layer_image = numpy_bounds_index(image_data_as_numpy_8bit(self._image), bounds)
+                np_content = image_data_as_numpy_8bit(content)
+                np.copyto(np_layer_image, np_content)
+                self.content_changed.emit(self, change_bounds)
+            UndoStack().commit_action(lambda c=updated_content, b=change_bounds: _apply_change(c, b),
+                                      lambda c=initial_bounds_content, b=change_bounds: _apply_change(c, b),
+                                      'ImageLayer.borrow_image', skip_initial_call=True)
+
+            self.content_changed.emit(self, change_bounds)
 
     def adjust_local_bounds(self, relative_bounds: QRect, register_to_undo_history: bool = True) -> None:
         """Changes local image bounds, cropping or extending the layer image.
@@ -244,23 +262,11 @@ class ImageLayer(TransformLayer):
                                                                                  f' {updated_image.size()} image')
         elif register_to_undo_history:
             # Used instead of self.image to ensure post-processing is restricted to the change bounds:
-            src_image = self.get_qimage().copy(bounds_rect)
-
-            def _update(img=image_data, bounds=bounds_rect, mode=composition_mode):
-                with self.borrow_image(bounds) as layer_image:
-                    layer_painter = QPainter(layer_image)
-                    layer_painter.setCompositionMode(mode)
-                    layer_painter.drawImage(bounds, img)
-                    layer_painter.end()
-
-            def _undo(img=src_image, bounds=bounds_rect):
-                with self.borrow_image(bounds) as layer_image:
-                    layer_painter = QPainter(layer_image)
-                    layer_painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_Source)
-                    layer_painter.drawImage(bounds, img)
-                    layer_painter.end()
-
-            UndoStack().commit_action(_update, _undo, 'ImageLayer.insert_image_content')
+            with self.borrow_image(bounds_rect) as layer_image:
+                layer_painter = QPainter(layer_image)
+                layer_painter.setCompositionMode(composition_mode)
+                layer_painter.drawImage(bounds_rect, image_data)
+                layer_painter.end()
             return
         else:
             updated_image = self.image

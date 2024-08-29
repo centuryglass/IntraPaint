@@ -90,7 +90,7 @@ class UndoStack(metaclass=Singleton):
         return len(self._redo_stack)
 
     def commit_action(self, action: Callable[[], None], undo_action: Callable[[], None], action_type: str,
-                      action_data: Optional[Dict[str, Any]] = None) -> bool:
+                      action_data: Optional[Dict[str, Any]] = None, skip_initial_call=False) -> bool:
         """Performs an action, then commits it to the undo stack.
 
         The undo stack is lock-protected.  Make sure that the function parameters provided don't also call
@@ -113,6 +113,8 @@ class UndoStack(metaclass=Singleton):
             An arbitrary label used to identify the action, to be used when attempting to merge actions in the stack.
         action_data: Dict
             Arbitrary data to use for merging actions.
+        skip_initial_call: bool, default=False
+            If true, skip the initial action() call.
         """
         if self._access_lock.locked():
             raise RuntimeError(f'Concurrent undo history changes detected! Attempted: {action_type}, '
@@ -121,7 +123,8 @@ class UndoStack(metaclass=Singleton):
             logger.info(f'ADD ACTION:{action_type}, UNDO_COUNT={len(self._undo_stack)},'
                         f' REDO_COUNT={len(self._redo_stack)}')
             self._in_progress_change = action_type
-            action()
+            if not skip_initial_call:
+                action()
             if self._open_group is not None:
                 self._open_group.add_to_group(undo_action, action, action_type)
             else:
@@ -199,6 +202,19 @@ class UndoStack(metaclass=Singleton):
             last_action_object.redo()
             self.redo_count_changed.emit(len(self._redo_stack))
             self._add_to_stack(last_action_object, self._undo_stack)
+
+    def clear(self) -> None:
+        """Clears the entire undo/redo history."""
+        with self._access_lock:
+            assert self._open_group is None
+            undo_count = self.undo_count()
+            redo_count = self.redo_count()
+            self._undo_stack.clear()
+            self._redo_stack.clear()
+            if undo_count != 0:
+                self.undo_count_changed.emit(0)
+            if redo_count != 0:
+                self.redo_count_changed.emit(0)
 
     def _add_to_stack(self, stack_item: _UndoAction | _UndoGroup, stack: List[_UndoAction | _UndoGroup]) -> None:
         if stack == self._undo_stack:

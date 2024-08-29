@@ -152,8 +152,8 @@ def extract_transform_parameters(transform: QTransform,
     angle_degrees = convert_degrees(-angle_line.angle())
 
     # Calculate scale:
-    scaling_transform_at_origin = QTransform.fromTranslate(origin.x(), origin.y()) \
-                                  * transform * QTransform.fromTranslate(-origin.x() - x_offset, -origin.y() - y_offset) \
+    scaling_transform_at_origin = QTransform.fromTranslate(origin.x(), origin.y()) * transform \
+                                  * QTransform.fromTranslate(-origin.x() - x_offset, -origin.y() - y_offset) \
                                   * QTransform().rotate(-angle_degrees)
     x_scale = scaling_transform_at_origin.m11()
     y_scale = scaling_transform_at_origin.m22()

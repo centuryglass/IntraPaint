@@ -63,7 +63,7 @@ class PlacementOutline(QGraphicsObject):
         """Ensure handle z-values stay in sync with the outline."""
         super().setZValue(z)
         for handle in self._handles.values():
-            handle.setZValue(z - 2)
+            handle.setZValue(z + 2)
 
     @property
     def preserve_aspect_ratio(self) -> bool:
@@ -245,4 +245,3 @@ class _Handle(TransformHandle):
             base_angle = 135
         super().__init__(parent, handle_id, base_angle, True)
         self.dragged.connect(parent.move_corner)
-

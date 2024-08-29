@@ -2,9 +2,9 @@
 import datetime
 from typing import Set, Tuple, Dict, Optional
 
-from PySide6.QtWidgets import QGraphicsItem
-from PySide6.QtCore import QRect
+from PySide6.QtCore import QPoint
 from PySide6.QtGui import QImage, QPolygonF, QPainterPath, QPainter
+from PySide6.QtWidgets import QGraphicsItem
 
 from src.image.composite_mode import CompositeMode
 from src.util.image_utils import create_transparent_image, image_is_fully_transparent
@@ -24,6 +24,7 @@ class ComposableItem:
         self._background_cache_timestamp = 0.0
         self._background_cache_items: Set[ComposableItem] = set()
         self._mode = CompositeMode.NORMAL
+        self._saved_opacity = 1.0
 
     @property
     def change_timestamp(self) -> float:
@@ -95,7 +96,7 @@ class ComposableItem:
 
         for item, opacity in opacity_map.items():
             item.setOpacity(opacity)
-        return background, updated_cache
+        return background.copy(), updated_cache
 
     @property
     def composition_mode(self) -> CompositeMode:
@@ -119,19 +120,28 @@ class ComposableItem:
         """Gets the image after applying custom composition adjustments as needed, along with the appropriate QPainter
         composition mode."""
         qt_composite_mode = self.composition_mode.qt_composite_mode()
-        if qt_composite_mode is not None:
-            composite_image = self.get_composite_source_image()
+        if qt_composite_mode is not None and qt_composite_mode not in (CompositeMode.DESTINATION_IN,
+                                                                       CompositeMode.DESTINATION_OUT,
+                                                                       CompositeMode.DESTINATION_ATOP):
+            composited_image = self.get_composite_source_image()
         else:
             background_image, background_updated = self.render_background()
             if not background_updated and not self._cache_image.isNull() and \
                     self._cache_timestamp > self._change_timestamp:
-                composite_image = self._cache_image
+                composited_image = self._cache_image
             else:
-                composite_image = self.get_composite_source_image()
+                composite_source = self.get_composite_source_image()
                 composite_op = self._mode.custom_composite_op()
                 assert isinstance(self, QGraphicsItem)
-                if self.isVisible() and self.opacity() > 0 and not image_is_fully_transparent(composite_image):
-                    composite_op(composite_image, background_image, QRect(), QRect(), None)
-                self._cache_image = composite_image
+                if qt_composite_mode is None:
+                    if self.isVisible() and self.opacity() > 0 and not image_is_fully_transparent(composite_source):
+                        composite_op(composite_source, background_image, 1.0, None, None)
+                else:
+                    painter = QPainter(background_image)
+                    painter.setCompositionMode(qt_composite_mode)
+                    painter.drawImage(QPoint(500, 500), composite_source)
+                    painter.end()
+                self._cache_image = background_image
                 self._cache_timestamp = datetime.datetime.now().timestamp()
-        return composite_image, qt_composite_mode
+                composited_image = background_image.copy()
+        return composited_image, qt_composite_mode

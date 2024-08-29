@@ -16,6 +16,7 @@ from src.image.layers.layer_stack import LayerStack
 from src.image.layers.selection_layer import SelectionLayer
 from src.image.layers.transform_layer import TransformLayer
 from src.image.open_raster import read_ora_image
+from src.undo_stack import UndoStack
 
 IMG_SIZE = QSize(512, 512)
 GEN_AREA_SIZE = QSize(300, 300)
@@ -23,8 +24,8 @@ MIN_GEN_AREA = QSize(8, 8)
 MAX_GEN_AREA = QSize(999, 999)
 
 INIT_IMAGE = 'test/resources/test_images/source.png'
-LAYER_IMAGE = 'test/resources/test_images/layer_test.ora'
-LAYER_IMAGE_PNG = 'test/resources/test_images/layer_test.png'
+LAYER_MOVE_TEST_IMAGE = 'test/resources/test_images/layer_move_test.ora'
+LAYER_MOVE_TEST_PNG = 'test/resources/test_images/layer_move_test.png'
 SELECTION_PNG = 'test/resources/test_images/selected_test.png'
 SELECTION_CLEARED_PNG = 'test/resources/test_images/selected_clear_test.png'
 app = QApplication.instance() or QApplication(sys.argv)
@@ -43,6 +44,7 @@ class ImageStackTest(unittest.TestCase):
         AppConfig()._reset()
         KeyConfig()._reset()
         Cache()._reset()
+        UndoStack().clear()
         self.image_stack = ImageStack(IMG_SIZE, GEN_AREA_SIZE, MIN_GEN_AREA, MAX_GEN_AREA)
 
         self.generation_area_bounds_changed_mock = MagicMock()
@@ -240,7 +242,7 @@ class ImageStackTest(unittest.TestCase):
 
     def test_transform_rendering(self) -> None:
         """Confirm that image rendering properly supports complex transformed nested layer groups."""
-        read_ora_image(self.image_stack, LAYER_IMAGE)
+        read_ora_image(self.image_stack, LAYER_MOVE_TEST_IMAGE)
         group_count = 0
         image_count = 0
         for layer in self.image_stack.layers:
@@ -252,9 +254,9 @@ class ImageStackTest(unittest.TestCase):
                 group_count += 1
         self.assertEqual(3, group_count)
         self.assertEqual(8, image_count)
-        expected_output = QImage(LAYER_IMAGE_PNG).convertToFormat(QImage.Format.Format_ARGB32_Premultiplied)
+        expected_output = QImage(LAYER_MOVE_TEST_PNG).convertToFormat(QImage.Format.Format_ARGB32_Premultiplied)
         output_image = self.image_stack.qimage()
-        test_path = LAYER_IMAGE_PNG + '_tested.png'
+        test_path = LAYER_MOVE_TEST_PNG + '_tested.png'
         output_image.save(test_path)
         self.assertEqual(expected_output.size(), self.image_stack.size)
         self.assertEqual(output_image.size(), self.image_stack.size)
@@ -264,7 +266,7 @@ class ImageStackTest(unittest.TestCase):
 
     def test_copy_paste_selected(self) -> None:
         """Confirm that copying selected layer content properly supports complex transformed nested layer groups."""
-        read_ora_image(self.image_stack, LAYER_IMAGE)
+        read_ora_image(self.image_stack, LAYER_MOVE_TEST_IMAGE)
         selection_bounds = QRect(50, self.image_stack.height // 6 * 4, self.image_stack.width - 80, 160)
         with self.image_stack.selection_layer.borrow_image() as mask_image:
             painter = QPainter(mask_image)
@@ -286,7 +288,7 @@ class ImageStackTest(unittest.TestCase):
 
     def test_clear_selected(self) -> None:
         """Confirm that clearing selected layer content properly supports complex transformed nested layer groups."""
-        read_ora_image(self.image_stack, LAYER_IMAGE)
+        read_ora_image(self.image_stack, LAYER_MOVE_TEST_IMAGE)
         selection_bounds = QRect(50, self.image_stack.height // 6 * 4, self.image_stack.width - 80, 160)
         with self.image_stack.selection_layer.borrow_image() as mask_image:
             painter = QPainter(mask_image)
@@ -302,3 +304,39 @@ class ImageStackTest(unittest.TestCase):
         self.assertEqual(image.format(), expected_content.format())
         self.assertEqual(image, expected_content)
         os.remove(test_path)
+
+    def test_borrow_layer_image(self) -> None:
+        """Confirm that setting layer images within the stack still works correctly"""
+        read_ora_image(self.image_stack, LAYER_MOVE_TEST_IMAGE)
+        new_content = QImage(QSize(512, 512), QImage.Format.Format_ARGB32_Premultiplied)
+        new_content.fill(Qt.GlobalColor.red)
+
+        first_image_layer = self.image_stack.image_layers[0]
+        self.image_stack.active_layer = first_image_layer
+        layer_image = first_image_layer.image
+        layer_size = first_image_layer.size
+        self.assertNotEqual(layer_image, new_content)
+        self.assertEqual(1, UndoStack().undo_count())
+        UndoStack().clear()
+        self.assertEqual(0, UndoStack().undo_count())
+
+        self.assertTrue(first_image_layer.visible)
+        self.assertFalse(first_image_layer.locked)
+        self.assertFalse(first_image_layer.alpha_locked)
+        self.assertFalse(layer_size.isEmpty())
+
+        with first_image_layer.borrow_image() as edited_image:
+            painter = QPainter(edited_image)
+            painter.drawImage(QPoint(), new_content)
+            painter.end()
+
+        expected_image = layer_image.copy()
+        painter = QPainter(expected_image)
+        painter.fillRect(QRect(QPoint(), new_content.size()), Qt.GlobalColor.red)
+        painter.end()
+        final_image = first_image_layer.image
+        self.assertNotEqual(final_image, layer_image)
+        self.assertEqual(expected_image, final_image)
+        self.assertEqual(1, UndoStack().undo_count())
+
+

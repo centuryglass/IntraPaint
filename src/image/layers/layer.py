@@ -9,7 +9,8 @@ from src.config.application_config import AppConfig
 from src.image.composite_mode import CompositeMode
 from src.undo_stack import UndoStack, _UndoAction, _UndoGroup
 from src.util.cached_data import CachedData
-from src.util.image_utils import image_data_as_numpy_8bit, is_fully_transparent, create_transparent_image
+from src.util.image_utils import (create_transparent_image, NpAnyArray, image_data_as_numpy_8bit_readonly,
+                                  image_is_fully_transparent)
 
 
 class LayerParent:
@@ -49,7 +50,7 @@ class Layer(QObject):
 
     name_changed = Signal(QObject, str)
     visibility_changed = Signal(QObject, bool)
-    content_changed = Signal(QObject)
+    content_changed = Signal(QObject, QRect)
     opacity_changed = Signal(QObject, float)
     size_changed = Signal(QObject, QSize)
     composition_mode_changed = Signal(QObject, CompositeMode)
@@ -227,10 +228,10 @@ class Layer(QObject):
             bounds = QRect(QPoint(), image.size())
         if bounds.isEmpty():
             return True
-        image_array = image_data_as_numpy_8bit(self.get_qimage())
+        image_array = self.image_bits_readonly
         image_array = image_array[bounds.y():bounds.y() + bounds.height(),
                                   bounds.x():bounds.x() + bounds.width(), :]
-        return is_fully_transparent(image_array)
+        return image_is_fully_transparent(image_array)
 
     @property
     def empty(self) -> bool:
@@ -249,6 +250,11 @@ class Layer(QObject):
     def image(self, new_image: Any) -> None:
         """Unimplemented, replaces the layer's QImage content."""
         self._image_prop_setter(new_image)
+
+    @property
+    def image_bits_readonly(self) -> NpAnyArray:
+        """Provide direct access to a read-only numpy array of the layer's image data."""
+        return image_data_as_numpy_8bit_readonly(self.get_qimage())
 
     @property
     def pixmap(self) -> QPixmap:
@@ -367,7 +373,6 @@ class Layer(QObject):
                 or layer_image.isNull():
             return base_image
         painter = QPainter(base_image)
-        painter.setOpacity(self.opacity)
         layer_bounds = self.bounds
         if paint_param_adjuster is not None:
             new_image = paint_param_adjuster(self.id, layer_image, layer_bounds, painter)
@@ -375,12 +380,13 @@ class Layer(QObject):
                 layer_image = new_image
         qt_composite_mode = self.composition_mode.qt_composite_mode()
         if qt_composite_mode is None:
-            qt_composite_mode = CompositeMode.NORMAL.qt_composite_mode()
             composite_op = self.composition_mode.custom_composite_op()
             layer_image = layer_image.copy()
-            composite_op(layer_image, base_image, QRect(), layer_bounds, painter.transform())
-        painter.setCompositionMode(qt_composite_mode)
-        painter.drawImage(layer_bounds, layer_image)
+            composite_op(layer_image, base_image, self.opacity, painter.transform(), painter)
+        else:
+            painter.setOpacity(self.opacity)
+            painter.setCompositionMode(qt_composite_mode)
+            painter.drawImage(layer_bounds, layer_image)
         painter.end()
         return base_image
 
@@ -395,7 +401,7 @@ class Layer(QObject):
     def refresh_pixmap(self) -> None:
         """Regenerate the image pixmap cache and notify self.content_changed subscribers."""
         self._pixmap.data = QPixmap.fromImage(self.get_qimage())
-        self.content_changed.emit(self)
+        self.content_changed.emit(self, self.bounds)
 
     def _apply_combinable_change(self,
                                     new_value: Any,

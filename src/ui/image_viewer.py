@@ -86,14 +86,11 @@ class ImageViewer(ImageGraphicsView):
         image_stack.content_changed.connect(self._update_drawn_borders)
         image_stack.size_changed.connect(self._image_size_changed_slot)
         image_stack.generation_area_bounds_changed.connect(self._image_generation_area_change_slot)
-        image_stack.layer_added.connect(self._layer_added_slot)
-        image_stack.layer_removed.connect(self._layer_removed_slot)
 
         # Manually trigger signal handlers to set up the initial state:
         self._image_size_changed_slot(self.content_size)
-        self._layer_added_slot(image_stack.selection_layer)
-        for layer in self._image_stack.image_layers:
-            self._layer_added_slot(layer)
+        self._add_layer_item(image_stack.selection_layer)
+        self._add_layer_item(image_stack.layer_stack)
         self._image_generation_area_change_slot(image_stack.generation_area)
         self.resizeEvent(None)
 
@@ -106,16 +103,6 @@ class ImageViewer(ImageGraphicsView):
         self.follow_generation_area = not self._follow_generation_area
         if not self.follow_generation_area:
             self.reset_scale()
-
-    def stop_rendering_layer(self, layer: Layer) -> None:
-        """Makes the ImageViewer stop direct rendering of a particular layer until further notice."""
-        self._hidden.add(layer.id)
-        if layer.id in self._layer_items:
-            self._layer_items[layer.id].hidden = True
-        if isinstance(layer, LayerStack):
-            for child in layer.recursive_child_layers:
-                self.stop_rendering_layer(child)
-        self.update()
 
     def resume_rendering_layer(self, layer: Layer) -> None:
         """Makes the ImageViewer resume normal rendering for a layer."""
@@ -215,7 +202,8 @@ class ImageViewer(ImageGraphicsView):
             else:
                 self._active_layer_outline.setVisible(False)
 
-    def _mask_content_change_slot(self) -> None:
+    # noinspection PyUnusedLocal
+    def _mask_content_change_slot(self, *args) -> None:
         """Sync 'inpaint masked only' bounds selection mask layer changes."""
         selection_layer = self._image_stack.selection_layer
         bounds = selection_layer.get_selection_gen_area()
@@ -254,24 +242,21 @@ class ImageViewer(ImageGraphicsView):
         if layer == self._image_stack.active_layer:
             self._active_layer_outline.setTransform(layer.transform)
 
-    def _layer_added_slot(self, new_layer: Layer) -> None:
+    def _add_layer_item(self, new_layer: Layer) -> None:
         """Adds a new image layer into the view."""
         if self._image_border.windowed_area.isEmpty() and self._image_stack.has_image:
             self._image_border.windowed_area = self._image_stack.bounds if self._image_stack.has_image else QRect()
             self._image_outline.outlined_region = self._image_border.windowed_area
-        if not isinstance(new_layer, LayerStack):
-            assert new_layer.id not in self._layer_items
-            layer_item = LayerGraphicsItem(new_layer)
-            scene = self.scene()
-            assert scene is not None
-            self._layer_items[new_layer.id] = layer_item
-            scene.addItem(layer_item)
-            assert new_layer.id in self._layer_items
-            if new_layer.id in self._hidden:
-                layer_item.hidden = True
-            if layer_item.isVisible():
-                self.resetCachedContent()
-                self.update()
+        assert new_layer.id not in self._layer_items
+        layer_item = LayerGraphicsItem(new_layer)
+        scene = self.scene()
+        assert scene is not None
+        self._layer_items[new_layer.id] = layer_item
+        scene.addItem(layer_item)
+        assert new_layer.id in self._layer_items
+        if layer_item.isVisible():
+            self.resetCachedContent()
+            self.update()
         for outline in (self._generation_area_outline, self._image_generation_area_outline, self._active_layer_outline,
                         self._generation_area_border):
             assert isinstance(outline, (Outline, Border))

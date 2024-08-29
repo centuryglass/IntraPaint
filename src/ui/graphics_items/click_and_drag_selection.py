@@ -131,11 +131,10 @@ class ClickAndDragSelection:
         assert selection is not None
         if self._mode == SELECTION_MODE_RECT:
             return self._transform.map(QRectF(selection))
-        else:
-            assert self._mode == SELECTION_MODE_ELLIPSE
-            path = QPainterPath()
-            path.addEllipse(selection)
-            return self._transform.map(path.toFillPolygon())
+        assert self._mode == SELECTION_MODE_ELLIPSE
+        path = QPainterPath()
+        path.addEllipse(selection)
+        return self._transform.map(path.toFillPolygon())
 
     def set_pen(self, pen: QPen) -> None:
         """Set the selection item's line drawing pen."""

@@ -54,7 +54,8 @@ class LayerGraphicsItem(PixmapItem):
         self._hidden = hidden
         self.setVisible(self._layer.visible and not hidden)
 
-    def _update_pixmap(self, _) -> None:
+    # noinspection PyUnusedLocal
+    def _update_pixmap(self, *args) -> None:
         self.setPixmap(self._layer.pixmap)
         self.composition_mode = self._layer.composition_mode
         self.update()

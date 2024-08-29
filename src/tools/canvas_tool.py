@@ -1,5 +1,6 @@
 """Base template for tools that use a MyPaint surface within an image layer."""
 import logging
+import datetime
 from typing import Optional
 
 from PySide6.QtCore import Qt, QPoint, QLineF, QPointF
@@ -13,7 +14,6 @@ from src.hotkey_filter import HotkeyFilter
 from src.image.canvas.layer_canvas import LayerCanvas
 from src.image.layers.image_layer import ImageLayer
 from src.image.layers.image_stack import ImageStack
-from src.image.layers.layer import Layer
 from src.tools.base_tool import BaseTool
 from src.ui.image_viewer import ImageViewer
 from src.util.shared_constants import PROJECT_DIR, FLOAT_MAX
@@ -57,9 +57,11 @@ class CanvasTool(BaseTool):
         self._drawing = False
         self._cached_size: Optional[int] = None
         self._tablet_pressure: Optional[float] = None
+        self._last_pressure: Optional[float] = None
         self._tablet_x_tilt: Optional[float] = None
         self._tablet_y_tilt: Optional[float] = None
         self._tablet_input: Optional[QPointingDevice.PointerType] = None
+        self._tablet_event_timestamp = 0.0
         self._last_pos: Optional[QPoint] = None
         self._fixed_angle: Optional[int] = None
 
@@ -95,7 +97,8 @@ class CanvasTool(BaseTool):
                 self._canvas.set_input_mask(None)
         Cache().connect(self, Cache.PAINT_SELECTION_ONLY, _set_restricted_to_selection)
 
-        def _selection_layer_update(_) -> None:
+        # noinspection PyUnusedLocal
+        def _selection_layer_update(*args) -> None:
             if not Cache().get(Cache.PAINT_SELECTION_ONLY) or not self.is_active or self._layer is None \
                     or self._layer == image_stack.selection_layer:
                 return
@@ -140,8 +143,8 @@ class CanvasTool(BaseTool):
         """Sets or clears the connected image layer."""
         if self._layer is not None and self._layer != layer:
             self._layer.lock_changed.disconnect(self._layer_lock_slot)
-            if isinstance(self._layer, ImageLayer):
-                self._image_viewer.resume_rendering_layer(self._layer)
+        if not isinstance(layer, ImageLayer):
+            layer = None
         self._layer = layer
         if layer is not None:
             layer.lock_changed.connect(self._layer_lock_slot)
@@ -153,7 +156,6 @@ class CanvasTool(BaseTool):
             return
         if layer is None or not isinstance(layer, ImageLayer):
             self._canvas.connect_to_layer(None)
-            self._image_viewer.hide_active_layer = False
             control_panel = self.get_control_panel()
             if control_panel is not None:
                 control_panel.setEnabled(False)
@@ -163,18 +165,14 @@ class CanvasTool(BaseTool):
         """Access the tool's edited canvas."""
         return self._canvas
 
-    def _layer_lock_slot(self, layer: Layer, locked: bool) -> None:
+    def _layer_lock_slot(self, layer: ImageLayer, locked: bool) -> None:
         if not self.is_active:
             return
         assert layer == self._layer
         if locked:
             self._canvas.connect_to_layer(None)
-            self._image_viewer.resume_rendering_layer(layer)
-            self._image_viewer.hide_active_layer = False
         else:
-            self._canvas.z_value = layer.z_value
             self._canvas.connect_to_layer(layer)
-            self._image_viewer.stop_rendering_layer(layer)
         control_panel = self.get_control_panel()
         if control_panel is not None:
             control_panel.setEnabled(not locked)
@@ -246,13 +244,16 @@ class CanvasTool(BaseTool):
             self._tablet_pressure = None
             self._tablet_x_tilt = None
             self._tablet_y_tilt = None
-        if self._layer is not None:
-            self._image_viewer.resume_rendering_layer(self._layer)
         self._canvas.connect_to_layer(None)
 
     # Event handlers:
     def _stroke_to(self, image_coordinates: QPoint) -> None:
         """Draws coordinates to the canvas, including tablet data if available."""
+        if datetime.datetime.now().timestamp() > self._tablet_event_timestamp + 0.5:  # discard outdated tablet events
+            self._tablet_input = None
+            self._tablet_pressure = None
+            self._tablet_x_tilt = None
+            self._tablet_y_tilt = None
         if self._layer is not None:
             image_coordinates = self._layer.map_from_image(image_coordinates)
         if not self._image_stack.has_image:
@@ -286,7 +287,9 @@ class CanvasTool(BaseTool):
             assert isinstance(closest_point, QPoint)
             image_coordinates = closest_point
         if KeyConfig.modifier_held(KeyConfig.LINE_MODIFIER) and self._last_pos is not None:
-            pressure = None if self._tablet_pressure is None else max(self._tablet_pressure, MIN_LINE_PRESSURE)
+            pressure = self._last_pressure if self._tablet_pressure is None else self._tablet_pressure
+            if pressure is not None:
+                pressure = max(pressure, MIN_LINE_PRESSURE)
             self._canvas.stroke_to(self._last_pos.x(), self._last_pos.y(), pressure, self._tablet_x_tilt,
                                    self._tablet_y_tilt)
             self._canvas.stroke_to(image_coordinates.x(), image_coordinates.y(), pressure,
@@ -310,6 +313,7 @@ class CanvasTool(BaseTool):
                 self._canvas.end_stroke()
             self._drawing = True
             self._fixed_angle = None
+            self._last_pressure = None
             if KeyConfig.modifier_held(KeyConfig.FIXED_ANGLE_MODIFIER):
                 self._last_pos = image_coordinates  # Update so previous clicks don't constrain the angle
             if self._cached_size is not None and event.buttons() == Qt.MouseButton.LeftButton:
@@ -340,13 +344,13 @@ class CanvasTool(BaseTool):
             return False
         if self._drawing:
             self._drawing = False
-            self._stroke_to(image_coordinates)
             self._canvas.end_stroke()
             if self._cached_size:
                 self.brush_size = self._cached_size
                 self._cached_size = None
             self._tablet_input = None
             self._tablet_pressure = None
+            self._last_pressure = None
             self._tablet_x_tilt = None
             self._tablet_y_tilt = None
             return True
@@ -357,12 +361,14 @@ class CanvasTool(BaseTool):
         assert event is not None
         if event.pointerType() is not None:
             self._tablet_input = event.pointerType()
-        if event.pressure() > 0.0001:
+        if event.pressure() > 0.00001:
             self._tablet_pressure = event.pressure()
+            self._last_pressure = event.pressure()
         else:
             self._tablet_pressure = None
         self._tablet_x_tilt = event.xTilt()
         self._tablet_y_tilt = event.yTilt()
+        self._tablet_event_timestamp = datetime.datetime.now().timestamp()
         return True
 
     def update_brush_cursor(self) -> None:

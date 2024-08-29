@@ -223,8 +223,8 @@
         "label": "Undo merge interval (seconds):",
         "category": "Editing",
         "description": "Similar actions will be combined in the undo history if the time between them is less than this.",
-        "type": "int",
-        "default": 1,
+        "type": "float",
+        "default": 0.5,
         "saved": true
     },
     "speed_modifier_multiplier": {

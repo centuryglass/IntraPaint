@@ -1518,102 +1518,102 @@ Please remember to include the traceback from the Details expander.</translation
   <context>
     <name>image.composite_mode</name>
     <message>
-      <location filename="../../src/image/composite_mode.py" line="24"/>
+      <location filename="../../src/image/composite_mode.py" line="35"/>
       <source>Normal</source>
       <translation>Normal</translation>
     </message>
     <message>
-      <location filename="../../src/image/composite_mode.py" line="25"/>
+      <location filename="../../src/image/composite_mode.py" line="36"/>
       <source>Multiply</source>
       <translation>Multiply</translation>
     </message>
     <message>
-      <location filename="../../src/image/composite_mode.py" line="26"/>
+      <location filename="../../src/image/composite_mode.py" line="37"/>
       <source>Screen</source>
       <translation>Screen</translation>
     </message>
     <message>
-      <location filename="../../src/image/composite_mode.py" line="27"/>
+      <location filename="../../src/image/composite_mode.py" line="38"/>
       <source>Overlay</source>
       <translation>Overlay</translation>
     </message>
     <message>
-      <location filename="../../src/image/composite_mode.py" line="28"/>
+      <location filename="../../src/image/composite_mode.py" line="39"/>
       <source>Darken</source>
       <translation>Darken</translation>
     </message>
     <message>
-      <location filename="../../src/image/composite_mode.py" line="29"/>
+      <location filename="../../src/image/composite_mode.py" line="40"/>
       <source>Lighten</source>
       <translation>Lighten</translation>
     </message>
     <message>
-      <location filename="../../src/image/composite_mode.py" line="30"/>
+      <location filename="../../src/image/composite_mode.py" line="41"/>
       <source>Color Dodge</source>
       <translation>Color Dodge</translation>
     </message>
     <message>
-      <location filename="../../src/image/composite_mode.py" line="31"/>
+      <location filename="../../src/image/composite_mode.py" line="42"/>
       <source>Color Burn</source>
       <translation>Color Burn</translation>
     </message>
     <message>
-      <location filename="../../src/image/composite_mode.py" line="32"/>
+      <location filename="../../src/image/composite_mode.py" line="43"/>
       <source>Hard Light</source>
       <translation>Hard Light</translation>
     </message>
     <message>
-      <location filename="../../src/image/composite_mode.py" line="33"/>
+      <location filename="../../src/image/composite_mode.py" line="44"/>
       <source>Soft Light</source>
       <translation>Soft Light</translation>
     </message>
     <message>
-      <location filename="../../src/image/composite_mode.py" line="34"/>
+      <location filename="../../src/image/composite_mode.py" line="45"/>
       <source>Difference</source>
       <translation>Difference</translation>
     </message>
     <message>
-      <location filename="../../src/image/composite_mode.py" line="35"/>
+      <location filename="../../src/image/composite_mode.py" line="46"/>
       <source>Color</source>
       <translation>Color</translation>
     </message>
     <message>
-      <location filename="../../src/image/composite_mode.py" line="36"/>
+      <location filename="../../src/image/composite_mode.py" line="47"/>
       <source>Luminosity</source>
       <translation>Luminosity</translation>
     </message>
     <message>
-      <location filename="../../src/image/composite_mode.py" line="37"/>
+      <location filename="../../src/image/composite_mode.py" line="48"/>
       <source>Hue</source>
       <translation>Hue</translation>
     </message>
     <message>
-      <location filename="../../src/image/composite_mode.py" line="38"/>
+      <location filename="../../src/image/composite_mode.py" line="49"/>
       <source>Saturation</source>
       <translation>Saturation</translation>
     </message>
     <message>
-      <location filename="../../src/image/composite_mode.py" line="39"/>
+      <location filename="../../src/image/composite_mode.py" line="50"/>
       <source>Plus</source>
       <translation>Plus</translation>
     </message>
     <message>
-      <location filename="../../src/image/composite_mode.py" line="40"/>
+      <location filename="../../src/image/composite_mode.py" line="51"/>
       <source>Destination In</source>
       <translation>Destination In</translation>
     </message>
     <message>
-      <location filename="../../src/image/composite_mode.py" line="41"/>
+      <location filename="../../src/image/composite_mode.py" line="52"/>
       <source>Destination Out</source>
       <translation>Destination Out</translation>
     </message>
     <message>
-      <location filename="../../src/image/composite_mode.py" line="42"/>
+      <location filename="../../src/image/composite_mode.py" line="53"/>
       <source>Source Atop</source>
       <translation>Source Atop</translation>
     </message>
     <message>
-      <location filename="../../src/image/composite_mode.py" line="43"/>
+      <location filename="../../src/image/composite_mode.py" line="54"/>
       <source>Destination Atop</source>
       <translation>Destination Atop</translation>
     </message>
@@ -1779,17 +1779,17 @@ Please remember to include the traceback from the Details expander.</translation
   <context>
     <name>image.layers.image_layer</name>
     <message>
-      <location filename="../../src/image/layers/image_layer.py" line="27"/>
+      <location filename="../../src/image/layers/image_layer.py" line="28"/>
       <source>Layer cropping failed</source>
       <translation>Layer cropping failed</translation>
     </message>
     <message>
-      <location filename="../../src/image/layers/image_layer.py" line="28"/>
+      <location filename="../../src/image/layers/image_layer.py" line="29"/>
       <source>Layer has no image content.</source>
       <translation>Layer has no image content.</translation>
     </message>
     <message>
-      <location filename="../../src/image/layers/image_layer.py" line="29"/>
+      <location filename="../../src/image/layers/image_layer.py" line="30"/>
       <source>Layer is already cropped to fit image content.</source>
       <translation>Layer is already cropped to fit image content.</translation>
     </message>
@@ -2101,17 +2101,17 @@ Please remember to include the traceback from the Details expander.</translation
   <context>
     <name>tools.selection_tool</name>
     <message>
-      <location filename="../../src/tools/selection_tool.py" line="27"/>
+      <location filename="../../src/tools/selection_tool.py" line="26"/>
       <source>Selection</source>
       <translation>Selection</translation>
     </message>
     <message>
-      <location filename="../../src/tools/selection_tool.py" line="28"/>
+      <location filename="../../src/tools/selection_tool.py" line="27"/>
       <source>Select areas for editing or inpainting.</source>
       <translation>Select areas for editing or inpainting.</translation>
     </message>
     <message>
-      <location filename="../../src/tools/selection_tool.py" line="29"/>
+      <location filename="../../src/tools/selection_tool.py" line="28"/>
       <source>LMB:select - RMB:1px select - </source>
       <translation>LMB:select - RMB:1px select - </translation>
     </message>
@@ -3167,42 +3167,42 @@ Please remember to include the traceback from the Details expander.</translation
   <context>
     <name>ui.window.main_window</name>
     <message>
-      <location filename="../../src/ui/window/main_window.py" line="43"/>
+      <location filename="../../src/ui/window/main_window.py" line="48"/>
       <source>Image Generation</source>
       <translation>Image Generation</translation>
     </message>
     <message>
-      <location filename="../../src/ui/window/main_window.py" line="44"/>
+      <location filename="../../src/ui/window/main_window.py" line="49"/>
       <source>Tools</source>
       <translation>Tools</translation>
     </message>
     <message>
-      <location filename="../../src/ui/window/main_window.py" line="45"/>
+      <location filename="../../src/ui/window/main_window.py" line="50"/>
       <source>Move up</source>
       <translation>Move up</translation>
     </message>
     <message>
-      <location filename="../../src/ui/window/main_window.py" line="46"/>
+      <location filename="../../src/ui/window/main_window.py" line="51"/>
       <source>Move down</source>
       <translation>Move down</translation>
     </message>
     <message>
-      <location filename="../../src/ui/window/main_window.py" line="47"/>
+      <location filename="../../src/ui/window/main_window.py" line="52"/>
       <source>Move left</source>
       <translation>Move left</translation>
     </message>
     <message>
-      <location filename="../../src/ui/window/main_window.py" line="48"/>
+      <location filename="../../src/ui/window/main_window.py" line="53"/>
       <source>Move right</source>
       <translation>Move right</translation>
     </message>
     <message>
-      <location filename="../../src/ui/window/main_window.py" line="49"/>
+      <location filename="../../src/ui/window/main_window.py" line="54"/>
       <source>Move all tabs here</source>
       <translation>Move all tabs here</translation>
     </message>
     <message>
-      <location filename="../../src/ui/window/main_window.py" line="52"/>
+      <location filename="../../src/ui/window/main_window.py" line="57"/>
       <source>Loading...</source>
       <translation>Loading...</translation>
     </message>

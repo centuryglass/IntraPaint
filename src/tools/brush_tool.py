@@ -37,9 +37,7 @@ class BrushTool(CanvasTool):
     """Implements brush controls using a MyPaint surface."""
 
     def __init__(self, image_stack: ImageStack, image_viewer: ImageViewer) -> None:
-        scene = image_viewer.scene()
-        assert scene is not None
-        super().__init__(image_stack, image_viewer, MyPaintLayerCanvas(scene))
+        super().__init__(image_stack, image_viewer, MyPaintLayerCanvas())
         self._last_click = None
         self._control_panel = BrushControlPanel()
         self._active = False

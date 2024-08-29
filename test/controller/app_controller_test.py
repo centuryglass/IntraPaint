@@ -19,7 +19,7 @@ from src.util.image_utils import IMAGE_WRITE_FORMATS, IMAGE_READ_FORMATS, IMAGE_
 app = QApplication.instance() or QApplication(sys.argv)
 exec_mock = MagicMock()
 
-LAYER_IMAGE = 'test/resources/test_images/layer_test.ora'
+LAYER_IMAGE = 'test/resources/test_images/layer_move_test.ora'
 
 @patch('PyQt6.QtWidgets.QApplication.exec', new=exec_mock)
 class TestAppController(unittest.TestCase):

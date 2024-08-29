@@ -179,8 +179,6 @@ class SDWebUIGenerator(ImageGenerator):
             self._webservice = A1111Webservice(self._server_url)
         try:
             # Login automatically if username/password are defined as env variables.
-            # Obviously this isn't terribly secure, but A1111 auth security is already pretty minimal, and I'm just using
-            # this for testing.
             if 'SD_UNAME' in os.environ and 'SD_PASS' in os.environ:
                 self._webservice.login(os.environ['SD_UNAME'], os.environ['SD_PASS'])
                 self._webservice.set_auth((os.environ['SD_UNAME'], os.environ['SD_PASS']))

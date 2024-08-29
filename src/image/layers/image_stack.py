@@ -109,14 +109,16 @@ class ImageStack(QObject):
 
         # Selection update handling:
 
-        def handle_selection_layer_update():
+        # noinspection PyUnusedLocal
+        def handle_selection_layer_update(*args):
             """Refresh appropriate caches and send on signals if the selection layer changes."""
             if self._selection_layer.visible:
                 self._emit_content_changed()
 
         self._selection_layer.content_changed.connect(handle_selection_layer_update)
 
-        def handle_selection_layer_visibility_change():
+        # noinspection PyUnusedLocal
+        def handle_selection_layer_visibility_change(*args):
             """Refresh appropriate caches and send on signals if the selection layer is shown or hidden."""
             self._emit_content_changed()
 
@@ -798,11 +800,11 @@ class ImageStack(QObject):
             if qt_composite_mode is not None:
                 print(f'merge mode: {qt_composite_mode}')
                 painter.setCompositionMode(qt_composite_mode)
+                painter.drawImage(top_layer.bounds, top_image)
             else:
                 painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_SourceOver)
                 composite_op = top_layer.composition_mode.custom_composite_op()
-                composite_op(top_image, merged_image, top_layer.bounds, top_layer.bounds, painter.transform())
-            painter.drawImage(top_layer.bounds, top_image)
+                composite_op(top_image, merged_image, top_layer.opacity, painter.transform(), painter)
             if base_layer.alpha_locked:
                 painter.setTransform(base_paint_transform)
                 painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_DestinationIn)

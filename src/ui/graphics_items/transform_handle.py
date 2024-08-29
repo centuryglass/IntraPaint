@@ -188,5 +188,3 @@ class TransformHandle(QGraphicsObject):
 
 def _get_handle_rect(pos: QPointF) -> QRectF:
     return QRectF(pos - QPointF(HANDLE_SIZE / 2, HANDLE_SIZE / 2), QSizeF(HANDLE_SIZE, HANDLE_SIZE))
-
-

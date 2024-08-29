@@ -253,7 +253,8 @@ class AppController(MenuBuilder):
             self._update_enabled_actions()
 
         self._image_stack.active_layer_changed.connect(_active_changed)
-        self._image_stack.selection_layer.content_changed.connect(lambda _layer: self._update_enabled_actions())
+        self._image_stack.selection_layer.content_changed.connect(
+            lambda _layer, _bounds: self._update_enabled_actions())
         UndoStack().undo_count_changed.connect(lambda _count: self._update_enabled_actions())  # type: ignore
         UndoStack().redo_count_changed.connect(lambda _count: self._update_enabled_actions())  # type: ignore
 

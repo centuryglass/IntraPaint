@@ -142,7 +142,8 @@ class LayerWidget(BorderedWidget):
         painter.end()
         self.update()
 
-    def _layer_content_change_slot(self) -> None:
+    # noinspection PyUnusedLocal
+    def _layer_content_change_slot(self, *args) -> None:
         if isinstance(self._layer, TransformLayer):
             layer_image, _ = self._layer.transformed_image()
         else:

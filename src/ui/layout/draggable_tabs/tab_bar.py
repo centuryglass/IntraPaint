@@ -14,12 +14,7 @@ BASE_BAR_SIZE = 10
 
 
 class TabBar(QFrame):
-    """Widget bar that can accept dragged tabs.
-
-    TODO: TabBar inheritance is only being used for styling purposes here, actually using any of the tab-related methods
-          is going to cause odd conflicts. Switch this back to a more generic class (QFrame?) and fix the styling
-          issues so that this doesn't cause confusion.
-    """
+    """Widget bar that can accept dragged tabs."""
 
     active_tab_content_replaced = Signal(Tab)
     tab_clicked = Signal(Tab)
@@ -347,4 +342,3 @@ class TabBar(QFrame):
             else:
                 painter.drawLine(QLine(0, self._insert_pos, self.width(), self._insert_pos))
         painter.end()
-

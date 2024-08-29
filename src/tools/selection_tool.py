@@ -1,8 +1,7 @@
 """Selects image content for image generation or editing."""
 from typing import Optional
 
-from PySide6.QtCore import Qt, QPoint
-from PySide6.QtGui import QMouseEvent, QIcon, QKeySequence, QColor
+from PySide6.QtGui import QIcon, QKeySequence, QColor
 from PySide6.QtWidgets import QWidget, QApplication
 
 from src.config.application_config import AppConfig
@@ -32,19 +31,11 @@ CURSOR_SELECTION_TOOL = f'{PROJECT_DIR}/resources/cursors/selection_cursor.svg'
 ICON_SELECTION_TOOL = f'{PROJECT_DIR}/resources/icons/tools/selection_icon.svg'
 
 
-ACTIVE_PIXMAP_OPACITY = 0.4
-INACTIVE_PIXMAP_OPACITY = 0.2
-
-
 class SelectionTool(CanvasTool):
     """Selects image content for image generation or editing."""
 
     def __init__(self, image_stack: ImageStack, image_viewer: ImageViewer) -> None:
-        scene = image_viewer.scene()
-        assert scene is not None
-        canvas = PixmapLayerCanvas(scene)
-        canvas.active_opacity = ACTIVE_PIXMAP_OPACITY
-        canvas.inactive_opacity = INACTIVE_PIXMAP_OPACITY
+        canvas = PixmapLayerCanvas(None)
         super().__init__(image_stack, image_viewer, canvas)
         self._last_click = None
         self._control_panel = CanvasSelectionPanel(image_stack.selection_layer)
@@ -104,28 +95,3 @@ class SelectionTool(CanvasTool):
         new_size = min(new_size, AppConfig().get(AppConfig.SELECTION_BRUSH_SIZE, RangeKey.MAX))
         super().set_brush_size(new_size)
         AppConfig().set(AppConfig.SELECTION_BRUSH_SIZE, max(1, new_size))
-
-    def _on_activate(self, restoring_after_delegation=False) -> None:
-        """Override base canvas tool to keep mask layer visible."""
-        super()._on_activate()
-        layer = self.layer
-        if layer is not None:
-            self._image_viewer.resume_rendering_layer(layer)
-
-    def mouse_click(self, event: Optional[QMouseEvent], image_coordinates: QPoint) -> bool:
-        """Hide the mask layer while actively drawing."""
-        assert event is not None
-        layer = self.layer
-        if layer is not None and (event.buttons() == Qt.MouseButton.LeftButton
-                                  or event.buttons() == Qt.MouseButton.RightButton):
-            self._image_viewer.stop_rendering_layer(layer)
-            self._canvas.z_value = 1
-        return super().mouse_click(event, image_coordinates)
-
-    def mouse_release(self, event: Optional[QMouseEvent], image_coordinates: QPoint) -> bool:
-        """Stop hiding the mask layer when done drawing."""
-        assert event is not None
-        layer = self.layer
-        if layer is not None:
-            self._image_viewer.resume_rendering_layer(layer)
-        return super().mouse_release(event, image_coordinates)

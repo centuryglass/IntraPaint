@@ -333,7 +333,8 @@ def read_ora_image(image_stack: ImageStack, file_path: str) -> Optional[str]:
             if TRANSFORM_SRC_TAG in extended_layer_load_data:
                 layer_image = extended_layer_load_data[TRANSFORM_SRC_TAG]
                 layer_transform = extended_layer_load_data[TRANSFORM_TAG]
-            alpha_locked = extended_layer_load_data[ATTR_TAG_ALPHA_LOCKED]
+            if ATTR_TAG_ALPHA_LOCKED in extended_layer_load_data:
+                alpha_locked = extended_layer_load_data[ATTR_TAG_ALPHA_LOCKED]
         if layer_image.isNull():
             layer_image = QImage(os.path.join(tmpdir, base_image_path))
         layer = ImageLayer(layer_image, '')

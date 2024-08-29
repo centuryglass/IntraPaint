@@ -521,4 +521,3 @@ class _Handle(TransformHandle):
         assert isinstance(parent, TransformOutline)
         x_scale, y_scale = parent.transform_scale
         return x_scale, y_scale, parent.rotation_angle
-

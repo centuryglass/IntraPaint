@@ -484,7 +484,6 @@ class LayerTransformTool(BaseTool):
         last_layer = self._layer
         if last_layer is not None:
             last_layer.transform_changed.disconnect(self._layer_transform_change_slot)
-            last_layer.z_value_changed.disconnect(self._layer_z_value_change_slot)
             last_layer.size_changed.disconnect(self._layer_size_change_slot)
             last_layer.lock_changed.disconnect(self._layer_lock_change_slot)
         if layer is None or isinstance(layer, TransformLayer):
@@ -495,7 +494,6 @@ class LayerTransformTool(BaseTool):
         self._reload_scene_item()
         if self._layer is not None:
             self._layer.transform_changed.connect(self._layer_transform_change_slot)
-            self._layer.z_value_changed.connect(self._layer_z_value_change_slot)
             self._layer.size_changed.connect(self._layer_size_change_slot)
             self._layer.lock_changed.connect(self._layer_lock_change_slot)
         else:
@@ -536,6 +534,7 @@ class LayerTransformTool(BaseTool):
 
         # Re-create for new layer:
         self._transform_outline = TransformOutline(QRectF() if layer is None else QRectF(layer.bounds))
+        self._transform_outline.setZValue(self._image_stack.selection_layer.z_value + 1)
         self._transform_outline.offset_changed.connect(self._offset_change_slot)
         self._transform_outline.scale_changed.connect(self._scale_change_slot)
         self._transform_outline.angle_changed.connect(self._angle_change_slot)
@@ -555,7 +554,6 @@ class LayerTransformTool(BaseTool):
             self._initial_transform = layer.transform
             self._preview.set_layer_bounds(layer.bounds)
             self._transform_outline.setVisible(layer.visible and not layer.size.isEmpty())
-            self._transform_outline.setZValue(layer.z_value + 1)
             self._preview.set_transform(self._initial_transform)
             self._transform_outline.setTransform(self._initial_transform)
         self._control_panel.setEnabled(layer is not None and not layer.locked and not self._layer.size.isEmpty())
@@ -577,10 +575,6 @@ class LayerTransformTool(BaseTool):
     def _layer_lock_change_slot(self, _unused_layer: Layer, locked: bool) -> None:
         if self._control_panel is not None:
             self._control_panel.setEnabled(not locked)
-
-    def _layer_z_value_change_slot(self, layer: Layer, z_value: int) -> None:
-        assert layer == self._layer
-        self._transform_outline.setZValue(z_value + 1)
 
     # noinspection PyUnusedLocal
     def _layer_transform_change_slot(self, layer: Layer, transform: QTransform) -> None:

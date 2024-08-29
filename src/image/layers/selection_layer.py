@@ -10,8 +10,8 @@ from PySide6.QtGui import QImage, QPolygonF, QPainter, QColor
 
 from src.config.application_config import AppConfig
 from src.image.layers.image_layer import ImageLayer
-from src.util.image_utils import qimage_to_pil_image, image_content_bounds, AnyNpArray, image_data_as_numpy_8bit, \
-    is_fully_transparent
+from src.util.image_utils import (qimage_to_pil_image, image_content_bounds, NpAnyArray, image_data_as_numpy_8bit,
+                                  image_is_fully_transparent)
 
 logger = logging.getLogger(__name__)
 
@@ -72,7 +72,7 @@ class SelectionLayer(ImageLayer):
         """Update the area marked for image generation."""
         self._generation_area = QRect(new_area)
         self._update_bounds()
-        self.content_changed.emit(self)
+        self.content_changed.emit(self, self.bounds)
 
     # Disabling unwanted layer functionality:
     def copy(self) -> 'SelectionLayer':
@@ -137,7 +137,7 @@ class SelectionLayer(ImageLayer):
         image = self.image
         image_ptr = image.bits()
         assert image_ptr is not None, 'Selection layer image was invalid'
-        np_image: AnyNpArray = np.ndarray(shape=(image.height(), image.width(), 4), dtype=np.uint8, buffer=image_ptr)
+        np_image: NpAnyArray = np.ndarray(shape=(image.height(), image.width(), 4), dtype=np.uint8, buffer=image_ptr)
 
         masked = np_image[:, :, 3] > 0
         mask_uint8 = masked.astype(np.uint8) * 255
@@ -190,11 +190,11 @@ class SelectionLayer(ImageLayer):
             return
         image_ptr = image.bits()
         assert image_ptr is not None, 'Selection layer image was invalid'
-        np_image: AnyNpArray = np.ndarray(shape=(image.height(), image.width(), 4), dtype=np.uint8, buffer=image_ptr)
+        np_image: NpAnyArray = np.ndarray(shape=(image.height(), image.width(), 4), dtype=np.uint8, buffer=image_ptr)
 
         # Update selection bounds, skip extra processing if selection is empty:
         self._update_bounds(np_image)
-        if is_fully_transparent(np_image):
+        if image_is_fully_transparent(np_image):
             self._outline_polygons = []
             return
 

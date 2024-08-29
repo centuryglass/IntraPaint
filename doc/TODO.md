@@ -72,9 +72,12 @@
 
 ## Compositing
 ### Figure out remaining bugs with HSL compositing:
-- Weird artifacts on any mode other than luminosity
-- Results don't seem to match other programs (saturation is off?)
-- Somehow introduces transparency when merging down - are component values out of range?
+Problems occur when the HSL layer contains partially-transparent content.  The problem is that compositing fails to take
+into account the exact way that alpha needs to affect color component changes, its not enough to just set RGB values
+as if both layers were fully opaque and then use SourceOver composition to take care of the alpha channels.  Manually
+calculating full RGBA values and then using Source composition basically works, but it can cause a lot of lost detail
+in the base layer if the top layer is transformed.  Maybe try applying those calculations to the base instead of the
+top?
 
 ### "Isolate" layer group attribute:
 - With isolate:
@@ -85,16 +88,6 @@
   * (?) also render all layers to a transparent mask image
   * (?) draw the mask over the group using DestinationIn to crop out backdrop content that doesn't overlap with the group content
   * Render the group image to the backdrop using group settings.
-
-### Group compositing in the ImageViewer
-- How do I apply group compositing across multiple QGraphicsItems?
-- Approach 1: Don't have multiple QGraphicsItems
-  * Don't insert QGraphicsItems for every layer, just use one for the root LayerStack
-  * Figure out a way to insert MyPaint tiles into the LayerStack rendering process: probably an alternate to MPCanvas that writes tiles directly into the layer image
-  * Do the same with the Draw tool
-- Approach 2: QGraphicsItem parent-child relationships
-  * Can a parent QGraphicsItem apply a composition mode across all of its child items?
-  * If that can't be done in a more basic way, can it be done by rendering child items to a secondary scene?
 
 ## Layer interface
 - Add selection layer back to layer panel

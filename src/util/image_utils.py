@@ -15,14 +15,14 @@ from PySide6.QtWidgets import QStyle, QWidget, QApplication
 from numpy import ndarray, dtype
 
 from src.config.application_config import AppConfig
-from src.util.display_size import max_font_size
 from src.util.geometry_utils import is_smaller_size
 from src.util.shared_constants import PIL_SCALING_MODES
 
 logger = logging.getLogger(__name__)
 DEFAULT_ICON_SIZE = QSize(64, 64)
 
-AnyNpArray: TypeAlias = ndarray[Any, dtype[Any]]
+NpAnyArray: TypeAlias = ndarray[Any, dtype[Any]]
+NpUInt8Array: TypeAlias = np.ndarray[Any, np.dtype[np.int8]]
 
 
 METADATA_PARAMETER_KEY = 'parameters'
@@ -102,24 +102,30 @@ def create_transparent_image(size: QSize) -> QImage:
     return image
 
 
-def image_is_fully_transparent(image: QImage) -> bool:
+def image_is_fully_transparent(image: QImage | QPixmap | NpAnyArray) -> bool:
     """Returns whether all pixels in the image are 100% transparent."""
-    if not image.hasAlphaChannel():
-        return False
-    if image.format() != QImage.Format.Format_ARGB32_Premultiplied:
-        image = image.convertToFormat(QImage.Format.Format_ARGB32_Premultiplied)
-    np_image = image_data_as_numpy_8bit(image)
-    return not (np_image[:, :, 3] > 0).any()
+    if isinstance(image, QPixmap):
+        image = image.toImage()
+    if isinstance(image, QImage):
+        if not image.hasAlphaChannel():
+            return False
+        if image.format() != QImage.Format.Format_ARGB32_Premultiplied:
+            image = image.convertToFormat(QImage.Format.Format_ARGB32_Premultiplied)
+        image = image_data_as_numpy_8bit(image)
+    return not (image[:, :, 3] > 0).any()
 
 
 def image_is_fully_opaque(image: QImage) -> bool:
     """Returns whether all pixels in the image are 100% opaque."""
-    if not image.hasAlphaChannel():
-        return True
-    if image.format() != QImage.Format.Format_ARGB32_Premultiplied:
-        image = image.convertToFormat(QImage.Format.Format_ARGB32_Premultiplied)
-    np_image = image_data_as_numpy_8bit(image)
-    return not (np_image[:, :, 3] < 255).any()
+    if isinstance(image, QPixmap):
+        image = image.toImage()
+    if isinstance(image, QImage):
+        if not image.hasAlphaChannel():
+            return True
+        if image.format() != QImage.Format.Format_ARGB32_Premultiplied:
+            image = image.convertToFormat(QImage.Format.Format_ARGB32_Premultiplied)
+        image = image_data_as_numpy_8bit(image)
+    return not (image[:, :, 3] < 255).any()
 
 
 def image_has_partial_alpha(image: QImage) -> bool:
@@ -243,7 +249,7 @@ def image_content_bounds(image: QImage | np.ndarray, search_bounds: Optional[QRe
     if isinstance(image, QImage):
         image_ptr = image.bits()
         assert image_ptr is not None
-        np_image: AnyNpArray = np.ndarray(shape=(image.height(), image.width(), 4), dtype=np.uint8, buffer=image_ptr)
+        np_image: NpAnyArray = np.ndarray(shape=(image.height(), image.width(), 4), dtype=np.uint8, buffer=image_ptr)
     else:
         np_image = image
     if search_bounds is not None:
@@ -301,25 +307,6 @@ def get_standard_qt_icon(icon_code: QStyle.StandardPixmap, style_source: Optiona
         style = style_source.style()
     assert style is not None
     return style.standardIcon(icon_code)
-
-
-def get_character_icon(character: str, color: QColor) -> QIcon:
-    """Renders a character as an icon."""
-    assert len(character) == 1, f'Expected a single character, got {character}'
-    font = QApplication.font()
-    size = DEFAULT_ICON_SIZE
-    pt_size = max_font_size(character, font, size)
-    font.setPointSize(pt_size)
-    font.setBold(True)
-    pixmap = QPixmap(size)
-    pixmap.fill(Qt.GlobalColor.transparent)
-    painter = QPainter(pixmap)
-    painter.setFont(font)
-    painter.setPen(color)
-    painter.setRenderHint(QPainter.RenderHint.TextAntialiasing)
-    painter.drawText(QRect(QPoint(), DEFAULT_ICON_SIZE), Qt.AlignmentFlag.AlignCenter, character)
-    painter.end()
-    return QIcon(pixmap)
 
 
 TRANSPARENCY_PATTERN_BACKGROUND_DIM = 640
@@ -587,7 +574,7 @@ def load_image(file_path: str) -> Tuple[QImage, Optional[Dict[str, Any]], Option
     return QImage(file_path), None, None
 
 
-def image_data_as_numpy_8bit(image: QImage) -> AnyNpArray:
+def image_data_as_numpy_8bit(image: QImage) -> NpAnyArray:
     """Returns a numpy array interface for a QImage's internal data buffer."""
     assert image.format() == QImage.Format.Format_ARGB32_Premultiplied, \
         f'Image must be pre-converted to ARGB32_premultiplied, format was {image.format()}'
@@ -597,29 +584,37 @@ def image_data_as_numpy_8bit(image: QImage) -> AnyNpArray:
     return np.ndarray(shape=(image.height(), image.width(), 4), dtype=np.uint8, buffer=image_ptr)
 
 
-def numpy_8bit_to_qimage(np_image: AnyNpArray) -> QImage:
+def image_data_as_numpy_8bit_readonly(image: QImage) -> NpAnyArray:
+    """Returns a numpy array interface for a QImage's internal data buffer."""
+    assert image.format() == QImage.Format.Format_ARGB32_Premultiplied, \
+        f'Image must be pre-converted to ARGB32_premultiplied, format was {image.format()}'
+    image_ptr = image.constBits()
+    if image_ptr is None:
+        raise ValueError('Invalid image parameter')
+    return np.ndarray(shape=(image.height(), image.width(), 4), dtype=np.uint8, buffer=image_ptr)
+
+
+def numpy_8bit_to_qimage(np_image: NpAnyArray) -> QImage:
     """Create a new QImage from numpy image data."""
     height, width, channel = np_image.shape
     assert channel == 4, f'Expected ARGB32 image, but found {channel} channels'
     return QImage(np_image.data, width, height, QImage.Format.Format_ARGB32_Premultiplied)
 
 
-def is_fully_transparent(np_image: AnyNpArray) -> bool:
-    """Returns whether numpy image data is 100% transparent."""
-    return bool(np.all(np_image[:, :, 3] == 0))
+def numpy_bounds_index(np_image: NpAnyArray, bounds: QRect) -> NpAnyArray:
+    """Gets a numpy array that points to a smaller region within a larger array."""
+    assert not bounds.isEmpty() and bounds.isValid(), f'invalid bounds {bounds}, array shape={np_image.shape}'
+    left = bounds.x()
+    top = bounds.y()
+    right = left + bounds.width()
+    bottom = top + bounds.height()
+    assert top >= 0 and bottom <= np_image.shape[0] and left >= 0 and right <= np_image.shape[1], \
+            f'bounds ({left},{top})->({right},{bottom}) not contained within shape {np_image.shape}'
+    return np_image[top:bottom, left:right, :]
 
 
-def zero_image(image: QImage) -> None:
-    """Quickly set image data to fully transparent."""
-    image_ptr = image.bits()
-    if image_ptr is None:
-        return
-    img_arr: AnyNpArray = np.ndarray(shape=(image.height(), image.width(), 4), dtype=np.uint8, buffer=image_ptr)
-    img_arr[:, :, [3]] = 0
-
-
-def numpy_intersect(arr1: AnyNpArray, arr2: AnyNpArray,
-                    x: int = 0, y: int = 0) -> Tuple[AnyNpArray, AnyNpArray] | Tuple[None, None]:
+def numpy_intersect(arr1: NpAnyArray, arr2: NpAnyArray,
+                    x: int = 0, y: int = 0) -> Tuple[NpAnyArray, NpAnyArray] | Tuple[None, None]:
     """Takes two offset numpy arrays and returns only their intersecting regions."""
     w1 = arr1.shape[1]
     w2 = arr2.shape[1]

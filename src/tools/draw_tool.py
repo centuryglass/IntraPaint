@@ -37,9 +37,7 @@ class DrawTool(CanvasTool):
     """Implements brush controls using a minimal QPainter-based brush engine."""
 
     def __init__(self, image_stack: ImageStack, image_viewer: ImageViewer) -> None:
-        scene = image_viewer.scene()
-        assert scene is not None
-        super().__init__(image_stack, image_viewer, PixmapLayerCanvas(scene))
+        super().__init__(image_stack, image_viewer, PixmapLayerCanvas())
         self._last_click = None
         self._control_panel = DrawToolPanel()
         self._active = False

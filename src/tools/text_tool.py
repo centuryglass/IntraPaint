@@ -170,7 +170,7 @@ class TextTool(BaseTool):
         self._placement_outline.offset = layer.offset
         self._placement_outline.outline_size = QSizeF(text_rect.size)
         self._placement_outline.setTransform(layer.transform)
-        self._placement_outline.setZValue(layer.z_value - 1)
+        self._placement_outline.setZValue(self._image_stack.selection_layer.z_value + 1)
         self._placement_outline.setVisible(True)
         self._connect_signals()
         self._control_panel.focus_text_input()
