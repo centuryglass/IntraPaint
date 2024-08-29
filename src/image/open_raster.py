@@ -151,7 +151,8 @@ def save_ora_image(image_stack: ImageStack, file_path: str,  metadata: str) -> N
                 layer_transform_str = _get_transform_str(layer_transform)
                 layer_untransformed_path = os.path.join(DATA_DIRECTORY_NAME,
                                                         f'{layer.name}_{layer.id}-untransformed.png')
-                layer.image.save(os.path.join(tmpdir, layer_untransformed_path))
+                full_untransformed_path = os.path.join(tmpdir, layer_untransformed_path)
+                assert layer.image.save(full_untransformed_path), f'failed to write to {full_untransformed_path}'
                 extended_layer_data[TRANSFORM_SRC_TAG] = layer_untransformed_path
                 extended_layer_data[TRANSFORM_TAG] = layer_transform_str
             extended_data[image_path] = extended_layer_data

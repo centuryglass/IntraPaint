@@ -2,9 +2,7 @@
 
 # Misc. bugs and testing:
 - Test GLID with tab interface
-- Improve layer test image:
-  * Broader use of composite modes and opacity, so it's clearer when something breaks there
-  * Text 
+- layer_blend_test: The label layers aren't loading properly, they show up in the stack but are empty and have zero size. Krita loads them normally, so probably a loading issue rather than saving. Maybe something wrong with the extended transform saving?  Not seeing any issues in layer_move_test.ora.
 
 ## Documentation + Release
 - Rewrite README.md for stable-diffusion info
@@ -69,15 +67,6 @@
 - Text layers, .ora extension approach:
   * As above, but serialize and write to the xml data extension file instead
   * Possibly better than the .svg approach, this route won't break the image in other editors if loaded on a system that's missing fonts. Decide based on ease of .svg serialization.
-
-## Compositing
-### Figure out remaining bugs with HSL compositing:
-Problems occur when the HSL layer contains partially-transparent content.  The problem is that compositing fails to take
-into account the exact way that alpha needs to affect color component changes, its not enough to just set RGB values
-as if both layers were fully opaque and then use SourceOver composition to take care of the alpha channels.  Manually
-calculating full RGBA values and then using Source composition basically works, but it can cause a lot of lost detail
-in the base layer if the top layer is transformed.  Maybe try applying those calculations to the base instead of the
-top?
 
 ### "Isolate" layer group attribute:
 - With isolate:

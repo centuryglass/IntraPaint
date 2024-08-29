@@ -382,7 +382,7 @@ class Layer(QObject):
         if qt_composite_mode is None:
             composite_op = self.composition_mode.custom_composite_op()
             layer_image = layer_image.copy()
-            composite_op(layer_image, base_image, self.opacity, painter.transform(), painter)
+            composite_op(layer_image, base_image, self.opacity, painter.transform())
         else:
             painter.setOpacity(self.opacity)
             painter.setCompositionMode(qt_composite_mode)

@@ -172,17 +172,17 @@ class LayerStack(Layer, LayerParent):
             else:
                 layer.render(base_image, paint_param_adjuster)
         if final_base_image is not None:
-            painter = QPainter(final_base_image)
-            final_bounds = QRect(QPoint(), final_base_image.size())
             qt_composite_mode = self.composition_mode.qt_composite_mode()
             if qt_composite_mode is not None:
+                painter = QPainter(final_base_image)
+                final_bounds = QRect(QPoint(), final_base_image.size())
                 painter.setOpacity(self.opacity)
                 painter.setCompositionMode(qt_composite_mode)
                 painter.drawImage(final_bounds, base_image)
+                painter.end()
             else:
                 composite_op = self.composition_mode.custom_composite_op()
-                composite_op(base_image, final_base_image, self.opacity, None, painter)
-            painter.end()
+                composite_op(base_image, final_base_image, self.opacity, None)
             return final_base_image
         return base_image
 

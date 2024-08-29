@@ -3,13 +3,13 @@ from ctypes import sizeof, memset
 from typing import Optional
 
 import numpy as np
-from PySide6.QtCore import Qt, QRectF, QRect, QSize, QPointF
-from PySide6.QtGui import QImage, QPainter, QPainterPath, QTransform
+from PySide6.QtCore import Qt, QRectF, QRect, QSize
+from PySide6.QtGui import QImage, QPainter, QPainterPath
 from PySide6.QtWidgets import QWidget, QGraphicsItem, QStyleOptionGraphicsItem
 
+from src.image.composite_mode import CompositeMode
 from src.image.mypaint.libmypaint import TILE_DIM, TilePixelBuffer
 from src.image.mypaint.numpy_image_utils import pixel_data_as_numpy_16bit, numpy_8bit_to_16bit, numpy_16bit_to_8bit
-from src.ui.graphics_items.composable_item import ComposableItem
 from src.ui.graphics_items.layer_graphics_item import LayerGraphicsItem
 from src.util.image_utils import NpAnyArray, image_data_as_numpy_8bit, numpy_intersect, image_is_fully_transparent
 
@@ -19,7 +19,7 @@ BLUE = 2
 ALPHA = 3
 
 
-class MyPaintSceneTile(QGraphicsItem, ComposableItem):
+class MyPaintSceneTile(QGraphicsItem):
     """Connects a libmypaint image tile to a QGraphicsItem.
 
     TODO: This is currently unused, get rid of it after releasing the standalone qt-libmypaint library.
@@ -40,6 +40,7 @@ class MyPaintSceneTile(QGraphicsItem, ComposableItem):
         self._tile_cache_image: Optional[QImage] = QImage(size, QImage.Format.Format_ARGB32_Premultiplied)
         self._tile_cache_image_valid = False
         self._mask_image: Optional[QImage] = None
+        self._mode = CompositeMode.NORMAL
         self.setCacheMode(QGraphicsItem.CacheMode.NoCache)
         self.setFlag(LayerGraphicsItem.GraphicsItemFlag.ItemStacksBehindParent, True)
         if clear_buffer:
@@ -52,7 +53,16 @@ class MyPaintSceneTile(QGraphicsItem, ComposableItem):
             scene.removeItem(self)
         self._pixels = None
         self._tile_cache_image = None
-        self.update_bounds_change_timestamp()
+
+    @property
+    def composition_mode(self) -> CompositeMode:
+        """Access the graphic item composition mode."""
+        return self._mode
+
+    @composition_mode.setter
+    def composition_mode(self, new_mode: CompositeMode) -> None:
+        self._mode = new_mode
+        self.update()
 
     @property
     def alpha_lock(self) -> bool:
@@ -131,9 +141,7 @@ class MyPaintSceneTile(QGraphicsItem, ComposableItem):
         painter.save()
         if self.composition_mode.qt_composite_mode() is not None:
             painter.setCompositionMode(self.composition_mode.qt_composite_mode())
-            tile_image = self._tile_cache_image
-        else:
-            tile_image, _ = self.get_composited_image()
+        tile_image = self._tile_cache_image
         bounds = QRect(0, 0, self._tile_cache_image.width(), self._tile_cache_image.height())
         painter.drawImage(bounds, tile_image)
         painter.restore()
@@ -155,7 +163,6 @@ class MyPaintSceneTile(QGraphicsItem, ComposableItem):
         self._pixels[y][x][GREEN] = g
         self._pixels[y][x][BLUE] = b
         self._pixels[y][x][ALPHA] = a
-        self.update_change_timestamp()
 
     def update_tile_image_cache(self) -> None:
         """Copy data into the QImage cache."""
@@ -163,14 +170,12 @@ class MyPaintSceneTile(QGraphicsItem, ComposableItem):
         assert self._tile_cache_image is not None
         self.copy_tile_into_image(self._tile_cache_image, skip_if_transparent=False)
         self._tile_cache_image_valid = True
-        self.update_change_timestamp()
 
     def set_cache(self, cache_image: QImage) -> None:
         """Directly update the cache with image data. This does not alter the pixel buffer."""
         self._assert_is_valid()
         self._tile_cache_image = cache_image
         self._tile_cache_image_valid = True
-        self.update_change_timestamp()
 
     def copy_tile_into_image(self, image: QImage, source: Optional[QRect] = None, destination: Optional[QRect] = None,
                              skip_if_transparent: bool = True, color_correction: bool = False) -> bool:
@@ -267,7 +272,6 @@ class MyPaintSceneTile(QGraphicsItem, ComposableItem):
     def copy_image_into_tile(self, image: QImage, x: int, y: int, skip_if_transparent: bool = True) -> bool:
         """Copy tile data from a QImage at arbitrary (x, y) image coordinates."""
         self._assert_is_valid()
-        self.update_change_timestamp()
         return MyPaintSceneTile.copy_image_into_pixel_buffer(self._pixels, image, x, y, skip_if_transparent)
 
     def is_fully_transparent(self):
@@ -283,7 +287,6 @@ class MyPaintSceneTile(QGraphicsItem, ComposableItem):
         memset(self._pixels, 0, sizeof(self._pixels))
         self._tile_cache_image.fill(Qt.GlobalColor.transparent)
         self._tile_cache_image_valid = True
-        self.update_change_timestamp()
 
     def save(self, path: str) -> None:
         """Save the tile's contents as an image."""
@@ -308,46 +311,3 @@ class MyPaintSceneTile(QGraphicsItem, ComposableItem):
         np_pixels = (np_image.astype(np.float32) / 255 * (1 << 15)).astype(np.uint16)
         np.ctypeslib.as_array(self._pixels, shape=(TILE_DIM, TILE_DIM, 4))[:] = np_pixels
         self._tile_cache_image_valid = True
-        self.update_change_timestamp()
-
-    def get_composite_source_image(self) -> QImage:
-        """Return the item's contents as a composable QImage."""
-        if not self._tile_cache_image_valid:
-            self.update_tile_image_cache()
-        assert isinstance(self._tile_cache_image, QImage)
-        return self._tile_cache_image.copy()
-
-    def setTransform(self, matrix: QTransform, combine: bool = False) -> None:
-        """Update change timestamp if the item's transformation changes."""
-        super().setTransform(matrix, combine)
-        self.update_bounds_change_timestamp()
-
-    def setOpacity(self, opacity: float) -> None:
-        """Update change timestamp if the item's opacity changes."""
-        super().setOpacity(opacity)
-        self.update_change_timestamp()
-
-    def setVisible(self, visible):
-        """Update change timestamp if the item's visibility changes."""
-        super().setVisible(visible)
-        self.update_change_timestamp()
-
-    def setX(self, x: float) -> None:
-        """Update change timestamp if the item's x-position changes."""
-        super().setX(x)
-        self.update_bounds_change_timestamp()
-
-    def setY(self, y: float) -> None:
-        """Update change timestamp if the item's y-position changes."""
-        super().setX(y)
-        self.update_bounds_change_timestamp()
-
-    def setPos(self, pos: QPointF) -> None:
-        """Update change timestamp if the item's position changes."""
-        super().setPos(pos)
-        self.update_bounds_change_timestamp()
-
-    def setZValue(self, z: float) -> None:
-        """Update change timestamp if the item's z-value changes."""
-        super().setZValue(z)
-        self.update_bounds_change_timestamp()
