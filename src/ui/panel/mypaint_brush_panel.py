@@ -211,7 +211,10 @@ class _IconButton(QWidget):
     def is_selected(self) -> bool:
         """Checks whether this brush is the selected brush."""
         active_brush = AppConfig().get(self._brush_config_key)
-        return active_brush is not None and active_brush == self._brush_path
+        if active_brush is not None and not os.path.isfile(active_brush):
+            active_brush = f'{PROJECT_DIR}/{active_brush}'
+        print(f'active={active_brush}, self={self._brush_path}')
+        return active_brush is not None and os.path.abspath(active_brush) == os.path.abspath(self._brush_path)
 
     def resizeEvent(self, unused_event: Optional[QResizeEvent]) -> None:
         """Recalculates icon bounds when the widget size changes."""
@@ -245,7 +248,10 @@ class _IconButton(QWidget):
         """Load the associated brush when left-clicked."""
         if event is not None and event.button() == Qt.MouseButton.LeftButton and not self.is_selected() \
                 and self._image_rect is not None and self._image_rect.contains(event.pos()):
-            AppConfig().set(self._brush_config_key, self._brush_path)
+            brush_path = self._brush_path
+            if brush_path.startswith(PROJECT_DIR):
+                brush_path = brush_path[len(PROJECT_DIR) + 1:]
+            AppConfig().set(self._brush_config_key, brush_path)
             parent = self.parent()
             if parent is not None:
                 brush_icon_buttons = parent.findChildren(_IconButton)

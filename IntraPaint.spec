@@ -6,17 +6,18 @@ a = Analysis(
     pathex=[],
     binaries=[],
     datas=[('resources', 'resources'), ('lib', 'lib')],
-    hiddenimports=[],
+    hiddenimports=['src.tools.brush_tool'],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
-    excludes=[],
+    excludes=['PySide6.QtNetwork', 'PySide6.QtDBus', 'libKf6BreezeIcons.so.6'],
     noarchive=False,
     optimize=0,
 )
 pyz = PYZ(a.pure)
+
 splash = Splash(
-    'resources/icons/app_icon.png',
+    'resources/IntraPaint_banner.jpg',
     binaries=a.binaries,
     datas=a.datas,
     text_pos=None,
@@ -24,6 +25,7 @@ splash = Splash(
     minify_script=True,
     always_on_top=True,
 )
+
 
 exe = EXE(
     pyz,

@@ -1,6 +1,7 @@
 """Base template for tools that use a MyPaint surface within an image layer."""
 import logging
 import datetime
+import os
 from typing import Optional
 
 from PySide6.QtCore import Qt, QPoint, QLineF, QPointF
@@ -199,8 +200,14 @@ class CanvasTool(BaseTool):
         """Updates the active brush size."""
         if hasattr(self._canvas, 'brush_path'):
             try:
+                if not os.path.isfile(new_path):
+                    resource_path = f'{PROJECT_DIR}/new_path'
+                    if os.path.isfile(resource_path):
+                        new_path = resource_path
+                    else:
+                        raise RuntimeError('Brush file does not exist')
                 self._canvas.brush_path = new_path
-            except OSError as err:
+            except (OSError, RuntimeError) as err:
                 logger.error(f'loading brush {new_path} failed', err)
         else:
             raise RuntimeError(f'Tried to set brush path {new_path} when layer canvas has no brush support.')

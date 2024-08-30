@@ -275,7 +275,8 @@ def save_ora_image(image_stack: ImageStack, file_path: str,  metadata: str) -> N
 def read_ora_image(image_stack: ImageStack, file_path: str) -> Optional[str]:
     """Read a .ora file into the image stack, returning metadata."""
     tmpdir = tempfile.mkdtemp()
-    shutil.unpack_archive(file_path, tmpdir, format='zip')
+    with zipfile.ZipFile(file_path) as zip_file:
+        zip_file.extractall(tmpdir)
 
     extended_xml_path = os.path.join(tmpdir, EXTENDED_DATA_XML_FILE_NAME)
     metadata = None
@@ -289,7 +290,10 @@ def read_ora_image(image_stack: ImageStack, file_path: str) -> Optional[str]:
             assert flattened_image_path is not None
             transform_image_path = extended_layer.get(TRANSFORM_SRC_TAG)
             if transform_image_path is not None:
-                transform_image = QImage(os.path.join(tmpdir, transform_image_path))
+                transform_image_full_path = os.path.join(tmpdir, transform_image_path)
+                assert os.path.isfile(transform_image_full_path), f'missing file: {transform_image_full_path}'
+                transform_image = QImage(transform_image_full_path)
+                assert not transform_image.isNull(), f'loading failed: {transform_image_full_path}'
                 extended_layer_data[TRANSFORM_SRC_TAG] = transform_image
                 matrix_elements = [float(elem) for elem in str(extended_layer.get(TRANSFORM_TAG)).split(',')]
                 transform = QTransform(*matrix_elements)

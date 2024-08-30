@@ -12,7 +12,7 @@ from typing import Optional, Any, List, Tuple, Callable, Set
 from PIL import Image, UnidentifiedImageError, ExifTags
 from PIL.ExifTags import IFD
 from PySide6.QtCore import QSize
-from PySide6.QtGui import QImage
+from PySide6.QtGui import QImage, Qt
 from PySide6.QtWidgets import QApplication, QMessageBox
 
 from src.config.application_config import AppConfig
@@ -197,6 +197,10 @@ class AppController(MenuBuilder):
             self._window.setMaximumSize(size)
         if args.init_image is not None:
             self.load_image(file_path=args.init_image)
+        if not self._image_stack.has_image:
+            image = QImage(config.get(AppConfig.DEFAULT_IMAGE_SIZE), QImage.Format.Format_ARGB32_Premultiplied)
+            image.fill(Qt.GlobalColor.white)
+            self._image_stack.load_image(image)
 
         # Prepare generator options:
         self._sd_generator = SDWebUIGenerator(self._window, self._image_stack, args)

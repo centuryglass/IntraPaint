@@ -133,6 +133,7 @@ class ImageLayer(TransformLayer):
     def set_image(self, new_image: QImage, offset: Optional[QPoint] = None) -> None:
         """Updates the layer image."""
         assert not self.locked, 'Tried to change image in a locked layer'
+        assert not new_image.isNull()
         size_changed = new_image.size() != self._size
         send_size_change_signal = size_changed and not self._size.isNull()
         if size_changed:

@@ -9,8 +9,10 @@ import os
 import sys
 
 from PySide6.QtCore import QTranslator
-from PySide6.QtWidgets import QApplication
+from PySide6.QtGui import QPixmap
+from PySide6.QtWidgets import QApplication, QSplashScreen
 
+from src.util.geometry_utils import get_scaled_placement
 from src.util.optional_import import check_import
 from src.util.shared_constants import TIMELAPSE_MODE_FLAG, PROJECT_DIR, LOG_DIR
 from src.util.arg_parser import build_arg_parser
@@ -69,8 +71,28 @@ def exit_log():
 
 atexit.register(exit_log)
 
-# Load translations:
 app = QApplication.instance() or QApplication(sys.argv)
+
+# close pyinstaller splash screen, if running from bundled executable:
+try:
+    # noinspection PyUnresolvedReferences
+    import pyi_splash
+    pyi_splash.close()
+except ImportError:
+    pass  # Not using the pyinstaller bundle
+
+# show Qt splash screen:
+splash_screen_image = QPixmap(f'{PROJECT_DIR}/resources/IntraPaint_banner.jpg')
+screen = app.primaryScreen()
+splash_screen_bounds = get_scaled_placement(screen.geometry(), splash_screen_image.size(), 10)
+splash_screen_image = splash_screen_image.scaled(splash_screen_bounds.size())
+splash_screen = QSplashScreen(screen, splash_screen_image)
+splash_screen.setGeometry(splash_screen_bounds)
+splash_screen.show()
+splash_screen.raise_()
+app.processEvents()
+
+# Load translations:
 translator = QTranslator()
 for root, _, files in os.walk(f'{PROJECT_DIR}/resources/translations'):
     for file in files:
@@ -112,13 +134,7 @@ if __name__ == '__main__':
     try:
         controller = AppController(args)
 
-        try:
-            # noinspection PyUnresolvedReferences
-            import pyi_splash
-
-            pyi_splash.close()
-        except ImportError:
-            pass  # Not using the pyinstaller bundle, there's no splash screen to close
+        splash_screen.finish(controller.menu_window)
 
         controller.start_app()
     except Exception as err:
