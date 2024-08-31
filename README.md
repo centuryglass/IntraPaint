@@ -61,44 +61,44 @@ All of the images below were created using IntraPaint:
     <tr>
         <td colspan="1" rowspan="1">
           <a href="https://centuryglass.us/img/IntraPaint/ASCII-lair.jpg">
-            <img src="./examples/thumbnails/ASCII-lair.jpg" width="256" height="256" alt="IntraPaint example: ASCII Lair">
+            <img src="./examples/thumbnails/ASCII-lair.jpg" width="128" height="128" alt="IntraPaint example: ASCII Lair">
           </a>
         </td>
         <td colspan="2" rowspan="2">
           <a href="https://centuryglass.us/img/IntraPaint/isolibrary.jpg">
-            <img src="./examples/thumbnails/isolibrary.jpg" width="512" height="512" alt="IntraPaint example: IsoLibrary">
+            <img src="./examples/thumbnails/isolibrary.jpg" width="256" height="256" alt="IntraPaint example: IsoLibrary">
           </a>
         </td>
         <td colspan="1" rowspan="1">
           <a href="https://centuryglass.us/img/IntraPaint/interstate.jpg">
-            <img src="./examples/thumbnails/interstate.jpg" width="256" height="256" alt="IntraPaint example: interstate">
+            <img src="./examples/thumbnails/interstate.jpg" width="128" height="128" alt="IntraPaint example: interstate">
           </a>
         </td>
     </tr>
         <td colspan="1" rowspan="1">
           <a href="https://centuryglass.us/img/IntraPaint/jungle-grid.jpg">
-            <img src="./examples/thumbnails/jungle-grid.jpg" width="256" height="256" alt="IntraPaint example: Jungle Grid">
+            <img src="./examples/thumbnails/jungle-grid.jpg" width="128" height="128" alt="IntraPaint example: Jungle Grid">
           </a>
         </td>
         <td colspan="1" rowspan="1">
           <a href="https://centuryglass.us/img/IntraPaint/lifebulb.jpg">
-            <img src="./examples/thumbnails/lifebulb.jpg" width="256" height="256" alt="IntraPaint example: lifebulb">
+            <img src="./examples/thumbnails/lifebulb.jpg" width="128" height="128" alt="IntraPaint example: lifebulb">
           </a>
         </td>
     <tr>
         <td colspan="1" rowspan="2">
           <a href="https://centuryglass.us/img/IntraPaint/catseye.jpg">
-            <img src="./examples/thumbnails/catseye.jpg" width="256" height="384" alt="IntraPaint example: catseye">
+            <img src="./examples/thumbnails/catseye.jpg" width="128" height="192" alt="IntraPaint example: catseye">
           </a>
         </td>
         <td colspan="2" rowspan="2">
           <a href="https://centuryglass.us/img/IntraPaint/moonlighter.jpg">
-            <img src="./examples/thumbnails/moonlighter.jpg" width="512" height="341" alt="IntraPaint example: Moonlighter">
+            <img src="./examples/thumbnails/moonlighter.jpg" width="256" height="170" alt="IntraPaint example: Moonlighter">
           </a>
         </td>
         <td colspan="1" rowspan="2">
           <a href="https://centuryglass.us/img/IntraPaint/glitch alley.jpg">
-            <img src="./examples/thumbnails/glitch alley.jpg" width="256" height="384" alt="IntraPaint example: Glitch Alley">
+            <img src="./examples/thumbnails/glitch alley.jpg" width="128" height="192" alt="IntraPaint example: Glitch Alley">
           </a>
         </td>
     </tr>
@@ -106,12 +106,12 @@ All of the images below were created using IntraPaint:
     <tr>
         <td colspan="3" rowspan="2">
           <a href="https://centuryglass.us/img/IntraPaint/fungiwood.jpg">
-            <img src="./examples/thumbnails/fungiwood.jpg" width="768" height="432" alt="IntraPaint example: Fungiwood">
+            <img src="./examples/thumbnails/fungiwood.jpg" width="384" height="216" alt="IntraPaint example: Fungiwood">
           </a>
         </td>
         <td colspan="1" rowspan="2">
           <a href="https://centuryglass.us/img/IntraPaint/radian.jpg">
-            <img src="./examples/thumbnails/radian.jpg" width="256" height="384" alt="IntraPaint example: radian">
+            <img src="./examples/thumbnails/radian.jpg" width="128" height="192" alt="IntraPaint example: radian">
           </a>
         </td>
     </tr>
