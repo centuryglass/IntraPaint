@@ -614,5 +614,13 @@
         "type": "string",
         "default": "always_ask",
         "saved": true
+    },
+    "libmypaint_library_dir": {
+        "label": "libmypaint library directory:",
+        "category": "System",
+        "description": "Directory to search for libmypaint library files if unable to load default libraries",
+        "type": "string",
+        "default": "",
+        "saved": true
     }
 }

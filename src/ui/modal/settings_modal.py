@@ -7,7 +7,7 @@ from typing import Any, Dict, List, Optional
 from PySide6.QtCore import Signal, QSize, Qt
 from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QPushButton, QWidget, QTabWidget, QFormLayout, \
-    QScrollArea, QApplication
+    QScrollArea, QApplication, QLabel
 
 from src.config.config import Config
 from src.ui.input_fields.big_int_spinbox import BigIntSpinbox
@@ -56,6 +56,7 @@ class SettingsModal(QDialog):
         self.setLayout(layout)
 
         self._tab_widget = QTabWidget(self)
+        self._tab_widget.setDocumentMode(True)
         layout.addWidget(self._tab_widget, stretch=20)
 
         bottom_panel = BorderedWidget(self)

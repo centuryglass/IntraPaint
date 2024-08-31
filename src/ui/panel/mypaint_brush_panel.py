@@ -213,7 +213,6 @@ class _IconButton(QWidget):
         active_brush = AppConfig().get(self._brush_config_key)
         if active_brush is not None and not os.path.isfile(active_brush):
             active_brush = f'{PROJECT_DIR}/{active_brush}'
-        print(f'active={active_brush}, self={self._brush_path}')
         return active_brush is not None and os.path.abspath(active_brush) == os.path.abspath(self._brush_path)
 
     def resizeEvent(self, unused_event: Optional[QResizeEvent]) -> None:

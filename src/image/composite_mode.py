@@ -179,7 +179,6 @@ class CompositeMode(StrEnum):
         assert source_image.format() == base_image.format() == QImage.Format.Format_ARGB32_Premultiplied
         if opacity == 0 or image_is_fully_transparent(source_image):
             return
-        opacity = 1.0  # TODO: REMOVE AFTER ISSUES ARE FIXED: disabling opacity while debugging to eliminate possible complicating factors
         if top_transform is None:
             top_transform = QTransform()
         base_bounds = QRect(QPoint(), base_image.size())

@@ -1,15 +1,20 @@
 # Development tasks
 
+- Color picker implementation is a messy hack, doesn't work on the ubuntu build. Reimplement properly.
+- Create example images for README, finish missing sections and improve writing
+- Massive list of supported file formats stretches the non-native file dialog
+- Nested layer selection state shown in the layer panel isn't updating properly
+
+
 # Misc. bugs and testing:
 - Test GLID with tab interface
-- layer_blend_test: The label layers aren't loading properly, they show up in the stack but are empty and have zero size. Krita loads them normally, so probably a loading issue rather than saving. Maybe something wrong with the extended transform saving?  Not seeing any issues in layer_move_test.ora.
 
 ## Documentation + Release
 - Rewrite README.md for stable-diffusion info
 - Create tutorials for common workflows
     * Editing with the sketch layer
     * Filling in details with controlNet + tile
-- Create timelapse editing video
+- New timelapse editing video with improved UI, scripted to showcase features.
 - Update Windows libmypaint DLLs
 - Add Mac OS, ARM linux libmypaint libraries
 
@@ -25,9 +30,8 @@
 
 ## ControlNet
 - Figure out a way to preview module preprocessing
-- Get extended controls working in Forge API (PR adding control type endpoint)?
 - Add tooltip descriptions for modules and models
-- Maybe add some simple presets for common workflows
+- Saved preset support, with defaults saved.
 
 ## sketch canvas/libmypaint
 - Cleanup and release libmypaint-qt package
@@ -37,7 +41,6 @@
 - Investigate ComfyUI support
 - A1111 script panel support
 - A1111 lora/hypernet/etc selection support
-- A1111 PR for updating saved styles
 
 ## Help window
 - Rich text tutorial content, with images and dynamic hotkeys.
@@ -53,6 +56,17 @@
 - Add legacy AI generators:
   * DeepDream
   * VQGAN+CLIP
+  
+### "Isolate" layer group attribute:
+- With isolate:
+  * Render all group layers to a transparent group image
+  * Render the group image to the backdrop using group settings.
+- Without isolate:
+  * Render all group layers to a group image that's a copy of the backdrop
+  * (?) also render all layers to a transparent mask image
+  * (?) draw the mask over the group using DestinationIn to crop out backdrop content that doesn't overlap with the group content
+  * Render the group image to the backdrop using group settings.
+
 
 ## ORA format: Preserve information from other programs
 - SVG layers:
@@ -67,16 +81,6 @@
 - Text layers, .ora extension approach:
   * As above, but serialize and write to the xml data extension file instead
   * Possibly better than the .svg approach, this route won't break the image in other editors if loaded on a system that's missing fonts. Decide based on ease of .svg serialization.
-
-### "Isolate" layer group attribute:
-- With isolate:
-  * Render all group layers to a transparent group image
-  * Render the group image to the backdrop using group settings.
-- Without isolate:
-  * Render all group layers to a group image that's a copy of the backdrop
-  * (?) also render all layers to a transparent mask image
-  * (?) draw the mask over the group using DestinationIn to crop out backdrop content that doesn't overlap with the group content
-  * Render the group image to the backdrop using group settings.
 
 ## Layer interface
 - Add selection layer back to layer panel
@@ -128,7 +132,7 @@
 
 ### Draw tool
 - Fix erasing, current implementation is erasing to solid black
-- When not erasing, brush strokes should be drawn to a different layer that gets composited in when the stroke ends.
+- For each brush stroke, track changed pixels and remove/control overlap
 - Add hardness slider, opacity slider
 - Add brush fill patterns
 - When tablet input is detected: add size/hardness/opacity pressure toggles

@@ -65,6 +65,10 @@ class A1111Webservice(WebService):
         EXTRA_NW_THUMB = '/sd_extra_networks/thumb'
         EXTRA_NW_CARD = '/sd_extra_networks/card'
 
+    class ForgeEndpoints:
+        """REST API endpoint constants (Forge WebUI alternates)"""
+        SD_MODULES = '/sdapi/v1/sd-modules'
+
     class ImgParams:
         """Image generation body key constants."""
         INIT_IMAGES = 'init_images'
@@ -477,7 +481,10 @@ class A1111Webservice(WebService):
 
         If available models may have changed, instead consider using the slower refresh_vae method.
         """
-        return self.get(A1111Webservice.Endpoints.VAE_MODELS, timeout=30).json()
+        try:
+            return self.get(A1111Webservice.Endpoints.VAE_MODELS, timeout=30).json()
+        except RuntimeError:
+            return self.get(A1111Webservice.ForgeEndpoints.SD_MODULES, timeout=30).json()
 
     def get_controlnet_version(self) -> int:
         """

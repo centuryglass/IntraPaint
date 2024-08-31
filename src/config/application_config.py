@@ -1,4 +1,5 @@
 """Provides access to the user-editable application config."""
+import os
 from argparse import Namespace
 from typing import Optional
 
@@ -51,6 +52,13 @@ class AppConfig(Config, metaclass=Singleton):
         self.update_options(AppConfig.UPSCALE_MODE, scaling_options)
         self.update_options(AppConfig.DOWNSCALE_MODE, scaling_options)
 
+        if self.get(AppConfig.LIBMYPAINT_LIBRARY_DIR) == '':  # Set default based on user data dir
+            alt_libmypaint_dir = os.path.join(DATA_DIR, 'libmypaint-backup')
+            if not os.path.isfile(alt_libmypaint_dir) and not os.path.exists(alt_libmypaint_dir):
+                os.mkdir(alt_libmypaint_dir)
+            if os.path.isdir(alt_libmypaint_dir):
+                self.set(AppConfig.LIBMYPAINT_LIBRARY_DIR, alt_libmypaint_dir)
+
     def apply_args(self, args: Namespace) -> None:
         """Loads expected parameters from command line arguments"""
         expected = {
@@ -93,6 +101,7 @@ class AppConfig(Config, metaclass=Singleton):
     INPAINT_FULL_RES: str
     INPAINT_FULL_RES_PADDING: str
     INTERROGATE_MODEL: str
+    LIBMYPAINT_LIBRARY_DIR: str
     MASKED_CONTENT: str
     MASK_BLUR: str
     MAX_EDIT_SIZE: str

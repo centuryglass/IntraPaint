@@ -4,7 +4,8 @@ from ctypes import CFUNCTYPE, POINTER, Structure, c_int, c_void_p, c_float, c_do
 from ctypes.util import find_library
 from typing import Optional, TypeAlias
 
-from src.util.shared_constants import PROJECT_DIR
+from src.config.application_config import AppConfig
+from src.util.shared_constants import PROJECT_DIR, DATA_DIR
 
 # constants and basic typedefs:
 c_float_p = POINTER(c_float)
@@ -143,15 +144,34 @@ def load_libmypaint(default_library_path: Optional[str]) -> CDLL:
         library_path = find_library(LIBRARY_NAME)
         if library_path is None:
             library_path = default_library_path
-        if os.name == 'nt':
-            cdll.LoadLibrary(f'{PROJECT_DIR}/lib/libiconv-2.dll')
-            cdll.LoadLibrary(f'{PROJECT_DIR}/lib/libintl-8.dll')
-            cdll.LoadLibrary(f'{PROJECT_DIR}/lib/libjson-c-2.dll')
-            lib = cdll.LoadLibrary(f'{PROJECT_DIR}/lib/libmypaint-1-4-0.dll')
-        else:
-            lib = CDLL(library_path)
-    except OSError as err:
+        try:
+            if os.name == 'nt':
+                cdll.LoadLibrary(f'{PROJECT_DIR}/lib/libiconv-2.dll')
+                cdll.LoadLibrary(f'{PROJECT_DIR}/lib/libintl-8.dll')
+                cdll.LoadLibrary(f'{PROJECT_DIR}/lib/libjson-c-2.dll')
+                lib = cdll.LoadLibrary(f'{PROJECT_DIR}/lib/libmypaint-1-4-0.dll')
+            else:
+                lib = CDLL(library_path)
+        except OSError:
+            alt_library_dir = AppConfig().get(AppConfig.LIBMYPAINT_LIBRARY_DIR)
+            if not os.path.isdir(alt_library_dir):
+                raise RuntimeError(f'libmypaint alternate library directory {alt_library_dir} does not exist')
+            mypaint_lib_path = ''
+            for lib_file in os.listdir(alt_library_dir):
+                file_path = os.path.join(alt_library_dir, lib_file)
+                if not os.path.isfile(file_path):
+                    continue
+                if 'mypaint' in lib_file.lower():
+                    mypaint_lib_path = file_path
+                else:
+                    cdll.LoadLibrary(file_path)
+            if mypaint_lib_path == '':
+                raise RuntimeError(f'No mypaint library found: exactly one file in {alt_library_dir} should have a '
+                                   f'name that includes "mypaint" (e.g. libmypaint.dll, libmypaint.so, etc.)')
+            lib = cdll.LoadLibrary(mypaint_lib_path)
+    except (OSError, RuntimeError) as err:
         raise ImportError(f'Failed to find {LIBRARY_NAME} library: last path tried: {library_path}') from err
+    assert lib is not None
     # Brush functions:
     lib.mypaint_brush_new.restype = c_void_p
     lib.mypaint_brush_new.argtypes = []

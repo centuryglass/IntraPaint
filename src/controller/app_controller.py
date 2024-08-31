@@ -57,6 +57,7 @@ from src.util.image_utils import pil_image_scaling, create_transparent_image, ME
     GREYSCALE_IMAGE_FORMATS
 from src.util.menu_builder import MenuBuilder, menu_action, MENU_DATA_ATTR, MenuData
 from src.util.optional_import import optional_import
+from src.util.pyinstaller import is_pyinstaller_bundle
 from src.util.qtexcepthook import QtExceptHook
 
 # Optional spacenav support and extended theming:
@@ -204,8 +205,9 @@ class AppController(MenuBuilder):
 
         # Prepare generator options:
         self._sd_generator = SDWebUIGenerator(self._window, self._image_stack, args)
-        self._glid_generator = Glid3XLGenerator(self._window, self._image_stack, args)
-        self._glid_web_generator = Glid3WebserviceGenerator(self._window, self._image_stack, args)
+        if not is_pyinstaller_bundle():
+            self._glid_generator = Glid3XLGenerator(self._window, self._image_stack, args)
+            self._glid_web_generator = Glid3WebserviceGenerator(self._window, self._image_stack, args)
         self._test_generator = TestGenerator(self._window, self._image_stack)
         self._null_generator = NullGenerator(self._window, self._image_stack)
         self._generator: ImageGenerator = self._null_generator
@@ -300,9 +302,9 @@ class AppController(MenuBuilder):
         match mode:
             case _ if mode == GENERATION_MODE_SD_WEBUI:
                 self.load_image_generator(self._sd_generator)
-            case _ if mode == GENERATION_MODE_WEB_GLID:
+            case _ if mode == GENERATION_MODE_WEB_GLID and not is_pyinstaller_bundle():
                 self.load_image_generator(self._glid_web_generator)
-            case _ if mode == GENERATION_MODE_LOCAL_GLID:
+            case _ if mode == GENERATION_MODE_LOCAL_GLID and not is_pyinstaller_bundle():
                 self.load_image_generator(self._glid_generator)
             case _ if mode == GENERATION_MODE_TEST:
                 self.load_image_generator(self._test_generator)
@@ -312,17 +314,17 @@ class AppController(MenuBuilder):
                 server_url = args.server_url
                 if server_url == DEFAULT_SD_URL:
                     self.load_image_generator(self._sd_generator)
-                elif server_url == DEFAULT_GLID_URL:
+                elif server_url == DEFAULT_GLID_URL and not is_pyinstaller_bundle():
                     self.load_image_generator(self._glid_web_generator)
                 if self._sd_generator.is_available():
                     self.load_image_generator(self._sd_generator)
                     return
-                if self._glid_web_generator.is_available():
+                if not is_pyinstaller_bundle() and self._glid_web_generator.is_available():
                     self.load_image_generator(self._glid_generator)
                     return
                 if args.dev:
                     self.load_image_generator(self._test_generator)
-                else:
+                elif not is_pyinstaller_bundle():
                     if self._glid_generator.is_available():
                         self.load_image_generator(self._glid_generator)
                         return
@@ -1070,8 +1072,9 @@ class AppController(MenuBuilder):
         if self._generator_window is None:
             self._generator_window = GeneratorSetupWindow()
             self._generator_window.add_generator(self._sd_generator)
-            self._generator_window.add_generator(self._glid_generator)
-            self._generator_window.add_generator(self._glid_web_generator)
+            if not is_pyinstaller_bundle():
+                self._generator_window.add_generator(self._glid_generator)
+                self._generator_window.add_generator(self._glid_web_generator)
             if '--dev' in sys.argv or self._generator == self._test_generator:
                 self._generator_window.add_generator(self._test_generator)
             self._generator_window.add_generator(self._null_generator)

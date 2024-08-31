@@ -13,6 +13,7 @@ from PySide6.QtWidgets import QMessageBox, QFileDialog, QWidget, QStyle, QApplic
 from src.config.application_config import AppConfig
 from src.ui.input_fields.check_box import CheckBox
 from src.util.image_utils import get_standard_qt_icon, IMAGE_WRITE_FORMATS, IMAGE_READ_FORMATS, OPENRASTER_FORMAT
+from src.util.pyinstaller import is_pyinstaller_bundle
 
 logger = logging.getLogger(__name__)
 
@@ -127,7 +128,6 @@ def request_confirmation(parent: Optional[QWidget], title: str, message: str,
 def open_image_file(parent: QWidget, mode: str = 'load',
                     selected_file: str = '') -> Optional[str]:
     """Opens an image file for editing, saving, etc."""
-    is_pyinstaller_bundle = getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS')
     file_filter = IMAGE_LOAD_FILTER if mode == LOAD_IMAGE_MODE else IMAGE_SAVE_FILTER
     file_dialog = QFileDialog(parent, filter=file_filter)
     if os.path.isfile(selected_file):
@@ -140,7 +140,7 @@ def open_image_file(parent: QWidget, mode: str = 'load',
         assert mode == SAVE_IMAGE_MODE
         file_dialog.setFileMode(QFileDialog.FileMode.AnyFile)
         file_dialog.setAcceptMode(QFileDialog.AcceptMode.AcceptSave)
-    if is_pyinstaller_bundle:
+    if is_pyinstaller_bundle():
         file_dialog.setOption(QFileDialog.Option.DontUseNativeDialog, True)
     try:
         if file_dialog.exec():
@@ -153,6 +153,5 @@ def open_image_file(parent: QWidget, mode: str = 'load',
 
 def open_image_layers(parent: QWidget) -> tuple[list[str], str] | tuple[None, None]:
     """Opens multiple image files to import as layers."""
-    is_pyinstaller_bundle = getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS')
-    options = str(QFileDialog.Option.DontUseNativeDialog) if is_pyinstaller_bundle else None
+    options = str(QFileDialog.Option.DontUseNativeDialog) if is_pyinstaller_bundle() else None
     return QFileDialog.getOpenFileNames(parent, TITLE_LOAD_LAYER, options, filter=LAYER_LOAD_FILTER)
