@@ -71,7 +71,8 @@ class ConfigEntry(Parameter):
                  tooltip: str,
                  options: Optional[list[Any]] = None,
                  range_options: Optional[dict[str, int | float]] = None,
-                 save_json: bool = True) -> None:
+                 save_json: bool = True,
+                 subcategory: Optional[str] = None) -> None:
         minimum = None
         maximum = None
         step = None
@@ -89,6 +90,7 @@ class ConfigEntry(Parameter):
         self._key = key
         self._value = initial_value
         self._category = category
+        self._subcategory = subcategory
         self.save_json = save_json
         if options is not None:
             self.set_valid_options(options)
@@ -145,6 +147,11 @@ class ConfigEntry(Parameter):
     def category(self) -> str:
         """Gets the config option's category name."""
         return self._category
+
+    @property
+    def subcategory(self) -> Optional[str]:
+        """Gets the config option's subcategory name, if any."""
+        return self._subcategory
 
     @property
     def option_index(self) -> int:

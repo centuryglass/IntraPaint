@@ -222,11 +222,17 @@ class SelectionLayer(ImageLayer):
         if change_bounds is not None:
             final_image_bounds = QRect(change_bounds).translated(pos.x(), pos.y())
             polys_to_remove = []
-            for poly in self._outline_polygons:
-                poly_bounds = poly.boundingRect().toAlignedRect()
-                if poly_bounds.intersects(final_image_bounds):
-                    final_image_bounds = final_image_bounds.united(poly_bounds.adjusted(-1, -1, 1, 1))
-                    polys_to_remove.append(poly)
+            bounds_expanded = True
+            while bounds_expanded:
+                bounds_expanded = False
+                for poly in self._outline_polygons:
+                    if poly in polys_to_remove:
+                        continue
+                    poly_bounds = poly.boundingRect().toAlignedRect()
+                    if poly_bounds.intersects(final_image_bounds):
+                        final_image_bounds = final_image_bounds.united(poly_bounds.adjusted(-1, -1, 1, 1))
+                        polys_to_remove.append(poly)
+                        bounds_expanded = True
             for poly in polys_to_remove:
                 self._outline_polygons.remove(poly)
             final_local_bounds = final_image_bounds.translated(-pos.x(), -pos.y())\

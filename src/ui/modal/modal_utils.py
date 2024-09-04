@@ -141,6 +141,7 @@ def open_image_file(parent: QWidget, mode: str = 'load',
         file_dialog.setAcceptMode(QFileDialog.AcceptMode.AcceptSave)
     if is_pyinstaller_bundle():
         file_dialog.setOption(QFileDialog.Option.DontUseNativeDialog, True)
+        file_dialog.setOption(QFileDialog.Option.HideNameFilterDetails, True)
     try:
         if file_dialog.exec():
             return file_dialog.selectedFiles()[0]

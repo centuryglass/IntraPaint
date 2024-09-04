@@ -1,9 +1,8 @@
 # Development tasks
 
 - Create example images for README, finish missing sections and improve writing
-- Massive list of supported file formats stretches the non-native file dialog
-- sampling method is missing from SD generate panel
-- selection outlines are glitching when 2+ distinct polygons are selected.
+- New image modal: bg color picker
+
 
 # Color picker component:
 - Alternate palette options - all custom colors?
@@ -38,19 +37,11 @@
     * Save as file
 - Non-transitory selection window? 
 
-## ControlNet
-- Figure out a way to preview module preprocessing
-- Add tooltip descriptions for modules and models
-- Saved preset support, with defaults saved.
+## Tabs and windows:
+- Add shortcut to activate/show/hide each tab
+- Hide tab panel resize bars unless the panel is non-empty
 
-## sketch canvas/libmypaint
-- Cleanup and release libmypaint-qt package
-- Get it working with one of those compatibility packages that lets you use the same code with Qt 4-6 and both PyQt and PySide
 
-## API
-- Investigate ComfyUI support
-- A1111 script panel support
-- A1111 lora/hypernet/etc selection support
 
 ## Help window
 - Rich text tutorial content, with images and dynamic hotkeys.
@@ -63,9 +54,6 @@
 
 ## Generators:
 - Update SD webui instructions with simpler Stability Matrix setup process
-- Add legacy AI generators:
-  * DeepDream
-  * VQGAN+CLIP
   
 ### "Isolate" layer group attribute:
 - With isolate:
@@ -163,5 +151,26 @@
 ## Possible lurking bugs
 Things I never fixed but can no longer reproduce:
 - Nested layer selection state shown in the layer panel isn't updating properly (recursive active layer update logic in LayerPanel looks fine)
+
+# Low priority
+
+## sketch canvas/libmypaint
+- Cleanup and release libmypaint-qt package
+- Get it working with one of those compatibility packages that lets you use the same code with Qt 4-6 and both PyQt and PySide
+- Update demo app
+
+## API
+- Investigate ComfyUI support
+- A1111 script panel support
+- A1111 lora/hypernet/etc selection support
+
+## ControlNet
+- Figure out a way to preview module preprocessing
+- Add tooltip descriptions for modules and models
+- Saved preset support, with defaults saved.
+
+## Add legacy AI generators:
+- DeepDream
+- VQGAN+CLIP
 
 

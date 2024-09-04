@@ -165,11 +165,13 @@ class SDWebUIPanel(BorderedWidget):
 
             # third column:
             third_column_labels = (self._edit_mode_label,
+                                   self._sampler_label,
                                    self._full_res_label,
                                    self._padding_label,
                                    self._seed_label,
                                    self._last_seed_label)
             third_column_controls = (self._edit_mode_combobox,
+                                     self._sampler_combobox,
                                      self._full_res_checkbox,
                                      self._padding_slider,
                                      self._seed_textbox,
