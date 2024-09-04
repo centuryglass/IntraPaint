@@ -1,16 +1,32 @@
 """Interface for any entity that can exist within an image layer stack."""
 import datetime
-from typing import Any, Callable, Optional
+from typing import Any, Callable, Optional, Set
 
 from PySide6.QtCore import QObject, Signal, QRect, QPoint, QSize
 from PySide6.QtGui import QImage, QPixmap, QPainter
+from PySide6.QtWidgets import QApplication
 
 from src.config.application_config import AppConfig
 from src.image.composite_mode import CompositeMode
+from src.ui.modal.modal_utils import show_error_dialog
 from src.undo_stack import UndoStack, _UndoAction, _UndoGroup
 from src.util.cached_data import CachedData
 from src.util.image_utils import (create_transparent_image, NpAnyArray, image_data_as_numpy_8bit_readonly,
                                   image_is_fully_transparent)
+
+
+# The QCoreApplication.translate context for strings in this file
+TR_ID = 'image.layer.layer'
+
+
+def _tr(*args):
+    """Helper to make `QCoreApplication.translate` more concise."""
+    return QApplication.translate(TR_ID, *args)
+
+
+ERROR_TITLE_SHOW_LAYER_FAILED = _tr('Showing layer failed')
+ERROR_MESSAGE_LOCKED_PARENT = _tr('Cannot show layer "{layer_name}", parent layer "{parent_name}" is locked and'
+                                  ' hidden.')
 
 
 class LayerParent:
@@ -218,7 +234,39 @@ class Layer(QObject):
     @visible.setter
     def visible(self, visible: bool):
         """Sets whether this layer is marked as visible."""
-        self._apply_combinable_change(visible, self._visible, self.set_visible, 'layer.visibility')
+        if visible == self.visible:
+            return
+        if visible:  # Un-hide hidden parents without making other child layers visible:
+            toggled_layers: Set[Layer] = set()
+            if not self._visible:
+                toggled_layers.add(self)
+            parent = self.layer_parent
+            while parent is not None:
+                assert isinstance(parent, Layer) and isinstance(parent, LayerParent)
+                if not parent._visible:
+                    if parent.locked:
+                        error_message = ERROR_MESSAGE_LOCKED_PARENT.format(layer_name=self.name,
+                                                                           parent_name=parent.name)
+                        show_error_dialog(None, ERROR_TITLE_SHOW_LAYER_FAILED, error_message)
+                        return
+                    toggled_layers.add(parent)
+                    i = 0
+                    while True:
+                        try:
+                            child = parent.get_layer_by_index(i)
+                            i += 1
+                            if child._visible and not child.locked and child != self:
+                                toggled_layers.add(child)
+                        except ValueError:
+                            break
+                parent = parent.layer_parent
+
+            def _toggle_all():
+                for layer in toggled_layers:
+                    layer.set_visible(not layer._visible)
+            UndoStack().commit_action(_toggle_all, _toggle_all, 'layer.visible')
+        else:
+            self._apply_combinable_change(visible, self._visible, self.set_visible, 'layer.visibility')
 
     def is_empty(self, bounds: Optional[QRect] = None) -> bool:
         """Returns whether this layer contains only fully transparent pixels, optionally restricting the check to a

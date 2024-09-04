@@ -25,7 +25,7 @@ class HSBox(ImageWidget):
 
     def sizeHint(self) -> QSize:
         """Set default size at 1/4 image size."""
-        return QSize(180, 128)
+        return QSize(320, 256)
 
     def set_draw_cross(self, should_draw: bool) -> None:
         """Set whether cross-hairs should be drawn over the selected color."""

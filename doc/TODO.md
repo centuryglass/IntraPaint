@@ -2,9 +2,6 @@
 
 - Create example images for README, finish missing sections and improve writing
 - Massive list of supported file formats stretches the non-native file dialog
-- Nested layer selection state shown in the layer panel isn't updating properly
-- Transparency handling of nested layers is confusing, trying to un-hide a layer should work even it it's in a hidden group
-- Adding a layer within a nested group should expand that group in the layer panel.
 - sampling method is missing from SD generate panel
 - eyedropper icon isn't loading when using ctrl to delegate to color picker
 - gen select screen: cancel button should send an interrupt request
@@ -164,4 +161,9 @@
 - Circle, polygons with n sides
 - stroke+fill controls
 - Probably best to just render directly for now, but maybe use with SVGLayer + graphics items in the future
+
+## Possible lurking bugs
+Things I never fixed but can no longer reproduce:
+- Nested layer selection state shown in the layer panel isn't updating properly (recursive active layer update logic in LayerPanel looks fine)
+
 

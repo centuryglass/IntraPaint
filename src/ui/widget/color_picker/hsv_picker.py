@@ -73,12 +73,6 @@ class HsvPicker(QWidget):
             return
         self.color = QColor.fromHsv(self._color.hue(), self._color.saturation(), value)
 
-    # def resizeEvent(self, event: Optional[QResizeEvent]) -> None:
-    #     """Keep value selector height pinned to hue/saturation picker image."""
-    #     fixed_height = self._hs_box.image_bounds.height()
-    #     self._value_picker.setMaximumHeight(fixed_height)
-    #     self._value_picker.setMinimumHeight(fixed_height)
-
     def _started_color_picking_slot(self) -> None:
         self._hs_box.set_input_enabled(False)
         self._value_picker.set_input_enabled(False)

@@ -75,7 +75,7 @@ class LayerWidget(BorderedWidget):
         self._layer_image = QImage()
         self._preview_pixmap = QPixmap()
         self._clicking = False
-        self._click_time = 0.0
+        self._click_pos = QPoint()
         if layer == image_stack.selection_layer:
             self._label = QLabel(layer.name, self)
         else:
@@ -217,7 +217,7 @@ class LayerWidget(BorderedWidget):
         """Activate layer on click."""
         assert event is not None
         self._clicking = True
-        self._click_time = datetime.datetime.now().timestamp()
+        self._click_pos = event.pos()
         if self._layer == self._image_stack.selection_layer:
             Cache().set(Cache.LAST_ACTIVE_TOOL, LABEL_TEXT_SELECTION_TOOL)
         elif not self.active and event.button() == Qt.MouseButton.LeftButton:
@@ -228,8 +228,9 @@ class LayerWidget(BorderedWidget):
     def mouseMoveEvent(self, event: Optional[QMouseEvent]) -> None:
         """Allow click and drag."""
         assert event is not None
-        click_duration = datetime.datetime.now().timestamp() - self._click_time
-        if self._clicking and click_duration > 0.2 and self._layer != self._image_stack.layer_stack:
+        drag_distance = (self._click_pos - event.pos()).manhattanLength()
+
+        if drag_distance > QApplication.startDragDistance() and self._layer != self._image_stack.layer_stack:
             self.update()
             self.dragging.emit()
             drag = QDrag(self)
@@ -237,14 +238,14 @@ class LayerWidget(BorderedWidget):
             drag.setPixmap(self._preview_pixmap)
             drag.exec(Qt.DropAction.MoveAction)
             self._clicking = False
-            self._click_time = 0.0
+            self._click_pos = QPoint()
             self.drag_ended.emit()
             self.update()
 
     def mouseReleaseEvent(self, event: Optional[QMouseEvent]) -> None:
         """Exit dragging state."""
         self._clicking = False
-        self._click_time = 0.0
+        self._click_pos = QPoint()
         self.drag_ended.emit()
         self.update()
 

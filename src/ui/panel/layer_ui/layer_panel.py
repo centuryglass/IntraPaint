@@ -1,14 +1,15 @@
 """Shows image layers, and allows the user to manipulate them."""
 import logging
-from typing import Optional, List, Callable, Any
+from typing import Optional, List, Callable, Any, Tuple
 
 from PySide6.QtCore import Qt, QSize, QPointF, QTimer
-from PySide6.QtGui import QIcon
+from PySide6.QtGui import QIcon, QKeyEvent
 from PySide6.QtWidgets import QWidget, QLabel, QVBoxLayout, QHBoxLayout, QScrollArea, QToolButton, QSlider, \
     QDoubleSpinBox, QComboBox, QApplication
 
 from src.image.layers.image_stack import ImageStack
-from src.image.layers.layer import Layer
+from src.image.layers.layer import Layer, LayerParent
+from src.image.layers.layer_stack import LayerStack
 from src.ui.panel.layer_ui.layer_group_widget import LayerGroupWidget
 from src.ui.panel.layer_ui.layer_widget import PREVIEW_SIZE, LAYER_PADDING, MAX_WIDTH, LayerWidget, ICON_SIZE
 from src.util.shared_constants import PROJECT_DIR, APP_ICON_PATH
@@ -153,6 +154,7 @@ class LayerPanel(QWidget):
                                                  self._image_stack.merge_layer_down)
 
         self._image_stack.active_layer_changed.connect(self._active_layer_change_slot)
+        self._image_stack.layer_added.connect(self._layer_added_slot)
         self._active_layer_change_slot(self._image_stack.active_layer)
         self._image_stack.layer_order_changed.connect(self._update_order_slot)
 
@@ -256,10 +258,42 @@ class LayerPanel(QWidget):
         if active_layer.composition_mode != mode:
             active_layer.composition_mode = mode
 
+    def _find_layer_parent_widgets(self, layer: Layer) -> List[LayerGroupWidget]:
+        parent_map: List[Tuple[Layer, int]] = []
+        layer_iter: Optional[Layer] = layer.layer_parent
+        if layer_iter is None:
+            return []
+        parent_iter: Optional[LayerParent] = layer_iter.layer_parent
+        while parent_iter is not None:
+            assert isinstance(parent_iter, LayerStack)
+            idx = parent_iter.get_layer_index(layer_iter)
+            assert idx is not None
+            parent_map.insert(0, (layer_iter, idx))
+            layer_iter = parent_iter
+            parent_iter = layer_iter.layer_parent
+        assert layer_iter == self._image_stack.layer_stack
+        parent_list: List[LayerGroupWidget] = [self._parent_group_item]
+        widget_iter: LayerGroupWidget = self._parent_group_item
+        assert isinstance(widget_iter, LayerGroupWidget)
+        for mapped_layer, idx in parent_map:
+            assert isinstance(widget_iter, LayerGroupWidget)
+            widget_iter = widget_iter.child_items[idx]
+            assert isinstance(widget_iter, LayerGroupWidget)
+            assert widget_iter.layer == mapped_layer
+            parent_list.append(widget_iter)
+        return parent_list
+
+    def _open_parent_groups(self, layer: Layer) -> None:
+        parent_widget_list = self._find_layer_parent_widgets(layer)
+        for parent in parent_widget_list:
+            if not parent.is_expanded():
+                parent.set_expanded(True)
+
     def _active_layer_change_slot(self, new_active_layer: Layer) -> None:
         if self._active_layer is not None:
             self._active_layer.lock_changed.disconnect(self._lock_change_slot)
         self._active_layer = new_active_layer
+        self._open_parent_groups(new_active_layer)
         new_active_layer.lock_changed.connect(self._lock_change_slot)
         self._lock_change_slot(new_active_layer, new_active_layer.locked)
         layer_id = new_active_layer.id
@@ -280,6 +314,9 @@ class LayerPanel(QWidget):
             if mode_index >= 0:
                 self._mode_box.setCurrentIndex(mode_index)
 
+    def _layer_added_slot(self, new_layer: Layer) -> None:
+        self._open_parent_groups(new_layer)
+
     def _lock_change_slot(self, layer: Layer, is_locked: bool) -> None:
         assert layer == self._image_stack.active_layer, (f'active is {self._image_stack.active_layer.name},'
                                                          f' got {layer.name}')
@@ -289,3 +326,4 @@ class LayerPanel(QWidget):
                        self._merge_down_button,
                        self._delete_button):
             widget.setEnabled(not is_locked)
+

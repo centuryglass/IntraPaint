@@ -177,6 +177,7 @@ class CompositeMode(StrEnum):
                              opacity: float = 1.0,
                              top_transform: Optional[QTransform] = None) -> None:
         assert source_image.format() == base_image.format() == QImage.Format.Format_ARGB32_Premultiplied
+        assert not source_image.isNull() and not base_image.isNull()
         if opacity == 0 or image_is_fully_transparent(source_image):
             return
         if top_transform is None:
@@ -202,6 +203,7 @@ class CompositeMode(StrEnum):
         alpha_top = np_top[:, :, 3] / 255.0 * opacity
         alpha_base = np_base[:, :, 3] / 255.0
         alpha_combined = np.clip(alpha_top + alpha_base * (1 - alpha_top), 0, 1)
+        nonzero_alpha = alpha_combined > 0
 
         # Calculate HSL values (as hls):
         top_hls = cv2.cvtColor(np_top[:, :, :3], cv2.COLOR_BGR2HLS)
@@ -213,8 +215,10 @@ class CompositeMode(StrEnum):
 
         # final compositing onto the base image:
         for c in range(3):
-            np_base[:, :, c] = (blended_rgb[:, :, c] * alpha_top + np_base[:, :, c]
-                                * alpha_base * (1 - alpha_top) / alpha_combined)
+            np_base[nonzero_alpha, c] = (blended_rgb[nonzero_alpha, c] * alpha_top[nonzero_alpha]
+                                         + np_base[nonzero_alpha, c]
+                                         * alpha_base[nonzero_alpha] * (1 - alpha_top[nonzero_alpha])
+                                         / alpha_combined[nonzero_alpha])
         np_base[:, :, 3] = alpha_combined * 255
 
     @classmethod

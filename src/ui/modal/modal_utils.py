@@ -3,7 +3,6 @@ Provides simple popup windows for error messages, requesting confirmation, and l
 """
 import logging
 import os
-import sys
 import traceback
 from typing import Optional, Set
 
