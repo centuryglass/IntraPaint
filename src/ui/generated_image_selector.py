@@ -67,6 +67,8 @@ VIEW_BACKGROUND = Qt.GlobalColor.black
 class GeneratedImageSelector(QWidget):
     """Shows all images from an image generation operation, allows the user to select one or discard all of them."""
 
+    cancel_generation = Signal()
+
     def __init__(self,
                  image_stack: ImageStack,
                  close_selector: Callable) -> None:
@@ -141,7 +143,13 @@ class GeneratedImageSelector(QWidget):
         self._cancel_button.setIcon(get_standard_qt_icon(QStyle.StandardPixmap.SP_DialogCancelButton))
         self._cancel_button.setText(CANCEL_BUTTON_TEXT)
         self._cancel_button.setToolTip(CANCEL_BUTTON_TOOLTIP)
-        self._cancel_button.clicked.connect(self._close_selector)
+
+        def _cancel() -> None:
+            if AppStateTracker.app_state() == APP_STATE_LOADING:
+                self.cancel_generation.emit()
+            self._close_selector()
+
+        self._cancel_button.clicked.connect(_cancel)
         self._button_bar_layout.addWidget(self._cancel_button)
 
         self._button_bar_layout.addStretch(255)

@@ -272,6 +272,9 @@ class SDWebUIGenerator(ImageGenerator):
                 self._controlnet_tab = Tab(CONTROLNET_TITLE, controlnet_panel)
                 self._controlnet_tab.setIcon(QIcon(CONTROLNET_TAB_ICON))
 
+            assert self._window is not None
+            self._window.cancel_generation.connect(self.cancel_generation)
+
             return True
         except AuthError:
             return False
@@ -296,6 +299,8 @@ class SDWebUIGenerator(ImageGenerator):
             self._controlnet_tab.deleteLater()
             self._controlnet_tab = None
             self._controlnet_panel = None
+        assert self._window is not None
+        self._window.cancel_generation.disconnect(self.cancel_generation)
         self.clear_menus()
 
     def init_settings(self, settings_modal: SettingsModal) -> None:
@@ -519,6 +524,12 @@ class SDWebUIGenerator(ImageGenerator):
         self._async_progress_check()
         task.start()
         return True
+
+    def cancel_generation(self) -> None:
+        """Cancels image generation, if in-progress"""
+        assert self._webservice is not None
+        if AppStateTracker.app_state() == APP_STATE_LOADING:
+            self._webservice.interrupt()
 
     def generate(self,
                  status_signal: Signal,

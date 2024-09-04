@@ -4,7 +4,6 @@
 - Massive list of supported file formats stretches the non-native file dialog
 - sampling method is missing from SD generate panel
 - eyedropper icon isn't loading when using ctrl to delegate to color picker
-- gen select screen: cancel button should send an interrupt request
 - selection outlines are glitching when 2+ distinct polygons are selected.
 
 # Color picker component:

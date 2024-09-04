@@ -135,6 +135,7 @@ class MainWindow(QMainWindow):
     """Main user interface for inpainting."""
 
     generate_signal = Signal()
+    cancel_generation = Signal()
 
     def __init__(self, image_stack: ImageStack):
         """Initializes the main application window and sets up the default UI layout and menu options.
@@ -338,6 +339,7 @@ class MainWindow(QMainWindow):
             if self._image_selector is None:
                 self._image_selector = GeneratedImageSelector(self._image_stack,
                                                               lambda: self.set_image_selector_visible(False))
+                self._image_selector.cancel_generation.connect(self.cancel_generation)
             else:
                 self._image_selector.reset()
             self._central_widget.addWidget(self._image_selector)
