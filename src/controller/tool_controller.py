@@ -157,7 +157,7 @@ class ToolController(QObject):
         """Check for changes in held key modifiers, and handle tool delegation."""
         if self._active_tool is None:
             return
-        if self._active_delegate and self._tool_modifier_delegates[self._active_tool] != modifiers:
+        if self._active_delegate is not None and self._tool_modifier_delegates[self._active_tool] != modifiers:
             self._active_delegate.is_active = False
             self._active_delegate = None
             self._active_tool.reactivate_after_delegation()
@@ -171,6 +171,8 @@ class ToolController(QObject):
     @property
     def active_tool(self) -> Optional[BaseTool]:
         """Returns the active tool, if any."""
+        if self._active_delegate is not None:
+            return self._active_delegate
         return self._active_tool
 
     @active_tool.setter
