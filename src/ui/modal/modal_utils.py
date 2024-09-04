@@ -11,6 +11,7 @@ from PySide6.QtWidgets import QMessageBox, QFileDialog, QWidget, QStyle, QApplic
 
 from src.config.application_config import AppConfig
 from src.ui.input_fields.check_box import CheckBox
+from src.util.display_size import get_screen_size
 from src.util.image_utils import get_standard_qt_icon, IMAGE_WRITE_FORMATS, IMAGE_READ_FORMATS, OPENRASTER_FORMAT
 from src.util.pyinstaller import is_pyinstaller_bundle
 
@@ -142,6 +143,8 @@ def open_image_file(parent: QWidget, mode: str = 'load',
     if is_pyinstaller_bundle():
         file_dialog.setOption(QFileDialog.Option.DontUseNativeDialog, True)
         file_dialog.setOption(QFileDialog.Option.HideNameFilterDetails, True)
+    max_size = get_screen_size()
+    file_dialog.setMaximumSize(max_size)
     try:
         if file_dialog.exec():
             return file_dialog.selectedFiles()[0]
