@@ -336,6 +336,7 @@ class AppController(MenuBuilder):
         if AppConfig().get(AppConfig.USE_ERROR_HANDLER):
             QtExceptHook().enable()
         self._window.show()
+
         AppStateTracker.set_app_state(APP_STATE_EDITING if self._image_stack.has_image else APP_STATE_NO_IMAGE)
         app.exec()
 

@@ -1,7 +1,7 @@
 """Displays a single image or pixmap, keeping aspect ratios."""
 from typing import Optional
 
-from PySide6.QtCore import QSize
+from PySide6.QtCore import QSize, QRect
 from PySide6.QtGui import QIcon, QPaintEvent, QPainter, QImage, QPixmap
 from PySide6.QtWidgets import QWidget
 
@@ -33,12 +33,17 @@ class ImageWidget(QWidget):
         self._image = new_image
         self.update()
 
+    @property
+    def image_bounds(self) -> QRect:
+        """Access the current image bounds within the widget."""
+        return get_scaled_placement(self.size(), self.sizeHint(), 2)
+
     def paintEvent(self, event: Optional[QPaintEvent]) -> None:
         """Draws the image scaled to widget size, keeping aspect ratios."""
         if self._image is None:
             return
         painter = QPainter(self)
-        paint_bounds = get_scaled_placement(self.size(), self.sizeHint(), 2)
+        paint_bounds = self.image_bounds
         if isinstance(self._image, QImage):
             painter.drawImage(paint_bounds, self._image)
         elif isinstance(self._image, QPixmap):

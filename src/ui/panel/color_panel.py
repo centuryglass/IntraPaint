@@ -5,11 +5,11 @@ from PySide6.QtCore import Qt
 from PySide6.QtGui import QColor, QResizeEvent, QShowEvent
 
 from src.config.cache import Cache
-from src.ui.widget.color_picker import ColorPicker
+from src.ui.widget.color_pick.tabbed_color_picker import TabbedColorPicker
 from src.util.display_size import get_window_size
 
 
-class ColorControlPanel(ColorPicker):
+class ColorControlPanel(TabbedColorPicker):
     """Rearranges the Qt color dialog into a fixed panel widget."""
 
     def __init__(self, config_key: Optional[str] = 'last_brush_color', disable_extended_layouts=False) -> None:
@@ -34,6 +34,8 @@ class ColorControlPanel(ColorPicker):
         self._orientation = orientation
         if orientation is None:
             return
+        self.set_default_mode()
+        return
         window_size = get_window_size()
         panel_size = self.panel_size()
         if orientation == Qt.Orientation.Vertical:

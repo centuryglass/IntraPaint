@@ -116,6 +116,7 @@ class AppConfig(Config, metaclass=Singleton):
     RESTORE_FACES: str
     SAMPLING_METHOD: str
     SAMPLING_STEPS: str
+    SAVED_COLORS: str
     SEED: str
     SELECTION_BRUSH_SIZE: str
     SELECTION_COLOR: str

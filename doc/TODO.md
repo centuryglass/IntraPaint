@@ -4,6 +4,12 @@
 - Create example images for README, finish missing sections and improve writing
 - Massive list of supported file formats stretches the non-native file dialog
 - Nested layer selection state shown in the layer panel isn't updating properly
+- Transparency handling of nested layers is confusing, trying to un-hide a layer should work even it it's in a hidden group
+- Adding a layer within a nested group should expand that group in the layer panel.
+- sampling method is missing from SD generate panel
+- eyedropper icon isn't loading when using ctrl to delegate to color picker
+- gen select screen: cancel button should send an interrupt request
+- selection outlines are glitching when 2+ distinct polygons are selected.
 
 
 # Misc. bugs and testing:

@@ -235,6 +235,14 @@
         "default": 5,
         "saved": true
     },
+    "saved_colors": {
+        "label": "Saved colors:",
+        "category": "Editing",
+        "description": "List of saved custom color values.",
+        "type": "list",
+        "default": [],
+        "saved": true
+    },
     "prompt": {
         "label": "Prompt:",
         "category": "Image generation",

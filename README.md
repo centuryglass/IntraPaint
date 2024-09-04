@@ -40,12 +40,12 @@ that you don't want to do.
 
 Control image generation visually. No complex prompts needed, scribble in rough art, describe it briefly, and let Stable-Diffusion figure out the details you want from visual cues.
 
-Prompt: "a red lizard standing on a purple statue in an orange desert under a blue sky"
+Prompt: "on the left, a red lizard with a yellow hat standing on a green pillar in an orange desert under a blue sky, looking at a  silver robot in a cowboy hat on the right "
 
-|                                                                         |                                                                               |                                                                                   |
-|-------------------------------------------------------------------------|-------------------------------------------------------------------------------|-----------------------------------------------------------------------------------|
-| IMG: Initial image, not quite right                                     | IMG: Quick sketch, exactly matches description.                               | IMG: AI refined version of sketch                                                 |
-| AI does okay with details, but struggles with combining them correctly. | I can easily get the composition right, but not with the same level of detail | IntraPaint drawing plus inpainting gives you the best of both with minimal hassle |
+|                                                                                                 |                                                                                                             |                                                                                       |
+|-------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------|
+| ![comp_example_1.jpg](./examples/comp_example_1.jpg)                                            | ![comp_example_2.jpg](./examples/comp_example_2.jpg)                                                        | ![comp_example_3.jpg](./examples/comp_example_3.jpg)                                  |
+| AI does okay with details, but struggles with combining them correctly in complex arrangements. | A human artist can easily get the composition right, but similar details require lots of time and practice. | IntraPaint drawing plus AI inpainting gives you the best of both with minimal hassle. |
 
 Generate images with levels of detail and precision far higher than unguided image generation allows.
 
