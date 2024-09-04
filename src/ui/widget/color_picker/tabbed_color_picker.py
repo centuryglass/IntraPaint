@@ -88,9 +88,15 @@ class TabbedColorPicker(ScreenColorWidget):
         self._screen_preview_label.setText('')
 
         def _set_label_pos(pos: QPoint, _) -> None:
+            self._screen_preview_label.setVisible(True)
             self._screen_preview_label.setText(LABEL_TEXT_PICK_SCREEN_COLOR_INFO.format(x=pos.x(), y=pos.y()))
+
+        def _clear_label() -> None:
+            self._screen_preview_label.setText('')
+            self._screen_preview_label.setVisible(False)
+
         self.color_previewed.connect(_set_label_pos)
-        self.stopped_color_picking.connect(lambda: self._screen_preview_label.setText(''))
+        self.stopped_color_picking.connect(_clear_label)
         self._custom_palette_layout.addWidget(self._screen_preview_label)
 
         # Divide color control into spectrum and component panels:
@@ -211,6 +217,8 @@ class TabbedColorPicker(ScreenColorWidget):
             if self._always_show_pick_color_button and title != BASIC_PALETTE_TITLE:
                 widget = QWidget()
                 layout = QVBoxLayout(widget)
+                layout.setContentsMargins(1, 1, 1, 1)
+                layout.setSpacing(1)
                 layout.addWidget(tab)
                 pick_button, pick_label = self._new_pick_screen_color_button()
                 if title != CUSTOM_PALETTE_TITLE:
@@ -229,11 +237,17 @@ class TabbedColorPicker(ScreenColorWidget):
 
         screen_preview_label = QLabel()
         screen_preview_label.setText('')
+        screen_preview_label.setVisible(False)
 
         def _set_label_pos(pos: QPoint, _) -> None:
+            screen_preview_label.setVisible(True)
             screen_preview_label.setText(LABEL_TEXT_PICK_SCREEN_COLOR_INFO.format(x=pos.x(), y=pos.y()))
         self.color_previewed.connect(_set_label_pos)
-        self.stopped_color_picking.connect(lambda: screen_preview_label.setText(''))
+
+        def _clear_label() -> None:
+            screen_preview_label.setText('')
+            screen_preview_label.setVisible(False)
+        self.stopped_color_picking.connect(_clear_label)
         return pick_color_button, screen_preview_label
 
     def _use_linear_layout(self, layout_class) -> None:

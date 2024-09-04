@@ -5,6 +5,7 @@ from PySide6.QtCore import Signal, QPoint, QLine, QSize
 from PySide6.QtGui import QImage, QPaintEvent, QPainter, QPen, Qt, QMouseEvent
 
 from src.ui.widget.image_widget import ImageWidget
+from src.util.display_size import get_window_size
 from src.util.math_utils import clamp
 from src.util.shared_constants import PROJECT_DIR
 
@@ -25,7 +26,11 @@ class HSBox(ImageWidget):
 
     def sizeHint(self) -> QSize:
         """Set default size at 1/4 image size."""
-        return QSize(320, 256)
+        window_size = get_window_size()
+        min_dim = min(window_size.width(), window_size.height())
+        if min_dim > 1200:
+            return QSize(320, 256)
+        return QSize(160, 128)
 
     def set_draw_cross(self, should_draw: bool) -> None:
         """Set whether cross-hairs should be drawn over the selected color."""

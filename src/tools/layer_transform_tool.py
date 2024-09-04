@@ -126,10 +126,12 @@ class LayerTransformTool(BaseTool):
 
         self._reset_button = QPushButton()
         self._reset_button.setText(RESET_BUTTON_TEXT)
+        self._reset_button.setMinimumHeight(self._reset_button.sizeHint().height())
         self._reset_button.clicked.connect(self.reset_transformation)
 
         self._clear_button = QPushButton()
         self._clear_button.setText(CLEAR_BUTTON_TEXT)
+        self._clear_button.setMinimumHeight(self._clear_button.sizeHint().height())
         self._clear_button.clicked.connect(lambda: self._transform_outline.setTransform(QTransform()))
 
         def _restore_aspect_ratio() -> None:
@@ -304,12 +306,15 @@ class LayerTransformTool(BaseTool):
 
         def _add_control(label_text: str, row: int, column: int, use_hints: bool = True) -> None:
             control, up_key_hint, down_key_hint = item_map[label_text]
+            control.setMinimumHeight(control.sizeHint().height())
             if use_hints is False:
                 up_key_hint = None
                 down_key_hint = None
             grid_column = column * 4
             if not isinstance(control, (QPushButton, QCheckBox)):
-                grid.addWidget(QLabel(label_text), row, grid_column, 1, 2 if up_key_hint is None else 1)
+                ctrl_label = QLabel(label_text)
+                ctrl_label.setMinimumHeight(control.sizeHint().height())
+                grid.addWidget(ctrl_label, row, grid_column, 1, 2 if up_key_hint is None else 1)
             if up_key_hint is not None:
                 grid.addWidget(up_key_hint, row, grid_column + 1)
                 up_key_hint.show()

@@ -18,6 +18,8 @@ class HsvPicker(QWidget):
     def __init__(self):
         super().__init__()
         self._layout = QHBoxLayout(self)
+        self._layout.setContentsMargins(2, 2, 2, 2)
+        self._layout.setSpacing(0)
         self._color = QColor()
         self._hs_box = HSBox()
         self._layout.addWidget(self._hs_box)

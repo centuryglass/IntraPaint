@@ -22,7 +22,7 @@ from src.ui.panel.layer_ui.layer_toggle_button import ICON_SIZE
 
 from src.ui.panel.layer_ui.layer_visibility_button import LayerVisibilityButton
 from src.ui.layout.bordered_widget import BorderedWidget
-from src.util.display_size import find_text_size
+from src.util.display_size import find_text_size, get_window_size
 from src.util.geometry_utils import get_scaled_placement
 from src.util.image_utils import get_transparency_tile_pixmap, crop_to_content
 
@@ -37,6 +37,7 @@ def _tr(*args):
 
 
 PREVIEW_SIZE = QSize(80, 80)
+SMALL_PREVIEW_SIZE = QSize(40, 40)
 LAYER_PADDING = 10
 MAX_WIDTH = PREVIEW_SIZE.width() + ICON_SIZE.width() + LAYER_PADDING * 2 + 400
 MENU_OPTION_MOVE_UP = _tr('Move up')
@@ -56,6 +57,14 @@ MENU_OPTION_MIRROR_HORIZONTAL = _tr('Mirror horizontally')
 COPIED_LAYER_NAME = _tr('{src_layer_name} copied content')
 
 
+def _preview_size() -> QSize:
+    window_size = get_window_size()
+    min_dim = min(window_size.width(), window_size.height())
+    if min_dim > 1200:
+        return QSize(PREVIEW_SIZE)
+    return QSize(SMALL_PREVIEW_SIZE)
+
+
 class LayerWidget(BorderedWidget):
     """A single layer's representation in the list"""
 
@@ -71,7 +80,7 @@ class LayerWidget(BorderedWidget):
         self._layer = layer
         self._image_stack = image_stack
         self._layout = QHBoxLayout(self)
-        self._layout.addSpacing(PREVIEW_SIZE.width())
+        self._layout.addSpacing(_preview_size().width())
         self._layer_image = QImage()
         self._preview_pixmap = QPixmap()
         self._clicking = False
@@ -189,9 +198,9 @@ class LayerWidget(BorderedWidget):
         text_size = find_text_size(self.layer.name)
         layer_width = text_size.width()
         layer_height = text_size.height()
-        layer_width += PREVIEW_SIZE.width() + ICON_SIZE.width()
+        layer_width += _preview_size().width() + ICON_SIZE.width()
         layer_width = min(layer_width, MAX_WIDTH)
-        layer_height = max(layer_height, ICON_SIZE.height(), PREVIEW_SIZE.height())
+        layer_height = max(layer_height, ICON_SIZE.height(), _preview_size().height())
         return QSize(layer_width, layer_height)
 
     @property

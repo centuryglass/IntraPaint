@@ -189,15 +189,26 @@ class _IconButton(QWidget):
         self._brush_path = brush_path
         self._image_path = image_path
         self._image_rect: Optional[QRect] = None
-        self._image = QPixmap(image_path)
+        self._image = QIcon(QPixmap(image_path))
         inverted = QImage(image_path)
         inverted.invertPixels(QImage.InvertMode.InvertRgb)
-        self._image_inverted = QPixmap.fromImage(inverted)
-        self.setMinimumSize(self._image.width() // 2, self._image.height() // 2)
-        self.setMaximumSize(self._image.width(), self._image.height())
+        self._image_inverted = QIcon(QPixmap.fromImage(inverted))
         self.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        self.setToolTip(self._brush_name)
         self.customContextMenuRequested.connect(self._menu)
         self.resizeEvent(None)
+
+    def _get_pixmap(self) -> QPixmap:
+        window_size = get_window_size()
+        min_dim = min(window_size.width(), window_size.height())
+        icon = self._image if not self.is_selected() else self._image_inverted
+        if min_dim > 1600:
+            size = 128
+        elif min_dim > 1000:
+            size = 64
+        else:
+            size = 48
+        return icon.pixmap(size)
 
     def saved_name(self) -> str:
         """Returns the name used to save this brush to favorites."""
@@ -217,31 +228,22 @@ class _IconButton(QWidget):
 
     def resizeEvent(self, unused_event: Optional[QResizeEvent]) -> None:
         """Recalculates icon bounds when the widget size changes."""
-        self._image_rect = get_scaled_placement(self.size(), self._image.size())
+        size = self.sizeHint()
+        self._image_rect = get_scaled_placement(self.size(), size)
+        # self.setMinimumSize(size)
+        # self.setMaximumSize(size)
 
     def sizeHint(self):
         """Define suggested button size based on window size."""
-        width = self._image.width()
-        height = self._image.height()
-        window_size = get_window_size()
-        if not window_size.isEmpty():
-            width = min(width, window_size.width() // 30)
-            height = min(height, window_size.height() // 30)
-            if width < height:
-                height = int(width * self._image.height() / self._image.width())
-            else:
-                width = int(height * self._image.width() / self._image.height())
-        return QSize(width, height)
+        return self._get_pixmap().size()
 
     def paintEvent(self, unused_event: Optional[QPaintEvent]) -> None:
         """Paints the icon image in the widget bounds, preserving aspect ratio."""
         if self._image_rect is None:
             return
         painter = QPainter(self)
-        if self.is_selected():
-            painter.drawPixmap(self._image_rect, self._image_inverted)
-        else:
-            painter.drawPixmap(self._image_rect, self._image)
+        pixmap = self._get_pixmap()
+        painter.drawPixmap(self._image_rect, pixmap, QRect(QPoint(), pixmap.size()))
 
     def mousePressEvent(self, event: Optional[QMouseEvent]) -> None:
         """Load the associated brush when left-clicked."""

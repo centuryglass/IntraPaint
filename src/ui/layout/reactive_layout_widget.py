@@ -22,6 +22,10 @@ class ReactiveLayoutWidget(QWidget):
         self._default_mode: Optional[_LayoutMode] = None
         self._active_mode: Optional[str] = None
 
+    def sizeHint(self) -> Optional[QSize]:
+        """Returns a null size to ensure Qt layout management doesn't block transitions into other modes."""
+        return QSize()
+
     def add_visibility_limit(self, widget: QWidget, min_size: QSize) -> None:
         """Set a threshold, below which a given child widget shouldn't be shown."""
         self._visibility_limits[widget] = min_size
