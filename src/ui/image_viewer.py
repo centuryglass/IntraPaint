@@ -53,7 +53,7 @@ class ImageViewer(ImageGraphicsView):
         assert scene is not None
         self._image_outline = Outline(scene, self)
         self._image_border = Border(scene, self)
-        self._image_border.windowed_area = image_stack.bounds if image_stack.has_image else QRect()
+        self._image_border.windowed_area = image_stack.bounds
         self._image_border.color = QColor(GENERATION_AREA_BORDER_COLOR)
         self._image_border.setOpacity(IMAGE_BORDER_OPACITY)
         self._image_border.setVisible(True)
@@ -222,7 +222,7 @@ class ImageViewer(ImageGraphicsView):
         self.content_size = new_size
 
         self._update_drawn_borders()
-        self._image_border.windowed_area = self._image_stack.bounds if self._image_stack.has_image else QRect()
+        self._image_border.windowed_area = self._image_stack.bounds
         self._image_outline.outlined_region = self._image_border.windowed_area
         self.resizeEvent(None)
 

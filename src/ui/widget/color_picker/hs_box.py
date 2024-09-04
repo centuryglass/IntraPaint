@@ -1,7 +1,7 @@
 """Display the full hue/saturation spectrum in a widget, show a selected color, allow color selection"""
 from typing import Optional
 
-from PySide6.QtCore import Signal, QPoint, QLine
+from PySide6.QtCore import Signal, QPoint, QLine, QSize
 from PySide6.QtGui import QImage, QPaintEvent, QPainter, QPen, Qt, QMouseEvent
 
 from src.ui.widget.image_widget import ImageWidget
@@ -22,6 +22,10 @@ class HSBox(ImageWidget):
         self._saturation = 0
         self._draw_cross = True
         self._input_enabled = True
+
+    def sizeHint(self) -> QSize:
+        """Set default size at 1/4 image size."""
+        return QSize(180, 128)
 
     def set_draw_cross(self, should_draw: bool) -> None:
         """Set whether cross-hairs should be drawn over the selected color."""

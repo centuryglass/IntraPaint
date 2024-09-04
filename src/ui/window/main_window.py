@@ -254,8 +254,7 @@ class MainWindow(QMainWindow):
             tab_box.add_tab_bar_action(move_all_action)
             self._tab_bar_actions.append(move_all_action)
 
-        for panel in (self._image_panel, self._tool_panel):
-            AppStateTracker.set_enabled_states(panel, [APP_STATE_EDITING])
+        AppStateTracker.set_enabled_states(self._image_panel, [APP_STATE_EDITING])
         self.resizeEvent(None)
 
     def set_control_panel(self, control_panel: Optional[QWidget]) -> None:

@@ -7,7 +7,7 @@ from PySide6.QtGui import QColor, QPaintEvent, QPainter, QMouseEvent, Qt, QPixma
     QRegularExpressionValidator
 from PySide6.QtWidgets import QApplication, QWidget, QGridLayout, QLabel, QFrame, QSpinBox, QLineEdit
 
-from src.ui.widget.color_pick.screen_color import ScreenColorWidget
+from src.ui.widget.color_picker.screen_color import ScreenColorWidget
 
 # The `QCoreApplication.translate` context for strings in this file
 TR_ID = 'ui.widget.color_picker.component_spinbox_picker'

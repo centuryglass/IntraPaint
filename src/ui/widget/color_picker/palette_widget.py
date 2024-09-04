@@ -7,7 +7,7 @@ from PySide6.QtGui import QColor, QPaintEvent, QPainter, QMouseEvent, QFocusEven
 from PySide6.QtWidgets import QWidget, QStyleOptionFrame, QStyle, QStyleOptionFocusRect, QSizePolicy, QApplication
 
 from src.config.application_config import AppConfig
-from src.ui.widget.color_pick.screen_color import ScreenColorWidget
+from src.ui.widget.color_picker.screen_color import ScreenColorWidget
 
 
 class _PaletteGrid(QWidget):
@@ -71,6 +71,18 @@ class _PaletteGrid(QWidget):
     def num_cols(self) -> int:
         """Return the number of grid columns."""
         return self._num_cols
+
+    def color_index(self, row: int, col: int) -> int:
+        """Returns the color index of a given row and column."""
+        assert 0 <= row < self._num_rows and 0 <= col < self._num_cols
+        return col + row * self._num_cols
+
+    def color_position(self, idx: int) -> Tuple[int, int]:
+        """Returns the row and column of a given color index"""
+        assert 0 <= idx < self._num_cols * self._num_rows
+        row = idx // self._num_cols
+        col = idx % self._num_cols
+        return row, col
 
     def _cell_rect(self) -> QRect:
         return QRect(0, 0, self._cell_w, self._cell_h)
@@ -239,7 +251,7 @@ class PaletteWidget(_PaletteGrid):
     def _color_selected_slot(self, row: int, col: int) -> None:
         if row < 0 or row >= self.num_rows() or col < 0 or col >= self.num_cols():
             return
-        i = row + col * self.num_rows()
+        i = self.color_index(row, col)
         self.color_selected.emit(self._colors[i])
 
     def connect_screen_color_picker(self, screen_color_picker: ScreenColorWidget) -> None:
@@ -257,8 +269,12 @@ class PaletteWidget(_PaletteGrid):
         screen_color_picker.color_selected.disconnect(self._screen_color_selected_slot)
 
     def _paint_cell_contents(self, painter: QPainter, row: int, col: int, bounds: QRect) -> None:
-        i = row + col * self.num_rows()
-        painter.fillRect(bounds, QColor(self._colors[i]))
+        i = self.color_index(row, col)
+        color = self._colors[i]
+        if color.isValid():
+            painter.fillRect(bounds, color)
+        else:
+            super()._paint_cell_contents(painter, row, col, bounds)
 
     def mousePressEvent(self, event: Optional[QMouseEvent]) -> None:
         """Save old selection before changing selection as usual."""
@@ -282,7 +298,9 @@ class PaletteWidget(_PaletteGrid):
             return
         if (self._press_pos - event.pos()).manhattanLength() > QApplication.startDragDistance():
             self.set_current(self._old_current.x(), self._old_current.y())
-            i = self.row_at(self._press_pos.y() + self.column_at(self._press_pos.x()) * self.num_rows())
+            row = self.row_at(self._press_pos.y())
+            col = self.column_at(self._press_pos.x())
+            i = self.color_index(row, col)
             color = self._colors[i]
             mime_data = QMimeData()
             mime_data.setColorData(color)
@@ -337,6 +355,7 @@ class PaletteWidget(_PaletteGrid):
         if self._colors[i] != color:
             self._colors[i] = color
             self.color_changed.emit(i, color)
+        self.update()
 
     def dropEvent(self, event: Optional[QDropEvent]) -> None:
         """Apply new color when dropped."""
@@ -346,7 +365,9 @@ class PaletteWidget(_PaletteGrid):
             return
         color = QColor(event.mimeData().colorData())
         if color.isValid():
-            i = self.row_at(event.pos().y() + self.column_at(event.pos().x()) * self.num_rows())
+            row = self.row_at(event.pos().y())
+            col = self.column_at(event.pos().x())
+            i = self.color_index(row, col)
             self.set_color(i, color)
             event.accept()
         else:
@@ -377,9 +398,7 @@ class PaletteWidget(_PaletteGrid):
         for i, grid_color in enumerate(self._colors):
             if grid_color != rgb_color:
                 continue
-            row = i // self.num_rows()
-            col = i % self.num_cols()
-            return row, col
+            return self.color_position(i)
         return -1, -1
 
     def _color_preview_slot(self, _, color: QColor) -> None:
@@ -407,7 +426,7 @@ def config_colors(num_colors: int) -> List[QColor]:
     """Returns the set of configurable color options."""
     color_list = [QColor(color_str) for color_str in AppConfig().get(AppConfig.SAVED_COLORS)][:num_colors]
     while len(color_list) < num_colors:
-        color_list.append(QColor(0, 0, 0))
+        color_list.append(QColor())
     return color_list
 
 
@@ -427,7 +446,7 @@ class CustomColorPaletteWidget(PaletteWidget):
         self.color_changed.connect(self._update_config_color_slot)
         self._last_added_idx = -1
         for i, saved_color in enumerate(colors):
-            if saved_color == QColor():
+            if not saved_color.isValid():
                 self._last_added_idx = i - 1
                 break
 
@@ -442,4 +461,5 @@ class CustomColorPaletteWidget(PaletteWidget):
         if next_idx >= self.num_rows() * self.num_cols():
             next_idx = 0
         self.set_color(next_idx, color)
+        self._last_added_idx = next_idx
 

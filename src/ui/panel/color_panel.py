@@ -5,7 +5,7 @@ from PySide6.QtCore import Qt
 from PySide6.QtGui import QColor, QResizeEvent, QShowEvent
 
 from src.config.cache import Cache
-from src.ui.widget.color_pick.tabbed_color_picker import TabbedColorPicker
+from src.ui.widget.color_picker.tabbed_color_picker import TabbedColorPicker
 from src.util.display_size import get_window_size
 
 
@@ -22,20 +22,18 @@ class ColorControlPanel(TabbedColorPicker):
         if config_key is not None:
             cache = Cache()
             initial_color = QColor(cache.get(Cache.LAST_BRUSH_COLOR))
-            self.setCurrentColor(initial_color)
+            self.set_current_color(initial_color)
             cache.connect(self, Cache.LAST_BRUSH_COLOR, self._apply_config_color)
-            self.currentColorChanged.connect(self._update_config_color)
+            self.color_selected.connect(self._update_config_color)
 
     def _apply_config_color(self, color_str: str) -> None:
-        self.setCurrentColor(QColor(color_str))
+        self.set_current_color(QColor(color_str))
 
     def set_orientation(self, orientation: Optional[Qt.Orientation]):
         """Update the panel layout based on window size and requested orientation."""
         self._orientation = orientation
         if orientation is None:
             return
-        self.set_default_mode()
-        return
         window_size = get_window_size()
         panel_size = self.panel_size()
         if orientation == Qt.Orientation.Vertical:

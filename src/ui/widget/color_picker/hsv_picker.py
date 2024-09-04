@@ -5,9 +5,9 @@ from PySide6.QtWidgets import QWidget, QHBoxLayout
 from PySide6.QtCore import Signal, QPoint
 from PySide6.QtGui import QColor, QResizeEvent
 
-from src.ui.widget.color_pick.hs_box import HSBox
-from src.ui.widget.color_pick.hsv_value_picker import HsvValuePicker
-from src.ui.widget.color_pick.screen_color import ScreenColorWidget
+from src.ui.widget.color_picker.hs_box import HSBox
+from src.ui.widget.color_picker.hsv_value_picker import HsvValuePicker
+from src.ui.widget.color_picker.screen_color import ScreenColorWidget
 
 
 class HsvPicker(QWidget):
@@ -73,11 +73,11 @@ class HsvPicker(QWidget):
             return
         self.color = QColor.fromHsv(self._color.hue(), self._color.saturation(), value)
 
-    def resizeEvent(self, event: Optional[QResizeEvent]) -> None:
-        """Keep value selector height pinned to hue/saturation picker image."""
-        fixed_height = self._hs_box.image_bounds.height()
-        self._value_picker.setMaximumHeight(fixed_height)
-        self._value_picker.setMinimumHeight(fixed_height)
+    # def resizeEvent(self, event: Optional[QResizeEvent]) -> None:
+    #     """Keep value selector height pinned to hue/saturation picker image."""
+    #     fixed_height = self._hs_box.image_bounds.height()
+    #     self._value_picker.setMaximumHeight(fixed_height)
+    #     self._value_picker.setMinimumHeight(fixed_height)
 
     def _started_color_picking_slot(self) -> None:
         self._hs_box.set_input_enabled(False)

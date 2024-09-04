@@ -1149,10 +1149,11 @@ class ImageStack(QObject):
             self._layer_stack.set_visible(True)
             self._layer_stack.set_opacity(1.0)
             self._layer_stack.set_composition_mode(CompositeMode.NORMAL)
-            self.size = size
             self._insert_layer_internal(new_layer, self._layer_stack, 0)
+            assert self.has_image
             self._set_generation_area_internal(gen_rect)
             self._set_active_layer_internal(loaded)
+            self.size = size
 
         # noinspection PyDefaultArgument
         @self._with_batch_content_update
@@ -1160,13 +1161,13 @@ class ImageStack(QObject):
                        size=old_size, active_id=last_active_id):
             assert self.count == 1, f'Unexpected layer count {self.count} when reversing image load!'
             self._remove_layer_internal(unloaded)
-            self.size = size
             self._active_layer_id = self._layer_stack.id
             self._layer_stack.restore_state(state)
             self._update_z_values()
             self.selection_layer.restore_state(selection_state)
             self._set_generation_area_internal(gen_rect)
             self._set_active_layer_internal(active_id)
+            self.size = size
 
         UndoStack().commit_action(_load, _undo_load, 'ImageStack.set_image')
 

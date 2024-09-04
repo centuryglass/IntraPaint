@@ -1,6 +1,5 @@
 # Development tasks
 
-- Color picker implementation is a messy hack, doesn't work on the ubuntu build. Reimplement properly.
 - Create example images for README, finish missing sections and improve writing
 - Massive list of supported file formats stretches the non-native file dialog
 - Nested layer selection state shown in the layer panel isn't updating properly
@@ -11,6 +10,16 @@
 - gen select screen: cancel button should send an interrupt request
 - selection outlines are glitching when 2+ distinct polygons are selected.
 
+# Color picker component:
+- Alternate palette options - all custom colors?
+- Standalone color picker window
+- Selected color preview on palette-only screen, draggable to custom colors
+- Condensed layout?
+- Save/load custom palettes?
+
+# Tool nav panel:
+- Get rid of zoom slider and button: Always stay at 100% zoom
+- Add zoom tool just for this panel, connect to main ImageViewer. should be possible to move the viewport even when the main ImageViewer is zoomed in beyond the gen area.
 
 # Misc. bugs and testing:
 - Test GLID with tab interface
