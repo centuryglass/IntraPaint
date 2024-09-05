@@ -16,10 +16,9 @@ from numpy import ndarray, dtype
 
 from src.config.application_config import AppConfig
 from src.util.geometry_utils import is_smaller_size
-from src.util.shared_constants import PIL_SCALING_MODES
+from src.util.shared_constants import PIL_SCALING_MODES, ICON_SIZE
 
 logger = logging.getLogger(__name__)
-DEFAULT_ICON_SIZE = QSize(64, 64)
 
 NpAnyArray: TypeAlias = ndarray[Any, dtype[Any]]
 NpUInt8Array: TypeAlias = np.ndarray[Any, np.dtype[np.int8]]
@@ -633,3 +632,22 @@ def numpy_intersect(arr1: NpAnyArray, arr2: NpAnyArray,
     arr1_cropped = arr1[y1_start:y1_end, x1_start:x1_end]
     arr2_cropped = arr2[y2_start:y2_end, x2_start:x2_end]
     return arr1_cropped, arr2_cropped
+
+
+def get_color_icon(color: QColor | Qt.GlobalColor, size: Optional[QSize] = None) -> QPixmap:
+    """Returns a pixmap icon representing a color."""
+    if size is None or size.isEmpty():
+        size = QSize(ICON_SIZE, ICON_SIZE)
+    if isinstance(color, Qt.GlobalColor):
+        color = QColor(color)
+    if color.alpha() < 255:
+        pixmap = get_transparency_tile_pixmap(size)
+        painter = QPainter(pixmap)
+        painter.fillRect(QRect(QPoint(), size), color)
+    else:
+        pixmap = QPixmap(size)
+        pixmap.fill(color)
+        painter = QPainter(pixmap)
+    painter.drawRect(QRect(QPoint(), size).adjusted(0, 0, -1, -1))
+    painter.end()
+    return pixmap

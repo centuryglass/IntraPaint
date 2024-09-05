@@ -18,11 +18,11 @@ from src.ui.input_fields.editable_label import EditableLabel
 from src.ui.layout.bordered_widget import BorderedWidget
 from src.ui.panel.layer_ui.layer_alpha_lock_button import LayerAlphaLockButton
 from src.ui.panel.layer_ui.layer_lock_button import LayerLockButton
-from src.ui.panel.layer_ui.layer_toggle_button import ICON_SIZE
 from src.ui.panel.layer_ui.layer_visibility_button import LayerVisibilityButton
 from src.util.display_size import find_text_size, get_window_size
 from src.util.geometry_utils import get_scaled_placement
 from src.util.image_utils import get_transparency_tile_pixmap, crop_to_content
+from src.util.shared_constants import ICON_SIZE
 
 # The QCoreApplication.translate context for strings in this file
 TR_ID = 'ui.panel.layer.image_layer_widget'
@@ -36,7 +36,7 @@ def _tr(*args):
 PREVIEW_SIZE = QSize(80, 80)
 SMALL_PREVIEW_SIZE = QSize(40, 40)
 LAYER_PADDING = 10
-MAX_WIDTH = PREVIEW_SIZE.width() + ICON_SIZE.width() + LAYER_PADDING * 2 + 400
+MAX_WIDTH = PREVIEW_SIZE.width() + ICON_SIZE + LAYER_PADDING * 2 + 400
 MENU_OPTION_MOVE_UP = _tr('Move up')
 MENU_OPTION_MOVE_DOWN = _tr('Move down')
 MENU_OPTION_COPY = _tr('Copy')
@@ -195,9 +195,9 @@ class LayerWidget(BorderedWidget):
         text_size = find_text_size(self.layer.name)
         layer_width = text_size.width()
         layer_height = text_size.height()
-        layer_width += _preview_size().width() + ICON_SIZE.width()
+        layer_width += _preview_size().width() + ICON_SIZE
         layer_width = min(layer_width, MAX_WIDTH)
-        layer_height = max(layer_height, ICON_SIZE.height(), _preview_size().height())
+        layer_height = max(layer_height, ICON_SIZE, _preview_size().height())
         return QSize(layer_width, layer_height)
 
     @property

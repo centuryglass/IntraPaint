@@ -15,7 +15,7 @@ from src.ui.graphics_items.click_and_drag_selection import ClickAndDragSelection
 from src.ui.image_viewer import ImageViewer
 from src.ui.input_fields.dual_toggle import DualToggle
 from src.ui.panel.image_panel import ImagePanel
-from src.util.shared_constants import APP_ICON_PATH, PROJECT_DIR
+from src.util.shared_constants import APP_ICON_PATH, PROJECT_DIR, ICON_SIZE
 
 # The `QCoreApplication.translate` context for strings in this file
 TR_ID = 'ui.window.image_window'
@@ -33,7 +33,6 @@ BORDER_OPACITY = 0.4
 
 RESOURCES_ZOOM_ICON = f'{PROJECT_DIR}/resources/icons/tools/zoom_icon.svg'
 MIN_AREA = 4
-ICON_SIZE = 32
 
 
 class ZoomTool(BaseTool):

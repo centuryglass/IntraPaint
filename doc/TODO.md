@@ -1,7 +1,6 @@
 # Development tasks
 
 - Create example images for README, finish missing sections and improve writing
-- New image modal: bg color picker
 
 # Color picker component:
 - Alternate palette options - all custom colors?

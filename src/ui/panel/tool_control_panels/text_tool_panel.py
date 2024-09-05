@@ -11,7 +11,7 @@ from src.image.text_rect import TextRect
 from src.ui.input_fields.check_box import CheckBox
 from src.ui.input_fields.plain_text_edit import PlainTextEdit
 from src.ui.input_fields.slider_spinbox import IntSliderSpinbox
-from src.ui.widget.brush_color_button import BrushColorButton
+from src.ui.widget.color_button import ColorButton
 from src.ui.widget.image_widget import ImageWidget
 from src.util.display_size import find_text_size
 from src.util.geometry_utils import get_scaled_placement, fill_outside_rect
@@ -230,10 +230,10 @@ class TextToolPanel(QWidget):
         self._alignment_dropdown.currentIndexChanged.connect(self._alignment_change_slot)
 
         # Text color control:
-        self._color_button = BrushColorButton()
+        self._color_button = ColorButton()
         self._color_button.setText(BUTTON_TEXT_FONT_COLOR)
         self._color_button.setToolTip(TOOLTIP_COLOR)
-        self._background_color_button = BrushColorButton(Cache.BACKGROUND_COLOR)
+        self._background_color_button = ColorButton(Cache.TEXT_BACKGROUND_COLOR)
         self._background_color_button.setText(BUTTON_TEXT_BACKGROUND_COLOR)
         self._background_color_button.setToolTip(TOOLTIP_BACKGROUND_COLOR)
 
@@ -241,7 +241,7 @@ class TextToolPanel(QWidget):
         self._text_rect.background_color = self._background_color_button.color
         cache = Cache()
         cache.connect(self, Cache.LAST_BRUSH_COLOR, self._color_change_slot)
-        cache.connect(self, Cache.BACKGROUND_COLOR, self._background_color_change_slot)
+        cache.connect(self, Cache.TEXT_BACKGROUND_COLOR, self._background_color_change_slot)
 
         # Font selection panel:
         self._font_list_label = QLabel(LABEL_TEXT_FONT_FAMILY)

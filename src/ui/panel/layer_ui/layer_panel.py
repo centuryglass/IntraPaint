@@ -12,8 +12,8 @@ from src.image.layers.image_stack import ImageStack
 from src.image.layers.layer import Layer, LayerParent
 from src.image.layers.layer_stack import LayerStack
 from src.ui.panel.layer_ui.layer_group_widget import LayerGroupWidget
-from src.ui.panel.layer_ui.layer_widget import PREVIEW_SIZE, LAYER_PADDING, MAX_WIDTH, LayerWidget, ICON_SIZE
-from src.util.shared_constants import PROJECT_DIR, APP_ICON_PATH
+from src.ui.panel.layer_ui.layer_widget import PREVIEW_SIZE, LAYER_PADDING, MAX_WIDTH, LayerWidget
+from src.util.shared_constants import PROJECT_DIR, APP_ICON_PATH, ICON_SIZE
 
 logger = logging.getLogger(__name__)
 
@@ -218,8 +218,8 @@ class LayerPanel(QWidget):
 
     def sizeHint(self) -> QSize:
         """At minimum, always show one layer."""
-        layer_width = PREVIEW_SIZE.width() + ICON_SIZE.width() + 2 * LAYER_PADDING
-        layer_height = max(ICON_SIZE.height(), PREVIEW_SIZE.height())
+        layer_width = PREVIEW_SIZE.width() + ICON_SIZE + 2 * LAYER_PADDING
+        layer_height = max(ICON_SIZE, PREVIEW_SIZE.height())
         width = min(MAX_WIDTH, layer_width + LAYER_PADDING)
         height = layer_height + LAYER_PADDING
         scrollbar = self._scroll_area.verticalScrollBar()

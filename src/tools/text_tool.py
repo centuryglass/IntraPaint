@@ -146,7 +146,8 @@ class TextTool(BaseTool):
             self._connect_text_layer(active_layer)
             if restoring_after_delegation:
                 text_rect = active_layer.text_rect
-                text_rect.text_color = Cache().get(Cache.LAST_BRUSH_COLOR)
+                text_rect.text_color = Cache().get_color(Cache.LAST_BRUSH_COLOR, Qt.GlobalColor.black)
+                text_rect.background_color = Cache().get_color(Cache.TEXT_BACKGROUND_COLOR, Qt.GlobalColor.white)
                 self._control_panel.text_rect = text_rect
                 active_layer.text_rect = text_rect
 

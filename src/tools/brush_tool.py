@@ -1,7 +1,7 @@
 """Implements brush controls using a MyPaint surface."""
 from typing import Optional
 
-from PySide6.QtGui import QColor, QIcon, QKeySequence
+from PySide6.QtGui import QColor, QIcon, QKeySequence, Qt
 from PySide6.QtWidgets import QWidget, QApplication
 
 from src.config.application_config import AppConfig
@@ -50,7 +50,7 @@ class BrushTool(CanvasTool):
         cache = Cache()
         self.brush_path = config.get(AppConfig.MYPAINT_BRUSH)
         self.brush_size = config.get(AppConfig.SKETCH_BRUSH_SIZE)
-        self.brush_color = QColor(cache.get(Cache.LAST_BRUSH_COLOR))
+        self.brush_color = cache.get_color(Cache.LAST_BRUSH_COLOR, Qt.GlobalColor.black)
 
         def apply_brush_size(size: int) -> None:
             """Update brush size for the canvas and cursor when it changes in config."""

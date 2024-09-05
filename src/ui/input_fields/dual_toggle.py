@@ -53,7 +53,6 @@ class DualToggle(QWidget):
         self.label2.set_scale_to_bounds(True)
         self.label2.setFrameStyle(QFrame.Shape.StyledPanel | QFrame.Shadow.Raised)
         self.set_orientation(orientation)
-        # self.setSizePolicy(QSizePolicy.Policy.MinimumExpanding, QSizePolicy.Policy.MinimumExpanding)
 
     @property
     def options(self) -> List[str]:

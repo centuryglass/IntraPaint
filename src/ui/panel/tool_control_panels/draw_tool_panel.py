@@ -12,7 +12,7 @@ from src.ui.input_fields.dual_toggle import DualToggle
 from src.ui.input_fields.slider_spinbox import IntSliderSpinbox
 from src.ui.panel.tool_control_panels.canvas_selection_panel import (TOOL_MODE_DRAW, TOOL_MODE_ERASE,
                                                                      RESOURCES_PEN_PNG, RESOURCES_ERASER_PNG)
-from src.ui.widget.brush_color_button import BrushColorButton
+from src.ui.widget.color_button import ColorButton
 from src.ui.widget.key_hint_label import KeyHintLabel
 
 # The `QCoreApplication.translate` context for strings in this file
@@ -45,7 +45,7 @@ class DrawToolPanel(QWidget):
         self._brush_size_up_hint = KeyHintLabel(config_key=KeyConfig.BRUSH_SIZE_INCREASE)
 
         # Color button:
-        self._color_picker_button = BrushColorButton()
+        self._color_picker_button = ColorButton()
 
         # Selection only box:
         self._selection_only_checkbox = Cache().get_control_widget(Cache.PAINT_SELECTION_ONLY)

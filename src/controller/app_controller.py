@@ -201,7 +201,7 @@ class AppController(MenuBuilder):
             self.load_image(file_path=args.init_image)
         if not self._image_stack.has_image:
             image = QImage(config.get(AppConfig.DEFAULT_IMAGE_SIZE), QImage.Format.Format_ARGB32_Premultiplied)
-            image.fill(Qt.GlobalColor.white)
+            image.fill(Cache().get_color(Cache.NEW_IMAGE_BACKGROUND_COLOR, Qt.GlobalColor.white))
             self._image_stack.load_image(image)
 
         # Prepare generator options:
@@ -499,7 +499,9 @@ class AppController(MenuBuilder):
         if image_size and (not self._image_stack.has_image or request_confirmation(self._window,
                                                                                    NEW_IMAGE_CONFIRMATION_TITLE,
                                                                                    NEW_IMAGE_CONFIRMATION_MESSAGE)):
-            new_image = create_transparent_image(image_size)
+
+            new_image = QImage(image_size, QImage.Format.Format_ARGB32_Premultiplied)
+            new_image.fill(Cache().get_color(Cache.NEW_IMAGE_BACKGROUND_COLOR, Qt.GlobalColor.white))
             Cache().set(Cache.LAST_FILE_PATH, '')
             self._image_stack.load_image(new_image)
             self._metadata = None

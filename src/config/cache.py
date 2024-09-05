@@ -18,7 +18,6 @@ class Cache(Config, metaclass=Singleton):
     # DYNAMIC PROPERTIES:
     # Generate with `python /home/anthony/Workspace/ML/IntraPaint/scripts/dynamic_import_typing.py src/config/cache.py`
 
-    BACKGROUND_COLOR: str
     CONTROLNET_CONTROL_TYPES: str
     CONTROLNET_MODELS: str
     CONTROLNET_MODULES: str
@@ -30,7 +29,9 @@ class Cache(Config, metaclass=Singleton):
     LAST_NAV_PANEL_TOOL: str
     LAST_SEED: str
     LORA_MODELS: str
+    NEW_IMAGE_BACKGROUND_COLOR: str
     PAINT_SELECTION_ONLY: str
     SAMPLE_MERGED: str
     STYLES: str
+    TEXT_BACKGROUND_COLOR: str
     TEXT_TOOL_PARAMS: str

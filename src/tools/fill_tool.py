@@ -11,7 +11,7 @@ from src.image.layers.image_layer import ImageLayer
 from src.image.layers.image_stack import ImageStack
 from src.image.layers.layer import Layer
 from src.tools.base_tool import BaseTool
-from src.ui.widget.brush_color_button import BrushColorButton
+from src.ui.widget.color_button import ColorButton
 from src.util.image_utils import flood_fill, create_transparent_image
 from src.util.shared_constants import PROJECT_DIR, COLOR_PICK_HINT
 
@@ -43,7 +43,7 @@ class FillTool(BaseTool):
         self._control_panel: Optional[QWidget] = None
         self._image_stack = image_stack
         self._icon = QIcon(RESOURCES_FILL_ICON)
-        self._color = QColor(cache.get(Cache.LAST_BRUSH_COLOR))
+        self._color = cache.get_color(Cache.LAST_BRUSH_COLOR, Qt.GlobalColor.black)
         self._threshold = cache.get(Cache.FILL_THRESHOLD)
         self._sample_merged = cache.get(Cache.SAMPLE_MERGED)
         cursor_icon = QIcon(RESOURCES_FILL_CURSOR)
@@ -85,7 +85,7 @@ class FillTool(BaseTool):
         cache = Cache()
         self._control_panel = QWidget()
         layout = QFormLayout(self._control_panel)
-        color_button = BrushColorButton()
+        color_button = ColorButton()
         layout.addRow(color_button)
         threshold_slider = cache.get_control_widget(Cache.FILL_THRESHOLD)
         layout.addRow(cache.get_label(Cache.FILL_THRESHOLD), threshold_slider)

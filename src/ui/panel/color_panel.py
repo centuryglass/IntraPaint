@@ -4,7 +4,7 @@ from typing import Optional
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QColor, QResizeEvent, QShowEvent
 
-from src.config.cache import Cache
+from src.config.config_from_key import get_config_from_key
 from src.ui.widget.color_picker.tabbed_color_picker import TabbedColorPicker
 from src.util.display_size import get_window_size
 
@@ -20,10 +20,10 @@ class ColorControlPanel(TabbedColorPicker):
         self.layout().setAlignment(Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignHCenter)
 
         if config_key is not None:
-            cache = Cache()
-            initial_color = QColor(cache.get(Cache.LAST_BRUSH_COLOR))
+            config = get_config_from_key(config_key)
+            initial_color = config.get_color(config_key, Qt.GlobalColor.black)
             self.set_current_color(initial_color)
-            cache.connect(self, Cache.LAST_BRUSH_COLOR, self._apply_config_color)
+            config.connect(self, config_key, self._apply_config_color)
             self.color_selected.connect(self._update_config_color)
 
     def _apply_config_color(self, color_str: str) -> None:
@@ -61,5 +61,5 @@ class ColorControlPanel(TabbedColorPicker):
 
     def _update_config_color(self, color: QColor) -> None:
         if self._config_key is not None:
-            cache = Cache()
-            cache.set(self._config_key, color.name(QColor.NameFormat.HexArgb))
+            config = get_config_from_key(self._config_key)
+            config.set(self._config_key, color.name(QColor.NameFormat.HexArgb))

@@ -59,8 +59,8 @@ class TextRect:
         else:
             self._text = ''
             self._font = QApplication.font()
-            self._text_color = QColor(Cache().get(Cache.LAST_BRUSH_COLOR))
-            self._background_color = QColor(Cache().get(Cache.BACKGROUND_COLOR))
+            self._text_color = Cache().get_color(Cache.LAST_BRUSH_COLOR, Qt.GlobalColor.black)
+            self._background_color = Cache().get_color(Cache.TEXT_BACKGROUND_COLOR, Qt.GlobalColor.white)
             self._size = QSize(DEFAULT_SIZE)
             self._text_alignment = Qt.AlignmentFlag.AlignLeft
             self._fill_background = False

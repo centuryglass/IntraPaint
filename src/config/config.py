@@ -16,7 +16,7 @@ from threading import Lock
 from typing import Optional, Any, Callable, List, Dict
 
 from PySide6.QtCore import QSize, QTimer, Qt
-from PySide6.QtGui import QKeySequence
+from PySide6.QtGui import QKeySequence, QColor
 from PySide6.QtWidgets import QApplication
 
 from src.config.config_entry import ConfigEntry, DefinitionKey, DefinitionType
@@ -84,6 +84,7 @@ class Config:
         try:
             with open(definition_path, encoding='utf-8') as file:
                 config_text_key = definition_path.replace('_definitions.json', '')
+
                 def _tr_cfg(text: str) -> str:
                     return QApplication.translate(config_text_key, text)
 
@@ -200,6 +201,26 @@ class Config:
             raise KeyError(UNKNOWN_KEY_ERROR.format(key=key))
         with self._lock:
             return self._entries[key].get_value(inner_key)
+
+    def get_color(self, key: str, default_color: QColor | Qt.GlobalColor) -> QColor:
+        """Returns a color value from config.
+
+        Parameters
+        ----------
+        key : str
+            A key tracked by this config file.
+        default_color : QColor | Qt.GlobalColor
+            Color value to return if the key doesn't map to a valid color string.
+
+        Returns
+        -------
+        The configured color, or the default if the color isn't valid."""
+        color_str = self.get(key)
+        if not QColor.isValidColor(color_str):
+            if isinstance(default_color, Qt.GlobalColor):
+                default_color = QColor(default_color)
+            return default_color
+        return QColor(color_str)
 
     def get_control_widget(self, key: str, connect_to_config: bool = True, multi_line=False) -> DynamicFieldWidget:
         """Returns a QWidget capable of adjusting the chosen config value. Unless connect_to_config is false, changes

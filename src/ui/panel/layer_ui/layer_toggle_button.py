@@ -6,8 +6,7 @@ from PySide6.QtGui import QIcon, QMouseEvent
 from PySide6.QtWidgets import QToolButton, QSizePolicy
 
 from src.image.layers.layer import Layer
-
-ICON_SIZE = QSize(32, 32)
+from src.util.shared_constants import ICON_SIZE
 
 
 class LayerToggleButton(QToolButton):
@@ -36,7 +35,7 @@ class LayerToggleButton(QToolButton):
     # noinspection PyMethodMayBeStatic
     def sizeHint(self):
         """Use a fixed size for icons."""
-        return ICON_SIZE
+        return QSize(ICON_SIZE, ICON_SIZE)
 
     def _update_icon(self):
         self.setIcon(self._true_icon if self._get_boolean(self._layer) else self._false_icon)

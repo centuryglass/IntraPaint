@@ -71,10 +71,18 @@
         "default": "#ff000000",
         "saved": true
     },
-    "background_color": {
-        "label": "Background color:",
+    "text_background_color": {
+        "label": "Text background color:",
         "category": "Cache",
         "description": "Last background color (text tool)",
+        "type": "string",
+        "default": "#ffffffff",
+        "saved": true
+    },
+    "new_image_background_color": {
+        "label": "New image background color:",
+        "category": "Cache",
+        "description": "Last new image background color",
         "type": "string",
         "default": "#ffffffff",
         "saved": true
