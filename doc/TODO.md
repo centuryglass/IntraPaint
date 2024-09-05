@@ -11,10 +11,6 @@
 - Condensed layout?
 - Save/load custom palettes?
 
-# Tool nav panel:
-- Get rid of zoom slider and button: Always stay at 100% zoom
-- Add zoom tool just for this panel, connect to main ImageViewer. should be possible to move the viewport even when the main ImageViewer is zoomed in beyond the gen area.
-
 # Misc. bugs and testing:
 - Test GLID with tab interface
 

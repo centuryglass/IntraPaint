@@ -95,6 +95,14 @@
         "default": "brush",
         "saved": true
     },
+    "last_nav_panel_tool": {
+        "label": "Last navigation panel tool:",
+        "category": "Cache",
+        "description": "Label of the last active tool in the navigation panel, to restore after restart",
+        "type": "string",
+        "default": "",
+        "saved": true
+    },
     "fill_threshold": {
         "label": "Color threshold:",
         "category": "Cache",

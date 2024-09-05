@@ -27,6 +27,7 @@ class Cache(Config, metaclass=Singleton):
     LAST_ACTIVE_TOOL: str
     LAST_BRUSH_COLOR: str
     LAST_FILE_PATH: str
+    LAST_NAV_PANEL_TOOL: str
     LAST_SEED: str
     LORA_MODELS: str
     PAINT_SELECTION_ONLY: str

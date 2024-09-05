@@ -487,7 +487,7 @@ class ImageGraphicsView(QGraphicsView):
                              int(bounds.center().y() - (content_size.height() // 2)))
         self._scale_adjustment = (get_scaled_placement(self.size(), bounds.size(), 0).width()
                                   / (bounds.width() + margin)) - self._scale
-        self.scale_changed.emit(self.scene_scale)
         self.center_on_point(QPointF(self._content_size.width() / 2 + self._offset.x(),
                                      self._content_size.height() / 2 + self._offset.y()))
         self._update_scale_and_transform()
+        self.scale_changed.emit(self.scene_scale)

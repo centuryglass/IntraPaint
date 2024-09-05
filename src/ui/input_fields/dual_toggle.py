@@ -1,7 +1,7 @@
 """
 A fancier Qt toggle button implementation that allows selecting between two options.
 """
-from typing import Optional, cast
+from typing import Optional, cast, List
 from PySide6.QtGui import QPixmap, QMouseEvent, QColor
 from PySide6.QtWidgets import QWidget, QFrame, QSizePolicy, QApplication
 from PySide6.QtCore import Qt, QSize, Signal, QEvent
@@ -46,11 +46,19 @@ class DualToggle(QWidget):
             else:
                 bg_color = QColor(Qt.GlobalColor.gray)  # Fallback, should only happen during unit testing.
         self.label1 = Label(options[0], self, bg_color=bg_color, orientation=orientation)
+        self.label1.set_scale_to_bounds(True)
         self.label1.setFrameStyle(QFrame.Shape.StyledPanel | QFrame.Shadow.Sunken)
         self.label1.set_inverted(True)
         self.label2 = Label(options[1], self, bg_color=bg_color, orientation=orientation)
+        self.label2.set_scale_to_bounds(True)
         self.label2.setFrameStyle(QFrame.Shape.StyledPanel | QFrame.Shadow.Raised)
         self.set_orientation(orientation)
+        self.setSizePolicy(QSizePolicy.Policy.MinimumExpanding, QSizePolicy.Policy.MinimumExpanding)
+
+    @property
+    def options(self) -> List[str]:
+        """Return accepted options."""
+        return [self.option1, self.option2]
 
     def set_orientation(self, orientation: Qt.Orientation) -> None:
         """Choose between horizontal and vertical orientation."""

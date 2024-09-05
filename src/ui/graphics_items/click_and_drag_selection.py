@@ -34,9 +34,10 @@ class ClickAndDragSelection:
         self._selection_shape: Optional[QGraphicsRectItem | QGraphicsEllipseItem] = None
         self._mode = SELECTION_MODE_RECT
         self._pen: QPen = QPen(DEFAULT_SELECTION_LINE_COLOR, DEFAULT_SELECTION_LINE_WIDTH)
-        self._brush: QBrush = QBrush(DEFAULT_SELECTION_FILL_COLOR, Qt.BrushStyle.DiagCrossPattern)
+        self._brush: QBrush = QBrush(DEFAULT_SELECTION_FILL_COLOR, Qt.BrushStyle.Dense5Pattern)
         self._last_bounds: Optional[QRect] = None
         self._transform = QTransform()
+        self._aspect_ratio: Optional[float] = None
 
     @property
     def last_selection_bounds(self) -> Optional[QRect]:
@@ -59,6 +60,10 @@ class ClickAndDragSelection:
             bounds = self._remove_scene_item()
             assert bounds is not None
             self._create_scene_item(bounds)
+
+    def set_aspect_ratio(self, aspect_ratio: Optional[float]) -> None:
+        """Set or clear a fixed aspect ratio for selection."""
+        self._aspect_ratio = aspect_ratio
 
     @property
     def selecting(self) -> bool:
@@ -107,7 +112,10 @@ class ClickAndDragSelection:
             return
         assert self._selection_shape is not None
         rect = self._selection_shape.rect()
-        if KeyConfig.modifier_held(KeyConfig.FIXED_ASPECT_MODIFIER):
+        if self._aspect_ratio is not None:
+            bottom_right = closest_point_keeping_aspect_ratio(QPointF(drag_point), rect.topLeft(),
+                                                              self._aspect_ratio).toPoint()
+        elif KeyConfig.modifier_held(KeyConfig.FIXED_ASPECT_MODIFIER):
             bottom_right = closest_point_keeping_aspect_ratio(QPointF(drag_point), rect.topLeft(),
                                                               1.0).toPoint()
         else:

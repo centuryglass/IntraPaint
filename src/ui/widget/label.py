@@ -4,10 +4,10 @@ An extended QLabel implementation that supports vertical text.
 from typing import Optional
 
 from PySide6.QtCore import Qt, QSize, QPointF
-from PySide6.QtGui import QPainter, QPixmap, QPainterPath, QTransform, QFont, QColor, QPalette, QIcon
+from PySide6.QtGui import QPainter, QPixmap, QPainterPath, QTransform, QFont, QColor, QPalette, QIcon, QResizeEvent
 from PySide6.QtWidgets import QLabel, QSizePolicy, QWidget
 
-from src.util.display_size import find_text_size
+from src.util.display_size import find_text_size, max_font_size
 
 
 class Label(QLabel):
@@ -38,6 +38,7 @@ class Label(QLabel):
         super().__init__(parent)
         self._size = size
         self._font = QFont()
+        self._scale_text_to_bounds = False
         self._inverted: Optional[bool] = False
         self._icon: Optional[QPixmap] = None
         self._image: Optional[QPixmap] = None
@@ -58,6 +59,14 @@ class Label(QLabel):
             self._font.setPointSize(size)
         self.set_orientation(orientation)
         self.setText(text)
+
+    def set_scale_to_bounds(self, should_scale: bool) -> None:
+        """Sets whether text to be scaled to fit available bounds."""
+        if should_scale != self._scale_text_to_bounds:
+            self._scale_text_to_bounds = should_scale
+            text = self._text
+            self.setText('')
+            self.setText(text)
 
     def set_orientation(self, orientation: Qt.Orientation) -> None:
         """Sets the label's text orientation."""
@@ -85,11 +94,18 @@ class Label(QLabel):
     def sizeHint(self) -> QSize:
         """Calculate ideal widget size based on text size."""
         assert self._image is not None
+        if self._scale_text_to_bounds:
+            text_size = find_text_size(self._text, self._font)
+            if self._icon is not None:
+                text_size.setWidth(text_size.width() + text_size.height())
+            if self._orientation == Qt.Orientation.Vertical:
+                text_size.transpose()
+            return text_size
         return QSize(self._image.width() + 4, self._image.height() + 4)
 
     def setText(self, text: Optional[str]) -> None:
         """Changes the displayed text string"""
-        if text == self._text:
+        if text == self._text and not self._scale_text_to_bounds:
             return
         self._text = text
 
@@ -119,10 +135,25 @@ class Label(QLabel):
     def _draw_text_pixmaps(self) -> tuple[QPixmap, QPixmap]:
         """Re-renders the label text."""
         drawn_text = '     ' if self._text is None else (self._text + '     ')
-        text_size = find_text_size(drawn_text, self._font)
+        font = QFont(self._font)
+        if self._scale_text_to_bounds:
+            w = self.height() if self._orientation == Qt.Orientation.Vertical else self.width()
+            h = self.width() if self._orientation == Qt.Orientation.Vertical else self.height()
+            if self._icon is not None:
+                if self._orientation == Qt.Orientation.Vertical:
+                    h -= w
+                else:
+                    w -= h
+            text_size = QSize(w, h)
+            font_size = max_font_size(drawn_text, font, text_size)
+            font.setPointSize(font_size)
+        else:
+            text_size = find_text_size(drawn_text, self._font)
         w = text_size.height() if self._orientation == Qt.Orientation.Vertical else text_size.width()
         h = text_size.width() if self._orientation == Qt.Orientation.Vertical else text_size.height()
         image_size = QSize(w, h)
+        if image_size.isEmpty():
+            return QPixmap(), QPixmap()
 
         path = QPainterPath()
         text_pt = QPointF(0, -(text_size.height() * 0.3)) if self._orientation == Qt.Orientation.Vertical \
@@ -202,3 +233,8 @@ class Label(QLabel):
         """Returns the size of the label's internal image representation."""
         assert self._image is not None
         return self._image.size()
+
+    def resizeEvent(self, event: Optional[QResizeEvent]) -> None:
+        """If scaling text to bounds, redraw text when bounds change."""
+        if self._scale_text_to_bounds:
+            self.setText(self._text)
