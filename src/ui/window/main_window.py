@@ -160,8 +160,6 @@ class MainWindow(QMainWindow):
         self._image_stack = image_stack
         self._image_selector: Optional[GeneratedImageSelector] = None
 
-        self._layer_panel: Optional[LayerPanel] = None
-        self._image_window = ImageWindow(image_stack)
 
         # Create components, build layout:
         self._main_widget = QWidget(self)
@@ -205,6 +203,10 @@ class MainWindow(QMainWindow):
 
         self._bottom_tab_box = TabBox(Qt.Orientation.Horizontal, False)
         self._layout.addWidget(self._bottom_tab_box, stretch=TAB_BOX_STRETCH)
+
+        # Optional extra windows:
+        self._layer_panel: Optional[LayerPanel] = None
+        self._image_window = ImageWindow(image_stack, self._image_panel.image_viewer)
 
         # Image/Mask editing layout:
         self._tool_panel = ToolPanel(image_stack, self._image_panel, self.generate_signal.emit)

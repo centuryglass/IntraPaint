@@ -47,9 +47,11 @@ class ToolController(QObject):
 
     tool_changed = Signal(QObject)
 
-    def __init__(self, image_stack: ImageStack, image_viewer: ImageViewer, load_all_tools: bool = True):
+    def __init__(self, image_stack: ImageStack, image_viewer: ImageViewer, load_all_tools: bool = True,
+                 use_hotkeys: bool = True):
         """Installs itself as an event handler within an image viewer."""
         super().__init__()
+        self._use_hotkeys = use_hotkeys
         self._image_viewer = image_viewer
         self._active_tool: Optional[BaseTool] = None
         self._active_delegate: Optional[BaseTool] = None
@@ -124,6 +126,8 @@ class ToolController(QObject):
 
     def register_hotkeys(self, tool: BaseTool) -> None:
         """Register key(s) that should load a specific tool."""
+        if not self._use_hotkeys:
+            return
         keys = tool.get_hotkey()
 
         def set_active():

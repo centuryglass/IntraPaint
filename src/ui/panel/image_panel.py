@@ -39,7 +39,8 @@ MAIN_CONTENT_STRETCH = 100
 class ImagePanel(QWidget):
     """Displays the image panel with zoom controls and input hints."""
 
-    def __init__(self, image_stack: ImageStack, include_tab_boxes: bool = False, use_keybindings=True) -> None:
+    def __init__(self, image_stack: ImageStack, include_tab_boxes: bool = False, include_zoom_controls: bool = True,
+                 use_keybindings=True) -> None:
         super().__init__()
         if include_tab_boxes:
             self._outer_layout = QHBoxLayout(self)
@@ -80,77 +81,89 @@ class ImagePanel(QWidget):
         self._control_bar.addAction(self._hide_hint_action if AppConfig().get(AppConfig.SHOW_TOOL_CONTROL_HINTS)
                                     else self._show_hint_action)
         self._layout.addWidget(self._control_bar, stretch=1)
-        self._control_layout = QHBoxLayout(self._control_bar)
-        self._control_hint_label = QLabel('')
-        self._control_hint_label.setWordWrap(True)
-        self._control_layout.addWidget(self._control_hint_label)
-        self._control_layout.addSpacing(25)
-        scale_reset_button = QPushButton()
 
-        def toggle_scale():
-            """Toggle between default zoom and zooming in on the image generation area."""
-            if self._image_viewer.is_at_default_view and not self._image_viewer.follow_generation_area:
-                self._image_viewer.follow_generation_area = True
-                scale_reset_button.setText(SCALE_RESET_BUTTON_LABEL)
-                scale_reset_button.setToolTip(SCALE_RESET_BUTTON_TOOLTIP)
-            else:
-                self._image_viewer.follow_generation_area = False
-                self._image_viewer.reset_scale()
-                scale_reset_button.setText(SCALE_ZOOM_BUTTON_LABEL)
-                scale_reset_button.setToolTip(SCALE_ZOOM_BUTTON_TOOLTIP)
+        if include_zoom_controls:
+            self._control_layout: Optional[QHBoxLayout] = QHBoxLayout(self._control_bar)
+            self._control_hint_label: Optional[QLabel] = QLabel('')
+            self._control_hint_label.setWordWrap(True)
+            self._control_layout.addWidget(self._control_hint_label)
+            self._control_layout.addSpacing(25)
+            scale_reset_button = QPushButton()
 
-        scale_reset_button.setText(SCALE_ZOOM_BUTTON_LABEL)
-        scale_reset_button.setToolTip(SCALE_ZOOM_BUTTON_TOOLTIP)
-        scale_reset_button.clicked.connect(toggle_scale)
-        # Zoom slider:
-        self._control_layout.addWidget(QLabel(SCALE_SLIDER_LABEL))
-        image_scale_slider = QSlider(Qt.Orientation.Horizontal)
-        self._image_scale_slider = image_scale_slider
-        self._control_layout.addWidget(image_scale_slider)
-        image_scale_slider.setRange(1, 4000)
-        image_scale_slider.setSingleStep(10)
-        image_scale_slider.setValue(int(self._image_viewer.scene_scale * 100))
-        image_scale_box = QDoubleSpinBox()
-        self._control_layout.addWidget(image_scale_box)
-        image_scale_box.setRange(0.001, 40)
-        image_scale_box.setSingleStep(0.1)
-        image_scale_box.setValue(self._image_viewer.scene_scale)
-        self._control_layout.addWidget(scale_reset_button)
+            def toggle_scale():
+                """Toggle between default zoom and zooming in on the image generation area."""
+                if self._image_viewer.is_at_default_view and not self._image_viewer.follow_generation_area:
+                    self._image_viewer.follow_generation_area = True
+                    scale_reset_button.setText(SCALE_RESET_BUTTON_LABEL)
+                    scale_reset_button.setToolTip(SCALE_RESET_BUTTON_TOOLTIP)
+                else:
+                    self._image_viewer.follow_generation_area = False
+                    self._image_viewer.reset_scale()
+                    scale_reset_button.setText(SCALE_ZOOM_BUTTON_LABEL)
+                    scale_reset_button.setToolTip(SCALE_ZOOM_BUTTON_TOOLTIP)
 
-        scale_signals = [
-            self._image_viewer.scale_changed,
-            image_scale_slider.valueChanged,
-            image_scale_box.valueChanged
-        ]
+            scale_reset_button.setText(SCALE_ZOOM_BUTTON_LABEL)
+            scale_reset_button.setToolTip(SCALE_ZOOM_BUTTON_TOOLTIP)
+            scale_reset_button.clicked.connect(toggle_scale)
+            # Zoom slider:
+            self._control_layout.addWidget(QLabel(SCALE_SLIDER_LABEL))
+            image_scale_slider: Optional[QSlider] = QSlider(Qt.Orientation.Horizontal)
+            self._image_scale_slider = image_scale_slider
+            self._control_layout.addWidget(image_scale_slider)
+            image_scale_slider.setRange(1, 4000)
+            image_scale_slider.setSingleStep(10)
+            image_scale_slider.setValue(int(self._image_viewer.scene_scale * 100))
+            image_scale_box: Optional[QDoubleSpinBox] = QDoubleSpinBox()
+            self._control_layout.addWidget(image_scale_box)
+            image_scale_box.setRange(0.001, 40)
+            image_scale_box.setSingleStep(0.1)
+            image_scale_box.setValue(self._image_viewer.scene_scale)
+            self._control_layout.addWidget(scale_reset_button)
 
-        def on_scale_change(new_scale: float | int) -> None:
-            """Synchronize slider, spin box, panel scale, and zoom button text:"""
-            if isinstance(new_scale, int):
-                float_scale = new_scale / 100
-                int_scale = new_scale
-            else:
-                float_scale = new_scale
-                int_scale = int(float_scale * 100)
-            for scale_signal in scale_signals:
-                scale_signal.disconnect(on_scale_change)
-            if image_scale_box.value() != float_scale:
-                image_scale_box.setValue(float_scale)
-            if image_scale_slider.value() != int_scale:
-                image_scale_slider.setValue(int_scale)
-            if self._image_viewer.scene_scale != float_scale:
-                self._image_viewer.scene_scale = float_scale
-            for scale_signal in scale_signals:
-                scale_signal.connect(on_scale_change)
-            if self._image_viewer.is_at_default_view and not self._image_viewer.follow_generation_area:
-                scale_reset_button.setText(SCALE_ZOOM_BUTTON_LABEL)
-                scale_reset_button.setToolTip(SCALE_ZOOM_BUTTON_TOOLTIP)
-            else:
-                scale_reset_button.setText(SCALE_RESET_BUTTON_LABEL)
-                scale_reset_button.setToolTip(SCALE_RESET_BUTTON_TOOLTIP)
+            scale_signals = [
+                self._image_viewer.scale_changed,
+                image_scale_slider.valueChanged,
+                image_scale_box.valueChanged
+            ]
 
-        for signal in scale_signals:
-            signal.connect(on_scale_change)
+            def on_scale_change(new_scale: float | int) -> None:
+                """Synchronize slider, spin box, panel scale, and zoom button text:"""
+                if isinstance(new_scale, int):
+                    float_scale = new_scale / 100
+                    int_scale = new_scale
+                else:
+                    float_scale = new_scale
+                    int_scale = int(float_scale * 100)
+                for scale_signal in scale_signals:
+                    scale_signal.disconnect(on_scale_change)
+                if image_scale_box.value() != float_scale:
+                    image_scale_box.setValue(float_scale)
+                if image_scale_slider.value() != int_scale:
+                    image_scale_slider.setValue(int_scale)
+                if self._image_viewer.scene_scale != float_scale:
+                    self._image_viewer.scene_scale = float_scale
+                for scale_signal in scale_signals:
+                    scale_signal.connect(on_scale_change)
+                if self._image_viewer.is_at_default_view and not self._image_viewer.follow_generation_area:
+                    scale_reset_button.setText(SCALE_ZOOM_BUTTON_LABEL)
+                    scale_reset_button.setToolTip(SCALE_ZOOM_BUTTON_TOOLTIP)
+                else:
+                    scale_reset_button.setText(SCALE_RESET_BUTTON_LABEL)
+                    scale_reset_button.setToolTip(SCALE_RESET_BUTTON_TOOLTIP)
+
+            for signal in scale_signals:
+                signal.connect(on_scale_change)
+        else:
+            self._control_layout = None
+            self._control_hint_label = None
+            self._control_bar = None
+            self._image_scale_slider = None
         self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+
+    @property
+    def vertical_layout(self) -> QVBoxLayout:
+        """Access the panel's main vertical layout."""
+        return self._layout
 
     def setEnabled(self, enabled: bool) -> None:
         """Override setEnabled to ensure it does not apply to tab bars."""
@@ -181,6 +194,7 @@ class ImagePanel(QWidget):
         return self._right_tab_box
 
     def _show_control_hint_config_slot(self, show_hints: bool):
+        assert self._control_bar is not None
         if show_hints:
             self._control_bar.removeAction(self._show_hint_action)
             self._control_bar.addAction(self._hide_hint_action)
@@ -190,6 +204,8 @@ class ImagePanel(QWidget):
         self._update_widget_visibility()
 
     def _update_widget_visibility(self) -> None:
-        self._control_hint_label.setVisible(AppConfig().get(AppConfig.SHOW_TOOL_CONTROL_HINTS)
-                                            and self.width() > MIN_WIDTH_SHOWING_HINT_TEXT)
-        self._image_scale_slider.setVisible(self.width() > MIN_WIDTH_SHOWING_SCALE_SLIDER)
+        if self._control_hint_label is not None:
+            self._control_hint_label.setVisible(AppConfig().get(AppConfig.SHOW_TOOL_CONTROL_HINTS)
+                                                and self.width() > MIN_WIDTH_SHOWING_HINT_TEXT)
+        if self._image_scale_slider is not None:
+            self._image_scale_slider.setVisible(self.width() > MIN_WIDTH_SHOWING_SCALE_SLIDER)

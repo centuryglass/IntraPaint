@@ -125,6 +125,13 @@ class ImageGraphicsView(QGraphicsView):
     def mouse_navigation_enabled(self, enabled: bool) -> None:
         self._mouse_navigation_enabled = enabled
 
+    @property
+    def view_scene_bounds(self) -> QRectF:
+        """Returns the actual scene bounds currently shown within the image view."""
+        top_left = self.mapToScene(QPoint())
+        bottom_right = self.mapToScene(QPoint(self.width(), self.height()))
+        return QRectF(top_left, bottom_right)
+
     def center_on_point(self, pos: QPointF) -> None:
         """Cache the center point whenever it changes."""
         super().centerOn(pos)
@@ -217,7 +224,7 @@ class ImageGraphicsView(QGraphicsView):
 
     @property
     def displayed_content_size(self) -> Optional[QSize]:
-        """Gets the not displayed size of the viewed content."""
+        """Gets the displayed size of the viewed content."""
         if self._content_rect is None:
             return None
         return self._content_rect.size()
