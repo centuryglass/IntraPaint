@@ -61,6 +61,7 @@ class ImageGraphicsView(QGraphicsView):
                 self._opengl_view.setFormat(surface_format)
                 self.setViewport(self._opengl_view)
             elif not use_opengl and self._opengl_view is not None:
+                # noinspection PyTypeChecker
                 self.setViewport(None)
                 self._opengl_view = None
         _update_render_mode(AppConfig().get(AppConfig.OPENGL_ACCELERATION))

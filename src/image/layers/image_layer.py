@@ -132,7 +132,7 @@ class ImageLayer(TransformLayer):
 
     def set_image(self, new_image: QImage, offset: Optional[QPoint] = None) -> None:
         """Updates the layer image."""
-        assert not self.locked, 'Tried to change image in a locked layer'
+        assert self.locked is not True, 'Tried to change image in a locked layer'
         assert not new_image.isNull()
         size_changed = new_image.size() != self._size
         send_size_change_signal = size_changed and not self._size.isNull()
@@ -152,7 +152,7 @@ class ImageLayer(TransformLayer):
     @contextmanager
     def borrow_image(self, change_bounds: Optional[QRect] = None) -> Generator[Optional[QImage], None, None]:
         """Provides direct access to the image for editing, automatically marking it as changed when complete."""
-        assert not self.locked, 'Tried to change image in a locked layer'
+        assert self.locked is not True, 'Tried to change image in a locked layer'
         if change_bounds is None or change_bounds.isEmpty():
             change_bounds = self.bounds
         initial_image = self.image
@@ -172,9 +172,14 @@ class ImageLayer(TransformLayer):
                 np_content = image_data_as_numpy_8bit(content)
                 np.copyto(np_layer_image, np_content)
                 self.content_changed.emit(self, change_bounds)
-            UndoStack().commit_action(lambda c=updated_content, b=change_bounds: _apply_change(c, b),
-                                      lambda c=initial_bounds_content, b=change_bounds: _apply_change(c, b),
-                                      'ImageLayer.borrow_image', skip_initial_call=True)
+
+            def _apply(c: QImage = updated_content, b: QRect = change_bounds) -> None:
+                _apply_change(c, b)
+
+            def _undo(c: QImage = initial_bounds_content, b: QRect = change_bounds) -> None:
+                _apply_change(c, b)
+
+            UndoStack().commit_action(_apply, _undo, 'ImageLayer.borrow_image', skip_initial_call=True)
 
             self.content_changed.emit(self, change_bounds)
 

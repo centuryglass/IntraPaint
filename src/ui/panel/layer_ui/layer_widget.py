@@ -1,6 +1,5 @@
 """Represents an image layer within the layer panel."""
 
-import datetime
 from typing import Optional, cast, Callable
 
 from PySide6.QtCore import QSize, Qt, QRect, QPoint, QMimeData, Signal
@@ -16,16 +15,14 @@ from src.image.layers.layer_stack import LayerStack
 from src.image.layers.transform_layer import TransformLayer
 from src.tools.selection_tool import LABEL_TEXT_SELECTION_TOOL
 from src.ui.input_fields.editable_label import EditableLabel
+from src.ui.layout.bordered_widget import BorderedWidget
 from src.ui.panel.layer_ui.layer_alpha_lock_button import LayerAlphaLockButton
 from src.ui.panel.layer_ui.layer_lock_button import LayerLockButton
 from src.ui.panel.layer_ui.layer_toggle_button import ICON_SIZE
-
 from src.ui.panel.layer_ui.layer_visibility_button import LayerVisibilityButton
-from src.ui.layout.bordered_widget import BorderedWidget
 from src.util.display_size import find_text_size, get_window_size
 from src.util.geometry_utils import get_scaled_placement
 from src.util.image_utils import get_transparency_tile_pixmap, crop_to_content
-
 
 # The QCoreApplication.translate context for strings in this file
 TR_ID = 'ui.panel.layer.image_layer_widget'

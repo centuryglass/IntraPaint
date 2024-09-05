@@ -1,4 +1,6 @@
 """Generates an HSV color picker image"""
+from typing import Any
+
 import numpy as np
 from PySide6.QtCore import QSize
 from PySide6.QtGui import QImage, Qt, QColor
@@ -14,7 +16,8 @@ OUT_PATH = 'resources/hsv_square.png'
 hsv_image = QImage(QSize(X_RES, Y_RES), QImage.Format.Format_ARGB32_Premultiplied)
 hsv_image.fill(Qt.GlobalColor.white)
 
-numpy_image = np.ndarray(shape=(hsv_image.height(), hsv_image.width(), 4), dtype=np.uint8, buffer=hsv_image.bits())
+numpy_image: np.ndarray[Any, np.dtype[np.uint8]] = np.ndarray(shape=(hsv_image.height(), hsv_image.width(), 4),
+                                                              dtype=np.uint8, buffer=hsv_image.bits())
 for y in range(Y_RES):
     for x in range(X_RES):
         color = QColor.fromHsvF(1.0 - x / X_RES, 1.0 - y / Y_RES, 1.0, 1.0)

@@ -56,7 +56,7 @@ Generate images with levels of detail and precision far higher than unguided ima
 
 
 ### More examples:
-All of the images below were created using IntraPaint:
+All the images below were created using IntraPaint:
 <table>
     <tr>
         <td colspan="1" rowspan="1">
@@ -151,7 +151,7 @@ For AI image generation features, you will need to install a Stable-Diffusion cl
    * [Arch Linux AUR](https://aur.archlinux.org/packages/stabilitymatrix)
    * [macOS, Apple Silicon](https://github.com/LykosAI/StabilityMatrix/releases/latest/download/StabilityMatrix-macos-arm64.dmg)
 2. Open Stability Matrix, click "Add Package", select "Stable Diffusion WebUI Forge", and wait for it to install.
-3. Once the install finishes, click the gear icon next to Forge on the package screen to open launch options. Scroll to the bottom of the launch options, add `--api` to "Extra Launch Arguments", and click "Save"
+3. Once the installation finishes, click the gear icon next to Forge on the package screen to open launch options. Scroll to the bottom of the launch options, add `--api` to "Extra Launch Arguments", and click "Save"
 4. Click "Launch", and wait for the WebUI to finish starting up.
 5. Open IntraPaint, and it should automatically connect to the Forge API. If IntraPaint is already running, open "Select image generator" under the Tools menu, select "Stable-Diffusion WebUI API", and click "Activate".
 
@@ -176,7 +176,7 @@ I didn't create any of these resources.
 On systems other than 64-bit Linux and Windows, the brush tool may not work, because you will need a system-specific
 build of the libmypaint brush engine library.  If pre-packaged libmypaint versions can't be used, IntraPaint will try
 to load libmypaint libraries from another directory, configurable in IntraPaint's settings under the "system" category.
-If you need help locating libmypaint files for a particular system, open a GitHub issue and I'll try to help.
+If you need help locating libmypaint files for a particular system, open a GitHub issue, and I'll try to help.
 
 #### Q: Where are the ControlNet options?
 

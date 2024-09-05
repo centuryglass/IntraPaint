@@ -375,6 +375,7 @@ class PaletteWidget(_PaletteGrid):
 
     def mouseReleaseEvent(self, event: Optional[QMouseEvent]) -> None:
         """Update mouse status and defer to superclass on mouse release."""
+        assert event is not None
         if self._ignoring_inputs:
             event.ignore()
             return

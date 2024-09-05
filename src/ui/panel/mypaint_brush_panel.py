@@ -6,7 +6,7 @@ import os
 import re
 from typing import Optional, List, Dict, cast
 
-from PySide6.QtCore import Qt, QRect, QPoint, Signal, QSize
+from PySide6.QtCore import Qt, QRect, QPoint, Signal
 from PySide6.QtGui import QPixmap, QImage, QPainter, QPaintEvent, QMouseEvent, QResizeEvent, QIcon
 from PySide6.QtWidgets import QWidget, QTabWidget, QMenu, QSizePolicy, QApplication
 

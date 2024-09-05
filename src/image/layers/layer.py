@@ -242,7 +242,7 @@ class Layer(QObject):
                 toggled_layers.add(self)
             parent = self.layer_parent
             while parent is not None:
-                assert isinstance(parent, Layer) and isinstance(parent, LayerParent)
+                assert isinstance(parent, Layer)
                 if not parent._visible:
                     if parent.locked:
                         error_message = ERROR_MESSAGE_LOCKED_PARENT.format(layer_name=self.name,
@@ -253,12 +253,14 @@ class Layer(QObject):
                     i = 0
                     while True:
                         try:
+                            assert isinstance(parent, LayerParent)
                             child = parent.get_layer_by_index(i)
                             i += 1
                             if child._visible and not child.locked and child != self:
                                 toggled_layers.add(child)
                         except ValueError:
                             break
+                assert isinstance(parent, Layer)
                 parent = parent.layer_parent
 
             def _toggle_all():

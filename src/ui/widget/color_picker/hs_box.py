@@ -100,7 +100,7 @@ class HSBox(ImageWidget):
         y = clamp(clicked_pt.y() - paint_bounds.y(), 0, paint_bounds.height())
         hue = clamp(int(round((1.0 - x / paint_bounds.width()) * 359)), 0, 359)
         sat = clamp(int(round((1.0 - y / paint_bounds.height()) * 255)), 0, 255)
-        self.set_components(hue, sat)
+        self.set_components(int(hue), int(sat))
         self.color_values_chosen.emit(self._hue, self._saturation)
 
     def mousePressEvent(self, event: Optional[QMouseEvent]) -> None:

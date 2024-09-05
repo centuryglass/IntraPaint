@@ -95,7 +95,7 @@ class Label(QLabel):
         """Calculate ideal widget size based on text size."""
         assert self._image is not None
         if self._scale_text_to_bounds:
-            text_size = find_text_size(self._text, self._font)
+            text_size = find_text_size(self._text or '', self._font)
             if self._icon is not None:
                 text_size.setWidth(text_size.width() + text_size.height())
             if self._orientation == Qt.Orientation.Vertical:

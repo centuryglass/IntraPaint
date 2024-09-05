@@ -119,7 +119,7 @@ indexes = list(insertions.keys())
 indexes.sort()
 for idx in reversed(indexes):
     text, data = insertions[idx]
-    file_text = file_text[:idx] + text + file_text[end:]
+    file_text = file_text[:idx] + text + file_text[end:] + '\n'
 
 with open(module_path, 'w', encoding='utf-8') as file:
     file.write(file_text)

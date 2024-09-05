@@ -685,7 +685,7 @@ class AppController(MenuBuilder):
                         if self._metadata is None:
                             self._metadata = {}
                         self._metadata[METADATA_PARAMETER_KEY] = description
-                self._image_stack.load_image(QImage(file_path))
+                self._image_stack.load_image(image)
             cache.set(Cache.LAST_FILE_PATH, file_path)
 
             # File loaded, attempt to apply metadata:

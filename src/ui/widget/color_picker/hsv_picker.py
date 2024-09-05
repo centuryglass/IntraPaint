@@ -1,9 +1,8 @@
 """Widget for selecting color values by HSV components."""
-from typing import Optional
 
-from PySide6.QtWidgets import QWidget, QHBoxLayout
 from PySide6.QtCore import Signal, QPoint
-from PySide6.QtGui import QColor, QResizeEvent
+from PySide6.QtGui import QColor
+from PySide6.QtWidgets import QWidget, QHBoxLayout
 
 from src.ui.widget.color_picker.hs_box import HSBox
 from src.ui.widget.color_picker.hsv_value_picker import HsvValuePicker

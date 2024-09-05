@@ -25,6 +25,7 @@ LABEL_VALUE = _tr('&Val:')
 LABEL_RED = _tr('&Red:')
 LABEL_GREEN = _tr('&Green:')
 LABEL_BLUE = _tr('Bl&ue:')
+# noinspection SpellCheckingInspection
 LABEL_ALPHA = _tr('A&lpha channel:')
 LABEL_HTML = _tr('&HTML:')
 
@@ -33,7 +34,7 @@ class _ColorShowLabel(QFrame):
 
     color_dropped = Signal(QColor)
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
         self.setFrameShape(QFrame.Shape.Panel)
         self.setFrameShadow(QFrame.Shadow.Sunken)
@@ -92,6 +93,7 @@ class _ColorShowLabel(QFrame):
 
     def dragEnterEvent(self, event: Optional[QDragEnterEvent]) -> None:
         """Accept drag events that contain color data."""
+        assert event is not None
         mime_data = event.mimeData()
         if mime_data.hasColor():
             event.accept()
@@ -100,6 +102,7 @@ class _ColorShowLabel(QFrame):
 
     def dropEvent(self, event: Optional[QDropEvent]) -> None:
         """Apply dropped color data."""
+        assert event is not None
         color = QColor(event.mimeData().colorData())
         if color.isValid():
             self._color = color
@@ -118,6 +121,7 @@ class _QColSpinBox(QSpinBox):
 
     def setValue(self, value: int) -> None:
         """Set the value, suppressing signals."""
+        # noinspection PyUnusedLocal
         blocker = QSignalBlocker(self)
         super().setValue(value)
 

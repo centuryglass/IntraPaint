@@ -3,17 +3,17 @@ import logging
 from typing import Optional, List, Callable, Any, Tuple
 
 from PySide6.QtCore import Qt, QSize, QPointF, QTimer
-from PySide6.QtGui import QIcon, QKeyEvent
+from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import QWidget, QLabel, QVBoxLayout, QHBoxLayout, QScrollArea, QToolButton, QSlider, \
     QDoubleSpinBox, QComboBox, QApplication
 
+from src.image.composite_mode import CompositeMode
 from src.image.layers.image_stack import ImageStack
 from src.image.layers.layer import Layer, LayerParent
 from src.image.layers.layer_stack import LayerStack
 from src.ui.panel.layer_ui.layer_group_widget import LayerGroupWidget
 from src.ui.panel.layer_ui.layer_widget import PREVIEW_SIZE, LAYER_PADDING, MAX_WIDTH, LayerWidget, ICON_SIZE
 from src.util.shared_constants import PROJECT_DIR, APP_ICON_PATH
-from src.image.composite_mode import CompositeMode
 
 logger = logging.getLogger(__name__)
 
@@ -260,7 +260,9 @@ class LayerPanel(QWidget):
 
     def _find_layer_parent_widgets(self, layer: Layer) -> List[LayerGroupWidget]:
         parent_map: List[Tuple[Layer, int]] = []
-        layer_iter: Optional[Layer] = layer.layer_parent
+        first_parent_group = layer.layer_parent
+        assert first_parent_group is None or isinstance(first_parent_group, Layer)
+        layer_iter: Optional[Layer] = first_parent_group
         if layer_iter is None:
             return []
         parent_iter: Optional[LayerParent] = layer_iter.layer_parent
@@ -277,8 +279,9 @@ class LayerPanel(QWidget):
         assert isinstance(widget_iter, LayerGroupWidget)
         for mapped_layer, idx in parent_map:
             assert isinstance(widget_iter, LayerGroupWidget)
-            widget_iter = widget_iter.child_items[idx]
-            assert isinstance(widget_iter, LayerGroupWidget)
+            child_group = widget_iter.child_items[idx]
+            assert isinstance(child_group, LayerGroupWidget)
+            widget_iter = child_group
             assert widget_iter.layer == mapped_layer
             parent_list.append(widget_iter)
         return parent_list

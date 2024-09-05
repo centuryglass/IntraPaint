@@ -1,5 +1,5 @@
 """Slider meant specifically for picking color luminance."""
-from typing import Optional
+from typing import Optional, Any, cast
 
 import numpy as np
 from PySide6.QtGui import Qt, QPaintEvent, QMouseEvent, QPixmap, QImage, QColor, QPainter, QPolygon
@@ -18,7 +18,7 @@ class HsvValuePicker(QWidget):
 
     value_changed = Signal(int)
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
         self._val = 100
         self._hue = 100
@@ -54,7 +54,8 @@ class HsvValuePicker(QWidget):
         hi = r.height() - 2
         if self._pixmap is None or self._pixmap.isNull() or self._pixmap.width() != wi or self._pixmap.height() != hi:
             image = QImage(wi, hi, QImage.Format.Format_ARGB32_Premultiplied)
-            np_image = np.ndarray(shape=(image.height(), image.width(), 4), dtype=np.uint8, buffer=image.bits())
+            np_image: np.ndarray[Any, np.dtype[np.uint8]] = np.ndarray(shape=(image.height(), image.width(), 4),
+                                                                       dtype=np.uint8, buffer=image.bits())
             for y in range(hi):
                 color = QColor.fromHsv(self._hue, self._sat, self._y2val(y + CONTENT_OFFSET)).toRgb()
                 np_image[y, :, 0] = color.blue()
@@ -94,14 +95,14 @@ class HsvValuePicker(QWidget):
 
     def _y2val(self, y: int) -> int:
         d = self.height() - 2 * CONTENT_OFFSET - 1
-        return clamp(int(255 - (y - CONTENT_OFFSET) * 255 / d), 0, 255)
+        return int(clamp(int(255 - (y - CONTENT_OFFSET) * 255 / d), 0, 255))
 
     def _val2y(self, val: int) -> int:
         d = self.height() - 2 * CONTENT_OFFSET - 1
-        return int(CONTENT_OFFSET + (255 - val) * d / 255)
+        return cast(int, CONTENT_OFFSET + (255 - val) * d / 255)
 
     def _set_value(self, val: int) -> None:
-        val = clamp(val, 0, 255)
+        val = cast(int, clamp(val, 0, 255))
         if val == self._val:
             return
         self._val = val

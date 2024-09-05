@@ -25,7 +25,7 @@ class ScreenColorWidget(QWidget):
     color_previewed = Signal(QPoint, QColor)
     color_selected = Signal(QColor)
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
         self._color = QColor()
         self._preview_color = QColor()
@@ -48,6 +48,8 @@ class ScreenColorWidget(QWidget):
         self.installEventFilter(self)
         self.grabMouse(Qt.CursorShape.CrossCursor)
         if os.name == 'nt':
+            assert isinstance(self._update_timer, QTimer)
+            assert isinstance(self._transparent_selection_window, QWindow)
             self._update_timer.start(30)
             self._transparent_selection_window.show()
         self.grabKeyboard()
@@ -60,6 +62,8 @@ class ScreenColorWidget(QWidget):
         self.removeEventFilter(self)
         self.releaseMouse()
         if os.name == 'nt':
+            assert isinstance(self._update_timer, QTimer)
+            assert isinstance(self._transparent_selection_window, QWindow)
             self._update_timer.stop()
             self._transparent_selection_window.setVisible(False)
         self.releaseKeyboard()

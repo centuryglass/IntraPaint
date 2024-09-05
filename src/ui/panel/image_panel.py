@@ -85,6 +85,8 @@ class ImagePanel(QWidget):
         if include_zoom_controls:
             self._control_layout: Optional[QHBoxLayout] = QHBoxLayout(self._control_bar)
             self._control_hint_label: Optional[QLabel] = QLabel('')
+            assert self._control_layout is not None
+            assert self._control_hint_label is not None
             self._control_hint_label.setWordWrap(True)
             self._control_layout.addWidget(self._control_hint_label)
             self._control_layout.addSpacing(25)
@@ -108,12 +110,13 @@ class ImagePanel(QWidget):
             # Zoom slider:
             self._control_layout.addWidget(QLabel(SCALE_SLIDER_LABEL))
             image_scale_slider: Optional[QSlider] = QSlider(Qt.Orientation.Horizontal)
+            assert image_scale_slider is not None
             self._image_scale_slider = image_scale_slider
             self._control_layout.addWidget(image_scale_slider)
             image_scale_slider.setRange(1, 4000)
             image_scale_slider.setSingleStep(10)
             image_scale_slider.setValue(int(self._image_viewer.scene_scale * 100))
-            image_scale_box: Optional[QDoubleSpinBox] = QDoubleSpinBox()
+            image_scale_box = QDoubleSpinBox()
             self._control_layout.addWidget(image_scale_box)
             image_scale_box.setRange(0.001, 40)
             image_scale_box.setSingleStep(0.1)
@@ -177,7 +180,8 @@ class ImagePanel(QWidget):
 
     def set_control_hint(self, hint_text: str) -> None:
         """Add a message below the image viewer hinting at controls."""
-        self._control_hint_label.setText(hint_text)
+        if isinstance(self._control_hint_label, QLabel):
+            self._control_hint_label.setText(hint_text)
 
     def resizeEvent(self, event: Optional[QResizeEvent]) -> None:
         """Hide non-essential UI elements if there's not enough space."""

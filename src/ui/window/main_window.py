@@ -160,7 +160,6 @@ class MainWindow(QMainWindow):
         self._image_stack = image_stack
         self._image_selector: Optional[GeneratedImageSelector] = None
 
-
         # Create components, build layout:
         self._main_widget = QWidget(self)
         self._layout = QVBoxLayout(self._main_widget)

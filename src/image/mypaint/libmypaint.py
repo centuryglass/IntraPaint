@@ -5,7 +5,7 @@ from ctypes.util import find_library
 from typing import Optional, TypeAlias
 
 from src.config.application_config import AppConfig
-from src.util.shared_constants import PROJECT_DIR, DATA_DIR
+from src.util.shared_constants import PROJECT_DIR
 
 # constants and basic typedefs:
 c_float_p = POINTER(c_float)

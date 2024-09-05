@@ -53,13 +53,13 @@ PIL_READ_FORMATS = {ex[1:].upper() for ex, f in Image.registered_extensions().it
 PIL_WRITE_FORMATS = {ex[1:].upper() for ex, f in Image.registered_extensions().items() if f in Image.SAVE}
 
 # Formats that are programmatically listed as valid, but fail in testing.
-INVALID_WRITE_FORMATS = {'MSP', 'JFIF', 'H5', 'HDF', 'PFM', 'APNG'}
+INVALID_WRITE_FORMATS = {'MSP', 'JFIF', 'H5', 'HDF', 'PFM', 'APNG', 'WBMP'}
 
 # Formats that need to be renamed to work correctly:
 RENAMED_FORMATS = {'ICB': 'TGA', 'VST': 'TGA', 'VDA': 'TGA', 'EMF': 'WMF', 'JPE': 'JPEG', 'JPG': 'JPEG', 'PS': 'EPS',
                    'RGB': 'SGI', 'RGBA': 'SGI', 'BW': 'SGI', 'PBM': 'PPM', 'PGM': 'PPM', 'PNM': 'PPM', 'TIF': 'TIFF'}
 
-# Formats that need to be omitted to work correctly:
+# Formats that need to be omitted from PIL save parameters to work correctly:
 OMITTED_FORMATS = {'J2K', 'JPC', 'JPF'}
 
 for format_set in PIL_WRITE_FORMATS, QIMAGE_WRITE_FORMATS:

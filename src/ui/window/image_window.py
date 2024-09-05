@@ -1,15 +1,15 @@
 """Shows the edited image in its own window."""
 from typing import Optional
 
-from PySide6.QtCore import QPoint, QSize
+from PySide6.QtCore import QPoint
 from PySide6.QtGui import QIcon, Qt, QCursor, QMouseEvent
 from PySide6.QtWidgets import QWidget, QApplication, QHBoxLayout, QPushButton
 
 from src.config.cache import Cache
+from src.controller.tool_controller import ToolController
 from src.image.layers.image_stack import ImageStack
 from src.tools.base_tool import BaseTool
 from src.tools.generation_area_tool import GenerationAreaTool, GEN_AREA_CONTROL_HINT
-from src.controller.tool_controller import ToolController
 from src.ui.graphics_items.border import Border
 from src.ui.graphics_items.click_and_drag_selection import ClickAndDragSelection
 from src.ui.image_viewer import ImageViewer
@@ -175,16 +175,20 @@ class ImageWindow(ImagePanel):
             return
         self.image_viewer.set_cursor(active_tool.cursor)
 
+    # noinspection PyUnusedLocal
     def _local_offset_change_slot(self, offset: QPoint) -> None:
         if self._reset_zoom_button is not None:
             self._reset_zoom_button.setVisible(not self.image_viewer.is_at_default_view)
 
+    # noinspection PyUnusedLocal
     def _local_scale_change_slot(self, scale: float) -> None:
         if self._reset_zoom_button is not None:
             self._reset_zoom_button.setVisible(not self.image_viewer.is_at_default_view)
 
+    # noinspection PyUnusedLocal
     def _main_offset_change_slot(self, offset: QPoint) -> None:
         self._main_view_border.windowed_area = self._main_image_viewer.view_scene_bounds
 
+    # noinspection PyUnusedLocal
     def _main_scale_change_slot(self, scale: float) -> None:
         self._main_view_border.windowed_area = self._main_image_viewer.view_scene_bounds

@@ -7,17 +7,17 @@ from typing import Any, Dict, List, Optional
 from PySide6.QtCore import Signal, QSize, Qt
 from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QPushButton, QWidget, QTabWidget, QFormLayout, \
-    QScrollArea, QApplication, QLabel
+    QScrollArea, QApplication
 
 from src.config.config import Config
 from src.ui.input_fields.big_int_spinbox import BigIntSpinbox
-from src.ui.input_fields.slider_spinbox import IntSliderSpinbox
 from src.ui.input_fields.check_box import CheckBox
 from src.ui.input_fields.combo_box import ComboBox
 from src.ui.input_fields.dual_toggle import DualToggle
 from src.ui.input_fields.line_edit import LineEdit
 from src.ui.input_fields.plain_text_edit import PlainTextEdit
 from src.ui.input_fields.size_field import SizeField
+from src.ui.input_fields.slider_spinbox import IntSliderSpinbox
 from src.ui.layout.bordered_widget import BorderedWidget
 from src.util.parameter import DynamicFieldWidget
 from src.util.shared_constants import APP_ICON_PATH
