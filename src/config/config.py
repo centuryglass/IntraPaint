@@ -83,6 +83,10 @@ class Config:
             raise RuntimeError(MISSING_DEF_ERROR.format(definition_path=definition_path))
         try:
             with open(definition_path, encoding='utf-8') as file:
+                config_text_key = definition_path.replace('_definitions.json', '')
+                def _tr_cfg(text: str) -> str:
+                    return QApplication.translate(config_text_key, text)
+
                 json_data = json.load(file)
                 for key, definition in json_data.items():
                     assert isinstance(definition, dict)
@@ -134,9 +138,11 @@ class Config:
                     except KeyError as err:
                         raise RuntimeError(INVALID_KEY_ERROR.format(key=key, err=err)) from err
 
-                    label = definition[DefinitionKey.LABEL]
-                    category = definition[DefinitionKey.CATEGORY]
-                    tooltip = definition[DefinitionKey.TOOLTIP]
+                    label = _tr_cfg(definition[DefinitionKey.LABEL])
+                    category = _tr_cfg(definition[DefinitionKey.CATEGORY])
+                    subcategory = None if DefinitionKey.SUBCATEGORY not in definition \
+                        else _tr_cfg(definition[DefinitionKey.SUBCATEGORY])
+                    tooltip = _tr_cfg(definition[DefinitionKey.TOOLTIP])
                     options = None if DefinitionKey.OPTIONS not in definition \
                         else list(definition[DefinitionKey.OPTIONS])
                     range_options = None if DefinitionKey.RANGE not in definition \
@@ -145,7 +151,8 @@ class Config:
                         save_json = definition[DefinitionKey.SAVED]
                     else:
                         save_json = False
-                    self._add_entry(key, initial_value, label, category, tooltip, options, range_options, save_json)
+                    self._add_entry(key, initial_value, label, category, subcategory, tooltip, options, range_options,
+                                    save_json)
 
         except json.JSONDecodeError as err:
             raise RuntimeError(INVALID_JSON_DEFINITION_ERROR.format(err=err)) from err
@@ -415,11 +422,21 @@ class Config:
                 categories.append(value.category)
         return categories
 
-    def get_category_keys(self, category: str) -> List[str]:
+    def get_subcategories(self, category: str) -> List[str]:
+        """Returns all unique subcategories within a category."""
+        subcategories = []
+        for value in self._entries.values():
+            if value.category != category:
+                continue
+            if value.subcategory is not None and value.subcategory not in subcategories:
+                subcategories.append(value.subcategory)
+        return subcategories
+
+    def get_category_keys(self, category: str, subcategory: Optional[str] = None) -> List[str]:
         """Returns all keys with the given category."""
         keys = []
         for key, value in self._entries.items():
-            if value.category == category:
+            if value.category == category and (subcategory is None or subcategory == value.subcategory):
                 keys.append(key)
         return keys
 
@@ -432,13 +449,15 @@ class Config:
                    initial_value: Any,
                    label: str,
                    category: str,
+                   subcategory: Optional[str],
                    tooltip: str,
                    options: Optional[List[ParamType]] = None,
                    range_options: Optional[Dict[str, int | float]] = None,
                    save_json: bool = True) -> None:
         if key in self._entries:
             raise KeyError(DUPLICATE_KEY_ERROR.format(key=key))
-        entry = ConfigEntry(key, initial_value, label, category, tooltip, options, range_options, save_json)
+        entry = ConfigEntry(key, initial_value, label, category, subcategory, tooltip, options, range_options,
+                            save_json)
         self._entries[key] = entry
         self._connected[key] = {}
 

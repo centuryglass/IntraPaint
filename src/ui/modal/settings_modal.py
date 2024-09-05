@@ -5,9 +5,9 @@ stable_diffusion_controller.
 from typing import Any, Dict, List, Optional
 
 from PySide6.QtCore import Signal, QSize, Qt
-from PySide6.QtGui import QIcon
+from PySide6.QtGui import QIcon, QFont
 from PySide6.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QPushButton, QWidget, QTabWidget, QFormLayout, \
-    QScrollArea, QApplication
+    QScrollArea, QApplication, QLabel
 
 from src.config.config import Config
 from src.ui.input_fields.big_int_spinbox import BigIntSpinbox
@@ -85,23 +85,36 @@ class SettingsModal(QDialog):
         if categories is None:
             categories = config.get_categories()
         for category in categories:
-            for key in config.get_category_keys(category):
-                if key in self._inputs:
+            subcategories = config.get_subcategories(category)
+            all_keys = config.get_category_keys(category)
+            subcategory_key_map = {'': all_keys}
+            for subcategory in subcategories:
+                subcategory_key_map[subcategory] = []
+                for key in config.get_category_keys(category, subcategory):
+                    subcategory_key_map[""].remove(key)
+                    subcategory_key_map[subcategory].append(key)
+            for subcategory in ['', *subcategories]:
+                key_set = subcategory_key_map[subcategory]
+                if len(key_set) == 0:
                     continue
-                label = config.get_label(key)
-                try:
-                    control_widget = config.get_control_widget(key, False)
-                except RuntimeError:
-                    continue
-                assert hasattr(control_widget, 'valueChanged')
-                if isinstance(control_widget, CheckBox):
-                    control_widget.setText('')  # External labels look better than checkbox labels in this layout.
+                self._add_subcategory_header(category, subcategory if subcategory != '' else category)
+                for key in key_set:
+                    if key in self._inputs:
+                        continue
+                    label = config.get_label(key)
+                    try:
+                        control_widget = config.get_control_widget(key, False)
+                    except RuntimeError:
+                        continue
+                    assert hasattr(control_widget, 'valueChanged')
+                    if isinstance(control_widget, CheckBox):
+                        control_widget.setText('')  # External labels look better than checkbox labels in this layout.
 
-                def _add_change(new_value: Any, name=key):
-                    self._add_change(name, new_value)
+                    def _add_change(new_value: Any, name=key):
+                        self._add_change(name, new_value)
 
-                control_widget.valueChanged.connect(_add_change)
-                self._add_setting(key, category, control_widget, label)
+                    control_widget.valueChanged.connect(_add_change)
+                    self._add_setting(key, category, control_widget, label)
 
     def remove_category(self, config: Config, category: str) -> None:
         """Remove a category from the modal"""
@@ -196,6 +209,18 @@ class SettingsModal(QDialog):
             self._tabs[tab_name] = tab
             self._tab_layouts[tab_name] = tab_layout
             self._tab_widget.addTab(tab, tab_name)
+
+    def _add_subcategory_header(self, category: str, subcategory: str) -> None:
+        self._add_tab_if_missing(category)
+        label = QLabel(subcategory)
+        label_font = QFont()
+        label_font.setBold(True)
+        if label_font.pixelSize() > 0:
+            label_font.setPixelSize(label_font.pixelSize() + 2)
+        label_font.setUnderline(True)
+        label.setFont(label_font)
+        label.setContentsMargins(2, 10, 2, 2)
+        self._tab_layouts[category].addRow(label)
 
     def _add_setting(self,
                      setting_name: str,

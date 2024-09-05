@@ -151,8 +151,9 @@ NO_COLOR_SAVE_TITLE = _tr('Image saved without color')
 NO_COLOR_SAVE_MESSAGE = _tr('The {file_format} format saves the image without color. Use another format if you want'
                             ' to preserve image colors.')
 
-IGNORED_APPCONFIG_CATEGORIES = ('Stable-Diffusion', 'GLID-3-XL')
-DEV_APPCONFIG_CATEGORY = 'Developer'
+IGNORED_APPCONFIG_CATEGORIES = (QApplication.translate('application_config', 'Stable-Diffusion'),
+                                QApplication.translate('application_config', 'GLID-3-XL'))
+DEV_APPCONFIG_CATEGORY = QApplication.translate('application_config', 'Developer')
 
 
 def _get_config_categories() -> List[str]:

@@ -35,6 +35,7 @@ class DefinitionKey:
     TYPE = 'type'
     LABEL = 'label'
     CATEGORY = 'category'
+    SUBCATEGORY = 'subcategory'
     TOOLTIP = 'description'
     OPTIONS = 'options'
     RANGE = 'range_options'
@@ -68,11 +69,11 @@ class ConfigEntry(Parameter):
                  initial_value: Any,
                  label: str,
                  category: str,
+                 subcategory: Optional[str],
                  tooltip: str,
                  options: Optional[list[Any]] = None,
                  range_options: Optional[dict[str, int | float]] = None,
-                 save_json: bool = True,
-                 subcategory: Optional[str] = None) -> None:
+                 save_json: bool = True) -> None:
         minimum = None
         maximum = None
         step = None

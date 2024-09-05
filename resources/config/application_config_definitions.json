@@ -2,6 +2,7 @@
     "style": {
         "label": "Style:",
         "category": "Interface",
+        "subcategory": "Appearance",
         "description": "Qt style to use for the user interface",
         "type": "string",
         "default": "fusion",
@@ -11,6 +12,7 @@
     "theme": {
         "label": "Theme:",
         "category": "Interface",
+        "subcategory": "Appearance",
         "description": "Theme to use for the user interface (may require restart)",
         "type": "string",
         "default": "None",
@@ -20,6 +22,7 @@
     "font_point_size": {
         "label": "Font size:",
         "category": "Interface",
+        "subcategory": "Appearance",
         "description": "Font point size to use for user interface text (may require restart)",
         "type": "int",
         "default": 10,
@@ -28,6 +31,7 @@
     "tab_font_point_size": {
         "label": "Tab font size:",
         "category": "Interface",
+        "subcategory": "Appearance",
         "description": "Font point size to use for user interface tab labels (may require restart)",
         "type": "int",
         "default": 12,
@@ -36,6 +40,7 @@
     "show_tool_control_hints": {
         "label": "Show active tool control hints:",
         "category": "Interface",
+        "subcategory": "Layout",
         "description": "Show control hints for the active tool below the image.",
         "type": "bool",
         "default": true,
@@ -92,6 +97,7 @@
     "tool_tab_bar": {
         "label": "Tool tab bar:",
         "category": "Interface",
+        "subcategory": "Layout",
         "description": "Toolbar where the tool tab is placed by default (TOP|BOTTOM|LEFT|RIGHT|LOWER or empty)",
         "type": "string",
         "default": "",
@@ -100,6 +106,7 @@
     "generation_tab_bar": {
         "label": "Image generation tab bar:",
         "category": "Interface",
+        "subcategory": "Layout",
         "description": "Toolbar where the image generation tab is placed by default (TOP|BOTTOM|LEFT|RIGHT|LOWER or empty)",
         "type": "string",
         "default": "",
@@ -108,6 +115,7 @@
     "controlnet_tab_bar": {
         "label": "ControlNet tab bar:",
         "category": "Interface",
+        "subcategory": "Layout",
         "description": "Toolbar where the ControlNet tab is placed by default (TOP|BOTTOM|LEFT|RIGHT|LOWER or empty)",
         "type": "string",
         "default": "",
@@ -116,6 +124,7 @@
     "default_image_size": {
         "label": "Default image size:",
         "category": "Editing",
+        "subcategory": "Size",
         "description": "Default size when creating new images",
         "type": "Size",
         "default": "1024x1024",
@@ -124,6 +133,7 @@
     "edit_size": {
         "label": "Editing size:",
         "category": "Editing",
+        "subcategory": "Size",
         "description": "Current/initial size in pixels of the area selected for editing",
         "type": "Size",
         "default": "512x512",
@@ -132,6 +142,7 @@
     "max_edit_size": {
         "label": "Maximum editing size:",
         "category": "Editing",
+        "subcategory": "Size",
         "description": "Maximum size in pixels of the area selected for editing",
         "type": "Size",
         "default": "10240x10240",
@@ -140,6 +151,7 @@
     "min_edit_size": {
         "label": "Minimum editing size:",
         "category": "Editing",
+        "subcategory": "Size",
         "description": "Minimum size in pixels of the area selected for editing",
         "type": "Size",
         "default": "8x8",
@@ -148,6 +160,7 @@
     "generation_size": {
         "label": "Generation size:",
         "category": "Editing",
+        "subcategory": "Size",
         "description": "Current/initial size in pixels used for AI image generation",
         "type": "Size",
         "default": "512x512",
@@ -156,6 +169,7 @@
     "max_generation_size": {
         "label": "Maximum generation size:",
         "category": "Editing",
+        "subcategory": "Size",
         "description": "Maximum size in pixels allowed for AI image generation",
         "type": "Size",
         "default": "2048x2048",
@@ -164,6 +178,7 @@
     "min_generation_size": {
         "label": "Minimum generation size:",
         "category": "Editing",
+        "subcategory": "Size",
         "description": "Minimum size in pixels allowed for AI image generation",
         "type": "Size",
         "default": "256x256",
@@ -172,6 +187,7 @@
     "selection_brush_size": {
         "label": "Selection brush size:",
         "category": "Editing",
+        "subcategory": "Size",
         "description": "Current/initial brush size (in pixels) for the selection tool.",
         "type": "int",
         "default": 40,
@@ -185,6 +201,7 @@
     "sketch_brush_size": {
         "label": "Brush size:",
         "category": "Editing",
+        "subcategory": "Size",
         "description": "Current/initial brush size (in pixels) for the drawing/painting tool.",
         "type": "int",
         "default": 8,
@@ -456,6 +473,7 @@
     "restore_faces": {
         "label": "Restore faces",
         "category": "Stable-Diffusion",
+        "subcategory": "Extra Features",
         "description": "Use a face restoration model to correct image data after stable-diffusion runs. In most cases you'll probably get better results without it.",
         "type": "bool",
         "default": false,
@@ -464,6 +482,7 @@
     "tiling": {
         "label": "Tiling",
         "category": "Stable-Diffusion",
+        "subcategory": "Extra Features",
         "description": "Generate tiling images that can be seamlessly repeated.",
         "type": "bool",
         "default": false,

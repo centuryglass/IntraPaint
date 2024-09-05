@@ -42,7 +42,7 @@ def _tr(*args):
 
 DEFAULT_GLID_MODEL = 'models/inpaint.pt'
 MIN_GLID_VRAM = 8000000000  # This is just a rough estimate.
-GLID_CONFIG_CATEGORY = 'GLID-3-XL'
+GLID_CONFIG_CATEGORY = QApplication.translate('application_config', 'GLID-3-XL')
 GLID_GENERATOR_NAME = _tr('GLID-3-XL image generation')
 GLID_GENERATOR_DESCRIPTION = _tr('<h1>GLID-3-XL</h1>'
                                  '<p>GLID-3-XL was the best inpainting model available until August 2022, and the '
@@ -257,7 +257,7 @@ class Glid3XLGenerator(ImageGenerator):
         """Unloads this generator's settings from the settings modal."""
         settings_modal.remove_category(AppConfig(), GLID_CONFIG_CATEGORY)
 
-    def get_control_panel(self) -> QWidget:
+    def get_control_panel(self) -> Optional[QWidget]:
         """Returns a widget with inputs for controlling this generator."""
         if self._control_panel is None:
             self._control_panel = GlidPanel()

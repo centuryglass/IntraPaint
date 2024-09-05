@@ -1,4 +1,6 @@
 """Represents the option to run IntraPaint without an image generator."""
+from typing import Optional
+
 from PySide6.QtGui import QImage
 from PySide6.QtWidgets import QApplication, QWidget
 
@@ -29,7 +31,6 @@ class NullGenerator(ImageGenerator):
     def __init__(self, window: MainWindow, image_stack: ImageStack) -> None:
         super().__init__(window, image_stack)
         self._preview = QImage(NULL_GENERATOR_PREVIEW_IMAGE)
-        self._panel = QWidget()  # Intentionally left empty
 
     def get_display_name(self) -> str:
         """Returns a display name identifying the generator."""
@@ -59,6 +60,6 @@ class NullGenerator(ImageGenerator):
     def disconnect_or_disable(self) -> None:
         """No-op (there's nothing to disconnect/disable)."""
 
-    def get_control_panel(self) -> QWidget:
+    def get_control_panel(self) -> Optional[QWidget]:
         """Returns a widget with inputs for controlling this generator."""
-        return self._panel
+        return None

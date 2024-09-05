@@ -4,6 +4,7 @@ import os
 import re
 import shutil
 import subprocess
+import sys
 import xml.etree.ElementTree as ET
 from xml.etree.ElementTree import ElementTree, Element
 
@@ -103,9 +104,21 @@ for content_key, json_prefix in (
             if text in line:
                 return i + 1
         return None
+    categories = set()
+    subcategories = set()
     for entry in json_data.values():
         add_message(context_elem, saved_json_path, entry['label'], _find_line_num(entry['label']))
         add_message(context_elem, saved_json_path, entry['description'], _find_line_num(entry['description']))
+        if 'category' not in entry:
+            print('missing category in ' + entry['label'])
+            sys.exit(1)
+        if 'category' in entry and entry['category'] not in categories:
+            add_message(context_elem, saved_json_path, entry['category'], _find_line_num(entry['category']))
+            categories.add(entry['category'])
+        if 'subcategory' in entry and entry['subcategory'] not in categories:
+            add_message(context_elem, saved_json_path, entry['subcategory'], _find_line_num(entry['subcategory']))
+            subcategories.add(entry['subcategory'])
+
 
 # Copy sources to translations:
 for context_elem in xml_root:

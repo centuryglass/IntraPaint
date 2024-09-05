@@ -64,7 +64,7 @@ class TestGenerator(ImageGenerator):
            connect to required external services, returning whether the process completed correctly."""
         return True
 
-    def get_control_panel(self) -> QWidget:
+    def get_control_panel(self) -> Optional[QWidget]:
         """Returns a widget with inputs for controlling this generator."""
         return TestControlPanel()
 

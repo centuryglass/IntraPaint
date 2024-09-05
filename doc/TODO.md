@@ -3,7 +3,6 @@
 - Create example images for README, finish missing sections and improve writing
 - New image modal: bg color picker
 
-
 # Color picker component:
 - Alternate palette options - all custom colors?
 - Standalone color picker window
@@ -23,9 +22,6 @@
 - Update Windows libmypaint DLLs
 - Add Mac OS, ARM linux libmypaint libraries
 
-# Settings
-- Add subcategories 
-
 ## Generated image selection screen
 - Add context menu for selections:
     * Select
@@ -36,8 +32,6 @@
 ## Tabs and windows:
 - Add shortcut to activate/show/hide each tab
 - Hide tab panel resize bars unless the panel is non-empty
-
-
 
 ## Help window
 - Rich text tutorial content, with images and dynamic hotkeys.

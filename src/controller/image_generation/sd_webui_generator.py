@@ -80,7 +80,7 @@ SD_WEBUI_GENERATOR_SETUP = _tr('<h2>Installing the WebUI</h2><p>The <a href="htt
 SD_PREVIEW_IMAGE = f'{PROJECT_DIR}/resources/generator_preview/stable-diffusion.png'
 CONTROLNET_TAB_ICON = f'{PROJECT_DIR}/resources/icons/tabs/hex.svg'
 DEFAULT_SD_URL = 'http://localhost:7860'
-STABLE_DIFFUSION_CONFIG_CATEGORY = 'Stable-Diffusion'
+STABLE_DIFFUSION_CONFIG_CATEGORY = QApplication.translate('application_config', 'Stable-Diffusion')
 AUTH_ERROR_DETAIL_KEY = 'detail'
 AUTH_ERROR_MESSAGE = _tr('Not authenticated')
 INTERROGATE_ERROR_MESSAGE_NO_IMAGE = _tr('Open or create an image first.')
@@ -349,7 +349,10 @@ class SDWebUIGenerator(ImageGenerator):
 
     def unload_settings(self, settings_modal: SettingsModal) -> None:
         """Unloads this generator's settings from the settings modal."""
-        settings_modal.remove_category(A1111Config(), STABLE_DIFFUSION_CONFIG_CATEGORY)
+        settings_modal.remove_category(AppConfig(), STABLE_DIFFUSION_CONFIG_CATEGORY)
+        a1111_config = A1111Config()
+        for category in a1111_config.get_categories():
+            settings_modal.remove_category(a1111_config, category)
 
     def interrogate(self) -> None:
         """ Calls the "interrogate" endpoint to automatically generate image prompts.
@@ -396,7 +399,7 @@ class SDWebUIGenerator(ImageGenerator):
 
         task.error_signal.connect(handle_error)
 
-    def get_control_panel(self) -> QWidget:
+    def get_control_panel(self) -> Optional[QWidget]:
         """Returns a widget with inputs for controlling this generator."""
         if self._control_panel is None:
             self._control_panel = SDWebUIPanel()

@@ -100,7 +100,7 @@ class ImageGenerator(MenuBuilder):
     def unload_settings(self, settings_modal: SettingsModal) -> None:
         """Unloads this generator's settings from the settings modal."""
 
-    def get_control_panel(self) -> QWidget:
+    def get_control_panel(self) -> Optional[QWidget]:
         """Returns a widget with inputs for controlling this generator."""
         raise NotImplementedError()
 

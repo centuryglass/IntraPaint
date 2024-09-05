@@ -265,7 +265,7 @@ class MainWindow(QMainWindow):
         self._control_panel = control_panel
         self._control_tab.content_widget = control_panel
         tab_parent = self._control_tab.parent()
-        if tab_parent is None:
+        if tab_parent is None and control_panel is not None:
             screen_size = get_screen_size(self)
             try:
                 tab_box_id = TabBoxID(AppConfig().get(AppConfig.GENERATION_TAB_BAR))
@@ -273,6 +273,8 @@ class MainWindow(QMainWindow):
                 tab_box_id = TabBoxID.BOTTOM_TAB_BOX_ID if screen_size.height() > AUTO_TAB_MOVE_THRESHOLD \
                     else TabBoxID.RIGHT_TAB_BOX_ID
             self.add_tab(self._control_tab, tab_box_id)
+        elif control_panel is None:
+            self.remove_tab(self._control_tab)
 
     def _init_tab_actions(self, tab: Tab) -> None:
         if tab not in self._tab_actions:

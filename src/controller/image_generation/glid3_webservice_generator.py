@@ -29,7 +29,7 @@ def _tr(*args):
 
 
 DEFAULT_GLID_URL = 'http://localhost:5555'
-GLID_CONFIG_CATEGORY = 'GLID-3-XL'
+GLID_CONFIG_CATEGORY = QApplication.translate('application_config', 'GLID-3-XL')
 GLID_WEB_GENERATOR_NAME = _tr('GLID-3-XL image generation server')
 GLID_WEB_GENERATOR_SETUP = _tr('<h2>GLID-3-XL server setup</h2>'
                                '<p>NOTE: Because GLID-3-XL is mainly a historical curiosity at this point, few steps '
@@ -207,7 +207,7 @@ class Glid3WebserviceGenerator(ImageGenerator):
         """Unloads this generator's settings from the settings modal."""
         settings_modal.remove_category(AppConfig(), GLID_CONFIG_CATEGORY)
 
-    def get_control_panel(self) -> QWidget:
+    def get_control_panel(self) -> Optional[QWidget]:
         """Returns a widget with inputs for controlling this generator."""
         if self._control_panel is None:
             self._control_panel = GlidPanel()
