@@ -136,18 +136,29 @@ class Glid3XLGenerator(ImageGenerator):
 
     def __init__(self, window: MainWindow, image_stack: ImageStack, args: Namespace) -> None:
         super().__init__(window, image_stack)
+        config = AppConfig()
         self._control_panel: Optional[GlidPanel] = None
         self._clip_guidance = args.clip_guidance
         self._ddim = args.ddim
         self._ddpm = args.ddpm
-        self._model_path = DEFAULT_GLID_MODEL if args.model_path is None else args.model_path
-        self._bert_path = args.bert_path
-        self._kl_path = args.kl_path
+        self._model_path = config.get(AppConfig.GLID_MODEL_PATH)
+        self._bert_path = config.get(AppConfig.BERT_MODEL_PATH)
+        self._kl_path = config.get(AppConfig.GLID_VAE_MODEL_PATH)
+        self._clip_model_name = config.get(AppConfig.CLIP_MODEL_NAME)
         self._steps = args.steps
         self._clip_guidance = args.clip_guidance
         self._cpu = args.cpu
         self._ddpm = args.ddpm
         self._ddim = args.ddim
+
+        if args.model_path is not None:
+            self._model_path = args.model_path
+        if args.bert_path is not None:
+            self._bert_path = args.bert_path
+        if args.kl_path is not None:
+            self._kl_path = args.kl_path
+        if args.clip_model is not None:
+            self._clip_model_name = args.clip_model
 
         self._model_params: Optional[Dict[str, Any]] = None
         self._model: Optional[Any] = None
@@ -212,6 +223,7 @@ class Glid3XLGenerator(ImageGenerator):
                                                                  model_path=self._model_path,
                                                                  bert_path=self._bert_path,
                                                                  kl_path=self._kl_path,
+                                                                 clip_model_name=self._clip_model_name,
                                                                  steps=self._steps,
                                                                  clip_guidance=self._clip_guidance,
                                                                  cpu=self._cpu,

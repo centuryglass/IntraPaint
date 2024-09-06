@@ -80,7 +80,9 @@ class AppConfig(Config, metaclass=Singleton):
     ANIMATE_OUTLINES: str
     BATCH_COUNT: str
     BATCH_SIZE: str
+    BERT_MODEL_PATH: str
     BRUSH_FAVORITES: str
+    CLIP_MODEL_NAME: str
     CONTROLNET_ARGS_0: str
     CONTROLNET_ARGS_1: str
     CONTROLNET_ARGS_2: str
@@ -97,6 +99,8 @@ class AppConfig(Config, metaclass=Singleton):
     FONT_POINT_SIZE: str
     GENERATION_SIZE: str
     GENERATION_TAB_BAR: str
+    GLID_MODEL_PATH: str
+    GLID_VAE_MODEL_PATH: str
     GUIDANCE_SCALE: str
     INPAINT_FULL_RES: str
     INPAINT_FULL_RES_PADDING: str

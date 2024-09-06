@@ -33,5 +33,8 @@ def optional_import(module_name: str, package_name: Optional[str] = None, attr_n
 
 def check_import(name: str, module_name: Optional[str] = None) -> bool:
     """Returns whether a particular module could potentially be imported."""
-    spec = importlib.util.find_spec(name, package=module_name)
-    return spec is not None
+    try:
+        spec = importlib.util.find_spec(name, package=module_name)
+        return spec is not None
+    except ModuleNotFoundError:
+        return False

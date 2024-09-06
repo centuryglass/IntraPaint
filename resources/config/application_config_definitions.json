@@ -521,7 +521,12 @@
         "description": "Determines how many random cutouts from the input image are used to guide image generation. Higher values can introduce more detail and variation, but may also introduce more noise and irrelevant information.",
         "type": "int",
         "default": 16,
-        "saved": true
+        "saved": true,
+        "range_options": {
+            "min": 1,
+            "max": 32,
+            "step": 1
+        }
     },
     "skip_steps": {
         "label": "Skip steps:",
@@ -552,6 +557,42 @@
         "type": "string",
         "default": "Lanczos",
         "options": [],
+        "saved": true
+    },
+    "glid_model_path": {
+        "label": "GLID-3-XL model path:",
+        "category": "GLID-3-XL",
+        "subcategory": "Models",
+        "description": "Path to the main GLID-3-XL model file",
+        "type": "string",
+        "default": "models/inpaint.pt",
+        "saved": true
+    },
+    "bert_model_path": {
+        "label": "BERT model path:",
+        "category": "GLID-3-XL",
+        "subcategory": "Models",
+        "description": "Path to the BERT language model file",
+        "type": "string",
+        "default": "models/bert.pt",
+        "saved": true
+    },
+    "glid_vae_model_path": {
+        "label": "GLID-3-XL VAE model path:",
+        "category": "GLID-3-XL",
+        "subcategory": "Models",
+        "description": "Path to the VAE latent image encoding/decoding model file",
+        "type": "string",
+        "default": "models/kl-f8.pt",
+        "saved": true
+    },
+    "clip_model_name": {
+        "label": "CLIP model name:",
+        "category": "GLID-3-XL",
+        "subcategory": "Models",
+        "description": "Name of the CLIP language model to use.",
+        "type": "string",
+        "default": "ViT-L/14",
         "saved": true
     },
     "use_error_handler": {

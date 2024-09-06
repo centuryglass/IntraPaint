@@ -13,7 +13,7 @@ from PySide6.QtGui import QPixmap
 from PySide6.QtWidgets import QApplication, QSplashScreen
 
 from src.util.geometry_utils import get_scaled_placement
-from src.util.optional_import import check_import
+from src.util.optional_import import check_import, optional_import
 from src.util.pyinstaller import is_pyinstaller_bundle
 from src.util.shared_constants import TIMELAPSE_MODE_FLAG, PROJECT_DIR, LOG_DIR
 from src.util.arg_parser import build_arg_parser
@@ -21,7 +21,7 @@ from src.util.arg_parser import build_arg_parser
 DEFAULT_GLID_MODEL = f'{PROJECT_DIR}/models/inpaint.pt'
 
 # argument parsing:
-parser = build_arg_parser(default_model=DEFAULT_GLID_MODEL, include_edit_params=False)
+parser = build_arg_parser(include_edit_params=False, include_model_defaults=False)
 parser.add_argument('--mode', type=str, required=False, default='auto',
                     help='Set where inpainting operations should be completed. \nOptions:\n'
                          '"auto": Attempt to guess at the most appropriate editing mode.\n'
@@ -107,19 +107,22 @@ if not is_pyinstaller_bundle():
         expected_ldm_path = f'{PROJECT_DIR}/latent-diffusion'
         if os.path.exists(expected_ldm_path):
             sys.path.append(expected_ldm_path)
+    else:
+        expected_ldm_path = PROJECT_DIR
 
-            # Newer versions of pytorch-lightning changed the location of one needed dependency, but latent-diffusion was
-            # never updated. This only requires a single minor update, so make that change here if necessary:
-            updated_file_path = f'{expected_ldm_path}/ldm/models/diffusion/ddpm.py'
-            with open(updated_file_path, 'r+') as module_file:
-                lines = module_file.readlines()
-                for i, line in enumerate(lines):
-                    if 'from pytorch_lightning.utilities.distributed import rank_zero_only' in line:
-                        lines[i] = 'from pytorch_lightning.utilities.rank_zero import rank_zero_only'
-                        module_file.seek(0)
-                        module_file.writelines(lines)
-                        module_file.truncate()
-                        break
+    # Newer versions of pytorch-lightning changed the location of one needed dependency, but latent-diffusion was
+    # never updated. This only requires a single minor update, so make that change here if necessary:
+    updated_file_path = f'{expected_ldm_path}/ldm/models/diffusion/ddpm.py'
+    if os.path.exists(updated_file_path):
+        with open(updated_file_path, 'r+') as module_file:
+            lines = module_file.readlines()
+            for i, line in enumerate(lines):
+                if 'from pytorch_lightning.utilities.distributed import rank_zero_only' in line:
+                    lines[i] = 'from pytorch_lightning.utilities.rank_zero import rank_zero_only'
+                    module_file.seek(0)
+                    module_file.writelines(lines)
+                    module_file.truncate()
+                    break
 
     if not check_import('taming'):
         expected_taming_path = f'{PROJECT_DIR}/taming-transformers'

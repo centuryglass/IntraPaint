@@ -4,16 +4,22 @@ Builds an argument parser for an image generation script.
 import argparse
 
 
-def build_arg_parser(default_model='models/inpaint.pt', include_edit_params=True,
-                     include_gen_params=True) -> argparse.ArgumentParser:
+def build_arg_parser(include_edit_params=True, include_gen_params=True,
+                     include_model_defaults=True) -> argparse.ArgumentParser:
     """Create a command-line argument parser that includes options shared between several scripts"""
     parser = argparse.ArgumentParser()
-    parser.add_argument('--model_path', type=str, default=default_model,
+    parser.add_argument('--model_path', type=str, required=False,
+                        default='models/inpaint.pt' if include_model_defaults else None,
                         help='path to the diffusion model')
-    parser.add_argument('--kl_path', type=str, default='models/kl-f8.pt',
+    parser.add_argument('--kl_path', type=str, required=False,
+                        default='models/kl-f8.pt' if include_model_defaults else None,
                         help='path to the LDM first stage model')
-    parser.add_argument('--bert_path', type=str, default='models/bert.pt',
+    parser.add_argument('--bert_path', type=str, required=False,
+                        default='models/bert.pt' if include_model_defaults else None,
                         help='path to the LDM first stage model')
+    parser.add_argument('--clip_model', type=str, required=False,
+                        default='ViT-L/14' if include_model_defaults else None,
+                        help='CLIP language model name')
     parser.add_argument('--text', type=str, required=False, default='',
                         help='your text prompt')
     parser.add_argument('--negative', type=str, required=False, default='',

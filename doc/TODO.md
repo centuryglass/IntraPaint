@@ -6,8 +6,6 @@
 - Alternate palette options - all custom colors?
 - Standalone color picker window
 - Selected color preview on palette-only screen, draggable to custom colors
-- Condensed layout?
-- Save/load custom palettes?
 
 # Misc. bugs and testing:
 - Test GLID with tab interface

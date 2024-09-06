@@ -12,7 +12,7 @@ from src.glid_3_xl.ml_utils import get_device, get_save_fn
 from src.util.arg_parser import build_arg_parser
 
 # argument parsing:
-parser = build_arg_parser(default_model='glid_3_xl/models/finetune.pt', include_edit_params=False)
+parser = build_arg_parser(include_edit_params=False)
 args = parser.parse_args()
 
 if args.model_path in ('glid_3_xl/models/inpaint.pt', 'glid_3_xl/models/ongo.pt'):
@@ -26,8 +26,8 @@ device = get_device(args.cpu)
 if args.seed >= 0:
     torch.manual_seed(args.seed)
 model_data = load_models(device, model_path=args.model_path, bert_path=args.bert_path, kl_path=args.kl_path,
-                         steps=args.steps, clip_guidance=args.clip_guidance, cpu=args.cpu, ddpm=args.ddpm,
-                         ddim=args.ddim)
+                         clip_model_name=args.clip_model,  steps=args.steps, clip_guidance=args.clip_guidance,
+                         cpu=args.cpu, ddpm=args.ddpm, ddim=args.ddim)
 model_params, model, diffusion, ldm, bert, clip_model, clip_preprocess, normalize = model_data
 batch_size, batch_count = (param if param is not None else 1 for param in (args.batch_size, args.num_batches))
 sample_fn, clip_score_fn = create_sample_function(

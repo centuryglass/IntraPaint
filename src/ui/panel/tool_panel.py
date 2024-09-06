@@ -34,7 +34,7 @@ LAYER_TAB = _tr('Layers')
 COLOR_TAB = _tr('Color')
 NAV_TAB = _tr('Navigation')
 
-TOOL_ICON_SIZE = 40
+TOOL_ICON_SIZE = 32
 
 TOOL_LIST_STRETCH = 0
 TOOL_PANEL_STRETCH = 50

@@ -2,6 +2,8 @@
 Loads the ML models that make up GLID-3-XL.
 """
 import gc
+import os
+
 # noinspection PyPackageRequirements
 import torch
 # noinspection PyPackageRequirements
@@ -25,6 +27,8 @@ def load_models(device,
                 ddim=False):
     """Loads all ML models and associated variables."""
 
+    if not os.path.isfile(model_path):
+        raise RuntimeError(f'Invalid GLID-3-XL model path {model_path}')
     model_state_dict = torch.load(model_path, map_location='cpu')
 
     model_params = {
@@ -83,14 +87,18 @@ def load_models(device,
     gc.collect()
 
     # vae
+    if not os.path.isfile(kl_path):
+        raise RuntimeError(f'Invalid VAE model path {kl_path}')
     ldm = torch.load(kl_path, map_location='cpu')
     ldm.to(device)
     ldm.eval()
     ldm.requires_grad_(clip_guidance)
     _set_requires_grad(ldm, clip_guidance)
-    print(f'loaded and configured latent diffusion model from {kl_path}')
+    print(f'loaded and configured latent diffusion VAE model from {kl_path}')
     gc.collect()
 
+    if not os.path.isfile(bert_path):
+        raise RuntimeError(f'Invalid BERT model path {bert_path}')
     bert = BERTEmbedder(1280, 32)
     sd = torch.load(bert_path, map_location='cpu')
     bert.load_state_dict(sd)
@@ -101,6 +109,7 @@ def load_models(device,
     gc.collect()
 
     # clip
+    print(f'loading clip model {clip_model_name}')
     clip_model, clip_preprocess = clip.load(clip_model_name, device=device, jit=False)
     clip_model.eval().requires_grad_(False)
     print(f'loaded and configured CLIP model from {clip_model_name}')
