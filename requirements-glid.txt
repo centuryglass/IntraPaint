@@ -23,3 +23,4 @@ Flask~=2.3.3
 flask_cors
 flask_ngrok
 pyngrok
+numpy<2.0.0

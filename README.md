@@ -30,22 +30,22 @@ IntraPaint is a free and open source image editor with integrated AI image gener
 
 ### What can you do with this combination?
 Benefit from partial automation: you draw the parts that you want to draw, let image generation take care of the parts
-that you don't want to do.
+that you don't want to do. Quickly explore alternatives.
 
-|                                              |                                               |                                                                                        |
-|----------------------------------------------|-----------------------------------------------|----------------------------------------------------------------------------------------|
-| "Detailed painting of a brick wall"          | "line art, black and white, a strange person" | "warm colors/cool colors/impressionism/3D render/child's drawing/renaissance painting" |
-| GIF: complicated interior behind a character | GIF: rough sketch becomes polished line art   | GIF: simple drawing alternates between styles and color patterns                       |
-|Generate complex backgrounds                  | Polish and refine your sketches               | Add color, experiment with styles                                                      |
+|                                                       |                                                                                                                                                                          |                                                                                                     |
+|-------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------|
+| "Detailed painting of a brick wall"                   | "A small figure walking down a road under a massive cloudy sky, billowing clouds, sunset, fiery fields, god rays, sun"                                                   | "warm colors/cool colors/impressionism/3D render/child's drawing/renaissance painting"              |
+| GIF: complicated interior behind a character          | ![An extremely rough sketch of a person walking down a road under a sunset on the left, a more detailed AI-refined version on the right.](./examples/sketch_example.jpg) | ![Animation showing a simple drawing alternating between many different styles](style_example.webp) |
+| Generate complex backgrounds and render fine details. | Quickly refine sketches.                                                                                                                                                 | Experiment with alternate styles.                                                                   |
 
 Control image generation visually. No complex prompts needed, scribble in rough art, describe it briefly, and let Stable-Diffusion figure out the details you want from visual cues.
 
-Prompt: "on the left, a red lizard with a yellow hat standing on a green pillar in an orange desert under a blue sky, looking at a  silver robot in a cowboy hat on the right "
+Prompt: "on the left, a red lizard with a yellow hat standing on a green pillar in an orange desert under a blue sky, looking at a silver robot in a cowboy hat on the right "
 
-|                                                                                                 |                                                                                                             |                                                                                       |
-|-------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------|
-| ![comp_example_1.jpg](./examples/comp_example_1.jpg)                                            | ![comp_example_2.jpg](./examples/comp_example_2.jpg)                                                        | ![comp_example_3.jpg](./examples/comp_example_3.jpg)                                  |
-| AI does okay with details, but struggles with combining them correctly in complex arrangements. | A human artist can easily get the composition right, but similar details require lots of time and practice. | IntraPaint drawing plus AI inpainting gives you the best of both with minimal hassle. |
+|                                                                                                                              |                                                                                                                                                                      |                                                                                                                          |
+|------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------|
+| ![Fully AI generated image of a robot and a lizard in a desert. The image is oddly arranged.](./examples/comp_example_1.jpg) | ![A simple human-made digital drawing of the lizard and robot. Details are rough, but the image is much more accurate to the prompt.](./examples/comp_example_2.jpg) | ![An image combining the detail of the first example with the composition of the second.](./examples/comp_example_3.jpg) |
+| AI does okay with details, but struggles with combining them correctly in complex arrangements.                              | A human artist can easily get the composition right, but similar details require lots of time and practice.                                                          | IntraPaint drawing plus AI inpainting gives you the best of both with minimal hassle.                                    |
 
 Generate images with levels of detail and precision far higher than unguided image generation allows.
 

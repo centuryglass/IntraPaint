@@ -1,5 +1,5 @@
 opencv-python-headless~=4.10.0.84
-numpy<2.0.0
+numpy~=2.0.0
 pillow~=10.3.0
 requests~=2.32.01
 PySide6~=6.7.2

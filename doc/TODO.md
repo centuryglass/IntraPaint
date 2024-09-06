@@ -1,15 +1,18 @@
 # Development tasks
 
+
+## Misc. bugs and testing:
 - Create example images for README, finish missing sections and improve writing
+- Txt2Img + ControlNet doesn't seem to work with the image as source.
+- text tool isn't loading text on active layer change
+- text tool: ctrl for eyedropper interferes with copy/paste, space missing in tool hints
+- Add custom brush dir, configurable
+- layer widget rendering gets stuck in darker "drag" mode
 
 # Color picker component:
 - Alternate palette options - all custom colors?
-- Standalone color picker window
 - Selected color preview on palette-only screen, draggable to custom colors
-
-# Misc. bugs and testing:
-- Test GLID with tab interface
-
+- 
 ## Documentation + Release
 - Rewrite README.md for stable-diffusion info
 - Create tutorials for common workflows
@@ -73,6 +76,8 @@
 - Layer multi-select: Topmost selected layer is active, all others only selected for the sake of bulk copy/grouping/merge/delete
 - Add "merge group" and "merge all visible" options
 - Add "convert to image" (flatten?) option to text layers
+- Layer preview images should ignore composition mode, opacity
+- Improve appearance of active layer
 
 ## Menus
 - Tools: open mypaint brush panel
@@ -88,6 +93,8 @@
 - Fixed aspect ratio should be based on generation size aspect ratio
 - Add checkboxes to limit generation size to edit size, force restricted aspect ratio.
 - Fix issues with gen area recalculation when loading a smaller image.
+
+### Navigation tool
 
 ### Text tool
 * Connect move/pan keys to text layer placement
