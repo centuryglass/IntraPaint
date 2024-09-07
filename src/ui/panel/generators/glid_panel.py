@@ -47,7 +47,6 @@ class GlidPanel(BorderedWidget):
         self._cutn_spinbox = config.get_control_widget(AppConfig.CUTN)
         self._cutn_spinbox.setText(config.get_label(AppConfig.CUTN))
 
-
         self._enable_scale_checkbox = config.get_control_widget(AppConfig.INPAINT_FULL_RES)
         self._enable_scale_checkbox.setText(config.get_label(AppConfig.INPAINT_FULL_RES))
         self._upscale_mode_label = QLabel(config.get_label(AppConfig.UPSCALE_MODE), self)

@@ -2,6 +2,7 @@
 <project version="4">
   <component name="VcsDirectoryMappings">
     <mapping directory="" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/latent-diffusion" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/pyspacenav" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/taming-transformers" vcs="Git" />
   </component>

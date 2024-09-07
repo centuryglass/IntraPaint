@@ -7,25 +7,28 @@ import time
 from typing import Callable, Optional, cast, List
 
 from PIL import Image
-from PySide6.QtWidgets import QApplication
+from PySide6.QtWidgets import QApplication, QMenu
 from PySide6.QtCore import Qt, QRect, QSize, QSizeF, QRectF, QEvent, Signal, QPointF, QObject, QPoint
 from PySide6.QtGui import QImage, QResizeEvent, QPixmap, QPainter, QWheelEvent, QMouseEvent, \
-    QPainterPath, QKeyEvent, QPolygonF, QSinglePointEvent
+    QPainterPath, QKeyEvent, QPolygonF, QSinglePointEvent, QAction
 from PySide6.QtWidgets import QWidget, QGraphicsPixmapItem, QVBoxLayout, QLabel, \
     QStyleOptionGraphicsItem, QHBoxLayout, QPushButton, QStyle
 
 from src.config.application_config import AppConfig
 from src.config.key_config import KeyConfig
 from src.image.layers.image_stack import ImageStack
+from src.image.layers.layer import Layer
 from src.ui.graphics_items.outline import Outline
 from src.ui.graphics_items.polygon_outline import PolygonOutline
+from src.ui.graphics_items.toast_message import ToastMessageItem
 from src.ui.input_fields.check_box import CheckBox
+from src.ui.modal.modal_utils import open_image_file, SAVE_IMAGE_MODE
 from src.ui.widget.image_graphics_view import ImageGraphicsView
 from src.util.application_state import AppStateTracker, APP_STATE_LOADING, APP_STATE_EDITING
 from src.util.display_size import max_font_size
 from src.util.geometry_utils import get_scaled_placement
 from src.util.image_utils import get_standard_qt_icon, pil_image_scaling, get_transparency_tile_pixmap, \
-    pil_image_to_qimage
+    pil_image_to_qimage, save_image
 from src.util.key_code_utils import get_key_display_string
 from src.util.math_utils import clamp
 from src.util.shared_constants import TIMELAPSE_MODE_FLAG
@@ -50,7 +53,16 @@ ZOOM_BUTTON_TEXT = _tr('Toggle zoom')
 NEXT_BUTTON_TEXT = _tr('Next')
 
 ORIGINAL_CONTENT_LABEL = _tr('Original image content')
+LABEL_TEXT_IMAGE_OPTION = _tr('Option {index}')
 LOADING_IMG_TEXT = _tr('Loading...')
+
+MENU_ACTION_SELECT = _tr('Select this option')
+MENU_ACTION_SAVE_TO_FILE = _tr('Save to new file')
+MENU_ACTION_SEND_TO_NEW_LAYER = _tr('Send to new layer')
+
+TOAST_MESSAGE_SAVED = _tr('Saved image option to {image_path}')
+TOAST_MESSAGE_LAYER_CREATED = _tr('Created new layer "{layer_name}"')
+TOAST_MESSAGE_SAVE_CANCELED = _tr('Cancelled saving image option to file.')
 
 SELECTION_TITLE = _tr('Select from generated image options.')
 VIEW_MARGIN = 6
@@ -84,6 +96,7 @@ class GeneratedImageSelector(QWidget):
         self._change_bounds: Optional[QRect] = None
         self._zoom_index = 0
         self._last_scroll_time = time.time() * 1000
+        self._toast_message: Optional[ToastMessageItem] = None
 
         self._base_option_offset = QPointF(0.0, 0.0)
         self._base_option_scale = 0.0
@@ -104,6 +117,7 @@ class GeneratedImageSelector(QWidget):
         self._view.offset_changed.connect(self._offset_change_slot)
         self._view.setMouseTracking(True)
         self._view.installEventFilter(self)
+        self.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         config = AppConfig()
 
         def _selection_scroll(dx, dy):
@@ -270,7 +284,7 @@ class GeneratedImageSelector(QWidget):
             raise IndexError(f'invalid index {idx}, max is {len(self._options)}')
         idx += 1  # Original image gets index zero
         if idx == len(self._options):
-            self._options.append(_ImageOption(image, f'Option {idx}'))
+            self._options.append(_ImageOption(image, LABEL_TEXT_IMAGE_OPTION.format(index=idx)))
             scene = self._view.scene()
             assert scene is not None, 'Scene should have been created automatically and never cleared'
             scene.addItem(self._options[-1])
@@ -324,6 +338,35 @@ class GeneratedImageSelector(QWidget):
         if self._zoomed_in:
             self._zoom_to_option(self._zoom_index, True)
 
+    def _show_context_menu(self, idx: int, pos: QPoint) -> None:
+        menu = QMenu()
+        menu.setTitle(ORIGINAL_CONTENT_LABEL if idx == 0 else LABEL_TEXT_IMAGE_OPTION.format(index=idx))
+
+        def _add_action(name: str, action_callback: Callable[..., None]) -> QAction:
+            action = menu.addAction(name)
+            assert action is not None
+            action.triggered.connect(action_callback)
+            return action
+        _add_action(MENU_ACTION_SELECT, lambda: self._select_option_and_close(idx))
+
+        def _save_to_file() -> None:
+            image = self._options[idx].full_image
+            save_path = open_image_file(self, SAVE_IMAGE_MODE)
+            if save_path is not None:
+                save_image(image, save_path)
+                self._toast_message = ToastMessageItem(TOAST_MESSAGE_SAVED.format(image_path=save_path), self._view)
+            else:
+                self._toast_message = ToastMessageItem(TOAST_MESSAGE_SAVE_CANCELED, self._view)
+        _add_action(MENU_ACTION_SAVE_TO_FILE, _save_to_file)
+
+        def _send_to_new_layer() -> None:
+            new_layer = self._image_stack.create_layer(layer_name=menu.title())
+            self._insert_option_into_layer(idx, new_layer)
+            self._toast_message = ToastMessageItem(TOAST_MESSAGE_LAYER_CREATED.format(layer_name=new_layer.name),
+                                                   self._view)
+        _add_action(MENU_ACTION_SEND_TO_NEW_LAYER, _send_to_new_layer)
+        menu.exec(self.mapToGlobal(pos))
+
     def eventFilter(self, source: Optional[QObject], event: Optional[QEvent]):
         """Use horizontal scroll to move through selections, select items when clicked."""
         assert event is not None
@@ -342,7 +385,7 @@ class GeneratedImageSelector(QWidget):
                 else:
                     self._close_selector()
             elif (event.key() == Qt.Key.Key_Enter or event.key() == Qt.Key.Key_Return) and self._zoomed_in:
-                self._select_option(self._zoom_index)
+                self._select_option_and_close(self._zoom_index)
             else:
                 try:
                     num_value = int(event.text())
@@ -362,12 +405,17 @@ class GeneratedImageSelector(QWidget):
             self._view.set_cursor_pos(view_pos)
             if KeyConfig.modifier_held(KeyConfig.PAN_VIEW_MODIFIER):
                 return False  # Ctrl+click is for panning, don't select options
-            if event.button() != Qt.MouseButton.LeftButton or AppStateTracker.app_state() == APP_STATE_LOADING:
+            if (event.button() not in (Qt.MouseButton.LeftButton, Qt.MouseButton.RightButton)
+                    or AppStateTracker.app_state() == APP_STATE_LOADING):
                 return False
             scene_pos = self._view.mapToScene(view_pos).toPoint()
             for i, option in enumerate(self._options):
                 if option.bounds.contains(scene_pos):
-                    self._select_option(i)
+                    if event.button() == Qt.MouseButton.LeftButton:
+                        self._select_option_and_close(i)
+                    elif event.button() == Qt.MouseButton.RightButton and source == self._view:
+                        self._show_context_menu(i, event.pos())
+                    event.accept()
         if event.type() in (QEvent.Type.Enter, QEvent.Type.MouseMove, QEvent.Type.MouseButtonRelease):
             event = cast(QSinglePointEvent, event)
             if source == self._view:
@@ -390,23 +438,27 @@ class GeneratedImageSelector(QWidget):
             return
         self._option_scale_offset = scale - self._base_option_scale
 
-    def _select_option(self, option_index: int) -> None:
+    def _insert_option_into_layer(self, option_index: int, layer: Layer):
         """Apply an AI-generated image change to the edited image."""
-        sample_image = None if option_index == 0 else self._options[option_index].image
-        if sample_image is not None:
-            if isinstance(sample_image, Image.Image):
-                image = pil_image_to_qimage(sample_image).convertToFormat(QImage.Format.Format_ARGB32_Premultiplied)
-            else:
-                image = sample_image.convertToFormat(QImage.Format.Format_ARGB32_Premultiplied)
-            if AppConfig().get(AppConfig.EDIT_MODE) == 'Inpaint':
-                inpaint_mask = self._image_stack.selection_layer.mask_image
-                painter = QPainter(image)
-                painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_DestinationIn)
-                painter.drawImage(QRect(QPoint(0, 0), image.size()), inpaint_mask)
-                painter.end()
+        sample_image = self._options[option_index].image
+        if isinstance(sample_image, Image.Image):
+            image = pil_image_to_qimage(sample_image).convertToFormat(QImage.Format.Format_ARGB32_Premultiplied)
+        else:
+            image = sample_image.convertToFormat(QImage.Format.Format_ARGB32_Premultiplied)
+        if AppConfig().get(AppConfig.EDIT_MODE) == 'Inpaint':
+            inpaint_mask = self._image_stack.selection_layer.mask_image
+            painter = QPainter(image)
+            painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_DestinationIn)
+            painter.drawImage(QRect(QPoint(0, 0), image.size()), inpaint_mask)
+            painter.end()
+        self._image_stack.set_generation_area_content(image, layer)
+
+    def _select_option_and_close(self, option_index: int) -> None:
+        """Insert the selection and close this selector."""
+        if option_index != 0:
             layer = self._image_stack.active_layer
-            self._image_stack.set_generation_area_content(image, layer)
-            AppStateTracker.set_app_state(APP_STATE_EDITING)
+            self._insert_option_into_layer(option_index, layer)
+        AppStateTracker.set_app_state(APP_STATE_EDITING)
         self._close_selector()
 
     def _scroll_debounce_finished(self) -> bool:
@@ -551,6 +603,11 @@ class _ImageOption(QGraphicsPixmapItem):
         self.update()
 
     @property
+    def full_image(self) -> QImage:
+        """Return the largest available version of this option's image."""
+        return self._full_image
+
+    @property
     def bounds(self) -> QRect:
         """Return the image bounds within the scene."""
         return QRect(self.pos().toPoint(), self.size)
@@ -581,7 +638,6 @@ class _ImageOption(QGraphicsPixmapItem):
               option: Optional[QStyleOptionGraphicsItem],
               widget: Optional[QWidget] = None) -> None:
         """Draw the label above the image."""
-        super().paint(painter, option, widget)
         assert painter is not None
         painter.save()
         image_margin = int(min(self.width, self.height) * IMAGE_MARGIN_FRACTION)
