@@ -45,6 +45,11 @@ class TransformHandle(QGraphicsObject):
         self._saved_arrow_bounds = None
         self._icon = self._arrow_icon
 
+    @property
+    def handle_id(self) -> str:
+        """Returns the handle's id string."""
+        return self._handle_id
+
     def set_draw_arrows(self, should_draw: bool) -> None:
         """Sets whether the handle arrows will be drawn."""
         if should_draw != self._draw_arrows:

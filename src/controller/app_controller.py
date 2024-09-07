@@ -556,7 +556,16 @@ class AppController(MenuBuilder):
                     self.update_metadata(False)
 
             if file_path.lower().endswith('.ora'):
-                save_ora_image(self._image_stack, file_path, json.dumps(self._metadata))
+
+                class _Encoder(json.JSONEncoder):
+
+                    def default(self, obj):
+                        """Convert byte strings to ASCII when serializing."""
+                        if isinstance(obj, bytes):
+                            return obj.decode()
+                        return super().default(obj)
+
+                save_ora_image(self._image_stack, file_path, json.dumps(self._metadata, cls=_Encoder))
             else:
                 image = self._image_stack.qimage()
 

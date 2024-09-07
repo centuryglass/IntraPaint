@@ -2,6 +2,27 @@
 <!DOCTYPE TS>
 <TS version="2.1" language="en_US">
   <context>
+    <name>application_config</name>
+    <message>
+      <location filename="../../src/controller/image_generation/sd_webui_generator.py" line="83"/>
+      <location filename="../../src/controller/app_controller.py" line="154"/>
+      <source>Stable-Diffusion</source>
+      <translation>Stable-Diffusion</translation>
+    </message>
+    <message>
+      <location filename="../../src/controller/image_generation/glid3_webservice_generator.py" line="32"/>
+      <location filename="../../src/controller/image_generation/glid3_xl_generator.py" line="45"/>
+      <location filename="../../src/controller/app_controller.py" line="155"/>
+      <source>GLID-3-XL</source>
+      <translation>GLID-3-XL</translation>
+    </message>
+    <message>
+      <location filename="../../src/controller/app_controller.py" line="156"/>
+      <source>Developer</source>
+      <translation>Developer</translation>
+    </message>
+  </context>
+  <context>
     <name>config.config</name>
     <message>
       <location filename="../../src/config/config.py" line="36"/>
@@ -478,11 +499,26 @@
     </message>
     <message>
       <location filename="../config/key_config_definitions.json" line="210"/>
+      <source>Switch to the free selection tool:</source>
+      <translation>Switch to the free selection tool:</translation>
+    </message>
+    <message>
+      <location filename="../config/key_config_definitions.json" line="213"/>
+      <source>Activate the free selection tool to mark areas for editing.</source>
+      <translation>Activate the free selection tool to mark areas for editing.</translation>
+    </message>
+    <message>
+      <location filename="../config/key_config_definitions.json" line="158"/>
+      <source>Tool Selection</source>
+      <translation>Tool Selection</translation>
+    </message>
+    <message>
+      <location filename="../config/key_config_definitions.json" line="219"/>
       <source>Switch to the fill tool:</source>
       <translation>Switch to the fill tool:</translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="213"/>
+      <location filename="../config/key_config_definitions.json" line="222"/>
       <source>Activate the fill tool to fill areas with solid colors.</source>
       <translation>Activate the fill tool to fill areas with solid colors.</translation>
     </message>
@@ -492,12 +528,12 @@
       <translation>Tool Selection</translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="219"/>
+      <location filename="../config/key_config_definitions.json" line="228"/>
       <source>Switch to the text tool:</source>
       <translation>Switch to the text tool:</translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="222"/>
+      <location filename="../config/key_config_definitions.json" line="231"/>
       <source>Activate the text tool.</source>
       <translation>Activate the text tool.</translation>
     </message>
@@ -507,12 +543,12 @@
       <translation>Tool Selection</translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="228"/>
+      <location filename="../config/key_config_definitions.json" line="237"/>
       <source>Switch to the image generation area selection tool:</source>
       <translation>Switch to the image generation area selection tool:</translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="231"/>
+      <location filename="../config/key_config_definitions.json" line="240"/>
       <source>Activate the generation area tool to pick an image area for AI image generation.</source>
       <translation>Activate the generation area tool to pick an image area for AI image generation.</translation>
     </message>
@@ -522,879 +558,879 @@
       <translation>Tool Selection</translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="237"/>
+      <location filename="../config/key_config_definitions.json" line="246"/>
       <source>Increase brush size:</source>
       <translation>Increase brush size:</translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="240"/>
+      <location filename="../config/key_config_definitions.json" line="249"/>
       <source>Increase the size of the active brush</source>
       <translation>Increase the size of the active brush</translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="239"/>
-      <source>Tool Shortcuts</source>
-      <translation>Tool Shortcuts</translation>
-    </message>
-    <message>
-      <location filename="../config/key_config_definitions.json" line="246"/>
-      <source>Decrease brush size:</source>
-      <translation>Decrease brush size:</translation>
-    </message>
-    <message>
-      <location filename="../config/key_config_definitions.json" line="240"/>
-      <source>Increase the size of the active brush</source>
-      <translation>Increase the size of the active brush</translation>
-    </message>
-    <message>
-      <location filename="../config/key_config_definitions.json" line="239"/>
+      <location filename="../config/key_config_definitions.json" line="248"/>
       <source>Tool Shortcuts</source>
       <translation>Tool Shortcuts</translation>
     </message>
     <message>
       <location filename="../config/key_config_definitions.json" line="255"/>
-      <source>Switch to the brush tool:</source>
-      <translation>Switch to the brush tool:</translation>
+      <source>Decrease brush size:</source>
+      <translation>Decrease brush size:</translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="258"/>
-      <source>Activate the brush tool to paint into the image.</source>
-      <translation>Activate the brush tool to paint into the image.</translation>
+      <location filename="../config/key_config_definitions.json" line="249"/>
+      <source>Increase the size of the active brush</source>
+      <translation>Increase the size of the active brush</translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="239"/>
+      <location filename="../config/key_config_definitions.json" line="248"/>
       <source>Tool Shortcuts</source>
       <translation>Tool Shortcuts</translation>
     </message>
     <message>
       <location filename="../config/key_config_definitions.json" line="264"/>
-      <source>Rotate layer counter-clockwise:</source>
-      <translation>Rotate layer counter-clockwise:</translation>
+      <source>Switch to the brush tool:</source>
+      <translation>Switch to the brush tool:</translation>
     </message>
     <message>
       <location filename="../config/key_config_definitions.json" line="267"/>
-      <source>Rotates the layer when the layer transformation tool is active</source>
-      <translation>Rotates the layer when the layer transformation tool is active</translation>
+      <source>Activate the brush tool to paint into the image.</source>
+      <translation>Activate the brush tool to paint into the image.</translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="239"/>
+      <location filename="../config/key_config_definitions.json" line="248"/>
       <source>Tool Shortcuts</source>
       <translation>Tool Shortcuts</translation>
     </message>
     <message>
       <location filename="../config/key_config_definitions.json" line="273"/>
-      <source>Rotate layer clockwise:</source>
-      <translation>Rotate layer clockwise:</translation>
+      <source>Rotate layer counter-clockwise:</source>
+      <translation>Rotate layer counter-clockwise:</translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="267"/>
+      <location filename="../config/key_config_definitions.json" line="276"/>
       <source>Rotates the layer when the layer transformation tool is active</source>
       <translation>Rotates the layer when the layer transformation tool is active</translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="239"/>
+      <location filename="../config/key_config_definitions.json" line="248"/>
       <source>Tool Shortcuts</source>
       <translation>Tool Shortcuts</translation>
     </message>
     <message>
       <location filename="../config/key_config_definitions.json" line="282"/>
-      <source>Tool action hotkey</source>
-      <translation>Tool action hotkey</translation>
+      <source>Rotate layer clockwise:</source>
+      <translation>Rotate layer clockwise:</translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="285"/>
-      <source>Performs some context-specific action based on the active tool.</source>
-      <translation>Performs some context-specific action based on the active tool.</translation>
+      <location filename="../config/key_config_definitions.json" line="276"/>
+      <source>Rotates the layer when the layer transformation tool is active</source>
+      <translation>Rotates the layer when the layer transformation tool is active</translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="239"/>
+      <location filename="../config/key_config_definitions.json" line="248"/>
       <source>Tool Shortcuts</source>
       <translation>Tool Shortcuts</translation>
     </message>
     <message>
       <location filename="../config/key_config_definitions.json" line="291"/>
+      <source>Tool action hotkey</source>
+      <translation>Tool action hotkey</translation>
+    </message>
+    <message>
+      <location filename="../config/key_config_definitions.json" line="294"/>
+      <source>Performs some context-specific action based on the active tool.</source>
+      <translation>Performs some context-specific action based on the active tool.</translation>
+    </message>
+    <message>
+      <location filename="../config/key_config_definitions.json" line="248"/>
+      <source>Tool Shortcuts</source>
+      <translation>Tool Shortcuts</translation>
+    </message>
+    <message>
+      <location filename="../config/key_config_definitions.json" line="300"/>
       <source>New Image</source>
       <translation>New Image</translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="294"/>
+      <location filename="../config/key_config_definitions.json" line="303"/>
       <source>Open a new image for editing.</source>
       <translation>Open a new image for editing.</translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="292"/>
+      <location filename="../config/key_config_definitions.json" line="301"/>
       <source>Menu Shortcuts</source>
       <translation>Menu Shortcuts</translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="293"/>
-      <source>File Menu</source>
-      <translation>File Menu</translation>
-    </message>
-    <message>
-      <location filename="../config/key_config_definitions.json" line="300"/>
-      <source>Save</source>
-      <translation>Save</translation>
-    </message>
-    <message>
-      <location filename="../config/key_config_definitions.json" line="303"/>
-      <source>Save current image as .png or .ora.</source>
-      <translation>Save current image as .png or .ora.</translation>
-    </message>
-    <message>
-      <location filename="../config/key_config_definitions.json" line="293"/>
+      <location filename="../config/key_config_definitions.json" line="302"/>
       <source>File Menu</source>
       <translation>File Menu</translation>
     </message>
     <message>
       <location filename="../config/key_config_definitions.json" line="309"/>
-      <source>Save as</source>
-      <translation>Save as</translation>
+      <source>Save</source>
+      <translation>Save</translation>
     </message>
     <message>
       <location filename="../config/key_config_definitions.json" line="312"/>
-      <source>Save current image as .png or .inpt at a new file path.</source>
-      <translation>Save current image as .png or .inpt at a new file path.</translation>
+      <source>Save current image as .png or .ora.</source>
+      <translation>Save current image as .png or .ora.</translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="293"/>
+      <location filename="../config/key_config_definitions.json" line="302"/>
       <source>File Menu</source>
       <translation>File Menu</translation>
     </message>
     <message>
       <location filename="../config/key_config_definitions.json" line="318"/>
-      <source>Load Image</source>
-      <translation>Load Image</translation>
+      <source>Save as</source>
+      <translation>Save as</translation>
     </message>
     <message>
       <location filename="../config/key_config_definitions.json" line="321"/>
-      <source>Open an image file for editing.</source>
-      <translation>Open an image file for editing.</translation>
+      <source>Save current image as .png or .inpt at a new file path.</source>
+      <translation>Save current image as .png or .inpt at a new file path.</translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="293"/>
+      <location filename="../config/key_config_definitions.json" line="302"/>
       <source>File Menu</source>
       <translation>File Menu</translation>
     </message>
     <message>
       <location filename="../config/key_config_definitions.json" line="327"/>
-      <source>Open as Layers</source>
-      <translation>Open as Layers</translation>
+      <source>Load Image</source>
+      <translation>Load Image</translation>
     </message>
     <message>
       <location filename="../config/key_config_definitions.json" line="330"/>
-      <source>Open images as new layers.</source>
-      <translation>Open images as new layers.</translation>
+      <source>Open an image file for editing.</source>
+      <translation>Open an image file for editing.</translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="293"/>
+      <location filename="../config/key_config_definitions.json" line="302"/>
       <source>File Menu</source>
       <translation>File Menu</translation>
     </message>
     <message>
       <location filename="../config/key_config_definitions.json" line="336"/>
-      <source>Reload</source>
-      <translation>Reload</translation>
+      <source>Open as Layers</source>
+      <translation>Open as Layers</translation>
     </message>
     <message>
       <location filename="../config/key_config_definitions.json" line="339"/>
-      <source>Reload the image from its file.</source>
-      <translation>Reload the image from its file.</translation>
+      <source>Open images as new layers.</source>
+      <translation>Open images as new layers.</translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="293"/>
+      <location filename="../config/key_config_definitions.json" line="302"/>
       <source>File Menu</source>
       <translation>File Menu</translation>
     </message>
     <message>
       <location filename="../config/key_config_definitions.json" line="345"/>
-      <source>Quit</source>
-      <translation>Quit</translation>
+      <source>Reload</source>
+      <translation>Reload</translation>
     </message>
     <message>
       <location filename="../config/key_config_definitions.json" line="348"/>
-      <source>Closes the application.</source>
-      <translation>Closes the application.</translation>
+      <source>Reload the image from its file.</source>
+      <translation>Reload the image from its file.</translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="293"/>
+      <location filename="../config/key_config_definitions.json" line="302"/>
       <source>File Menu</source>
       <translation>File Menu</translation>
     </message>
     <message>
       <location filename="../config/key_config_definitions.json" line="354"/>
+      <source>Quit</source>
+      <translation>Quit</translation>
+    </message>
+    <message>
+      <location filename="../config/key_config_definitions.json" line="357"/>
+      <source>Closes the application.</source>
+      <translation>Closes the application.</translation>
+    </message>
+    <message>
+      <location filename="../config/key_config_definitions.json" line="302"/>
+      <source>File Menu</source>
+      <translation>File Menu</translation>
+    </message>
+    <message>
+      <location filename="../config/key_config_definitions.json" line="363"/>
       <source>Undo</source>
       <translation>Undo</translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="357"/>
+      <location filename="../config/key_config_definitions.json" line="366"/>
       <source>Undo the last action taken</source>
       <translation>Undo the last action taken</translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="356"/>
-      <source>Edit Menu</source>
-      <translation>Edit Menu</translation>
-    </message>
-    <message>
-      <location filename="../config/key_config_definitions.json" line="363"/>
-      <source>Redo</source>
-      <translation>Redo</translation>
-    </message>
-    <message>
-      <location filename="../config/key_config_definitions.json" line="366"/>
-      <source>Re-apply the last action reversed with undo.</source>
-      <translation>Re-apply the last action reversed with undo.</translation>
-    </message>
-    <message>
-      <location filename="../config/key_config_definitions.json" line="356"/>
+      <location filename="../config/key_config_definitions.json" line="365"/>
       <source>Edit Menu</source>
       <translation>Edit Menu</translation>
     </message>
     <message>
       <location filename="../config/key_config_definitions.json" line="372"/>
-      <source>Cut</source>
-      <translation>Cut</translation>
+      <source>Redo</source>
+      <translation>Redo</translation>
     </message>
     <message>
       <location filename="../config/key_config_definitions.json" line="375"/>
-      <source>Remove selected image content in the active layer.</source>
-      <translation>Remove selected image content in the active layer.</translation>
+      <source>Re-apply the last action reversed with undo.</source>
+      <translation>Re-apply the last action reversed with undo.</translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="356"/>
+      <location filename="../config/key_config_definitions.json" line="365"/>
       <source>Edit Menu</source>
       <translation>Edit Menu</translation>
     </message>
     <message>
       <location filename="../config/key_config_definitions.json" line="381"/>
-      <source>Copy</source>
-      <translation>Copy</translation>
+      <source>Cut</source>
+      <translation>Cut</translation>
     </message>
     <message>
       <location filename="../config/key_config_definitions.json" line="384"/>
-      <source>Copy selected image content in the active layer.</source>
-      <translation>Copy selected image content in the active layer.</translation>
+      <source>Remove selected image content in the active layer.</source>
+      <translation>Remove selected image content in the active layer.</translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="356"/>
+      <location filename="../config/key_config_definitions.json" line="365"/>
       <source>Edit Menu</source>
       <translation>Edit Menu</translation>
     </message>
     <message>
       <location filename="../config/key_config_definitions.json" line="390"/>
-      <source>Paste</source>
-      <translation>Paste</translation>
+      <source>Copy</source>
+      <translation>Copy</translation>
     </message>
     <message>
       <location filename="../config/key_config_definitions.json" line="393"/>
-      <source>Insert copied image data into a new layer.</source>
-      <translation>Insert copied image data into a new layer.</translation>
+      <source>Copy selected image content in the active layer.</source>
+      <translation>Copy selected image content in the active layer.</translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="356"/>
+      <location filename="../config/key_config_definitions.json" line="365"/>
       <source>Edit Menu</source>
       <translation>Edit Menu</translation>
     </message>
     <message>
       <location filename="../config/key_config_definitions.json" line="399"/>
-      <source>Clear</source>
-      <translation>Clear</translation>
+      <source>Paste</source>
+      <translation>Paste</translation>
     </message>
     <message>
       <location filename="../config/key_config_definitions.json" line="402"/>
-      <source>Delete selected image content in the active layer.</source>
-      <translation>Delete selected image content in the active layer.</translation>
+      <source>Insert copied image data into a new layer.</source>
+      <translation>Insert copied image data into a new layer.</translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="356"/>
+      <location filename="../config/key_config_definitions.json" line="365"/>
       <source>Edit Menu</source>
       <translation>Edit Menu</translation>
     </message>
     <message>
       <location filename="../config/key_config_definitions.json" line="408"/>
-      <source>Settings</source>
-      <translation>Settings</translation>
+      <source>Clear</source>
+      <translation>Clear</translation>
     </message>
     <message>
       <location filename="../config/key_config_definitions.json" line="411"/>
-      <source>Open the application settings window.</source>
-      <translation>Open the application settings window.</translation>
+      <source>Delete selected image content in the active layer.</source>
+      <translation>Delete selected image content in the active layer.</translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="356"/>
+      <location filename="../config/key_config_definitions.json" line="365"/>
       <source>Edit Menu</source>
       <translation>Edit Menu</translation>
     </message>
     <message>
       <location filename="../config/key_config_definitions.json" line="417"/>
+      <source>Settings</source>
+      <translation>Settings</translation>
+    </message>
+    <message>
+      <location filename="../config/key_config_definitions.json" line="420"/>
+      <source>Open the application settings window.</source>
+      <translation>Open the application settings window.</translation>
+    </message>
+    <message>
+      <location filename="../config/key_config_definitions.json" line="365"/>
+      <source>Edit Menu</source>
+      <translation>Edit Menu</translation>
+    </message>
+    <message>
+      <location filename="../config/key_config_definitions.json" line="426"/>
       <source>Resize canvas</source>
       <translation>Resize canvas</translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="420"/>
+      <location filename="../config/key_config_definitions.json" line="429"/>
       <source>Change the image size without scaling layers.</source>
       <translation>Change the image size without scaling layers.</translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="419"/>
-      <source>Image Menu</source>
-      <translation>Image Menu</translation>
-    </message>
-    <message>
-      <location filename="../config/key_config_definitions.json" line="426"/>
-      <source>Scale image</source>
-      <translation>Scale image</translation>
-    </message>
-    <message>
-      <location filename="../config/key_config_definitions.json" line="429"/>
-      <source>Scale image content to a new size.</source>
-      <translation>Scale image content to a new size.</translation>
-    </message>
-    <message>
-      <location filename="../config/key_config_definitions.json" line="419"/>
+      <location filename="../config/key_config_definitions.json" line="428"/>
       <source>Image Menu</source>
       <translation>Image Menu</translation>
     </message>
     <message>
       <location filename="../config/key_config_definitions.json" line="435"/>
-      <source>Resize image to content</source>
-      <translation>Resize image to content</translation>
+      <source>Scale image</source>
+      <translation>Scale image</translation>
     </message>
     <message>
       <location filename="../config/key_config_definitions.json" line="438"/>
-      <source>Resize the image to fit all layers</source>
-      <translation>Resize the image to fit all layers</translation>
+      <source>Scale image content to a new size.</source>
+      <translation>Scale image content to a new size.</translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="419"/>
+      <location filename="../config/key_config_definitions.json" line="428"/>
       <source>Image Menu</source>
       <translation>Image Menu</translation>
     </message>
     <message>
       <location filename="../config/key_config_definitions.json" line="444"/>
-      <source>Update metadata</source>
-      <translation>Update metadata</translation>
+      <source>Resize image to content</source>
+      <translation>Resize image to content</translation>
     </message>
     <message>
       <location filename="../config/key_config_definitions.json" line="447"/>
-      <source>Update image metadata that will be saved with the file.</source>
-      <translation>Update image metadata that will be saved with the file.</translation>
+      <source>Resize the image to fit all layers</source>
+      <translation>Resize the image to fit all layers</translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="419"/>
+      <location filename="../config/key_config_definitions.json" line="428"/>
       <source>Image Menu</source>
       <translation>Image Menu</translation>
     </message>
     <message>
       <location filename="../config/key_config_definitions.json" line="453"/>
-      <source>Generate</source>
-      <translation>Generate</translation>
+      <source>Update metadata</source>
+      <translation>Update metadata</translation>
     </message>
     <message>
       <location filename="../config/key_config_definitions.json" line="456"/>
-      <source>Start AI image generation.</source>
-      <translation>Start AI image generation.</translation>
+      <source>Update image metadata that will be saved with the file.</source>
+      <translation>Update image metadata that will be saved with the file.</translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="419"/>
+      <location filename="../config/key_config_definitions.json" line="428"/>
       <source>Image Menu</source>
       <translation>Image Menu</translation>
     </message>
     <message>
       <location filename="../config/key_config_definitions.json" line="462"/>
+      <source>Generate</source>
+      <translation>Generate</translation>
+    </message>
+    <message>
+      <location filename="../config/key_config_definitions.json" line="465"/>
+      <source>Start AI image generation.</source>
+      <translation>Start AI image generation.</translation>
+    </message>
+    <message>
+      <location filename="../config/key_config_definitions.json" line="428"/>
+      <source>Image Menu</source>
+      <translation>Image Menu</translation>
+    </message>
+    <message>
+      <location filename="../config/key_config_definitions.json" line="471"/>
       <source>Select All</source>
       <translation>Select All</translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="465"/>
+      <location filename="../config/key_config_definitions.json" line="474"/>
       <source>Select the entire image</source>
       <translation>Select the entire image</translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="464"/>
-      <source>Selection Menu</source>
-      <translation>Selection Menu</translation>
-    </message>
-    <message>
-      <location filename="../config/key_config_definitions.json" line="471"/>
-      <source>Deselect All</source>
-      <translation>Deselect All</translation>
-    </message>
-    <message>
-      <location filename="../config/key_config_definitions.json" line="474"/>
-      <source>Clear the selection</source>
-      <translation>Clear the selection</translation>
-    </message>
-    <message>
-      <location filename="../config/key_config_definitions.json" line="464"/>
+      <location filename="../config/key_config_definitions.json" line="473"/>
       <source>Selection Menu</source>
       <translation>Selection Menu</translation>
     </message>
     <message>
       <location filename="../config/key_config_definitions.json" line="480"/>
-      <source>Invert selection</source>
-      <translation>Invert selection</translation>
+      <source>Deselect All</source>
+      <translation>Deselect All</translation>
     </message>
     <message>
       <location filename="../config/key_config_definitions.json" line="483"/>
-      <source>Swap selected and unselected areas</source>
-      <translation>Swap selected and unselected areas</translation>
+      <source>Clear the selection</source>
+      <translation>Clear the selection</translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="464"/>
+      <location filename="../config/key_config_definitions.json" line="473"/>
       <source>Selection Menu</source>
       <translation>Selection Menu</translation>
     </message>
     <message>
       <location filename="../config/key_config_definitions.json" line="489"/>
-      <source>Select layer content</source>
-      <translation>Select layer content</translation>
+      <source>Invert selection</source>
+      <translation>Invert selection</translation>
     </message>
     <message>
       <location filename="../config/key_config_definitions.json" line="492"/>
-      <source>Select all non-transparent pixels in the active layer</source>
-      <translation>Select all non-transparent pixels in the active layer</translation>
+      <source>Swap selected and unselected areas</source>
+      <translation>Swap selected and unselected areas</translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="464"/>
+      <location filename="../config/key_config_definitions.json" line="473"/>
       <source>Selection Menu</source>
       <translation>Selection Menu</translation>
     </message>
     <message>
       <location filename="../config/key_config_definitions.json" line="498"/>
-      <source>Expand selection</source>
-      <translation>Expand selection</translation>
+      <source>Select layer content</source>
+      <translation>Select layer content</translation>
     </message>
     <message>
       <location filename="../config/key_config_definitions.json" line="501"/>
-      <source>Expand the selection bounds</source>
-      <translation>Expand the selection bounds</translation>
+      <source>Select all non-transparent pixels in the active layer</source>
+      <translation>Select all non-transparent pixels in the active layer</translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="464"/>
+      <location filename="../config/key_config_definitions.json" line="473"/>
       <source>Selection Menu</source>
       <translation>Selection Menu</translation>
     </message>
     <message>
       <location filename="../config/key_config_definitions.json" line="507"/>
-      <source>Shrink selection</source>
-      <translation>Shrink selection</translation>
+      <source>Expand selection</source>
+      <translation>Expand selection</translation>
     </message>
     <message>
       <location filename="../config/key_config_definitions.json" line="510"/>
-      <source>Shrink the selection bounds</source>
-      <translation>Shrink the selection bounds</translation>
+      <source>Expand the selection bounds</source>
+      <translation>Expand the selection bounds</translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="464"/>
+      <location filename="../config/key_config_definitions.json" line="473"/>
       <source>Selection Menu</source>
       <translation>Selection Menu</translation>
     </message>
     <message>
       <location filename="../config/key_config_definitions.json" line="516"/>
+      <source>Shrink selection</source>
+      <translation>Shrink selection</translation>
+    </message>
+    <message>
+      <location filename="../config/key_config_definitions.json" line="519"/>
+      <source>Shrink the selection bounds</source>
+      <translation>Shrink the selection bounds</translation>
+    </message>
+    <message>
+      <location filename="../config/key_config_definitions.json" line="473"/>
+      <source>Selection Menu</source>
+      <translation>Selection Menu</translation>
+    </message>
+    <message>
+      <location filename="../config/key_config_definitions.json" line="525"/>
       <source>New layer</source>
       <translation>New layer</translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="519"/>
+      <location filename="../config/key_config_definitions.json" line="528"/>
       <source>Create a new layer above the active layer.</source>
       <translation>Create a new layer above the active layer.</translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="518"/>
-      <source>Layer Menu</source>
-      <translation>Layer Menu</translation>
-    </message>
-    <message>
-      <location filename="../config/key_config_definitions.json" line="525"/>
-      <source>New layer group</source>
-      <translation>New layer group</translation>
-    </message>
-    <message>
-      <location filename="../config/key_config_definitions.json" line="528"/>
-      <source>Create a new layer group above the active layer.</source>
-      <translation>Create a new layer group above the active layer.</translation>
-    </message>
-    <message>
-      <location filename="../config/key_config_definitions.json" line="518"/>
+      <location filename="../config/key_config_definitions.json" line="527"/>
       <source>Layer Menu</source>
       <translation>Layer Menu</translation>
     </message>
     <message>
       <location filename="../config/key_config_definitions.json" line="534"/>
-      <source>Copy layer</source>
-      <translation>Copy layer</translation>
+      <source>New layer group</source>
+      <translation>New layer group</translation>
     </message>
     <message>
       <location filename="../config/key_config_definitions.json" line="537"/>
-      <source>Create a copy of the active layer.</source>
-      <translation>Create a copy of the active layer.</translation>
+      <source>Create a new layer group above the active layer.</source>
+      <translation>Create a new layer group above the active layer.</translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="518"/>
+      <location filename="../config/key_config_definitions.json" line="527"/>
       <source>Layer Menu</source>
       <translation>Layer Menu</translation>
     </message>
     <message>
       <location filename="../config/key_config_definitions.json" line="543"/>
-      <source>Delete layer</source>
-      <translation>Delete layer</translation>
+      <source>Copy layer</source>
+      <translation>Copy layer</translation>
     </message>
     <message>
       <location filename="../config/key_config_definitions.json" line="546"/>
-      <source>Delete the active layer.</source>
-      <translation>Delete the active layer.</translation>
+      <source>Create a copy of the active layer.</source>
+      <translation>Create a copy of the active layer.</translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="518"/>
+      <location filename="../config/key_config_definitions.json" line="527"/>
       <source>Layer Menu</source>
       <translation>Layer Menu</translation>
     </message>
     <message>
       <location filename="../config/key_config_definitions.json" line="552"/>
-      <source>Select previous layer</source>
-      <translation>Select previous layer</translation>
+      <source>Delete layer</source>
+      <translation>Delete layer</translation>
     </message>
     <message>
       <location filename="../config/key_config_definitions.json" line="555"/>
-      <source>Switch to the next layer up.</source>
-      <translation>Switch to the next layer up.</translation>
+      <source>Delete the active layer.</source>
+      <translation>Delete the active layer.</translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="518"/>
+      <location filename="../config/key_config_definitions.json" line="527"/>
       <source>Layer Menu</source>
       <translation>Layer Menu</translation>
     </message>
     <message>
       <location filename="../config/key_config_definitions.json" line="561"/>
-      <source>Select next layer</source>
-      <translation>Select next layer</translation>
+      <source>Select previous layer</source>
+      <translation>Select previous layer</translation>
     </message>
     <message>
       <location filename="../config/key_config_definitions.json" line="564"/>
-      <source>Switch to the next layer down.</source>
-      <translation>Switch to the next layer down.</translation>
+      <source>Switch to the next layer up.</source>
+      <translation>Switch to the next layer up.</translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="518"/>
+      <location filename="../config/key_config_definitions.json" line="527"/>
       <source>Layer Menu</source>
       <translation>Layer Menu</translation>
     </message>
     <message>
       <location filename="../config/key_config_definitions.json" line="570"/>
-      <source>Move layer up</source>
-      <translation>Move layer up</translation>
+      <source>Select next layer</source>
+      <translation>Select next layer</translation>
     </message>
     <message>
       <location filename="../config/key_config_definitions.json" line="573"/>
-      <source>Move the active layer up</source>
-      <translation>Move the active layer up</translation>
+      <source>Switch to the next layer down.</source>
+      <translation>Switch to the next layer down.</translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="518"/>
+      <location filename="../config/key_config_definitions.json" line="527"/>
       <source>Layer Menu</source>
       <translation>Layer Menu</translation>
     </message>
     <message>
       <location filename="../config/key_config_definitions.json" line="579"/>
-      <source>Move layer down</source>
-      <translation>Move layer down</translation>
+      <source>Move layer up</source>
+      <translation>Move layer up</translation>
     </message>
     <message>
       <location filename="../config/key_config_definitions.json" line="582"/>
-      <source>Move the active layer down</source>
-      <translation>Move the active layer down</translation>
+      <source>Move the active layer up</source>
+      <translation>Move the active layer up</translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="518"/>
+      <location filename="../config/key_config_definitions.json" line="527"/>
       <source>Layer Menu</source>
       <translation>Layer Menu</translation>
     </message>
     <message>
       <location filename="../config/key_config_definitions.json" line="588"/>
-      <source>Move layer to top</source>
-      <translation>Move layer to top</translation>
+      <source>Move layer down</source>
+      <translation>Move layer down</translation>
     </message>
     <message>
       <location filename="../config/key_config_definitions.json" line="591"/>
-      <source>Move the active layer above all others</source>
-      <translation>Move the active layer above all others</translation>
+      <source>Move the active layer down</source>
+      <translation>Move the active layer down</translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="518"/>
+      <location filename="../config/key_config_definitions.json" line="527"/>
       <source>Layer Menu</source>
       <translation>Layer Menu</translation>
     </message>
     <message>
       <location filename="../config/key_config_definitions.json" line="597"/>
-      <source>Merge layer down</source>
-      <translation>Merge layer down</translation>
+      <source>Move layer to top</source>
+      <translation>Move layer to top</translation>
     </message>
     <message>
       <location filename="../config/key_config_definitions.json" line="600"/>
-      <source>Merge the active layer with the one below it</source>
-      <translation>Merge the active layer with the one below it</translation>
+      <source>Move the active layer above all others</source>
+      <translation>Move the active layer above all others</translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="518"/>
+      <location filename="../config/key_config_definitions.json" line="527"/>
       <source>Layer Menu</source>
       <translation>Layer Menu</translation>
     </message>
     <message>
       <location filename="../config/key_config_definitions.json" line="606"/>
-      <source>Layer to image size</source>
-      <translation>Layer to image size</translation>
+      <source>Merge layer down</source>
+      <translation>Merge layer down</translation>
     </message>
     <message>
       <location filename="../config/key_config_definitions.json" line="609"/>
-      <source>Expand or crop the active layer to match the image bounds.</source>
-      <translation>Expand or crop the active layer to match the image bounds.</translation>
+      <source>Merge the active layer with the one below it</source>
+      <translation>Merge the active layer with the one below it</translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="518"/>
+      <location filename="../config/key_config_definitions.json" line="527"/>
       <source>Layer Menu</source>
       <translation>Layer Menu</translation>
     </message>
     <message>
       <location filename="../config/key_config_definitions.json" line="615"/>
-      <source>Crop layer to contents</source>
-      <translation>Crop layer to contents</translation>
+      <source>Layer to image size</source>
+      <translation>Layer to image size</translation>
     </message>
     <message>
       <location filename="../config/key_config_definitions.json" line="618"/>
-      <source>Crop transparent borders in the active layer.</source>
-      <translation>Crop transparent borders in the active layer.</translation>
+      <source>Expand or crop the active layer to match the image bounds.</source>
+      <translation>Expand or crop the active layer to match the image bounds.</translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="518"/>
+      <location filename="../config/key_config_definitions.json" line="527"/>
       <source>Layer Menu</source>
       <translation>Layer Menu</translation>
     </message>
     <message>
       <location filename="../config/key_config_definitions.json" line="624"/>
+      <source>Crop layer to contents</source>
+      <translation>Crop layer to contents</translation>
+    </message>
+    <message>
+      <location filename="../config/key_config_definitions.json" line="627"/>
+      <source>Crop transparent borders in the active layer.</source>
+      <translation>Crop transparent borders in the active layer.</translation>
+    </message>
+    <message>
+      <location filename="../config/key_config_definitions.json" line="527"/>
+      <source>Layer Menu</source>
+      <translation>Layer Menu</translation>
+    </message>
+    <message>
+      <location filename="../config/key_config_definitions.json" line="633"/>
       <source>Mirror layer horizontally</source>
       <translation>Mirror layer horizontally</translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="627"/>
+      <location filename="../config/key_config_definitions.json" line="636"/>
       <source>Flip layer content horizontally</source>
       <translation>Flip layer content horizontally</translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="518"/>
+      <location filename="../config/key_config_definitions.json" line="527"/>
       <source>Layer Menu</source>
       <translation>Layer Menu</translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="632"/>
+      <location filename="../config/key_config_definitions.json" line="641"/>
       <source>Mirror layer vertically</source>
       <translation>Mirror layer vertically</translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="635"/>
+      <location filename="../config/key_config_definitions.json" line="644"/>
       <source>Flip layer content vertically</source>
       <translation>Flip layer content vertically</translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="518"/>
+      <location filename="../config/key_config_definitions.json" line="527"/>
       <source>Layer Menu</source>
       <translation>Layer Menu</translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="640"/>
+      <location filename="../config/key_config_definitions.json" line="649"/>
       <source>Rotate layer 90° CW</source>
       <translation>Rotate layer 90° CW</translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="643"/>
+      <location filename="../config/key_config_definitions.json" line="652"/>
       <source>Rotate the active layer 90 degrees clockwise.</source>
       <translation>Rotate the active layer 90 degrees clockwise.</translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="518"/>
-      <source>Layer Menu</source>
-      <translation>Layer Menu</translation>
-    </message>
-    <message>
-      <location filename="../config/key_config_definitions.json" line="648"/>
-      <source>Rotate layer 90° CCW</source>
-      <translation>Rotate layer 90° CCW</translation>
-    </message>
-    <message>
-      <location filename="../config/key_config_definitions.json" line="651"/>
-      <source>Rotate the active layer 90 degrees counter-clockwise.</source>
-      <translation>Rotate the active layer 90 degrees counter-clockwise.</translation>
-    </message>
-    <message>
-      <location filename="../config/key_config_definitions.json" line="518"/>
+      <location filename="../config/key_config_definitions.json" line="527"/>
       <source>Layer Menu</source>
       <translation>Layer Menu</translation>
     </message>
     <message>
       <location filename="../config/key_config_definitions.json" line="657"/>
+      <source>Rotate layer 90° CCW</source>
+      <translation>Rotate layer 90° CCW</translation>
+    </message>
+    <message>
+      <location filename="../config/key_config_definitions.json" line="660"/>
+      <source>Rotate the active layer 90 degrees counter-clockwise.</source>
+      <translation>Rotate the active layer 90 degrees counter-clockwise.</translation>
+    </message>
+    <message>
+      <location filename="../config/key_config_definitions.json" line="527"/>
+      <source>Layer Menu</source>
+      <translation>Layer Menu</translation>
+    </message>
+    <message>
+      <location filename="../config/key_config_definitions.json" line="666"/>
       <source>Show layer window</source>
       <translation>Show layer window</translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="660"/>
+      <location filename="../config/key_config_definitions.json" line="669"/>
       <source>Open the image layer panel in a new window.</source>
       <translation>Open the image layer panel in a new window.</translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="659"/>
-      <source>Tool Menu</source>
-      <translation>Tool Menu</translation>
-    </message>
-    <message>
-      <location filename="../config/key_config_definitions.json" line="666"/>
-      <source>LCM Mode</source>
-      <translation>LCM Mode</translation>
-    </message>
-    <message>
-      <location filename="../config/key_config_definitions.json" line="669"/>
-      <source>Apply appropriate settings for the LCM LORA.</source>
-      <translation>Apply appropriate settings for the LCM LORA.</translation>
-    </message>
-    <message>
-      <location filename="../config/key_config_definitions.json" line="659"/>
+      <location filename="../config/key_config_definitions.json" line="668"/>
       <source>Tool Menu</source>
       <translation>Tool Menu</translation>
     </message>
     <message>
       <location filename="../config/key_config_definitions.json" line="675"/>
-      <source>Show Image Window</source>
-      <translation>Show Image Window</translation>
+      <source>LCM Mode</source>
+      <translation>LCM Mode</translation>
     </message>
     <message>
       <location filename="../config/key_config_definitions.json" line="678"/>
-      <source>Open a new window showing the edited image.</source>
-      <translation>Open a new window showing the edited image.</translation>
+      <source>Apply appropriate settings for the LCM LORA.</source>
+      <translation>Apply appropriate settings for the LCM LORA.</translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="659"/>
+      <location filename="../config/key_config_definitions.json" line="668"/>
       <source>Tool Menu</source>
       <translation>Tool Menu</translation>
     </message>
     <message>
       <location filename="../config/key_config_definitions.json" line="684"/>
-      <source>Select Image Generator</source>
-      <translation>Select Image Generator</translation>
+      <source>Show Image Window</source>
+      <translation>Show Image Window</translation>
     </message>
     <message>
       <location filename="../config/key_config_definitions.json" line="687"/>
-      <source>Selects an AI image generator</source>
-      <translation>Selects an AI image generator</translation>
+      <source>Open a new window showing the edited image.</source>
+      <translation>Open a new window showing the edited image.</translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="659"/>
+      <location filename="../config/key_config_definitions.json" line="668"/>
       <source>Tool Menu</source>
       <translation>Tool Menu</translation>
     </message>
     <message>
       <location filename="../config/key_config_definitions.json" line="693"/>
+      <source>Select Image Generator</source>
+      <translation>Select Image Generator</translation>
+    </message>
+    <message>
+      <location filename="../config/key_config_definitions.json" line="696"/>
+      <source>Selects an AI image generator</source>
+      <translation>Selects an AI image generator</translation>
+    </message>
+    <message>
+      <location filename="../config/key_config_definitions.json" line="668"/>
+      <source>Tool Menu</source>
+      <translation>Tool Menu</translation>
+    </message>
+    <message>
+      <location filename="../config/key_config_definitions.json" line="702"/>
       <source>RGBA Color Balance</source>
       <translation>RGBA Color Balance</translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="696"/>
+      <location filename="../config/key_config_definitions.json" line="705"/>
       <source>Adjust RGBA color channels</source>
       <translation>Adjust RGBA color channels</translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="695"/>
-      <source>Filter Menu</source>
-      <translation>Filter Menu</translation>
-    </message>
-    <message>
-      <location filename="../config/key_config_definitions.json" line="702"/>
-      <source>Brightness/Contrast</source>
-      <translation>Brightness/Contrast</translation>
-    </message>
-    <message>
-      <location filename="../config/key_config_definitions.json" line="705"/>
-      <source>Adjust image brightness/contrast</source>
-      <translation>Adjust image brightness/contrast</translation>
-    </message>
-    <message>
-      <location filename="../config/key_config_definitions.json" line="695"/>
+      <location filename="../config/key_config_definitions.json" line="704"/>
       <source>Filter Menu</source>
       <translation>Filter Menu</translation>
     </message>
     <message>
       <location filename="../config/key_config_definitions.json" line="711"/>
-      <source>Blur</source>
-      <translation>Blur</translation>
+      <source>Brightness/Contrast</source>
+      <translation>Brightness/Contrast</translation>
     </message>
     <message>
       <location filename="../config/key_config_definitions.json" line="714"/>
-      <source>Image blurring</source>
-      <translation>Image blurring</translation>
+      <source>Adjust image brightness/contrast</source>
+      <translation>Adjust image brightness/contrast</translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="695"/>
+      <location filename="../config/key_config_definitions.json" line="704"/>
       <source>Filter Menu</source>
       <translation>Filter Menu</translation>
     </message>
     <message>
       <location filename="../config/key_config_definitions.json" line="720"/>
-      <source>Sharpen</source>
-      <translation>Sharpen</translation>
+      <source>Blur</source>
+      <translation>Blur</translation>
     </message>
     <message>
       <location filename="../config/key_config_definitions.json" line="723"/>
-      <source>Sharpen image details</source>
-      <translation>Sharpen image details</translation>
+      <source>Image blurring</source>
+      <translation>Image blurring</translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="695"/>
+      <location filename="../config/key_config_definitions.json" line="704"/>
       <source>Filter Menu</source>
       <translation>Filter Menu</translation>
     </message>
     <message>
       <location filename="../config/key_config_definitions.json" line="729"/>
-      <source>Posterize</source>
-      <translation>Posterize</translation>
+      <source>Sharpen</source>
+      <translation>Sharpen</translation>
     </message>
     <message>
       <location filename="../config/key_config_definitions.json" line="732"/>
-      <source>Simplify layer color palette</source>
-      <translation>Simplify layer color palette</translation>
+      <source>Sharpen image details</source>
+      <translation>Sharpen image details</translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="695"/>
+      <location filename="../config/key_config_definitions.json" line="704"/>
       <source>Filter Menu</source>
       <translation>Filter Menu</translation>
     </message>
     <message>
       <location filename="../config/key_config_definitions.json" line="738"/>
-      <source>View saved prompt styles</source>
-      <translation>View saved prompt styles</translation>
+      <source>Posterize</source>
+      <translation>Posterize</translation>
     </message>
     <message>
       <location filename="../config/key_config_definitions.json" line="741"/>
-      <source>Access saved stable-diffusion prompt styles</source>
-      <translation>Access saved stable-diffusion prompt styles</translation>
+      <source>Simplify layer color palette</source>
+      <translation>Simplify layer color palette</translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="695"/>
+      <location filename="../config/key_config_definitions.json" line="704"/>
       <source>Filter Menu</source>
       <translation>Filter Menu</translation>
     </message>
     <message>
       <location filename="../config/key_config_definitions.json" line="747"/>
+      <source>View saved prompt styles</source>
+      <translation>View saved prompt styles</translation>
+    </message>
+    <message>
+      <location filename="../config/key_config_definitions.json" line="750"/>
+      <source>Access saved stable-diffusion prompt styles</source>
+      <translation>Access saved stable-diffusion prompt styles</translation>
+    </message>
+    <message>
+      <location filename="../config/key_config_definitions.json" line="749"/>
+      <source>Stable-Diffusion Menu</source>
+      <translation>Stable-Diffusion Menu</translation>
+    </message>
+    <message>
+      <location filename="../config/key_config_definitions.json" line="756"/>
       <source>View Lora models</source>
       <translation>View Lora models</translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="750"/>
+      <location filename="../config/key_config_definitions.json" line="759"/>
       <source>Access available Lora models.</source>
       <translation>Access available Lora models.</translation>
     </message>
     <message>
-      <location filename="../config/key_config_definitions.json" line="695"/>
-      <source>Filter Menu</source>
-      <translation>Filter Menu</translation>
+      <location filename="../config/key_config_definitions.json" line="749"/>
+      <source>Stable-Diffusion Menu</source>
+      <translation>Stable-Diffusion Menu</translation>
     </message>
   </context>
   <context>
@@ -1734,17 +1770,17 @@
   <context>
     <name>controller.image_generation.null_generator</name>
     <message>
-      <location filename="../../src/controller/image_generation/null_generator.py" line="19"/>
+      <location filename="../../src/controller/image_generation/null_generator.py" line="21"/>
       <source>No image generator</source>
       <translation>No image generator</translation>
     </message>
     <message>
-      <location filename="../../src/controller/image_generation/null_generator.py" line="20"/>
+      <location filename="../../src/controller/image_generation/null_generator.py" line="22"/>
       <source>&lt;p&gt;IntraPaint does not need an image generator to function.  If you don't want to set up an image generator, you can still use it like any other image editor.</source>
       <translation>&lt;p&gt;IntraPaint does not need an image generator to function.  If you don't want to set up an image generator, you can still use it like any other image editor.</translation>
     </message>
     <message>
-      <location filename="../../src/controller/image_generation/null_generator.py" line="22"/>
+      <location filename="../../src/controller/image_generation/null_generator.py" line="24"/>
       <source>This option has no setup requirements.</source>
       <translation>This option has no setup requirements.</translation>
     </message>
@@ -1868,12 +1904,12 @@
   <context>
     <name>controller.tool_controller</name>
     <message>
-      <location filename="../../src/controller/tool_controller.py" line="41"/>
+      <location filename="../../src/controller/tool_controller.py" line="42"/>
       <source>Failed to load libmypaint brush library files</source>
       <translation>Failed to load libmypaint brush library files</translation>
     </message>
     <message>
-      <location filename="../../src/controller/tool_controller.py" line="42"/>
+      <location filename="../../src/controller/tool_controller.py" line="43"/>
       <source>The brush tool will not be available unless this is fixed.</source>
       <translation>The brush tool will not be available unless this is fixed.</translation>
     </message>
@@ -2456,6 +2492,24 @@ Please remember to include the traceback from the Details expander.</translation
     </message>
   </context>
   <context>
+    <name>tools.lasso_selection_tool</name>
+    <message>
+      <location filename="../../src/tools/free_selection_tool.py" line="30"/>
+      <source>Free selection</source>
+      <translation>Free selection</translation>
+    </message>
+    <message>
+      <location filename="../../src/tools/free_selection_tool.py" line="31"/>
+      <source>Select or de-select polygonal areas</source>
+      <translation>Select or de-select polygonal areas</translation>
+    </message>
+    <message>
+      <location filename="../../src/tools/free_selection_tool.py" line="32"/>
+      <source>LMB:add or drag point - Enter:finish selection - </source>
+      <translation>LMB:add or drag point - Enter:finish selection - </translation>
+    </message>
+  </context>
+  <context>
     <name>tools.layer_transform_tool</name>
     <message>
       <location filename="../../src/tools/layer_transform_tool.py" line="39"/>
@@ -2598,67 +2652,102 @@ Please remember to include the traceback from the Details expander.</translation
   <context>
     <name>ui.generated_image_selector</name>
     <message>
-      <location filename="../../src/ui/generated_image_selector.py" line="43"/>
+      <location filename="../../src/ui/generated_image_selector.py" line="46"/>
       <source>Zoom to changes</source>
       <translation>Zoom to changes</translation>
     </message>
     <message>
-      <location filename="../../src/ui/generated_image_selector.py" line="44"/>
+      <location filename="../../src/ui/generated_image_selector.py" line="47"/>
       <source>Show selection</source>
       <translation>Show selection</translation>
     </message>
     <message>
-      <location filename="../../src/ui/generated_image_selector.py" line="45"/>
+      <location filename="../../src/ui/generated_image_selector.py" line="48"/>
       <source>Inpaint</source>
       <translation>Inpaint</translation>
     </message>
     <message>
-      <location filename="../../src/ui/generated_image_selector.py" line="46"/>
+      <location filename="../../src/ui/generated_image_selector.py" line="49"/>
       <source>Cancel</source>
       <translation>Cancel</translation>
     </message>
     <message>
-      <location filename="../../src/ui/generated_image_selector.py" line="47"/>
+      <location filename="../../src/ui/generated_image_selector.py" line="50"/>
       <source>This will discard all generated images.</source>
       <translation>This will discard all generated images.</translation>
     </message>
     <message>
-      <location filename="../../src/ui/generated_image_selector.py" line="48"/>
+      <location filename="../../src/ui/generated_image_selector.py" line="51"/>
       <source>Previous</source>
       <translation>Previous</translation>
     </message>
     <message>
-      <location filename="../../src/ui/generated_image_selector.py" line="49"/>
+      <location filename="../../src/ui/generated_image_selector.py" line="52"/>
       <source>Toggle zoom</source>
       <translation>Toggle zoom</translation>
     </message>
     <message>
-      <location filename="../../src/ui/generated_image_selector.py" line="50"/>
+      <location filename="../../src/ui/generated_image_selector.py" line="53"/>
       <source>Next</source>
       <translation>Next</translation>
     </message>
     <message>
-      <location filename="../../src/ui/generated_image_selector.py" line="52"/>
+      <location filename="../../src/ui/generated_image_selector.py" line="55"/>
       <source>Original image content</source>
       <translation>Original image content</translation>
     </message>
     <message>
-      <location filename="../../src/ui/generated_image_selector.py" line="53"/>
+      <location filename="../../src/ui/generated_image_selector.py" line="56"/>
+      <source>Option {index}</source>
+      <translation>Option {index}</translation>
+    </message>
+    <message>
+      <location filename="../../src/ui/generated_image_selector.py" line="57"/>
       <source>Loading...</source>
       <translation>Loading...</translation>
     </message>
     <message>
-      <location filename="../../src/ui/generated_image_selector.py" line="55"/>
+      <location filename="../../src/ui/generated_image_selector.py" line="59"/>
+      <source>Select this option</source>
+      <translation>Select this option</translation>
+    </message>
+    <message>
+      <location filename="../../src/ui/generated_image_selector.py" line="60"/>
+      <source>Save to new file</source>
+      <translation>Save to new file</translation>
+    </message>
+    <message>
+      <location filename="../../src/ui/generated_image_selector.py" line="61"/>
+      <source>Send to new layer</source>
+      <translation>Send to new layer</translation>
+    </message>
+    <message>
+      <location filename="../../src/ui/generated_image_selector.py" line="63"/>
+      <source>Saved image option to {image_path}</source>
+      <translation>Saved image option to {image_path}</translation>
+    </message>
+    <message>
+      <location filename="../../src/ui/generated_image_selector.py" line="64"/>
+      <source>Created new layer "{layer_name}"</source>
+      <translation>Created new layer "{layer_name}"</translation>
+    </message>
+    <message>
+      <location filename="../../src/ui/generated_image_selector.py" line="65"/>
+      <source>Cancelled saving image option to file.</source>
+      <translation>Cancelled saving image option to file.</translation>
+    </message>
+    <message>
+      <location filename="../../src/ui/generated_image_selector.py" line="67"/>
       <source>Select from generated image options.</source>
       <translation>Select from generated image options.</translation>
     </message>
     <message>
-      <location filename="../../src/ui/generated_image_selector.py" line="60"/>
+      <location filename="../../src/ui/generated_image_selector.py" line="72"/>
       <source>Ctrl+LMB or MMB and drag: pan view, mouse wheel: zoom, Esc: discard all options</source>
       <translation>Ctrl+LMB or MMB and drag: pan view, mouse wheel: zoom, Esc: discard all options</translation>
     </message>
     <message>
-      <location filename="../../src/ui/generated_image_selector.py" line="61"/>
+      <location filename="../../src/ui/generated_image_selector.py" line="73"/>
       <source>Ctrl+LMB or MMB and drag: pan view, mouse wheel: zoom, Enter: select option, Esc: return to full view</source>
       <translation>Ctrl+LMB or MMB and drag: pan view, mouse wheel: zoom, Enter: select option, Esc: return to full view</translation>
     </message>
@@ -2865,39 +2954,69 @@ Please remember to include the traceback from the Details expander.</translation
   <context>
     <name>ui.modal.new_image_modal</name>
     <message>
-      <location filename="../../src/ui/modal/new_image_modal.py" line="19"/>
+      <location filename="../../src/ui/modal/new_image_modal.py" line="23"/>
       <source>Create new image</source>
       <translation>Create new image</translation>
     </message>
     <message>
-      <location filename="../../src/ui/modal/new_image_modal.py" line="20"/>
+      <location filename="../../src/ui/modal/new_image_modal.py" line="24"/>
       <source>Width:</source>
       <translation>Width:</translation>
     </message>
     <message>
-      <location filename="../../src/ui/modal/new_image_modal.py" line="21"/>
+      <location filename="../../src/ui/modal/new_image_modal.py" line="25"/>
       <source>New image width in pixels</source>
       <translation>New image width in pixels</translation>
     </message>
     <message>
-      <location filename="../../src/ui/modal/new_image_modal.py" line="22"/>
+      <location filename="../../src/ui/modal/new_image_modal.py" line="26"/>
       <source>Height:</source>
       <translation>Height:</translation>
     </message>
     <message>
-      <location filename="../../src/ui/modal/new_image_modal.py" line="23"/>
+      <location filename="../../src/ui/modal/new_image_modal.py" line="27"/>
       <source>New image height in pixels</source>
       <translation>New image height in pixels</translation>
     </message>
     <message>
-      <location filename="../../src/ui/modal/new_image_modal.py" line="24"/>
+      <location filename="../../src/ui/modal/new_image_modal.py" line="28"/>
       <source>Create</source>
       <translation>Create</translation>
     </message>
     <message>
-      <location filename="../../src/ui/modal/new_image_modal.py" line="25"/>
+      <location filename="../../src/ui/modal/new_image_modal.py" line="29"/>
       <source>Cancel</source>
       <translation>Cancel</translation>
+    </message>
+    <message>
+      <location filename="../../src/ui/modal/new_image_modal.py" line="30"/>
+      <source>Background Color:</source>
+      <translation>Background Color:</translation>
+    </message>
+    <message>
+      <location filename="../../src/ui/modal/new_image_modal.py" line="32"/>
+      <source>transparent</source>
+      <translation>transparent</translation>
+    </message>
+    <message>
+      <location filename="../../src/ui/modal/new_image_modal.py" line="33"/>
+      <source>white</source>
+      <translation>white</translation>
+    </message>
+    <message>
+      <location filename="../../src/ui/modal/new_image_modal.py" line="34"/>
+      <source>black</source>
+      <translation>black</translation>
+    </message>
+    <message>
+      <location filename="../../src/ui/modal/new_image_modal.py" line="35"/>
+      <source>custom</source>
+      <translation>custom</translation>
+    </message>
+    <message>
+      <location filename="../../src/ui/modal/new_image_modal.py" line="37"/>
+      <source>Select background color</source>
+      <translation>Select background color</translation>
     </message>
   </context>
   <context>
@@ -3508,12 +3627,12 @@ Please remember to include the traceback from the Details expander.</translation
   <context>
     <name>ui.widget.brush_color_button</name>
     <message>
-      <location filename="../../src/ui/widget/brush_color_button.py" line="20"/>
+      <location filename="../../src/ui/widget/color_button.py" line="19"/>
       <source>Color</source>
       <translation>Color</translation>
     </message>
     <message>
-      <location filename="../../src/ui/widget/brush_color_button.py" line="21"/>
+      <location filename="../../src/ui/widget/color_button.py" line="20"/>
       <source>Select paint color</source>
       <translation>Select paint color</translation>
     </message>
@@ -4550,222 +4669,292 @@ Press ESC to cancel</translation>
       <translation>Restore faces</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="476"/>
+      <location filename="../config/application_config_definitions.json" line="477"/>
       <source>Use a face restoration model to correct image data after stable-diffusion runs. In most cases you'll probably get better results without it.</source>
       <translation>Use a face restoration model to correct image data after stable-diffusion runs. In most cases you'll probably get better results without it.</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="482"/>
+      <location filename="../config/application_config_definitions.json" line="476"/>
+      <source>Extra Features</source>
+      <translation>Extra Features</translation>
+    </message>
+    <message>
+      <location filename="../config/application_config_definitions.json" line="483"/>
       <source>Tiling</source>
       <translation>Tiling</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="484"/>
+      <location filename="../config/application_config_definitions.json" line="486"/>
       <source>Generate tiling images that can be seamlessly repeated.</source>
       <translation>Generate tiling images that can be seamlessly repeated.</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="490"/>
+      <location filename="../config/application_config_definitions.json" line="476"/>
+      <source>Extra Features</source>
+      <translation>Extra Features</translation>
+    </message>
+    <message>
+      <location filename="../config/application_config_definitions.json" line="492"/>
       <source>ControlNet Settings (first layer)</source>
       <translation>ControlNet Settings (first layer)</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="492"/>
+      <location filename="../config/application_config_definitions.json" line="494"/>
       <source>First layer ControlNet extension settings.</source>
       <translation>First layer ControlNet extension settings.</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="498"/>
+      <location filename="../config/application_config_definitions.json" line="500"/>
       <source>ControlNet Settings (second layer)</source>
       <translation>ControlNet Settings (second layer)</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="500"/>
+      <location filename="../config/application_config_definitions.json" line="502"/>
       <source>Second layer ControlNet extension settings.</source>
       <translation>Second layer ControlNet extension settings.</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="506"/>
+      <location filename="../config/application_config_definitions.json" line="508"/>
       <source>ControlNet Settings (third layer)</source>
       <translation>ControlNet Settings (third layer)</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="500"/>
+      <location filename="../config/application_config_definitions.json" line="502"/>
       <source>Second layer ControlNet extension settings.</source>
       <translation>Second layer ControlNet extension settings.</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="517"/>
+      <location filename="../config/application_config_definitions.json" line="519"/>
       <source>Detail reference count (cutn):</source>
       <translation>Detail reference count (cutn):</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="519"/>
+      <location filename="../config/application_config_definitions.json" line="521"/>
       <source>Determines how many random cutouts from the input image are used to guide image generation. Higher values can introduce more detail and variation, but may also introduce more noise and irrelevant information.</source>
       <translation>Determines how many random cutouts from the input image are used to guide image generation. Higher values can introduce more detail and variation, but may also introduce more noise and irrelevant information.</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="518"/>
+      <location filename="../config/application_config_definitions.json" line="520"/>
       <source>GLID-3-XL</source>
       <translation>GLID-3-XL</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="525"/>
+      <location filename="../config/application_config_definitions.json" line="532"/>
       <source>Skip steps:</source>
       <translation>Skip steps:</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="527"/>
+      <location filename="../config/application_config_definitions.json" line="534"/>
       <source>Number of diffusion steps to skip. Higher values will result in faster image generation with decreased detail and accuracy.</source>
       <translation>Number of diffusion steps to skip. Higher values will result in faster image generation with decreased detail and accuracy.</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="538"/>
+      <location filename="../config/application_config_definitions.json" line="545"/>
       <source>Upscale mode:</source>
       <translation>Upscale mode:</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="540"/>
+      <location filename="../config/application_config_definitions.json" line="547"/>
       <source>Upscaling mode used when the inpainting resolution doesn't match the image generation area size.</source>
       <translation>Upscaling mode used when the inpainting resolution doesn't match the image generation area size.</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="547"/>
+      <location filename="../config/application_config_definitions.json" line="554"/>
       <source>Downscale mode:</source>
       <translation>Downscale mode:</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="549"/>
+      <location filename="../config/application_config_definitions.json" line="556"/>
       <source>Downscaling mode used when the inpainting resolution doesn't match the image generation area size.</source>
       <translation>Downscaling mode used when the inpainting resolution doesn't match the image generation area size.</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="556"/>
+      <location filename="../config/application_config_definitions.json" line="563"/>
+      <source>GLID-3-XL model path:</source>
+      <translation>GLID-3-XL model path:</translation>
+    </message>
+    <message>
+      <location filename="../config/application_config_definitions.json" line="566"/>
+      <source>Path to the main GLID-3-XL model file</source>
+      <translation>Path to the main GLID-3-XL model file</translation>
+    </message>
+    <message>
+      <location filename="../config/application_config_definitions.json" line="565"/>
+      <source>Models</source>
+      <translation>Models</translation>
+    </message>
+    <message>
+      <location filename="../config/application_config_definitions.json" line="572"/>
+      <source>BERT model path:</source>
+      <translation>BERT model path:</translation>
+    </message>
+    <message>
+      <location filename="../config/application_config_definitions.json" line="575"/>
+      <source>Path to the BERT language model file</source>
+      <translation>Path to the BERT language model file</translation>
+    </message>
+    <message>
+      <location filename="../config/application_config_definitions.json" line="565"/>
+      <source>Models</source>
+      <translation>Models</translation>
+    </message>
+    <message>
+      <location filename="../config/application_config_definitions.json" line="581"/>
+      <source>GLID-3-XL VAE model path:</source>
+      <translation>GLID-3-XL VAE model path:</translation>
+    </message>
+    <message>
+      <location filename="../config/application_config_definitions.json" line="584"/>
+      <source>Path to the VAE latent image encoding/decoding model file</source>
+      <translation>Path to the VAE latent image encoding/decoding model file</translation>
+    </message>
+    <message>
+      <location filename="../config/application_config_definitions.json" line="565"/>
+      <source>Models</source>
+      <translation>Models</translation>
+    </message>
+    <message>
+      <location filename="../config/application_config_definitions.json" line="590"/>
+      <source>CLIP model name:</source>
+      <translation>CLIP model name:</translation>
+    </message>
+    <message>
+      <location filename="../config/application_config_definitions.json" line="593"/>
+      <source>Name of the CLIP language model to use.</source>
+      <translation>Name of the CLIP language model to use.</translation>
+    </message>
+    <message>
+      <location filename="../config/application_config_definitions.json" line="565"/>
+      <source>Models</source>
+      <translation>Models</translation>
+    </message>
+    <message>
+      <location filename="../config/application_config_definitions.json" line="599"/>
       <source>Enable global error handler:</source>
       <translation>Enable global error handler:</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="558"/>
+      <location filename="../config/application_config_definitions.json" line="601"/>
       <source>Attempt to catch and report global application errors instead of crashing. Disabling this makes it easier to debug certain errors.</source>
       <translation>Attempt to catch and report global application errors instead of crashing. Disabling this makes it easier to debug certain errors.</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="564"/>
+      <location filename="../config/application_config_definitions.json" line="607"/>
       <source>Warn about keybinding issues:</source>
       <translation>Warn about keybinding issues:</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="566"/>
+      <location filename="../config/application_config_definitions.json" line="609"/>
       <source>Show an alert when keybinding issues are found on startup.</source>
       <translation>Show an alert when keybinding issues are found on startup.</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="565"/>
+      <location filename="../config/application_config_definitions.json" line="608"/>
       <source>Alerts</source>
       <translation>Alerts</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="572"/>
+      <location filename="../config/application_config_definitions.json" line="615"/>
       <source>Warn when saving without layers:</source>
       <translation>Warn when saving without layers:</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="574"/>
+      <location filename="../config/application_config_definitions.json" line="617"/>
       <source>Show a warning popup when saving a multi-layer image in a format that discards layer data.</source>
       <translation>Show a warning popup when saving a multi-layer image in a format that discards layer data.</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="580"/>
+      <location filename="../config/application_config_definitions.json" line="623"/>
       <source>Warn when saving without transparency:</source>
       <translation>Warn when saving without transparency:</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="582"/>
+      <location filename="../config/application_config_definitions.json" line="625"/>
       <source>Show a warning popup when saving an image with transparency in a format that doesn't support it.</source>
       <translation>Show a warning popup when saving an image with transparency in a format that doesn't support it.</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="588"/>
+      <location filename="../config/application_config_definitions.json" line="631"/>
       <source>Warn when saving without metadata:</source>
       <translation>Warn when saving without metadata:</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="590"/>
+      <location filename="../config/application_config_definitions.json" line="633"/>
       <source>Show a warning popup when saving an image in a format that discards metadata.</source>
       <translation>Show a warning popup when saving an image in a format that discards metadata.</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="596"/>
+      <location filename="../config/application_config_definitions.json" line="639"/>
       <source>Warn when saving in a format that cannot be loaded:</source>
       <translation>Warn when saving in a format that cannot be loaded:</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="598"/>
+      <location filename="../config/application_config_definitions.json" line="641"/>
       <source>Show a warning popup when saving an image in a format that can't be loaded.</source>
       <translation>Show a warning popup when saving an image in a format that can't be loaded.</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="604"/>
+      <location filename="../config/application_config_definitions.json" line="647"/>
       <source>Warn when saving in a format that changes image size:</source>
       <translation>Warn when saving in a format that changes image size:</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="606"/>
+      <location filename="../config/application_config_definitions.json" line="649"/>
       <source>Show a warning popup when saving an image in a format requires a specific resolution.</source>
       <translation>Show a warning popup when saving an image in a format requires a specific resolution.</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="612"/>
+      <location filename="../config/application_config_definitions.json" line="655"/>
       <source>Warn when saving in a format that removes color:</source>
       <translation>Warn when saving in a format that removes color:</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="614"/>
+      <location filename="../config/application_config_definitions.json" line="657"/>
       <source>Show a warning popup when saving an image in a format that does not support color.</source>
       <translation>Show a warning popup when saving an image in a format that does not support color.</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="620"/>
+      <location filename="../config/application_config_definitions.json" line="663"/>
       <source>Warn when loading libmypaint fails:</source>
       <translation>Warn when loading libmypaint fails:</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="622"/>
+      <location filename="../config/application_config_definitions.json" line="665"/>
       <source>Show a warning popup when the brush tool cannot be used because of missing libraries.</source>
       <translation>Show a warning popup when the brush tool cannot be used because of missing libraries.</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="628"/>
+      <location filename="../config/application_config_definitions.json" line="671"/>
       <source>Always save metadata:</source>
       <translation>Always save metadata:</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="630"/>
+      <location filename="../config/application_config_definitions.json" line="673"/>
       <source>Always save metadata when no previous metadata exists(confirm), never do that(cancel), or ask every time(always_ask).</source>
       <translation>Always save metadata when no previous metadata exists(confirm), never do that(cancel), or ask every time(always_ask).</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="636"/>
+      <location filename="../config/application_config_definitions.json" line="679"/>
       <source>Always update metadata:</source>
       <translation>Always update metadata:</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="638"/>
+      <location filename="../config/application_config_definitions.json" line="681"/>
       <source>Always update metadata when images are saved(confirm), never do that(cancel), or ask every time(always_ask).</source>
       <translation>Always update metadata when images are saved(confirm), never do that(cancel), or ask every time(always_ask).</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="644"/>
+      <location filename="../config/application_config_definitions.json" line="687"/>
       <source>libmypaint library directory:</source>
       <translation>libmypaint library directory:</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="646"/>
+      <location filename="../config/application_config_definitions.json" line="689"/>
       <source>Directory to search for libmypaint library files if unable to load default libraries</source>
       <translation>Directory to search for libmypaint library files if unable to load default libraries</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="645"/>
+      <location filename="../config/application_config_definitions.json" line="688"/>
       <source>System</source>
       <translation>System</translation>
     </message>
@@ -4869,8 +5058,8 @@ Press ESC to cancel</translation>
     </message>
     <message>
       <location filename="../config/cache_value_definitions.json" line="75"/>
-      <source>Background color:</source>
-      <translation>Background color:</translation>
+      <source>Text background color:</source>
+      <translation>Text background color:</translation>
     </message>
     <message>
       <location filename="../config/cache_value_definitions.json" line="77"/>
@@ -4879,61 +5068,71 @@ Press ESC to cancel</translation>
     </message>
     <message>
       <location filename="../config/cache_value_definitions.json" line="83"/>
+      <source>New image background color:</source>
+      <translation>New image background color:</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="85"/>
+      <source>Last new image background color</source>
+      <translation>Last new image background color</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="91"/>
       <source>Text tool parameters:</source>
       <translation>Text tool parameters:</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="85"/>
+      <location filename="../config/cache_value_definitions.json" line="93"/>
       <source>Last text tool font and settings</source>
       <translation>Last text tool font and settings</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="91"/>
+      <location filename="../config/cache_value_definitions.json" line="99"/>
       <source>Last active tool:</source>
       <translation>Last active tool:</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="93"/>
+      <location filename="../config/cache_value_definitions.json" line="101"/>
       <source>Label of the last active tool, to restore after restart</source>
       <translation>Label of the last active tool, to restore after restart</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="99"/>
+      <location filename="../config/cache_value_definitions.json" line="107"/>
       <source>Last navigation panel tool:</source>
       <translation>Last navigation panel tool:</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="101"/>
+      <location filename="../config/cache_value_definitions.json" line="109"/>
       <source>Label of the last active tool in the navigation panel, to restore after restart</source>
       <translation>Label of the last active tool in the navigation panel, to restore after restart</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="107"/>
+      <location filename="../config/cache_value_definitions.json" line="115"/>
       <source>Color threshold:</source>
       <translation>Color threshold:</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="109"/>
+      <location filename="../config/cache_value_definitions.json" line="117"/>
       <source>Sets how closely colors need to match the clicked color to be selected. 0.0 only changes exact matching colors, higher values are more permissive.</source>
       <translation>Sets how closely colors need to match the clicked color to be selected. 0.0 only changes exact matching colors, higher values are more permissive.</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="120"/>
+      <location filename="../config/cache_value_definitions.json" line="128"/>
       <source>Sample Merged:</source>
       <translation>Sample Merged:</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="122"/>
+      <location filename="../config/cache_value_definitions.json" line="130"/>
       <source>If checked, fill based on the entire image contents, not just the current layer</source>
       <translation>If checked, fill based on the entire image contents, not just the current layer</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="128"/>
+      <location filename="../config/cache_value_definitions.json" line="136"/>
       <source>Paint selection only:</source>
       <translation>Paint selection only:</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="130"/>
+      <location filename="../config/cache_value_definitions.json" line="138"/>
       <source>If checked, only paint within the selection bounds</source>
       <translation>If checked, only paint within the selection bounds</translation>
     </message>

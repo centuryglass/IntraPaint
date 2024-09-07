@@ -159,7 +159,7 @@ class ImageLayer(TransformLayer):
         try:
             yield self._image
         finally:
-            self._pixmap.invalidate()
+            self.invalidate_pixmap()
             self._handle_content_change(self._image, initial_image, change_bounds)
             if change_bounds is None:
                 change_bounds = self.bounds
@@ -168,9 +168,14 @@ class ImageLayer(TransformLayer):
             updated_content = self._image.copy(change_bounds)
 
             def _apply_change(content: QImage, bounds: QRect) -> None:
+                init_image = QImage(self._image.size(), QImage.Format.Format_ARGB32_Premultiplied)
+                np_init_img = numpy_bounds_index(image_data_as_numpy_8bit(init_image), bounds)
                 np_layer_image = numpy_bounds_index(image_data_as_numpy_8bit(self._image), bounds)
                 np_content = image_data_as_numpy_8bit(content)
+                np.copyto(np_init_img, np_layer_image)
                 np.copyto(np_layer_image, np_content)
+                self.invalidate_pixmap()
+                self._handle_content_change(self._image, init_image, change_bounds)
                 self.content_changed.emit(self, change_bounds)
 
             def _apply(c: QImage = updated_content, b: QRect = change_bounds) -> None:
@@ -178,6 +183,7 @@ class ImageLayer(TransformLayer):
 
             def _undo(c: QImage = initial_bounds_content, b: QRect = change_bounds) -> None:
                 _apply_change(c, b)
+                self.content_changed.emit(self, change_bounds)
 
             UndoStack().commit_action(_apply, _undo, 'ImageLayer.borrow_image', skip_initial_call=True)
 

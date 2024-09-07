@@ -206,6 +206,15 @@
         "default": "R",
         "saved": true
     },
+    "free_selection_tool_key": {
+        "label": "Switch to the free selection tool:",
+        "category": "Keybindings",
+        "subcategory": "Tool Selection",
+        "description": "Activate the free selection tool to mark areas for editing.",
+        "type": "string",
+        "default": "L",
+        "saved": true
+    },
     "fill_tool_key": {
         "label": "Switch to the fill tool:",
         "category": "Keybindings",

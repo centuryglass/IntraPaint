@@ -100,21 +100,8 @@
 * Connect move/pan keys to text layer placement
 
 ### Polygonal lasso tool
-- Vector-based selection tool
-- Add EditablePath QGraphicsItem:
-  * add_point method add a point to the end of the path, present in the scene as a TransformHandle
-  * paint method draws lines between appropriate handles
-  * close_path method connects first and last points
-  * polygon property returns points as a QPolygonF
-- Controls:
-  * Click to start a new polygon or add a point to an existing one
-  * Drag handles to reposition
-  * Close path (click first point when there's more than two points? or should it be double-click?)
-  * Enter/return: close path if there's more than two points
   * escape: discard path
-  * undo/redo: should hold individual point changes
-- Panel:
-  * snapping controls, maybe?
+  * use fixed angles when appropriate modifier is held
 
 ### Transform tool
 - Unique look for origin point (rotate 45 degrees?)

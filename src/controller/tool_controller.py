@@ -15,6 +15,7 @@ from src.tools.base_tool import BaseTool
 from src.tools.draw_tool import DrawTool
 from src.tools.eyedropper_tool import EyedropperTool
 from src.tools.fill_tool import FillTool
+from src.tools.free_selection_tool import FreeSelectionTool
 from src.tools.generation_area_tool import GenerationAreaTool
 from src.tools.layer_transform_tool import LayerTransformTool
 from src.tools.selection_fill_tool import SelectionFillTool
@@ -85,12 +86,13 @@ class ToolController(QObject):
         text_tool = TextTool(image_stack, image_viewer)
         self._add_tool(text_tool)
         self._add_tool(SelectionTool(image_stack, image_viewer))
+        self._add_tool(FreeSelectionTool(image_stack, image_viewer))
         self._add_tool(ShapeSelectionTool(image_stack, image_viewer))
         self._add_tool(SelectionFillTool(image_stack))
 
         eyedropper_modifier = KeyConfig().get_modifier(KeyConfig.EYEDROPPER_OVERRIDE_MODIFIER)
         if eyedropper_modifier != Qt.KeyboardModifier.NoModifier:
-            for tool in (brush_tool, fill_tool, text_tool, draw_tool):
+            for tool in (brush_tool, fill_tool, draw_tool):
                 if tool is not None:
                     if isinstance(eyedropper_modifier, list):
                         for mod in eyedropper_modifier:
@@ -228,6 +230,9 @@ class ToolController(QObject):
         event_handled = False
         pan_modifier_held = KeyConfig.modifier_held(KeyConfig.PAN_VIEW_MODIFIER, True)
         match event.type():
+            case QEvent.Type.MouseButtonDblClick:
+                event = cast(QMouseEvent, event)
+                event_handled = active_tool.mouse_double_click(event, find_image_coordinates(event))
             case QEvent.Type.MouseButtonPress:
                 event = cast(QMouseEvent, event)
                 event_handled = active_tool.mouse_click(event, find_image_coordinates(event))

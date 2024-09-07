@@ -9,7 +9,6 @@ from PySide6.QtWidgets import QGraphicsItem, QGraphicsView, QGraphicsItemGroup, 
 from src.util.shared_constants import TIMELAPSE_MODE_FLAG
 
 PEN_WIDTH = 3
-
 MAX_DASH_OFFSET = 560
 ANIM_DURATION = 36000
 
