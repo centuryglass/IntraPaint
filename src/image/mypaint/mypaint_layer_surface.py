@@ -15,7 +15,7 @@ from src.image.mypaint.libmypaint import libmypaint, MyPaintTiledSurface, MyPain
     RectangleBuffer, MyPaintRectangles, RECTANGLE_BUF_SIZE, c_uint16_p
 from src.image.mypaint.mypaint_brush import MyPaintBrush
 from src.image.mypaint.mypaint_layer_tile import MyPaintLayerTile
-from src.util.image_utils import numpy_bounds_index, image_data_as_numpy_8bit_readonly
+from src.util.visual.image_utils import numpy_bounds_index, image_data_as_numpy_8bit_readonly
 
 logger = logging.getLogger(__name__)
 TILE_UPDATE_TIMER_MS = 100

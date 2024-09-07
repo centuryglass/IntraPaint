@@ -16,6 +16,7 @@ from src.tools.base_tool import BaseTool
 from src.tools.canvas_tool import CanvasTool
 from src.ui.image_viewer import ImageViewer
 from src.ui.panel.tool_control_panels.brush_control_panel import BrushControlPanel
+from src.util.visual.text_drawing_utils import left_button_hint_text, right_button_hint_text
 from src.util.shared_constants import PROJECT_DIR, COLOR_PICK_HINT
 
 # The `QCoreApplication.translate` context for strings in this file
@@ -30,7 +31,7 @@ def _tr(*args):
 RESOURCES_BRUSH_ICON = f'{PROJECT_DIR}/resources/icons/tools/brush_icon.svg'
 BRUSH_LABEL = _tr('Brush')
 BRUSH_TOOLTIP = _tr('Paint into the image')
-BRUSH_CONTROL_HINT = _tr('LMB:draw - RMB:1px draw - ')
+BRUSH_CONTROL_HINT = _tr('{left_mouse_icon}: draw - {right_mouse_icon}: 1px draw')
 
 
 class BrushTool(CanvasTool):
@@ -92,8 +93,12 @@ class BrushTool(CanvasTool):
 
     def get_input_hint(self) -> str:
         """Return text describing different input functionality."""
-        return (f'{BRUSH_CONTROL_HINT}{BaseTool.modifier_hint(KeyConfig.EYEDROPPER_TOOL_KEY, COLOR_PICK_HINT)}'
-                f'{CanvasTool.canvas_control_hints()}{super().get_input_hint()}')
+        brush_hint = BRUSH_CONTROL_HINT.format(left_mouse_icon=left_button_hint_text(),
+                                               right_mouse_icon=right_button_hint_text())
+        eyedropper_hint = BaseTool.modifier_hint(KeyConfig.EYEDROPPER_OVERRIDE_MODIFIER, COLOR_PICK_HINT)
+        if len(eyedropper_hint) > 0:
+            eyedropper_hint = ' - ' + eyedropper_hint
+        return f'{brush_hint}{eyedropper_hint}<br/>{CanvasTool.canvas_control_hints()}<br/>{super().get_input_hint()}'
 
     def get_control_panel(self) -> Optional[QWidget]:
         """Returns the brush control panel."""

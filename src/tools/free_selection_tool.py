@@ -3,7 +3,7 @@ from typing import Optional
 
 from PySide6.QtCore import Qt, QPoint, QPointF, QLineF, QEvent
 from PySide6.QtGui import QKeySequence, QIcon, QMouseEvent, QPainter, QPainterPath, QTransform
-from PySide6.QtWidgets import QWidget, QLayout, QApplication
+from PySide6.QtWidgets import QWidget, QApplication
 
 from src.config.key_config import KeyConfig
 from src.hotkey_filter import HotkeyFilter
@@ -14,6 +14,7 @@ from src.ui.graphics_items.temp_dashed_line_item import TempDashedLineItem
 from src.ui.image_viewer import ImageViewer
 from src.ui.panel.tool_control_panels.canvas_selection_panel import TOOL_MODE_ERASE
 from src.ui.panel.tool_control_panels.free_selection_panel import FreeSelectionPanel
+from src.util.visual.text_drawing_utils import rich_text_key_hint, left_button_hint_text, right_button_hint_text
 from src.util.shared_constants import PROJECT_DIR
 
 # The `QCoreApplication.translate` context for strings in this file
@@ -29,7 +30,8 @@ RESOURCES_FREE_SELECT_ICON = f'{PROJECT_DIR}/resources/icons/tools/free_selectio
 
 FREE_SELECTION_LABEL = _tr('Free selection')
 FREE_SELECTION_TOOLTIP = _tr('Select or de-select polygonal areas')
-FREE_SELECTION_CONTROL_HINT = _tr('LMB:add or drag point - Enter:finish selection - ')
+FREE_SELECTION_CONTROL_HINT = _tr('{left_mouse_icon}: add or move point<br/>{enter_key}'
+                                  ' or {right_mouse_icon}+first point: finish selection')
 
 GRAPHICS_ITEM_OPACITY = 0.6
 ERASING_COLOR = Qt.GlobalColor.white
@@ -80,7 +82,10 @@ class FreeSelectionTool(BaseTool):
 
     def get_input_hint(self) -> str:
         """Return text describing different input functionality."""
-        return f'{FREE_SELECTION_CONTROL_HINT}{super().get_input_hint()}'
+        selection_hint = FREE_SELECTION_CONTROL_HINT.format(left_mouse_icon=left_button_hint_text(),
+                                                            right_mouse_icon=right_button_hint_text(),
+                                                            enter_key=rich_text_key_hint('Enter'))
+        return f'{selection_hint}<br/>{super().get_input_hint()}'
 
     def get_control_panel(self) -> Optional[QWidget]:
         """Returns a panel providing controls for customizing tool behavior, or None if no such panel is needed."""

@@ -19,6 +19,7 @@ from src.ui.graphics_items.placement_outline import PlacementOutline
 from src.ui.image_viewer import ImageViewer
 from src.ui.panel.tool_control_panels.text_tool_panel import TextToolPanel
 from src.undo_stack import UndoStack
+from src.util.visual.text_drawing_utils import left_button_hint_text
 from src.util.shared_constants import PROJECT_DIR
 
 # The `QCoreApplication.translate` context for strings in this file
@@ -35,7 +36,8 @@ MIN_DRAG_SIZE = 4
 
 TEXT_LABEL = _tr('Text')
 TEXT_TOOLTIP = _tr('Add text to a text layer')
-TEXT_CONTROL_HINT = _tr('LMB:select text layer - LMB+drag:create new layer - ')
+TEXT_CONTROL_HINT = _tr('{left_mouse_icon}: select text layer<br/>{left_mouse_icon}, drag:'
+                        ' create new layer or move active')
 
 
 class TextTool(BaseTool):
@@ -79,8 +81,9 @@ class TextTool(BaseTool):
 
     def get_input_hint(self) -> str:
         """Return text describing different input functionality."""
-        return (f'{TEXT_CONTROL_HINT}{BaseTool.fixed_aspect_hint()}'
-                f'{super().get_input_hint()}')
+        text_hint = TEXT_CONTROL_HINT.format(left_mouse_icon=left_button_hint_text())
+        return (f'{text_hint}<br/>{BaseTool.fixed_aspect_hint()}'
+                f'<br/>{super().get_input_hint()}')
 
     def get_control_panel(self) -> Optional[QWidget]:
         """Returns a panel providing controls for customizing tool behavior, or None if no such panel is needed."""

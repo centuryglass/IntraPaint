@@ -14,7 +14,8 @@ from src.controller.image_generation.test_generator import TestGenerator
 from src.ui.modal.settings_modal import SettingsModal
 from src.ui.window.main_window import MainWindow
 from src.util.arg_parser import build_arg_parser
-from src.util.image_utils import IMAGE_WRITE_FORMATS, IMAGE_READ_FORMATS, IMAGE_FORMATS_SUPPORTING_METADATA
+from src.util.visual.image_format_utils import IMAGE_FORMATS_SUPPORTING_METADATA, IMAGE_READ_FORMATS, \
+    IMAGE_WRITE_FORMATS
 
 app = QApplication.instance() or QApplication(sys.argv)
 exec_mock = MagicMock()

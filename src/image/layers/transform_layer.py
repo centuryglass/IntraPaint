@@ -5,8 +5,8 @@ from PySide6.QtCore import QObject, Signal, QRect, QPoint, QPointF
 from PySide6.QtGui import QPainter, QImage, QTransform
 
 from src.image.layers.layer import Layer
-from src.util.geometry_utils import extract_transform_parameters, combine_transform_parameters, map_rect_precise
-from src.util.image_utils import create_transparent_image
+from src.util.visual.geometry_utils import extract_transform_parameters, combine_transform_parameters, map_rect_precise
+from src.util.visual.image_utils import create_transparent_image
 
 
 class TransformLayer(Layer):

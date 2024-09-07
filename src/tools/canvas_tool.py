@@ -17,6 +17,7 @@ from src.image.layers.image_layer import ImageLayer
 from src.image.layers.image_stack import ImageStack
 from src.tools.base_tool import BaseTool
 from src.ui.image_viewer import ImageViewer
+from src.util.visual.text_drawing_utils import left_button_hint_text, right_button_hint_text
 from src.util.shared_constants import PROJECT_DIR, FLOAT_MAX
 
 RESOURCES_BRUSH_ICON = f'{PROJECT_DIR}/resources/icons/tools/brush_icon.svg'
@@ -33,8 +34,8 @@ def _tr(*args):
     return QApplication.translate(TR_ID, *args)
 
 
-LINE_HINT = _tr('{modifier_or_modifiers}+click: line mode - ')
-FIXED_ANGLE_HINT = _tr('{modifier_or_modifiers}: fixed angle - ')
+LINE_HINT = _tr('{modifier_or_modifiers}+{left_mouse_icon}/{right_mouse_icon}: draw line')
+FIXED_ANGLE_HINT = _tr('{modifier_or_modifiers}: fixed angle')
 
 MAX_CURSOR_SIZE = 255
 MIN_CURSOR_SIZE = 20
@@ -110,8 +111,11 @@ class CanvasTool(BaseTool):
     @staticmethod
     def canvas_control_hints() -> str:
         """Get control hints for line and fixed angle modes, if enabled."""
-        return (f'{BaseTool.modifier_hint(KeyConfig.LINE_MODIFIER, LINE_HINT)}'
-                f'{BaseTool.modifier_hint(KeyConfig.FIXED_ASPECT_MODIFIER, FIXED_ANGLE_HINT)}')
+        line_hint = LINE_HINT.format(left_mouse_icon=left_button_hint_text(),
+                                     right_mouse_icon=right_button_hint_text(),
+                                     modifier_or_modifiers='{modifier_or_modifiers}')
+        return (f'{BaseTool.modifier_hint(KeyConfig.LINE_MODIFIER, line_hint)}'
+                f' - {BaseTool.modifier_hint(KeyConfig.FIXED_ANGLE_MODIFIER, FIXED_ANGLE_HINT)}')
 
     def set_scaling_icon_cursor(self, icon: Optional[QIcon]) -> None:
         """Sets whether the tool should use a cursor scaled to the brush size and canvas.

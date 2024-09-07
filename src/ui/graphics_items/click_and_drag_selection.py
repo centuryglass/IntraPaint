@@ -7,7 +7,7 @@ from PySide6.QtGui import QPen, QBrush, QColor, QTransform, QPolygonF, QPainterP
 from PySide6.QtWidgets import QGraphicsScene, QGraphicsRectItem, QGraphicsEllipseItem, QApplication
 
 from src.config.key_config import KeyConfig
-from src.util.geometry_utils import closest_point_keeping_aspect_ratio
+from src.util.visual.geometry_utils import closest_point_keeping_aspect_ratio
 
 DEFAULT_SELECTION_LINE_COLOR = Qt.GlobalColor.black
 DEFAULT_SELECTION_LINE_WIDTH = 2.0

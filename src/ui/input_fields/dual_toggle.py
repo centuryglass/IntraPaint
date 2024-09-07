@@ -46,11 +46,11 @@ class DualToggle(QWidget):
             else:
                 bg_color = QColor(Qt.GlobalColor.gray)  # Fallback, should only happen during unit testing.
         self.label1 = Label(options[0], self, bg_color=bg_color, orientation=orientation)
-        self.label1.set_scale_to_bounds(True)
+        # self.label1.set_scale_to_bounds(True)
         self.label1.setFrameStyle(QFrame.Shape.StyledPanel | QFrame.Shadow.Sunken)
         self.label1.set_inverted(True)
         self.label2 = Label(options[1], self, bg_color=bg_color, orientation=orientation)
-        self.label2.set_scale_to_bounds(True)
+        # self.label2.set_scale_to_bounds(True)
         self.label2.setFrameStyle(QFrame.Shape.StyledPanel | QFrame.Shadow.Raised)
         self.set_orientation(orientation)
 

@@ -11,7 +11,7 @@ from PySide6.QtWidgets import QDialog, QHBoxLayout, QLabel, QPushButton, \
 from src.config.application_config import AppConfig
 from src.ui.layout.bordered_widget import BorderedWidget
 from src.ui.widget.image_widget import ImageWidget
-from src.util.display_size import max_font_size
+from src.util.visual.text_drawing_utils import max_font_size
 from src.util.shared_constants import APP_ICON_PATH
 
 logger = logging.getLogger(__name__)

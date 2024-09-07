@@ -23,7 +23,7 @@ from src.image.layers.image_stack import ImageStack
 from src.image.layers.layer import Layer
 from src.image.layers.layer_stack import LayerStack
 from src.image.layers.text_layer import TextLayer
-from src.util.geometry_utils import get_scaled_placement
+from src.util.visual.geometry_utils import get_scaled_placement
 
 logger = logging.getLogger(__name__)
 

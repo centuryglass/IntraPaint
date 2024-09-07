@@ -5,7 +5,7 @@ from PySide6.QtGui import QColor, QIcon, QPixmap
 from PySide6.QtWidgets import QPushButton, QColorDialog, QApplication
 
 from src.config.config_from_key import get_config_from_key
-from src.util.image_utils import get_color_icon
+from src.util.visual.image_utils import get_color_icon
 
 # The `QCoreApplication.translate` context for strings in this file
 TR_ID = 'ui.widget.brush_color_button'

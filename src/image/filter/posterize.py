@@ -8,7 +8,7 @@ from PySide6.QtGui import QImage, QPainter
 
 from src.config.key_config import KeyConfig
 from src.image.filter.filter import ImageFilter
-from src.util.image_utils import qimage_to_pil_image, pil_image_to_qimage
+from src.util.visual.pil_image_utils import pil_image_to_qimage, qimage_to_pil_image
 from src.util.parameter import Parameter, TYPE_INT
 
 # The `QCoreApplication.translate` context for strings in this file

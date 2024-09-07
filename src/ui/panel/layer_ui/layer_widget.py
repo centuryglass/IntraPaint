@@ -19,9 +19,10 @@ from src.ui.layout.bordered_widget import BorderedWidget
 from src.ui.panel.layer_ui.layer_alpha_lock_button import LayerAlphaLockButton
 from src.ui.panel.layer_ui.layer_lock_button import LayerLockButton
 from src.ui.panel.layer_ui.layer_visibility_button import LayerVisibilityButton
-from src.util.display_size import find_text_size, get_window_size
-from src.util.geometry_utils import get_scaled_placement
-from src.util.image_utils import get_transparency_tile_pixmap, crop_to_content
+from src.util.visual.display_size import get_window_size
+from src.util.visual.text_drawing_utils import find_text_size
+from src.util.visual.geometry_utils import get_scaled_placement
+from src.util.visual.image_utils import get_transparency_tile_pixmap, crop_to_content
 from src.util.shared_constants import ICON_SIZE
 
 # The QCoreApplication.translate context for strings in this file

@@ -6,7 +6,7 @@ from PySide6.QtWidgets import QWidget, QApplication, QVBoxLayout, QPushButton, Q
 from src.config.application_config import AppConfig
 from src.config.key_config import KeyConfig
 from src.image.layers.selection_layer import SelectionLayer
-from src.util.key_code_utils import get_key_display_string
+from src.util.visual.text_drawing_utils import get_key_display_string
 from src.util.shared_constants import PROJECT_DIR
 
 # The `QCoreApplication.translate` context for strings in this file
@@ -38,8 +38,8 @@ class SelectionPanel(QWidget):
 
         select_all_key = KeyConfig().get_keycodes(KeyConfig.SELECT_ALL_SHORTCUT)
         clear_key = KeyConfig().get_keycodes(KeyConfig.SELECT_NONE_SHORTCUT)
-        select_all_shortcut = None if select_all_key == '' else get_key_display_string(select_all_key)
-        clear_shortcut = None if clear_key == '' else get_key_display_string(clear_key)
+        select_all_shortcut = None if select_all_key == '' else get_key_display_string(select_all_key, rich_text=False)
+        clear_shortcut = None if clear_key == '' else get_key_display_string(clear_key, rich_text=False)
 
         clear_selection_button = QPushButton()
         clear_selection_button.setText(CLEAR_BUTTON_LABEL if clear_shortcut is None

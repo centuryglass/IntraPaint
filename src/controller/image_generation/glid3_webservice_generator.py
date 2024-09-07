@@ -16,7 +16,7 @@ from src.image.layers.image_stack import ImageStack
 from src.ui.modal.settings_modal import SettingsModal
 from src.ui.panel.generators.glid_panel import GlidPanel
 from src.ui.window.main_window import MainWindow
-from src.util.image_utils import image_to_base64, qimage_from_base64
+from src.util.visual.image_utils import image_to_base64, qimage_from_base64
 from src.util.shared_constants import EDIT_MODE_INPAINT
 
 # The QCoreApplication.translate context for strings in this file

@@ -13,6 +13,7 @@ from src.image.layers.transform_layer import TransformLayer
 from src.tools.base_tool import BaseTool
 from src.ui.image_viewer import ImageViewer
 from src.ui.layout.divider import Divider
+from src.util.visual.text_drawing_utils import left_button_hint_text, right_button_hint_text
 from src.util.shared_constants import PROJECT_DIR
 
 
@@ -30,7 +31,7 @@ GENERATION_AREA_LABEL = _tr('Set Image Generation Area')
 GENERATION_AREA_TOOLTIP = _tr('Select an image region for AI image generation')
 SELECT_LAYER_BUTTON_TEXT = _tr('Full image as generation area')
 SELECT_LAYER_BUTTON_TOOLTIP = _tr('Send the entire image during image generation.')
-GEN_AREA_CONTROL_HINT = _tr('LMB:move area - RMB:resize area - ')
+GEN_AREA_CONTROL_HINT = _tr('{left_mouse_icon}: move area - {right_mouse_icon}: resize area')
 
 GENERATION_AREA_X_LABEL = _tr('X:')
 GENERATION_AREA_Y_LABEL = _tr('Y:')
@@ -73,7 +74,9 @@ class GenerationAreaTool(BaseTool):
 
     def get_input_hint(self) -> str:
         """Return text describing different input functionality."""
-        return f'{GEN_AREA_CONTROL_HINT}{BaseTool.fixed_aspect_hint()}{super().get_input_hint()}'
+        gen_area_hint = GEN_AREA_CONTROL_HINT.format(left_mouse_icon=left_button_hint_text(),
+                                                     right_mouse_icon=right_button_hint_text())
+        return f'{gen_area_hint}<br/>{BaseTool.fixed_aspect_hint()}<br/>{super().get_input_hint()}'
 
     def get_control_panel(self) -> Optional[QWidget]:
         """Returns a panel providing controls for customizing tool behavior, or None if no such panel is needed."""

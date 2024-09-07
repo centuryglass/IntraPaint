@@ -12,7 +12,8 @@ from src.image.layers.image_stack import ImageStack
 from src.image.layers.layer import Layer
 from src.tools.base_tool import BaseTool
 from src.ui.widget.color_button import ColorButton
-from src.util.image_utils import flood_fill, create_transparent_image
+from src.util.visual.image_utils import flood_fill, create_transparent_image
+from src.util.visual.text_drawing_utils import left_button_hint_text
 from src.util.shared_constants import PROJECT_DIR, COLOR_PICK_HINT
 
 # The `QCoreApplication.translate` context for strings in this file
@@ -30,7 +31,7 @@ CURSOR_SIZE = 50
 
 FILL_LABEL = _tr('Color fill')
 FILL_TOOLTIP = _tr('Fill areas with solid colors')
-FILL_CONTROL_HINT = _tr('LMB:fill - ')
+FILL_CONTROL_HINT = _tr('{left_mouse_icon}: fill')
 FILL_BUTTON_TOOLTIP = _tr('Set fill color')
 
 
@@ -75,8 +76,11 @@ class FillTool(BaseTool):
 
     def get_input_hint(self) -> str:
         """Return text describing different input functionality."""
-        return (f'{FILL_CONTROL_HINT}{BaseTool.modifier_hint(KeyConfig.EYEDROPPER_TOOL_KEY, COLOR_PICK_HINT)}'
-                f'{super().get_input_hint()}')
+        fill_hint = FILL_CONTROL_HINT.format(left_mouse_icon=left_button_hint_text())
+        eyedropper_hint = BaseTool.modifier_hint(KeyConfig.EYEDROPPER_OVERRIDE_MODIFIER, COLOR_PICK_HINT)
+        if len(eyedropper_hint) > 0:
+            eyedropper_hint = ' - ' + eyedropper_hint
+        return f'{fill_hint}{eyedropper_hint}<br/>{super().get_input_hint()}'
 
     def get_control_panel(self) -> Optional[QWidget]:
         """Returns a panel providing controls for customizing tool behavior, or None if no such panel is needed."""

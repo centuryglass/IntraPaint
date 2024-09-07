@@ -13,7 +13,8 @@ from PySide6.QtGui import QCursor, QPixmap, QMouseEvent, QTabletEvent, QWheelEve
 from PySide6.QtWidgets import QWidget, QApplication
 
 from src.config.key_config import KeyConfig
-
+from src.util.visual.text_drawing_utils import left_button_hint_text, middle_button_hint_text, \
+    vertical_scroll_hint_text, get_key_display_string
 
 # The `QCoreApplication.translate` context for strings in this file
 TR_ID = 'tools.base_tool'
@@ -24,8 +25,8 @@ def _tr(*args):
     return QApplication.translate(TR_ID, *args)
 
 
-PAN_HINT = _tr('{modifier_or_modifiers}+LMB/MMB and drag:pan view - ')
-ZOOM_HINT = _tr('Scroll wheel:zoom')
+PAN_HINT = _tr('{modifier_or_modifiers}+{left_mouse_icon} or {middle_mouse_icon}, drag: pan view')
+ZOOM_HINT = _tr('{v_scroll_icon}: zoom')
 FIXED_ASPECT_HINT = _tr('{modifier_or_modifiers}: Fixed aspect ratio')
 
 
@@ -91,12 +92,14 @@ class BaseTool(QObject):
         assert '{modifier_or_modifiers}' in modifier_hint_str
         if KeyConfig().get_modifier(modifier_key) == Qt.KeyboardModifier.NoModifier:
             return ''
-        return modifier_hint_str.format(modifier_or_modifiers=KeyConfig().get(modifier_key))
+        modifier = KeyConfig().get(modifier_key)
+        modifier = get_key_display_string(modifier)
+        return modifier_hint_str.format(modifier_or_modifiers=modifier)
 
     @staticmethod
     def fixed_aspect_hint() -> str:
         """Returns the hint for the fixed aspect ratio key, if set"""
-        return BaseTool.modifier_hint(KeyConfig.FIXED_ASPECT_MODIFIER, FIXED_ASPECT_HINT)
+        return f'{BaseTool.modifier_hint(KeyConfig.FIXED_ASPECT_MODIFIER, FIXED_ASPECT_HINT)}'
 
     @property
     def cursor(self) -> Optional[QCursor | QPixmap]:
@@ -148,7 +151,11 @@ class BaseTool(QObject):
 
     def get_input_hint(self) -> str:
         """Return text describing different input functionality."""
-        return f'{BaseTool.modifier_hint(KeyConfig.PAN_VIEW_MODIFIER, PAN_HINT)}{ZOOM_HINT}'
+        pan_hint = PAN_HINT.format(left_mouse_icon=left_button_hint_text(),
+                                   middle_mouse_icon=middle_button_hint_text(),
+                                   modifier_or_modifiers='{modifier_or_modifiers}')
+        zoom_hint = ZOOM_HINT.format(v_scroll_icon=vertical_scroll_hint_text())
+        return f'{BaseTool.modifier_hint(KeyConfig.PAN_VIEW_MODIFIER, pan_hint)} - {zoom_hint}'
 
     @property
     def label(self) -> str:

@@ -10,8 +10,9 @@ from PySide6.QtGui import QImage, QPolygonF, QPainter, QColor
 
 from src.config.application_config import AppConfig
 from src.image.layers.image_layer import ImageLayer
-from src.util.image_utils import (qimage_to_pil_image, image_content_bounds, NpAnyArray, image_data_as_numpy_8bit,
-                                  image_is_fully_transparent)
+from src.util.visual.image_utils import (image_content_bounds, NpAnyArray, image_data_as_numpy_8bit,
+                                         image_is_fully_transparent)
+from src.util.visual.pil_image_utils import qimage_to_pil_image
 
 logger = logging.getLogger(__name__)
 

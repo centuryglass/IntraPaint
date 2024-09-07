@@ -2,7 +2,7 @@
 import math
 from typing import Tuple, Optional
 
-from PySide6.QtCore import QRect, QSize, QRectF, QSizeF, QPoint, QPointF, QLineF, Qt
+from PySide6.QtCore import QRect, QSize, QRectF, QSizeF, QPoint, QPointF, QLineF, Qt, QMargins
 from PySide6.QtGui import QTransform, QPolygonF, QPainter, QColor
 
 from src.util.math_utils import convert_degrees
@@ -38,6 +38,41 @@ def get_scaled_placement(container_rect: QRect | QSize,
     if (inner_size.height() * scale) < container_size.height():
         y += (container_size.height() - inner_size.height() * scale) / 2
     return QRect(int(x), int(y), int(inner_size.width() * scale), int(inner_size.height() * scale))
+
+
+def align_inner_bounds(outer_bounds: QRect | QRectF, inner_bounds: QRect | QRectF,
+                       alignment: Qt.AlignmentFlag, margins: Optional[QMargins] = None) -> None:
+    """Edits an inner_bounds rectangle in-place to position it within a rectangle using a given alignment."""
+    assert outer_bounds.width() >= inner_bounds.width() and outer_bounds.height() >= inner_bounds.height() \
+           and not inner_bounds.isEmpty(), f'outer={outer_bounds}, inner={inner_bounds}'
+    if margins is None:
+        left_margin = 0
+        right_margin = 0
+        top_margin = 0
+        bottom_margin = 0
+    else:
+        left_margin = margins.left()
+        right_margin = margins.right()
+        top_margin = margins.top()
+        bottom_margin = margins.bottom()
+    assert outer_bounds.width() >= (inner_bounds.width() + left_margin + right_margin)
+    assert outer_bounds.height() >= (inner_bounds.height() + top_margin + bottom_margin)
+    x: int | float = outer_bounds.x() + left_margin
+    y: int | float = outer_bounds.y() + top_margin
+    if alignment & Qt.AlignmentFlag.AlignHCenter == Qt.AlignmentFlag.AlignHCenter:
+        x += (outer_bounds.width() - inner_bounds.width() - left_margin - right_margin) / 2
+    elif alignment & Qt.AlignmentFlag.AlignRight == Qt.AlignmentFlag.AlignRight:
+        x = outer_bounds.width() - inner_bounds.width() - right_margin
+    if alignment & Qt.AlignmentFlag.AlignVCenter == Qt.AlignmentFlag.AlignVCenter:
+        y += (outer_bounds.height() - inner_bounds.height() - top_margin - bottom_margin) / 2
+    elif alignment & Qt.AlignmentFlag.AlignBottom == Qt.AlignmentFlag.AlignBottom:
+        y = outer_bounds.height() - inner_bounds.height() - bottom_margin
+    if isinstance(inner_bounds, QRect):
+        x = int(round(x))
+        y = int(round(y))
+    inner_bounds.moveLeft(x)
+    inner_bounds.moveTop(y)
+    assert outer_bounds.contains(inner_bounds), f'{inner_bounds} not in {outer_bounds}'
 
 
 def get_rect_transformation(source: QRect | QRectF | QSize, destination: QRect | QRectF | QSize) -> QTransform:

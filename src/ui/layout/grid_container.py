@@ -7,7 +7,7 @@ from PySide6.QtCore import QSize, Qt, QRect
 from PySide6.QtGui import QResizeEvent
 from PySide6.QtWidgets import QWidget, QGridLayout
 
-from src.util.geometry_utils import get_scaled_placement
+from src.util.visual.geometry_utils import get_scaled_placement
 from src.util.math_utils import clamp
 
 DEFAULT_MAX = 999

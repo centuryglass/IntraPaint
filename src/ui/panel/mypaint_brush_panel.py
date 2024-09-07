@@ -12,8 +12,8 @@ from PySide6.QtWidgets import QWidget, QTabWidget, QMenu, QSizePolicy, QApplicat
 
 from src.config.application_config import AppConfig
 from src.ui.layout.grid_container import GridContainer
-from src.util.display_size import get_window_size
-from src.util.geometry_utils import get_scaled_placement
+from src.util.visual.display_size import get_window_size
+from src.util.visual.geometry_utils import get_scaled_placement
 from src.util.shared_constants import PROJECT_DIR
 
 # The `QCoreApplication.translate` context for strings in this file

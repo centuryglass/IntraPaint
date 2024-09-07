@@ -5,7 +5,6 @@
 - Create example images for README, finish missing sections and improve writing
 - Txt2Img + ControlNet doesn't seem to work with the image as source.
 - text tool isn't loading text on active layer change
-- text tool: ctrl for eyedropper interferes with copy/paste, space missing in tool hints
 - Add custom brush dir, configurable
 - layer widget rendering gets stuck in darker "drag" mode
 

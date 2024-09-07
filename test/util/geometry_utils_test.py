@@ -3,11 +3,11 @@ import math
 import sys
 import unittest
 
-from PySide6.QtCore import QPointF, QLineF
+from PySide6.QtCore import QPointF
 from PySide6.QtGui import QTransform
 from PySide6.QtWidgets import QApplication
 
-from src.util.geometry_utils import extract_transform_parameters, combine_transform_parameters, transform_str, \
+from src.util.visual.geometry_utils import extract_transform_parameters, combine_transform_parameters, transform_str, \
     transforms_approx_equal
 from src.util.math_utils import convert_degrees
 

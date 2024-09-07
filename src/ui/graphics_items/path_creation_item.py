@@ -152,6 +152,7 @@ class PathCreationItem(AnimatedDashItem):
               unused_option: Optional[QStyleOptionGraphicsItem],
               unused_widget: Optional[QWidget] = None) -> None:
         """Draw animated dotted lines between all handles."""
+        assert painter is not None
         painter.save()
         pen = self.get_pen()
         pen.setWidth(PEN_WIDTH)

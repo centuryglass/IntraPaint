@@ -16,8 +16,8 @@ from src.ui.layout.draggable_divider import DraggableDivider
 from src.ui.widget.key_hint_label import KeyHintLabel
 from src.ui.layout.reactive_layout_widget import ReactiveLayoutWidget
 from src.ui.window.image_window import ImageWindow
-from src.util.display_size import get_window_size
-from src.util.geometry_utils import get_scaled_placement
+from src.util.visual.display_size import get_window_size
+from src.util.visual.geometry_utils import get_scaled_placement
 
 # The `QCoreApplication.translate` context for strings in this file
 TR_ID = 'ui.panel.tool_panel'
@@ -299,7 +299,7 @@ class _ToolButton(QWidget):
         label_text = connected_tool.label
         if connected_tool.get_hotkey() is not None:
             self._key_hint: Optional[KeyHintLabel] = KeyHintLabel(connected_tool.get_hotkey(), parent=self)
-            self._key_hint.setAlignment(Qt.AlignmentFlag.AlignRight)
+            self._key_hint.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
         else:
             self._key_hint = None
         self.setToolTip(label_text)

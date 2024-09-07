@@ -32,7 +32,7 @@ class MainWindowTest(unittest.TestCase):
         self.window = MainWindow(self._image_stack)
         self.window.show()
 
-    @patch('src.util.display_size.get_screen_size', new_callable=lambda: QSize(800, 600))
+    @patch('src.util.visual.display_size.get_screen_size', new_callable=lambda: QSize(800, 600))
     def test_panel_layout(self, _) -> None:
         """Test orientation/layout changes as window size changes."""
         large_vertical = QSize(2000, 4000)

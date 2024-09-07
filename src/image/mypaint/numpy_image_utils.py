@@ -4,7 +4,7 @@ from typing import TypeAlias, Any
 import numpy as np
 
 from src.image.mypaint.libmypaint import TilePixelBuffer, TILE_DIM
-from src.util.image_utils import NpUInt8Array
+from src.util.visual.image_utils import NpUInt8Array
 
 NpUInt16Array: TypeAlias = np.ndarray[Any, np.dtype[np.uint16]]
 

@@ -22,9 +22,9 @@ from src.ui.image_viewer import ImageViewer
 from src.ui.layout.reactive_layout_widget import ReactiveLayoutWidget
 from src.ui.widget.key_hint_label import KeyHintLabel
 from src.undo_stack import UndoStack
-from src.util.display_size import find_text_size
-from src.util.geometry_utils import get_scaled_placement, get_rect_transformation
-from src.util.image_utils import get_transparency_tile_pixmap
+from src.util.visual.text_drawing_utils import find_text_size, left_button_hint_text
+from src.util.visual.geometry_utils import get_scaled_placement, get_rect_transformation
+from src.util.visual.image_utils import get_transparency_tile_pixmap
 from src.util.shared_constants import FLOAT_MIN, FLOAT_MAX, MIN_NONZERO, INT_MAX, PROJECT_DIR
 
 # The `QCoreApplication.translate` context for strings in this file
@@ -49,7 +49,7 @@ TRANSFORM_TOOLTIP = _tr('Move, scale, or rotate the active layer.')
 ASPECT_RATIO_CHECK_LABEL = _tr('Keep aspect ratio')
 RESET_BUTTON_TEXT = _tr('Reset')
 CLEAR_BUTTON_TEXT = _tr('Clear')
-TRANSFORM_CONTROL_HINT = _tr('LMB+drag:move layer - ')
+TRANSFORM_CONTROL_HINT = _tr('{left_mouse_icon}, drag: move layer')
 
 SCALE_STEP = 0.05
 MIN_WIDTH_FOR_PREVIEW = 600
@@ -180,7 +180,8 @@ class LayerTransformTool(BaseTool):
 
     def get_input_hint(self) -> str:
         """Return text describing different input functionality."""
-        return f'{TRANSFORM_CONTROL_HINT}{super().get_input_hint()}'
+        transform_hint = TRANSFORM_CONTROL_HINT.format(left_mouse_icon=left_button_hint_text())
+        return f'{transform_hint}<br/>{super().get_input_hint()}'
 
     def restore_aspect_ratio(self) -> None:
         """Ensure that the aspect ratio is constant."""

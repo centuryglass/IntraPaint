@@ -3,6 +3,7 @@
     "theme": "None",
     "font_point_size": 10,
     "tab_font_point_size": 12,
+    "show_tool_control_hints": true,
     "animate_outlines": true,
     "selection_color": "#55ff0000",
     "show_selections_in_generation_options": true,
@@ -13,7 +14,7 @@
     "generation_tab_bar": "",
     "controlnet_tab_bar": "",
     "default_image_size": "1024x1024",
-    "edit_size": "8x8",
+    "edit_size": "512x512",
     "max_edit_size": "10240x10240",
     "min_edit_size": "8x8",
     "generation_size": "512x512",
@@ -34,13 +35,14 @@
     "mypaint_brush": "./resources/brushes/experimental/1pixel.myb",
     "brush_favorites": [],
     "max_undo": 30,
-    "undo_merge_interval": 1,
+    "undo_merge_interval": 0.5,
     "speed_modifier_multiplier": 5,
+    "saved_colors": [],
     "guidance_scale": {
         "min": 0.0,
         "max": 20.0,
         "step": 0.1,
-        "value": 1.5
+        "value": 9.0
     },
     "batch_size": {
         "min": 1,
@@ -91,7 +93,12 @@
     "controlnet_args_0": {},
     "controlnet_args_1": {},
     "controlnet_args_2": {},
-    "cutn": 16,
+    "cutn": {
+        "min": 1,
+        "max": 32,
+        "step": 1,
+        "value": 16
+    },
     "skip_steps": {
         "min": 0,
         "max": 27,
@@ -100,12 +107,20 @@
     },
     "upscale_mode": "Lanczos",
     "downscale_mode": "Lanczos",
+    "glid_model_path": "models/inpaint.pt",
+    "bert_model_path": "models/bert.pt",
+    "glid_vae_model_path": "models/kl-f8.pt",
+    "clip_model_name": "ViT-L/14",
     "use_error_handler": true,
     "warn_on_key_error": true,
-    "warn_before_layerless_save": false,
-    "warn_before_rgb_save": false,
-    "warn_before_save_without_metadata": false,
-    "warn_before_write_only_save": false,
-    "warn_before_fixed_size_save": false,
-    "warn_before_color_loss": false
+    "warn_before_layerless_save": true,
+    "warn_before_rgb_save": true,
+    "warn_before_save_without_metadata": true,
+    "warn_before_write_only_save": true,
+    "warn_before_fixed_size_save": true,
+    "warn_before_color_loss": true,
+    "warn_on_libmypaint_error": true,
+    "always_init_metadata_on_save": "always_ask",
+    "always_update_metadata_on_save": "always_ask",
+    "libmypaint_library_dir": ""
 }

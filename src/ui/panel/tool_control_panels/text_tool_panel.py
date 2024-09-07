@@ -13,9 +13,9 @@ from src.ui.input_fields.plain_text_edit import PlainTextEdit
 from src.ui.input_fields.slider_spinbox import IntSliderSpinbox
 from src.ui.widget.color_button import ColorButton
 from src.ui.widget.image_widget import ImageWidget
-from src.util.display_size import find_text_size
-from src.util.geometry_utils import get_scaled_placement, fill_outside_rect
-from src.util.image_utils import create_transparent_image
+from src.util.visual.text_drawing_utils import find_text_size
+from src.util.visual.geometry_utils import get_scaled_placement, fill_outside_rect
+from src.util.visual.image_utils import create_transparent_image
 from src.util.shared_constants import PROJECT_DIR, SHORT_LABEL_X_POS, SHORT_LABEL_Y_POS, SHORT_LABEL_WIDTH, \
     SHORT_LABEL_HEIGHT, INT_MAX
 

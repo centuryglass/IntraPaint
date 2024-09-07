@@ -9,7 +9,7 @@ from PySide6.QtCore import Qt, QPoint, QRect
 from PySide6.QtGui import QPainter, QPen, QPixmap, QImage, QPaintEvent, QMouseEvent, QResizeEvent, QIcon
 from PySide6.QtWidgets import QApplication, QMainWindow
 
-from src.util.image_utils import qimage_to_pil_image
+from src.util.visual.pil_image_utils import qimage_to_pil_image
 from src.util.shared_constants import APP_ICON_PATH
 
 

@@ -25,11 +25,11 @@ from src.ui.input_fields.check_box import CheckBox
 from src.ui.modal.modal_utils import open_image_file, SAVE_IMAGE_MODE
 from src.ui.widget.image_graphics_view import ImageGraphicsView
 from src.util.application_state import AppStateTracker, APP_STATE_LOADING, APP_STATE_EDITING
-from src.util.display_size import max_font_size
-from src.util.geometry_utils import get_scaled_placement
-from src.util.image_utils import get_standard_qt_icon, pil_image_scaling, get_transparency_tile_pixmap, \
-    pil_image_to_qimage, save_image
-from src.util.key_code_utils import get_key_display_string
+from src.util.visual.text_drawing_utils import max_font_size, get_key_display_string
+from src.util.visual.geometry_utils import get_scaled_placement
+from src.util.visual.image_utils import get_standard_qt_icon, get_transparency_tile_pixmap
+from src.util.visual.image_format_utils import save_image
+from src.util.visual.pil_image_utils import pil_image_to_qimage, pil_image_scaling
 from src.util.math_utils import clamp
 from src.util.shared_constants import TIMELAPSE_MODE_FLAG
 from src.util.validation import assert_valid_index
@@ -176,7 +176,7 @@ class GeneratedImageSelector(QWidget):
 
         def _add_key_hint(button, config_key):
             keys = key_config.get_keycodes(config_key)
-            button.setText(f'{button.text()} [{get_key_display_string(keys)}]')
+            button.setText(f'{button.text()} {get_key_display_string(keys, rich_text=False)}')
 
         self._prev_button = QPushButton()
         self._prev_button.setIcon(get_standard_qt_icon(QStyle.StandardPixmap.SP_ArrowLeft))

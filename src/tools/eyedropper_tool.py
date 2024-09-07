@@ -10,6 +10,7 @@ from src.config.key_config import KeyConfig
 from src.image.layers.image_stack import ImageStack
 from src.tools.base_tool import BaseTool
 from src.ui.panel.color_panel import ColorControlPanel
+from src.util.visual.text_drawing_utils import left_button_hint_text
 from src.util.shared_constants import PROJECT_DIR
 
 # The `QCoreApplication.translate` context for strings in this file
@@ -27,7 +28,7 @@ CURSOR_SIZE = 50
 
 EYEDROPPER_LABEL = _tr('Color Picker')
 EYEDROPPER_TOOLTIP = _tr('Select a brush color')
-EYEDROPPER_CONTROL_HINT = _tr('LMB:pick color - ')
+EYEDROPPER_CONTROL_HINT = _tr('{left_mouse_icon}: pick color')
 
 
 class EyedropperTool(BaseTool):
@@ -59,7 +60,8 @@ class EyedropperTool(BaseTool):
 
     def get_input_hint(self) -> str:
         """Return text describing different input functionality."""
-        return f'{EYEDROPPER_CONTROL_HINT}{super().get_input_hint()}'
+        eyedropper_hint = EYEDROPPER_CONTROL_HINT.format(left_mouse_icon=left_button_hint_text())
+        return f'{eyedropper_hint}</br>{super().get_input_hint()}'
 
     def get_control_panel(self) -> Optional[QWidget]:
         """Returns a panel providing controls for customizing tool behavior, or None if no such panel is needed."""

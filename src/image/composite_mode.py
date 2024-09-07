@@ -16,9 +16,9 @@ from PySide6.QtCore import QPoint, QRect
 from PySide6.QtGui import QPainter, QImage, QTransform
 from PySide6.QtWidgets import QApplication
 
-from src.util.image_utils import image_data_as_numpy_8bit, create_transparent_image, NpUInt8Array, \
+from src.util.visual.image_utils import image_data_as_numpy_8bit, create_transparent_image, NpUInt8Array, \
     numpy_bounds_index, image_is_fully_transparent
-from src.util.geometry_utils import map_rect_precise
+from src.util.visual.geometry_utils import map_rect_precise
 
 # The `QCoreApplication.translate` context for strings in this file
 TR_ID = 'image.composite_mode'

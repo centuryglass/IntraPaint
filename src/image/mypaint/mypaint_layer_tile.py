@@ -9,7 +9,7 @@ from PySide6.QtGui import QImage
 from src.image.layers.image_layer import ImageLayer
 from src.image.mypaint.libmypaint import TilePixelBuffer
 from src.image.mypaint.numpy_image_utils import pixel_data_as_numpy_16bit, numpy_8bit_to_16bit, numpy_16bit_to_8bit
-from src.util.image_utils import NpAnyArray, image_data_as_numpy_8bit, numpy_intersect, numpy_bounds_index, NpUInt8Array
+from src.util.visual.image_utils import NpAnyArray, image_data_as_numpy_8bit, numpy_intersect, numpy_bounds_index, NpUInt8Array
 
 
 class MyPaintLayerTile:

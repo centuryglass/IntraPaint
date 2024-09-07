@@ -12,8 +12,8 @@ from src.image.layers.transform_layer import TransformLayer
 from src.undo_stack import UndoStack
 from src.util.application_state import APP_STATE_NO_IMAGE, APP_STATE_EDITING, AppStateTracker
 from src.util.cached_data import CachedData
-from src.util.geometry_utils import map_rect_precise
-from src.util.image_utils import create_transparent_image
+from src.util.visual.geometry_utils import map_rect_precise
+from src.util.visual.image_utils import create_transparent_image
 from src.util.validation import assert_valid_index
 
 

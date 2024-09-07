@@ -3,11 +3,13 @@ An extended QLabel implementation that supports vertical text.
 """
 from typing import Optional
 
-from PySide6.QtCore import Qt, QSize, QPointF
-from PySide6.QtGui import QPainter, QPixmap, QPainterPath, QTransform, QFont, QColor, QPalette, QIcon, QResizeEvent
+from PySide6.QtCore import Qt, QSize, QMargins, QRect, QPoint
+from PySide6.QtGui import QPainter, QPixmap, QFont, QColor, QPalette, QIcon, QResizeEvent
 from PySide6.QtWidgets import QLabel, QSizePolicy, QWidget
 
-from src.util.display_size import find_text_size, max_font_size
+from src.util.visual.text_drawing_utils import find_text_size, max_font_size, create_text_path, draw_text_path
+
+TEXT_IMG_MARGIN = 3
 
 
 class Label(QLabel):
@@ -137,48 +139,28 @@ class Label(QLabel):
         drawn_text = '     ' if self._text is None else (self._text + '     ')
         font = QFont(self._font)
         if self._scale_text_to_bounds:
-            w = self.height() if self._orientation == Qt.Orientation.Vertical else self.width()
-            h = self.width() if self._orientation == Qt.Orientation.Vertical else self.height()
-            if self._icon is not None:
-                if self._orientation == Qt.Orientation.Vertical:
-                    h -= w
-                else:
-                    w -= h
-            text_size = QSize(w, h)
+            text_size = self.size().transposed() if self._orientation == Qt.Orientation.Vertical else self.size()
+            text_size.setWidth(text_size.width() - 2 * TEXT_IMG_MARGIN)
+            text_size.setHeight(text_size.height() - 2 * TEXT_IMG_MARGIN)
             font_size = max_font_size(drawn_text, font, text_size)
             font.setPointSize(font_size)
         else:
-            text_size = find_text_size(drawn_text, self._font)
-        w = text_size.height() if self._orientation == Qt.Orientation.Vertical else text_size.width()
-        h = text_size.width() if self._orientation == Qt.Orientation.Vertical else text_size.height()
-        image_size = QSize(w, h)
-        if image_size.isEmpty():
+            text_size = find_text_size(drawn_text, font, True, orientation=self._orientation)
+        image_size = QSize(text_size)
+        if image_size.isEmpty() or text_size.isEmpty():
             return QPixmap(), QPixmap()
-
-        path = QPainterPath()
-        text_pt = QPointF(0, -(text_size.height() * 0.3)) if self._orientation == Qt.Orientation.Vertical \
-            else QPointF(0, text_size.height())
-        path.addText(text_pt, self._font, drawn_text)
-        if self._orientation == Qt.Orientation.Vertical:
-            rotation = QTransform()
-            rotation.rotate(90)
-            path = rotation.map(path)
-        path_bounds = path.boundingRect()
-        path_x = (w - path_bounds.width()) / 2
-        path_y = (h - path_bounds.height()) / 2
-        if path_bounds.x() != path_x or path_bounds.y() != path_y:
-            translate = QTransform.fromTranslate(path_x - path_bounds.x(), path_y - path_bounds.y())
-            path = translate.map(path)
+        image_size.setWidth(image_size.width() + 2 * TEXT_IMG_MARGIN)
+        image_size.setHeight(image_size.height() + 2 * TEXT_IMG_MARGIN)
+        margins = QMargins(TEXT_IMG_MARGIN, TEXT_IMG_MARGIN, TEXT_IMG_MARGIN, TEXT_IMG_MARGIN)
+        text_path = create_text_path(drawn_text, font, QRect(QPoint(), image_size), self.alignment(), margins,
+                                     self._orientation)
 
         def draw(bg: QColor | Qt.GlobalColor, fg: QColor | Qt.GlobalColor) -> QPixmap:
             """Perform drawing operations on one of the internal label images."""
             label_image = QPixmap(image_size)
             label_image.fill(bg)
             painter = QPainter(label_image)
-            painter.setRenderHint(QPainter.RenderHint.LosslessImageRendering, True)
-            painter.setRenderHint(QPainter.RenderHint.SmoothPixmapTransform, True)
-            painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
-            painter.fillPath(path, fg)
+            draw_text_path(text_path, painter, fg)
             painter.end()
             return label_image
 

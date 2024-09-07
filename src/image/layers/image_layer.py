@@ -13,7 +13,7 @@ from src.image.composite_mode import CompositeMode
 from src.image.layers.transform_layer import TransformLayer
 from src.ui.modal.modal_utils import show_error_dialog
 from src.undo_stack import UndoStack
-from src.util.image_utils import image_content_bounds, create_transparent_image, image_data_as_numpy_8bit, \
+from src.util.visual.image_utils import image_content_bounds, create_transparent_image, image_data_as_numpy_8bit, \
     numpy_intersect, numpy_bounds_index
 
 # The `QCoreApplication.translate` context for strings in this file

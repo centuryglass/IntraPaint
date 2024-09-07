@@ -5,7 +5,7 @@ from PySide6.QtCore import Signal, QPoint, QLine, QSize
 from PySide6.QtGui import QImage, QPaintEvent, QPainter, QPen, Qt, QMouseEvent
 
 from src.ui.widget.image_widget import ImageWidget
-from src.util.display_size import get_window_size
+from src.util.visual.display_size import get_window_size
 from src.util.math_utils import clamp
 from src.util.shared_constants import PROJECT_DIR
 

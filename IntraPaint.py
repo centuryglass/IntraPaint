@@ -13,7 +13,7 @@ from PySide6.QtGui import QPixmap
 from PySide6.QtWidgets import QApplication, QSplashScreen
 
 from src.util.arg_parser import build_arg_parser
-from src.util.geometry_utils import get_scaled_placement
+from src.util.visual.geometry_utils import get_scaled_placement
 from src.util.optional_import import check_import
 from src.util.pyinstaller import is_pyinstaller_bundle
 from src.util.shared_constants import TIMELAPSE_MODE_FLAG, PROJECT_DIR, LOG_DIR

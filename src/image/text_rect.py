@@ -7,8 +7,8 @@ from PySide6.QtGui import QColor, Qt, QFont, QPainter, QImage
 from PySide6.QtWidgets import QApplication
 
 from src.config.cache import Cache
-from src.util.display_size import find_text_size, max_font_size
-from src.util.image_utils import create_transparent_image
+from src.util.visual.text_drawing_utils import find_text_size, max_font_size
+from src.util.visual.image_utils import create_transparent_image
 
 
 class TextRectKeys:
@@ -201,7 +201,7 @@ class TextRect:
         elif self._scale_mode == SCALE_MODE_TEXT_TO_BOUNDS:
             if len(self._text) == 0:
                 return
-            max_pt_size = max_font_size(self._text, self._font, self._size)
+            max_pt_size = max_font_size(self._text, self._font, self._size, True)
             if max_pt_size > 0:
                 self._font.setPointSize(max_pt_size)
 

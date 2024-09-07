@@ -30,7 +30,7 @@ from src.ui.widget.loading_widget import LoadingWidget
 from src.ui.window.image_window import ImageWindow
 from src.util.application_state import AppStateTracker, APP_STATE_LOADING, APP_STATE_NO_IMAGE, APP_STATE_EDITING, \
     APP_STATE_SELECTION
-from src.util.display_size import get_screen_size
+from src.util.visual.display_size import get_screen_size
 from src.util.shared_constants import TIMELAPSE_MODE_FLAG, APP_ICON_PATH, PROJECT_DIR
 from src.util.validation import layout_debug
 

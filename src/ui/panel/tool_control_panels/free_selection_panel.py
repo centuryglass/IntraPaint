@@ -1,14 +1,11 @@
 """Selection panel for the FreeSelectionTool class."""
 from PySide6.QtCore import Qt, Signal
-from PySide6.QtWidgets import QApplication, QHBoxLayout
+from PySide6.QtWidgets import QHBoxLayout
 
-from src.config.cache import Cache
 from src.config.key_config import KeyConfig
 from src.hotkey_filter import HotkeyFilter
 from src.image.layers.selection_layer import SelectionLayer
-from src.ui.input_fields.check_box import CheckBox
 from src.ui.input_fields.dual_toggle import DualToggle
-from src.ui.input_fields.slider_spinbox import FloatSliderSpinbox
 from src.ui.layout.divider import Divider
 from src.ui.panel.tool_control_panels.canvas_selection_panel import TOOL_MODE_DRAW, TOOL_MODE_ERASE, \
     RESOURCES_ERASER_PNG, RESOURCES_PEN_PNG

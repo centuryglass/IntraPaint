@@ -49,12 +49,13 @@ from src.ui.window.main_window import MainWindow
 from src.undo_stack import UndoStack
 from src.util.application_state import AppStateTracker, APP_STATE_NO_IMAGE, APP_STATE_EDITING, APP_STATE_LOADING, \
     APP_STATE_SELECTION
-from src.util.display_size import get_screen_size
-from src.util.image_utils import pil_image_scaling, create_transparent_image, METADATA_PARAMETER_KEY, load_image, \
-    METADATA_COMMENT_KEY, IMAGE_FORMATS_SUPPORTING_ALPHA, image_is_fully_opaque, IMAGE_FORMATS_SUPPORTING_METADATA, \
-    save_image_with_metadata, save_image, IMAGE_WRITE_FORMATS, IMAGE_READ_FORMATS, \
-    IMAGE_FORMATS_SUPPORTING_PARTIAL_ALPHA, image_has_partial_alpha, IMAGE_FORMATS_WITH_FIXED_SIZE, \
-    GREYSCALE_IMAGE_FORMATS
+from src.util.visual.display_size import get_screen_size
+from src.util.visual.image_format_utils import save_image_with_metadata, save_image, load_image, \
+    IMAGE_FORMATS_SUPPORTING_METADATA, IMAGE_FORMATS_SUPPORTING_ALPHA, IMAGE_FORMATS_SUPPORTING_PARTIAL_ALPHA, \
+    METADATA_PARAMETER_KEY, IMAGE_WRITE_FORMATS, IMAGE_READ_FORMATS, IMAGE_FORMATS_WITH_FIXED_SIZE, \
+    GREYSCALE_IMAGE_FORMATS, METADATA_COMMENT_KEY
+from src.util.visual.image_utils import image_is_fully_opaque, image_has_partial_alpha, create_transparent_image
+from src.util.visual.pil_image_utils import pil_image_scaling
 from src.util.menu_builder import MenuBuilder, menu_action, MENU_DATA_ATTR, MenuData
 from src.util.optional_import import optional_import
 from src.util.pyinstaller import is_pyinstaller_bundle

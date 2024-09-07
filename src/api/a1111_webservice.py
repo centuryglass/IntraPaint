@@ -17,7 +17,8 @@ from requests import Response
 from src.api.webservice import WebService
 from src.config.application_config import AppConfig
 from src.ui.modal.login_modal import LoginModal
-from src.util.image_utils import pil_image_from_base64, image_to_base64, qimage_from_base64
+from src.util.visual.image_utils import image_to_base64, qimage_from_base64
+from src.util.visual.pil_image_utils import pil_image_from_base64
 from src.util.shared_constants import CONTROLNET_REUSE_IMAGE_CODE
 
 logger = logging.getLogger(__name__)

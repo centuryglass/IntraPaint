@@ -5,7 +5,7 @@ from PySide6.QtCore import QPoint, QRectF, QTimer
 from PySide6.QtGui import QFont, QPainterPath, QPainter, Qt
 from PySide6.QtWidgets import QGraphicsObject, QGraphicsView, QStyleOptionGraphicsItem, QWidget
 
-from src.util.display_size import max_font_size, find_text_size
+from src.util.visual.text_drawing_utils import find_text_size, max_font_size
 
 TIMEOUT_MS = 1000
 

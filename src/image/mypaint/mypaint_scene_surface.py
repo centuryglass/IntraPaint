@@ -13,7 +13,7 @@ from src.image.mypaint.libmypaint import libmypaint, MyPaintTiledSurface, MyPain
     RectangleBuffer, MyPaintRectangles, RECTANGLE_BUF_SIZE, c_uint16_p
 from src.image.mypaint.mypaint_brush import MyPaintBrush
 from src.image.mypaint.mypaint_scene_tile import MyPaintSceneTile
-from src.util.image_utils import create_transparent_image
+from src.util.visual.image_utils import create_transparent_image
 
 
 class MyPaintSceneSurface(QObject):

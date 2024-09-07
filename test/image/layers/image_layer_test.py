@@ -14,7 +14,7 @@ from src.config.key_config import KeyConfig
 from src.image.composite_mode import CompositeMode
 from src.image.layers.image_layer import ImageLayer
 from src.undo_stack import UndoStack
-from src.util.image_utils import image_is_fully_transparent
+from src.util.visual.image_utils import image_is_fully_transparent
 
 IMG_SIZE = QSize(512, 512)
 LAYER_NAME = 'test layer'

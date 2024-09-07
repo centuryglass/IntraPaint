@@ -8,7 +8,7 @@ from PySide6.QtCore import QSize, QRect, QPoint
 from src.config.cache import Cache
 from src.ui.input_fields.labeled_spinbox import LabeledSpinbox
 from src.ui.widget.color_button import ColorButton
-from src.util.image_utils import get_color_icon
+from src.util.visual.image_utils import get_color_icon
 from src.util.shared_constants import APP_ICON_PATH, ICON_SIZE
 
 # The `QCoreApplication.translate` context for strings in this file

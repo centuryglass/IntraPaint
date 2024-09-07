@@ -13,6 +13,7 @@ from src.ui.graphics_items.click_and_drag_selection import ClickAndDragSelection
     SELECTION_MODE_ELLIPSE
 from src.ui.image_viewer import ImageViewer
 from src.ui.panel.tool_control_panels.shape_selection_panel import ShapeSelectionPanel
+from src.util.visual.text_drawing_utils import left_button_hint_text, right_button_hint_text
 from src.util.shared_constants import PROJECT_DIR
 
 # The `QCoreApplication.translate` context for strings in this file
@@ -28,7 +29,7 @@ RESOURCES_SHAPE_SELECT_ICON = f'{PROJECT_DIR}/resources/icons/tools/shape_select
 
 SHAPE_SELECTION_LABEL = _tr('Rectangle/Ellipse selection')
 SHAPE_SELECTION_TOOLTIP = _tr('Select or de-select rectangles or ellipses')
-SHAPE_SELECTION_CONTROL_HINT = _tr('LMB+drag:select - RMB+drag:deselect - ')
+SHAPE_SELECTION_CONTROL_HINT = _tr('{left_mouse_icon}, drag:select - {right_mouse_icon}, drag: deselect')
 
 GRAPHICS_ITEM_OPACITY = 0.6
 ERASING_COLOR = Qt.GlobalColor.white
@@ -82,7 +83,9 @@ class ShapeSelectionTool(BaseTool):
 
     def get_input_hint(self) -> str:
         """Return text describing different input functionality."""
-        return f'{SHAPE_SELECTION_CONTROL_HINT}{BaseTool.fixed_aspect_hint()}{super().get_input_hint()}'
+        shape_selection_hint = SHAPE_SELECTION_CONTROL_HINT.format(left_mouse_icon=left_button_hint_text(),
+                                                                   right_mouse_icon=right_button_hint_text())
+        return f'{shape_selection_hint}<br/>{BaseTool.fixed_aspect_hint()}<br/>{super().get_input_hint()}'
 
     def get_control_panel(self) -> Optional[QWidget]:
         """Returns a panel providing controls for customizing tool behavior, or None if no such panel is needed."""

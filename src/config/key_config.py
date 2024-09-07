@@ -1,4 +1,5 @@
 """Provides access to the user-editable application keybinding config."""
+import logging
 from typing import Optional
 
 from PySide6.QtCore import Qt
@@ -11,6 +12,9 @@ from src.ui.modal.modal_utils import show_warning_dialog
 from src.util.key_code_utils import get_modifiers
 from src.util.shared_constants import PROJECT_DIR, DATA_DIR
 from src.util.singleton import Singleton
+
+logger = logging.getLogger(__name__)
+
 
 # The `QCoreApplication.translate` context for strings in this file
 TR_ID = 'config.key_config'
@@ -82,7 +86,8 @@ class KeyConfig(Config, metaclass=Singleton):
         str_value = self.get(key)
         try:
             return get_modifiers(str_value)
-        except RuntimeError:
+        except RuntimeError as err:
+            logger.error(f'get_modifier error: key={key} value={str_value} err={err}')
             return Qt.KeyboardModifier.NoModifier
 
     def validate_keybindings(self) -> None:

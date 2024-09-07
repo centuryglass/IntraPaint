@@ -11,8 +11,8 @@ from src.image.composite_mode import CompositeMode
 from src.ui.modal.modal_utils import show_error_dialog
 from src.undo_stack import UndoStack, _UndoAction, _UndoGroup
 from src.util.cached_data import CachedData
-from src.util.image_utils import (create_transparent_image, NpAnyArray, image_data_as_numpy_8bit_readonly,
-                                  image_is_fully_transparent)
+from src.util.visual.image_utils import (create_transparent_image, NpAnyArray, image_data_as_numpy_8bit_readonly,
+                                         image_is_fully_transparent)
 
 
 # The QCoreApplication.translate context for strings in this file

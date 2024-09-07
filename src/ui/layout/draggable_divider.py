@@ -7,7 +7,7 @@ from PySide6.QtCore import Qt, QPoint, QSize, QRect, Signal
 from PySide6.QtGui import QPainter, QPen, QResizeEvent, QMouseEvent, QPaintEvent, QCursor
 from PySide6.QtWidgets import QWidget, QSizePolicy, QBoxLayout, QHBoxLayout, QVBoxLayout, QLayoutItem
 
-from src.util.contrast_color import contrast_color
+from src.util.visual.contrast_color import contrast_color
 
 DIVIDER_SIZE = 4
 

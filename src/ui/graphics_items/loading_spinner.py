@@ -6,7 +6,7 @@ from PySide6.QtWidgets import QGraphicsObject, QStyleOptionGraphicsItem, QWidget
 from PySide6.QtGui import QPainter, QPen, QBrush, QColor, QPainterPath
 from PySide6.QtCore import Qt, QRect, QRectF, QPointF, QPropertyAnimation, Property
 
-from src.util.display_size import max_font_size
+from src.util.visual.text_drawing_utils import max_font_size
 from src.util.math_utils import clamp
 
 ANIM_DURATION_MS = 2000

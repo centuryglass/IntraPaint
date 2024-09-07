@@ -1,14 +1,10 @@
-"""Utilities for managing Qt keycodes and strings."""
+"""Utilities for managing Qt keycodes and strings, and displaying input hints."""
 from typing import Tuple, List, Optional
 
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QKeySequence
 
-_MODIFIERS = {
-    Qt.Key.Key_Control: Qt.KeyboardModifier.ControlModifier,
-    Qt.Key.Key_Shift: Qt.KeyboardModifier.ShiftModifier,
-    Qt.Key.Key_Alt: Qt.KeyboardModifier.AltModifier
-}
+from src.util.visual.text_drawing_utils import get_key_display_string
 
 
 def get_key_code(key_string: str) -> Qt.Key:
@@ -67,29 +63,5 @@ def get_modifier_string(modifiers: Qt.KeyboardModifier) -> str:
                        (Qt.KeyboardModifier.ControlModifier, 'Ctrl'),
                        (Qt.KeyboardModifier.MetaModifier, 'Meta')):
         if (code & modifiers) == code:
-            mod_strings.append(name)
+            mod_strings.append(get_key_display_string(name, rich_text=False))
     return '+'.join(mod_strings)
-
-
-def get_key_display_string(keys: QKeySequence) -> str:
-    """Creates a display string representing a set of keys, replacing common symbols with appropriate characters."""
-    text = keys.toString()
-    symbol_map = {
-        'Ctrl+': '⌃',
-        'Alt+': '⎇',
-        'Meta+': '⌘',
-        'Shift+': '⇧',
-        'Enter': '⏎',
-        'Del': '⌫',
-        'Home': '⇱',
-        'End': '⇲',
-        'PgUp': '⇞',
-        'PgDown': '⇟',
-        'Up': '↑',
-        'Down': '↓',
-        'Left': '←',
-        'Right': '→'
-    }
-    for key, symbol in symbol_map.items():
-        text = text.replace(key, symbol)
-    return text

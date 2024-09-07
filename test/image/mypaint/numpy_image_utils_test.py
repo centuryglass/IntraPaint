@@ -8,7 +8,7 @@ from PySide6.QtGui import QImage
 from PySide6.QtWidgets import QApplication
 
 from src.image.mypaint.numpy_image_utils import numpy_8bit_to_16bit, numpy_16bit_to_8bit
-from src.util.image_utils import image_data_as_numpy_8bit, numpy_8bit_to_qimage
+from src.util.visual.image_utils import image_data_as_numpy_8bit, numpy_8bit_to_qimage
 
 app = QApplication.instance() or QApplication(sys.argv)
 

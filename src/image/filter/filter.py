@@ -15,8 +15,8 @@ from src.ui.modal.image_filter_modal import ImageFilterModal
 from src.undo_stack import UndoStack
 from src.util.application_state import APP_STATE_EDITING, AppStateTracker
 from src.util.async_task import AsyncTask
-from src.util.geometry_utils import adjusted_placement_in_bounds
-from src.util.image_utils import get_transparency_tile_pixmap, image_content_bounds
+from src.util.visual.geometry_utils import adjusted_placement_in_bounds
+from src.util.visual.image_utils import get_transparency_tile_pixmap, image_content_bounds
 from src.util.parameter import Parameter
 
 # The `QCoreApplication.translate` context for strings in this file

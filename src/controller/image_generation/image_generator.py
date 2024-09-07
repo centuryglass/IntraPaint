@@ -15,7 +15,7 @@ from src.ui.modal.settings_modal import SettingsModal
 from src.ui.window.main_window import MainWindow
 from src.util.application_state import AppStateTracker, APP_STATE_LOADING, APP_STATE_EDITING
 from src.util.async_task import AsyncTask
-from src.util.image_utils import pil_image_scaling, pil_image_to_qimage, qimage_to_pil_image
+from src.util.visual.pil_image_utils import pil_image_to_qimage, qimage_to_pil_image, pil_image_scaling
 from src.util.menu_builder import MenuBuilder
 from src.util.shared_constants import EDIT_MODE_INPAINT
 

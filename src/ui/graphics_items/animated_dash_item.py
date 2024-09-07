@@ -90,3 +90,4 @@ class AnimatedDashItem(QGraphicsObject):
     def hideEvent(self, _: Optional[QHideEvent]) -> None:
         """Stops the animation when the item is hidden."""
         self._animation.stop()
+

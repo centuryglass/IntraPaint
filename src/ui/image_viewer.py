@@ -20,7 +20,7 @@ from src.ui.graphics_items.layer_graphics_item import LayerGraphicsItem
 from src.ui.graphics_items.outline import Outline
 from src.ui.graphics_items.polygon_outline import PolygonOutline
 from src.ui.widget.image_graphics_view import ImageGraphicsView
-from src.util.image_utils import get_transparency_tile_pixmap
+from src.util.visual.image_utils import get_transparency_tile_pixmap
 
 GENERATION_AREA_BORDER_OPACITY = 0.6
 IMAGE_BORDER_OPACITY = 0.2

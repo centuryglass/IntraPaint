@@ -5,7 +5,7 @@ from PySide6.QtCore import Signal, Qt
 from PySide6.QtGui import QKeyEvent
 from PySide6.QtWidgets import QWidget, QLabel, QHBoxLayout, QLineEdit, QToolButton, QStyle
 
-from src.util.image_utils import get_standard_qt_icon
+from src.util.visual.image_utils import get_standard_qt_icon
 
 
 class EditableLabel(QWidget):

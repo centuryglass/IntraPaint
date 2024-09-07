@@ -11,8 +11,8 @@ from PySide6.QtWidgets import QWidget, QGraphicsView, QGraphicsScene, QGraphicsP
 from src.config.application_config import AppConfig
 from src.config.key_config import KeyConfig
 from src.hotkey_filter import HotkeyFilter
-from src.util.contrast_color import contrast_color
-from src.util.geometry_utils import get_scaled_placement
+from src.util.visual.contrast_color import contrast_color
+from src.util.visual.geometry_utils import get_scaled_placement
 
 CURSOR_ITEM_Z_LEVEL = 9999
 BASE_ZOOM_OFFSET = 0.05

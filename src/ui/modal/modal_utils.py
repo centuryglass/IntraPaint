@@ -11,8 +11,9 @@ from PySide6.QtWidgets import QMessageBox, QFileDialog, QWidget, QStyle, QApplic
 
 from src.config.application_config import AppConfig
 from src.ui.input_fields.check_box import CheckBox
-from src.util.display_size import get_screen_size
-from src.util.image_utils import get_standard_qt_icon, IMAGE_WRITE_FORMATS, IMAGE_READ_FORMATS, OPENRASTER_FORMAT
+from src.util.visual.display_size import get_screen_size
+from src.util.visual.image_format_utils import IMAGE_WRITE_FORMATS, IMAGE_READ_FORMATS, OPENRASTER_FORMAT
+from src.util.visual.image_utils import get_standard_qt_icon
 from src.util.pyinstaller import is_pyinstaller_bundle
 
 logger = logging.getLogger(__name__)

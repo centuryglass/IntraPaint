@@ -14,7 +14,7 @@ from src.image.layers.image_stack import ImageStack
 from src.ui.modal.settings_modal import SettingsModal
 from src.ui.panel.generators.glid_panel import GlidPanel
 from src.ui.window.main_window import MainWindow
-from src.util.image_utils import qimage_to_pil_image, pil_image_to_qimage
+from src.util.visual.pil_image_utils import pil_image_to_qimage, qimage_to_pil_image
 from src.util.optional_import import optional_import, check_import
 from src.util.shared_constants import EDIT_MODE_INPAINT, PROJECT_DIR
 from src.util.validation import assert_types

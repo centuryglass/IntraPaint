@@ -6,7 +6,7 @@ from PySide6.QtGui import QColor, QResizeEvent, QShowEvent
 
 from src.config.config_from_key import get_config_from_key
 from src.ui.widget.color_picker.tabbed_color_picker import TabbedColorPicker
-from src.util.display_size import get_window_size
+from src.util.visual.display_size import get_window_size
 
 
 class ColorControlPanel(TabbedColorPicker):

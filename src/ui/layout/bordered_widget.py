@@ -7,7 +7,7 @@ from PySide6.QtCore import QMargins
 from PySide6.QtGui import QColor, QPalette
 from PySide6.QtWidgets import QFrame, QWidget
 
-from src.util.contrast_color import contrast_color
+from src.util.visual.contrast_color import contrast_color
 
 DEFAULT_MARGIN = 2
 DEFAULT_LINE_MARGIN = 1

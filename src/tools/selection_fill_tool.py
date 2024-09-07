@@ -12,7 +12,8 @@ from src.image.layers.image_stack import ImageStack
 from src.image.layers.transform_layer import TransformLayer
 from src.tools.base_tool import BaseTool
 from src.ui.panel.tool_control_panels.fill_selection_panel import FillSelectionPanel
-from src.util.image_utils import flood_fill
+from src.util.visual.image_utils import flood_fill
+from src.util.visual.text_drawing_utils import left_button_hint_text, right_button_hint_text
 from src.util.shared_constants import PROJECT_DIR
 
 # The `QCoreApplication.translate` context for strings in this file
@@ -30,7 +31,7 @@ CURSOR_SIZE = 25
 
 SELECTION_FILL_LABEL = _tr('Selection fill')
 SELECTION_FILL_TOOLTIP = _tr('Select areas with solid colors')
-SELECTION_FILL_CONTROL_HINT = _tr('LMB:select - RMB:deselect - ')
+SELECTION_FILL_CONTROL_HINT = _tr('{left_mouse_icon}:select, {right_mouse_icon}: deselect')
 
 
 class SelectionFillTool(BaseTool):
@@ -71,7 +72,9 @@ class SelectionFillTool(BaseTool):
 
     def get_input_hint(self) -> str:
         """Return text describing different input functionality."""
-        return f'{SELECTION_FILL_CONTROL_HINT}{super().get_input_hint()}'
+        selection_fill_hint = SELECTION_FILL_CONTROL_HINT.format(left_mouse_icon=left_button_hint_text(),
+                                                                 right_mouse_icon=right_button_hint_text())
+        return f'{selection_fill_hint}<br/>{super().get_input_hint()}'
 
     def get_control_panel(self) -> Optional[QWidget]:
         """Returns a panel providing controls for customizing tool behavior, or None if no such panel is needed."""

@@ -21,9 +21,10 @@ from src.image.text_rect import TextRect
 from src.undo_stack import UndoStack, _UndoAction, _UndoGroup
 from src.util.application_state import AppStateTracker, APP_STATE_NO_IMAGE, APP_STATE_EDITING
 from src.util.cached_data import CachedData
-from src.util.geometry_utils import adjusted_placement_in_bounds, map_rect_precise
-from src.util.image_utils import qimage_to_pil_image, create_transparent_image, image_content_bounds, \
+from src.util.visual.geometry_utils import adjusted_placement_in_bounds, map_rect_precise
+from src.util.visual.image_utils import create_transparent_image, image_content_bounds, \
     image_is_fully_transparent
+from src.util.visual.pil_image_utils import qimage_to_pil_image
 from src.util.math_utils import clamp
 
 # The `QCoreApplication.translate` context for strings in this file

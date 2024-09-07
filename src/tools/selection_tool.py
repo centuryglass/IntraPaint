@@ -12,6 +12,7 @@ from src.image.layers.image_stack import ImageStack
 from src.tools.canvas_tool import CanvasTool
 from src.ui.image_viewer import ImageViewer
 from src.ui.panel.tool_control_panels.canvas_selection_panel import TOOL_MODE_ERASE, CanvasSelectionPanel
+from src.util.visual.text_drawing_utils import left_button_hint_text, right_button_hint_text
 from src.util.shared_constants import PROJECT_DIR
 
 # The `QCoreApplication.translate` context for strings in this file
@@ -25,7 +26,7 @@ def _tr(*args):
 
 LABEL_TEXT_SELECTION_TOOL = _tr('Selection')
 TOOLTIP_SELECTION_TOOL = _tr('Select areas for editing or inpainting.')
-CONTROL_HINT_SELECTION_TOOL = _tr('LMB:select - RMB:1px select - ')
+CONTROL_HINT_SELECTION_TOOL = _tr('{left_mouse_icon}: select - {right_mouse_icon}:1px select')
 
 CURSOR_SELECTION_TOOL = f'{PROJECT_DIR}/resources/cursors/selection_cursor.svg'
 ICON_SELECTION_TOOL = f'{PROJECT_DIR}/resources/icons/tools/selection_icon.svg'
@@ -76,7 +77,9 @@ class SelectionTool(CanvasTool):
 
     def get_input_hint(self) -> str:
         """Return text describing different input functionality."""
-        return f'{CONTROL_HINT_SELECTION_TOOL}{CanvasTool.canvas_control_hints()}{super().get_input_hint()}'
+        select_hint = CONTROL_HINT_SELECTION_TOOL.format(left_mouse_icon=left_button_hint_text(),
+                                                         right_mouse_icon=right_button_hint_text())
+        return f'{select_hint}<br/>{CanvasTool.canvas_control_hints()}<br/>{super().get_input_hint()}'
 
     def get_tooltip_text(self) -> str:
         """Returns tooltip text used to describe this tool."""

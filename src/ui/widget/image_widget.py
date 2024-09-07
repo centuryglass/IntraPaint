@@ -5,7 +5,7 @@ from PySide6.QtCore import QSize, QRect
 from PySide6.QtGui import QIcon, QPaintEvent, QPainter, QImage, QPixmap
 from PySide6.QtWidgets import QWidget
 
-from src.util.geometry_utils import get_scaled_placement
+from src.util.visual.geometry_utils import get_scaled_placement
 
 
 class ImageWidget(QWidget):

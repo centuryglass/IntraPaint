@@ -5,7 +5,7 @@ from PySide6.QtWidgets import QWidget, QDialog, QVBoxLayout, QHBoxLayout, QPushB
 from PySide6.QtCore import Qt, QSize, QRect, QPoint
 from PySide6.QtGui import QPainter, QPen, QImage, QResizeEvent, QPaintEvent, QIcon
 from src.ui.input_fields.labeled_spinbox import LabeledSpinbox
-from src.util.geometry_utils import get_scaled_placement
+from src.util.visual.geometry_utils import get_scaled_placement
 from src.util.shared_constants import APP_ICON_PATH
 
 # The `QCoreApplication.translate` context for strings in this file

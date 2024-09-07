@@ -7,8 +7,8 @@ from PIL import Image
 from PySide6.QtGui import QImage
 from PySide6.QtWidgets import QApplication
 
-from src.util.image_utils import pil_image_to_qimage, qimage_to_pil_image, qimage_from_base64, pil_image_from_base64, \
-    BASE_64_PREFIX, image_to_base64
+from src.util.visual.image_utils import qimage_from_base64, BASE_64_PREFIX, image_to_base64
+from src.util.visual.pil_image_utils import pil_image_to_qimage, qimage_to_pil_image, pil_image_from_base64
 
 app = QApplication.instance() or QApplication(sys.argv)
 
