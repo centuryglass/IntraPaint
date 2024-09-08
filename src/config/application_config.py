@@ -110,9 +110,13 @@ class AppConfig(Config, metaclass=Singleton):
     MASK_BLUR: str
     MAX_EDIT_SIZE: str
     MAX_GENERATION_SIZE: str
+    MAX_PRESSURE_THRESHOLD: str
+    MAX_PRESSURE_VALUE: str
     MAX_UNDO: str
     MIN_EDIT_SIZE: str
     MIN_GENERATION_SIZE: str
+    MIN_PRESSURE_THRESHOLD: str
+    MIN_PRESSURE_VALUE: str
     MYPAINT_BRUSH: str
     NEGATIVE_PROMPT: str
     OPENGL_ACCELERATION: str

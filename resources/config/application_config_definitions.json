@@ -260,6 +260,59 @@
         "default": [],
         "saved": true
     },
+    "min_pressure_value": {
+        "label": "Minimum pressure value",
+        "category": "Drawing tablet settings",
+        "description": "All nonzero pen pressure readings will be boosted up to this value at a minimum.",
+        "type": "float",
+        "range_options": {
+            "min": 0.0,
+            "max": 1.0,
+            "step": 0.05
+        },
+        "default": 0.01,
+        "saved": true
+
+    },
+    "max_pressure_value": {
+        "label": "Maximum pressure value",
+        "category": "Drawing tablet settings",
+        "description": "All pen pressure readings will be capped at this value.",
+        "type": "float",
+        "range_options": {
+            "min": 0.0,
+            "max": 1.0,
+            "step": 0.05
+        },
+        "default": 1.0,
+        "saved": true
+    },
+    "min_pressure_threshold": {
+        "label": "Minimum pressure threshold",
+        "category": "Drawing tablet settings",
+        "description": "Lower bounds of pen pressure input. Pressure values will be scaled so that this value becomes the minimum pressure value.",
+        "type": "float",
+        "range_options": {
+            "min": 0.0,
+            "max": 1.0,
+            "step": 0.05
+        },
+        "default": 0.3,
+        "saved": true
+    },
+    "max_pressure_threshold": {
+        "label": "Maximum pressure threshold",
+        "category": "Drawing tablet settings",
+        "description": "Upper bounds of pen pressure input. Pressure values will be scaled so that this value becomes the maximum pressure value",
+        "type": "float",
+        "range_options": {
+            "min": 0.0,
+            "max": 1.0,
+            "step": 0.05
+        },
+        "default": 0.9,
+        "saved": true
+    },
     "prompt": {
         "label": "Prompt:",
         "category": "Image generation",

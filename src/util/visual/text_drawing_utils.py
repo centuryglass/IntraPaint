@@ -99,6 +99,7 @@ def create_text_path(text: str, font: QFont, bounds: Optional[QRect] = None, ali
     final_offset = offset - path.boundingRect().toAlignedRect().topLeft()
     path = QTransform.fromTranslate(final_offset.x(), final_offset.y()).map(path)
     assert isinstance(path, QPainterPath)
+    path.setFillRule(Qt.FillRule.WindingFill)
     return path
 
 

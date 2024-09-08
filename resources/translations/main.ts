@@ -2358,12 +2358,12 @@ Please remember to include the traceback from the Details expander.</translation
   <context>
     <name>tools.canvas_tool</name>
     <message>
-      <location filename="../../src/tools/canvas_tool.py" line="37"/>
+      <location filename="../../src/tools/canvas_tool.py" line="38"/>
       <source>{modifier_or_modifiers}+{left_mouse_icon}/{right_mouse_icon}: draw line</source>
       <translation>{modifier_or_modifiers}+{left_mouse_icon}/{right_mouse_icon}: draw line</translation>
     </message>
     <message>
-      <location filename="../../src/tools/canvas_tool.py" line="38"/>
+      <location filename="../../src/tools/canvas_tool.py" line="39"/>
       <source>{modifier_or_modifiers}: fixed angle</source>
       <translation>{modifier_or_modifiers}: fixed angle</translation>
     </message>
@@ -2371,17 +2371,17 @@ Please remember to include the traceback from the Details expander.</translation
   <context>
     <name>tools.draw_tool</name>
     <message>
-      <location filename="../../src/tools/draw_tool.py" line="32"/>
+      <location filename="../../src/tools/draw_tool.py" line="34"/>
       <source>Draw</source>
       <translation>Draw</translation>
     </message>
     <message>
-      <location filename="../../src/tools/draw_tool.py" line="33"/>
+      <location filename="../../src/tools/draw_tool.py" line="35"/>
       <source>Draw into the image</source>
       <translation>Draw into the image</translation>
     </message>
     <message>
-      <location filename="../../src/tools/draw_tool.py" line="34"/>
+      <location filename="../../src/tools/draw_tool.py" line="36"/>
       <source>{left_mouse_icon}: draw - {right_mouse_icon}: 1px draw</source>
       <translation>{left_mouse_icon}: draw - {right_mouse_icon}: 1px draw</translation>
     </message>
@@ -4465,11 +4465,56 @@ Press ESC to cancel</translation>
     </message>
     <message>
       <location filename="../config/application_config_definitions.json" line="264"/>
+      <source>Minimum pressure value</source>
+      <translation>Minimum pressure value</translation>
+    </message>
+    <message>
+      <location filename="../config/application_config_definitions.json" line="266"/>
+      <source>All nonzero pen pressure readings will be boosted up to this value at a minimum.</source>
+      <translation>All nonzero pen pressure readings will be boosted up to this value at a minimum.</translation>
+    </message>
+    <message>
+      <location filename="../config/application_config_definitions.json" line="265"/>
+      <source>Drawing tablet settings</source>
+      <translation>Drawing tablet settings</translation>
+    </message>
+    <message>
+      <location filename="../config/application_config_definitions.json" line="278"/>
+      <source>Maximum pressure value</source>
+      <translation>Maximum pressure value</translation>
+    </message>
+    <message>
+      <location filename="../config/application_config_definitions.json" line="280"/>
+      <source>All pen pressure readings will be capped at this value.</source>
+      <translation>All pen pressure readings will be capped at this value.</translation>
+    </message>
+    <message>
+      <location filename="../config/application_config_definitions.json" line="291"/>
+      <source>Minimum pressure threshold</source>
+      <translation>Minimum pressure threshold</translation>
+    </message>
+    <message>
+      <location filename="../config/application_config_definitions.json" line="293"/>
+      <source>Lower bounds of pen pressure input. Pressure values will be scaled so that this value becomes the minimum pressure value.</source>
+      <translation>Lower bounds of pen pressure input. Pressure values will be scaled so that this value becomes the minimum pressure value.</translation>
+    </message>
+    <message>
+      <location filename="../config/application_config_definitions.json" line="304"/>
+      <source>Maximum pressure threshold</source>
+      <translation>Maximum pressure threshold</translation>
+    </message>
+    <message>
+      <location filename="../config/application_config_definitions.json" line="306"/>
+      <source>Upper bounds of pen pressure input. Pressure values will be scaled so that this value becomes the maximum pressure value</source>
+      <translation>Upper bounds of pen pressure input. Pressure values will be scaled so that this value becomes the maximum pressure value</translation>
+    </message>
+    <message>
+      <location filename="../config/application_config_definitions.json" line="317"/>
       <source>Prompt:</source>
       <translation>Prompt:</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="266"/>
+      <location filename="../config/application_config_definitions.json" line="319"/>
       <source>Description that generated images should match.</source>
       <translation>Description that generated images should match.</translation>
     </message>
@@ -4479,482 +4524,482 @@ Press ESC to cancel</translation>
       <translation>Image generation</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="272"/>
+      <location filename="../config/application_config_definitions.json" line="325"/>
       <source>Negative prompt:</source>
       <translation>Negative prompt:</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="274"/>
+      <location filename="../config/application_config_definitions.json" line="327"/>
       <source>Description that generated images should not match.</source>
       <translation>Description that generated images should not match.</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="280"/>
+      <location filename="../config/application_config_definitions.json" line="333"/>
       <source>Guidance scale:</source>
       <translation>Guidance scale:</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="282"/>
+      <location filename="../config/application_config_definitions.json" line="335"/>
       <source>Controls how strongly the prompt and negative prompt are applied. Higher values are more consistent but may be less creative.  Overly high or low values may cause image distortion.</source>
       <translation>Controls how strongly the prompt and negative prompt are applied. Higher values are more consistent but may be less creative.  Overly high or low values may cause image distortion.</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="293"/>
+      <location filename="../config/application_config_definitions.json" line="346"/>
       <source>Batch size:</source>
       <translation>Batch size:</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="295"/>
+      <location filename="../config/application_config_definitions.json" line="348"/>
       <source>Number of image options to simultaneously create in a single image editing operation. Increasing this value too much may result in errors or slowdown if GPU memory limits are reached.</source>
       <translation>Number of image options to simultaneously create in a single image editing operation. Increasing this value too much may result in errors or slowdown if GPU memory limits are reached.</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="306"/>
+      <location filename="../config/application_config_definitions.json" line="359"/>
       <source>Batch count:</source>
       <translation>Batch count:</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="308"/>
+      <location filename="../config/application_config_definitions.json" line="361"/>
       <source>Number of image batches to create in a single image editing operation. Increasing this value doesn't require additional memory, but it slows down image editing more than increasing the batch size does.</source>
       <translation>Number of image batches to create in a single image editing operation. Increasing this value doesn't require additional memory, but it slows down image editing more than increasing the batch size does.</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="319"/>
+      <location filename="../config/application_config_definitions.json" line="372"/>
       <source>Edit mode:</source>
       <translation>Edit mode:</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="321"/>
+      <location filename="../config/application_config_definitions.json" line="374"/>
       <source>Stable-Diffusion image editing mode. 'Text to Image' completely replaces the selected image section with new content, 'Image to Image' creates altered versions of the image selection, and 'Inpaint' works like 'Image to Image' except that it only affects areas selected by the mask tool</source>
       <translation>Stable-Diffusion image editing mode. 'Text to Image' completely replaces the selected image section with new content, 'Image to Image' creates altered versions of the image selection, and 'Inpaint' works like 'Image to Image' except that it only affects areas selected by the mask tool</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="320"/>
+      <location filename="../config/application_config_definitions.json" line="373"/>
       <source>Stable-Diffusion</source>
       <translation>Stable-Diffusion</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="332"/>
+      <location filename="../config/application_config_definitions.json" line="385"/>
       <source>Masked content:</source>
       <translation>Masked content:</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="334"/>
+      <location filename="../config/application_config_definitions.json" line="387"/>
       <source>Determines what should be used to fill the masked area before inpainting. 'fill' replaces it with a solid color, 'original' keeps it as-is, 'latent noise' replaces it with random data, and 'latent nothing' clears it. Unless you're inpainting with a denoising strength &gt;0.8, 'original' will almost always be the best option</source>
       <translation>Determines what should be used to fill the masked area before inpainting. 'fill' replaces it with a solid color, 'original' keeps it as-is, 'latent noise' replaces it with random data, and 'latent nothing' clears it. Unless you're inpainting with a denoising strength &gt;0.8, 'original' will almost always be the best option</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="346"/>
+      <location filename="../config/application_config_definitions.json" line="399"/>
       <source>Image interrogation model:</source>
       <translation>Image interrogation model:</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="348"/>
+      <location filename="../config/application_config_definitions.json" line="401"/>
       <source>Model used when auto-generating appropriate prompts using the 'interrogate' button. Supported values will vary based on what extensions you've installed into the stable-generation-webui, but 'clip' should always be accepted.</source>
       <translation>Model used when auto-generating appropriate prompts using the 'interrogate' button. Supported values will vary based on what extensions you've installed into the stable-generation-webui, but 'clip' should always be accepted.</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="354"/>
+      <location filename="../config/application_config_definitions.json" line="407"/>
       <source>Sampling steps:</source>
       <translation>Sampling steps:</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="356"/>
+      <location filename="../config/application_config_definitions.json" line="409"/>
       <source>Number of diffusion operations to perform when generating image data. Higher values take longer, but often produce more detailed and accurate results. Different stable-diffusion models and samplers have different requirements, but in most cates setting this higher than 30 has only minimal benefits</source>
       <translation>Number of diffusion operations to perform when generating image data. Higher values take longer, but often produce more detailed and accurate results. Different stable-diffusion models and samplers have different requirements, but in most cates setting this higher than 30 has only minimal benefits</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="367"/>
+      <location filename="../config/application_config_definitions.json" line="420"/>
       <source>Denoising strength:</source>
       <translation>Denoising strength:</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="369"/>
+      <location filename="../config/application_config_definitions.json" line="422"/>
       <source>Controls how dramatically inpainting and image-to-image operations will change the initial image data. At 0.0, the image will be completely unedited, at 1.0 the image will be completely different</source>
       <translation>Controls how dramatically inpainting and image-to-image operations will change the initial image data. At 0.0, the image will be completely unedited, at 1.0 the image will be completely different</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="380"/>
+      <location filename="../config/application_config_definitions.json" line="433"/>
       <source>Sampling method:</source>
       <translation>Sampling method:</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="382"/>
+      <location filename="../config/application_config_definitions.json" line="435"/>
       <source>Mathematical technique used to transform image data during the generation process. 'Euler a' works well in most cases, but certain models or extensions might perform better with other options.</source>
       <translation>Mathematical technique used to transform image data during the generation process. 'Euler a' works well in most cases, but certain models or extensions might perform better with other options.</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="389"/>
+      <location filename="../config/application_config_definitions.json" line="442"/>
       <source>Upscale method:</source>
       <translation>Upscale method:</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="391"/>
+      <location filename="../config/application_config_definitions.json" line="444"/>
       <source>Method to use when increasing image resolution. Available options will be loaded from the stable-diffusion-webui on launch.</source>
       <translation>Method to use when increasing image resolution. Available options will be loaded from the stable-diffusion-webui on launch.</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="398"/>
+      <location filename="../config/application_config_definitions.json" line="451"/>
       <source>ControlNet tiled upscaling</source>
       <translation>ControlNet tiled upscaling</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="400"/>
+      <location filename="../config/application_config_definitions.json" line="453"/>
       <source>Whether to use the ControlNet tile model to improve image upscaling. When enabled and supported, all other image generation options will influence upscaling results. To use this, the ControlNet extension needs to be installed in the stable-diffusion-webui, and the controlnet tile model needs to be downloaded to the correct folder.</source>
       <translation>Whether to use the ControlNet tile model to improve image upscaling. When enabled and supported, all other image generation options will influence upscaling results. To use this, the ControlNet extension needs to be installed in the stable-diffusion-webui, and the controlnet tile model needs to be downloaded to the correct folder.</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="406"/>
+      <location filename="../config/application_config_definitions.json" line="459"/>
       <source>ControlNet tiled upscaling model:</source>
       <translation>ControlNet tiled upscaling model:</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="408"/>
+      <location filename="../config/application_config_definitions.json" line="461"/>
       <source>ControlNet model to use for tiled upscaling, in the 'filename [hash]' format used by the webui. This only needs to change if a newer model is available if using a stable diffusion model not based on stable-diffusion 1.5.</source>
       <translation>ControlNet model to use for tiled upscaling, in the 'filename [hash]' format used by the webui. This only needs to change if a newer model is available if using a stable diffusion model not based on stable-diffusion 1.5.</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="414"/>
+      <location filename="../config/application_config_definitions.json" line="467"/>
       <source>Tile downsample rate:</source>
       <translation>Tile downsample rate:</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="416"/>
+      <location filename="../config/application_config_definitions.json" line="469"/>
       <source>Adjusts how strongly the ControlNet tile model preserves the original image data, higher values result in fewer changes.</source>
       <translation>Adjusts how strongly the ControlNet tile model preserves the original image data, higher values result in fewer changes.</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="427"/>
+      <location filename="../config/application_config_definitions.json" line="480"/>
       <source>Mask blur:</source>
       <translation>Mask blur:</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="429"/>
+      <location filename="../config/application_config_definitions.json" line="482"/>
       <source>Pixel radius to blur in the inpainting mask to smoothly combine edited and original image content.</source>
       <translation>Pixel radius to blur in the inpainting mask to smoothly combine edited and original image content.</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="440"/>
+      <location filename="../config/application_config_definitions.json" line="493"/>
       <source>Seed:</source>
       <translation>Seed:</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="442"/>
+      <location filename="../config/application_config_definitions.json" line="495"/>
       <source>Number used to control pseudo-random aspects of image generation, in most cases using the same seed with the same settings and inputs will always produce the same results. If set to -1, a different random seed will be used for each image generation. </source>
       <translation>Number used to control pseudo-random aspects of image generation, in most cases using the same seed with the same settings and inputs will always produce the same results. If set to -1, a different random seed will be used for each image generation. </translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="453"/>
+      <location filename="../config/application_config_definitions.json" line="506"/>
       <source>Inpaint Full Resolution</source>
       <translation>Inpaint Full Resolution</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="455"/>
+      <location filename="../config/application_config_definitions.json" line="508"/>
       <source>If true, inpaint the masked area at higher resolution by ignoring the unmasked area. This can increase image quality by sacrificing awareness of additional image content.</source>
       <translation>If true, inpaint the masked area at higher resolution by ignoring the unmasked area. This can increase image quality by sacrificing awareness of additional image content.</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="461"/>
+      <location filename="../config/application_config_definitions.json" line="514"/>
       <source>Padding:</source>
       <translation>Padding:</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="463"/>
+      <location filename="../config/application_config_definitions.json" line="516"/>
       <source>Pixel radius outside of the masked area to include when inpainting when the 'Inpaint Full Resolution' option is enabled. Higher values increase contextual awareness while decreasing overall level of detail.</source>
       <translation>Pixel radius outside of the masked area to include when inpainting when the 'Inpaint Full Resolution' option is enabled. Higher values increase contextual awareness while decreasing overall level of detail.</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="474"/>
+      <location filename="../config/application_config_definitions.json" line="527"/>
       <source>Restore faces</source>
       <translation>Restore faces</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="477"/>
+      <location filename="../config/application_config_definitions.json" line="530"/>
       <source>Use a face restoration model to correct image data after stable-diffusion runs. In most cases you'll probably get better results without it.</source>
       <translation>Use a face restoration model to correct image data after stable-diffusion runs. In most cases you'll probably get better results without it.</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="476"/>
+      <location filename="../config/application_config_definitions.json" line="529"/>
       <source>Extra Features</source>
       <translation>Extra Features</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="483"/>
+      <location filename="../config/application_config_definitions.json" line="536"/>
       <source>Tiling</source>
       <translation>Tiling</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="486"/>
+      <location filename="../config/application_config_definitions.json" line="539"/>
       <source>Generate tiling images that can be seamlessly repeated.</source>
       <translation>Generate tiling images that can be seamlessly repeated.</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="476"/>
+      <location filename="../config/application_config_definitions.json" line="529"/>
       <source>Extra Features</source>
       <translation>Extra Features</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="492"/>
+      <location filename="../config/application_config_definitions.json" line="545"/>
       <source>ControlNet Settings (first layer)</source>
       <translation>ControlNet Settings (first layer)</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="494"/>
+      <location filename="../config/application_config_definitions.json" line="547"/>
       <source>First layer ControlNet extension settings.</source>
       <translation>First layer ControlNet extension settings.</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="500"/>
+      <location filename="../config/application_config_definitions.json" line="553"/>
       <source>ControlNet Settings (second layer)</source>
       <translation>ControlNet Settings (second layer)</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="502"/>
+      <location filename="../config/application_config_definitions.json" line="555"/>
       <source>Second layer ControlNet extension settings.</source>
       <translation>Second layer ControlNet extension settings.</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="508"/>
+      <location filename="../config/application_config_definitions.json" line="561"/>
       <source>ControlNet Settings (third layer)</source>
       <translation>ControlNet Settings (third layer)</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="502"/>
+      <location filename="../config/application_config_definitions.json" line="555"/>
       <source>Second layer ControlNet extension settings.</source>
       <translation>Second layer ControlNet extension settings.</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="519"/>
+      <location filename="../config/application_config_definitions.json" line="572"/>
       <source>Detail reference count (cutn):</source>
       <translation>Detail reference count (cutn):</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="521"/>
+      <location filename="../config/application_config_definitions.json" line="574"/>
       <source>Determines how many random cutouts from the input image are used to guide image generation. Higher values can introduce more detail and variation, but may also introduce more noise and irrelevant information.</source>
       <translation>Determines how many random cutouts from the input image are used to guide image generation. Higher values can introduce more detail and variation, but may also introduce more noise and irrelevant information.</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="520"/>
+      <location filename="../config/application_config_definitions.json" line="573"/>
       <source>GLID-3-XL</source>
       <translation>GLID-3-XL</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="532"/>
+      <location filename="../config/application_config_definitions.json" line="585"/>
       <source>Skip steps:</source>
       <translation>Skip steps:</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="534"/>
+      <location filename="../config/application_config_definitions.json" line="587"/>
       <source>Number of diffusion steps to skip. Higher values will result in faster image generation with decreased detail and accuracy.</source>
       <translation>Number of diffusion steps to skip. Higher values will result in faster image generation with decreased detail and accuracy.</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="545"/>
+      <location filename="../config/application_config_definitions.json" line="598"/>
       <source>Upscale mode:</source>
       <translation>Upscale mode:</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="547"/>
+      <location filename="../config/application_config_definitions.json" line="600"/>
       <source>Upscaling mode used when the inpainting resolution doesn't match the image generation area size.</source>
       <translation>Upscaling mode used when the inpainting resolution doesn't match the image generation area size.</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="554"/>
+      <location filename="../config/application_config_definitions.json" line="607"/>
       <source>Downscale mode:</source>
       <translation>Downscale mode:</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="556"/>
+      <location filename="../config/application_config_definitions.json" line="609"/>
       <source>Downscaling mode used when the inpainting resolution doesn't match the image generation area size.</source>
       <translation>Downscaling mode used when the inpainting resolution doesn't match the image generation area size.</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="563"/>
+      <location filename="../config/application_config_definitions.json" line="616"/>
       <source>GLID-3-XL model path:</source>
       <translation>GLID-3-XL model path:</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="566"/>
+      <location filename="../config/application_config_definitions.json" line="619"/>
       <source>Path to the main GLID-3-XL model file</source>
       <translation>Path to the main GLID-3-XL model file</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="565"/>
+      <location filename="../config/application_config_definitions.json" line="618"/>
       <source>Models</source>
       <translation>Models</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="572"/>
+      <location filename="../config/application_config_definitions.json" line="625"/>
       <source>BERT model path:</source>
       <translation>BERT model path:</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="575"/>
+      <location filename="../config/application_config_definitions.json" line="628"/>
       <source>Path to the BERT language model file</source>
       <translation>Path to the BERT language model file</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="565"/>
+      <location filename="../config/application_config_definitions.json" line="618"/>
       <source>Models</source>
       <translation>Models</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="581"/>
+      <location filename="../config/application_config_definitions.json" line="634"/>
       <source>GLID-3-XL VAE model path:</source>
       <translation>GLID-3-XL VAE model path:</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="584"/>
+      <location filename="../config/application_config_definitions.json" line="637"/>
       <source>Path to the VAE latent image encoding/decoding model file</source>
       <translation>Path to the VAE latent image encoding/decoding model file</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="565"/>
+      <location filename="../config/application_config_definitions.json" line="618"/>
       <source>Models</source>
       <translation>Models</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="590"/>
+      <location filename="../config/application_config_definitions.json" line="643"/>
       <source>CLIP model name:</source>
       <translation>CLIP model name:</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="593"/>
+      <location filename="../config/application_config_definitions.json" line="646"/>
       <source>Name of the CLIP language model to use.</source>
       <translation>Name of the CLIP language model to use.</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="565"/>
+      <location filename="../config/application_config_definitions.json" line="618"/>
       <source>Models</source>
       <translation>Models</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="599"/>
+      <location filename="../config/application_config_definitions.json" line="652"/>
       <source>Enable global error handler:</source>
       <translation>Enable global error handler:</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="601"/>
+      <location filename="../config/application_config_definitions.json" line="654"/>
       <source>Attempt to catch and report global application errors instead of crashing. Disabling this makes it easier to debug certain errors.</source>
       <translation>Attempt to catch and report global application errors instead of crashing. Disabling this makes it easier to debug certain errors.</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="607"/>
+      <location filename="../config/application_config_definitions.json" line="660"/>
       <source>Warn about keybinding issues:</source>
       <translation>Warn about keybinding issues:</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="609"/>
+      <location filename="../config/application_config_definitions.json" line="662"/>
       <source>Show an alert when keybinding issues are found on startup.</source>
       <translation>Show an alert when keybinding issues are found on startup.</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="608"/>
+      <location filename="../config/application_config_definitions.json" line="661"/>
       <source>Alerts</source>
       <translation>Alerts</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="615"/>
+      <location filename="../config/application_config_definitions.json" line="668"/>
       <source>Warn when saving without layers:</source>
       <translation>Warn when saving without layers:</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="617"/>
+      <location filename="../config/application_config_definitions.json" line="670"/>
       <source>Show a warning popup when saving a multi-layer image in a format that discards layer data.</source>
       <translation>Show a warning popup when saving a multi-layer image in a format that discards layer data.</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="623"/>
+      <location filename="../config/application_config_definitions.json" line="676"/>
       <source>Warn when saving without transparency:</source>
       <translation>Warn when saving without transparency:</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="625"/>
+      <location filename="../config/application_config_definitions.json" line="678"/>
       <source>Show a warning popup when saving an image with transparency in a format that doesn't support it.</source>
       <translation>Show a warning popup when saving an image with transparency in a format that doesn't support it.</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="631"/>
+      <location filename="../config/application_config_definitions.json" line="684"/>
       <source>Warn when saving without metadata:</source>
       <translation>Warn when saving without metadata:</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="633"/>
+      <location filename="../config/application_config_definitions.json" line="686"/>
       <source>Show a warning popup when saving an image in a format that discards metadata.</source>
       <translation>Show a warning popup when saving an image in a format that discards metadata.</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="639"/>
+      <location filename="../config/application_config_definitions.json" line="692"/>
       <source>Warn when saving in a format that cannot be loaded:</source>
       <translation>Warn when saving in a format that cannot be loaded:</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="641"/>
+      <location filename="../config/application_config_definitions.json" line="694"/>
       <source>Show a warning popup when saving an image in a format that can't be loaded.</source>
       <translation>Show a warning popup when saving an image in a format that can't be loaded.</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="647"/>
+      <location filename="../config/application_config_definitions.json" line="700"/>
       <source>Warn when saving in a format that changes image size:</source>
       <translation>Warn when saving in a format that changes image size:</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="649"/>
+      <location filename="../config/application_config_definitions.json" line="702"/>
       <source>Show a warning popup when saving an image in a format requires a specific resolution.</source>
       <translation>Show a warning popup when saving an image in a format requires a specific resolution.</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="655"/>
+      <location filename="../config/application_config_definitions.json" line="708"/>
       <source>Warn when saving in a format that removes color:</source>
       <translation>Warn when saving in a format that removes color:</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="657"/>
+      <location filename="../config/application_config_definitions.json" line="710"/>
       <source>Show a warning popup when saving an image in a format that does not support color.</source>
       <translation>Show a warning popup when saving an image in a format that does not support color.</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="663"/>
+      <location filename="../config/application_config_definitions.json" line="716"/>
       <source>Warn when loading libmypaint fails:</source>
       <translation>Warn when loading libmypaint fails:</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="665"/>
+      <location filename="../config/application_config_definitions.json" line="718"/>
       <source>Show a warning popup when the brush tool cannot be used because of missing libraries.</source>
       <translation>Show a warning popup when the brush tool cannot be used because of missing libraries.</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="671"/>
+      <location filename="../config/application_config_definitions.json" line="724"/>
       <source>Always save metadata:</source>
       <translation>Always save metadata:</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="673"/>
+      <location filename="../config/application_config_definitions.json" line="726"/>
       <source>Always save metadata when no previous metadata exists(confirm), never do that(cancel), or ask every time(always_ask).</source>
       <translation>Always save metadata when no previous metadata exists(confirm), never do that(cancel), or ask every time(always_ask).</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="679"/>
+      <location filename="../config/application_config_definitions.json" line="732"/>
       <source>Always update metadata:</source>
       <translation>Always update metadata:</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="681"/>
+      <location filename="../config/application_config_definitions.json" line="734"/>
       <source>Always update metadata when images are saved(confirm), never do that(cancel), or ask every time(always_ask).</source>
       <translation>Always update metadata when images are saved(confirm), never do that(cancel), or ask every time(always_ask).</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="687"/>
+      <location filename="../config/application_config_definitions.json" line="740"/>
       <source>libmypaint library directory:</source>
       <translation>libmypaint library directory:</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="689"/>
+      <location filename="../config/application_config_definitions.json" line="742"/>
       <source>Directory to search for libmypaint library files if unable to load default libraries</source>
       <translation>Directory to search for libmypaint library files if unable to load default libraries</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="688"/>
+      <location filename="../config/application_config_definitions.json" line="741"/>
       <source>System</source>
       <translation>System</translation>
     </message>
@@ -5135,6 +5180,66 @@ Press ESC to cancel</translation>
       <location filename="../config/cache_value_definitions.json" line="138"/>
       <source>If checked, only paint within the selection bounds</source>
       <translation>If checked, only paint within the selection bounds</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="144"/>
+      <source>Pen pressure=size:</source>
+      <translation>Pen pressure=size:</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="146"/>
+      <source>Drawing tablet pen pressure affects draw tool brush size.</source>
+      <translation>Drawing tablet pen pressure affects draw tool brush size.</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="152"/>
+      <source>Pen pressure=opacity:</source>
+      <translation>Pen pressure=opacity:</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="154"/>
+      <source>Drawing tablet pen pressure affects draw tool brush opacity.</source>
+      <translation>Drawing tablet pen pressure affects draw tool brush opacity.</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="160"/>
+      <source>Pen pressure=hardness:</source>
+      <translation>Pen pressure=hardness:</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="162"/>
+      <source>Drawing tablet pen pressure affects draw tool brush hardness.</source>
+      <translation>Drawing tablet pen pressure affects draw tool brush hardness.</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="168"/>
+      <source>Opacity:</source>
+      <translation>Opacity:</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="170"/>
+      <source>Draw tool color opacity</source>
+      <translation>Draw tool color opacity</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="181"/>
+      <source>Hardness:</source>
+      <translation>Hardness:</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="183"/>
+      <source>Draw tool brush hardness</source>
+      <translation>Draw tool brush hardness</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="194"/>
+      <source>Fill type:</source>
+      <translation>Fill type:</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="196"/>
+      <source>Draw tool brush pattern</source>
+      <translation>Draw tool brush pattern</translation>
     </message>
   </context>
 </TS>

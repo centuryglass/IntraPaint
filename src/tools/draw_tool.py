@@ -1,7 +1,8 @@
 """Implements drawing controls using a minimal QPainter-based canvas."""
 from typing import Optional
 
-from PySide6.QtGui import QColor, QIcon, QKeySequence, Qt
+from PySide6.QtCore import QPoint
+from PySide6.QtGui import QColor, QIcon, QKeySequence, Qt, QTabletEvent
 from PySide6.QtWidgets import QWidget, QApplication
 
 from src.config.application_config import AppConfig
@@ -15,6 +16,7 @@ from src.image.layers.layer import Layer
 from src.tools.base_tool import BaseTool
 from src.tools.canvas_tool import CanvasTool
 from src.ui.image_viewer import ImageViewer
+from src.ui.panel.tool_control_panels.canvas_selection_panel import TOOL_MODE_ERASE
 from src.ui.panel.tool_control_panels.draw_tool_panel import DrawToolPanel
 from src.util.visual.text_drawing_utils import left_button_hint_text, right_button_hint_text
 from src.util.shared_constants import PROJECT_DIR, COLOR_PICK_HINT
@@ -64,6 +66,10 @@ class DrawTool(CanvasTool):
             self.brush_color = color
         cache.connect(self, Cache.LAST_BRUSH_COLOR, set_brush_color)
 
+        def _set_eraser(tool_mode: str) -> None:
+            self.canvas.eraser = tool_mode == TOOL_MODE_ERASE
+        self._control_panel.tool_mode_changed.connect(_set_eraser)
+
         image_stack.active_layer_changed.connect(self._active_layer_change_slot)
         self.layer = image_stack.active_layer
 
@@ -96,9 +102,22 @@ class DrawTool(CanvasTool):
         return (f'{control_hint_draw_tool}{eyedropper_hint}<br/>{CanvasTool.canvas_control_hints()}'
                 f'<br/>{super().get_input_hint()}')
 
+    def _stroke_to(self, image_coordinates: QPoint):
+        cache = Cache()
+        opacity = cache.get(Cache.DRAW_TOOL_OPACITY)
+        hardness = cache.get(Cache.DRAW_TOOL_HARDNESS)
+        self.canvas.opacity = opacity
+        self.canvas.hardness = hardness
+        super()._stroke_to(image_coordinates)
+
     def get_control_panel(self) -> Optional[QWidget]:
         """Returns the brush control panel."""
         return self._control_panel
+
+    def tablet_event(self, event: Optional[QTabletEvent], image_coordinates: QPoint) -> bool:
+        """Show pressure toggles and cache tablet data when received."""
+        self._control_panel.show_pressure_checkboxes()
+        return super().tablet_event(event, image_coordinates)
 
     def set_brush_size(self, new_size: int) -> None:
         """Update the brush size."""

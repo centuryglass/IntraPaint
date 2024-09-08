@@ -17,6 +17,7 @@ from src.image.layers.image_layer import ImageLayer
 from src.image.layers.image_stack import ImageStack
 from src.tools.base_tool import BaseTool
 from src.ui.image_viewer import ImageViewer
+from src.util.math_utils import clamp
 from src.util.visual.text_drawing_utils import left_button_hint_text, right_button_hint_text
 from src.util.shared_constants import PROJECT_DIR, FLOAT_MAX
 
@@ -373,8 +374,22 @@ class CanvasTool(BaseTool):
         if event.pointerType() is not None:
             self._tablet_input = event.pointerType()
         if event.pressure() > 0.00001:
-            self._tablet_pressure = event.pressure()
-            self._last_pressure = event.pressure()
+            config = AppConfig()
+            min_pressure = config.get(AppConfig.MIN_PRESSURE_VALUE)
+            max_pressure = config.get(AppConfig.MAX_PRESSURE_VALUE)
+            min_threshold = config.get(AppConfig.MIN_PRESSURE_THRESHOLD)
+            max_threshold = config.get(AppConfig.MAX_PRESSURE_THRESHOLD)
+            if max_pressure > min_pressure and max_threshold > min_threshold:
+                input_range = max_threshold - min_threshold
+                pressure_input = float(clamp(event.pressure(), min_threshold, max_threshold))
+                input_fraction = (pressure_input - min_threshold) / input_range
+                output_range = max_pressure - min_pressure
+                pressure = min_pressure + output_range * input_fraction
+            else:
+                logger.warning(f'Invalid pressure threshold or bounds, ignoring pressure threshold/bounds settings')
+                pressure = event.pressure()
+            self._tablet_pressure = pressure
+            self._last_pressure = pressure
         else:
             self._tablet_pressure = None
         self._tablet_x_tilt = event.xTilt()

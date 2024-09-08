@@ -4,6 +4,7 @@ from typing import Optional
 from PySide6.QtGui import QColor, QImage
 
 from src.image.layers.image_layer import ImageLayer
+from src.util.math_utils import clamp
 
 
 class LayerCanvas:
@@ -14,6 +15,8 @@ class LayerCanvas:
         self._eraser = False
         self._color = QColor(0, 0, 0)
         self._brush_size = 1
+        self._opacity = 1.0
+        self._hardness = 1.0
         self._drawing = False
         if layer is not None:
             self.connect_to_layer(layer)
@@ -60,6 +63,24 @@ class LayerCanvas:
     def brush_color(self, new_color: QColor) -> None:
         """Updates the active brush color."""
         self._set_brush_color(new_color)
+
+    @property
+    def opacity(self) -> float:
+        """Access the brush hardness fraction."""
+        return self._opacity
+
+    @opacity.setter
+    def opacity(self, opacity: float) -> None:
+        self._opacity = float(clamp(opacity, 0.0, 1.0))
+
+    @property
+    def hardness(self) -> float:
+        """Access the brush hardness fraction."""
+        return self._hardness
+
+    @hardness.setter
+    def hardness(self, hardness: float) -> None:
+        self._hardness = float(clamp(hardness, 0.0, 1.0))
 
     @property
     def drawing(self) -> bool:

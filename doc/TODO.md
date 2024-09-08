@@ -7,6 +7,7 @@
 - text tool isn't loading text on active layer change
 - Add custom brush dir, configurable
 - layer widget rendering gets stuck in darker "drag" mode
+- fixes for borrow_image + undo aren't quite working
 
 # Color picker component:
 - Alternate palette options - all custom colors?
@@ -109,11 +110,7 @@
 - Move panel into src.ui.panel.tool_control_panels
 
 ### Draw tool
-- Fix erasing, current implementation is erasing to solid black
-- For each brush stroke, track changed pixels and remove/control overlap
-- Add hardness slider, opacity slider
 - Add brush fill patterns
-- When tablet input is detected: add size/hardness/opacity pressure toggles
   
 ### Brush tool
 - Pick a few solid defaults for the favorites panel

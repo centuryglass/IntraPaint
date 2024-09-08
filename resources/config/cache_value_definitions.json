@@ -139,5 +139,63 @@
         "type": "bool",
         "default": false,
         "saved": true
+    },
+    "draw_tool_pressure_size": {
+        "label": "Pen pressure=size:",
+        "category": "Cache",
+        "description": "Drawing tablet pen pressure affects draw tool brush size.",
+        "type": "bool",
+        "default": true,
+        "saved": true
+    },
+    "draw_tool_pressure_opacity": {
+        "label": "Pen pressure=opacity:",
+        "category": "Cache",
+        "description": "Drawing tablet pen pressure affects draw tool brush opacity.",
+        "type": "bool",
+        "default": false,
+        "saved": true
+    },
+    "draw_tool_pressure_hardness": {
+        "label": "Pen pressure=hardness:",
+        "category": "Cache",
+        "description": "Drawing tablet pen pressure affects draw tool brush hardness.",
+        "type": "bool",
+        "default": false,
+        "saved": true
+    },
+    "draw_tool_opacity": {
+        "label": "Opacity:",
+        "category": "Cache",
+        "description": "Draw tool color opacity",
+        "type": "float",
+        "default": 1.0,
+        "range_options": {
+            "min": 0.0,
+            "max": 1.0,
+            "step": 0.05
+        },
+        "saved": true
+    },
+    "draw_tool_hardness": {
+        "label": "Hardness:",
+        "category": "Cache",
+        "description": "Draw tool brush hardness",
+        "type": "float",
+        "default": 1.0,
+        "range_options": {
+            "min": 0.0,
+            "max": 1.0,
+            "step": 0.05
+        },
+        "saved": true
+    },
+    "draw_tool_fill_type": {
+        "label": "Fill type:",
+        "category": "Cache",
+        "description": "Draw tool brush pattern",
+        "type": "string",
+        "default": "",
+        "saved": true
     }
 }

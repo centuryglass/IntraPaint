@@ -34,7 +34,7 @@ LAYER_TAB = _tr('Layers')
 COLOR_TAB = _tr('Color')
 NAV_TAB = _tr('Navigation')
 
-TOOL_ICON_SIZE = 24
+TOOL_ICON_SIZE = 32
 
 TOOL_LIST_STRETCH = 0
 TOOL_PANEL_STRETCH = 50
@@ -243,8 +243,8 @@ class ToolPanel(QWidget):
             return
         button_size = button_list[0].sizeHint()
         if self._orientation == Qt.Orientation.Vertical:
-            num_cols = 4
-            num_rows = 3
+            num_cols = 6
+            num_rows = 2
             self._tool_button_layout.setAlignment(Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignHCenter)
         else:  # Horizontal
             num_rows = 4
