@@ -8,7 +8,7 @@ from src.config.application_config import AppConfig
 from src.config.cache import Cache
 from src.config.config_entry import RangeKey
 from src.config.key_config import KeyConfig
-from src.image.canvas.mypaint_layer_canvas import MyPaintLayerCanvas
+from src.image.canvas.mypaint_canvas import MyPaintLayerCanvas
 from src.image.layers.image_layer import ImageLayer
 from src.image.layers.image_stack import ImageStack
 from src.image.layers.layer import Layer

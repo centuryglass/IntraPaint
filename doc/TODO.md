@@ -1,13 +1,18 @@
 # Development tasks
 
 
-## Misc. bugs and testing:
+## Misc. bugs, minor features, and testing:
 - Create example images for README, finish missing sections and improve writing
 - Txt2Img + ControlNet doesn't seem to work with the image as source.
 - text tool isn't loading text on active layer change
 - Add custom brush dir, configurable
 - layer widget rendering gets stuck in darker "drag" mode
 - fixes for borrow_image + undo aren't quite working
+- composite modes not applied properly on merging down?
+- image selector should save gen. area on init; image window can move gen. area and cause problems.
+- using a border on the image window/nav panel for the viewport makes it harder to assess the full image, use an outline instead (no dotted lines)
+- changing gen. area size still doesn't always sync fully - width changes but not height
+- image window intercepts zoom key
 
 # Color picker component:
 - Alternate palette options - all custom colors?

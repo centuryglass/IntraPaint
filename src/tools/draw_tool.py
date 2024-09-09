@@ -9,7 +9,7 @@ from src.config.application_config import AppConfig
 from src.config.cache import Cache
 from src.config.config_entry import RangeKey
 from src.config.key_config import KeyConfig
-from src.image.canvas.pixmap_layer_canvas import PixmapLayerCanvas
+from src.image.canvas.qt_paint_canvas import QtPaintCanvas
 from src.image.layers.image_layer import ImageLayer
 from src.image.layers.image_stack import ImageStack
 from src.image.layers.layer import Layer
@@ -40,7 +40,7 @@ class DrawTool(CanvasTool):
     """Implements brush controls using a minimal QPainter-based brush engine."""
 
     def __init__(self, image_stack: ImageStack, image_viewer: ImageViewer) -> None:
-        super().__init__(image_stack, image_viewer, PixmapLayerCanvas())
+        super().__init__(image_stack, image_viewer, QtPaintCanvas())
         self._last_click = None
         self._control_panel = DrawToolPanel()
         self._active = False
@@ -106,8 +106,10 @@ class DrawTool(CanvasTool):
         cache = Cache()
         opacity = cache.get(Cache.DRAW_TOOL_OPACITY)
         hardness = cache.get(Cache.DRAW_TOOL_HARDNESS)
-        self.canvas.opacity = opacity
-        self.canvas.hardness = hardness
+        canvas = self.canvas
+        assert isinstance(canvas, QtPaintCanvas)
+        canvas.opacity = opacity
+        canvas.hardness = hardness
         super()._stroke_to(image_coordinates)
 
     def get_control_panel(self) -> Optional[QWidget]:

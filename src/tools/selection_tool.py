@@ -7,7 +7,7 @@ from PySide6.QtWidgets import QWidget, QApplication
 from src.config.application_config import AppConfig
 from src.config.config_entry import RangeKey
 from src.config.key_config import KeyConfig
-from src.image.canvas.pixmap_layer_canvas import PixmapLayerCanvas
+from src.image.canvas.qt_paint_canvas import QtPaintCanvas
 from src.image.layers.image_stack import ImageStack
 from src.tools.canvas_tool import CanvasTool
 from src.ui.image_viewer import ImageViewer
@@ -36,7 +36,7 @@ class SelectionTool(CanvasTool):
     """Selects image content for image generation or editing."""
 
     def __init__(self, image_stack: ImageStack, image_viewer: ImageViewer) -> None:
-        canvas = PixmapLayerCanvas(None)
+        canvas = QtPaintCanvas(None)
         super().__init__(image_stack, image_viewer, canvas)
         self._last_click = None
         self._control_panel = CanvasSelectionPanel(image_stack.selection_layer)
