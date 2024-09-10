@@ -1,4 +1,5 @@
 """Provides a control panel class for the text tool."""
+import os.path
 from typing import Optional, Callable
 
 from PySide6.QtCore import Signal, QSize, QPoint, QRect
@@ -6,6 +7,7 @@ from PySide6.QtGui import QFont, QFontDatabase, Qt, QImage, QColor, QPainter, QR
 from PySide6.QtWidgets import QApplication, QWidget, QListWidget, QGridLayout, QLabel, QSizePolicy, QComboBox, \
     QVBoxLayout, QScrollArea
 
+from src.config.application_config import AppConfig
 from src.config.cache import Cache
 from src.image.text_rect import TextRect
 from src.ui.input_fields.check_box import CheckBox
@@ -247,9 +249,19 @@ class TextToolPanel(QWidget):
         self._font_list_label = QLabel(LABEL_TEXT_FONT_FAMILY)
         self._font_list = QListWidget()
         self._font_list.setSelectionMode(QListWidget.SelectionMode.SingleSelection)
-
+        custom_font_dir = AppConfig().get(AppConfig.ADDED_FONT_DIR)
+        if os.path.isdir(custom_font_dir):
+            scan_dirs = [custom_font_dir]
+            while len(scan_dirs) > 0:
+                scan_dir = scan_dirs.pop(0)
+                for file_path in os.listdir(scan_dir):
+                    full_path = os.path.join(scan_dir, file_path)
+                    if os.path.isdir(full_path):
+                        scan_dirs.append(full_path)
+                    else:
+                        QFontDatabase.addApplicationFont(full_path)
         font_families = [font for font in QFontDatabase.families() if QFontDatabase.isScalable(font)
-                               and not QFontDatabase.isPrivateFamily(font)]
+                         and not QFontDatabase.isPrivateFamily(font)]
         fonts = [QFont(family) for family in font_families]
         for font in fonts:
             font_family = font.family()

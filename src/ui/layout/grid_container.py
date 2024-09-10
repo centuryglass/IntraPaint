@@ -154,10 +154,8 @@ class GridContainer(QWidget):
                 child_height = self._children[-1].sizeHint().height()
 
                 # counts can't exceed the bounds:
-                max_cols, max_rows = (min(edge, dim // c_dim) for edge, dim, c_dim in ((max_cols, width, child_width),
-                                                                                       (
-                                                                                           max_rows, height,
-                                                                                           child_height)))
+                max_cols, max_rows = (min(edge, dim // max(c_dim, 1)) for edge, dim, c_dim
+                                      in ((max_cols, width, child_width), (max_rows, height, child_height)))
             # dimensions shouldn't exceed the total number of items:
             max_cols, max_rows = (int(clamp(edge, 1, len(self._children))) for edge in (max_cols, max_rows))
 
@@ -178,7 +176,7 @@ class GridContainer(QWidget):
             column_count = int(clamp(math.ceil(len(self._children) / row_count), min_cols, max_cols))
         elif self._fill_horizontal:
             child_width = max(self._children[-1].sizeHint().width(), self._children[-1].width())
-            column_count = int(clamp(self.width() // child_width, min_cols, max_cols))
+            column_count = int(clamp(self.width() // max(1, child_width), min_cols, max_cols))
             while (child_width * column_count) >= self.width() and column_count > min_cols:
                 column_count -= 1
         else:

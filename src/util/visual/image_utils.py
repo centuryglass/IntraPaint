@@ -361,17 +361,21 @@ def get_color_icon(color: QColor | Qt.GlobalColor, size: Optional[QSize] = None)
     painter.end()
     return pixmap
 
-
-def temp_rich_text_image(image_name: str, image_draw_fn: Callable[[], QImage]) -> str:
-    """Create a string that can embed an image into rich text by writing the image to temporary storage.  If called
-       multiple times with the same image_name, the same image will be reused."""
+def temp_image_path(image_name: str, image_draw_fn: Callable[[], QImage]) -> str:
+    """Creates or loads a temporary image with a particular filename."""
     global temp_image_dir
     if temp_image_dir == '':
         temp_image_dir = tempfile.mkdtemp()
     img_path = os.path.join(temp_image_dir, f'{image_name}.png')
-    rich_text_image = f'<img src="{img_path}"/>'
     if os.path.isfile(img_path):
-        return rich_text_image
+        return img_path
     image = image_draw_fn()
     image.save(img_path)
-    return rich_text_image
+    return img_path
+
+
+def temp_rich_text_image(image_name: str, image_draw_fn: Callable[[], QImage]) -> str:
+    """Create a string that can embed an image into rich text by writing the image to temporary storage.  If called
+       multiple times with the same image_name, the same image will be reused."""
+    img_path = temp_image_path(image_name, image_draw_fn)
+    return f'<img src="{img_path}"/>'

@@ -736,9 +736,25 @@
         "default": "always_ask",
         "saved": true
     },
+    "added_font_dir": {
+        "label": "Added font directory:",
+        "category": "Files",
+        "description": "Directory to search for additional font files to load",
+        "type": "string",
+        "default": "",
+        "saved": true
+    },
+    "added_mypaint_brush_dir": {
+        "label": "Added MyPaint brush directory:",
+        "category": "Files",
+        "description": "Directory to search for additional MyPaint brush files to load",
+        "type": "string",
+        "default": "",
+        "saved": true
+    },
     "libmypaint_library_dir": {
         "label": "libmypaint library directory:",
-        "category": "System",
+        "category": "Files",
         "description": "Directory to search for libmypaint library files if unable to load default libraries",
         "type": "string",
         "default": "",

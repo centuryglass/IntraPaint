@@ -3,9 +3,6 @@
 
 ## Misc. bugs, minor features, and testing:
 - Create example images for README, finish missing sections and improve writing
-- Txt2Img + ControlNet doesn't seem to work with the image as source.
-- text tool isn't loading text on active layer change
-- Add custom brush dir, configurable
 - layer widget rendering gets stuck in darker "drag" mode
 - fixes for borrow_image + undo aren't quite working
 - composite modes not applied properly on merging down?
@@ -131,8 +128,10 @@
 - Probably best to just render directly for now, but maybe use with SVGLayer + graphics items in the future
 
 ## Possible lurking bugs
-Things I never fixed but can no longer reproduce:
+Things I never fixed but can no longer reproduce, or that come from external issues:
 - Nested layer selection state shown in the layer panel isn't updating properly (recursive active layer update logic in LayerPanel looks fine)
+- Txt2Img + ControlNet doesn't seem to work with the image as source. Looks like a webui error, `'StableDiffusionProcessingTxt2Img' object has no attribute 'resize_mode'`, shows up in logs. After trying other settings I can no longer reproduce this, but I don't think it's fixed.
+`
 
 # Low priority
 

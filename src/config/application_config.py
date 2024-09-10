@@ -52,12 +52,17 @@ class AppConfig(Config, metaclass=Singleton):
         self.update_options(AppConfig.UPSCALE_MODE, scaling_options)
         self.update_options(AppConfig.DOWNSCALE_MODE, scaling_options)
 
-        if self.get(AppConfig.LIBMYPAINT_LIBRARY_DIR) == '':  # Set default based on user data dir
-            alt_libmypaint_dir = os.path.join(DATA_DIR, 'libmypaint-backup')
-            if not os.path.isfile(alt_libmypaint_dir) and not os.path.exists(alt_libmypaint_dir):
-                os.mkdir(alt_libmypaint_dir)
-            if os.path.isdir(alt_libmypaint_dir):
-                self.set(AppConfig.LIBMYPAINT_LIBRARY_DIR, alt_libmypaint_dir)
+        # Put default user data directories in the user data dir:
+        for config_key, dir_name in ((AppConfig.LIBMYPAINT_LIBRARY_DIR, 'libmypaint-lib-files'),
+                                     (AppConfig.ADDED_FONT_DIR, 'fonts'),
+                                     (AppConfig.ADDED_MYPAINT_BRUSH_DIR, 'mypaint-brushes')):
+            current_path = self.get(config_key)
+            if current_path == '':
+                dir_path = os.path.join(DATA_DIR, dir_name)
+                if not os.path.isfile(dir_path) and not os.path.exists(dir_path):
+                    os.mkdir(dir_path)
+                if os.path.isdir(dir_path):
+                    self.set(config_key, dir_path)
 
     def apply_args(self, args: Namespace) -> None:
         """Loads expected parameters from command line arguments"""
@@ -75,6 +80,8 @@ class AppConfig(Config, metaclass=Singleton):
     # DYNAMIC PROPERTIES:
     # Generate with `python /home/anthony/Workspace/ML/IntraPaint/scripts/dynamic_import_typing.py src/config/application_config.py`
 
+    ADDED_FONT_DIR: str
+    ADDED_MYPAINT_BRUSH_DIR: str
     ALWAYS_INIT_METADATA_ON_SAVE: str
     ALWAYS_UPDATE_METADATA_ON_SAVE: str
     ANIMATE_OUTLINES: str

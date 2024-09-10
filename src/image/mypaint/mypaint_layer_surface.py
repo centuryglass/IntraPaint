@@ -136,9 +136,12 @@ class MyPaintLayerSurface(QObject):
         if layer == self._layer:
             return
         self.clear()
+        if self._layer is not None:
+            self._disconnect_layer_signals()
         self._layer = layer
         if layer is not None:
             self.reset_surface(layer.size)
+            self._connect_layer_signals()
 
     @property
     def tiles_width(self) -> int:

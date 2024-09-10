@@ -2,11 +2,12 @@
 Selects between the default MyPaint brushes found in resources/brushes. This widget can only be used if a compatible
 brushlib/libmypaint QT library is available, currently only true for x86_64 Linux.
 """
+import logging
 import os
 import re
 from typing import Optional, List, Dict, cast
 
-from PySide6.QtCore import Qt, QRect, QPoint, Signal
+from PySide6.QtCore import Qt, QRect, QPoint, Signal, QSize
 from PySide6.QtGui import QPixmap, QImage, QPainter, QPaintEvent, QMouseEvent, QResizeEvent, QIcon
 from PySide6.QtWidgets import QWidget, QTabWidget, QMenu, QSizePolicy, QApplication
 
@@ -15,6 +16,8 @@ from src.ui.layout.grid_container import GridContainer
 from src.util.visual.display_size import get_window_size
 from src.util.visual.geometry_utils import get_scaled_placement
 from src.util.shared_constants import PROJECT_DIR
+from src.util.visual.image_utils import temp_image_path
+from src.util.visual.text_drawing_utils import max_font_size, create_text_path, draw_text_path
 
 # The `QCoreApplication.translate` context for strings in this file
 TR_ID = 'ui.panel.mypaint_brush_panel'
@@ -37,6 +40,9 @@ BRUSH_CONF_FILE = 'brushes.conf'
 BRUSH_ORDER_FILE = 'order.conf'
 BRUSH_EXTENSION = '.myb'
 BRUSH_ICON_EXTENSION = '_prev.png'
+ICON_SIZE = 128
+
+logger = logging.getLogger(__name__)
 
 
 class MypaintBrushPanel(QTabWidget):
@@ -55,6 +61,7 @@ class MypaintBrushPanel(QTabWidget):
         super().__init__(parent)
         self._brush_config_key = brush_config_key
         self._groups: List[str] = []
+        self._group_dirs: Dict[str, str] = {}
         self._group_orders: Dict[str, List[str]] = {}
         self._pages: Dict[str, GridContainer] = {}
         self._read_order_file(os.path.join(BRUSH_DIR, BRUSH_CONF_FILE))
@@ -63,23 +70,40 @@ class MypaintBrushPanel(QTabWidget):
 
     def _setup_brush_tabs(self) -> None:
         """Reads in brush files, organizes them into tabs."""
-        for group in os.listdir(BRUSH_DIR):
-            group_dir = os.path.join(BRUSH_DIR, group)
-            if group in self._group_orders or not os.path.isdir(group_dir):
+        brush_dirs = [BRUSH_DIR]
+        custom_brush_dir = AppConfig().get(AppConfig.ADDED_MYPAINT_BRUSH_DIR)
+        if os.path.isdir(custom_brush_dir):
+            brush_dirs.append(custom_brush_dir)
+        brush_files: Dict[str, List[str]] = {}
+        while len(brush_dirs) > 0:
+            brush_dir = brush_dirs.pop(0)
+            dir_name = os.path.basename(brush_dir)
+            if dir_name in self._groups:
+                if self._group_dirs[dir_name] != brush_dir:
+                    logger.error(f'Duplicate group {dir_name} found in both {self._group_dirs[dir_name]} and '
+                                 f'{brush_dir}, the second directory will be ignored.')
                 continue
-            if self._read_order_file(os.path.join(group_dir, BRUSH_ORDER_FILE)):
-                continue
-            # No order.conf: just read in file order
-            self._groups.append(group)
-            self._group_orders[group] = []
-            for file in os.listdir(group_dir):
-                if not file.endswith(BRUSH_EXTENSION):
-                    continue
-                brush_name = file[:-4]
-                self._group_orders[group].append(brush_name)
+            for brush_dir_file in os.listdir(brush_dir):
+                full_path = os.path.join(brush_dir, brush_dir_file)
+                if brush_dir_file == BRUSH_ORDER_FILE:
+                    self._read_order_file(full_path)
+                elif os.path.isdir(full_path):
+                    brush_dirs.append(full_path)
+                elif full_path.endswith(BRUSH_EXTENSION):
+                    if brush_dir not in brush_files:
+                        brush_files[dir_name] = []
+                        self._groups.append(dir_name)
+                        self._group_dirs[dir_name] = brush_dir
+                    brush_files[dir_name].append(brush_dir_file[:-len(BRUSH_EXTENSION)])
+        for group in self._group_orders.keys():
+            if group in brush_files:
+                del brush_files[group]
+        for group, group_brushes in brush_files.items():
+            group_brushes.sort()
+            self._group_orders[group] = group_brushes
         for group in self._groups:
-            group_dir = os.path.join(BRUSH_DIR, group)
-            if not os.path.isdir(group_dir):
+            group_dir = self._group_dirs[group]
+            if not os.path.isdir(group_dir) or len(self._group_orders[group]) == 0:
                 continue
             self._create_tab(group)
             for brush_name in self._group_orders[group]:
@@ -97,8 +121,8 @@ class MypaintBrushPanel(QTabWidget):
             if '/' not in favorite:
                 continue
             group, brush = favorite.split('/')
-            brush_path = os.path.join(BRUSH_DIR, group, brush + BRUSH_EXTENSION)
-            image_path = os.path.join(BRUSH_DIR, group, brush + BRUSH_ICON_EXTENSION)
+            brush_path = os.path.join(self._group_dirs[group], brush + BRUSH_EXTENSION)
+            image_path = os.path.join(self._group_dirs[group], brush + BRUSH_ICON_EXTENSION)
             brush_icon = _IconButton(self._brush_config_key, image_path, brush_path, True)
             brush_icon.favorite_change.connect(self._remove_favorite)
             favorite_brushes.append(brush_icon)
@@ -156,6 +180,7 @@ class MypaintBrushPanel(QTabWidget):
     def _read_order_file(self, file_path: str) -> bool:
         if not os.path.exists(file_path):
             return False
+        dir_path = os.path.dirname(file_path)
         with open(file_path, 'r', encoding='utf-8') as file:
             lines = [ln.strip() for ln in file.readlines()]
         for line in lines:
@@ -163,6 +188,7 @@ class MypaintBrushPanel(QTabWidget):
             if group_match:
                 group = group_match.group(1)
                 self._groups.append(group)
+                self._group_dirs[group] = os.path.join(dir_path, group)
                 self._group_orders[group] = []
                 continue
             if '/' not in line:
@@ -170,6 +196,7 @@ class MypaintBrushPanel(QTabWidget):
             group, brush = line.split('/')
             if group not in self._group_orders:
                 self._groups.append(group)
+                self._group_dirs[group] = os.path.join(dir_path, group)
                 self._group_orders[group] = []
             self._group_orders[group].append(brush)
         return True
@@ -187,7 +214,32 @@ class _IconButton(QWidget):
         self._favorite = favorite
         self._brush_name = os.path.basename(brush_path)[:-4]
         self._brush_path = brush_path
+        if not os.path.isfile(image_path):
+            print(f'{image_path} not found, creating placeholder')
+
+            def _draw_image() -> QImage:
+
+                image = QImage(QSize(ICON_SIZE, ICON_SIZE), QImage.Format.Format_ARGB32_Premultiplied)
+                image_bounds = QRect(QPoint(), image.size())
+                text_bounds = image_bounds.adjusted(2, 2, -2, -2)
+                palette = self.palette()
+                bg_color = palette.color(self.backgroundRole())
+                text_color = palette.color(self.foregroundRole())
+                font = self.font()
+                pt_size = max_font_size(self._brush_name, font, text_bounds.size())
+                font.setPointSize(pt_size)
+                painter = QPainter(image)
+                painter.fillRect(image_bounds, bg_color)
+                painter.setPen(text_color)
+                painter.drawRect(image_bounds.adjusted(0, 0, -1, -1))
+                text_path = create_text_path(self._brush_name, font, text_bounds)
+                draw_text_path(text_path, painter, text_color)
+                painter.end()
+                return image
+            image_path = temp_image_path(self._brush_name, _draw_image)
+            assert os.path.isfile(image_path)
         self._image_path = image_path
+
         self._image_rect: Optional[QRect] = None
         self._image = QIcon(QPixmap(image_path))
         inverted = QImage(image_path)
