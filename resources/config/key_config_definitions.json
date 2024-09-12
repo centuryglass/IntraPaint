@@ -611,6 +611,15 @@
         "default": "Ctrl+Shift+M",
         "saved": true
     },
+    "flatten_layer_shortcut": {
+        "label": "Flatten layer",
+        "category": "Menu Shortcuts",
+        "subcategory": "Layer Menu",
+        "description": "Simplify a layer",
+        "type": "string",
+        "default": "Ctrl+Shift+F",
+        "saved": true
+    },
     "layer_to_image_size_shortcut": {
         "label": "Layer to image size",
         "category": "Menu Shortcuts",

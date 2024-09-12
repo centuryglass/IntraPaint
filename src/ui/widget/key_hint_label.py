@@ -2,7 +2,7 @@
 from typing import Optional
 
 
-from PySide6.QtCore import Qt, QRect, QPoint
+from PySide6.QtCore import Qt, QRect, QPoint, QSize
 from PySide6.QtGui import QKeySequence, QResizeEvent, QPainter, QPainterPath, QPaintEvent
 from PySide6.QtWidgets import QLabel, QWidget
 
@@ -32,6 +32,10 @@ class KeyHintLabel(QLabel):
         self._update_text(keys)
         if config_key is not None:
             KeyConfig().connect(self, config_key, self._key_update_slot)
+
+    def sizeHint(self) -> QSize:
+        """Calculate size hint with adjusted margins"""
+        return find_text_size(self._base_text, self.font(), exact=True) + QSize(6, 6)
 
     def paintEvent(self, event: Optional[QPaintEvent]):
         """Outline the key text."""

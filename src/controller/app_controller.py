@@ -195,17 +195,14 @@ class AppController(MenuBuilder):
             self._window.setMaximumSize(width, height)
             self._window.setMinimumSize(width, height)
         else:
-            try:
-                x, y, width, height = (int(param) for param in Cache().get(Cache.SAVED_MAIN_WINDOW_POS).split(','))
-                size = QSize(width, height)
-            except (ValueError, TypeError):
+            if not Cache().load_bounds(Cache.SAVED_MAIN_WINDOW_POS, self._window):
                 size = get_screen_size(self._window)
                 x = 0
                 y = 0
                 width = size.width()
                 height = size.height()
-            self._window.setGeometry(x, y, width, height)
-            self._window.setMaximumSize(size)
+                self._window.setGeometry(x, y, width, height)
+            self._window.setMaximumSize(get_screen_size(self._window))
         if args.init_image is not None:
             self.load_image(file_path=args.init_image)
         if not self._image_stack.has_image:
@@ -346,6 +343,7 @@ class AppController(MenuBuilder):
         if AppConfig().get(AppConfig.USE_ERROR_HANDLER):
             QtExceptHook().enable()
         self._window.show()
+        self._update_enabled_actions()
 
         AppStateTracker.set_app_state(APP_STATE_EDITING if self._image_stack.has_image else APP_STATE_NO_IMAGE)
         app.exec()
@@ -444,6 +442,7 @@ class AppController(MenuBuilder):
             self.layer_rotate_ccw,
             self.delete_layer,
             self.merge_layer_down,
+            self.flatten_layer,
             self.layer_to_image_size,
             self.crop_layer_to_content
 
@@ -461,8 +460,10 @@ class AppController(MenuBuilder):
             self.select_previous_layer,
             self.move_layer_up,
             self.move_layer_down,
-            self.move_layer_to_top
+            self.move_layer_to_top,
+            self.flatten_layer
         }
+        not_flat_methods: Set[Callable[..., None]] = { self.flatten_layer }
         not_layer_group_methods: Set[Callable[..., None]] = {self.merge_layer_down}
 
         not_text_layer_methods: Set[Callable[..., None]] = {self.crop_layer_to_content}
@@ -488,6 +489,7 @@ class AppController(MenuBuilder):
                                                   (not_top_layer_methods, is_top_layer),
                                                   (not_layer_stack_methods,
                                                    active_layer == self._image_stack.layer_stack),
+                                                  (not_flat_methods, self._image_stack.layer_is_flat(active_layer)),
                                                   (not_layer_group_methods, isinstance(active_layer, LayerStack)),
                                                   (not_text_layer_methods, isinstance(active_layer, TextLayer))):
                 if menu_method in method_set and disable_condition:
@@ -1058,6 +1060,11 @@ class AppController(MenuBuilder):
     def merge_layer_down(self) -> None:
         """Merge the active layer with the one beneath it."""
         self._image_stack.merge_layer_down()
+
+    @menu_action(MENU_LAYERS, 'flatten_layer_shortcut', 444, valid_app_states=[APP_STATE_EDITING])
+    def flatten_layer(self) -> None:
+        """Simplifies the active layer."""
+        self._image_stack.flatten_layer()
 
     @menu_action(MENU_LAYERS, 'layer_to_image_size_shortcut', 445,
                  valid_app_states=[APP_STATE_EDITING])

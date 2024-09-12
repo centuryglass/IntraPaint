@@ -1,8 +1,10 @@
 """Manages an edited image composed of multiple layers."""
+import logging
 import os
 import re
-from typing import Optional, Tuple, cast, List, Callable
+from typing import Optional, Tuple, cast, List, Callable, TypeAlias
 
+import numpy as np
 from PIL import Image
 from PySide6.QtCore import QObject, QSize, QPoint, QRect, Signal
 from PySide6.QtGui import QPainter, QPixmap, QImage, QColor, QTransform
@@ -23,9 +25,11 @@ from src.util.application_state import AppStateTracker, APP_STATE_NO_IMAGE, APP_
 from src.util.cached_data import CachedData
 from src.util.visual.geometry_utils import adjusted_placement_in_bounds, map_rect_precise
 from src.util.visual.image_utils import create_transparent_image, image_content_bounds, \
-    image_is_fully_transparent
+    image_is_fully_transparent, image_data_as_numpy_8bit
 from src.util.visual.pil_image_utils import qimage_to_pil_image
 from src.util.math_utils import clamp
+
+logger = logging.getLogger(__name__)
 
 # The `QCoreApplication.translate` context for strings in this file
 TR_ID = 'image.layers.image_stack'
@@ -40,6 +44,8 @@ NEW_IMAGE_LAYER_GROUP_NAME = _tr('new image')
 ACTION_NAME_MERGE_LAYERS = _tr('merge layers')
 ACTION_NAME_LAYER_TO_IMAGE_SIZE = _tr('resize layer to image')
 ACTION_NAME_CLEAR_SELECTED = _tr('cut/clear selection')
+
+RenderAdjustFn: TypeAlias = Callable[[int, QImage, QRect, QPainter], Optional[QImage]]
 
 
 class ImageStack(QObject):
@@ -71,6 +77,7 @@ class ImageStack(QObject):
         def _update_gen_area_size(size: QSize) -> None:
             if size != self._generation_area.size():
                 self.generation_area = QRect(self._generation_area.topLeft(), size)
+
         AppConfig().connect(self, AppConfig.EDIT_SIZE, _update_gen_area_size)
 
         self._layer_stack = LayerStack(NEW_IMAGE_LAYER_GROUP_NAME)
@@ -84,6 +91,7 @@ class ImageStack(QObject):
         # Layer stack update handling:
         def _set_name(name: str) -> None:
             self._layer_stack.set_name(os.path.basename(name))
+
         Cache().connect(self._layer_stack, Cache.LAST_FILE_PATH, _set_name)
         self._connect_layer(self._layer_stack)
 
@@ -101,6 +109,7 @@ class ImageStack(QObject):
                     f'expected containing {content_bounds}, got {self._selection_layer.transformed_bounds}'
             self._image.invalidate()
             self._emit_content_changed()
+
         self._layer_stack.content_changed.connect(_content_change)
         self._layer_stack.visibility_changed.connect(_content_change)
         self._layer_stack.opacity_changed.connect(_content_change)
@@ -367,8 +376,7 @@ class ImageStack(QObject):
         return image
 
     def render(self, base_image: Optional[QImage] = None,
-               paint_param_adjuster: Optional[Callable[[int, QImage, QRect, QPainter], Optional[QImage]]]
-                      = None) -> QImage:
+               paint_param_adjuster: Optional[RenderAdjustFn] = None) -> QImage:
         """Render all layers to a QImage with a custom base image and accepting a function to control layer painting on
         a per-layer basis.
 
@@ -618,17 +626,18 @@ class ImageStack(QObject):
             layer_index = layer_parent.get_layer_index(to_remove)
             assert layer_index is not None
             self._insert_layer_internal(to_insert, layer_parent, layer_index)
-            if self.active_layer == to_remove:
+            if self.active_layer == to_remove or (isinstance(to_remove, LayerStack) and
+                                                  to_remove.contains_recursive(self.active_layer)):
                 self._set_active_layer_internal(to_insert)
             self._remove_layer_internal(to_remove)
 
-        def _text_to_image(old: Layer = removed_layer, new: Layer = replacement_layer) -> None:
+        def _install_replacement(old: Layer = removed_layer, new: Layer = replacement_layer) -> None:
             _replace(old, new)
 
-        def _image_to_text(old: Layer = replacement_layer, new: Layer = removed_layer) -> None:
+        def _revert_replacement(old: Layer = replacement_layer, new: Layer = removed_layer) -> None:
             _replace(old, new)
 
-        UndoStack().commit_action(_text_to_image, _image_to_text, 'ImageStack.replace_layer')
+        UndoStack().commit_action(_install_replacement, _revert_replacement, 'ImageStack.replace_layer')
 
     def replace_text_layer_with_image(self, text_layer: TextLayer) -> ImageLayer:
         """Convert a text layer into an image layer, replacing it in the layer stack and returning the new layer."""
@@ -728,6 +737,102 @@ class ImageStack(QObject):
         else:  # -1
             new_parent, new_index = self._prev_insert_index(layer)
         self.move_layer(layer, new_parent, new_index)
+
+    @staticmethod
+    def layer_is_flat(layer: Layer) -> bool:
+        """Returns true if calling flatten_layer on a layer would do nothing."""
+        if isinstance(layer, ImageLayer):
+            return layer.composition_mode == CompositeMode.NORMAL and layer.opacity == 1.0 \
+                and layer.transform == QTransform.fromTranslate(layer.bounds.x(), layer.bounds.y())
+        if isinstance(layer, LayerStack):
+            return layer.count == 0
+        return False
+
+    def flatten_layer(self, layer: Optional[Layer] = None) -> None:
+        """Flatten a layer within the layer stack.
+
+        Flattening a layer does the following:
+        - Converts all other layer types to ImageLayer
+        - Removes all transformations other than offset by applying them directly to image data
+        - Sets opacity to 100%, recalculating color alpha levels accordingly.
+
+        The goal is to simplify a layer's properties while leaving the final image as close to unchanged as possible.
+        Note that this isn't totally possible in some cases, it doesn't work with some composition modes.
+
+        TODO: Color accuracy has issues when both the top and base are partially transparent, look into reverse
+              composition further and see if this can be improved.
+        """
+        if layer is None:
+            layer = self.active_layer
+        if layer == self._layer_stack or layer.locked or layer.parent_locked:
+            return
+        parent = layer.layer_parent
+        assert isinstance(parent, LayerStack)
+
+        if self.layer_is_flat(layer):
+            logger.warning(f'Skipping flatten, layer {layer.name} cannot be simplified further.')
+            return
+
+        def _stop_render_above_z_level(level: int) -> RenderAdjustFn:
+
+            def _render_adjust(layer_id: int, img: QImage, bounds: QRect, painter: QPainter) -> Optional[QImage]:
+                rendered_layer = self._layer_stack.get_layer_by_id(layer_id)
+                assert rendered_layer is not None
+                if rendered_layer.z_value > level:
+                    painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_SourceOver)
+                    if not (isinstance(rendered_layer, LayerStack) and rendered_layer.contains_recursive(layer)):
+                        painter.setOpacity(0)
+                        return QImage()
+                return None
+
+            return _render_adjust
+        if isinstance(layer, LayerStack):
+            last_child = layer.child_layers[-1]
+            base_z = last_child.z_value - 1
+        else:
+            base_z = layer.z_value - 1
+
+        base_render = parent.render(paint_param_adjuster=_stop_render_above_z_level(base_z))
+        top_render = parent.render(paint_param_adjuster=_stop_render_above_z_level(layer.z_value))
+        base_render.save('base.png')
+        top_render.save('top.png')
+        # Subtract out base from top:
+        np_base = image_data_as_numpy_8bit(base_render)
+        np_combined = image_data_as_numpy_8bit(top_render)
+        np_top = np_combined
+        identical_regions = np_base[:, :, 3] == np_combined[:, :, 3]
+        for c in range(3):
+            identical_regions = identical_regions & (np_base[:, :, c] == np_combined[:, :, c])
+        np_combined[identical_regions, :] = 0
+
+        # Attempt a reversed SourceOver composition to calculate color values for the final top layer in areas where
+        # both top and base are partially transparent:
+        blended_px = (~identical_regions & (np_base[:, :, 3] < 255) & (np_base[:, :, 3] > 0)
+                      & (np_combined[:, :, 3] < 255) & (np_combined[:, :, 3] > 0))
+        alpha_combined = np_combined[:, :, 3] / 255.0
+        alpha_base = np_base[:, :, 3] / 255.0
+        alpha_top = alpha_combined - alpha_base
+        alpha_top[blended_px] /= (1 - alpha_base[blended_px])
+        alpha_top[blended_px] = np.clip(alpha_top[blended_px], .00001, 1.0)
+
+        # Solve for the reversed rgb compositing function:
+        # c, t, b = combined, top, base, CA, TA, BA = combinedAlpha, topAlpha, baseAlpha
+        # c = (tAT + bAB(1 - AT)) / AC
+        # cAC = tAT + bAB(1 - AT)
+        # cAC - bAB(1 - AT) = tAT
+        # t = (cAC - bAB(1 - AT)) / AT
+        for c in range(3):
+            comp_mult = np_combined[blended_px, c] * alpha_combined[blended_px]
+            top_inv_alpha = 1 - alpha_top[blended_px]
+            base_mult = np_base[blended_px, c] * alpha_base[blended_px]
+            np_top[blended_px, c] = np.clip(comp_mult - (base_mult * top_inv_alpha) / alpha_top[blended_px],
+                                            0, 255)
+        np_top[blended_px, 3] = alpha_top[blended_px] * 255
+
+        layer_offset = parent.bounds.topLeft()
+        replacement_layer = self._create_layer_internal(layer.name, top_render)
+        replacement_layer.set_transform(QTransform.fromTranslate(layer_offset.x(), layer_offset.y()))
+        self.replace_layer(layer, replacement_layer)
 
     def merge_layer_down(self, layer: Optional[Layer] = None) -> None:
         """Merges a layer with the one beneath it on the stack.
@@ -903,7 +1008,7 @@ class ImageStack(QObject):
             painter_transform = painter_transform * layer.transform.inverted()[0]
         else:
             layer_pos = layer.bounds.topLeft()
-            painter_transform = painter_transform * QTransform.fromTranslate(-layer_pos.x(),  -layer_pos.y())
+            painter_transform = painter_transform * QTransform.fromTranslate(-layer_pos.x(), -layer_pos.y())
         painter = QPainter(transformed_mask)
         painter.setTransform(painter_transform)
         painter.drawImage(QRect(0, 0, selection_mask.width(), selection_mask.height()), selection_mask)
@@ -1004,7 +1109,7 @@ class ImageStack(QObject):
                                     image_data: QImage,
                                     layer: Optional[Layer] = None,
                                     composition_mode: QPainter.CompositionMode
-                                        = QPainter.CompositionMode.CompositionMode_SourceOver):
+                                    = QPainter.CompositionMode.CompositionMode_SourceOver):
         """Updates image generation area content within a layer.
         Parameters
         ----------
@@ -1263,9 +1368,6 @@ class ImageStack(QObject):
         if isinstance(layer, TransformLayer):
             layer.transform_changed.disconnect(self._layer_content_change_slot)
         layer.visibility_changed.disconnect(self._layer_visibility_change_slot)
-        if isinstance(layer, LayerStack):
-            for child_layer in layer.recursive_child_layers:
-                self._disconnect_layer(child_layer)
 
     def _layer_added_slot(self, layer: Layer) -> None:
         self._connect_layer(layer)
@@ -1458,11 +1560,13 @@ class ImageStack(QObject):
     def _with_batch_content_update(self, func):
         """Decorator for wrapping functions that trigger a lot of redundant content change signals.  This will
            suppress the signal while the function is executing, then emit it once at the end."""
+
         def _wrapper():
             self._content_change_signal_enabled = False
             func()
             self._content_change_signal_enabled = True
             self._emit_content_changed()
+
         return _wrapper
 
     @staticmethod
@@ -1502,6 +1606,7 @@ class ImageStack(QObject):
                                 inner_index += 1
                         return _recursive_offset(layer_at_index, inner_index, off)
             return parent, int(clamp(index, 0, max_idx))
+
         assert layer.layer_parent is not None
         layer_parent = cast(LayerStack, layer.layer_parent)
         layer_index = layer_parent.get_layer_index(layer)

@@ -4,7 +4,7 @@ from typing import Optional, cast, Callable
 
 from PySide6.QtCore import QSize, Qt, QRect, QPoint, QMimeData, Signal
 from PySide6.QtGui import (QPixmap, QImage, QPainter, QTransform, QResizeEvent, QPaintEvent, QColor, QMouseEvent, QDrag,
-                           QAction, QPainterPath, QPen)
+                           QAction, QPainterPath, QPen, QIcon)
 from PySide6.QtWidgets import QWidget, QHBoxLayout, QLabel, QSizePolicy, QMenu, QApplication
 
 from src.config.cache import Cache
@@ -12,6 +12,7 @@ from src.image.layers.image_layer import ImageLayer
 from src.image.layers.image_stack import ImageStack
 from src.image.layers.layer import Layer
 from src.image.layers.layer_stack import LayerStack
+from src.image.layers.text_layer import TextLayer
 from src.image.layers.transform_layer import TransformLayer
 from src.tools.selection_tool import LABEL_TEXT_SELECTION_TOOL
 from src.ui.input_fields.editable_label import EditableLabel
@@ -19,7 +20,7 @@ from src.ui.layout.bordered_widget import BorderedWidget
 from src.ui.panel.layer_ui.layer_alpha_lock_button import LayerAlphaLockButton
 from src.ui.panel.layer_ui.layer_lock_button import LayerLockButton
 from src.ui.panel.layer_ui.layer_visibility_button import LayerVisibilityButton
-from src.util.shared_constants import ICON_SIZE
+from src.util.shared_constants import ICON_SIZE, PROJECT_DIR
 from src.util.visual.display_size import get_window_size
 from src.util.visual.geometry_utils import get_scaled_placement
 from src.util.visual.image_utils import get_transparency_tile_pixmap, crop_to_content
@@ -35,14 +36,15 @@ def _tr(*args):
 
 
 PREVIEW_SIZE = QSize(80, 80)
-SMALL_PREVIEW_SIZE = QSize(40, 40)
-LAYER_PADDING = 10
+SMALL_PREVIEW_SIZE = QSize(50, 50)
+LAYER_PADDING = 4
 MAX_WIDTH = PREVIEW_SIZE.width() + ICON_SIZE + LAYER_PADDING * 2 + 400
 MENU_OPTION_MOVE_UP = _tr('Move up')
 MENU_OPTION_MOVE_DOWN = _tr('Move down')
 MENU_OPTION_COPY = _tr('Copy')
 MENU_OPTION_DELETE = _tr('Delete')
 MENU_OPTION_MERGE_DOWN = _tr('Merge down')
+MENU_OPTION_FLATTEN = _tr('Flatten')
 MENU_OPTION_CLEAR_SELECTED = _tr('Clear selected')
 MENU_OPTION_COPY_SELECTED = _tr('Copy selected to new layer')
 MENU_OPTION_LAYER_TO_IMAGE_SIZE = _tr('Layer to image size')
@@ -53,6 +55,10 @@ MENU_OPTION_INVERT_SELECTION = _tr('Invert selection')
 MENU_OPTION_MIRROR_VERTICAL = _tr('Mirror vertically')
 MENU_OPTION_MIRROR_HORIZONTAL = _tr('Mirror horizontally')
 COPIED_LAYER_NAME = _tr('{src_layer_name} copied content')
+
+GROUP_FRAME = f'{PROJECT_DIR}/resources/icons/layer/group_frame.svg'
+IMAGE_FRAME = f'{PROJECT_DIR}/resources/icons/layer/img_frame.svg'
+TEXT_FRAME = f'{PROJECT_DIR}/resources/icons/layer/txt_frame.svg'
 
 
 def _preview_size() -> QSize:
@@ -83,6 +89,12 @@ class LayerWidget(BorderedWidget):
         self._preview_pixmap = QPixmap()
         self._clicking = False
         self._click_pos = QPoint()
+        if isinstance(layer, LayerStack):
+            self._frame = QIcon(GROUP_FRAME)
+        elif isinstance(layer, TextLayer):
+            self._frame = QIcon(TEXT_FRAME)
+        else:
+            self._frame = QIcon(IMAGE_FRAME)
         if layer == image_stack.selection_layer:
             self._label = QLabel(layer.name, self)
         else:
@@ -103,7 +115,7 @@ class LayerWidget(BorderedWidget):
         self._active_color = self.color
         self._inactive_color = self._active_color.darker() if self._active_color.lightness() > 100 \
             else self._active_color.lighter()
-        self.setSizePolicy(QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Maximum))
+        self.setSizePolicy(QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed))
         if LayerWidget._layer_transparency_background is None:
             LayerWidget._layer_transparency_background = get_transparency_tile_pixmap(QSize(64, 64))
         self.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
@@ -119,11 +131,23 @@ class LayerWidget(BorderedWidget):
         # Prepare initial layer image:
         self._layer_content_change_slot()
 
+    def _layer_preview_frame_bounds(self) -> QRect:
+        bounds = QRect(LAYER_PADDING, LAYER_PADDING, self._label.x() - LAYER_PADDING * 2,
+                       self.height() - LAYER_PADDING * 2)
+        bounds.setWidth(bounds.width() * 1.5)
+        return bounds
+
+    def _layer_inner_frame_bounds(self) -> QRect:
+        bounds = self._layer_preview_frame_bounds().adjusted(3, 3, -3, -3)
+        bounds.setWidth(bounds.height())
+        return bounds
+
     def _layer_preview_bounds(self) -> QRect:
-        preview_bounds = QRect(LAYER_PADDING, LAYER_PADDING, self._label.x() - LAYER_PADDING * 2,
-                               self.height() - LAYER_PADDING * 2)
+        preview_bounds = self._layer_inner_frame_bounds()
         if not self._layer_image.isNull() and not self._layer_image.size().isEmpty():
             preview_bounds = get_scaled_placement(preview_bounds, self._layer_image.size(), 2)
+        else:
+            preview_bounds = preview_bounds.adjusted(2, 2, -2, -2)
         return preview_bounds
 
     def _update_pixmap(self, ignore_if_same_size=False):
@@ -163,10 +187,12 @@ class LayerWidget(BorderedWidget):
 
     def resizeEvent(self, event: Optional[QResizeEvent]) -> None:
         """Resize the layer pixmap on resize"""
+        self.setMinimumHeight(self.sizeHint().height())
         self._update_pixmap(True)
 
     def paintEvent(self, event: Optional[QPaintEvent]) -> None:
         """Draws the scaled layer contents to the widget."""
+        frame_bounds = self._layer_preview_frame_bounds()
         paint_bounds = self._layer_preview_bounds()
         painter = QPainter(self)
         if self.active:
@@ -189,11 +215,18 @@ class LayerWidget(BorderedWidget):
             painter.setPen(QPen(highlight_color, 2))
             painter.drawPath(path)
         if not paint_bounds.isEmpty():
-            painter.setPen(Qt.GlobalColor.black)
-            painter.drawRect(paint_bounds)
+            self._frame.paint(painter, frame_bounds, alignment=Qt.AlignmentFlag.AlignLeft)
+            inner_frame = self._layer_inner_frame_bounds()
+            assert LayerWidget._layer_transparency_background is not None
+            painter.drawTiledPixmap(inner_frame, LayerWidget._layer_transparency_background)
+            painter.fillRect(inner_frame, QColor(0.3, 0.3, 0.3, 0.3))
+            painter.setPen(Qt.GlobalColor.white)
+            painter.drawRect(inner_frame)
             painter.save()
             painter.drawPixmap(paint_bounds, self._preview_pixmap)
             painter.restore()
+            painter.setPen(Qt.GlobalColor.black)
+            painter.drawRect(paint_bounds)
             if not self._layer.visible:
                 painter.fillRect(paint_bounds, QColor.fromRgb(0, 0, 0, 100))
         if self._clicking:
@@ -310,6 +343,10 @@ class LayerWidget(BorderedWidget):
                 if next_layer is None or next_layer.locked or not next_layer.visible:
                     merge_option.setEnabled(False)
 
+            flatten_action = _add_action(MENU_OPTION_FLATTEN, lambda: self._image_stack.flatten_layer(self.layer),
+                                         True)
+            if self._image_stack.layer_is_flat(self.layer):
+                flatten_action.setEnabled(False)
             _add_action(MENU_OPTION_CLEAR_SELECTED, lambda: self._image_stack.cut_selected(self.layer), True)
 
             def do_copy() -> None:

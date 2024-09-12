@@ -402,8 +402,7 @@ class MainWindow(QMainWindow):
             self._loading_widget.setGeometry(loading_bounds)
         # Cache window placement:
         if self.isVisible():
-            placement_str = f'{self.x()},{self.y()},{self.width()},{self.height()}'
-            Cache().set(Cache.SAVED_MAIN_WINDOW_POS, placement_str)
+            Cache().save_bounds(Cache.SAVED_MAIN_WINDOW_POS, self)
 
     def mousePressEvent(self, event: Optional[QMouseEvent]) -> None:
         """Suppresses mouse events when the loading spinner is active."""

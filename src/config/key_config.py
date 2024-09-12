@@ -200,6 +200,7 @@ class KeyConfig(Config, metaclass=Singleton):
     FILL_TOOL_KEY: str
     FIXED_ANGLE_MODIFIER: str
     FIXED_ASPECT_MODIFIER: str
+    FLATTEN_LAYER_SHORTCUT: str
     FREE_SELECTION_TOOL_KEY: str
     GENERATE_SHORTCUT: str
     GENERATION_AREA_TOOL_KEY: str

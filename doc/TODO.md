@@ -72,7 +72,6 @@
 - Add icons to layers to identify their type (image, group, text, vector (eventually))
 - Layer multi-select: Topmost selected layer is active, all others only selected for the sake of bulk copy/grouping/merge/delete
 - Add "merge group" and "merge all visible" options
-- Add "convert to image" (flatten?) option to text layers
 
 ## Menus
 - Tools: open mypaint brush panel

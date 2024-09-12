@@ -1,5 +1,5 @@
 """Represents a group of linked image layers that can be manipulated as one in limited ways."""
-from typing import List, Optional, Dict, Any, Callable, TypeAlias
+from typing import List, Optional, Dict, Any, TypeAlias, Callable
 
 from PySide6.QtCore import QRect, Signal, QPoint
 from PySide6.QtGui import QPainter, QImage, QTransform
@@ -16,8 +16,8 @@ from src.util.visual.geometry_utils import map_rect_precise
 from src.util.visual.image_utils import create_transparent_image
 from src.util.validation import assert_valid_index
 
-RenderAdjustFn: TypeAlias = Callable[[int, QImage, QRect, QPainter], Optional[QImage]]
 
+RenderAdjustFn: TypeAlias = Callable[[int, QImage, QRect, QPainter], Optional[QImage]]
 
 class LayerStack(Layer, LayerParent):
     """Represents a group of linked image layers that can be manipulated as one in limited ways."""
@@ -179,6 +179,10 @@ class LayerStack(Layer, LayerParent):
                 final_bounds = QRect(QPoint(), final_base_image.size())
                 painter.setOpacity(self.opacity)
                 painter.setCompositionMode(qt_composite_mode)
+                if paint_param_adjuster is not None:
+                    replacement_image = paint_param_adjuster(self.id, base_image, final_bounds, painter)
+                    if replacement_image is not None:
+                        base_image = replacement_image
                 painter.drawImage(final_bounds, base_image)
                 painter.end()
             else:

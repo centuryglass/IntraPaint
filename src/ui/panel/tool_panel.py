@@ -34,7 +34,7 @@ LAYER_TAB = _tr('Layers')
 COLOR_TAB = _tr('Color')
 NAV_TAB = _tr('Navigation')
 
-TOOL_ICON_SIZE = 32
+TOOL_ICON_SIZE = 48
 
 TOOL_LIST_STRETCH = 0
 TOOL_PANEL_STRETCH = 50
@@ -312,16 +312,20 @@ class _ToolButton(QWidget):
         if window_size.isEmpty():
             return QSize(TOOL_ICON_SIZE, TOOL_ICON_SIZE)
         size = max(min(window_size.width() // 40, window_size.height() // 40), TOOL_ICON_SIZE)
+        if self._key_hint is not None:
+            hint_size = self._key_hint.sizeHint()
+            return QSize(max(int(size * 1.5), size + hint_size.width() + 2), size)
         return QSize(int(size * 1.5), size)
 
     def resizeEvent(self, unused_event: Optional[QResizeEvent]):
         """Recalculate and cache icon bounds on size change."""
         self._icon_bounds = get_scaled_placement(self.size(), QSize(10, 10), 8)
         if self._key_hint is not None:
-            self._key_hint.setGeometry(QRect(self._icon_bounds.right() + 1,
-                                             self._icon_bounds.center().y() - self._icon_bounds.height() // 4,
-                                             self._icon_bounds.width() // 2,
-                                             self._icon_bounds.height() // 2))
+            hint_size = self._key_hint.sizeHint()
+            self._key_hint.setGeometry(QRect(self._icon_bounds.right() + 2,
+                                             self._icon_bounds.center().y() - hint_size.height() // 2,
+                                             hint_size.width(),
+                                             hint_size.height()))
 
     @property
     def is_active(self) -> bool:

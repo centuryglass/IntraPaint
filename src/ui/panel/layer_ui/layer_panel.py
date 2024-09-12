@@ -30,6 +30,7 @@ LIST_SPACING = 4
 
 WINDOW_TITLE = _tr('Image Layers')
 ADD_BUTTON_TOOLTIP = _tr('Create a new layer above the current active layer.')
+ADD_GROUP_BUTTON_TOOLTIP = _tr('Create a new layer group above the current active layer.')
 DELETE_BUTTON_TOOLTIP = _tr('Delete the active layer.')
 LAYER_UP_BUTTON_TOOLTIP = _tr('Move the active layer up.')
 LAYER_DOWN_BUTTON_TOOLTIP = _tr('Move the active layer down.')
@@ -39,6 +40,7 @@ OPACITY_LABEL_TEXT = _tr('Opacity:')
 MODE_LABEL_TEXT = _tr('Layer mode:')
 
 ADD_BUTTON_ICON = f'{PROJECT_DIR}/resources/icons/layer/plus_icon.svg'
+ADD_GROUP_BUTTON_ICON = f'{PROJECT_DIR}/resources/icons/layer/plus_group_icon.svg'
 DELETE_BUTTON_ICON = f'{PROJECT_DIR}/resources/icons/layer/minus_icon.svg'
 LAYER_UP_BUTTON_ICON = f'{PROJECT_DIR}/resources/icons/layer/up_icon.svg'
 LAYER_DOWN_BUTTON_ICON = f'{PROJECT_DIR}/resources/icons/layer/down_icon.svg'
@@ -144,6 +146,8 @@ class LayerPanel(QWidget):
             return button
 
         self._add_button = _create_button(ADD_BUTTON_ICON, ADD_BUTTON_TOOLTIP, self._image_stack.create_layer)
+        self._add_group_button = _create_button(ADD_GROUP_BUTTON_ICON, ADD_GROUP_BUTTON_TOOLTIP,
+                                                self._image_stack.create_layer_group)
         self._delete_button = _create_button(DELETE_BUTTON_ICON, DELETE_BUTTON_TOOLTIP, self._image_stack.remove_layer)
         self._move_up_button = _create_button(LAYER_UP_BUTTON_ICON, LAYER_UP_BUTTON_TOOLTIP,
                                               lambda: self._image_stack.move_layer_by_offset(-1))
@@ -280,7 +284,8 @@ class LayerPanel(QWidget):
         for mapped_layer, idx in parent_map:
             assert isinstance(widget_iter, LayerGroupWidget)
             child_group = widget_iter.child_items[idx]
-            assert isinstance(child_group, LayerGroupWidget)
+            if not isinstance(child_group, LayerGroupWidget):
+                continue
             widget_iter = child_group
             assert widget_iter.layer == mapped_layer
             parent_list.append(widget_iter)
