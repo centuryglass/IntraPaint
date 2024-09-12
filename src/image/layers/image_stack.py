@@ -799,7 +799,6 @@ class ImageStack(QObject):
             top_image = top_layer.image
             qt_composite_mode = top_layer.composition_mode.qt_composite_mode()
             if qt_composite_mode is not None:
-                print(f'merge mode: {qt_composite_mode}')
                 painter.setCompositionMode(qt_composite_mode)
                 painter.drawImage(top_layer.bounds, top_image)
             else:

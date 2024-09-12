@@ -12,6 +12,7 @@ from src.tools.base_tool import BaseTool
 from src.tools.generation_area_tool import GenerationAreaTool, GEN_AREA_CONTROL_HINT
 from src.ui.graphics_items.border import Border
 from src.ui.graphics_items.click_and_drag_selection import ClickAndDragSelection
+from src.ui.graphics_items.outline import Outline
 from src.ui.image_viewer import ImageViewer
 from src.ui.input_fields.dual_toggle import DualToggle
 from src.ui.panel.image_panel import ImagePanel
@@ -128,10 +129,11 @@ class ImageWindow(ImagePanel):
         main_scene = main_image_view.scene()
         assert main_scene is not None
         self._main_scene = main_scene
-        self._main_view_border = Border(scene, self.image_viewer)
-        self._main_view_border.setOpacity(BORDER_OPACITY)
-        self._main_view_border.windowed_area = main_image_view.view_scene_bounds
-        self._main_view_border.setVisible(True)
+        self._main_view_outline = Outline(scene, self.image_viewer)
+        self._main_view_outline.animated = False
+        self._main_view_outline.dash_pattern = [2, 0]
+        self._main_view_outline.outlined_region = main_image_view.view_scene_bounds
+        self._main_view_outline.setVisible(True)
 
         self._nav_control_bar = QWidget()
         self.vertical_layout.addWidget(self._nav_control_bar)
@@ -186,8 +188,8 @@ class ImageWindow(ImagePanel):
 
     # noinspection PyUnusedLocal
     def _main_offset_change_slot(self, offset: QPoint) -> None:
-        self._main_view_border.windowed_area = self._main_image_viewer.view_scene_bounds
+        self._main_view_outline.outlined_region = self._main_image_viewer.view_scene_bounds
 
     # noinspection PyUnusedLocal
     def _main_scale_change_slot(self, scale: float) -> None:
-        self._main_view_border.windowed_area = self._main_image_viewer.view_scene_bounds
+        self._main_view_outline.outlined_region = self._main_image_viewer.view_scene_bounds

@@ -295,7 +295,7 @@ def closest_point_keeping_aspect_ratio(moving_point: QPointF, source_point: QPoi
     width = abs(moving_point.x() - source_point.x())
     height = abs(moving_point.y() - source_point.y())
     adjusted_height = width / aspect_ratio
-    adjusted_width = height / aspect_ratio
+    adjusted_width = height * aspect_ratio
     point_options = [
         QPointF(moving_point.x(), source_point.y() + adjusted_height),
         QPointF(moving_point.x(), source_point.y() - adjusted_height),

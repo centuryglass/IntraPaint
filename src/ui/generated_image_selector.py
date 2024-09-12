@@ -86,6 +86,7 @@ class GeneratedImageSelector(QWidget):
                  close_selector: Callable) -> None:
         super().__init__(None)
         self._image_stack = image_stack
+        self._generation_area = image_stack.generation_area
         self._close_selector = close_selector
         self._options: List[_ImageOption] = []
         self._outlines: List[Outline] = []
@@ -451,6 +452,7 @@ class GeneratedImageSelector(QWidget):
             painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_DestinationIn)
             painter.drawImage(QRect(QPoint(0, 0), image.size()), inpaint_mask)
             painter.end()
+        self._image_stack.generation_area = self._generation_area
         self._image_stack.set_generation_area_content(image, layer)
 
     def _select_option_and_close(self, option_index: int) -> None:

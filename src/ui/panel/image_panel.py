@@ -87,7 +87,6 @@ class ImagePanel(QWidget):
             self._control_hint_label: Optional[QLabel] = QLabel('')
             assert self._control_layout is not None
             assert self._control_hint_label is not None
-            # self._control_hint_label.setWordWrap(True)
             self._control_layout.addWidget(self._control_hint_label)
             self._control_layout.addSpacing(25)
             scale_reset_button = QPushButton()
