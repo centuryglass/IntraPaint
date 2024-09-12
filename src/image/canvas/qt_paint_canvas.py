@@ -88,7 +88,6 @@ class QtPaintCanvas(LayerCanvas):
         self._last_opacity.clear()
         self._last_hardness.clear()
         if not self._brush_stroke_buffer.isNull():
-            self._brush_stroke_buffer.save('stroke_buffer.png')
             self._brush_stroke_buffer.fill(Qt.GlobalColor.transparent)
 
     def set_input_mask(self, mask_image: Optional[QImage]) -> None:
@@ -217,6 +216,7 @@ class QtPaintCanvas(LayerCanvas):
         change_bounds = QRect()
         for event in self._input_buffer:
             change_bounds = change_bounds.united(event.change_bounds)
+        change_bounds = change_bounds.intersected(self.layer.bounds)
         new_input_painter = QPainter(self._paint_buffer)
         with layer.borrow_image(change_bounds) as layer_image:
             img_painter = QPainter(layer_image)

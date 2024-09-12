@@ -38,6 +38,7 @@ class Cache(Config, metaclass=Singleton):
     NEW_IMAGE_BACKGROUND_COLOR: str
     PAINT_SELECTION_ONLY: str
     SAMPLE_MERGED: str
+    SAVED_MAIN_WINDOW_POS: str
     STYLES: str
     TEXT_BACKGROUND_COLOR: str
     TEXT_TOOL_PARAMS: str

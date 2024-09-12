@@ -6,6 +6,9 @@ import logging
 import sys
 from typing import Optional, Dict, List
 from enum import Enum
+
+from src.config.cache import Cache
+
 try:
     from enum import StrEnum
 except ImportError:  # Use third-party StrEnum if python version < 3.11
@@ -397,6 +400,10 @@ class MainWindow(QMainWindow):
             loading_bounds = QRect(self.width() // 2 - loading_widget_size // 2, loading_widget_size * 3,
                                    loading_widget_size, loading_widget_size)
             self._loading_widget.setGeometry(loading_bounds)
+        # Cache window placement:
+        if self.isVisible():
+            placement_str = f'{self.x()},{self.y()},{self.width()},{self.height()}'
+            Cache().set(Cache.SAVED_MAIN_WINDOW_POS, placement_str)
 
     def mousePressEvent(self, event: Optional[QMouseEvent]) -> None:
         """Suppresses mouse events when the loading spinner is active."""

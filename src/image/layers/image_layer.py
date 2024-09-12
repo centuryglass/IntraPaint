@@ -155,6 +155,8 @@ class ImageLayer(TransformLayer):
         assert self.locked is not True, 'Tried to change image in a locked layer'
         if change_bounds is None or change_bounds.isEmpty():
             change_bounds = self.bounds
+        if not self.bounds.contains(change_bounds):
+            raise ValueError(f'Change bounds {change_bounds} not within layer bounds {self.bounds}')
         initial_image = self.image
         try:
             yield self._image
@@ -166,7 +168,6 @@ class ImageLayer(TransformLayer):
             initial_bounds_content = initial_image if change_bounds == self.bounds \
                 else initial_image.copy(change_bounds)
             updated_content = self._image.copy(change_bounds)
-            print(f'do: changed {change_bounds}')
 
             def _apply_change(content: QImage, bounds: QRect) -> None:
                 init_image = QImage(self._image.size(), QImage.Format.Format_ARGB32_Premultiplied)
@@ -176,15 +177,13 @@ class ImageLayer(TransformLayer):
                 np.copyto(np_init_img, np_layer_image)
                 np.copyto(np_layer_image, np_content)
                 self.invalidate_pixmap()
-                self._handle_content_change(self._image, init_image, change_bounds)
-                self.content_changed.emit(self, change_bounds)
+                self._handle_content_change(self._image, init_image, bounds)
+                self.content_changed.emit(self, bounds)
 
             def _apply(c: QImage = updated_content, b: QRect = change_bounds) -> None:
-                print(f'redo: changed {b}')
                 _apply_change(c, b)
 
             def _undo(c: QImage = initial_bounds_content, b: QRect = change_bounds) -> None:
-                print(f'undo: changed {b}')
                 _apply_change(c, b)
                 self.content_changed.emit(self, change_bounds)
 

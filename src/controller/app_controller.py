@@ -195,8 +195,16 @@ class AppController(MenuBuilder):
             self._window.setMaximumSize(width, height)
             self._window.setMinimumSize(width, height)
         else:
-            size = get_screen_size(self._window)
-            self._window.setGeometry(0, 0, size.width(), size.height())
+            try:
+                x, y, width, height = (int(param) for param in Cache().get(Cache.SAVED_MAIN_WINDOW_POS).split(','))
+                size = QSize(width, height)
+            except (ValueError, TypeError):
+                size = get_screen_size(self._window)
+                x = 0
+                y = 0
+                width = size.width()
+                height = size.height()
+            self._window.setGeometry(x, y, width, height)
             self._window.setMaximumSize(size)
         if args.init_image is not None:
             self.load_image(file_path=args.init_image)

@@ -197,5 +197,13 @@
         "type": "string",
         "default": "",
         "saved": true
+    },
+    "saved_main_window_pos": {
+        "label": "Saved main window placement",
+        "category": "Cache",
+        "description": "display, position, and size where the main window last was.",
+        "type": "string",
+        "default": "",
+        "saved": true
     }
 }

@@ -3,7 +3,6 @@
 
 ## Misc. bugs, minor features, and testing:
 - Create example images for README, finish missing sections and improve writing
-- fixes for borrow_image + undo aren't quite working
 - composite modes not applied properly on merging down?
 - image selector should save gen. area on init; image window can move gen. area and cause problems.
 - using a border on the image window/nav panel for the viewport makes it harder to assess the full image, use an outline instead (no dotted lines)
