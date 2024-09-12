@@ -149,11 +149,13 @@ class PolygonOutline(QGraphicsItemGroup):
         else:
             self._animator.animation.stop()
 
+    # noinspection PyPep8Naming
     def showEvent(self, _: Optional[QShowEvent]) -> None:
         """Starts the animation when the outline is shown."""
         if self._animated:
             self._animator.animation.start()
 
+    # noinspection PyPep8Naming
     def hideEvent(self, _: Optional[QHideEvent]) -> None:
         """Stops the animation when the outline is hidden."""
         self._animator.animation.stop()

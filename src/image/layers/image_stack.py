@@ -367,7 +367,7 @@ class ImageStack(QObject):
         return image
 
     def render(self, base_image: Optional[QImage] = None,
-                      paint_param_adjuster: Optional[Callable[[int, QImage, QRect, QPainter], Optional[QImage]]]
+               paint_param_adjuster: Optional[Callable[[int, QImage, QRect, QPainter], Optional[QImage]]]
                       = None) -> QImage:
         """Render all layers to a QImage with a custom base image and accepting a function to control layer painting on
         a per-layer basis.

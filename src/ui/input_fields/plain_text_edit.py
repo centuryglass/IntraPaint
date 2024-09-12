@@ -18,6 +18,7 @@ class PlainTextEdit(QPlainTextEdit):
         """Return the text value."""
         return self.toPlainText()
 
+    # noinspection PyPep8Naming
     def setValue(self, new_value: str) -> None:
         """Update the text value."""
         self.setPlainText(new_value)

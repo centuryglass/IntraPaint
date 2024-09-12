@@ -121,7 +121,7 @@ class Layer(QObject):
             assert isinstance(new_parent, Layer)
             assert new_parent.contains(self), (f'Layer {self.name}:{self.id} parent set'
                                                f' to {new_parent.name}:{new_parent.id}), but that layer does not '
-                                                'contain this one.')
+                                               'contain this one.')
         self._parent = new_parent
 
     @property
@@ -454,10 +454,10 @@ class Layer(QObject):
         self.content_changed.emit(self, self.bounds)
 
     def _apply_combinable_change(self,
-                                    new_value: Any,
-                                    last_value: Any,
-                                    value_setter: Callable[[Any], None],
-                                    change_type: str) -> None:
+                                 new_value: Any,
+                                 last_value: Any,
+                                 value_setter: Callable[[Any], None],
+                                 change_type: str) -> None:
         assert not self.locked and not self.parent_locked, f'Tried to change {change_type} in a locked layer'
         if last_value == new_value:
             return

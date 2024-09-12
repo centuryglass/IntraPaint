@@ -10,8 +10,10 @@ from PySide6.QtWidgets import QWidget, QGraphicsItem, QStyleOptionGraphicsItem, 
 
 from src.ui.graphics_items.transform_handle import TransformHandle, TRANSFORM_MODE_SCALE, TRANSFORM_MODE_ROTATE
 from src.util.visual.geometry_utils import extract_transform_parameters, combine_transform_parameters
-from src.util.visual.graphics_scene_utils import get_view_bounds_of_scene_item_rect, map_scene_item_point_to_view_point, \
-    get_scene_item_bounds_of_view_rect, get_view, get_scene_bounds_of_scene_item_rect
+from src.util.visual.graphics_scene_utils import (get_view_bounds_of_scene_item_rect,
+                                                  map_scene_item_point_to_view_point,
+                                                  get_scene_item_bounds_of_view_rect, get_view,
+                                                  get_scene_bounds_of_scene_item_rect)
 from src.util.visual.image_utils import create_transparent_image
 from src.util.math_utils import clamp, avoiding_zero
 from src.util.shared_constants import MIN_NONZERO

@@ -100,6 +100,7 @@ class DualToggle(QWidget):
         """Returns the current selected option string."""
         return self._selected
 
+    # noinspection PyPep8Naming
     def setValue(self, selected_option: Optional[str]) -> None:
         """Set the selected option string. Raises ValueError if the choice isn't one of the available options."""
         if selected_option == self._selected:

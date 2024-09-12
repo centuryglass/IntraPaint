@@ -1,5 +1,5 @@
 """Represents a group of linked image layers that can be manipulated as one in limited ways."""
-from typing import List, Optional, Dict, Any, Callable
+from typing import List, Optional, Dict, Any, Callable, TypeAlias
 
 from PySide6.QtCore import QRect, Signal, QPoint
 from PySide6.QtGui import QPainter, QImage, QTransform
@@ -15,6 +15,8 @@ from src.util.cached_data import CachedData
 from src.util.visual.geometry_utils import map_rect_precise
 from src.util.visual.image_utils import create_transparent_image
 from src.util.validation import assert_valid_index
+
+RenderAdjustFn: TypeAlias = Callable[[int, QImage, QRect, QPainter], Optional[QImage]]
 
 
 class LayerStack(Layer, LayerParent):
@@ -127,8 +129,7 @@ class LayerStack(Layer, LayerParent):
         return image
 
     def render(self, base_image: Optional[QImage] = None,
-               paint_param_adjuster: Optional[Callable[[int, QImage, QRect, QPainter],
-                                                        Optional[QImage]]] = None) -> QImage:
+               paint_param_adjuster: Optional[RenderAdjustFn] = None) -> QImage:
         """Render all layers to a QImage with a custom base image and accepting a function to control layer painting on
         a per-layer basis.
 

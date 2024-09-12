@@ -182,7 +182,7 @@ class TextToolPanel(QWidget):
         self._checkbox_container.setSizePolicy(QSizePolicy.Policy.Preferred,
                                                QSizePolicy.Policy.MinimumExpanding)
         self._checkbox_scroll.setSizePolicy(QSizePolicy.Policy.MinimumExpanding,
-                                               QSizePolicy.Policy.Expanding)
+                                            QSizePolicy.Policy.Expanding)
 
         def _init_checkbox(label: str, icon_path: str, getter: Callable[[QFont], bool],
                            setter: Callable[[QFont, bool], None]) -> CheckBox:

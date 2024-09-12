@@ -37,6 +37,7 @@ class ComboBox(QComboBox):
             raise TypeError(f'Item should have data type {self._data_type}, found {data}')
         return data
 
+    # noinspection PyPep8Naming
     def setValue(self, new_value: Any) -> None:
         """Updates the current selected item value."""
         index = self.findData(new_value)

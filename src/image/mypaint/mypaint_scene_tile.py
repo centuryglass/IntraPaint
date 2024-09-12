@@ -11,7 +11,8 @@ from src.image.composite_mode import CompositeMode
 from src.image.mypaint.libmypaint import TILE_DIM, TilePixelBuffer
 from src.image.mypaint.numpy_image_utils import pixel_data_as_numpy_16bit, numpy_8bit_to_16bit, numpy_16bit_to_8bit
 from src.ui.graphics_items.layer_graphics_item import LayerGraphicsItem
-from src.util.visual.image_utils import NpAnyArray, image_data_as_numpy_8bit, numpy_intersect, image_is_fully_transparent
+from src.util.visual.image_utils import (NpAnyArray, image_data_as_numpy_8bit, numpy_intersect,
+                                         image_is_fully_transparent)
 
 RED = 0
 GREEN = 1

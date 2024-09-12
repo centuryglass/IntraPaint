@@ -166,6 +166,7 @@ class ImageLayer(TransformLayer):
             initial_bounds_content = initial_image if change_bounds == self.bounds \
                 else initial_image.copy(change_bounds)
             updated_content = self._image.copy(change_bounds)
+            print(f'do: changed {change_bounds}')
 
             def _apply_change(content: QImage, bounds: QRect) -> None:
                 init_image = QImage(self._image.size(), QImage.Format.Format_ARGB32_Premultiplied)
@@ -179,9 +180,11 @@ class ImageLayer(TransformLayer):
                 self.content_changed.emit(self, change_bounds)
 
             def _apply(c: QImage = updated_content, b: QRect = change_bounds) -> None:
+                print(f'redo: changed {b}')
                 _apply_change(c, b)
 
             def _undo(c: QImage = initial_bounds_content, b: QRect = change_bounds) -> None:
+                print(f'undo: changed {b}')
                 _apply_change(c, b)
                 self.content_changed.emit(self, change_bounds)
 

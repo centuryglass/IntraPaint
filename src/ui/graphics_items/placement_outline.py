@@ -9,8 +9,9 @@ from PySide6.QtWidgets import QWidget, QGraphicsItem, QStyleOptionGraphicsItem, 
 
 from src.ui.graphics_items.transform_handle import TransformHandle
 from src.util.visual.geometry_utils import combine_transform_parameters, closest_size_keeping_aspect_ratio
-from src.util.visual.graphics_scene_utils import get_view_bounds_of_scene_item_rect, map_scene_item_point_to_view_point, \
-    get_scene_item_bounds_of_view_rect, get_view
+from src.util.visual.graphics_scene_utils import (get_view_bounds_of_scene_item_rect,
+                                                  map_scene_item_point_to_view_point,
+                                                  get_scene_item_bounds_of_view_rect, get_view)
 from src.util.math_utils import clamp, avoiding_zero
 from src.util.shared_constants import MIN_NONZERO, FLOAT_MIN, FLOAT_MAX
 

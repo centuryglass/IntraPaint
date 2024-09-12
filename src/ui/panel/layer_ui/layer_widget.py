@@ -4,7 +4,7 @@ from typing import Optional, cast, Callable
 
 from PySide6.QtCore import QSize, Qt, QRect, QPoint, QMimeData, Signal
 from PySide6.QtGui import (QPixmap, QImage, QPainter, QTransform, QResizeEvent, QPaintEvent, QColor, QMouseEvent, QDrag,
-                           QAction)
+                           QAction, QPainterPath, QPen)
 from PySide6.QtWidgets import QWidget, QHBoxLayout, QLabel, QSizePolicy, QMenu, QApplication
 
 from src.config.cache import Cache
@@ -19,11 +19,11 @@ from src.ui.layout.bordered_widget import BorderedWidget
 from src.ui.panel.layer_ui.layer_alpha_lock_button import LayerAlphaLockButton
 from src.ui.panel.layer_ui.layer_lock_button import LayerLockButton
 from src.ui.panel.layer_ui.layer_visibility_button import LayerVisibilityButton
+from src.util.shared_constants import ICON_SIZE
 from src.util.visual.display_size import get_window_size
-from src.util.visual.text_drawing_utils import find_text_size
 from src.util.visual.geometry_utils import get_scaled_placement
 from src.util.visual.image_utils import get_transparency_tile_pixmap, crop_to_content
-from src.util.shared_constants import ICON_SIZE
+from src.util.visual.text_drawing_utils import find_text_size
 
 # The QCoreApplication.translate context for strings in this file
 TR_ID = 'ui.panel.layer.image_layer_widget'
@@ -169,14 +169,29 @@ class LayerWidget(BorderedWidget):
         """Draws the scaled layer contents to the widget."""
         paint_bounds = self._layer_preview_bounds()
         painter = QPainter(self)
+        if self.active:
+            # Draw active layer with a slightly different color and a fancier border:
+            palette = self.palette()
+            bg_color = palette.color(self.backgroundRole())
+            if bg_color.lightness() < 128:
+                bg_color = bg_color.lighter()
+            else:
+                bg_color = bg_color.darker()
+            painter.fillRect(QRect(QPoint(), self.size()), bg_color)
+            path = QPainterPath()
+            path.addRoundedRect(3, 2, self.width() - 5, self.height() - 5, 6, 6)
+            painter.setPen(QPen(self.color, 2))
+            painter.drawRect(QRect(0, 0, self.width() - 1, self.height() - 1))
+            painter.setPen(QPen(self.color, 6))
+            painter.drawPath(path)
+            highlight_color = QColor.fromHsv(self.color.hue(), self.color.saturation(),
+                                             255 if self.color.lightness() < 128 else 0)
+            painter.setPen(QPen(highlight_color, 2))
+            painter.drawPath(path)
         if not paint_bounds.isEmpty():
             painter.setPen(Qt.GlobalColor.black)
             painter.drawRect(paint_bounds)
             painter.save()
-            painter.setOpacity(self._layer.opacity)
-            qt_composite_mode = self._layer.composition_mode.qt_composite_mode()
-            if qt_composite_mode is not None:
-                painter.setCompositionMode(qt_composite_mode)
             painter.drawPixmap(paint_bounds, self._preview_pixmap)
             painter.restore()
             if not self._layer.visible:
@@ -216,15 +231,15 @@ class LayerWidget(BorderedWidget):
         """Updates whether this layer is active."""
         if is_active != self._active:
             self.color = self._active_color if is_active else self._inactive_color
-            self.line_width = 10 if is_active else 1
+            self.line_width = 0 if is_active else 1
             self._active = is_active
             self.update()
 
     def mousePressEvent(self, event: Optional[QMouseEvent]) -> None:
         """Activate layer on click."""
         assert event is not None
-        self._clicking = True
-        self._click_pos = event.pos()
+        if event.buttons() == Qt.MouseButton.LeftButton:
+            self._click_pos = event.pos()
         if self._layer == self._image_stack.selection_layer:
             Cache().set(Cache.LAST_ACTIVE_TOOL, LABEL_TEXT_SELECTION_TOOL)
         elif not self.active and event.button() == Qt.MouseButton.LeftButton:
@@ -237,7 +252,9 @@ class LayerWidget(BorderedWidget):
         assert event is not None
         drag_distance = (self._click_pos - event.pos()).manhattanLength()
 
-        if drag_distance > QApplication.startDragDistance() and self._layer != self._image_stack.layer_stack:
+        if (drag_distance > QApplication.startDragDistance() and self._layer != self._image_stack.layer_stack
+                and event.buttons() == Qt.MouseButton.LeftButton):
+            self._clicking = True
             self.update()
             self.dragging.emit()
             drag = QDrag(self)

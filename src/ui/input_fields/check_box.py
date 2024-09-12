@@ -18,6 +18,7 @@ class CheckBox(QCheckBox):
         """Return whether the checkbox is checked."""
         return self.isChecked()
 
+    # noinspection PyPep8Naming
     def setValue(self, new_value: bool) -> None:
         """Set whether the checkbox is checked."""
         self.setChecked(new_value)

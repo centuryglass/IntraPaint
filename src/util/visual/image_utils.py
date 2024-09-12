@@ -361,6 +361,7 @@ def get_color_icon(color: QColor | Qt.GlobalColor, size: Optional[QSize] = None)
     painter.end()
     return pixmap
 
+
 def temp_image_path(image_name: str, image_draw_fn: Callable[[], QImage]) -> str:
     """Creates or loads a temporary image with a particular filename."""
     global temp_image_dir

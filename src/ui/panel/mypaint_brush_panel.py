@@ -215,7 +215,6 @@ class _IconButton(QWidget):
         self._brush_name = os.path.basename(brush_path)[:-4]
         self._brush_path = brush_path
         if not os.path.isfile(image_path):
-            print(f'{image_path} not found, creating placeholder')
 
             def _draw_image() -> QImage:
 

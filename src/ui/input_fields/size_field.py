@@ -122,6 +122,7 @@ class SizeField(QWidget):
         """Accesses the current size value."""
         return QSize(self._width, self._height)
 
+    # noinspection PyPep8Naming
     def setValue(self, new_value: QSize) -> None:
         """Updates the current size value."""
         if new_value != self.value():

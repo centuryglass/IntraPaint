@@ -50,12 +50,14 @@ class BigIntSpinbox(QAbstractSpinBox):
         """Returns the current numeric value as an int."""
         return int(self._line_edit.text())
 
+    # noinspection PyPep8Naming
     def setValue(self, value: int) -> None:
         """Sets a new integer value if within the accepted range."""
         value = int(value)
         if self._value_in_range(value):
             self._line_edit.setText(str(value))
 
+    # noinspection PyPep8Naming
     def setSingleStep(self, single_step: int) -> None:
         """Sets the amount the spinbox value should change when the controls are used to change the value once."""
         assert isinstance(single_step, int)
@@ -70,6 +72,7 @@ class BigIntSpinbox(QAbstractSpinBox):
         """Returns whether incrementing/decrementing the value by steps is enabled."""
         return self.StepEnabledFlag.StepUpEnabled | self.StepEnabledFlag.StepDownEnabled
 
+    # noinspection PyPep8Naming
     def singleStep(self) -> int:
         """Returns the amount the spinbox value changes when controls are clicked once. """
         return self._single_step
@@ -78,6 +81,7 @@ class BigIntSpinbox(QAbstractSpinBox):
         """Returns the current minimum accepted value."""
         return self._minimum
 
+    # noinspection PyPep8Naming
     def setMinimum(self, minimum: int) -> None:
         """Sets the minimum value accepted, must be an integer no less than -18446744073709551616."""
         assert isinstance(minimum, int)
@@ -89,6 +93,7 @@ class BigIntSpinbox(QAbstractSpinBox):
         """Returns the current maximum accepted value."""
         return self._maximum
 
+    # noinspection PyPep8Naming
     def setMaximum(self, maximum: int) -> None:
         """Sets the maximum value accepted, must be an integer no greater than 18446744073709551615."""
         assert isinstance(maximum, int)
@@ -96,6 +101,7 @@ class BigIntSpinbox(QAbstractSpinBox):
             raise ValueError(f'Maximum cannot be greater that {BigIntSpinbox.MAXIMUM}, got {maximum}')
         self._maximum = maximum
 
+    # noinspection PyPep8Naming
     def setRange(self, minimum: int, maximum: int) -> None:
         """Sets the range of accepted values."""
         self.setMinimum(minimum)

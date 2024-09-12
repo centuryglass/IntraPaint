@@ -37,11 +37,13 @@ class EditableLabel(QWidget):
         self._label.setText(text)
         self._field.setText(text)
 
+    # noinspection PyPep8Naming
     def setAlignment(self, alignment: Qt.AlignmentFlag) -> None:
         """Set the text alignment."""
         self._label.setAlignment(alignment)
         self._field.setAlignment(alignment)
 
+    # noinspection PyPep8Naming
     def setWordWrap(self, enable_word_wrap: bool) -> None:
         """Enable or disable word wrap (outside of editing mode)."""
         self._label.setWordWrap(enable_word_wrap)

@@ -18,6 +18,7 @@ class LineEdit(QLineEdit):
         """Return the text value."""
         return self.text()
 
+    # noinspection PyPep8Naming
     def setValue(self, new_value: str) -> None:
         """Update the text value."""
         self.setText(new_value)

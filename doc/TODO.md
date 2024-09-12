@@ -3,7 +3,6 @@
 
 ## Misc. bugs, minor features, and testing:
 - Create example images for README, finish missing sections and improve writing
-- layer widget rendering gets stuck in darker "drag" mode
 - fixes for borrow_image + undo aren't quite working
 - composite modes not applied properly on merging down?
 - image selector should save gen. area on init; image window can move gen. area and cause problems.
@@ -78,8 +77,6 @@
 - Layer multi-select: Topmost selected layer is active, all others only selected for the sake of bulk copy/grouping/merge/delete
 - Add "merge group" and "merge all visible" options
 - Add "convert to image" (flatten?) option to text layers
-- Layer preview images should ignore composition mode, opacity
-- Improve appearance of active layer
 
 ## Menus
 - Tools: open mypaint brush panel

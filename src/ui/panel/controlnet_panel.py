@@ -179,8 +179,8 @@ class ControlnetPanel(BorderedWidget):
         self._load_image_button.setText(CONTROL_IMAGE_BUTTON_LABEL)
         self._load_image_button.setEnabled(not use_generation_area)
         self._image_path_edit = QLineEdit('' if use_generation_area or CONTROL_CONFIG_IMAGE_KEY
-                                                not in initial_control_state
-                                           else initial_control_state[CONTROL_CONFIG_IMAGE_KEY])
+                                          not in initial_control_state
+                                          else initial_control_state[CONTROL_CONFIG_IMAGE_KEY])
         self._image_path_edit.setEnabled(not use_generation_area)
         self._reuse_image_checkbox = QCheckBox()
         self._reuse_image_checkbox.setText(GENERATION_AREA_AS_CONTROL)

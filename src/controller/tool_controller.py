@@ -243,7 +243,7 @@ class ToolController(QObject):
                 event = cast(QMouseEvent, event)
                 event_handled = active_tool.mouse_release(event, find_image_coordinates(event))
             case QEvent.Type.TabletMove | QEvent.Type.TabletEnterProximity | QEvent.Type.TabletLeaveProximity | \
-                   QEvent.Type.TabletPress | QEvent.Type.TabletRelease:
+                    QEvent.Type.TabletPress | QEvent.Type.TabletRelease:
                 event = cast(QTabletEvent, event)
                 event_handled = active_tool.tablet_event(event, find_image_coordinates(event))
             case QEvent.Type.Wheel:
