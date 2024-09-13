@@ -375,6 +375,11 @@ class Config:
             raise KeyError(UNKNOWN_KEY_ERROR.format(key=key))
         self._connected[key].pop(connected_object, None)
 
+    def disconnect_all(self, connected_object: Any) -> None:
+        """Removes all connections associated with a particular object."""
+        for connection_list in self._connected.values():
+            connection_list.pop(connected_object, None)
+
     def list(self) -> List[str]:
         """Returns all keys tracked by this Config object."""
         return list(self._entries.keys())

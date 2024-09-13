@@ -202,6 +202,8 @@ class QtPaintCanvas(LayerCanvas):
             changes = changes & ~stroke_buf_overrides
 
         # Draw the last segment to the image:
+        if self.eraser:
+            img_painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_DestinationOut)
         img_painter.drawImage(bounds, self._paint_buffer, bounds)
         # Add the last paint operation to stroke buffer:
         np_stroke_buf[changes, :] = np_paint_buf[changes, :]

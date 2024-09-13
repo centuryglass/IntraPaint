@@ -13,6 +13,7 @@ from src.hotkey_filter import HotkeyFilter
 from src.image.layers.image_stack import ImageStack
 from src.tools.base_tool import BaseTool
 from src.tools.draw_tool import DrawTool
+from src.tools.eraser_tool import EraserTool
 from src.tools.eyedropper_tool import EyedropperTool
 from src.tools.fill_tool import FillTool
 from src.tools.free_selection_tool import FreeSelectionTool
@@ -79,6 +80,7 @@ class ToolController(QObject):
             brush_tool = None
         draw_tool = DrawTool(image_stack, image_viewer)
         self._add_tool(draw_tool)
+        self._add_tool(EraserTool(image_stack, image_viewer))
         fill_tool = FillTool(image_stack)
         self._add_tool(fill_tool)
         eyedropper_tool = EyedropperTool(image_stack)

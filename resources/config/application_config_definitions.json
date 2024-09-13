@@ -202,9 +202,23 @@
         "label": "Brush size:",
         "category": "Editing",
         "subcategory": "Size",
-        "description": "Current/initial brush size (in pixels) for the drawing/painting tool.",
+        "description": "Current/initial brush size (in pixels) for drawing tools.",
         "type": "int",
-        "default": 8,
+        "default": 40,
+        "saved": true,
+        "range_options": {
+            "min": 1,
+            "max": 300,
+            "step": 1
+        }
+    },
+    "eraser_size": {
+        "label": "Eraser size:",
+        "category": "Editing",
+        "subcategory": "Size",
+        "description": "Current/initial brush size (in pixels) for the eraser tool.",
+        "type": "int",
+        "default": 20,
         "saved": true,
         "range_options": {
             "min": 1,

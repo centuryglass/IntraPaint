@@ -42,7 +42,7 @@ class DrawTool(CanvasTool):
     def __init__(self, image_stack: ImageStack, image_viewer: ImageViewer) -> None:
         super().__init__(image_stack, image_viewer, QtPaintCanvas())
         self._last_click = None
-        self._control_panel = DrawToolPanel()
+        self._control_panel: Optional[DrawToolPanel] = None
         self._active = False
         self._drawing = False
         self._cached_size = None
@@ -56,7 +56,7 @@ class DrawTool(CanvasTool):
 
         def apply_brush_size(size: int) -> None:
             """Update brush size for the canvas and cursor when it changes in config."""
-            self._canvas.brush_size = size
+            self.canvas.brush_size = size
             self.update_brush_cursor()
         config.connect(self, AppConfig.SKETCH_BRUSH_SIZE, apply_brush_size)
 
@@ -65,10 +65,6 @@ class DrawTool(CanvasTool):
             color = QColor(color_str)
             self.brush_color = color
         cache.connect(self, Cache.LAST_BRUSH_COLOR, set_brush_color)
-
-        def _set_eraser(tool_mode: str) -> None:
-            self.canvas.eraser = tool_mode == TOOL_MODE_ERASE
-        self._control_panel.tool_mode_changed.connect(_set_eraser)
 
         image_stack.active_layer_changed.connect(self._active_layer_change_slot)
         self.layer = image_stack.active_layer
@@ -114,6 +110,12 @@ class DrawTool(CanvasTool):
 
     def get_control_panel(self) -> Optional[QWidget]:
         """Returns the brush control panel."""
+        if self._control_panel is None:
+            self._control_panel = DrawToolPanel()
+
+            def _set_eraser(tool_mode: str) -> None:
+                self.canvas.eraser = tool_mode == TOOL_MODE_ERASE
+            self._control_panel.tool_mode_changed.connect(_set_eraser)
         return self._control_panel
 
     def tablet_event(self, event: Optional[QTabletEvent], image_coordinates: QPoint) -> bool:

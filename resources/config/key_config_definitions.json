@@ -161,6 +161,15 @@
         "default": "D",
         "saved": true
     },
+    "eraser_tool_key": {
+        "label": "Switch to the eraser tool:",
+        "category": "Keybindings",
+        "subcategory": "Tool Selection",
+        "description": "Activate the eraser tool to erase image content.",
+        "type": "string",
+        "default": "A",
+        "saved": true
+    },
     "eyedropper_tool_key": {
         "label": "Switch to the color picker tool:",
         "category": "Keybindings",

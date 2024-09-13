@@ -103,6 +103,7 @@ class AppConfig(Config, metaclass=Singleton):
     DOWNSCALE_MODE: str
     EDIT_MODE: str
     EDIT_SIZE: str
+    ERASER_SIZE: str
     FONT_POINT_SIZE: str
     GENERATION_SIZE: str
     GENERATION_TAB_BAR: str
