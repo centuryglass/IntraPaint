@@ -4,11 +4,7 @@
 ## Misc. bugs, minor features, and testing:
 - Create example images for README, finish missing sections and improve writing
 - changing gen. area size still doesn't always sync fully - width changes but not height
-- image window intercepts zoom key
 
-# Color picker component:
-- Alternate palette options - all custom colors?
-- Selected color preview on palette-only screen, draggable to custom colors
 - 
 ## Documentation + Release
 - Rewrite README.md for stable-diffusion info

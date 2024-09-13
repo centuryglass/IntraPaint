@@ -2,10 +2,11 @@
 from typing import Optional, Tuple
 
 from PySide6.QtCore import QSize, QPoint
-from PySide6.QtGui import QColor
+from PySide6.QtGui import QColor, QResizeEvent
 from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, \
     QTabWidget, QBoxLayout, QSizePolicy, QPushButton, QLabel, QApplication
 
+from src.ui.widget.color_picker.color_show_label import ColorShowLabel, PaletteColorShowLabel
 from src.ui.widget.color_picker.component_spinbox_picker import ComponentSpinboxPicker
 from src.ui.widget.color_picker.hsv_picker import HsvPicker
 from src.ui.widget.color_picker.palette_widget import StandardColorPaletteWidget, CustomColorPaletteWidget
@@ -59,11 +60,17 @@ class TabbedColorPicker(ScreenColorWidget):
         self._basic_palette_layout = QVBoxLayout(self._basic_palette_panel)
         self._basic_palette_label = QLabel(BASIC_PALETTE_TITLE)
         self._basic_palette_layout.addWidget(self._basic_palette_label)
+
         self._basic_palette = StandardColorPaletteWidget()
         self._basic_palette_label.setBuddy(self._basic_palette_label)
         self._basic_palette_layout.addWidget(self._basic_palette)
         self._basic_palette.connect_screen_color_picker(self)
         self._basic_palette.color_selected.connect(self.set_current_color)
+
+        self._basic_palette_preview = PaletteColorShowLabel()
+        self._basic_palette_layout.addWidget(self._basic_palette_preview)
+        self._basic_palette_preview.color_dropped.connect(self.set_current_color)
+
         self._pick_color_button = QPushButton()
         self._pick_color_button.setText(BUTTON_LABEL_PICK_SCREEN_COLOR)
         self._pick_color_button.clicked.connect(self.start_screen_color_picking)
@@ -74,11 +81,17 @@ class TabbedColorPicker(ScreenColorWidget):
         self._custom_palette_layout = QVBoxLayout(self._custom_palette_panel)
         self._custom_palette_label = QLabel(CUSTOM_PALETTE_TITLE)
         self._custom_palette_layout.addWidget(self._custom_palette_label)
+
         self._custom_palette = CustomColorPaletteWidget()
         self._custom_palette_label.setBuddy(self._custom_palette)
         self._custom_palette.connect_screen_color_picker(self)
         self._custom_palette.color_selected.connect(self.set_current_color)
         self._custom_palette_layout.addWidget(self._custom_palette)
+
+        self._custom_palette_preview = PaletteColorShowLabel()
+        self._custom_palette_layout.addWidget(self._custom_palette_preview)
+        self._custom_palette_preview.color_dropped.connect(self.set_current_color)
+
         self._add_custom_color_button = QPushButton()
         self._add_custom_color_button.setText(BUTTON_LABEL_ADD_CUSTOM_COLOR)
         self._add_custom_color_button.clicked.connect(lambda: self._custom_palette.add_color(self._color))
@@ -86,6 +99,7 @@ class TabbedColorPicker(ScreenColorWidget):
 
         self._screen_preview_label = QLabel()
         self._screen_preview_label.setText('')
+        self._screen_preview_label.setVisible(False)
 
         def _set_label_pos(pos: QPoint, _) -> None:
             self._screen_preview_label.setVisible(True)
@@ -138,6 +152,8 @@ class TabbedColorPicker(ScreenColorWidget):
         self._hsv_picker.color_selected.disconnect(self.set_current_color)
         self._component_picker.color_selected.disconnect(self.set_current_color)
 
+        self._basic_palette_preview.color = color
+        self._custom_palette_preview.color = color
         self._basic_palette.select_color_if_present(color)
         self._custom_palette.select_color_if_present(color)
         self._hsv_picker.color = color
@@ -212,6 +228,8 @@ class TabbedColorPicker(ScreenColorWidget):
             return
         self._mode = MODE_1X1
         self._clear_layouts()
+        self._basic_palette_preview.setVisible(True)
+        self._custom_palette_preview.setVisible(True)
         tab_names = (SPECTRUM_TAB_TITLE, COMPONENT_TAB_TITLE, BASIC_PALETTE_TITLE, CUSTOM_PALETTE_TITLE)
         for title, tab in zip(tab_names, self._panels()):
             if self._always_show_pick_color_button and title != BASIC_PALETTE_TITLE:
@@ -253,6 +271,8 @@ class TabbedColorPicker(ScreenColorWidget):
     def _use_linear_layout(self, layout_class) -> None:
         self._clear_layouts()
         self._main_layout = layout_class()
+        self._basic_palette_preview.setVisible(False)
+        self._custom_palette_preview.setVisible(False)
         self._outer_layout.addLayout(self._main_layout)
         for panel in self._panels():
             assert self._main_layout is not None
@@ -271,6 +291,8 @@ class TabbedColorPicker(ScreenColorWidget):
         component_layout = layout_class(component_widget)
         component_layout.setSpacing(0)
         component_layout.setContentsMargins(1, 1, 1, 1)
+        self._basic_palette_preview.setVisible(False)
+        self._custom_palette_preview.setVisible(True)
         if layout_class == QHBoxLayout and pick_color_button is not None and pick_color_label is not None:
             left_panel_layout = QVBoxLayout()
             left_panel_layout.setSpacing(0)

@@ -1,14 +1,18 @@
 """Widget holding multiple color options, largely ported from the internal QWellArray class within QColorDialog."""
-from typing import Optional, List, Tuple
+from typing import Optional, List, Tuple, Set
 
 from PySide6.QtCore import Qt, Signal, QRect, QSize, QPoint, QMimeData
 from PySide6.QtGui import QColor, QPaintEvent, QPainter, QMouseEvent, QFocusEvent, QKeyEvent, QPixmap, QDrag, \
     QDragEnterEvent, QDragLeaveEvent, QDragMoveEvent, QDropEvent
-from PySide6.QtWidgets import QWidget, QStyleOptionFrame, QStyle, QStyleOptionFocusRect, QSizePolicy, QApplication
+from PySide6.QtWidgets import QWidget, QStyleOptionFrame, QStyle, QStyleOptionFocusRect, QSizePolicy, QApplication, \
+    QColorDialog
 
 from src.config.application_config import AppConfig
 from src.ui.widget.color_picker.screen_color import ScreenColorWidget
 
+CELL_WIDTH = 28
+CELL_HEIGHT = 24
+NUM_COLUMNS = 8
 
 class _PaletteGrid(QWidget):
 
@@ -20,8 +24,8 @@ class _PaletteGrid(QWidget):
         super().__init__()
         self._num_rows = rows
         self._num_cols = columns
-        self._cell_w = 28
-        self._cell_h = 24
+        self._cell_w = CELL_WIDTH
+        self._cell_h = CELL_HEIGHT
         self._cur_row = 0
         self._cur_col = 0
         self._sel_row = -1
@@ -74,7 +78,8 @@ class _PaletteGrid(QWidget):
 
     def color_index(self, row: int, col: int) -> int:
         """Returns the color index of a given row and column."""
-        assert 0 <= row < self._num_rows and 0 <= col < self._num_cols
+        if not 0 <= row < self._num_rows and 0 <= col < self._num_cols:
+            raise IndexError(f'{row},{col} out of bounds')
         return col + row * self._num_cols
 
     def color_position(self, idx: int) -> Tuple[int, int]:
@@ -247,6 +252,7 @@ class PaletteWidget(_PaletteGrid):
         self._press_pos = QPoint()
         self.setSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Minimum)
         self.setAcceptDrops(True)
+        self.selected.connect(self._color_selected_slot)
 
     def _color_selected_slot(self, row: int, col: int) -> None:
         if row < 0 or row >= self.num_rows() or col < 0 or col >= self.num_cols():
@@ -357,6 +363,15 @@ class PaletteWidget(_PaletteGrid):
             self.color_changed.emit(i, color)
         self.update()
 
+    def get_color(self, i: int) -> QColor:
+        """Reads one of the colors from the grid"""
+        assert 0 <= i < len(self._colors)
+        return QColor(self._colors[i])
+
+    def color_count(self) -> int:
+        """Returns the number of grid colors"""
+        return len(self._colors)
+
     def dropEvent(self, event: Optional[QDropEvent]) -> None:
         """Apply new color when dropped."""
         assert event is not None
@@ -367,7 +382,11 @@ class PaletteWidget(_PaletteGrid):
         if color.isValid():
             row = self.row_at(event.pos().y())
             col = self.column_at(event.pos().x())
-            i = self.color_index(row, col)
+            try:
+                i = self.color_index(row, col)
+            except IndexError:
+                event.ignore()
+                return
             self.set_color(i, color)
             event.accept()
         else:
@@ -436,15 +455,17 @@ class StandardColorPaletteWidget(PaletteWidget):
 
     def __init__(self):
         super().__init__(6, 8, standard_colors())
+        self.setAcceptDrops(False)
 
 
 class CustomColorPaletteWidget(PaletteWidget):
     """Select and update custom colors."""
 
     def __init__(self):
-        colors = config_colors(16)
-        super().__init__(2, 8, colors)
+        colors = config_colors(24)
+        super().__init__(3, 8, colors)
         self.color_changed.connect(self._update_config_color_slot)
+        AppConfig().connect(self, AppConfig.SAVED_COLORS, self._update_on_color_change)
         self._last_added_idx = -1
         for i, saved_color in enumerate(colors):
             if not saved_color.isValid():
@@ -455,11 +476,32 @@ class CustomColorPaletteWidget(PaletteWidget):
         colors = config_colors(self.num_rows() * self.num_cols())
         colors[i] = color
         AppConfig().set(AppConfig.SAVED_COLORS, [col.name(QColor.NameFormat.HexArgb) for col in colors])
+        for i in range(self.num_cols() * 2):
+            # QColorDialog is indexed by column instead of row.  This is intentional, it makes it less of a hassle
+            # to keep them synchronized when CustomColorPaletteWidget adds extra rows. We do still need to recalculate
+            # the index though:
+            row, col = self.color_position(i)
+            idx = row + col * self._num_rows
+            QColorDialog.setCustomColor(idx, colors[i])
+
+    def _update_on_color_change(self, color_list_str: str) -> None:
+        color_list = [QColor(color_str) for color_str in color_list_str]
+        for i, color in enumerate(color_list):
+            self.set_color(i, color)
 
     def add_color(self, color: QColor) -> None:
-        """Adds a new custom color."""
+        """Adds a new custom color.  This will replace the first duplicate color encountered, or the color after the
+        previous changed index if no duplicates are found."""
+        colors_traversed: Set[str] = set()
         next_idx = self._last_added_idx + 1
-        if next_idx >= self.num_rows() * self.num_cols():
+        for i in range(self.color_count()):
+            prev_color = self.get_color(i).name(QColor.NameFormat.HexArgb)
+            if prev_color in colors_traversed:
+                next_idx = i
+                break
+            else:
+                colors_traversed.add(prev_color)
+        if next_idx >= self.color_count():
             next_idx = 0
         self.set_color(next_idx, color)
         self._last_added_idx = next_idx
