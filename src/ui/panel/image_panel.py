@@ -10,7 +10,7 @@ from src.config.application_config import AppConfig
 from src.image.layers.image_stack import ImageStack
 from src.ui.image_viewer import ImageViewer
 from src.ui.layout.draggable_divider import DraggableDivider
-from src.ui.layout.draggable_tabs.tab_box import TabBox
+from src.ui.layout.draggable_tabs.tab_box import TabBox, hide_widget_when_tab_box_closed_or_empty
 
 # The `QCoreApplication.translate` context for strings in this file
 TR_ID = 'ui.panel.image_panel'
@@ -47,13 +47,18 @@ class ImagePanel(QWidget):
             self._outer_layout.setContentsMargins(0, 0, 0, 0)
             self._left_tab_box: Optional[TabBox] = TabBox(Qt.Orientation.Vertical, True)
             self._outer_layout.addWidget(self._left_tab_box, stretch=TAB_BOX_STRETCH)
-            self._outer_layout.addWidget(DraggableDivider())
+            self._left_divider = DraggableDivider()
+            self._outer_layout.addWidget(self._left_divider)
             self._inner_content = QWidget()
             self._layout = QVBoxLayout(self._inner_content)
             self._outer_layout.addWidget(self._inner_content, stretch=MAIN_CONTENT_STRETCH)
-            self._outer_layout.addWidget(DraggableDivider())
+            self._right_divider = DraggableDivider()
+            self._outer_layout.addWidget(self._right_divider)
             self._right_tab_box: Optional[TabBox] = TabBox(Qt.Orientation.Vertical, False)
             self._outer_layout.addWidget(self._right_tab_box, stretch=TAB_BOX_STRETCH)
+
+            hide_widget_when_tab_box_closed_or_empty(self._left_tab_box, self._left_divider)
+            hide_widget_when_tab_box_closed_or_empty(self._right_tab_box, self._right_divider)
         else:
             self._layout = QVBoxLayout(self)
             self._left_tab_box = None

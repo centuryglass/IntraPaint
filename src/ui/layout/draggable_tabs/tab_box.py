@@ -67,6 +67,11 @@ class TabBox(BorderedWidget):
         """Returns all tabs in this tab box."""
         return self._tab_bar.tabs
 
+    @property
+    def count(self) -> int:
+        """Returns the number of tabs in the box."""
+        return len(self.tabs)
+
     def add_tab_bar_action(self, action: QAction) -> None:
         """Adds a right-click menu option to the tab bar."""
         self._tab_bar.addAction(action)
@@ -153,3 +158,13 @@ class TabBox(BorderedWidget):
             tab_widget.show()
         self._layout.setStretch(content_index, 1 if is_open else 0)
         self._update_max_size()
+
+
+def hide_widget_when_tab_box_closed_or_empty(tab_box: TabBox, widget: QWidget) -> None:
+    """Shows/hides a widget based on whether the box is open and tabs are present."""
+    def _update_widget(_=None, b=tab_box, w=widget) -> None:
+        w.setVisible(b.count > 0 and b.is_open)
+    tab_box.box_toggled.connect(_update_widget)
+    tab_box.tab_added.connect(_update_widget)
+    tab_box.tab_removed.connect(_update_widget)
+    _update_widget()

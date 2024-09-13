@@ -25,7 +25,7 @@ from src.undo_stack import UndoStack
 from src.util.visual.text_drawing_utils import find_text_size, left_button_hint_text
 from src.util.visual.geometry_utils import get_scaled_placement, get_rect_transformation
 from src.util.visual.image_utils import get_transparency_tile_pixmap
-from src.util.shared_constants import FLOAT_MIN, FLOAT_MAX, MIN_NONZERO, INT_MAX, PROJECT_DIR
+from src.util.shared_constants import FLOAT_MIN, FLOAT_MAX, MIN_NONZERO, INT_MAX, PROJECT_DIR, ASPECT_RATIO_CHECK_LABEL
 
 # The `QCoreApplication.translate` context for strings in this file
 TR_ID = 'tools.layer_transform_tool'
@@ -46,7 +46,6 @@ DEGREE_LABEL = _tr('Angle:')
 
 TRANSFORM_LABEL = _tr('Transform Layers')
 TRANSFORM_TOOLTIP = _tr('Move, scale, or rotate the active layer.')
-ASPECT_RATIO_CHECK_LABEL = _tr('Keep aspect ratio')
 RESET_BUTTON_TEXT = _tr('Reset')
 CLEAR_BUTTON_TEXT = _tr('Clear')
 TRANSFORM_CONTROL_HINT = _tr('{left_mouse_icon}, drag: move layer')

@@ -4,8 +4,7 @@
 ## Misc. bugs, minor features, and testing:
 - Create example images for README, finish missing sections and improve writing
 - changing gen. area size still doesn't always sync fully - width changes but not height
-
-- 
+- Fix issues with multiple DraggableDividers in a layout
 ## Documentation + Release
 - Rewrite README.md for stable-diffusion info
 - Create tutorials for common workflows
@@ -16,15 +15,10 @@
 - Add Mac OS, ARM linux libmypaint libraries
 
 ## Generated image selection screen
-- Add context menu for selections:
-    * Select
-    * Send to new layer
-    * Save as file
 - Non-transitory selection window? 
 
 ## Tabs and windows:
 - Add shortcut to activate/show/hide each tab
-- Hide tab panel resize bars unless the panel is non-empty
 
 ## Help window
 - Rich text tutorial content, with images and dynamic hotkeys.
@@ -65,7 +59,6 @@
 
 ## Layer interface
 - Add selection layer back to layer panel
-- Add icons to layers to identify their type (image, group, text, vector (eventually))
 - Layer multi-select: Topmost selected layer is active, all others only selected for the sake of bulk copy/grouping/merge/delete
 - Add "merge group" and "merge all visible" options
 
@@ -75,16 +68,6 @@
 - Filters: just throw in whatever fun stuff PIL/CV2 have to offer
 - Enable/disable menus based on arbitrary context, not just app state
 
-## Tools
-### Image gen area tool
-- generation area to generation size button
-- generation size controls
-- fix gen area tool aspect ratio constraints
-- Fixed aspect ratio should be based on generation size aspect ratio
-- Add checkboxes to limit generation size to edit size, force restricted aspect ratio.
-- Fix issues with gen area recalculation when loading a smaller image.
-
-### Navigation tool
 
 ### Text tool
 * Connect move/pan keys to text layer placement

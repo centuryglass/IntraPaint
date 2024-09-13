@@ -54,6 +54,7 @@ LABEL_TEXT_SCALE = _tr('Scale:')
 LABEL_TEXT_IMAGE_PADDING = _tr('Padding:')
 BUTTON_TEXT_ZOOM_IN = _tr('Zoom In')
 BUTTON_TEXT_RESET_ZOOM = _tr('Reset Zoom')
+ASPECT_RATIO_CHECK_LABEL = _tr('Keep aspect ratio')
 
 # Argument used to disable or alter certain UI elements for better use in timelapse footage:
 TIMELAPSE_MODE_FLAG = '--timelapse_mode'
