@@ -213,5 +213,13 @@
         "type": "string",
         "default": "",
         "saved": true
+    },
+    "saved_image_window_pos": {
+        "label": "Saved image window placement",
+        "category": "Cache",
+        "description": "display, position, and size where the image window last was.",
+        "type": "string",
+        "default": "",
+        "saved": true
     }
 }

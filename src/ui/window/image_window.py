@@ -2,7 +2,7 @@
 from typing import Optional
 
 from PySide6.QtCore import QPoint
-from PySide6.QtGui import QIcon, Qt, QCursor, QMouseEvent
+from PySide6.QtGui import QIcon, Qt, QCursor, QMouseEvent, QResizeEvent
 from PySide6.QtWidgets import QWidget, QApplication, QHBoxLayout, QPushButton
 
 from src.config.cache import Cache
@@ -112,7 +112,7 @@ class ImageWindow(ImagePanel):
     """Shows the edited image in its own window."""
 
     def __init__(self, image_stack: ImageStack, main_image_view: ImageViewer, include_zoom_controls=True,
-                 use_keybindings=True) -> None:
+                 use_keybindings=False) -> None:
         super().__init__(image_stack, include_zoom_controls=include_zoom_controls, use_keybindings=use_keybindings)
         self._main_image_viewer = main_image_view
         self.setWindowIcon(QIcon(APP_ICON_PATH))
@@ -193,3 +193,8 @@ class ImageWindow(ImagePanel):
     # noinspection PyUnusedLocal
     def _main_scale_change_slot(self, scale: float) -> None:
         self._main_view_outline.outlined_region = self._main_image_viewer.view_scene_bounds
+
+    def resizeEvent(self, event: Optional[QResizeEvent]) -> None:
+        """Save image window bounds changes when visible."""
+        if self.isVisible():
+            Cache().save_bounds(Cache.SAVED_IMAGE_WINDOW_POS, self)

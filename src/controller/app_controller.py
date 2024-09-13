@@ -49,6 +49,7 @@ from src.ui.window.main_window import MainWindow
 from src.undo_stack import UndoStack
 from src.util.application_state import AppStateTracker, APP_STATE_NO_IMAGE, APP_STATE_EDITING, APP_STATE_LOADING, \
     APP_STATE_SELECTION
+from src.util.shared_constants import APP_ICON_PATH
 from src.util.visual.display_size import get_screen_size
 from src.util.visual.image_format_utils import save_image_with_metadata, save_image, load_image, \
     IMAGE_FORMATS_SUPPORTING_METADATA, IMAGE_FORMATS_SUPPORTING_ALPHA, IMAGE_FORMATS_SUPPORTING_PARTIAL_ALPHA, \
@@ -1087,6 +1088,13 @@ class AppController(MenuBuilder):
         """Opens the layer panel window"""
         if self._layer_panel is None:
             self._layer_panel = LayerPanel(self._image_stack)
+            if not Cache().load_bounds(Cache.SAVED_LAYER_WINDOW_POS, self._layer_panel):
+                width = int(self._layer_panel.sizeHint().width() * 1.5)
+                height = self._window.height() // 3
+                x = self._window.x() + self._window.width() - int(width * 1.5)
+                y = self._window.y() + height
+                Cache().set(Cache.SAVED_LAYER_WINDOW_POS, f'{x},{y},{width},{height}')
+                Cache().load_bounds(Cache.SAVED_LAYER_WINDOW_POS, self._layer_panel)
         self._layer_panel.show()
         self._layer_panel.raise_()
 

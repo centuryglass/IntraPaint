@@ -3,10 +3,11 @@ import logging
 from typing import Optional, List, Callable, Any, Tuple
 
 from PySide6.QtCore import Qt, QSize, QPointF, QTimer
-from PySide6.QtGui import QIcon
+from PySide6.QtGui import QIcon, QShowEvent
 from PySide6.QtWidgets import QWidget, QLabel, QVBoxLayout, QHBoxLayout, QScrollArea, QToolButton, QSlider, \
-    QDoubleSpinBox, QComboBox, QApplication
+    QDoubleSpinBox, QComboBox, QApplication, QSizePolicy
 
+from src.config.cache import Cache
 from src.image.composite_mode import CompositeMode
 from src.image.layers.image_stack import ImageStack
 from src.image.layers.layer import Layer, LayerParent
@@ -71,6 +72,8 @@ class LayerPanel(QWidget):
         super().__init__(parent)
         self.setWindowTitle(WINDOW_TITLE)
         self.setWindowIcon(QIcon(APP_ICON_PATH))
+        if self.isWindow():
+            self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         self._layout = QVBoxLayout(self)
         self._image_stack = image_stack
         self._active_layer: Optional[Layer] = None
@@ -208,6 +211,10 @@ class LayerPanel(QWidget):
         if self._scroll_timer.isActive():
             self._scroll_timer.stop()
 
+    def showEvent(self, event: Optional[QShowEvent]) -> None:
+        if self.isWindow():
+            Cache().load_bounds(Cache.SAVED_LAYER_WINDOW_POS, self)
+
     def resizeEvent(self, event):
         """Keep at least one layer visible."""
         self._scroll_area.setMinimumHeight(self._parent_group_item.layer_item.sizeHint().height() + LIST_SPACING)
@@ -219,6 +226,8 @@ class LayerPanel(QWidget):
         if horizontal_scrollbar is not None:
             horizontal_scrollbar.setRange(0, 0)
         self._scroll_area.setMinimumWidth(min_scroll_width)
+        if self.isVisible() and self.isWindow():
+            Cache().save_bounds(Cache.SAVED_LAYER_WINDOW_POS, self)
 
     def sizeHint(self) -> QSize:
         """At minimum, always show one layer."""

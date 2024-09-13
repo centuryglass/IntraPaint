@@ -329,8 +329,10 @@ class MainWindow(QMainWindow):
 
     def show_image_window(self) -> None:
         """Show or raise the image window."""
-        self._image_window.show()
-        self._image_window.raise_()
+        if not self._image_window.isVisible():
+            Cache().load_bounds(Cache.SAVED_IMAGE_WINDOW_POS, self._image_window)
+            self._image_window.show()
+            self._image_window.raise_()
 
     def is_image_selector_visible(self) -> bool:
         """Returns whether the generated image selection screen is showing."""
