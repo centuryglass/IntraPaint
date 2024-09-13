@@ -14,7 +14,7 @@ from src.image.layers.layer import Layer
 from src.image.layers.layer_stack import LayerStack
 from src.image.layers.text_layer import TextLayer
 from src.image.layers.transform_layer import TransformLayer
-from src.tools.selection_tool import LABEL_TEXT_SELECTION_TOOL
+from src.tools.selection_brush_tool import LABEL_TEXT_SELECTION_TOOL
 from src.ui.input_fields.editable_label import EditableLabel
 from src.ui.layout.bordered_widget import BorderedWidget
 from src.ui.panel.layer_ui.layer_alpha_lock_button import LayerAlphaLockButton

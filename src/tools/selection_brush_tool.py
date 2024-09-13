@@ -24,15 +24,15 @@ def _tr(*args):
     return QApplication.translate(TR_ID, *args)
 
 
-LABEL_TEXT_SELECTION_TOOL = _tr('Selection')
-TOOLTIP_SELECTION_TOOL = _tr('Select areas for editing or inpainting.')
+LABEL_TEXT_SELECTION_TOOL = _tr('Selection Brush')
+TOOLTIP_SELECTION_TOOL = _tr('Draw to select areas for editing or inpainting.')
 CONTROL_HINT_SELECTION_TOOL = _tr('{left_mouse_icon}: select - {right_mouse_icon}:1px select')
 
 CURSOR_SELECTION_TOOL = f'{PROJECT_DIR}/resources/cursors/selection_cursor.svg'
 ICON_SELECTION_TOOL = f'{PROJECT_DIR}/resources/icons/tools/selection_icon.svg'
 
 
-class SelectionTool(CanvasTool):
+class SelectionBrushTool(CanvasTool):
     """Selects image content for image generation or editing."""
 
     def __init__(self, image_stack: ImageStack, image_viewer: ImageViewer) -> None:
@@ -65,7 +65,7 @@ class SelectionTool(CanvasTool):
 
     def get_hotkey(self) -> QKeySequence:
         """Returns the hotkey(s) that should activate this tool."""
-        return KeyConfig().get_keycodes(KeyConfig.SELECTION_TOOL_KEY)
+        return KeyConfig().get_keycodes(KeyConfig.SELECTION_BRUSH_TOOL_KEY)
 
     def get_icon(self) -> QIcon:
         """Returns an icon used to represent this tool."""

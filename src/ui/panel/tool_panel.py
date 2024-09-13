@@ -247,8 +247,8 @@ class ToolPanel(QWidget):
             num_rows = 2
             self._tool_button_layout.setAlignment(Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignHCenter)
         else:  # Horizontal
-            num_rows = 4
-            num_cols = 3
+            num_rows = 6
+            num_cols = 2
             self.setMinimumHeight(0)
             self._tool_button_layout.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
         if self._row_count == num_rows and self._column_count == num_cols \
@@ -300,6 +300,9 @@ class _ToolButton(QWidget):
         if connected_tool.get_hotkey() is not None:
             self._key_hint: Optional[KeyHintLabel] = KeyHintLabel(connected_tool.get_hotkey(), parent=self)
             self._key_hint.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+            self._key_hint.setSizePolicy(QSizePolicy.Policy.MinimumExpanding, QSizePolicy.Policy.MinimumExpanding)
+            self._key_hint.setMinimumSize(self._key_hint.sizeHint())
+
         else:
             self._key_hint = None
         self.setToolTip(label_text)

@@ -20,7 +20,7 @@ from src.tools.free_selection_tool import FreeSelectionTool
 from src.tools.generation_area_tool import GenerationAreaTool
 from src.tools.layer_transform_tool import LayerTransformTool
 from src.tools.selection_fill_tool import SelectionFillTool
-from src.tools.selection_tool import SelectionTool
+from src.tools.selection_brush_tool import SelectionBrushTool
 from src.tools.shape_selection_tool import ShapeSelectionTool
 from src.tools.text_tool import TextTool
 from src.ui.image_viewer import ImageViewer
@@ -87,7 +87,7 @@ class ToolController(QObject):
         self._add_tool(eyedropper_tool)
         text_tool = TextTool(image_stack, image_viewer)
         self._add_tool(text_tool)
-        self._add_tool(SelectionTool(image_stack, image_viewer))
+        self._add_tool(SelectionBrushTool(image_stack, image_viewer))
         self._add_tool(FreeSelectionTool(image_stack, image_viewer))
         self._add_tool(ShapeSelectionTool(image_stack, image_viewer))
         self._add_tool(SelectionFillTool(image_stack))

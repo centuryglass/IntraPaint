@@ -167,7 +167,7 @@
         "subcategory": "Tool Selection",
         "description": "Activate the eraser tool to erase image content.",
         "type": "string",
-        "default": "A",
+        "default": "E",
         "saved": true
     },
     "eyedropper_tool_key": {
@@ -188,11 +188,11 @@
         "default": "T",
         "saved": true
     },
-    "selection_tool_key": {
-        "label": "Switch to the selection tool:",
+    "selection_brush_tool_key": {
+        "label": "Switch to the selection brush tool:",
         "category": "Keybindings",
         "subcategory": "Tool Selection",
-        "description": "Activate the selection tool to mark areas for editing.",
+        "description": "Activate the selection brush tool to mark areas for editing.",
         "type": "string",
         "default": "S",
         "saved": true
@@ -203,7 +203,7 @@
         "subcategory": "Tool Selection",
         "description": "Activate the area selection tool to mark areas for editing.",
         "type": "string",
-        "default": "E",
+        "default": "A",
         "saved": true
     },
     "shape_selection_tool_key": {
