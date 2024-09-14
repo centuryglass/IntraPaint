@@ -14,6 +14,7 @@ CELL_WIDTH = 28
 CELL_HEIGHT = 24
 NUM_COLUMNS = 8
 
+
 class _PaletteGrid(QWidget):
 
     selected = Signal(int, int)

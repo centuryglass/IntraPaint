@@ -6,7 +6,6 @@ from PySide6.QtCore import QPoint, QRect, QSize, Signal, QTimer, QObject
 from PySide6.QtGui import QImage, QPainter
 from PySide6.QtWidgets import QApplication, QWidget
 
-from src.config.application_config import AppConfig
 from src.config.cache import Cache
 from src.image.layers.image_stack import ImageStack
 from src.ui.layout.draggable_tabs.tab import Tab
@@ -15,9 +14,9 @@ from src.ui.modal.settings_modal import SettingsModal
 from src.ui.window.main_window import MainWindow
 from src.util.application_state import AppStateTracker, APP_STATE_LOADING, APP_STATE_EDITING
 from src.util.async_task import AsyncTask
-from src.util.visual.pil_image_utils import pil_image_to_qimage, qimage_to_pil_image, pil_image_scaling
 from src.util.menu_builder import MenuBuilder
 from src.util.shared_constants import EDIT_MODE_INPAINT
+from src.util.visual.pil_image_utils import pil_image_to_qimage, qimage_to_pil_image, pil_image_scaling
 
 # The QCoreApplication.translate context for strings in this file
 TR_ID = 'controller.image_generation.image_generator'
@@ -129,18 +128,18 @@ class ImageGenerator(MenuBuilder):
     def start_and_manage_image_generation(self) -> None:
         """Start inpainting/image editing based on the current state of the UI."""
         assert self._window is not None
-        config = AppConfig()
+        cache = Cache()
         self._generated_images.clear()
 
         source_selection = self._image_stack.qimage_generation_area_content()
         inpaint_image = source_selection.copy()
 
         # If necessary, scale image and mask to match the image generation size.
-        generation_size = config.get(AppConfig.GENERATION_SIZE)
+        generation_size = cache.get(Cache.GENERATION_SIZE)
         if inpaint_image.size() != generation_size:
             inpaint_image = pil_image_scaling(inpaint_image, generation_size)
 
-        if config.get(AppConfig.EDIT_MODE) == EDIT_MODE_INPAINT:
+        if cache.get(Cache.EDIT_MODE) == EDIT_MODE_INPAINT:
             inpaint_mask = self._image_stack.selection_layer.mask_image
             if inpaint_mask.size() != generation_size:
                 inpaint_mask = pil_image_scaling(inpaint_mask, generation_size)
@@ -188,7 +187,7 @@ class ImageGenerator(MenuBuilder):
             for idx, image in enumerate(self._generated_images):
                 if image.isNull():
                     continue
-                if config.get(AppConfig.EDIT_MODE) == EDIT_MODE_INPAINT:
+                if cache.get(Cache.EDIT_MODE) == EDIT_MODE_INPAINT:
                     assert composite_base is not None
                     assert composite_base.size() == image.size()
                     painter = QPainter(image)
@@ -217,7 +216,7 @@ class ImageGenerator(MenuBuilder):
                 image = pil_image_to_qimage(sample_image).convertToFormat(QImage.Format.Format_ARGB32_Premultiplied)
             else:
                 image = sample_image.convertToFormat(QImage.Format.Format_ARGB32_Premultiplied)
-            if AppConfig().get(AppConfig.EDIT_MODE) == 'Inpaint':
+            if Cache().get(Cache.EDIT_MODE) == 'Inpaint':
                 inpaint_mask = self._image_stack.selection_layer.mask_image
                 painter = QPainter(image)
                 painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_DestinationIn)

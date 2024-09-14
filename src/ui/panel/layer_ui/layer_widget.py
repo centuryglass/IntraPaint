@@ -134,7 +134,7 @@ class LayerWidget(BorderedWidget):
     def _layer_preview_frame_bounds(self) -> QRect:
         bounds = QRect(LAYER_PADDING, LAYER_PADDING, self._label.x() - LAYER_PADDING * 2,
                        self.height() - LAYER_PADDING * 2)
-        bounds.setWidth(bounds.width() * 1.5)
+        bounds.setWidth(int(bounds.width() * 1.5))
         return bounds
 
     def _layer_inner_frame_bounds(self) -> QRect:
@@ -219,7 +219,7 @@ class LayerWidget(BorderedWidget):
             inner_frame = self._layer_inner_frame_bounds()
             assert LayerWidget._layer_transparency_background is not None
             painter.drawTiledPixmap(inner_frame, LayerWidget._layer_transparency_background)
-            painter.fillRect(inner_frame, QColor(0.3, 0.3, 0.3, 0.3))
+            painter.fillRect(inner_frame, QColor.fromRgbF(0.3, 0.3, 0.3, 0.3))
             painter.setPen(Qt.GlobalColor.white)
             painter.drawRect(inner_frame)
             painter.save()

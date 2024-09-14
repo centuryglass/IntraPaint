@@ -8,7 +8,7 @@ from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QCheckBox, QPushButton, QLineEdit, QComboBox, QApplication, QTabWidget, QGridLayout, \
     QLabel, QWidget
 
-from src.config.application_config import AppConfig
+from src.config.cache import Cache
 from src.ui.input_fields.check_box import CheckBox
 from src.ui.input_fields.slider_spinbox import IntSliderSpinbox, FloatSliderSpinbox
 from src.ui.layout.divider import Divider
@@ -101,9 +101,9 @@ class TabbedControlnetPanel(QTabWidget):
             API data defining available ControlNet models.
         """
         super().__init__()
-        self._panel1 = ControlnetPanel(AppConfig.CONTROLNET_ARGS_0, control_types, module_detail, model_list)
-        self._panel2 = ControlnetPanel(AppConfig.CONTROLNET_ARGS_1, control_types, module_detail, model_list)
-        self._panel3 = ControlnetPanel(AppConfig.CONTROLNET_ARGS_2, control_types, module_detail, model_list)
+        self._panel1 = ControlnetPanel(Cache.CONTROLNET_ARGS_0, control_types, module_detail, model_list)
+        self._panel2 = ControlnetPanel(Cache.CONTROLNET_ARGS_1, control_types, module_detail, model_list)
+        self._panel3 = ControlnetPanel(Cache.CONTROLNET_ARGS_2, control_types, module_detail, model_list)
         self.addTab(self._panel1, CONTROLNET_UNIT_TITLE.format(unit_number='1'))
         self.addTab(self._panel2, CONTROLNET_UNIT_TITLE.format(unit_number='2'))
         self.addTab(self._panel3, CONTROLNET_UNIT_TITLE.format(unit_number='3'))
@@ -119,7 +119,7 @@ class ControlnetPanel(BorderedWidget):
     """ControlnetPanel provides controls for the stable-diffusion ControlNet extension."""
 
     def __init__(self,
-                 config_key: str,
+                 cache_key: str,
                  control_types: Optional[dict],
                  module_detail: dict,
                  model_list: dict):
@@ -127,8 +127,8 @@ class ControlnetPanel(BorderedWidget):
 
         Parameters
         ----------
-        config_key : str, default = Config.CONTROLNET_ARGS_0
-            Config key where ControlNet settings will be saved.
+        cache_key : str, default = Cache.CONTROLNET_ARGS_0
+            Cache key where ControlNet settings will be saved.
         control_types : dict or None
             API data defining available control types. If none, only the module and model dropdowns are used.
         module_detail : dict
@@ -142,10 +142,10 @@ class ControlnetPanel(BorderedWidget):
         assert isinstance(model_list, dict)
         if MODEL_LIST_KEY not in model_list:
             raise KeyError(f'Controlnet model list had unexpected structure: {model_list}')
-        config = AppConfig()
-        initial_control_state = config.get(config_key)
+        cache = Cache()
+        initial_control_state = cache.get(cache_key)
         self._saved_state = initial_control_state
-        self._config_key = config_key
+        self._cache_key = cache_key
         self._control_types = control_types
         self._module_detail = module_detail
         self._model_list = model_list
@@ -167,8 +167,8 @@ class ControlnetPanel(BorderedWidget):
         # Main checkboxes:
         self._enabled_checkbox = CheckBox()
         self._enabled_checkbox.setText(ENABLE_CONTROLNET_CHECKBOX_LABEL)
-        self._vram_checkbox = _ControlnetCheckbox(config_key, CONTROL_CONFIG_LOW_VRAM_KEY, LOW_VRAM_LABEL)
-        self._px_perfect_checkbox = _ControlnetCheckbox(config_key, CONTROL_CONFIG_PX_PERFECT_KEY,
+        self._vram_checkbox = _ControlnetCheckbox(cache_key, CONTROL_CONFIG_LOW_VRAM_KEY, LOW_VRAM_LABEL)
+        self._px_perfect_checkbox = _ControlnetCheckbox(cache_key, CONTROL_CONFIG_PX_PERFECT_KEY,
                                                         PX_PERFECT_CHECKBOX_LABEL)
 
         # Control image inputs:
@@ -203,7 +203,7 @@ class ControlnetPanel(BorderedWidget):
                 control_img_widget.setEnabled(not checked)
             if checked:
                 self._image_path_edit.setText('')
-            config.set(config_key, value, inner_key=CONTROL_CONFIG_IMAGE_KEY)
+            cache.set(cache_key, value, inner_key=CONTROL_CONFIG_IMAGE_KEY)
 
         self._reuse_image_checkbox.stateChanged.connect(reuse_image_update)
 
@@ -211,7 +211,7 @@ class ControlnetPanel(BorderedWidget):
             """Update config when the selected control image changes."""
             if self._reuse_image_checkbox.isChecked():
                 return
-            config.set(config_key, text, inner_key=CONTROL_CONFIG_IMAGE_KEY)
+            cache.set(cache_key, text, inner_key=CONTROL_CONFIG_IMAGE_KEY)
 
         self._image_path_edit.textChanged.connect(image_path_update)
 
@@ -266,10 +266,10 @@ class ControlnetPanel(BorderedWidget):
             for widget in control_image_widgets:
                 widget.setEnabled(checked and not self._reuse_image_checkbox.isChecked())
             if checked:
-                config.set(config_key, self._saved_state)
+                cache.set(cache_key, self._saved_state)
             else:
-                self._saved_state = config.get(config_key)
-                config.set(config_key, {})
+                self._saved_state = cache.get(cache_key)
+                cache.set(cache_key, {})
 
         set_enabled(CONTROL_MODEL_KEY in initial_control_state)
         self._enabled_checkbox.stateChanged.connect(set_enabled)
@@ -402,13 +402,13 @@ class ControlnetPanel(BorderedWidget):
 
     def _handle_module_change(self, selected_module: str) -> None:
         """When the selected module changes, update config and module option controls."""
-        config = AppConfig()
+        cache = Cache()
         details = {}
-        config.set(self._config_key, selected_module, inner_key=CONTROL_MODULE_KEY)
+        cache.set(self._cache_key, selected_module, inner_key=CONTROL_MODULE_KEY)
         for label, slider in zip(self._dynamic_slider_labels, self._dynamic_sliders):
             self._layout.removeWidget(label)
             self._layout.removeWidget(slider)
-            config.disconnect(slider, self._config_key)
+            cache.disconnect(slider, self._cache_key)
             label.setParent(None)
             slider.setParent(None)
         self._dynamic_slider_labels = []
@@ -423,10 +423,10 @@ class ControlnetPanel(BorderedWidget):
                 logger.warning(f'Warning: chosen module {selected_module} not found')
             else:
                 details = self._module_detail[MODULE_DETAIL_KEY][selected_module]
-        current_keys = list(config.get(self._config_key).keys())
+        current_keys = list(cache.get(self._cache_key).keys())
         for param in current_keys:
             if param not in DEFAULT_PARAMS:
-                config.set(self._config_key, None, inner_key=param)
+                cache.set(self._cache_key, None, inner_key=param)
         if selected_module != DEFAULT_MODULE_NAME:
             sliders = [
                 {
@@ -470,9 +470,9 @@ class ControlnetPanel(BorderedWidget):
                 if key == slider_title:
                     if SLIDER_RES_KEY in key:
                         key = CONTROL_RESOLUTION_KEY
-                    elif CONTROL_MODULE_PARAM_1_KEY not in config.get(self._config_key):
+                    elif CONTROL_MODULE_PARAM_1_KEY not in cache.get(self._cache_key):
                         key = CONTROL_MODULE_PARAM_1_KEY
-                    elif CONTROL_MODULE_PARAM_2_KEY not in config.get(self._config_key):
+                    elif CONTROL_MODULE_PARAM_2_KEY not in cache.get(self._cache_key):
                         key = CONTROL_MODULE_PARAM_2_KEY
                 step = 1 if SLIDER_STEP_KEY not in slider_params else slider_params[SLIDER_STEP_KEY]
                 float_mode = any(x != int(x) for x in [value, min_val, max_val, step])
@@ -486,7 +486,7 @@ class ControlnetPanel(BorderedWidget):
                     min_val = int(min_val)
                     max_val = int(max_val)
                     step = int(step)
-                config.set(self._config_key, value, inner_key=key)
+                cache.set(self._cache_key, value, inner_key=key)
                 control_param = Parameter(slider_title,
                                           TYPE_FLOAT if float_mode else TYPE_INT,
                                           value,
@@ -498,7 +498,7 @@ class ControlnetPanel(BorderedWidget):
                 label = QLabel(slider_title)
 
                 def _update_value(new_value, inner_key=key):
-                    config.set(self._config_key, new_value, inner_key=inner_key)
+                    cache.set(self._cache_key, new_value, inner_key=inner_key)
 
                 slider.valueChanged.connect(_update_value)
                 self._dynamic_sliders.append(slider)
@@ -507,23 +507,23 @@ class ControlnetPanel(BorderedWidget):
 
     def _handle_model_change(self, selected_model: str) -> None:
         """Update config when the selected model changes."""
-        AppConfig().set(self._config_key, selected_model, inner_key=CONTROL_MODEL_KEY)
+        AppConfig().set(self._cache_key, selected_model, inner_key=CONTROL_MODEL_KEY)
 
 
 class _ControlnetCheckbox(CheckBox):
     """Connects to a boolean parameter in a controlnet JSON body."""
 
-    def __init__(self, config_key: str, inner_key: str, label_text: Optional[str] = None) -> None:
+    def __init__(self, cache_key: str, inner_key: str, label_text: Optional[str] = None) -> None:
         super().__init__(None)
-        self._key = config_key
+        self._key = cache_key
         self._inner_key = inner_key
-        config = AppConfig()
-        value = config.get(config_key, inner_key=inner_key)
+        cache = Cache()
+        value = cache.get(cache_key, inner_key=inner_key)
         self.setValue(bool(value))
         self.valueChanged.connect(self._update_config)
         if label_text is not None:
             self.setText(label_text)
-        config.connect(self, config_key, self.setValue, inner_key=inner_key)
+        cache.connect(self, cache_key, self.setValue, inner_key=inner_key)
 
     def _update_config(self, new_value: bool) -> None:
-        AppConfig().set(self._key, new_value, inner_key=self._inner_key)
+        Cache().set(self._key, new_value, inner_key=self._inner_key)

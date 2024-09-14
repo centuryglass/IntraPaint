@@ -1,12 +1,14 @@
 """Draw tool variant meant for erasing only."""
 from typing import Optional
 
+from PySide6.QtCore import QPoint
 from PySide6.QtGui import QIcon, QKeySequence
 from PySide6.QtWidgets import QApplication, QWidget
 
-from src.config.application_config import AppConfig
+from src.config.cache import Cache
 from src.config.config_entry import RangeKey
 from src.config.key_config import KeyConfig
+from src.image.canvas.qt_paint_canvas import QtPaintCanvas
 from src.image.layers.image_stack import ImageStack
 from src.tools.canvas_tool import CanvasTool
 from src.tools.draw_tool import DrawTool
@@ -34,19 +36,17 @@ class EraserTool(DrawTool):
     """Draw tool variant meant for erasing only."""
 
     def __init__(self, image_stack: ImageStack, image_viewer: ImageViewer) -> None:
-        super().__init__(image_stack, image_viewer)
+        super().__init__(image_stack, image_viewer, size_key=Cache.ERASER_TOOL_SIZE,
+                         pressure_size_key=Cache.ERASER_TOOL_PRESSURE_SIZE, opacity_key=Cache.ERASER_TOOL_OPACITY,
+                         pressure_opacity_key=Cache.DRAW_TOOL_PRESSURE_OPACITY,
+                         hardness_key=Cache.ERASER_TOOL_HARDNESS,
+                         pressure_hardness_key=Cache.ERASER_TOOL_PRESSURE_HARDNESS)
         self.canvas.eraser = True
 
-        config = AppConfig()
-        config.disconnect_all(self)
+        cache = Cache()
+        cache.disconnect(self, Cache.LAST_BRUSH_COLOR)
         self._icon = QIcon(ICON_ERASER_TOOL)
         self._control_panel: Optional[EraserToolPanel] = None
-
-        def _update_eraser_size(size: int) -> None:
-            self.canvas.brush_size = size
-            self.update_brush_cursor()
-        config.connect(self, AppConfig.ERASER_SIZE, _update_eraser_size)
-        _update_eraser_size(config.get(AppConfig.ERASER_SIZE))
 
     def get_control_panel(self) -> Optional[QWidget]:
         """Returns the brush control panel."""
@@ -80,6 +80,16 @@ class EraserTool(DrawTool):
 
     def set_brush_size(self, new_size: int) -> None:
         """Update the eraser size."""
-        new_size = min(new_size, AppConfig().get(AppConfig.ERASER_SIZE, RangeKey.MAX))
+        new_size = min(new_size, Cache().get(Cache.ERASER_TOOL_SIZE, RangeKey.MAX))
         super().set_brush_size(new_size)
-        AppConfig().set(AppConfig.ERASER_SIZE, max(1, new_size))
+        Cache().set(Cache.ERASER_TOOL_SIZE, max(1, new_size))
+
+    def _stroke_to(self, image_coordinates: QPoint):
+        cache = Cache()
+        opacity = cache.get(Cache.ERASER_TOOL_OPACITY)
+        hardness = cache.get(Cache.ERASER_TOOL_HARDNESS)
+        canvas = self.canvas
+        assert isinstance(canvas, QtPaintCanvas)
+        canvas.opacity = opacity
+        canvas.hardness = hardness
+        super()._stroke_to(image_coordinates)

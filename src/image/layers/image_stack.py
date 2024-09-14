@@ -10,7 +10,6 @@ from PySide6.QtCore import QObject, QSize, QPoint, QRect, Signal
 from PySide6.QtGui import QPainter, QPixmap, QImage, QColor, QTransform
 from PySide6.QtWidgets import QApplication
 
-from src.config.application_config import AppConfig
 from src.config.cache import Cache
 from src.image.composite_mode import CompositeMode
 from src.image.layers.image_layer import ImageLayer
@@ -23,11 +22,11 @@ from src.image.text_rect import TextRect
 from src.undo_stack import UndoStack, _UndoAction, _UndoGroup
 from src.util.application_state import AppStateTracker, APP_STATE_NO_IMAGE, APP_STATE_EDITING
 from src.util.cached_data import CachedData
+from src.util.math_utils import clamp
 from src.util.visual.geometry_utils import adjusted_placement_in_bounds, map_rect_precise
 from src.util.visual.image_utils import create_transparent_image, image_content_bounds, \
     image_is_fully_transparent, image_data_as_numpy_8bit
 from src.util.visual.pil_image_utils import qimage_to_pil_image
-from src.util.math_utils import clamp
 
 logger = logging.getLogger(__name__)
 
@@ -78,7 +77,7 @@ class ImageStack(QObject):
             if size != self._generation_area.size():
                 self.generation_area = QRect(self._generation_area.topLeft(), size)
 
-        AppConfig().connect(self, AppConfig.EDIT_SIZE, _update_gen_area_size)
+        Cache().connect(self, Cache.EDIT_SIZE, _update_gen_area_size)
 
         self._layer_stack = LayerStack(NEW_IMAGE_LAYER_GROUP_NAME)
         self._image = CachedData(None)
@@ -296,7 +295,7 @@ class ImageStack(QObject):
                     self._generation_area = next_bounds
                     self.generation_area_bounds_changed.emit(next_bounds)
                     if next_bounds.size() != prev_bounds.size():
-                        AppConfig().set(AppConfig.EDIT_SIZE, QSize(self._generation_area.size()))
+                        Cache().set(Cache.EDIT_SIZE, QSize(self._generation_area.size()))
 
             action_type = 'ImageStack.generation_area'
             prev_action: Optional[_UndoAction | _UndoGroup]
@@ -775,6 +774,7 @@ class ImageStack(QObject):
 
         def _stop_render_above_z_level(level: int) -> RenderAdjustFn:
 
+            # noinspection PyUnusedLocal
             def _render_adjust(layer_id: int, img: QImage, bounds: QRect, painter: QPainter) -> Optional[QImage]:
                 rendered_layer = self._layer_stack.get_layer_by_id(layer_id)
                 assert rendered_layer is not None
@@ -1465,7 +1465,7 @@ class ImageStack(QObject):
             last_bounds = self._generation_area
             self._generation_area = bounds_rect
             if bounds_rect.size() != last_bounds.size():
-                AppConfig().set(AppConfig.EDIT_SIZE, QSize(bounds_rect.size()))
+                Cache().set(Cache.EDIT_SIZE, QSize(bounds_rect.size()))
             self.generation_area_bounds_changed.emit(bounds_rect)
 
     def _update_z_values(self) -> None:

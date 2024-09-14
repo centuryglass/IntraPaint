@@ -6,7 +6,6 @@ from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import QDialog, QFormLayout, QPushButton, QComboBox, QSpinBox, QHBoxLayout, QDoubleSpinBox, \
     QWidget, QApplication
 
-from src.config.application_config import AppConfig
 from src.config.cache import Cache
 from src.ui.input_fields.check_box import CheckBox
 from src.ui.input_fields.slider_spinbox import FloatSliderSpinbox
@@ -47,7 +46,7 @@ class ImageScaleModal(QDialog):
 
     def __init__(self, default_width: int, default_height: int):
         super().__init__()
-        config = AppConfig()
+        cache = Cache()
         self._should_scale = False
         self.setModal(True)
         self.setWindowIcon(QIcon(APP_ICON_PATH))
@@ -55,7 +54,7 @@ class ImageScaleModal(QDialog):
 
         self.setWindowTitle(TITLE_TEXT)
 
-        self._upscale_method_box: QComboBox = cast(QComboBox, config.get_control_widget(AppConfig.UPSCALE_METHOD))
+        self._upscale_method_box: QComboBox = cast(QComboBox, cache.get_control_widget(Cache.UPSCALE_METHOD))
         self._layout.addRow(UPSCALE_METHOD_LABEL, self._upscale_method_box)
 
         def _add_input(default_value, min_val, max_val, title, tooltip) -> Spinbox:
@@ -102,20 +101,20 @@ class ImageScaleModal(QDialog):
 
         # Add controlnet upscale option:
         if Cache().get(Cache.CONTROLNET_VERSION) > 0:
-            self._controlnet_checkbox = config.get_control_widget(AppConfig.CONTROLNET_UPSCALING)
+            self._controlnet_checkbox = cache.get_control_widget(Cache.CONTROLNET_UPSCALING)
             assert isinstance(self._controlnet_checkbox, CheckBox)
             self._controlnet_checkbox.setText('')
-            self._controlnet_rate_box = config.get_control_widget(AppConfig.CONTROLNET_DOWNSAMPLE_RATE)
+            self._controlnet_rate_box = cache.get_control_widget(Cache.CONTROLNET_DOWNSAMPLE_RATE)
             assert isinstance(self._controlnet_rate_box, FloatSliderSpinbox)
             self._controlnet_rate_box.set_slider_included(False)
-            self._controlnet_rate_box.setEnabled(config.get(AppConfig.CONTROLNET_UPSCALING))
+            self._controlnet_rate_box.setEnabled(cache.get(Cache.CONTROLNET_UPSCALING))
             self._controlnet_checkbox.stateChanged.connect(self._controlnet_rate_box.setEnabled)
-            self._layout.addRow(config.get_label(AppConfig.CONTROLNET_UPSCALING), self._controlnet_checkbox)
-            self._layout.addRow(config.get_label(AppConfig.CONTROLNET_DOWNSAMPLE_RATE), self._controlnet_rate_box)
+            self._layout.addRow(cache.get_label(Cache.CONTROLNET_UPSCALING), self._controlnet_checkbox)
+            self._layout.addRow(cache.get_label(Cache.CONTROLNET_DOWNSAMPLE_RATE), self._controlnet_rate_box)
 
         def on_finish(should_scale: bool) -> None:
             """Cleanup, set choice, and close on 'scale image'/'cancel'."""
-            config.disconnect(self._upscale_method_box, AppConfig.UPSCALE_METHOD)
+            cache.disconnect(self._upscale_method_box, Cache.UPSCALE_METHOD)
             self._should_scale = should_scale
             self.hide()
 

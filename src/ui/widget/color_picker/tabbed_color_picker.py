@@ -2,11 +2,11 @@
 from typing import Optional, Tuple
 
 from PySide6.QtCore import QSize, QPoint
-from PySide6.QtGui import QColor, QResizeEvent
+from PySide6.QtGui import QColor
 from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, \
     QTabWidget, QBoxLayout, QSizePolicy, QPushButton, QLabel, QApplication
 
-from src.ui.widget.color_picker.color_show_label import ColorShowLabel, PaletteColorShowLabel
+from src.ui.widget.color_picker.color_show_label import PaletteColorShowLabel
 from src.ui.widget.color_picker.component_spinbox_picker import ComponentSpinboxPicker
 from src.ui.widget.color_picker.hsv_picker import HsvPicker
 from src.ui.widget.color_picker.palette_widget import StandardColorPaletteWidget, CustomColorPaletteWidget
@@ -24,7 +24,9 @@ def _tr(*args):
 BASIC_PALETTE_TITLE = _tr('&Basic colors')
 CUSTOM_PALETTE_TITLE = _tr('&Custom colors')
 SPECTRUM_TAB_TITLE = _tr('&Spectrum')
+# noinspection SpellCheckingInspection
 PALETTE_TAB_TITLE = _tr('Pa&lette')
+# noinspection SpellCheckingInspection
 COMPONENT_TAB_TITLE = _tr('C&olor Component')
 
 BUTTON_LABEL_PICK_SCREEN_COLOR = _tr('&Pick Screen Color')

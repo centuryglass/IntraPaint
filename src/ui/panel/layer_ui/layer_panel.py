@@ -3,7 +3,7 @@ import logging
 from typing import Optional, List, Callable, Any, Tuple
 
 from PySide6.QtCore import Qt, QSize, QPointF, QTimer
-from PySide6.QtGui import QIcon, QShowEvent
+from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import QWidget, QLabel, QVBoxLayout, QHBoxLayout, QScrollArea, QToolButton, QSlider, \
     QDoubleSpinBox, QComboBox, QApplication, QSizePolicy
 
@@ -210,10 +210,6 @@ class LayerPanel(QWidget):
     def _layer_drag_end_slot(self) -> None:
         if self._scroll_timer.isActive():
             self._scroll_timer.stop()
-
-    def showEvent(self, event: Optional[QShowEvent]) -> None:
-        if self.isWindow():
-            Cache().load_bounds(Cache.SAVED_LAYER_WINDOW_POS, self)
 
     def resizeEvent(self, event):
         """Keep at least one layer visible."""

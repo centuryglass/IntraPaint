@@ -4,8 +4,8 @@ inpainting modes.  Other editing modes should provide subclasses with implementa
 """
 import logging
 import sys
-from typing import Optional, Dict, List
 from enum import Enum
+from typing import Optional, Dict, List
 
 from src.config.cache import Cache
 
@@ -19,7 +19,6 @@ from PySide6.QtCore import Qt, QRect, QSize, Signal
 from PySide6.QtGui import QIcon, QMouseEvent, QResizeEvent, QKeySequence, QCloseEvent, QImage, QAction
 from PySide6.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QStackedWidget, QApplication, QSizePolicy
 
-from src.config.application_config import AppConfig
 from src.hotkey_filter import HotkeyFilter
 from src.image.layers.image_stack import ImageStack
 from src.ui.generated_image_selector import GeneratedImageSelector
@@ -225,7 +224,7 @@ class MainWindow(QMainWindow):
 
         self._tab_actions: Dict[Tab, Dict[TabMoveActions, QAction]] = {}
         try:
-            tab_box_id = TabBoxID(AppConfig().get(AppConfig.TOOL_TAB_BAR))
+            tab_box_id = TabBoxID(Cache().get(Cache.TOOL_TAB_BAR))
         except ValueError:
             tab_box_id = TabBoxID.LOWER_TAB_BOX_ID if screen_size.height() > AUTO_TAB_MOVE_THRESHOLD \
                 else TabBoxID.RIGHT_TAB_BOX_ID
@@ -243,11 +242,11 @@ class MainWindow(QMainWindow):
             def _tab_added(tab, box_id=tab_box_id):
                 # Remember to update this after adding any new tabs
                 if tab == self._tool_tab:
-                    AppConfig().set(AppConfig.TOOL_TAB_BAR, box_id)
+                    Cache().set(Cache.TOOL_TAB_BAR, box_id)
                 elif tab == self._control_tab:
-                    AppConfig().set(AppConfig.GENERATION_TAB_BAR, box_id)
+                    Cache().set(Cache.GENERATION_TAB_BAR, box_id)
                 else:
-                    AppConfig().set(AppConfig.CONTROLNET_TAB_BAR, box_id)
+                    Cache().set(Cache.CONTROLNET_TAB_BAR, box_id)
                 self._update_tab_actions(tab, box_id)
             tab_box.tab_added.connect(_tab_added)
 
@@ -279,7 +278,7 @@ class MainWindow(QMainWindow):
         if tab_parent is None and control_panel is not None:
             screen_size = get_screen_size(self)
             try:
-                tab_box_id = TabBoxID(AppConfig().get(AppConfig.GENERATION_TAB_BAR))
+                tab_box_id = TabBoxID(Cache().get(Cache.GENERATION_TAB_BAR))
             except ValueError:
                 tab_box_id = TabBoxID.BOTTOM_TAB_BOX_ID if screen_size.height() > AUTO_TAB_MOVE_THRESHOLD \
                     else TabBoxID.RIGHT_TAB_BOX_ID

@@ -5,6 +5,7 @@
 - Create example images for README, finish missing sections and improve writing
 - changing gen. area size still doesn't always sync fully - width changes but not height
 - Fix issues with multiple DraggableDividers in a layout
+- 
 ## Documentation + Release
 - Rewrite README.md for stable-diffusion info
 - Create tutorials for common workflows
@@ -66,28 +67,20 @@
 - Tools: open mypaint brush panel
 - Tools: open mypaint brush file
 - Filters: just throw in whatever fun stuff PIL/CV2 have to offer
-- Enable/disable menus based on arbitrary context, not just app state
-
 
 ### Text tool
 * Connect move/pan keys to text layer placement
-
-### Polygonal lasso tool
-  * escape: discard path
-  * use fixed angles when appropriate modifier is held
 
 ### Transform tool
 - Unique look for origin point (rotate 45 degrees?)
 - Toggle switch for scale/rotate modes
 - Make sure clear/rotate button is in all panel layouts
-- Move panel into src.ui.panel.tool_control_panels
 
 ### Draw tool
 - Add brush fill patterns
   
 ### Brush tool
 - Pick a few solid defaults for the favorites panel
-- Add a way to load in more brushes from the user data directory
 
 ### Brush tool variants:
 - Implement using MyPaint canvas with a fixed brush: Erase tool, Smudge tool, Blur tool

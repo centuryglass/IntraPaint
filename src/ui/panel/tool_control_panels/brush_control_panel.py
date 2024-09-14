@@ -4,7 +4,6 @@ from typing import cast
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QWidget, QVBoxLayout, QApplication, QHBoxLayout, QLabel
 
-from src.config.application_config import AppConfig
 from src.config.cache import Cache
 from src.config.key_config import KeyConfig
 from src.ui.input_fields.slider_spinbox import IntSliderSpinbox
@@ -33,16 +32,16 @@ class BrushControlPanel(QWidget):
         self._layout = QVBoxLayout(self)
         self._layout.setAlignment(Qt.AlignmentFlag.AlignTop)
         self._layout.addWidget(Divider(Qt.Orientation.Horizontal))
-        config = AppConfig()
+        cache = Cache()
 
         # Size slider:
         size_row = QHBoxLayout()
         size_row.setAlignment(Qt.AlignmentFlag.AlignLeft)
-        size_label = QLabel(config.get_label(AppConfig.SKETCH_BRUSH_SIZE))
+        size_label = QLabel(cache.get_label(Cache.PAINT_TOOL_BRUSH_SIZE))
         size_row.addWidget(size_label)
         size_down_hint = KeyHintLabel(config_key=KeyConfig.BRUSH_SIZE_DECREASE)
         size_row.addWidget(size_down_hint)
-        brush_size_slider = cast(IntSliderSpinbox, config.get_control_widget(AppConfig.SKETCH_BRUSH_SIZE))
+        brush_size_slider = cast(IntSliderSpinbox, cache.get_control_widget(Cache.PAINT_TOOL_BRUSH_SIZE))
         size_row.addWidget(brush_size_slider)
         size_up_hint = KeyHintLabel(config_key=KeyConfig.BRUSH_SIZE_INCREASE)
         size_row.addWidget(size_up_hint)

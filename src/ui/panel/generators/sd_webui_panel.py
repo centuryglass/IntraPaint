@@ -5,7 +5,6 @@ from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import QSizePolicy, QGridLayout, QLabel, QPushButton, \
     QApplication, QWidget
 
-from src.config.application_config import AppConfig
 from src.config.cache import Cache
 from src.ui.input_fields.size_field import SizeField
 from src.ui.layout.bordered_widget import BorderedWidget
@@ -36,21 +35,21 @@ class SDWebUIPanel(BorderedWidget):
     def __init__(self) -> None:
         super().__init__()
         self.setSizePolicy(QSizePolicy.Policy.MinimumExpanding, QSizePolicy.Policy.MinimumExpanding)
-        config = AppConfig()
+        cache = Cache()
         AppStateTracker.set_enabled_states(self, [APP_STATE_EDITING])
 
         self._layout = QGridLayout(self)
         self._orientation = Qt.Orientation.Horizontal
 
         def _get_control_with_label(config_key: str, **kwargs) -> Tuple[QLabel, DynamicFieldWidget]:
-            label = QLabel(config.get_label(config_key))
+            label = QLabel(cache.get_label(config_key))
             label.setWordWrap(True)
-            control = config.get_control_widget(config_key, **kwargs)
+            control = cache.get_control_widget(config_key, **kwargs)
             label.setBuddy(control)
             return label, control
 
-        self._prompt_label, self._prompt_textbox = _get_control_with_label(AppConfig.PROMPT, multi_line=True)
-        self._negative_label, self._negative_textbox = _get_control_with_label(AppConfig.NEGATIVE_PROMPT,
+        self._prompt_label, self._prompt_textbox = _get_control_with_label(Cache.PROMPT, multi_line=True)
+        self._negative_label, self._negative_textbox = _get_control_with_label(Cache.NEGATIVE_PROMPT,
                                                                                multi_line=True)
         # Font size will be used to limit the height of the prompt boxes:
         line_height = self.font().pixelSize()
@@ -60,19 +59,19 @@ class SDWebUIPanel(BorderedWidget):
         for textbox in (self._prompt_textbox, self._negative_textbox):
             textbox.setMaximumHeight(textbox_height)
 
-        self._gen_size_label, self._gen_size_input = _get_control_with_label(AppConfig.GENERATION_SIZE)
-        self._batch_size_label, self._batch_size_spinbox = _get_control_with_label(AppConfig.BATCH_SIZE)
-        self._batch_count_label, self._batch_count_spinbox = _get_control_with_label(AppConfig.BATCH_COUNT)
-        self._step_count_label, self._step_count_slider = _get_control_with_label(AppConfig.SAMPLING_STEPS)
-        self._guidance_scale_label, self._guidance_scale_slider = _get_control_with_label(AppConfig.GUIDANCE_SCALE)
+        self._gen_size_label, self._gen_size_input = _get_control_with_label(Cache.GENERATION_SIZE)
+        self._batch_size_label, self._batch_size_spinbox = _get_control_with_label(Cache.BATCH_SIZE)
+        self._batch_count_label, self._batch_count_spinbox = _get_control_with_label(Cache.BATCH_COUNT)
+        self._step_count_label, self._step_count_slider = _get_control_with_label(Cache.SAMPLING_STEPS)
+        self._guidance_scale_label, self._guidance_scale_slider = _get_control_with_label(Cache.GUIDANCE_SCALE)
         self._denoising_strength_label, self._denoising_strength_slider = _get_control_with_label(
-            AppConfig.DENOISING_STRENGTH)
-        self._edit_mode_label, self._edit_mode_combobox = _get_control_with_label(AppConfig.EDIT_MODE)
-        self._sampler_label, self._sampler_combobox = _get_control_with_label(AppConfig.SAMPLING_METHOD)
-        self._full_res_label, self._full_res_checkbox = _get_control_with_label(AppConfig.INPAINT_FULL_RES)
+            Cache.DENOISING_STRENGTH)
+        self._edit_mode_label, self._edit_mode_combobox = _get_control_with_label(Cache.EDIT_MODE)
+        self._sampler_label, self._sampler_combobox = _get_control_with_label(Cache.SAMPLING_METHOD)
+        self._full_res_label, self._full_res_checkbox = _get_control_with_label(Cache.INPAINT_FULL_RES)
         self._full_res_checkbox.setText('')
-        self._padding_label, self._padding_slider = _get_control_with_label(AppConfig.INPAINT_FULL_RES_PADDING)
-        self._seed_label, self._seed_textbox = _get_control_with_label(AppConfig.SEED)
+        self._padding_label, self._padding_slider = _get_control_with_label(Cache.INPAINT_FULL_RES_PADDING)
+        self._seed_label, self._seed_textbox = _get_control_with_label(Cache.SEED)
         self._last_seed_label = QLabel(Cache().get_label(Cache.LAST_SEED))
         self._last_seed_textbox = Cache().get_control_widget(Cache.LAST_SEED)
         self._last_seed_textbox.setReadOnly(True)
@@ -92,15 +91,15 @@ class SDWebUIPanel(BorderedWidget):
             self._full_res_checkbox.setEnabled(edit_mode == EDIT_MODE_INPAINT)
             self._padding_label.setEnabled(edit_mode == EDIT_MODE_INPAINT)
             self._padding_slider.setEnabled(edit_mode == EDIT_MODE_INPAINT)
-        _edit_mode_control_update(config.get(AppConfig.EDIT_MODE))
-        config.connect(self, AppConfig.EDIT_MODE, _edit_mode_control_update)
+        _edit_mode_control_update(cache.get(Cache.EDIT_MODE))
+        cache.connect(self, Cache.EDIT_MODE, _edit_mode_control_update)
 
         def padding_layout_update(inpaint_full_res: bool) -> None:
             """Only show the 'full-res padding' spin box if 'inpaint full-res' is checked."""
             self._padding_label.setVisible(inpaint_full_res)
             self._padding_slider.setVisible(inpaint_full_res)
-        config.connect(self, AppConfig.INPAINT_FULL_RES, padding_layout_update)
-        padding_layout_update(config.get(AppConfig.INPAINT_FULL_RES))
+        cache.connect(self, Cache.INPAINT_FULL_RES, padding_layout_update)
+        padding_layout_update(cache.get(Cache.INPAINT_FULL_RES))
         self._build_layout()
 
     def _build_layout(self) -> None:

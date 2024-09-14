@@ -1,7 +1,6 @@
 """Base template for tools that use a MyPaint surface within an image layer."""
-import logging
 import datetime
-import os
+import logging
 from typing import Optional
 
 from PySide6.QtCore import Qt, QPoint, QLineF, QPointF
@@ -18,8 +17,8 @@ from src.image.layers.image_stack import ImageStack
 from src.tools.base_tool import BaseTool
 from src.ui.image_viewer import ImageViewer
 from src.util.math_utils import clamp
-from src.util.visual.text_drawing_utils import left_button_hint_text, right_button_hint_text
 from src.util.shared_constants import PROJECT_DIR, FLOAT_MAX
+from src.util.visual.text_drawing_utils import left_button_hint_text, right_button_hint_text
 
 RESOURCES_BRUSH_ICON = f'{PROJECT_DIR}/resources/icons/tools/brush_icon.svg'
 RESOURCES_CURSOR = f'{PROJECT_DIR}/resources/cursors/brush_cursor.svg'
@@ -192,30 +191,6 @@ class CanvasTool(BaseTool):
     def brush_size(self, new_size: int):
         """Updates the active brush size."""
         self.set_brush_size(new_size)
-
-    @property
-    def brush_path(self) -> Optional[str]:
-        """Gets the active brush file path, if any."""
-        if hasattr(self._canvas, 'brush_path'):
-            return self._canvas.brush_path
-        return None
-
-    @brush_path.setter
-    def brush_path(self, new_path: str) -> None:
-        """Updates the active brush size."""
-        if hasattr(self._canvas, 'brush_path'):
-            try:
-                if not os.path.isfile(new_path):
-                    resource_path = f'{PROJECT_DIR}/new_path'
-                    if os.path.isfile(resource_path):
-                        new_path = resource_path
-                    else:
-                        raise RuntimeError('Brush file does not exist')
-                self._canvas.brush_path = new_path
-            except (OSError, RuntimeError) as err:
-                logger.error(f'loading brush {new_path} failed', err)
-        else:
-            raise RuntimeError(f'Tried to set brush path {new_path} when layer canvas has no brush support.')
 
     def adjust_brush_size(self, offset: int) -> None:
         """Change brush size by some offset amount, multiplying offset if the speed modifier is held."""

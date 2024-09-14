@@ -459,7 +459,7 @@ class TextToolPanel(QWidget):
         text = '       ' if len(entered_text) == 0 else entered_text
         text_size = find_text_size(text, selected_font)
         self._calculated_size = text_size
-        if text_size.width() == 0:
+        if text_size.isEmpty():
             image = self._preview.image
             if image is not None and not image.isNull():
                 image.fill(self._text_rect.background_color)

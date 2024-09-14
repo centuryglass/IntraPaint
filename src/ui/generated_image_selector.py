@@ -15,6 +15,7 @@ from PySide6.QtWidgets import QWidget, QGraphicsPixmapItem, QVBoxLayout, QLabel,
     QStyleOptionGraphicsItem, QHBoxLayout, QPushButton, QStyle
 
 from src.config.application_config import AppConfig
+from src.config.cache import Cache
 from src.config.key_config import KeyConfig
 from src.image.layers.image_stack import ImageStack
 from src.image.layers.layer import Layer
@@ -31,7 +32,7 @@ from src.util.visual.image_utils import get_standard_qt_icon, get_transparency_t
 from src.util.visual.image_format_utils import save_image
 from src.util.visual.pil_image_utils import pil_image_to_qimage, pil_image_scaling
 from src.util.math_utils import clamp
-from src.util.shared_constants import TIMELAPSE_MODE_FLAG
+from src.util.shared_constants import TIMELAPSE_MODE_FLAG, EDIT_MODE_INPAINT
 from src.util.validation import assert_valid_index
 
 # The `QCoreApplication.translate` context for strings in this file
@@ -203,7 +204,7 @@ class GeneratedImageSelector(QWidget):
     def reset(self) -> None:
         """Remove all old options and prepare for new ones."""
         self._zoom_index = 0
-        config = AppConfig()
+        cache = Cache()
         scene = self._view.scene()
         assert scene is not None
         # Clear the scene:
@@ -217,7 +218,7 @@ class GeneratedImageSelector(QWidget):
                     scene.removeItem(scene_item)
 
         # Configure checkboxes and change bounds:
-        if config.get(AppConfig.EDIT_MODE) == MODE_INPAINT:
+        if cache.get(Cache.EDIT_MODE) == MODE_INPAINT:
             self._selection_outline_checkbox.setVisible(True)
             change_bounds = self._image_stack.selection_layer.get_selection_gen_area(True)
             if change_bounds != self._image_stack.generation_area and change_bounds is not None:
@@ -239,7 +240,7 @@ class GeneratedImageSelector(QWidget):
         self._options.append(original_option)
         self._outlines.append(Outline(scene, self._view))
         self._outlines[0].outlined_region = self._options[0].bounds
-        if config.get(AppConfig.EDIT_MODE) == MODE_INPAINT:
+        if Cache().get(Cache.EDIT_MODE) == MODE_INPAINT:
             self._add_option_selection_outline(0)
 
         self._loading_image = QImage(original_image.size(), QImage.Format.Format_ARGB32_Premultiplied)
@@ -251,7 +252,7 @@ class GeneratedImageSelector(QWidget):
                          LOADING_IMG_TEXT)
         painter.end()
 
-        expected_count = config.get(AppConfig.BATCH_SIZE) * config.get(AppConfig.BATCH_COUNT)
+        expected_count = cache.get(Cache.BATCH_SIZE) * cache.get(Cache.BATCH_COUNT)
         for i in range(expected_count):
             self.add_image_option(self._loading_image, i)
 
@@ -291,7 +292,7 @@ class GeneratedImageSelector(QWidget):
             scene.addItem(self._options[-1])
             self._outlines.append(Outline(scene, self._view))
             # Add selections if inpainting:
-            if AppConfig().get(AppConfig.EDIT_MODE) == MODE_INPAINT:
+            if Cache().get(Cache.EDIT_MODE) == MODE_INPAINT:
                 self._add_option_selection_outline(idx)
         else:
             self._options[idx].image = image
@@ -446,7 +447,7 @@ class GeneratedImageSelector(QWidget):
             image = pil_image_to_qimage(sample_image).convertToFormat(QImage.Format.Format_ARGB32_Premultiplied)
         else:
             image = sample_image.convertToFormat(QImage.Format.Format_ARGB32_Premultiplied)
-        if AppConfig().get(AppConfig.EDIT_MODE) == 'Inpaint':
+        if Cache().get(Cache.EDIT_MODE) == EDIT_MODE_INPAINT:
             inpaint_mask = self._image_stack.selection_layer.mask_image
             painter = QPainter(image)
             painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_DestinationIn)
@@ -591,9 +592,10 @@ class _ImageOption(QGraphicsPixmapItem):
 
     @image.setter
     def image(self, new_image: QImage) -> None:
+        cache = Cache()
         config = AppConfig()
-        full_size = config.get(AppConfig.GENERATION_SIZE)
-        final_size = config.get(AppConfig.EDIT_SIZE)
+        full_size = cache.get(Cache.GENERATION_SIZE)
+        final_size = cache.get(Cache.EDIT_SIZE)
         if new_image.size() == full_size:
             self._full_image = new_image
             self._scaled_image = pil_image_scaling(new_image, final_size)

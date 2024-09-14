@@ -8,6 +8,7 @@ from PySide6.QtGui import QPainter, QColor, QTransform
 from PySide6.QtWidgets import QWidget, QSizePolicy
 
 from src.config.application_config import AppConfig
+from src.config.cache import Cache
 from src.hotkey_filter import HotkeyFilter
 from src.image.layers.image_layer import ImageLayer
 from src.image.layers.image_stack import ImageStack
@@ -67,8 +68,8 @@ class ImageViewer(ImageGraphicsView):
         self._image_generation_area_outline.animated = config.get(AppConfig.ANIMATE_OUTLINES)
         selection_layer = image_stack.selection_layer
         selection_layer.content_changed.connect(self._mask_content_change_slot)
-        config.connect(self, AppConfig.INPAINT_FULL_RES, self._mask_content_change_slot)
-        config.connect(self, AppConfig.INPAINT_FULL_RES_PADDING, self._mask_content_change_slot)
+        Cache().connect(self, Cache.INPAINT_FULL_RES, self._mask_content_change_slot)
+        Cache().connect(self, Cache.INPAINT_FULL_RES_PADDING, self._mask_content_change_slot)
 
         # active layer outline:
         self._active_layer_id = -1
@@ -163,7 +164,7 @@ class ImageViewer(ImageGraphicsView):
         self._generation_area_border.windowed_area = generation_area.toAlignedRect()
         self._generation_area_outline.setVisible(image_loaded)
         self._image_generation_area_outline.setVisible(
-            image_loaded and AppConfig().get(AppConfig.INPAINT_FULL_RES))
+            image_loaded and Cache().get(Cache.INPAINT_FULL_RES))
         self._active_layer_outline.setVisible(True)
         self._active_layer_outline.outlined_region = QRectF(self._image_stack.active_layer.bounds)
         selection_layer = self._image_stack.selection_layer

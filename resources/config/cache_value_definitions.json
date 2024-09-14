@@ -1,4 +1,44 @@
 {
+    "edit_size": {
+        "label": "Editing size:",
+        "category": "Cache",
+        "description": "Current/initial size in pixels of the area selected for editing",
+        "type": "Size",
+        "default": "512x512",
+        "saved": true
+    },
+    "generation_size": {
+        "label": "Generation size:",
+        "category": "Cache",
+        "description": "Current/initial size in pixels used for AI image generation",
+        "type": "Size",
+        "default": "512x512",
+        "saved": true
+    },
+    "tool_tab_bar": {
+        "label": "Tool tab bar:",
+        "category": "Cache",
+        "description": "Toolbar where the tool tab is placed by default (TOP|BOTTOM|LEFT|RIGHT|LOWER or empty)",
+        "type": "string",
+        "default": "",
+        "saved": true
+    },
+    "generation_tab_bar": {
+        "label": "Image generation tab bar:",
+        "category": "Cache",
+        "description": "Toolbar where the image generation tab is placed by default (TOP|BOTTOM|LEFT|RIGHT|LOWER or empty)",
+        "type": "string",
+        "default": "",
+        "saved": true
+    },
+    "controlnet_tab_bar": {
+        "label": "ControlNet tab bar:",
+        "category": "Cache",
+        "description": "Toolbar where the ControlNet tab is placed by default (TOP|BOTTOM|LEFT|RIGHT|LOWER or empty)",
+        "type": "string",
+        "default": "",
+        "saved": true
+    },
     "styles": {
         "label": "styles",
         "category": "Cache",
@@ -140,6 +180,54 @@
         "default": false,
         "saved": true
     },
+    "mypaint_brush": {
+        "label": "Selected MyPaint brush:",
+        "category": "Cache",
+        "description": "Currently selected MyPaint brush file.",
+        "type": "string",
+        "default": "./resources/brushes/experimental/1pixel.myb",
+        "saved": true
+    },
+    "paint_tool_brush_size": {
+        "label": "Brush size:",
+        "category": "Cache",
+        "description": "Current/initial brush size (in pixels) for the MyPaint brush tool.",
+        "type": "int",
+        "default": 40,
+        "saved": true,
+        "range_options": {
+            "min": 1,
+            "max": 300,
+            "step": 1
+        }
+    },
+    "selection_brush_size": {
+        "label": "Selection brush size:",
+        "category": "Cache",
+        "subcategory": "Size",
+        "description": "Current/initial brush size (in pixels) for the selection tool.",
+        "type": "int",
+        "default": 40,
+        "saved": true,
+        "range_options": {
+            "min": 1,
+            "max": 300,
+            "step": 1
+        }
+    },
+    "draw_tool_brush_size": {
+        "label": "Brush size:",
+        "category": "Cache",
+        "description": "Current/initial brush size (in pixels) for the draw tool.",
+        "type": "int",
+        "default": 40,
+        "saved": true,
+        "range_options": {
+            "min": 1,
+            "max": 300,
+            "step": 1
+        }
+    },
     "draw_tool_pressure_size": {
         "label": "Pen pressure=size:",
         "category": "Cache",
@@ -198,6 +286,70 @@
         "default": "",
         "saved": true
     },
+    "eraser_tool_pressure_size": {
+        "label": "Pen pressure=size:",
+        "category": "Cache",
+        "description": "Drawing tablet pen pressure affects draw tool brush size.",
+        "type": "bool",
+        "default": true,
+        "saved": true
+    },
+    "eraser_tool_pressure_opacity": {
+        "label": "Pen pressure=opacity:",
+        "category": "Cache",
+        "description": "Drawing tablet pen pressure affects draw tool brush opacity.",
+        "type": "bool",
+        "default": false,
+        "saved": true
+    },
+    "eraser_tool_pressure_hardness": {
+        "label": "Pen pressure=hardness:",
+        "category": "Cache",
+        "description": "Drawing tablet pen pressure affects draw tool brush hardness.",
+        "type": "bool",
+        "default": false,
+        "saved": true
+    },
+    "eraser_tool_size": {
+        "label": "Eraser size:",
+        "category": "Cache",
+        "subcategory": "Size",
+        "description": "Current/initial brush size (in pixels) for the eraser tool.",
+        "type": "int",
+        "default": 20,
+        "saved": true,
+        "range_options": {
+            "min": 1,
+            "max": 300,
+            "step": 1
+        }
+    },
+    "eraser_tool_opacity": {
+        "label": "Opacity:",
+        "category": "Cache",
+        "description": "Draw tool color opacity",
+        "type": "float",
+        "default": 1.0,
+        "range_options": {
+            "min": 0.0,
+            "max": 1.0,
+            "step": 0.05
+        },
+        "saved": true
+    },
+    "eraser_tool_hardness": {
+        "label": "Hardness:",
+        "category": "Cache",
+        "description": "Draw tool brush hardness",
+        "type": "float",
+        "default": 1.0,
+        "range_options": {
+            "min": 0.0,
+            "max": 1.0,
+            "step": 0.05
+        },
+        "saved": true
+    },
     "saved_main_window_pos": {
         "label": "Saved main window placement",
         "category": "Cache",
@@ -220,6 +372,240 @@
         "description": "display, position, and size where the image window last was.",
         "type": "string",
         "default": "",
+        "saved": true
+    },"prompt": {
+        "label": "Prompt:",
+        "category": "Cache",
+        "description": "Description that generated images should match.",
+        "type": "string",
+        "default": "",
+        "saved": false
+    },
+    "negative_prompt": {
+        "label": "Negative prompt:",
+        "category": "Cache",
+        "description": "Description that generated images should not match.",
+        "type": "string",
+        "default": "",
+        "saved": false
+    },
+    "guidance_scale": {
+        "label": "Guidance scale:",
+        "category": "Cache",
+        "description": "Controls how strongly the prompt and negative prompt are applied. Higher values are more consistent but may be less creative.  Overly high or low values may cause image distortion.",
+        "type": "float",
+        "default": 9.0,
+        "saved": true,
+        "range_options": {
+            "min": 0.0,
+            "max": 20.0,
+            "step": 0.1
+        }
+    },
+    "batch_size": {
+        "label": "Batch size:",
+        "category": "Cache",
+        "description": "Number of image options to simultaneously create in a single image editing operation. Increasing this value too much may result in errors or slowdown if GPU memory limits are reached.",
+        "type": "int",
+        "default": 5,
+        "saved": true,
+        "range_options": {
+            "min": 1,
+            "max": 20,
+            "step": 1
+        }
+    },
+    "batch_count": {
+        "label": "Batch count:",
+        "category": "Cache",
+        "description": "Number of image batches to create in a single image editing operation. Increasing this value doesn't require additional memory, but it slows down image editing more than increasing the batch size does.",
+        "type": "int",
+        "default": 1,
+        "saved": true,
+        "range_options": {
+            "min": 1,
+            "max": 99,
+            "step": 1
+        }
+    },
+    "edit_mode": {
+        "label": "Edit mode:",
+        "category": "Cache",
+        "description": "Stable-Diffusion image editing mode. 'Text to Image' completely replaces the selected image section with new content, 'Image to Image' creates altered versions of the image selection, and 'Inpaint' works like 'Image to Image' except that it only affects areas selected by the mask tool",
+        "type": "string",
+        "default": "Inpaint",
+        "options": [
+            "Inpaint",
+            "Image to Image",
+            "Text to Image"
+        ],
+        "saved": true
+    },
+    "sampling_steps": {
+        "label": "Sampling steps:",
+        "category": "Cache",
+        "description": "Number of diffusion operations to perform when generating image data. Higher values take longer, but often produce more detailed and accurate results. Different stable-diffusion models and samplers have different requirements, but in most cates setting this higher than 30 has only minimal benefits",
+        "type": "int",
+        "default": 30,
+        "saved": false,
+        "range_options": {
+            "min": 1,
+            "max": 150,
+            "step": 1
+        }
+    },
+    "denoising_strength": {
+        "label": "Denoising strength:",
+        "category": "Cache",
+        "description": "Controls how dramatically inpainting and image-to-image operations will change the initial image data. At 0.0, the image will be completely unedited, at 1.0 the image will be completely different",
+        "type": "float",
+        "default": 0.4,
+        "saved": false,
+        "range_options": {
+            "min": 0.0,
+            "max": 1.0,
+            "step": 0.01
+        }
+    },
+    "sampling_method": {
+        "label": "Sampling method:",
+        "category": "Cache",
+        "description": "Mathematical technique used to transform image data during the generation process. 'Euler a' works well in most cases, but certain models or extensions might perform better with other options.",
+        "type": "string",
+        "default": "Euler a",
+        "options": [],
+        "saved": true
+    },
+    "upscale_method": {
+        "label": "Upscale method:",
+        "category": "Cache",
+        "description": "Method to use when increasing image resolution. Available options will be loaded from the stable-diffusion-webui on launch.",
+        "type": "string",
+        "default": "None",
+        "options": [],
+        "saved": true
+    },
+    "controlnet_upscaling": {
+        "label": "ControlNet tiled upscaling",
+        "category": "Cache",
+        "description": "Whether to use the ControlNet tile model to improve image upscaling. When enabled and supported, all other image generation options will influence upscaling results. To use this, the ControlNet extension needs to be installed in the stable-diffusion-webui, and the controlnet tile model needs to be downloaded to the correct folder.",
+        "type": "bool",
+        "default": false,
+        "saved": true
+    },
+    "controlnet_downsample_rate": {
+        "label": "Tile downsample rate:",
+        "category": "Cache",
+        "description": "Adjusts how strongly the ControlNet tile model preserves the original image data, higher values result in fewer changes.",
+        "type": "float",
+        "range_options": {
+            "min": 1.0,
+            "max": 4.0,
+            "step": 0.1
+        },
+        "default": 1.0,
+        "saved": true
+    },
+    "seed": {
+        "label": "Seed:",
+        "category": "Cache",
+        "description": "Number used to control pseudo-random aspects of image generation, in most cases using the same seed with the same settings and inputs will always produce the same results. If set to -1, a different random seed will be used for each image generation. ",
+        "type": "int",
+        "default": -1,
+        "range_options": {
+            "min": -1,
+            "max": 18446744073709551615,
+            "step": 1
+        },
+        "saved": true
+    },
+    "inpaint_full_res": {
+        "label": "Inpaint Full Resolution",
+        "category": "Cache",
+        "description": "If true, inpaint the masked area at higher resolution by ignoring the unmasked area. This can increase image quality by sacrificing awareness of additional image content.",
+        "type": "bool",
+        "default": false,
+        "saved": true
+    },
+    "inpaint_full_res_padding": {
+        "label": "Padding:",
+        "category": "Cache",
+        "description": "Pixel radius outside of the masked area to include when inpainting when the 'Inpaint Full Resolution' option is enabled. Higher values increase contextual awareness while decreasing overall level of detail.",
+        "type": "int",
+        "default": 32,
+        "range_options": {
+            "min": 0,
+            "max": 1024,
+            "step": 1
+        },
+        "saved": true
+    },
+    "controlnet_args_0": {
+        "label": "ControlNet Settings (first layer)",
+        "category": "Cache",
+        "description": "First layer ControlNet extension settings.",
+        "type": "dict",
+        "default": {},
+        "saved": true
+    },
+    "controlnet_args_1": {
+        "label": "ControlNet Settings (second layer)",
+        "category": "Cache",
+        "description": "Second layer ControlNet extension settings.",
+        "type": "dict",
+        "default": {},
+        "saved": true
+    },
+    "controlnet_args_2": {
+        "label": "ControlNet Settings (third layer)",
+        "category": "Cache",
+        "description": "Second layer ControlNet extension settings.",
+        "type": "dict",
+        "default": {},
+        "saved": true
+    },
+    "cutn": {
+        "label": "Detail reference count (cutn):",
+        "category": "Cache",
+        "description": "Determines how many random cutouts from the input image are used to guide image generation (GLID-3-XL). Higher values can introduce more detail and variation, but may also introduce more noise and irrelevant information.",
+        "type": "int",
+        "default": 16,
+        "saved": true,
+        "range_options": {
+            "min": 1,
+            "max": 32,
+            "step": 1
+        }
+    },
+    "skip_steps": {
+        "label": "Skip steps:",
+        "category": "Cache",
+        "description": "Number of diffusion steps to skip (GLID-3-XL). Higher values will result in faster image generation with decreased detail and accuracy.",
+        "type": "int",
+        "default": 0,
+        "saved": true,
+        "range_options": {
+            "min": 0,
+            "max": 27,
+            "step": 1
+        }
+    },
+    "upscale_mode": {
+        "label": "Upscale mode:",
+        "category": "GLID-3-XL",
+        "description": "Upscaling mode used when the inpainting resolution doesn't match the image generation area size.",
+        "type": "string",
+        "default": "Lanczos",
+        "options":  [],
+        "saved": true
+    },
+    "downscale_mode": {
+        "label": "Downscale mode:",
+        "category": "GLID-3-XL",
+        "description": "Downscaling mode used when the inpainting resolution doesn't match the image generation area size.",
+        "type": "string",
+        "default": "Lanczos",
+        "options": [],
         "saved": true
     }
 }

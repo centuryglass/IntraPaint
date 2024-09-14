@@ -9,6 +9,7 @@ from PySide6.QtCore import QRect, QPoint, QSize, Signal, QPointF
 from PySide6.QtGui import QImage, QPolygonF, QPainter, QColor
 
 from src.config.application_config import AppConfig
+from src.config.cache import Cache
 from src.image.layers.image_layer import ImageLayer
 from src.util.visual.image_utils import (image_content_bounds, NpAnyArray, image_data_as_numpy_8bit,
                                          image_is_fully_transparent)
@@ -283,10 +284,10 @@ class SelectionLayer(ImageLayer):
            Rectangle containing all non-transparent mask canvas content plus padding, or None if the canvas is empty
            or config.get(Config.INPAINT_FULL_RES) is false and ignore_config is false.
         """
-        config = AppConfig()
-        if (not ignore_config and not config.get(AppConfig.INPAINT_FULL_RES)) or self._bounding_box is None:
+        cache = Cache()
+        if (not ignore_config and not cache.get(Cache.INPAINT_FULL_RES)) or self._bounding_box is None:
             return None
-        padding = config.get(AppConfig.INPAINT_FULL_RES_PADDING)
+        padding = cache.get(Cache.INPAINT_FULL_RES_PADDING)
         top: int = self._bounding_box.top()
         bottom: int = self._bounding_box.bottom()
         left: int = self._bounding_box.left()

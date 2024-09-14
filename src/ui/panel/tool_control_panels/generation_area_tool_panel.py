@@ -6,8 +6,8 @@ from PySide6.QtWidgets import QApplication, QWidget, QGridLayout, QPushButton, Q
     QSizePolicy
 
 from src.config.application_config import AppConfig
+from src.config.cache import Cache
 from src.image.layers.image_stack import ImageStack
-from src.image.layers.transform_layer import TransformLayer
 from src.ui.input_fields.size_field import SizeField
 from src.ui.layout.divider import Divider
 
@@ -78,13 +78,13 @@ class GenerationAreaToolPanel(QWidget):
 
         def _area_to_res() -> None:
             gen_area = image_stack.generation_area
-            gen_area.setSize(AppConfig().get(AppConfig.GENERATION_SIZE))
+            gen_area.setSize(Cache().get(Cache.GENERATION_SIZE))
             image_stack.generation_area = gen_area
         self._match_resolution_button.clicked.connect(_area_to_res)
 
         self._gen_size_label = QLabel(GEN_RESOLUTION_LABEL)
         self._gen_size_label.setAlignment(Qt.AlignmentFlag.AlignLeft)
-        self._gen_size_control = cast(SizeField, AppConfig().get_control_widget(AppConfig.GENERATION_SIZE))
+        self._gen_size_control = cast(SizeField, Cache().get_control_widget(Cache.GENERATION_SIZE))
         self._gen_size_control.layout().setAlignment(Qt.AlignmentFlag.AlignTop)
         self._gen_size_control.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
 
@@ -95,7 +95,7 @@ class GenerationAreaToolPanel(QWidget):
 
         def _res_to_area() -> None:
             area_size = image_stack.generation_area.size()
-            AppConfig().set(AppConfig.GENERATION_SIZE, area_size)
+            Cache().set(Cache.GENERATION_SIZE, area_size)
         self._match_area_button.clicked.connect(_res_to_area)
         self._build_layout()
 

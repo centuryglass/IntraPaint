@@ -3,11 +3,11 @@ from PySide6.QtCore import Qt
 from PySide6.QtGui import QIcon, QPixmap
 from PySide6.QtWidgets import QWidget, QApplication, QVBoxLayout, QPushButton, QHBoxLayout, QLabel, QLayout
 
-from src.config.application_config import AppConfig
+from src.config.cache import Cache
 from src.config.key_config import KeyConfig
 from src.image.layers.selection_layer import SelectionLayer
-from src.util.visual.text_drawing_utils import get_key_display_string
 from src.util.shared_constants import PROJECT_DIR
+from src.util.visual.text_drawing_utils import get_key_display_string
 
 # The `QCoreApplication.translate` context for strings in this file
 TR_ID = 'ui.panel.tool_control_panels.selection_panel'
@@ -58,17 +58,17 @@ class SelectionPanel(QWidget):
         clear_fill_line_layout.addWidget(fill_selection_button)
         self._layout.addLayout(clear_fill_line_layout)
 
-        config = AppConfig()
-        padding_checkbox = config.get_control_widget(AppConfig.INPAINT_FULL_RES)
+        cache = Cache()
+        padding_checkbox = cache.get_control_widget(Cache.INPAINT_FULL_RES)
         self._layout.addWidget(padding_checkbox)
         padding_line_layout = QHBoxLayout()
         padding_line_layout.setContentsMargins(0, 0, 0, 0)
         padding_line_layout.setSpacing(0)
         padding_line_layout.setAlignment(Qt.AlignmentFlag.AlignLeft)
 
-        padding_label = QLabel(config.get_label(AppConfig.INPAINT_FULL_RES_PADDING))
+        padding_label = QLabel(cache.get_label(Cache.INPAINT_FULL_RES_PADDING))
         padding_line_layout.addWidget(padding_label)
-        padding_spinbox = config.get_control_widget(AppConfig.INPAINT_FULL_RES_PADDING)
+        padding_spinbox = cache.get_control_widget(Cache.INPAINT_FULL_RES_PADDING)
         padding_line_layout.addWidget(padding_spinbox)
 
         def _show_hide_padding(should_show: bool) -> None:
@@ -79,7 +79,7 @@ class SelectionPanel(QWidget):
                 padding_label.hide()
                 padding_spinbox.hide()
         padding_checkbox.stateChanged.connect(lambda state: _show_hide_padding(bool(state)))
-        full_res_padding_tip = config.get_tooltip(AppConfig.INPAINT_FULL_RES_PADDING)
+        full_res_padding_tip = cache.get_tooltip(Cache.INPAINT_FULL_RES_PADDING)
         for padding_widget in (padding_label, padding_spinbox):
             padding_widget.setToolTip(full_res_padding_tip)
         self._layout.addLayout(padding_line_layout)

@@ -7,7 +7,7 @@ from PIL import Image, ImageQt
 from PySide6.QtCore import QSize
 from PySide6.QtGui import QImage
 
-from src.config.application_config import AppConfig
+from src.config.cache import Cache
 from src.util.shared_constants import PIL_SCALING_MODES
 from src.util.visual.geometry_utils import is_smaller_size
 from src.util.visual.image_utils import BASE_64_PREFIX
@@ -58,9 +58,9 @@ def pil_image_scaling(image: QImage | Image.Image, size: QSize, mode: Optional[I
         image = qimage_to_pil_image(image)
     if mode is None:
         if is_smaller_size(image_size, size):
-            mode = PIL_SCALING_MODES[AppConfig().get(AppConfig.UPSCALE_MODE)]
+            mode = PIL_SCALING_MODES[Cache().get(Cache.UPSCALE_MODE)]
         else:
-            mode = PIL_SCALING_MODES[AppConfig().get(AppConfig.DOWNSCALE_MODE)]
+            mode = PIL_SCALING_MODES[Cache().get(Cache.DOWNSCALE_MODE)]
     image = image.resize((size.width(), size.height()), mode)
     return pil_image_to_qimage(image)
 

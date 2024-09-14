@@ -41,6 +41,9 @@ class QtPaintCanvas(LayerCanvas):
         self._brush_stroke_buffer = QImage()
         self._prev_image_buffer = QImage()
         self._paint_buffer = QImage()
+        self._pressure_size = True
+        self._pressure_opacity = False
+        self._pressure_hardness = False
 
     @property
     def opacity(self) -> float:
@@ -60,6 +63,33 @@ class QtPaintCanvas(LayerCanvas):
     def hardness(self, hardness: float) -> None:
         self._hardness = float(clamp(hardness, 0.0, 1.0))
 
+    @property
+    def pressure_size(self) -> bool:
+        """Access whether pressure data controls brush size."""
+        return self._pressure_size
+
+    @pressure_size.setter
+    def pressure_size(self, pressure_sets_size: bool) -> None:
+        self._pressure_size = pressure_sets_size
+
+    @property
+    def pressure_opacity(self) -> bool:
+        """Access whether pressure data controls brush opacity."""
+        return self._pressure_opacity
+
+    @pressure_opacity.setter
+    def pressure_opacity(self, pressure_sets_opacity: bool) -> None:
+        self._pressure_opacity = pressure_sets_opacity
+
+    @property
+    def pressure_hardness(self) -> bool:
+        """Access whether pressure data controls brush hardness."""
+        return self._pressure_hardness
+
+    @pressure_hardness.setter
+    def pressure_hardness(self, pressure_sets_hardness: bool) -> None:
+        self._pressure_hardness = pressure_sets_hardness
+
     def connect_to_layer(self, new_layer: Optional[ImageLayer]):
         """Disconnects from the current layer, and connects to a new one."""
         super().connect_to_layer(new_layer)
@@ -76,7 +106,9 @@ class QtPaintCanvas(LayerCanvas):
         self._last_sizes.clear()
         self._last_opacity.clear()
         self._last_hardness.clear()
-        self._prev_image_buffer = self.layer.image
+        layer = self.layer
+        assert layer is not None
+        self._prev_image_buffer = layer.image
         super().start_stroke()
 
     def end_stroke(self) -> None:
@@ -218,7 +250,7 @@ class QtPaintCanvas(LayerCanvas):
         change_bounds = QRect()
         for event in self._input_buffer:
             change_bounds = change_bounds.united(event.change_bounds)
-        change_bounds = change_bounds.intersected(self.layer.bounds)
+        change_bounds = change_bounds.intersected(layer.bounds)
         new_input_painter = QPainter(self._paint_buffer)
         with layer.borrow_image(change_bounds) as layer_image:
             img_painter = QPainter(layer_image)
@@ -261,7 +293,8 @@ class QtPaintCanvas(LayerCanvas):
         layer = self.layer
         assert layer is not None
         input_event = QtPaintCanvas._InputEvent(x, y, pressure, self.brush_size, self.brush_color, self._last_point,
-                                                layer, self.opacity, self.hardness)
+                                                layer, self.opacity, self.hardness, self.pressure_size,
+                                                self.pressure_opacity, self.pressure_hardness)
         self._last_point = QPointF(x, y)
         self._input_buffer.append(input_event)
         if not self._buffer_timer.isActive():
@@ -271,19 +304,20 @@ class QtPaintCanvas(LayerCanvas):
         """Delayed drawing input event, buffered to decrease input lag."""
 
         def __init__(self, x: float, y: float, pressure: Optional[float], size: float, color: QColor,
-                     last_point: Optional[QPointF], layer: ImageLayer, opacity: float, hardness: float) -> None:
+                     last_point: Optional[QPointF], layer: ImageLayer, opacity: float, hardness: float,
+                     pressure_size: bool, pressure_opacity: bool, pressure_hardness: bool) -> None:
             layer_bounds = layer.bounds
             self.layer = layer
             self.size = size
             self.opacity = opacity
             self.hardness = hardness
             if pressure is not None:
-                if isinstance(layer, SelectionLayer) or Cache().get(Cache.DRAW_TOOL_PRESSURE_SIZE):
+                if isinstance(layer, SelectionLayer) or pressure_size:
                     self.size = max(int(size * pressure), 1)
                 if not isinstance(layer, SelectionLayer):
-                    if Cache().get(Cache.DRAW_TOOL_PRESSURE_OPACITY):
+                    if pressure_opacity:
                         self.opacity = float(clamp(self.opacity * pressure, 0.0, 1.0))
-                    if Cache().get(Cache.DRAW_TOOL_PRESSURE_HARDNESS):
+                    if pressure_hardness:
                         self.hardness = float(clamp(self.opacity * pressure, 0.0, 1.0))
 
             self.change_pt = QPointF(x - layer_bounds.x(), y - layer_bounds.y())

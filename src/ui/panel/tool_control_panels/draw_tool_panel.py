@@ -4,7 +4,6 @@ from typing import cast
 from PySide6.QtCore import Signal, Qt
 from PySide6.QtWidgets import QApplication, QWidget, QLabel, QVBoxLayout, QHBoxLayout
 
-from src.config.application_config import AppConfig
 from src.config.cache import Cache
 from src.config.key_config import KeyConfig
 from src.hotkey_filter import HotkeyFilter
@@ -36,13 +35,12 @@ class DrawToolPanel(QWidget):
         super().__init__()
         self._layout = QVBoxLayout(self)
         self._layout.setAlignment(Qt.AlignmentFlag.AlignTop)
-        config = AppConfig()
         cache = Cache()
 
         # Size slider:
-        self._brush_size_label = QLabel(config.get_label(AppConfig.SKETCH_BRUSH_SIZE))
+        self._brush_size_label = QLabel(cache.get_label(Cache.DRAW_TOOL_BRUSH_SIZE))
         self._brush_size_down_hint = KeyHintLabel(config_key=KeyConfig.BRUSH_SIZE_DECREASE)
-        self._brush_size_slider = cast(IntSliderSpinbox, config.get_control_widget(AppConfig.SKETCH_BRUSH_SIZE))
+        self._brush_size_slider = cast(IntSliderSpinbox, cache.get_control_widget(Cache.DRAW_TOOL_BRUSH_SIZE))
         self._brush_size_up_hint = KeyHintLabel(config_key=KeyConfig.BRUSH_SIZE_INCREASE)
         self._size_pressure_checkbox = cache.get_control_widget(Cache.DRAW_TOOL_PRESSURE_SIZE)
 

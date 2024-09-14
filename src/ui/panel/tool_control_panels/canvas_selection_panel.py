@@ -4,7 +4,7 @@ from typing import cast
 from PySide6.QtCore import Signal, Qt
 from PySide6.QtWidgets import QApplication, QHBoxLayout, QLabel
 
-from src.config.application_config import AppConfig
+from src.config.cache import Cache
 from src.config.key_config import KeyConfig
 from src.hotkey_filter import HotkeyFilter
 from src.image.layers.selection_layer import SelectionLayer
@@ -41,7 +41,6 @@ class CanvasSelectionPanel(SelectionPanel):
 
     def __init__(self, selection_layer: SelectionLayer) -> None:
         super().__init__(selection_layer)
-        config = AppConfig()
 
         # Brush size:
         size_row = QHBoxLayout()
@@ -50,7 +49,7 @@ class CanvasSelectionPanel(SelectionPanel):
         size_row.addWidget(size_label)
         size_down_hint = KeyHintLabel(config_key=KeyConfig.BRUSH_SIZE_DECREASE)
         size_row.addWidget(size_down_hint)
-        brush_size_slider = cast(IntSliderSpinbox, config.get_control_widget(AppConfig.SELECTION_BRUSH_SIZE))
+        brush_size_slider = cast(IntSliderSpinbox, Cache().get_control_widget(Cache.SELECTION_BRUSH_SIZE))
         size_row.addWidget(brush_size_slider)
         size_up_hint = KeyHintLabel(config_key=KeyConfig.BRUSH_SIZE_INCREASE)
         size_row.addWidget(size_up_hint)

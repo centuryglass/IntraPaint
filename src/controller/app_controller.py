@@ -45,11 +45,14 @@ from src.ui.modal.resize_canvas_modal import ResizeCanvasModal
 from src.ui.modal.settings_modal import SettingsModal
 from src.ui.panel.layer_ui.layer_panel import LayerPanel
 from src.ui.window.generator_setup_window import GeneratorSetupWindow
-from src.ui.window.main_window import MainWindow
+from src.ui.window.main_window import MainWindow, TabBoxID
 from src.undo_stack import UndoStack
 from src.util.application_state import AppStateTracker, APP_STATE_NO_IMAGE, APP_STATE_EDITING, APP_STATE_LOADING, \
     APP_STATE_SELECTION
-from src.util.shared_constants import APP_ICON_PATH
+from src.util.menu_builder import MenuBuilder, menu_action, MENU_DATA_ATTR, MenuData
+from src.util.optional_import import optional_import
+from src.util.pyinstaller import is_pyinstaller_bundle
+from src.util.qtexcepthook import QtExceptHook
 from src.util.visual.display_size import get_screen_size
 from src.util.visual.image_format_utils import save_image_with_metadata, save_image, load_image, \
     IMAGE_FORMATS_SUPPORTING_METADATA, IMAGE_FORMATS_SUPPORTING_ALPHA, IMAGE_FORMATS_SUPPORTING_PARTIAL_ALPHA, \
@@ -57,10 +60,6 @@ from src.util.visual.image_format_utils import save_image_with_metadata, save_im
     GREYSCALE_IMAGE_FORMATS, METADATA_COMMENT_KEY
 from src.util.visual.image_utils import image_is_fully_opaque, image_has_partial_alpha, create_transparent_image
 from src.util.visual.pil_image_utils import pil_image_scaling
-from src.util.menu_builder import MenuBuilder, menu_action, MENU_DATA_ATTR, MenuData
-from src.util.optional_import import optional_import
-from src.util.pyinstaller import is_pyinstaller_bundle
-from src.util.qtexcepthook import QtExceptHook
 
 # Optional spacenav support and extended theming:
 qdarktheme = optional_import('qdarktheme')
@@ -175,12 +174,13 @@ class AppController(MenuBuilder):
         super().__init__()
         app = QApplication.instance() or QApplication(sys.argv)
         config = AppConfig()
-        config.apply_args(args)
+        cache = Cache()
+        cache.apply_args(args)
         self._layer_panel: Optional[LayerPanel] = None
         self._generator_window: Optional[GeneratorSetupWindow] = None
 
         # Initialize edited image data structures:
-        self._image_stack = ImageStack(config.get(AppConfig.DEFAULT_IMAGE_SIZE), config.get(AppConfig.EDIT_SIZE),
+        self._image_stack = ImageStack(config.get(AppConfig.DEFAULT_IMAGE_SIZE), cache.get(Cache.EDIT_SIZE),
                                        config.get(AppConfig.MIN_EDIT_SIZE), config.get(AppConfig.MAX_EDIT_SIZE))
 
         self._metadata: Optional[dict[str, Any]] = None
@@ -368,7 +368,11 @@ class AppController(MenuBuilder):
         self._window.set_control_panel(self._generator.get_control_panel())
         for tab in self._generator.get_extra_tabs():
             # Remember to adjust this if you add any other generator-specific tabs
-            self._window.add_tab(tab, AppConfig().get(AppConfig.CONTROLNET_TAB_BAR))
+            try:
+                box_id: Optional[TabBoxID] = TabBoxID(Cache().get(Cache.CONTROLNET_TAB_BAR))
+            except ValueError:
+                box_id = None
+            self._window.add_tab(tab, box_id)
         if self._generator_window is not None:
             self._generator_window.mark_active_generator(generator)
 
@@ -464,7 +468,7 @@ class AppController(MenuBuilder):
             self.move_layer_to_top,
             self.flatten_layer
         }
-        not_flat_methods: Set[Callable[..., None]] = { self.flatten_layer }
+        not_flat_methods: Set[Callable[..., None]] = {self.flatten_layer}
         not_layer_group_methods: Set[Callable[..., None]] = {self.merge_layer_down}
 
         not_text_layer_methods: Set[Callable[..., None]] = {self.crop_layer_to_content}
@@ -474,9 +478,9 @@ class AppController(MenuBuilder):
 
         active_layer = self._image_stack.active_layer
         is_top_layer = active_layer == self._image_stack.layer_stack or self._image_stack.prev_layer(active_layer) \
-            in (None, self._image_stack.layer_stack)
+                       in (None, self._image_stack.layer_stack)
         is_bottom_layer = active_layer != self._image_stack.layer_stack \
-            and self._image_stack.next_layer(active_layer) is None
+                          and self._image_stack.next_layer(active_layer) is None
         for menu_method in managed_menu_methods:
             action = self.get_action_for_method(menu_method)
             assert action is not None
@@ -511,7 +515,6 @@ class AppController(MenuBuilder):
         if image_size and (not self._image_stack.has_image or request_confirmation(self._window,
                                                                                    NEW_IMAGE_CONFIRMATION_TITLE,
                                                                                    NEW_IMAGE_CONFIRMATION_MESSAGE)):
-
             new_image = QImage(image_size, QImage.Format.Format_ARGB32_Premultiplied)
             new_image.fill(Cache().get_color(Cache.NEW_IMAGE_BACKGROUND_COLOR, Qt.GlobalColor.white))
             Cache().set(Cache.LAST_FILE_PATH, '')
@@ -621,6 +624,7 @@ class AppController(MenuBuilder):
 
                 def _extension_str(extensions: Tuple[str, ...]) -> str:
                     return ', '.join((f'.{ext.lower()}' for ext in extensions))
+
                 format_str = f'.{file_format.lower()}'
 
                 if warn_save_discards_alpha:
@@ -666,7 +670,6 @@ class AppController(MenuBuilder):
     def load_image(self, file_path: Optional[str | List[str]] = None) -> None:
         """Open a loading dialog, then load the selected image for editing."""
         cache = Cache()
-        config = AppConfig()
         if file_path is None:
             selected_path = open_image_file(self._window)
             if not isinstance(selected_path, (str, list)):
@@ -719,7 +722,7 @@ class AppController(MenuBuilder):
                     # noinspection PyTypeChecker
                     param_str = str(param_str, encoding='utf-8')
                 match = re.match(r'^(.*\n?.*)\nSteps: ?(\d+), Sampler: ?(.*), CFG scale: ?(.*), Seed: ?(.+),'
-                                 r' Size: ?(\d+)x?(\d+)',  param_str)
+                                 r' Size: ?(\d+)x?(\d+)', param_str)
                 if match:
                     prompt = match.group(1)
                     negative = ''
@@ -735,16 +738,16 @@ class AppController(MenuBuilder):
                         negative = divider_match.group(2)
                     logger.info('Detected saved image gen data, applying to UI')
                     try:
-                        config.set(AppConfig.PROMPT, prompt)
-                        config.set(AppConfig.NEGATIVE_PROMPT, negative)
-                        config.set(AppConfig.SAMPLING_STEPS, steps)
+                        cache.set(Cache.PROMPT, prompt)
+                        cache.set(Cache.NEGATIVE_PROMPT, negative)
+                        cache.set(Cache.SAMPLING_STEPS, steps)
                         try:
-                            config.set(AppConfig.SAMPLING_METHOD, sampler)
+                            cache.set(Cache.SAMPLING_METHOD, sampler)
                         except ValueError:
                             logger.error(f'sampler "{sampler}" used to generate this image is not supported.')
-                        config.set(AppConfig.GUIDANCE_SCALE, cfg_scale)
-                        config.set(AppConfig.SEED, seed)
-                        config.set(AppConfig.GENERATION_SIZE, QSize(width, height))
+                        cache.set(Cache.GUIDANCE_SCALE, cfg_scale)
+                        cache.set(Cache.SEED, seed)
+                        cache.set(Cache.GENERATION_SIZE, QSize(width, height))
                     except (TypeError, RuntimeError) as err:
                         logger.error(f'Failed to load image gen data from metadata: {err}')
                 else:
@@ -880,16 +883,16 @@ class AppController(MenuBuilder):
 
     @staticmethod
     def _updated_metadata_params() -> str:
-        config = AppConfig()
-        prompt = config.get(AppConfig.PROMPT)
-        negative = config.get(AppConfig.NEGATIVE_PROMPT)
-        steps = config.get(AppConfig.SAMPLING_STEPS)
-        sampler = config.get(AppConfig.SAMPLING_METHOD)
-        cfg_scale = config.get(AppConfig.GUIDANCE_SCALE)
-        seed = config.get(AppConfig.SEED)
-        size = config.get(AppConfig.GENERATION_SIZE)
+        cache = Cache()
+        prompt = cache.get(Cache.PROMPT)
+        negative = cache.get(Cache.NEGATIVE_PROMPT)
+        steps = cache.get(Cache.SAMPLING_STEPS)
+        sampler = cache.get(Cache.SAMPLING_METHOD)
+        cfg_scale = cache.get(Cache.GUIDANCE_SCALE)
+        seed = cache.get(Cache.SEED)
+        size = cache.get(Cache.GENERATION_SIZE)
         return f'{prompt}\nNegative prompt: {negative}\nSteps: {steps}, Sampler: {sampler}, CFG scale:' + \
-               f'{cfg_scale}, Seed: {seed}, Size: {size.width()}x{size.height()}'
+            f'{cfg_scale}, Seed: {seed}, Size: {size.width()}x{size.height()}'
 
     def _metadata_is_latest(self) -> bool:
         if not self._metadata_will_be_saved():

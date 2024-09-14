@@ -243,12 +243,12 @@ class ToolPanel(QWidget):
             return
         button_size = button_list[0].sizeHint()
         if self._orientation == Qt.Orientation.Vertical:
-            num_cols = 6
-            num_rows = 2
+            num_cols = 5
+            num_rows = 3
             self._tool_button_layout.setAlignment(Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignHCenter)
         else:  # Horizontal
-            num_rows = 6
-            num_cols = 2
+            num_rows = 5
+            num_cols = 3
             self.setMinimumHeight(0)
             self._tool_button_layout.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
         if self._row_count == num_rows and self._column_count == num_cols \

@@ -1,11 +1,12 @@
 """Use the Config module's data sharing capabilities to cache temporary values."""
+from argparse import Namespace
 from typing import Dict
 
 from PySide6.QtCore import QRect, QTimer
 from PySide6.QtWidgets import QWidget
 
 from src.config.config import Config
-from src.util.shared_constants import PROJECT_DIR, DATA_DIR
+from src.util.shared_constants import PROJECT_DIR, DATA_DIR, PIL_SCALING_MODES
 from src.util.singleton import Singleton
 
 CONFIG_DEFINITIONS = f'{PROJECT_DIR}/resources/config/cache_value_definitions.json'
@@ -25,9 +26,28 @@ class Cache(Config, metaclass=Singleton):
         self._final_bounds: Dict[QWidget, QRect] = {}
         self._last_bounds: Dict[QWidget, QRect] = {}
 
+    def _adjust_defaults(self):
+        """Dynamically initialize application style and theme options based on available modules."""
+        scaling_options = PIL_SCALING_MODES.keys()
+        self.update_options(Cache.UPSCALE_MODE, scaling_options)
+        self.update_options(Cache.DOWNSCALE_MODE, scaling_options)
+
+    def apply_args(self, args: Namespace) -> None:
+        """Loads expected parameters from command line arguments"""
+        expected = {
+            args.text: Cache.PROMPT,
+            args.negative: Cache.NEGATIVE_PROMPT,
+            args.num_batches: Cache.BATCH_COUNT,
+            args.batch_size: Cache.BATCH_SIZE,
+            args.cutn: Cache.CUTN
+        }
+        for arg_value, key in expected.items():
+            if arg_value:
+                self.set(key, arg_value)
+
     def save_bounds(self, key: str, widget: QWidget) -> None:
         """Save a widget's geometry to the cache.  If waiting to load bounds for the same widget the new bounds will
-           not be saved, since they are about to be replaced anywya."""
+           not be saved, since they are about to be replaced anyway."""
         if widget not in self._last_bounds:  # Don't update if waiting to apply previous bounds
             cache_str = f'{widget.x()},{widget.y()},{widget.width()},{widget.height()}'
             self.set(key, cache_str)
@@ -67,29 +87,66 @@ class Cache(Config, metaclass=Singleton):
     # DYNAMIC PROPERTIES:
     # Generate with `python /home/anthony/Workspace/ML/IntraPaint/scripts/dynamic_import_typing.py src/config/cache.py`
 
+    BATCH_COUNT: str
+    BATCH_SIZE: str
+    CONTROLNET_ARGS_0: str
+    CONTROLNET_ARGS_1: str
+    CONTROLNET_ARGS_2: str
     CONTROLNET_CONTROL_TYPES: str
+    CONTROLNET_DOWNSAMPLE_RATE: str
     CONTROLNET_MODELS: str
     CONTROLNET_MODULES: str
+    CONTROLNET_TAB_BAR: str
+    CONTROLNET_UPSCALING: str
     CONTROLNET_VERSION: str
+    CUTN: str
+    DENOISING_STRENGTH: str
+    DOWNSCALE_MODE: str
+    DRAW_TOOL_BRUSH_SIZE: str
     DRAW_TOOL_FILL_TYPE: str
     DRAW_TOOL_HARDNESS: str
     DRAW_TOOL_OPACITY: str
     DRAW_TOOL_PRESSURE_HARDNESS: str
     DRAW_TOOL_PRESSURE_OPACITY: str
     DRAW_TOOL_PRESSURE_SIZE: str
+    EDIT_MODE: str
+    EDIT_SIZE: str
+    ERASER_TOOL_HARDNESS: str
+    ERASER_TOOL_OPACITY: str
+    ERASER_TOOL_PRESSURE_HARDNESS: str
+    ERASER_TOOL_PRESSURE_OPACITY: str
+    ERASER_TOOL_PRESSURE_SIZE: str
+    ERASER_TOOL_SIZE: str
     FILL_THRESHOLD: str
+    GENERATION_SIZE: str
+    GENERATION_TAB_BAR: str
+    GUIDANCE_SCALE: str
+    INPAINT_FULL_RES: str
+    INPAINT_FULL_RES_PADDING: str
     LAST_ACTIVE_TOOL: str
     LAST_BRUSH_COLOR: str
     LAST_FILE_PATH: str
     LAST_NAV_PANEL_TOOL: str
     LAST_SEED: str
     LORA_MODELS: str
+    MYPAINT_BRUSH: str
+    NEGATIVE_PROMPT: str
     NEW_IMAGE_BACKGROUND_COLOR: str
     PAINT_SELECTION_ONLY: str
+    PAINT_TOOL_BRUSH_SIZE: str
+    PROMPT: str
     SAMPLE_MERGED: str
+    SAMPLING_METHOD: str
+    SAMPLING_STEPS: str
     SAVED_IMAGE_WINDOW_POS: str
     SAVED_LAYER_WINDOW_POS: str
     SAVED_MAIN_WINDOW_POS: str
+    SEED: str
+    SELECTION_BRUSH_SIZE: str
+    SKIP_STEPS: str
     STYLES: str
     TEXT_BACKGROUND_COLOR: str
     TEXT_TOOL_PARAMS: str
+    TOOL_TAB_BAR: str
+    UPSCALE_METHOD: str
+    UPSCALE_MODE: str

@@ -8,7 +8,6 @@ from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import QDialog, QHBoxLayout, QListWidget, QListWidgetItem, QLabel, QPushButton, \
     QVBoxLayout, QApplication
 
-from src.config.application_config import AppConfig
 from src.config.cache import Cache
 from src.ui.input_fields.line_edit import LineEdit
 from src.ui.input_fields.plain_text_edit import PlainTextEdit
@@ -122,19 +121,19 @@ class PromptStyleWindow(QDialog):
         selected = self._get_selected_style()
         if selected is None:
             return
-        config = AppConfig()
-        prompt = config.get(AppConfig.PROMPT)
-        config.set(AppConfig.PROMPT, f'{prompt} {selected[PROMPT_KEY]}')
-        negative = config.get(AppConfig.NEGATIVE_PROMPT)
-        config.set(AppConfig.NEGATIVE_PROMPT, f'{negative} {selected[NEGATIVE_KEY]}')
+        cache = Cache()
+        prompt = cache.get(Cache.PROMPT)
+        cache.set(Cache.PROMPT, f'{prompt} {selected[PROMPT_KEY]}')
+        negative = cache.get(Cache.NEGATIVE_PROMPT)
+        cache.set(Cache.NEGATIVE_PROMPT, f'{negative} {selected[NEGATIVE_KEY]}')
 
     def _replace_prompt(self) -> None:
         selected = self._get_selected_style()
         if selected is None:
             return
-        config = AppConfig()
-        config.set(AppConfig.PROMPT, selected[PROMPT_KEY])
-        config.set(AppConfig.NEGATIVE_PROMPT, selected[NEGATIVE_KEY])
+        cache = Cache()
+        cache.set(Cache.PROMPT, selected[PROMPT_KEY])
+        cache.set(Cache.NEGATIVE_PROMPT, selected[NEGATIVE_KEY])
 
     def _update_preview(self) -> None:
         selected = self._get_selected_style()

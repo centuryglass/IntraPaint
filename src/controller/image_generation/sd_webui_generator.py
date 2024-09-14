@@ -120,7 +120,7 @@ GEN_TAB_ICON = f'{PROJECT_DIR}/resources/icons/tabs/sparkle.svg'
 
 
 def _check_lcm_mode_available(_) -> bool:
-    if LCM_SAMPLER not in AppConfig().get_options(AppConfig.SAMPLING_METHOD):
+    if LCM_SAMPLER not in Cache().get_options(Cache.SAMPLING_METHOD):
         return False
     loras = [lora['name'] for lora in Cache().get(Cache.LORA_MODELS)]
     return LCM_LORA_1_5 in loras or LCM_LORA_XL in loras
@@ -233,8 +233,8 @@ class SDWebUIGenerator(ImageGenerator):
                 cache.set(Cache.CONTROLNET_VERSION, -1.0)
 
             option_loading_params: Tuple[Tuple[str, Callable[[], List[str]]], ...] = (
-                (AppConfig.SAMPLING_METHOD, self._webservice.get_samplers),
-                (AppConfig.UPSCALE_METHOD, self._webservice.get_upscalers)
+                (Cache.SAMPLING_METHOD, self._webservice.get_samplers),
+                (Cache.UPSCALE_METHOD, self._webservice.get_upscalers)
             )
 
             # load various option lists:
@@ -387,7 +387,7 @@ class SDWebUIGenerator(ImageGenerator):
 
         def set_prompt(prompt_text: str) -> None:
             """Update the image prompt in config with the interrogate results."""
-            AppConfig().set(AppConfig.PROMPT, prompt_text)
+            Cache().set(Cache.PROMPT, prompt_text)
 
         task.prompt_ready.connect(set_prompt)
 
@@ -550,7 +550,7 @@ class SDWebUIGenerator(ImageGenerator):
             Mask marking edited image region.
         """
         assert self._webservice is not None
-        edit_mode = AppConfig().get(AppConfig.EDIT_MODE)
+        edit_mode = Cache().get(Cache.EDIT_MODE)
         if edit_mode == EDIT_MODE_INPAINT and self._image_stack.selection_layer.generation_area_fully_selected():
             edit_mode = EDIT_MODE_IMG2IMG
         if edit_mode != EDIT_MODE_INPAINT:
@@ -566,7 +566,7 @@ class SDWebUIGenerator(ImageGenerator):
         self._async_progress_check(status_signal)
         try:
             if edit_mode == EDIT_MODE_TXT2IMG:
-                gen_size = AppConfig().get(AppConfig.GENERATION_SIZE)
+                gen_size = Cache().get(Cache.GENERATION_SIZE)
                 width = gen_size.width()
                 height = gen_size.height()
                 image_data, info = self._webservice.txt2img(width, height, image=source_image)
@@ -584,22 +584,22 @@ class SDWebUIGenerator(ImageGenerator):
     @menu_action(MENU_TOOLS, 'lcm_mode_shortcut', 99, condition_check=_check_lcm_mode_available)
     def set_lcm_mode(self) -> None:
         """Apply all settings required for using an LCM LoRA module."""
-        config = AppConfig()
+        cache = Cache()
         loras = [lora['name'] for lora in Cache().get(Cache.LORA_MODELS)]
         if LCM_LORA_1_5 in loras:
             lora_name = LCM_LORA_1_5
         else:
             lora_name = LCM_LORA_XL
         lora_key = f'<lora:{lora_name}:1>'
-        prompt = config.get(AppConfig.PROMPT)
+        prompt = cache.get(Cache.PROMPT)
         if lora_key not in prompt:
-            config.set(AppConfig.PROMPT, f'{prompt} {lora_key}')
-        config.set(AppConfig.GUIDANCE_SCALE, 1.5)
-        config.set(AppConfig.SAMPLING_STEPS, 8)
-        config.set(AppConfig.SAMPLING_METHOD, 'LCM')
-        config.set(AppConfig.SEED, -1)
-        if config.get(AppConfig.BATCH_SIZE) < 5:
-            config.set(AppConfig.BATCH_SIZE, 5)
+            cache.set(Cache.PROMPT, f'{prompt} {lora_key}')
+        cache.set(Cache.GUIDANCE_SCALE, 1.5)
+        cache.set(Cache.SAMPLING_STEPS, 8)
+        cache.set(Cache.SAMPLING_METHOD, 'LCM')
+        cache.set(Cache.SEED, -1)
+        if cache.get(Cache.BATCH_SIZE) < 5:
+            cache.set(Cache.BATCH_SIZE, 5)
 
     def _update_styles(self, style_list: List[Dict[str, str]]) -> None:
         try:

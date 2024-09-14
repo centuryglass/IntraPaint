@@ -8,6 +8,7 @@ from PySide6.QtGui import QImage
 from PySide6.QtWidgets import QApplication, QInputDialog, QWidget
 
 from src.config.application_config import AppConfig
+from src.config.cache import Cache
 from src.controller.image_generation.glid3_xl_generator import GLID_PREVIEW_IMAGE, GLID_GENERATOR_DESCRIPTION
 from src.controller.image_generation.image_generator import ImageGenerator
 from src.controller.image_generation.sd_webui_generator import URL_REQUEST_MESSAGE, URL_REQUEST_RETRY_MESSAGE, \
@@ -175,8 +176,8 @@ class Glid3WebserviceGenerator(ImageGenerator):
             if not url_entered:
                 return False
             self._server_url = new_url
-        AppConfig().set(AppConfig.GENERATION_SIZE, QSize(256, 256))
-        AppConfig().set(AppConfig.EDIT_MODE, EDIT_MODE_INPAINT)
+        Cache().set(Cache.GENERATION_SIZE, QSize(256, 256))
+        Cache().set(Cache.EDIT_MODE, EDIT_MODE_INPAINT)
         return True
 
     def disconnect_or_disable(self) -> None:
@@ -233,18 +234,18 @@ class Glid3WebserviceGenerator(ImageGenerator):
             raise RuntimeError('GLID-3-XL only supports inpainting')
         if source_image.hasAlphaChannel():
             source_image = source_image.convertToFormat(QImage.Format.Format_RGB32)
-        config = AppConfig()
-        batch_size = config.get(AppConfig.BATCH_SIZE)
-        batch_count = config.get(AppConfig.BATCH_COUNT)
+        config = Cache()
+        batch_size = config.get(Cache.BATCH_SIZE)
+        batch_count = config.get(Cache.BATCH_COUNT)
         body = {
             'batch_size': batch_size,
             'num_batches': batch_count,
             'edit': image_to_base64(source_image),
             'mask': image_to_base64(mask_image),
-            'prompt': config.get(AppConfig.PROMPT),
-            'negative': config.get(AppConfig.NEGATIVE_PROMPT),
-            'guidanceScale': config.get(AppConfig.GUIDANCE_SCALE),
-            'skipSteps': config.get(AppConfig.SKIP_STEPS),
+            'prompt': config.get(Cache.PROMPT),
+            'negative': config.get(Cache.NEGATIVE_PROMPT),
+            'guidanceScale': config.get(Cache.GUIDANCE_SCALE),
+            'skipSteps': config.get(Cache.SKIP_STEPS),
             'width': source_image.width(),
             'height': source_image.height()
         }

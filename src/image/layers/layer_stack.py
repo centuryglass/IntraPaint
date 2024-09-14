@@ -19,6 +19,7 @@ from src.util.validation import assert_valid_index
 
 RenderAdjustFn: TypeAlias = Callable[[int, QImage, QRect, QPainter], Optional[QImage]]
 
+
 class LayerStack(Layer, LayerParent):
     """Represents a group of linked image layers that can be manipulated as one in limited ways."""
 

@@ -170,6 +170,24 @@
         "default": "E",
         "saved": true
     },
+    "blur_tool_key": {
+        "label": "Switch to the blur tool:",
+        "category": "Keybindings",
+        "subcategory": "Tool Selection",
+        "description": "Activate the blur tool to blur image content.",
+        "type": "string",
+        "default": "U",
+        "saved": true
+    },
+    "smudge_tool_key": {
+        "label": "Switch to the smudge tool:",
+        "category": "Keybindings",
+        "subcategory": "Tool Selection",
+        "description": "Activate the smudge tool to smudge image content.",
+        "type": "string",
+        "default": "M",
+        "saved": true
+    },
     "eyedropper_tool_key": {
         "label": "Switch to the color picker tool:",
         "category": "Keybindings",

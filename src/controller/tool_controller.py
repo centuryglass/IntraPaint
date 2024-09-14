@@ -28,6 +28,8 @@ from src.ui.modal.modal_utils import show_warning_dialog
 from src.util.optional_import import optional_import
 
 BrushTool = optional_import('src.tools.brush_tool', attr_name='BrushTool')
+BlurTool = optional_import('src.tools.blur_tool', attr_name='BlurTool')
+SmudgeTool = optional_import('src.tools.smudge_tool', attr_name='SmudgeTool')
 
 logger = logging.getLogger(__name__)
 
@@ -83,6 +85,10 @@ class ToolController(QObject):
         self._add_tool(EraserTool(image_stack, image_viewer))
         fill_tool = FillTool(image_stack)
         self._add_tool(fill_tool)
+        if BlurTool is not None:
+            self._add_tool(BlurTool(image_stack, image_viewer))
+        if SmudgeTool is not None:
+            self._add_tool(SmudgeTool(image_stack, image_viewer))
         eyedropper_tool = EyedropperTool(image_stack)
         self._add_tool(eyedropper_tool)
         text_tool = TextTool(image_stack, image_viewer)

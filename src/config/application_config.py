@@ -1,13 +1,12 @@
 """Provides access to the user-editable application config."""
 import os
-from argparse import Namespace
 from typing import Optional
 
 from PySide6.QtWidgets import QStyleFactory
 
 from src.config.config import Config
 from src.util.optional_import import optional_import
-from src.util.shared_constants import PIL_SCALING_MODES, PROJECT_DIR, DATA_DIR
+from src.util.shared_constants import PROJECT_DIR, DATA_DIR
 from src.util.singleton import Singleton
 
 # Optional theme modules:
@@ -48,10 +47,6 @@ class AppConfig(Config, metaclass=Singleton):
         self.update_options(AppConfig.THEME, theme_options)
         self.update_options(AppConfig.STYLE, list(QStyleFactory.keys()))
 
-        scaling_options = PIL_SCALING_MODES.keys()
-        self.update_options(AppConfig.UPSCALE_MODE, scaling_options)
-        self.update_options(AppConfig.DOWNSCALE_MODE, scaling_options)
-
         # Put default user data directories in the user data dir:
         for config_key, dir_name in ((AppConfig.LIBMYPAINT_LIBRARY_DIR, 'libmypaint-lib-files'),
                                      (AppConfig.ADDED_FONT_DIR, 'fonts'),
@@ -64,19 +59,6 @@ class AppConfig(Config, metaclass=Singleton):
                 if os.path.isdir(dir_path):
                     self.set(config_key, dir_path)
 
-    def apply_args(self, args: Namespace) -> None:
-        """Loads expected parameters from command line arguments"""
-        expected = {
-            args.text: AppConfig.PROMPT,
-            args.negative: AppConfig.NEGATIVE_PROMPT,
-            args.num_batches: AppConfig.BATCH_COUNT,
-            args.batch_size: AppConfig.BATCH_SIZE,
-            args.cutn: AppConfig.CUTN
-        }
-        for arg_value, key in expected.items():
-            if arg_value:
-                self.set(key, arg_value)
-
     # DYNAMIC PROPERTIES:
     # Generate with `python /home/anthony/Workspace/ML/IntraPaint/scripts/dynamic_import_typing.py src/config/application_config.py`
 
@@ -85,33 +67,14 @@ class AppConfig(Config, metaclass=Singleton):
     ALWAYS_INIT_METADATA_ON_SAVE: str
     ALWAYS_UPDATE_METADATA_ON_SAVE: str
     ANIMATE_OUTLINES: str
-    BATCH_COUNT: str
-    BATCH_SIZE: str
     BERT_MODEL_PATH: str
     BRUSH_FAVORITES: str
     CLIP_MODEL_NAME: str
-    CONTROLNET_ARGS_0: str
-    CONTROLNET_ARGS_1: str
-    CONTROLNET_ARGS_2: str
-    CONTROLNET_DOWNSAMPLE_RATE: str
-    CONTROLNET_TAB_BAR: str
     CONTROLNET_TILE_MODEL: str
-    CONTROLNET_UPSCALING: str
-    CUTN: str
     DEFAULT_IMAGE_SIZE: str
-    DENOISING_STRENGTH: str
-    DOWNSCALE_MODE: str
-    EDIT_MODE: str
-    EDIT_SIZE: str
-    ERASER_SIZE: str
     FONT_POINT_SIZE: str
-    GENERATION_SIZE: str
-    GENERATION_TAB_BAR: str
     GLID_MODEL_PATH: str
     GLID_VAE_MODEL_PATH: str
-    GUIDANCE_SCALE: str
-    INPAINT_FULL_RES: str
-    INPAINT_FULL_RES_PADDING: str
     INTERROGATE_MODEL: str
     LIBMYPAINT_LIBRARY_DIR: str
     MASKED_CONTENT: str
@@ -125,32 +88,20 @@ class AppConfig(Config, metaclass=Singleton):
     MIN_GENERATION_SIZE: str
     MIN_PRESSURE_THRESHOLD: str
     MIN_PRESSURE_VALUE: str
-    MYPAINT_BRUSH: str
-    NEGATIVE_PROMPT: str
     OPENGL_ACCELERATION: str
-    PROMPT: str
     RESTORE_FACES: str
-    SAMPLING_METHOD: str
-    SAMPLING_STEPS: str
     SAVED_COLORS: str
-    SEED: str
-    SELECTION_BRUSH_SIZE: str
     SELECTION_COLOR: str
     SELECTION_SCREEN_ZOOMS_TO_CHANGED: str
     SHOW_OPTIONS_FULL_RESOLUTION: str
     SHOW_SELECTIONS_IN_GENERATION_OPTIONS: str
     SHOW_TOOL_CONTROL_HINTS: str
-    SKETCH_BRUSH_SIZE: str
-    SKIP_STEPS: str
     SPEED_MODIFIER_MULTIPLIER: str
     STYLE: str
     TAB_FONT_POINT_SIZE: str
     THEME: str
     TILING: str
-    TOOL_TAB_BAR: str
     UNDO_MERGE_INTERVAL: str
-    UPSCALE_METHOD: str
-    UPSCALE_MODE: str
     USE_ERROR_HANDLER: str
     WARN_BEFORE_COLOR_LOSS: str
     WARN_BEFORE_FIXED_SIZE_SAVE: str

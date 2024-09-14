@@ -183,6 +183,7 @@ class KeyConfig(Config, metaclass=Singleton):
     # Generate with `python /home/anthony/Workspace/ML/IntraPaint/scripts/dynamic_import_typing.py src/config/key_config.py`
 
     BLUR_SHORTCUT: str
+    BLUR_TOOL_KEY: str
     BRIGHTNESS_CONTRAST_SHORTCUT: str
     BRUSH_SIZE_DECREASE: str
     BRUSH_SIZE_INCREASE: str
@@ -260,6 +261,7 @@ class KeyConfig(Config, metaclass=Singleton):
     SHARPEN_SHORTCUT: str
     SHOW_LAYER_MENU_SHORTCUT: str
     SHRINK_SELECTION_SHORTCUT: str
+    SMUDGE_TOOL_KEY: str
     SPEED_MODIFIER: str
     TEXT_TOOL_KEY: str
     TOOL_ACTION_HOTKEY: str

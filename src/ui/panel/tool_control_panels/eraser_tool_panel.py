@@ -1,18 +1,12 @@
 """Control panel for the basic eraser tool."""
 from typing import cast
 
-from PySide6.QtCore import Signal, Qt
+from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QApplication, QWidget, QLabel, QVBoxLayout, QHBoxLayout
 
-from src.config.application_config import AppConfig
 from src.config.cache import Cache
 from src.config.key_config import KeyConfig
-from src.hotkey_filter import HotkeyFilter
-from src.ui.input_fields.dual_toggle import DualToggle
 from src.ui.input_fields.slider_spinbox import IntSliderSpinbox, FloatSliderSpinbox
-from src.ui.panel.tool_control_panels.canvas_selection_panel import (TOOL_MODE_DRAW, TOOL_MODE_ERASE,
-                                                                     RESOURCES_PEN_PNG, RESOURCES_ERASER_PNG)
-from src.ui.widget.color_button import ColorButton
 from src.ui.widget.key_hint_label import KeyHintLabel
 
 # The `QCoreApplication.translate` context for strings in this file
@@ -33,23 +27,22 @@ class EraserToolPanel(QWidget):
         super().__init__()
         self._layout = QVBoxLayout(self)
         self._layout.setAlignment(Qt.AlignmentFlag.AlignTop)
-        config = AppConfig()
         cache = Cache()
 
         # Size slider:
-        self._brush_size_label = QLabel(config.get_label(AppConfig.ERASER_SIZE))
+        self._brush_size_label = QLabel(cache.get_label(Cache.ERASER_TOOL_SIZE))
         self._brush_size_down_hint = KeyHintLabel(config_key=KeyConfig.BRUSH_SIZE_DECREASE)
-        self._brush_size_slider = cast(IntSliderSpinbox, config.get_control_widget(AppConfig.ERASER_SIZE))
+        self._brush_size_slider = cast(IntSliderSpinbox, cache.get_control_widget(Cache.ERASER_TOOL_SIZE))
         self._brush_size_up_hint = KeyHintLabel(config_key=KeyConfig.BRUSH_SIZE_INCREASE)
-        self._size_pressure_checkbox = cache.get_control_widget(Cache.DRAW_TOOL_PRESSURE_SIZE)
+        self._size_pressure_checkbox = cache.get_control_widget(Cache.ERASER_TOOL_PRESSURE_SIZE)
 
         self._brush_opacity_label = QLabel(cache.get_label(Cache.DRAW_TOOL_OPACITY))
-        self._brush_opacity_slider = cast(FloatSliderSpinbox, cache.get_control_widget(Cache.DRAW_TOOL_OPACITY))
-        self._opacity_pressure_checkbox = cache.get_control_widget(Cache.DRAW_TOOL_PRESSURE_OPACITY)
+        self._brush_opacity_slider = cast(FloatSliderSpinbox, cache.get_control_widget(Cache.ERASER_TOOL_OPACITY))
+        self._opacity_pressure_checkbox = cache.get_control_widget(Cache.ERASER_TOOL_PRESSURE_OPACITY)
 
         self._brush_hardness_label = QLabel(cache.get_label(Cache.DRAW_TOOL_HARDNESS))
-        self._brush_hardness_slider = cast(FloatSliderSpinbox, cache.get_control_widget(Cache.DRAW_TOOL_HARDNESS))
-        self._hardness_pressure_checkbox = cache.get_control_widget(Cache.DRAW_TOOL_PRESSURE_HARDNESS)
+        self._brush_hardness_slider = cast(FloatSliderSpinbox, cache.get_control_widget(Cache.ERASER_TOOL_HARDNESS))
+        self._hardness_pressure_checkbox = cache.get_control_widget(Cache.ERASER_TOOL_PRESSURE_HARDNESS)
 
         # Selection only box:
         self._selection_only_checkbox = Cache().get_control_widget(Cache.PAINT_SELECTION_ONLY)

@@ -10,7 +10,6 @@ from src.controller.tool_controller import ToolController
 from src.image.layers.image_stack import ImageStack
 from src.tools.base_tool import BaseTool
 from src.tools.generation_area_tool import GenerationAreaTool, GEN_AREA_CONTROL_HINT
-from src.ui.graphics_items.border import Border
 from src.ui.graphics_items.click_and_drag_selection import ClickAndDragSelection
 from src.ui.graphics_items.outline import Outline
 from src.ui.image_viewer import ImageViewer

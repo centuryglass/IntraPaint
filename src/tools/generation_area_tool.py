@@ -4,21 +4,17 @@ from typing import Optional, cast
 
 from PySide6.QtCore import Qt, QRect, QPoint, QSize, QPointF
 from PySide6.QtGui import QMouseEvent, QKeyEvent, QCursor, QIcon, QKeySequence
-from PySide6.QtWidgets import QWidget, QApplication, QPushButton, QGridLayout
+from PySide6.QtWidgets import QWidget, QApplication
 
-from src.config.application_config import AppConfig
+from src.config.cache import Cache
 from src.config.key_config import KeyConfig
 from src.image.layers.image_stack import ImageStack
-from src.image.layers.transform_layer import TransformLayer
 from src.tools.base_tool import BaseTool
 from src.ui.image_viewer import ImageViewer
-from src.ui.layout.divider import Divider
-from src.ui.panel.tool_control_panels.generation_area_tool_panel import GenerationAreaToolPanel, \
-    get_generation_area_control_boxes
+from src.ui.panel.tool_control_panels.generation_area_tool_panel import GenerationAreaToolPanel
+from src.util.shared_constants import PROJECT_DIR
 from src.util.visual.geometry_utils import closest_point_keeping_aspect_ratio
 from src.util.visual.text_drawing_utils import left_button_hint_text, right_button_hint_text
-from src.util.shared_constants import PROJECT_DIR
-
 
 # The `QCoreApplication.translate` context for strings in this file
 TR_ID = 'tools.generation_area_tool'
@@ -84,7 +80,7 @@ class GenerationAreaTool(BaseTool):
         height = min(self._image_stack.height - generation_area.y(), bottom_right.y() - generation_area.y())
         if width > 0 and height > 0:
             if KeyConfig.modifier_held(KeyConfig.FIXED_ASPECT_MODIFIER):
-                gen_size = cast(QSize, AppConfig().get(AppConfig.GENERATION_SIZE))
+                gen_size = cast(QSize, Cache().get(Cache.GENERATION_SIZE))
                 aspect_ratio = gen_size.width() / gen_size.height()
                 bottom_right = closest_point_keeping_aspect_ratio(QPointF(bottom_right),
                                                                   QPointF(generation_area.topLeft()),

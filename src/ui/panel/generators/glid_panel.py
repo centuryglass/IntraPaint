@@ -2,7 +2,7 @@
 from PySide6.QtCore import Signal, Qt
 from PySide6.QtWidgets import QPushButton, QLabel, QGridLayout, QSizePolicy
 
-from src.config.application_config import AppConfig
+from src.config.cache import Cache
 from src.ui.layout.bordered_widget import BorderedWidget
 from src.util.application_state import APP_STATE_EDITING, AppStateTracker
 
@@ -16,7 +16,7 @@ class GlidPanel(BorderedWidget):
 
     def __init__(self):
         super().__init__()
-        config = AppConfig()
+        cache = Cache()
         self._orientation = Qt.Orientation.Horizontal
         self._layout = QGridLayout(self)
         self._layout.setSpacing(3)
@@ -24,10 +24,10 @@ class GlidPanel(BorderedWidget):
         self.setSizePolicy(QSizePolicy.Policy.MinimumExpanding, QSizePolicy.Policy.MinimumExpanding)
         AppStateTracker.set_enabled_states(self, [APP_STATE_EDITING])
 
-        self._text_prompt_label = QLabel(config.get_label(AppConfig.PROMPT), self)
-        self._text_prompt_textbox = config.get_control_widget(AppConfig.PROMPT, multi_line=False)
-        self._negative_prompt_label = QLabel(config.get_label(AppConfig.NEGATIVE_PROMPT), self)
-        self._negative_prompt_textbox = config.get_control_widget(AppConfig.NEGATIVE_PROMPT, multi_line=False)
+        self._text_prompt_label = QLabel(cache.get_label(Cache.PROMPT), self)
+        self._text_prompt_textbox = cache.get_control_widget(Cache.PROMPT, multi_line=False)
+        self._negative_prompt_label = QLabel(cache.get_label(Cache.NEGATIVE_PROMPT), self)
+        self._negative_prompt_textbox = cache.get_control_widget(Cache.NEGATIVE_PROMPT, multi_line=False)
         # Font size will be used to limit the height of the prompt boxes:
         line_height = self.font().pixelSize()
         if line_height < 0:  # font uses pt, not px
@@ -36,23 +36,23 @@ class GlidPanel(BorderedWidget):
         for textbox in (self._text_prompt_textbox, self._negative_prompt_textbox):
             textbox.setMaximumHeight(textbox_height)
 
-        self._batch_size_spinbox = config.get_control_widget(AppConfig.BATCH_SIZE)
-        self._batch_size_spinbox.setText(config.get_label(AppConfig.BATCH_SIZE))
-        self._batch_count_spinbox = config.get_control_widget(AppConfig.BATCH_COUNT)
-        self._batch_count_spinbox.setText(config.get_label(AppConfig.BATCH_COUNT))
-        self._guidance_scale_spinbox = config.get_control_widget(AppConfig.GUIDANCE_SCALE)
-        self._guidance_scale_spinbox.setText(config.get_label(AppConfig.GUIDANCE_SCALE))
-        self._skip_steps_spinbox = config.get_control_widget(AppConfig.SKIP_STEPS)
-        self._skip_steps_spinbox.setText(config.get_label(AppConfig.SKIP_STEPS))
-        self._cutn_spinbox = config.get_control_widget(AppConfig.CUTN)
-        self._cutn_spinbox.setText(config.get_label(AppConfig.CUTN))
+        self._batch_size_spinbox = cache.get_control_widget(Cache.BATCH_SIZE)
+        self._batch_size_spinbox.setText(cache.get_label(Cache.BATCH_SIZE))
+        self._batch_count_spinbox = cache.get_control_widget(Cache.BATCH_COUNT)
+        self._batch_count_spinbox.setText(cache.get_label(Cache.BATCH_COUNT))
+        self._guidance_scale_spinbox = cache.get_control_widget(Cache.GUIDANCE_SCALE)
+        self._guidance_scale_spinbox.setText(cache.get_label(Cache.GUIDANCE_SCALE))
+        self._skip_steps_spinbox = cache.get_control_widget(Cache.SKIP_STEPS)
+        self._skip_steps_spinbox.setText(cache.get_label(Cache.SKIP_STEPS))
+        self._cutn_spinbox = cache.get_control_widget(Cache.CUTN)
+        self._cutn_spinbox.setText(cache.get_label(Cache.CUTN))
 
-        self._enable_scale_checkbox = config.get_control_widget(AppConfig.INPAINT_FULL_RES)
-        self._enable_scale_checkbox.setText(config.get_label(AppConfig.INPAINT_FULL_RES))
-        self._upscale_mode_label = QLabel(config.get_label(AppConfig.UPSCALE_MODE), self)
-        self._upscale_mode_list = config.get_control_widget(AppConfig.UPSCALE_MODE)
-        self._downscale_mode_label = QLabel(config.get_label(AppConfig.DOWNSCALE_MODE), self)
-        self._downscale_mode_list = config.get_control_widget(AppConfig.DOWNSCALE_MODE)
+        self._enable_scale_checkbox = cache.get_control_widget(Cache.INPAINT_FULL_RES)
+        self._enable_scale_checkbox.setText(cache.get_label(Cache.INPAINT_FULL_RES))
+        self._upscale_mode_label = QLabel(cache.get_label(Cache.UPSCALE_MODE), self)
+        self._upscale_mode_list = cache.get_control_widget(Cache.UPSCALE_MODE)
+        self._downscale_mode_label = QLabel(cache.get_label(Cache.DOWNSCALE_MODE), self)
+        self._downscale_mode_list = cache.get_control_widget(Cache.DOWNSCALE_MODE)
 
         self._inpaint_button = QPushButton()
         self._inpaint_button.setText(INPAINT_BUTTON_TEXT)

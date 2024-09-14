@@ -5,6 +5,7 @@ from PySide6.QtGui import QIcon, QKeySequence, QColor
 from PySide6.QtWidgets import QWidget, QApplication
 
 from src.config.application_config import AppConfig
+from src.config.cache import Cache
 from src.config.config_entry import RangeKey
 from src.config.key_config import KeyConfig
 from src.image.canvas.qt_paint_canvas import QtPaintCanvas
@@ -59,7 +60,7 @@ class SelectionBrushTool(CanvasTool):
         _update_color(AppConfig().get(AppConfig.SELECTION_COLOR))
         AppConfig().connect(self, AppConfig.SELECTION_COLOR, _update_color)
 
-        self.brush_size = AppConfig().get(AppConfig.SELECTION_BRUSH_SIZE)
+        self.brush_size = Cache().get(Cache.SELECTION_BRUSH_SIZE)
         self.layer = image_stack.selection_layer
         self.update_brush_cursor()
 
@@ -95,6 +96,6 @@ class SelectionBrushTool(CanvasTool):
 
     def set_brush_size(self, new_size: int) -> None:
         """Update the brush size."""
-        new_size = min(new_size, AppConfig().get(AppConfig.SELECTION_BRUSH_SIZE, RangeKey.MAX))
+        new_size = min(new_size, Cache().get(Cache.SELECTION_BRUSH_SIZE, RangeKey.MAX))
         super().set_brush_size(new_size)
-        AppConfig().set(AppConfig.SELECTION_BRUSH_SIZE, max(1, new_size))
+        Cache().set(Cache.SELECTION_BRUSH_SIZE, max(1, new_size))

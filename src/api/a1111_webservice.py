@@ -16,6 +16,7 @@ from requests import Response
 
 from src.api.webservice import WebService
 from src.config.application_config import AppConfig
+from src.config.cache import Cache
 from src.ui.modal.login_modal import LoginModal
 from src.util.visual.image_utils import image_to_base64, qimage_from_base64
 from src.util.visual.pil_image_utils import pil_image_from_base64
@@ -192,9 +193,10 @@ class A1111Webservice(WebService):
             Any additional information sent back with the generated images.
         """
         config = AppConfig()
+        cache = Cache()
         body = self._get_base_diffusion_body(image, scripts)
         body[A1111Webservice.ImgParams.INIT_IMAGES] = [image_to_base64(image, include_prefix=True)]
-        body[A1111Webservice.ImgParams.DENOISING] = config.get(AppConfig.DENOISING_STRENGTH)
+        body[A1111Webservice.ImgParams.DENOISING] = cache.get(Cache.DENOISING_STRENGTH)
         body[A1111Webservice.ImgParams.WIDTH] = image.width() if width is None else width
         body[A1111Webservice.ImgParams.HEIGHT] = image.height() if height is None else height
         if mask is not None:
@@ -202,8 +204,8 @@ class A1111Webservice(WebService):
             body[A1111Webservice.ImgParams.MASK_BLUR] = config.get(AppConfig.MASK_BLUR)
             body[A1111Webservice.ImgParams.INPAINT_FILL] = config.get_option_index(AppConfig.MASKED_CONTENT)
             body[A1111Webservice.ImgParams.MASK_INVERT] = 0  # Don't invert
-            body[A1111Webservice.ImgParams.INPAINT_FULL_RES] = config.get(AppConfig.INPAINT_FULL_RES)
-            body[A1111Webservice.ImgParams.INPAINT_FULL_RES_PADDING] = config.get(AppConfig.INPAINT_FULL_RES_PADDING)
+            body[A1111Webservice.ImgParams.INPAINT_FULL_RES] = cache.get(Cache.INPAINT_FULL_RES)
+            body[A1111Webservice.ImgParams.INPAINT_FULL_RES_PADDING] = cache.get(Cache.INPAINT_FULL_RES_PADDING)
         if overrides is not None:
             for key in overrides:
                 body[key] = overrides[key]
@@ -262,13 +264,14 @@ class A1111Webservice(WebService):
             Any additional information sent back with the generated images.
         """
         config = AppConfig()
-        if config.get(AppConfig.CONTROLNET_UPSCALING):
+        cache = Cache()
+        if cache.get(Cache.CONTROLNET_UPSCALING):
             scripts = {
                 'controlNet': {
                     'args': [{
                         'module': 'tile_resample',
                         'model': config.get(AppConfig.CONTROLNET_TILE_MODEL),
-                        'threshold_a': config.get(AppConfig.CONTROLNET_DOWNSAMPLE_RATE)
+                        'threshold_a': cache.get(Cache.CONTROLNET_DOWNSAMPLE_RATE)
                     }]
                 }
             }
@@ -278,19 +281,19 @@ class A1111Webservice(WebService):
                 'batch_size': 1,
                 'n_iter': 1
             }
-            upscaler = config.get(AppConfig.UPSCALE_METHOD)
+            upscaler = cache.get(Cache.UPSCALE_METHOD)
             if upscaler != 'None':
                 overrides['script_name'] = 'ultimate sd upscale'
                 overrides['script_args'] = [
                     None,  # not used
-                    config.get(AppConfig.GENERATION_SIZE).width(),  # tile width
-                    config.get(AppConfig.GENERATION_SIZE).height(),  # tile height
+                    cache.get(Cache.GENERATION_SIZE).width(),  # tile width
+                    cache.get(Cache.GENERATION_SIZE).height(),  # tile height
                     8,  # mask_blur
                     32,  # padding
                     64,  # seams_fix_width
                     0.35,  # seams_fix_denoise
                     32,  # seams_fix_padding
-                    config.get_options(AppConfig.UPSCALE_METHOD).index(upscaler),  # upscaler_index
+                    cache.get_options(Cache.UPSCALE_METHOD).index(upscaler),  # upscaler_index
                     False,  # save_upscaled_image a.k.a Upscaled
                     0,  # redraw_mode (linear)
                     False,  # save_seams_fix_image a.k.a Seams fix
@@ -307,7 +310,7 @@ class A1111Webservice(WebService):
             'resize_mode': 1,
             'upscaling_resize_w': width,
             'upscaling_resize_h': height,
-            'upscaler_1': config.get(AppConfig.UPSCALE_METHOD),
+            'upscaler_1': cache.get(Cache.UPSCALE_METHOD),
             'image': image_to_base64(image, include_prefix=True)
         }
         res = self.post(A1111Webservice.Endpoints.UPSCALE, body)
@@ -344,21 +347,22 @@ class A1111Webservice(WebService):
     def _get_base_diffusion_body(image: Optional[QImage] = None,
                                  scripts: Optional[dict] = None) -> dict:
         config = AppConfig()
+        cache = Cache()
         body = {
-            A1111Webservice.ImgParams.PROMPT: config.get(AppConfig.PROMPT),
-            A1111Webservice.ImgParams.SEED: config.get(AppConfig.SEED),
-            A1111Webservice.ImgParams.BATCH_SIZE: config.get(AppConfig.BATCH_SIZE),
-            A1111Webservice.ImgParams.BATCH_COUNT: config.get(AppConfig.BATCH_COUNT),
-            A1111Webservice.ImgParams.STEPS: config.get(AppConfig.SAMPLING_STEPS),
-            A1111Webservice.ImgParams.CFG_SCALE: config.get(AppConfig.GUIDANCE_SCALE),
+            A1111Webservice.ImgParams.PROMPT: cache.get(Cache.PROMPT),
+            A1111Webservice.ImgParams.SEED: cache.get(Cache.SEED),
+            A1111Webservice.ImgParams.BATCH_SIZE: cache.get(Cache.BATCH_SIZE),
+            A1111Webservice.ImgParams.BATCH_COUNT: cache.get(Cache.BATCH_COUNT),
+            A1111Webservice.ImgParams.STEPS: cache.get(Cache.SAMPLING_STEPS),
+            A1111Webservice.ImgParams.CFG_SCALE: cache.get(Cache.GUIDANCE_SCALE),
             A1111Webservice.ImgParams.RESTORE_FACES: config.get(AppConfig.RESTORE_FACES),
             A1111Webservice.ImgParams.TILING: config.get(AppConfig.TILING),
-            A1111Webservice.ImgParams.NEGATIVE: config.get(AppConfig.NEGATIVE_PROMPT),
+            A1111Webservice.ImgParams.NEGATIVE: cache.get(Cache.NEGATIVE_PROMPT),
             A1111Webservice.ImgParams.OVERRIDE_SETTINGS: {},
-            A1111Webservice.ImgParams.SAMPLER_IDX: config.get(AppConfig.SAMPLING_METHOD),
+            A1111Webservice.ImgParams.SAMPLER_IDX: cache.get(Cache.SAMPLING_METHOD),
             A1111Webservice.ImgParams.ALWAYS_ON_SCRIPTS: {}
         }
-        controlnet = dict(config.get(AppConfig.CONTROLNET_ARGS_0))
+        controlnet = dict(cache.get(Cache.CONTROLNET_ARGS_0))
         if len(controlnet) > 0 and 'model' in controlnet:
             if 'image' in controlnet:
                 if controlnet['image'] == CONTROLNET_REUSE_IMAGE_CODE and image is not None:

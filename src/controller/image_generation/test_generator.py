@@ -5,7 +5,7 @@ from PySide6.QtCore import Signal
 from PySide6.QtGui import QImage
 from PySide6.QtWidgets import QApplication, QWidget
 
-from src.config.application_config import AppConfig
+from src.config.cache import Cache
 from src.controller.image_generation.image_generator import ImageGenerator
 from src.image.filter.blur import BlurFilter, MODE_GAUSSIAN
 from src.image.filter.brightness_contrast import BrightnessContrastFilter
@@ -84,9 +84,9 @@ class TestGenerator(ImageGenerator):
         mask_image : QImage, optional
             Mask marking edited image region.
         """
-        edit_mode = AppConfig().get(AppConfig.EDIT_MODE)
+        edit_mode = Cache().get(Cache.EDIT_MODE)
         if edit_mode == EDIT_MODE_TXT2IMG or source_image is None:
-            source_image = self._test_image.scaled(AppConfig().get(AppConfig.GENERATION_SIZE))
+            source_image = self._test_image.scaled(Cache().get(Cache.GENERATION_SIZE))
 
         # Create mock generated images using all available filters:
         blur_image = BlurFilter.blur(source_image, MODE_GAUSSIAN, 5)

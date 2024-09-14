@@ -9,6 +9,7 @@ from PySide6.QtGui import QImage
 from PySide6.QtWidgets import QApplication, QWidget
 
 from src.config.application_config import AppConfig
+from src.config.cache import Cache
 from src.controller.image_generation.image_generator import ImageGenerator
 from src.image.layers.image_stack import ImageStack
 from src.ui.modal.settings_modal import SettingsModal
@@ -214,8 +215,8 @@ class Glid3XLGenerator(ImageGenerator):
            connect to required external services, returning whether the process completed correctly."""
         if not self.is_available():
             return False
-        AppConfig().set(AppConfig.GENERATION_SIZE, QSize(256, 256))
-        AppConfig().set(AppConfig.EDIT_MODE, EDIT_MODE_INPAINT)
+        Cache().set(Cache.GENERATION_SIZE, QSize(256, 256))
+        Cache().set(Cache.EDIT_MODE, EDIT_MODE_INPAINT)
         device = get_device()
         logger.info('Using device: %s', device)
         self._model_params, self._model, self._diffusion, self._ldm, self._bert, self._clip_model, \
@@ -295,7 +296,7 @@ class Glid3XLGenerator(ImageGenerator):
             assert_types((source_image, mask_image), QImage)
         except TypeError as err:
             raise RuntimeError('GLID-3-XL inpainting always requires a source and mask image') from err
-        config = AppConfig()
+        cache = Cache()
         assert source_image is not None
         assert mask_image is not None
         if source_image.size() != mask_image.size():
@@ -304,8 +305,8 @@ class Glid3XLGenerator(ImageGenerator):
         if source_image.hasAlphaChannel():
             source_image = source_image.convertToFormat(QImage.Format.Format_RGB32)
 
-        batch_size = config.get(AppConfig.BATCH_SIZE)
-        batch_count = config.get(AppConfig.BATCH_COUNT)
+        batch_size = Cache().get(Cache.BATCH_SIZE)
+        batch_count = Cache().get(Cache.BATCH_COUNT)
         device = get_device()
         sample_fn, unused_clip_score_fn = create_sample_function(
             device,
@@ -319,18 +320,18 @@ class Glid3XLGenerator(ImageGenerator):
             self._normalize,
             image=None,  # Inpainting uses edit instead of this param
             mask=qimage_to_pil_image(mask_image),
-            prompt=config.get(AppConfig.PROMPT),
-            negative=config.get(AppConfig.NEGATIVE_PROMPT),
-            guidance_scale=config.get(AppConfig.GUIDANCE_SCALE),
+            prompt=cache.get(Cache.PROMPT),
+            negative=cache.get(Cache.NEGATIVE_PROMPT),
+            guidance_scale=cache.get(Cache.GUIDANCE_SCALE),
             batch_size=batch_size,
             edit=qimage_to_pil_image(source_image),
             width=source_image.width(),
             height=source_image.height(),
             edit_width=source_image.width(),
             edit_height=source_image.height(),
-            cutn=config.get(AppConfig.CUTN),
+            cutn=cache.get(Cache.CUTN),
             clip_guidance=self._clip_guidance,
-            skip_timesteps=config.get(AppConfig.SKIP_STEPS),
+            skip_timesteps=cache.get(Cache.SKIP_STEPS),
             ddpm=self._ddpm,
             ddim=self._ddim)
 
