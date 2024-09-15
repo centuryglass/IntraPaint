@@ -203,6 +203,7 @@ class GeneratedImageSelector(QWidget):
 
     def reset(self) -> None:
         """Remove all old options and prepare for new ones."""
+        self._generation_area = self._image_stack.generation_area
         self._zoom_index = 0
         cache = Cache()
         scene = self._view.scene()
