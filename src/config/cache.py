@@ -89,6 +89,7 @@ class Cache(Config, metaclass=Singleton):
 
     BATCH_COUNT: str
     BATCH_SIZE: str
+    BLUR_TOOL_BRUSH_SIZE: str
     CONTROLNET_ARGS_0: str
     CONTROLNET_ARGS_1: str
     CONTROLNET_ARGS_2: str
@@ -144,6 +145,7 @@ class Cache(Config, metaclass=Singleton):
     SEED: str
     SELECTION_BRUSH_SIZE: str
     SKIP_STEPS: str
+    SMUDGE_TOOL_BRUSH_SIZE: str
     STYLES: str
     TEXT_BACKGROUND_COLOR: str
     TEXT_TOOL_PARAMS: str

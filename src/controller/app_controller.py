@@ -660,8 +660,11 @@ class AppController(MenuBuilder):
                          color_loss_message)):
                     if loss_condition:
                         show_warning_dialog(self._window, title, message, warn_on_save_config_key)
+            if not os.path.isfile(file_path):
+                raise RuntimeError(f'Unknown error: saving {file_path} failed')
             cache.set(Cache.LAST_FILE_PATH, file_path)
-        except (IOError, TypeError) as save_err:
+        except (IOError, TypeError, RuntimeError) as save_err:
+            logger.error(f'save failed: {save_err}')
             show_error_dialog(self._window, SAVE_ERROR_TITLE, str(save_err))
             raise save_err
 

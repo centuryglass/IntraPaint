@@ -173,6 +173,8 @@ def save_image_with_metadata(image: Image.Image | QImage, file_path: str, metada
                         logger.error(f'failed to preserve "{key}" in metadata: {png_err}')
                 assert exif is not None
                 image.save(file_path, 'PNG', pnginfo=info, exif=exif)
+            else:
+                image.save(file_path, 'PNG')
         case 'GIF':
             image.save(file_path, file_format, comment=parameter_text)
         case  'JP2' | 'JPX' | 'J2C' | 'JPC':

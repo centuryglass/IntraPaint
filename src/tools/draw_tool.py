@@ -102,10 +102,6 @@ class DrawTool(CanvasTool):
             color = QColor(color_str)
             self.brush_color = color
         cache.connect(self, Cache.LAST_BRUSH_COLOR, _update_brush_color)
-
-        image_stack.active_layer_changed.connect(self._active_layer_change_slot)
-        self.layer = image_stack.active_layer
-
         self.update_brush_cursor()
 
     def get_hotkey(self) -> QKeySequence:
@@ -157,9 +153,3 @@ class DrawTool(CanvasTool):
         new_size = min(new_size, Cache().get(Cache.DRAW_TOOL_BRUSH_SIZE, RangeKey.MAX))
         super().set_brush_size(new_size)
         Cache().set(Cache.DRAW_TOOL_BRUSH_SIZE, max(1, new_size))
-
-    def _active_layer_change_slot(self, active_layer: Layer) -> None:
-        if isinstance(active_layer, ImageLayer):
-            self.layer = active_layer
-        else:
-            self.layer = None

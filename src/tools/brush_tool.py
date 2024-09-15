@@ -10,9 +10,7 @@ from src.config.cache import Cache
 from src.config.config_entry import RangeKey
 from src.config.key_config import KeyConfig
 from src.image.canvas.mypaint_canvas import MyPaintLayerCanvas
-from src.image.layers.image_layer import ImageLayer
 from src.image.layers.image_stack import ImageStack
-from src.image.layers.layer import Layer
 from src.tools.base_tool import BaseTool
 from src.tools.canvas_tool import CanvasTool
 from src.ui.image_viewer import ImageViewer
@@ -40,8 +38,9 @@ BRUSH_CONTROL_HINT = _tr('{left_mouse_icon}: draw - {right_mouse_icon}: 1px draw
 class BrushTool(CanvasTool):
     """Implements brush controls using a MyPaint surface."""
 
-    def __init__(self, image_stack: ImageStack, image_viewer: ImageViewer) -> None:
+    def __init__(self, image_stack: ImageStack, image_viewer: ImageViewer, size_key: Optional[str] = None) -> None:
         super().__init__(image_stack, image_viewer, MyPaintLayerCanvas())
+        self._size_key = Cache.PAINT_TOOL_BRUSH_SIZE if size_key is None else size_key
         self._last_click = None
         self._control_panel: Optional[BrushControlPanel] = None
         self._active = False
@@ -52,14 +51,14 @@ class BrushTool(CanvasTool):
         # Load brush and size from cache
         cache = Cache()
         self.brush_path = cache.get(Cache.MYPAINT_BRUSH)
-        self.brush_size = cache.get(Cache.PAINT_TOOL_BRUSH_SIZE)
+        self.brush_size = cache.get(self._size_key)
         self.brush_color = cache.get_color(Cache.LAST_BRUSH_COLOR, Qt.GlobalColor.black)
 
         def apply_brush_size(size: int) -> None:
             """Update brush size for the canvas and cursor when it changes in config."""
             self._canvas.brush_size = size
             self.update_brush_cursor()
-        cache.connect(self, Cache.PAINT_TOOL_BRUSH_SIZE, apply_brush_size)
+        cache.connect(self, self._size_key, apply_brush_size)
 
         def set_brush_color(color_str: str) -> None:
             """Update the brush color within the canvas when it changes in config."""
@@ -71,10 +70,6 @@ class BrushTool(CanvasTool):
             """Update the active MyPaint brush when it changes in config."""
             self.brush_path = brush_path
         cache.connect(self, Cache.MYPAINT_BRUSH, set_active_brush)
-
-        image_stack.active_layer_changed.connect(self._active_layer_change_slot)
-        self.layer = image_stack.active_layer
-
         self.update_brush_cursor()
 
     def get_hotkey(self) -> QKeySequence:
@@ -136,9 +131,3 @@ class BrushTool(CanvasTool):
         new_size = min(new_size, Cache().get(Cache.PAINT_TOOL_BRUSH_SIZE, RangeKey.MAX))
         super().set_brush_size(new_size)
         Cache().set(Cache.PAINT_TOOL_BRUSH_SIZE, max(1, new_size))
-
-    def _active_layer_change_slot(self, active_layer: Layer) -> None:
-        if isinstance(active_layer, ImageLayer):
-            self.layer = active_layer
-        else:
-            self.layer = None

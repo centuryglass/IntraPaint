@@ -294,7 +294,7 @@ class ImageStack(QObject):
                 if self._generation_area != next_bounds:
                     self._generation_area = next_bounds
                     self.generation_area_bounds_changed.emit(next_bounds)
-                    if next_bounds.size() != prev_bounds.size():
+                    if next_bounds.size() != Cache().get(Cache.EDIT_SIZE):
                         Cache().set(Cache.EDIT_SIZE, QSize(self._generation_area.size()))
 
             action_type = 'ImageStack.generation_area'
@@ -794,8 +794,6 @@ class ImageStack(QObject):
 
         base_render = parent.render(paint_param_adjuster=_stop_render_above_z_level(base_z))
         top_render = parent.render(paint_param_adjuster=_stop_render_above_z_level(layer.z_value))
-        base_render.save('base.png')
-        top_render.save('top.png')
         # Subtract out base from top:
         np_base = image_data_as_numpy_8bit(base_render)
         np_combined = image_data_as_numpy_8bit(top_render)
