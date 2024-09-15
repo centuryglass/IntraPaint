@@ -2,8 +2,27 @@
 from typing import Optional
 
 from PySide6.QtGui import QColor, QImage
+from PySide6.QtWidgets import QApplication
 
 from src.image.layers.image_layer import ImageLayer
+from src.ui.modal.modal_utils import show_error_dialog
+from src.util.visual.image_utils import image_is_fully_transparent
+
+# The `QCoreApplication.translate` context for strings in this file
+TR_ID = 'image.canvas.layer_canvas'
+
+
+def _tr(*args):
+    """Helper to make `QCoreApplication.translate` more concise."""
+    return QApplication.translate(TR_ID, *args)
+
+
+ERROR_TITLE_EDIT_FAILED = _tr('Editing failed')
+ERROR_MESSAGE_LAYER_LOCKED = _tr('The selected layer is locked, unlock it or select a different layer.')
+ERROR_MESSAGE_LAYER_HIDDEN = _tr('The selected layer is hidden, un-hide it before trying to edit it.')
+ERROR_MESSAGE_LAYER_NONE = _tr('The selected layer is not an image layer, select an image layer first.')
+ERROR_MESSAGE_EMPTY_MASK = _tr('Changes are restricted to selected content only, but nothing is selected in this layer.'
+                               'Select layer content or enable changes in unselected areas.')
 
 
 class LayerCanvas:
@@ -11,6 +30,7 @@ class LayerCanvas:
 
     def __init__(self, layer: Optional[ImageLayer] = None) -> None:
         self._layer: Optional[ImageLayer] = None
+        self._mask: Optional[QImage] = None
         self._eraser = False
         self._color = QColor(0, 0, 0)
         self._brush_size = 1
@@ -71,6 +91,11 @@ class LayerCanvas:
         """Returns the active ImageLayer, or None if no ImageLayer is active."""
         return self._layer
 
+    @property
+    def input_mask(self) -> Optional[QImage]:
+        """Access the optional input mask image."""
+        return self._mask
+
     def start_stroke(self) -> None:
         """Signals the start of a brush stroke, to be called once whenever user input starts or resumes."""
         if self._layer is None or not self._layer.visible or self._layer.locked:
@@ -82,7 +107,18 @@ class LayerCanvas:
     def stroke_to(self, x: float, y: float, pressure: Optional[float], x_tilt: Optional[float],
                   y_tilt: Optional[float]) -> None:
         """Continue a brush stroke with optional tablet inputs."""
-        if self._layer is None or not self._layer.visible or self._layer.locked:
+        error_message: Optional[str] = None
+        if self._layer is None:
+            error_message = ERROR_MESSAGE_LAYER_NONE
+        elif not self._layer.visible:
+            error_message = ERROR_MESSAGE_LAYER_HIDDEN
+        elif self._layer.locked:
+            error_message = ERROR_MESSAGE_LAYER_LOCKED
+        elif self._mask is not None:
+            if image_is_fully_transparent(self._mask):
+                error_message = ERROR_MESSAGE_EMPTY_MASK
+        if error_message is not None:
+            show_error_dialog(None, ERROR_TITLE_EDIT_FAILED, error_message)
             return
         if not self._drawing:
             self.start_stroke()
@@ -94,7 +130,7 @@ class LayerCanvas:
 
     def set_input_mask(self, mask_image: Optional[QImage]) -> None:
         """Sets a mask image, restricting canvas changes to areas covered by non-transparent mask areas"""
-        raise NotImplementedError()
+        self._mask = mask_image
 
     def _set_brush_size(self, new_size: int) -> None:
         self._brush_size = new_size

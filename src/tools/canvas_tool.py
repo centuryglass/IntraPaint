@@ -14,6 +14,7 @@ from src.hotkey_filter import HotkeyFilter
 from src.image.canvas.layer_canvas import LayerCanvas
 from src.image.layers.image_layer import ImageLayer
 from src.image.layers.image_stack import ImageStack
+from src.image.layers.layer import Layer
 from src.tools.base_tool import BaseTool
 from src.ui.image_viewer import ImageViewer
 from src.util.math_utils import clamp
@@ -74,7 +75,6 @@ class CanvasTool(BaseTool):
         self._scaling_cursor = True
         image_viewer.scale_changed.connect(self.update_brush_cursor)
 
-        # Create MyPaintLayerCanvas
         self._image_stack = image_stack
         self._image_viewer = image_viewer
         self._canvas = canvas
@@ -107,6 +107,9 @@ class CanvasTool(BaseTool):
             mask = image_stack.get_layer_mask(self._layer)
             self._canvas.set_input_mask(mask)
         image_stack.selection_layer.content_changed.connect(_selection_layer_update)
+
+        image_stack.active_layer_changed.connect(self._active_layer_change_slot)
+        self.layer = image_stack.active_layer
 
     @staticmethod
     def canvas_control_hints() -> str:
@@ -146,7 +149,7 @@ class CanvasTool(BaseTool):
     @layer.setter
     def layer(self, layer: Optional[ImageLayer]) -> None:
         """Sets or clears the connected image layer."""
-        if self._layer is not None and self._layer != layer:
+        if self._layer is not None:
             self._layer.lock_changed.disconnect(self._layer_lock_slot)
         if not isinstance(layer, ImageLayer):
             layer = None
@@ -157,13 +160,18 @@ class CanvasTool(BaseTool):
             if layer != self._image_stack.selection_layer and Cache().get(Cache.PAINT_SELECTION_ONLY):
                 mask = self._image_stack.get_layer_mask(layer)
                 self._canvas.set_input_mask(mask)
+            else:
+                self._canvas.set_input_mask(None)
         if not self._active:
             return
         if layer is None or not isinstance(layer, ImageLayer):
             self._canvas.connect_to_layer(None)
-            control_panel = self.get_control_panel()
-            if control_panel is not None:
-                control_panel.setEnabled(False)
+        else:
+            self._canvas.connect_to_layer(layer)
+        control_panel = self.get_control_panel()
+        if control_panel is not None:
+            control_panel.setEnabled(layer is not None and isinstance(layer, ImageLayer) and not layer.locked
+                                     and layer.visible)
 
     @property
     def canvas(self) -> LayerCanvas:
@@ -174,10 +182,6 @@ class CanvasTool(BaseTool):
         if not self.is_active:
             return
         assert layer == self._layer
-        if locked:
-            self._canvas.connect_to_layer(None)
-        else:
-            self._canvas.connect_to_layer(layer)
         control_panel = self.get_control_panel()
         if control_panel is not None:
             control_panel.setEnabled(not locked)
@@ -217,6 +221,8 @@ class CanvasTool(BaseTool):
         """Connect the canvas to the active layer."""
         if self._layer is not None:
             self.layer = self._layer  # Re-apply the connection
+        else:
+            self.layer = self._image_stack.active_layer
         self.update_brush_cursor()
 
     def _on_deactivate(self) -> None:
@@ -403,3 +409,9 @@ class CanvasTool(BaseTool):
             self.adjust_brush_size(offset)
             return True
         return False
+
+    def _active_layer_change_slot(self, active_layer: Layer) -> None:
+        if isinstance(active_layer, ImageLayer):
+            self.layer = active_layer
+        else:
+            self.layer = None

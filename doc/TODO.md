@@ -5,7 +5,9 @@
 - Create example images for README, finish missing sections and improve writing
 - changing gen. area size still doesn't always sync fully - width changes but not height
 - Fix issues with multiple DraggableDividers in a layout
-- 
+- Automatic file extension suggestions are not helpful (.blp?)
+- Possible offset issues: polygon selection tool isn't filling appropriate areas after transform+layer size changes
+
 ## Documentation + Release
 - Rewrite README.md for stable-diffusion info
 - Create tutorials for common workflows

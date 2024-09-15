@@ -36,7 +36,7 @@ class BlurTool(BrushTool):  # type: ignore
     """Implements image blurring using a restricted BrushTool."""
 
     def __init__(self, image_stack: ImageStack, image_viewer: ImageViewer) -> None:
-        super().__init__(image_stack, image_viewer)
+        super().__init__(image_stack, image_viewer, Cache.BLUR_TOOL_BRUSH_SIZE)
         Cache().disconnect(self, Cache.MYPAINT_BRUSH)
         Cache().disconnect(self, Cache.LAST_BRUSH_COLOR)
         self.brush_color = Qt.GlobalColor.black

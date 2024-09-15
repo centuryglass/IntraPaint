@@ -20,7 +20,6 @@ class MyPaintLayerCanvas(LayerCanvas):
     def __init__(self, layer: Optional[ImageLayer] = None) -> None:
         """Initialize a MyPaint surface, and connect to the image layer."""
         super().__init__(layer)
-        self._mask: Optional[QImage] = None
         self._mp_surface = MyPaintLayerSurface(None)
         self._last_stroke_bounds = QRect()
         self._last_stroke_tiles: Set[MyPaintSceneTile] = set()
@@ -64,7 +63,7 @@ class MyPaintLayerCanvas(LayerCanvas):
 
     def set_input_mask(self, mask_image: Optional[QImage]) -> None:
         """Sets a mask image, restricting canvas changes to areas covered by non-transparent mask areas"""
-        self._mask = mask_image
+        super().set_input_mask(mask_image)
         self._mp_surface.input_mask = mask_image
 
     def _set_brush_size(self, new_size: int) -> None:

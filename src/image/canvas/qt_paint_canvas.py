@@ -7,7 +7,6 @@ import numpy as np
 from PySide6.QtCore import Qt, QPoint, QPointF, QRectF, QTimer, QRect
 from PySide6.QtGui import QPainter, QPen, QImage, QColor
 
-from src.config.cache import Cache
 from src.image.canvas.layer_canvas import LayerCanvas
 from src.image.layers.image_layer import ImageLayer
 from src.image.layers.selection_layer import SelectionLayer
@@ -32,7 +31,6 @@ class QtPaintCanvas(LayerCanvas):
         self._last_opacity: List[float] = []
         self._last_hardness: List[float] = []
         self._change_bounds = QRectF()
-        self._mask: Optional[QImage] = None
         self._input_buffer: List[QtPaintCanvas._InputEvent] = []
         self._buffer_timer = QTimer()
         self._buffer_timer.setInterval(PAINT_BUFFER_DELAY_MS)
@@ -122,41 +120,42 @@ class QtPaintCanvas(LayerCanvas):
         if not self._brush_stroke_buffer.isNull():
             self._brush_stroke_buffer.fill(Qt.GlobalColor.transparent)
 
-    def set_input_mask(self, mask_image: Optional[QImage]) -> None:
-        """Sets a mask image, restricting canvas changes to areas covered by non-transparent mask areas"""
-        self._mask = mask_image
-
     @staticmethod
-    def _input_event_paint_segment(painter: QPainter, input_event: 'QtPaintCanvas._InputEvent') -> None:
-        """Paints a single segment from a brush stroke, without any blending."""
+    def _paint_segment(painter: QPainter, size: int, opacity: float, hardness: float, color: QColor, change_pt: QPointF,
+                       last_pt: Optional[QPointF]) -> None:
+        """Paints a single segment from a brush stroke, without any blending between segments."""
         painter.save()
-        painter.setOpacity(input_event.opacity)
-        pen = QPen(input_event.color, input_event.size, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap,
-                   Qt.PenJoinStyle.RoundJoin)
+        painter.setOpacity(opacity)
+        pen = QPen(color, size, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap, Qt.PenJoinStyle.RoundJoin)
         painter.setPen(pen)
-        if input_event.hardness < 1.0:
-            min_size = input_event.size * input_event.hardness
-            size_range = round(input_event.size - min_size)
+        if hardness < 1.0:
+            min_size = size * hardness
+            size_range = round(size - min_size)
             painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_Source)
-            alpha_step = input_event.opacity / size_range
+            alpha_step = opacity / size_range
             alpha = alpha_step
-            size = input_event.size - 1
+            size = size - 1
             while size >= min_size:
                 pen.setWidth(size)
                 painter.setOpacity(alpha)
                 painter.setPen(pen)
-                if input_event.last_pt is None:
-                    painter.drawPoint(input_event.change_pt)
+                if last_pt is None:
+                    painter.drawPoint(change_pt)
                 else:
-                    painter.drawLine(input_event.last_pt, input_event.change_pt)
+                    painter.drawLine(last_pt, change_pt)
                 alpha += alpha_step
                 size -= 1
         else:
-            if input_event.last_pt is None:
-                painter.drawPoint(input_event.change_pt)
+            if last_pt is None:
+                painter.drawPoint(change_pt)
             else:
-                painter.drawLine(input_event.last_pt, input_event.change_pt)
+                painter.drawLine(last_pt, change_pt)
         painter.restore()
+
+    @staticmethod
+    def _input_event_paint_segment(painter: QPainter, input_event: 'QtPaintCanvas._InputEvent') -> None:
+        QtPaintCanvas._paint_segment(painter, input_event.size, input_event.opacity, input_event.hardness,
+                                     input_event.color, input_event.change_pt, input_event.last_pt)
 
     def _draw_input_event(self,
                           input_event: 'QtPaintCanvas._InputEvent',
@@ -201,13 +200,14 @@ class QtPaintCanvas(LayerCanvas):
             return
         np_paint_buf = numpy_bounds_index(np_paint_buf, bounds)
         np_stroke_buf = numpy_bounds_index(np_stroke_buf, bounds)
-        np_image = numpy_bounds_index(np_image, bounds)
         np_prev_image = numpy_bounds_index(np_prev_image, bounds)
+        np_image = numpy_bounds_index(np_image, bounds)
         if np_mask is not None:
             np_mask = numpy_bounds_index(np_mask, bounds)
 
         # Make sure the paint buffer is clear, draw the most recent segment in the brush stroke:
         np_paint_buf[:, :, :] = 0
+
         self._input_event_paint_segment(new_input_painter, input_event)
 
         # find changed pixels.  If a mask is set, remove all changes not covered by the mask.
@@ -255,7 +255,7 @@ class QtPaintCanvas(LayerCanvas):
         with layer.borrow_image(change_bounds) as layer_image:
             img_painter = QPainter(layer_image)
             assert isinstance(layer_image, QImage)
-            np_mask = None if self._mask is None else image_data_as_numpy_8bit(self._mask)
+            np_mask = None if self.input_mask is None else image_data_as_numpy_8bit(self.input_mask)
             np_paint_buf = image_data_as_numpy_8bit(self._paint_buffer)
             np_stroke_buf = image_data_as_numpy_8bit(self._brush_stroke_buffer)
             np_image = image_data_as_numpy_8bit(layer_image)
@@ -265,6 +265,7 @@ class QtPaintCanvas(LayerCanvas):
                     values.append(new_value)
                     while len(values) > AVG_COUNT:
                         values.pop(0)
+
                 _update_rolling_avg_list(self._last_sizes, event.size)
                 _update_rolling_avg_list(self._last_opacity, event.opacity)
                 _update_rolling_avg_list(self._last_hardness, event.hardness)
