@@ -121,8 +121,8 @@ class QtPaintCanvas(LayerCanvas):
             self._brush_stroke_buffer.fill(Qt.GlobalColor.transparent)
 
     @staticmethod
-    def _paint_segment(painter: QPainter, size: int, opacity: float, hardness: float, color: QColor, change_pt: QPointF,
-                       last_pt: Optional[QPointF]) -> None:
+    def paint_segment(painter: QPainter, size: int, opacity: float, hardness: float, color: QColor, change_pt: QPointF,
+                      last_pt: Optional[QPointF]) -> None:
         """Paints a single segment from a brush stroke, without any blending between segments."""
         painter.save()
         painter.setOpacity(opacity)
@@ -154,8 +154,8 @@ class QtPaintCanvas(LayerCanvas):
 
     @staticmethod
     def _input_event_paint_segment(painter: QPainter, input_event: 'QtPaintCanvas._InputEvent') -> None:
-        QtPaintCanvas._paint_segment(painter, input_event.size, input_event.opacity, input_event.hardness,
-                                     input_event.color, input_event.change_pt, input_event.last_pt)
+        QtPaintCanvas.paint_segment(painter, round(input_event.size), input_event.opacity, input_event.hardness,
+                                    input_event.color, input_event.change_pt, input_event.last_pt)
 
     def _draw_input_event(self,
                           input_event: 'QtPaintCanvas._InputEvent',

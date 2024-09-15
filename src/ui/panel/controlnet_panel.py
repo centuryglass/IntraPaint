@@ -507,7 +507,7 @@ class ControlnetPanel(BorderedWidget):
 
     def _handle_model_change(self, selected_model: str) -> None:
         """Update config when the selected model changes."""
-        AppConfig().set(self._cache_key, selected_model, inner_key=CONTROL_MODEL_KEY)
+        Cache().set(self._cache_key, selected_model, inner_key=CONTROL_MODEL_KEY)
 
 
 class _ControlnetCheckbox(CheckBox):

@@ -228,30 +228,6 @@
             "step": 1
         }
     },
-    "draw_tool_pressure_size": {
-        "label": "Pen pressure=size:",
-        "category": "Cache",
-        "description": "Drawing tablet pen pressure affects draw tool brush size.",
-        "type": "bool",
-        "default": true,
-        "saved": true
-    },
-    "draw_tool_pressure_opacity": {
-        "label": "Pen pressure=opacity:",
-        "category": "Cache",
-        "description": "Drawing tablet pen pressure affects draw tool brush opacity.",
-        "type": "bool",
-        "default": false,
-        "saved": true
-    },
-    "draw_tool_pressure_hardness": {
-        "label": "Pen pressure=hardness:",
-        "category": "Cache",
-        "description": "Drawing tablet pen pressure affects draw tool brush hardness.",
-        "type": "bool",
-        "default": false,
-        "saved": true
-    },
     "draw_tool_opacity": {
         "label": "Opacity:",
         "category": "Cache",
@@ -278,15 +254,7 @@
         },
         "saved": true
     },
-    "draw_tool_fill_type": {
-        "label": "Fill type:",
-        "category": "Cache",
-        "description": "Draw tool brush pattern",
-        "type": "string",
-        "default": "",
-        "saved": true
-    },
-    "eraser_tool_pressure_size": {
+    "draw_tool_pressure_size": {
         "label": "Pen pressure=size:",
         "category": "Cache",
         "description": "Drawing tablet pen pressure affects draw tool brush size.",
@@ -294,7 +262,7 @@
         "default": true,
         "saved": true
     },
-    "eraser_tool_pressure_opacity": {
+    "draw_tool_pressure_opacity": {
         "label": "Pen pressure=opacity:",
         "category": "Cache",
         "description": "Drawing tablet pen pressure affects draw tool brush opacity.",
@@ -302,12 +270,20 @@
         "default": false,
         "saved": true
     },
-    "eraser_tool_pressure_hardness": {
+    "draw_tool_pressure_hardness": {
         "label": "Pen pressure=hardness:",
         "category": "Cache",
         "description": "Drawing tablet pen pressure affects draw tool brush hardness.",
         "type": "bool",
         "default": false,
+        "saved": true
+    },
+    "draw_tool_fill_type": {
+        "label": "Fill type:",
+        "category": "Cache",
+        "description": "Draw tool brush pattern",
+        "type": "string",
+        "default": "",
         "saved": true
     },
     "eraser_tool_size": {
@@ -350,6 +326,30 @@
         },
         "saved": true
     },
+    "eraser_tool_pressure_size": {
+        "label": "Pen pressure=size:",
+        "category": "Cache",
+        "description": "Drawing tablet pen pressure affects draw tool brush size.",
+        "type": "bool",
+        "default": true,
+        "saved": true
+    },
+    "eraser_tool_pressure_opacity": {
+        "label": "Pen pressure=opacity:",
+        "category": "Cache",
+        "description": "Drawing tablet pen pressure affects draw tool brush opacity.",
+        "type": "bool",
+        "default": false,
+        "saved": true
+    },
+    "eraser_tool_pressure_hardness": {
+        "label": "Pen pressure=hardness:",
+        "category": "Cache",
+        "description": "Drawing tablet pen pressure affects draw tool brush hardness.",
+        "type": "bool",
+        "default": false,
+        "saved": true
+    },
     "blur_tool_brush_size": {
         "label": "Blur tool brush size:",
         "category": "Cache",
@@ -377,6 +377,56 @@
             "max": 300,
             "step": 1
         }
+    },
+    "smudge_tool_opacity": {
+        "label": "Opacity:",
+        "category": "Cache",
+        "description": "Smudge tool color opacity",
+        "type": "float",
+        "default": 0.5,
+        "range_options": {
+            "min": 0.0,
+            "max": 1.0,
+            "step": 0.05
+        },
+        "saved": true
+    },
+    "smudge_tool_hardness": {
+        "label": "Hardness:",
+        "category": "Cache",
+        "description": "Smudge tool brush hardness",
+        "type": "float",
+        "default": 1.0,
+        "range_options": {
+            "min": 0.0,
+            "max": 1.0,
+            "step": 0.05
+        },
+        "saved": true
+    },
+    "smudge_tool_pressure_size": {
+        "label": "Pen pressure=size:",
+        "category": "Cache",
+        "description": "Drawing tablet pen pressure affects smudge tool brush size.",
+        "type": "bool",
+        "default": true,
+        "saved": true
+    },
+    "smudge_tool_pressure_opacity": {
+        "label": "Pen pressure=opacity:",
+        "category": "Cache",
+        "description": "Drawing tablet pen pressure affects smudge tool brush opacity.",
+        "type": "bool",
+        "default": false,
+        "saved": true
+    },
+    "smudge_tool_pressure_hardness": {
+        "label": "Pen pressure=hardness:",
+        "category": "Cache",
+        "description": "Drawing tablet pen pressure affects smudge tool brush hardness.",
+        "type": "bool",
+        "default": false,
+        "saved": true
     },
     "saved_main_window_pos": {
         "label": "Saved main window placement",

@@ -289,7 +289,7 @@ class ImageStack(QObject):
         if bounds_rect != self._generation_area:
             last_bounds = self._generation_area
 
-            def update_fn(prev_bounds: QRect, next_bounds: QRect) -> None:
+            def update_fn(next_bounds: QRect) -> None:
                 """Apply an arbitrary image generation area change."""
                 if self._generation_area != next_bounds:
                     self._generation_area = next_bounds
@@ -303,13 +303,13 @@ class ImageStack(QObject):
                 if isinstance(prev_action, _UndoAction) and prev_action.type == action_type \
                         and prev_action.action_data is not None:
                     last_bounds = prev_action.action_data['prev_bounds']
-                    prev_action.redo = lambda: update_fn(last_bounds, bounds_rect)
-                    prev_action.undo = lambda: update_fn(bounds_rect, last_bounds)
+                    prev_action.redo = lambda: update_fn(bounds_rect)
+                    prev_action.undo = lambda: update_fn(last_bounds)
                     prev_action.redo()
                     return
 
-            UndoStack().commit_action(lambda: update_fn(last_bounds, bounds_rect),
-                                      lambda: update_fn(bounds_rect, last_bounds),
+            UndoStack().commit_action(lambda: update_fn(bounds_rect),
+                                      lambda: update_fn(last_bounds),
                                       action_type, {'prev_bounds': last_bounds})
 
     # IMAGE ACCESS / MANIPULATION FUNCTIONS:

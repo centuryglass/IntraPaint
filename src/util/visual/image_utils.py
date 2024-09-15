@@ -20,7 +20,7 @@ from src.util.shared_constants import ICON_SIZE
 logger = logging.getLogger(__name__)
 
 NpAnyArray: TypeAlias = ndarray[Any, dtype[Any]]
-NpUInt8Array: TypeAlias = np.ndarray[Any, np.dtype[np.int8]]
+NpUInt8Array: TypeAlias = np.ndarray[Any, np.dtype[np.uint8]]
 
 
 temp_image_dir = ''

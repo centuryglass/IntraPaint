@@ -151,14 +151,14 @@ class TestAppController(unittest.TestCase):
                 continue
             save_path = f'save_test_{file_format}.{file_format.lower()}'
             test_prompt_str = f'{file_format} R/W test'
-            AppConfig().set(AppConfig.PROMPT, test_prompt_str)
+            Cache().set(Cache.PROMPT, test_prompt_str)
             self.controller.update_metadata(show_messagebox=False)
             self.controller.save_image_as(save_path)
             self.assertTrue(os.path.isfile(save_path), f'{file_format} save test failed')
-            AppConfig().set(AppConfig.PROMPT, '')
+            Cache().set(Cache.PROMPT, '')
             if file_format in IMAGE_READ_FORMATS:
                 self.controller.load_image(save_path)
-                prompt = AppConfig().get(AppConfig.PROMPT)
+                prompt = Cache().get(Cache.PROMPT)
                 expected_metadata = file_format in IMAGE_FORMATS_SUPPORTING_METADATA
                 if prompt == test_prompt_str:
                     self.assertTrue(expected_metadata, f'Metadata found but not expected for format {file_format}')

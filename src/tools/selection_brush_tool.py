@@ -38,7 +38,7 @@ class SelectionBrushTool(CanvasTool):
 
     def __init__(self, image_stack: ImageStack, image_viewer: ImageViewer) -> None:
         canvas = QtPaintCanvas(None)
-        super().__init__(image_stack, image_viewer, canvas)
+        super().__init__(image_stack, image_viewer, canvas, False, False)
         self._last_click = None
         self._control_panel = CanvasSelectionPanel(image_stack.selection_layer)
         self._control_panel.tool_mode_changed.connect(self._tool_toggle_slot)

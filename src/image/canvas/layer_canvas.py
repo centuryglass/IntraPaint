@@ -22,7 +22,7 @@ ERROR_MESSAGE_LAYER_LOCKED = _tr('The selected layer is locked, unlock it or sel
 ERROR_MESSAGE_LAYER_HIDDEN = _tr('The selected layer is hidden, un-hide it before trying to edit it.')
 ERROR_MESSAGE_LAYER_NONE = _tr('The selected layer is not an image layer, select an image layer first.')
 ERROR_MESSAGE_EMPTY_MASK = _tr('Changes are restricted to selected content only, but nothing is selected in this layer.'
-                               'Select layer content or enable changes in unselected areas.')
+                               ' Select layer content or enable changes in unselected areas.')
 
 
 class LayerCanvas:

@@ -17,6 +17,7 @@ from src.image.layers.image_stack import ImageStack
 from src.image.layers.layer import Layer
 from src.tools.base_tool import BaseTool
 from src.ui.image_viewer import ImageViewer
+from src.ui.panel.tool_control_panels.canvas_tool_panel import CanvasToolPanel
 from src.util.math_utils import clamp
 from src.util.shared_constants import PROJECT_DIR, FLOAT_MAX
 from src.util.visual.text_drawing_utils import left_button_hint_text, right_button_hint_text
@@ -54,7 +55,8 @@ class CanvasTool(BaseTool):
     and setting or updating the affected layer.
     """
 
-    def __init__(self, image_stack: ImageStack, image_viewer: ImageViewer, canvas: LayerCanvas) -> None:
+    def __init__(self, image_stack: ImageStack, image_viewer: ImageViewer, canvas: LayerCanvas,
+                 enable_selection_restrictions=True, follow_active_layer=True) -> None:
         super().__init__()
         self._layer: Optional[ImageLayer] = None
         self._drawing = False
@@ -88,28 +90,30 @@ class CanvasTool(BaseTool):
 
             HotkeyFilter.instance().register_speed_modified_keybinding(_size_change, key)
 
-        # Handle restricting changes to selection:
-        def _set_restricted_to_selection(selected_only: bool) -> None:
-            if not self.is_active or self._layer is None or self._layer == image_stack.selection_layer:
-                return
-            if selected_only:
+        if enable_selection_restrictions:
+            # Handle restricting changes to selection:
+            def _set_restricted_to_selection(selected_only: bool) -> None:
+                if not self.is_active or self._layer is None or self._layer == image_stack.selection_layer:
+                    return
+                if selected_only:
+                    mask = image_stack.get_layer_mask(self._layer)
+                    self._canvas.set_input_mask(mask)
+                else:
+                    self._canvas.set_input_mask(None)
+            Cache().connect(self, Cache.PAINT_SELECTION_ONLY, _set_restricted_to_selection)
+
+        if follow_active_layer:
+            # noinspection PyUnusedLocal
+            def _selection_layer_update(*args) -> None:
+                if not Cache().get(Cache.PAINT_SELECTION_ONLY) or not self.is_active or self._layer is None \
+                        or self._layer == image_stack.selection_layer:
+                    return
                 mask = image_stack.get_layer_mask(self._layer)
                 self._canvas.set_input_mask(mask)
-            else:
-                self._canvas.set_input_mask(None)
-        Cache().connect(self, Cache.PAINT_SELECTION_ONLY, _set_restricted_to_selection)
+            image_stack.selection_layer.content_changed.connect(_selection_layer_update)
 
-        # noinspection PyUnusedLocal
-        def _selection_layer_update(*args) -> None:
-            if not Cache().get(Cache.PAINT_SELECTION_ONLY) or not self.is_active or self._layer is None \
-                    or self._layer == image_stack.selection_layer:
-                return
-            mask = image_stack.get_layer_mask(self._layer)
-            self._canvas.set_input_mask(mask)
-        image_stack.selection_layer.content_changed.connect(_selection_layer_update)
-
-        image_stack.active_layer_changed.connect(self._active_layer_change_slot)
-        self.layer = image_stack.active_layer
+            image_stack.active_layer_changed.connect(self._active_layer_change_slot)
+            self.layer = image_stack.active_layer
 
     @staticmethod
     def canvas_control_hints() -> str:
@@ -195,6 +199,7 @@ class CanvasTool(BaseTool):
     def brush_size(self, new_size: int):
         """Updates the active brush size."""
         self.set_brush_size(new_size)
+        self.update_brush_cursor()
 
     def adjust_brush_size(self, offset: int) -> None:
         """Change brush size by some offset amount, multiplying offset if the speed modifier is held."""
@@ -376,6 +381,9 @@ class CanvasTool(BaseTool):
         self._tablet_x_tilt = event.xTilt()
         self._tablet_y_tilt = event.yTilt()
         self._tablet_event_timestamp = datetime.datetime.now().timestamp()
+        control_panel = self.get_control_panel()
+        if isinstance(control_panel, CanvasToolPanel):
+            control_panel.show_pressure_checkboxes()
         return True
 
     def update_brush_cursor(self) -> None:

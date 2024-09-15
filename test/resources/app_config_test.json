@@ -10,109 +10,57 @@
     "selection_screen_zooms_to_changed": false,
     "show_options_full_resolution": false,
     "opengl_acceleration": false,
-    "tool_tab_bar": "",
-    "generation_tab_bar": "",
-    "controlnet_tab_bar": "",
     "default_image_size": "1024x1024",
-    "edit_size": "512x512",
     "max_edit_size": "10240x10240",
     "min_edit_size": "8x8",
-    "generation_size": "512x512",
     "max_generation_size": "2048x2048",
     "min_generation_size": "256x256",
-    "selection_brush_size": {
-        "min": 1,
-        "max": 300,
-        "step": 1,
-        "value": 40
-    },
-    "sketch_brush_size": {
-        "min": 1,
-        "max": 300,
-        "step": 1,
-        "value": 8
-    },
-    "mypaint_brush": "./resources/brushes/experimental/1pixel.myb",
     "brush_favorites": [],
     "max_undo": 30,
-    "undo_merge_interval": 0.5,
+    "undo_merge_interval": 0.2,
     "speed_modifier_multiplier": 5,
     "saved_colors": [],
-    "guidance_scale": {
+    "min_pressure_value": {
         "min": 0.0,
-        "max": 20.0,
-        "step": 0.1,
-        "value": 9.0
+        "max": 1.0,
+        "step": 0.05,
+        "value": 0.01
     },
-    "batch_size": {
-        "min": 1,
-        "max": 20,
-        "step": 1,
-        "value": 5
-    },
-    "batch_count": {
-        "min": 1,
-        "max": 99,
-        "step": 1,
-        "value": 1
-    },
-    "edit_mode": "Inpaint",
-    "masked_content": "original",
-    "interrogate_model": "clip",
-    "sampling_method": "Euler a",
-    "upscale_method": "None",
-    "controlnet_upscaling": false,
-    "controlnet_tile_model": "control_v11f1e_sd15_tile [a371b31b]",
-    "controlnet_downsample_rate": {
-        "min": 1.0,
-        "max": 4.0,
-        "step": 0.1,
+    "max_pressure_value": {
+        "min": 0.0,
+        "max": 1.0,
+        "step": 0.05,
         "value": 1.0
     },
+    "min_pressure_threshold": {
+        "min": 0.0,
+        "max": 1.0,
+        "step": 0.05,
+        "value": 0.3
+    },
+    "max_pressure_threshold": {
+        "min": 0.0,
+        "max": 1.0,
+        "step": 0.05,
+        "value": 0.9
+    },
+    "masked_content": "original",
+    "interrogate_model": "clip",
+    "controlnet_tile_model": "control_v11f1e_sd15_tile [a371b31b]",
     "mask_blur": {
         "min": 0,
         "max": 64,
         "step": 1,
         "value": 4
     },
-    "seed": {
-        "min": -1,
-        "max": 18446744073709551615,
-        "step": 1,
-        "value": -1
-    },
-    "inpaint_full_res": false,
-    "inpaint_full_res_padding": {
-        "min": 0,
-        "max": 1024,
-        "step": 1,
-        "value": 32
-    },
     "restore_faces": false,
     "tiling": false,
-    "controlnet_args_0": {},
-    "controlnet_args_1": {},
-    "controlnet_args_2": {},
-    "cutn": {
-        "min": 1,
-        "max": 32,
-        "step": 1,
-        "value": 16
-    },
-    "skip_steps": {
-        "min": 0,
-        "max": 27,
-        "step": 1,
-        "value": 0
-    },
-    "upscale_mode": "Lanczos",
-    "downscale_mode": "Lanczos",
     "glid_model_path": "models/inpaint.pt",
     "bert_model_path": "models/bert.pt",
     "glid_vae_model_path": "models/kl-f8.pt",
     "clip_model_name": "ViT-L/14",
     "use_error_handler": true,
-    "warn_on_key_error": true,
+    "warn_on_key_error": false,
     "warn_before_layerless_save": true,
     "warn_before_rgb_save": true,
     "warn_before_save_without_metadata": true,
@@ -122,5 +70,7 @@
     "warn_on_libmypaint_error": true,
     "always_init_metadata_on_save": "always_ask",
     "always_update_metadata_on_save": "always_ask",
+    "added_font_dir": "",
+    "added_mypaint_brush_dir": "",
     "libmypaint_library_dir": ""
 }

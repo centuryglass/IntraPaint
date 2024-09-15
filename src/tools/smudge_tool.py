@@ -1,12 +1,12 @@
 """Implements image smudging using a restricted BrushTool."""
 from typing import Optional
 
-from PySide6.QtGui import QIcon, QKeySequence, Qt
+from PySide6.QtGui import QIcon, QKeySequence
 from PySide6.QtWidgets import QApplication, QWidget
 
 from src.config.cache import Cache
 from src.config.key_config import KeyConfig
-from src.image.canvas.mypaint_canvas import MyPaintLayerCanvas
+from src.image.canvas.smudge_canvas import SmudgeCanvas
 from src.image.layers.image_stack import ImageStack
 from src.tools.canvas_tool import CanvasTool
 from src.ui.image_viewer import ImageViewer
@@ -34,20 +34,45 @@ SMUDGE_TOOLTIP = _tr('Smudge image content')
 SMUDGE_CONTROL_HINT = _tr('{left_mouse_icon}: smudge - {right_mouse_icon}: 1px smudge')
 
 
-class SmudgeTool(BrushTool):  # type: ignore
+class SmudgeTool(CanvasTool):  # type: ignore
     """Implements image smudging using a restricted BrushTool."""
 
     def __init__(self, image_stack: ImageStack, image_viewer: ImageViewer) -> None:
-        super().__init__(image_stack, image_viewer, Cache.SMUDGE_TOOL_BRUSH_SIZE)
-        Cache().disconnect(self, Cache.MYPAINT_BRUSH)
-        Cache().disconnect(self, Cache.LAST_BRUSH_COLOR)
-        self.brush_color = Qt.GlobalColor.black
-        self.brush_path = RESOURCES_SMUDGE_BRUSH
+        canvas = SmudgeCanvas()
+        super().__init__(image_stack, image_viewer, canvas)
+        self._control_panel = SmudgeToolPanel()
         self._icon = QIcon(RESOURCES_SMUDGE_ICON)
-        canvas = self.canvas
-        assert isinstance(canvas, MyPaintLayerCanvas)
-        brush = canvas.brush
-        self._control_panel = SmudgeToolPanel(brush)
+        cache = Cache()
+
+        def _size_update(size: int) -> None:
+            self.brush_size = size
+        cache.connect(self, Cache.SMUDGE_TOOL_BRUSH_SIZE, _size_update)
+        self.brush_size = cache.get(Cache.SMUDGE_TOOL_BRUSH_SIZE)
+
+        def _opacity_update(opacity: float) -> None:
+            canvas.opacity = opacity
+        cache.connect(self, Cache.SMUDGE_TOOL_OPACITY, _opacity_update)
+        canvas.opacity = cache.get(Cache.SMUDGE_TOOL_OPACITY)
+
+        def _hardness_update(hardness: float) -> None:
+            canvas.hardness = hardness
+        cache.connect(self, Cache.SMUDGE_TOOL_HARDNESS, _hardness_update)
+        canvas.hardness = cache.get(Cache.SMUDGE_TOOL_HARDNESS)
+
+        def _pressure_size_update(use_pressure: bool) -> None:
+            canvas.pressure_size = use_pressure
+        cache.connect(self, Cache.SMUDGE_TOOL_PRESSURE_SIZE, _pressure_size_update)
+        canvas.pressure_size = cache.get(Cache.SMUDGE_TOOL_PRESSURE_SIZE)
+
+        def _pressure_opacity_update(use_pressure: bool) -> None:
+            canvas.pressure_opacity = use_pressure
+        cache.connect(self, Cache.SMUDGE_TOOL_PRESSURE_OPACITY, _pressure_opacity_update)
+        canvas.pressure_opacity = cache.get(Cache.SMUDGE_TOOL_PRESSURE_OPACITY)
+
+        def _pressure_hardness_update(use_pressure: bool) -> None:
+            canvas.pressure_hardness = use_pressure
+        cache.connect(self, Cache.SMUDGE_TOOL_PRESSURE_HARDNESS, _pressure_hardness_update)
+        canvas.pressure_hardness = cache.get(Cache.SMUDGE_TOOL_PRESSURE_HARDNESS)
 
     # noinspection PyMethodMayBeStatic
     def get_hotkey(self) -> QKeySequence:

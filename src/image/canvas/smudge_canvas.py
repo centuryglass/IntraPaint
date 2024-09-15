@@ -1,22 +1,21 @@
 """
 Canvas implementing smudge tool operations.
 """
-import math
 from typing import Optional, List
 
-import numpy as np
-from PySide6.QtCore import Qt, QPoint, QPointF, QRectF, QTimer, QRect, QLineF
-from PySide6.QtGui import QPainter, QPen, QImage, QColor
+from PySide6.QtCore import Qt, QPoint, QPointF, QTimer, QRect
+from PySide6.QtGui import QPainter, QImage, QColor
 
 from src.image.canvas.layer_canvas import LayerCanvas
+from src.image.canvas.qt_paint_canvas import QtPaintCanvas
 from src.image.layers.image_layer import ImageLayer
-from src.image.layers.selection_layer import SelectionLayer
 from src.util.math_utils import clamp
-from src.util.visual.image_utils import create_transparent_image, image_data_as_numpy_8bit, numpy_bounds_index, \
-    NpUInt8Array
+from src.util.visual.image_utils import create_transparent_image, image_data_as_numpy_8bit
 
 PAINT_BUFFER_DELAY_MS = 50
 AVG_COUNT = 20
+
+debug_save_idx = 0
 
 
 class SmudgeCanvas(LayerCanvas):
@@ -28,18 +27,12 @@ class SmudgeCanvas(LayerCanvas):
         self._opacity = 1.0
         self._hardness = 1.0
         self._last_point: Optional[QPoint] = None
-        self._last_sizes: List[float] = []
-        self._last_opacity: List[float] = []
-        self._last_hardness: List[float] = []
-        self._change_bounds = QRectF()
-        self._input_buffer: List[QRect] = []
+        self._last_point_img = QImage()
+        self._input_buffer: List['_SmudgePoint'] = []
         self._buffer_timer = QTimer()
         self._buffer_timer.setInterval(PAINT_BUFFER_DELAY_MS)
         self._buffer_timer.setSingleShot(True)
         self._buffer_timer.timeout.connect(self._draw_buffered_events)
-        self._brush_stroke_buffer = QImage()
-        self._prev_image_buffer = QImage()
-        self._paint_buffer = QImage()
         self._pressure_size = True
         self._pressure_opacity = False
         self._pressure_hardness = False
@@ -89,37 +82,59 @@ class SmudgeCanvas(LayerCanvas):
     def pressure_hardness(self, pressure_sets_hardness: bool) -> None:
         self._pressure_hardness = pressure_sets_hardness
 
-    def connect_to_layer(self, new_layer: Optional[ImageLayer]):
-        """Disconnects from the current layer, and connects to a new one."""
-        super().connect_to_layer(new_layer)
-        if new_layer is not None:
-            self._brush_stroke_buffer = create_transparent_image(new_layer.size)
-            self._paint_buffer = create_transparent_image(new_layer.size)
-        else:
-            self._brush_stroke_buffer = QImage()
-            self._paint_buffer = QImage()
-
     def start_stroke(self) -> None:
-        self._change_bounds = QRectF()
+        """Clear tracked stroke data before starting a new stroke."""
         self._last_point = None
-        self._last_sizes.clear()
-        self._last_opacity.clear()
-        self._last_hardness.clear()
+        self._last_point_img = QImage()
         layer = self.layer
         assert layer is not None
-        self._prev_image_buffer = layer.image
         super().start_stroke()
 
     def end_stroke(self) -> None:
-        """Finishes a brush stroke, copying it back to the layer."""
+        """Finishes a brush stroke, copying any pending events back to the layer."""
         super().end_stroke()
         self._last_point = None
         self._draw_buffered_events()
-        self._last_sizes.clear()
-        self._last_opacity.clear()
-        self._last_hardness.clear()
-        if not self._brush_stroke_buffer.isNull():
-            self._brush_stroke_buffer.fill(Qt.GlobalColor.transparent)
+
+    @staticmethod
+    def _sample_smudge_point(smudge_point: '_SmudgePoint', layer_image: QImage) -> QImage:
+        """Sample a point from the image, to be drawn over the next smudge point.
+
+        Parameters:
+        -----------
+        smudge_point: _SmudgePoint
+            Data from one smudge tool input event, storing location, brush size, opacity, and hardness.
+        layer_image: QImage
+            The ARGB32_Premultiplied layer image.
+
+        Returns:
+        --------
+        A new ARGB32_Premultiplied QImage containing the image content sampled from the layer.
+        """
+        intersect_bounds = smudge_point.rect.intersected(QRect(QPoint(), layer_image.size()))
+        if intersect_bounds.isEmpty():
+            return QImage()  # Mouse input was outside the image bounds, ignore it
+
+        # Draw the brush mask: A black circle with diameter equal to the brush size, highest opacity set to the
+        # smudge point opacity, and edges faded out based on hardness:
+        smudge_mask = smudge_point.draw_mask()
+
+        # Convert to numpy array. If the brush doesn't fully intersect with the image, clear the parts of the brush
+        # mask that do not intersect and restrict the array to the parts that do intersect.
+        np_smudge_mask = image_data_as_numpy_8bit(smudge_mask)
+        mask_intersect_bounds = intersect_bounds.translated(-smudge_point.rect.x(), -smudge_point.rect.y())
+        if intersect_bounds.size() != smudge_mask.size():
+            np_smudge_mask[:mask_intersect_bounds.y(), :, :] = 0
+            np_smudge_mask[mask_intersect_bounds.y() + mask_intersect_bounds.height():, :, :] = 0
+            np_smudge_mask[:, :mask_intersect_bounds.x(), :] = 0
+            np_smudge_mask[:, mask_intersect_bounds.x() + mask_intersect_bounds.width():, :] = 0
+
+        painter = QPainter(smudge_mask)
+        painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_SourceIn)
+        painter.drawImage(mask_intersect_bounds, layer_image, intersect_bounds)
+        painter.end()
+
+        return smudge_mask
 
     def _draw_buffered_events(self) -> None:
         self._buffer_timer.stop()
@@ -129,78 +144,86 @@ class SmudgeCanvas(LayerCanvas):
         if layer is None:
             return
         change_bounds = QRect()
-        for rect in self._input_buffer:
-            change_bounds = change_bounds.united(rect)
+        for smudge_point in self._input_buffer:
+            change_bounds = change_bounds.united(smudge_point.rect)
         change_bounds = change_bounds.intersected(layer.bounds)
-        new_input_painter = QPainter(self._paint_buffer)
         with layer.borrow_image(change_bounds) as layer_image:
             img_painter = QPainter(layer_image)
             assert isinstance(layer_image, QImage)
-            np_mask = None if self.input_mask is None else image_data_as_numpy_8bit(self.input_mask)
-            np_paint_buf = image_data_as_numpy_8bit(self._paint_buffer)
-            np_stroke_buf = image_data_as_numpy_8bit(self._brush_stroke_buffer)
-            np_image = image_data_as_numpy_8bit(layer_image)
-            np_prev_image = image_data_as_numpy_8bit(self._prev_image_buffer)
-            for event in self._input_buffer:
-                def _update_rolling_avg_list(values: List[float], new_value: float) -> None:
-                    values.append(new_value)
-                    while len(values) > AVG_COUNT:
-                        values.pop(0)
-
-                _update_rolling_avg_list(self._last_sizes, event.size)
-                _update_rolling_avg_list(self._last_opacity, event.opacity)
-                _update_rolling_avg_list(self._last_hardness, event.hardness)
-
-                def _float_avg(values: List[float], default_value: float) -> float:
-                    if len(values) == 0:
-                        return default_value
-                    value_sum = 0.0
-                    for value in values:
-                        value_sum += value
-                    a = value_sum / len(values)
-                    return a
-
-                event.size = _float_avg(self._last_sizes, event.size)
-                event.opacity = _float_avg(self._last_opacity, event.opacity)
-                event.hardness = _float_avg(self._last_hardness, event.hardness)
-                self._draw_input_event(event, new_input_painter, np_paint_buf, np_stroke_buf, np_mask, np_image,
-                                       np_prev_image, img_painter)
-            self._input_buffer.clear()
+            for smudge_point in self._input_buffer:
+                if not self._last_point_img.isNull():  # Draw the image from the last smudge point to the current one:
+                    paint_bounds = QRect(QPoint(), self._last_point_img.size())
+                    paint_bounds.moveCenter(smudge_point.rect.center())
+                    mask_image = self.input_mask
+                    if mask_image is not None:
+                        source_bounds = paint_bounds.intersected(QRect(QPoint(), mask_image.size()))
+                        if source_bounds.isEmpty():
+                            continue
+                        destination_bounds = source_bounds.translated(-paint_bounds.x(), -paint_bounds.y())
+                        point_img_painter = QPainter(self._last_point_img)
+                        point_img_painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_DestinationIn)
+                        point_img_painter.drawImage(destination_bounds, mask_image, source_bounds)
+                        point_img_painter.end()
+                    img_painter.drawImage(paint_bounds, self._last_point_img)
+                # Save the image from the current smudge point to draw on the next one:
+                self._last_point_img = self._sample_smudge_point(smudge_point, layer_image)
             img_painter.end()
-        new_input_painter.end()
-
-    def _point_rect(self, pos: QPoint, size: int) -> QRect:
-        rect = QRect(0, 0, size, size)
-        rect.moveCenter(pos)
-        return rect
+            self._input_buffer.clear()
 
     def _draw(self, x: float, y: float, pressure: Optional[float], x_tilt: Optional[float],
               y_tilt: Optional[float]) -> None:
         """Use active settings to draw to the canvas with the given inputs."""
         layer = self.layer
         assert layer is not None
+        size = self.brush_size
+        opacity = self.opacity
+        hardness = self.hardness
         if pressure is not None:
-            size = round(self.brush_size * pressure)
-        else:
-            size = self.brush_size
+            if self._pressure_size:
+                size = round(size * pressure)
+            if self._pressure_opacity:
+                opacity *= pressure
+            if self._pressure_hardness:
+                hardness *= pressure
         if self._last_point is None:
-            self._input_buffer.append(self._point_rect(QPoint(round(x), round(y)), size))
+            self._input_buffer.append(_SmudgePoint(x, y, size, opacity, hardness))
         else:
-            start = QPointF(self._last_point)
-            end = QPointF(x, y)
-            line = QLineF(start, end)
-            length = line.length()
-            last_x = -1
-            last_y = -1
-            for i in range(math.ceil(length)):
-                line.setLength(i)
-                xi = round(line.x2())
-                yi = round(line.y2())
-                if xi == last_x and yi == last_y:
-                    continue
-                self._input_buffer.append(self._point_rect(QPoint(xi, yi), size))
-                last_x = xi
-                last_y = yi
+            x0 = round(self._last_point.x())
+            y0 = round(self._last_point.y())
+            x1 = round(x)
+            y1 = round(y)
+            dx = x1 - x0
+            dy = y1 - y0
+            if dx == 0 and dy == 0:
+                return
+            step_count = max(abs(dx), abs(dy))
+            x_step = dx / step_count
+            y_step = dy / step_count
+            for i in range(1, step_count, 1):
+                xi = round(x0 + x_step * i)
+                yi = round(y0 + y_step * i)
+                self._input_buffer.append(_SmudgePoint(xi, yi, size, opacity, hardness))
         self._last_point = QPointF(x, y)
         if not self._buffer_timer.isActive():
             self._buffer_timer.start()
+
+
+class _SmudgePoint:
+    """A single point of smudge input data, storing position and size (as rect), opacity, and hardness."""
+
+    def __init__(self, x: float, y: float, size: int, opacity: float, hardness: float):
+        self.rect = QRect(0, 0, size, size)
+        self.rect.moveCenter(QPoint(round(x), round(y)))
+        self.opacity = opacity
+        self.hardness = hardness
+
+    def draw_mask(self) -> QImage:
+        """Creates a mask image for this input point."""
+        image = create_transparent_image(self.rect.size())
+        painter = QPainter(image)
+        image_center = QPointF(self.rect.width() / 2, self.rect.height() / 2)
+        QtPaintCanvas.paint_segment(painter, self.rect.width(), self.opacity, self.hardness,
+                                    QColor(Qt.GlobalColor.black), image_center, None)
+        painter.end()
+        return image
+
