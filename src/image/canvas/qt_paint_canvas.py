@@ -5,7 +5,7 @@ from typing import Optional, List
 
 import numpy as np
 from PySide6.QtCore import Qt, QPoint, QPointF, QRectF, QTimer, QRect
-from PySide6.QtGui import QPainter, QPen, QImage, QColor
+from PySide6.QtGui import QPainter, QPen, QImage, QColor, QBrush
 
 from src.image.canvas.layer_canvas import LayerCanvas
 from src.image.layers.image_layer import ImageLayer
@@ -39,6 +39,7 @@ class QtPaintCanvas(LayerCanvas):
         self._brush_stroke_buffer = QImage()
         self._prev_image_buffer = QImage()
         self._paint_buffer = QImage()
+        self._pattern_brush: Optional[QBrush] = None
         self._pressure_size = True
         self._pressure_opacity = False
         self._pressure_hardness = False
@@ -87,6 +88,10 @@ class QtPaintCanvas(LayerCanvas):
     @pressure_hardness.setter
     def pressure_hardness(self, pressure_sets_hardness: bool) -> None:
         self._pressure_hardness = pressure_sets_hardness
+
+    def set_pattern_brush(self, brush: Optional[QBrush]) -> None:
+        """Sets a QBrush that defines the shape (but not color) of brush strokes."""
+        self._pattern_brush = brush
 
     def connect_to_layer(self, new_layer: Optional[ImageLayer]):
         """Disconnects from the current layer, and connects to a new one."""
@@ -233,12 +238,21 @@ class QtPaintCanvas(LayerCanvas):
             np_paint_buf[stroke_buf_overrides, :] = 0
             changes = changes & ~stroke_buf_overrides
 
+        np_stroke_buf[changes, :] = np_paint_buf[changes, :]
+
+        if self._pattern_brush is not None:
+            # Apply the pattern to the brush stroke segment:
+            new_input_painter.save()
+            new_input_painter.setOpacity(1.0)
+            new_input_painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_DestinationIn)
+            new_input_painter.fillRect(bounds, self._pattern_brush)
+            new_input_painter.restore()
+
         # Draw the last segment to the image:
         if self.eraser:
             img_painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_DestinationOut)
         img_painter.drawImage(bounds, self._paint_buffer, bounds)
         # Add the last paint operation to stroke buffer:
-        np_stroke_buf[changes, :] = np_paint_buf[changes, :]
 
     def _draw_buffered_events(self) -> None:
         self._buffer_timer.stop()

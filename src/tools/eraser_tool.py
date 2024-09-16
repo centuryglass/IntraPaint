@@ -1,17 +1,14 @@
 """Draw tool variant meant for erasing only."""
 from typing import Optional
 
-from PySide6.QtCore import QPoint
 from PySide6.QtGui import QIcon, QKeySequence
 from PySide6.QtWidgets import QApplication, QWidget
 
 from src.config.cache import Cache
-from src.config.config_entry import RangeKey
 from src.config.key_config import KeyConfig
-from src.image.canvas.qt_paint_canvas import QtPaintCanvas
 from src.image.layers.image_stack import ImageStack
 from src.tools.canvas_tool import CanvasTool
-from src.tools.draw_tool import DrawTool
+from src.tools.qt_paint_canvas_tool import QtPaintCanvasTool
 from src.ui.image_viewer import ImageViewer
 from src.ui.panel.tool_control_panels.eraser_tool_panel import EraserToolPanel
 from src.util.shared_constants import PROJECT_DIR
@@ -32,7 +29,7 @@ TOOLTIP_ERASER_TOOL = _tr('Erase image layer content')
 CONTROL_HINT_DRAW_TOOL = _tr('{left_mouse_icon}: erase - {right_mouse_icon}: 1px erase')
 
 
-class EraserTool(DrawTool):
+class EraserTool(QtPaintCanvasTool):
     """Draw tool variant meant for erasing only."""
 
     def __init__(self, image_stack: ImageStack, image_viewer: ImageViewer) -> None:
@@ -77,19 +74,3 @@ class EraserTool(DrawTool):
                                                                modifier_or_modifiers='{modifier_or_modifiers}')
         return (f'{control_hint_draw_tool}<br/>{CanvasTool.canvas_control_hints()}'
                 f'<br/>{CanvasTool.get_input_hint(self)}')
-
-    def set_brush_size(self, new_size: int) -> None:
-        """Update the eraser size."""
-        new_size = min(new_size, Cache().get(Cache.ERASER_TOOL_SIZE, RangeKey.MAX))
-        super().set_brush_size(new_size)
-        Cache().set(Cache.ERASER_TOOL_SIZE, max(1, new_size))
-
-    def _stroke_to(self, image_coordinates: QPoint):
-        cache = Cache()
-        opacity = cache.get(Cache.ERASER_TOOL_OPACITY)
-        hardness = cache.get(Cache.ERASER_TOOL_HARDNESS)
-        canvas = self.canvas
-        assert isinstance(canvas, QtPaintCanvas)
-        canvas.opacity = opacity
-        canvas.hardness = hardness
-        super()._stroke_to(image_coordinates)

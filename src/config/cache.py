@@ -103,8 +103,8 @@ class Cache(Config, metaclass=Singleton):
     CUTN: str
     DENOISING_STRENGTH: str
     DOWNSCALE_MODE: str
+    DRAW_TOOL_BRUSH_PATTERN: str
     DRAW_TOOL_BRUSH_SIZE: str
-    DRAW_TOOL_FILL_TYPE: str
     DRAW_TOOL_HARDNESS: str
     DRAW_TOOL_OPACITY: str
     DRAW_TOOL_PRESSURE_HARDNESS: str
@@ -118,6 +118,7 @@ class Cache(Config, metaclass=Singleton):
     ERASER_TOOL_PRESSURE_OPACITY: str
     ERASER_TOOL_PRESSURE_SIZE: str
     ERASER_TOOL_SIZE: str
+    EXPECT_TABLET_INPUT: str
     FILL_THRESHOLD: str
     GENERATION_SIZE: str
     GENERATION_TAB_BAR: str

@@ -2,10 +2,12 @@
 from typing import Optional, List, cast
 
 from PySide6.QtCore import Qt
+from PySide6.QtGui import QColor
 from PySide6.QtWidgets import QWidget, QVBoxLayout, QLabel, QHBoxLayout, QLayout
 
 from src.config.cache import Cache
 from src.config.key_config import KeyConfig
+from src.ui.input_fields.pattern_combo_box import PatternComboBox
 from src.ui.input_fields.slider_spinbox import IntSliderSpinbox, FloatSliderSpinbox
 from src.ui.widget.color_button import ColorButton
 from src.ui.widget.key_hint_label import KeyHintLabel
@@ -21,6 +23,7 @@ class CanvasToolPanel(QWidget):
                  hardness_key: Optional[str] = None,
                  pressure_hardness_key: Optional[str] = None,
                  color_key: Optional[str] = None,
+                 pattern_key: Optional[str] = None,
                  selection_only_label: Optional[str] = None,
                  added_rows: Optional[List[QWidget | QLayout]] = None) -> None:
         super().__init__()
@@ -28,6 +31,14 @@ class CanvasToolPanel(QWidget):
         self._layout.setAlignment(Qt.AlignmentFlag.AlignTop)
         self._pressure_checkboxes = []
         cache = Cache()
+
+        if added_rows is not None:
+            for row in added_rows:
+                if isinstance(row, QWidget):
+                    self._layout.addWidget(row)
+                else:
+                    assert isinstance(row, QLayout)
+                    self._layout.addLayout(row)
 
         if size_key is not None:
             size_label = QLabel(cache.get_label(size_key))
@@ -59,34 +70,36 @@ class CanvasToolPanel(QWidget):
             self._layout.addLayout(hardness_row)
 
         color_row = QHBoxLayout()
-        # color_row.setAlignment(Qt.AlignmentFlag.AlignLeft)
         if color_key is not None:
             color_button = ColorButton(config_key=color_key)
             color_row.addWidget(color_button)
+        if pattern_key is not None:
+            pattern_label = QLabel(cache.get_label(pattern_key))
+            pattern_dropdown = PatternComboBox(pattern_key)
+            color_row.addWidget(pattern_label)
+            color_row.addWidget(pattern_dropdown)
+            if color_key is not None:
+                def _pattern_color_update(color_str: str) -> None:
+                    if QColor.isValidColor(color_str):
+                        color = QColor(color_str)
+                        pattern_dropdown.set_icon_colors(color)
+                cache.connect(self, color_key, _pattern_color_update)
+                pattern_dropdown.set_icon_colors(cache.get_color(color_key, Qt.GlobalColor.black))
+        self._layout.addLayout(color_row)
+
+        checkbox_row = QHBoxLayout()
+        checkbox_row.setAlignment(Qt.AlignmentFlag.AlignLeft)
         selection_only_checkbox = cache.get_control_widget(Cache.PAINT_SELECTION_ONLY)
         if selection_only_label is not None:
             selection_only_checkbox.setText(selection_only_label)
-        color_row.addWidget(selection_only_checkbox)
-        self._layout.addLayout(color_row)
-
-        if added_rows is not None:
-            for row in added_rows:
-                if isinstance(row, QWidget):
-                    self._layout.addWidget(row)
-                else:
-                    assert isinstance(row, QLayout)
-                    self._layout.addLayout(row)
-
+        checkbox_row.addWidget(selection_only_checkbox)
         for pressure_key in [pressure_size_key, pressure_opacity_key, pressure_hardness_key]:
             if pressure_key is not None:
-                self._pressure_checkboxes.append(cache.get_control_widget(pressure_key))
-        if len(self._pressure_checkboxes) > 0:
-            checkbox_row = QHBoxLayout()
-            checkbox_row.setAlignment(Qt.AlignmentFlag.AlignLeft)
-            for checkbox in self._pressure_checkboxes:
+                checkbox = cache.get_control_widget(pressure_key)
+                self._pressure_checkboxes.append(checkbox)
                 checkbox.setVisible(False)
                 checkbox_row.addWidget(checkbox)
-            self._layout.addLayout(checkbox_row)
+        self._layout.addLayout(checkbox_row)
 
     def show_pressure_checkboxes(self) -> None:
         """After receiving a tablet event, call this to reveal the pressure control checkboxes."""

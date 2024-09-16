@@ -1,6 +1,8 @@
 """Control panel for the basic drawing tool."""
+from typing import List, Tuple
 
 from PySide6.QtCore import Signal, Qt
+from PySide6.QtGui import QBrush
 from PySide6.QtWidgets import QApplication, QHBoxLayout
 
 from src.config.cache import Cache
@@ -23,7 +25,6 @@ def _tr(*args):
 
 SELECTION_ONLY_LABEL = _tr('Draw in selection only')
 
-
 class DrawToolPanel(CanvasToolPanel):
     """Control panel for the basic drawing tool."""
 
@@ -35,7 +36,6 @@ class DrawToolPanel(CanvasToolPanel):
         tool_toggle.set_icons(RESOURCES_PEN_PNG, RESOURCES_ERASER_PNG)
         tool_toggle.setValue(TOOL_MODE_DRAW)
         toggle_hint = KeyHintLabel(config_key=KeyConfig.TOOL_ACTION_HOTKEY)
-
         def _try_toggle() -> bool:
             if not tool_toggle.isVisible():
                 return False
@@ -53,6 +53,7 @@ class DrawToolPanel(CanvasToolPanel):
                          hardness_key=Cache.DRAW_TOOL_HARDNESS,
                          pressure_hardness_key=Cache.DRAW_TOOL_PRESSURE_HARDNESS,
                          color_key=Cache.LAST_BRUSH_COLOR,
+                         pattern_key=Cache.DRAW_TOOL_BRUSH_PATTERN,
                          selection_only_label=SELECTION_ONLY_LABEL,
                          added_rows=[toggle_row])
         tool_toggle.valueChanged.connect(self.tool_mode_changed)

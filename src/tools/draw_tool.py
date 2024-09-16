@@ -1,16 +1,15 @@
 """Implements drawing controls using a minimal QPainter-based canvas."""
 from typing import Optional
 
-from PySide6.QtGui import QColor, QIcon, QKeySequence, Qt
+from PySide6.QtGui import QIcon, QKeySequence
 from PySide6.QtWidgets import QWidget, QApplication
 
 from src.config.cache import Cache
-from src.config.config_entry import RangeKey
 from src.config.key_config import KeyConfig
-from src.image.canvas.qt_paint_canvas import QtPaintCanvas
 from src.image.layers.image_stack import ImageStack
 from src.tools.base_tool import BaseTool
 from src.tools.canvas_tool import CanvasTool
+from src.tools.qt_paint_canvas_tool import QtPaintCanvasTool
 from src.ui.image_viewer import ImageViewer
 from src.ui.panel.tool_control_panels.canvas_selection_panel import TOOL_MODE_ERASE
 from src.ui.panel.tool_control_panels.draw_tool_panel import DrawToolPanel
@@ -32,74 +31,17 @@ TOOLTIP_DRAW_TOOL = _tr('Draw into the image')
 CONTROL_HINT_DRAW_TOOL = _tr('{left_mouse_icon}: draw - {right_mouse_icon}: 1px draw')
 
 
-class DrawTool(CanvasTool):
+class DrawTool(QtPaintCanvasTool):
     """Implements brush controls using a minimal QPainter-based brush engine."""
 
-    def __init__(self, image_stack: ImageStack, image_viewer: ImageViewer,
-                 size_key: Optional[str] = None, pressure_size_key: Optional[str] = None,
-                 opacity_key: Optional[str] = None, pressure_opacity_key: Optional[str] = None,
-                 hardness_key: Optional[str] = None, pressure_hardness_key: Optional[str] = None) -> None:
-        super().__init__(image_stack, image_viewer, QtPaintCanvas())
-        self._size_key = Cache.DRAW_TOOL_BRUSH_SIZE if size_key is None else size_key
-        self._pressure_size_key = Cache.DRAW_TOOL_PRESSURE_SIZE if pressure_size_key is None else pressure_size_key
-        self._opacity_key = Cache.DRAW_TOOL_OPACITY if opacity_key is None else opacity_key
-        self._pressure_opacity_key = Cache.DRAW_TOOL_PRESSURE_OPACITY if pressure_opacity_key is None \
-            else pressure_opacity_key
-        self._hardness_key = Cache.DRAW_TOOL_HARDNESS if hardness_key is None \
-            else hardness_key
-        self._pressure_hardness_key = Cache.DRAW_TOOL_PRESSURE_HARDNESS if pressure_hardness_key is None \
-            else pressure_hardness_key
-        self._last_click = None
+    def __init__(self, image_stack: ImageStack, image_viewer: ImageViewer) -> None:
+        super().__init__(image_stack, image_viewer, size_key=Cache.DRAW_TOOL_BRUSH_SIZE,
+                         pressure_size_key=Cache.DRAW_TOOL_PRESSURE_SIZE, opacity_key=Cache.DRAW_TOOL_OPACITY,
+                         pressure_opacity_key=Cache.DRAW_TOOL_PRESSURE_OPACITY,
+                         hardness_key=Cache.DRAW_TOOL_HARDNESS, pressure_hardness_key=Cache.DRAW_TOOL_PRESSURE_HARDNESS,
+                         color_key=Cache.LAST_BRUSH_COLOR, pattern_key=Cache.DRAW_TOOL_BRUSH_PATTERN)
         self._control_panel: Optional[DrawToolPanel] = None
-        self._active = False
-        self._drawing = False
-        self._cached_size = None
         self._icon = QIcon(ICON_DRAW_TOOL)
-
-        # Load color and size from cache
-        cache = Cache()
-        self.brush_size = cache.get(self._size_key)
-        self.brush_color = cache.get_color(Cache.LAST_BRUSH_COLOR, Qt.GlobalColor.black)
-
-        canvas = self.canvas
-        assert isinstance(canvas, QtPaintCanvas)
-        canvas.brush_size = cache.get(self._size_key)
-        canvas.opacity = cache.get(self._opacity_key)
-        canvas.hardness = cache.get(self._hardness_key)
-        canvas.pressure_size = cache.get(self._pressure_size_key)
-        canvas.pressure_opacity = cache.get(self._pressure_opacity_key)
-        canvas.pressure_hardness = cache.get(self._pressure_hardness_key)
-
-        def _update_size(size: int) -> None:
-            canvas.brush_size = size
-            self.update_brush_cursor()
-        cache.connect(self, self._size_key, _update_size)
-
-        def _update_pressure_size(pressure: bool) -> None:
-            canvas.pressure_size = pressure
-        cache.connect(self, self._pressure_size_key, _update_pressure_size)
-
-        def _update_opacity(opacity: float) -> None:
-            canvas.opacity = opacity
-        cache.connect(self, self._opacity_key, _update_opacity)
-
-        def _update_pressure_opacity(pressure: bool) -> None:
-            canvas.pressure_opacity = pressure
-        cache.connect(self, self._pressure_opacity_key, _update_pressure_opacity)
-
-        def _update_hardness(hardness: float) -> None:
-            canvas.hardness = hardness
-        cache.connect(self, self._hardness_key, _update_hardness)
-
-        def _update_pressure_hardness(pressure: bool) -> None:
-            canvas.pressure_hardness = pressure
-        cache.connect(self, self._pressure_hardness_key, _update_pressure_hardness)
-
-        def _update_brush_color(color_str: str) -> None:
-            color = QColor(color_str)
-            self.brush_color = color
-        cache.connect(self, Cache.LAST_BRUSH_COLOR, _update_brush_color)
-        self.update_brush_cursor()
 
     def get_hotkey(self) -> QKeySequence:
         """Returns the hotkey(s) that should activate this tool."""
@@ -137,9 +79,3 @@ class DrawTool(CanvasTool):
                 self.canvas.eraser = tool_mode == TOOL_MODE_ERASE
             self._control_panel.tool_mode_changed.connect(_set_eraser)
         return self._control_panel
-
-    def set_brush_size(self, new_size: int) -> None:
-        """Update the brush size."""
-        new_size = min(new_size, Cache().get(Cache.DRAW_TOOL_BRUSH_SIZE, RangeKey.MAX))
-        super().set_brush_size(new_size)
-        Cache().set(Cache.DRAW_TOOL_BRUSH_SIZE, max(1, new_size))

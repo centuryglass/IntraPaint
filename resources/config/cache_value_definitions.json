@@ -278,10 +278,10 @@
         "default": false,
         "saved": true
     },
-    "draw_tool_fill_type": {
-        "label": "Fill type:",
+    "draw_tool_brush_pattern": {
+        "label": "Draw tool brush pattern:",
         "category": "Cache",
-        "description": "Draw tool brush pattern",
+        "description": "Draw tool Qt brush style to apply",
         "type": "string",
         "default": "",
         "saved": true
@@ -670,7 +670,7 @@
     },
     "upscale_mode": {
         "label": "Upscale mode:",
-        "category": "GLID-3-XL",
+        "category": "Cache",
         "description": "Upscaling mode used when the inpainting resolution doesn't match the image generation area size.",
         "type": "string",
         "default": "Lanczos",
@@ -679,11 +679,19 @@
     },
     "downscale_mode": {
         "label": "Downscale mode:",
-        "category": "GLID-3-XL",
+        "category": "Cache",
         "description": "Downscaling mode used when the inpainting resolution doesn't match the image generation area size.",
         "type": "string",
         "default": "Lanczos",
         "options": [],
+        "saved": true
+    },
+    "expect_tablet_input": {
+        "label": "Expect tablet input",
+        "category": "Cache",
+        "description": "Whether input controls relevant to drawing tablets should be shown immediately, or only after tablet input arrives.",
+        "type": "bool",
+        "default": false,
         "saved": true
     }
 }

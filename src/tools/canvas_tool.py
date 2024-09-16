@@ -357,6 +357,10 @@ class CanvasTool(BaseTool):
     def tablet_event(self, event: Optional[QTabletEvent], image_coordinates: QPoint) -> bool:
         """Cache tablet data when received."""
         assert event is not None
+        control_panel = self.get_control_panel()
+        if isinstance(control_panel, CanvasToolPanel):
+            control_panel.show_pressure_checkboxes()
+            Cache().set(Cache.EXPECT_TABLET_INPUT, True)
         if event.pointerType() is not None:
             self._tablet_input = event.pointerType()
         if event.pressure() > 0.00001:

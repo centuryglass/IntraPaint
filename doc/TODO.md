@@ -2,14 +2,16 @@
 
 
 ## Misc. bugs, minor features, and testing:
-- Create example images for README, finish missing sections and improve writing
-- changing gen. area size still doesn't always sync fully - width changes but not height
 - Fix issues with multiple DraggableDividers in a layout
 - Automatic file extension suggestions are not helpful (.blp?)
 - Possible offset issues: polygon selection tool isn't filling appropriate areas after transform+layer size changes
+- Hide Gen. Area tool when active generator is None.
+- Add tool keys to raise/lower opacity, hardness
+- Fill tool should support patterns
+- Free selection tool: Escape should clear input, left-clicking first point should close.
 
 ## Documentation + Release
-- Rewrite README.md for stable-diffusion info
+- Create example images for README, finish missing sections and improve writing
 - Create tutorials for common workflows
     * Editing with the sketch layer
     * Filling in details with controlNet + tile
@@ -79,27 +81,41 @@
 - Make sure clear/rotate button is in all panel layouts
 
 ### Draw tool
-- Add brush fill patterns
+- Add custom brush fill patterns
   
+### Smudge tool
+- Find some way to mitigate delays when smudging linearly over long distances
+
 ### Brush tool
 - Pick a few solid defaults for the favorites panel
 
-### Brush tool variants:
-- Implement using MyPaint canvas with a fixed brush: Erase tool, Smudge tool, Blur tool
-- Identify which MPBrush parameters are most significant for each of these, provide access through the control panel
+### Blur tool
+Implement using filter instead of libmypaint
 
 ### Shape tool
 - Circle, polygons with n sides
 - stroke+fill controls
 - Probably best to just render directly for now, but maybe use with SVGLayer + graphics items in the future
 
+### Stamp tool
+- Clone stamp brush, using the same color sampling approach as smudge tool, complete with usual modifiers
+- Right-click/ctrl-click to set sample point, visible as graphics item
+- Left click to draw, sample point moves with brush strokes
+- Sample point content as cursor?
+
 ## Possible lurking bugs
 Things I never fixed but can no longer reproduce, or that come from external issues:
 - Nested layer selection state shown in the layer panel isn't updating properly (recursive active layer update logic in LayerPanel looks fine)
-- Txt2Img + ControlNet doesn't seem to work with the image as source. Looks like a webui error, `'StableDiffusionProcessingTxt2Img' object has no attribute 'resize_mode'`, shows up in logs. After trying other settings I can no longer reproduce this, but I don't think it's fixed.
-`
+- Txt2Img + ControlNet doesn't seem to work with the image as source. Looks like a webui error, `'StableDiffusionProcessingTxt2Img' object has no attribute 'resize_mode'`, shows up in logs. After trying other settings I can no longer reproduce this, but I don't think it's fixed (input size needs to be a multiple of 32?).
+- changing gen. area size still doesn't always sync fully - width changes but not height. Possibly fixed, keep an eye out for it.
 
 # Low priority
+
+# Gradient support
+- Select between gradient types, define gradient transition points
+- Option to save gradients
+- Support in draw, fill, shape, text tools
+
 
 ## sketch canvas/libmypaint
 - Cleanup and release libmypaint-qt package

@@ -10,6 +10,7 @@ from src.image.canvas.smudge_canvas import SmudgeCanvas
 from src.image.layers.image_stack import ImageStack
 from src.tools.canvas_tool import CanvasTool
 from src.ui.image_viewer import ImageViewer
+from src.ui.panel.tool_control_panels.canvas_tool_panel import CanvasToolPanel
 from src.ui.panel.tool_control_panels.smudge_tool_panel import SmudgeToolPanel
 from src.util.optional_import import optional_import
 from src.util.shared_constants import PROJECT_DIR
@@ -73,6 +74,11 @@ class SmudgeTool(CanvasTool):  # type: ignore
             canvas.pressure_hardness = use_pressure
         cache.connect(self, Cache.SMUDGE_TOOL_PRESSURE_HARDNESS, _pressure_hardness_update)
         canvas.pressure_hardness = cache.get(Cache.SMUDGE_TOOL_PRESSURE_HARDNESS)
+
+        if cache.get(Cache.EXPECT_TABLET_INPUT):
+            control_panel = self.get_control_panel()
+            assert isinstance(control_panel, CanvasToolPanel)
+            control_panel.show_pressure_checkboxes(True)
 
     # noinspection PyMethodMayBeStatic
     def get_hotkey(self) -> QKeySequence:
