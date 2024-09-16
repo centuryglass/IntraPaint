@@ -102,6 +102,10 @@ class SizeField(QWidget):
         base_hint.setWidth(base_hint.width() // 2)
         return base_hint
 
+    def minimumSizeHint(self):
+        """Reduce the expected width."""
+        return self.sizeHint()
+
     def set_labels_visible(self, should_show: bool) -> None:
         """Show or hide width/height labels."""
         self._width_label.setVisible(should_show)

@@ -320,6 +320,10 @@ class _ToolButton(QWidget):
             return QSize(max(int(size * 1.5), size + hint_size.width() + 2), size)
         return QSize(int(size * 1.5), size)
 
+    def minimumSizeHint(self) -> QSize:
+        """Returns ideal size as TOOL_ICON_SIZExTOOL_ICON_SIZE."""
+        return self.sizeHint()
+
     def resizeEvent(self, unused_event: Optional[QResizeEvent]):
         """Recalculate and cache icon bounds on size change."""
         self._icon_bounds = get_scaled_placement(self.size(), QSize(10, 10), 8)

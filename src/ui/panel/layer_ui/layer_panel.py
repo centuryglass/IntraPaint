@@ -240,6 +240,10 @@ class LayerPanel(QWidget):
         width = max(bar_size.width(), width)
         return QSize(width, height)
 
+    def minimumSizeHint(self) -> QSize:
+        """At minimum, always show one layer."""
+        return self.sizeHint()
+
     def _update_order_slot(self) -> None:
         self._parent_group_item.reorder_child_layers()
 

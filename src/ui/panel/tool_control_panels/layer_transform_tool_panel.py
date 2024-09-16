@@ -490,6 +490,10 @@ class _TransformPreview(QWidget):
         """Preview size is capped at 200x200."""
         return QSize(200, 200)
 
+    def minimumSizeHint(self) -> QSize:
+        """Preview size is capped at 200x200."""
+        return self.sizeHint()
+
     def set_image_size(self, new_size: QSize) -> None:
         """Update the previewed size of the edited image."""
         self._image_size = new_size

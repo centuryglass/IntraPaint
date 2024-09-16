@@ -2,7 +2,6 @@
 
 
 ## Misc. bugs, minor features, and testing:
-- Fix issues with multiple DraggableDividers in a layout
 - Automatic file extension suggestions are not helpful (.blp?)
 - Possible offset issues: polygon selection tool isn't filling appropriate areas after transform+layer size changes
 - Hide Gen. Area tool when active generator is None.

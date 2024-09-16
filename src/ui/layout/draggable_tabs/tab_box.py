@@ -33,6 +33,7 @@ class TabBox(BorderedWidget):
         self._tab_bar.active_tab_content_replaced.connect(self._update_tab_slot)
         self._tab_bar.tab_added.connect(self.tab_added)
         self._tab_bar.tab_removed.connect(self.tab_removed)
+        self._tab_bar.toggled.connect(self.box_toggled)
         self._tab_bar.max_size_changed.connect(self._update_max_size)
         self._layout.setSpacing(0)
         self._layout.setContentsMargins(0, 0, 0, 0)
@@ -110,6 +111,10 @@ class TabBox(BorderedWidget):
         """Calculate size based on whether content is expanded."""
         return super().sizeHint() if self.is_open else self._tab_bar.sizeHint()
 
+    def minimumSizeHint(self) -> QSize:
+        """Calculate size based on whether content is expanded."""
+        return super().minimumSizeHint() if self.is_open else self._tab_bar.minimumSizeHint()
+
     def _tab_clicked_slot(self, tab: QWidget) -> None:
         assert tab is None or isinstance(tab, Tab)
         self.set_active_tab(tab)
@@ -158,13 +163,3 @@ class TabBox(BorderedWidget):
             tab_widget.show()
         self._layout.setStretch(content_index, 1 if is_open else 0)
         self._update_max_size()
-
-
-def hide_widget_when_tab_box_closed_or_empty(tab_box: TabBox, widget: QWidget) -> None:
-    """Shows/hides a widget based on whether the box is open and tabs are present."""
-    def _update_widget(_=None, b=tab_box, w=widget) -> None:
-        w.setVisible(b.count > 0 and b.is_open)
-    tab_box.box_toggled.connect(_update_widget)
-    tab_box.tab_added.connect(_update_widget)
-    tab_box.tab_removed.connect(_update_widget)
-    _update_widget()

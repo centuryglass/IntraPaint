@@ -24,7 +24,7 @@ from src.image.layers.image_stack import ImageStack
 from src.ui.generated_image_selector import GeneratedImageSelector
 from src.ui.layout.draggable_divider import DraggableDivider
 from src.ui.layout.draggable_tabs.tab import Tab
-from src.ui.layout.draggable_tabs.tab_box import TabBox, hide_widget_when_tab_box_closed_or_empty
+from src.ui.layout.draggable_tabs.tab_box import TabBox
 from src.ui.panel.image_panel import ImagePanel
 from src.ui.panel.layer_ui.layer_panel import LayerPanel
 from src.ui.panel.tool_panel import ToolPanel
@@ -208,10 +208,26 @@ class MainWindow(QMainWindow):
         self._bottom_tab_box = TabBox(Qt.Orientation.Horizontal, False)
         self._layout.addWidget(self._bottom_tab_box, stretch=TAB_BOX_STRETCH)
 
-        for tab_box, divider in ((self._top_tab_box, self._top_divider),
-                                 (self._lower_tab_box, self._lower_divider),
-                                 (self._bottom_tab_box, self._bottom_divider)):
-            hide_widget_when_tab_box_closed_or_empty(tab_box, divider)
+        def _show_or_hide_top_divider(_=None) -> None:
+            self._top_divider.setVisible(self._top_tab_box.count > 0 and self._top_tab_box.is_open)
+        for signal in (self._top_tab_box.box_toggled, self._top_tab_box.tab_added,
+                       self._top_tab_box.tab_removed):
+            signal.connect(_show_or_hide_top_divider)
+        _show_or_hide_top_divider()
+
+        def _show_or_hide_lower_divider(_=None) -> None:
+            self._lower_divider.setVisible(self._lower_tab_box.count > 0 and self._lower_tab_box.is_open)
+        for signal in (self._lower_tab_box.box_toggled, self._lower_tab_box.tab_added,
+                       self._lower_tab_box.tab_removed):
+            signal.connect(_show_or_hide_lower_divider)
+        _show_or_hide_lower_divider()
+
+        def _show_or_hide_bottom_divider(_=None) -> None:
+            self._bottom_divider.setVisible(self._bottom_tab_box.count > 0 and self._bottom_tab_box.is_open)
+        for signal in (self._bottom_tab_box.box_toggled, self._bottom_tab_box.tab_added,
+                       self._bottom_tab_box.tab_removed):
+            signal.connect(_show_or_hide_bottom_divider)
+        _show_or_hide_bottom_divider()
 
         # Optional extra windows:
         self._layer_panel: Optional[LayerPanel] = None

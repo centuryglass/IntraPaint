@@ -282,11 +282,13 @@ class _IconButton(QWidget):
         """Recalculates icon bounds when the widget size changes."""
         size = self.sizeHint()
         self._image_rect = get_scaled_placement(self.size(), size)
-        # self.setMinimumSize(size)
-        # self.setMaximumSize(size)
 
     def sizeHint(self):
-        """Define suggested button size based on window size."""
+        """Define suggested button size based on pixmap size."""
+        return self._get_pixmap().size()
+
+    def minimumSizeHint(self):
+        """Define suggested button size based on pixmap size."""
         return self._get_pixmap().size()
 
     def paintEvent(self, unused_event: Optional[QPaintEvent]) -> None:

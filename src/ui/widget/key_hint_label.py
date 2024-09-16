@@ -55,6 +55,7 @@ class KeyHintLabel(QLabel):
         painter.setPen(self.palette().color(self.foregroundRole()))
         path = QPainterPath()
         path.addRoundedRect(text_bounds.adjusted(0, 0, -1, -1), 3, 3)
+        painter.fillPath(path, self.palette().color(self.backgroundRole()))
         painter.drawPath(path)
         painter.end()
         super().paintEvent(event)

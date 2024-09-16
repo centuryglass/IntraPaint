@@ -10,7 +10,7 @@ from src.config.application_config import AppConfig
 from src.image.layers.image_stack import ImageStack
 from src.ui.image_viewer import ImageViewer
 from src.ui.layout.draggable_divider import DraggableDivider
-from src.ui.layout.draggable_tabs.tab_box import TabBox, hide_widget_when_tab_box_closed_or_empty
+from src.ui.layout.draggable_tabs.tab_box import TabBox
 
 # The `QCoreApplication.translate` context for strings in this file
 TR_ID = 'ui.panel.image_panel'
@@ -57,8 +57,20 @@ class ImagePanel(QWidget):
             self._right_tab_box: Optional[TabBox] = TabBox(Qt.Orientation.Vertical, False)
             self._outer_layout.addWidget(self._right_tab_box, stretch=TAB_BOX_STRETCH)
 
-            hide_widget_when_tab_box_closed_or_empty(self._left_tab_box, self._left_divider)
-            hide_widget_when_tab_box_closed_or_empty(self._right_tab_box, self._right_divider)
+            def _show_or_hide_left_divider(_=None) -> None:
+                self._left_divider.setVisible(self._left_tab_box.count > 0 and self._left_tab_box.is_open)
+            for signal in (self._left_tab_box.box_toggled, self._left_tab_box.tab_added,
+                           self._left_tab_box.tab_removed):
+                signal.connect(_show_or_hide_left_divider)
+            _show_or_hide_left_divider()
+
+            def _show_or_hide_right_divider(_=None) -> None:
+                self._right_divider.setVisible(self._right_tab_box.count > 0 and self._right_tab_box.is_open)
+            for signal in (self._right_tab_box.box_toggled, self._right_tab_box.tab_added,
+                           self._right_tab_box.tab_removed):
+                signal.connect(_show_or_hide_right_divider)
+            _show_or_hide_right_divider()
+
         else:
             self._layout = QVBoxLayout(self)
             self._left_tab_box = None
