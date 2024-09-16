@@ -540,8 +540,10 @@ class AppController(MenuBuilder):
         config = AppConfig()
         try:
             if not isinstance(file_path, str):
+                self._window.setUpdatesEnabled(False)
                 selected_path = open_image_file(self._window, mode='save',
                                                 selected_file=cache.get(Cache.LAST_FILE_PATH))
+                self._window.setUpdatesEnabled(True)
                 if not isinstance(selected_path, str):
                     return
                 file_path = selected_path
@@ -674,7 +676,9 @@ class AppController(MenuBuilder):
         """Open a loading dialog, then load the selected image for editing."""
         cache = Cache()
         if file_path is None:
+            self._window.setUpdatesEnabled(False)
             selected_path = open_image_file(self._window)
+            self._window.setUpdatesEnabled(True)
             if not isinstance(selected_path, (str, list)):
                 return
             file_path = selected_path

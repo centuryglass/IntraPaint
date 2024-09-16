@@ -354,7 +354,9 @@ class GeneratedImageSelector(QWidget):
 
         def _save_to_file() -> None:
             image = self._options[idx].full_image
+            self.setUpdatesEnabled(False)
             save_path = open_image_file(self, SAVE_IMAGE_MODE)
+            self.setUpdatesEnabled(True)
             if save_path is not None:
                 save_image(image, save_path)
                 self._toast_message = ToastMessageItem(TOAST_MESSAGE_SAVED.format(image_path=save_path), self._view)
