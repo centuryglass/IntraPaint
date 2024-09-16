@@ -128,7 +128,7 @@ class QtPaintCanvas(LayerCanvas):
         painter.setOpacity(opacity)
         pen = QPen(color, size, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap, Qt.PenJoinStyle.RoundJoin)
         painter.setPen(pen)
-        if hardness < 1.0:
+        if hardness < 1.0 and round(size * hardness) < size:
             min_size = size * hardness
             size_range = round(size - min_size)
             painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_Source)
