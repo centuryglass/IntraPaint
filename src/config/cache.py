@@ -89,7 +89,6 @@ class Cache(Config, metaclass=Singleton):
 
     BATCH_COUNT: str
     BATCH_SIZE: str
-    BLUR_TOOL_BRUSH_SIZE: str
     CONTROLNET_ARGS_0: str
     CONTROLNET_ARGS_1: str
     CONTROLNET_ARGS_2: str
@@ -120,6 +119,14 @@ class Cache(Config, metaclass=Singleton):
     ERASER_TOOL_SIZE: str
     EXPECT_TABLET_INPUT: str
     FILL_THRESHOLD: str
+    FILTER_TOOL_BRUSH_SIZE: str
+    FILTER_TOOL_CACHED_PARAMETERS: str
+    FILTER_TOOL_HARDNESS: str
+    FILTER_TOOL_OPACITY: str
+    FILTER_TOOL_PRESSURE_HARDNESS: str
+    FILTER_TOOL_PRESSURE_OPACITY: str
+    FILTER_TOOL_PRESSURE_SIZE: str
+    FILTER_TOOL_SELECTED_FILTER: str
     GENERATION_SIZE: str
     GENERATION_TAB_BAR: str
     GUIDANCE_SCALE: str

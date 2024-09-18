@@ -1,11 +1,25 @@
 """A horizontal slider and spinbox that both control the same value."""
-from typing import Optional
+from typing import Optional, List
 
 from PySide6.QtCore import Signal, Qt
 from PySide6.QtWidgets import QWidget, QHBoxLayout, QLabel, QSlider, QDoubleSpinBox, QSpinBox
 
+from src.util.visual.geometry_utils import synchronize_row_widths
+
 
 class _SliderSpinbox(QWidget):
+
+    @staticmethod
+    def align_slider_spinboxes(boxes: 'List[_SliderSpinbox]',
+                               extra_rows: Optional[List[Optional[QWidget]]] = None) -> None:
+        """Adjust inner component layouts so that all parts of a column of slider spinboxes are sized equally"""
+        if len(boxes) < 2:
+            return
+        rows = [] if extra_rows is None else extra_rows
+        for box in boxes:
+            row = [box.label, box.slider, box.spinbox]
+            rows.append(row)
+        synchronize_row_widths(rows)
 
     def __init__(self, initial_value: float | int, parent: Optional[QWidget] = None, label: Optional[str] = None):
         super().__init__(parent)
@@ -35,7 +49,16 @@ class _SliderSpinbox(QWidget):
 
     def _update_slider_ticks(self) -> None:
         full_range = self._slider.maximum() - self._slider.minimum()
-        tick_interval = 1 if (full_range < 20) else (5 if full_range < 50 else 10)
+        if full_range < 20:
+            tick_interval = 1
+        elif full_range < 50:
+            tick_interval = 5
+        elif full_range < 100:
+            tick_interval = 10
+        elif full_range < 500:
+            tick_interval = 50
+        else:
+            tick_interval = 100
         if isinstance(self._spinbox, QDoubleSpinBox):
             tick_interval *= 100
         self._slider.setTickInterval(tick_interval)
@@ -119,6 +142,22 @@ class _SliderSpinbox(QWidget):
     def send_change_signal(self) -> None:
         """Send the type-specific value change signal."""
         raise NotImplementedError('Implement to send a float or int value change.')
+
+    @property
+    def label(self) -> QLabel:
+        """Access the internal label"""
+        return self._label
+
+    @property
+    def slider(self) -> QSlider:
+        """Access the internal slider"""
+        return self._slider
+
+    @property
+    def spinbox(self) -> QSpinBox | QDoubleSpinBox:
+        """Access the internal spinbox"""
+        return self._spinbox
+
 
 
 class IntSliderSpinbox(_SliderSpinbox):

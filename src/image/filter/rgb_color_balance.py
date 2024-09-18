@@ -7,6 +7,7 @@ from PySide6.QtGui import QImage
 
 from src.config.key_config import KeyConfig
 from src.image.filter.filter import ImageFilter
+from src.util.shared_constants import PROJECT_DIR
 from src.util.visual.image_utils import image_data_as_numpy_8bit
 from src.util.parameter import Parameter, TYPE_FLOAT
 
@@ -27,12 +28,13 @@ GREEN_LABEL = _tr('Green')
 BLUE_LABEL = _tr('Blue')
 ALPHA_LABEL = _tr('Alpha')
 MAX_VALUE = 8.0
+RGBA_ICON_PATH = f'{PROJECT_DIR}/resources/icons/filter/rgba_icon.svg'
 
 
 class RGBColorBalanceFilter(ImageFilter):
     """Filter used to adjust  RGB color levels."""
 
-    def get_modal_title(self) -> str:
+    def get_name(self) -> str:
         """Return the modal's title string."""
         return COLOR_BALANCE_TITLE
 

@@ -7,6 +7,7 @@ from PySide6.QtWidgets import QSizePolicy, QGridLayout, QLabel, QPushButton, \
 
 from src.config.cache import Cache
 from src.ui.input_fields.size_field import SizeField
+from src.ui.input_fields.slider_spinbox import IntSliderSpinbox
 from src.ui.layout.divider import Divider
 from src.ui.panel.generators.generator_panel import GeneratorPanel
 from src.util.application_state import APP_STATE_EDITING, AppStateTracker
@@ -66,6 +67,8 @@ class SDWebUIPanel(GeneratorPanel):
         self._guidance_scale_label, self._guidance_scale_slider = _get_control_with_label(Cache.GUIDANCE_SCALE)
         self._denoising_strength_label, self._denoising_strength_slider = _get_control_with_label(
             Cache.DENOISING_STRENGTH)
+        IntSliderSpinbox.align_slider_spinboxes([self._step_count_slider, self._guidance_scale_slider,
+                                                 self._denoising_strength_slider])
         self._edit_mode_label, self._edit_mode_combobox = _get_control_with_label(Cache.EDIT_MODE)
         self._sampler_label, self._sampler_combobox = _get_control_with_label(Cache.SAMPLING_METHOD)
         self._full_res_label, self._full_res_checkbox = _get_control_with_label(Cache.INPAINT_FULL_RES)

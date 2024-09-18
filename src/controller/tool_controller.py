@@ -16,6 +16,7 @@ from src.tools.draw_tool import DrawTool
 from src.tools.eraser_tool import EraserTool
 from src.tools.eyedropper_tool import EyedropperTool
 from src.tools.fill_tool import FillTool
+from src.tools.filter_tool import FilterTool
 from src.tools.free_selection_tool import FreeSelectionTool
 from src.tools.layer_transform_tool import LayerTransformTool
 from src.tools.selection_fill_tool import SelectionFillTool
@@ -28,7 +29,6 @@ from src.ui.modal.modal_utils import show_warning_dialog
 from src.util.optional_import import optional_import
 
 BrushTool = optional_import('src.tools.brush_tool', attr_name='BrushTool')
-BlurTool = optional_import('src.tools.blur_tool', attr_name='BlurTool')
 
 logger = logging.getLogger(__name__)
 
@@ -84,8 +84,7 @@ class ToolController(QObject):
         self.add_tool(EraserTool(image_stack, image_viewer))
         fill_tool = FillTool(image_stack)
         self.add_tool(fill_tool)
-        if BlurTool is not None:
-            self.add_tool(BlurTool(image_stack, image_viewer))
+        self.add_tool(FilterTool(image_stack, image_viewer))
         self.add_tool(SmudgeTool(image_stack, image_viewer))
         eyedropper_tool = EyedropperTool(image_stack)
         self.add_tool(eyedropper_tool)

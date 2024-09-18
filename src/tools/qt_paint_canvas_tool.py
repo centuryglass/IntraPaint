@@ -26,8 +26,12 @@ class QtPaintCanvasTool(CanvasTool):
                  size_key: Optional[str] = None, pressure_size_key: Optional[str] = None,
                  opacity_key: Optional[str] = None, pressure_opacity_key: Optional[str] = None,
                  hardness_key: Optional[str] = None, pressure_hardness_key: Optional[str] = None,
-                 color_key: Optional[str] = None, pattern_key: Optional[str] = None) -> None:
-        canvas = QtPaintCanvas()
+                 color_key: Optional[str] = None, pattern_key: Optional[str] = None,
+                 canvas: Optional[QtPaintCanvas] = None) -> None:
+        if canvas is None:
+            canvas = QtPaintCanvas()
+        else:
+            assert isinstance(canvas, QtPaintCanvas)
         super().__init__(image_stack, image_viewer, canvas)
         self._last_click = None
         self._control_panel: Optional[DrawToolPanel] = None
@@ -138,8 +142,8 @@ class QtPaintCanvasTool(CanvasTool):
 
         if cache.get(Cache.EXPECT_TABLET_INPUT):
             control_panel = self.get_control_panel()
-            assert isinstance(control_panel, CanvasToolPanel)
-            control_panel.show_pressure_checkboxes()
+            if isinstance(control_panel, CanvasToolPanel):
+                control_panel.show_pressure_checkboxes()
 
     @property
     def opacity(self) -> float:

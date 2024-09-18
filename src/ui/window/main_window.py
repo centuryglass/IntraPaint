@@ -295,13 +295,7 @@ class MainWindow(QMainWindow):
     def add_tab(self, tab: Tab, tab_box_id: Optional[TabBoxID] = None) -> None:
         """Adds a new tab to one of the window's tab boxes."""
         if tab_box_id is None:
-            if isinstance(tab.content_widget, ToolPanel):
-                try:
-                    tab_box_id = TabBoxID(Cache().get(Cache.TOOL_TAB_BAR))
-                except ValueError:
-                    tab_box_id = TabBoxID.LOWER_TAB_BOX_ID if self.height() > AUTO_TAB_MOVE_THRESHOLD \
-                        else TabBoxID.RIGHT_TAB_BOX_ID
-            elif self.height() > USE_LOWER_CONTROL_TAB_THRESHOLD:
+            if self.height() > USE_LOWER_CONTROL_TAB_THRESHOLD:
                 tab_box_id = TabBoxID.BOTTOM_TAB_BOX_ID
             elif self.height() > AUTO_TAB_MOVE_THRESHOLD:
                 tab_box_id = TabBoxID.LOWER_TAB_BOX_ID

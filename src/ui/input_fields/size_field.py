@@ -43,10 +43,12 @@ class SizeField(QWidget):
             self._width_slider = None
             self._height_slider = None
         self._width_box = QSpinBox(self)
+        self._width_label.setBuddy(self._width_box)
         self._width_box.setValue(0)
         self._width_box.valueChanged.connect(self._width_changed_slot)
         self._height_label = QLabel(HEIGHT_LABEL)
         self._height_box = QSpinBox(self)
+        self._height_label.setBuddy(self._height_box)
         self._height_box.setValue(0)
         self._height_box.valueChanged.connect(self._height_changed_slot)
         self._width = 0

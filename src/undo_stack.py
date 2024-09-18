@@ -65,11 +65,17 @@ class UndoStack(metaclass=Singleton):
         self._access_lock = Lock()
         self._open_group: Optional[_UndoGroup] = None
         self._in_progress_change = 'none'
+        self._undo_in_progress = False
 
         class _SignalManager(QObject):
             undo_count_changed = Signal(int)
             redo_count_changed = Signal(int)
         self._signal_manager = _SignalManager()
+
+    @property
+    def undo_in_progress(self) -> bool:
+        """Returns whether an undo action is currently in progress."""
+        return self._undo_in_progress
 
     @property
     def undo_count_changed(self) -> Signal:
@@ -182,6 +188,7 @@ class UndoStack(metaclass=Singleton):
     def undo(self) -> None:
         """Reverses the most recent action taken."""
         with self._access_lock:
+            self._undo_in_progress = True
             if len(self._undo_stack) == 0:
                 return
             last_action_object = self._undo_stack.pop()
@@ -190,6 +197,7 @@ class UndoStack(metaclass=Singleton):
             last_action_object.undo()
             self.undo_count_changed.emit(len(self._undo_stack))
             self._add_to_stack(last_action_object, self._redo_stack)
+            self._undo_in_progress = False
 
     def redo(self) -> None:
         """Re-applies the last undone action as long as no new actions were registered after the last undo."""

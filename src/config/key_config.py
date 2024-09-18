@@ -175,6 +175,9 @@ class KeyConfig(Config, metaclass=Singleton):
                     errors.append(KEY_CONFLICT_ERROR.format(key_str=key_str, key_names=key_names))
         if len(errors) > 0 and QApplication.instance() is not None:
             # Error messages can be fairly long, apply HTML to make them a bit more readable.
+            # AppConfig explicit initialization is required if running the dynamic import script, otherwise
+            # WARN_ON_KEY_ERROR won't be present and any key errors will cause an unexplained failure.
+            AppConfig()
             lines = ['<li>' + err + '</li>\n' for err in errors]
             error_message = '<b>' + KEY_CONFIG_ERROR_MESSAGE + '</b><br><ul>' + ''.join(lines) + '</ul>'
             show_warning_dialog(None, KEY_CONFIG_ERROR_TITLE, error_message, AppConfig.WARN_ON_KEY_ERROR)
@@ -183,7 +186,6 @@ class KeyConfig(Config, metaclass=Singleton):
     # Generate with `python /home/anthony/Workspace/ML/IntraPaint/scripts/dynamic_import_typing.py src/config/key_config.py`
 
     BLUR_SHORTCUT: str
-    BLUR_TOOL_KEY: str
     BRIGHTNESS_CONTRAST_SHORTCUT: str
     BRUSH_HARDNESS_DECREASE: str
     BRUSH_HARDNESS_INCREASE: str
@@ -204,6 +206,7 @@ class KeyConfig(Config, metaclass=Singleton):
     EYEDROPPER_OVERRIDE_MODIFIER: str
     EYEDROPPER_TOOL_KEY: str
     FILL_TOOL_KEY: str
+    FILTER_TOOL_KEY: str
     FIXED_ANGLE_MODIFIER: str
     FIXED_ASPECT_MODIFIER: str
     FLATTEN_LAYER_SHORTCUT: str

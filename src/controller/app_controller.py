@@ -286,13 +286,16 @@ class AppController(MenuBuilder):
 
         # Set up menus:
         self.build_menus()
-        # Since image filter menus follow a very simple pattern, add them here instead of using @menu_action:
+        # Since image filter menus follow a very simple pattern, add them here instead of using @menu_action.
+        # At the same time, make sure the filter tool's list of available options contains all filters.
+        filter_class_names = []
         for filter_class in (RGBColorBalanceFilter,
                              BrightnessContrastFilter,
                              BlurFilter,
                              SharpenFilter,
                              PosterizeFilter):
             image_filter = filter_class(self._image_stack)
+            filter_class_names.append(image_filter.get_name())
 
             def _open_filter_modal(filter_instance=image_filter) -> None:
                 modal = filter_instance.get_filter_modal()
@@ -305,6 +308,7 @@ class AppController(MenuBuilder):
                                           config_key)
             assert action is not None
             AppStateTracker.set_enabled_states(action, [APP_STATE_EDITING])
+        cache.update_options(Cache.FILTER_TOOL_SELECTED_FILTER, filter_class_names)
 
         self._last_active = self._image_stack.active_layer
         self._lock_connection = self._last_active.lock_changed.connect(
@@ -366,7 +370,9 @@ class AppController(MenuBuilder):
         self._tool_panel_navigation_panel = ImageWindow(self._image_stack, self._image_viewer,
                                                         include_zoom_controls=False, use_keybindings=False)
         self._tool_panel.add_utility_widget_tab(LayerPanel(self._image_stack), TOOL_PANEL_LAYER_TAB)
-        self._tool_panel.add_utility_widget_tab(ColorControlPanel(disable_extended_layouts=True), TOOL_PANEL_COLOR_TAB)
+        self._tool_panel_color_picker = ColorControlPanel(disable_extended_layouts=True)
+        self._tool_panel_color_picker.set_four_tab_mode()
+        self._tool_panel.add_utility_widget_tab(self._tool_panel_color_picker, TOOL_PANEL_COLOR_TAB)
         self._tool_panel.add_utility_widget_tab(self._tool_panel_navigation_panel, TOOL_PANEL_NAV_TAB)
 
         # Add all tools to the panel except for the generation area tool:
@@ -402,7 +408,11 @@ class AppController(MenuBuilder):
         # Set up main window tabs:
         self._tool_tab = Tab(TOOL_TAB_NAME, self._tool_panel)
         self._tool_tab.setIcon(QIcon(TOOL_TAB_ICON))
-        self._window.add_tab(self._tool_tab)
+        try:
+            tool_tab_box_id = TabBoxID(Cache().get(Cache.TOOL_TAB_BAR))
+        except ValueError:
+            tool_tab_box_id = None
+        self._window.add_tab(self._tool_tab, tool_tab_box_id)
 
         self._control_panel: Optional[QWidget] = None
         self._control_tab = Tab(CONTROL_TAB_NAME)
@@ -485,7 +495,11 @@ class AppController(MenuBuilder):
         if self._control_panel is None and not prev_panel_was_none:
             self._window.remove_tab(self._control_tab)
         elif prev_panel_was_none and self._control_panel is not None:
-            self._window.add_tab(self._control_tab)
+            try:
+                generation_tab_box_id = TabBoxID(Cache().get(Cache.GENERATION_TAB_BAR))
+            except ValueError:
+                generation_tab_box_id = None
+            self._window.add_tab(self._control_tab, generation_tab_box_id)
         for tab in self._generator.get_extra_tabs():
             # Remember to adjust this if you add any other generator-specific tabs
             try:

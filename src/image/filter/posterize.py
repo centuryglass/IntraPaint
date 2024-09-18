@@ -8,6 +8,8 @@ from PySide6.QtGui import QImage, QPainter
 
 from src.config.key_config import KeyConfig
 from src.image.filter.filter import ImageFilter
+from src.image.layers.image_stack import ImageStack
+from src.util.shared_constants import PROJECT_DIR
 from src.util.visual.pil_image_utils import pil_image_to_qimage, qimage_to_pil_image
 from src.util.parameter import Parameter, TYPE_INT
 
@@ -25,11 +27,16 @@ POSTERIZE_FILTER_DESCRIPTION = _tr('Reduce color range by reducing image color b
 PARAM_LABEL = _tr('Bit Count:')
 PARAM_TEXT = _tr('Image color bits to preserve (1-8)')
 
+POSTERIZE_ICON_PATH = f'{PROJECT_DIR}/resources/icons/filter/posterize.png'
+
 
 class PosterizeFilter(ImageFilter):
     """Filter used to reduce image color range."""
 
-    def get_modal_title(self) -> str:
+    def __init__(self, image_stack: ImageStack) -> None:
+        super().__init__(image_stack, POSTERIZE_ICON_PATH)
+
+    def get_name(self) -> str:
         """Return the modal's title string."""
         return POSTERIZE_FILTER_TITLE
 

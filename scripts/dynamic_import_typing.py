@@ -100,8 +100,8 @@ for class_name, data in class_items.items():
     # Some classes don't load dynamic properties until an instance exists, so try creating object instances:
     try:
         instance = class_type()
-    except Exception:
-        print(f'{class_name} instantiation failed, this may or may not harm {__file__} functionality')
+    except Exception as err:
+        print(f'{class_name} instantiation failed, this may or may not harm {__file__} functionality. Error: {err}')
     for attr_name in dir(class_type):
         if attr_name.startswith('_') or f' {attr_name}' in class_text:
             continue

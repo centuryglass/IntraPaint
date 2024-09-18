@@ -3,7 +3,7 @@ and provides the information needed to add the function as a menu action."""
 from typing import Callable, List, Optional, Dict, Any
 
 from PySide6.QtCore import QPoint
-from PySide6.QtGui import QImage, QPainter, QTransform
+from PySide6.QtGui import QImage, QPainter, QTransform, QIcon
 from PySide6.QtWidgets import QApplication
 
 from src.image.layers.image_layer import ImageLayer
@@ -15,6 +15,7 @@ from src.ui.modal.image_filter_modal import ImageFilterModal
 from src.undo_stack import UndoStack
 from src.util.application_state import APP_STATE_EDITING, AppStateTracker
 from src.util.async_task import AsyncTask
+from src.util.shared_constants import PROJECT_DIR
 from src.util.visual.geometry_utils import adjusted_placement_in_bounds
 from src.util.visual.image_utils import get_transparency_tile_pixmap, image_content_bounds
 from src.util.parameter import Parameter
@@ -33,15 +34,17 @@ ACTION_NAME_FILTER = _tr('Apply image filter')
 
 MAX_PREVIEW_SIZE = 800
 MIN_PREVIEW_SIZE = 200
+FILTER_ICON_PATH = f'{PROJECT_DIR}/resources/icons/tools/filter_icon.svg'
 
 
 class ImageFilter:
     """Interface for image filtering functions exposed through a modal UI."""
 
-    def __init__(self, image_stack: ImageStack) -> None:
+    def __init__(self, image_stack: ImageStack, icon_path=FILTER_ICON_PATH) -> None:
         self._image_stack = image_stack
         self._filter_selection_only = True
         self._filter_active_layer_only = True
+        self._icon = QIcon(icon_path)
 
     @property
     def selection_only(self) -> bool:
@@ -66,10 +69,14 @@ class ImageFilter:
         into account (False)."""
         return True
 
+    def radius(self, parameter_values: List[Any]) -> float:
+        """Given a set of valid parameters, estimate how far each pixel's influence extends in the final image."""
+        return 0.0
+
     def get_filter_modal(self) -> ImageFilterModal:
         """Creates and returns a modal widget that can apply the filter to the edited image."""
         self.selection_only = not self._image_stack.selection_layer.empty
-        modal = ImageFilterModal(self.get_modal_title(),
+        modal = ImageFilterModal(self.get_name(),
                                  self.get_modal_description(),
                                  self.get_parameters(),
                                  self.get_preview_image,
@@ -81,6 +88,7 @@ class ImageFilter:
             self.active_layer_only = active_only
 
         modal.filter_active_only.connect(_set_active_only)
+        modal.setWindowIcon(self.get_icon())
 
         def _set_selection_only(selection_only: bool) -> None:
             self.selection_only = selection_only
@@ -88,9 +96,13 @@ class ImageFilter:
         modal.filter_selection_only.connect(_set_selection_only)
         return modal
 
-    def get_modal_title(self) -> str:
-        """Return the modal's title string."""
+    def get_name(self) -> str:
+        """Return the filter's name string."""
         raise NotImplementedError()
+
+    def get_icon(self) -> QIcon:
+        """Return the filter's icon."""
+        return self._icon
 
     def get_modal_description(self) -> str:
         """Returns the modal's description string."""
@@ -107,6 +119,14 @@ class ImageFilter:
     def get_parameters(self) -> List[Parameter]:
         """Returns definitions for the non-image parameters passed to the filtering function."""
         return []
+
+    def validate_parameter_values(self, parameter_values: List[Any]) -> None:
+        """Raise an exception if a set of parameter values is not valid for this filter."""
+        parameters = self.get_parameters()
+        if len(parameter_values) != len(parameters):
+            raise ValueError(f'Expected {len(parameters)} parameters, got {len(parameter_values)}')
+        for i, parameter in enumerate(parameters):
+            parameter.validate(parameter_values[i])
 
     def _filter_layer_image(self, filter_param_values: List[Any], layer_id: int, layer_image: QImage) -> bool:
         """Apply any required filtering in-place to a layer image, returning whether changes were made."""
@@ -203,8 +223,10 @@ class ImageFilter:
             if scale != 1.0:
                 layer_image = layer_image.scaled(int(layer_image.width() * scale), int(layer_image.height() * scale))
                 painter.setTransform(preview_transform, True)
+            else:
+                layer_image = layer_image.copy()
             self._filter_layer_image(filter_param_values, layer_id, layer_image)
-            return layer_image if scale != 1.0 else None
+            return layer_image
 
         self._image_stack.render(preview_image, _adjust_layer_paint_params)
         if cropped_preview_bounds is not None:

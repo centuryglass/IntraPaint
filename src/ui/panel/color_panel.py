@@ -46,7 +46,7 @@ class ColorControlPanel(TabbedColorPicker):
         elif orientation == Qt.Orientation.Horizontal:
             if not self._disable_extended_layouts and window_size.width() > panel_size.width() * 6:
                 self.set_horizontal_mode()
-            elif window_size.width() > panel_size.width() * 4:
+            elif not self._disable_extended_layouts and window_size.width() > panel_size.width() * 4:
                 self.set_horizontal_two_tab_mode()
             else:
                 self.set_four_tab_mode()

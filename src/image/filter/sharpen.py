@@ -1,5 +1,5 @@
 """Define image sharpening functions."""
-from typing import List, Callable
+from typing import List, Callable, Any
 
 from PIL import ImageEnhance
 from PySide6.QtWidgets import QApplication
@@ -7,6 +7,8 @@ from PySide6.QtGui import QImage
 
 from src.config.key_config import KeyConfig
 from src.image.filter.filter import ImageFilter
+from src.image.layers.image_stack import ImageStack
+from src.util.shared_constants import PROJECT_DIR
 from src.util.visual.pil_image_utils import pil_image_to_qimage, qimage_to_pil_image
 from src.util.parameter import Parameter, TYPE_FLOAT
 
@@ -26,11 +28,16 @@ SHARPEN_FILTER_DESCRIPTION = _tr('Sharpen the image')
 FACTOR_LABEL = _tr('Factor')
 FACTOR_DESCRIPTION = _tr('Sharpness factor (1.0: no change)')
 
+SHARPEN_ICON_PATH = f'{PROJECT_DIR}/resources/icons/filter/sharpen.png'
+
 
 class SharpenFilter(ImageFilter):
     """Filter used to sharpen image details."""
 
-    def get_modal_title(self) -> str:
+    def __init__(self, image_stack: ImageStack) -> None:
+        super().__init__(image_stack, SHARPEN_ICON_PATH)
+
+    def get_name(self) -> str:
         """Return the modal's title string."""
         return SHARPEN_FILTER_TITLE
 
@@ -50,6 +57,10 @@ class SharpenFilter(ImageFilter):
         """Indicates whether the filter operates independently on each pixel (True) or takes neighboring pixels
         into account (False)."""
         return False
+
+    def radius(self, parameter_values: List[Any]) -> float:
+        """Given a set of valid parameters, estimate how far each pixel's influence extends in the final image."""
+        return 5.0  # TODO: this is just a guess, test for accuracy
 
     @staticmethod
     def sharpen(image: QImage, factor: float) -> QImage:

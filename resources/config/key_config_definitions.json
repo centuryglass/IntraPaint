@@ -170,11 +170,11 @@
         "default": "E",
         "saved": true
     },
-    "blur_tool_key": {
-        "label": "Switch to the blur tool:",
+    "filter_tool_key": {
+        "label": "Switch to the filter tool:",
         "category": "Keybindings",
         "subcategory": "Tool Selection",
-        "description": "Activate the blur tool to blur image content.",
+        "description": "Activate the filter tool to apply image filters to brush strokes.",
         "type": "string",
         "default": "U",
         "saved": true

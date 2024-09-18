@@ -233,7 +233,7 @@
         "saved": true
     },
     "draw_tool_brush_pattern": {
-        "label": "Draw tool brush pattern:",
+        "label": "Pattern:",
         "category": "Cache",
         "subcategory": "Draw Tool",
         "description": "Draw tool Qt brush style to apply",
@@ -310,11 +310,29 @@
         "default": false,
         "saved": true
     },
-    "blur_tool_brush_size": {
+    "filter_tool_selected_filter": {
+        "label": "Filter:",
+        "category": "Cache",
+        "subcategory": "Filter Tool",
+        "description": "Selected image filter",
+        "type": "string",
+        "default": "",
+        "saved": true
+    },
+    "filter_tool_cached_parameters": {
+        "label": "Filter parameters:",
+        "category": "Cache",
+        "subcategory": "Filter Tool",
+        "description": "Cached parameters for all filters",
+        "type": "string",
+        "default": "{}",
+        "saved": true
+    },
+    "filter_tool_brush_size": {
         "label": "Size:",
         "category": "Cache",
-        "subcategory": "Blur Tool",
-        "description": "Current/initial brush size (in pixels) for the blur tool.",
+        "subcategory": "Filter Tool",
+        "description": "Current/initial brush size (in pixels) for the filter tool.",
         "type": "int",
         "default": 40,
         "saved": true,
@@ -323,6 +341,61 @@
             "max": 300,
             "step": 1
         }
+    },
+    "filter_tool_opacity": {
+        "label": "Opacity:",
+        "category": "Cache",
+        "subcategory": "Filter Tool",
+        "description": "Filter tool color opacity",
+        "type": "float",
+        "default": 0.5,
+        "range_options": {
+            "min": 0.0,
+            "max": 1.0,
+            "step": 0.05
+        },
+        "saved": true
+    },
+    "filter_tool_hardness": {
+        "label": "Hardness:",
+        "category": "Cache",
+        "subcategory": "Filter Tool",
+        "description": "Filter tool brush hardness",
+        "type": "float",
+        "default": 1.0,
+        "range_options": {
+            "min": 0.0,
+            "max": 1.0,
+            "step": 0.05
+        },
+        "saved": true
+    },
+    "filter_tool_pressure_size": {
+        "label": "Pen pressure=size:",
+        "category": "Cache",
+        "subcategory": "Filter Tool",
+        "description": "Drawing tablet pen pressure affects filter tool brush size.",
+        "type": "bool",
+        "default": true,
+        "saved": true
+    },
+    "filter_tool_pressure_opacity": {
+        "label": "Pen pressure=opacity:",
+        "category": "Cache",
+        "subcategory": "Filter Tool",
+        "description": "Drawing tablet pen pressure affects filter tool brush opacity.",
+        "type": "bool",
+        "default": false,
+        "saved": true
+    },
+    "filter_tool_pressure_hardness": {
+        "label": "Pen pressure=hardness:",
+        "category": "Cache",
+        "subcategory": "Smudge Tool",
+        "description": "Drawing tablet pen pressure affects filter tool brush hardness.",
+        "type": "bool",
+        "default": false,
+        "saved": true
     },
     "smudge_tool_brush_size": {
         "label": "Size:",

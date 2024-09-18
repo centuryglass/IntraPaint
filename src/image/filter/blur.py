@@ -1,11 +1,13 @@
 """Define image blurring functions."""
-from typing import List, Callable
+from typing import List, Callable, Any, cast
 from PIL import ImageFilter as PilImageFilter
 from PySide6.QtWidgets import QApplication
 from PySide6.QtGui import QImage
 
 from src.config.key_config import KeyConfig
 from src.image.filter.filter import ImageFilter
+from src.image.layers.image_stack import ImageStack
+from src.util.shared_constants import PROJECT_DIR
 from src.util.visual.pil_image_utils import pil_image_to_qimage, qimage_to_pil_image
 from src.util.parameter import Parameter, TYPE_FLOAT, TYPE_STR
 
@@ -31,11 +33,17 @@ MODE_DESCRIPTION = _tr('Image blurring algorithm')
 RADIUS_LABEL = _tr('Radius')
 RADIUS_DESCRIPTION = _tr('Pixel blur radius (no effect in simple mode).')
 
+BLUR_ICON_PATH = f'{PROJECT_DIR}/resources/icons/filter/blur_icon.svg'
+MAX_VALUE = 100.0
+
 
 class BlurFilter(ImageFilter):
     """Filter used to blur image content."""
 
-    def get_modal_title(self) -> str:
+    def __init__(self, image_stack: ImageStack) -> None:
+        super().__init__(image_stack, BLUR_ICON_PATH)
+
+    def get_name(self) -> str:
         """Return the modal's title string."""
         return BLUR_FILTER_TITLE
 
@@ -55,6 +63,16 @@ class BlurFilter(ImageFilter):
         """Indicates whether the filter operates independently on each pixel (True) or takes neighboring pixels
         into account (False)."""
         return False
+
+    def radius(self, parameter_values: List[Any]) -> float:
+        """Given a set of valid parameters, estimate how far each pixel's influence extends in the final image."""
+        self.validate_parameter_values(parameter_values)
+        mode = cast(str, parameter_values[0])
+        radius = cast(float, parameter_values[1])
+        # TODO: these need to be validated:
+        if mode == MODE_SIMPLE:
+            return 5.0
+        return radius
 
     @staticmethod
     def blur(image: QImage, mode: str, radius: float) -> QImage:
@@ -80,5 +98,6 @@ class BlurFilter(ImageFilter):
                       TYPE_FLOAT,
                       3.0,
                       RADIUS_DESCRIPTION,
-                      0.0)
+                      0.0,
+                      MAX_VALUE)
         ]

@@ -170,7 +170,7 @@ class QtPaintCanvas(LayerCanvas):
                           np_mask: Optional[NpUInt8Array],
                           np_image: NpUInt8Array,
                           np_prev_image: NpUInt8Array,
-                          img_painter: QPainter):
+                          layer_painter: QPainter):
         """
         Draws a single segment within a brush stroke. This applies size, opacity, and hardness, and blends the segment
         with previous sections in the brush stroke.
@@ -193,7 +193,7 @@ class QtPaintCanvas(LayerCanvas):
             The final layer image that we're drawing into.
         np_prev_image: NpUInt8Array:
             A copy of the layer image, taken before the first segment in the brush stroke was drawn.
-        img_painter: QPainter:
+        layer_painter: QPainter:
             Painter used to draw the final adjusted segment onto the layer image.
         """
         if input_event.opacity == 0 or input_event.size == 0:
@@ -238,6 +238,7 @@ class QtPaintCanvas(LayerCanvas):
             np_paint_buf[stroke_buf_overrides, :] = 0
             changes = changes & ~stroke_buf_overrides
 
+        # Add the last paint operation to stroke buffer:
         np_stroke_buf[changes, :] = np_paint_buf[changes, :]
 
         if self._pattern_brush is not None:
@@ -249,10 +250,16 @@ class QtPaintCanvas(LayerCanvas):
             new_input_painter.restore()
 
         # Draw the last segment to the image:
+        layer_image = layer_painter.device()
+        assert isinstance(layer_image, QImage)
+        self.draw_segment_to_image(self._paint_buffer, layer_image, layer_painter, bounds)
+
+    def draw_segment_to_image(self, segment_image: QImage, layer_image: QImage, layer_painter: QPainter,
+                              bounds: QRect) -> None:
+        """Handles the final drawing operation that copies an input segment to the layer image."""
         if self.eraser:
-            img_painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_DestinationOut)
-        img_painter.drawImage(bounds, self._paint_buffer, bounds)
-        # Add the last paint operation to stroke buffer:
+            layer_painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_DestinationOut)
+        layer_painter.drawImage(bounds, segment_image, bounds)
 
     def _draw_buffered_events(self) -> None:
         self._buffer_timer.stop()
@@ -267,6 +274,7 @@ class QtPaintCanvas(LayerCanvas):
         change_bounds = change_bounds.intersected(layer.bounds)
         new_input_painter = QPainter(self._paint_buffer)
         with layer.borrow_image(change_bounds) as layer_image:
+            self._change_bounds = self._change_bounds.united(change_bounds)
             img_painter = QPainter(layer_image)
             assert isinstance(layer_image, QImage)
             np_mask = None if self.input_mask is None else image_data_as_numpy_8bit(self.input_mask)

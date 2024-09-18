@@ -11,6 +11,7 @@ from src.ui.input_fields.pattern_combo_box import PatternComboBox
 from src.ui.input_fields.slider_spinbox import IntSliderSpinbox, FloatSliderSpinbox
 from src.ui.widget.color_button import ColorButton
 from src.ui.widget.key_hint_label import KeyHintLabel
+from src.util.visual.geometry_utils import synchronize_row_widths
 
 
 class CanvasToolPanel(QWidget):
@@ -73,6 +74,7 @@ class CanvasToolPanel(QWidget):
                 hardness_row.addWidget(hardness_widget)
             self._layout.addLayout(hardness_row)
 
+        self._align_rows()
         color_row = QHBoxLayout()
         if color_key is not None:
             color_button = ColorButton(config_key=color_key)
@@ -104,6 +106,28 @@ class CanvasToolPanel(QWidget):
                 checkbox.setVisible(False)
                 checkbox_row.addWidget(checkbox)
         self._layout.addLayout(checkbox_row)
+
+    def _align_rows(self) -> None:
+        rows = []
+        expected_count = 4
+        for i in range(self._layout.count()):
+            row = []
+            row_item = self._layout.itemAt(i)
+            if row_item is None:
+                continue
+            row_layout = row_item.layout()
+            if row_layout is None or row_layout.count() != expected_count:
+                continue
+            for i2 in range(row_layout.count()):
+                column_item = row_layout.itemAt(i2)
+                assert column_item is not None
+                column = column_item.widget()
+                assert column is not None
+                row.append(column)
+            rows.append(row)
+        if len(rows) > 0:
+            synchronize_row_widths(rows)
+
 
     def show_pressure_checkboxes(self) -> None:
         """After receiving a tablet event, call this to reveal the pressure control checkboxes."""

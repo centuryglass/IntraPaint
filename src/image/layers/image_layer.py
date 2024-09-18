@@ -313,13 +313,35 @@ class ImageLayer(TransformLayer):
          make before sending update signals."""
         if not hasattr(self, 'alpha_locked'):
             return
-        if self.alpha_locked:
+        # Don't apply the alpha lock on undo, if it was applied initially there should be no need.
+        if self.alpha_locked and not UndoStack().undo_in_progress:
             np_source = image_data_as_numpy_8bit(last_image)
             np_dst = image_data_as_numpy_8bit(image)
             source_intersect, dst_intersect = numpy_intersect(np_source, np_dst)
             if source_intersect is None or dst_intersect is None:
                 return
-            dst_intersect[:, :, 3] = source_intersect[:, :, 3]
+            alpha_unchanged = source_intersect[:, :, 3] == dst_intersect[:, :, 3]
+            src_full_alpha = source_intersect[:, :, 3] == 0
+            dst_full_alpha = dst_intersect[:, :, 3] == 0
+
+            # where the source is fully transparent, completely clear the destination:
+            dst_intersect[src_full_alpha, :] = 0
+
+            # where the destination is fully transparent and the source isn't, completely override the destination
+            # with the source:
+            source_overrides = dst_full_alpha & ~src_full_alpha
+            dst_intersect[source_overrides, :] = source_intersect[source_overrides, :]
+
+            # where both images are not fully transparent and both images have differing opacity, re-multiply color
+            # channels:
+            re_multiply = ~src_full_alpha & ~dst_full_alpha & ~alpha_unchanged
+            for c in range(3):
+                dst_intersect[re_multiply, c] = (dst_intersect[re_multiply, c]
+                                                     / (dst_intersect[re_multiply, 3] / 255)
+                                                     * (source_intersect[re_multiply, 3] / 255))
+
+            # apply source alpha across the image:
+            dst_intersect[~alpha_unchanged, 3] = source_intersect[~alpha_unchanged, 3]
 
     def crop_to_content(self, show_warnings: bool = True):
         """Crops the layer to remove transparent areas."""

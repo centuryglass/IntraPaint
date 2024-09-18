@@ -61,6 +61,7 @@ class SelectionBrushTool(CanvasTool):
         AppConfig().connect(self, AppConfig.SELECTION_COLOR, _update_color)
 
         self.brush_size = Cache().get(Cache.SELECTION_BRUSH_SIZE)
+        Cache().connect(self, Cache.SELECTION_BRUSH_SIZE, self.set_brush_size)
         self.layer = image_stack.selection_layer
         self.update_brush_cursor()
 

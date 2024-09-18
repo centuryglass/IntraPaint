@@ -299,15 +299,15 @@ def _in_range(value: int | float | QSize,
         if value_type == TYPE_INT:
             maximum = INT_MAX
         elif value_type == TYPE_FLOAT:
-            minimum = FLOAT_MAX
+            maximum = FLOAT_MAX
         else:  # QSize
-            minimum = QSize(INT_MAX, INT_MAX)
+            maximum = QSize(INT_MAX, INT_MAX)
     if value_type == TYPE_QSIZE:
         assert isinstance(minimum, QSize)
         assert isinstance(maximum, QSize)
         assert isinstance(value, QSize)
         return minimum.width() <= value.width() <= maximum.width() \
             and minimum.height() <= value.height() <= maximum.height()
-    assert isinstance(minimum, (int, float))
-    assert isinstance(maximum, (int, float))
+    assert isinstance(minimum, (int, float)),  f'Expected numeric minimum, got {minimum}'
+    assert isinstance(maximum, (int, float)),  f'Expected numeric maximum, got {maximum}'
     return minimum <= value <= maximum
