@@ -3,10 +3,10 @@ from PySide6.QtCore import Signal
 from PySide6.QtWidgets import QVBoxLayout, QLabel, QPushButton
 
 from src.config.cache import Cache
-from src.ui.layout.bordered_widget import BorderedWidget
+from src.ui.panel.generators.generator_panel import GeneratorPanel
 
 
-class TestControlPanel(BorderedWidget):
+class TestControlPanel(GeneratorPanel):
     """Control panel widget for testing and debugging."""
 
     generate_signal = Signal()

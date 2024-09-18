@@ -7,7 +7,7 @@ from src.hotkey_filter import HotkeyFilter
 from src.image.layers.selection_layer import SelectionLayer
 from src.ui.input_fields.dual_toggle import DualToggle
 from src.ui.layout.divider import Divider
-from src.ui.panel.tool_control_panels.canvas_selection_panel import TOOL_MODE_DRAW, TOOL_MODE_ERASE, \
+from src.ui.panel.tool_control_panels.brush_selection_panel import TOOL_MODE_DRAW, TOOL_MODE_ERASE, \
     RESOURCES_ERASER_PNG, RESOURCES_PEN_PNG
 from src.ui.panel.tool_control_panels.selection_panel import SelectionPanel
 from src.ui.widget.key_hint_label import KeyHintLabel
@@ -41,4 +41,5 @@ class FreeSelectionPanel(SelectionPanel):
                 return False
             tool_toggle.toggle()
             return True
-        HotkeyFilter.instance().register_config_keybinding(_try_toggle, KeyConfig.TOOL_ACTION_HOTKEY)
+        binding_id = f'FreeSelectionPanel_{id(self)}_try_toggle'
+        HotkeyFilter.instance().register_config_keybinding(binding_id, _try_toggle, KeyConfig.TOOL_ACTION_HOTKEY)

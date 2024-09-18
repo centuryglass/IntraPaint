@@ -130,8 +130,8 @@ class LayerTransformToolPanel(ReactiveLayoutWidget):
                         return False
                     box.stepBy(steps)
                     return True
-
-                HotkeyFilter.instance().register_speed_modified_keybinding(_binding, key)
+                binding_id = f'LayerTransformToolPanel_{id(self)}_key'
+                HotkeyFilter.instance().register_speed_modified_keybinding(binding_id, _binding, key)
         self.setContentsMargins(0, 0, 0, 0)
         self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Ignored)
         grid = self._layout

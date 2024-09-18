@@ -1,6 +1,15 @@
 {
-    "styles": "None",
-    "last_active_tool": "Select Image Generation Area",
+    "edit_size": "512x512",
+    "generation_size": "512x512",
+    "tool_tab_bar": "RIGHT",
+    "generation_tab_bar": "RIGHT",
+    "controlnet_tab_bar": "",
+    "last_brush_color": "#ff000000",
+    "text_background_color": "#ffffffff",
+    "new_image_background_color": "#ffffffff",
+    "text_tool_params": "{\"text\": \"\", \"font\": \"Noto Sans,10,-1,5,400,0,0,0,0,0,0,0,0,0,0,1\", \"text_color\": \"#ff000000\", \"bg_color\": \"#ffffffff\", \"size\": [0, 0, 100, 100], \"alignment\": 1, \"fill_background\": false, \"scale_mode\": \"none\"}",
+    "last_active_tool": "Move view",
+    "last_nav_panel_tool": "",
     "fill_threshold": {
         "min": 0.0,
         "max": 30.0,
@@ -8,5 +17,150 @@
         "value": 0.0
     },
     "sample_merged": false,
-    "paint_selection_only": false
+    "paint_selection_only": false,
+    "mypaint_brush": "./resources/brushes/experimental/1pixel.myb",
+    "paint_tool_brush_size": {
+        "min": 1,
+        "max": 300,
+        "step": 1,
+        "value": 40
+    },
+    "selection_brush_size": {
+        "min": 1,
+        "max": 300,
+        "step": 1,
+        "value": 40
+    },
+    "draw_tool_brush_size": {
+        "min": 1,
+        "max": 300,
+        "step": 1,
+        "value": 40
+    },
+    "draw_tool_opacity": {
+        "min": 0.0,
+        "max": 1.0,
+        "step": 0.05,
+        "value": 1.0
+    },
+    "draw_tool_hardness": {
+        "min": 0.0,
+        "max": 1.0,
+        "step": 0.05,
+        "value": 1.0
+    },
+    "draw_tool_pressure_size": true,
+    "draw_tool_pressure_opacity": false,
+    "draw_tool_pressure_hardness": false,
+    "draw_tool_brush_pattern": "Solid",
+    "eraser_tool_size": {
+        "min": 1,
+        "max": 300,
+        "step": 1,
+        "value": 20
+    },
+    "eraser_tool_opacity": {
+        "min": 0.0,
+        "max": 1.0,
+        "step": 0.05,
+        "value": 1.0
+    },
+    "eraser_tool_hardness": {
+        "min": 0.0,
+        "max": 1.0,
+        "step": 0.05,
+        "value": 1.0
+    },
+    "eraser_tool_pressure_size": true,
+    "eraser_tool_pressure_opacity": false,
+    "eraser_tool_pressure_hardness": false,
+    "blur_tool_brush_size": {
+        "min": 1,
+        "max": 300,
+        "step": 1,
+        "value": 40
+    },
+    "smudge_tool_brush_size": {
+        "min": 1,
+        "max": 300,
+        "step": 1,
+        "value": 40
+    },
+    "smudge_tool_opacity": {
+        "min": 0.0,
+        "max": 1.0,
+        "step": 0.05,
+        "value": 0.5
+    },
+    "smudge_tool_hardness": {
+        "min": 0.0,
+        "max": 1.0,
+        "step": 0.05,
+        "value": 1.0
+    },
+    "smudge_tool_pressure_size": true,
+    "smudge_tool_pressure_opacity": false,
+    "smudge_tool_pressure_hardness": false,
+    "saved_main_window_pos": "",
+    "saved_layer_window_pos": "",
+    "saved_image_window_pos": "",
+    "guidance_scale": {
+        "min": 0.0,
+        "max": 20.0,
+        "step": 0.1,
+        "value": 9.0
+    },
+    "batch_size": {
+        "min": 1,
+        "max": 20,
+        "step": 1,
+        "value": 5
+    },
+    "batch_count": {
+        "min": 1,
+        "max": 99,
+        "step": 1,
+        "value": 1
+    },
+    "edit_mode": "Inpaint",
+    "sampling_method": "Euler a",
+    "upscale_method": "None",
+    "controlnet_upscaling": false,
+    "controlnet_downsample_rate": {
+        "min": 1.0,
+        "max": 4.0,
+        "step": 0.1,
+        "value": 1.0
+    },
+    "seed": {
+        "min": -1,
+        "max": 18446744073709551615,
+        "step": 1,
+        "value": -1
+    },
+    "inpaint_full_res": false,
+    "inpaint_full_res_padding": {
+        "min": 0,
+        "max": 1024,
+        "step": 1,
+        "value": 32
+    },
+    "controlnet_args_0": {},
+    "controlnet_args_1": {},
+    "controlnet_args_2": {},
+    "cutn": {
+        "min": 1,
+        "max": 32,
+        "step": 1,
+        "value": 16
+    },
+    "skip_steps": {
+        "min": 0,
+        "max": 27,
+        "step": 1,
+        "value": 0
+    },
+    "upscale_mode": "Lanczos",
+    "downscale_mode": "Lanczos",
+    "expect_tablet_input": false
 }

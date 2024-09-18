@@ -3,7 +3,7 @@ import sys
 import unittest
 from unittest.mock import patch, MagicMock
 
-from PySide6.QtCore import QSize
+from PySide6.QtCore import QSize, QTimer
 from PySide6.QtWidgets import QApplication
 
 from src.config.application_config import AppConfig
@@ -18,14 +18,12 @@ from src.util.visual.image_format_utils import IMAGE_FORMATS_SUPPORTING_METADATA
     IMAGE_WRITE_FORMATS
 
 app = QApplication.instance() or QApplication(sys.argv)
-exec_mock = MagicMock()
 
 LAYER_IMAGE = 'test/resources/test_images/layer_move_test.ora'
 
-@patch('PyQt6.QtWidgets.QApplication.exec', new=exec_mock)
+
 class TestAppController(unittest.TestCase):
 
-    @patch('PyQt6.QtWidgets.QApplication.exec', new=exec_mock)
     def setUp(self):
         while os.path.basename(os.getcwd()) not in ('IntraPaint', ''):
             os.chdir('..')
@@ -40,11 +38,7 @@ class TestAppController(unittest.TestCase):
         self.args.fast_ngrok_connection = False
         self.controller = AppController(self.args)
 
-    @patch('src.controller.app_controller.MainWindow')
-    @patch('src.controller.app_controller.get_screen_size')
-    def test_init(self, MockGetScreenSize, MockMainWindow):
-        mock_main_window = MockMainWindow.return_value
-        MockGetScreenSize.return_value = QSize(1024, 768)
+    def test_init(self):
         self.assertIsInstance(self.controller, AppController)
         self.assertIsInstance(self.controller._window, MainWindow)
         self.assertIsInstance(self.controller._settings_modal, SettingsModal)
@@ -110,24 +104,21 @@ class TestAppController(unittest.TestCase):
         self.assertEqual(AppConfig().get('font_point_size'), QApplication.instance().font().pointSize())
 
     # TODO: Fix issues with MenuBuilder mocking that are breaking this test case.
-    # @patch('src.controller.image_generation.test_generator.TestGenerator.build_menus')
-    # @patch('src.controller.app_controller.SettingsModal')
-    # @patch('src.controller.app_controller.QtExceptHook')
-    # @patch('src.controller.app_controller.MainWindow')
-    # @patch('src.controller.app_controller.AppController.clear_menus')
-    # @patch('src.controller.app_controller.AppController.add_menu_action')
-    # @patch('src.controller.app_controller.AppController.build_menus')
-    # @patch('src.controller.app_controller.SpacenavManager')
-    # def test_start_app(self, MockSpacenavManager, mock_build_menus, mock_add_menu_action, mock_clear_menus, MockMainWindow,
-    #                    MockQtExceptHook, MockSettingsModal, _):
-    #     self.controller = AppController(self.args)
-    #     self.controller.start_app()
-    #     self.assertTrue(mock_build_menus.called)
-    #     self.assertTrue(mock_add_menu_action.called)
-    #     self.assertTrue(MockSpacenavManager.called)
-    #     self.assertTrue(self.controller._window.show.called)
-    #     self.assertTrue(MockQtExceptHook.called)
-    #     self.assertTrue(exec_mock.called)
+    def test_start_app(self):
+        self.controller = AppController(self.args)
+        timer = QTimer()
+        timer.setInterval(1000)
+        timer.setSingleShot(True)
+
+        def _on_timeout():
+            window = self.controller.menu_window
+            self.assertIsInstance(window, MainWindow)
+            self.assertTrue(window.isVisible())
+            self.controller.quit(skip_confirmation=True)
+        timer.timeout.connect(_on_timeout)
+        timer.start()
+        self.controller.start_app()
+        self.assertFalse(self.controller.menu_window.isVisible())
 
     def test_image_save_and_load(self):
         AppConfig()._reset()

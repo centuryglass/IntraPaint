@@ -1,6 +1,6 @@
 """QComboBox used to select between brush/fill patterns"""
-from typing import List, Tuple, Optional
 import logging
+from typing import Optional
 
 from PySide6.QtCore import Signal, QSize, QRect
 from PySide6.QtGui import QBrush, Qt, QPixmap, QPainter, QColor
@@ -13,6 +13,7 @@ logger = logging.getLogger(__name__)
 
 # The `QCoreApplication.translate` context for strings in this file
 TR_ID = 'ui.input_fields.pattern_combo_box'
+
 
 def _tr(*args):
     """Helper to make `QCoreApplication.translate` more concise."""
@@ -93,7 +94,6 @@ class PatternComboBox(QComboBox):
         def _apply_change_to_config(new_pattern_name: str) -> None:
             Cache().set(cache_key, new_pattern_name)
         self.currentTextChanged.connect(_apply_change_to_config)
-
 
     @staticmethod
     def _draw_icon(brush: QBrush, bg_color: QColor | Qt.GlobalColor) -> QPixmap:

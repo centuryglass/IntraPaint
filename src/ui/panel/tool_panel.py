@@ -1,21 +1,16 @@
-"""Selects between image editing tools, and controls their settings."""
-from typing import Optional, Dict, Callable
+"""Provides buttons to select between tools, renders the active tool's control panel, and renders an extra tabbed
+   area with layer, navigation, and color picking interfaces."""
+from typing import Optional, Dict, List
 
 from PySide6.QtCore import Qt, Signal, QRect, QSize, QMargins, QObject
 from PySide6.QtGui import QMouseEvent, QPaintEvent, QPainter, QPen, QResizeEvent
-from PySide6.QtWidgets import QWidget, QLabel, QHBoxLayout, QVBoxLayout, QSizePolicy, QScrollArea, QPushButton, \
-    QGridLayout, QLayout, QApplication, QTabWidget
+from PySide6.QtWidgets import QWidget, QLabel, QHBoxLayout, QVBoxLayout, QSizePolicy, QScrollArea, QGridLayout, QLayout, \
+    QApplication, QTabWidget
 
-from src.controller.tool_controller import ToolController
-from src.image.layers.image_stack import ImageStack
 from src.tools.base_tool import BaseTool
-from src.ui.panel.color_panel import ColorControlPanel
-from src.ui.panel.image_panel import ImagePanel
-from src.ui.panel.layer_ui.layer_panel import LayerPanel
 from src.ui.layout.draggable_divider import DraggableDivider
-from src.ui.widget.key_hint_label import KeyHintLabel
 from src.ui.layout.reactive_layout_widget import ReactiveLayoutWidget
-from src.ui.window.image_window import ImageWindow
+from src.ui.widget.key_hint_label import KeyHintLabel
 from src.util.visual.display_size import get_window_size
 from src.util.visual.geometry_utils import get_scaled_placement
 
@@ -29,10 +24,6 @@ def _tr(*args):
 
 
 TOOL_PANEL_TITLE = _tr('Tools')
-GENERATE_BUTTON_TEXT = _tr('Generate')
-LAYER_TAB = _tr('Layers')
-COLOR_TAB = _tr('Color')
-NAV_TAB = _tr('Navigation')
 
 TOOL_ICON_SIZE = 48
 
@@ -44,45 +35,21 @@ MIN_SIZE_FOR_TOOL_LABEL = QSize(300, 300)
 
 
 class ToolPanel(QWidget):
-    """Selects between image editing tools, and controls their settings."""
+    """Provides buttons to select between tools, renders the active tool's control panel, and renders an extra tabbed
+       area with where additional small panels can be added."""
 
     panel_toggled = Signal(bool)
+    tool_selected = Signal(QObject)
 
-    def __init__(self, image_stack: ImageStack, image_panel: ImagePanel, generate_fn: Callable[[], None]) -> None:
-        """Initializes instances of all Tool classes, connects them to image data, and sets up the tool interface.
-
-        Parameters:
-        -----------
-        image_stack: ImageStack
-            Used by tools that need to view or modify the edited image.
-        image_panel: ImagePanel
-            Used by tools that interact with the way image data is displayed.
-        generate_fn: Callable
-            Connected to the "Generate" button, if one is enabled.
-        """
+    def __init__(self) -> None:
         super().__init__()
         self.setSizePolicy(QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding))
-        self._image_stack = image_stack
-        self._image_panel = image_panel
-        self._image_viewer = image_panel.image_viewer
-        self._tool_controller = ToolController(image_stack, image_panel.image_viewer)
-        self._tool_controller.tool_changed.connect(self._setup_active_tool)
         self._orientation = Qt.Orientation.Vertical
         self._layout = QVBoxLayout(self)
         self._divider = DraggableDivider()
 
-        self._control_panel = QTabWidget()
-        self._layer_tab = LayerPanel(image_stack)
-        self._color_tab = ColorControlPanel(disable_extended_layouts=True)
-        self._color_tab.set_orientation(self._orientation)
-        self._navigation_tab = ImageWindow(image_stack, image_panel.image_viewer, include_zoom_controls=False,
-                                           use_keybindings=False)
-        self._control_panel.addTab(self._layer_tab, LAYER_TAB)
-        self._control_panel.addTab(self._color_tab, COLOR_TAB)
-        self._control_panel.addTab(self._navigation_tab, NAV_TAB)
-
-        self._generate_button = QPushButton(GENERATE_BUTTON_TEXT)
-        self._generate_button.clicked.connect(generate_fn)
+        self._utility_tab_panel = QTabWidget()
+        self._utility_tab_panels: List[QWidget] = []
 
         # Setup tool list:
         self._tool_button_layout = QGridLayout()
@@ -116,20 +83,48 @@ class ToolPanel(QWidget):
         self._tool_scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self._tool_scroll_area.setSizePolicy(QSizePolicy(QSizePolicy.Policy.Expanding,
                                                          QSizePolicy.Policy.Expanding))
-
-        # Create individual tool widgets:
-        for tool in self._tool_controller.tools:
-            button = _ToolButton(tool)
-            toolbar_button = _ToolButton(tool)
-            self._tool_widgets[tool.label] = button
-            self._toolbar_tool_widgets[tool.label] = toolbar_button
-            button.tool_selected.connect(self._switch_active_tool)
-            toolbar_button.tool_selected.connect(self._switch_active_tool)
-        self._build_tool_button_layout()
-        active_tool = self._tool_controller.active_tool
-        if active_tool is not None:
-            self._switch_active_tool(active_tool)
         self._build_layout()
+
+    def add_tool_button(self, tool: BaseTool) -> None:
+        """Creates and shows a new tool button for a given tool object."""
+        if tool.label in self._tool_widgets:
+            return
+        primary_button = _ToolButton(tool)
+        toolbar_button = _ToolButton(tool)
+        self._tool_widgets[tool.label] = primary_button
+        self._toolbar_tool_widgets[tool.label] = toolbar_button
+        primary_button.tool_selected.connect(self.tool_selected)
+        toolbar_button.tool_selected.connect(self.tool_selected)
+        self._build_tool_button_layout()
+
+    def remove_tool_button(self, tool: BaseTool) -> None:
+        """Removes a tool button from the panel."""
+        tool_name = tool.label
+        buttons = []
+        if tool_name in self._tool_widgets:
+            buttons.append(self._tool_widgets[tool_name])
+            del self._tool_widgets[tool_name]
+        if tool_name in self._toolbar_tool_widgets:
+            buttons.append(self._toolbar_tool_widgets[tool_name])
+            del self._toolbar_tool_widgets[tool_name]
+        for button in buttons:
+            button.tool_selected.disconnect(self.tool_selected)
+            button.setVisible(False)
+            button.setEnabled(False)
+            parent = button.parentWidget()
+            if parent is not None:
+                layout = parent.layout()
+                if layout is not None:
+                    idx = layout.indexOf(button)
+                    if idx >= 0:
+                        layout.takeAt(idx)
+            button.setParent(None)
+        self._build_tool_button_layout()
+
+    def add_utility_widget_tab(self, widget: QWidget, tab_name: str) -> None:
+        """Adds a tabbed utility widget to the tabs at the end of the panel."""
+        self._utility_tab_panels.append(widget)
+        self._utility_tab_panel.addTab(widget, tab_name)
 
     @property
     def orientation(self) -> Qt.Orientation:
@@ -148,8 +143,7 @@ class ToolPanel(QWidget):
             return self._layout.stretch(idx)
         tool_list_stretch = _get_stretch(self._tool_button_layout, TOOL_LIST_STRETCH)
         tool_panel_stretch = _get_stretch(self._tool_scroll_area, TOOL_PANEL_STRETCH)
-        layer_panel_stretch = _get_stretch(self._control_panel, LAYER_PANEL_STRETCH)
-        show_generate_button = self._generate_button.isVisible()
+        layer_panel_stretch = _get_stretch(self._utility_tab_panel, LAYER_PANEL_STRETCH)
 
         # Replace layout if orientation changed:
         layout_class = QHBoxLayout if self._orientation == Qt.Orientation.Horizontal else QVBoxLayout
@@ -166,14 +160,7 @@ class ToolPanel(QWidget):
             self._layout.addLayout(self._tool_button_layout, stretch=tool_list_stretch)
             self._layout.addWidget(self._tool_scroll_area, stretch=tool_panel_stretch)
             self._layout.addWidget(self._divider)
-            self._layout.addWidget(self._control_panel, stretch=layer_panel_stretch)
-            self._layout.addWidget(self._generate_button)
-            self._generate_button.setVisible(show_generate_button)
-            if self._orientation == Qt.Orientation.Horizontal:
-                generate_label = '\n'.join(GENERATE_BUTTON_TEXT)
-            else:
-                generate_label = GENERATE_BUTTON_TEXT
-            self._generate_button.setText(generate_label)
+            self._layout.addWidget(self._utility_tab_panel, stretch=layer_panel_stretch)
             if self._active_tool_panel is not None and hasattr(self._active_tool_panel, 'set_orientation'):
                 self._active_tool_panel.set_orientation(self._orientation)
         self._build_tool_button_layout()
@@ -185,21 +172,12 @@ class ToolPanel(QWidget):
         if self._orientation == orientation:
             return
         self._orientation = orientation
-        self._color_tab.set_orientation(orientation)
+        for tab in self._utility_tab_panels:
+            if hasattr(tab, 'set_orientation'):
+                tab.set_orientation(orientation)
         self._build_layout()
 
-    def show_generate_button(self, should_show: bool) -> None:
-        """Shows or hides the image generation button."""
-        self._generate_button.setVisible(should_show)
-        self._generate_button.setEnabled(should_show)
-
-    def _switch_active_tool(self, tool: Optional[QObject]) -> None:
-        """Sets a new tool as the active tool."""
-        assert tool is None or isinstance(tool, BaseTool)
-        self._tool_controller.active_tool = tool
-        # Event handler will send a signal to trigger _setup_active_tool
-
-    def _setup_active_tool(self, active_tool: Optional[QObject]) -> None:
+    def setup_active_tool(self, active_tool: Optional[QObject]) -> None:
         """Reconfigures the panel for a new active tool."""
         assert active_tool is None or isinstance(active_tool, BaseTool)
         if self._active_tool_panel is not None:
@@ -213,10 +191,7 @@ class ToolPanel(QWidget):
             self._tool_control_box.setToolTip(active_tool.get_tooltip_text())
             for label, widget in [*self._tool_widgets.items(), *self._toolbar_tool_widgets.items()]:
                 widget.is_active = label == active_tool.label
-            self._update_cursor()
-            active_tool.cursor_change.connect(self._update_cursor)
             tool_panel = active_tool.get_control_panel()
-            self._image_panel.set_control_hint(active_tool.get_input_hint())
             if tool_panel is not None:
                 tool_panel.setToolTip(active_tool.get_tooltip_text())
                 self._active_tool_panel = tool_panel
@@ -225,17 +200,9 @@ class ToolPanel(QWidget):
                     tool_panel.set_orientation(self._orientation)
                 tool_panel.show()
         else:
-            self._update_cursor()
             self._tool_control_label.setText('')
             self._tool_control_box.setToolTip('')
         self.updateGeometry()
-
-    def _update_cursor(self) -> None:
-        """Apply a cursor to the image viewer, or resets to the default."""
-        if self._tool_controller.active_tool is None:
-            return
-        new_cursor = self._tool_controller.active_tool.cursor
-        self._image_viewer.set_cursor(new_cursor)
 
     def _build_tool_button_layout(self) -> None:
         button_list = list(self._tool_widgets.values())

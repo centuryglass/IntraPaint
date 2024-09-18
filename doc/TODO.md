@@ -2,12 +2,10 @@
 
 
 ## Misc. bugs, minor features, and testing:
-- Automatic file extension suggestions are not helpful (.blp?)
-- Possible offset issues: polygon selection tool isn't filling appropriate areas after transform+layer size changes
-- Hide Gen. Area tool when active generator is None.
 - Add tool keys to raise/lower opacity, hardness
 - Fill tool should support patterns
 - Free selection tool: Escape should clear input, left-clicking first point should close.
+- Add tool icons to tools toolbar when closed.
 
 ## Documentation + Release
 - Create example images for README, finish missing sections and improve writing

@@ -3,13 +3,13 @@ from PySide6.QtCore import Signal, Qt
 from PySide6.QtWidgets import QPushButton, QLabel, QGridLayout, QSizePolicy
 
 from src.config.cache import Cache
-from src.ui.layout.bordered_widget import BorderedWidget
+from src.ui.panel.generators.generator_panel import GeneratorPanel
 from src.util.application_state import APP_STATE_EDITING, AppStateTracker
 
 INPAINT_BUTTON_TEXT = 'Start inpainting'
 
 
-class GlidPanel(BorderedWidget):
+class GlidPanel(GeneratorPanel):
     """Control panel widget for GLID-3-XL inpainting."""
 
     generate_signal = Signal()

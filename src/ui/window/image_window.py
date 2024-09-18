@@ -163,6 +163,13 @@ class ImageWindow(ImagePanel):
         if initial_tool in self._tool_toggle.options:
             self._tool_toggle.setValue(initial_tool)
 
+    def set_image_generation_controls_visible(self, visible: bool) -> None:
+        """Only show the tool toggle if generation area controls are visible."""
+        if not visible and self._tool_controller.active_tool == self._generation_area_tool:
+            self._tool_toggle.setValue(self._zoom_tool.label)
+        self._tool_toggle.setVisible(visible)
+        super().set_image_generation_controls_visible(visible)
+
     def _set_active_tool(self, tool_name: str) -> None:
         if tool_name == IMAGE_GEN_LABEL_SHORT:
             self._tool_controller.active_tool = self._generation_area_tool

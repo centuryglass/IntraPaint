@@ -11,7 +11,7 @@ from src.tools.base_tool import BaseTool
 from src.tools.canvas_tool import CanvasTool
 from src.tools.qt_paint_canvas_tool import QtPaintCanvasTool
 from src.ui.image_viewer import ImageViewer
-from src.ui.panel.tool_control_panels.canvas_selection_panel import TOOL_MODE_ERASE
+from src.ui.panel.tool_control_panels.brush_selection_panel import TOOL_MODE_ERASE
 from src.ui.panel.tool_control_panels.draw_tool_panel import DrawToolPanel
 from src.util.shared_constants import PROJECT_DIR, COLOR_PICK_HINT
 from src.util.visual.text_drawing_utils import left_button_hint_text, right_button_hint_text

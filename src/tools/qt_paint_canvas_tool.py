@@ -97,4 +97,4 @@ class QtPaintCanvasTool(CanvasTool):
         if cache.get(Cache.EXPECT_TABLET_INPUT):
             control_panel = self.get_control_panel()
             assert isinstance(control_panel, CanvasToolPanel)
-            control_panel.show_pressure_checkboxes(True)
+            control_panel.show_pressure_checkboxes()

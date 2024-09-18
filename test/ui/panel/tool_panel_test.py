@@ -1,16 +1,15 @@
 import os
 import sys
 import unittest
-from unittest.mock import Mock, MagicMock
 
-from PySide6.QtCore import Qt, QSize
-from PySide6.QtTest import QTest
-from PySide6.QtWidgets import QApplication
+from PySide6.QtCore import QSize
+from PySide6.QtWidgets import QApplication, QWidget
 
 from src.config.application_config import AppConfig
 from src.config.cache import Cache
 from src.config.key_config import KeyConfig
 from src.image.layers.image_stack import ImageStack
+from src.tools.draw_tool import DrawTool
 from src.ui.panel.image_panel import ImagePanel
 from src.ui.panel.tool_panel import ToolPanel
 
@@ -30,48 +29,61 @@ class ToolPanelTest(unittest.TestCase):
         test_size = QSize(512, 512)
         self._image_stack = ImageStack(test_size, test_size, test_size, test_size)
         self._image_panel = ImagePanel(self._image_stack)
-        self._generate = Mock()
-        self._tool_panel = ToolPanel(self._image_stack, self._image_panel, self._generate)
+        self._tool_panel = ToolPanel()
         self._tool_panel.show()
 
-    def test_generate_button(self) -> None:
-        """Test generate button behavior."""
-        # Behavior after init:
-        self._generate.assert_not_called()
-        self.assertTrue(self._tool_panel.isVisible())
-        self.assertTrue(not self._tool_panel._generate_button.isVisible())
-        self._tool_panel.show_generate_button(True)
-        self.assertTrue(self._tool_panel._generate_button.isVisible())
-        self.assertEqual(self._tool_panel.orientation, Qt.Orientation.Vertical)
-        self.assertEqual(self._tool_panel._generate_button.text(), 'Generate')
-        QTest.mouseClick(self._tool_panel._generate_button, Qt.MouseButton.LeftButton)
-        self._generate.assert_called()
-        self._generate.reset_mock()
+    def test_add_remove_tool_button(self) -> None:
+        """It should be possible to add and remove a tool button"""
+        self.assertEqual(len(self._tool_panel._tool_widgets), 0)
+        test_tool = DrawTool(self._image_stack, self._image_panel.image_viewer)
+        self._tool_panel.add_tool_button(test_tool)
+        self.assertEqual(len(self._tool_panel._tool_widgets), 1)
+        self._tool_panel.remove_tool_button(test_tool)
+        self.assertEqual(len(self._tool_panel._tool_widgets), 0)
 
-        # Behavior after orientation change:
-        self._tool_panel.set_orientation(Qt.Orientation.Horizontal)
-        self.assertTrue(self._tool_panel._generate_button.isVisible())
-        self.assertEqual(self._tool_panel.orientation, Qt.Orientation.Horizontal)
-        self.assertEqual(self._tool_panel._generate_button.text(), 'G\ne\nn\ne\nr\na\nt\ne')
-        QTest.mouseClick(self._tool_panel._generate_button, Qt.MouseButton.LeftButton)
-        self._generate.assert_called()
-        self._generate.reset_mock()
+    def test_avoid_duplicate_tools(self) -> None:
+        """Adding the same tool or type of tool more than once should be blocked."""
+        self.assertEqual(len(self._tool_panel._tool_widgets), 0)
+        test_tool_1 = DrawTool(self._image_stack, self._image_panel.image_viewer)
+        self._tool_panel.add_tool_button(test_tool_1)
+        self.assertEqual(len(self._tool_panel._tool_widgets), 1)
+        self._tool_panel.add_tool_button(test_tool_1)
+        self.assertEqual(len(self._tool_panel._tool_widgets), 1)
+        test_tool_2 = DrawTool(self._image_stack, self._image_panel.image_viewer)
+        self._tool_panel.add_tool_button(test_tool_2)
+        self.assertEqual(len(self._tool_panel._tool_widgets), 1)
 
-        # Hiding button works:
-        self._tool_panel.show_generate_button(False)
-        self.assertTrue(not self._tool_panel._generate_button.isVisible())
+    def test_add_utility_widget_tab(self) -> None:
+        """ToolPanel should accept arbitrary panel widgets for the utility tab box."""
+        self.assertEqual(len(self._tool_panel._utility_tab_panels), 0)
+        self.assertEqual(self._tool_panel._utility_tab_panel.count(), 0)
+        panel = QWidget()
+        panel_name = 'test panel'
+        self.assertFalse(panel.isVisible())
+        self._tool_panel.add_utility_widget_tab(panel, panel_name)
+        self.assertTrue(panel.isVisible())
+        self.assertEqual(len(self._tool_panel._utility_tab_panels), 1)
+        self.assertEqual(self._tool_panel._utility_tab_panel.count(), 1)
+        self.assertEqual(self._tool_panel._utility_tab_panel.currentWidget(), panel)
 
-        # Button remains hidden after orientation changes:
-        self._tool_panel.set_orientation(Qt.Orientation.Vertical)
-        self.assertTrue(not self._tool_panel._generate_button.isVisible())
-        self._tool_panel.set_orientation(Qt.Orientation.Horizontal)
-        self.assertTrue(not self._tool_panel._generate_button.isVisible())
+    def test_activate_tool(self) -> None:
+        """ToolPanel should show the panel widget and mark the button as active when a tool is activated."""
+        test_tool = DrawTool(self._image_stack, self._image_panel.image_viewer)
+        self._tool_panel.add_tool_button(test_tool)
+        tool_button_1 = self._tool_panel._tool_widgets[test_tool.label]
+        tool_button_2 = self._tool_panel._toolbar_tool_widgets[test_tool.label]
+        self.assertEqual(self._tool_panel._tool_control_label.text(), '')
+        self.assertIsNone(self._tool_panel._active_tool_panel)
+        self.assertFalse(tool_button_1.is_active)
+        self.assertFalse(tool_button_2.is_active)
+        control_panel = test_tool.get_control_panel()
+        assert control_panel is not None
+        self.assertFalse(control_panel.isVisible())
 
-        # Button can be revealed again:
-        self._tool_panel.show_generate_button(True)
-        self.assertTrue(self._tool_panel._generate_button.isVisible())
-
-        # Button still works after the hide+show sequence:
-        QTest.mouseClick(self._tool_panel._generate_button, Qt.MouseButton.LeftButton)
-        self._generate.assert_called()
-        self._generate.reset_mock()
+        self._tool_panel.setup_active_tool(test_tool)
+        self.assertEqual(self._tool_panel._tool_control_label.text(),
+                         f'{test_tool.label} - {test_tool.get_tooltip_text()}')
+        self.assertEqual(self._tool_panel._active_tool_panel, control_panel)
+        self.assertTrue(tool_button_1.is_active)
+        self.assertTrue(tool_button_2.is_active)
+        self.assertTrue(control_panel.isVisible())

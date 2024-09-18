@@ -46,6 +46,10 @@ REMEMBER_OPTION_CANCEL = 'cancel'
 def _extension_set_to_filter_string(str_set: Set[str]) -> str:
     format_list = [f'*.{file_format.lower()}' for file_format in str_set]
     format_list.sort()
+    # Move .ora to the front of the list to make sure it's the recommended format:
+    if '*.ora' in format_list:
+        format_list.remove('*.ora')
+        format_list.insert(0, '*.ora')
     return f'({" ".join(format_list)})'
 
 

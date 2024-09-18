@@ -60,7 +60,7 @@
     "glid_vae_model_path": "models/kl-f8.pt",
     "clip_model_name": "ViT-L/14",
     "use_error_handler": true,
-    "warn_on_key_error": false,
+    "warn_on_key_error": true,
     "warn_before_layerless_save": true,
     "warn_before_rgb_save": true,
     "warn_before_save_without_metadata": true,

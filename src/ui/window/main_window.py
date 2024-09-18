@@ -8,6 +8,7 @@ from enum import Enum
 from typing import Optional, Dict, List
 
 from src.config.cache import Cache
+from src.ui.panel.generators.generator_panel import GeneratorPanel
 
 try:
     from enum import StrEnum
@@ -33,7 +34,7 @@ from src.ui.window.image_window import ImageWindow
 from src.util.application_state import AppStateTracker, APP_STATE_LOADING, APP_STATE_NO_IMAGE, APP_STATE_EDITING, \
     APP_STATE_SELECTION
 from src.util.visual.display_size import get_screen_size
-from src.util.shared_constants import TIMELAPSE_MODE_FLAG, APP_ICON_PATH, PROJECT_DIR
+from src.util.shared_constants import TIMELAPSE_MODE_FLAG, APP_ICON_PATH
 from src.util.validation import layout_debug
 
 logger = logging.getLogger(__name__)
@@ -47,8 +48,6 @@ def _tr(*args):
     return QApplication.translate(TR_ID, *args)
 
 
-CONTROL_TAB_NAME = _tr('Image Generation')
-TOOL_TAB_NAME = _tr('Tools')
 ACTION_NAME_MOVE_UP = _tr('Move up')
 ACTION_NAME_MOVE_DOWN = _tr('Move down')
 ACTION_NAME_MOVE_LEFT = _tr('Move left')
@@ -129,10 +128,6 @@ class TabMoveActions(Enum):
                 return TabBoxID.LOWER_TAB_BOX_ID
 
 
-TOOL_TAB_ICON = f'{PROJECT_DIR}/resources/icons/tabs/wrench.svg'
-GEN_TAB_ICON = f'{PROJECT_DIR}/resources/icons/tabs/sparkle.svg'
-
-
 class MainWindow(QMainWindow):
     """Main user interface for inpainting."""
 
@@ -156,7 +151,7 @@ class MainWindow(QMainWindow):
             def _dbg_layout():
                 layout_debug(self)
                 return True
-            HotkeyFilter.instance().register_keybinding(_dbg_layout, QKeySequence('U'))
+            HotkeyFilter.instance().register_keybinding('Debug_layout_dump', _dbg_layout, QKeySequence('U'))
 
         # Initialize UI/editing data model:
         self._image_stack = image_stack
@@ -234,22 +229,8 @@ class MainWindow(QMainWindow):
         self._image_window = ImageWindow(image_stack, self._image_panel.image_viewer)
 
         # Image/Mask editing layout:
-        self._tool_panel = ToolPanel(image_stack, self._image_panel, self.generate_signal.emit)
-        self._tool_tab = Tab(TOOL_TAB_NAME, self._tool_panel)
-        self._tool_tab.setIcon(QIcon(TOOL_TAB_ICON))
 
         self._tab_actions: Dict[Tab, Dict[TabMoveActions, QAction]] = {}
-        try:
-            tab_box_id = TabBoxID(Cache().get(Cache.TOOL_TAB_BAR))
-        except ValueError:
-            tab_box_id = TabBoxID.LOWER_TAB_BOX_ID if screen_size.height() > AUTO_TAB_MOVE_THRESHOLD \
-                else TabBoxID.RIGHT_TAB_BOX_ID
-        self.add_tab(self._tool_tab, tab_box_id)
-
-        self._control_panel: Optional[QWidget] = None
-        self._control_tab = Tab(CONTROL_TAB_NAME)
-        self._control_tab.setIcon(QIcon(GEN_TAB_ICON))
-
         self._tab_bar_actions: List[QAction] = []
         for tab_box_id in TabBoxID:
             assert isinstance(tab_box_id, TabBoxID)
@@ -257,9 +238,9 @@ class MainWindow(QMainWindow):
 
             def _tab_added(tab, box_id=tab_box_id):
                 # Remember to update this after adding any new tabs
-                if tab == self._tool_tab:
+                if isinstance(tab.content_widget, ToolPanel):
                     Cache().set(Cache.TOOL_TAB_BAR, box_id)
-                elif tab == self._control_tab:
+                elif isinstance(tab.content_widget, GeneratorPanel):
                     Cache().set(Cache.GENERATION_TAB_BAR, box_id)
                 else:
                     Cache().set(Cache.CONTROLNET_TAB_BAR, box_id)
@@ -284,23 +265,6 @@ class MainWindow(QMainWindow):
 
         AppStateTracker.set_enabled_states(self._image_panel, [APP_STATE_EDITING])
         self.resizeEvent(None)
-
-    def set_control_panel(self, control_panel: Optional[QWidget]) -> None:
-        """Sets the image generation control panel."""
-        assert control_panel is None or control_panel != self._control_panel
-        self._control_panel = control_panel
-        self._control_tab.content_widget = control_panel
-        tab_parent = self._control_tab.parent()
-        if tab_parent is None and control_panel is not None:
-            screen_size = get_screen_size(self)
-            try:
-                tab_box_id = TabBoxID(Cache().get(Cache.GENERATION_TAB_BAR))
-            except ValueError:
-                tab_box_id = TabBoxID.BOTTOM_TAB_BOX_ID if screen_size.height() > AUTO_TAB_MOVE_THRESHOLD \
-                    else TabBoxID.RIGHT_TAB_BOX_ID
-            self.add_tab(self._control_tab, tab_box_id)
-        elif control_panel is None:
-            self.remove_tab(self._control_tab)
 
     def _init_tab_actions(self, tab: Tab) -> None:
         if tab not in self._tab_actions:
@@ -328,17 +292,23 @@ class MainWindow(QMainWindow):
             elif not action_included and should_include:
                 tab.addAction(action)
 
-    def add_tab(self, tab: Tab, tab_box_key: Optional[TabBoxID]) -> None:
+    def add_tab(self, tab: Tab, tab_box_id: Optional[TabBoxID] = None) -> None:
         """Adds a new tab to one of the window's tab boxes."""
-        if tab_box_key is None:
-            if self.height() > USE_LOWER_CONTROL_TAB_THRESHOLD:
-                tab_box_key = TabBoxID.BOTTOM_TAB_BOX_ID
+        if tab_box_id is None:
+            if isinstance(tab.content_widget, ToolPanel):
+                try:
+                    tab_box_id = TabBoxID(Cache().get(Cache.TOOL_TAB_BAR))
+                except ValueError:
+                    tab_box_id = TabBoxID.LOWER_TAB_BOX_ID if self.height() > AUTO_TAB_MOVE_THRESHOLD \
+                        else TabBoxID.RIGHT_TAB_BOX_ID
+            elif self.height() > USE_LOWER_CONTROL_TAB_THRESHOLD:
+                tab_box_id = TabBoxID.BOTTOM_TAB_BOX_ID
             elif self.height() > AUTO_TAB_MOVE_THRESHOLD:
-                tab_box_key = TabBoxID.LOWER_TAB_BOX_ID
+                tab_box_id = TabBoxID.LOWER_TAB_BOX_ID
             else:
-                tab_box_key = TabBoxID.RIGHT_TAB_BOX_ID
-        tab_box = self._get_tab_box(tab_box_key)
-        self._update_tab_actions(tab, tab_box_key)
+                tab_box_id = TabBoxID.RIGHT_TAB_BOX_ID
+        tab_box = self._get_tab_box(tab_box_id)
+        self._update_tab_actions(tab, tab_box_id)
         tab_box.add_widget(tab)
 
     def remove_tab(self, tab: Tab) -> None:
@@ -349,6 +319,11 @@ class MainWindow(QMainWindow):
             if tab_box.contains_widget(tab):
                 tab_box.remove_widget(tab)
                 return
+
+    @property
+    def image_window(self) -> ImageWindow:
+        """Access the secondary image window."""
+        return self._image_window
 
     def show_image_window(self) -> None:
         """Show or raise the image window."""
@@ -437,6 +412,11 @@ class MainWindow(QMainWindow):
     def closeEvent(self, unused_event: Optional[QCloseEvent]) -> None:
         """Close the application when the main window is closed."""
         QApplication.exit()
+
+    @property
+    def image_panel(self) -> ImagePanel:
+        """Returns the window's ImagePanel."""
+        return self._image_panel
 
     def _get_tab_box(self, tab_box_id: TabBoxID) -> TabBox:
         """Look up a tab box from its expected name in config."""

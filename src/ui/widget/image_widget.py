@@ -23,6 +23,13 @@ class ImageWidget(QWidget):
             return self._image.availableSizes()[0]
         return self._image.size()
 
+    def minimumSizeHint(self) -> QSize:
+        """Set minimum size based on image size."""
+        base_size = self.sizeHint()
+        if base_size.width() > 3 and base_size.height() > 3:
+            return QSize(base_size.width() // 3, base_size.height() // 3)
+        return base_size
+
     @property
     def image(self) -> Optional[QImage | QPixmap | QIcon]:
         """Access the displayed image."""

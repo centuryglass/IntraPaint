@@ -42,6 +42,7 @@ class ImagePanel(QWidget):
     def __init__(self, image_stack: ImageStack, include_tab_boxes: bool = False, include_zoom_controls: bool = True,
                  use_keybindings=True) -> None:
         super().__init__()
+        self._showing_image_gen_controls = True
         if include_tab_boxes:
             self._outer_layout = QHBoxLayout(self)
             self._outer_layout.setContentsMargins(0, 0, 0, 0)
@@ -58,6 +59,7 @@ class ImagePanel(QWidget):
             self._outer_layout.addWidget(self._right_tab_box, stretch=TAB_BOX_STRETCH)
 
             def _show_or_hide_left_divider(_=None) -> None:
+                assert self._left_tab_box is not None
                 self._left_divider.setVisible(self._left_tab_box.count > 0 and self._left_tab_box.is_open)
             for signal in (self._left_tab_box.box_toggled, self._left_tab_box.tab_added,
                            self._left_tab_box.tab_removed):
@@ -65,6 +67,7 @@ class ImagePanel(QWidget):
             _show_or_hide_left_divider()
 
             def _show_or_hide_right_divider(_=None) -> None:
+                assert self._right_tab_box is not None
                 self._right_divider.setVisible(self._right_tab_box.count > 0 and self._right_tab_box.is_open)
             for signal in (self._right_tab_box.box_toggled, self._right_tab_box.tab_added,
                            self._right_tab_box.tab_removed):
@@ -106,23 +109,26 @@ class ImagePanel(QWidget):
             assert self._control_hint_label is not None
             self._control_layout.addWidget(self._control_hint_label)
             self._control_layout.addSpacing(25)
-            scale_reset_button = QPushButton()
+            self._scale_reset_button: Optional[QPushButton] = QPushButton()
 
             def toggle_scale():
                 """Toggle between default zoom and zooming in on the image generation area."""
+                assert self._scale_reset_button is not None
                 if self._image_viewer.is_at_default_view and not self._image_viewer.follow_generation_area:
                     self._image_viewer.follow_generation_area = True
-                    scale_reset_button.setText(SCALE_RESET_BUTTON_LABEL)
-                    scale_reset_button.setToolTip(SCALE_RESET_BUTTON_TOOLTIP)
+                    self._scale_reset_button.setVisible(True)
+                    self._scale_reset_button.setText(SCALE_RESET_BUTTON_LABEL)
+                    self._scale_reset_button.setToolTip(SCALE_RESET_BUTTON_TOOLTIP)
                 else:
+                    self._scale_reset_button.setVisible(self._showing_image_gen_controls)
                     self._image_viewer.follow_generation_area = False
                     self._image_viewer.reset_scale()
-                    scale_reset_button.setText(SCALE_ZOOM_BUTTON_LABEL)
-                    scale_reset_button.setToolTip(SCALE_ZOOM_BUTTON_TOOLTIP)
+                    self._scale_reset_button.setText(SCALE_ZOOM_BUTTON_LABEL)
+                    self._scale_reset_button.setToolTip(SCALE_ZOOM_BUTTON_TOOLTIP)
 
-            scale_reset_button.setText(SCALE_ZOOM_BUTTON_LABEL)
-            scale_reset_button.setToolTip(SCALE_ZOOM_BUTTON_TOOLTIP)
-            scale_reset_button.clicked.connect(toggle_scale)
+            self._scale_reset_button.setText(SCALE_ZOOM_BUTTON_LABEL)
+            self._scale_reset_button.setToolTip(SCALE_ZOOM_BUTTON_TOOLTIP)
+            self._scale_reset_button.clicked.connect(toggle_scale)
             # Zoom slider:
             self._control_layout.addWidget(QLabel(SCALE_SLIDER_LABEL))
             image_scale_slider: Optional[QSlider] = QSlider(Qt.Orientation.Horizontal)
@@ -137,7 +143,7 @@ class ImagePanel(QWidget):
             image_scale_box.setRange(0.001, 40)
             image_scale_box.setSingleStep(0.1)
             image_scale_box.setValue(self._image_viewer.scene_scale)
-            self._control_layout.addWidget(scale_reset_button)
+            self._control_layout.addWidget(self._scale_reset_button)
 
             scale_signals = [
                 self._image_viewer.scale_changed,
@@ -147,6 +153,7 @@ class ImagePanel(QWidget):
 
             def on_scale_change(new_scale: float | int) -> None:
                 """Synchronize slider, spin box, panel scale, and zoom button text:"""
+                assert self._scale_reset_button is not None
                 if isinstance(new_scale, int):
                     float_scale = new_scale / 100
                     int_scale = new_scale
@@ -164,11 +171,13 @@ class ImagePanel(QWidget):
                 for scale_signal in scale_signals:
                     scale_signal.connect(on_scale_change)
                 if self._image_viewer.is_at_default_view and not self._image_viewer.follow_generation_area:
-                    scale_reset_button.setText(SCALE_ZOOM_BUTTON_LABEL)
-                    scale_reset_button.setToolTip(SCALE_ZOOM_BUTTON_TOOLTIP)
+                    self._scale_reset_button.setVisible(self._showing_image_gen_controls)
+                    self._scale_reset_button.setText(SCALE_ZOOM_BUTTON_LABEL)
+                    self._scale_reset_button.setToolTip(SCALE_ZOOM_BUTTON_TOOLTIP)
                 else:
-                    scale_reset_button.setText(SCALE_RESET_BUTTON_LABEL)
-                    scale_reset_button.setToolTip(SCALE_RESET_BUTTON_TOOLTIP)
+                    self._scale_reset_button.setVisible(True)
+                    self._scale_reset_button.setText(SCALE_RESET_BUTTON_LABEL)
+                    self._scale_reset_button.setToolTip(SCALE_RESET_BUTTON_TOOLTIP)
 
             for signal in scale_signals:
                 signal.connect(on_scale_change)
@@ -177,7 +186,17 @@ class ImagePanel(QWidget):
             self._control_hint_label = None
             self._control_bar = None
             self._image_scale_slider = None
+            self._scale_reset_button = None
         self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+
+    def set_image_generation_controls_visible(self, visible: bool) -> None:
+        """Sets whether controls related to image generation will be shown."""
+        if visible == self._showing_image_gen_controls:
+            return
+        self._showing_image_gen_controls = visible
+        if self._scale_reset_button is not None:
+            self._scale_reset_button.setVisible(visible or not self._image_viewer.is_at_default_view)
+        self._image_viewer.set_generation_area_visible(visible)
 
     @property
     def vertical_layout(self) -> QVBoxLayout:

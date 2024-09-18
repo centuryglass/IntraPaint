@@ -12,7 +12,7 @@ from src.image.canvas.qt_paint_canvas import QtPaintCanvas
 from src.image.layers.image_stack import ImageStack
 from src.tools.canvas_tool import CanvasTool
 from src.ui.image_viewer import ImageViewer
-from src.ui.panel.tool_control_panels.canvas_selection_panel import TOOL_MODE_ERASE, CanvasSelectionPanel
+from src.ui.panel.tool_control_panels.brush_selection_panel import TOOL_MODE_ERASE, BrushSelectionPanel
 from src.util.visual.text_drawing_utils import left_button_hint_text, right_button_hint_text
 from src.util.shared_constants import PROJECT_DIR
 
@@ -40,7 +40,7 @@ class SelectionBrushTool(CanvasTool):
         canvas = QtPaintCanvas(None)
         super().__init__(image_stack, image_viewer, canvas, False, False)
         self._last_click = None
-        self._control_panel = CanvasSelectionPanel(image_stack.selection_layer)
+        self._control_panel = BrushSelectionPanel(image_stack.selection_layer)
         self._control_panel.tool_mode_changed.connect(self._tool_toggle_slot)
         self._active = False
         self._drawing = False

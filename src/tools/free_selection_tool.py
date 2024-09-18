@@ -12,7 +12,7 @@ from src.tools.base_tool import BaseTool
 from src.ui.graphics_items.path_creation_item import PathCreationItem
 from src.ui.graphics_items.temp_dashed_line_item import TempDashedLineItem
 from src.ui.image_viewer import ImageViewer
-from src.ui.panel.tool_control_panels.canvas_selection_panel import TOOL_MODE_ERASE
+from src.ui.panel.tool_control_panels.brush_selection_panel import TOOL_MODE_ERASE
 from src.ui.panel.tool_control_panels.free_selection_panel import FreeSelectionPanel
 from src.util.visual.text_drawing_utils import rich_text_key_hint, left_button_hint_text, right_button_hint_text
 from src.util.shared_constants import PROJECT_DIR
@@ -61,7 +61,7 @@ class FreeSelectionTool(BaseTool):
                 return False
             self._close_and_select()
             return True
-        HotkeyFilter.instance().register_keybinding(_close_on_enter,
+        HotkeyFilter.instance().register_keybinding('FreeSelectionTool._close_on_enter', _close_on_enter,
                                                     QKeySequence(Qt.Key.Key_Enter, Qt.Key.Key_Return))
 
     def get_hotkey(self) -> QKeySequence:
@@ -99,7 +99,7 @@ class FreeSelectionTool(BaseTool):
         self._preview_line.setVisible(False)
         self._path_item.clear_points()
         layer = self._image_stack.selection_layer
-        layer_pos = layer.bounds.topLeft()
+        layer_pos = layer.transformed_bounds.topLeft()
         bounds = polygon.boundingRect().toAlignedRect()
         bounds.translate(-layer_pos.x(), -layer_pos.y())
         with layer.borrow_image(bounds) as selection_img:

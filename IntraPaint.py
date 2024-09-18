@@ -20,15 +20,18 @@ from src.util.shared_constants import TIMELAPSE_MODE_FLAG, PROJECT_DIR, LOG_DIR
 
 DEFAULT_GLID_MODEL = f'{PROJECT_DIR}/models/inpaint.pt'
 
+MODE_OPTION_HELP = ('Set how image generation operations should be completed. \nOptions:\n'
+                    '"auto": Attempt to guess at the most appropriate image generation mode.\n'
+                    '"stable": A remote server handles inpainting over a network using stable-diffusion.\n'
+                    '"web": A remote server handles inpainting over a network using GLID-3-XL.\n'
+                    '"none": No AI image generation capabilities, manual editing only.\n')
+if not is_pyinstaller_bundle():
+    MODE_OPTION_HELP += ('"local": Handle inpainting on the local machine (requires a GPU with ~10GB VRAM).\n'
+                         '"mock": No actual inpainting performed, for UI testing only')
+
 # argument parsing:
 parser = build_arg_parser(include_edit_params=False, include_model_defaults=False)
-parser.add_argument('--mode', type=str, required=False, default='auto',
-                    help='Set where inpainting operations should be completed. \nOptions:\n'
-                         '"auto": Attempt to guess at the most appropriate editing mode.\n'
-                         '"stable": A remote server handles inpainting over a network using stable-diffusion.\n'
-                         '"web": A remote server handles inpainting over a network using GLID-3-XL.\n'
-                         '"local": Handle inpainting on the local machine (requires a GPU with ~10GB VRAM).\n'
-                         '"mock": No actual inpainting performed, for UI testing only')
+parser.add_argument('--mode', type=str, required=False, default='auto', help=MODE_OPTION_HELP)
 parser.add_argument('--init_edit_image', type=str, required=False, default=None,
                     help='initial image to edit')
 parser.add_argument('--edit_width', type=int, required=False, default=256,

@@ -4,14 +4,14 @@ import sys
 import unittest
 from unittest.mock import Mock, patch
 
-from PySide6.QtCore import QSize, QRect, QPoint, Qt
+from PySide6.QtCore import QSize
 from PySide6.QtWidgets import QApplication
 
 from src.config.application_config import AppConfig
 from src.config.cache import Cache
 from src.config.key_config import KeyConfig
 from src.image.layers.image_stack import ImageStack
-from src.ui.window.main_window import MainWindow, CONTROL_TAB_NAME
+from src.ui.window.main_window import MainWindow
 
 app = QApplication.instance() or QApplication(sys.argv)
 

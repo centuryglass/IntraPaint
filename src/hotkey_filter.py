@@ -1,5 +1,6 @@
 """Passes ImageViewer input events to an active editing tool."""
 import logging
+from dataclasses import dataclass
 from typing import Optional, Dict, Callable, List, cast, Tuple
 
 from PySide6.QtCore import Qt, QObject, QEvent, Signal, QTimer
@@ -28,9 +29,12 @@ class HotkeyFilter(QObject):
             return HotkeyFilter()
         return HotkeyFilter.shared_instance
 
+    @dataclass
     class KeyBinding:
-        """Holds keybinding information
+        """Holds key binding information
 
+        KeyBinding.str_id:
+            String used to identify this binding.
         KeyBinding.action:
             Function the key binding should invoke. Returns whether the function consumed the key event.
         KeyBinding.key:
@@ -38,12 +42,10 @@ class HotkeyFilter(QObject):
         KeyBinding.modifiers:
             Exact keyboard modifiers required to invoke the action.  If none, modifiers will be ignored.
         """
-
-        def __init__(self, action: Callable[[], bool], key: Qt.Key | int,
-                     modifiers: Qt.KeyboardModifier = Qt.KeyboardModifier.NoModifier):
-            self.action = action
-            self.key = key
-            self.modifiers = modifiers
+        str_id: str
+        action: Callable[[], bool]
+        key: Qt.Key | int
+        modifiers: Qt.KeyboardModifier = Qt.KeyboardModifier.NoModifier
 
     def __init__(self) -> None:
         """Registers and handles application-level hotkeys."""
@@ -72,7 +74,7 @@ class HotkeyFilter(QObject):
            returns focus to the focus widget."""
         self._default_focus = focus_widget
 
-    def register_keybinding(self, action: Callable[[], bool], keys: QKeySequence,
+    def register_keybinding(self, str_id: str, action: Callable[[], bool], keys: QKeySequence,
                             modifiers: Qt.KeyboardModifier = Qt.KeyboardModifier.NoModifier
                             ) -> List[Tuple[Qt.Key, 'HotkeyFilter.KeyBinding']]:
         """Register a keystroke that should invoke an action.
@@ -82,6 +84,8 @@ class HotkeyFilter(QObject):
 
         Parameters
         ----------
+        str_id: str
+            Identifier to assign to this binding, to be used if needed to remove the binding later.
         action: Callable
             Function the key binding should invoke. Returns whether the function consumed the key event.
         keys: QKeySequence
@@ -104,18 +108,30 @@ class HotkeyFilter(QObject):
                 # noinspection PyUnresolvedReferences
                 key = QKeySequence(key_strings[-1])[0]
 
-            keybinding = HotkeyFilter.KeyBinding(action, key, key_modifiers)
+            keybinding = HotkeyFilter.KeyBinding(str_id, action, key, key_modifiers)
             if key not in self._bindings:
                 self._bindings[key] = []
             self._bindings[key].insert(0, keybinding)
             new_bindings.append((key, keybinding))
         return new_bindings
 
-    def register_config_keybinding(self, action: Callable[[], bool], config_key: str) -> None:
+    def remove_keybinding(self, str_id: str) -> None:
+        """Finds and removes all keybindings with the given ID string."""
+        to_remove: List[Tuple[Qt.Key | int, int]] = []
+        for key, key_list in self._bindings.items():
+            for i, binding in enumerate(key_list):
+                if binding.str_id == str_id:
+                    to_remove.append((key, i))
+        for key, idx in to_remove:
+            del self._bindings[key][idx]
+
+    def register_config_keybinding(self, str_id: str, action: Callable[[], bool], config_key: str) -> None:
         """Register a keybinding defined in application config.
 
         Parameters
         ----------
+        str_id: str
+            Identifier to assign to this binding, to be used if needed to remove the binding later.
         action: Callable
             Function the key binding should invoke. Returns whether the function consumed the key event.
         config_key: str
@@ -124,10 +140,10 @@ class HotkeyFilter(QObject):
         key_text = KeyConfig().get(config_key)
         assert isinstance(key_text, str)
         keys = key_text.split(',')
-        new_bindings = []
+        new_bindings: List[Tuple[Qt.Key, 'HotkeyFilter.KeyBinding']] = []
         for binding_str in keys:
             key, modifiers = get_key_with_modifiers(binding_str)
-            new_bindings += self.register_keybinding(action, QKeySequence(key), modifiers)
+            new_bindings += self.register_keybinding(str_id, action, QKeySequence(key), modifiers)
         if len(new_bindings) == 0:
 
             return
@@ -138,12 +154,13 @@ class HotkeyFilter(QObject):
             # Remove and replace bindings when the config key changes:
             for prev_key, binding in new_bindings:
                 self._bindings[prev_key].remove(binding)
-            KeyConfig().disconnect(connected_binding, connected_key)
+            KeyConfig().disconnect(connected_binding.str_id, connected_key)
             assert isinstance(connected_binding, HotkeyFilter.KeyBinding)
-            self.register_config_keybinding(connected_binding.action, connected_key)
-        KeyConfig().connect(connected_binding, connected_key, _update_config)
+            self.register_config_keybinding(str_id, connected_binding.action, connected_key)
+        KeyConfig().connect(connected_binding.str_id, connected_key, _update_config)
 
-    def register_speed_modified_keybinding(self, scaling_action: Callable[[int], bool], config_key: str) -> None:
+    def register_speed_modified_keybinding(self, str_id: str, scaling_action: Callable[[int], bool],
+                                           config_key: str) -> None:
         """Register a keybinding defined in application config that's affected by the speed modifier.
 
         If the speed_modifier key has a valid definition in the config file, some actions operate at increased speed if
@@ -151,6 +168,8 @@ class HotkeyFilter(QObject):
 
         Parameters
         ----------
+        str_id: str
+            Identifier to assign to this binding, to be used if needed to remove the binding later.
         scaling_action: Callable[[int], bool]
             Function the key binding should invoke. The int parameter is a multiplier that the function should apply to
             some scalar action it performs. Return value is whether the function consumed the key event.
@@ -169,9 +188,10 @@ class HotkeyFilter(QObject):
         keys = key_text.split(',')
         for binding_str in keys:
             key, modifiers = get_key_with_modifiers(binding_str)
-            self.register_keybinding(lambda: scaling_action(1), QKeySequence(key), modifiers)
+            self.register_keybinding(str_id, lambda: scaling_action(1), QKeySequence(key), modifiers)
             if (speed_modifier | modifiers) != modifiers:
-                self.register_keybinding(lambda: scaling_action(AppConfig().get(AppConfig.SPEED_MODIFIER_MULTIPLIER)),
+                self.register_keybinding(str_id,
+                                         lambda: scaling_action(AppConfig().get(AppConfig.SPEED_MODIFIER_MULTIPLIER)),
                                          QKeySequence(key), modifiers | speed_modifier)
 
     def eventFilter(self, source: Optional[QObject], event: Optional[QEvent]) -> bool:

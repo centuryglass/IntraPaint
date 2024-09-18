@@ -7,8 +7,8 @@ from PySide6.QtWidgets import QSizePolicy, QGridLayout, QLabel, QPushButton, \
 
 from src.config.cache import Cache
 from src.ui.input_fields.size_field import SizeField
-from src.ui.layout.bordered_widget import BorderedWidget
 from src.ui.layout.divider import Divider
+from src.ui.panel.generators.generator_panel import GeneratorPanel
 from src.util.application_state import APP_STATE_EDITING, AppStateTracker
 from src.util.parameter import DynamicFieldWidget
 from src.util.shared_constants import BUTTON_TEXT_GENERATE, EDIT_MODE_INPAINT, EDIT_MODE_TXT2IMG
@@ -26,7 +26,7 @@ INTERROGATE_BUTTON_TEXT = _tr('Interrogate')
 INTERROGATE_BUTTON_TOOLTIP = _tr('Attempt to generate a prompt that describes the current image generation area')
 
 
-class SDWebUIPanel(BorderedWidget):
+class SDWebUIPanel(GeneratorPanel):
     """A control panel for the Stable-Diffusion WebUI image generator."""
 
     interrogate_signal = Signal()

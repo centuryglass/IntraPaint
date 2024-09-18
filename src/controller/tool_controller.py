@@ -17,11 +17,11 @@ from src.tools.eraser_tool import EraserTool
 from src.tools.eyedropper_tool import EyedropperTool
 from src.tools.fill_tool import FillTool
 from src.tools.free_selection_tool import FreeSelectionTool
-from src.tools.generation_area_tool import GenerationAreaTool
 from src.tools.layer_transform_tool import LayerTransformTool
 from src.tools.selection_fill_tool import SelectionFillTool
 from src.tools.selection_brush_tool import SelectionBrushTool
 from src.tools.shape_selection_tool import ShapeSelectionTool
+from src.tools.smudge_tool import SmudgeTool
 from src.tools.text_tool import TextTool
 from src.ui.image_viewer import ImageViewer
 from src.ui.modal.modal_utils import show_warning_dialog
@@ -29,7 +29,6 @@ from src.util.optional_import import optional_import
 
 BrushTool = optional_import('src.tools.brush_tool', attr_name='BrushTool')
 BlurTool = optional_import('src.tools.blur_tool', attr_name='BlurTool')
-SmudgeTool = optional_import('src.tools.smudge_tool', attr_name='SmudgeTool')
 
 logger = logging.getLogger(__name__)
 
@@ -49,6 +48,8 @@ BRUSH_LOAD_ERROR_MESSAGE = _tr('The brush tool will not be available unless this
 class ToolController(QObject):
     """Manages available tools and handles tool input events."""
 
+    tool_added = Signal(QObject)
+    tool_removed = Signal(QObject)
     tool_changed = Signal(QObject)
 
     def __init__(self, image_stack: ImageStack, image_viewer: ImageViewer, load_all_tools: bool = True,
@@ -71,32 +72,30 @@ class ToolController(QObject):
 
         # Set up tools:
         last_active_tool_name = Cache().get(Cache.LAST_ACTIVE_TOOL)
-        self._add_tool(GenerationAreaTool(image_stack, image_viewer))
-        self._add_tool(LayerTransformTool(image_stack, image_viewer))
         if BrushTool is not None:
             brush_tool = BrushTool(image_stack, image_viewer)
-            self._add_tool(brush_tool)
+            self.add_tool(brush_tool)
         else:
             show_warning_dialog(None, BRUSH_LOAD_ERROR_TITLE, BRUSH_LOAD_ERROR_MESSAGE,
                                 AppConfig.WARN_ON_LIBMYPAINT_ERROR)
             brush_tool = None
         draw_tool = DrawTool(image_stack, image_viewer)
-        self._add_tool(draw_tool)
-        self._add_tool(EraserTool(image_stack, image_viewer))
+        self.add_tool(draw_tool)
+        self.add_tool(EraserTool(image_stack, image_viewer))
         fill_tool = FillTool(image_stack)
-        self._add_tool(fill_tool)
+        self.add_tool(fill_tool)
         if BlurTool is not None:
-            self._add_tool(BlurTool(image_stack, image_viewer))
-        if SmudgeTool is not None:
-            self._add_tool(SmudgeTool(image_stack, image_viewer))
+            self.add_tool(BlurTool(image_stack, image_viewer))
+        self.add_tool(SmudgeTool(image_stack, image_viewer))
         eyedropper_tool = EyedropperTool(image_stack)
-        self._add_tool(eyedropper_tool)
+        self.add_tool(eyedropper_tool)
         text_tool = TextTool(image_stack, image_viewer)
-        self._add_tool(text_tool)
-        self._add_tool(SelectionBrushTool(image_stack, image_viewer))
-        self._add_tool(FreeSelectionTool(image_stack, image_viewer))
-        self._add_tool(ShapeSelectionTool(image_stack, image_viewer))
-        self._add_tool(SelectionFillTool(image_stack))
+        self.add_tool(text_tool)
+        self.add_tool(LayerTransformTool(image_stack, image_viewer))
+        self.add_tool(FreeSelectionTool(image_stack, image_viewer))
+        self.add_tool(SelectionBrushTool(image_stack, image_viewer))
+        self.add_tool(ShapeSelectionTool(image_stack, image_viewer))
+        self.add_tool(SelectionFillTool(image_stack))
 
         eyedropper_modifier = KeyConfig().get_modifier(KeyConfig.EYEDROPPER_OVERRIDE_MODIFIER)
         if eyedropper_modifier != Qt.KeyboardModifier.NoModifier:
@@ -112,7 +111,7 @@ class ToolController(QObject):
         if last_active_tool is not None:
             self.active_tool = last_active_tool
         else:
-            self.active_tool = self.find_tool_by_class(GenerationAreaTool)
+            self.active_tool = self.find_tool_by_class(DrawTool)
 
     @property
     def tools(self) -> List[BaseTool]:
@@ -147,7 +146,13 @@ class ToolController(QObject):
             self.active_tool = tool
             self._image_viewer.focusWidget()
             return True
-        HotkeyFilter.instance().register_keybinding(set_active, keys, Qt.KeyboardModifier.NoModifier)
+        binding_id = f'{tool.label}_{id(self)}'
+        HotkeyFilter.instance().register_keybinding(binding_id, set_active, keys, Qt.KeyboardModifier.NoModifier)
+
+    def unregister_hotkeys(self, tool: BaseTool) -> None:
+        """Disconnects tool hotkey bindings."""
+        binding_id = f'{tool.label}_{id(self)}'
+        HotkeyFilter.instance().remove_keybinding(binding_id)
 
     def register_tool_delegate(self, source_tool: BaseTool, delegate_tool: BaseTool,
                                modifiers: Qt.KeyboardModifier) -> None:
@@ -194,7 +199,7 @@ class ToolController(QObject):
         """Sets a new active tool."""
         logger.info(f'active tool set: {new_tool}')
         if new_tool not in self._all_tools:
-            self._add_tool(new_tool)
+            self.add_tool(new_tool)
         if self._active_delegate is not None:
             self._active_delegate.is_active = False
             self._active_delegate = None
@@ -210,6 +215,10 @@ class ToolController(QObject):
         self._mouse_in_bounds = False
         if new_tool is not None:
             self.tool_changed.emit(new_tool)
+
+    def set_active_tool(self, new_tool: BaseTool) -> None:
+        """Sets a new active tool."""
+        self.active_tool = new_tool
 
     def eventFilter(self, source: Optional[QObject], event: Optional[QEvent]):
         """Allow the active tool to intercept and handle events."""
@@ -258,7 +267,40 @@ class ToolController(QObject):
                 event_handled = active_tool.wheel_event(cast(QWheelEvent, event))
         return True if event_handled else super().eventFilter(source, event)
 
-    def _add_tool(self, new_tool: BaseTool) -> None:
+    def add_tool(self, new_tool: BaseTool) -> None:
         """Adds a new tool to the list of available tools."""
         self._all_tools.append(new_tool)
         self.register_hotkeys(new_tool)
+        self.tool_added.emit(new_tool)
+
+    def remove_tool(self, removed_tool: BaseTool) -> None:
+        """Removes a tool from the list."""
+        if removed_tool not in self._all_tools:
+            logger.warning(f'Tried to remove tool {removed_tool.label} that is not actually present.')
+
+        # If the tool is active or active as a delegate, stop delegation and change active tool if necessary:
+        if self._active_delegate is not None and removed_tool in (self._active_delegate, self._active_tool):
+            self._handle_modifier_delegation(Qt.KeyboardModifier.NoModifier)
+            assert self._active_delegate is None
+        if removed_tool == self.active_tool:  # If the tool is active, switch to another first:
+            for alternate_tool in self._all_tools:
+                if alternate_tool != removed_tool:
+                    self.active_tool = alternate_tool
+                    break
+            if removed_tool == self.active_tool:
+                raise RuntimeError(f'Tried to remove active tool {removed_tool.label}, but no other tool exists to'
+                                   'replace it.')
+        # Clear keybindings, remove from tool list and delegates:
+        self.unregister_hotkeys(removed_tool)
+        for delegate_dict in self._tool_modifier_delegates.values():
+            to_remove = []
+            for modifier, delegate_tool in delegate_dict.items():
+                if delegate_tool == removed_tool:
+                    to_remove.append(modifier)
+            for modifier in to_remove:
+                del delegate_dict[modifier]
+        if removed_tool in self._tool_modifier_delegates:
+            del self._tool_modifier_delegates[removed_tool]
+        self._all_tools.remove(removed_tool)
+        self.tool_removed.emit(removed_tool)
+

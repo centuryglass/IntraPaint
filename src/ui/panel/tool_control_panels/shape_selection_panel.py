@@ -38,7 +38,8 @@ class ShapeSelectionPanel(SelectionPanel):
                 return False
             self._mode_toggle.toggle()
             return True
-        HotkeyFilter.instance().register_config_keybinding(_try_toggle, KeyConfig.TOOL_ACTION_HOTKEY)
+        binding_id = f'ShapeSelectionPanel_{id(self)}_try_toggle'
+        HotkeyFilter.instance().register_config_keybinding(binding_id, _try_toggle, KeyConfig.TOOL_ACTION_HOTKEY)
 
         # TODO: fixed aspect ratio checkbox
         self.insert_into_layout(Divider(Qt.Orientation.Horizontal))

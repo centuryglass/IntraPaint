@@ -1,4 +1,4 @@
-"""Selection panel for the primary SelectionTool class."""
+"""Selection panel for the SelectionBrushTool class."""
 from typing import cast
 
 from PySide6.QtCore import Signal, Qt
@@ -34,8 +34,8 @@ RESOURCES_PEN_PNG = f'{PROJECT_DIR}/resources/icons/pen_small.svg'
 RESOURCES_ERASER_PNG = f'{PROJECT_DIR}/resources/icons/eraser_small.svg'
 
 
-class CanvasSelectionPanel(SelectionPanel):
-    """Selection panel for the primary SelectionTool class."""
+class BrushSelectionPanel(SelectionPanel):
+    """Selection panel for the SelectionBrushTool class."""
 
     tool_mode_changed = Signal(str)
 
@@ -75,4 +75,5 @@ class CanvasSelectionPanel(SelectionPanel):
                 return False
             tool_toggle.toggle()
             return True
-        HotkeyFilter.instance().register_config_keybinding(_try_toggle, KeyConfig.TOOL_ACTION_HOTKEY)
+        binding_id = f'BrushSelectionPanel_{id(self)}_try_toggle'
+        HotkeyFilter.instance().register_config_keybinding(binding_id, _try_toggle, KeyConfig.TOOL_ACTION_HOTKEY)

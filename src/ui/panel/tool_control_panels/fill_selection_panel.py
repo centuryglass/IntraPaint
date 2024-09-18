@@ -49,7 +49,8 @@ class FillSelectionPanel(SelectionPanel):
                 return False
             sample_merged_checkbox.toggle()
             return True
-        HotkeyFilter.instance().register_config_keybinding(_try_toggle, KeyConfig.TOOL_ACTION_HOTKEY)
+        binding_id = f'FillSelectionPanel_{id(self)}_try_toggle'
+        HotkeyFilter.instance().register_config_keybinding(binding_id, _try_toggle, KeyConfig.TOOL_ACTION_HOTKEY)
 
         self._fill_by_selection_checkbox = CheckBox()
         self._fill_by_selection_checkbox.setText(FILL_BY_SELECTION)

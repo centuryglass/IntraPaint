@@ -105,6 +105,7 @@ class DraggableDivider(QWidget):
         - Never decrease a widget's stretch to less than one.
         """
         parent_layout = self._get_containing_layout()
+        assert parent_layout is not None
         own_index = parent_layout.indexOf(self)
         if own_index in (0, -1, parent_layout.count() - 1):
             return
@@ -277,9 +278,9 @@ def _item_at_minimum_size(item: Optional[QWidget | QLayout | QSpacerItem]) -> Tu
         size_hint = item.minimumSizeHint()
         size_policy = item.sizePolicy()
         at_minimum_width = _widget_at_minimum(item.width(), item.minimumWidth(), size_hint.width(),
-                                       size_policy.horizontalPolicy())
+                                              size_policy.horizontalPolicy())
         at_minimum_height = _widget_at_minimum(item.height(), item.minimumHeight(), size_hint.height(),
-                                        size_policy.verticalPolicy())
+                                               size_policy.verticalPolicy())
     return at_minimum_width, at_minimum_height
 
 

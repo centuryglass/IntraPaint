@@ -87,8 +87,8 @@ class CanvasTool(BaseTool):
                     return False
                 self.adjust_brush_size(step * mult)
                 return True
-
-            HotkeyFilter.instance().register_speed_modified_keybinding(_size_change, key)
+            binding_id = f'CanvasTool_{id(self)}_{key}'
+            HotkeyFilter.instance().register_speed_modified_keybinding(binding_id, _size_change, key)
 
         if enable_selection_restrictions:
             # Handle restricting changes to selection:

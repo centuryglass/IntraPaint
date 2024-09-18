@@ -1,5 +1,41 @@
 """
-AppController coordinates IntraPaint application behavior.
+AppController coordinates almost all IntraPaint application behavior.
+
+Primary responsibilities:
+
+Initialization:
+- Initialize all Config classes.
+- Initialize application image data and control structures (via ImageStack).
+- Create the main application window, connecting signal handlers and applying cached and command line arguments.
+- Create or load the initial image, depending on command line options.
+- Build the main application menu structure, and configure when all menu options should be enabled.
+- Load application themes, styles, and other display options.
+- Create the ToolController and ToolPanel, connecting appropriate signals.
+- Prepare all available ImageGenerator options, applying an appropriate one based on availability and command line
+  arguments.
+
+Image generator management:
+- Manage the set of available image generators.
+- Provides the GeneratorSetupWindow that allows the user to view and select generators.
+- Update settings, control panels, and menu options when the active generator changes.
+- Show or hide image generation tools depending on whether the active generator actually has image generation
+  capabilities.
+
+Application menu handling:
+- Defines the list of standard menu options, configures when they should be visible and/or enabled, and provides
+  the methods that handle those menu options.
+- Dynamically creates menu options for all image filters.
+- Provides access to various ImageStack and ImageGenerator functions
+
+Image I/O:
+- Controls when and how image file dialogs are shown.
+- Shows appropriate errors or warnings whenever saving/loading fails or does not preserve all data.
+- Caches and applies image metadata.
+- Provides the connection between the ImageStack and image files.
+
+User settings:
+- Creates the settings modal, ensures that it contains appropriate entries from the assorted Config classes
+- Applies changes to config whenever the settings modal closes.
 """
 import json
 import logging
@@ -12,8 +48,8 @@ from typing import Optional, Any, List, Tuple, Callable, Set
 from PIL import Image, UnidentifiedImageError, ExifTags
 from PIL.ExifTags import IFD
 from PySide6.QtCore import QSize
-from PySide6.QtGui import QImage, Qt
-from PySide6.QtWidgets import QApplication, QMessageBox
+from PySide6.QtGui import QImage, Qt, QIcon
+from PySide6.QtWidgets import QApplication, QMessageBox, QWidget
 
 from src.config.application_config import AppConfig
 from src.config.cache import Cache
@@ -24,6 +60,7 @@ from src.controller.image_generation.image_generator import ImageGenerator
 from src.controller.image_generation.null_generator import NullGenerator
 from src.controller.image_generation.sd_webui_generator import SDWebUIGenerator, DEFAULT_SD_URL
 from src.controller.image_generation.test_generator import TestGenerator
+from src.controller.tool_controller import ToolController
 from src.image.filter.blur import BlurFilter
 from src.image.filter.brightness_contrast import BrightnessContrastFilter
 from src.image.filter.posterize import PosterizeFilter
@@ -37,22 +74,30 @@ from src.image.layers.text_layer import TextLayer
 from src.image.layers.transform_group import TransformGroup
 from src.image.layers.transform_layer import TransformLayer
 from src.image.open_raster import save_ora_image, read_ora_image
+from src.tools.base_tool import BaseTool
+from src.tools.generation_area_tool import GenerationAreaTool
+from src.ui.layout.draggable_tabs.tab import Tab
 from src.ui.modal.image_scale_modal import ImageScaleModal
 from src.ui.modal.modal_utils import show_error_dialog, request_confirmation, open_image_file, open_image_layers, \
     show_warning_dialog
 from src.ui.modal.new_image_modal import NewImageModal
 from src.ui.modal.resize_canvas_modal import ResizeCanvasModal
 from src.ui.modal.settings_modal import SettingsModal
+from src.ui.panel.color_panel import ColorControlPanel
 from src.ui.panel.layer_ui.layer_panel import LayerPanel
+from src.ui.panel.tool_panel import ToolPanel
 from src.ui.window.generator_setup_window import GeneratorSetupWindow
+from src.ui.window.image_window import ImageWindow
 from src.ui.window.main_window import MainWindow, TabBoxID
 from src.undo_stack import UndoStack
 from src.util.application_state import AppStateTracker, APP_STATE_NO_IMAGE, APP_STATE_EDITING, APP_STATE_LOADING, \
     APP_STATE_SELECTION
+from src.util.math_utils import clamp
 from src.util.menu_builder import MenuBuilder, menu_action, MENU_DATA_ATTR, MenuData
 from src.util.optional_import import optional_import
 from src.util.pyinstaller import is_pyinstaller_bundle
 from src.util.qtexcepthook import QtExceptHook
+from src.util.shared_constants import PROJECT_DIR
 from src.util.visual.display_size import get_screen_size
 from src.util.visual.image_format_utils import save_image_with_metadata, save_image, load_image, \
     IMAGE_FORMATS_SUPPORTING_METADATA, IMAGE_FORMATS_SUPPORTING_ALPHA, IMAGE_FORMATS_SUPPORTING_PARTIAL_ALPHA, \
@@ -77,9 +122,14 @@ def _tr(*args):
     return QApplication.translate(TR_ID, *args)
 
 
+TOOL_PANEL_LAYER_TAB = _tr('Layers')
+TOOL_PANEL_COLOR_TAB = _tr('Color')
+TOOL_PANEL_NAV_TAB = _tr('Navigation')
+
 GENERATION_MODE_SD_WEBUI = 'stable'
 GENERATION_MODE_LOCAL_GLID = 'local'
 GENERATION_MODE_WEB_GLID = 'web'
+GENERATION_MODE_NONE = 'none'
 GENERATION_MODE_TEST = 'mock'
 GENERATION_MODE_AUTO = 'auto'
 
@@ -94,6 +144,12 @@ MENU_FILTERS = _tr('Filters')
 SUBMENU_MOVE = _tr('Move')
 SUBMENU_SELECT = _tr('Select')
 SUBMENU_TRANSFORM = _tr('Transform')
+
+CONTROL_TAB_NAME = _tr('Image Generation')
+TOOL_TAB_NAME = _tr('Tools')
+
+TOOL_TAB_ICON = f'{PROJECT_DIR}/resources/icons/tabs/wrench.svg'
+GEN_TAB_ICON = f'{PROJECT_DIR}/resources/icons/tabs/sparkle.svg'
 
 GENERATOR_LOAD_ERROR_TITLE = _tr('Loading image generator failed')
 GENERATOR_LOAD_ERROR_MESSAGE = _tr('Unable to load the {generator_name} image generator')
@@ -189,6 +245,7 @@ class AppController(MenuBuilder):
         # Initialize main window:
         self._window = MainWindow(self._image_stack)
         self.menu_window = self._window
+        self._image_viewer = self._window.image_panel.image_viewer
         self._window.generate_signal.connect(self.start_and_manage_inpainting)
         if args.window_size is not None:
             width, height = (int(dim) for dim in args.window_size.split('x'))
@@ -211,14 +268,7 @@ class AppController(MenuBuilder):
             image.fill(Cache().get_color(Cache.NEW_IMAGE_BACKGROUND_COLOR, Qt.GlobalColor.white))
             self._image_stack.load_image(image)
 
-        # Prepare generator options:
-        self._sd_generator = SDWebUIGenerator(self._window, self._image_stack, args)
-        if not is_pyinstaller_bundle():
-            self._glid_generator = Glid3XLGenerator(self._window, self._image_stack, args)
-            self._glid_web_generator = Glid3WebserviceGenerator(self._window, self._image_stack, args)
-        self._test_generator = TestGenerator(self._window, self._image_stack)
-        self._null_generator = NullGenerator(self._window, self._image_stack)
-        self._generator: ImageGenerator = self._null_generator
+        self._generator: Optional[ImageGenerator] = None
 
         # Load settings:
         self._settings_modal = SettingsModal(self._window)
@@ -246,6 +296,7 @@ class AppController(MenuBuilder):
 
             def _open_filter_modal(filter_instance=image_filter) -> None:
                 modal = filter_instance.get_filter_modal()
+                self._set_alt_window_fractional_bounds(modal)
                 modal.exec()
 
             config_key = image_filter.get_config_key()
@@ -305,9 +356,70 @@ class AppController(MenuBuilder):
         config.connect(self, AppConfig.FONT_POINT_SIZE, _apply_font)
         _apply_font(config.get(AppConfig.FONT_POINT_SIZE))
 
-        # Load image generator, if any:
+        # Set up editing tools:
+        self._tool_controller = ToolController(self._image_stack, self._image_viewer)
+        self._tool_panel = ToolPanel()
+        self._generation_area_tool = GenerationAreaTool(self._image_stack, self._image_viewer)
+        self._last_active_tool: Optional[BaseTool] = None
+
+        # Add utility widgets to the tool panel:
+        self._tool_panel_navigation_panel = ImageWindow(self._image_stack, self._image_viewer,
+                                                        include_zoom_controls=False, use_keybindings=False)
+        self._tool_panel.add_utility_widget_tab(LayerPanel(self._image_stack), TOOL_PANEL_LAYER_TAB)
+        self._tool_panel.add_utility_widget_tab(ColorControlPanel(disable_extended_layouts=True), TOOL_PANEL_COLOR_TAB)
+        self._tool_panel.add_utility_widget_tab(self._tool_panel_navigation_panel, TOOL_PANEL_NAV_TAB)
+
+        # Add all tools to the panel except for the generation area tool:
+        for tool in self._tool_controller.tools:
+            if isinstance(tool, GenerationAreaTool):
+                continue
+            self._tool_panel.add_tool_button(tool)
+
+        # Connect signal handlers:
+        self._tool_panel.tool_selected.connect(self._tool_controller.set_active_tool)
+        self._tool_controller.tool_changed.connect(self._tool_panel.setup_active_tool)
+        self._tool_controller.tool_added.connect(self._tool_panel.add_tool_button)
+        self._tool_controller.tool_removed.connect(self._tool_panel.remove_tool_button)
+
+        def _update_image_cursor() -> None:
+            active_tool = self._tool_controller.active_tool
+            if active_tool is not None:
+                self._image_viewer.set_cursor(active_tool.cursor)
+
+        def _update_cursor_and_control_hint(new_active_tool: BaseTool) -> None:
+            self._window.image_panel.set_control_hint(new_active_tool.get_input_hint())
+            if self._last_active_tool is not None:
+                self._last_active_tool.cursor_change.disconnect(_update_image_cursor)
+            new_active_tool.cursor_change.connect(_update_image_cursor)
+            self._last_active_tool = new_active_tool
+            _update_image_cursor()
+        self._tool_controller.tool_changed.connect(_update_cursor_and_control_hint)
+        active_tool = self._tool_controller.active_tool
+        assert active_tool is not None
+        _update_cursor_and_control_hint(active_tool)
+        self._tool_panel.setup_active_tool(active_tool)
+
+        # Set up main window tabs:
+        self._tool_tab = Tab(TOOL_TAB_NAME, self._tool_panel)
+        self._tool_tab.setIcon(QIcon(TOOL_TAB_ICON))
+        self._window.add_tab(self._tool_tab)
+
+        self._control_panel: Optional[QWidget] = None
+        self._control_tab = Tab(CONTROL_TAB_NAME)
+        self._control_tab.setIcon(QIcon(GEN_TAB_ICON))
+
+        # Prepare image generator options, and select one based on availability and command line arguments.
+        self._null_generator = NullGenerator(self._window, self._image_stack)
+        self._sd_generator = SDWebUIGenerator(self._window, self._image_stack, args)
+        if not is_pyinstaller_bundle():
+            self._glid_generator = Glid3XLGenerator(self._window, self._image_stack, args)
+            self._glid_web_generator = Glid3WebserviceGenerator(self._window, self._image_stack, args)
+        self._test_generator = TestGenerator(self._window, self._image_stack)
+
         mode = args.mode
         match mode:
+            case _ if mode == GENERATION_MODE_NONE:
+                self.load_image_generator(self._null_generator)
             case _ if mode == GENERATION_MODE_SD_WEBUI:
                 self.load_image_generator(self._sd_generator)
             case _ if mode == GENERATION_MODE_WEB_GLID and not is_pyinstaller_bundle():
@@ -336,7 +448,8 @@ class AppController(MenuBuilder):
                     if self._glid_generator.is_available():
                         self.load_image_generator(self._glid_generator)
                         return
-                logger.info('No valid generator detected, starting with none enabled.')
+                logger.info('No valid generator detected, starting with null generator enabled.')
+                self.load_image_generator(self._null_generator)
 
     def start_app(self) -> None:
         """Start the application."""
@@ -365,7 +478,14 @@ class AppController(MenuBuilder):
         self._generator.menu_window = self._window
         self._generator.init_settings(self._settings_modal)
         self._generator.build_menus()
-        self._window.set_control_panel(self._generator.get_control_panel())
+
+        prev_panel_was_none = self._control_panel is None
+        self._control_panel = self._generator.get_control_panel()
+        self._control_tab.content_widget = self._control_panel
+        if self._control_panel is None and not prev_panel_was_none:
+            self._window.remove_tab(self._control_tab)
+        elif prev_panel_was_none and self._control_panel is not None:
+            self._window.add_tab(self._control_tab)
         for tab in self._generator.get_extra_tabs():
             # Remember to adjust this if you add any other generator-specific tabs
             try:
@@ -375,6 +495,20 @@ class AppController(MenuBuilder):
             self._window.add_tab(tab, box_id)
         if self._generator_window is not None:
             self._generator_window.mark_active_generator(generator)
+
+        # Generation area tool management:
+        gen_area_tool = self._tool_controller.find_tool_by_class(GenerationAreaTool)
+
+        # Remove gen area tool if null generator was activated, add it if a non-null generator was activated:
+        show_image_gen_controls = generator != self._null_generator
+        if gen_area_tool is not None and not show_image_gen_controls:
+            self._tool_controller.remove_tool(gen_area_tool)
+        elif gen_area_tool is None and show_image_gen_controls:
+            self._tool_controller.add_tool(self._generation_area_tool)
+        image_panels = (self._window.image_panel, self._tool_panel_navigation_panel, self._window.image_window)
+        for image_panel in image_panels:
+            image_panel.set_image_generation_controls_visible(show_image_gen_controls)
+        self._update_enabled_actions()
 
     def init_settings(self, settings_modal: SettingsModal) -> None:
         """Load application settings into a SettingsModal"""
@@ -500,6 +634,10 @@ class AppController(MenuBuilder):
                 if menu_method in method_set and disable_condition:
                     action.setEnabled(False)
                     break
+        # Completely hide the upscaling option if the generator doesn't support it:
+        upscale_methods_available = len(Cache().get_options(Cache.UPSCALE_METHOD)) > 1
+        upscale_action = self.get_action_for_method(self.scale_image)
+        upscale_action.setVisible(upscale_methods_available)
 
     # Menu action definitions:
 
@@ -554,7 +692,8 @@ class AppController(MenuBuilder):
             file_format = file_path[delimiter_index + 1:].upper()
 
             # Check if metadata is out of date, ask if it should update:
-            if file_format in IMAGE_FORMATS_SUPPORTING_METADATA and not isinstance(self._generator, NullGenerator):
+            if file_format in IMAGE_FORMATS_SUPPORTING_METADATA and self._generator is not None \
+                    and not isinstance(self._generator, NullGenerator):
                 if not self._metadata_will_be_saved():
                     update_metadata = request_confirmation(self._window, TITLE_CONFIRM_METADATA_INIT,
                                                            MESSAGE_CONFIRM_METADATA_INIT,
@@ -813,9 +952,9 @@ class AppController(MenuBuilder):
             self.load_image(file_path=file_path)
 
     @menu_action(MENU_FILE, 'quit_shortcut', 6)
-    def quit(self) -> None:
+    def quit(self, skip_confirmation: bool = False) -> None:
         """Quit the application after getting confirmation from the user."""
-        if request_confirmation(self._window, CONFIRM_QUIT_TITLE, CONFIRM_QUIT_MESSAGE):
+        if skip_confirmation or request_confirmation(self._window, CONFIRM_QUIT_TITLE, CONFIRM_QUIT_MESSAGE):
             self._window.close()
 
     # Edit menu:
@@ -859,6 +998,7 @@ class AppController(MenuBuilder):
             self.init_settings(self._settings_modal)
             self._settings_modal.changes_saved.connect(self.update_settings)
         self.refresh_settings(self._settings_modal)
+        self._set_alt_window_fractional_bounds(self._settings_modal)
         self._settings_modal.show_modal()
 
     # Image menu:
@@ -867,6 +1007,7 @@ class AppController(MenuBuilder):
     def resize_canvas(self) -> None:
         """Crop or extend the edited image without scaling its contents based on user input into a popup modal."""
         resize_modal = ResizeCanvasModal(self._image_stack.qimage())
+        self._set_alt_window_centered_bounds(resize_modal)
         new_size, offset = resize_modal.show_resize_modal()
         if new_size is None or offset is None:
             return
@@ -878,6 +1019,7 @@ class AppController(MenuBuilder):
         width = self._image_stack.width
         height = self._image_stack.height
         scale_modal = ImageScaleModal(width, height)
+        self._set_alt_window_centered_bounds(scale_modal)
         new_size = scale_modal.show_image_modal()
         if new_size is not None:
             if self._generator is not None:
@@ -941,6 +1083,7 @@ class AppController(MenuBuilder):
         if self._generator == self._null_generator:
             self.show_generator_window()
         else:
+            assert self._generator is not None
             self._generator.start_and_manage_image_generation()
 
     # Selection menu:
@@ -1116,21 +1259,50 @@ class AppController(MenuBuilder):
     @menu_action(MENU_TOOLS, 'generator_select_shortcut', 502)
     def show_generator_window(self) -> None:
         """Show the generator selection window."""
+        assert self._generator is not None
         if self._generator_window is None:
             self._generator_window = GeneratorSetupWindow()
             self._generator_window.add_generator(self._sd_generator)
             if not is_pyinstaller_bundle():
                 self._generator_window.add_generator(self._glid_generator)
-                self._generator_window.add_generator(self._glid_web_generator)
+            self._generator_window.add_generator(self._glid_web_generator)
             if '--dev' in sys.argv or self._generator == self._test_generator:
                 self._generator_window.add_generator(self._test_generator)
             self._generator_window.add_generator(self._null_generator)
             self._generator_window.activate_signal.connect(self.load_image_generator)
         self._generator_window.mark_active_generator(self._generator)
+        self._set_alt_window_fractional_bounds(self._generator_window)
         self._generator_window.show()
         self._generator_window.raise_()
 
     # Internal/protected:
+
+    def _set_alt_window_fractional_bounds(self, alt_window: QWidget, preferred_scale: float = 0.8) -> None:
+        """Set a new window's bounds centered over the main window bounds, scaled to a given fraction of the main
+           window dimensions, restricted to ensure its not smaller than the minimum size hint or larger than the
+           screen."""
+        window_bounds = self._window.geometry()
+        screen_size = get_screen_size(self._window)
+        center = window_bounds.center()
+        minimum_size = alt_window.minimumSizeHint()
+        window_bounds.setWidth(clamp(int(window_bounds.width() * preferred_scale),
+                                     min(minimum_size.width(), screen_size.width(), window_bounds.width()),
+                                     screen_size.width()))
+        window_bounds.setHeight(clamp(int(window_bounds.height() * preferred_scale),
+                                      min(minimum_size.height(), screen_size.height(), window_bounds.height()),
+                                      screen_size.height()))
+        window_bounds.moveCenter(center)
+        alt_window.setGeometry(window_bounds)
+
+    def _set_alt_window_centered_bounds(self, alt_window: QWidget) -> None:
+        """Set a new window's bounds centered over the main window bounds, scaled to the sizeHint."""
+        window_bounds = self._window.geometry()
+        center = window_bounds.center()
+        size_hint = alt_window.sizeHint()
+        window_bounds.setWidth(size_hint.width())
+        window_bounds.setHeight(size_hint.height())
+        window_bounds.moveCenter(center)
+        alt_window.setGeometry(window_bounds)
 
     def _scale(self, new_size: QSize) -> None:  # Override to allow alternate or external upscalers:
         image = self._image_stack.qimage()
