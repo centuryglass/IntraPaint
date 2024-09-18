@@ -53,20 +53,24 @@ class CanvasToolPanel(QWidget):
 
         if opacity_key is not None:
             opacity_label = QLabel(cache.get_label(opacity_key))
+            opacity_down_hint = KeyHintLabel(config_key=KeyConfig.BRUSH_OPACITY_DECREASE)
             opacity_slider = cast(FloatSliderSpinbox, cache.get_control_widget(opacity_key))
+            opacity_up_hint = KeyHintLabel(config_key=KeyConfig.BRUSH_OPACITY_INCREASE)
             opacity_row = QHBoxLayout()
             opacity_row.setAlignment(Qt.AlignmentFlag.AlignLeft)
-            opacity_row.addWidget(opacity_label)
-            opacity_row.addWidget(opacity_slider)
+            for opacity_widget in (opacity_label, opacity_down_hint, opacity_slider, opacity_up_hint):
+                opacity_row.addWidget(opacity_widget)
             self._layout.addLayout(opacity_row)
 
         if hardness_key is not None:
             hardness_label = QLabel(cache.get_label(hardness_key))
+            hardness_down_hint = KeyHintLabel(config_key=KeyConfig.BRUSH_HARDNESS_DECREASE)
             hardness_slider = cast(FloatSliderSpinbox, cache.get_control_widget(hardness_key))
+            hardness_up_hint = KeyHintLabel(config_key=KeyConfig.BRUSH_HARDNESS_INCREASE)
             hardness_row = QHBoxLayout()
             hardness_row.setAlignment(Qt.AlignmentFlag.AlignLeft)
-            hardness_row.addWidget(hardness_label)
-            hardness_row.addWidget(hardness_slider)
+            for hardness_widget in (hardness_label, hardness_down_hint, hardness_slider, hardness_up_hint):
+                hardness_row.addWidget(hardness_widget)
             self._layout.addLayout(hardness_row)
 
         color_row = QHBoxLayout()

@@ -2,10 +2,11 @@
 
 
 ## Misc. bugs, minor features, and testing:
-- Add tool keys to raise/lower opacity, hardness
 - Fill tool should support patterns
 - Free selection tool: Escape should clear input, left-clicking first point should close.
 - Add tool icons to tools toolbar when closed.
+- Add gen. button to tools taskbar when closed
+- Add "resize image to contents" option (key already exists, I think)
 
 ## Documentation + Release
 - Create example images for README, finish missing sections and improve writing

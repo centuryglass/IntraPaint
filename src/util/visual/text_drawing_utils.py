@@ -186,8 +186,10 @@ def horizontal_scroll_hint_text() -> str:
     return _rich_text_image(ICON_H_SCROLL)
 
 
-def get_key_display_string(keys: QKeySequence | str, rich_text: bool = True) -> str:
+def get_key_display_string(keys: QKeySequence | Qt.Key | int | str, rich_text: bool = True) -> str:
     """Creates a display string representing a set of keys, replacing common symbols with appropriate characters."""
+    if isinstance(keys, (Qt.Key, int)):
+        keys = QKeySequence(keys)
     text = keys if isinstance(keys, str) else keys.toString()
     symbol_map = {
         'Ctrl+': '⌃',

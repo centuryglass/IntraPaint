@@ -382,9 +382,9 @@ class AppController(MenuBuilder):
         self._tool_controller.tool_removed.connect(self._tool_panel.remove_tool_button)
 
         def _update_image_cursor() -> None:
-            active_tool = self._tool_controller.active_tool
-            if active_tool is not None:
-                self._image_viewer.set_cursor(active_tool.cursor)
+            updated_active_tool = self._tool_controller.active_tool
+            if updated_active_tool is not None:
+                self._image_viewer.set_cursor(updated_active_tool.cursor)
 
         def _update_cursor_and_control_hint(new_active_tool: BaseTool) -> None:
             self._window.image_panel.set_control_hint(new_active_tool.get_input_hint())
@@ -1279,7 +1279,7 @@ class AppController(MenuBuilder):
 
     def _set_alt_window_fractional_bounds(self, alt_window: QWidget, preferred_scale: float = 0.8) -> None:
         """Set a new window's bounds centered over the main window bounds, scaled to a given fraction of the main
-           window dimensions, restricted to ensure its not smaller than the minimum size hint or larger than the
+           window dimensions, restricted to ensure it's not smaller than the minimum size hint or larger than the
            screen."""
         window_bounds = self._window.geometry()
         screen_size = get_screen_size(self._window)

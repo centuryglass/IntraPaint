@@ -269,6 +269,24 @@
         "default": "G",
         "saved": true
     },
+    "brush_tool_key": {
+        "label": "Switch to the brush tool:",
+        "category": "Keybindings",
+        "subcategory": "Tool Selection",
+        "description": "Activate the brush tool to paint into the image.",
+        "type": "string",
+        "default": "B",
+        "saved": true
+    },
+    "brush_size_decrease": {
+        "label": "Decrease brush size:",
+        "category": "Keybindings",
+        "subcategory": "Tool Shortcuts",
+        "description": "Decrease the size of the active brush",
+        "type": "string",
+        "default": "[",
+        "saved": true
+    },
     "brush_size_increase": {
         "label": "Increase brush size:",
         "category": "Keybindings",
@@ -278,22 +296,40 @@
         "default": "]",
         "saved": true
     },
-    "brush_size_decrease": {
-        "label": "Decrease brush size:",
+    "brush_opacity_decrease": {
+        "label": "Decrease brush opacity:",
         "category": "Keybindings",
         "subcategory": "Tool Shortcuts",
-        "description": "Increase the size of the active brush",
+        "description": "Decrease the opacity of the active brush",
         "type": "string",
-        "default": "[",
+        "default": "<",
         "saved": true
     },
-    "brush_tool_key": {
-        "label": "Switch to the brush tool:",
+    "brush_opacity_increase": {
+        "label": "Increase brush opacity:",
         "category": "Keybindings",
         "subcategory": "Tool Shortcuts",
-        "description": "Activate the brush tool to paint into the image.",
+        "description": "Increase the opacity of the active brush",
         "type": "string",
-        "default": "B",
+        "default": ">",
+        "saved": true
+    },
+    "brush_hardness_decrease": {
+        "label": "Decrease brush hardness:",
+        "category": "Keybindings",
+        "subcategory": "Tool Shortcuts",
+        "description": "Decrease the hardness of the active brush",
+        "type": "string",
+        "default": "{",
+        "saved": true
+    },
+    "brush_hardness_increase": {
+        "label": "Increase brush hardness:",
+        "category": "Keybindings",
+        "subcategory": "Tool Shortcuts",
+        "description": "Increase the hardness of the active brush",
+        "type": "string",
+        "default": "}",
         "saved": true
     },
     "rotate_ccw_key": {

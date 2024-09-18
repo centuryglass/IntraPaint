@@ -122,8 +122,8 @@ class HotkeyFilter(QObject):
             for i, binding in enumerate(key_list):
                 if binding.str_id == str_id:
                     to_remove.append((key, i))
-        for key, idx in to_remove:
-            del self._bindings[key][idx]
+        for key, idx in reversed(sorted(to_remove, key=lambda entry: entry[1])):
+            self._bindings[key].pop(idx)
 
     def register_config_keybinding(self, str_id: str, action: Callable[[], bool], config_key: str) -> None:
         """Register a keybinding defined in application config.
@@ -140,24 +140,24 @@ class HotkeyFilter(QObject):
         key_text = KeyConfig().get(config_key)
         assert isinstance(key_text, str)
         keys = key_text.split(',')
-        new_bindings: List[Tuple[Qt.Key, 'HotkeyFilter.KeyBinding']] = []
         for binding_str in keys:
-            key, modifiers = get_key_with_modifiers(binding_str)
-            new_bindings += self.register_keybinding(str_id, action, QKeySequence(key), modifiers)
-        if len(new_bindings) == 0:
+            try:
+                key, modifiers = get_key_with_modifiers(binding_str)
+                self.register_keybinding(str_id, action, QKeySequence(key), modifiers)
+            except ValueError:
+                logger.warning(f'Skipping invalid key "{binding_str}" for config key {config_key}')
+                continue
 
-            return
-        connected_binding = new_bindings[0][1]
-        connected_key = config_key
+        _id = str_id
+        _config_key = config_key
+        _action = action
 
         def _update_config(_) -> None:
             # Remove and replace bindings when the config key changes:
-            for prev_key, binding in new_bindings:
-                self._bindings[prev_key].remove(binding)
-            KeyConfig().disconnect(connected_binding.str_id, connected_key)
-            assert isinstance(connected_binding, HotkeyFilter.KeyBinding)
-            self.register_config_keybinding(str_id, connected_binding.action, connected_key)
-        KeyConfig().connect(connected_binding.str_id, connected_key, _update_config)
+            self.remove_keybinding(_id)
+            KeyConfig().disconnect(_id, _config_key)
+            self.register_config_keybinding(str_id, _action, _config_key)
+        KeyConfig().connect(str_id, config_key, _update_config)
 
     def register_speed_modified_keybinding(self, str_id: str, scaling_action: Callable[[int], bool],
                                            config_key: str) -> None:
@@ -187,16 +187,30 @@ class HotkeyFilter(QObject):
         assert isinstance(key_text, str)
         keys = key_text.split(',')
         for binding_str in keys:
-            key, modifiers = get_key_with_modifiers(binding_str)
+            try:
+                key, modifiers = get_key_with_modifiers(binding_str)
+            except ValueError:
+                logger.warning(f'Skipping invalid key "{binding_str}" for config key {config_key}')
+                continue
             self.register_keybinding(str_id, lambda: scaling_action(1), QKeySequence(key), modifiers)
             if (speed_modifier | modifiers) != modifiers:
                 self.register_keybinding(str_id,
                                          lambda: scaling_action(AppConfig().get(AppConfig.SPEED_MODIFIER_MULTIPLIER)),
                                          QKeySequence(key), modifiers | speed_modifier)
 
+        _id = str_id
+        _config_key = config_key
+        _action = scaling_action
+
+        def _update_config(_) -> None:
+            # Remove and replace bindings when the config key changes:
+            self.remove_keybinding(_id)
+            KeyConfig().disconnect(_id, _config_key)
+            self.register_speed_modified_keybinding(str_id, _action, _config_key)
+        KeyConfig().connect(str_id, config_key, _update_config)
+
     def eventFilter(self, source: Optional[QObject], event: Optional[QEvent]) -> bool:
         """Check for registered keys and trigger associated actions."""
-        # self._check_modifiers(QApplication.keyboardModifiers())
         if event is None or (source is not None and not isinstance(source, QObject)):
             return False
         if event.type() != QEvent.Type.KeyPress:

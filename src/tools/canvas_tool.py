@@ -85,7 +85,7 @@ class CanvasTool(BaseTool):
             def _size_change(mult, step=sign) -> bool:
                 if not self.is_active:
                     return False
-                self.adjust_brush_size(step * mult)
+                self.set_brush_size(self.brush_size + step * mult)
                 return True
             binding_id = f'CanvasTool_{id(self)}_{key}'
             HotkeyFilter.instance().register_speed_modified_keybinding(binding_id, _size_change, key)

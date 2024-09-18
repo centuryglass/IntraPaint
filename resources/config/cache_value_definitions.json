@@ -39,62 +39,6 @@
         "default": "",
         "saved": true
     },
-    "styles": {
-        "label": "styles",
-        "category": "Cache",
-        "description": "Saved style prompts loaded from the webui",
-        "type": "list",
-        "default": [],
-        "saved": false
-    },
-    "controlnet_version": {
-        "label": "ControlNet version:",
-        "category": "Cache",
-        "description": "ControlNet extension version loaded from the webui",
-        "type": "float",
-        "default": -1.0,
-        "saved": false
-    },
-    "controlnet_control_types": {
-        "label": "ControlNet control types:",
-        "category": "Cache",
-        "description": "ControlNet control type definitions loaded from the webui",
-        "type": "dict",
-        "default": {},
-        "saved": false
-    },
-    "controlnet_modules": {
-        "label": "ControlNet modules:",
-        "category": "Cache",
-        "description": "ControlNet module definitions loaded from the webui",
-        "type": "dict",
-        "default": {},
-        "saved": false
-    },
-    "controlnet_models": {
-        "label": "ControlNet models:",
-        "category": "Cache",
-        "description": "ControlNet model definitions loaded from the webui",
-        "type": "dict",
-        "default": {},
-        "saved": false
-    },
-    "lora_models": {
-        "label": "LoRA models:",
-        "category": "Cache",
-        "description": "LoRA model definitions loaded from the webui",
-        "type": "list",
-        "default": {},
-        "saved": false
-    },
-    "last_seed": {
-        "label": "Last seed:",
-        "category": "Cache",
-        "description": "Last seed used for image generation",
-        "type": "string",
-        "default": "-1",
-        "saved": false
-    },
     "last_file_path": {
         "label": "Last file path:",
         "category": "Cache",
@@ -111,14 +55,6 @@
         "default": "#ff000000",
         "saved": true
     },
-    "text_background_color": {
-        "label": "Text background color:",
-        "category": "Cache",
-        "description": "Last background color (text tool)",
-        "type": "string",
-        "default": "#ffffffff",
-        "saved": true
-    },
     "new_image_background_color": {
         "label": "New image background color:",
         "category": "Cache",
@@ -127,9 +63,19 @@
         "default": "#ffffffff",
         "saved": true
     },
+    "text_background_color": {
+        "label": "Text background color:",
+        "category": "Cache",
+        "subcategory": "Text Tool",
+        "description": "Last background color (text tool)",
+        "type": "string",
+        "default": "#ffffffff",
+        "saved": true
+    },
     "text_tool_params": {
         "label": "Text tool parameters:",
         "category": "Cache",
+        "subcategory": "Text Tool",
         "description": "Last text tool font and settings",
         "type": "string",
         "default": "",
@@ -183,14 +129,16 @@
     "mypaint_brush": {
         "label": "Selected MyPaint brush:",
         "category": "Cache",
+        "subcategory": "Paint Tool",
         "description": "Currently selected MyPaint brush file.",
         "type": "string",
         "default": "./resources/brushes/experimental/1pixel.myb",
         "saved": true
     },
     "paint_tool_brush_size": {
-        "label": "Brush size:",
+        "label": "Size:",
         "category": "Cache",
+        "subcategory": "Paint Tool",
         "description": "Current/initial brush size (in pixels) for the MyPaint brush tool.",
         "type": "int",
         "default": 40,
@@ -202,9 +150,9 @@
         }
     },
     "selection_brush_size": {
-        "label": "Selection brush size:",
+        "label": "Size:",
         "category": "Cache",
-        "subcategory": "Size",
+        "subcategory": "Brush Selection",
         "description": "Current/initial brush size (in pixels) for the selection tool.",
         "type": "int",
         "default": 40,
@@ -216,8 +164,9 @@
         }
     },
     "draw_tool_brush_size": {
-        "label": "Brush size:",
+        "label": "Size:",
         "category": "Cache",
+        "subcategory": "Draw Tool",
         "description": "Current/initial brush size (in pixels) for the draw tool.",
         "type": "int",
         "default": 40,
@@ -231,6 +180,7 @@
     "draw_tool_opacity": {
         "label": "Opacity:",
         "category": "Cache",
+        "subcategory": "Draw Tool",
         "description": "Draw tool color opacity",
         "type": "float",
         "default": 1.0,
@@ -244,6 +194,7 @@
     "draw_tool_hardness": {
         "label": "Hardness:",
         "category": "Cache",
+        "subcategory": "Draw Tool",
         "description": "Draw tool brush hardness",
         "type": "float",
         "default": 1.0,
@@ -257,6 +208,7 @@
     "draw_tool_pressure_size": {
         "label": "Pen pressure=size:",
         "category": "Cache",
+        "subcategory": "Draw Tool",
         "description": "Drawing tablet pen pressure affects draw tool brush size.",
         "type": "bool",
         "default": true,
@@ -265,6 +217,7 @@
     "draw_tool_pressure_opacity": {
         "label": "Pen pressure=opacity:",
         "category": "Cache",
+        "subcategory": "Draw Tool",
         "description": "Drawing tablet pen pressure affects draw tool brush opacity.",
         "type": "bool",
         "default": false,
@@ -273,6 +226,7 @@
     "draw_tool_pressure_hardness": {
         "label": "Pen pressure=hardness:",
         "category": "Cache",
+        "subcategory": "Draw Tool",
         "description": "Drawing tablet pen pressure affects draw tool brush hardness.",
         "type": "bool",
         "default": false,
@@ -281,6 +235,7 @@
     "draw_tool_brush_pattern": {
         "label": "Draw tool brush pattern:",
         "category": "Cache",
+        "subcategory": "Draw Tool",
         "description": "Draw tool Qt brush style to apply",
         "type": "string",
         "default": "",
@@ -289,7 +244,7 @@
     "eraser_tool_size": {
         "label": "Eraser size:",
         "category": "Cache",
-        "subcategory": "Size",
+        "subcategory": "Eraser Tool",
         "description": "Current/initial brush size (in pixels) for the eraser tool.",
         "type": "int",
         "default": 20,
@@ -303,6 +258,7 @@
     "eraser_tool_opacity": {
         "label": "Opacity:",
         "category": "Cache",
+        "subcategory": "Eraser Tool",
         "description": "Draw tool color opacity",
         "type": "float",
         "default": 1.0,
@@ -316,6 +272,7 @@
     "eraser_tool_hardness": {
         "label": "Hardness:",
         "category": "Cache",
+        "subcategory": "Eraser Tool",
         "description": "Draw tool brush hardness",
         "type": "float",
         "default": 1.0,
@@ -329,6 +286,7 @@
     "eraser_tool_pressure_size": {
         "label": "Pen pressure=size:",
         "category": "Cache",
+        "subcategory": "Eraser Tool",
         "description": "Drawing tablet pen pressure affects draw tool brush size.",
         "type": "bool",
         "default": true,
@@ -337,6 +295,7 @@
     "eraser_tool_pressure_opacity": {
         "label": "Pen pressure=opacity:",
         "category": "Cache",
+        "subcategory": "Eraser Tool",
         "description": "Drawing tablet pen pressure affects draw tool brush opacity.",
         "type": "bool",
         "default": false,
@@ -345,15 +304,16 @@
     "eraser_tool_pressure_hardness": {
         "label": "Pen pressure=hardness:",
         "category": "Cache",
+        "subcategory": "Eraser Tool",
         "description": "Drawing tablet pen pressure affects draw tool brush hardness.",
         "type": "bool",
         "default": false,
         "saved": true
     },
     "blur_tool_brush_size": {
-        "label": "Blur tool brush size:",
+        "label": "Size:",
         "category": "Cache",
-        "subcategory": "Size",
+        "subcategory": "Blur Tool",
         "description": "Current/initial brush size (in pixels) for the blur tool.",
         "type": "int",
         "default": 40,
@@ -365,9 +325,9 @@
         }
     },
     "smudge_tool_brush_size": {
-        "label": "Smudge tool brush size:",
+        "label": "Size:",
         "category": "Cache",
-        "subcategory": "Size",
+        "subcategory": "Smudge Tool",
         "description": "Current/initial brush size (in pixels) for the smudge tool.",
         "type": "int",
         "default": 40,
@@ -381,6 +341,7 @@
     "smudge_tool_opacity": {
         "label": "Opacity:",
         "category": "Cache",
+        "subcategory": "Smudge Tool",
         "description": "Smudge tool color opacity",
         "type": "float",
         "default": 0.5,
@@ -394,6 +355,7 @@
     "smudge_tool_hardness": {
         "label": "Hardness:",
         "category": "Cache",
+        "subcategory": "Smudge Tool",
         "description": "Smudge tool brush hardness",
         "type": "float",
         "default": 1.0,
@@ -407,6 +369,7 @@
     "smudge_tool_pressure_size": {
         "label": "Pen pressure=size:",
         "category": "Cache",
+        "subcategory": "Smudge Tool",
         "description": "Drawing tablet pen pressure affects smudge tool brush size.",
         "type": "bool",
         "default": true,
@@ -415,6 +378,7 @@
     "smudge_tool_pressure_opacity": {
         "label": "Pen pressure=opacity:",
         "category": "Cache",
+        "subcategory": "Smudge Tool",
         "description": "Drawing tablet pen pressure affects smudge tool brush opacity.",
         "type": "bool",
         "default": false,
@@ -423,6 +387,7 @@
     "smudge_tool_pressure_hardness": {
         "label": "Pen pressure=hardness:",
         "category": "Cache",
+        "subcategory": "Smudge Tool",
         "description": "Drawing tablet pen pressure affects smudge tool brush hardness.",
         "type": "bool",
         "default": false,
@@ -431,6 +396,7 @@
     "saved_main_window_pos": {
         "label": "Saved main window placement",
         "category": "Cache",
+        "subcategory": "Window placement",
         "description": "display, position, and size where the main window last was.",
         "type": "string",
         "default": "",
@@ -439,6 +405,7 @@
     "saved_layer_window_pos": {
         "label": "Saved layer window placement",
         "category": "Cache",
+        "subcategory": "Window placement",
         "description": "display, position, and size where the layer window last was.",
         "type": "string",
         "default": "",
@@ -447,6 +414,7 @@
     "saved_image_window_pos": {
         "label": "Saved image window placement",
         "category": "Cache",
+        "subcategory": "Window placement",
         "description": "display, position, and size where the image window last was.",
         "type": "string",
         "default": "",
@@ -454,6 +422,7 @@
     },"prompt": {
         "label": "Prompt:",
         "category": "Cache",
+        "subcategory": "Image generation",
         "description": "Description that generated images should match.",
         "type": "string",
         "default": "",
@@ -462,6 +431,7 @@
     "negative_prompt": {
         "label": "Negative prompt:",
         "category": "Cache",
+        "subcategory": "Image generation",
         "description": "Description that generated images should not match.",
         "type": "string",
         "default": "",
@@ -470,7 +440,8 @@
     "guidance_scale": {
         "label": "Guidance scale:",
         "category": "Cache",
-        "description": "Controls how strongly the prompt and negative prompt are applied. Higher values are more consistent but may be less creative.  Overly high or low values may cause image distortion.",
+        "subcategory": "Image generation",
+        "description": "Controls how strongly the prompt and negative prompt are applied.",
         "type": "float",
         "default": 9.0,
         "saved": true,
@@ -483,7 +454,8 @@
     "batch_size": {
         "label": "Batch size:",
         "category": "Cache",
-        "description": "Number of image options to simultaneously create in a single image editing operation. Increasing this value too much may result in errors or slowdown if GPU memory limits are reached.",
+        "subcategory": "Image generation",
+        "description": "Number of image options to simultaneously create in a single image editing operation.",
         "type": "int",
         "default": 5,
         "saved": true,
@@ -496,6 +468,7 @@
     "batch_count": {
         "label": "Batch count:",
         "category": "Cache",
+        "subcategory": "Image generation",
         "description": "Number of image batches to create in a single image editing operation. Increasing this value doesn't require additional memory, but it slows down image editing more than increasing the batch size does.",
         "type": "int",
         "default": 1,
@@ -509,6 +482,7 @@
     "edit_mode": {
         "label": "Edit mode:",
         "category": "Cache",
+        "subcategory": "Image generation",
         "description": "Stable-Diffusion image editing mode. 'Text to Image' completely replaces the selected image section with new content, 'Image to Image' creates altered versions of the image selection, and 'Inpaint' works like 'Image to Image' except that it only affects areas selected by the mask tool",
         "type": "string",
         "default": "Inpaint",
@@ -522,6 +496,7 @@
     "sampling_steps": {
         "label": "Sampling steps:",
         "category": "Cache",
+        "subcategory": "Image generation",
         "description": "Number of diffusion operations to perform when generating image data. Higher values take longer, but often produce more detailed and accurate results. Different stable-diffusion models and samplers have different requirements, but in most cates setting this higher than 30 has only minimal benefits",
         "type": "int",
         "default": 30,
@@ -535,6 +510,7 @@
     "denoising_strength": {
         "label": "Denoising strength:",
         "category": "Cache",
+        "subcategory": "Image generation",
         "description": "Controls how dramatically inpainting and image-to-image operations will change the initial image data. At 0.0, the image will be completely unedited, at 1.0 the image will be completely different",
         "type": "float",
         "default": 0.4,
@@ -548,6 +524,7 @@
     "sampling_method": {
         "label": "Sampling method:",
         "category": "Cache",
+        "subcategory": "Image generation",
         "description": "Mathematical technique used to transform image data during the generation process. 'Euler a' works well in most cases, but certain models or extensions might perform better with other options.",
         "type": "string",
         "default": "Euler a",
@@ -557,36 +534,17 @@
     "upscale_method": {
         "label": "Upscale method:",
         "category": "Cache",
+        "subcategory": "Image generation",
         "description": "Method to use when increasing image resolution. Available options will be loaded from the stable-diffusion-webui on launch.",
         "type": "string",
         "default": "None",
         "options": [],
         "saved": true
     },
-    "controlnet_upscaling": {
-        "label": "ControlNet tiled upscaling",
-        "category": "Cache",
-        "description": "Whether to use the ControlNet tile model to improve image upscaling. When enabled and supported, all other image generation options will influence upscaling results. To use this, the ControlNet extension needs to be installed in the stable-diffusion-webui, and the controlnet tile model needs to be downloaded to the correct folder.",
-        "type": "bool",
-        "default": false,
-        "saved": true
-    },
-    "controlnet_downsample_rate": {
-        "label": "Tile downsample rate:",
-        "category": "Cache",
-        "description": "Adjusts how strongly the ControlNet tile model preserves the original image data, higher values result in fewer changes.",
-        "type": "float",
-        "range_options": {
-            "min": 1.0,
-            "max": 4.0,
-            "step": 0.1
-        },
-        "default": 1.0,
-        "saved": true
-    },
     "seed": {
         "label": "Seed:",
         "category": "Cache",
+        "subcategory": "Image generation",
         "description": "Number used to control pseudo-random aspects of image generation, in most cases using the same seed with the same settings and inputs will always produce the same results. If set to -1, a different random seed will be used for each image generation. ",
         "type": "int",
         "default": -1,
@@ -597,9 +555,19 @@
         },
         "saved": true
     },
+    "last_seed": {
+        "label": "Last seed:",
+        "category": "Cache",
+        "subcategory": "Image generation",
+        "description": "Last seed used for image generation",
+        "type": "string",
+        "default": "-1",
+        "saved": false
+    },
     "inpaint_full_res": {
         "label": "Inpaint Full Resolution",
         "category": "Cache",
+        "subcategory": "Image generation",
         "description": "If true, inpaint the masked area at higher resolution by ignoring the unmasked area. This can increase image quality by sacrificing awareness of additional image content.",
         "type": "bool",
         "default": false,
@@ -608,6 +576,7 @@
     "inpaint_full_res_padding": {
         "label": "Padding:",
         "category": "Cache",
+        "subcategory": "Image generation",
         "description": "Pixel radius outside of the masked area to include when inpainting when the 'Inpaint Full Resolution' option is enabled. Higher values increase contextual awareness while decreasing overall level of detail.",
         "type": "int",
         "default": 32,
@@ -618,33 +587,26 @@
         },
         "saved": true
     },
-    "controlnet_args_0": {
-        "label": "ControlNet Settings (first layer)",
+    "styles": {
+        "label": "styles",
         "category": "Cache",
-        "description": "First layer ControlNet extension settings.",
-        "type": "dict",
-        "default": {},
-        "saved": true
+        "description": "Saved style prompts loaded from the webui",
+        "type": "list",
+        "default": [],
+        "saved": false
     },
-    "controlnet_args_1": {
-        "label": "ControlNet Settings (second layer)",
+    "lora_models": {
+        "label": "LoRA models:",
         "category": "Cache",
-        "description": "Second layer ControlNet extension settings.",
-        "type": "dict",
+        "description": "LoRA model definitions loaded from the webui",
+        "type": "list",
         "default": {},
-        "saved": true
-    },
-    "controlnet_args_2": {
-        "label": "ControlNet Settings (third layer)",
-        "category": "Cache",
-        "description": "Second layer ControlNet extension settings.",
-        "type": "dict",
-        "default": {},
-        "saved": true
+        "saved": false
     },
     "cutn": {
         "label": "Detail reference count (cutn):",
         "category": "Cache",
+        "subcategory": "Image generation",
         "description": "Determines how many random cutouts from the input image are used to guide image generation (GLID-3-XL). Higher values can introduce more detail and variation, but may also introduce more noise and irrelevant information.",
         "type": "int",
         "default": 16,
@@ -658,6 +620,7 @@
     "skip_steps": {
         "label": "Skip steps:",
         "category": "Cache",
+        "subcategory": "Image generation",
         "description": "Number of diffusion steps to skip (GLID-3-XL). Higher values will result in faster image generation with decreased detail and accuracy.",
         "type": "int",
         "default": 0,
@@ -671,6 +634,7 @@
     "upscale_mode": {
         "label": "Upscale mode:",
         "category": "Cache",
+        "subcategory": "Image generation",
         "description": "Upscaling mode used when the inpainting resolution doesn't match the image generation area size.",
         "type": "string",
         "default": "Lanczos",
@@ -680,15 +644,103 @@
     "downscale_mode": {
         "label": "Downscale mode:",
         "category": "Cache",
+        "subcategory": "Image generation",
         "description": "Downscaling mode used when the inpainting resolution doesn't match the image generation area size.",
         "type": "string",
         "default": "Lanczos",
         "options": [],
         "saved": true
     },
+    "controlnet_upscaling": {
+        "label": "ControlNet tiled upscaling",
+        "category": "Cache",
+        "subcategory": "ControlNet",
+        "description": "Whether to use the ControlNet tile model to improve image upscaling. When enabled and supported, all other image generation options will influence upscaling results. To use this, the ControlNet extension needs to be installed in the stable-diffusion-webui, and the controlnet tile model needs to be downloaded to the correct folder.",
+        "type": "bool",
+        "default": false,
+        "saved": true
+    },
+    "controlnet_downsample_rate": {
+        "label": "Tile downsample rate:",
+        "category": "Cache",
+        "subcategory": "ControlNet",
+        "description": "Adjusts how strongly the ControlNet tile model preserves the original image data, higher values result in fewer changes.",
+        "type": "float",
+        "range_options": {
+            "min": 1.0,
+            "max": 4.0,
+            "step": 0.1
+        },
+        "default": 1.0,
+        "saved": true
+    },
+    "controlnet_args_0": {
+        "label": "ControlNet Settings (first layer)",
+        "category": "Cache",
+        "subcategory": "ControlNet",
+        "description": "First layer ControlNet extension settings.",
+        "type": "dict",
+        "default": {},
+        "saved": true
+    },
+    "controlnet_args_1": {
+        "label": "ControlNet Settings (second layer)",
+        "category": "Cache",
+        "subcategory": "ControlNet",
+        "description": "Second layer ControlNet extension settings.",
+        "type": "dict",
+        "default": {},
+        "saved": true
+    },
+    "controlnet_args_2": {
+        "label": "ControlNet Settings (third layer)",
+        "category": "Cache",
+        "subcategory": "ControlNet",
+        "description": "Second layer ControlNet extension settings.",
+        "type": "dict",
+        "default": {},
+        "saved": true
+    },
+    "controlnet_version": {
+        "label": "ControlNet version:",
+        "category": "Cache",
+        "subcategory": "ControlNet",
+        "description": "ControlNet extension version loaded from the webui",
+        "type": "float",
+        "default": -1.0,
+        "saved": false
+    },
+    "controlnet_control_types": {
+        "label": "ControlNet control types:",
+        "category": "Cache",
+        "subcategory": "ControlNet",
+        "description": "ControlNet control type definitions loaded from the webui",
+        "type": "dict",
+        "default": {},
+        "saved": false
+    },
+    "controlnet_modules": {
+        "label": "ControlNet modules:",
+        "category": "Cache",
+        "subcategory": "ControlNet",
+        "description": "ControlNet module definitions loaded from the webui",
+        "type": "dict",
+        "default": {},
+        "saved": false
+    },
+    "controlnet_models": {
+        "label": "ControlNet models:",
+        "category": "Cache",
+        "subcategory": "ControlNet",
+        "description": "ControlNet model definitions loaded from the webui",
+        "type": "dict",
+        "default": {},
+        "saved": false
+    },
     "expect_tablet_input": {
         "label": "Expect tablet input",
         "category": "Cache",
+        "subcategory": "ControlNet",
         "description": "Whether input controls relevant to drawing tablets should be shown immediately, or only after tablet input arrives.",
         "type": "bool",
         "default": false,

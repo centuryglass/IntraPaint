@@ -55,7 +55,7 @@ class SDWebUIPanel(GeneratorPanel):
         line_height = self.font().pixelSize()
         if line_height < 0:  # font uses pt, not px
             line_height = round(self.font().pointSize() * 1.5)
-        textbox_height = line_height * 4
+        textbox_height = line_height * 5
         for textbox in (self._prompt_textbox, self._negative_textbox):
             textbox.setMaximumHeight(textbox_height)
 

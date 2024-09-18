@@ -6,12 +6,14 @@ from PySide6.QtWidgets import QApplication, QWidget
 
 from src.config.cache import Cache
 from src.config.key_config import KeyConfig
+from src.hotkey_filter import HotkeyFilter
 from src.image.canvas.smudge_canvas import SmudgeCanvas
 from src.image.layers.image_stack import ImageStack
 from src.tools.canvas_tool import CanvasTool
 from src.ui.image_viewer import ImageViewer
 from src.ui.panel.tool_control_panels.canvas_tool_panel import CanvasToolPanel
 from src.ui.panel.tool_control_panels.smudge_tool_panel import SmudgeToolPanel
+from src.util.math_utils import clamp
 from src.util.optional_import import optional_import
 from src.util.shared_constants import PROJECT_DIR
 from src.util.visual.text_drawing_utils import left_button_hint_text, right_button_hint_text
@@ -44,6 +46,7 @@ class SmudgeTool(CanvasTool):  # type: ignore
         self._control_panel = SmudgeToolPanel()
         self._icon = QIcon(RESOURCES_SMUDGE_ICON)
         cache = Cache()
+        key_filter = HotkeyFilter.instance()
 
         def _size_update(size: int) -> None:
             self.brush_size = size
@@ -55,10 +58,40 @@ class SmudgeTool(CanvasTool):  # type: ignore
         cache.connect(self, Cache.SMUDGE_TOOL_OPACITY, _opacity_update)
         canvas.opacity = cache.get(Cache.SMUDGE_TOOL_OPACITY)
 
+        def _update_opacity_offset(offset: float) -> bool:
+            offset *= 0.02  # offsets are int-based, scale to float range
+            tool_control_panel = self.get_control_panel()
+            if not self.is_active or tool_control_panel is None or not tool_control_panel.isEnabled():
+                return False
+            self.opacity = float(clamp(self.opacity + offset, 0.0, 1.0))
+            return True
+        opacity_down_id = f'SmudgeTool_{id(self)}_opacity_down'
+        opacity_up_id = f'SmudgeTool_{id(self)}_opacity_up'
+        key_filter.register_speed_modified_keybinding(opacity_down_id,
+                                                      lambda offset: _update_opacity_offset(-offset),
+                                                      KeyConfig.BRUSH_OPACITY_DECREASE)
+        key_filter.register_speed_modified_keybinding(opacity_up_id, _update_opacity_offset,
+                                                      KeyConfig.BRUSH_OPACITY_INCREASE)
+
         def _hardness_update(hardness: float) -> None:
             canvas.hardness = hardness
         cache.connect(self, Cache.SMUDGE_TOOL_HARDNESS, _hardness_update)
         canvas.hardness = cache.get(Cache.SMUDGE_TOOL_HARDNESS)
+
+        def _update_hardness_offset(offset: float) -> bool:
+            offset *= 0.02  # offsets are int-based, scale to float range
+            tool_control_panel = self.get_control_panel()
+            if not self.is_active or tool_control_panel is None or not tool_control_panel.isEnabled():
+                return False
+            self.hardness = float(clamp(self.hardness + offset, 0.0, 1.0))
+            return True
+        hardness_down_id = f'SmudgeTool_{id(self)}_hardness_down'
+        hardness_up_id = f'SmudgeTool_{id(self)}_hardness_up'
+        key_filter.register_speed_modified_keybinding(hardness_down_id,
+                                                      lambda offset: _update_hardness_offset(-offset),
+                                                      KeyConfig.BRUSH_HARDNESS_DECREASE)
+        key_filter.register_speed_modified_keybinding(hardness_up_id, _update_hardness_offset,
+                                                      KeyConfig.BRUSH_HARDNESS_INCREASE)
 
         def _pressure_size_update(use_pressure: bool) -> None:
             canvas.pressure_size = use_pressure
@@ -108,3 +141,32 @@ class SmudgeTool(CanvasTool):  # type: ignore
     def get_control_panel(self) -> Optional[QWidget]:
         """Returns the blur tool control panel."""
         return self._control_panel
+
+    @property
+    def opacity(self) -> float:
+        """Accesses canvas opacity"""
+        canvas = self.canvas
+        assert isinstance(canvas, SmudgeCanvas)
+        return canvas.opacity
+
+    @opacity.setter
+    def opacity(self, opacity: float) -> None:
+        opacity = float(clamp(opacity, 0.0, 1.0))
+        Cache().set(Cache.SMUDGE_TOOL_OPACITY, opacity)
+
+    @property
+    def hardness(self) -> float:
+        """Accesses canvas hardness"""
+        canvas = self.canvas
+        assert isinstance(canvas, SmudgeCanvas)
+        return canvas.hardness
+
+    @hardness.setter
+    def hardness(self, hardness: float) -> None:
+        hardness = float(clamp(hardness, 0.0, 1.0))
+        Cache().set(Cache.SMUDGE_TOOL_HARDNESS, hardness)
+
+    def set_brush_size(self, new_size: int) -> None:
+        """Ensure brush size also propagates to the appropriate config key."""
+        Cache().set(Cache.SMUDGE_TOOL_BRUSH_SIZE, new_size)
+        super().set_brush_size(new_size)

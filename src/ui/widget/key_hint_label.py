@@ -8,7 +8,7 @@ from PySide6.QtWidgets import QLabel, QWidget
 
 from src.config.key_config import KeyConfig
 from src.util.visual.text_drawing_utils import find_text_size, max_font_size, get_key_display_string
-from src.util.key_code_utils import get_key_with_modifiers, get_modifier_string
+from src.util.key_code_utils import get_key_with_modifiers, get_modifier_string, KEY_REQUIRES_SHIFT
 from src.util.math_utils import clamp
 
 
@@ -39,6 +39,9 @@ class KeyHintLabel(QLabel):
 
     def paintEvent(self, event: Optional[QPaintEvent]):
         """Outline the key text."""
+        if self._base_text == '':
+            super().paintEvent(event)
+            return
         own_bounds = QRect(QPoint(), self.size())
         text_bounds = QRect(QPoint(), find_text_size(self._base_text, self.font())).adjusted(0, 0, 5, 5)
         alignment = self.alignment()
@@ -77,6 +80,8 @@ class KeyHintLabel(QLabel):
         for key_substr in all_keys:
             try:
                 key, modifiers = get_key_with_modifiers(key_substr)
+                if get_key_display_string(key, False) in KEY_REQUIRES_SHIFT:
+                    modifiers = modifiers & ~Qt.KeyboardModifier.ShiftModifier
                 if key is not None and key != Qt.Key.Key_unknown:
                     display_key = get_key_display_string(QKeySequence(key), False)
                     if modifiers == Qt.KeyboardModifier.NoModifier:
@@ -102,7 +107,17 @@ class KeyHintLabel(QLabel):
             key_display_str = get_modifier_string(key_codes)
         else:
             raise TypeError(f'Unexpected key_codes value type {type(key_codes)} = {key_codes}')
+        key_substitutions = {
+            '&': '&amp;',
+            '<': '&lt;',
+            '>': '&gt;',
+            '"': '&quot;',
+            "'": '&apos;'
+        }
         self._base_text = key_display_str
+        for invalid_str, replacement in key_substitutions.items():
+            if invalid_str in key_display_str:
+                key_display_str = key_display_str.replace(invalid_str, replacement)
         self.setText(f'<span><strong>{key_display_str}</strong></span>')
 
     def _key_update_slot(self, key_string: str) -> None:
