@@ -1,7 +1,6 @@
 import os
 import sys
 import unittest
-from typing import Optional
 
 from PySide6.QtCore import QSize, QPoint, Qt
 from PySide6.QtGui import QImage
@@ -10,12 +9,11 @@ from PySide6.QtWidgets import QApplication
 from src.config.application_config import AppConfig
 from src.config.cache import Cache
 from src.config.key_config import KeyConfig
+from src.controller.app_controller import AppController
 from src.image.layers.image_stack import ImageStack
-from src.image.mypaint.mypaint_scene_tile import MyPaintSceneTile
 from src.tools.brush_tool import BrushTool
-from src.ui.graphics_items.layer_graphics_item import LayerGraphicsItem
-from src.ui.window.main_window import MainWindow
 from src.undo_stack import UndoStack
+from src.util.arg_parser import build_arg_parser
 
 app = QApplication.instance() or QApplication(sys.argv)
 
@@ -36,13 +34,21 @@ class BrushToolTest(unittest.TestCase):
         Cache('test/resources/cache_test.json')._reset()
         UndoStack().clear()
         test_size = QSize(512, 512)
-        self.image_stack = ImageStack(test_size, test_size, test_size, test_size)
-        self.window = MainWindow(self.image_stack)
+        args = ['--window_size', '800x600', '--mode', 'mock']
+        self.args = build_arg_parser(include_edit_params=False).parse_args(args)
+        self.args.mode = 'mock'
+        self.args.server_url = ''
+        self.args.fast_ngrok_connection = False
+        self.controller = AppController(self.args)
+        self.image_stack = self.controller._image_stack
+        self.image_stack.size = test_size
+        self.image_stack.remove_layer(self.image_stack.image_layers[0])
+        self.window = self.controller._window
         self.window.show()
-        self.tool_panel = self.window._tool_panel
-        self.brush_tool = self.tool_panel._tool_controller.find_tool_by_class(BrushTool)
+        self.tool_panel = self.controller._tool_panel
+        self.brush_tool = self.controller._tool_controller.find_tool_by_class(BrushTool)
         assert self.brush_tool is not None
-        self.tool_handler = self.tool_panel._tool_controller
+        self.tool_handler = self.controller._tool_controller
         self.canvas = self.brush_tool._canvas
         self.surface = self.canvas._mp_surface
         self.tiles = self.surface._tiles

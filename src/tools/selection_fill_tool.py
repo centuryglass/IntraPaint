@@ -12,9 +12,9 @@ from src.image.layers.image_stack import ImageStack
 from src.image.layers.transform_layer import TransformLayer
 from src.tools.base_tool import BaseTool
 from src.ui.panel.tool_control_panels.fill_selection_panel import FillSelectionPanel
-from src.util.visual.image_utils import flood_fill
-from src.util.visual.text_drawing_utils import left_button_hint_text, right_button_hint_text
 from src.util.shared_constants import PROJECT_DIR
+from src.util.visual.image_utils import flood_fill, color_fill
+from src.util.visual.text_drawing_utils import left_button_hint_text, right_button_hint_text
 
 # The `QCoreApplication.translate` context for strings in this file
 TR_ID = 'tools.selection_fill_tool'
@@ -121,7 +121,10 @@ class SelectionFillTool(BaseTool):
                 paint_transform *= QTransform.fromTranslate(img_offset.x(), img_offset.y())
             if not QRect(QPoint(), image.size()).contains(sample_point):
                 return True
-            mask = flood_fill(image, sample_point, self._color, threshold, False)
+            if Cache().get(Cache.COLOR_SELECT_MODE):
+                mask = color_fill(image, image.pixelColor(image_coordinates), threshold)
+            else:
+                mask = flood_fill(image, sample_point, self._color, threshold, False)
             selection_image = self._image_stack.selection_layer.image
             assert mask is not None
             painter = QPainter(selection_image)

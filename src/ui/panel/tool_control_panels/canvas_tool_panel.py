@@ -128,7 +128,6 @@ class CanvasToolPanel(QWidget):
         if len(rows) > 0:
             synchronize_row_widths(rows)
 
-
     def show_pressure_checkboxes(self) -> None:
         """After receiving a tablet event, call this to reveal the pressure control checkboxes."""
         for checkbox in self._pressure_checkboxes:

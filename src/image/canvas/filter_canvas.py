@@ -18,7 +18,7 @@ class FilterCanvas(QtPaintCanvas):
         self._filter = image_filter
         filter_params = image_filter.get_parameters()
         self._last_point: Optional[QPoint] = None
-        self._parameter_values = { self._filter: [param.default_value for param in filter_params] }
+        self._parameter_values = {self._filter: [param.default_value for param in filter_params]}
 
     @property
     def image_filter(self) -> ImageFilter:
@@ -59,7 +59,9 @@ class FilterCanvas(QtPaintCanvas):
         if self._filter.is_local():
             return QRect(base_bounds)
         filter_bounds = QRect(base_bounds)
-        layer_bounds = self.layer.bounds
+        layer = self.layer
+        assert layer is not None
+        layer_bounds = layer.bounds
         radius = math.ceil(self._filter.radius(self._parameter_values[self._filter]))
         filter_bounds.setX(max(0, filter_bounds.x() - radius))
         filter_bounds.setY(max(0, filter_bounds.y() - radius))
@@ -84,14 +86,15 @@ class FilterCanvas(QtPaintCanvas):
         layer_painter.drawImage(bounds, filtered_image, final_source_bounds)
         layer_painter.restore()
 
-
     def end_stroke(self) -> None:
         """Re-apply the filter across the entire stroke for consistency."""
         self._draw_buffered_events()
         bounds = self._change_bounds.toAlignedRect()
         filter_bounds = self._filter_bounds(bounds)
         prev_content = self._prev_image_buffer.copy(filter_bounds)
-        with self.layer.borrow_image(filter_bounds) as layer_image:
+        layer = self.layer
+        assert layer is not None
+        with layer.borrow_image(filter_bounds) as layer_image:
             layer_painter = QPainter(layer_image)
             layer_painter.drawImage(filter_bounds, prev_content)
             self.draw_segment_to_image(self._brush_stroke_buffer, layer_image, layer_painter, bounds)

@@ -2,8 +2,8 @@
 from typing import Optional
 
 from PySide6.QtCore import Qt, QPoint, QRect
-from PySide6.QtGui import QIcon, QCursor, QMouseEvent, QKeySequence, QColor, QPainter, QTransform
-from PySide6.QtWidgets import QWidget, QFormLayout, QApplication
+from PySide6.QtGui import QIcon, QCursor, QMouseEvent, QKeySequence, QColor, QPainter, QTransform, QBrush
+from PySide6.QtWidgets import QWidget, QApplication
 
 from src.config.cache import Cache
 from src.config.key_config import KeyConfig
@@ -11,10 +11,11 @@ from src.image.layers.image_layer import ImageLayer
 from src.image.layers.image_stack import ImageStack
 from src.image.layers.layer import Layer
 from src.tools.base_tool import BaseTool
-from src.ui.widget.color_button import ColorButton
+from src.ui.input_fields.pattern_combo_box import PatternComboBox
+from src.ui.panel.tool_control_panels.fill_tool_panel import FillToolPanel
+from src.util.shared_constants import PROJECT_DIR, COLOR_PICK_HINT
 from src.util.visual.image_utils import flood_fill, create_transparent_image
 from src.util.visual.text_drawing_utils import left_button_hint_text
-from src.util.shared_constants import PROJECT_DIR, COLOR_PICK_HINT
 
 # The `QCoreApplication.translate` context for strings in this file
 TR_ID = 'tools.fill_tool'
@@ -41,7 +42,7 @@ class FillTool(BaseTool):
     def __init__(self, image_stack: ImageStack) -> None:
         super().__init__()
         cache = Cache()
-        self._control_panel: Optional[QWidget] = None
+        self._control_panel: Optional[FillToolPanel] = None
         self._image_stack = image_stack
         self._icon = QIcon(RESOURCES_FILL_ICON)
         self._color = cache.get_color(Cache.LAST_BRUSH_COLOR, Qt.GlobalColor.black)
@@ -84,19 +85,8 @@ class FillTool(BaseTool):
 
     def get_control_panel(self) -> Optional[QWidget]:
         """Returns a panel providing controls for customizing tool behavior, or None if no such panel is needed."""
-        if self._control_panel is not None:
-            return self._control_panel
-        cache = Cache()
-        self._control_panel = QWidget()
-        layout = QFormLayout(self._control_panel)
-        color_button = ColorButton()
-        layout.addRow(color_button)
-        threshold_slider = cache.get_control_widget(Cache.FILL_THRESHOLD)
-        layout.addRow(cache.get_label(Cache.FILL_THRESHOLD), threshold_slider)
-        sample_merged_checkbox = cache.get_control_widget(Cache.SAMPLE_MERGED)
-        layout.addRow(sample_merged_checkbox)
-        selection_only_checkbox = cache.get_control_widget(Cache.PAINT_SELECTION_ONLY)
-        layout.addRow(selection_only_checkbox)
+        if self._control_panel is None:
+            self._control_panel = FillToolPanel()
         return self._control_panel
 
     def mouse_click(self, event: Optional[QMouseEvent], image_coordinates: QPoint) -> bool:
@@ -126,11 +116,21 @@ class FillTool(BaseTool):
                 layer_image = fill_image
             mask = flood_fill(fill_image, layer_point, self._color, self._threshold, False)
             assert mask is not None
-            if Cache().get(Cache.PAINT_SELECTION_ONLY):
-                selection_mask = self._image_stack.get_layer_mask(layer)
+            fill_pattern = Cache().get(Cache.FILL_TOOL_BRUSH_PATTERN)
+            try:
+                fill_brush = PatternComboBox.get_brush(fill_pattern)
+            except KeyError:
+                fill_brush = QBrush(Qt.BrushStyle.SolidPattern)
+            selection_only = Cache().get(Cache.PAINT_SELECTION_ONLY)
+            if selection_only or fill_brush.style() != Qt.BrushStyle.SolidPattern:
                 mask_painter = QPainter(mask)
                 mask_painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_DestinationIn)
-                mask_painter.drawImage(0, 0, selection_mask)
+                if selection_only:
+                    selection_mask = self._image_stack.get_layer_mask(layer)
+                    mask_painter.drawImage(0, 0, selection_mask)
+                if fill_brush.style() != Qt.BrushStyle.SolidPattern:
+                    fill_brush.setColor(self._color)
+                    mask_painter.fillRect(QRect(QPoint(), mask.size()), fill_brush)
                 mask_painter.end()
             painter = QPainter(layer_image)
             painter.drawImage(QRect(QPoint(), layer.size), mask)

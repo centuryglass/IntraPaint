@@ -1,13 +1,12 @@
 """Control panel widget for the filter tool."""
 import json
-from typing import List, Optional, Dict, Callable, Any, Tuple
+from typing import List, Optional, Callable, Any, Tuple
 
 from PySide6.QtCore import QSize, Qt
 from PySide6.QtWidgets import QWidget, QApplication, QVBoxLayout, QLabel, QHBoxLayout
 
 from src.config.cache import Cache
 from src.image.filter.filter import ImageFilter
-from src.image.mypaint.mypaint_brush import MyPaintBrush
 from src.ui.input_fields.check_box import CheckBox
 from src.ui.input_fields.slider_spinbox import FloatSliderSpinbox, IntSliderSpinbox
 from src.ui.layout.divider import Divider
@@ -136,7 +135,7 @@ class FilterToolPanel(CanvasToolPanel):
             try:
                 widget.setValue(self._filter_params[filter_name][idx])
             except (TypeError, ValueError):
-                widget.setValue(parameter.default_value)
+                widget.setValue(parameter.default_value)  # type: ignore
                 self._filter_params[filter_name][idx] = parameter.default_value
                 Cache().set(Cache.FILTER_TOOL_CACHED_PARAMETERS, json.dumps(self._filter_params))
             widget.valueChanged.connect(_update_param_in_json)

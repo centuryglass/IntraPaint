@@ -288,7 +288,7 @@ class AppController(MenuBuilder):
         self.build_menus()
         # Since image filter menus follow a very simple pattern, add them here instead of using @menu_action.
         # At the same time, make sure the filter tool's list of available options contains all filters.
-        filter_class_names = []
+        filter_class_names: List[str] = []
         for filter_class in (RGBColorBalanceFilter,
                              BrightnessContrastFilter,
                              BlurFilter,
@@ -308,7 +308,7 @@ class AppController(MenuBuilder):
                                           config_key)
             assert action is not None
             AppStateTracker.set_enabled_states(action, [APP_STATE_EDITING])
-        cache.update_options(Cache.FILTER_TOOL_SELECTED_FILTER, filter_class_names)
+        cache.update_options(Cache.FILTER_TOOL_SELECTED_FILTER, filter_class_names)  # type: ignore
 
         self._last_active = self._image_stack.active_layer
         self._lock_connection = self._last_active.lock_changed.connect(
@@ -822,6 +822,9 @@ class AppController(MenuBuilder):
             logger.error(f'save failed: {save_err}')
             show_error_dialog(self._window, SAVE_ERROR_TITLE, str(save_err))
             raise save_err
+        finally:
+            self._window.setUpdatesEnabled(True)
+            self._window.update()
 
     @menu_action(MENU_FILE, 'load_shortcut', 3,
                  valid_app_states=[APP_STATE_EDITING, APP_STATE_NO_IMAGE])
@@ -890,8 +893,6 @@ class AppController(MenuBuilder):
                     sampler = match.group(3)
                     cfg_scale = float(match.group(4))
                     seed = int(match.group(5))
-                    width = int(match.group(6))
-                    height = int(match.group(7))
                     divider_match = re.match('^(.*)\nNegative prompt: ?(.*)$', prompt)
                     if divider_match:
                         prompt = divider_match.group(1)
@@ -907,7 +908,6 @@ class AppController(MenuBuilder):
                             logger.error(f'sampler "{sampler}" used to generate this image is not supported.')
                         cache.set(Cache.GUIDANCE_SCALE, cfg_scale)
                         cache.set(Cache.SEED, seed)
-                        cache.set(Cache.GENERATION_SIZE, QSize(width, height))
                     except (TypeError, RuntimeError) as err:
                         logger.error(f'Failed to load image gen data from metadata: {err}')
                 else:
@@ -917,6 +917,9 @@ class AppController(MenuBuilder):
         except (UnidentifiedImageError, OSError) as err:
             show_error_dialog(self._window, LOAD_ERROR_TITLE, err)
             return
+        finally:
+            self._window.setUpdatesEnabled(True)
+            self._window.update()
 
     @menu_action(MENU_FILE, 'load_layers_shortcut', 4,
                  valid_app_states=[APP_STATE_EDITING, APP_STATE_NO_IMAGE])

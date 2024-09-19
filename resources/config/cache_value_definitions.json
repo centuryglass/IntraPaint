@@ -21,7 +21,8 @@
         "description": "Toolbar where the tool tab is placed by default (TOP|BOTTOM|LEFT|RIGHT|LOWER or empty)",
         "type": "string",
         "default": "",
-        "saved": true
+        "saved": true,
+        "translate": false
     },
     "generation_tab_bar": {
         "label": "Image generation tab bar:",
@@ -29,7 +30,8 @@
         "description": "Toolbar where the image generation tab is placed by default (TOP|BOTTOM|LEFT|RIGHT|LOWER or empty)",
         "type": "string",
         "default": "",
-        "saved": true
+        "saved": true,
+        "translate": false
     },
     "controlnet_tab_bar": {
         "label": "ControlNet tab bar:",
@@ -37,7 +39,8 @@
         "description": "Toolbar where the ControlNet tab is placed by default (TOP|BOTTOM|LEFT|RIGHT|LOWER or empty)",
         "type": "string",
         "default": "",
-        "saved": true
+        "saved": true,
+        "translate": false
     },
     "last_file_path": {
         "label": "Last file path:",
@@ -45,7 +48,8 @@
         "description": "Last image file loaded",
         "type": "string",
         "default": "",
-        "saved": false
+        "saved": false,
+        "translate": false
     },
     "last_brush_color": {
         "label": "Last brush color:",
@@ -79,7 +83,8 @@
         "description": "Last text tool font and settings",
         "type": "string",
         "default": "",
-        "saved": true
+        "saved": true,
+        "translate": false
     },
     "last_active_tool": {
         "label": "Last active tool:",
@@ -87,7 +92,8 @@
         "description": "Label of the last active tool, to restore after restart",
         "type": "string",
         "default": "brush",
-        "saved": true
+        "saved": true,
+        "translate": false
     },
     "last_nav_panel_tool": {
         "label": "Last navigation panel tool:",
@@ -95,7 +101,8 @@
         "description": "Label of the last active tool in the navigation panel, to restore after restart",
         "type": "string",
         "default": "",
-        "saved": true
+        "saved": true,
+        "translate": false
     },
     "fill_threshold": {
         "label": "Color threshold:",
@@ -105,21 +112,38 @@
         "default": 0.0,
         "range_options": {
             "min": 0.0,
-            "max": 30.0,
+            "max": 255.0,
             "step": 10.0
         },
         "saved": true
     },
+    "fill_tool_brush_pattern": {
+        "label": "Pattern:",
+        "category": "Cache",
+        "subcategory": "Fill Tool",
+        "description": "Fill tool Qt brush style to apply",
+        "type": "string",
+        "default": "",
+        "saved": true
+    },
     "sample_merged": {
-        "label": "Sample Merged:",
+        "label": "Sample Merged",
         "category": "Cache",
         "description": "If checked, fill based on the entire image contents, not just the current layer",
         "type": "bool",
         "default": false,
         "saved": true
     },
+    "color_select_mode": {
+        "label": "Select all by color",
+        "category": "Cache",
+        "description": "If checked, ignore boundaries and select all content within the color threshold",
+        "type": "bool",
+        "default": false,
+        "saved": true
+    },
     "paint_selection_only": {
-        "label": "Paint selection only:",
+        "label": "Paint selection only",
         "category": "Cache",
         "description": "If checked, only paint within the selection bounds",
         "type": "bool",
@@ -133,7 +157,8 @@
         "description": "Currently selected MyPaint brush file.",
         "type": "string",
         "default": "./resources/brushes/experimental/1pixel.myb",
-        "saved": true
+        "saved": true,
+        "translate": false
     },
     "paint_tool_brush_size": {
         "label": "Size:",
@@ -666,7 +691,8 @@
         "description": "Saved style prompts loaded from the webui",
         "type": "list",
         "default": [],
-        "saved": false
+        "saved": false,
+        "translate": false
     },
     "lora_models": {
         "label": "LoRA models:",
@@ -674,7 +700,8 @@
         "description": "LoRA model definitions loaded from the webui",
         "type": "list",
         "default": {},
-        "saved": false
+        "saved": false,
+        "translate": false
     },
     "cutn": {
         "label": "Detail reference count (cutn):",
@@ -754,7 +781,8 @@
         "description": "First layer ControlNet extension settings.",
         "type": "dict",
         "default": {},
-        "saved": true
+        "saved": true,
+        "translate": false
     },
     "controlnet_args_1": {
         "label": "ControlNet Settings (second layer)",
@@ -763,7 +791,8 @@
         "description": "Second layer ControlNet extension settings.",
         "type": "dict",
         "default": {},
-        "saved": true
+        "saved": true,
+        "translate": false
     },
     "controlnet_args_2": {
         "label": "ControlNet Settings (third layer)",
@@ -772,7 +801,8 @@
         "description": "Second layer ControlNet extension settings.",
         "type": "dict",
         "default": {},
-        "saved": true
+        "saved": true,
+        "translate": false
     },
     "controlnet_version": {
         "label": "ControlNet version:",
@@ -781,7 +811,8 @@
         "description": "ControlNet extension version loaded from the webui",
         "type": "float",
         "default": -1.0,
-        "saved": false
+        "saved": false,
+        "translate": false
     },
     "controlnet_control_types": {
         "label": "ControlNet control types:",
@@ -790,7 +821,8 @@
         "description": "ControlNet control type definitions loaded from the webui",
         "type": "dict",
         "default": {},
-        "saved": false
+        "saved": false,
+        "translate": false
     },
     "controlnet_modules": {
         "label": "ControlNet modules:",
@@ -799,7 +831,8 @@
         "description": "ControlNet module definitions loaded from the webui",
         "type": "dict",
         "default": {},
-        "saved": false
+        "saved": false,
+        "translate": false
     },
     "controlnet_models": {
         "label": "ControlNet models:",
@@ -808,7 +841,8 @@
         "description": "ControlNet model definitions loaded from the webui",
         "type": "dict",
         "default": {},
-        "saved": false
+        "saved": false,
+        "translate": false
     },
     "expect_tablet_input": {
         "label": "Expect tablet input",
@@ -817,6 +851,7 @@
         "description": "Whether input controls relevant to drawing tablets should be shown immediately, or only after tablet input arrives.",
         "type": "bool",
         "default": false,
-        "saved": true
+        "saved": true,
+        "translate": false
     }
 }

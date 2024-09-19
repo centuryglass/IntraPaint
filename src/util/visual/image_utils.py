@@ -22,7 +22,6 @@ logger = logging.getLogger(__name__)
 NpAnyArray: TypeAlias = ndarray[Any, dtype[Any]]
 NpUInt8Array: TypeAlias = np.ndarray[Any, np.dtype[np.uint8]]
 
-
 temp_image_dir = ''
 
 
@@ -215,28 +214,6 @@ def get_transparency_tile_pixmap(size: Optional[QSize] = None) -> QPixmap:
     return transparency_pixmap
 
 
-def _flood_fill_rgb(image: QImage, pos: QPoint, color: QColor, threshold: float) -> QImage:
-    np_image = image_data_as_numpy_8bit(image)
-    cv2_np_image = np_image[:, :, :3]  # cv2 won't accept 4-channel images.
-    if not cv2_np_image.flags['C_CONTIGUOUS']:
-        cv2_np_image = np.ascontiguousarray(cv2_np_image)
-    seed_point = (pos.x(), pos.y())
-    fill_color = (color.blue(), color.green(), color.red())
-    height, width, _ = np_image.shape
-    mask = np.zeros((height + 2, width + 2), np.uint8)
-    flags = cv2.FLOODFILL_MASK_ONLY
-    cv2.floodFill(cv2_np_image, mask, seed_point, fill_color,
-                  loDiff=(threshold, threshold, threshold, threshold),
-                  upDiff=(threshold, threshold, threshold, threshold),
-                  flags=flags)
-    assert mask is not None
-    mask = mask[1:-1, 1:-1]  # Remove the border
-    mask_image = np.zeros_like(np_image)
-    mask_indices = np.where(mask == 1)
-    mask_image[mask_indices[0], mask_indices[1]] = (color.blue(), color.green(), color.red(), 255)
-    return numpy_8bit_to_qimage(mask_image)
-
-
 def flood_fill(image: QImage, pos: QPoint, color: QColor, threshold: float, in_place: bool = False) -> Optional[QImage]:
     """Returns a mask image marking all areas of similar color directly connected to a point in an image.
 
@@ -259,32 +236,49 @@ def flood_fill(image: QImage, pos: QPoint, color: QColor, threshold: float, in_p
             size as the source image. filled pixels will be set to the color parameter, while unfilled pixels will be
             fully transparent.
     """
-    tmp_image = image.copy()
-    np_tmp_image = image_data_as_numpy_8bit(tmp_image)
-    np_image = image_data_as_numpy_8bit(image)
-    mask = QImage(image.size(), QImage.Format.Format_ARGB32_Premultiplied)
-    mask.fill(color)
-    painter = QPainter(mask)
-    painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_DestinationIn)
-    np_tmp_image[..., 3] = 255
-    for i in range(3):
-        if i > 0:
-            np_tmp_image[..., i - 1] = np_image[..., i - 1]
-        np_tmp_image[..., i] = np_image[..., 3]
-        channel_fill_mask = _flood_fill_rgb(tmp_image, pos, color, threshold)
-        painter.drawImage(0, 0, channel_fill_mask)
-    painter.end()
-    if not in_place:
-        return mask
-    painter = QPainter(image)
-    painter.drawImage(0, 0, mask)
-    painter.end()
-    return None
+    un_multiplied_image = image.convertToFormat(QImage.Format.Format_ARGB32)
+    np_image = image_data_as_numpy_8bit(un_multiplied_image)
+    np_color = np.array(np_image[pos.y(), pos.x(), :], dtype=np_image.dtype).reshape(1, 1, 4)
+    diff = np.linalg.norm(np_image - np_color, axis=-1)
+    diff = np.clip(diff, 0, 255).astype(np.uint8)
+    within_threshold = np.zeros((image.height() + 2, image.width() + 2), np.uint8)
+    seed_point = (pos.x(), pos.y())
+    cv2.floodFill(diff, within_threshold, seed_point, 255, loDiff=threshold, upDiff=threshold,
+                  flags=cv2.FLOODFILL_MASK_ONLY)
+    within_threshold = within_threshold[1:-1, 1:-1]
+    # Convert color to premultiplied ARGB to match the image color format:
+    paint_color = [int(color.blue() * color.alphaF()), int(color.green() * color.alphaF()),
+                   int(color.red() * color.alphaF()), color.alpha()]
+    np_paint_color = np.array(paint_color, dtype=np_image.dtype).reshape(1, 1, 4)
+    if in_place:
+        np_image = image_data_as_numpy_8bit(image)
+        np_image[within_threshold == 1, :] = np_paint_color
+        return None
+    mask_image = create_transparent_image(image.size())
+    np_mask_image = image_data_as_numpy_8bit(mask_image)
+    np_mask_image[within_threshold == 1, :] = np_paint_color
+    return mask_image
+
+
+def color_fill(image: QImage, color: QColor, threshold: float) -> QImage:
+    """Return an image mask marking all pixels where the color value matches a given color within a threshold range."""
+    un_multiplied_image = image.convertToFormat(QImage.Format.Format_ARGB32)
+    np_image = image_data_as_numpy_8bit(un_multiplied_image)
+    # Convert color to premultiplied ARGB to match the image color format:
+    color = [int(color.blue() * color.alphaF()), int(color.green() * color.alphaF()), int(color.red() * color.alphaF()),
+             color.alpha()]
+    np_color = np.array(color, dtype=np_image.dtype).reshape(1, 1, 4)
+    diff = np.linalg.norm(np_image - np_color, axis=-1)
+    within_threshold = (diff <= threshold)
+    mask_image = create_transparent_image(image.size())
+    np_mask_image = image_data_as_numpy_8bit(mask_image)
+    np_mask_image[within_threshold, 3] = 255
+    return mask_image
 
 
 def image_data_as_numpy_8bit(image: QImage) -> NpAnyArray:
     """Returns a numpy array interface for a QImage's internal data buffer."""
-    assert image.format() == QImage.Format.Format_ARGB32_Premultiplied, \
+    assert image.format() in (QImage.Format.Format_ARGB32_Premultiplied, QImage.Format.Format_ARGB32), \
         f'Image must be pre-converted to ARGB32_premultiplied, format was {image.format()}'
     image_ptr = image.bits()
     if image_ptr is None:
@@ -317,7 +311,7 @@ def numpy_bounds_index(np_image: NpAnyArray, bounds: QRect) -> NpAnyArray:
     right = left + bounds.width()
     bottom = top + bounds.height()
     assert top >= 0 and bottom <= np_image.shape[0] and left >= 0 and right <= np_image.shape[1], \
-            f'bounds ({left},{top})->({right},{bottom}) not contained within shape {np_image.shape}'
+        f'bounds ({left},{top})->({right},{bottom}) not contained within shape {np_image.shape}'
     return np_image[top:bottom, left:right, :]
 
 

@@ -89,6 +89,7 @@ class Cache(Config, metaclass=Singleton):
 
     BATCH_COUNT: str
     BATCH_SIZE: str
+    COLOR_SELECT_MODE: str
     CONTROLNET_ARGS_0: str
     CONTROLNET_ARGS_1: str
     CONTROLNET_ARGS_2: str
@@ -119,6 +120,7 @@ class Cache(Config, metaclass=Singleton):
     ERASER_TOOL_SIZE: str
     EXPECT_TABLET_INPUT: str
     FILL_THRESHOLD: str
+    FILL_TOOL_BRUSH_PATTERN: str
     FILTER_TOOL_BRUSH_SIZE: str
     FILTER_TOOL_CACHED_PARAMETERS: str
     FILTER_TOOL_HARDNESS: str

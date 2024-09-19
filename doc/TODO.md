@@ -1,15 +1,28 @@
 # Development tasks
 
+## Before next release:
+- Free selection tool: Escape should clear input, left-clicking first point should close. (< 15 minutes)
+- Add tool icons, generate button, to toolbar when panel isn't showing. (1 day)
+- Add "resize image to contents" option (key already exists, I think) (< 15 minutes)
+- Layer right-click menus: add "select content" option (< 15 minutes)
+- Add shortcut to activate/show/hide each tab  (< 1 hour)
+- Improve empty tab bar appearances (< 1 hour)
+- Update SD webui instructions with simpler Stability Matrix setup process (copy from release page) (< 15 minutes)
+- Pick a few solid defaults for the mypaint brush favorites panel  (< 15 minutes)
+- implement shape tool (< 2 days)
+- Connect move/pan keys to text layer placement  (< 1 hour)
+- Unique look for transform origin point (rotate 45 degrees?) (< 15 minutes)
+- transform tool: Toggle switch for scale/rotate mode, make sure clear/rotate button is in all panel layouts  (< 30 minutes)
+- Finish README cleanup and examples (< 1 day)
+- Basic workflow tutorials (< 1 day)
+- Final timelapse video (< 5 days)
 
-## Misc. bugs, minor features, and testing:
-- Fill tool should support patterns
-- Free selection tool: Escape should clear input, left-clicking first point should close.
-- Add tool icons to tools toolbar when closed.
-- Add gen. button to tools taskbar when closed
-- Add "resize image to contents" option (key already exists, I think)
+## Timelapse video: using latest interface
+Scripted to make use of every tool, in-video text explaining what I'm doing
 
 ## Documentation + Release
 - Create example images for README, finish missing sections and improve writing
+- Prioritize examples showing the actual interface over standalone outputs
 - Create tutorials for common workflows
     * Editing with the sketch layer
     * Filling in details with controlNet + tile
@@ -17,14 +30,6 @@
 - Update Windows libmypaint DLLs
 - Add Mac OS, ARM linux libmypaint libraries
 
-## Generated image selection screen
-- Non-transitory selection window? 
-
-## Tabs and windows:
-- Add shortcut to activate/show/hide each tab
-
-## Help window
-- Rich text tutorial content, with images and dynamic hotkeys.
 
 ## Tutorial topics
 - Visual influence on control: sketching details to guide inpainting
@@ -32,9 +37,28 @@
 - Stable-diffusion settings: what do all those options do:
 - ControlNet model guides
 
-## Generators:
-- Update SD webui instructions with simpler Stability Matrix setup process
-  
+### Shape tool
+- Circle, polygons with n sides
+- stroke+fill controls
+- Probably best to just render directly for now, but maybe use with SVGLayer + graphics items in the future
+
+## Possible lurking bugs
+Things I never fixed but can no longer reproduce, or that come from external issues:
+- Nested layer selection state shown in the layer panel isn't updating properly (recursive active layer update logic in LayerPanel looks fine)
+- Txt2Img + ControlNet doesn't seem to work with the image as source. Looks like a webui error, `'StableDiffusionProcessingTxt2Img' object has no attribute 'resize_mode'`, shows up in logs. After trying other settings I can no longer reproduce this, but I don't think it's fixed (input size needs to be a multiple of 32?).
+- changing gen. area size still doesn't always sync fully - width changes but not height. Possibly fixed, keep an eye out for it.
+
+
+# Lower priority/post-release:
+
+## General concerns:
+* Solid color selection layer is less than ideal, even with a configurable color.  Maybe some sort of animated fill?
+* Fill and color fill algorithms are not ideal, look into measuring color differences with a perceptual algorithm instead of plain distance
+* Do more profiling, performance is adequate but there's still some noticeable lag in a few places
+
+## Help window
+- Rich text tutorial content, with images and dynamic hotkeys.
+
 ### "Isolate" layer group attribute:
 - With isolate:
   * Render all group layers to a transparent group image
@@ -66,34 +90,15 @@
 - Add "merge group" and "merge all visible" options
 
 ## Menus
-- Tools: open mypaint brush panel
-- Tools: open mypaint brush file
 - Filters: just throw in whatever fun stuff PIL/CV2 have to offer
-
-### Text tool
-* Connect move/pan keys to text layer placement
-
-### Transform tool
-- Unique look for origin point (rotate 45 degrees?)
-- Toggle switch for scale/rotate modes
-- Make sure clear/rotate button is in all panel layouts
 
 ### Draw tool
 - Add custom brush fill patterns
   
 ### Smudge tool
-- Find some way to mitigate delays when smudging linearly over long distances
-
-### Brush tool
-- Pick a few solid defaults for the favorites panel
-
-### Blur tool
-Implement using filter instead of libmypaint
-
-### Shape tool
-- Circle, polygons with n sides
-- stroke+fill controls
-- Probably best to just render directly for now, but maybe use with SVGLayer + graphics items in the future
+- Find some way to mitigate delays when smudging linearly over long distances:
+- Try numpy compositing again now that the algorithm's worked out (see ImagePanel alpha-lock implementation)
+- When the drawing buffer has huge numbers of pending operations, see if we can defer some of them to give the window time to update
 
 ### Stamp tool
 - Clone stamp brush, using the same color sampling approach as smudge tool, complete with usual modifiers
@@ -101,28 +106,25 @@ Implement using filter instead of libmypaint
 - Left click to draw, sample point moves with brush strokes
 - Sample point content as cursor?
 
-## Possible lurking bugs
-Things I never fixed but can no longer reproduce, or that come from external issues:
-- Nested layer selection state shown in the layer panel isn't updating properly (recursive active layer update logic in LayerPanel looks fine)
-- Txt2Img + ControlNet doesn't seem to work with the image as source. Looks like a webui error, `'StableDiffusionProcessingTxt2Img' object has no attribute 'resize_mode'`, shows up in logs. After trying other settings I can no longer reproduce this, but I don't think it's fixed (input size needs to be a multiple of 32?).
-- changing gen. area size still doesn't always sync fully - width changes but not height. Possibly fixed, keep an eye out for it.
+## sketch canvas/libmypaint
+- Import latest code/changes
+- Get the demo app working again
+- Port to qtpy for maximum compatibility
+- Figure out Pip release process, libmypaint bundling
 
-# Low priority
+## Generated image selection screen
+- Non-transitory selection window?
 
 # Gradient support
 - Select between gradient types, define gradient transition points
 - Option to save gradients
 - Support in draw, fill, shape, text tools
 
+## ComfyUI support:
+Looks like the ComfyUI API is websocket-based instead of REST, and the client needs to be aware of ComfyUI's node graph structure. This is manageable, but requires a totally different approach and a lot of work. Defer unless a lot of people show interest. 
 
-## sketch canvas/libmypaint
-- Cleanup and release libmypaint-qt package
-- Get it working with one of those compatibility packages that lets you use the same code with Qt 4-6 and both PyQt and PySide
-- Update demo app
-
-## API
-- Investigate ComfyUI support
-- A1111 script panel support
+## A1111/Forge api extensions
+- More support for custom scripts, script UI panels
 - A1111 lora/hypernet/etc selection support
 
 ## ControlNet
@@ -130,7 +132,8 @@ Things I never fixed but can no longer reproduce, or that come from external iss
 - Add tooltip descriptions for modules and models
 - Saved preset support, with defaults saved.
 
-## Add legacy AI generators:
+## Legacy AI generators:
+It would be cool to add support for these, if only for the nostalgia.  Probably best done with standalone server programs with minimal REST interfaces.
 - DeepDream
 - VQGAN+CLIP
 

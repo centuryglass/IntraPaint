@@ -107,6 +107,8 @@ for content_key, json_prefix in (
     categories = set()
     subcategories = set()
     for entry in json_data.values():
+        if 'translate' in entry and entry['translate'] is False:
+            continue
         add_message(context_elem, saved_json_path, entry['label'], _find_line_num(entry['label']))
         add_message(context_elem, saved_json_path, entry['description'], _find_line_num(entry['description']))
         if 'category' not in entry:

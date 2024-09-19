@@ -11,7 +11,7 @@ class _SliderSpinbox(QWidget):
 
     @staticmethod
     def align_slider_spinboxes(boxes: 'List[_SliderSpinbox]',
-                               extra_rows: Optional[List[Optional[QWidget]]] = None) -> None:
+                               extra_rows: Optional[List[List[Optional[QWidget]]]] = None) -> None:
         """Adjust inner component layouts so that all parts of a column of slider spinboxes are sized equally"""
         if len(boxes) < 2:
             return
@@ -157,7 +157,6 @@ class _SliderSpinbox(QWidget):
     def spinbox(self) -> QSpinBox | QDoubleSpinBox:
         """Access the internal spinbox"""
         return self._spinbox
-
 
 
 class IntSliderSpinbox(_SliderSpinbox):

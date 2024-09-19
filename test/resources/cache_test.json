@@ -5,8 +5,8 @@
     "generation_tab_bar": "RIGHT",
     "controlnet_tab_bar": "",
     "last_brush_color": "#ff000000",
-    "text_background_color": "#ffffffff",
     "new_image_background_color": "#ffffffff",
+    "text_background_color": "#ffffffff",
     "text_tool_params": "{\"text\": \"\", \"font\": \"Noto Sans,10,-1,5,400,0,0,0,0,0,0,0,0,0,0,1\", \"text_color\": \"#ff000000\", \"bg_color\": \"#ffffffff\", \"size\": [0, 0, 100, 100], \"alignment\": 1, \"fill_background\": false, \"scale_mode\": \"none\"}",
     "last_active_tool": "Move view",
     "last_nav_panel_tool": "",
@@ -16,7 +16,9 @@
         "step": 10.0,
         "value": 0.0
     },
+    "fill_tool_brush_pattern": "",
     "sample_merged": false,
+    "color_select_mode": false,
     "paint_selection_only": false,
     "mypaint_brush": "./resources/brushes/experimental/1pixel.myb",
     "paint_tool_brush_size": {
@@ -74,12 +76,29 @@
     "eraser_tool_pressure_size": true,
     "eraser_tool_pressure_opacity": false,
     "eraser_tool_pressure_hardness": false,
-    "blur_tool_brush_size": {
+    "filter_tool_selected_filter": "RGBA Color Balance",
+    "filter_tool_cached_parameters": "{\"Blur\": [\"Box\", 3.0], \"Brightness/Contrast\": [1.0, 1.0], \"Posterize\": [3], \"RGBA Color Balance\": [1.0, 1.0, 1.0, 1.0], \"Sharpen\": [2.0]}",
+    "filter_tool_brush_size": {
         "min": 1,
         "max": 300,
         "step": 1,
         "value": 40
     },
+    "filter_tool_opacity": {
+        "min": 0.0,
+        "max": 1.0,
+        "step": 0.05,
+        "value": 0.5
+    },
+    "filter_tool_hardness": {
+        "min": 0.0,
+        "max": 1.0,
+        "step": 0.05,
+        "value": 1.0
+    },
+    "filter_tool_pressure_size": true,
+    "filter_tool_pressure_opacity": false,
+    "filter_tool_pressure_hardness": false,
     "smudge_tool_brush_size": {
         "min": 1,
         "max": 300,
@@ -125,13 +144,6 @@
     "edit_mode": "Inpaint",
     "sampling_method": "Euler a",
     "upscale_method": "None",
-    "controlnet_upscaling": false,
-    "controlnet_downsample_rate": {
-        "min": 1.0,
-        "max": 4.0,
-        "step": 0.1,
-        "value": 1.0
-    },
     "seed": {
         "min": -1,
         "max": 18446744073709551615,
@@ -145,9 +157,6 @@
         "step": 1,
         "value": 32
     },
-    "controlnet_args_0": {},
-    "controlnet_args_1": {},
-    "controlnet_args_2": {},
     "cutn": {
         "min": 1,
         "max": 32,
@@ -162,5 +171,15 @@
     },
     "upscale_mode": "Lanczos",
     "downscale_mode": "Lanczos",
+    "controlnet_upscaling": false,
+    "controlnet_downsample_rate": {
+        "min": 1.0,
+        "max": 4.0,
+        "step": 0.1,
+        "value": 1.0
+    },
+    "controlnet_args_0": {},
+    "controlnet_args_1": {},
+    "controlnet_args_2": {},
     "expect_tablet_input": false
 }

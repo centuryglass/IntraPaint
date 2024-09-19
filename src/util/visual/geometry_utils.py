@@ -320,6 +320,7 @@ def closest_size_keeping_aspect_ratio(new_size: QSizeF, aspect_ratio: float) -> 
                                                        aspect_ratio)
     return QSizeF(closest_point.x(), closest_point.y())
 
+
 def synchronize_widths(widgets: List[Optional[QWidget]]) -> None:
     """Synchronizes the widths of several widgets."""
     min_width = 0
@@ -332,13 +333,14 @@ def synchronize_widths(widgets: List[Optional[QWidget]]) -> None:
             continue
         widget.setMinimumWidth(min_width)
 
+
 def synchronize_row_widths(rows: List[List[Optional[QWidget]]]) -> None:
     """Synchronizes the widths of column widgets within several equal_sized rows."""
     if len(rows) < 2:
         return
     column_count = len(rows[0])
     assert all(len(row) == column_count for row in rows)
-    columns = []
+    columns: List[List[Optional[QWidget]]] = []
     for i in range(column_count):
         columns.append([])
     for row in rows:

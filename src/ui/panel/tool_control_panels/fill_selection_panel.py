@@ -52,10 +52,12 @@ class FillSelectionPanel(SelectionPanel):
         binding_id = f'FillSelectionPanel_{id(self)}_try_toggle'
         HotkeyFilter.instance().register_config_keybinding(binding_id, _try_toggle, KeyConfig.TOOL_ACTION_HOTKEY)
 
+        self._color_select_checkbox = cache.get_control_widget(Cache.COLOR_SELECT_MODE)
+        checkbox_row.addWidget(self._color_select_checkbox)
+
         self._fill_by_selection_checkbox = CheckBox()
         self._fill_by_selection_checkbox.setText(FILL_BY_SELECTION)
         self._fill_by_selection_checkbox.setToolTip(FILL_BY_SELECTION_TOOLTIP)
-        checkbox_row.addSpacing(20)
         checkbox_row.addWidget(self._fill_by_selection_checkbox)
 
         self.insert_into_layout(checkbox_row)
