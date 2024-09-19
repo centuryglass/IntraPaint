@@ -31,7 +31,8 @@ RESOURCES_FREE_SELECT_ICON = f'{PROJECT_DIR}/resources/icons/tools/free_selectio
 FREE_SELECTION_LABEL = _tr('Free selection')
 FREE_SELECTION_TOOLTIP = _tr('Select or de-select polygonal areas')
 FREE_SELECTION_CONTROL_HINT = _tr('{left_mouse_icon}: add or move point<br/>{enter_key}'
-                                  ' or {right_mouse_icon}+first point: finish selection')
+                                  ' or {left_mouse_icon}+first point: finish selection<br/>'
+                                  '{escape_key}: cancel selection')
 
 GRAPHICS_ITEM_OPACITY = 0.6
 ERASING_COLOR = Qt.GlobalColor.white
@@ -57,12 +58,23 @@ class FreeSelectionTool(BaseTool):
         self._control_panel.tool_mode_changed.connect(_update_clearing)
 
         def _close_on_enter() -> bool:
-            if not self.is_active or self._path_item.count < 3 or not self._preview_line.isVisible():
+            if not self.is_active or self._path_item.count < 3:
                 return False
             self._close_and_select()
             return True
         HotkeyFilter.instance().register_keybinding('FreeSelectionTool._close_on_enter', _close_on_enter,
                                                     QKeySequence(Qt.Key.Key_Enter, Qt.Key.Key_Return))
+
+        def _cancel_on_escape() -> bool:
+            if not self.is_active or self._path_item.count == 0:
+                return False
+            self._preview_line.set_line(QLineF())
+            self._preview_line.setVisible(False)
+            self._path_item.clear_points()
+        HotkeyFilter.instance().register_keybinding(f'FreeSelectionTool_{id(self)}_cancel_on_escape',
+                                                    _cancel_on_escape, QKeySequence(Qt.Key.Key_Escape))
+
+        self._path_item.first_handle_clicked.connect(self._first_handle_click_slot)
 
     def get_hotkey(self) -> QKeySequence:
         """Returns the hotkey(s) that should activate this tool."""
@@ -83,7 +95,7 @@ class FreeSelectionTool(BaseTool):
     def get_input_hint(self) -> str:
         """Return text describing different input functionality."""
         selection_hint = FREE_SELECTION_CONTROL_HINT.format(left_mouse_icon=left_button_hint_text(),
-                                                            right_mouse_icon=right_button_hint_text(),
+                                                            escape_key=rich_text_key_hint('Esc'),
                                                             enter_key=rich_text_key_hint('Enter'))
         return f'{selection_hint}<br/>{super().get_input_hint()}'
 
@@ -118,7 +130,7 @@ class FreeSelectionTool(BaseTool):
         if KeyConfig.modifier_held(KeyConfig.PAN_VIEW_MODIFIER, True):
             return False
         point_idx = self._path_item.get_point_index(QPointF(image_coordinates))
-        if event.buttons() == Qt.MouseButton.RightButton and point_idx == 0:
+        if event.buttons() == Qt.MouseButton.LeftButton and point_idx == 0 and self._path_item.count > 2:
             self._close_and_select()
             return True
         if event.buttons() == Qt.MouseButton.LeftButton and point_idx is None:
@@ -157,3 +169,7 @@ class FreeSelectionTool(BaseTool):
     def _on_deactivate(self) -> None:
         self._path_item.setVisible(False)
         self._preview_line.setVisible(False)
+
+    def _first_handle_click_slot(self) -> None:
+        if self._path_item.count > 2:
+            self._close_and_select()

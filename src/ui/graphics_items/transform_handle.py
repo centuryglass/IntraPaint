@@ -16,20 +16,22 @@ CORNER_ROTATE_ARROW_FILE = f'{PROJECT_DIR}/resources/arrow_corner_rot.svg'
 
 TRANSFORM_MODE_SCALE = 'scale'
 TRANSFORM_MODE_ROTATE = 'rotate'
-HANDLE_SIZE = 20
+HANDLE_SIZE = 10
 MIN_SCENE_DIM = 5
 
 
 class TransformHandle(QGraphicsObject):
     """Small square the user can drag to adjust the item properties."""
 
+    clicked = Signal(str, QPointF)
     dragged = Signal(str, QPointF, QPointF)
 
-    def __init__(self, parent: QGraphicsItem, handle_id: str, base_angle: int = 0, draw_arrows: bool = True) -> None:
+    def __init__(self, parent: QGraphicsItem, handle_id: str, base_arrow_angle: int = 0, draw_arrows: bool = True) -> None:
         super().__init__(parent)
         self.setZValue(parent.zValue() + 2)
         self._draw_arrows = draw_arrows
-        self._base_angle = base_angle
+        self._base_arrow_angle = base_arrow_angle
+        self._drawn_angle = 0
         self._handle_id = handle_id
         self.setToolTip(handle_id)
         self._last_pos = None
@@ -44,6 +46,16 @@ class TransformHandle(QGraphicsObject):
         self._saved_bounds = None
         self._saved_arrow_bounds = None
         self._icon = self._arrow_icon
+
+    @property
+    def drawn_angle(self) -> int:
+        """Accesses the angle used when drawing the handle square."""
+        return self._drawn_angle
+
+    @drawn_angle.setter
+    def drawn_angle(self, angle: int) -> None:
+        self._drawn_angle = angle
+        self.update()
 
     @property
     def handle_id(self) -> str:
@@ -123,10 +135,12 @@ class TransformHandle(QGraphicsObject):
             painter.setTransform(inverse, True)
             pos = transform.map(self.rect().center())
             painter.translate(pos)
+            painter.rotate(self._drawn_angle)
             rect = _get_handle_rect(QPointF())
             painter.fillRect(rect, self._brush)
             painter.setPen(self._pen)
             painter.drawRect(rect)
+            painter.rotate(-self.drawn_angle)
 
             if self._draw_arrows and self.parentItem() is not None:
                 arrow_pixmap = self._icon.pixmap(rect.size().toSize())
@@ -136,9 +150,9 @@ class TransformHandle(QGraphicsObject):
                 scale_x, scale_y, angle = self._get_parent_transform_params()
                 if scale_x < 0 or scale_y < 0:
                     angle *= -1
-                    angle += -(self._base_angle + 135) + (90 if scale_x < 0 else 270)
+                    angle += -(self._base_arrow_angle + 135) + (90 if scale_x < 0 else 270)
                 else:
-                    angle += 135 + self._base_angle
+                    angle += 135 + self._base_arrow_angle
                 painter.rotate(angle)
                 painter.drawPixmap(arrow_bounds.toAlignedRect(), arrow_pixmap)
         except AssertionError:
@@ -163,7 +177,7 @@ class TransformHandle(QGraphicsObject):
             adjusted_bounds = self._adjusted_bounds()
         radius = math.sqrt(adjusted_bounds.width()**2 + adjusted_bounds.height()**2)
         offset_vector = QLineF(0, 0, radius, 0)
-        offset_vector.setAngle(-self._base_angle)
+        offset_vector.setAngle(-self._base_arrow_angle)
         return adjusted_bounds.translated(offset_vector.p2().x(), offset_vector.p2().y())
 
     def mousePressEvent(self, event: Optional[QGraphicsSceneMouseEvent]) -> None:
@@ -171,7 +185,7 @@ class TransformHandle(QGraphicsObject):
         assert event is not None
         super().mousePressEvent(event)
         self.setSelected(True)
-        self.dragged.emit(self._handle_id, event.scenePos(), event.lastScenePos())
+        self.clicked.emit(self._handle_id, event.scenePos())
 
     def mouseMoveEvent(self, event: Optional[QGraphicsSceneMouseEvent]) -> None:
         """Continue sending handle position changes."""

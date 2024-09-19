@@ -3,7 +3,7 @@ import datetime
 import logging
 from typing import Optional
 
-from PySide6.QtCore import Qt, QPoint, QLineF, QPointF
+from PySide6.QtCore import Qt, QPoint, QLineF, QPointF, QEvent, QRect
 from PySide6.QtGui import QCursor, QTabletEvent, QMouseEvent, QColor, QIcon, QWheelEvent, QPointingDevice
 from PySide6.QtWidgets import QApplication
 
@@ -16,6 +16,7 @@ from src.image.layers.image_layer import ImageLayer
 from src.image.layers.image_stack import ImageStack
 from src.image.layers.layer import Layer
 from src.tools.base_tool import BaseTool
+from src.ui.graphics_items.temp_dashed_line_item import TempDashedLineItem
 from src.ui.image_viewer import ImageViewer
 from src.ui.panel.tool_control_panels.canvas_tool_panel import CanvasToolPanel
 from src.util.math_utils import clamp
@@ -69,6 +70,9 @@ class CanvasTool(BaseTool):
         self._tablet_event_timestamp = 0.0
         self._last_pos: Optional[QPoint] = None
         self._fixed_angle: Optional[int] = None
+        scene = image_viewer.scene()
+        assert scene is not None
+        self._preview_line = TempDashedLineItem(scene)
 
         self._small_brush_icon = QIcon(RESOURCES_MIN_CURSOR)
         self._small_brush_cursor = QCursor(self._small_brush_icon.pixmap(MIN_SMALL_CURSOR_SIZE, MIN_SMALL_CURSOR_SIZE))
@@ -114,6 +118,7 @@ class CanvasTool(BaseTool):
 
             image_stack.active_layer_changed.connect(self._active_layer_change_slot)
             self.layer = image_stack.active_layer
+        HotkeyFilter.instance().modifiers_changed.connect(self._modifier_change_slot)
 
     @staticmethod
     def canvas_control_hints() -> str:
@@ -330,6 +335,10 @@ class CanvasTool(BaseTool):
         """Receives a mouse move event, returning whether the tool consumed the event."""
         if self._layer is None or event is None or not self._image_stack.has_image:
             return False
+
+        if KeyConfig.modifier_held(KeyConfig.LINE_MODIFIER) and self._last_pos is not None:
+            self._preview_line.setVisible(True)
+            self._preview_line.set_line(QLineF(QPointF(self._last_pos), QPointF(image_coordinates)))
         if (event.buttons() == Qt.MouseButton.LeftButton or event.buttons() == Qt.MouseButton.RightButton
                 and self._drawing):
             self._stroke_to(image_coordinates)
@@ -353,6 +362,19 @@ class CanvasTool(BaseTool):
             self._tablet_y_tilt = None
             return True
         return False
+
+    def mouse_enter(self, event: Optional[QEvent], image_coordinates: QPoint) -> bool:
+        """Show the line preview on enter if in line mode."""
+        if KeyConfig.modifier_held(KeyConfig.LINE_MODIFIER):
+            self._preview_line.setVisible(True)
+            return True
+        return False
+
+    def mouse_exit(self, event: Optional[QEvent], image_coordinates: QPoint) -> bool:
+        """Hide the line preview on exit."""
+        self._preview_line.set_line(QLineF())
+        self._preview_line.setVisible(False)
+        return True
 
     def tablet_event(self, event: Optional[QTabletEvent], image_coordinates: QPoint) -> bool:
         """Cache tablet data when received."""
@@ -427,3 +449,15 @@ class CanvasTool(BaseTool):
             self.layer = active_layer
         else:
             self.layer = None
+
+    def _modifier_change_slot(self, modifiers: Qt.KeyboardModifier) -> None:
+        if not self.is_active:
+            return
+        line_modifier = KeyConfig().get(KeyConfig.LINE_MODIFIER)
+        if modifiers == line_modifier and self._last_pos is not None :
+            cursor_pos = self._image_viewer.mapFromGlobal(QCursor.pos())
+            if QRect(QPoint(), self._image_viewer.size()).contains(cursor_pos):
+                self._preview_line.set_line(QLineF(QPointF(self._last_pos), QPointF(cursor_pos)))
+                self._preview_line.setVisible(True)
+        else:
+            self._preview_line.setVisible(False)

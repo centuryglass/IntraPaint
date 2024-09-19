@@ -96,7 +96,9 @@ class FilterCanvas(QtPaintCanvas):
         assert layer is not None
         with layer.borrow_image(filter_bounds) as layer_image:
             layer_painter = QPainter(layer_image)
+            layer_painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_Source)
             layer_painter.drawImage(filter_bounds, prev_content)
+            layer_painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_SourceOver)
             self.draw_segment_to_image(self._brush_stroke_buffer, layer_image, layer_painter, bounds)
             layer_painter.end()
         super().end_stroke()

@@ -81,6 +81,7 @@ class TransformOutline(QGraphicsObject):
             if not include_origin_handle and handle_id == ORIGIN_HANDLE_ID:
                 continue
             self._handles[handle_id] = _Handle(self, handle_id)
+        self._handles[ORIGIN_HANDLE_ID].drawn_angle = 45
         self.transformation_origin = self.rect().center()
         self._update_handles()
 

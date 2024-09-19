@@ -2,8 +2,8 @@
 from typing import List, Optional
 import logging
 
-from PySide6.QtCore import QPointF, QRectF, QLineF
-from PySide6.QtGui import QPainterPath, QPolygonF, QPainter
+from PySide6.QtCore import QPointF, QRectF, QLineF, Signal
+from PySide6.QtGui import QPainterPath, QPolygonF, QPainter, Qt
 from PySide6.QtWidgets import QGraphicsScene, QStyleOptionGraphicsItem, QWidget
 
 from src.ui.graphics_items.animated_dash_item import AnimatedDashItem
@@ -21,6 +21,8 @@ logger = logging.getLogger(__name__)
 class PathCreationItem(AnimatedDashItem):
     """Editable path item used to create a polygon."""
 
+    first_handle_clicked = Signal()
+
     def __init__(self, scene: QGraphicsScene) -> None:
         super().__init__()
         self._points: List[QPointF] = []
@@ -37,6 +39,7 @@ class PathCreationItem(AnimatedDashItem):
         handle = TransformHandle(self, str(len(self._handles)), draw_arrows=False)
         handle.setZValue(self.zValue() + 1)
         handle.move_rect_center(point)
+        handle.drawn_angle = 45
         return handle
 
     def _add_handle(self, point: QPointF, handle: Optional[TransformHandle] = None) -> None:
@@ -47,6 +50,8 @@ class PathCreationItem(AnimatedDashItem):
         self.prepareGeometryChange()
         self._points.append(point)
         self._handles.append(handle)
+        if len(self._handles) == 1:
+            handle.clicked.connect(lambda id_str, pt: self.first_handle_clicked.emit())
         handle.dragged.connect(self._move_handle_on_drag)
         if handle.scene() is None:
             scene.addItem(handle)

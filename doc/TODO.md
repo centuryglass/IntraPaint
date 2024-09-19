@@ -1,7 +1,6 @@
 # Development tasks
 
 ## Before next release:
-- Free selection tool: Escape should clear input, left-clicking first point should close. (< 15 minutes)
 - Add tool icons, generate button, to toolbar when panel isn't showing. (1 day)
 - Add "resize image to contents" option (key already exists, I think) (< 15 minutes)
 - Layer right-click menus: add "select content" option (< 15 minutes)
@@ -11,8 +10,7 @@
 - Pick a few solid defaults for the mypaint brush favorites panel  (< 15 minutes)
 - implement shape tool (< 2 days)
 - Connect move/pan keys to text layer placement  (< 1 hour)
-- Unique look for transform origin point (rotate 45 degrees?) (< 15 minutes)
-- transform tool: Toggle switch for scale/rotate mode, make sure clear/rotate button is in all panel layouts  (< 30 minutes)
+- transform tool: make sure clear/rotate button is in all panel layouts  (< 30 minutes)
 - Finish README cleanup and examples (< 1 day)
 - Basic workflow tutorials (< 1 day)
 - Final timelapse video (< 5 days)
