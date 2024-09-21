@@ -41,7 +41,7 @@ BRUSH_CONF_FILE = 'brushes.conf'
 BRUSH_ORDER_FILE = 'order.conf'
 BRUSH_EXTENSION = '.myb'
 BRUSH_ICON_EXTENSION = '_prev.png'
-ICON_SIZE = 128
+BRUSH_ICON_SIZE = 128
 
 logger = logging.getLogger(__name__)
 
@@ -219,7 +219,7 @@ class _IconButton(QWidget):
 
             def _draw_image() -> QImage:
 
-                image = QImage(QSize(ICON_SIZE, ICON_SIZE), QImage.Format.Format_ARGB32_Premultiplied)
+                image = QImage(QSize(BRUSH_ICON_SIZE, BRUSH_ICON_SIZE), QImage.Format.Format_ARGB32_Premultiplied)
                 image_bounds = QRect(QPoint(), image.size())
                 text_bounds = image_bounds.adjusted(2, 2, -2, -2)
                 palette = self.palette()

@@ -84,8 +84,10 @@ from src.ui.modal.new_image_modal import NewImageModal
 from src.ui.modal.resize_canvas_modal import ResizeCanvasModal
 from src.ui.modal.settings_modal import SettingsModal
 from src.ui.panel.color_panel import ColorControlPanel
+from src.ui.panel.generators.generator_panel import GeneratorPanel
 from src.ui.panel.layer_ui.layer_panel import LayerPanel
 from src.ui.panel.tool_panel import ToolPanel
+from src.ui.widget.tool_tab import ToolTab
 from src.ui.window.generator_setup_window import GeneratorSetupWindow
 from src.ui.window.image_window import ImageWindow
 from src.ui.window.main_window import MainWindow, TabBoxID
@@ -146,9 +148,7 @@ SUBMENU_SELECT = _tr('Select')
 SUBMENU_TRANSFORM = _tr('Transform')
 
 CONTROL_TAB_NAME = _tr('Image Generation')
-TOOL_TAB_NAME = _tr('Tools')
 
-TOOL_TAB_ICON = f'{PROJECT_DIR}/resources/icons/tabs/wrench.svg'
 GEN_TAB_ICON = f'{PROJECT_DIR}/resources/icons/tabs/sparkle.svg'
 
 GENERATOR_LOAD_ERROR_TITLE = _tr('Loading image generator failed')
@@ -360,7 +360,7 @@ class AppController(MenuBuilder):
         config.connect(self, AppConfig.FONT_POINT_SIZE, _apply_font)
         _apply_font(config.get(AppConfig.FONT_POINT_SIZE))
 
-        # Set up editing tools:
+        # ToolPanel/ToolController: Set up editing tools:
         self._tool_controller = ToolController(self._image_stack, self._image_viewer)
         self._tool_panel = ToolPanel()
         self._generation_area_tool = GenerationAreaTool(self._image_stack, self._image_viewer)
@@ -377,13 +377,11 @@ class AppController(MenuBuilder):
 
         # Add all tools to the panel except for the generation area tool:
         for tool in self._tool_controller.tools:
-            if isinstance(tool, GenerationAreaTool):
-                continue
             self._tool_panel.add_tool_button(tool)
 
         # Connect signal handlers:
         self._tool_panel.tool_selected.connect(self._tool_controller.set_active_tool)
-        self._tool_controller.tool_changed.connect(self._tool_panel.setup_active_tool)
+        self._tool_controller.active_tool_changed.connect(self._tool_panel.setup_active_tool)
         self._tool_controller.tool_added.connect(self._tool_panel.add_tool_button)
         self._tool_controller.tool_removed.connect(self._tool_panel.remove_tool_button)
 
@@ -399,22 +397,21 @@ class AppController(MenuBuilder):
             new_active_tool.cursor_change.connect(_update_image_cursor)
             self._last_active_tool = new_active_tool
             _update_image_cursor()
-        self._tool_controller.tool_changed.connect(_update_cursor_and_control_hint)
+        self._tool_controller.active_tool_changed.connect(_update_cursor_and_control_hint)
         active_tool = self._tool_controller.active_tool
         assert active_tool is not None
         _update_cursor_and_control_hint(active_tool)
         self._tool_panel.setup_active_tool(active_tool)
 
         # Set up main window tabs:
-        self._tool_tab = Tab(TOOL_TAB_NAME, self._tool_panel)
-        self._tool_tab.setIcon(QIcon(TOOL_TAB_ICON))
+        self._tool_tab = ToolTab(self._tool_panel, self._tool_controller)
         try:
             tool_tab_box_id = TabBoxID(Cache().get(Cache.TOOL_TAB_BAR))
         except ValueError:
-            tool_tab_box_id = None
+            tool_tab_box_id = None  # Invalid cache entry, use default placement
         self._window.add_tab(self._tool_tab, tool_tab_box_id)
 
-        self._control_panel: Optional[QWidget] = None
+        self._control_panel: Optional[GeneratorPanel] = None
         self._control_tab = Tab(CONTROL_TAB_NAME)
         self._control_tab.setIcon(QIcon(GEN_TAB_ICON))
 
@@ -461,6 +458,17 @@ class AppController(MenuBuilder):
                 logger.info('No valid generator detected, starting with null generator enabled.')
                 self.load_image_generator(self._null_generator)
 
+        # Restore previous active tool, save future active tool changes
+        last_active_tool_name = cache.get(Cache.LAST_ACTIVE_TOOL)
+        last_active_tool = self._tool_controller.find_tool_by_label(last_active_tool_name)
+        if last_active_tool is not None:
+            self._tool_controller.active_tool = last_active_tool
+
+        def _update_last_active_tool(new_active_tool: BaseTool) -> None:
+            tool_value = '' if not isinstance(new_active_tool, BaseTool) else new_active_tool.label
+            cache.set(Cache.LAST_ACTIVE_TOOL, tool_value)
+        self._tool_controller.active_tool_changed.connect(_update_last_active_tool)
+
     def start_app(self) -> None:
         """Start the application."""
         app = QApplication.instance() or QApplication(sys.argv)
@@ -481,6 +489,9 @@ class AppController(MenuBuilder):
         if self._generator is not None:
             for tab in self._generator.get_extra_tabs():
                 self._window.remove_tab(tab)
+            if self._control_panel is not None:
+                for tab_bar_widget in self._control_panel.get_tab_bar_widgets():
+                    self._control_tab.remove_tab_bar_widget(tab_bar_widget)
             self._generator.unload_settings(self._settings_modal)
             self._generator.clear_menus()
             self._generator.disconnect_or_disable()
@@ -492,6 +503,9 @@ class AppController(MenuBuilder):
         prev_panel_was_none = self._control_panel is None
         self._control_panel = self._generator.get_control_panel()
         self._control_tab.content_widget = self._control_panel
+        if self._control_panel is not None:
+            for tab_bar_widget in self._control_panel.get_tab_bar_widgets():
+                self._control_tab.add_tab_bar_widget(tab_bar_widget)
         if self._control_panel is None and not prev_panel_was_none:
             self._window.remove_tab(self._control_tab)
         elif prev_panel_was_none and self._control_panel is not None:

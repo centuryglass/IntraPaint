@@ -1,9 +1,9 @@
 """Editable path item used to create a polygon."""
-from typing import List, Optional
 import logging
+from typing import List, Optional
 
 from PySide6.QtCore import QPointF, QRectF, QLineF, Signal
-from PySide6.QtGui import QPainterPath, QPolygonF, QPainter, Qt
+from PySide6.QtGui import QPainterPath, QPolygonF, QPainter
 from PySide6.QtWidgets import QGraphicsScene, QStyleOptionGraphicsItem, QWidget
 
 from src.ui.graphics_items.animated_dash_item import AnimatedDashItem

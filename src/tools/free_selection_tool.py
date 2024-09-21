@@ -14,8 +14,8 @@ from src.ui.graphics_items.temp_dashed_line_item import TempDashedLineItem
 from src.ui.image_viewer import ImageViewer
 from src.ui.panel.tool_control_panels.brush_selection_panel import TOOL_MODE_ERASE
 from src.ui.panel.tool_control_panels.free_selection_panel import FreeSelectionPanel
-from src.util.visual.text_drawing_utils import rich_text_key_hint, left_button_hint_text, right_button_hint_text
 from src.util.shared_constants import PROJECT_DIR
+from src.util.visual.text_drawing_utils import rich_text_key_hint, left_button_hint_text
 
 # The `QCoreApplication.translate` context for strings in this file
 TR_ID = 'tools.lasso_selection_tool'
@@ -71,6 +71,7 @@ class FreeSelectionTool(BaseTool):
             self._preview_line.set_line(QLineF())
             self._preview_line.setVisible(False)
             self._path_item.clear_points()
+            return True
         HotkeyFilter.instance().register_keybinding(f'FreeSelectionTool_{id(self)}_cancel_on_escape',
                                                     _cancel_on_escape, QKeySequence(Qt.Key.Key_Escape))
 

@@ -2,17 +2,15 @@
    area with layer, navigation, and color picking interfaces."""
 from typing import Optional, Dict, List
 
-from PySide6.QtCore import Qt, Signal, QRect, QSize, QMargins, QObject
-from PySide6.QtGui import QMouseEvent, QPaintEvent, QPainter, QPen, QResizeEvent
+from PySide6.QtCore import Qt, Signal, QSize, QMargins, QObject
+from PySide6.QtGui import QResizeEvent
 from PySide6.QtWidgets import QWidget, QLabel, QHBoxLayout, QVBoxLayout, QSizePolicy, QScrollArea, QGridLayout, QLayout, \
     QApplication, QTabWidget
 
 from src.tools.base_tool import BaseTool
 from src.ui.layout.draggable_divider import DraggableDivider
 from src.ui.layout.reactive_layout_widget import ReactiveLayoutWidget
-from src.ui.widget.key_hint_label import KeyHintLabel
-from src.util.visual.display_size import get_window_size
-from src.util.visual.geometry_utils import get_scaled_placement
+from src.ui.widget.tool_button import ToolButton
 
 # The `QCoreApplication.translate` context for strings in this file
 TR_ID = 'ui.panel.tool_panel'
@@ -24,8 +22,6 @@ def _tr(*args):
 
 
 TOOL_PANEL_TITLE = _tr('Tools')
-
-TOOL_ICON_SIZE = 48
 
 TOOL_LIST_STRETCH = 0
 TOOL_PANEL_STRETCH = 50
@@ -58,8 +54,7 @@ class ToolPanel(QWidget):
         self._row_count = 0
         self._column_count = 0
 
-        self._tool_widgets: Dict[str, '_ToolButton'] = {}
-        self._toolbar_tool_widgets: Dict[str, '_ToolButton'] = {}
+        self._tool_widgets: Dict[str, 'ToolButton'] = {}
         self._active_tool_panel: Optional[QWidget] = None
 
         self._tool_control_box = ReactiveLayoutWidget()
@@ -85,16 +80,16 @@ class ToolPanel(QWidget):
                                                          QSizePolicy.Policy.Expanding))
         self._build_layout()
 
+    def create_tool_button(self, tool: BaseTool) -> QWidget:
+        """Creates and returns a new tool button."""
+
     def add_tool_button(self, tool: BaseTool) -> None:
         """Creates and shows a new tool button for a given tool object."""
         if tool.label in self._tool_widgets:
             return
-        primary_button = _ToolButton(tool)
-        toolbar_button = _ToolButton(tool)
+        primary_button = ToolButton(tool)
         self._tool_widgets[tool.label] = primary_button
-        self._toolbar_tool_widgets[tool.label] = toolbar_button
         primary_button.tool_selected.connect(self.tool_selected)
-        toolbar_button.tool_selected.connect(self.tool_selected)
         self._build_tool_button_layout()
 
     def remove_tool_button(self, tool: BaseTool) -> None:
@@ -104,9 +99,6 @@ class ToolPanel(QWidget):
         if tool_name in self._tool_widgets:
             buttons.append(self._tool_widgets[tool_name])
             del self._tool_widgets[tool_name]
-        if tool_name in self._toolbar_tool_widgets:
-            buttons.append(self._toolbar_tool_widgets[tool_name])
-            del self._toolbar_tool_widgets[tool_name]
         for button in buttons:
             button.tool_selected.disconnect(self.tool_selected)
             button.setVisible(False)
@@ -189,7 +181,7 @@ class ToolPanel(QWidget):
         if active_tool is not None:
             self._tool_control_label.setText(f'{active_tool.label} - {active_tool.get_tooltip_text()}')
             self._tool_control_box.setToolTip(active_tool.get_tooltip_text())
-            for label, widget in [*self._tool_widgets.items(), *self._toolbar_tool_widgets.items()]:
+            for label, widget in self._tool_widgets.items():
                 widget.is_active = label == active_tool.label
             tool_panel = active_tool.get_control_panel()
             if tool_panel is not None:
@@ -251,80 +243,3 @@ class ToolPanel(QWidget):
         if self._active_tool_panel is not None and hasattr(self._active_tool_panel, 'set_orientation'):
             self._active_tool_panel.set_orientation(self._orientation)
         self._build_tool_button_layout()
-
-
-class _ToolButton(QWidget):
-    """Displays a tool icon and label, indicates if the tool is selected."""
-
-    tool_selected = Signal(QObject)
-
-    def __init__(self, connected_tool: BaseTool) -> None:
-        super().__init__()
-        self._tool = connected_tool
-        self._icon = connected_tool.get_icon()
-        self.setSizePolicy(QSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed))
-        label_text = connected_tool.label
-        if connected_tool.get_hotkey() is not None:
-            self._key_hint: Optional[KeyHintLabel] = KeyHintLabel(connected_tool.get_hotkey(), parent=self)
-            self._key_hint.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
-            self._key_hint.setSizePolicy(QSizePolicy.Policy.MinimumExpanding, QSizePolicy.Policy.MinimumExpanding)
-            self._key_hint.setMinimumSize(self._key_hint.sizeHint())
-
-        else:
-            self._key_hint = None
-        self.setToolTip(label_text)
-        self._icon_bounds = QRect()
-        self._active = False
-
-    def sizeHint(self) -> QSize:
-        """Returns ideal size as TOOL_ICON_SIZExTOOL_ICON_SIZE."""
-        window_size = get_window_size()
-        if window_size.isEmpty():
-            return QSize(TOOL_ICON_SIZE, TOOL_ICON_SIZE)
-        size = max(min(window_size.width() // 40, window_size.height() // 40), TOOL_ICON_SIZE)
-        if self._key_hint is not None:
-            hint_size = self._key_hint.sizeHint()
-            return QSize(max(int(size * 1.5), size + hint_size.width() + 2), size)
-        return QSize(int(size * 1.5), size)
-
-    def minimumSizeHint(self) -> QSize:
-        """Returns ideal size as TOOL_ICON_SIZExTOOL_ICON_SIZE."""
-        return self.sizeHint()
-
-    def resizeEvent(self, unused_event: Optional[QResizeEvent]):
-        """Recalculate and cache icon bounds on size change."""
-        self._icon_bounds = get_scaled_placement(self.size(), QSize(10, 10), 8)
-        if self._key_hint is not None:
-            hint_size = self._key_hint.sizeHint()
-            self._key_hint.setGeometry(QRect(self._icon_bounds.right() + 2,
-                                             self._icon_bounds.center().y() - hint_size.height() // 2,
-                                             hint_size.width(),
-                                             hint_size.height()))
-
-    @property
-    def is_active(self) -> bool:
-        """Checks whether the associated tool is shown as active."""
-        return self._active
-
-    @is_active.setter
-    def is_active(self, active: bool) -> None:
-        """Sets whether the associated tool is shown as active."""
-        self._active = active
-        self.update()
-
-    def mousePressEvent(self, unused_event: Optional[QMouseEvent]) -> None:
-        """Trigger tool change if clicked when not selected."""
-        if not self.is_active:
-            self.tool_selected.emit(self._tool)
-
-    def paintEvent(self, unused_event: Optional[QPaintEvent]) -> None:
-        """Highlight when selected."""
-        painter = QPainter(self)
-        if self.is_active:
-            pen = QPen(self.palette().color(self.foregroundRole()), 2)
-        else:
-            pen = QPen(self.palette().color(self.backgroundRole()).lighter(), 2)
-
-        painter.setPen(pen)
-        painter.drawRect(self._icon_bounds.adjusted(-4, -4, 4, 4))
-        self._icon.paint(painter, self._icon_bounds)

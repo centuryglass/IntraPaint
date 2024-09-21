@@ -101,6 +101,7 @@ class AppConfig(Config, metaclass=Singleton):
     TAB_FONT_POINT_SIZE: str
     THEME: str
     TILING: str
+    TOOLBAR_TOOL_BUTTON_COUNT: str
     UNDO_MERGE_INTERVAL: str
     USE_ERROR_HANDLER: str
     WARN_BEFORE_COLOR_LOSS: str

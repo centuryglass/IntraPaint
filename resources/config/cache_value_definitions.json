@@ -95,6 +95,15 @@
         "saved": true,
         "translate": false
     },
+    "recent_tools": {
+        "label": "Recent tools:",
+        "category": "Cache",
+        "description": "Cached list of recent active tools",
+        "type": "list",
+        "default": [],
+        "saved": true,
+        "translate": false
+    },
     "last_nav_panel_tool": {
         "label": "Last navigation panel tool:",
         "category": "Cache",

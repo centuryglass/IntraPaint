@@ -4,13 +4,14 @@ from typing import List, Dict, Optional, Any
 from PIL import Image, ImageFilter
 from PySide6.QtCore import QPoint, QRect, QSize, Signal, QTimer, QObject
 from PySide6.QtGui import QImage, QPainter
-from PySide6.QtWidgets import QApplication, QWidget
+from PySide6.QtWidgets import QApplication
 
 from src.config.cache import Cache
 from src.image.layers.image_stack import ImageStack
 from src.ui.layout.draggable_tabs.tab import Tab
 from src.ui.modal.modal_utils import show_error_dialog
 from src.ui.modal.settings_modal import SettingsModal
+from src.ui.panel.generators.generator_panel import GeneratorPanel
 from src.ui.window.main_window import MainWindow
 from src.util.application_state import AppStateTracker, APP_STATE_LOADING, APP_STATE_EDITING
 from src.util.async_task import AsyncTask
@@ -99,7 +100,7 @@ class ImageGenerator(MenuBuilder):
     def unload_settings(self, settings_modal: SettingsModal) -> None:
         """Unloads this generator's settings from the settings modal."""
 
-    def get_control_panel(self) -> Optional[QWidget]:
+    def get_control_panel(self) -> Optional[GeneratorPanel]:
         """Returns a widget with inputs for controlling this generator."""
         raise NotImplementedError()
 

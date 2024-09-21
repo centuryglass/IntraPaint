@@ -117,7 +117,7 @@ class ImageWindow(ImagePanel):
         self.setWindowIcon(QIcon(APP_ICON_PATH))
         self._image_stack = image_stack
         self._tool_controller = ToolController(image_stack, self.image_viewer, False, False)
-        self._tool_controller.tool_changed.connect(self._update_tool_slot)
+        self._tool_controller.active_tool_changed.connect(self._update_tool_slot)
         self._generation_area_tool = GenerationAreaTool(image_stack, self.image_viewer)
         self._zoom_tool = ZoomTool(main_image_view, self.image_viewer)
         self._tool_controller.active_tool = self._generation_area_tool

@@ -146,6 +146,7 @@ class Cache(Config, metaclass=Singleton):
     PAINT_SELECTION_ONLY: str
     PAINT_TOOL_BRUSH_SIZE: str
     PROMPT: str
+    RECENT_TOOLS: str
     SAMPLE_MERGED: str
     SAMPLING_METHOD: str
     SAMPLING_STEPS: str

@@ -1,145 +1,315 @@
-"""Widget bar that accepts draggable tabs."""
+"""Widget bar that accepts draggable tabs.
+
+Most of the functionality in draggable_tabs is handled within the TabBar, including the following:
+- Displaying a set of widgets, sorted between Tab widgets and others.
+- Keeping track of which Tab is currently active.
+- Tracking whether the content widget associated with a Tab should be displayed.
+- Allowing the user to switch between different tabs on the bar.
+- Displaying a set of optional tab bar widgets for each Tab, except when that tab's main content widget is showing.
+- Accepting Tabs dragged from other TabBars
+"""
 from typing import Optional, List
 
-from PySide6.QtCore import Signal, Qt, QPointF, QLine, QSize
+from PySide6.QtCore import Signal, Qt, QPointF, QLine, QSize, QTimer, QSignalBlocker
 from PySide6.QtGui import QDragEnterEvent, QDragMoveEvent, QDragLeaveEvent, QDropEvent, QPaintEvent, QPainter
 from PySide6.QtWidgets import QWidget, QBoxLayout, QHBoxLayout, QVBoxLayout, QToolButton, QSizePolicy, QFrame
 
 from src.ui.layout.draggable_tabs.tab import Tab
 from src.ui.panel.layer_ui.layer_widget import LayerWidget
-from src.ui.widget.label import Label
-from src.util.shared_constants import MAX_WIDGET_SIZE
 
-BASE_BAR_SIZE = 10
+BASE_BAR_SIZE = 20
+BASE_EMPTY_BAR_SIZE = 10
+TAB_BAR_OPEN_DELAY_MS = 100
+INLINE_MARGIN = 2
+EDGE_MARGIN = 3
+BASE_MARGIN = 3
 
 
 class TabBar(QFrame):
     """Widget bar that can accept dragged tabs."""
 
+    active_tab_changed = Signal(Tab)
     active_tab_content_replaced = Signal(Tab)
     tab_clicked = Signal(Tab)
     tab_added = Signal(Tab)
     tab_removed = Signal(Tab)
-    max_size_changed = Signal(QSize)
     toggled = Signal(bool)
+    tab_bar_will_open = Signal()
 
     def __init__(self, orientation: Qt.Orientation, at_parent_start: bool) -> None:
         super().__init__()
+        self._layout: QBoxLayout = QHBoxLayout(self) if orientation == Qt.Orientation.Horizontal else QVBoxLayout(self)
         self._orientation = orientation
         self._at_parent_start = at_parent_start
-        self._active_tab: Optional[Tab] = None
-        self._widgets: List[QWidget] = []
-        self._insert_pos: Optional[int] = None
-        self._insert_index: Optional[int] = None
-        self._layout: QBoxLayout = QHBoxLayout(self) if orientation == Qt.Orientation.Horizontal else QVBoxLayout(self)
-        self._toggle_button = QToolButton()
-        self._toggle_button.setCheckable(True)
-        self._toggle_button.setChecked(True)
-        self._toggle_button.setStyleSheet('QToolButton { border: none; }')
-        self._toggle_button.toggled.connect(self._toggle_button_slot)
-        self._bar_size = BASE_BAR_SIZE
         self.setContextMenuPolicy(Qt.ContextMenuPolicy.ActionsContextMenu)
 
+        # TabBar open/close toggle button setup:
+        self._toggle_button = QToolButton()
+        self._toggle_button.setCheckable(True)
+        self._toggle_button.setChecked(False)
+        self._toggle_button.setStyleSheet('QToolButton { border: none; }')
+        self._toggle_button.toggled.connect(self._toggle_button_slot)
         self._toggle_button.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonIconOnly)
         self._toggle_button.setChecked(False)
         self._layout.addWidget(self._toggle_button)
         self._toggle_button.setVisible(False)
         self._toggle_button.setEnabled(False)
+        self._active_tab: Optional[Tab] = None
+
+        # Remaining layout contents: all tabs, a spacer, then all additional widgets
+        self._tabs: List[Tab] = []
+        self._spacer_widget = QWidget()
+        self._layout.addWidget(self._spacer_widget, stretch=5)
+        self._widgets: List[QWidget] = []
+
+        # Track pending drag and drop state:
+        self._insert_pos: Optional[int] = None
+        self._insert_index: Optional[int] = None
+        self._drag_list: Optional[List[QWidget] | List[Tab]] = None
         self.setAcceptDrops(True)
+
+        # Track active tab, tab widget open/close state:
+        self._is_open = False
+        self._tab_open_timer = QTimer()
+        self._tab_open_timer.setInterval(TAB_BAR_OPEN_DELAY_MS)
+        self._tab_open_timer.setSingleShot(True)
+        self._tab_open_timer.timeout.connect(self._finish_tab_open)
+
         self._apply_orientation()
 
     @property
+    def active_tab(self) -> Optional[Tab]:
+        """Gets and sets the active tab.
+
+        Only one tab in the tab bar may be active at a time. When the bar is open, the active tab's tab bar widgets
+        will be hidden.
+        """
+        return self._active_tab
+
+    @active_tab.setter
+    def active_tab(self, tab: Optional[Tab]) -> None:
+        if tab == self._active_tab:
+            return
+        if tab is not None and tab not in self._tabs:
+            raise ValueError(f'Tried to activate tab "{tab.text()}" not found in the list of tabs')
+        if self._active_tab is not None:
+            for tab_bar_widget in self._active_tab.tab_bar_widgets:
+                assert tab_bar_widget in self._widgets
+                tab_bar_widget.setVisible(True)
+        self._active_tab = tab
+        if tab is not None:
+            for tab_bar_widget in tab.tab_bar_widgets:
+                assert tab_bar_widget in self._widgets
+                tab_bar_widget.setVisible(not self.is_open)
+        self.active_tab_changed.emit(tab)
+        self.update()
+
+    @property
     def is_open(self) -> bool:
-        """Return true if tab content is open (or would be open if the tab is non-empty)."""
-        return self._toggle_button.isChecked()
+        """Access whether the tab bar is open.
+
+         When the tab bar is open, the active tab's content widget should be displayed next to the bar. The tab bar
+         can only be open if it contains at least one tab."""
+        return self._is_open
 
     @is_open.setter
     def is_open(self, is_open: bool) -> None:
+        if self.active_tab is None:
+            is_open = False
         if self._toggle_button.isChecked() != is_open:
-            self._toggle_button.toggle()
+            # noinspection PyUnusedLocal
+            signal_blocker = QSignalBlocker(self._toggle_button)
+            self._toggle_button.setChecked(is_open)
+            self._update_toggle_arrow(is_open)
+        if is_open == self._is_open:
+            return
+        if is_open:
+            if not self._tab_open_timer.isActive():
+                self._tab_open_timer.start()
+                self.tab_bar_will_open.emit()
+        else:
+            if self._tab_open_timer.isActive():
+                self._tab_open_timer.stop()
+            self._is_open = False
+            self._update_tab_widget_visibility()
+            self._update_toggle_arrow(False)
+            self.toggled.emit(False)
+
+    def _finish_tab_open(self) -> None:
+        self._tab_open_timer.stop()
+        if self._active_tab is None:
+            self.is_open = False
+            return
+        if not self._toggle_button.isChecked():
+            # noinspection PyUnusedLocal
+            signal_blocker = QSignalBlocker(self._toggle_button)
+            self._toggle_button.setChecked(True)
+        active_tab = self.active_tab
+        assert active_tab is not None
+        for tab_bar_widget in active_tab.tab_bar_widgets:
+            assert tab_bar_widget in self._widgets
+            tab_bar_widget.setVisible(True)
+        self._is_open = True
+        self._update_toggle_arrow(True)
+        self._update_tab_widget_visibility()
+        self.toggled.emit(True)
 
     def set_orientation(self, orientation: Qt.Orientation) -> None:
         """Switch between vertical and horizontal orientation."""
         if self._orientation != orientation:
             self._orientation = orientation
-            self._update_bar_size()
             self._apply_orientation()
 
-    def add_widget(self, widget: QWidget, index: int) -> None:
+    def sizeHint(self) -> QSize:
+        """Returns a reduced thickness when the bar is empty."""
+        hint = super().sizeHint()
+        if len(self._tabs) == 0 and len(self._widgets) == 0:
+            if self._orientation == Qt.Orientation.Horizontal:
+                hint.setHeight(BASE_EMPTY_BAR_SIZE)
+            else:
+                hint.setWidth(BASE_EMPTY_BAR_SIZE)
+        return hint
+
+    def minimumSizeHint(self) -> QSize:
+        """Returns a reduced thickness when the bar is empty."""
+        hint = super().minimumSizeHint()
+        if len(self._tabs) == 0 and len(self._widgets) == 0:
+            if self._orientation == Qt.Orientation.Horizontal:
+                hint.setHeight(BASE_EMPTY_BAR_SIZE)
+            else:
+                hint.setWidth(BASE_EMPTY_BAR_SIZE)
+        return hint
+
+    def add_tab(self, tab: Tab, index: Optional[int] = None) -> None:
+        """Add a tab to the bar."""
+        if index is None or index < 0:
+            index = len(self._tabs)
+        if tab in self._tabs:
+            self.move_widget(tab, index)
+            return
+        last_parent = tab.parent()
+        if isinstance(last_parent, TabBar):
+            last_parent.remove_widget(tab)
+        self._tabs.insert(index, tab)
+        if len(self._tabs) == 1:
+            self._toggle_button.setEnabled(True)
+            self._toggle_button.setVisible(True)
+        self._layout.insertWidget(1 + index, tab)
+        self._apply_widget_orientation(tab)
+        tab.clicked.connect(self._tab_clicked_slot)
+        tab.double_clicked.connect(self._tab_double_clicked_slot)
+        tab.tab_content_replaced.connect(self._tab_widget_change_slot)
+        tab.tab_bar_widget_added.connect(self.add_widget)
+        tab.tab_bar_widget_removed.connect(self.remove_widget)
+        tab.tab_bar_widget_order_changed.connect(self._update_widget_order)
+        tab_content_widget = tab.content_widget
+        if tab_content_widget is not None:
+            self._apply_widget_orientation(tab_content_widget)
+        widget_insert_idx = self._layout.indexOf(self._spacer_widget) + 1
+        for other_tab in self._tabs:
+            if other_tab == tab:
+                break
+            widget_insert_idx += len(other_tab.tab_bar_widgets)
+        for tab_bar_widget in tab.tab_bar_widgets:
+            self.add_widget(tab_bar_widget, widget_insert_idx)
+            widget_insert_idx += 1
+            tab_bar_widget.setVisible(True)
+        self.tab_added.emit(tab)
+        if self.active_tab is None:
+            self.active_tab = tab
+            self.tab_clicked.emit(tab)
+            self.is_open = True
+            self.update()
+
+    def add_widget(self, widget: QWidget, index: Optional[int] = None) -> None:
         """Add a widget to the bar."""
         if widget in self._widgets:
-            self.move_widget(widget, index)
+            if index is not None:
+                self.move_widget(widget, index)
             return
+        if isinstance(widget, Tab):
+            self.add_tab(widget, index)
+            return
+        if self.active_tab is not None and widget in self.active_tab.tab_bar_widgets:
+            widget.setVisible(not self.is_open)
         last_parent = widget.parent()
         if isinstance(last_parent, TabBar):
             last_parent.remove_widget(widget)
-        if index < 0:
+        if index is None or index < 0:
             index = len(self._widgets)
+        index = min(index, len(self._widgets))
         self._widgets.insert(index, widget)
-        if len(self._widgets) == 1:
-            if self._layout.count() == 0:
-                self._layout.addWidget(self._toggle_button)
-            self._toggle_button.setEnabled(True)
-            self._toggle_button.setVisible(True)
-        self._layout.insertWidget(index + 1, widget)
+        layout_index = min(self._layout.indexOf(self._spacer_widget) + index + 1, self._layout.count())
+        self._layout.insertWidget(layout_index, widget)
         self._apply_widget_orientation(widget)
-        self._update_bar_size()
-        if isinstance(widget, Tab):
-            widget.clicked.connect(self._tab_clicked_slot)
-            widget.double_clicked.connect(self._tab_double_clicked_slot)
-            widget.tab_content_replaced.connect(self._tab_widget_change_slot)
-            self.tab_added.emit(widget)
-            if self._active_tab is None:
-                self._active_tab = widget
-                self.tab_clicked.emit(widget)
-                self.is_open = True
-                self.update()
+        self._update_widget_order()
+
+    def remove_tab(self, tab: Tab) -> None:
+        """Remove a tab from the bar."""
+        assert tab in self._tabs
+        self._tabs.remove(tab)
+        if tab == self.active_tab:
+            first_tab = None if len(self._tabs) == 0 else self._tabs[0]
+            self.active_tab = first_tab
+            if first_tab is not None:
+                self.tab_clicked.emit(first_tab)
+            if self.is_open:
+                self.is_open = False
+        tab.clicked.disconnect(self._tab_clicked_slot)
+        tab.double_clicked.disconnect(self._tab_double_clicked_slot)
+        tab.tab_content_replaced.disconnect(self._tab_widget_change_slot)
+        tab.tab_bar_widget_added.disconnect(self.add_widget)
+        tab.tab_bar_widget_removed.disconnect(self.remove_widget)
+        tab.tab_bar_widget_order_changed.disconnect(self._update_widget_order)
+        for tab_bar_widget in tab.tab_bar_widgets:
+            if tab_bar_widget in self._widgets:
+                self.remove_widget(tab_bar_widget)
+        self.tab_removed.emit(tab)
+        self._layout.removeWidget(tab)
+        tab.setParent(None)
+        if len(self._tabs) == 0:
+            self._toggle_button.setEnabled(False)
+            self._toggle_button.setVisible(False)
+        self._update_widget_order()
 
     def remove_widget(self, widget: QWidget) -> None:
         """Remove a widget from the bar."""
-        assert widget in self._widgets
         if isinstance(widget, Tab):
-            widget.clicked.disconnect(self._tab_clicked_slot)
-            widget.double_clicked.disconnect(self._tab_double_clicked_slot)
-            widget.tab_content_replaced.disconnect(self._tab_widget_change_slot)
-            self.tab_removed.emit(widget)
+            self.remove_tab(widget)
+            return
+        assert widget in self._widgets
+        widget.setVisible(False)
         self._widgets.remove(widget)
         self._layout.removeWidget(widget)
         widget.setParent(None)
-        self._update_bar_size()
-        if widget == self._active_tab:
-            first_tab = None
-            for other_widget in self._widgets:
-                if isinstance(other_widget, Tab):
-                    first_tab = other_widget
-                    break
-            self._active_tab = first_tab
-            self.tab_clicked.emit(first_tab)
-            if self.is_open:
-                self.is_open = False
-        if len(self._widgets) == 0:
-            self._toggle_button.setEnabled(False)
-            self._toggle_button.setVisible(False)
         self.update()
 
     def move_widget(self, widget: QWidget, index: int) -> None:
         """Moves a widget to another position in the bar."""
-        assert widget in self._widgets
-        current_index = self._widgets.index(widget)
+        widget_list = self._tabs if isinstance(widget, Tab) else self._widgets
+        assert widget in widget_list
+        current_index = widget_list.index(widget)
         if index in (current_index, current_index + 1):
             return
         if index > current_index:
             index -= 1
-        self._widgets.remove(widget)
+        widget_list.remove(widget)
+        widget_list.insert(index, widget)
+        if isinstance(widget, Tab):
+            layout_index = index + 1
+            self._update_widget_order()
+        else:
+            spacer_index = self._layout.indexOf(self._spacer_widget)
+            layout_index = spacer_index + 1 + index
         self._layout.removeWidget(widget)
-        self._widgets.insert(index, widget)
-        self._layout.insertWidget(index + 1, widget)
+        self._layout.insertWidget(layout_index, widget)
         self.update()
+        self._update_widget_order()
 
     @property
     def tabs(self) -> List[Tab]:
         """Returns all tabs in this tab bar."""
-        return [widget for widget in self._widgets if isinstance(widget, Tab)]
+        return list(self._tabs)
 
     def _update_toggle_arrow(self, checked: bool):
         if self._orientation == Qt.Orientation.Horizontal:
@@ -150,19 +320,21 @@ class TabBar(QFrame):
             closed_arrow = Qt.ArrowType.DownArrow
         self._toggle_button.setArrowType(open_arrow if checked else closed_arrow)
 
+    def _update_tab_widget_visibility(self) -> None:
+        """Hide tab widgets only when their tab is active and the bar is open."""
+        for tab in self._tabs:
+            for widget in tab.tab_bar_widgets:
+                widget.setVisible((not self.is_open) or (tab != self.active_tab))
+
     def _toggle_button_slot(self) -> None:
-        checked = self._toggle_button.isChecked()
-        self._update_toggle_arrow(checked)
-        self.toggled.emit(checked)
+        self.is_open = self._toggle_button.isChecked()
 
     def _tab_clicked_slot(self, tab: QWidget) -> None:
-        assert isinstance(tab, Tab)
-        if self._active_tab != tab:
-            self._active_tab = tab
-            self.tab_clicked.emit(tab)
-            self.update()
+        self.active_tab = tab
 
     def _tab_double_clicked_slot(self, tab: QWidget) -> None:
+        """If double-clicking an inactive tab, activate it. If double-clicking the active tab, open or close tab
+         content."""
         assert isinstance(tab, Tab)
         if self._active_tab != tab:
             self._tab_clicked_slot(tab)
@@ -173,6 +345,37 @@ class TabBar(QFrame):
     def _tab_widget_change_slot(self, tab: QWidget, tab_widget: QWidget) -> None:
         if self._active_tab == tab:
             self.active_tab_content_replaced.emit(tab_widget)
+
+    def _update_widget_order(self) -> None:
+        """Ensure widgets are ordered in tab order, in the order provided by the tabs"""
+        all_widgets = list(self._widgets)
+        widget_idx = 0
+        layout_idx = self._layout.indexOf(self._spacer_widget) + 1
+        for tab in self._tabs:
+            tab_widgets = tab.tab_bar_widgets
+            for tab_widget in tab_widgets:
+                try:
+                    widget_list_idx = self._widgets.index(tab_widget)
+                except ValueError:
+                    return  # Currently adding all widgets in a Tab, wait until they're all added to sort.
+                widget_layout_idx = self._layout.indexOf(tab_widget)
+                assert widget_layout_idx != -1 and widget_list_idx != -1
+                if widget_list_idx != widget_idx:
+                    self._widgets.remove(tab_widget)
+                    self._widgets.insert(widget_idx, tab_widget)
+                if widget_layout_idx != layout_idx:
+                    self._layout.removeWidget(tab_widget)
+                    self._layout.insertWidget(layout_idx, tab_widget)
+                widget_idx += 1
+                layout_idx += 1
+                all_widgets.remove(tab_widget)
+        for non_tab_widget in all_widgets:
+            self._widgets.remove(non_tab_widget)
+            self._widgets.insert(widget_idx, non_tab_widget)
+            self._layout.removeWidget(non_tab_widget)
+            self._layout.insertWidget(layout_idx, non_tab_widget)
+            widget_idx += 1
+            layout_idx += 1
 
     def _alignment(self) -> Qt.AlignmentFlag:
         if self._orientation == Qt.Orientation.Horizontal:
@@ -194,25 +397,6 @@ class TabBar(QFrame):
         # Panel widget:
         return QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
 
-    def _update_bar_size(self) -> None:
-        bar_size = BASE_BAR_SIZE
-        margins = self.contentsMargins()
-        for widget in self._widgets:
-            if not isinstance(widget, Label):
-                return
-            size_hint = widget.sizeHint()
-            bar_size = max(bar_size, int(1.5 * min(size_hint.width() + margins.left() + margins.right(),
-                                         size_hint.height() + margins.top() + margins.bottom())))
-        if bar_size != self._bar_size:
-            self._bar_size = bar_size
-            self._apply_orientation()
-
-    def _max_width(self) -> int:
-        return MAX_WIDGET_SIZE if self._orientation == Qt.Orientation.Horizontal else self._bar_size
-
-    def _max_height(self) -> int:
-        return self._bar_size if self._orientation == Qt.Orientation.Horizontal else MAX_WIDGET_SIZE
-
     def _apply_widget_orientation(self, widget: QWidget) -> None:
         if hasattr(widget, 'setAlignment'):
             widget.setAlignment(self._alignment())
@@ -220,15 +404,9 @@ class TabBar(QFrame):
             widget.setOrientation(self._orientation)
         if hasattr(widget, 'set_orientation'):
             widget.set_orientation(self._orientation)
-        widget.setSizePolicy(self._size_policy(widget))
 
     def _apply_orientation(self) -> None:
         layout_class = QHBoxLayout if self._orientation == Qt.Orientation.Horizontal else QVBoxLayout
-        if self._orientation == Qt.Orientation.Horizontal:
-            self.setMinimumHeight(self._bar_size)
-        else:
-            self.setMinimumWidth(self._bar_size)
-
         if not isinstance(self._orientation, layout_class):
             while self._layout.count() > 0:
                 self._layout.takeAt(0)
@@ -236,24 +414,36 @@ class TabBar(QFrame):
             temp_widget.setLayout(self._layout)
             self._layout = layout_class(self)
             self._layout.addWidget(self._toggle_button)
+            for tab in self._tabs:
+                self._layout.addWidget(tab)
+            self._layout.addWidget(self._spacer_widget, stretch=5)
             for widget in self._widgets:
                 self._layout.addWidget(widget)
+        if self._orientation == Qt.Orientation.Horizontal:
+            self._spacer_widget.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Maximum)
+            margin_top = BASE_MARGIN if self._at_parent_start else EDGE_MARGIN
+            margin_bottom = EDGE_MARGIN if self._at_parent_start else BASE_MARGIN
+            self._layout.setContentsMargins(INLINE_MARGIN, margin_top, INLINE_MARGIN, margin_bottom)
+        else:
+            self._spacer_widget.setSizePolicy(QSizePolicy.Policy.Maximum, QSizePolicy.Policy.Expanding)
+            margin_left = BASE_MARGIN if self._at_parent_start else EDGE_MARGIN
+            margin_right = EDGE_MARGIN if self._at_parent_start else BASE_MARGIN
+            self._layout.setContentsMargins(margin_left, INLINE_MARGIN, margin_right, INLINE_MARGIN)
+
         self._apply_widget_orientation(self)
         self._apply_widget_orientation(self._toggle_button)
         self._layout.setAlignment(self._alignment())
+        for tab in self._tabs:
+            self._apply_widget_orientation(tab)
+            tab_widget = tab.content_widget
+            if tab_widget is not None:
+                self._apply_widget_orientation(tab_widget)
         for widget in self._widgets:
             self._apply_widget_orientation(widget)
-            if isinstance(widget, Tab):
-                tab_widget = widget.content_widget
-                if tab_widget is not None:
-                    self._apply_widget_orientation(tab_widget)
         self._update_toggle_arrow(self._toggle_button.isChecked())
-        max_size = QSize(self._max_width(), self._max_height())
-        if max_size != self.maximumSize():
-            self.setMaximumSize(max_size)
-            self.max_size_changed.emit(max_size)
 
     def _update_insert_pos(self, point: QPointF):
+        """When dragging in a Tab or other widget, find where the tab will be placed."""
         if len(self._widgets) == 0:
             if self._insert_index != 0:
                 self._insert_index = 0
@@ -261,23 +451,30 @@ class TabBar(QFrame):
                 self.update()
             return
         mouse_pos = int(point.x() if self._orientation == Qt.Orientation.Horizontal else point.y())
-        for i, widget in enumerate(self._widgets):
+        assert self._drag_list is not None
+        start_widget = self._toggle_button if self._drag_list == self._tabs else self._spacer_widget
+        if self._orientation == Qt.Orientation.Horizontal:
+            margin = self._layout.contentsMargins().right()
+            end_pos = start_widget.x() + start_widget.width()
+        else:
+            margin = self._layout.contentsMargins().bottom()
+            end_pos = start_widget.y() + start_widget.height()
+        for i, widget in enumerate(self._drag_list):
             if self._orientation == Qt.Orientation.Horizontal:
-                start_pos = widget.x() - (self._layout.contentsMargins().right())
+                start_pos = end_pos + (widget.x() - end_pos) // 2
                 mid_pos = widget.x() + (widget.width() // 2)
+                end_pos = widget.x() + widget.width()
             else:
-                start_pos = widget.y() - (self._layout.contentsMargins().bottom())
+                start_pos = end_pos + (widget.y() - end_pos) // 2
                 mid_pos = widget.y() + (widget.height() // 2)
+                end_pos = widget.y() + widget.height()
             if mouse_pos < mid_pos:
                 self._insert_index = i
                 self._insert_pos = start_pos
                 self.update()
                 return
-        self._insert_index = len(self._widgets)
-        if self._orientation == Qt.Orientation.Horizontal:
-            self._insert_pos = self._widgets[-1].geometry().right() + self._layout.contentsMargins().right()
-        else:
-            self._insert_pos = self._widgets[-1].geometry().bottom() + self._layout.contentsMargins().bottom()
+        self._insert_index = len(self._drag_list)
+        self._insert_pos = end_pos + margin
         self.update()
 
     def dragEnterEvent(self, event: Optional[QDragEnterEvent]) -> None:
@@ -286,6 +483,7 @@ class TabBar(QFrame):
         dragged_item = event.source()
         if not isinstance(dragged_item, QWidget) or isinstance(dragged_item, LayerWidget):
             return
+        self._drag_list = self._tabs if isinstance(dragged_item, Tab) else self._widgets
         event.accept()
         self._update_insert_pos(event.position())
 
@@ -299,6 +497,7 @@ class TabBar(QFrame):
         if self._insert_pos is not None:
             self._insert_pos = None
             self._insert_index = None
+            self._drag_list = None
             self.update()
 
     def dropEvent(self, event: Optional[QDropEvent]) -> None:
@@ -310,6 +509,7 @@ class TabBar(QFrame):
             self.add_widget(widget, self._insert_index)
             self._insert_index = None
             self._insert_pos = None
+            self._drag_list = None
             self.update()
 
     def paintEvent(self, event: Optional[QPaintEvent]) -> None:
@@ -318,22 +518,23 @@ class TabBar(QFrame):
         painter = QPainter(self)
         foreground_color = self.palette().color(self.foregroundRole())
         painter.setPen(foreground_color)
-        if self._active_tab is not None:
-            active_rect = self._active_tab.geometry()
+        active_tab = self.active_tab
+        if active_tab is not None:
+            active_rect = active_tab.geometry()
             if self._orientation == Qt.Orientation.Horizontal:
                 if self._at_parent_start:
                     active_rect.setBottom(self.height() - 2)
-                    active_rect.setY(self._active_tab.y() + self._active_tab.height() + 2)
+                    active_rect.setY(active_tab.y() + active_tab.height() + 2)
                 else:
                     active_rect.setY(2)
-                    active_rect.setBottom(self._active_tab.y() - 2)
+                    active_rect.setBottom(active_tab.y() - 2)
             else:
                 if self._at_parent_start:
                     active_rect.setRight(self.width() - 2)
-                    active_rect.setX(self._active_tab.x() + self._active_tab.width() + 2)
+                    active_rect.setX(active_tab.x() + active_tab.width() + 2)
                 else:
                     active_rect.setX(2)
-                    active_rect.setRight(self._active_tab.x() - 2)
+                    active_rect.setRight(active_tab.x() - 2)
             painter.fillRect(active_rect, foreground_color)
 
         if self._insert_pos is not None:

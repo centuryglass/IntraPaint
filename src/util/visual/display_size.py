@@ -2,24 +2,39 @@
 import logging
 from typing import Optional, cast
 
-from PySide6.QtCore import QSize
+from PySide6.QtCore import QSize, QRect
 from PySide6.QtWidgets import QApplication, QMainWindow
 
 logger = logging.getLogger(__name__)
 
 
-def get_screen_size(window: Optional[QMainWindow] = None, default_to_primary: bool = True) -> QSize:
-    """Returns the size of the display a window is in, or the size of the primary display if window is None."""
-    display = None
+def get_screen_bounds(window: Optional[QMainWindow] = None, default_to_primary: bool = True) -> QRect:
+    """Returns the bounds of the display a window is in, or the bounds of the primary display if window is None."""
     app = cast(QApplication, QApplication.instance())
     assert app is not None, 'Application instance must be created to get screen size'
+    screen = None
     if window is not None:
-        display = app.screenAt(window.pos())
-    if display is None and default_to_primary:
-        display = app.primaryScreen()
-    if display is None:
-        return QSize(0, 0)
-    return display.size()
+        window_bounds = window.geometry()
+        window_area = window_bounds.width() * window_bounds.height()
+        best_screen_area = 0.0
+        for test_screen in app.screens():
+            screen_bounds = test_screen.geometry()
+            intersect = screen_bounds.intersected(window_bounds)
+            if not intersect.isEmpty():
+                intersect_percent = (intersect.width() * intersect.height()) / window_area
+                if intersect_percent > best_screen_area:
+                    screen = test_screen
+                    best_screen_area = intersect_percent
+    if screen is None and default_to_primary:
+        screen = app.primaryScreen()
+    if screen is None:
+        return QRect()
+    return screen.availableGeometry()
+
+
+def get_screen_size(window: Optional[QMainWindow] = None, default_to_primary: bool = True) -> QSize:
+    """Returns the size of the display a window is in, or the size of the primary display if window is None."""
+    return get_screen_bounds(window, default_to_primary).size()
 
 
 def get_window_size() -> QSize:

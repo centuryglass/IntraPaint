@@ -9,7 +9,7 @@ from typing import Optional, Dict, List, cast, Any, Callable, Tuple
 import requests
 from PySide6.QtCore import Signal, QSize, QThread
 from PySide6.QtGui import QImage, QAction, QIcon
-from PySide6.QtWidgets import QInputDialog, QWidget, QApplication
+from PySide6.QtWidgets import QInputDialog, QApplication
 
 from src.api.a1111_webservice import A1111Webservice, AuthError
 from src.config.a1111_config import A1111Config
@@ -17,11 +17,12 @@ from src.config.application_config import AppConfig
 from src.config.cache import Cache
 from src.controller.image_generation.image_generator import ImageGenerator
 from src.image.layers.image_stack import ImageStack
+from src.ui.layout.draggable_tabs.tab import Tab
 from src.ui.modal.modal_utils import show_error_dialog
 from src.ui.modal.settings_modal import SettingsModal
 from src.ui.panel.controlnet_panel import TabbedControlnetPanel, CONTROLNET_TITLE
+from src.ui.panel.generators.generator_panel import GeneratorPanel
 from src.ui.panel.generators.sd_webui_panel import SDWebUIPanel
-from src.ui.layout.draggable_tabs.tab import Tab
 from src.ui.window.extra_network_window import ExtraNetworkWindow
 from src.ui.window.main_window import MainWindow
 from src.ui.window.prompt_style_window import PromptStyleWindow
@@ -399,7 +400,7 @@ class SDWebUIGenerator(ImageGenerator):
 
         task.error_signal.connect(handle_error)
 
-    def get_control_panel(self) -> Optional[QWidget]:
+    def get_control_panel(self) -> Optional[GeneratorPanel]:
         """Returns a widget with inputs for controlling this generator."""
         if self._control_panel is None:
             self._control_panel = SDWebUIPanel()
@@ -457,7 +458,7 @@ class SDWebUIGenerator(ImageGenerator):
                         status_signal.emit({'progress': status_text})
                     except RuntimeError as err:
                         error_count += 1
-                        print(f'Error {error_count}: {err}')
+                        logger.error(f'Error {error_count}: {err}')
                         if error_count > MAX_ERROR_COUNT:
                             logger.error('Inpainting failed, reached max retries.')
                             break

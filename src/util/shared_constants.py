@@ -30,6 +30,7 @@ MIN_NONZERO = 0.001
 # Not actually hard limits, just reasonable extremes guaranteed to be within hard limits:
 FLOAT_MIN = -9999999.0
 FLOAT_MAX = 9999999.0
+MAX_WIDGET_SIZE = 16777215
 
 # Editing modes:
 EDIT_MODE_INPAINT = _tr('Inpaint')
@@ -41,6 +42,7 @@ CONTROLNET_REUSE_IMAGE_CODE = 'SELECTION'
 
 # Display text:
 BUTTON_TEXT_GENERATE = _tr('Generate')
+BUTTON_TOOLTIP_GENERATE = _tr('Start AI image generation or modification')
 SHORT_LABEL_WIDTH = _tr('W:')
 SHORT_LABEL_HEIGHT = _tr('H:')
 SHORT_LABEL_X_POS = _tr('X:')
@@ -67,6 +69,5 @@ PIL_SCALING_MODES = {
     _tr('Lanczos'): Image.Resampling.LANCZOS,
     _tr('Box'): Image.Resampling.BOX
 }
-MAX_WIDGET_SIZE = 16777215
 COLOR_PICK_HINT = _tr('{modifier_or_modifiers}: pick color')
 ICON_SIZE = 32

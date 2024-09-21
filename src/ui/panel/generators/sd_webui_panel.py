@@ -10,9 +10,11 @@ from src.ui.input_fields.size_field import SizeField
 from src.ui.input_fields.slider_spinbox import IntSliderSpinbox
 from src.ui.layout.divider import Divider
 from src.ui.panel.generators.generator_panel import GeneratorPanel
+from src.ui.widget.rotating_toolbar_button import RotatingToolbarButton
 from src.util.application_state import APP_STATE_EDITING, AppStateTracker
 from src.util.parameter import DynamicFieldWidget
-from src.util.shared_constants import BUTTON_TEXT_GENERATE, EDIT_MODE_INPAINT, EDIT_MODE_TXT2IMG
+from src.util.shared_constants import BUTTON_TEXT_GENERATE, EDIT_MODE_INPAINT, EDIT_MODE_TXT2IMG, \
+    BUTTON_TOOLTIP_GENERATE
 
 # The `QCoreApplication.translate` context for strings in this file
 TR_ID = 'ui.panel.generators.sd_webui_panel'
@@ -23,8 +25,8 @@ def _tr(*args):
     return QApplication.translate(TR_ID, *args)
 
 
-INTERROGATE_BUTTON_TEXT = _tr('Interrogate')
-INTERROGATE_BUTTON_TOOLTIP = _tr('Attempt to generate a prompt that describes the current image generation area')
+BUTTON_TEXT_INTERROGATE = _tr('Interrogate')
+BUTTON_TOOLTIP_INTERROGATE = _tr('Attempt to generate a prompt that describes the current image generation area')
 
 
 class SDWebUIPanel(GeneratorPanel):
@@ -80,12 +82,18 @@ class SDWebUIPanel(GeneratorPanel):
         self._last_seed_textbox.setReadOnly(True)
 
         self._interrogate_button = QPushButton()
-        self._interrogate_button.setText(INTERROGATE_BUTTON_TEXT)
-        self._interrogate_button.setToolTip(INTERROGATE_BUTTON_TOOLTIP)
+        self._interrogate_button.setText(BUTTON_TEXT_INTERROGATE)
+        self._interrogate_button.setToolTip(BUTTON_TOOLTIP_INTERROGATE)
         self._interrogate_button.clicked.connect(self.interrogate_signal)
         self._generate_button = QPushButton()
         self._generate_button.setText(BUTTON_TEXT_GENERATE)
+        self._generate_button.setToolTip(BUTTON_TOOLTIP_GENERATE)
         self._generate_button.clicked.connect(self.generate_signal)
+
+        self._toolbar_generate_button = RotatingToolbarButton(BUTTON_TEXT_GENERATE)
+        self._toolbar_generate_button.setToolTip(BUTTON_TOOLTIP_GENERATE)
+        self._toolbar_generate_button.clicked.connect(self.generate_signal)
+        self._toolbar_generate_button.setVisible(False)
 
         def _edit_mode_control_update(edit_mode: str) -> None:
             self._denoising_strength_label.setEnabled(edit_mode != EDIT_MODE_TXT2IMG)
@@ -104,6 +112,10 @@ class SDWebUIPanel(GeneratorPanel):
         cache.connect(self, Cache.INPAINT_FULL_RES, padding_layout_update)
         padding_layout_update(cache.get(Cache.INPAINT_FULL_RES))
         self._build_layout()
+
+    def get_tab_bar_widgets(self) -> List[QWidget]:
+        """Returns the toolbar generate button as the only toolbar widget."""
+        return [self._toolbar_generate_button]
 
     def _build_layout(self) -> None:
         grid = self._layout

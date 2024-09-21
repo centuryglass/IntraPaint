@@ -2,10 +2,11 @@
 from typing import Optional
 
 from PySide6.QtGui import QImage
-from PySide6.QtWidgets import QApplication, QWidget
+from PySide6.QtWidgets import QApplication
 
 from src.controller.image_generation.image_generator import ImageGenerator
 from src.image.layers.image_stack import ImageStack
+from src.ui.panel.generators.generator_panel import GeneratorPanel
 from src.ui.window.main_window import MainWindow
 from src.util.shared_constants import PROJECT_DIR
 
@@ -60,6 +61,6 @@ class NullGenerator(ImageGenerator):
     def disconnect_or_disable(self) -> None:
         """No-op (there's nothing to disconnect/disable)."""
 
-    def get_control_panel(self) -> Optional[QWidget]:
+    def get_control_panel(self) -> Optional[GeneratorPanel]:
         """Returns a widget with inputs for controlling this generator."""
         return None

@@ -26,7 +26,12 @@
         "description": "Font point size to use for user interface text (may require restart)",
         "type": "int",
         "default": 10,
-        "saved": true
+        "saved": true,
+        "range_options": {
+            "min": 1,
+            "max": 100,
+            "step": 1
+        }
     },
     "tab_font_point_size": {
         "label": "Tab font size:",
@@ -35,7 +40,26 @@
         "description": "Font point size to use for user interface tab labels (may require restart)",
         "type": "int",
         "default": 12,
-        "saved": true
+        "saved": true,
+        "range_options": {
+            "min": 1,
+            "max": 100,
+            "step": 1
+        }
+    },
+    "toolbar_tool_button_count": {
+        "label": "Recent tool toolbar icon count",
+        "category": "Interface",
+        "subcategory": "Layout",
+        "description": "Number of tool selection buttons to show on the toolbar when the tool tab is closed or inactive.",
+        "type": "int",
+        "default": 4,
+        "saved": true,
+        "range_options": {
+            "min": 0,
+            "max": 99,
+            "step": 1
+        }
     },
     "show_tool_control_hints": {
         "label": "Show active tool control hints:",

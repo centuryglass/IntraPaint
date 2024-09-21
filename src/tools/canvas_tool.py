@@ -27,7 +27,6 @@ RESOURCES_BRUSH_ICON = f'{PROJECT_DIR}/resources/icons/tools/brush_icon.svg'
 RESOURCES_CURSOR = f'{PROJECT_DIR}/resources/cursors/brush_cursor.svg'
 RESOURCES_MIN_CURSOR = f'{PROJECT_DIR}/resources/cursors/min_cursor.svg'
 
-
 # The `QCoreApplication.translate` context for strings in this file
 TR_ID = 'tools.canvas_tool'
 
@@ -91,6 +90,7 @@ class CanvasTool(BaseTool):
                     return False
                 self.set_brush_size(self.brush_size + step * mult)
                 return True
+
             binding_id = f'CanvasTool_{id(self)}_{key}'
             HotkeyFilter.instance().register_speed_modified_keybinding(binding_id, _size_change, key)
 
@@ -104,6 +104,7 @@ class CanvasTool(BaseTool):
                     self._canvas.set_input_mask(mask)
                 else:
                     self._canvas.set_input_mask(None)
+
             Cache().connect(self, Cache.PAINT_SELECTION_ONLY, _set_restricted_to_selection)
 
         if follow_active_layer:
@@ -114,6 +115,7 @@ class CanvasTool(BaseTool):
                     return
                 mask = image_stack.get_layer_mask(self._layer)
                 self._canvas.set_input_mask(mask)
+
             image_stack.selection_layer.content_changed.connect(_selection_layer_update)
 
             image_stack.active_layer_changed.connect(self._active_layer_change_slot)
@@ -454,7 +456,7 @@ class CanvasTool(BaseTool):
         if not self.is_active:
             return
         line_modifier = KeyConfig().get(KeyConfig.LINE_MODIFIER)
-        if modifiers == line_modifier and self._last_pos is not None :
+        if modifiers == line_modifier and self._last_pos is not None:
             cursor_pos = self._image_viewer.mapFromGlobal(QCursor.pos())
             if QRect(QPoint(), self._image_viewer.size()).contains(cursor_pos):
                 self._preview_line.set_line(QLineF(QPointF(self._last_pos), QPointF(cursor_pos)))

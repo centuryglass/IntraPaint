@@ -5,7 +5,7 @@ inpainting modes.  Other editing modes should provide subclasses with implementa
 import logging
 import sys
 from enum import Enum
-from typing import Optional, Dict, List
+from typing import Optional, Dict, List, Set
 
 from src.config.cache import Cache
 from src.ui.panel.generators.generator_panel import GeneratorPanel
@@ -17,7 +17,7 @@ except ImportError:  # Use third-party StrEnum if python version < 3.11
     from strenum import StrEnum  # type: ignore
 
 from PySide6.QtCore import Qt, QRect, QSize, Signal
-from PySide6.QtGui import QIcon, QMouseEvent, QResizeEvent, QKeySequence, QCloseEvent, QImage, QAction
+from PySide6.QtGui import QIcon, QMouseEvent, QResizeEvent, QKeySequence, QCloseEvent, QImage, QAction, QMoveEvent
 from PySide6.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QStackedWidget, QApplication, QSizePolicy
 
 from src.hotkey_filter import HotkeyFilter
@@ -33,9 +33,9 @@ from src.ui.widget.loading_widget import LoadingWidget
 from src.ui.window.image_window import ImageWindow
 from src.util.application_state import AppStateTracker, APP_STATE_LOADING, APP_STATE_NO_IMAGE, APP_STATE_EDITING, \
     APP_STATE_SELECTION
-from src.util.visual.display_size import get_screen_size
+from src.util.visual.display_size import get_screen_size, get_screen_bounds
 from src.util.shared_constants import TIMELAPSE_MODE_FLAG, APP_ICON_PATH
-from src.util.validation import layout_debug
+from src.util.validation import layout_debug, all_layout_info
 
 logger = logging.getLogger(__name__)
 
@@ -57,8 +57,7 @@ ACTION_NAME_MOVE_ALL = _tr('Move all tabs here')
 
 DEFAULT_LOADING_MESSAGE = _tr('Loading...')
 
-TAB_BOX_STRETCH = 50
-IMAGE_PANEL_STRETCH = 300
+VERTICAL_STRETCH_SUM = 100
 AUTO_TAB_MOVE_THRESHOLD = 1200
 USE_LOWER_CONTROL_TAB_THRESHOLD = 1600
 
@@ -161,6 +160,7 @@ class MainWindow(QMainWindow):
         self._main_widget = QWidget(self)
         self._layout = QVBoxLayout(self._main_widget)
         self._layout.setContentsMargins(0, 0, 0, 0)
+        self._layout.setSpacing(2)
         self._central_widget = QStackedWidget(self)
         self._central_widget.addWidget(self._main_widget)
         self.setCentralWidget(self._central_widget)
@@ -185,23 +185,25 @@ class MainWindow(QMainWindow):
             AppStateTracker.signal().connect(_show_spinner_when_busy)
 
         # Main page contents:
+        self._last_open_box = TabBoxID.RIGHT_TAB_BOX_ID
         self._top_tab_box = TabBox(Qt.Orientation.Horizontal, True)
-        self._layout.addWidget(self._top_tab_box, stretch=TAB_BOX_STRETCH)
+        self._layout.addWidget(self._top_tab_box, stretch=1)
         self._top_divider = DraggableDivider()
         self._layout.addWidget(self._top_divider)
 
         self._image_panel = ImagePanel(image_stack, True)
-        self._layout.addWidget(self._image_panel, stretch=IMAGE_PANEL_STRETCH)
+        self._image_panel.setContentsMargins(1, 1, 1, 1)
+        self._layout.addWidget(self._image_panel, stretch=VERTICAL_STRETCH_SUM)
 
         self._lower_divider = DraggableDivider()
         self._layout.addWidget(self._lower_divider)
         self._lower_tab_box = TabBox(Qt.Orientation.Horizontal, False)
-        self._layout.addWidget(self._lower_tab_box, stretch=TAB_BOX_STRETCH)
+        self._layout.addWidget(self._lower_tab_box, stretch=1)
 
         self._bottom_divider = DraggableDivider()
         self._layout.addWidget(self._bottom_divider)
         self._bottom_tab_box = TabBox(Qt.Orientation.Horizontal, False)
-        self._layout.addWidget(self._bottom_tab_box, stretch=TAB_BOX_STRETCH)
+        self._layout.addWidget(self._bottom_tab_box, stretch=1)
 
         def _show_or_hide_top_divider(_=None) -> None:
             self._top_divider.setVisible(self._top_tab_box.count > 0 and self._top_tab_box.is_open)
@@ -235,6 +237,12 @@ class MainWindow(QMainWindow):
         for tab_box_id in TabBoxID:
             assert isinstance(tab_box_id, TabBoxID)
             tab_box = self._get_tab_box(tab_box_id)
+            tab_box.box_will_open.connect(self._prepare_for_tab_box_open)
+
+            def _on_open(is_open: bool, box_id=tab_box_id) -> None:
+                if is_open:
+                    self._tab_open_slot(box_id)
+            tab_box.box_toggled.connect(_on_open)
 
             def _tab_added(tab, box_id=tab_box_id):
                 # Remember to update this after adding any new tabs
@@ -261,6 +269,23 @@ class MainWindow(QMainWindow):
             move_all_action.setText(ACTION_NAME_MOVE_ALL)
             move_all_action.triggered.connect(_move_all)
             tab_box.add_tab_bar_action(move_all_action)
+            if '--dev' in sys.argv:  # Developer mode only: add layout debug action
+                def _tab_box_debug(_, box=tab_box, box_id=tab_box_id):
+                    print(f'\n{box_id} DEBUG:')
+                    print(f'\tBOX:')
+                    box_info = all_layout_info(box)
+                    for k, v in box_info.items():
+                        print(f'\t\t{k}: {v}')
+                    print('\tBAR:')
+                    # noinspection PyProtectedMember
+                    bar_info = all_layout_info(box._tab_bar)
+                    for k, v in bar_info.items():
+                        print(f'\t\t{k}: {v}')
+                debug_action = QAction()
+                debug_action.setText('LAYOUT DEBUG')
+                debug_action.triggered.connect(_tab_box_debug)
+                tab_box.add_tab_bar_action(debug_action)
+                self._tab_bar_actions.append(debug_action)
             self._tab_bar_actions.append(move_all_action)
 
         AppStateTracker.set_enabled_states(self._image_panel, [APP_STATE_EDITING])
@@ -280,6 +305,24 @@ class MainWindow(QMainWindow):
             action = QAction(action_text)
             action.triggered.connect(_move_to_panel)
             self._tab_actions[tab][action_type] = action
+
+        if '--dev' in sys.argv:  # Developer mode only: add layout debug action
+            def _tab_debug(_, dbg_tab=tab):
+                print(f'\nTAB "{dbg_tab.text()}" DEBUG:')
+                print('\tMAIN:')
+                tab_info = all_layout_info(dbg_tab)
+                for k, v in tab_info.items():
+                    print(f'\t\t{k}: {v}')
+                for i, widget in enumerate(dbg_tab.tab_bar_widgets):
+                    print(f'\tWIDGET {i}:')
+                    widget_info = all_layout_info(widget)
+                    for k, v in widget_info.items():
+                        print(f'\t\t{k}: {v}')
+            tab_action = QAction('TAB DEBUG')
+            tab_action.triggered.connect(_tab_debug)
+            tab.addAction(tab_action)
+            # noinspection PyTypeChecker
+            self._tab_actions[tab]['DEBUG'] = tab_action  # type: ignore
 
     def _update_tab_actions(self, tab: Tab, tab_box_key: TabBoxID) -> None:
         self._init_tab_actions(tab)
@@ -384,11 +427,99 @@ class MainWindow(QMainWindow):
         if self._loading_widget.isVisible():
             self._loading_widget.message = message
 
-    def resizeEvent(self, unused_event: Optional[QResizeEvent]) -> None:
-        """Applies the most appropriate layout when the window size changes."""
+    def _prepare_for_tab_box_open(self, opening_tab_box: TabBox) -> None:
+        """When tabs are arranged across multiple panels, opening a new tab will often make the window extend
+           beyond the window bounds. This is obnoxious, so make sure to close other tabs before opening a new one
+           if this would happen."""
+        assert not opening_tab_box.is_open  # It shouldn't be open yet, otherwise this whole function is irrelevant
+        opening_box_id = None
+        tab_boxes: Dict[TabBoxID, TabBox] = {}
+        for box_id_str in TabBoxID:
+            tab_box_id = TabBoxID(box_id_str)
+            tab_box = self._get_tab_box(tab_box_id)
+            if tab_box == opening_tab_box:
+                opening_box_id = tab_box_id
+            tab_boxes[tab_box_id] = tab_box
+        assert opening_box_id is not None
+        horizontal_tab_box_ids = [TabBoxID.TOP_TAB_BOX_ID, TabBoxID.BOTTOM_TAB_BOX_ID, TabBoxID.LOWER_TAB_BOX_ID]
+        vertical_tab_box_ids = [TabBoxID.LEFT_TAB_BOX_ID, TabBoxID.RIGHT_TAB_BOX_ID]
+
+        parallel_tabs = list(horizontal_tab_box_ids if opening_box_id in horizontal_tab_box_ids
+                             else vertical_tab_box_ids)
+        parallel_tabs.remove(opening_box_id)
+        perpendicular_tabs = horizontal_tab_box_ids if opening_box_id in vertical_tab_box_ids else vertical_tab_box_ids
+        to_close: Set[TabBox] = set()
+        max_size = self.size()
+        min_opening_box_size = opening_tab_box.minimum_active_size
+
+        if opening_box_id in horizontal_tab_box_ids:
+            perpendicular_width = 0
+            perpendicular_height = 0
+            parallel_width = 0
+            parallel_height = max_size.height() // 6  # Minimum space for the ImageView
+            for perpendicular_id in perpendicular_tabs:
+                tab_box_min = tab_boxes[perpendicular_id].sizeHint()
+                perpendicular_height = max(tab_box_min.height(), perpendicular_height)
+                perpendicular_width += tab_box_min.width()
+            for parallel_id in parallel_tabs:
+                tab_box_min = tab_boxes[parallel_id].sizeHint()
+                parallel_width = max(parallel_width, tab_box_min.width())
+                parallel_height += tab_box_min.height()
+            # Check if height would be exceeded:
+            if parallel_height + perpendicular_height + min_opening_box_size.height() > max_size.height():
+                for tab_id in perpendicular_tabs:
+                    to_close.add(tab_boxes[tab_id])
+            if parallel_height + min_opening_box_size.height() >= max_size.height():
+                for tab_id in parallel_tabs:
+                    to_close.add(tab_boxes[tab_id])
+            # Check if width would be exceeded:
+            if max(parallel_width, min_opening_box_size.width()) + perpendicular_width > max_size.width():
+                for tab_id in perpendicular_tabs:
+                    to_close.add(tab_boxes[tab_id])
+        else:
+            assert opening_box_id in vertical_tab_box_ids
+            perpendicular_width = 0
+            perpendicular_height = 0
+            parallel_width = max_size.width() // 6  # Minimum space for the ImageView
+            parallel_height = 0
+            for perpendicular_id in perpendicular_tabs:
+                tab_box_min = tab_boxes[perpendicular_id].sizeHint()
+                perpendicular_height += tab_box_min.height()
+                perpendicular_width = max(perpendicular_width, tab_box_min.width())
+            for parallel_id in parallel_tabs:
+                tab_box_min = tab_boxes[parallel_id].sizeHint()
+                parallel_width += tab_box_min.width()
+                parallel_height = max(parallel_height, tab_box_min.height())
+            # Check if width would be exceeded:
+            if parallel_width + perpendicular_width + min_opening_box_size.width() > max_size.width():
+                for tab_id in perpendicular_tabs:
+                    to_close.add(tab_boxes[tab_id])
+            if parallel_width + min_opening_box_size.width() > max_size.width():
+                for tab_id in parallel_tabs:
+                    to_close.add(tab_boxes[tab_id])
+            # Check if height would be exceeded:
+            if max(parallel_height, min_opening_box_size.height()) + perpendicular_height > max_size.height():
+                for tab_id in perpendicular_tabs:
+                    to_close.add(tab_boxes[tab_id])
+        for tab_box in to_close:
+            tab_box.is_open = False
+
+    def _size_and_bounds_updates(self) -> None:
+        """Keep the screen bounds up to date and cached"""
         screen_size = get_screen_size(self, False)
         if not screen_size.isNull() and screen_size != self.maximumSize():
             self.setMaximumSize(screen_size)
+        # Cache window placement:
+        if self.isVisible():
+            Cache().save_bounds(Cache.SAVED_MAIN_WINDOW_POS, self)
+
+    def moveEvent(self, unused_event: Optional[QMoveEvent]) -> None:
+        """Makes sure the window size respects the current display as it moves."""
+        self._size_and_bounds_updates()
+
+    def resizeEvent(self, unused_event: Optional[QResizeEvent]) -> None:
+        """Applies the most appropriate layout when the window size changes."""
+        self._size_and_bounds_updates()
         if hasattr(self, '_loading_widget') and TIMELAPSE_MODE_FLAG not in sys.argv:
             loading_widget_size = int(self.height() / 8)
             loading_bounds = QRect(self.width() // 2 - loading_widget_size // 2, loading_widget_size * 3,
@@ -411,6 +542,13 @@ class MainWindow(QMainWindow):
     def image_panel(self) -> ImagePanel:
         """Returns the window's ImagePanel."""
         return self._image_panel
+
+    def _tab_open_slot(self, tab_box_id: TabBoxID):
+        """If the screen is too small to fit perpendicular tabs, automatically close them when a new tab opens."""
+        self._last_open_box = tab_box_id
+        opened_box = self._get_tab_box(tab_box_id)
+        if not opened_box.is_open:
+            opened_box.is_open = True
 
     def _get_tab_box(self, tab_box_id: TabBoxID) -> TabBox:
         """Look up a tab box from its expected name in config."""

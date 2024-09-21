@@ -70,6 +70,11 @@ class Label(QLabel):
             self.setText('')
             self.setText(text)
 
+    @property
+    def orientation(self) -> Qt.Orientation:
+        """Returns the label's orientation."""
+        return self._orientation
+
     def set_orientation(self, orientation: Qt.Orientation) -> None:
         """Sets the label's text orientation."""
         if self._orientation == orientation:
@@ -105,6 +110,10 @@ class Label(QLabel):
             return text_size
         return QSize(self._image.width() + 4, self._image.height() + 4)
 
+    def text(self) -> str:
+        """Return the current displayed string"""
+        return '' if self._text is None else self._text
+
     def setText(self, text: Optional[str]) -> None:
         """Changes the displayed text string"""
         if text == self._text and not self._scale_text_to_bounds:
@@ -127,7 +136,7 @@ class Label(QLabel):
             self._image, self._image_inverted = self._draw_text_pixmaps()
         if isinstance(icon, str):
             icon = QPixmap(icon)
-        if isinstance(icon, QIcon):
+        elif isinstance(icon, QIcon):
             icon = icon.pixmap(QSize(256, 256))
         if not isinstance(icon, QPixmap):
             raise TypeError(f'Icon should be image path or QPixmap, icon={icon}')

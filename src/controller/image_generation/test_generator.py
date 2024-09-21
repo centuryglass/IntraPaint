@@ -3,7 +3,7 @@ from typing import Optional
 
 from PySide6.QtCore import Signal
 from PySide6.QtGui import QImage
-from PySide6.QtWidgets import QApplication, QWidget
+from PySide6.QtWidgets import QApplication
 
 from src.config.cache import Cache
 from src.controller.image_generation.image_generator import ImageGenerator
@@ -13,6 +13,7 @@ from src.image.filter.posterize import PosterizeFilter
 from src.image.filter.rgb_color_balance import RGBColorBalanceFilter
 from src.image.filter.sharpen import SharpenFilter
 from src.image.layers.image_stack import ImageStack
+from src.ui.panel.generators.generator_panel import GeneratorPanel
 from src.ui.panel.generators.testing_panel import TestControlPanel
 from src.ui.window.main_window import MainWindow
 from src.util.shared_constants import PROJECT_DIR, EDIT_MODE_TXT2IMG
@@ -64,7 +65,7 @@ class TestGenerator(ImageGenerator):
            connect to required external services, returning whether the process completed correctly."""
         return True
 
-    def get_control_panel(self) -> Optional[QWidget]:
+    def get_control_panel(self) -> Optional[GeneratorPanel]:
         """Returns a widget with inputs for controlling this generator."""
         return TestControlPanel()
 

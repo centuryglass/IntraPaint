@@ -1,9 +1,13 @@
 """Control panel widget for testing and debugging."""
+from typing import List
+
 from PySide6.QtCore import Signal
-from PySide6.QtWidgets import QVBoxLayout, QLabel, QPushButton
+from PySide6.QtWidgets import QVBoxLayout, QLabel, QPushButton, QWidget
 
 from src.config.cache import Cache
 from src.ui.panel.generators.generator_panel import GeneratorPanel
+from src.ui.widget.rotating_toolbar_button import RotatingToolbarButton
+from src.util.shared_constants import BUTTON_TEXT_GENERATE, BUTTON_TOOLTIP_GENERATE
 
 
 class TestControlPanel(GeneratorPanel):
@@ -23,3 +27,11 @@ class TestControlPanel(GeneratorPanel):
         self._mode_box = Cache().get_control_widget(Cache.EDIT_MODE)
         self._layout.addWidget(self._mode_box)
         self._layout.addWidget(self._generate_button)
+        self._toolbar_generate_button = RotatingToolbarButton(BUTTON_TEXT_GENERATE)
+        self._toolbar_generate_button.setToolTip(BUTTON_TOOLTIP_GENERATE)
+        self._toolbar_generate_button.clicked.connect(self.generate_signal)
+        self._toolbar_generate_button.setVisible(False)
+
+    def get_tab_bar_widgets(self) -> List[QWidget]:
+        """Returns the toolbar generate button as the only toolbar widget."""
+        return [self._toolbar_generate_button]

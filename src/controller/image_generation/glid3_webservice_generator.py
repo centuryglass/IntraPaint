@@ -5,7 +5,7 @@ from typing import Optional, Dict, Any
 import requests
 from PySide6.QtCore import Signal, QThread, QSize
 from PySide6.QtGui import QImage
-from PySide6.QtWidgets import QApplication, QInputDialog, QWidget
+from PySide6.QtWidgets import QApplication, QInputDialog
 
 from src.config.application_config import AppConfig
 from src.config.cache import Cache
@@ -15,10 +15,11 @@ from src.controller.image_generation.sd_webui_generator import URL_REQUEST_MESSA
     URL_REQUEST_TITLE
 from src.image.layers.image_stack import ImageStack
 from src.ui.modal.settings_modal import SettingsModal
+from src.ui.panel.generators.generator_panel import GeneratorPanel
 from src.ui.panel.generators.glid_panel import GlidPanel
 from src.ui.window.main_window import MainWindow
-from src.util.visual.image_utils import image_to_base64, qimage_from_base64
 from src.util.shared_constants import EDIT_MODE_INPAINT
+from src.util.visual.image_utils import image_to_base64, qimage_from_base64
 
 # The QCoreApplication.translate context for strings in this file
 TR_ID = 'controller.image_generation.glid3_webservice_generator'
@@ -208,7 +209,7 @@ class Glid3WebserviceGenerator(ImageGenerator):
         """Unloads this generator's settings from the settings modal."""
         settings_modal.remove_category(AppConfig(), GLID_CONFIG_CATEGORY)
 
-    def get_control_panel(self) -> Optional[QWidget]:
+    def get_control_panel(self) -> Optional[GeneratorPanel]:
         """Returns a widget with inputs for controlling this generator."""
         if self._control_panel is None:
             self._control_panel = GlidPanel()

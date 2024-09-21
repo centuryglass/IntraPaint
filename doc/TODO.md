@@ -1,7 +1,6 @@
 # Development tasks
 
 ## Before next release:
-- Add tool icons, generate button, to toolbar when panel isn't showing. (1 day)
 - Add "resize image to contents" option (key already exists, I think) (< 15 minutes)
 - Layer right-click menus: add "select content" option (< 15 minutes)
 - Add shortcut to activate/show/hide each tab  (< 1 hour)
@@ -14,6 +13,7 @@
 - Finish README cleanup and examples (< 1 day)
 - Basic workflow tutorials (< 1 day)
 - Final timelapse video (< 5 days)
+- Condense stable-diffusion layout
 
 ## Timelapse video: using latest interface
 Scripted to make use of every tool, in-video text explaining what I'm doing
@@ -49,10 +49,12 @@ Things I never fixed but can no longer reproduce, or that come from external iss
 
 # Lower priority/post-release:
 
-## General concerns:
+## General concerns and ideas
 * Solid color selection layer is less than ideal, even with a configurable color.  Maybe some sort of animated fill?
 * Fill and color fill algorithms are not ideal, look into measuring color differences with a perceptual algorithm instead of plain distance
 * Do more profiling, performance is adequate but there's still some noticeable lag in a few places
+* TabBar should have some mechanism for scrolling so the UI doesn't break when you turn up the tab bar shortcut count
+* There should be a mechanism for sending UI tabs to new windows
 
 ## Help window
 - Rich text tutorial content, with images and dynamic hotkeys.

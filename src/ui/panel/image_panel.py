@@ -32,7 +32,6 @@ MENU_ACTION_HIDE_HINTS = _tr('Hide tool control hints')
 
 MIN_WIDTH_SHOWING_SCALE_SLIDER = 600
 MIN_WIDTH_SHOWING_HINT_TEXT = 900
-TAB_BOX_STRETCH = 50
 MAIN_CONTENT_STRETCH = 100
 
 
@@ -45,9 +44,11 @@ class ImagePanel(QWidget):
         self._showing_image_gen_controls = True
         if include_tab_boxes:
             self._outer_layout = QHBoxLayout(self)
+            self.setContentsMargins(0, 0, 0, 0)
             self._outer_layout.setContentsMargins(0, 0, 0, 0)
+            self._outer_layout.setSpacing(2)
             self._left_tab_box: Optional[TabBox] = TabBox(Qt.Orientation.Vertical, True)
-            self._outer_layout.addWidget(self._left_tab_box, stretch=TAB_BOX_STRETCH)
+            self._outer_layout.addWidget(self._left_tab_box, stretch=1)
             self._left_divider = DraggableDivider()
             self._outer_layout.addWidget(self._left_divider)
             self._inner_content = QWidget()
@@ -56,7 +57,7 @@ class ImagePanel(QWidget):
             self._right_divider = DraggableDivider()
             self._outer_layout.addWidget(self._right_divider)
             self._right_tab_box: Optional[TabBox] = TabBox(Qt.Orientation.Vertical, False)
-            self._outer_layout.addWidget(self._right_tab_box, stretch=TAB_BOX_STRETCH)
+            self._outer_layout.addWidget(self._right_tab_box, stretch=1)
 
             def _show_or_hide_left_divider(_=None) -> None:
                 assert self._left_tab_box is not None
