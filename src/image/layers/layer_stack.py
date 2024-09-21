@@ -1,7 +1,7 @@
 """Represents a group of linked image layers that can be manipulated as one in limited ways."""
 from typing import List, Optional, Dict, Any, TypeAlias, Callable
 
-from PySide6.QtCore import QRect, Signal, QPoint
+from PySide6.QtCore import QRect, Signal, QPoint, QSignalBlocker
 from PySide6.QtGui import QPainter, QImage, QTransform
 
 from src.image.composite_mode import CompositeMode
@@ -360,6 +360,11 @@ class LayerStack(Layer, LayerParent):
                 else:
                     self.insert_layer(layer, i)
             assert layer.id in saved_state.child_states
+            if layer.locked:
+                signal_blocker = QSignalBlocker(layer)
+                layer.set_locked(False)
+                if isinstance(layer, ImageLayer) and layer.alpha_locked:
+                    layer.set_alpha_locked(False)
             layer.restore_state(saved_state.child_states[layer.id])
         while self.count > len(saved_state.child_layers):
             extra_layer = self.get_layer_by_index(len(saved_state.child_layers))

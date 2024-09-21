@@ -1064,6 +1064,11 @@ class AppController(MenuBuilder):
                     return
             self._scale(new_size)
 
+    @menu_action(MENU_IMAGE, 'image_to_layers_shortcut', 202, valid_app_states=[APP_STATE_EDITING])
+    def resize_image_to_content(self) -> None:
+        """Update the image size to match all layer content."""
+        self._image_stack.resize_to_content()
+
     def _metadata_will_be_saved(self) -> bool:
         return self._metadata is not None and METADATA_PARAMETER_KEY in self._metadata
 
@@ -1085,7 +1090,7 @@ class AppController(MenuBuilder):
             return False
         return self._metadata is not None and self._updated_metadata_params() == self._metadata[METADATA_PARAMETER_KEY]
 
-    @menu_action(MENU_IMAGE, 'update_metadata_shortcut', 202,
+    @menu_action(MENU_IMAGE, 'update_metadata_shortcut', 203,
                  valid_app_states=[APP_STATE_EDITING, APP_STATE_SELECTION])
     def update_metadata(self, show_messagebox: bool = True) -> None:
         """
@@ -1112,7 +1117,7 @@ class AppController(MenuBuilder):
             message_box.setStandardButtons(QMessageBox.StandardButton.Ok)
             message_box.exec()
 
-    @menu_action(MENU_IMAGE, 'generate_shortcut', 203, valid_app_states=[APP_STATE_EDITING])
+    @menu_action(MENU_IMAGE, 'generate_shortcut', 204, valid_app_states=[APP_STATE_EDITING])
     def start_and_manage_inpainting(self) -> None:
         """Start inpainting/image editing based on the current state of the UI."""
         if AppStateTracker.app_state() != APP_STATE_EDITING:

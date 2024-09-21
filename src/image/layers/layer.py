@@ -1,6 +1,7 @@
 """Interface for any entity that can exist within an image layer stack."""
 import datetime
-from typing import Any, Callable, Optional, Set
+from contextlib import contextmanager
+from typing import Any, Callable, Optional, Set, Generator
 
 from PySide6.QtCore import QObject, Signal, QRect, QPoint, QSize
 from PySide6.QtGui import QImage, QPixmap, QPainter
@@ -362,6 +363,14 @@ class Layer(QObject):
         if locked != self._locked:
             self._locked = locked
             self.lock_changed.emit(self, locked)
+
+    @contextmanager
+    def with_lock_disabled(self) -> Generator[None, None, None]:
+        """Temporarily disables layer locking while the context is held."""
+        lock_state = self._locked
+        self._locked = False
+        yield
+        self._locked = lock_state
 
     # Unimplemented interface:
 

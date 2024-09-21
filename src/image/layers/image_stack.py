@@ -19,6 +19,7 @@ from src.image.layers.selection_layer import SelectionLayer
 from src.image.layers.text_layer import TextLayer
 from src.image.layers.transform_layer import TransformLayer
 from src.image.text_rect import TextRect
+from src.ui.modal.modal_utils import show_error_dialog
 from src.undo_stack import UndoStack, _UndoAction, _UndoGroup
 from src.util.application_state import AppStateTracker, APP_STATE_NO_IMAGE, APP_STATE_EDITING
 from src.util.cached_data import CachedData
@@ -43,6 +44,12 @@ NEW_IMAGE_LAYER_GROUP_NAME = _tr('new image')
 ACTION_NAME_MERGE_LAYERS = _tr('merge layers')
 ACTION_NAME_LAYER_TO_IMAGE_SIZE = _tr('resize layer to image')
 ACTION_NAME_CLEAR_SELECTED = _tr('cut/clear selection')
+
+ERROR_TITLE_RESIZE_FAILED = _tr('Resizing image canvas failed')
+ERROR_MESSAGE_RESIZE_FAILED_SINGULAR = _tr('Locked layer {layer_name} would be cropped, unlock or move the layer '
+                                           'before retrying')
+ERROR_MESSAGE_RESIZE_FAILED_PLURAL = _tr('Locked layers {comma_separated_layer_names} would be cropped, unlock or '
+                                         'move these layers before retrying.')
 
 RenderAdjustFn: TypeAlias = Callable[[int, QImage, QRect, QPainter], Optional[QImage]]
 
@@ -314,7 +321,7 @@ class ImageStack(QObject):
 
     # IMAGE ACCESS / MANIPULATION FUNCTIONS:
 
-    def resize_canvas(self, new_size: QSize, x_offset: int, y_offset: int):
+    def resize_canvas(self, new_size: QSize, x_offset: int, y_offset: int) -> None:
         """
         Changes all layer sizes without scaling existing image content.
 
@@ -334,6 +341,27 @@ class ImageStack(QObject):
         transform = QTransform.fromTranslate(x_offset, y_offset)
         canvas_image_bounds = QRect(QPoint(), new_size)
 
+        intersect_bounds = canvas_image_bounds.translated(x_offset, y_offset)
+        interfering_locked_layers = []
+        for tested_layer in self._all_layers():
+            if not tested_layer.locked:
+                continue
+            if isinstance(tested_layer, TransformLayer):
+                layer_bounds = tested_layer.transformed_bounds
+            else:
+                layer_bounds = tested_layer.bounds
+            if not intersect_bounds.contains(layer_bounds):
+                interfering_locked_layers.append(tested_layer)
+        if len(interfering_locked_layers) > 0:
+            if len(interfering_locked_layers) > 1:
+                layer_names = ', '.join([f'"{layer.name}"' for layer in interfering_locked_layers])
+                error_message = ERROR_MESSAGE_RESIZE_FAILED_PLURAL.format(comma_separated_layer_names=layer_names)
+            else:
+                layer_name = f'"{interfering_locked_layers[0].name}"'
+                error_message = ERROR_MESSAGE_RESIZE_FAILED_SINGULAR.format(layer_name=layer_name)
+            show_error_dialog(None, ERROR_TITLE_RESIZE_FAILED, error_message)
+            return
+
         @self._with_batch_content_update
         def _resize(bounds=canvas_image_bounds, translate=transform):
             self.size = bounds.size()
@@ -341,9 +369,7 @@ class ImageStack(QObject):
             mapped_bounds = self.selection_layer.map_rect_from_image(bounds)
             self.selection_layer.adjust_local_bounds(mapped_bounds, False)
             for layer in self.image_layers:
-                if layer.locked:
-                    continue
-                with layer.with_alpha_lock_disabled():
+                with layer.with_alpha_lock_disabled() and layer.with_lock_disabled():
                     layer.set_transform(layer.transform * translate)
                     mapped_bounds = layer.map_rect_from_image(bounds)
                     layer.adjust_local_bounds(mapped_bounds, False)
@@ -373,6 +399,11 @@ class ImageStack(QObject):
             image = image.copy(QRect(offset, self.size))
             self._image.data = image
         return image
+
+    def resize_to_content(self) -> None:
+        """Resizes the image to match image content."""
+        full_bounds = self.merged_layer_bounds
+        self.resize_canvas(full_bounds.size(), -full_bounds.x(), -full_bounds.y())
 
     def render(self, base_image: Optional[QImage] = None,
                paint_param_adjuster: Optional[RenderAdjustFn] = None) -> QImage:
