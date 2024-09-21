@@ -710,6 +710,8 @@ class AppController(MenuBuilder):
                 selected_path = open_image_file(self._window, mode='save',
                                                 selected_file=cache.get(Cache.LAST_FILE_PATH))
                 self._window.setUpdatesEnabled(True)
+                self._window.update()
+                self._window.repaint()
                 if not isinstance(selected_path, str):
                     return
                 file_path = selected_path
@@ -839,6 +841,7 @@ class AppController(MenuBuilder):
         finally:
             self._window.setUpdatesEnabled(True)
             self._window.update()
+            self._window.repaint()
 
     @menu_action(MENU_FILE, 'load_shortcut', 3,
                  valid_app_states=[APP_STATE_EDITING, APP_STATE_NO_IMAGE])
@@ -849,6 +852,8 @@ class AppController(MenuBuilder):
             self._window.setUpdatesEnabled(False)
             selected_path = open_image_file(self._window)
             self._window.setUpdatesEnabled(True)
+            self._window.update()
+            self._window.repaint()
             if not isinstance(selected_path, (str, list)):
                 return
             file_path = selected_path
@@ -934,6 +939,7 @@ class AppController(MenuBuilder):
         finally:
             self._window.setUpdatesEnabled(True)
             self._window.update()
+            self._window.repaint()
 
     @menu_action(MENU_FILE, 'load_layers_shortcut', 4,
                  valid_app_states=[APP_STATE_EDITING, APP_STATE_NO_IMAGE])
