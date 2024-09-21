@@ -14,6 +14,7 @@ from src.ui.input_fields.slider_spinbox import IntSliderSpinbox, FloatSliderSpin
 from src.ui.layout.divider import Divider
 from src.ui.modal.modal_utils import open_image_file
 from src.ui.layout.bordered_widget import BorderedWidget
+from src.util.layout import extract_layout_item, clear_layout
 from src.util.parameter import Parameter, TYPE_FLOAT, TYPE_INT
 from src.util.shared_constants import CONTROLNET_REUSE_IMAGE_CODE
 
@@ -283,12 +284,7 @@ class ControlnetPanel(BorderedWidget):
 
     def _build_layout(self) -> None:
         """Builds the panel layout, or updates it when orientation changes."""
-        while self._layout.count() > 0:
-            item = self._layout.takeAt(0)
-            assert item is not None
-            widget = item.widget()
-            if widget is not None:
-                widget.setParent(None)
+        clear_layout(self._layout)
 
         for row in range(self._layout.rowCount()):
             self._layout.setRowStretch(row, 0)

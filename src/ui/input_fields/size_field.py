@@ -4,6 +4,7 @@ from typing import Optional
 from PySide6.QtCore import Signal, QSize, Qt
 from PySide6.QtWidgets import QWidget, QLabel, QSpinBox, QSlider, QGridLayout, QApplication
 
+from src.util.layout import clear_layout
 from src.util.math_utils import clamp
 from src.util.shared_constants import INT_MAX
 
@@ -62,14 +63,7 @@ class SizeField(QWidget):
         self._build_layout()
 
     def _build_layout(self) -> None:
-        for row in range(self._layout.rowCount()):
-            self._layout.setRowStretch(row, 0)
-        for col in range(self._layout.columnCount()):
-            self._layout.setColumnStretch(col, 0)
-        for widget in (self._width_box, self._width_label, self._width_slider,
-                       self._height_box, self._height_label, self._height_slider):
-            if widget is not None and widget in self._layout.findChildren(QWidget):
-                self._layout.removeWidget(widget)
+        clear_layout(self._layout)
         if self._orientation == Qt.Orientation.Horizontal:
             def _add_column(column_widget: Optional[QWidget], column: int, stretch: int = 2) -> None:
                 if column_widget is not None:
@@ -106,7 +100,9 @@ class SizeField(QWidget):
 
     def minimumSizeHint(self):
         """Reduce the expected width."""
-        return self.sizeHint()
+        base_hint = super().minimumSizeHint()
+        base_hint.setWidth(base_hint.width() // 2)
+        return base_hint
 
     def set_labels_visible(self, should_show: bool) -> None:
         """Show or hide width/height labels."""

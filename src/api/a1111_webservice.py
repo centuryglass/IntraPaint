@@ -202,7 +202,7 @@ class A1111Webservice(WebService):
         if mask is not None:
             body[A1111Webservice.ImgParams.MASK] = image_to_base64(mask, include_prefix=True)
             body[A1111Webservice.ImgParams.MASK_BLUR] = config.get(AppConfig.MASK_BLUR)
-            body[A1111Webservice.ImgParams.INPAINT_FILL] = config.get_option_index(AppConfig.MASKED_CONTENT)
+            body[A1111Webservice.ImgParams.INPAINT_FILL] = cache.get_option_index(Cache.MASKED_CONTENT)
             body[A1111Webservice.ImgParams.MASK_INVERT] = 0  # Don't invert
             body[A1111Webservice.ImgParams.INPAINT_FULL_RES] = cache.get(Cache.INPAINT_FULL_RES)
             body[A1111Webservice.ImgParams.INPAINT_FULL_RES_PADDING] = cache.get(Cache.INPAINT_FULL_RES_PADDING)

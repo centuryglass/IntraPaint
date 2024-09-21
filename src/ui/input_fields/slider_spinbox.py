@@ -4,7 +4,7 @@ from typing import Optional, List
 from PySide6.QtCore import Signal, Qt
 from PySide6.QtWidgets import QWidget, QHBoxLayout, QLabel, QSlider, QDoubleSpinBox, QSpinBox
 
-from src.util.visual.geometry_utils import synchronize_row_widths
+from src.util.layout import synchronize_row_widths
 
 
 class _SliderSpinbox(QWidget):

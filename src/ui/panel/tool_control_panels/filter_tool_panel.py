@@ -11,9 +11,9 @@ from src.ui.input_fields.check_box import CheckBox
 from src.ui.input_fields.slider_spinbox import FloatSliderSpinbox, IntSliderSpinbox
 from src.ui.layout.divider import Divider
 from src.ui.panel.tool_control_panels.canvas_tool_panel import CanvasToolPanel
+from src.util.layout import extract_layout_item, synchronize_row_widths
 from src.util.parameter import DynamicFieldWidget, ParamType
 from src.util.shared_constants import ICON_SIZE
-from src.util.visual.geometry_utils import synchronize_row_widths
 
 # The `QCoreApplication.translate` context for strings in this file
 TR_ID = 'ui.panel.tool_control_panels.filter_tool_panel'
@@ -109,10 +109,8 @@ class FilterToolPanel(CanvasToolPanel):
                 continue
             row = []
             for i2 in range(row_layout.count()):
-                row_item = row_layout.itemAt(i2)
-                assert row_item is not None
-                row_widget = row_item.widget()
-                if row_widget is None:
+                row_widget = extract_layout_item(row_layout.itemAt(i2))
+                if not isinstance(row_widget, QWidget):
                     continue
                 if isinstance(row_widget, (IntSliderSpinbox, FloatSliderSpinbox)):
                     row.append(row_widget.label)

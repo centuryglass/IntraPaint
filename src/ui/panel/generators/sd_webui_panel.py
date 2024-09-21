@@ -1,9 +1,10 @@
 """A control panel for the Stable-Diffusion WebUI image generator."""
+import logging
 from typing import Tuple, List
 
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import QSizePolicy, QGridLayout, QLabel, QPushButton, \
-    QApplication, QWidget
+    QApplication, QWidget, QBoxLayout, QVBoxLayout, QHBoxLayout, QSpacerItem
 
 from src.config.cache import Cache
 from src.ui.input_fields.size_field import SizeField
@@ -12,6 +13,7 @@ from src.ui.layout.divider import Divider
 from src.ui.panel.generators.generator_panel import GeneratorPanel
 from src.ui.widget.rotating_toolbar_button import RotatingToolbarButton
 from src.util.application_state import APP_STATE_EDITING, AppStateTracker
+from src.util.layout import clear_layout, synchronize_widths
 from src.util.parameter import DynamicFieldWidget
 from src.util.shared_constants import BUTTON_TEXT_GENERATE, EDIT_MODE_INPAINT, EDIT_MODE_TXT2IMG, \
     BUTTON_TOOLTIP_GENERATE
@@ -28,6 +30,8 @@ def _tr(*args):
 BUTTON_TEXT_INTERROGATE = _tr('Interrogate')
 BUTTON_TOOLTIP_INTERROGATE = _tr('Attempt to generate a prompt that describes the current image generation area')
 
+logger = logging.getLogger(__name__)
+
 
 class SDWebUIPanel(GeneratorPanel):
     """A control panel for the Stable-Diffusion WebUI image generator."""
@@ -41,7 +45,10 @@ class SDWebUIPanel(GeneratorPanel):
         cache = Cache()
         AppStateTracker.set_enabled_states(self, [APP_STATE_EDITING])
 
-        self._layout = QGridLayout(self)
+        self._layout: QVBoxLayout = QVBoxLayout(self)
+        self._layout.setSpacing(2)
+        self._layout.setContentsMargins(2, 2, 2, 2)
+        self._layout.setAlignment(Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignTop)
         self._orientation = Qt.Orientation.Horizontal
 
         def _get_control_with_label(config_key: str, **kwargs) -> Tuple[QLabel, DynamicFieldWidget]:
@@ -73,6 +80,7 @@ class SDWebUIPanel(GeneratorPanel):
                                                  self._denoising_strength_slider])
         self._edit_mode_label, self._edit_mode_combobox = _get_control_with_label(Cache.EDIT_MODE)
         self._sampler_label, self._sampler_combobox = _get_control_with_label(Cache.SAMPLING_METHOD)
+        self._masked_content_label, self._masked_content_combobox = _get_control_with_label(Cache.MASKED_CONTENT)
         self._full_res_label, self._full_res_checkbox = _get_control_with_label(Cache.INPAINT_FULL_RES)
         self._full_res_checkbox.setText('')
         self._padding_label, self._padding_slider = _get_control_with_label(Cache.INPAINT_FULL_RES_PADDING)
@@ -96,12 +104,14 @@ class SDWebUIPanel(GeneratorPanel):
         self._toolbar_generate_button.setVisible(False)
 
         def _edit_mode_control_update(edit_mode: str) -> None:
-            self._denoising_strength_label.setEnabled(edit_mode != EDIT_MODE_TXT2IMG)
-            self._denoising_strength_slider.setEnabled(edit_mode != EDIT_MODE_TXT2IMG)
-            self._full_res_label.setEnabled(edit_mode == EDIT_MODE_INPAINT)
-            self._full_res_checkbox.setEnabled(edit_mode == EDIT_MODE_INPAINT)
-            self._padding_label.setEnabled(edit_mode == EDIT_MODE_INPAINT)
-            self._padding_slider.setEnabled(edit_mode == EDIT_MODE_INPAINT)
+            self._denoising_strength_label.setVisible(edit_mode != EDIT_MODE_TXT2IMG)
+            self._denoising_strength_slider.setVisible(edit_mode != EDIT_MODE_TXT2IMG)
+            self._full_res_label.setVisible(edit_mode == EDIT_MODE_INPAINT)
+            self._full_res_checkbox.setVisible(edit_mode == EDIT_MODE_INPAINT)
+            self._padding_label.setVisible(edit_mode == EDIT_MODE_INPAINT)
+            self._padding_slider.setVisible(edit_mode == EDIT_MODE_INPAINT)
+            self._masked_content_label.setVisible(edit_mode == EDIT_MODE_INPAINT)
+            self._masked_content_combobox.setVisible(edit_mode == EDIT_MODE_INPAINT)
         _edit_mode_control_update(cache.get(Cache.EDIT_MODE))
         cache.connect(self, Cache.EDIT_MODE, _edit_mode_control_update)
 
@@ -118,143 +128,143 @@ class SDWebUIPanel(GeneratorPanel):
         return [self._toolbar_generate_button]
 
     def _build_layout(self) -> None:
-        grid = self._layout
-        for column in range(grid.columnCount()):
-            grid.setColumnStretch(column, 0)
-        for row in range(grid.rowCount()):
-            grid.setRowStretch(row, 0)
-        while grid.count() > 0:
-            item = grid.takeAt(0)
-            assert item is not None
-            widget = item.widget()
-            if widget is not None:
-                widget.setParent(None)
+        clear_layout(self._layout)
 
-        # Horizontal setup:
+        all_inner_layouts = []
+        aligned_sliders = [self._step_count_slider, self._guidance_scale_slider, self._denoising_strength_slider]
+
         if self._orientation == Qt.Orientation.Horizontal:
-            grid.setAlignment(Qt.AlignmentFlag.AlignCenter)
-            label_columns = (0, 3, 6)
-            for col in label_columns:
-                grid.setColumnStretch(col, 1)
-            grid.setColumnStretch(1, 10)
-            grid.setColumnStretch(4, 2)
-            grid.setColumnStretch(7, 2)
-
-            # prompt column:
-            grid.setColumnStretch(1, 6)
-            prompt_labels = (self._prompt_label, self._negative_label)
-            prompt_controls = (self._prompt_textbox, self._negative_textbox)
-            for row, label, control in zip(range(len(prompt_labels)), prompt_labels, prompt_controls):
-                grid.addWidget(label, row, 0)
-                grid.addWidget(control, row, 1, 1, 4)
-
-            # sliders:
-            slider_labels = (self._step_count_label, self._guidance_scale_label, self._denoising_strength_label)
-            slider_controls = (self._step_count_slider, self._guidance_scale_slider, self._denoising_strength_slider)
-            for row, label, control in zip(range(len(slider_labels)), slider_labels, slider_controls):
-                grid.addWidget(label, row + len(prompt_controls), 0)
-                grid.addWidget(control, row + len(prompt_controls), 1)
-                control.setSizePolicy(QSizePolicy.Policy.MinimumExpanding, QSizePolicy.Policy.MinimumExpanding)
-
-            slider_divider = Divider(Qt.Orientation.Vertical)
-            grid.addWidget(slider_divider, len(prompt_controls), 2, len(slider_controls), 1)
-            grid.setColumnStretch(2, 1)
-
-            # second column:
-            assert isinstance(self._gen_size_input, SizeField)
-            self._gen_size_input.orientation = Qt.Orientation.Vertical
-            second_column_labels = (self._gen_size_label, self._batch_size_label, self._batch_count_label)
-            second_column_controls = (self._gen_size_input, self._batch_size_spinbox, self._batch_count_spinbox)
-            second_column_heights = (2, 1, 1)
-            grid.setColumnStretch(len(prompt_controls), 3)
-
-            second_column_row = len(prompt_controls)
-            for height, label, control in zip(second_column_heights, second_column_labels, second_column_controls):
-                grid.addWidget(label, second_column_row, 3, height, 1)
-                grid.addWidget(control, second_column_row, 4, height, 1)
-                second_column_row += height
-
-            second_col_divider = Divider(Qt.Orientation.Vertical)
-            grid.addWidget(second_col_divider, 0, 5, 5, 1)
-
-            # third column:
-            third_column_labels = (self._edit_mode_label,
-                                   self._sampler_label,
-                                   self._full_res_label,
-                                   self._padding_label,
-                                   self._seed_label,
-                                   self._last_seed_label)
-            third_column_controls = (self._edit_mode_combobox,
-                                     self._sampler_combobox,
-                                     self._full_res_checkbox,
-                                     self._padding_slider,
-                                     self._seed_textbox,
-                                     self._last_seed_textbox)
-            for row, label, control in zip(range(len(third_column_labels)), third_column_labels, third_column_controls):
-                grid.addWidget(label, row, 6)
-                grid.addWidget(control, row, 7)
-
-            button_divider = Divider(Qt.Orientation.Horizontal)
-            grid.setRowStretch(6, 0)
-            grid.setRowStretch(7, 1)
-            grid.addWidget(button_divider, 6, 1, 1, 7)
-            grid.addWidget(self._interrogate_button, 7, 0, 1, 3)
-            grid.addWidget(self._generate_button, 7, 3, 1, 5)
-
-        # Vertical setup:
-        else:
-            grid.setAlignment(Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignVCenter)
-            assert isinstance(self._gen_size_input, SizeField)
+            primary_layout = QHBoxLayout()
+            button_layout = QHBoxLayout()
+            self._layout.addLayout(primary_layout)
+            self._layout.addWidget(Divider(Qt.Orientation.Horizontal))
+            self._layout.addLayout(button_layout)
+            left_panel_layout = QVBoxLayout()
+            right_panel_layout = QVBoxLayout()
+            primary_layout.addLayout(left_panel_layout, stretch=30)
+            primary_layout.addWidget(Divider(Qt.Orientation.Vertical))
+            primary_layout.addLayout(right_panel_layout, stretch=10)
+            right_panel_layout.setAlignment(Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignLeft)
             self._gen_size_input.orientation = Qt.Orientation.Horizontal
-            vertical_labels: List[QWidget | Tuple[QWidget, QWidget]] = [
-                self._edit_mode_label,
-                self._prompt_label,
-                self._negative_label,
-                self._gen_size_label,
-                (self._batch_size_label, self._batch_count_label),
-                self._step_count_label,
-                self._guidance_scale_label,
-                self._denoising_strength_label,
-                (self._full_res_label, self._padding_label),
-                self._sampler_label,
-                (self._seed_label, self._last_seed_label)
-            ]
-            vertical_controls: List[QWidget | Tuple[QWidget, QWidget]] = [
-                self._edit_mode_combobox,
-                self._prompt_textbox,
-                self._negative_textbox,
-                self._gen_size_input,
-                (self._batch_size_spinbox, self._batch_count_spinbox),
-                self._step_count_slider,
-                self._guidance_scale_slider,
-                self._denoising_strength_slider,
-                (self._full_res_checkbox, self._padding_slider),
-                self._sampler_combobox,
-                (self._seed_textbox, self._last_seed_textbox)
-            ]
-            for i in range(10):
-                grid.setColumnStretch(i, 1)
-            for row, vertical_label, vertical_control in zip(range(len(vertical_labels)), vertical_labels,
-                                                             vertical_controls):
-                # grid.setRowStretch(row, 1)
-                if isinstance(vertical_label, tuple) and isinstance(vertical_control, tuple):
-                    label1, label2 = vertical_label
-                    control1, control2 = vertical_control
-                    grid.addWidget(label1, row, 0, 1, 2)
-                    grid.addWidget(control1, row, 2, 1, 3)
-                    grid.addWidget(label2, row, 5, 1, 2)
-                    grid.addWidget(control2, row, 7, 1, 3)
+
+            # Alignment lists:
+            left_labels = []
+            center_labels = []
+            right_labels = []
+            right_inputs = []
+            all_inner_layouts += [primary_layout, button_layout, left_panel_layout, right_panel_layout]
+
+            for label, textbox in ((self._prompt_label, self._prompt_textbox),
+                                   (self._negative_label, self._negative_textbox)):
+                text_row = QHBoxLayout()
+                text_row.setAlignment(Qt.AlignmentFlag.AlignLeft)
+                text_row.addWidget(label)
+                text_row.addWidget(textbox)
+                left_panel_layout.addLayout(text_row)
+                left_labels.append(label)
+                all_inner_layouts.append(text_row)
+
+            lower_left_panel = QHBoxLayout()
+            slider_layout = QVBoxLayout()
+            size_count_layout = QVBoxLayout()
+            left_panel_layout.addLayout(lower_left_panel)
+            lower_left_panel.addLayout(slider_layout, stretch=30)
+            lower_left_panel.addWidget(Divider(Qt.Orientation.Vertical))
+            lower_left_panel.addLayout(size_count_layout, stretch=10)
+            all_inner_layouts += [lower_left_panel, slider_layout, size_count_layout]
+
+            for label, slider in ((self._step_count_label, self._step_count_slider),
+                                  (self._guidance_scale_label, self._guidance_scale_slider),
+                                  (self._denoising_strength_label, self._denoising_strength_slider)):
+                slider_row = QHBoxLayout()
+                slider_row.setAlignment(Qt.AlignmentFlag.AlignLeft)
+                slider_row.addWidget(label)
+                slider_row.addWidget(slider)
+                slider_layout.addLayout(slider_row)
+                all_inner_layouts.append(slider_row)
+                left_labels.append(label)
+
+            for label, input_widget in ((self._gen_size_label, self._gen_size_input),
+                                 (self._batch_size_label, self._batch_size_spinbox),
+                                 (self._batch_count_label, self._batch_count_spinbox)):
+                input_row = QHBoxLayout()
+                input_row.setAlignment(Qt.AlignmentFlag.AlignLeft)
+                input_row.addWidget(label)
+                input_row.addWidget(input_widget)
+                size_count_layout.addLayout(input_row)
+                all_inner_layouts.append(input_row)
+                center_labels.append(label)
+
+            for label, input_widget in ((self._edit_mode_label, self._edit_mode_combobox),
+                                        (self._sampler_label, self._sampler_combobox),
+                                        (self._masked_content_label, self._masked_content_combobox),
+                                        (self._full_res_label, self._full_res_checkbox),
+                                        (self._padding_label, self._padding_slider),
+                                        (self._seed_label, self._seed_textbox),
+                                        (self._last_seed_label, self._last_seed_textbox)):
+                input_row = QHBoxLayout()
+                input_row.setAlignment(Qt.AlignmentFlag.AlignLeft)
+                input_row.addWidget(label, stretch=1)
+                input_row.addWidget(input_widget, stretch=2)
+                right_panel_layout.addLayout(input_row)
+                all_inner_layouts.append(input_row)
+                if label == self._full_res_label:
+                    input_row.setStretch(1, 0)
                 else:
-                    assert isinstance(vertical_label, QWidget)
-                    assert isinstance(vertical_control, QWidget)
-                    grid.addWidget(vertical_label, row, 0, 1, 2)
-                    grid.addWidget(vertical_control, row, 2, 1, 8)
-            # increase stretch for textbox rows:
-            # for i in range(2):
-                # grid.setRowStretch(i, 3)
-            grid.setRowStretch(len(vertical_labels), 1)
-            grid.addWidget(self._interrogate_button, len(vertical_labels), 0, 1, 2)
-            grid.addWidget(self._generate_button, len(vertical_labels), 2, 1, 8)
+                    right_labels.append(label)
+                    right_inputs.append(input_widget)
+
+            for i in (0, 1, 4, 5):
+                right_panel_layout.setStretch(i, 1)
+            right_panel_layout.insertSpacing(right_panel_layout.count() - 4, 20)
+            right_panel_layout.insertSpacing(right_panel_layout.count() - 2, 20)
+
+            button_layout.addWidget(self._interrogate_button)
+            button_layout.addWidget(self._generate_button)
+
+            for alignment_group in (left_labels, center_labels, right_labels, right_inputs):
+                synchronize_widths(alignment_group)
+            self._batch_size_spinbox.align_slider_spinboxes([self._batch_size_spinbox, self._batch_count_spinbox])
+        else:
+            assert self._orientation == Qt.Orientation.Vertical
+            self._gen_size_input.orientation = Qt.Orientation.Vertical
+
+            # Alignment groups:
+            labels = []
+            inputs = []
+            for label, input_widget in ((self._edit_mode_label, self._edit_mode_combobox),
+                                        (self._sampler_label, self._sampler_combobox),
+                                        (self._masked_content_label, self._masked_content_combobox),
+                                        (self._prompt_label, self._prompt_textbox),
+                                        (self._negative_label, self._negative_textbox),
+                                        (self._gen_size_label, self._gen_size_input),
+                                        (self._batch_size_label, self._batch_size_spinbox),
+                                        (self._batch_count_label, self._batch_count_spinbox),
+                                        (self._step_count_label, self._step_count_slider),
+                                        (self._guidance_scale_label, self._guidance_scale_slider),
+                                        (self._denoising_strength_label, self._denoising_strength_slider),
+                                        (self._full_res_label, self._full_res_checkbox),
+                                        (self._padding_label, self._padding_slider),
+                                        (self._seed_label, self._seed_textbox),
+                                        (self._last_seed_label, self._last_seed_textbox),
+                                        (self._interrogate_button, self._generate_button)):
+                row_layout = QHBoxLayout()
+                row_layout.setAlignment(Qt.AlignmentFlag.AlignLeft)
+                row_layout.addWidget(label, stretch=1)
+                row_layout.addWidget(input_widget, stretch=5)
+                labels.append(label)
+                inputs.append(input_widget)
+                all_inner_layouts.append(row_layout)
+                self._layout.addLayout(row_layout, stretch=1)
+            aligned_sliders += [self._batch_size_spinbox, self._batch_count_spinbox]
+            self._layout.insertStretch(self._layout.count() - 3, 3)
+            self._layout.insertWidget(self._layout.count() - 1, Divider(Qt.Orientation.Horizontal))
+            synchronize_widths(labels)
+            synchronize_widths(inputs)
+        for layout in all_inner_layouts:
+            layout.setSpacing(2)
+            layout.setContentsMargins(1, 1, 1, 1)
+        self._step_count_slider.align_slider_spinboxes(aligned_sliders)
 
     def set_orientation(self, new_orientation: Qt.Orientation) -> None:
         """Sets panel orientation."""

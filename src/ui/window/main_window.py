@@ -33,7 +33,7 @@ from src.ui.widget.loading_widget import LoadingWidget
 from src.ui.window.image_window import ImageWindow
 from src.util.application_state import AppStateTracker, APP_STATE_LOADING, APP_STATE_NO_IMAGE, APP_STATE_EDITING, \
     APP_STATE_SELECTION
-from src.util.visual.display_size import get_screen_size, get_screen_bounds
+from src.util.visual.display_size import get_screen_size
 from src.util.shared_constants import TIMELAPSE_MODE_FLAG, APP_ICON_PATH
 from src.util.validation import layout_debug, all_layout_info
 
@@ -150,7 +150,7 @@ class MainWindow(QMainWindow):
             def _dbg_layout():
                 layout_debug(self)
                 return True
-            HotkeyFilter.instance().register_keybinding('Debug_layout_dump', _dbg_layout, QKeySequence('U'))
+            HotkeyFilter.instance().register_keybinding('Debug_layout_dump', _dbg_layout, QKeySequence('Alt+U'))
 
         # Initialize UI/editing data model:
         self._image_stack = image_stack

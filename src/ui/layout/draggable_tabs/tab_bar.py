@@ -16,6 +16,7 @@ from PySide6.QtWidgets import QWidget, QBoxLayout, QHBoxLayout, QVBoxLayout, QTo
 
 from src.ui.layout.draggable_tabs.tab import Tab
 from src.ui.panel.layer_ui.layer_widget import LayerWidget
+from src.util.layout import clear_layout
 
 BASE_BAR_SIZE = 20
 BASE_EMPTY_BAR_SIZE = 10
@@ -408,8 +409,7 @@ class TabBar(QFrame):
     def _apply_orientation(self) -> None:
         layout_class = QHBoxLayout if self._orientation == Qt.Orientation.Horizontal else QVBoxLayout
         if not isinstance(self._orientation, layout_class):
-            while self._layout.count() > 0:
-                self._layout.takeAt(0)
+            clear_layout(self._layout, unparent=False)
             temp_widget = QWidget()
             temp_widget.setLayout(self._layout)
             self._layout = layout_class(self)

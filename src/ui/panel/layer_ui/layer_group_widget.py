@@ -12,7 +12,7 @@ from src.image.layers.layer import Layer
 from src.image.layers.layer_stack import LayerStack
 from src.ui.panel.layer_ui.layer_widget import LayerWidget
 from src.ui.layout.collapsible_box import CollapsibleBox
-
+from src.util.layout import clear_layout
 
 logger = logging.getLogger(__name__)
 
@@ -222,8 +222,7 @@ class LayerGroupWidget(CollapsibleBox):
 
     def reorder_child_layers(self) -> None:
         """Update child layer order based on layer z-values."""
-        while self._list_layout.count() < 0:
-            self._list_layout.takeAt(0)
+        clear_layout(self._list_layout, unparent=False)
         child_items = list(self._layer_items.values())
         child_items.sort(key=lambda layer_widget: layer_widget.layer.z_value, reverse=True)
         for widget in child_items:

@@ -8,6 +8,7 @@ from PySide6.QtGui import QPainter, QPen, QResizeEvent, QMouseEvent, QPaintEvent
 from PySide6.QtWidgets import QWidget, QSizePolicy, QBoxLayout, QHBoxLayout, QVBoxLayout, QLayoutItem, QSpacerItem, \
     QLayout
 
+from src.util.layout import extract_layout_item
 from src.util.visual.contrast_color import contrast_color
 
 DIVIDER_SIZE = 4
@@ -120,7 +121,7 @@ class DraggableDivider(QWidget):
             total_stretch += stretch
             if i == own_index:
                 continue
-            item = _get_typed_layout_item(parent_layout, i)
+            item = extract_layout_item(parent_layout.itemAt(i))
             item_data = {'item': item, 'stretch': stretch, 'layout_idx': i}
             if i < own_index:
                 prev_stretch += stretch
@@ -238,21 +239,6 @@ class DraggableDivider(QWidget):
         return layout
 
 
-def _get_typed_layout_item(parent_layout: QLayout, idx: int) -> Optional[QWidget | QLayout | QSpacerItem]:
-    layout_item = parent_layout.itemAt(idx)
-    assert layout_item is not None
-    widget = layout_item.widget()
-    if widget is not None:
-        return widget
-    inner_layout = layout_item.layout()
-    if inner_layout is not None:
-        return inner_layout
-    spacer = layout_item.spacerItem()
-    if spacer is not None:
-        return spacer
-    return None
-
-
 def _item_at_minimum_size(item: Optional[QWidget | QLayout | QSpacerItem]) -> Tuple[bool, bool]:
     """Returns at_minimum_width, at_minimum_height"""
     if item is None:
@@ -261,7 +247,7 @@ def _item_at_minimum_size(item: Optional[QWidget | QLayout | QSpacerItem]) -> Tu
         if item.count() == 0:
             bounds = item.contentsRect()
             return bounds.width() == 0, bounds.height() == 0
-        inner_items = [_get_typed_layout_item(item, i) for i in range(item.count())]
+        inner_items = [extract_layout_item(item.itemAt(i)) for i in range(item.count())]
         min_tuples = [_item_at_minimum_size(inner_item) for inner_item in inner_items]
 
         at_minimum_width = not any(size_check[0] is False for size_check in min_tuples)
@@ -291,7 +277,7 @@ def _item_at_maximum_size(item: Optional[QWidget | QLayout | QSpacerItem]) -> Tu
     if isinstance(item, QLayout):
         if item.count() == 0:
             return True, True
-        inner_items = [_get_typed_layout_item(item, i) for i in range(item.count())]
+        inner_items = [extract_layout_item(item.itemAt(i)) for i in range(item.count())]
         max_tuples = [_item_at_maximum_size(inner_item) for inner_item in inner_items]
         at_maximum_width = not any(size_check[0] is False for size_check in max_tuples)
         at_maximum_height = not any(size_check[1] is False for size_check in max_tuples)

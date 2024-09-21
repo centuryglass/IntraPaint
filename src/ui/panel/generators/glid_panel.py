@@ -1,10 +1,11 @@
 """Control panel widget for GLID-3-XL inpainting."""
 from PySide6.QtCore import Signal, Qt
-from PySide6.QtWidgets import QPushButton, QLabel, QGridLayout, QSizePolicy
+from PySide6.QtWidgets import QPushButton, QLabel, QGridLayout, QSizePolicy, QWidget
 
 from src.config.cache import Cache
 from src.ui.panel.generators.generator_panel import GeneratorPanel
 from src.util.application_state import APP_STATE_EDITING, AppStateTracker
+from src.util.layout import extract_layout_item, clear_layout
 
 INPAINT_BUTTON_TEXT = 'Start inpainting'
 
@@ -65,12 +66,7 @@ class GlidPanel(GeneratorPanel):
             layout.setColumnStretch(column, 0)
         for row in range(layout.rowCount()):
             layout.setRowStretch(row, 0)
-        while layout.count() > 0:
-            item = layout.takeAt(0)
-            assert item is not None
-            widget = item.widget()
-            if widget is not None:
-                widget.setParent(None)
+        clear_layout(layout)
         if self._orientation == Qt.Orientation.Horizontal:
             layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
             layout.addWidget(self._text_prompt_label, 1, 0, 1, 1)

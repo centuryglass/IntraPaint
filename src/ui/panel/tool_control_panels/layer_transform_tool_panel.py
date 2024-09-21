@@ -13,6 +13,7 @@ from src.image.layers.image_stack import ImageStack
 from src.ui.input_fields.check_box import CheckBox
 from src.ui.layout.reactive_layout_widget import ReactiveLayoutWidget
 from src.ui.widget.key_hint_label import KeyHintLabel
+from src.util.layout import clear_layout
 from src.util.shared_constants import FLOAT_MIN, FLOAT_MAX, MIN_NONZERO, ASPECT_RATIO_CHECK_LABEL, INT_MAX
 from src.util.visual.geometry_utils import get_rect_transformation, get_scaled_placement
 from src.util.visual.image_utils import get_transparency_tile_pixmap
@@ -200,13 +201,7 @@ class LayerTransformToolPanel(ReactiveLayoutWidget):
 
         # Layout setup functions:
         def _clear_grid() -> None:
-            while grid.count() > 0:
-                item = grid.itemAt(0)
-                assert item is not None
-                widget = item.widget()
-                assert widget is not None
-                widget.hide()
-                grid.takeAt(0)
+            clear_layout(grid, unparent=False, hide=True)
             for row_num in range(grid.rowCount()):
                 grid.setRowStretch(row_num, 0)
             for col_num in range(grid.columnCount()):

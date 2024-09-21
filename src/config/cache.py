@@ -140,6 +140,7 @@ class Cache(Config, metaclass=Singleton):
     LAST_NAV_PANEL_TOOL: str
     LAST_SEED: str
     LORA_MODELS: str
+    MASKED_CONTENT: str
     MYPAINT_BRUSH: str
     NEGATIVE_PROMPT: str
     NEW_IMAGE_BACKGROUND_COLOR: str

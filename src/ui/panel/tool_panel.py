@@ -11,6 +11,7 @@ from src.tools.base_tool import BaseTool
 from src.ui.layout.draggable_divider import DraggableDivider
 from src.ui.layout.reactive_layout_widget import ReactiveLayoutWidget
 from src.ui.widget.tool_button import ToolButton
+from src.util.layout import clear_layout
 
 # The `QCoreApplication.translate` context for strings in this file
 TR_ID = 'ui.panel.tool_panel'
@@ -140,8 +141,7 @@ class ToolPanel(QWidget):
         # Replace layout if orientation changed:
         layout_class = QHBoxLayout if self._orientation == Qt.Orientation.Horizontal else QVBoxLayout
         if not isinstance(self._layout, layout_class):
-            while self._layout.count() > 0:
-                self._layout.takeAt(0)
+            clear_layout(self._layout, unparent=False)
             temp_widget = QWidget()
             temp_widget.setLayout(self._layout)
             self._layout = layout_class(self)
@@ -202,12 +202,12 @@ class ToolPanel(QWidget):
             return
         button_size = button_list[0].sizeHint()
         if self._orientation == Qt.Orientation.Vertical:
-            num_cols = 5
-            num_rows = 3
+            num_cols = 7
+            num_rows = 2
             self._tool_button_layout.setAlignment(Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignHCenter)
         else:  # Horizontal
-            num_rows = 5
-            num_cols = 3
+            num_rows = 7
+            num_cols = 2
             self.setMinimumHeight(0)
             self._tool_button_layout.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
         if self._row_count == num_rows and self._column_count == num_cols \
@@ -219,8 +219,7 @@ class ToolPanel(QWidget):
             self._tool_button_layout.setRowMinimumHeight(row, 0)
         self._row_count = num_rows
         self._column_count = num_cols
-        while self._tool_button_layout.count() > 0:
-            self._tool_button_layout.takeAt(0)
+        clear_layout(self._tool_button_layout, unparent=False)
         button_idx = 0
         for row in range(num_rows):
             self._tool_button_layout.setRowMinimumHeight(row, button_size.height())

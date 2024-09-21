@@ -14,6 +14,7 @@ from PySide6.QtWidgets import QHBoxLayout, QVBoxLayout, QWidget, QSizePolicy, QB
 from src.ui.layout.bordered_widget import BorderedWidget
 from src.ui.layout.draggable_tabs.tab import Tab
 from src.ui.layout.draggable_tabs.tab_bar import TabBar
+from src.util.layout import extract_layout_item
 
 EMPTY_MARGIN = 0
 NONEMPTY_MARGIN = 2
@@ -178,9 +179,8 @@ class TabBox(BorderedWidget):
         for i in range(parent_layout.count()):
             stretch = parent_layout.stretch(i)
             total_stretch += stretch
-            item = parent_layout.itemAt(i)
+            widget = extract_layout_item(parent_layout.itemAt(i))
             stretch_values.append(stretch)
-            widget = item.widget()
             if widget == self:
                 own_idx = i
         assert own_idx >= 0

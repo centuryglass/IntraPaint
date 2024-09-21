@@ -11,7 +11,7 @@ from src.ui.input_fields.pattern_combo_box import PatternComboBox
 from src.ui.input_fields.slider_spinbox import IntSliderSpinbox, FloatSliderSpinbox
 from src.ui.widget.color_button import ColorButton
 from src.ui.widget.key_hint_label import KeyHintLabel
-from src.util.visual.geometry_utils import synchronize_row_widths
+from src.util.layout import extract_layout_item, synchronize_row_widths
 
 
 class CanvasToolPanel(QWidget):
@@ -119,10 +119,8 @@ class CanvasToolPanel(QWidget):
             if row_layout is None or row_layout.count() != expected_count:
                 continue
             for i2 in range(row_layout.count()):
-                column_item = row_layout.itemAt(i2)
-                assert column_item is not None
-                column = column_item.widget()
-                assert column is not None
+                column = extract_layout_item(row_layout.itemAt(i2))
+                assert isinstance(column, QWidget)
                 row.append(column)
             rows.append(row)
         if len(rows) > 0:

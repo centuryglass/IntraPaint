@@ -77,7 +77,6 @@ class AppConfig(Config, metaclass=Singleton):
     GLID_VAE_MODEL_PATH: str
     INTERROGATE_MODEL: str
     LIBMYPAINT_LIBRARY_DIR: str
-    MASKED_CONTENT: str
     MASK_BLUR: str
     MAX_EDIT_SIZE: str
     MAX_GENERATION_SIZE: str

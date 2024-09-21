@@ -256,21 +256,6 @@
         "default": 0.9,
         "saved": true
     },
-
-    "masked_content": {
-        "label": "Masked content:",
-        "category": "Stable-Diffusion",
-        "description": "Determines what should be used to fill the masked area before inpainting. 'fill' replaces it with a solid color, 'original' keeps it as-is, 'latent noise' replaces it with random data, and 'latent nothing' clears it. Unless you're inpainting with a denoising strength >0.8, 'original' will almost always be the best option",
-        "type": "string",
-        "default": "original",
-        "options": [
-            "fill",
-            "original",
-            "latent noise",
-            "latent nothing"
-        ],
-        "saved": true
-    },
     "interrogate_model": {
         "label": "Image interrogation model:",
         "category": "Stable-Diffusion",

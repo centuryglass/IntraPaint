@@ -15,6 +15,7 @@ from src.ui.input_fields.plain_text_edit import PlainTextEdit
 from src.ui.input_fields.slider_spinbox import IntSliderSpinbox
 from src.ui.widget.color_button import ColorButton
 from src.ui.widget.image_widget import ImageWidget
+from src.util.layout import clear_layout
 from src.util.visual.text_drawing_utils import find_text_size
 from src.util.visual.geometry_utils import get_scaled_placement, fill_outside_rect
 from src.util.visual.image_utils import create_transparent_image
@@ -288,8 +289,7 @@ class TextToolPanel(QWidget):
         self._draw_preview()
 
     def _build_layout(self) -> None:
-        while self._layout.count() > 0:
-            self._layout.takeAt(0)
+        clear_layout(self._layout, unparent=False)
         if self._orientation == Qt.Orientation.Horizontal:
             self._layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
             self._layout.addWidget(self._font_list_label, 0, 0)

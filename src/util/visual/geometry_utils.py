@@ -1,10 +1,9 @@
 """Provides a utility function for handling image or widget placement."""
 import math
-from typing import Tuple, Optional, List
+from typing import Tuple, Optional
 
 from PySide6.QtCore import QRect, QSize, QRectF, QSizeF, QPoint, QPointF, QLineF, Qt, QMargins
 from PySide6.QtGui import QTransform, QPolygonF, QPainter, QColor
-from PySide6.QtWidgets import QWidget
 
 from src.util.math_utils import convert_degrees
 from src.util.shared_constants import MIN_NONZERO, FLOAT_MAX
@@ -319,32 +318,3 @@ def closest_size_keeping_aspect_ratio(new_size: QSizeF, aspect_ratio: float) -> 
     closest_point = closest_point_keeping_aspect_ratio(QPointF(new_size.width(), new_size.height()), QPointF(),
                                                        aspect_ratio)
     return QSizeF(closest_point.x(), closest_point.y())
-
-
-def synchronize_widths(widgets: List[Optional[QWidget]]) -> None:
-    """Synchronizes the widths of several widgets."""
-    min_width = 0
-    for widget in widgets:
-        if widget is None:
-            continue
-        min_width = max(min_width, widget.sizeHint().width())
-    for widget in widgets:
-        if widget is None:
-            continue
-        widget.setMinimumWidth(min_width)
-
-
-def synchronize_row_widths(rows: List[List[Optional[QWidget]]]) -> None:
-    """Synchronizes the widths of column widgets within several equal_sized rows."""
-    if len(rows) < 2:
-        return
-    column_count = len(rows[0])
-    assert all(len(row) == column_count for row in rows)
-    columns: List[List[Optional[QWidget]]] = []
-    for i in range(column_count):
-        columns.append([])
-    for row in rows:
-        for i, widget in enumerate(row):
-            columns[i].append(widget)
-    for column in columns:
-        synchronize_widths(column)
