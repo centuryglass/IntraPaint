@@ -1,7 +1,6 @@
 # Development tasks
 
 ## Before next release:
-- Add "resize image to contents" option (key already exists, I think) (< 15 minutes)
 - Layer right-click menus: add "select content" option (< 15 minutes)
 - Add shortcut to activate/show/hide each tab  (< 1 hour)
 - Improve empty tab bar appearances (< 1 hour)
@@ -13,7 +12,20 @@
 - Finish README cleanup and examples (< 1 day)
 - Basic workflow tutorials (< 1 day)
 - Final timelapse video (< 5 days)
+
+## Misc. bugs and minor issues:
 - Condense stable-diffusion layout
+- ARGB filter: fix reduced alpha compositing
+- In-depth pressure opacity testing
+- Fix pressure checkboxes
+- tool-specific names and icons for draw/erase toggles
+- Select all shouldn't use paint bucket icon
+- vertical inpaint full res text fix
+- fill tool cursor offset needs fixing
+- seed/last seed field updates don't seem to be working properly
+- loading icon text gets cut off
+- Menu capitalization has inconsistencies
+- Interrogate seems to have issues
 
 ## Timelapse video: using latest interface
 Scripted to make use of every tool, in-video text explaining what I'm doing
@@ -55,6 +67,8 @@ Things I never fixed but can no longer reproduce, or that come from external iss
 * Do more profiling, performance is adequate but there's still some noticeable lag in a few places
 * TabBar should have some mechanism for scrolling so the UI doesn't break when you turn up the tab bar shortcut count
 * There should be a mechanism for sending UI tabs to new windows
+* Color picker could use other options: RGB cube, color wheel, OKLab perceptual color
+* Switch color picker to horizontal tabs
 
 ## Help window
 - Rich text tutorial content, with images and dynamic hotkeys.
