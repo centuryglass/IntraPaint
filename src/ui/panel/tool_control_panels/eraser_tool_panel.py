@@ -3,7 +3,7 @@
 from PySide6.QtWidgets import QApplication
 
 from src.config.cache import Cache
-from src.ui.panel.tool_control_panels.canvas_tool_panel import CanvasToolPanel
+from src.ui.panel.tool_control_panels.brush_tool_panel import BrushToolPanel
 
 # The `QCoreApplication.translate` context for strings in this file
 TR_ID = 'ui.panel.tool_control_panels.eraser_tool_panel'
@@ -17,7 +17,7 @@ def _tr(*args):
 SELECTION_ONLY_LABEL = _tr('Erase in selection only')
 
 
-class EraserToolPanel(CanvasToolPanel):
+class EraserToolPanel(BrushToolPanel):
     """Control panel for the eraser tool."""
     def __init__(self):
         super().__init__(size_key=Cache.ERASER_TOOL_SIZE,

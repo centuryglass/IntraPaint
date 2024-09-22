@@ -7,7 +7,7 @@ import numpy as np
 from PySide6.QtCore import Qt, QPoint, QPointF, QRectF, QTimer, QRect
 from PySide6.QtGui import QPainter, QPen, QImage, QColor, QBrush
 
-from src.image.canvas.layer_canvas import LayerCanvas
+from src.image.brush.layer_brush import LayerBrush
 from src.image.layers.image_layer import ImageLayer
 from src.image.layers.selection_layer import SelectionLayer
 from src.util.math_utils import clamp
@@ -18,7 +18,7 @@ PAINT_BUFFER_DELAY_MS = 50
 AVG_COUNT = 20
 
 
-class QtPaintCanvas(LayerCanvas):
+class QtPaintBrush(LayerBrush):
     """Draws content to an image layer using basic Qt drawing operations."""
 
     def __init__(self, layer: Optional[ImageLayer] = None) -> None:
@@ -31,7 +31,7 @@ class QtPaintCanvas(LayerCanvas):
         self._last_opacity: List[float] = []
         self._last_hardness: List[float] = []
         self._change_bounds = QRectF()
-        self._input_buffer: List[QtPaintCanvas._InputEvent] = []
+        self._input_buffer: List[QtPaintBrush._InputEvent] = []
         self._buffer_timer = QTimer()
         self._buffer_timer.setInterval(PAINT_BUFFER_DELAY_MS)
         self._buffer_timer.setSingleShot(True)
@@ -158,12 +158,12 @@ class QtPaintCanvas(LayerCanvas):
         painter.restore()
 
     @staticmethod
-    def _input_event_paint_segment(painter: QPainter, input_event: 'QtPaintCanvas._InputEvent') -> None:
-        QtPaintCanvas.paint_segment(painter, round(input_event.size), input_event.opacity, input_event.hardness,
-                                    input_event.color, input_event.change_pt, input_event.last_pt)
+    def _input_event_paint_segment(painter: QPainter, input_event: 'QtPaintBrush._InputEvent') -> None:
+        QtPaintBrush.paint_segment(painter, round(input_event.size), input_event.opacity, input_event.hardness,
+                                   input_event.color, input_event.change_pt, input_event.last_pt)
 
     def _draw_input_event(self,
-                          input_event: 'QtPaintCanvas._InputEvent',
+                          input_event: 'QtPaintBrush._InputEvent',
                           new_input_painter: QPainter,
                           np_paint_buf: NpUInt8Array,
                           np_stroke_buf: NpUInt8Array,
@@ -177,7 +177,7 @@ class QtPaintCanvas(LayerCanvas):
 
         Parameters:
         -----------
-        input_event: 'QtPaintCanvas._InputEvent:
+        input_event: 'QtPaintBrush._InputEvent:
             The segment or point to draw, along with associated drawing data.
         new_input_painter: QPainter:
             Painter used to draw the segment onto the paint buffer.
@@ -312,12 +312,12 @@ class QtPaintCanvas(LayerCanvas):
 
     def _draw(self, x: float, y: float, pressure: Optional[float], x_tilt: Optional[float],
               y_tilt: Optional[float]) -> None:
-        """Use active settings to draw to the canvas with the given inputs."""
+        """Use active settings to draw with the brush using the given inputs."""
         layer = self.layer
         assert layer is not None
-        input_event = QtPaintCanvas._InputEvent(x, y, pressure, self.brush_size, self.brush_color, self._last_point,
-                                                layer, self.opacity, self.hardness, self.pressure_size,
-                                                self.pressure_opacity, self.pressure_hardness)
+        input_event = QtPaintBrush._InputEvent(x, y, pressure, self.brush_size, self.brush_color, self._last_point,
+                                               layer, self.opacity, self.hardness, self.pressure_size,
+                                               self.pressure_opacity, self.pressure_hardness)
         self._last_point = QPointF(x, y)
         self._input_buffer.append(input_event)
         if not self._buffer_timer.isActive():

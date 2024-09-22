@@ -1,13 +1,13 @@
 """
-Canvas implementing smudge tool operations.
+Brush implementing smudge tool operations.
 """
 from typing import Optional, List
 
 from PySide6.QtCore import Qt, QPoint, QPointF, QTimer, QRect
 from PySide6.QtGui import QPainter, QImage, QColor
 
-from src.image.canvas.layer_canvas import LayerCanvas
-from src.image.canvas.qt_paint_canvas import QtPaintCanvas
+from src.image.brush.layer_brush import LayerBrush
+from src.image.brush.qt_paint_brush import QtPaintBrush
 from src.image.layers.image_layer import ImageLayer
 from src.util.math_utils import clamp
 from src.util.visual.image_utils import create_transparent_image, image_data_as_numpy_8bit
@@ -18,7 +18,7 @@ AVG_COUNT = 20
 debug_save_idx = 0
 
 
-class SmudgeCanvas(LayerCanvas):
+class SmudgeBrush(LayerBrush):
     """Draws content to an image layer using basic Qt drawing operations."""
 
     def __init__(self, layer: Optional[ImageLayer] = None) -> None:
@@ -172,7 +172,7 @@ class SmudgeCanvas(LayerCanvas):
 
     def _draw(self, x: float, y: float, pressure: Optional[float], x_tilt: Optional[float],
               y_tilt: Optional[float]) -> None:
-        """Use active settings to draw to the canvas with the given inputs."""
+        """Use active settings to draw with the brush using the given inputs."""
         layer = self.layer
         assert layer is not None
         size = self.brush_size
@@ -222,8 +222,8 @@ class _SmudgePoint:
         image = create_transparent_image(self.rect.size())
         painter = QPainter(image)
         image_center = QPointF(self.rect.width() / 2, self.rect.height() / 2)
-        QtPaintCanvas.paint_segment(painter, self.rect.width(), self.opacity, self.hardness,
-                                    QColor(Qt.GlobalColor.black), image_center, None)
+        QtPaintBrush.paint_segment(painter, self.rect.width(), self.opacity, self.hardness,
+                                   QColor(Qt.GlobalColor.black), image_center, None)
         painter.end()
         return image
 

@@ -1,7 +1,7 @@
 """Control panel for the layer transformation tool."""
 from typing import Optional, Tuple, Dict
 
-from PySide6.QtCore import QRect, QPoint, QSize, QRectF, Signal, QSignalBlocker
+from PySide6.QtCore import QRect, QPoint, QSize, QRectF, Signal
 from PySide6.QtGui import QPaintEvent, QTransform, QColor, Qt, QPolygonF, QPainter, QPen, QKeySequence
 from PySide6.QtWidgets import QSizePolicy, QApplication, QGridLayout, QWidget, QDoubleSpinBox, QCheckBox, QSpinBox, \
     QPushButton, QLabel
@@ -15,6 +15,7 @@ from src.ui.layout.reactive_layout_widget import ReactiveLayoutWidget
 from src.ui.widget.key_hint_label import KeyHintLabel
 from src.util.layout import clear_layout
 from src.util.shared_constants import FLOAT_MIN, FLOAT_MAX, MIN_NONZERO, ASPECT_RATIO_CHECK_LABEL, INT_MAX
+from src.util.signals_blocked import signals_blocked
 from src.util.visual.geometry_utils import get_rect_transformation, get_scaled_placement
 from src.util.visual.image_utils import get_transparency_tile_pixmap
 from src.util.visual.text_drawing_utils import find_text_size
@@ -377,9 +378,8 @@ class LayerTransformToolPanel(ReactiveLayoutWidget):
 
     @x_position.setter
     def x_position(self, x: float) -> None:
-        # noinspection PyUnusedLocal
-        signal_blocker = QSignalBlocker(self._x_pos_box)
-        self._x_pos_box.setValue(x)
+        with signals_blocked(self._x_pos_box):
+            self._x_pos_box.setValue(x)
 
     @property
     def y_position(self) -> float:
@@ -388,9 +388,8 @@ class LayerTransformToolPanel(ReactiveLayoutWidget):
 
     @y_position.setter
     def y_position(self, y: float) -> None:
-        # noinspection PyUnusedLocal
-        signal_blocker = QSignalBlocker(self._y_pos_box)
-        self._y_pos_box.setValue(y)
+        with signals_blocked(self._y_pos_box):
+            self._y_pos_box.setValue(y)
 
     @property
     def layer_width(self) -> float:
@@ -399,9 +398,8 @@ class LayerTransformToolPanel(ReactiveLayoutWidget):
 
     @layer_width.setter
     def layer_width(self, width: float) -> None:
-        # noinspection PyUnusedLocal
-        signal_blocker = QSignalBlocker(self._width_box)
-        self._width_box.setValue(width)
+        with signals_blocked(self._width_box):
+            self._width_box.setValue(width)
 
     @property
     def layer_height(self) -> float:
@@ -410,9 +408,8 @@ class LayerTransformToolPanel(ReactiveLayoutWidget):
 
     @layer_height.setter
     def layer_height(self, width: float) -> None:
-        # noinspection PyUnusedLocal
-        signal_blocker = QSignalBlocker(self._height_box)
-        self._height_box.setValue(width)
+        with signals_blocked(self._height_box):
+            self._height_box.setValue(width)
 
     @property
     def x_scale(self) -> float:
@@ -421,9 +418,8 @@ class LayerTransformToolPanel(ReactiveLayoutWidget):
 
     @x_scale.setter
     def x_scale(self, x: float) -> None:
-        # noinspection PyUnusedLocal
-        signal_blocker = QSignalBlocker(self._x_scale_box)
-        self._x_scale_box.setValue(x)
+        with signals_blocked(self._x_scale_box):
+            self._x_scale_box.setValue(x)
 
     @property
     def y_scale(self) -> float:
@@ -432,9 +428,8 @@ class LayerTransformToolPanel(ReactiveLayoutWidget):
 
     @y_scale.setter
     def y_scale(self, y: float) -> None:
-        # noinspection PyUnusedLocal
-        signal_blocker = QSignalBlocker(self._y_scale_box)
-        self._y_scale_box.setValue(y)
+        with signals_blocked(self._y_scale_box):
+            self._y_scale_box.setValue(y)
 
     @property
     def rotation(self) -> float:
@@ -444,9 +439,8 @@ class LayerTransformToolPanel(ReactiveLayoutWidget):
     @rotation.setter
     def rotation(self, rotation: float) -> None:
         """Accesses the layer's transformation angle"""
-        # noinspection PyUnusedLocal
-        signal_blocker = QSignalBlocker(self._y_scale_box)
-        self._rotate_box.setValue(rotation)
+        with signals_blocked(self._y_scale_box):
+            self._rotate_box.setValue(rotation)
 
     @property
     def preserve_aspect_ratio(self) -> bool:
@@ -455,9 +449,8 @@ class LayerTransformToolPanel(ReactiveLayoutWidget):
 
     @preserve_aspect_ratio.setter
     def preserve_aspect_ratio(self, preserve_ratio: bool) -> None:
-        # noinspection PyUnusedLocal
-        signal_blocker = QSignalBlocker(self._aspect_ratio_checkbox)
-        self._aspect_ratio_checkbox.setChecked(preserve_ratio)
+        with signals_blocked(self._aspect_ratio_checkbox):
+            self._aspect_ratio_checkbox.setChecked(preserve_ratio)
 
     def set_preview_bounds(self, bounds: QRect) -> None:
         """Update the preview widget bounds"""

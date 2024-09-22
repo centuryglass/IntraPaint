@@ -1,4 +1,4 @@
-"""Base implementation for CanvasTool classes that use a QTPaintCanvas."""
+"""Base implementation for BrushTool classes that use a QtPaintBrush."""
 import logging
 from typing import Optional
 
@@ -7,32 +7,32 @@ from PySide6.QtGui import QColor, Qt
 from src.config.cache import Cache
 from src.config.key_config import KeyConfig
 from src.hotkey_filter import HotkeyFilter
-from src.image.canvas.qt_paint_canvas import QtPaintCanvas
+from src.image.brush.qt_paint_brush import QtPaintBrush
 from src.image.layers.image_stack import ImageStack
-from src.tools.canvas_tool import CanvasTool
+from src.tools.brush_tool import BrushTool
 from src.ui.image_viewer import ImageViewer
 from src.ui.input_fields.pattern_combo_box import PatternComboBox, BRUSH_PATTERN_SOLID
-from src.ui.panel.tool_control_panels.canvas_tool_panel import CanvasToolPanel
+from src.ui.panel.tool_control_panels.brush_tool_panel import BrushToolPanel
 from src.ui.panel.tool_control_panels.draw_tool_panel import DrawToolPanel
 from src.util.math_utils import clamp
 
 logger = logging.getLogger(__name__)
 
 
-class QtPaintCanvasTool(CanvasTool):
-    """Implements brush controls using a minimal QPainter-based brush engine."""
+class QtPaintBrushTool(BrushTool):
+    """Base implementation for BrushTool classes that use a QtPaintBrush."""
 
     def __init__(self, image_stack: ImageStack, image_viewer: ImageViewer,
                  size_key: Optional[str] = None, pressure_size_key: Optional[str] = None,
                  opacity_key: Optional[str] = None, pressure_opacity_key: Optional[str] = None,
                  hardness_key: Optional[str] = None, pressure_hardness_key: Optional[str] = None,
                  color_key: Optional[str] = None, pattern_key: Optional[str] = None,
-                 canvas: Optional[QtPaintCanvas] = None) -> None:
-        if canvas is None:
-            canvas = QtPaintCanvas()
+                 brush: Optional[QtPaintBrush] = None) -> None:
+        if brush is None:
+            brush = QtPaintBrush()
         else:
-            assert isinstance(canvas, QtPaintCanvas)
-        super().__init__(image_stack, image_viewer, canvas)
+            assert isinstance(brush, QtPaintBrush)
+        super().__init__(image_stack, image_viewer, brush)
         self._last_click = None
         self._control_panel: Optional[DrawToolPanel] = None
         self._drawing = False
@@ -52,15 +52,15 @@ class QtPaintCanvasTool(CanvasTool):
 
         if pressure_size_key is not None:
             def _update_pressure_size(pressure: bool) -> None:
-                canvas.pressure_size = pressure
+                brush.pressure_size = pressure
             cache.connect(self, pressure_size_key, _update_pressure_size)
-            canvas.pressure_size = cache.get(pressure_size_key)
+            brush.pressure_size = cache.get(pressure_size_key)
 
         if opacity_key is not None:
             def _update_opacity(opacity: float) -> None:
-                canvas.opacity = opacity
+                brush.opacity = opacity
             cache.connect(self, opacity_key, _update_opacity)
-            canvas.opacity = cache.get(opacity_key)
+            brush.opacity = cache.get(opacity_key)
 
             # Register slider hotkeys:
             down_id = f'QtPaintCanvasTool_{id(self)}_opacity_down'
@@ -82,15 +82,15 @@ class QtPaintCanvasTool(CanvasTool):
 
         if pressure_opacity_key is not None:
             def _update_pressure_opacity(pressure: bool) -> None:
-                canvas.pressure_opacity = pressure
+                brush.pressure_opacity = pressure
             cache.connect(self, pressure_opacity_key, _update_pressure_opacity)
-            canvas.pressure_opacity = cache.get(pressure_opacity_key)
+            brush.pressure_opacity = cache.get(pressure_opacity_key)
 
         if hardness_key is not None:
             def _update_hardness(hardness: float) -> None:
-                canvas.hardness = hardness
+                brush.hardness = hardness
             cache.connect(self, hardness_key, _update_hardness)
-            canvas.hardness = cache.get(hardness_key)
+            brush.hardness = cache.get(hardness_key)
 
             # Register slider hotkeys:
             down_id = f'QtPaintCanvasTool_{id(self)}_hardness_down'
@@ -112,9 +112,9 @@ class QtPaintCanvasTool(CanvasTool):
 
         if pressure_hardness_key is not None:
             def _update_pressure_hardness(pressure: bool) -> None:
-                canvas.pressure_hardness = pressure
+                brush.pressure_hardness = pressure
             cache.connect(self, pressure_hardness_key, _update_pressure_hardness)
-            canvas.pressure_hardness = cache.get(pressure_hardness_key)
+            brush.pressure_hardness = cache.get(pressure_hardness_key)
 
         if color_key is not None:
             def _update_color(color_str: str) -> None:
@@ -130,9 +130,9 @@ class QtPaintCanvasTool(CanvasTool):
                 try:
                     pattern_brush = PatternComboBox.get_brush(pattern_str)
                     if pattern_brush.style() != Qt.BrushStyle.SolidPattern:
-                        canvas.set_pattern_brush(pattern_brush)
+                        brush.set_pattern_brush(pattern_brush)
                     else:
-                        canvas.set_pattern_brush(None)
+                        brush.set_pattern_brush(None)
                 except KeyError:
                     logger.error(f'Got invalid pattern name {pattern_str}')
                     cache.set(pattern_key, BRUSH_PATTERN_SOLID)
@@ -142,15 +142,15 @@ class QtPaintCanvasTool(CanvasTool):
 
         if cache.get(Cache.EXPECT_TABLET_INPUT):
             control_panel = self.get_control_panel()
-            if isinstance(control_panel, CanvasToolPanel):
+            if isinstance(control_panel, BrushToolPanel):
                 control_panel.show_pressure_checkboxes()
 
     @property
     def opacity(self) -> float:
-        """Accesses canvas opacity"""
-        canvas = self.canvas
-        assert isinstance(canvas, QtPaintCanvas)
-        return canvas.opacity
+        """Accesses brush opacity"""
+        brush = self.brush
+        assert isinstance(brush, QtPaintBrush)
+        return brush.opacity
 
     @opacity.setter
     def opacity(self, opacity: float) -> None:
@@ -158,16 +158,16 @@ class QtPaintCanvasTool(CanvasTool):
         if self._opacity_key is not None:
             Cache().set(self._opacity_key, opacity)
         else:
-            canvas = self.canvas
-            assert isinstance(canvas, QtPaintCanvas)
-            canvas.opacity = opacity
+            brush = self.brush
+            assert isinstance(brush, QtPaintBrush)
+            brush.opacity = opacity
 
     @property
     def hardness(self) -> float:
-        """Accesses canvas hardness"""
-        canvas = self.canvas
-        assert isinstance(canvas, QtPaintCanvas)
-        return canvas.hardness
+        """Accesses brush hardness"""
+        brush = self.brush
+        assert isinstance(brush, QtPaintBrush)
+        return brush.hardness
 
     @hardness.setter
     def hardness(self, hardness: float) -> None:
@@ -175,9 +175,9 @@ class QtPaintCanvasTool(CanvasTool):
         if self._hardness_key is not None:
             Cache().set(self._hardness_key, hardness)
         else:
-            canvas = self.canvas
-            assert isinstance(canvas, QtPaintCanvas)
-            canvas.hardness = hardness
+            brush = self.brush
+            assert isinstance(brush, QtPaintBrush)
+            brush.hardness = hardness
 
     def set_brush_size(self, new_size: int) -> None:
         """Ensure brush size also propagates to the appropriate config key."""

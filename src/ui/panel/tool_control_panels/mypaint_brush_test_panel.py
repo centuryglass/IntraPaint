@@ -1,7 +1,7 @@
 """Control panel widget testing MyPaint brush adjustments (currently unused)."""
 from typing import cast, Optional
 
-from PySide6.QtCore import QSignalBlocker, Qt
+from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QWidget, QVBoxLayout, QLabel, QHBoxLayout, QComboBox
 
 from src.config.cache import Cache
@@ -9,6 +9,7 @@ from src.config.key_config import KeyConfig
 from src.image.mypaint.mypaint_brush import MyPaintBrush, BrushSetting
 from src.ui.input_fields.slider_spinbox import IntSliderSpinbox, FloatSliderSpinbox
 from src.ui.widget.key_hint_label import KeyHintLabel
+from src.util.signals_blocked import signals_blocked
 
 
 class MyPaintBrushTestPanel(QWidget):
@@ -57,13 +58,12 @@ class MyPaintBrushTestPanel(QWidget):
             self._setting_slider.setVisible(False)
             self._setting_info.setVisible(False)
             return
-        # noinspection PyUnusedLocal
-        blocker = QSignalBlocker(self._setting_slider)
-        self._setting_slider.setVisible(True)
-        self._setting_slider.setRange(brush_data.min_value, brush_data.max_value)
-        self._setting_slider.setValue(self._brush.get_value(brush_data.id))
-        self._setting_info.setText(brush_data.tooltip)
-        self._setting_info.setVisible(True)
+        with signals_blocked(self._setting_slider):
+            self._setting_slider.setVisible(True)
+            self._setting_slider.setRange(brush_data.min_value, brush_data.max_value)
+            self._setting_slider.setValue(self._brush.get_value(brush_data.id))
+            self._setting_info.setText(brush_data.tooltip)
+            self._setting_info.setVisible(True)
 
     def _slider_value_change_slot(self, value: float) -> None:
         brush_data: Optional[BrushSetting] = self._mypaint_dropdown.currentData()

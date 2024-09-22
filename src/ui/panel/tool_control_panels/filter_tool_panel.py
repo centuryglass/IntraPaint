@@ -10,7 +10,7 @@ from src.image.filter.filter import ImageFilter
 from src.ui.input_fields.check_box import CheckBox
 from src.ui.input_fields.slider_spinbox import FloatSliderSpinbox, IntSliderSpinbox
 from src.ui.layout.divider import Divider
-from src.ui.panel.tool_control_panels.canvas_tool_panel import CanvasToolPanel
+from src.ui.panel.tool_control_panels.brush_tool_panel import BrushToolPanel
 from src.util.layout import extract_layout_item, synchronize_row_widths
 from src.util.parameter import DynamicFieldWidget, ParamType
 from src.util.shared_constants import ICON_SIZE
@@ -28,7 +28,7 @@ LABEL_TEXT_FILTER_TYPE = _tr('Filter:')
 LABEL_TEXT_FILTER_SELECTED_ONLY = _tr('Filter selection only')
 
 
-class FilterToolPanel(CanvasToolPanel):
+class FilterToolPanel(BrushToolPanel):
     """Control panel widget for the filter tool."""
 
     def __init__(self, filter_list: List[ImageFilter]) -> None:

@@ -1,17 +1,17 @@
-"""Canvas class that functions by applying an ImageFilter to brush stroke regions."""
+"""Brush class that applies ImageFilter to brush stroke regions."""
 import math
 from typing import Optional, List, Any
 
 from PySide6.QtCore import QPoint, QRect
 from PySide6.QtGui import QImage, QPainter
 
-from src.image.canvas.qt_paint_canvas import QtPaintCanvas
+from src.image.brush.qt_paint_brush import QtPaintBrush
 from src.image.filter.filter import ImageFilter
 from src.image.layers.image_layer import ImageLayer
 
 
-class FilterCanvas(QtPaintCanvas):
-    """Canvas class that functions by applying an ImageFilter to brush stroke regions."""
+class FilterBrush(QtPaintBrush):
+    """Brush class that applies ImageFilter to brush stroke regions."""
 
     def __init__(self, image_filter: ImageFilter, layer: Optional[ImageLayer] = None) -> None:
         super().__init__(layer)
@@ -22,7 +22,7 @@ class FilterCanvas(QtPaintCanvas):
 
     @property
     def image_filter(self) -> ImageFilter:
-        """Accesses the canvas filter object."""
+        """Accesses the brush filter object."""
         return self._filter
 
     @image_filter.setter

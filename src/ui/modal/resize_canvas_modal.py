@@ -80,7 +80,7 @@ class ResizeCanvasModal(QDialog):
         center_button.setText(CENTER_BUTTON_LABEL)
 
         def center() -> None:
-            """Adjust offsets to center existing image content in the canvas."""
+            """Adjust offsets to center existing image content in the brush."""
             width = self._width_box.spinbox.value()
             height = self._height_box.spinbox.value()
             x_off = (width // 2) - (current_width // 2)
@@ -128,7 +128,7 @@ class ResizeCanvasModal(QDialog):
         self.hide()
 
     def _center(self) -> None:
-        """Adjust offsets to center existing image content in the canvas."""
+        """Adjust offsets to center existing image content in the brush."""
         current_width = self._image.width()
         current_height = self._image.height()
         width = self._width_box.spinbox.value()
@@ -203,7 +203,7 @@ class _PreviewWidget(QWidget):
         self.update()
 
     def paintEvent(self, unused_event: Optional[QPaintEvent]) -> None:
-        """Draw image with proposed changes to canvas bounds."""
+        """Draw image with proposed changes to brush bounds."""
         if self._canvas_bounds is None:
             return
         painter = QPainter(self)

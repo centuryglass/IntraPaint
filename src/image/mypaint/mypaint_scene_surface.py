@@ -151,7 +151,7 @@ class MyPaintSceneSurface(QObject):
         self.stroke_to(x, y, 1.0, 0.0, 0.0)
 
     def load_image(self, image: QImage) -> None:
-        """Loads a QImage into the canvas, clearing existing canvas content."""
+        """Loads a QImage into the brush, clearing existing brush content."""
         self._assert_valid_surface()
         if self._tile_buffer is None or self.width <= 0 or self.height <= 0:
             raise RuntimeError(f'Cannot load image, surface is in an invalid state (w={self.width},h={self.height},'

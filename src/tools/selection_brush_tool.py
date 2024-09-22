@@ -8,9 +8,9 @@ from src.config.application_config import AppConfig
 from src.config.cache import Cache
 from src.config.config_entry import RangeKey
 from src.config.key_config import KeyConfig
-from src.image.canvas.qt_paint_canvas import QtPaintCanvas
+from src.image.brush.qt_paint_brush import QtPaintBrush
 from src.image.layers.image_stack import ImageStack
-from src.tools.canvas_tool import CanvasTool
+from src.tools.brush_tool import BrushTool
 from src.ui.image_viewer import ImageViewer
 from src.ui.panel.tool_control_panels.brush_selection_panel import TOOL_MODE_ERASE, BrushSelectionPanel
 from src.util.visual.text_drawing_utils import left_button_hint_text, right_button_hint_text
@@ -33,12 +33,12 @@ CURSOR_SELECTION_TOOL = f'{PROJECT_DIR}/resources/cursors/selection_cursor.svg'
 ICON_SELECTION_TOOL = f'{PROJECT_DIR}/resources/icons/tools/selection_icon.svg'
 
 
-class SelectionBrushTool(CanvasTool):
+class SelectionBrushTool(BrushTool):
     """Selects image content for image generation or editing."""
 
     def __init__(self, image_stack: ImageStack, image_viewer: ImageViewer) -> None:
-        canvas = QtPaintCanvas(None)
-        super().__init__(image_stack, image_viewer, canvas, False, False)
+        brush = QtPaintBrush(None)
+        super().__init__(image_stack, image_viewer, brush, False, False)
         self._last_click = None
         self._control_panel = BrushSelectionPanel(image_stack.selection_layer)
         self._control_panel.tool_mode_changed.connect(self._tool_toggle_slot)
@@ -81,7 +81,7 @@ class SelectionBrushTool(CanvasTool):
         """Return text describing different input functionality."""
         select_hint = CONTROL_HINT_SELECTION_TOOL.format(left_mouse_icon=left_button_hint_text(),
                                                          right_mouse_icon=right_button_hint_text())
-        return f'{select_hint}<br/>{CanvasTool.canvas_control_hints()}<br/>{super().get_input_hint()}'
+        return f'{select_hint}<br/>{BrushTool.brush_control_hints()}<br/>{super().get_input_hint()}'
 
     def get_tooltip_text(self) -> str:
         """Returns tooltip text used to describe this tool."""
@@ -93,7 +93,7 @@ class SelectionBrushTool(CanvasTool):
 
     def _tool_toggle_slot(self, selected_tool_label: str):
         """Switches the mask tool between draw and erase modes."""
-        self._canvas.eraser = selected_tool_label == TOOL_MODE_ERASE
+        self._brush.eraser = selected_tool_label == TOOL_MODE_ERASE
 
     def set_brush_size(self, new_size: int) -> None:
         """Update the brush size."""

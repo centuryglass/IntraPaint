@@ -7,8 +7,8 @@ from PySide6.QtWidgets import QApplication, QWidget
 from src.config.cache import Cache
 from src.config.key_config import KeyConfig
 from src.image.layers.image_stack import ImageStack
-from src.tools.canvas_tool import CanvasTool
-from src.tools.qt_paint_canvas_tool import QtPaintCanvasTool
+from src.tools.brush_tool import BrushTool
+from src.tools.qt_paint_brush_tool import QtPaintBrushTool
 from src.ui.image_viewer import ImageViewer
 from src.ui.panel.tool_control_panels.eraser_tool_panel import EraserToolPanel
 from src.util.shared_constants import PROJECT_DIR
@@ -29,7 +29,7 @@ TOOLTIP_ERASER_TOOL = _tr('Erase image layer content')
 CONTROL_HINT_DRAW_TOOL = _tr('{left_mouse_icon}: erase - {right_mouse_icon}: 1px erase')
 
 
-class EraserTool(QtPaintCanvasTool):
+class EraserTool(QtPaintBrushTool):
     """Draw tool variant meant for erasing only."""
 
     def __init__(self, image_stack: ImageStack, image_viewer: ImageViewer) -> None:
@@ -38,7 +38,7 @@ class EraserTool(QtPaintCanvasTool):
                          pressure_opacity_key=Cache.DRAW_TOOL_PRESSURE_OPACITY,
                          hardness_key=Cache.ERASER_TOOL_HARDNESS,
                          pressure_hardness_key=Cache.ERASER_TOOL_PRESSURE_HARDNESS)
-        self.canvas.eraser = True
+        self.brush.eraser = True
 
         cache = Cache()
         cache.disconnect(self, Cache.LAST_BRUSH_COLOR)
@@ -72,5 +72,5 @@ class EraserTool(QtPaintCanvasTool):
         control_hint_draw_tool = CONTROL_HINT_DRAW_TOOL.format(left_mouse_icon=left_button_hint_text(),
                                                                right_mouse_icon=right_button_hint_text(),
                                                                modifier_or_modifiers='{modifier_or_modifiers}')
-        return (f'{control_hint_draw_tool}<br/>{CanvasTool.canvas_control_hints()}'
-                f'<br/>{CanvasTool.get_input_hint(self)}')
+        return (f'{control_hint_draw_tool}<br/>{BrushTool.brush_control_hints()}'
+                f'<br/>{BrushTool.get_input_hint(self)}')

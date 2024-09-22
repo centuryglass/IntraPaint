@@ -3,7 +3,7 @@
 from PySide6.QtWidgets import QApplication
 
 from src.config.cache import Cache
-from src.ui.panel.tool_control_panels.canvas_tool_panel import CanvasToolPanel
+from src.ui.panel.tool_control_panels.brush_tool_panel import BrushToolPanel
 
 # The `QCoreApplication.translate` context for strings in this file
 TR_ID = 'ui.panel.tool_control_panels.smudge_tool_panel'
@@ -17,7 +17,7 @@ def _tr(*args):
 SELECTION_ONLY_LABEL = _tr('Edit selection only')
 
 
-class SmudgeToolPanel(CanvasToolPanel):
+class SmudgeToolPanel(BrushToolPanel):
     """Control panel widget for the blur tool."""
 
     def __init__(self):

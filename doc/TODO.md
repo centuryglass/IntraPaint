@@ -106,7 +106,7 @@ Things I never fixed but can no longer reproduce, or that come from external iss
 - Left click to draw, sample point moves with brush strokes
 - Sample point content as cursor?
 
-## sketch canvas/libmypaint
+## libmypaint
 - Import latest code/changes
 - Get the demo app working again
 - Port to qtpy for maximum compatibility

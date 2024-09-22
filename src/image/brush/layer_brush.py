@@ -9,7 +9,7 @@ from src.ui.modal.modal_utils import show_error_dialog
 from src.util.visual.image_utils import image_is_fully_transparent
 
 # The `QCoreApplication.translate` context for strings in this file
-TR_ID = 'image.canvas.layer_canvas'
+TR_ID = 'image.brush.layer_brush'
 
 
 def _tr(*args):
@@ -25,7 +25,7 @@ ERROR_MESSAGE_EMPTY_MASK = _tr('Changes are restricted to selected content only,
                                ' Select layer content or enable changes in unselected areas.')
 
 
-class LayerCanvas:
+class LayerBrush:
     """Draws content to an image layer."""
 
     def __init__(self, layer: Optional[ImageLayer] = None) -> None:
@@ -129,7 +129,7 @@ class LayerCanvas:
         self._drawing = False
 
     def set_input_mask(self, mask_image: Optional[QImage]) -> None:
-        """Sets a mask image, restricting canvas changes to areas covered by non-transparent mask areas"""
+        """Sets a mask image, restricting brush changes to areas covered by non-transparent mask areas"""
         self._mask = mask_image
 
     def _set_brush_size(self, new_size: int) -> None:
@@ -145,5 +145,5 @@ class LayerCanvas:
 
     def _draw(self, x: float, y: float, pressure: Optional[float], x_tilt: Optional[float],
               y_tilt: Optional[float]) -> None:
-        """Use active settings to draw to the canvas with the given inputs."""
+        """Use active settings to use the brush with the given inputs."""
         raise NotImplementedError()

@@ -10,13 +10,14 @@ Most of the functionality in draggable_tabs is handled within the TabBar, includ
 """
 from typing import Optional, List
 
-from PySide6.QtCore import Signal, Qt, QPointF, QLine, QSize, QTimer, QSignalBlocker
+from PySide6.QtCore import Signal, Qt, QPointF, QLine, QSize, QTimer
 from PySide6.QtGui import QDragEnterEvent, QDragMoveEvent, QDragLeaveEvent, QDropEvent, QPaintEvent, QPainter
 from PySide6.QtWidgets import QWidget, QBoxLayout, QHBoxLayout, QVBoxLayout, QToolButton, QSizePolicy, QFrame
 
 from src.ui.layout.draggable_tabs.tab import Tab
 from src.ui.panel.layer_ui.layer_widget import LayerWidget
 from src.util.layout import clear_layout
+from src.util.signals_blocked import signals_blocked
 
 BASE_BAR_SIZE = 20
 BASE_EMPTY_BAR_SIZE = 10
@@ -118,10 +119,9 @@ class TabBar(QFrame):
         if self.active_tab is None:
             is_open = False
         if self._toggle_button.isChecked() != is_open:
-            # noinspection PyUnusedLocal
-            signal_blocker = QSignalBlocker(self._toggle_button)
-            self._toggle_button.setChecked(is_open)
-            self._update_toggle_arrow(is_open)
+            with signals_blocked(self._toggle_button):
+                self._toggle_button.setChecked(is_open)
+                self._update_toggle_arrow(is_open)
         if is_open == self._is_open:
             return
         if is_open:
@@ -142,9 +142,8 @@ class TabBar(QFrame):
             self.is_open = False
             return
         if not self._toggle_button.isChecked():
-            # noinspection PyUnusedLocal
-            signal_blocker = QSignalBlocker(self._toggle_button)
-            self._toggle_button.setChecked(True)
+            with signals_blocked(self._toggle_button):
+                self._toggle_button.setChecked(True)
         active_tab = self.active_tab
         assert active_tab is not None
         for tab_bar_widget in active_tab.tab_bar_widgets:

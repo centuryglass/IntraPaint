@@ -1,4 +1,4 @@
-"""Implements image smudging using a restricted BrushTool."""
+"""Implements image smudge operations."""
 from typing import Optional
 
 from PySide6.QtGui import QIcon, QKeySequence
@@ -7,19 +7,15 @@ from PySide6.QtWidgets import QApplication, QWidget
 from src.config.cache import Cache
 from src.config.key_config import KeyConfig
 from src.hotkey_filter import HotkeyFilter
-from src.image.canvas.smudge_canvas import SmudgeCanvas
+from src.image.brush.smudge_brush import SmudgeBrush
 from src.image.layers.image_stack import ImageStack
-from src.tools.canvas_tool import CanvasTool
+from src.tools.brush_tool import BrushTool
 from src.ui.image_viewer import ImageViewer
-from src.ui.panel.tool_control_panels.canvas_tool_panel import CanvasToolPanel
+from src.ui.panel.tool_control_panels.brush_tool_panel import BrushToolPanel
 from src.ui.panel.tool_control_panels.smudge_tool_panel import SmudgeToolPanel
 from src.util.math_utils import clamp
-from src.util.optional_import import optional_import
 from src.util.shared_constants import PROJECT_DIR
 from src.util.visual.text_drawing_utils import left_button_hint_text, right_button_hint_text
-
-BrushTool = optional_import('src.tools.brush_tool', attr_name='BrushTool')
-assert BrushTool is not None
 
 # The `QCoreApplication.translate` context for strings in this file
 TR_ID = 'tools.smudge_tool'
@@ -37,12 +33,12 @@ SMUDGE_TOOLTIP = _tr('Smudge image content')
 SMUDGE_CONTROL_HINT = _tr('{left_mouse_icon}: smudge - {right_mouse_icon}: 1px smudge')
 
 
-class SmudgeTool(CanvasTool):  # type: ignore
-    """Implements image smudging using a restricted BrushTool."""
+class SmudgeTool(BrushTool):  # type: ignore
+    """Implements image smudge operations."""
 
     def __init__(self, image_stack: ImageStack, image_viewer: ImageViewer) -> None:
-        canvas = SmudgeCanvas()
-        super().__init__(image_stack, image_viewer, canvas)
+        brush = SmudgeBrush()
+        super().__init__(image_stack, image_viewer, brush)
         self._control_panel = SmudgeToolPanel()
         self._icon = QIcon(RESOURCES_SMUDGE_ICON)
         cache = Cache()
@@ -54,9 +50,9 @@ class SmudgeTool(CanvasTool):  # type: ignore
         self.brush_size = cache.get(Cache.SMUDGE_TOOL_BRUSH_SIZE)
 
         def _opacity_update(opacity: float) -> None:
-            canvas.opacity = opacity
+            brush.opacity = opacity
         cache.connect(self, Cache.SMUDGE_TOOL_OPACITY, _opacity_update)
-        canvas.opacity = cache.get(Cache.SMUDGE_TOOL_OPACITY)
+        brush.opacity = cache.get(Cache.SMUDGE_TOOL_OPACITY)
 
         def _update_opacity_offset(offset: float) -> bool:
             offset *= 0.02  # offsets are int-based, scale to float range
@@ -74,9 +70,9 @@ class SmudgeTool(CanvasTool):  # type: ignore
                                                       KeyConfig.BRUSH_OPACITY_INCREASE)
 
         def _hardness_update(hardness: float) -> None:
-            canvas.hardness = hardness
+            brush.hardness = hardness
         cache.connect(self, Cache.SMUDGE_TOOL_HARDNESS, _hardness_update)
-        canvas.hardness = cache.get(Cache.SMUDGE_TOOL_HARDNESS)
+        brush.hardness = cache.get(Cache.SMUDGE_TOOL_HARDNESS)
 
         def _update_hardness_offset(offset: float) -> bool:
             offset *= 0.02  # offsets are int-based, scale to float range
@@ -94,23 +90,23 @@ class SmudgeTool(CanvasTool):  # type: ignore
                                                       KeyConfig.BRUSH_HARDNESS_INCREASE)
 
         def _pressure_size_update(use_pressure: bool) -> None:
-            canvas.pressure_size = use_pressure
+            brush.pressure_size = use_pressure
         cache.connect(self, Cache.SMUDGE_TOOL_PRESSURE_SIZE, _pressure_size_update)
-        canvas.pressure_size = cache.get(Cache.SMUDGE_TOOL_PRESSURE_SIZE)
+        brush.pressure_size = cache.get(Cache.SMUDGE_TOOL_PRESSURE_SIZE)
 
         def _pressure_opacity_update(use_pressure: bool) -> None:
-            canvas.pressure_opacity = use_pressure
+            brush.pressure_opacity = use_pressure
         cache.connect(self, Cache.SMUDGE_TOOL_PRESSURE_OPACITY, _pressure_opacity_update)
-        canvas.pressure_opacity = cache.get(Cache.SMUDGE_TOOL_PRESSURE_OPACITY)
+        brush.pressure_opacity = cache.get(Cache.SMUDGE_TOOL_PRESSURE_OPACITY)
 
         def _pressure_hardness_update(use_pressure: bool) -> None:
-            canvas.pressure_hardness = use_pressure
+            brush.pressure_hardness = use_pressure
         cache.connect(self, Cache.SMUDGE_TOOL_PRESSURE_HARDNESS, _pressure_hardness_update)
-        canvas.pressure_hardness = cache.get(Cache.SMUDGE_TOOL_PRESSURE_HARDNESS)
+        brush.pressure_hardness = cache.get(Cache.SMUDGE_TOOL_PRESSURE_HARDNESS)
 
         if cache.get(Cache.EXPECT_TABLET_INPUT):
             control_panel = self.get_control_panel()
-            assert isinstance(control_panel, CanvasToolPanel)
+            assert isinstance(control_panel, BrushToolPanel)
             control_panel.show_pressure_checkboxes()
 
     # noinspection PyMethodMayBeStatic
@@ -136,7 +132,7 @@ class SmudgeTool(CanvasTool):  # type: ignore
         """Return text describing different input functionality."""
         brush_hint = SMUDGE_CONTROL_HINT.format(left_mouse_icon=left_button_hint_text(),
                                                 right_mouse_icon=right_button_hint_text())
-        return f'{brush_hint}<br/>{CanvasTool.canvas_control_hints()}<br/>{CanvasTool.get_input_hint(self)}'
+        return f'{brush_hint}<br/>{BrushTool.brush_control_hints()}<br/>{BrushTool.get_input_hint(self)}'
 
     def get_control_panel(self) -> Optional[QWidget]:
         """Returns the blur tool control panel."""
@@ -144,10 +140,10 @@ class SmudgeTool(CanvasTool):  # type: ignore
 
     @property
     def opacity(self) -> float:
-        """Accesses canvas opacity"""
-        canvas = self.canvas
-        assert isinstance(canvas, SmudgeCanvas)
-        return canvas.opacity
+        """Accesses brush opacity"""
+        brush = self.brush
+        assert isinstance(brush, SmudgeBrush)
+        return brush.opacity
 
     @opacity.setter
     def opacity(self, opacity: float) -> None:
@@ -156,10 +152,10 @@ class SmudgeTool(CanvasTool):  # type: ignore
 
     @property
     def hardness(self) -> float:
-        """Accesses canvas hardness"""
-        canvas = self.canvas
-        assert isinstance(canvas, SmudgeCanvas)
-        return canvas.hardness
+        """Accesses brush hardness"""
+        brush = self.brush
+        assert isinstance(brush, SmudgeBrush)
+        return brush.hardness
 
     @hardness.setter
     def hardness(self, hardness: float) -> None:

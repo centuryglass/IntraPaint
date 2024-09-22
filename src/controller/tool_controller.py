@@ -27,7 +27,7 @@ from src.ui.image_viewer import ImageViewer
 from src.ui.modal.modal_utils import show_warning_dialog
 from src.util.optional_import import optional_import
 
-BrushTool = optional_import('src.tools.brush_tool', attr_name='BrushTool')
+MyPaintBrushTool = optional_import('src.tools.mypaint_brush_tool', attr_name='MyPaintBrushTool')
 
 logger = logging.getLogger(__name__)
 
@@ -70,8 +70,8 @@ class ToolController(QObject):
             return
 
         # Set up tools:
-        if BrushTool is not None:
-            brush_tool = BrushTool(image_stack, image_viewer)
+        if MyPaintBrushTool is not None:
+            brush_tool = MyPaintBrushTool(image_stack, image_viewer)
             self.add_tool(brush_tool)
         else:
             show_warning_dialog(None, BRUSH_LOAD_ERROR_TITLE, BRUSH_LOAD_ERROR_MESSAGE,

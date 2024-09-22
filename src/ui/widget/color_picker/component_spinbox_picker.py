@@ -2,12 +2,13 @@
      QColorDialog."""
 from typing import Tuple
 
-from PySide6.QtCore import Signal, QSignalBlocker, QRegularExpression
+from PySide6.QtCore import Signal, QRegularExpression
 from PySide6.QtGui import QColor, Qt, QRegularExpressionValidator
 from PySide6.QtWidgets import QApplication, QWidget, QGridLayout, QLabel, QSpinBox, QLineEdit
 
 from src.ui.widget.color_picker.color_show_label import ColorShowLabel
 from src.ui.widget.color_picker.screen_color import ScreenColorWidget
+from src.util.signals_blocked import signals_blocked
 
 # The `QCoreApplication.translate` context for strings in this file
 TR_ID = 'ui.widget.color_picker.component_spinbox_picker'
@@ -38,9 +39,8 @@ class _QColSpinBox(QSpinBox):
 
     def setValue(self, value: int) -> None:
         """Set the value, suppressing signals."""
-        # noinspection PyUnusedLocal
-        blocker = QSignalBlocker(self)
-        super().setValue(value)
+        with signals_blocked(self):
+            super().setValue(value)
 
 
 class ComponentSpinboxPicker(QWidget):

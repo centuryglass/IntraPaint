@@ -281,7 +281,7 @@ class SelectionLayer(ImageLayer):
         Returns
         -------
         QRect or None
-           Rectangle containing all non-transparent mask canvas content plus padding, or None if the canvas is empty
+           Rectangle containing all non-transparent selected content plus padding, or None if the selection is empty
            or config.get(Config.INPAINT_FULL_RES) is false and ignore_config is false.
         """
         cache = Cache()

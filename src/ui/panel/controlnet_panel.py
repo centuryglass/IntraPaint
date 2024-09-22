@@ -11,10 +11,10 @@ from PySide6.QtWidgets import QCheckBox, QPushButton, QLineEdit, QComboBox, QApp
 from src.config.cache import Cache
 from src.ui.input_fields.check_box import CheckBox
 from src.ui.input_fields.slider_spinbox import IntSliderSpinbox, FloatSliderSpinbox
+from src.ui.layout.bordered_widget import BorderedWidget
 from src.ui.layout.divider import Divider
 from src.ui.modal.modal_utils import open_image_file
-from src.ui.layout.bordered_widget import BorderedWidget
-from src.util.layout import extract_layout_item, clear_layout
+from src.util.layout import clear_layout
 from src.util.parameter import Parameter, TYPE_FLOAT, TYPE_INT
 from src.util.shared_constants import CONTROLNET_REUSE_IMAGE_CODE
 

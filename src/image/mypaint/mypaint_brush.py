@@ -102,7 +102,7 @@ class MyPaintBrush:
         libmypaint.mypaint_brush_set_base_value(self._brush, c_int(setting), c_float(value))
 
     # DYNAMIC PROPERTIES:
-    # Generate with `python /home/anthony/Workspace/ML/IntraPaint/scripts/dynamic_import_typing.py src/image/mypaint/mypaint_brush.py`
+    # Generate with `python /home/anthony/Workspace/ML/IntraPaint/scripts/dynamic_import_typing.py src/image/mypaint/mypaint_layer_brush.py`
 
     ANTI_ALIASING: int
     CHANGE_COLOR_H: int

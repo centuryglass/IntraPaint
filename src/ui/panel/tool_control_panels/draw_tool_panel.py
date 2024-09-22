@@ -9,7 +9,7 @@ from src.hotkey_filter import HotkeyFilter
 from src.ui.input_fields.dual_toggle import DualToggle
 from src.ui.panel.tool_control_panels.brush_selection_panel import (TOOL_MODE_DRAW, TOOL_MODE_ERASE,
                                                                     RESOURCES_PEN_PNG, RESOURCES_ERASER_PNG)
-from src.ui.panel.tool_control_panels.canvas_tool_panel import CanvasToolPanel
+from src.ui.panel.tool_control_panels.brush_tool_panel import BrushToolPanel
 from src.ui.widget.key_hint_label import KeyHintLabel
 
 # The `QCoreApplication.translate` context for strings in this file
@@ -24,13 +24,13 @@ def _tr(*args):
 SELECTION_ONLY_LABEL = _tr('Draw in selection only')
 
 
-class DrawToolPanel(CanvasToolPanel):
+class DrawToolPanel(BrushToolPanel):
     """Control panel for the basic drawing tool."""
 
     tool_mode_changed = Signal(str)
 
     def __init__(self):
-        # Set up toggle row before initializing standard canvas tool panel:
+        # Set up toggle row before initializing standard brush tool panel:
         tool_toggle = DualToggle(None, [TOOL_MODE_DRAW, TOOL_MODE_ERASE])
         tool_toggle.set_icons(RESOURCES_PEN_PNG, RESOURCES_ERASER_PNG)
         tool_toggle.setValue(TOOL_MODE_DRAW)

@@ -11,7 +11,7 @@ from src.config.cache import Cache
 from src.config.key_config import KeyConfig
 from src.controller.app_controller import AppController
 from src.image.layers.image_stack import ImageStack
-from src.tools.brush_tool import BrushTool
+from src.tools.mypaint_brush_tool import MyPaintBrushTool
 from src.undo_stack import UndoStack
 from src.util.arg_parser import build_arg_parser
 
@@ -46,11 +46,11 @@ class BrushToolTest(unittest.TestCase):
         self.window = self.controller._window
         self.window.show()
         self.tool_panel = self.controller._tool_panel
-        self.brush_tool = self.controller._tool_controller.find_tool_by_class(BrushTool)
+        self.brush_tool = self.controller._tool_controller.find_tool_by_class(MyPaintBrushTool)
         assert self.brush_tool is not None
         self.tool_handler = self.controller._tool_controller
-        self.canvas = self.brush_tool._canvas
-        self.surface = self.canvas._mp_surface
+        self.brush = self.brush_tool._brush
+        self.surface = self.brush._mp_surface
         self.tiles = self.surface._tiles
         self.pending_tiles = self.surface._pending_changed_tiles
 
@@ -60,7 +60,7 @@ class BrushToolTest(unittest.TestCase):
         self.assertFalse(self.brush_tool.is_active)
         self.tool_handler.active_tool = self.brush_tool
         self.assertTrue(self.brush_tool.is_active)
-        self.assertIsNotNone(self.canvas)
+        self.assertIsNotNone(self.brush)
         self.assertIsNotNone(self.surface)
         self.assertEqual(len(self.tiles), 0)
         self.assertEqual(len(self.pending_tiles), 0)
@@ -88,7 +88,7 @@ class BrushToolTest(unittest.TestCase):
 
         self.assertEqual(self.image_stack.active_layer, layer)
         self.assertEqual(self.brush_tool._layer, layer)
-        self.assertEqual(self.canvas._layer, layer)
+        self.assertEqual(self.brush._layer, layer)
         self.assertEqual(self.surface._layer, layer)
         self.assertEqual(self.surface.brush.color.alpha(), 255)
         self.assertGreater(self.brush_tool.brush_size, 1)

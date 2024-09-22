@@ -19,7 +19,7 @@ from src.ui.input_fields.plain_text_edit import PlainTextEdit
 from src.ui.input_fields.size_field import SizeField
 from src.ui.input_fields.slider_spinbox import IntSliderSpinbox
 from src.ui.layout.bordered_widget import BorderedWidget
-from src.util.layout import extract_layout_item, clear_layout
+from src.util.layout import clear_layout
 from src.util.parameter import DynamicFieldWidget
 from src.util.shared_constants import APP_ICON_PATH
 

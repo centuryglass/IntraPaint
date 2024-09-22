@@ -1,4 +1,4 @@
-"""Implements drawing controls using a minimal QPainter-based canvas."""
+"""Implements drawing controls using a minimal QPainter-based brush."""
 from typing import Optional
 
 from PySide6.QtGui import QIcon, QKeySequence
@@ -8,8 +8,8 @@ from src.config.cache import Cache
 from src.config.key_config import KeyConfig
 from src.image.layers.image_stack import ImageStack
 from src.tools.base_tool import BaseTool
-from src.tools.canvas_tool import CanvasTool
-from src.tools.qt_paint_canvas_tool import QtPaintCanvasTool
+from src.tools.brush_tool import BrushTool
+from src.tools.qt_paint_brush_tool import QtPaintBrushTool
 from src.ui.image_viewer import ImageViewer
 from src.ui.panel.tool_control_panels.brush_selection_panel import TOOL_MODE_ERASE
 from src.ui.panel.tool_control_panels.draw_tool_panel import DrawToolPanel
@@ -31,7 +31,7 @@ TOOLTIP_DRAW_TOOL = _tr('Draw into the image')
 CONTROL_HINT_DRAW_TOOL = _tr('{left_mouse_icon}: draw - {right_mouse_icon}: 1px draw')
 
 
-class DrawTool(QtPaintCanvasTool):
+class DrawTool(QtPaintBrushTool):
     """Implements brush controls using a minimal QPainter-based brush engine."""
 
     def __init__(self, image_stack: ImageStack, image_viewer: ImageViewer) -> None:
@@ -67,7 +67,7 @@ class DrawTool(QtPaintCanvasTool):
         eyedropper_hint = BaseTool.modifier_hint(KeyConfig.EYEDROPPER_OVERRIDE_MODIFIER, COLOR_PICK_HINT)
         if len(eyedropper_hint) > 0:
             eyedropper_hint = ' - ' + eyedropper_hint
-        return (f'{control_hint_draw_tool}{eyedropper_hint}<br/>{CanvasTool.canvas_control_hints()}'
+        return (f'{control_hint_draw_tool}{eyedropper_hint}<br/>{BrushTool.brush_control_hints()}'
                 f'<br/>{super().get_input_hint()}')
 
     def get_control_panel(self) -> Optional[QWidget]:
@@ -76,6 +76,6 @@ class DrawTool(QtPaintCanvasTool):
             self._control_panel = DrawToolPanel()
 
             def _set_eraser(tool_mode: str) -> None:
-                self.canvas.eraser = tool_mode == TOOL_MODE_ERASE
+                self.brush.eraser = tool_mode == TOOL_MODE_ERASE
             self._control_panel.tool_mode_changed.connect(_set_eraser)
         return self._control_panel

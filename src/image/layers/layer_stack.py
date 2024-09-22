@@ -1,7 +1,7 @@
 """Represents a group of linked image layers that can be manipulated as one in limited ways."""
 from typing import List, Optional, Dict, Any, TypeAlias, Callable
 
-from PySide6.QtCore import QRect, Signal, QPoint, QSignalBlocker
+from PySide6.QtCore import QRect, Signal, QPoint
 from PySide6.QtGui import QPainter, QImage, QTransform
 
 from src.image.composite_mode import CompositeMode
@@ -12,6 +12,7 @@ from src.image.layers.transform_layer import TransformLayer
 from src.undo_stack import UndoStack
 from src.util.application_state import APP_STATE_NO_IMAGE, APP_STATE_EDITING, AppStateTracker
 from src.util.cached_data import CachedData
+from src.util.signals_blocked import signals_blocked
 from src.util.visual.geometry_utils import map_rect_precise
 from src.util.visual.image_utils import create_transparent_image
 from src.util.validation import assert_valid_index
@@ -361,10 +362,10 @@ class LayerStack(Layer, LayerParent):
                     self.insert_layer(layer, i)
             assert layer.id in saved_state.child_states
             if layer.locked:
-                signal_blocker = QSignalBlocker(layer)
-                layer.set_locked(False)
-                if isinstance(layer, ImageLayer) and layer.alpha_locked:
-                    layer.set_alpha_locked(False)
+                with signals_blocked(layer):
+                    layer.set_locked(False)
+                    if isinstance(layer, ImageLayer) and layer.alpha_locked:
+                        layer.set_alpha_locked(False)
             layer.restore_state(saved_state.child_states[layer.id])
         while self.count > len(saved_state.child_layers):
             extra_layer = self.get_layer_by_index(len(saved_state.child_layers))

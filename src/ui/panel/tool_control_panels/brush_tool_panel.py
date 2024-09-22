@@ -1,4 +1,4 @@
-"""Control panel for canvas tools that apply size/opacity/hardness cache value changes."""
+"""Control panel for brush tools that apply size/opacity/hardness cache value changes."""
 from typing import Optional, List, cast
 
 from PySide6.QtCore import Qt
@@ -14,8 +14,8 @@ from src.ui.widget.key_hint_label import KeyHintLabel
 from src.util.layout import extract_layout_item, synchronize_row_widths
 
 
-class CanvasToolPanel(QWidget):
-    """Control panel for canvas tools that apply size/opacity/hardness cache value changes."""
+class BrushToolPanel(QWidget):
+    """Control panel for brush tools that apply size/opacity/hardness cache value changes."""
 
     def __init__(self, size_key: Optional[str] = None,
                  pressure_size_key: Optional[str] = None,

@@ -47,7 +47,7 @@ class QuickEditWindow(QMainWindow):
         self.show()
 
     def paintEvent(self, unused_event: Optional[QPaintEvent]) -> None:
-        """Draws the image and mask canvas in the window."""
+        """Draws the image and mask brush in the window."""
         painter = QPainter(self)
         painter.drawPixmap(QRect(0, 0, self._image.width(), self._image.height()), self._image)
         painter.drawPixmap(QRect(0, 0, self._canvas.width(), self._canvas.height()), self._canvas)
@@ -85,7 +85,7 @@ class QuickEditWindow(QMainWindow):
         return qimage_to_pil_image(image)
 
     def resizeEvent(self, unused_event: Optional[QResizeEvent]) -> None:
-        """adjust image and canvas scale on resize."""
+        """adjust image and brush scale on resize."""
         self._image = QPixmap.fromImage(self.qim)
         self._image = self._image.scaled(self.width(), self.height())
 

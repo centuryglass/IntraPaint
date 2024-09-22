@@ -7,14 +7,14 @@ from typing import Optional, Set
 from PySide6.QtCore import QRect
 from PySide6.QtGui import QColor, QImage
 
-from src.image.canvas.layer_canvas import LayerCanvas
+from src.image.brush.layer_brush import LayerBrush
 from src.image.layers.image_layer import ImageLayer
 from src.image.mypaint.mypaint_brush import MyPaintBrush
 from src.image.mypaint.mypaint_layer_surface import MyPaintLayerSurface
 from src.image.mypaint.mypaint_scene_tile import MyPaintSceneTile
 
 
-class MyPaintLayerCanvas(LayerCanvas):
+class MyPaintLayerBrush(LayerBrush):
     """Connects a MyPaint surface with an image layer."""
 
     def __init__(self, layer: Optional[ImageLayer] = None) -> None:
@@ -41,7 +41,7 @@ class MyPaintLayerCanvas(LayerCanvas):
 
     @property
     def brush(self) -> MyPaintBrush:
-        """Returns the MyPaint brush that belongs to this canvas."""
+        """Returns the MyPaint brush that belongs to this brush."""
         return self._mp_surface.brush
 
     def connect_to_layer(self, new_layer: Optional[ImageLayer]):
@@ -62,7 +62,7 @@ class MyPaintLayerCanvas(LayerCanvas):
         self._mp_surface.end_stroke()
 
     def set_input_mask(self, mask_image: Optional[QImage]) -> None:
-        """Sets a mask image, restricting canvas changes to areas covered by non-transparent mask areas"""
+        """Sets a mask image, restricting brush changes to areas covered by non-transparent mask areas"""
         super().set_input_mask(mask_image)
         self._mp_surface.input_mask = mask_image
 
@@ -91,7 +91,7 @@ class MyPaintLayerCanvas(LayerCanvas):
 
     def _draw(self, x: float, y: float, pressure: Optional[float], x_tilt: Optional[float],
               y_tilt: Optional[float]) -> None:
-        """Use active settings to draw to the canvas with the given inputs."""
+        """Use active settings to draw with the brush using the given inputs."""
         if pressure is not None or x_tilt is not None or y_tilt is not None:
             pressure = 1.0 if pressure is None else pressure
             x_tilt = 0.0 if x_tilt is None else x_tilt

@@ -24,7 +24,7 @@ def _tr(*args):
 SELECTION_ONLY_LABEL = _tr('Paint selection only')
 
 
-class BrushControlPanel(QWidget):
+class MyPaintBrushToolPanel(QWidget):
     """Control panel widget for the MyPaint Brush tool."""
 
     def __init__(self) -> None:

@@ -7,7 +7,7 @@ from PySide6.QtWidgets import QApplication, QWidget
 
 from src.config.cache import Cache
 from src.config.key_config import KeyConfig
-from src.image.canvas.filter_canvas import FilterCanvas
+from src.image.brush.filter_brush import FilterBrush
 from src.image.filter.blur import BlurFilter
 from src.image.filter.brightness_contrast import BrightnessContrastFilter
 from src.image.filter.filter import ImageFilter
@@ -15,8 +15,8 @@ from src.image.filter.posterize import PosterizeFilter
 from src.image.filter.rgb_color_balance import RGBColorBalanceFilter
 from src.image.filter.sharpen import SharpenFilter
 from src.image.layers.image_stack import ImageStack
-from src.tools.canvas_tool import CanvasTool
-from src.tools.qt_paint_canvas_tool import QtPaintCanvasTool
+from src.tools.brush_tool import BrushTool
+from src.tools.qt_paint_brush_tool import QtPaintBrushTool
 from src.ui.image_viewer import ImageViewer
 from src.ui.panel.tool_control_panels.filter_tool_panel import FilterToolPanel
 from src.util.shared_constants import PROJECT_DIR
@@ -37,7 +37,7 @@ FILTER_TOOLTIP = _tr('Draw to apply an image filter')
 FILTER_CONTROL_HINT = _tr('{left_mouse_icon}: filter - {right_mouse_icon}: 1px filter')
 
 
-class FilterTool(QtPaintCanvasTool):
+class FilterTool(QtPaintBrushTool):
     """Use brush strokes to apply image filters."""
 
     def __init__(self, image_stack: ImageStack, image_viewer: ImageViewer) -> None:
@@ -69,13 +69,13 @@ class FilterTool(QtPaintCanvasTool):
             initial_filter = self._filters[0]
             cache.set(Cache.FILTER_TOOL_SELECTED_FILTER, initial_filter.get_name())
         self._active_filter = initial_filter
-        canvas = FilterCanvas(initial_filter)
-        canvas.parameter_values = self._filter_params[self._active_filter.get_name()]
+        brush = FilterBrush(initial_filter)
+        brush.parameter_values = self._filter_params[self._active_filter.get_name()]
         super().__init__(image_stack, image_viewer, size_key=Cache.FILTER_TOOL_BRUSH_SIZE,
                          pressure_size_key=Cache.FILTER_TOOL_PRESSURE_SIZE, opacity_key=Cache.FILTER_TOOL_OPACITY,
                          pressure_opacity_key=Cache.FILTER_TOOL_PRESSURE_OPACITY,
                          hardness_key=Cache.FILTER_TOOL_HARDNESS,
-                         pressure_hardness_key=Cache.FILTER_TOOL_PRESSURE_HARDNESS, canvas=canvas)
+                         pressure_hardness_key=Cache.FILTER_TOOL_PRESSURE_HARDNESS, brush=brush)
         self._icon = QIcon(RESOURCES_FILTER_ICON)
         cache.connect(self, Cache.FILTER_TOOL_SELECTED_FILTER, self._filter_update_slot)
         cache.connect(self, Cache.FILTER_TOOL_CACHED_PARAMETERS, self._filter_param_update_slot)
@@ -103,7 +103,7 @@ class FilterTool(QtPaintCanvasTool):
         """Return text describing different input functionality."""
         brush_hint = FILTER_CONTROL_HINT.format(left_mouse_icon=left_button_hint_text(),
                                                 right_mouse_icon=right_button_hint_text())
-        return f'{brush_hint}<br/>{CanvasTool.canvas_control_hints()}<br/>{CanvasTool.get_input_hint(self)}'
+        return f'{brush_hint}<br/>{BrushTool.brush_control_hints()}<br/>{BrushTool.get_input_hint(self)}'
 
     # noinspection PyMethodMayBeStatic
     def get_control_panel(self) -> Optional[QWidget]:
@@ -116,17 +116,17 @@ class FilterTool(QtPaintCanvasTool):
         new_filter = self._filter_from_name(filter_name)
         if new_filter == self._active_filter:
             return
-        canvas = self.canvas
-        assert isinstance(canvas, FilterCanvas)
-        canvas.image_filter = new_filter
-        canvas.parameter_values = self._filter_params[new_filter.get_name()]
+        brush = self.brush
+        assert isinstance(brush, FilterBrush)
+        brush.image_filter = new_filter
+        brush.parameter_values = self._filter_params[new_filter.get_name()]
         self._active_filter = new_filter
 
     def _filter_param_update_slot(self, filter_params: str) -> None:
         self._filter_params = json.loads(filter_params)
-        canvas = self.canvas
-        assert isinstance(canvas, FilterCanvas)
-        canvas.parameter_values = self._filter_params[self._active_filter.get_name()]
+        brush = self.brush
+        assert isinstance(brush, FilterBrush)
+        brush.parameter_values = self._filter_params[self._active_filter.get_name()]
 
     def _filter_from_name(self, filter_name: str) -> ImageFilter:
         matching = [img_filter for img_filter in self._filters if img_filter.get_name() == filter_name]

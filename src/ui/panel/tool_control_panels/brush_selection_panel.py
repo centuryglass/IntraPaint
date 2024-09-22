@@ -16,7 +16,7 @@ from src.ui.widget.key_hint_label import KeyHintLabel
 from src.util.shared_constants import PROJECT_DIR
 
 # The `QCoreApplication.translate` context for strings in this file
-TR_ID = 'ui.panel.tool_control_panels.canvas_selection_panel'
+TR_ID = 'ui.panel.tool_control_panels.brush_selection_panel'
 
 
 def _tr(*args):

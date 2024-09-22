@@ -1,24 +1,31 @@
-"""Implements brush controls using a MyPaint surface."""
+"""Base template for tools that use a MyPaint surface within an image layer."""
+import datetime
 import logging
-import os
 from typing import Optional
 
-from PySide6.QtGui import QColor, QIcon, QKeySequence, Qt
-from PySide6.QtWidgets import QWidget, QApplication
+from PySide6.QtCore import Qt, QPoint, QLineF, QPointF, QEvent, QRect
+from PySide6.QtGui import QCursor, QTabletEvent, QMouseEvent, QColor, QIcon, QWheelEvent, QPointingDevice
+from PySide6.QtWidgets import QApplication
 
+from src.config.application_config import AppConfig
 from src.config.cache import Cache
-from src.config.config_entry import RangeKey
 from src.config.key_config import KeyConfig
-from src.image.canvas.mypaint_canvas import MyPaintLayerCanvas
+from src.hotkey_filter import HotkeyFilter
+from src.image.brush.layer_brush import LayerBrush
+from src.image.layers.image_layer import ImageLayer
 from src.image.layers.image_stack import ImageStack
+from src.image.layers.layer import Layer
 from src.tools.base_tool import BaseTool
-from src.tools.canvas_tool import CanvasTool
+from src.ui.graphics_items.temp_dashed_line_item import TempDashedLineItem
 from src.ui.image_viewer import ImageViewer
-from src.ui.panel.tool_control_panels.brush_control_panel import BrushControlPanel
-from src.util.shared_constants import PROJECT_DIR, COLOR_PICK_HINT
+from src.ui.panel.tool_control_panels.brush_tool_panel import BrushToolPanel
+from src.util.math_utils import clamp
+from src.util.shared_constants import PROJECT_DIR, FLOAT_MAX
 from src.util.visual.text_drawing_utils import left_button_hint_text, right_button_hint_text
 
-logger = logging.getLogger(__name__)
+RESOURCES_BRUSH_ICON = f'{PROJECT_DIR}/resources/icons/tools/brush_icon.svg'
+RESOURCES_CURSOR = f'{PROJECT_DIR}/resources/cursors/brush_cursor.svg'
+RESOURCES_MIN_CURSOR = f'{PROJECT_DIR}/resources/cursors/min_cursor.svg'
 
 # The `QCoreApplication.translate` context for strings in this file
 TR_ID = 'tools.brush_tool'
@@ -29,105 +36,429 @@ def _tr(*args):
     return QApplication.translate(TR_ID, *args)
 
 
-RESOURCES_BRUSH_ICON = f'{PROJECT_DIR}/resources/icons/tools/brush_icon.svg'
-BRUSH_LABEL = _tr('Brush')
-BRUSH_TOOLTIP = _tr('Paint into the image')
-BRUSH_CONTROL_HINT = _tr('{left_mouse_icon}: draw - {right_mouse_icon}: 1px draw')
+LINE_HINT = _tr('{modifier_or_modifiers}+{left_mouse_icon}/{right_mouse_icon}: draw line')
+FIXED_ANGLE_HINT = _tr('{modifier_or_modifiers}: fixed angle')
+
+MAX_CURSOR_SIZE = 255
+MIN_CURSOR_SIZE = 20
+MIN_SMALL_CURSOR_SIZE = 15
+MIN_LINE_PRESSURE = 0.5
+
+logger = logging.getLogger(__name__)
 
 
-class BrushTool(CanvasTool):
-    """Implements brush controls using a MyPaint surface."""
+class BrushTool(BaseTool):
+    """Base template for tools that use a LayerBrush to edit an image layer using drawing commands.
 
-    def __init__(self, image_stack: ImageStack, image_viewer: ImageViewer, size_key: Optional[str] = None) -> None:
-        super().__init__(image_stack, image_viewer, MyPaintLayerCanvas())
-        self._size_key = Cache.PAINT_TOOL_BRUSH_SIZE if size_key is None else size_key
-        self._last_click = None
-        self._control_panel: Optional[BrushControlPanel] = None
-        self._active = False
+    BrushTool handles the connection between a layer and a LayerBrush, and the process of passing inputs to
+    that brush. Implementations are responsible for providing their own control panel and configuring brush properties.
+    """
+
+    def __init__(self, image_stack: ImageStack, image_viewer: ImageViewer, brush: LayerBrush,
+                 enable_selection_restrictions=True, follow_active_layer=True) -> None:
+        super().__init__()
+        self._layer: Optional[ImageLayer] = None
         self._drawing = False
-        self._cached_size = None
-        self._icon = QIcon(RESOURCES_BRUSH_ICON)
+        self._cached_size: Optional[int] = None
+        self._tablet_pressure: Optional[float] = None
+        self._last_pressure: Optional[float] = None
+        self._tablet_x_tilt: Optional[float] = None
+        self._tablet_y_tilt: Optional[float] = None
+        self._tablet_input: Optional[QPointingDevice.PointerType] = None
+        self._tablet_event_timestamp = 0.0
+        self._last_pos: Optional[QPoint] = None
+        self._fixed_angle: Optional[int] = None
+        scene = image_viewer.scene()
+        assert scene is not None
+        self._preview_line = TempDashedLineItem(scene)
 
-        # Load brush and size from cache
-        cache = Cache()
-        self.brush_path = cache.get(Cache.MYPAINT_BRUSH)
-        self.brush_size = cache.get(self._size_key)
-        self.brush_color = cache.get_color(Cache.LAST_BRUSH_COLOR, Qt.GlobalColor.black)
+        self._small_brush_icon = QIcon(RESOURCES_MIN_CURSOR)
+        self._small_brush_cursor = QCursor(self._small_brush_icon.pixmap(MIN_SMALL_CURSOR_SIZE, MIN_SMALL_CURSOR_SIZE))
+        self._default_scaled_cursor_icon = QIcon(RESOURCES_CURSOR)
+        self._scaled_icon_cursor: Optional[QIcon] = self._default_scaled_cursor_icon
+        self._scaling_cursor = True
+        image_viewer.scale_changed.connect(self.update_brush_cursor)
 
-        def apply_brush_size(size: int) -> None:
-            """Update brush size for the canvas and cursor when it changes in config."""
-            self._canvas.brush_size = size
-            self.update_brush_cursor()
-        cache.connect(self, self._size_key, apply_brush_size)
+        self._image_stack = image_stack
+        self._image_viewer = image_viewer
+        self._brush = brush
 
-        def set_brush_color(color_str: str) -> None:
-            """Update the brush color within the canvas when it changes in config."""
-            color = QColor(color_str)
-            self.brush_color = color
-        cache.connect(self, Cache.LAST_BRUSH_COLOR, set_brush_color)
+        for key, sign in ((KeyConfig.BRUSH_SIZE_DECREASE, -1), (KeyConfig.BRUSH_SIZE_INCREASE, 1)):
+            def _size_change(mult, step=sign) -> bool:
+                if not self.is_active:
+                    return False
+                self.set_brush_size(self.brush_size + step * mult)
+                return True
 
-        def set_active_brush(brush_path: str) -> None:
-            """Update the active MyPaint brush when it changes in config."""
-            self.brush_path = brush_path
-        cache.connect(self, Cache.MYPAINT_BRUSH, set_active_brush)
+            binding_id = f'BrushTool_{id(self)}_{key}'
+            HotkeyFilter.instance().register_speed_modified_keybinding(binding_id, _size_change, key)
+
+        if enable_selection_restrictions:
+            # Handle restricting changes to selection:
+            def _set_restricted_to_selection(selected_only: bool) -> None:
+                if not self.is_active or self._layer is None or self._layer == image_stack.selection_layer:
+                    return
+                if selected_only:
+                    mask = image_stack.get_layer_mask(self._layer)
+                    self._brush.set_input_mask(mask)
+                else:
+                    self._brush.set_input_mask(None)
+
+            Cache().connect(self, Cache.PAINT_SELECTION_ONLY, _set_restricted_to_selection)
+
+        if follow_active_layer:
+            # noinspection PyUnusedLocal
+            def _selection_layer_update(*args) -> None:
+                if not Cache().get(Cache.PAINT_SELECTION_ONLY) or not self.is_active or self._layer is None \
+                        or self._layer == image_stack.selection_layer:
+                    return
+                mask = image_stack.get_layer_mask(self._layer)
+                self._brush.set_input_mask(mask)
+
+            image_stack.selection_layer.content_changed.connect(_selection_layer_update)
+
+            image_stack.active_layer_changed.connect(self._active_layer_change_slot)
+            self.layer = image_stack.active_layer
+        HotkeyFilter.instance().modifiers_changed.connect(self._modifier_change_slot)
+
+    @staticmethod
+    def brush_control_hints() -> str:
+        """Get control hints for line and fixed angle modes, if enabled."""
+        line_hint = LINE_HINT.format(left_mouse_icon=left_button_hint_text(),
+                                     right_mouse_icon=right_button_hint_text(),
+                                     modifier_or_modifiers='{modifier_or_modifiers}')
+        return (f'{BaseTool.modifier_hint(KeyConfig.LINE_MODIFIER, line_hint)}'
+                f' - {BaseTool.modifier_hint(KeyConfig.FIXED_ANGLE_MODIFIER, FIXED_ANGLE_HINT)}')
+
+    def set_scaling_icon_cursor(self, icon: Optional[QIcon]) -> None:
+        """Sets whether the tool should use a cursor scaled to the brush size.
+
+        Parameters
+        ----------
+        icon: QIcon, optional
+            Cursor icon to use. If None, dynamic cursor updates will be disabled. If an icon, BrushTool will
+            dynamically scale it to match the brush size, using an alternate instead if it's below MIN_CURSOR_SIZE.
+        """
+        self._scaling_cursor = icon is not None
+        self._scaled_icon_cursor = icon
         self.update_brush_cursor()
 
-    def get_hotkey(self) -> QKeySequence:
-        """Returns the hotkey(s) that should activate this tool."""
-        return KeyConfig().get_keycodes(KeyConfig.BRUSH_TOOL_KEY)
-
-    def get_icon(self) -> QIcon:
-        """Returns an icon used to represent this tool."""
-        return self._icon
-
-    def get_label_text(self) -> str:
-        """Returns label text used to represent this tool."""
-        return BRUSH_LABEL
-
-    def get_tooltip_text(self) -> str:
-        """Returns tooltip text used to describe this tool."""
-        return BRUSH_TOOLTIP
-
-    def get_input_hint(self) -> str:
-        """Return text describing different input functionality."""
-        brush_hint = BRUSH_CONTROL_HINT.format(left_mouse_icon=left_button_hint_text(),
-                                               right_mouse_icon=right_button_hint_text())
-        eyedropper_hint = BaseTool.modifier_hint(KeyConfig.EYEDROPPER_OVERRIDE_MODIFIER, COLOR_PICK_HINT)
-        if len(eyedropper_hint) > 0:
-            eyedropper_hint = ' - ' + eyedropper_hint
-        return f'{brush_hint}{eyedropper_hint}<br/>{CanvasTool.canvas_control_hints()}<br/>{super().get_input_hint()}'
-
-    def get_control_panel(self) -> Optional[QWidget]:
-        """Returns the brush control panel."""
-        if self._control_panel is None:
-            self._control_panel = BrushControlPanel()
-        return self._control_panel
+    def reset_scaling_pixmap_cursor(self) -> None:
+        """Restores the default scaling brush cursor."""
+        if self._scaling_cursor and self._scaled_icon_cursor == self._default_scaled_cursor_icon:
+            return
+        self._scaling_cursor = True
+        self._scaled_icon_cursor = self._default_scaled_cursor_icon
+        self.update_brush_cursor()
 
     @property
-    def brush_path(self) -> Optional[str]:
-        """Gets the active brush file path, if any."""
-        canvas = self.canvas
-        assert isinstance(canvas, MyPaintLayerCanvas)
-        return canvas.brush_path
+    def layer(self) -> Optional[ImageLayer]:
+        """Returns the active image layer."""
+        return self._layer
 
-    @brush_path.setter
-    def brush_path(self, new_path: str) -> None:
+    @layer.setter
+    def layer(self, layer: Optional[ImageLayer]) -> None:
+        """Sets or clears the connected image layer."""
+        if self._layer is not None:
+            self._layer.lock_changed.disconnect(self._layer_lock_slot)
+        if not isinstance(layer, ImageLayer):
+            layer = None
+        self._layer = layer
+        if layer is not None:
+            layer.lock_changed.connect(self._layer_lock_slot)
+            self._layer_lock_slot(layer, layer.locked)
+            if layer != self._image_stack.selection_layer and Cache().get(Cache.PAINT_SELECTION_ONLY):
+                mask = self._image_stack.get_layer_mask(layer)
+                self._brush.set_input_mask(mask)
+            else:
+                self._brush.set_input_mask(None)
+        if not self._active:
+            return
+        if layer is None or not isinstance(layer, ImageLayer):
+            self._brush.connect_to_layer(None)
+        else:
+            self._brush.connect_to_layer(layer)
+        control_panel = self.get_control_panel()
+        if control_panel is not None:
+            control_panel.setEnabled(layer is not None and isinstance(layer, ImageLayer) and not layer.locked
+                                     and layer.visible)
+
+    @property
+    def brush(self) -> LayerBrush:
+        """Access the tool's edited brush."""
+        return self._brush
+
+    def _layer_lock_slot(self, layer: ImageLayer, locked: bool) -> None:
+        if not self.is_active:
+            return
+        assert layer == self._layer
+        control_panel = self.get_control_panel()
+        if control_panel is not None:
+            control_panel.setEnabled(not locked)
+
+    @property
+    def brush_size(self) -> int:
+        """Gets the active brush size."""
+        return self._brush.brush_size
+
+    @brush_size.setter
+    def brush_size(self, new_size: int):
         """Updates the active brush size."""
-        canvas = self.canvas
-        assert isinstance(canvas, MyPaintLayerCanvas)
-        try:
-            if not os.path.isfile(new_path):
-                resource_path = f'{PROJECT_DIR}/new_path'
-                if os.path.isfile(resource_path):
-                    new_path = resource_path
-                else:
-                    raise RuntimeError('Brush file does not exist')
-            canvas.brush_path = new_path
-        except (OSError, RuntimeError) as err:
-            logger.error(f'loading brush {new_path} failed', err)
+        self.set_brush_size(new_size)
+        self.update_brush_cursor()
+
+    def adjust_brush_size(self, offset: int) -> None:
+        """Change brush size by some offset amount, multiplying offset if the speed modifier is held."""
+        if KeyConfig.modifier_held(KeyConfig.SPEED_MODIFIER):
+            offset *= AppConfig().get(AppConfig.SPEED_MODIFIER_MULTIPLIER)
+        self.set_brush_size(max(self._brush.brush_size + offset, 1))
 
     def set_brush_size(self, new_size: int) -> None:
         """Update the brush size."""
-        new_size = min(new_size, Cache().get(Cache.PAINT_TOOL_BRUSH_SIZE, RangeKey.MAX))
-        super().set_brush_size(new_size)
-        Cache().set(Cache.PAINT_TOOL_BRUSH_SIZE, max(1, new_size))
+        self._brush.brush_size = max(new_size, 1)
+        self.update_brush_cursor()
+
+    @property
+    def brush_color(self) -> QColor:
+        """Gets the active brush color."""
+        return self._brush.brush_color
+
+    @brush_color.setter
+    def brush_color(self, new_color: QColor | Qt.GlobalColor) -> None:
+        """Updates the active brush color."""
+        self._brush.brush_color = QColor(new_color)
+
+    def _on_activate(self, restoring_after_delegation=False) -> None:
+        """Connect the brush to the active layer."""
+        if self._layer is not None:
+            self.layer = self._layer  # Re-apply the connection
+        else:
+            self.layer = self._image_stack.active_layer
+        self.update_brush_cursor()
+
+    def _on_deactivate(self) -> None:
+        """Disconnect from the image when the tool is inactive."""
+        if self._drawing:
+            self._drawing = False
+            if self._cached_size:
+                self.brush_size = self._cached_size
+                self._cached_size = None
+            self._brush.end_stroke()
+            self._tablet_input = None
+            self._tablet_pressure = None
+            self._tablet_x_tilt = None
+            self._tablet_y_tilt = None
+        self._brush.connect_to_layer(None)
+
+    # Event handlers:
+    def _stroke_to(self, image_coordinates: QPoint) -> None:
+        """Draws coordinates with the brush, including tablet data if available."""
+        if datetime.datetime.now().timestamp() > self._tablet_event_timestamp + 0.5:  # discard outdated tablet events
+            self._tablet_input = None
+            self._tablet_pressure = None
+            self._tablet_x_tilt = None
+            self._tablet_y_tilt = None
+        if self._layer is not None:
+            image_coordinates = self._layer.map_from_image(image_coordinates)
+        if not self._image_stack.has_image:
+            return
+        if self._tablet_input == QPointingDevice.PointerType.Eraser:
+            self._brush.eraser = True
+
+        if KeyConfig.modifier_held(KeyConfig.FIXED_ANGLE_MODIFIER) and self._last_pos is not None \
+                and self._last_pos != image_coordinates:
+            closest_point = None
+            last_pos = QPointF(self._last_pos)
+            if self._fixed_angle is None:
+                distance_line = QLineF(last_pos, QPointF(image_coordinates))
+                min_distance = FLOAT_MAX
+                for angle in range(0, 360, 45):
+                    distance_line.setAngle(angle)
+                    distance_from_mouse = QLineF(QPointF(image_coordinates), distance_line.p2()).length()
+                    if distance_from_mouse < min_distance:
+                        self._fixed_angle = angle
+                        min_distance = distance_from_mouse
+                        closest_point = distance_line.p2().toPoint()
+            else:
+                line = QLineF(last_pos, last_pos + QPointF(1.0, 0.0))
+                line.setAngle(self._fixed_angle)
+                normal_line = QLineF(QPointF(image_coordinates), QPointF(image_coordinates) + QPointF(1.0, 0.0))
+                normal_line.setAngle(self._fixed_angle + 90)
+                intersect_type, closest_point = line.intersects(normal_line)
+                assert intersect_type != QLineF.IntersectionType.NoIntersection, f'{line} parallel to {normal_line}'
+                assert isinstance(closest_point, QPointF)
+                closest_point = closest_point.toPoint()
+            assert isinstance(closest_point, QPoint)
+            image_coordinates = closest_point
+        if KeyConfig.modifier_held(KeyConfig.LINE_MODIFIER) and self._last_pos is not None:
+            pressure = self._last_pressure if self._tablet_pressure is None else self._tablet_pressure
+            if pressure is not None:
+                pressure = max(pressure, MIN_LINE_PRESSURE)
+            self._brush.stroke_to(self._last_pos.x(), self._last_pos.y(), pressure, self._tablet_x_tilt,
+                                  self._tablet_y_tilt)
+            self._brush.stroke_to(image_coordinates.x(), image_coordinates.y(), pressure,
+                                  self._tablet_x_tilt, self._tablet_y_tilt)
+        else:
+            self._brush.stroke_to(image_coordinates.x(), image_coordinates.y(), self._tablet_pressure,
+                                  self._tablet_x_tilt, self._tablet_y_tilt)
+
+        if self._tablet_input == QPointingDevice.PointerType.Eraser:
+            self._brush.eraser = False
+        self._last_pos = image_coordinates
+
+    def mouse_click(self, event: Optional[QMouseEvent], image_coordinates: QPoint) -> bool:
+        """Starts drawing when the mouse is clicked in the scene."""
+        if self._layer is None or event is None or not self._image_stack.has_image:
+            return False
+        if KeyConfig.modifier_held(KeyConfig.PAN_VIEW_MODIFIER, True):
+            return False
+        if event.buttons() == Qt.MouseButton.LeftButton or event.buttons() == Qt.MouseButton.RightButton:
+            if self._drawing:
+                self._brush.end_stroke()
+            self._drawing = True
+            self._fixed_angle = None
+            self._last_pressure = None
+            if KeyConfig.modifier_held(KeyConfig.FIXED_ANGLE_MODIFIER):
+                self._last_pos = image_coordinates  # Update so previous clicks don't constrain the angle
+            if self._cached_size is not None and event.buttons() == Qt.MouseButton.LeftButton:
+                self.brush_size = self._cached_size
+                self._cached_size = None
+            elif event.buttons() == Qt.MouseButton.RightButton:
+                if self._cached_size is None:
+                    self._cached_size = self._brush.brush_size
+                self.brush_size = 1
+            self._brush.start_stroke()
+            self._stroke_to(image_coordinates)
+            return True
+        return False
+
+    def mouse_move(self, event: Optional[QMouseEvent], image_coordinates: QPoint) -> bool:
+        """Receives a mouse move event, returning whether the tool consumed the event."""
+        if self._layer is None or event is None or not self._image_stack.has_image:
+            return False
+
+        if KeyConfig.modifier_held(KeyConfig.LINE_MODIFIER) and self._last_pos is not None:
+            self._preview_line.setVisible(True)
+            self._preview_line.set_line(QLineF(QPointF(self._last_pos), QPointF(image_coordinates)))
+        if (event.buttons() == Qt.MouseButton.LeftButton or event.buttons() == Qt.MouseButton.RightButton
+                and self._drawing):
+            self._stroke_to(image_coordinates)
+            return True
+        return False
+
+    def mouse_release(self, event: Optional[QMouseEvent], image_coordinates: QPoint) -> bool:
+        """Receives a mouse release event, returning whether the tool consumed the event."""
+        if self._layer is None or event is None or not self._image_stack.has_image:
+            return False
+        if self._drawing:
+            self._drawing = False
+            self._brush.end_stroke()
+            if self._cached_size:
+                self.brush_size = self._cached_size
+                self._cached_size = None
+            self._tablet_input = None
+            self._tablet_pressure = None
+            self._last_pressure = None
+            self._tablet_x_tilt = None
+            self._tablet_y_tilt = None
+            return True
+        return False
+
+    def mouse_enter(self, event: Optional[QEvent], image_coordinates: QPoint) -> bool:
+        """Show the line preview on enter if in line mode."""
+        if KeyConfig.modifier_held(KeyConfig.LINE_MODIFIER):
+            self._preview_line.setVisible(True)
+            return True
+        return False
+
+    def mouse_exit(self, event: Optional[QEvent], image_coordinates: QPoint) -> bool:
+        """Hide the line preview on exit."""
+        self._preview_line.set_line(QLineF())
+        self._preview_line.setVisible(False)
+        return True
+
+    def tablet_event(self, event: Optional[QTabletEvent], image_coordinates: QPoint) -> bool:
+        """Cache tablet data when received."""
+        assert event is not None
+        control_panel = self.get_control_panel()
+        if isinstance(control_panel, BrushToolPanel):
+            control_panel.show_pressure_checkboxes()
+            Cache().set(Cache.EXPECT_TABLET_INPUT, True)
+        if event.pointerType() is not None:
+            self._tablet_input = event.pointerType()
+        if event.pressure() > 0.00001:
+            config = AppConfig()
+            min_pressure = config.get(AppConfig.MIN_PRESSURE_VALUE)
+            max_pressure = config.get(AppConfig.MAX_PRESSURE_VALUE)
+            min_threshold = config.get(AppConfig.MIN_PRESSURE_THRESHOLD)
+            max_threshold = config.get(AppConfig.MAX_PRESSURE_THRESHOLD)
+            if max_pressure > min_pressure and max_threshold > min_threshold:
+                input_range = max_threshold - min_threshold
+                pressure_input = float(clamp(event.pressure(), min_threshold, max_threshold))
+                input_fraction = (pressure_input - min_threshold) / input_range
+                output_range = max_pressure - min_pressure
+                pressure = min_pressure + output_range * input_fraction
+            else:
+                logger.warning(f'Invalid pressure threshold or bounds, ignoring pressure threshold/bounds settings')
+                pressure = event.pressure()
+            self._tablet_pressure = pressure
+            self._last_pressure = pressure
+        else:
+            self._tablet_pressure = None
+        self._tablet_x_tilt = event.xTilt()
+        self._tablet_y_tilt = event.yTilt()
+        self._tablet_event_timestamp = datetime.datetime.now().timestamp()
+        control_panel = self.get_control_panel()
+        if isinstance(control_panel, BrushToolPanel):
+            control_panel.show_pressure_checkboxes()
+        return True
+
+    def update_brush_cursor(self) -> None:
+        """Recalculates the brush cursor size if using a scaling cursor."""
+        if not self.is_active or self._scaling_cursor is False or self._scaled_icon_cursor is None:
+            return
+        brush_cursor_size = int(self.brush_size * self._image_viewer.scene_scale)
+        if brush_cursor_size <= MIN_SMALL_CURSOR_SIZE:
+            self.cursor = self._small_brush_cursor
+        else:
+            icon = self._scaled_icon_cursor if brush_cursor_size > MIN_CURSOR_SIZE else self._small_brush_icon
+            scaled_cursor = icon.pixmap(brush_cursor_size, brush_cursor_size)
+            if brush_cursor_size > MAX_CURSOR_SIZE:
+                self.cursor = scaled_cursor
+            else:
+                self.cursor = QCursor(scaled_cursor)
+
+    def wheel_event(self, event: Optional[QWheelEvent]) -> bool:
+        """Adjust brush size if scrolling horizontal."""
+        assert event is not None
+        if not hasattr(self, 'adjust_brush_size'):
+            return False
+        offset = 0
+        if event.angleDelta().x() < 0:
+            offset -= 1
+        elif event.angleDelta().x() > 0:
+            offset += 1
+        if offset != 0:
+            if KeyConfig.modifier_held(KeyConfig.SPEED_MODIFIER):
+                offset *= AppConfig().get(AppConfig.SPEED_MODIFIER_MULTIPLIER)
+            self.adjust_brush_size(offset)
+            return True
+        return False
+
+    def _active_layer_change_slot(self, active_layer: Layer) -> None:
+        if isinstance(active_layer, ImageLayer):
+            self.layer = active_layer
+        else:
+            self.layer = None
+
+    def _modifier_change_slot(self, modifiers: Qt.KeyboardModifier) -> None:
+        if not self.is_active:
+            return
+        line_modifier = KeyConfig().get(KeyConfig.LINE_MODIFIER)
+        if modifiers == line_modifier and self._last_pos is not None:
+            cursor_pos = self._image_viewer.mapFromGlobal(QCursor.pos())
+            if QRect(QPoint(), self._image_viewer.size()).contains(cursor_pos):
+                self._preview_line.set_line(QLineF(QPointF(self._last_pos), QPointF(cursor_pos)))
+                self._preview_line.setVisible(True)
+        else:
+            self._preview_line.setVisible(False)
