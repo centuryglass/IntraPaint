@@ -23,7 +23,7 @@ BASE_BAR_SIZE = 20
 BASE_EMPTY_BAR_SIZE = 10
 TAB_BAR_OPEN_DELAY_MS = 100
 INLINE_MARGIN = 2
-EDGE_MARGIN = 3
+EDGE_MARGIN = 5
 BASE_MARGIN = 3
 
 
@@ -104,7 +104,7 @@ class TabBar(QFrame):
                 assert tab_bar_widget in self._widgets
                 tab_bar_widget.setVisible(not self.is_open)
         self.active_tab_changed.emit(tab)
-        self.update()
+        self.repaint()
 
     @property
     def is_open(self) -> bool:
@@ -338,6 +338,9 @@ class TabBar(QFrame):
         assert isinstance(tab, Tab)
         if self._active_tab != tab:
             self._tab_clicked_slot(tab)
+            if not self.is_open:
+                self.is_open = True
+                self.update()
         else:
             self.is_open = not self.is_open
             self.update()
@@ -522,18 +525,18 @@ class TabBar(QFrame):
             active_rect = active_tab.geometry()
             if self._orientation == Qt.Orientation.Horizontal:
                 if self._at_parent_start:
-                    active_rect.setBottom(self.height() - 2)
-                    active_rect.setY(active_tab.y() + active_tab.height() + 2)
+                    active_rect.setBottom(self.height() - 1)
+                    active_rect.setY(active_tab.y() + active_tab.height() + 1)
                 else:
                     active_rect.setY(2)
-                    active_rect.setBottom(active_tab.y() - 2)
+                    active_rect.setBottom(active_tab.y() - 1)
             else:
                 if self._at_parent_start:
-                    active_rect.setRight(self.width() - 2)
-                    active_rect.setX(active_tab.x() + active_tab.width() + 2)
+                    active_rect.setRight(self.width() - 1)
+                    active_rect.setX(active_tab.x() + active_tab.width() + 1)
                 else:
-                    active_rect.setX(2)
-                    active_rect.setRight(active_tab.x() - 2)
+                    active_rect.setX(1)
+                    active_rect.setRight(active_tab.x() - 1)
             painter.fillRect(active_rect, foreground_color)
 
         if self._insert_pos is not None:

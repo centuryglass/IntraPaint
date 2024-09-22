@@ -411,9 +411,9 @@ class AppController(MenuBuilder):
             tool_tab_box_id = None  # Invalid cache entry, use default placement
         self._window.add_tab(self._tool_tab, tool_tab_box_id)
 
-        self._control_panel: Optional[GeneratorPanel] = None
-        self._control_tab = Tab(CONTROL_TAB_NAME)
-        self._control_tab.setIcon(QIcon(GEN_TAB_ICON))
+        self._generator_control_panel: Optional[GeneratorPanel] = None
+        self._generator_tab = Tab(CONTROL_TAB_NAME, None, KeyConfig.SELECT_GENERATOR_TAB)
+        self._generator_tab.setIcon(QIcon(GEN_TAB_ICON))
 
         # Prepare image generator options, and select one based on availability and command line arguments.
         self._null_generator = NullGenerator(self._window, self._image_stack)
@@ -489,9 +489,9 @@ class AppController(MenuBuilder):
         if self._generator is not None:
             for tab in self._generator.get_extra_tabs():
                 self._window.remove_tab(tab)
-            if self._control_panel is not None:
-                for tab_bar_widget in self._control_panel.get_tab_bar_widgets():
-                    self._control_tab.remove_tab_bar_widget(tab_bar_widget)
+            if self._generator_control_panel is not None:
+                for tab_bar_widget in self._generator_control_panel.get_tab_bar_widgets():
+                    self._generator_tab.remove_tab_bar_widget(tab_bar_widget)
             self._generator.unload_settings(self._settings_modal)
             self._generator.clear_menus()
             self._generator.disconnect_or_disable()
@@ -500,20 +500,20 @@ class AppController(MenuBuilder):
         self._generator.init_settings(self._settings_modal)
         self._generator.build_menus()
 
-        prev_panel_was_none = self._control_panel is None
-        self._control_panel = self._generator.get_control_panel()
-        self._control_tab.content_widget = self._control_panel
-        if self._control_panel is not None:
-            for tab_bar_widget in self._control_panel.get_tab_bar_widgets():
-                self._control_tab.add_tab_bar_widget(tab_bar_widget)
-        if self._control_panel is None and not prev_panel_was_none:
-            self._window.remove_tab(self._control_tab)
-        elif prev_panel_was_none and self._control_panel is not None:
+        prev_panel_was_none = self._generator_control_panel is None
+        self._generator_control_panel = self._generator.get_control_panel()
+        self._generator_tab.content_widget = self._generator_control_panel
+        if self._generator_control_panel is not None:
+            for tab_bar_widget in self._generator_control_panel.get_tab_bar_widgets():
+                self._generator_tab.add_tab_bar_widget(tab_bar_widget)
+        if self._generator_control_panel is None and not prev_panel_was_none:
+            self._window.remove_tab(self._generator_tab)
+        elif prev_panel_was_none and self._generator_control_panel is not None:
             try:
                 generation_tab_box_id = TabBoxID(Cache().get(Cache.GENERATION_TAB_BAR))
             except ValueError:
                 generation_tab_box_id = None
-            self._window.add_tab(self._control_tab, generation_tab_box_id)
+            self._window.add_tab(self._generator_tab, generation_tab_box_id)
         for tab in self._generator.get_extra_tabs():
             # Remember to adjust this if you add any other generator-specific tabs
             try:

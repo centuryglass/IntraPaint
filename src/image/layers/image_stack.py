@@ -1044,18 +1044,21 @@ class ImageStack(QObject):
         painter.end()
         return transformed_mask
 
-    def select_active_layer_content(self) -> None:
-        """Selects all pixels in the active layer that are not fully transparent."""
-        active_layer = self.active_layer
+    def select_layer_content(self, layer: Optional[Layer] = None) -> None:
+        """Selects all pixels in a layer that are not fully transparent.  Defaults to the active layer if the layer
+        parameter is None."""
+        if layer is None:
+            layer = self.active_layer
+        assert layer != self.selection_layer
         selection_image = create_transparent_image(self.selection_layer.size)
         painter = QPainter(selection_image)
-        if isinstance(active_layer, TransformLayer):
-            painter.setTransform(active_layer.transform * self.selection_layer.transform.inverted()[0])
+        if isinstance(layer, TransformLayer):
+            painter.setTransform(layer.transform * self.selection_layer.transform.inverted()[0])
         else:
-            offset = active_layer.bounds.topLeft()
+            offset = layer.bounds.topLeft()
             painter.setTransform(self.selection_layer.transform.inverted()[0] * QTransform.fromTranslate(offset.x(),
                                                                                                          offset.y()))
-        painter.drawImage(0, 0, active_layer.image)
+        painter.drawImage(0, 0, layer.image)
         painter.end()
         self.selection_layer.image = selection_image
 

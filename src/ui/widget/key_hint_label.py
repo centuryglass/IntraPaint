@@ -3,9 +3,10 @@ from typing import Optional
 
 
 from PySide6.QtCore import Qt, QRect, QPoint, QSize
-from PySide6.QtGui import QKeySequence, QResizeEvent, QPainter, QPainterPath, QPaintEvent
+from PySide6.QtGui import QKeySequence, QResizeEvent, QPainter, QPainterPath, QPaintEvent, QFont
 from PySide6.QtWidgets import QLabel, QWidget
 
+from src.config.application_config import AppConfig
 from src.config.key_config import KeyConfig
 from src.util.visual.text_drawing_utils import find_text_size, max_font_size, get_key_display_string
 from src.util.key_code_utils import get_key_with_modifiers, get_modifier_string, KEY_REQUIRES_SHIFT
@@ -19,13 +20,14 @@ class KeyHintLabel(QLabel):
                  config_key: Optional[str] = None,
                  parent: Optional[QWidget] = None):
         super().__init__('', parent=parent)
-        font = self.font()
-        self._default_size = font.pointSize() - 1
         self._base_text = ''
+        font = QFont()
+        self._default_size = AppConfig().get(AppConfig.KEY_HINT_FONT_SIZE)
         font.setPointSize(self._default_size)
         self.setFont(font)
         self.setTextFormat(Qt.TextFormat.RichText)
         self.setContentsMargins(3, 3, 3, 3)
+        self._saved_size: Optional[QSize] = None
 
         if keys is None and config_key is not None:
             keys = KeyConfig().get(config_key)
@@ -35,7 +37,19 @@ class KeyHintLabel(QLabel):
 
     def sizeHint(self) -> QSize:
         """Calculate size hint with adjusted margins"""
-        return find_text_size(self._base_text, self.font(), exact=True) + QSize(6, 6)
+        if self._saved_size is None:
+            self._saved_size = find_text_size(self._base_text, self.font(), exact=False) + QSize(6, 6)
+        return QSize(self._saved_size)
+
+    def setText(self, text: str) -> None:
+        """Update label text, clearing saved text size calculations."""
+        self._saved_size = None
+        super().setText(text)
+
+    def setFont(self, font: QFont) -> None:
+        """Update label font, clearing saved text size calculations."""
+        self._saved_size = None
+        super().setFont(font)
 
     def paintEvent(self, event: Optional[QPaintEvent]):
         """Outline the key text."""
@@ -62,14 +76,6 @@ class KeyHintLabel(QLabel):
         painter.drawPath(path)
         painter.end()
         super().paintEvent(event)
-
-    def resizeEvent(self, unused_event: Optional[QResizeEvent]) -> None:
-        """Scale font as needed to stay in the bounds."""
-        font = self.font()
-        max_size = int(clamp(max_font_size(self._base_text, font, self.size()), 1, self._default_size))
-        if max_size != font.pointSize():
-            font.setPointSize(max_size)
-            self.setFont(font)
 
     @staticmethod
     def _validate_and_format_keys(key_str: str) -> str:

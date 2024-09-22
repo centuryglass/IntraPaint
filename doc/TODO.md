@@ -1,8 +1,6 @@
 # Development tasks
 
 ## Before next release:
-- Layer right-click menus: add "select content" option (< 15 minutes)
-- Add shortcut to activate/show/hide each tab  (< 1 hour)
 - Improve empty tab bar appearances (< 1 hour)
 - Update SD webui instructions with simpler Stability Matrix setup process (copy from release page) (< 15 minutes)
 - Pick a few solid defaults for the mypaint brush favorites panel  (< 15 minutes)

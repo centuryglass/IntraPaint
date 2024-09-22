@@ -47,6 +47,20 @@
             "step": 1
         }
     },
+    "key_hint_font_size": {
+        "label": "Key hint font size::",
+        "category": "Interface",
+        "subcategory": "Appearance",
+        "description": "Font point size to use for key hint labels.",
+        "type": "int",
+        "default": 8,
+        "saved": true,
+        "range_options": {
+            "min": 1,
+            "max": 100,
+            "step": 1
+        }
+    },
     "toolbar_tool_button_count": {
         "label": "Recent tool toolbar icon count",
         "category": "Interface",

@@ -10,12 +10,14 @@ Tabs have the following properties:
 import datetime
 from typing import Optional, List
 
-from PySide6.QtCore import Signal, Qt, QMimeData
-from PySide6.QtGui import QPalette, QMouseEvent, QDrag
+from PySide6.QtCore import Signal, Qt, QMimeData, QRect, QPoint, QSize
+from PySide6.QtGui import QPalette, QMouseEvent, QDrag, QResizeEvent
 from PySide6.QtWidgets import QWidget, QFrame
 
 from src.config.application_config import AppConfig
-from src.ui.widget.label import Label
+from src.hotkey_filter import HotkeyFilter
+from src.ui.widget.key_hint_label import KeyHintLabel
+from src.ui.widget.label import Label, TEXT_IMG_MARGIN
 
 SECONDS_UNTIL_DRAG_START = 0.3
 
@@ -30,7 +32,7 @@ class Tab(Label):
     tab_bar_widget_removed = Signal(QWidget)
     tab_bar_widget_order_changed = Signal()
 
-    def __init__(self, text: str, widget: Optional[QWidget] = None) -> None:
+    def __init__(self, text: str, widget: Optional[QWidget] = None, shortcut_config_key: Optional[str] = None) -> None:
         super().__init__(text, size=AppConfig().get(AppConfig.TAB_FONT_POINT_SIZE))
         self.setFrameStyle(QFrame.Shape.Panel | QFrame.Shadow.Plain)
         palette = self.palette()
@@ -42,7 +44,38 @@ class Tab(Label):
         self._clicking = False
         self._dragging = False
         self._click_time = 0.0
+        if True or shortcut_config_key is not None:
+            self._key_hint: Optional[KeyHintLabel] = KeyHintLabel(None, shortcut_config_key)
+            self._key_hint.setParent(self)
+
+            def _activate_key() -> bool:
+                if not self.isVisible():
+                    return False
+                self.double_clicked.emit(self)
+                return True
+            HotkeyFilter.instance().register_config_keybinding(f'Tab_{id(self)}_shortcut', _activate_key,
+                                                               shortcut_config_key)
+            self._update_key_hint_bounds()
+        else:
+            self._key_hint = None
         self.setContextMenuPolicy(Qt.ContextMenuPolicy.ActionsContextMenu)
+
+    def sizeHint(self) -> QSize:
+        """Ensure size hints accommodate key hint size if necessary."""
+        size = super().sizeHint()
+        if self._key_hint is not None:
+            size.setWidth(size.width() + self._key_hint.width())
+        return size
+
+    def minimumSizeHint(self) -> QSize:
+        """Ensure size hints accommodate key hint size if necessary."""
+        size = super().minimumSizeHint()
+        if self._key_hint is not None:
+            if self.orientation == Qt.Orientation.Horizontal:
+                size.setWidth(size.width() + self._key_hint.width() + TEXT_IMG_MARGIN)
+            else:
+                size.setHeight(size.height() + self._key_hint.height() + TEXT_IMG_MARGIN)
+        return size
 
     @property
     def content_widget(self):
@@ -96,6 +129,7 @@ class Tab(Label):
             return
         if self._content_widget is not None and hasattr(self._content_widget, 'set_orientation'):
             self._content_widget.set_orientation(orientation)
+        self._update_key_hint_bounds()
 
     def mouseDoubleClickEvent(self, event: Optional[QMouseEvent]) -> None:
         """Send the double click signal on left-click."""
@@ -132,3 +166,16 @@ class Tab(Label):
             self.clicked.emit(self)
         self._clicking = False
         self._dragging = False
+
+    def resizeEvent(self, event: Optional[QResizeEvent]) -> None:
+        """Position the shortcut key hint label if relevant."""
+        self._update_key_hint_bounds()
+
+    def _update_key_hint_bounds(self) -> None:
+        if self._key_hint is not None:
+            hint_size = self._key_hint.sizeHint()
+            width = hint_size.width()
+            height = hint_size.height()
+            x = self.width() - width
+            y = self.height() - height
+            self._key_hint.setGeometry(QRect(QPoint(x, y), hint_size))

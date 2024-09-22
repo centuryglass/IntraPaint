@@ -49,12 +49,15 @@ MENU_OPTION_CLEAR_SELECTED = _tr('Clear selected')
 MENU_OPTION_COPY_SELECTED = _tr('Copy selected to new layer')
 MENU_OPTION_LAYER_TO_IMAGE_SIZE = _tr('Layer to image size')
 MENU_OPTION_CROP_TO_CONTENT = _tr('Crop layer to content')
-MENU_OPTION_CLEAR_SELECTION = _tr('Clear selection')
-MENU_OPTION_SELECT_ALL = _tr('Select all in active layer')
-MENU_OPTION_INVERT_SELECTION = _tr('Invert selection')
 MENU_OPTION_MIRROR_VERTICAL = _tr('Mirror vertically')
 MENU_OPTION_MIRROR_HORIZONTAL = _tr('Mirror horizontally')
+MENU_OPTION_SELECT_CONTENT = _tr('Select layer contents')
 COPIED_LAYER_NAME = _tr('{src_layer_name} copied content')
+
+# selection layer:
+MENU_OPTION_SELECT_ALL = _tr('Select all in active layer')
+MENU_OPTION_INVERT_SELECTION = _tr('Invert selection')
+MENU_OPTION_CLEAR_SELECTION = _tr('Clear selection')
 
 GROUP_FRAME = f'{PROJECT_DIR}/resources/icons/layer/group_frame.svg'
 IMAGE_FRAME = f'{PROJECT_DIR}/resources/icons/layer/img_frame.svg'
@@ -358,7 +361,9 @@ class LayerWidget(BorderedWidget):
             _add_action(MENU_OPTION_LAYER_TO_IMAGE_SIZE, lambda: self._image_stack.layer_to_image_size(self.layer),
                         True)
 
-        else:
+            _add_action(MENU_OPTION_SELECT_CONTENT, lambda: self._image_stack.select_layer_content(self.layer))
+
+        elif self._layer == self._image_stack.selection_layer:
             _add_action(MENU_OPTION_INVERT_SELECTION, self._image_stack.selection_layer.invert_selection)
             _add_action(MENU_OPTION_CLEAR_SELECTION, self._image_stack.selection_layer.clear)
             _add_action(MENU_OPTION_SELECT_ALL, self._image_stack.select_active_layer_content)

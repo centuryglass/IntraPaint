@@ -7,6 +7,7 @@ from PySide6.QtWidgets import QWidget, QApplication
 
 from src.config.application_config import AppConfig
 from src.config.cache import Cache
+from src.config.key_config import KeyConfig
 from src.controller.tool_controller import ToolController
 from src.tools.base_tool import BaseTool
 from src.ui.layout.draggable_tabs.tab import Tab
@@ -32,7 +33,7 @@ class ToolTab(Tab):
      toolbar widgets for selecting the active tool."""
 
     def __init__(self, tool_panel: QWidget, tool_controller: ToolController) -> None:
-        super().__init__(TOOL_TAB_NAME, tool_panel)
+        super().__init__(TOOL_TAB_NAME, tool_panel, KeyConfig.SELECT_TOOL_TAB)
         self.setIcon(QIcon(TOOL_TAB_ICON))
         self._toolbar_tool_widgets: Dict[BaseTool, QWidget] = {}
         self._recent_tools: List[BaseTool] = []
@@ -137,6 +138,3 @@ class ToolTab(Tab):
             self._recent_tools.insert(0, active_tool)
             self._recent_tools = self._recent_tools[:self._recent_tool_count]
         self._update_active_buttons()
-
-    def resizeEvent(self, event: Optional[QResizeEvent]) -> None:
-        """Keep tool button size in sync with the tab."""

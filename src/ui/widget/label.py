@@ -9,7 +9,7 @@ from PySide6.QtWidgets import QLabel, QSizePolicy, QWidget
 
 from src.util.visual.text_drawing_utils import find_text_size, max_font_size, create_text_path, draw_text_path
 
-TEXT_IMG_MARGIN = 3
+TEXT_IMG_MARGIN = 4
 
 
 class Label(QLabel):
@@ -108,7 +108,7 @@ class Label(QLabel):
             if self._orientation == Qt.Orientation.Vertical:
                 text_size.transpose()
             return text_size
-        return QSize(self._image.width() + 4, self._image.height() + 4)
+        return QSize(self._image.width(), self._image.height())
 
     def text(self) -> str:
         """Return the current displayed string"""
@@ -145,7 +145,7 @@ class Label(QLabel):
 
     def _draw_text_pixmaps(self) -> tuple[QPixmap, QPixmap]:
         """Re-renders the label text."""
-        drawn_text = '     ' if self._text is None else (self._text + '     ')
+        drawn_text = '     ' if self._text is None else (self._text)
         font = QFont(self._font)
         if self._scale_text_to_bounds:
             text_size = self.size().transposed() if self._orientation == Qt.Orientation.Vertical else self.size()

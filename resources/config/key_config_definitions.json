@@ -152,6 +152,33 @@
         "default": "Down,J",
         "saved": true
     },
+    "select_tool_tab": {
+        "label": "Select tool tab:",
+        "category": "Keybindings",
+        "subcategory": "Navigation",
+        "description": "Select or toggle the tool control tab",
+        "type": "string",
+        "default": "1",
+        "saved": true
+    },
+    "select_generator_tab": {
+        "label": "Select image generation tab:",
+        "category": "Keybindings",
+        "subcategory": "Navigation",
+        "description": "Select or toggle the image generation tab",
+        "type": "string",
+        "default": "2",
+        "saved": true
+    },
+    "select_ControlNet_tab": {
+        "label": "Select ControlNet tab:",
+        "category": "Keybindings",
+        "subcategory": "Navigation",
+        "description": "Select or toggle the ControlNet tab",
+        "type": "string",
+        "default": "3",
+        "saved": true
+    },
     "draw_tool_key": {
         "label": "Switch to the draw tool:",
         "category": "Keybindings",

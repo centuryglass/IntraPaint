@@ -45,18 +45,33 @@ class A1111Config(Config, metaclass=Singleton):
                 missing[key] = value
                 continue
             prev_value = self.get(key)
-            if isinstance(prev_value, bool):
-                self.set(key, bool(value))
-            elif isinstance(prev_value, int):
-                self.set(key, int(value))
-            elif isinstance(prev_value, float):
-                self.set(key, float(value))
-            elif isinstance(prev_value, str):
-                self.set(key, str(value))
-            elif isinstance(prev_value, (list, dict)):
-                self.set(key, value)
-            else:
-                raise RuntimeError(WEB_CONFIG_TYPE_ERROR.format(key=key, value_type=type(value), value=value))
+            try:
+                if isinstance(prev_value, bool):
+                    self.set(key, bool(value))
+                elif isinstance(prev_value, int):
+                    self.set(key, int(value))
+                elif isinstance(prev_value, float):
+                    self.set(key, float(value))
+                elif isinstance(prev_value, str):
+                    self.set(key, str(value))
+                elif isinstance(prev_value, (list, dict)):
+                    self.set(key, value)
+                else:
+                    raise RuntimeError(WEB_CONFIG_TYPE_ERROR.format(key=key, value_type=type(value), value=value))
+            except ValueError as load_err:
+                # Might be an issue with options lists omitting hash strings, check if there's another match:
+                try:
+                    options = self.get_options(key)
+                    match_found = False
+                    for option in options:
+                        if option.startswith(value) or value.startswith(option):
+                            self.set(key, option)
+                            match_found = True
+                            break
+                    if not match_found:
+                        raise RuntimeError(f'No match found in {len(options)} available options.')
+                except (RuntimeError, TypeError, ValueError) as err:
+                    logger.error(f'Applying "{key}"="{value}" failed: {load_err}, {err}')
         for key, value in missing.items():
             logger.debug(f'NOT USED: {key}={value}')
 

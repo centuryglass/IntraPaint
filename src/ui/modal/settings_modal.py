@@ -2,6 +2,7 @@
 Popup modal providing a dynamic settings interface, to be populated by the controller. Currently only used with
 stable_diffusion_controller.
 """
+import logging
 from typing import Any, Dict, List, Optional
 
 from PySide6.QtCore import Signal, QSize, Qt
@@ -36,6 +37,8 @@ CANCEL_BUTTON_LABEL = _tr('Cancel')
 SAVE_BUTTON_LABEL = _tr('Save')
 
 WINDOW_PADDING = 50
+
+logger = logging.getLogger(__name__)
 
 
 class SettingsModal(QDialog):
@@ -174,19 +177,22 @@ class SettingsModal(QDialog):
                 widget.setValue(new_value)
             else:
                 assert not isinstance(new_value, QSize)
-                if isinstance(widget, (LineEdit, PlainTextEdit, DualToggle, ComboBox)):
-                    widget.setValue(str(new_value))
-                else:
-                    if new_value is None:
-                        new_value = 0
-                    assert isinstance(new_value, (int, float, bool, str)), (f'Key "{key}": unexpected type '
-                                                                            f'{type(new_value)}')
-                    if isinstance(widget, (BigIntSpinbox, IntSliderSpinbox)):
-                        widget.setValue(int(new_value))
-                    elif isinstance(widget, CheckBox):
-                        widget.setValue(bool(new_value))
+                try:
+                    if isinstance(widget, (LineEdit, PlainTextEdit, DualToggle, ComboBox)):
+                        widget.setValue(str(new_value))
                     else:
-                        widget.setValue(float(new_value))
+                        if new_value is None:
+                            new_value = 0
+                        assert isinstance(new_value, (int, float, bool, str)), (f'Key "{key}": unexpected type '
+                                                                                f'{type(new_value)}')
+                        if isinstance(widget, (BigIntSpinbox, IntSliderSpinbox)):
+                            widget.setValue(int(new_value))
+                        elif isinstance(widget, CheckBox):
+                            widget.setValue(bool(new_value))
+                        else:
+                            widget.setValue(float(new_value))
+                except ValueError as err:
+                    logger.error(f'Failed to initialize "{key}"="{new_value}: {err}')
             if key in self._changes:
                 del self._changes[key]
 

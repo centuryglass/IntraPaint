@@ -15,6 +15,7 @@ from src.api.a1111_webservice import A1111Webservice, AuthError
 from src.config.a1111_config import A1111Config
 from src.config.application_config import AppConfig
 from src.config.cache import Cache
+from src.config.key_config import KeyConfig
 from src.controller.image_generation.image_generator import ImageGenerator
 from src.image.layers.image_stack import ImageStack
 from src.ui.layout.draggable_tabs.tab import Tab
@@ -270,7 +271,7 @@ class SDWebUIGenerator(ImageGenerator):
                 controlnet_panel = TabbedControlnetPanel(Cache().get(Cache.CONTROLNET_CONTROL_TYPES),
                                                          Cache().get(Cache.CONTROLNET_MODULES),
                                                          Cache().get(Cache.CONTROLNET_MODELS))
-                self._controlnet_tab = Tab(CONTROLNET_TITLE, controlnet_panel)
+                self._controlnet_tab = Tab(CONTROLNET_TITLE, controlnet_panel, KeyConfig.SELECT_CONTROLNET_TAB)
                 self._controlnet_tab.setIcon(QIcon(CONTROLNET_TAB_ICON))
 
             assert self._window is not None
