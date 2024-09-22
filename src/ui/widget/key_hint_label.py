@@ -80,7 +80,7 @@ class KeyHintLabel(QLabel):
         for key_substr in all_keys:
             try:
                 key, modifiers = get_key_with_modifiers(key_substr)
-                if get_key_display_string(key, False) in KEY_REQUIRES_SHIFT:
+                if key is not None and get_key_display_string(key, False) in KEY_REQUIRES_SHIFT:
                     modifiers = modifiers & ~Qt.KeyboardModifier.ShiftModifier
                 if key is not None and key != Qt.Key.Key_unknown:
                     display_key = get_key_display_string(QKeySequence(key), False)
