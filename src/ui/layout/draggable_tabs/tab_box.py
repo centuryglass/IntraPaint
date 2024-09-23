@@ -63,10 +63,10 @@ class TabBox(BorderedWidget):
         self._tab_bar.toggled.connect(self._update_stretch_on_toggle)
 
         self.setContextMenuPolicy(Qt.ContextMenuPolicy.ActionsContextMenu)
-        self._default_border_color = self.color
+        self._default_border_color = self.frame_color
         self._empty_border_color = self._default_border_color
         self._empty_border_color.setAlphaF(0.5)
-        self.color = self._empty_border_color
+        self.frame_color = self._empty_border_color
 
     @property
     def active_tab_content(self) -> Optional[QWidget]:
@@ -98,14 +98,14 @@ class TabBox(BorderedWidget):
         """Add or insert a widget into the tab bar."""
         self._tab_bar.add_widget(widget, index)
         if len(self.tabs) > 0:
-            self.color = self._default_border_color
+            self.frame_color = self._default_border_color
             self.setContentsMargins(NONEMPTY_MARGIN, NONEMPTY_MARGIN, NONEMPTY_MARGIN, NONEMPTY_MARGIN)
 
     def remove_widget(self, widget: QWidget) -> None:
         """Remove a widget from the tab bar."""
         self._tab_bar.remove_widget(widget)
         if len(self.tabs) == 0:
-            self.color = self._empty_border_color
+            self.frame_color = self._empty_border_color
             self.setContentsMargins(EMPTY_MARGIN, EMPTY_MARGIN, EMPTY_MARGIN, EMPTY_MARGIN)
 
     def contains_widget(self, widget: QWidget) -> bool:

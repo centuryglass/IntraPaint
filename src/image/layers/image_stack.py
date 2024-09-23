@@ -828,6 +828,15 @@ class ImageStack(QObject):
         # Subtract out base from top:
         np_base = image_data_as_numpy_8bit(base_render)
         np_combined = image_data_as_numpy_8bit(top_render)
+
+        # Image alpha is premultiplied, restore full color channel values:
+        for np_image in (np_base, np_combined):
+            alpha_nonzero = np_image[:, :, 3] > 0
+            alpha_float = np_image[:, :, 3] / 255.0
+            for c in range(3):
+                np_image[alpha_nonzero, c] = np.clip(np_image[alpha_nonzero, c] / alpha_float[alpha_nonzero],
+                                                     0, 255)
+
         np_top = np_combined
         identical_regions = np_base[:, :, 3] == np_combined[:, :, 3]
         for c in range(3):

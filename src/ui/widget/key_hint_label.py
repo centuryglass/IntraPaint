@@ -35,6 +35,12 @@ class KeyHintLabel(QLabel):
         if config_key is not None:
             KeyConfig().connect(self, config_key, self._key_update_slot)
 
+        def _update_size(size: int) -> None:
+            updated_font = QFont(self.font())
+            updated_font.setPointSize(size)
+            self.setFont(updated_font)
+        AppConfig().connect(self, AppConfig.KEY_HINT_FONT_SIZE, _update_size)
+
     def sizeHint(self) -> QSize:
         """Calculate size hint with adjusted margins"""
         if self._saved_size is None:

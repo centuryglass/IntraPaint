@@ -1149,7 +1149,7 @@ class AppController(MenuBuilder):
                  valid_app_states=[APP_STATE_EDITING])
     def select_active_layer_content(self) -> None:
         """Selects all pixels in the active layer that are not fully transparent."""
-        self._image_stack.select_active_layer_content()
+        self._image_stack.select_layer_content()
 
     @menu_action(MENU_SELECTION, 'grow_selection_shortcut', 304, valid_app_states=[APP_STATE_EDITING])
     def grow_selection(self, num_pixels=1) -> None:

@@ -115,7 +115,7 @@ class LayerWidget(BorderedWidget):
         if isinstance(self._layer, TransformLayer):
             self._layer.transform_changed.connect(self._layer_content_change_slot)
         self._active = False
-        self._active_color = self.color
+        self._active_color = self.frame_color
         self._inactive_color = self._active_color.darker() if self._active_color.lightness() > 100 \
             else self._active_color.lighter()
         self.setSizePolicy(QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed))
@@ -366,7 +366,7 @@ class LayerWidget(BorderedWidget):
         elif self._layer == self._image_stack.selection_layer:
             _add_action(MENU_OPTION_INVERT_SELECTION, self._image_stack.selection_layer.invert_selection)
             _add_action(MENU_OPTION_CLEAR_SELECTION, self._image_stack.selection_layer.clear)
-            _add_action(MENU_OPTION_SELECT_ALL, self._image_stack.select_active_layer_content)
+            _add_action(MENU_OPTION_SELECT_ALL, self._image_stack.select_layer_content)
 
         if isinstance(self._layer, ImageLayer):
             _add_action(MENU_OPTION_CROP_TO_CONTENT, self._layer.crop_to_content, True)

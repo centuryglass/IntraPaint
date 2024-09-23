@@ -182,7 +182,26 @@
         "category": "Editing",
         "description": "Brushes to list in the 'Favorites' tab of the brush selection window",
         "type": "list",
-        "default": [],
+        "default": [
+            "experimental/basic",
+            "classic/pencil",
+            "classic/kabura",
+            "classic/marker_small",
+            "classic/bulk",
+            "classic/knife",
+            "classic/blend+paint",
+            "classic/blending_knife",
+            "deevad/detail_brush_large",
+            "deevad/kneaded_eraser",
+            "deevad/basic_digital_brush",
+            "deevad/basic_digital_brush_smudging",
+            "deevad/only_water_fringe",
+            "deevad/soft-dip-pen",
+            "deevad/liner",
+            "deevad/blending",
+            "tanda/acrylic-03-with-water",
+            "tanda/acrylic-04-with-water"
+        ],
         "saved": true
     },
     "max_undo": {

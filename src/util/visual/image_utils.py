@@ -374,3 +374,31 @@ def temp_rich_text_image(image_name: str, image_draw_fn: Callable[[], QImage]) -
        multiple times with the same image_name, the same image will be reused."""
     img_path = temp_image_path(image_name, image_draw_fn)
     return f'<img src="{img_path}"/>'
+
+
+def numpy_source_over_composition(source: NpUInt8Array, destination: NpUInt8Array) -> None:
+    """ Performs a source-over image composition operation on two premultiplied ARGB images of equal size, writing
+    changes directly to the destination image."""
+    assert source.shape == destination.shape, f'Image shape mismatch: {source.shape} != {destination.shape}'
+    alpha_unchanged = source[:, :, 3] == destination[:, :, 3]
+    src_full_alpha = source[:, :, 3] == 0
+    dst_full_alpha = destination[:, :, 3] == 0
+
+    # where the source is fully transparent, completely clear the destination:
+    destination[src_full_alpha, :] = 0
+
+    # where the destination is fully transparent and the source isn't, completely override the destination
+    # with the source:
+    source_overrides = dst_full_alpha & ~src_full_alpha
+    destination[source_overrides, :] = source[source_overrides, :]
+
+    # where both images are not fully transparent and both images have differing opacity, re-multiply color
+    # channels:
+    re_multiply = ~src_full_alpha & ~dst_full_alpha & ~alpha_unchanged
+    for c in range(3):
+        destination[re_multiply, c] = (destination[re_multiply, c]
+                                       / (destination[re_multiply, 3] / 255)
+                                       * (source[re_multiply, 3] / 255))
+
+    # apply source alpha across the image:
+    destination[~alpha_unchanged, 3] = source[~alpha_unchanged, 3]

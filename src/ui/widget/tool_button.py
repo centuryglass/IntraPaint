@@ -57,8 +57,8 @@ class ToolButton(QToolButton):
             hint_size = self._key_hint.sizeHint()
             width = hint_size.width()
             height = hint_size.height()
-            x = self.width() - width - self.contentsMargins().right() - self._key_hint.contentsMargins().right()
-            y = self.height() - height - self.contentsMargins().bottom() - self._key_hint.contentsMargins().bottom()
+            x = self.width() - width
+            y = self.height() - height
             self._key_hint.setGeometry(QRect(QPoint(x, y), hint_size))
 
     @property

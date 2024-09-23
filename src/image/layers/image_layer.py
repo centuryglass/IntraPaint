@@ -14,7 +14,7 @@ from src.image.layers.transform_layer import TransformLayer
 from src.ui.modal.modal_utils import show_error_dialog
 from src.undo_stack import UndoStack
 from src.util.visual.image_utils import image_content_bounds, create_transparent_image, image_data_as_numpy_8bit, \
-    numpy_intersect, numpy_bounds_index
+    numpy_intersect, numpy_bounds_index, numpy_source_over_composition
 
 # The `QCoreApplication.translate` context for strings in this file
 TR_ID = 'image.layers.image_layer'
@@ -320,28 +320,7 @@ class ImageLayer(TransformLayer):
             source_intersect, dst_intersect = numpy_intersect(np_source, np_dst)
             if source_intersect is None or dst_intersect is None:
                 return
-            alpha_unchanged = source_intersect[:, :, 3] == dst_intersect[:, :, 3]
-            src_full_alpha = source_intersect[:, :, 3] == 0
-            dst_full_alpha = dst_intersect[:, :, 3] == 0
-
-            # where the source is fully transparent, completely clear the destination:
-            dst_intersect[src_full_alpha, :] = 0
-
-            # where the destination is fully transparent and the source isn't, completely override the destination
-            # with the source:
-            source_overrides = dst_full_alpha & ~src_full_alpha
-            dst_intersect[source_overrides, :] = source_intersect[source_overrides, :]
-
-            # where both images are not fully transparent and both images have differing opacity, re-multiply color
-            # channels:
-            re_multiply = ~src_full_alpha & ~dst_full_alpha & ~alpha_unchanged
-            for c in range(3):
-                dst_intersect[re_multiply, c] = (dst_intersect[re_multiply, c]
-                                                     / (dst_intersect[re_multiply, 3] / 255)
-                                                     * (source_intersect[re_multiply, 3] / 255))
-
-            # apply source alpha across the image:
-            dst_intersect[~alpha_unchanged, 3] = source_intersect[~alpha_unchanged, 3]
+            numpy_source_over_composition(source_intersect, dst_intersect)
 
     def crop_to_content(self, show_warnings: bool = True):
         """Crops the layer to remove transparent areas."""

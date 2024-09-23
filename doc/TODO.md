@@ -1,9 +1,6 @@
 # Development tasks
 
 ## Before next release:
-- Improve empty tab bar appearances (< 1 hour)
-- Update SD webui instructions with simpler Stability Matrix setup process (copy from release page) (< 15 minutes)
-- Pick a few solid defaults for the mypaint brush favorites panel  (< 15 minutes)
 - implement shape tool (< 2 days)
 - Connect move/pan keys to text layer placement  (< 1 hour)
 - transform tool: make sure clear/rotate button is in all panel layouts  (< 30 minutes)
@@ -12,8 +9,6 @@
 - Final timelapse video (< 5 days)
 
 ## Misc. bugs and minor issues:
-- Condense stable-diffusion layout
-- ARGB filter: fix reduced alpha compositing
 - In-depth pressure opacity testing
 - Fix pressure checkboxes
 - tool-specific names and icons for draw/erase toggles
@@ -24,6 +19,10 @@
 - loading icon text gets cut off
 - Menu capitalization has inconsistencies
 - Interrogate seems to have issues
+- Layer re-ordering only updates after something else triggers re-render
+- Extra x-scale labels on mid-size vertical transform tool
+- Can't actually edit transform controls? Seems like it breaks after switching to the smallest layout
+- Filter: blur mode box not showing
 
 ## Timelapse video: using latest interface
 Scripted to make use of every tool, in-video text explaining what I'm doing
