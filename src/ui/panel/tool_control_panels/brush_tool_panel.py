@@ -5,12 +5,14 @@ from PySide6.QtCore import Qt
 from PySide6.QtGui import QColor
 from PySide6.QtWidgets import QWidget, QVBoxLayout, QLabel, QHBoxLayout, QLayout
 
+from src.config.application_config import AppConfig
 from src.config.cache import Cache
 from src.config.key_config import KeyConfig
 from src.ui.input_fields.pattern_combo_box import PatternComboBox
 from src.ui.input_fields.slider_spinbox import IntSliderSpinbox, FloatSliderSpinbox
 from src.ui.widget.color_button import ColorButton
 from src.ui.widget.key_hint_label import KeyHintLabel
+from src.ui.widget.pen_pressure_panel import PenPressurePanel
 from src.util.layout import extract_layout_item, synchronize_row_widths
 
 
@@ -93,18 +95,19 @@ class BrushToolPanel(QWidget):
                 pattern_dropdown.set_icon_colors(cache.get_color(color_key, Qt.GlobalColor.black))
         self._layout.addLayout(color_row)
 
+        if any(key is not None for key in [pressure_size_key, pressure_opacity_key, pressure_hardness_key]):
+            self._pressure_panel = PenPressurePanel(pressure_size_key, pressure_opacity_key, pressure_hardness_key)
+            self._pressure_panel.setVisible(Cache().get(Cache.EXPECT_TABLET_INPUT))
+            self._layout.addWidget(self._pressure_panel)
+        else:
+            self._pressure_panel = None
+
         checkbox_row = QHBoxLayout()
         checkbox_row.setAlignment(Qt.AlignmentFlag.AlignLeft)
         selection_only_checkbox = cache.get_control_widget(Cache.PAINT_SELECTION_ONLY)
         if selection_only_label is not None:
             selection_only_checkbox.setText(selection_only_label)
         checkbox_row.addWidget(selection_only_checkbox)
-        for pressure_key in [pressure_size_key, pressure_opacity_key, pressure_hardness_key]:
-            if pressure_key is not None:
-                checkbox = cache.get_control_widget(pressure_key)
-                self._pressure_checkboxes.append(checkbox)
-                checkbox.setVisible(False)
-                checkbox_row.addWidget(checkbox)
         self._layout.addLayout(checkbox_row)
 
     def _align_rows(self) -> None:
@@ -128,5 +131,6 @@ class BrushToolPanel(QWidget):
 
     def show_pressure_checkboxes(self) -> None:
         """After receiving a tablet event, call this to reveal the pressure control checkboxes."""
-        for checkbox in self._pressure_checkboxes:
-            checkbox.setVisible(True)
+        if self._pressure_panel is not None:
+            self._pressure_panel.setVisible(True)
+            Cache().set(Cache.EXPECT_TABLET_INPUT, True)
