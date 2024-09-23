@@ -151,14 +151,14 @@ class LayerTransformToolPanel(ReactiveLayoutWidget):
             text_size = find_text_size(label)
             label_width = max(text_size.width(), label_width)
             label_height = max(text_size.height(), label_height)
-        aspect_ratio_hint = KeyHintLabel(None, KeyConfig.FIXED_ASPECT_MODIFIER)
+        aspect_ratio_hint = KeyHintLabel(None, KeyConfig.FIXED_ASPECT_MODIFIER, parent=self)
 
         def _get_down_hint(control_widget: QWidget) -> Optional[KeyHintLabel]:
             if control_widget == self._aspect_ratio_checkbox:
                 return aspect_ratio_hint
             if control_widget in self._down_keys:
                 down_keycode, down_config_key = self._down_keys[control_widget]
-                down_hint_widget = KeyHintLabel(down_keycode, down_config_key)
+                down_hint_widget = KeyHintLabel(down_keycode, down_config_key, parent=self)
                 down_hint_widget.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
                 return down_hint_widget
             return None
@@ -166,7 +166,7 @@ class LayerTransformToolPanel(ReactiveLayoutWidget):
         def _get_up_hint(control_widget: QWidget) -> Optional[KeyHintLabel]:
             if control_widget in self._up_keys:
                 up_keycode, up_config_key = self._up_keys[control_widget]
-                up_hint_widget = KeyHintLabel(up_keycode, up_config_key)
+                up_hint_widget = KeyHintLabel(up_keycode, up_config_key, parent=self)
                 up_hint_widget.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
                 return up_hint_widget
             return None

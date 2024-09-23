@@ -1,12 +1,12 @@
 """Base control panel for selection editing tools."""
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, QSize
 from PySide6.QtGui import QIcon, QPixmap
 from PySide6.QtWidgets import QWidget, QApplication, QVBoxLayout, QPushButton, QHBoxLayout, QLabel, QLayout
 
 from src.config.cache import Cache
 from src.config.key_config import KeyConfig
 from src.image.layers.selection_layer import SelectionLayer
-from src.util.shared_constants import PROJECT_DIR
+from src.util.shared_constants import PROJECT_DIR, ICON_SIZE
 from src.util.visual.text_drawing_utils import get_key_display_string
 
 # The `QCoreApplication.translate` context for strings in this file
@@ -22,8 +22,8 @@ FILL_BUTTON_LABEL = _tr('Select All')
 CLEAR_BUTTON_LABEL = _tr('Clear')
 FILL_BUTTON_LABEL_WITH_KEY = _tr('Select All ({select_all_shortcut})')
 CLEAR_BUTTON_LABEL_WITH_KEY = _tr('Clear ({clear_shortcut})')
-RESOURCES_CLEAR_PNG = f'{PROJECT_DIR}/resources/icons/clear.png'
-RESOURCES_FILL_PNG = f'{PROJECT_DIR}/resources/icons/fill.png'
+ICON_PATH_CLEAR = f'{PROJECT_DIR}/resources/icons/tool_modes/clear_all.svg'
+ICON_PATH_FILL = f'{PROJECT_DIR}/resources/icons/tool_modes/fill.svg'
 
 
 class SelectionPanel(QWidget):
@@ -44,13 +44,15 @@ class SelectionPanel(QWidget):
         clear_selection_button = QPushButton()
         clear_selection_button.setText(CLEAR_BUTTON_LABEL if clear_shortcut is None
                                        else CLEAR_BUTTON_LABEL_WITH_KEY.format(clear_shortcut=clear_shortcut))
-        clear_selection_button.setIcon(QIcon(QPixmap(RESOURCES_CLEAR_PNG)))
+        clear_selection_button.setIcon(QIcon(QPixmap(ICON_PATH_CLEAR)))
+        clear_selection_button.setIconSize(QSize(ICON_SIZE, ICON_SIZE))
         clear_selection_button.clicked.connect(lambda: selection_layer.clear())
 
         fill_selection_button = QPushButton()
         fill_selection_button.setText(FILL_BUTTON_LABEL if select_all_shortcut is None
                                       else FILL_BUTTON_LABEL_WITH_KEY.format(select_all_shortcut=select_all_shortcut))
-        fill_selection_button.setIcon(QIcon(QPixmap(RESOURCES_FILL_PNG)))
+        fill_selection_button.setIcon(QIcon(QPixmap(ICON_PATH_FILL)))
+        fill_selection_button.setIconSize(QSize(ICON_SIZE, ICON_SIZE))
         fill_selection_button.clicked.connect(lambda: selection_layer.select_all())
         clear_fill_line_layout = QHBoxLayout()
         clear_fill_line_layout.addWidget(clear_selection_button)

@@ -76,7 +76,7 @@ class ImageFilterModal(QDialog):
         self._active_only_checkbox.stateChanged.connect(self._update_preview)
 
         self._layout.addRow(self._preview)
-        self._button_row = QWidget()
+        self._button_row = QWidget(self)
         button_layout = QHBoxLayout(self._button_row)
         self._cancel_button = QPushButton()
         self._cancel_button.setText(CANCEL_BUTTON_TEXT)

@@ -12,7 +12,7 @@ from src.image.brush.qt_paint_brush import QtPaintBrush
 from src.image.layers.image_stack import ImageStack
 from src.tools.brush_tool import BrushTool
 from src.ui.image_viewer import ImageViewer
-from src.ui.panel.tool_control_panels.brush_selection_panel import TOOL_MODE_ERASE, BrushSelectionPanel
+from src.ui.panel.tool_control_panels.brush_selection_panel import TOOL_MODE_DESELECT, BrushSelectionPanel
 from src.util.visual.text_drawing_utils import left_button_hint_text, right_button_hint_text
 from src.util.shared_constants import PROJECT_DIR
 
@@ -93,7 +93,7 @@ class SelectionBrushTool(BrushTool):
 
     def _tool_toggle_slot(self, selected_tool_label: str):
         """Switches the mask tool between draw and erase modes."""
-        self._brush.eraser = selected_tool_label == TOOL_MODE_ERASE
+        self._brush.eraser = selected_tool_label == TOOL_MODE_DESELECT
 
     def set_brush_size(self, new_size: int) -> None:
         """Update the brush size."""

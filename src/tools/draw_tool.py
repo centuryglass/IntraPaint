@@ -11,7 +11,7 @@ from src.tools.base_tool import BaseTool
 from src.tools.brush_tool import BrushTool
 from src.tools.qt_paint_brush_tool import QtPaintBrushTool
 from src.ui.image_viewer import ImageViewer
-from src.ui.panel.tool_control_panels.brush_selection_panel import TOOL_MODE_ERASE
+from src.ui.panel.tool_control_panels.brush_selection_panel import TOOL_MODE_DESELECT
 from src.ui.panel.tool_control_panels.draw_tool_panel import DrawToolPanel
 from src.util.shared_constants import PROJECT_DIR, COLOR_PICK_HINT
 from src.util.visual.text_drawing_utils import left_button_hint_text, right_button_hint_text
@@ -74,8 +74,9 @@ class DrawTool(QtPaintBrushTool):
         """Returns the brush control panel."""
         if self._control_panel is None:
             self._control_panel = DrawToolPanel()
+            self._control_panel.hide()
 
             def _set_eraser(tool_mode: str) -> None:
-                self.brush.eraser = tool_mode == TOOL_MODE_ERASE
+                self.brush.eraser = tool_mode == TOOL_MODE_DESELECT
             self._control_panel.tool_mode_changed.connect(_set_eraser)
         return self._control_panel

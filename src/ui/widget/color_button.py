@@ -2,7 +2,7 @@
 from typing import Optional
 
 from PySide6.QtGui import QColor, QIcon, QPixmap
-from PySide6.QtWidgets import QPushButton, QColorDialog, QApplication
+from PySide6.QtWidgets import QPushButton, QColorDialog, QApplication, QWidget
 
 from src.config.config_from_key import get_config_from_key
 from src.util.visual.image_utils import get_color_icon
@@ -23,8 +23,8 @@ COLOR_BUTTON_TOOLTIP = _tr('Select paint color')
 class ColorButton(QPushButton):
     """Opens a color picker to set the brush color."""
 
-    def __init__(self, config_key: Optional[str] = 'last_brush_color'):
-        super().__init__()
+    def __init__(self, config_key: Optional[str] = 'last_brush_color', parent: Optional[QWidget] = None):
+        super().__init__(parent=parent)
         self._color = QColor()
         self._icon = QPixmap()
         self._config_key = config_key

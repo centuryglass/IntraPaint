@@ -106,7 +106,7 @@ class GeneratedImageSelector(QWidget):
         self._option_pos_offset = QPointF(0.0, 0.0)
 
         self._layout = QVBoxLayout(self)
-        self._page_top_bar = QWidget()
+        self._page_top_bar = QWidget(self)
         self._page_top_layout = QHBoxLayout(self._page_top_bar)
         self._page_top_label = QLabel(SELECTION_TITLE)
         self._page_top_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -151,7 +151,7 @@ class GeneratedImageSelector(QWidget):
         self._change_zoom_checkbox.toggled.connect(self.zoom_to_changes)
         self._page_top_layout.addWidget(self._change_zoom_checkbox)
 
-        self._button_bar = QWidget()
+        self._button_bar = QWidget(self)
         self._layout.addWidget(self._button_bar)
         self._button_bar_layout = QHBoxLayout(self._button_bar)
 

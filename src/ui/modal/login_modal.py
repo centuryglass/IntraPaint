@@ -45,7 +45,7 @@ class LoginModal(QDialog):
         self._title.setText(LOGIN_TITLE)
         self._layout.addRow(self._title)
 
-        self._name_input = QLineEdit()
+        self._name_input = QLineEdit(parent=self)
         self._layout.addRow(USERNAME_LABEL, self._name_input)
 
         self._password_input = QLineEdit()

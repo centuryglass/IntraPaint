@@ -12,7 +12,7 @@ from src.tools.base_tool import BaseTool
 from src.ui.graphics_items.path_creation_item import PathCreationItem
 from src.ui.graphics_items.temp_dashed_line_item import TempDashedLineItem
 from src.ui.image_viewer import ImageViewer
-from src.ui.panel.tool_control_panels.brush_selection_panel import TOOL_MODE_ERASE
+from src.ui.panel.tool_control_panels.brush_selection_panel import TOOL_MODE_DESELECT
 from src.ui.panel.tool_control_panels.free_selection_panel import FreeSelectionPanel
 from src.util.shared_constants import PROJECT_DIR
 from src.util.visual.text_drawing_utils import rich_text_key_hint, left_button_hint_text
@@ -54,7 +54,7 @@ class FreeSelectionTool(BaseTool):
         self._icon = QIcon(RESOURCES_FREE_SELECT_ICON)
 
         def _update_clearing(mode: str) -> None:
-            self._clearing = mode == TOOL_MODE_ERASE
+            self._clearing = mode == TOOL_MODE_DESELECT
         self._control_panel.tool_mode_changed.connect(_update_clearing)
 
         def _close_on_enter() -> bool:

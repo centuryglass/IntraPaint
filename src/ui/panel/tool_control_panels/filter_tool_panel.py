@@ -49,7 +49,7 @@ class FilterToolPanel(BrushToolPanel):
             self._filter_dropdown.setItemIcon(i, img_filter.get_icon())
 
         self._filter_dropdown.valueChanged.connect(self._update_filter_option_slot)
-        self._filter_row = QWidget()
+        self._filter_row = QWidget(self)
         self._filter_label = QLabel(LABEL_TEXT_FILTER_TYPE)
         self._filter_label.setBuddy(self._filter_dropdown)
         filter_row_layout = QHBoxLayout(self._filter_row)
@@ -146,7 +146,7 @@ class FilterToolPanel(BrushToolPanel):
             else:
                 widget_label = QLabel(parameter.name)
                 widget_label.setBuddy(widget)
-                widget_container = QWidget()
+                widget_container = QWidget(self)
                 widget_layout = QHBoxLayout()
                 widget_layout.setAlignment(Qt.AlignmentFlag.AlignLeft)
                 widget_layout.addWidget(widget_label)

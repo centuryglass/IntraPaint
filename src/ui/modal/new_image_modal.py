@@ -74,13 +74,13 @@ class NewImageModal(QDialog):
         self._height_box = LabeledSpinbox(self, HEIGHT_LABEL, HEIGHT_TOOLTIP, MIN_PX_VALUE, default_height,
                                           MAX_PX_VALUE)
 
-        self._color_row = QWidget()
+        self._color_row = QWidget(self)
         self._color_row_layout = QHBoxLayout(self._color_row)
         self._color_row_layout.addWidget(QLabel(LABEL_TEXT_BACKGROUND_COLOR))
         self._color_dropdown = QComboBox()
         self._color_row_layout.addWidget(self._color_dropdown)
 
-        self._color_button = ColorButton()
+        self._color_button = ColorButton(parent=self)
         self._color_button.color = self._color
         self._color_button.setText(BUTTON_TEXT_PICK_CUSTOM_COLOR)
         self._color_button.setVisible(False)
@@ -93,7 +93,7 @@ class NewImageModal(QDialog):
         self._color_dropdown.currentTextChanged.connect(self._color_dropdown_change_slot)
         self._set_dropdown_to_color(self._color)
 
-        self._button_row = QWidget()
+        self._button_row = QWidget(self)
         self._button_row_layout = QHBoxLayout(self._button_row)
 
         self._cancel_button = QPushButton(self)

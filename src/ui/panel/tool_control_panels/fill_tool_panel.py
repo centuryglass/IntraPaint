@@ -14,7 +14,7 @@ class FillToolPanel(QWidget):
         super().__init__()
         cache = Cache()
         self._layout = QFormLayout(self)
-        color_button = ColorButton()
+        color_button = ColorButton(parent=self)
         self._layout.addRow(color_button)
         pattern_dropdown = PatternComboBox(Cache.FILL_TOOL_BRUSH_PATTERN)
         self._layout.addRow(cache.get_label(Cache.FILL_TOOL_BRUSH_PATTERN), pattern_dropdown)

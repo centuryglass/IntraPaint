@@ -32,8 +32,8 @@ class ToolTab(Tab):
     """Tab widget associated with the ToolBar panel.  Connects to the ToolController to keep an up-to-date set of
      toolbar widgets for selecting the active tool."""
 
-    def __init__(self, tool_panel: QWidget, tool_controller: ToolController) -> None:
-        super().__init__(TOOL_TAB_NAME, tool_panel, KeyConfig.SELECT_TOOL_TAB)
+    def __init__(self, tool_panel: QWidget, tool_controller: ToolController, parent: Optional[QWidget] = None) -> None:
+        super().__init__(TOOL_TAB_NAME, tool_panel, KeyConfig.SELECT_TOOL_TAB, parent=parent)
         self.setIcon(QIcon(TOOL_TAB_ICON))
         self._toolbar_tool_widgets: Dict[BaseTool, QWidget] = {}
         self._recent_tools: List[BaseTool] = []

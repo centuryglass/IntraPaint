@@ -118,7 +118,7 @@ class ImageScaleModal(QDialog):
             self._should_scale = should_scale
             self.hide()
 
-        button_row = QWidget()
+        button_row = QWidget(self)
         self._layout.addRow(button_row)
         button_layout = QHBoxLayout(button_row)
 

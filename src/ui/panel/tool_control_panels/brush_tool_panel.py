@@ -5,7 +5,6 @@ from PySide6.QtCore import Qt
 from PySide6.QtGui import QColor
 from PySide6.QtWidgets import QWidget, QVBoxLayout, QLabel, QHBoxLayout, QLayout
 
-from src.config.application_config import AppConfig
 from src.config.cache import Cache
 from src.config.key_config import KeyConfig
 from src.ui.input_fields.pattern_combo_box import PatternComboBox
@@ -45,9 +44,9 @@ class BrushToolPanel(QWidget):
 
         if size_key is not None:
             size_label = QLabel(cache.get_label(size_key))
-            size_down_hint = KeyHintLabel(config_key=KeyConfig.BRUSH_SIZE_DECREASE)
+            size_down_hint = KeyHintLabel(config_key=KeyConfig.BRUSH_SIZE_DECREASE, parent=self)
             size_slider = cast(IntSliderSpinbox, cache.get_control_widget(size_key))
-            size_up_hint = KeyHintLabel(config_key=KeyConfig.BRUSH_SIZE_INCREASE)
+            size_up_hint = KeyHintLabel(config_key=KeyConfig.BRUSH_SIZE_INCREASE, parent=self)
             size_row = QHBoxLayout()
             size_row.setAlignment(Qt.AlignmentFlag.AlignLeft)
             for size_widget in (size_label, size_down_hint, size_slider, size_up_hint):
@@ -56,9 +55,9 @@ class BrushToolPanel(QWidget):
 
         if opacity_key is not None:
             opacity_label = QLabel(cache.get_label(opacity_key))
-            opacity_down_hint = KeyHintLabel(config_key=KeyConfig.BRUSH_OPACITY_DECREASE)
+            opacity_down_hint = KeyHintLabel(config_key=KeyConfig.BRUSH_OPACITY_DECREASE, parent=self)
             opacity_slider = cast(FloatSliderSpinbox, cache.get_control_widget(opacity_key))
-            opacity_up_hint = KeyHintLabel(config_key=KeyConfig.BRUSH_OPACITY_INCREASE)
+            opacity_up_hint = KeyHintLabel(config_key=KeyConfig.BRUSH_OPACITY_INCREASE, parent=self)
             opacity_row = QHBoxLayout()
             opacity_row.setAlignment(Qt.AlignmentFlag.AlignLeft)
             for opacity_widget in (opacity_label, opacity_down_hint, opacity_slider, opacity_up_hint):
@@ -67,9 +66,9 @@ class BrushToolPanel(QWidget):
 
         if hardness_key is not None:
             hardness_label = QLabel(cache.get_label(hardness_key))
-            hardness_down_hint = KeyHintLabel(config_key=KeyConfig.BRUSH_HARDNESS_DECREASE)
+            hardness_down_hint = KeyHintLabel(config_key=KeyConfig.BRUSH_HARDNESS_DECREASE, parent=self)
             hardness_slider = cast(FloatSliderSpinbox, cache.get_control_widget(hardness_key))
-            hardness_up_hint = KeyHintLabel(config_key=KeyConfig.BRUSH_HARDNESS_INCREASE)
+            hardness_up_hint = KeyHintLabel(config_key=KeyConfig.BRUSH_HARDNESS_INCREASE, parent=self)
             hardness_row = QHBoxLayout()
             hardness_row.setAlignment(Qt.AlignmentFlag.AlignLeft)
             for hardness_widget in (hardness_label, hardness_down_hint, hardness_slider, hardness_up_hint):
@@ -79,7 +78,7 @@ class BrushToolPanel(QWidget):
         self._align_rows()
         color_row = QHBoxLayout()
         if color_key is not None:
-            color_button = ColorButton(config_key=color_key)
+            color_button = ColorButton(config_key=color_key, parent=self)
             color_row.addWidget(color_button)
         if pattern_key is not None:
             pattern_label = QLabel(cache.get_label(pattern_key))
@@ -96,7 +95,8 @@ class BrushToolPanel(QWidget):
         self._layout.addLayout(color_row)
 
         if any(key is not None for key in [pressure_size_key, pressure_opacity_key, pressure_hardness_key]):
-            self._pressure_panel = PenPressurePanel(pressure_size_key, pressure_opacity_key, pressure_hardness_key)
+            self._pressure_panel = PenPressurePanel(pressure_size_key, pressure_opacity_key, pressure_hardness_key,
+                                                    self)
             self._pressure_panel.setVisible(Cache().get(Cache.EXPECT_TABLET_INPUT))
             self._layout.addWidget(self._pressure_panel)
         else:

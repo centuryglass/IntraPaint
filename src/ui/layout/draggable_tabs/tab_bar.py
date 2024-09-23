@@ -38,8 +38,8 @@ class TabBar(QFrame):
     toggled = Signal(bool)
     tab_bar_will_open = Signal()
 
-    def __init__(self, orientation: Qt.Orientation, at_parent_start: bool) -> None:
-        super().__init__()
+    def __init__(self, orientation: Qt.Orientation, at_parent_start: bool, parent: Optional[QWidget] = None) -> None:
+        super().__init__(parent)
         self._layout: QBoxLayout = QHBoxLayout(self) if orientation == Qt.Orientation.Horizontal else QVBoxLayout(self)
         self._orientation = orientation
         self._at_parent_start = at_parent_start
@@ -60,7 +60,7 @@ class TabBar(QFrame):
 
         # Remaining layout contents: all tabs, a spacer, then all additional widgets
         self._tabs: List[Tab] = []
-        self._spacer_widget = QWidget()
+        self._spacer_widget = QWidget(self)
         self._layout.addWidget(self._spacer_widget, stretch=5)
         self._widgets: List[QWidget] = []
 

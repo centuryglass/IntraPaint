@@ -134,7 +134,7 @@ class ImageWindow(ImagePanel):
         self._main_view_outline.outlined_region = main_image_view.view_scene_bounds
         self._main_view_outline.setVisible(True)
 
-        self._nav_control_bar = QWidget()
+        self._nav_control_bar = QWidget(self)
         self.vertical_layout.addWidget(self._nav_control_bar)
         self._nav_control_bar_layout = QHBoxLayout(self._nav_control_bar)
         self._nav_control_bar_layout.setSpacing(1)

@@ -131,7 +131,7 @@ class LayerPanel(QWidget):
         self._scroll_offset = 0
 
         # BUTTON BAR:
-        self._button_bar = QWidget()
+        self._button_bar = QWidget(self)
         self._layout.addWidget(self._button_bar)
         self._button_bar_layout = QHBoxLayout(self._button_bar)
         self._button_bar_layout.setSpacing(0)

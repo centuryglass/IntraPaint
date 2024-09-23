@@ -10,6 +10,10 @@ from src.ui.input_fields.dual_toggle import DualToggle
 from src.ui.layout.divider import Divider
 from src.ui.panel.tool_control_panels.selection_panel import SelectionPanel
 from src.ui.widget.key_hint_label import KeyHintLabel
+from src.util.shared_constants import PROJECT_DIR
+
+ICON_PATH_RECT = f'{PROJECT_DIR}/resources/icons/tool_modes/rect_select.svg'
+ICON_PATH_ELLIPSE = f'{PROJECT_DIR}/resources/icons/tool_modes/ellipse_select.svg'
 
 
 class ShapeSelectionPanel(SelectionPanel):
@@ -24,12 +28,12 @@ class ShapeSelectionPanel(SelectionPanel):
         toggle_row.setAlignment(Qt.AlignmentFlag.AlignLeft)
         self._mode_toggle = DualToggle(self, [SELECTION_MODE_RECT, SELECTION_MODE_ELLIPSE],
                                        Qt.Orientation.Horizontal)
-        # TODO: shape icons
+        self._mode_toggle.set_icons(ICON_PATH_RECT, ICON_PATH_ELLIPSE)
         self._mode_toggle.setValue(SELECTION_MODE_RECT)
         self._mode_toggle.valueChanged.connect(self.tool_mode_changed)
         toggle_row.addWidget(self._mode_toggle)
 
-        toggle_hint = KeyHintLabel(config_key=KeyConfig.TOOL_ACTION_HOTKEY)
+        toggle_hint = KeyHintLabel(config_key=KeyConfig.TOOL_ACTION_HOTKEY, parent=self)
         toggle_row.addWidget(toggle_hint)
         self.insert_into_layout(toggle_row)
 

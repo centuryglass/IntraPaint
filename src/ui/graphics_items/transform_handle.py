@@ -11,8 +11,8 @@ from src.util.visual.geometry_utils import extract_transform_parameters
 from src.util.visual.graphics_scene_utils import map_scene_item_point_to_view_point, get_scene_item_bounds_of_view_rect
 from src.util.shared_constants import MIN_NONZERO, PROJECT_DIR
 
-CORNER_SCALE_ARROW_FILE = f'{PROJECT_DIR}/resources/arrow_corner.svg'
-CORNER_ROTATE_ARROW_FILE = f'{PROJECT_DIR}/resources/arrow_corner_rot.svg'
+CORNER_SCALE_ARROW_FILE = f'{PROJECT_DIR}/resources/icons/transform/arrow_corner.svg'
+CORNER_ROTATE_ARROW_FILE = f'{PROJECT_DIR}/resources/icons/transform/arrow_corner_rot.svg'
 
 TRANSFORM_MODE_SCALE = 'scale'
 TRANSFORM_MODE_ROTATE = 'rotate'

@@ -165,16 +165,20 @@ class TextToolPanel(QWidget):
         self._scale_bounds_to_text_checkbox = CheckBox()
         self._scale_bounds_to_text_checkbox.setText(CHECKBOX_LABEL_RESIZE_BOUNDS)
         self._scale_bounds_to_text_checkbox.setIcon(QIcon(ICON_BOUNDS_TO_TEXT))
+        self._scale_bounds_to_text_checkbox.setSizePolicy(QSizePolicy.Policy.MinimumExpanding,
+                                                          QSizePolicy.Policy.MinimumExpanding)
         self._scale_bounds_to_text_checkbox.valueChanged.connect(self._scale_bounds_to_text_slot)
 
         self._scale_text_to_bounds_checkbox = CheckBox()
         self._scale_text_to_bounds_checkbox.setText(CHECKBOX_LABEL_RESIZE_FONT)
         self._scale_text_to_bounds_checkbox.setIcon(QIcon(ICON_TEXT_TO_BOUNDS))
+        self._scale_text_to_bounds_checkbox.setSizePolicy(QSizePolicy.Policy.MinimumExpanding,
+                                                          QSizePolicy.Policy.MinimumExpanding)
         self._scale_text_to_bounds_checkbox.valueChanged.connect(self._scale_text_to_bounds_slot)
 
         # Text feature checkboxes:
         self._checkbox_label = QLabel(LABEL_TEXT_CHECKBOX_CONTAINER)
-        self._checkbox_container = QWidget()
+        self._checkbox_container = QWidget(self)
         self._checkbox_layout = QVBoxLayout(self._checkbox_container)
         self._checkbox_scroll = QScrollArea()
         self._checkbox_scroll.setWidget(self._checkbox_container)
@@ -233,12 +237,15 @@ class TextToolPanel(QWidget):
         self._alignment_dropdown.currentIndexChanged.connect(self._alignment_change_slot)
 
         # Text color control:
-        self._color_button = ColorButton()
+        self._color_button = ColorButton(parent=self)
         self._color_button.setText(BUTTON_TEXT_FONT_COLOR)
         self._color_button.setToolTip(TOOLTIP_COLOR)
-        self._background_color_button = ColorButton(Cache.TEXT_BACKGROUND_COLOR)
+        self._color_button.setSizePolicy(QSizePolicy.Policy.MinimumExpanding, QSizePolicy.Policy.MinimumExpanding)
+        self._background_color_button = ColorButton(Cache.TEXT_BACKGROUND_COLOR, parent=self)
         self._background_color_button.setText(BUTTON_TEXT_BACKGROUND_COLOR)
         self._background_color_button.setToolTip(TOOLTIP_BACKGROUND_COLOR)
+        self._background_color_button.setSizePolicy(QSizePolicy.Policy.MinimumExpanding,
+                                                    QSizePolicy.Policy.MinimumExpanding)
 
         self._text_rect.text_color = self._color_button.color
         self._text_rect.background_color = self._background_color_button.color
@@ -322,10 +329,10 @@ class TextToolPanel(QWidget):
             self._layout.setColumnStretch(1, 0)
             self._layout.setColumnStretch(2, 0)
 
-            self._layout.addWidget(self._text_box, 0, 0, 2, 3)
-            self._layout.addWidget(self._color_button, 0, 3)
-            self._layout.addWidget(self._background_color_button, 1, 3)
-            self._layout.addWidget(self._preview, 2, 0, 4, 4, Qt.AlignmentFlag.AlignTop)
+            self._layout.addWidget(self._text_box, 2, 0, 4, 4)
+            self._layout.addWidget(self._color_button, 0, 2, 1, 2)
+            self._layout.addWidget(self._background_color_button, 1, 2, 1, 2)
+            self._layout.addWidget(self._preview, 0, 0, 2, 2, Qt.AlignmentFlag.AlignTop)
             self._layout.addWidget(self._size_slider, 6, 0, 1, 3)
             self._layout.addWidget(self._size_type_dropdown, 6, 3)
 

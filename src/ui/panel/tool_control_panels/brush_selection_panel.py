@@ -25,13 +25,11 @@ def _tr(*args):
 
 
 SELECTION_SIZE_SHORT_LABEL = _tr('Size:')
-TOOL_MODE_DRAW = _tr('Draw')
-TOOL_MODE_ERASE = _tr('Erase')
-CLEAR_BUTTON_LABEL = _tr('Clear')
-FILL_BUTTON_LABEL = _tr('Fill')
+TOOL_MODE_SELECT = _tr('Select')
+TOOL_MODE_DESELECT = _tr('Deselect')
 
-RESOURCES_PEN_PNG = f'{PROJECT_DIR}/resources/icons/pen_small.svg'
-RESOURCES_ERASER_PNG = f'{PROJECT_DIR}/resources/icons/eraser_small.svg'
+ICON_PATH_SELECT = f'{PROJECT_DIR}/resources/icons/tool_modes/select_round.svg'
+ICON_PATH_DESELECT = f'{PROJECT_DIR}/resources/icons/tool_modes/clear_round.svg'
 
 
 class BrushSelectionPanel(SelectionPanel):
@@ -47,11 +45,11 @@ class BrushSelectionPanel(SelectionPanel):
         size_row.setAlignment(Qt.AlignmentFlag.AlignLeft)
         size_label = QLabel(SELECTION_SIZE_SHORT_LABEL)
         size_row.addWidget(size_label)
-        size_down_hint = KeyHintLabel(config_key=KeyConfig.BRUSH_SIZE_DECREASE)
+        size_down_hint = KeyHintLabel(config_key=KeyConfig.BRUSH_SIZE_DECREASE, parent=self)
         size_row.addWidget(size_down_hint)
         brush_size_slider = cast(IntSliderSpinbox, Cache().get_control_widget(Cache.SELECTION_BRUSH_SIZE))
         size_row.addWidget(brush_size_slider)
-        size_up_hint = KeyHintLabel(config_key=KeyConfig.BRUSH_SIZE_INCREASE)
+        size_up_hint = KeyHintLabel(config_key=KeyConfig.BRUSH_SIZE_INCREASE, parent=self)
         size_row.addWidget(size_up_hint)
         self.insert_into_layout(size_row)
 
@@ -59,13 +57,13 @@ class BrushSelectionPanel(SelectionPanel):
 
         toggle_row = QHBoxLayout()
         toggle_row.setAlignment(Qt.AlignmentFlag.AlignLeft)
-        tool_toggle = DualToggle(self, [TOOL_MODE_DRAW, TOOL_MODE_ERASE])
-        tool_toggle.set_icons(RESOURCES_PEN_PNG, RESOURCES_ERASER_PNG)
-        tool_toggle.setValue(TOOL_MODE_DRAW)
+        tool_toggle = DualToggle(self, [TOOL_MODE_SELECT, TOOL_MODE_DESELECT])
+        tool_toggle.set_icons(ICON_PATH_SELECT, ICON_PATH_DESELECT)
+        tool_toggle.setValue(TOOL_MODE_SELECT)
         tool_toggle.valueChanged.connect(self.tool_mode_changed)
         toggle_row.addWidget(tool_toggle)
 
-        toggle_hint = KeyHintLabel(config_key=KeyConfig.TOOL_ACTION_HOTKEY)
+        toggle_hint = KeyHintLabel(config_key=KeyConfig.TOOL_ACTION_HOTKEY, parent=self)
         toggle_row.addWidget(toggle_hint)
         self.insert_into_layout(toggle_row)
         self.insert_into_layout(Divider(Qt.Orientation.Horizontal))

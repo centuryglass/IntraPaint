@@ -4,7 +4,7 @@
   <context>
     <name>application_config</name>
     <message>
-      <location filename="../../src/controller/image_generation/sd_webui_generator.py" line="85"/>
+      <location filename="../../src/controller/image_generation/sd_webui_generator.py" line="106"/>
       <location filename="../../src/controller/app_controller.py" line="211"/>
       <source>Stable-Diffusion</source>
       <translation>Stable-Diffusion</translation>
@@ -1985,81 +1985,81 @@
     </message>
     <message>
       <location filename="../../src/controller/image_generation/sd_webui_generator.py" line="73"/>
-      <source>&lt;h2&gt;Installing the WebUI&lt;/h2&gt;&lt;p&gt;The &lt;a href="https://github.com/lllyasviel/stable-diffusion-webui-forge"&gt;Forge WebUI&lt;/a&gt; is the recommended version, but the original &lt;a href="https://github.com/AUTOMATIC1111/stable-diffusion-webui"&gt;Stable-Diffusion WebUI&lt;/a&gt; also works. Pick one of those, and follow instructions at the link to install it.&lt;/p&gt;&lt;p&gt;Once the WebUI is installed, open the "webui-user.bat" file in its main folder (or "webui-user.sh" on Linux and MacOS). Where it says "set COMMANDLINE_ARGS", add &lt;nobr&gt;--api&lt;/nobr&gt;, save changes, and run the webui-user script. Once the WebUI starts successfully, you should be able to activate this IntraPaint generator.&lt;/p&gt;</source>
-      <translation>&lt;h2&gt;Installing the WebUI&lt;/h2&gt;&lt;p&gt;The &lt;a href="https://github.com/lllyasviel/stable-diffusion-webui-forge"&gt;Forge WebUI&lt;/a&gt; is the recommended version, but the original &lt;a href="https://github.com/AUTOMATIC1111/stable-diffusion-webui"&gt;Stable-Diffusion WebUI&lt;/a&gt; also works. Pick one of those, and follow instructions at the link to install it.&lt;/p&gt;&lt;p&gt;Once the WebUI is installed, open the "webui-user.bat" file in its main folder (or "webui-user.sh" on Linux and MacOS). Where it says "set COMMANDLINE_ARGS", add &lt;nobr&gt;--api&lt;/nobr&gt;, save changes, and run the webui-user script. Once the WebUI starts successfully, you should be able to activate this IntraPaint generator.&lt;/p&gt;</translation>
+      <source>&lt;h2&gt;Installing Stable-Diffusion&lt;/h2&gt;&lt;p&gt;To use Stable-Diffusion with IntraPaint, you will need to install the Stable-Diffusion WebUI. You can choose either the &lt;a href="https://github.com/lllyasviel/stable-diffusion-webui-forge"&gt;Forge WebUI&lt;/a&gt; or the  original &lt;a href="https://github.com/AUTOMATIC1111/stable-diffusion-webui"&gt;Stable-Diffusion WebUI&lt;/a&gt;, but the Forge WebUI is the recommended version. The easiest way to install either of these options is through &lt;a href="https://github.com/LykosAI/StabilityMatrix"&gt;Stability Matrix&lt;/a&gt;.&lt;/p&gt;&lt;ol&gt;&lt;li&gt;Install the appropriate version of Stability Matrix for your system:&lt;ul&gt;&lt;li&gt;&lt;a href="https://github.com/LykosAI/StabilityMatrix/releases/latest/download/StabilityMatrix-win-x64.zip"&gt;Windows 10, 11&lt;/a&gt;&lt;/li&gt;&lt;li&gt;&lt;a href="https://github.com/LykosAI/StabilityMatrix/releases/latest/download/StabilityMatrix-linux-x64.zip"&gt;Linux AppImage&lt;/a&gt;&lt;/li&gt;&lt;li&gt;&lt;a href="https://aur.archlinux.org/packages/stabilitymatrix"&gt;Arch Linux AUR&lt;/a&gt;&lt;/li&gt;&lt;li&gt;&lt;a href="https://github.com/LykosAI/StabilityMatrix/releases/latest/download/StabilityMatrix-macos-arm64.dmg"&gt;macOS, Apple Silicon&lt;/a&gt;&lt;/li&gt;&lt;/ul&gt;&lt;/li&gt;&lt;li&gt;Open Stability Matrix, click "Add Package", select "Stable Diffusion WebUI Forge", and wait for it to install.&lt;/li&gt;&lt;li&gt;Once the installation finishes, click the gear icon next to Forge on the package screen to open launch options. Scroll to the bottom of the launch options, add `--api` to "Extra Launch Arguments", and click "Save".&lt;/li&gt;&lt;li&gt;Click "Launch", and wait for the WebUI to finish starting up.&lt;/li&gt;&lt;li&gt;Once the WebUI has started completely, you should be able to click "Activate" below, and IntraPaint will connect to it automatically.  If you configure the WebUI to use any URL other than the default or to use a username and password, IntraPaint will ask for that information before connecting.&lt;/li&gt;&lt;/ol&gt;</source>
+      <translation>&lt;h2&gt;Installing Stable-Diffusion&lt;/h2&gt;&lt;p&gt;To use Stable-Diffusion with IntraPaint, you will need to install the Stable-Diffusion WebUI. You can choose either the &lt;a href="https://github.com/lllyasviel/stable-diffusion-webui-forge"&gt;Forge WebUI&lt;/a&gt; or the  original &lt;a href="https://github.com/AUTOMATIC1111/stable-diffusion-webui"&gt;Stable-Diffusion WebUI&lt;/a&gt;, but the Forge WebUI is the recommended version. The easiest way to install either of these options is through &lt;a href="https://github.com/LykosAI/StabilityMatrix"&gt;Stability Matrix&lt;/a&gt;.&lt;/p&gt;&lt;ol&gt;&lt;li&gt;Install the appropriate version of Stability Matrix for your system:&lt;ul&gt;&lt;li&gt;&lt;a href="https://github.com/LykosAI/StabilityMatrix/releases/latest/download/StabilityMatrix-win-x64.zip"&gt;Windows 10, 11&lt;/a&gt;&lt;/li&gt;&lt;li&gt;&lt;a href="https://github.com/LykosAI/StabilityMatrix/releases/latest/download/StabilityMatrix-linux-x64.zip"&gt;Linux AppImage&lt;/a&gt;&lt;/li&gt;&lt;li&gt;&lt;a href="https://aur.archlinux.org/packages/stabilitymatrix"&gt;Arch Linux AUR&lt;/a&gt;&lt;/li&gt;&lt;li&gt;&lt;a href="https://github.com/LykosAI/StabilityMatrix/releases/latest/download/StabilityMatrix-macos-arm64.dmg"&gt;macOS, Apple Silicon&lt;/a&gt;&lt;/li&gt;&lt;/ul&gt;&lt;/li&gt;&lt;li&gt;Open Stability Matrix, click "Add Package", select "Stable Diffusion WebUI Forge", and wait for it to install.&lt;/li&gt;&lt;li&gt;Once the installation finishes, click the gear icon next to Forge on the package screen to open launch options. Scroll to the bottom of the launch options, add `--api` to "Extra Launch Arguments", and click "Save".&lt;/li&gt;&lt;li&gt;Click "Launch", and wait for the WebUI to finish starting up.&lt;/li&gt;&lt;li&gt;Once the WebUI has started completely, you should be able to click "Activate" below, and IntraPaint will connect to it automatically.  If you configure the WebUI to use any URL other than the default or to use a username and password, IntraPaint will ask for that information before connecting.&lt;/li&gt;&lt;/ol&gt;</translation>
     </message>
     <message>
-      <location filename="../../src/controller/image_generation/sd_webui_generator.py" line="87"/>
+      <location filename="../../src/controller/image_generation/sd_webui_generator.py" line="108"/>
       <source>Not authenticated</source>
       <translation>Not authenticated</translation>
     </message>
     <message>
-      <location filename="../../src/controller/image_generation/sd_webui_generator.py" line="88"/>
+      <location filename="../../src/controller/image_generation/sd_webui_generator.py" line="109"/>
       <source>Open or create an image first.</source>
       <translation>Open or create an image first.</translation>
     </message>
     <message>
-      <location filename="../../src/controller/image_generation/sd_webui_generator.py" line="89"/>
+      <location filename="../../src/controller/image_generation/sd_webui_generator.py" line="110"/>
       <source>Existing operation still in progress</source>
       <translation>Existing operation still in progress</translation>
     </message>
     <message>
-      <location filename="../../src/controller/image_generation/sd_webui_generator.py" line="90"/>
+      <location filename="../../src/controller/image_generation/sd_webui_generator.py" line="111"/>
       <source>Interrogate failure</source>
       <translation>Interrogate failure</translation>
     </message>
     <message>
-      <location filename="../../src/controller/image_generation/sd_webui_generator.py" line="91"/>
+      <location filename="../../src/controller/image_generation/sd_webui_generator.py" line="112"/>
       <source>Running CLIP interrogate</source>
       <translation>Running CLIP interrogate</translation>
     </message>
     <message>
-      <location filename="../../src/controller/image_generation/sd_webui_generator.py" line="92"/>
+      <location filename="../../src/controller/image_generation/sd_webui_generator.py" line="113"/>
       <source>Inpainting UI</source>
       <translation>Inpainting UI</translation>
     </message>
     <message>
-      <location filename="../../src/controller/image_generation/sd_webui_generator.py" line="93"/>
+      <location filename="../../src/controller/image_generation/sd_webui_generator.py" line="114"/>
       <source>Enter server URL:</source>
       <translation>Enter server URL:</translation>
     </message>
     <message>
-      <location filename="../../src/controller/image_generation/sd_webui_generator.py" line="94"/>
+      <location filename="../../src/controller/image_generation/sd_webui_generator.py" line="115"/>
       <source>Server connection failed, enter a new URL or click "OK" to retry</source>
       <translation>Server connection failed, enter a new URL or click "OK" to retry</translation>
     </message>
     <message>
-      <location filename="../../src/controller/image_generation/sd_webui_generator.py" line="96"/>
+      <location filename="../../src/controller/image_generation/sd_webui_generator.py" line="117"/>
       <source>Upscale failure</source>
       <translation>Upscale failure</translation>
     </message>
     <message>
-      <location filename="../../src/controller/image_generation/sd_webui_generator.py" line="100"/>
+      <location filename="../../src/controller/image_generation/sd_webui_generator.py" line="121"/>
       <source>Updating prompt styles failed</source>
       <translation>Updating prompt styles failed</translation>
     </message>
     <message>
-      <location filename="../../src/controller/image_generation/sd_webui_generator.py" line="102"/>
+      <location filename="../../src/controller/image_generation/sd_webui_generator.py" line="123"/>
       <source>Image generation failed</source>
       <translation>Image generation failed</translation>
     </message>
     <message>
-      <location filename="../../src/controller/image_generation/sd_webui_generator.py" line="103"/>
+      <location filename="../../src/controller/image_generation/sd_webui_generator.py" line="124"/>
       <source>Nothing was selected in the image generation area. Either use the selection tool to mark part of the image generation area for inpainting, move the image generation area to cover selected content, or switch to another image generation mode.</source>
       <translation>Nothing was selected in the image generation area. Either use the selection tool to mark part of the image generation area for inpainting, move the image generation area to cover selected content, or switch to another image generation mode.</translation>
     </message>
     <message>
-      <location filename="../../src/controller/image_generation/sd_webui_generator.py" line="107"/>
+      <location filename="../../src/controller/image_generation/sd_webui_generator.py" line="128"/>
       <source>ControlNet</source>
       <translation>ControlNet</translation>
     </message>
     <message>
-      <location filename="../../src/controller/image_generation/sd_webui_generator.py" line="108"/>
+      <location filename="../../src/controller/image_generation/sd_webui_generator.py" line="129"/>
       <source>ControlNet Unit {unit_number}</source>
       <translation>ControlNet Unit {unit_number}</translation>
     </message>
     <message>
-      <location filename="../../src/controller/image_generation/sd_webui_generator.py" line="109"/>
+      <location filename="../../src/controller/image_generation/sd_webui_generator.py" line="130"/>
       <source>Login cancelled.</source>
       <translation>Login cancelled.</translation>
     </message>
@@ -3741,29 +3741,19 @@ Please remember to include the traceback from the Details expander.</translation
     </message>
     <message>
       <location filename="../../src/ui/panel/tool_control_panels/brush_selection_panel.py" line="28"/>
-      <source>Draw</source>
-      <translation>Draw</translation>
+      <source>Select</source>
+      <translation>Select</translation>
     </message>
     <message>
       <location filename="../../src/ui/panel/tool_control_panels/brush_selection_panel.py" line="29"/>
-      <source>Erase</source>
-      <translation>Erase</translation>
-    </message>
-    <message>
-      <location filename="../../src/ui/panel/tool_control_panels/brush_selection_panel.py" line="30"/>
-      <source>Clear</source>
-      <translation>Clear</translation>
-    </message>
-    <message>
-      <location filename="../../src/ui/panel/tool_control_panels/brush_selection_panel.py" line="31"/>
-      <source>Fill</source>
-      <translation>Fill</translation>
+      <source>Deselect</source>
+      <translation>Deselect</translation>
     </message>
   </context>
   <context>
     <name>ui.panel.tool_control_panels.draw_tool_panel</name>
     <message>
-      <location filename="../../src/ui/panel/tool_control_panels/draw_tool_panel.py" line="24"/>
+      <location filename="../../src/ui/panel/tool_control_panels/draw_tool_panel.py" line="18"/>
       <source>Draw in selection only</source>
       <translation>Draw in selection only</translation>
     </message>
@@ -4126,6 +4116,29 @@ Press ESC to cancel</translation>
       <location filename="../../src/ui/widget/color_picker/component_spinbox_picker.py" line="31"/>
       <source>&amp;HTML:</source>
       <translation>&amp;HTML:</translation>
+    </message>
+  </context>
+  <context>
+    <name>ui.widget.pen_pressure_panel</name>
+    <message>
+      <location filename="../../src/ui/widget/pen_pressure_panel.py" line="21"/>
+      <source>Pen Pressure:</source>
+      <translation>Pen Pressure:</translation>
+    </message>
+    <message>
+      <location filename="../../src/ui/widget/pen_pressure_panel.py" line="22"/>
+      <source>Size:</source>
+      <translation>Size:</translation>
+    </message>
+    <message>
+      <location filename="../../src/ui/widget/pen_pressure_panel.py" line="23"/>
+      <source>Opacity:</source>
+      <translation>Opacity:</translation>
+    </message>
+    <message>
+      <location filename="../../src/ui/widget/pen_pressure_panel.py" line="24"/>
+      <source>Hardness:</source>
+      <translation>Hardness:</translation>
     </message>
   </context>
   <context>
@@ -4750,367 +4763,367 @@ Press ESC to cancel</translation>
       <translation>Brushes to list in the 'Favorites' tab of the brush selection window</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="189"/>
+      <location filename="../config/application_config_definitions.json" line="208"/>
       <source>Maximum undo count:</source>
       <translation>Maximum undo count:</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="191"/>
+      <location filename="../config/application_config_definitions.json" line="210"/>
       <source>Number of actions that can be reversed using the 'undo' option.</source>
       <translation>Number of actions that can be reversed using the 'undo' option.</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="197"/>
+      <location filename="../config/application_config_definitions.json" line="216"/>
       <source>Undo merge interval (seconds):</source>
       <translation>Undo merge interval (seconds):</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="199"/>
+      <location filename="../config/application_config_definitions.json" line="218"/>
       <source>Similar actions will be combined in the undo history if the time between them is less than this.</source>
       <translation>Similar actions will be combined in the undo history if the time between them is less than this.</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="205"/>
+      <location filename="../config/application_config_definitions.json" line="224"/>
       <source>'Speed modifier' key multiplier:</source>
       <translation>'Speed modifier' key multiplier:</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="207"/>
+      <location filename="../config/application_config_definitions.json" line="226"/>
       <source>Controls how much faster changes happen when the 'speed_modifier' key is held down</source>
       <translation>Controls how much faster changes happen when the 'speed_modifier' key is held down</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="213"/>
+      <location filename="../config/application_config_definitions.json" line="232"/>
       <source>Saved colors:</source>
       <translation>Saved colors:</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="215"/>
+      <location filename="../config/application_config_definitions.json" line="234"/>
       <source>List of saved custom color values.</source>
       <translation>List of saved custom color values.</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="221"/>
+      <location filename="../config/application_config_definitions.json" line="240"/>
       <source>Minimum pressure value</source>
       <translation>Minimum pressure value</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="223"/>
+      <location filename="../config/application_config_definitions.json" line="242"/>
       <source>All nonzero pen pressure readings will be boosted up to this value at a minimum.</source>
       <translation>All nonzero pen pressure readings will be boosted up to this value at a minimum.</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="222"/>
+      <location filename="../config/application_config_definitions.json" line="241"/>
       <source>Drawing tablet settings</source>
       <translation>Drawing tablet settings</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="235"/>
+      <location filename="../config/application_config_definitions.json" line="254"/>
       <source>Maximum pressure value</source>
       <translation>Maximum pressure value</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="237"/>
+      <location filename="../config/application_config_definitions.json" line="256"/>
       <source>All pen pressure readings will be capped at this value.</source>
       <translation>All pen pressure readings will be capped at this value.</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="248"/>
+      <location filename="../config/application_config_definitions.json" line="267"/>
       <source>Minimum pressure threshold</source>
       <translation>Minimum pressure threshold</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="250"/>
+      <location filename="../config/application_config_definitions.json" line="269"/>
       <source>Lower bounds of pen pressure input. Pressure values will be scaled so that this value becomes the minimum pressure value.</source>
       <translation>Lower bounds of pen pressure input. Pressure values will be scaled so that this value becomes the minimum pressure value.</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="261"/>
+      <location filename="../config/application_config_definitions.json" line="280"/>
       <source>Maximum pressure threshold</source>
       <translation>Maximum pressure threshold</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="263"/>
+      <location filename="../config/application_config_definitions.json" line="282"/>
       <source>Upper bounds of pen pressure input. Pressure values will be scaled so that this value becomes the maximum pressure value</source>
       <translation>Upper bounds of pen pressure input. Pressure values will be scaled so that this value becomes the maximum pressure value</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="274"/>
+      <location filename="../config/application_config_definitions.json" line="293"/>
       <source>Image interrogation model:</source>
       <translation>Image interrogation model:</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="276"/>
+      <location filename="../config/application_config_definitions.json" line="295"/>
       <source>Model used when auto-generating appropriate prompts using the 'interrogate' button. Supported values will vary based on what extensions you've installed into the stable-generation-webui, but 'clip' should always be accepted.</source>
       <translation>Model used when auto-generating appropriate prompts using the 'interrogate' button. Supported values will vary based on what extensions you've installed into the stable-generation-webui, but 'clip' should always be accepted.</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="275"/>
+      <location filename="../config/application_config_definitions.json" line="294"/>
       <source>Stable-Diffusion</source>
       <translation>Stable-Diffusion</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="282"/>
+      <location filename="../config/application_config_definitions.json" line="301"/>
       <source>ControlNet tiled upscaling model:</source>
       <translation>ControlNet tiled upscaling model:</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="284"/>
+      <location filename="../config/application_config_definitions.json" line="303"/>
       <source>ControlNet model to use for tiled upscaling, in the 'filename [hash]' format used by the webui. This only needs to change if a newer model is available if using a stable diffusion model not based on stable-diffusion 1.5.</source>
       <translation>ControlNet model to use for tiled upscaling, in the 'filename [hash]' format used by the webui. This only needs to change if a newer model is available if using a stable diffusion model not based on stable-diffusion 1.5.</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="290"/>
+      <location filename="../config/application_config_definitions.json" line="309"/>
       <source>Mask blur:</source>
       <translation>Mask blur:</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="292"/>
+      <location filename="../config/application_config_definitions.json" line="311"/>
       <source>Pixel radius to blur in the inpainting mask to smoothly combine edited and original image content.</source>
       <translation>Pixel radius to blur in the inpainting mask to smoothly combine edited and original image content.</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="303"/>
+      <location filename="../config/application_config_definitions.json" line="322"/>
       <source>Restore faces</source>
       <translation>Restore faces</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="306"/>
+      <location filename="../config/application_config_definitions.json" line="325"/>
       <source>Use a face restoration model to correct image data after stable-diffusion runs. In most cases you'll probably get better results without it.</source>
       <translation>Use a face restoration model to correct image data after stable-diffusion runs. In most cases you'll probably get better results without it.</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="305"/>
+      <location filename="../config/application_config_definitions.json" line="324"/>
       <source>Extra Features</source>
       <translation>Extra Features</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="312"/>
+      <location filename="../config/application_config_definitions.json" line="331"/>
       <source>Tiling</source>
       <translation>Tiling</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="315"/>
+      <location filename="../config/application_config_definitions.json" line="334"/>
       <source>Generate tiling images that can be seamlessly repeated.</source>
       <translation>Generate tiling images that can be seamlessly repeated.</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="305"/>
+      <location filename="../config/application_config_definitions.json" line="324"/>
       <source>Extra Features</source>
       <translation>Extra Features</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="321"/>
+      <location filename="../config/application_config_definitions.json" line="340"/>
       <source>GLID-3-XL model path:</source>
       <translation>GLID-3-XL model path:</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="324"/>
+      <location filename="../config/application_config_definitions.json" line="343"/>
       <source>Path to the main GLID-3-XL model file</source>
       <translation>Path to the main GLID-3-XL model file</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="321"/>
+      <location filename="../config/application_config_definitions.json" line="340"/>
       <source>GLID-3-XL</source>
       <translation>GLID-3-XL</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="323"/>
+      <location filename="../config/application_config_definitions.json" line="342"/>
       <source>Models</source>
       <translation>Models</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="330"/>
+      <location filename="../config/application_config_definitions.json" line="349"/>
       <source>BERT model path:</source>
       <translation>BERT model path:</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="333"/>
+      <location filename="../config/application_config_definitions.json" line="352"/>
       <source>Path to the BERT language model file</source>
       <translation>Path to the BERT language model file</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="323"/>
+      <location filename="../config/application_config_definitions.json" line="342"/>
       <source>Models</source>
       <translation>Models</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="339"/>
+      <location filename="../config/application_config_definitions.json" line="358"/>
       <source>GLID-3-XL VAE model path:</source>
       <translation>GLID-3-XL VAE model path:</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="342"/>
+      <location filename="../config/application_config_definitions.json" line="361"/>
       <source>Path to the VAE latent image encoding/decoding model file</source>
       <translation>Path to the VAE latent image encoding/decoding model file</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="323"/>
+      <location filename="../config/application_config_definitions.json" line="342"/>
       <source>Models</source>
       <translation>Models</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="348"/>
+      <location filename="../config/application_config_definitions.json" line="367"/>
       <source>CLIP model name:</source>
       <translation>CLIP model name:</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="351"/>
+      <location filename="../config/application_config_definitions.json" line="370"/>
       <source>Name of the CLIP language model to use.</source>
       <translation>Name of the CLIP language model to use.</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="323"/>
+      <location filename="../config/application_config_definitions.json" line="342"/>
       <source>Models</source>
       <translation>Models</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="357"/>
+      <location filename="../config/application_config_definitions.json" line="376"/>
       <source>Enable global error handler:</source>
       <translation>Enable global error handler:</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="359"/>
+      <location filename="../config/application_config_definitions.json" line="378"/>
       <source>Attempt to catch and report global application errors instead of crashing. Disabling this makes it easier to debug certain errors.</source>
       <translation>Attempt to catch and report global application errors instead of crashing. Disabling this makes it easier to debug certain errors.</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="365"/>
+      <location filename="../config/application_config_definitions.json" line="384"/>
       <source>Warn about keybinding issues:</source>
       <translation>Warn about keybinding issues:</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="367"/>
+      <location filename="../config/application_config_definitions.json" line="386"/>
       <source>Show an alert when keybinding issues are found on startup.</source>
       <translation>Show an alert when keybinding issues are found on startup.</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="366"/>
+      <location filename="../config/application_config_definitions.json" line="385"/>
       <source>Alerts</source>
       <translation>Alerts</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="373"/>
+      <location filename="../config/application_config_definitions.json" line="392"/>
       <source>Warn when saving without layers:</source>
       <translation>Warn when saving without layers:</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="375"/>
+      <location filename="../config/application_config_definitions.json" line="394"/>
       <source>Show a warning popup when saving a multi-layer image in a format that discards layer data.</source>
       <translation>Show a warning popup when saving a multi-layer image in a format that discards layer data.</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="381"/>
+      <location filename="../config/application_config_definitions.json" line="400"/>
       <source>Warn when saving without transparency:</source>
       <translation>Warn when saving without transparency:</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="383"/>
+      <location filename="../config/application_config_definitions.json" line="402"/>
       <source>Show a warning popup when saving an image with transparency in a format that doesn't support it.</source>
       <translation>Show a warning popup when saving an image with transparency in a format that doesn't support it.</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="389"/>
+      <location filename="../config/application_config_definitions.json" line="408"/>
       <source>Warn when saving without metadata:</source>
       <translation>Warn when saving without metadata:</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="391"/>
+      <location filename="../config/application_config_definitions.json" line="410"/>
       <source>Show a warning popup when saving an image in a format that discards metadata.</source>
       <translation>Show a warning popup when saving an image in a format that discards metadata.</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="397"/>
+      <location filename="../config/application_config_definitions.json" line="416"/>
       <source>Warn when saving in a format that cannot be loaded:</source>
       <translation>Warn when saving in a format that cannot be loaded:</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="399"/>
+      <location filename="../config/application_config_definitions.json" line="418"/>
       <source>Show a warning popup when saving an image in a format that can't be loaded.</source>
       <translation>Show a warning popup when saving an image in a format that can't be loaded.</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="405"/>
+      <location filename="../config/application_config_definitions.json" line="424"/>
       <source>Warn when saving in a format that changes image size:</source>
       <translation>Warn when saving in a format that changes image size:</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="407"/>
+      <location filename="../config/application_config_definitions.json" line="426"/>
       <source>Show a warning popup when saving an image in a format requires a specific resolution.</source>
       <translation>Show a warning popup when saving an image in a format requires a specific resolution.</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="413"/>
+      <location filename="../config/application_config_definitions.json" line="432"/>
       <source>Warn when saving in a format that removes color:</source>
       <translation>Warn when saving in a format that removes color:</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="415"/>
+      <location filename="../config/application_config_definitions.json" line="434"/>
       <source>Show a warning popup when saving an image in a format that does not support color.</source>
       <translation>Show a warning popup when saving an image in a format that does not support color.</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="421"/>
+      <location filename="../config/application_config_definitions.json" line="440"/>
       <source>Warn when loading libmypaint fails:</source>
       <translation>Warn when loading libmypaint fails:</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="423"/>
+      <location filename="../config/application_config_definitions.json" line="442"/>
       <source>Show a warning popup when the brush tool cannot be used because of missing libraries.</source>
       <translation>Show a warning popup when the brush tool cannot be used because of missing libraries.</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="429"/>
+      <location filename="../config/application_config_definitions.json" line="448"/>
       <source>Always save metadata:</source>
       <translation>Always save metadata:</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="431"/>
+      <location filename="../config/application_config_definitions.json" line="450"/>
       <source>Always save metadata when no previous metadata exists(confirm), never do that(cancel), or ask every time(always_ask).</source>
       <translation>Always save metadata when no previous metadata exists(confirm), never do that(cancel), or ask every time(always_ask).</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="437"/>
+      <location filename="../config/application_config_definitions.json" line="456"/>
       <source>Always update metadata:</source>
       <translation>Always update metadata:</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="439"/>
+      <location filename="../config/application_config_definitions.json" line="458"/>
       <source>Always update metadata when images are saved(confirm), never do that(cancel), or ask every time(always_ask).</source>
       <translation>Always update metadata when images are saved(confirm), never do that(cancel), or ask every time(always_ask).</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="445"/>
+      <location filename="../config/application_config_definitions.json" line="464"/>
       <source>Added font directory:</source>
       <translation>Added font directory:</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="447"/>
+      <location filename="../config/application_config_definitions.json" line="466"/>
       <source>Directory to search for additional font files to load</source>
       <translation>Directory to search for additional font files to load</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="446"/>
+      <location filename="../config/application_config_definitions.json" line="465"/>
       <source>Files</source>
       <translation>Files</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="453"/>
+      <location filename="../config/application_config_definitions.json" line="472"/>
       <source>Added MyPaint brush directory:</source>
       <translation>Added MyPaint brush directory:</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="455"/>
+      <location filename="../config/application_config_definitions.json" line="474"/>
       <source>Directory to search for additional MyPaint brush files to load</source>
       <translation>Directory to search for additional MyPaint brush files to load</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="461"/>
+      <location filename="../config/application_config_definitions.json" line="480"/>
       <source>libmypaint library directory:</source>
       <translation>libmypaint library directory:</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="463"/>
+      <location filename="../config/application_config_definitions.json" line="482"/>
       <source>Directory to search for libmypaint library files if unable to load default libraries</source>
       <translation>Directory to search for libmypaint library files if unable to load default libraries</translation>
     </message>

@@ -45,7 +45,7 @@ class GeneratorSetupWindow(QWidget):
         self._option_list_layout.addWidget(QLabel(GEN_LIST_HEADER))
         self._layout.addWidget(self._option_list, stretch=10)
         self._layout.addWidget(DraggableDivider())
-        self._detail_panel = QWidget()
+        self._detail_panel = QWidget(self)
         self._detail_panel_layout = QVBoxLayout(self._detail_panel)
         self._detail_panel_layout.setAlignment(Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignVCenter)
         self._layout.addWidget(self._detail_panel, stretch=50)

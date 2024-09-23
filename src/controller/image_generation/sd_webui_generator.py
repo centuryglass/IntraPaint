@@ -292,7 +292,9 @@ class SDWebUIGenerator(ImageGenerator):
                 controlnet_panel = TabbedControlnetPanel(Cache().get(Cache.CONTROLNET_CONTROL_TYPES),
                                                          Cache().get(Cache.CONTROLNET_MODULES),
                                                          Cache().get(Cache.CONTROLNET_MODELS))
-                self._controlnet_tab = Tab(CONTROLNET_TITLE, controlnet_panel, KeyConfig.SELECT_CONTROLNET_TAB)
+                self._controlnet_tab = Tab(CONTROLNET_TITLE, controlnet_panel, KeyConfig.SELECT_CONTROLNET_TAB,
+                                           parent=self.menu_window)
+                self._controlnet_tab.hide()
                 self._controlnet_tab.setIcon(QIcon(CONTROLNET_TAB_ICON))
 
             assert self._window is not None
@@ -426,6 +428,7 @@ class SDWebUIGenerator(ImageGenerator):
         """Returns a widget with inputs for controlling this generator."""
         if self._control_panel is None:
             self._control_panel = SDWebUIPanel()
+            self._control_panel.hide()
             self._control_panel.generate_signal.connect(self.start_and_manage_image_generation)
             self._control_panel.interrogate_signal.connect(self.interrogate)
         return self._control_panel

@@ -52,9 +52,10 @@ class SDWebUIPanel(GeneratorPanel):
         self._orientation = Qt.Orientation.Horizontal
 
         def _get_control_with_label(config_key: str, **kwargs) -> Tuple[QLabel, DynamicFieldWidget]:
-            label = QLabel(cache.get_label(config_key))
+            label = QLabel(cache.get_label(config_key), parent=self)
             label.setWordWrap(True)
             control = cache.get_control_widget(config_key, **kwargs)
+            control.setParent(self)
             label.setBuddy(control)
             return label, control
 

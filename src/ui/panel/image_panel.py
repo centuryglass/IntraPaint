@@ -47,16 +47,16 @@ class ImagePanel(QWidget):
             self.setContentsMargins(0, 0, 0, 0)
             self._outer_layout.setContentsMargins(0, 0, 0, 0)
             self._outer_layout.setSpacing(2)
-            self._left_tab_box: Optional[TabBox] = TabBox(Qt.Orientation.Vertical, True)
+            self._left_tab_box: Optional[TabBox] = TabBox(Qt.Orientation.Vertical, True, parent=self)
             self._outer_layout.addWidget(self._left_tab_box, stretch=1)
             self._left_divider = DraggableDivider()
             self._outer_layout.addWidget(self._left_divider)
-            self._inner_content = QWidget()
+            self._inner_content = QWidget(self)
             self._layout = QVBoxLayout(self._inner_content)
             self._outer_layout.addWidget(self._inner_content, stretch=MAIN_CONTENT_STRETCH)
             self._right_divider = DraggableDivider()
             self._outer_layout.addWidget(self._right_divider)
-            self._right_tab_box: Optional[TabBox] = TabBox(Qt.Orientation.Vertical, False)
+            self._right_tab_box: Optional[TabBox] = TabBox(Qt.Orientation.Vertical, False, parent=self)
             self._outer_layout.addWidget(self._right_tab_box, stretch=1)
 
             def _show_or_hide_left_divider(_=None) -> None:
@@ -82,7 +82,7 @@ class ImagePanel(QWidget):
 
         self._image_viewer = ImageViewer(None, image_stack, use_keybindings)
         self._layout.addWidget(self._image_viewer, stretch=255)
-        self._control_bar = QWidget()
+        self._control_bar = QWidget(self)
         self._control_bar.setContextMenuPolicy(Qt.ContextMenuPolicy.ActionsContextMenu)
 
         # Show/hide control hints:

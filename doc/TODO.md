@@ -10,9 +10,6 @@
 
 ## Misc. bugs and minor issues:
 - In-depth pressure opacity testing
-- Fix pressure checkboxes
-- tool-specific names and icons for draw/erase toggles
-- Select all shouldn't use paint bucket icon
 - vertical inpaint full res text fix
 - fill tool cursor offset needs fixing
 - seed/last seed field updates don't seem to be working properly

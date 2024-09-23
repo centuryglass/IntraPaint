@@ -28,8 +28,8 @@ class TabBox(BorderedWidget):
     tab_added = Signal(Tab)
     tab_removed = Signal(Tab)
 
-    def __init__(self, orientation: Qt.Orientation, at_parent_start: bool) -> None:
-        super().__init__()
+    def __init__(self, orientation: Qt.Orientation, at_parent_start: bool, parent: Optional[QWidget] = None) -> None:
+        super().__init__(parent)
         # Setup layout and orientation:
         self._orientation = orientation
         self._at_parent_start = at_parent_start
@@ -49,7 +49,7 @@ class TabBox(BorderedWidget):
                 self._layout.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignHCenter)
 
         # Initialize tab bar and connect tab bar signals:
-        self._tab_bar = TabBar(orientation, at_parent_start)
+        self._tab_bar = TabBar(orientation, at_parent_start, parent=self)
         self._active_tab: Optional[Tab] = None
         self._open_tab_widget: Optional[QWidget] = None
         self._layout.addWidget(self._tab_bar)

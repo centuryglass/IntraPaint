@@ -22,9 +22,9 @@ class MyPaintBrushTestPanel(QWidget):
         self._brush = smudge_brush
         cache = Cache()
         self._brush_size_label = QLabel(cache.get_label(Cache.SMUDGE_TOOL_BRUSH_SIZE))
-        self._brush_size_down_hint = KeyHintLabel(config_key=KeyConfig.BRUSH_SIZE_DECREASE)
+        self._brush_size_down_hint = KeyHintLabel(config_key=KeyConfig.BRUSH_SIZE_DECREASE, parent=self)
         self._brush_size_slider = cast(IntSliderSpinbox, cache.get_control_widget(Cache.SMUDGE_TOOL_BRUSH_SIZE))
-        self._brush_size_up_hint = KeyHintLabel(config_key=KeyConfig.BRUSH_SIZE_INCREASE)
+        self._brush_size_up_hint = KeyHintLabel(config_key=KeyConfig.BRUSH_SIZE_INCREASE, parent=self)
 
         self._mypaint_dropdown = QComboBox()
         self._mypaint_dropdown.addItem('None')

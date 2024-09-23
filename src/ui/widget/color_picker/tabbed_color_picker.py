@@ -57,7 +57,7 @@ class TabbedColorPicker(ScreenColorWidget):
         self._mode = ''
         self._always_show_pick_color_button = always_show_pick_color_button
 
-        self._basic_palette_panel = QWidget()
+        self._basic_palette_panel = QWidget(self)
         self._basic_palette_panel.setSizePolicy(self._size_policy)
         self._basic_palette_layout = QVBoxLayout(self._basic_palette_panel)
         self._basic_palette_label = QLabel(BASIC_PALETTE_TITLE)
@@ -78,7 +78,7 @@ class TabbedColorPicker(ScreenColorWidget):
         self._pick_color_button.clicked.connect(self.start_screen_color_picking)
         self._basic_palette_layout.addWidget(self._pick_color_button)
 
-        self._custom_palette_panel = QWidget()
+        self._custom_palette_panel = QWidget(self)
         self._custom_palette_panel.setSizePolicy(self._size_policy)
         self._custom_palette_layout = QVBoxLayout(self._custom_palette_panel)
         self._custom_palette_label = QLabel(CUSTOM_PALETTE_TITLE)
@@ -116,7 +116,7 @@ class TabbedColorPicker(ScreenColorWidget):
         self._custom_palette_layout.addWidget(self._screen_preview_label)
 
         # Divide color control into spectrum and component panels:
-        self._spectrum_panel = QWidget()
+        self._spectrum_panel = QWidget(self)
         self._spectrum_panel.setSizePolicy(self._size_policy)
         self._spectrum_panel_layout = QVBoxLayout(self._spectrum_panel)
         self._hsv_picker = HsvPicker()
@@ -124,7 +124,7 @@ class TabbedColorPicker(ScreenColorWidget):
         self._hsv_picker.connect_screen_color_picker(self)
         self._spectrum_panel_layout.addWidget(self._hsv_picker)
 
-        self._component_panel = QWidget()
+        self._component_panel = QWidget(self)
         self._component_panel.setSizePolicy(self._size_policy)
         self._component_panel_layout = QVBoxLayout(self._component_panel)
         self._component_picker = ComponentSpinboxPicker()
@@ -235,7 +235,7 @@ class TabbedColorPicker(ScreenColorWidget):
         tab_names = (SPECTRUM_TAB_TITLE, COMPONENT_TAB_TITLE, BASIC_PALETTE_TITLE, CUSTOM_PALETTE_TITLE)
         for title, tab in zip(tab_names, self._panels()):
             if self._always_show_pick_color_button and title != BASIC_PALETTE_TITLE:
-                widget = QWidget()
+                widget = QWidget(self)
                 layout = QVBoxLayout(widget)
                 layout.setContentsMargins(1, 1, 1, 1)
                 layout.setSpacing(1)
@@ -288,7 +288,7 @@ class TabbedColorPicker(ScreenColorWidget):
         else:
             pick_color_button = None
             pick_color_label = None
-        component_widget = QWidget()
+        component_widget = QWidget(self)
         component_widget.setSizePolicy(self._size_policy)
         component_layout = layout_class(component_widget)
         component_layout.setSpacing(0)
@@ -316,7 +316,7 @@ class TabbedColorPicker(ScreenColorWidget):
                 component_layout.addWidget(pick_color_label)
                 component_layout.addWidget(pick_color_button)
         self._tab_panel.addTab(component_widget, COMPONENT_TAB_TITLE)
-        palette_tab = QWidget()
+        palette_tab = QWidget(self)
         palette_tab.setSizePolicy(self._size_policy)
         palette_layout = layout_class(palette_tab)
         palette_layout.addWidget(self._basic_palette_panel)

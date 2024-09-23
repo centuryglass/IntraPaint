@@ -41,7 +41,7 @@ class FillSelectionPanel(SelectionPanel):
         sample_merged_checkbox = cache.get_control_widget(Cache.SAMPLE_MERGED)
         checkbox_row.addWidget(sample_merged_checkbox)
 
-        toggle_hint = KeyHintLabel(config_key=KeyConfig.TOOL_ACTION_HOTKEY)
+        toggle_hint = KeyHintLabel(config_key=KeyConfig.TOOL_ACTION_HOTKEY, parent=self)
         checkbox_row.addWidget(toggle_hint)
 
         def _try_toggle() -> bool:

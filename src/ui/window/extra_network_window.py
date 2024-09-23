@@ -56,7 +56,7 @@ class ExtraNetworkWindow(QDialog):
         for lora in loras:
             self._loras.append(lora.copy())
 
-        self._lora_list = QWidget()
+        self._lora_list = QWidget(self)
         self._lora_scroll = QScrollArea()
         self._lora_scroll.setWidget(self._lora_list)
         self._lora_scroll.setWidgetResizable(True)

@@ -32,8 +32,9 @@ class Tab(Label):
     tab_bar_widget_removed = Signal(QWidget)
     tab_bar_widget_order_changed = Signal()
 
-    def __init__(self, text: str, widget: Optional[QWidget] = None, shortcut_config_key: Optional[str] = None) -> None:
-        super().__init__(text, size=AppConfig().get(AppConfig.TAB_FONT_POINT_SIZE))
+    def __init__(self, text: str, widget: Optional[QWidget] = None, shortcut_config_key: Optional[str] = None,
+                 parent: Optional[QWidget] = None) -> None:
+        super().__init__(text, size=AppConfig().get(AppConfig.TAB_FONT_POINT_SIZE), parent=parent)
         self.setFrameStyle(QFrame.Shape.Panel | QFrame.Shadow.Plain)
         palette = self.palette()
         palette.setColor(QPalette.ColorRole.Mid, palette.color(self.foregroundRole()))
@@ -45,8 +46,7 @@ class Tab(Label):
         self._dragging = False
         self._click_time = 0.0
         if True or shortcut_config_key is not None:
-            self._key_hint: Optional[KeyHintLabel] = KeyHintLabel(None, shortcut_config_key)
-            self._key_hint.setParent(self)
+            self._key_hint: Optional[KeyHintLabel] = KeyHintLabel(None, shortcut_config_key, parent=self)
 
             def _activate_key() -> bool:
                 if not self.isVisible():

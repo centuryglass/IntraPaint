@@ -201,7 +201,7 @@ class SettingsModal(QDialog):
 
     def _add_tab_if_missing(self, tab_name: str):
         if tab_name not in self._tabs:
-            tab_body = QWidget()
+            tab_body = QWidget(self)
             tab_layout = QFormLayout(tab_body)
             tab_layout.setAlignment(Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignLeft)
             tab = QScrollArea(self)

@@ -404,7 +404,7 @@ class AppController(MenuBuilder):
         self._tool_panel.setup_active_tool(active_tool)
 
         # Set up main window tabs:
-        self._tool_tab = ToolTab(self._tool_panel, self._tool_controller)
+        self._tool_tab = ToolTab(self._tool_panel, self._tool_controller, parent=self._window)
         try:
             tool_tab_box_id = TabBoxID(Cache().get(Cache.TOOL_TAB_BAR))
         except ValueError:
@@ -412,7 +412,8 @@ class AppController(MenuBuilder):
         self._window.add_tab(self._tool_tab, tool_tab_box_id)
 
         self._generator_control_panel: Optional[GeneratorPanel] = None
-        self._generator_tab = Tab(CONTROL_TAB_NAME, None, KeyConfig.SELECT_GENERATOR_TAB)
+        self._generator_tab = Tab(CONTROL_TAB_NAME, None, KeyConfig.SELECT_GENERATOR_TAB, parent=self._window)
+        self._generator_tab.hide()
         self._generator_tab.setIcon(QIcon(GEN_TAB_ICON))
 
         # Prepare image generator options, and select one based on availability and command line arguments.
@@ -514,6 +515,7 @@ class AppController(MenuBuilder):
             except ValueError:
                 generation_tab_box_id = None
             self._window.add_tab(self._generator_tab, generation_tab_box_id)
+            self._generator_tab.show()
         for tab in self._generator.get_extra_tabs():
             # Remember to adjust this if you add any other generator-specific tabs
             try:
@@ -521,6 +523,7 @@ class AppController(MenuBuilder):
             except ValueError:
                 box_id = None
             self._window.add_tab(tab, box_id)
+            tab.show()
         if self._generator_window is not None:
             self._generator_window.mark_active_generator(generator)
 

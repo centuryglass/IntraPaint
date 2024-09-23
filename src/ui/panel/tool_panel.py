@@ -142,7 +142,7 @@ class ToolPanel(QWidget):
         layout_class = QHBoxLayout if self._orientation == Qt.Orientation.Horizontal else QVBoxLayout
         if not isinstance(self._layout, layout_class):
             clear_layout(self._layout, unparent=False)
-            temp_widget = QWidget()
+            temp_widget = QWidget(self)
             temp_widget.setLayout(self._layout)
             self._layout = layout_class(self)
         self._layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
