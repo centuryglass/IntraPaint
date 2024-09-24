@@ -41,8 +41,6 @@ MODE_2X1 = '2x1'
 MODE_1X2 = '1x2'
 MODE_1X1 = '1x1'
 
-TIMER_INTERVAL = 100
-
 
 class TabbedColorPicker(ScreenColorWidget):
     """A Qt color picker widget with multiple layouts, heavily based on QColorDialog."""
@@ -262,11 +260,13 @@ class TabbedColorPicker(ScreenColorWidget):
         def _set_label_pos(pos: QPoint, _) -> None:
             screen_preview_label.setVisible(True)
             screen_preview_label.setText(LABEL_TEXT_PICK_SCREEN_COLOR_INFO.format(x=pos.x(), y=pos.y()))
+
         self.color_previewed.connect(_set_label_pos)
 
         def _clear_label() -> None:
             screen_preview_label.setText('')
             screen_preview_label.setVisible(False)
+
         self.stopped_color_picking.connect(_clear_label)
         return pick_color_button, screen_preview_label
 

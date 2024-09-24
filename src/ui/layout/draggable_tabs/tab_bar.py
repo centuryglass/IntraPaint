@@ -19,7 +19,6 @@ from src.ui.panel.layer_ui.layer_widget import LayerWidget
 from src.util.layout import clear_layout
 from src.util.signals_blocked import signals_blocked
 
-BASE_BAR_SIZE = 20
 BASE_EMPTY_BAR_SIZE = 10
 TAB_BAR_OPEN_DELAY_MS = 100
 INLINE_MARGIN = 2
@@ -195,6 +194,7 @@ class TabBar(QFrame):
             self._toggle_button.setEnabled(True)
             self._toggle_button.setVisible(True)
         self._layout.insertWidget(1 + index, tab)
+        tab.show()
         self._apply_widget_orientation(tab)
         tab.clicked.connect(self._tab_clicked_slot)
         tab.double_clicked.connect(self._tab_double_clicked_slot)
@@ -213,7 +213,6 @@ class TabBar(QFrame):
         for tab_bar_widget in tab.tab_bar_widgets:
             self.add_widget(tab_bar_widget, widget_insert_idx)
             widget_insert_idx += 1
-            tab_bar_widget.setVisible(True)
         self.tab_added.emit(tab)
         if self.active_tab is None:
             self.active_tab = tab
@@ -230,8 +229,6 @@ class TabBar(QFrame):
         if isinstance(widget, Tab):
             self.add_tab(widget, index)
             return
-        if self.active_tab is not None and widget in self.active_tab.tab_bar_widgets:
-            widget.setVisible(not self.is_open)
         last_parent = widget.parent()
         if isinstance(last_parent, TabBar):
             last_parent.remove_widget(widget)
@@ -240,8 +237,11 @@ class TabBar(QFrame):
         index = min(index, len(self._widgets))
         self._widgets.insert(index, widget)
         layout_index = min(self._layout.indexOf(self._spacer_widget) + index + 1, self._layout.count())
-        self._layout.insertWidget(layout_index, widget)
         self._apply_widget_orientation(widget)
+        self._layout.insertWidget(layout_index, widget)
+        widget.show()
+        if self.active_tab is not None and widget in self.active_tab.tab_bar_widgets:
+            widget.setVisible(not self.is_open)
         self._update_widget_order()
 
     def remove_tab(self, tab: Tab) -> None:
@@ -266,6 +266,7 @@ class TabBar(QFrame):
                 self.remove_widget(tab_bar_widget)
         self.tab_removed.emit(tab)
         self._layout.removeWidget(tab)
+        tab.hide()
         tab.setParent(None)
         if len(self._tabs) == 0:
             self._toggle_button.setEnabled(False)
@@ -281,6 +282,7 @@ class TabBar(QFrame):
         widget.setVisible(False)
         self._widgets.remove(widget)
         self._layout.removeWidget(widget)
+        widget.hide()
         widget.setParent(None)
         self.update()
 

@@ -1,7 +1,7 @@
 """Implements drawing controls using a minimal QPainter-based brush."""
 from typing import Optional
 
-from PySide6.QtGui import QIcon, QKeySequence
+from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import QWidget, QApplication
 
 from src.config.cache import Cache
@@ -35,29 +35,13 @@ class DrawTool(QtPaintBrushTool):
     """Implements brush controls using a minimal QPainter-based brush engine."""
 
     def __init__(self, image_stack: ImageStack, image_viewer: ImageViewer) -> None:
-        super().__init__(image_stack, image_viewer, size_key=Cache.DRAW_TOOL_BRUSH_SIZE,
+        super().__init__(KeyConfig.DRAW_TOOL_KEY, LABEL_TEXT_DRAW_TOOL, TOOLTIP_DRAW_TOOL, QIcon(ICON_DRAW_TOOL),
+                         image_stack, image_viewer, size_key=Cache.DRAW_TOOL_BRUSH_SIZE,
                          pressure_size_key=Cache.DRAW_TOOL_PRESSURE_SIZE, opacity_key=Cache.DRAW_TOOL_OPACITY,
                          pressure_opacity_key=Cache.DRAW_TOOL_PRESSURE_OPACITY,
                          hardness_key=Cache.DRAW_TOOL_HARDNESS, pressure_hardness_key=Cache.DRAW_TOOL_PRESSURE_HARDNESS,
                          color_key=Cache.LAST_BRUSH_COLOR, pattern_key=Cache.DRAW_TOOL_BRUSH_PATTERN)
         self._control_panel: Optional[DrawToolPanel] = None
-        self._icon = QIcon(ICON_DRAW_TOOL)
-
-    def get_hotkey(self) -> QKeySequence:
-        """Returns the hotkey(s) that should activate this tool."""
-        return KeyConfig().get_keycodes(KeyConfig.DRAW_TOOL_KEY)
-
-    def get_icon(self) -> QIcon:
-        """Returns an icon used to represent this tool."""
-        return self._icon
-
-    def get_label_text(self) -> str:
-        """Returns label text used to represent this tool."""
-        return LABEL_TEXT_DRAW_TOOL
-
-    def get_tooltip_text(self) -> str:
-        """Returns tooltip text used to describe this tool."""
-        return TOOLTIP_DRAW_TOOL
 
     def get_input_hint(self) -> str:
         """Return text describing different input functionality."""

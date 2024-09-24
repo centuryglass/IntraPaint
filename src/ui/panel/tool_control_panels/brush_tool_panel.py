@@ -7,7 +7,7 @@ from PySide6.QtWidgets import QWidget, QVBoxLayout, QLabel, QHBoxLayout, QLayout
 
 from src.config.cache import Cache
 from src.config.key_config import KeyConfig
-from src.ui.input_fields.pattern_combo_box import PatternComboBox
+from src.ui.input_fields.fill_style_combo_box import FillStyleComboBox
 from src.ui.input_fields.slider_spinbox import IntSliderSpinbox, FloatSliderSpinbox
 from src.ui.widget.color_button import ColorButton
 from src.ui.widget.key_hint_label import KeyHintLabel
@@ -31,7 +31,6 @@ class BrushToolPanel(QWidget):
         super().__init__()
         self._layout = QVBoxLayout(self)
         self._layout.setAlignment(Qt.AlignmentFlag.AlignTop)
-        self._pressure_checkboxes = []
         cache = Cache()
 
         if added_rows is not None:
@@ -82,7 +81,7 @@ class BrushToolPanel(QWidget):
             color_row.addWidget(color_button)
         if pattern_key is not None:
             pattern_label = QLabel(cache.get_label(pattern_key))
-            pattern_dropdown = PatternComboBox(pattern_key)
+            pattern_dropdown = FillStyleComboBox(pattern_key)
             color_row.addWidget(pattern_label)
             color_row.addWidget(pattern_dropdown)
             if color_key is not None:
@@ -95,8 +94,8 @@ class BrushToolPanel(QWidget):
         self._layout.addLayout(color_row)
 
         if any(key is not None for key in [pressure_size_key, pressure_opacity_key, pressure_hardness_key]):
-            self._pressure_panel = PenPressurePanel(pressure_size_key, pressure_opacity_key, pressure_hardness_key,
-                                                    self)
+            self._pressure_panel: Optional[PenPressurePanel] = PenPressurePanel(pressure_size_key, pressure_opacity_key,
+                                                                                pressure_hardness_key,  self)
             self._pressure_panel.setVisible(Cache().get(Cache.EXPECT_TABLET_INPUT))
             self._layout.addWidget(self._pressure_panel)
         else:

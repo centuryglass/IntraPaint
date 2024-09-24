@@ -2,7 +2,7 @@
 from typing import Optional
 
 from PySide6.QtCore import Qt, QPoint
-from PySide6.QtGui import QIcon, QCursor, QColor, QMouseEvent, QKeySequence
+from PySide6.QtGui import QIcon, QCursor, QColor, QMouseEvent
 from PySide6.QtWidgets import QWidget, QColorDialog, QApplication
 
 from src.config.cache import Cache
@@ -10,8 +10,8 @@ from src.config.key_config import KeyConfig
 from src.image.layers.image_stack import ImageStack
 from src.tools.base_tool import BaseTool
 from src.ui.panel.color_panel import ColorControlPanel
-from src.util.visual.text_drawing_utils import left_button_hint_text
 from src.util.shared_constants import PROJECT_DIR
+from src.util.visual.text_drawing_utils import left_button_hint_text
 
 # The `QCoreApplication.translate` context for strings in this file
 TR_ID = 'tools.eyedropper_tool'
@@ -35,28 +35,12 @@ class EyedropperTool(BaseTool):
     """Lets the user select colors from the scene or pick a color."""
 
     def __init__(self, image_stack: ImageStack) -> None:
-        super().__init__()
+        super().__init__(KeyConfig.EYEDROPPER_TOOL_KEY, EYEDROPPER_LABEL, EYEDROPPER_TOOLTIP,
+                         QIcon(RESOURCES_EYEDROPPER_ICON))
         self._image_stack = image_stack
         self._control_panel: Optional[QColorDialog] = None
-        self._icon = QIcon(RESOURCES_EYEDROPPER_ICON)
         cursor_icon = QIcon(RESOURCES_EYEDROPPER_CURSOR)
         self.cursor = QCursor(cursor_icon.pixmap(CURSOR_SIZE, CURSOR_SIZE), 0, CURSOR_SIZE)
-
-    def get_hotkey(self) -> QKeySequence:
-        """Returns the hotkey(s) that should activate this tool."""
-        return KeyConfig().get_keycodes(KeyConfig.EYEDROPPER_TOOL_KEY)
-
-    def get_icon(self) -> QIcon:
-        """Returns an icon used to represent this tool."""
-        return self._icon
-
-    def get_label_text(self) -> str:
-        """Returns label text used to represent this tool."""
-        return EYEDROPPER_LABEL
-
-    def get_tooltip_text(self) -> str:
-        """Returns tooltip text used to describe this tool."""
-        return EYEDROPPER_TOOLTIP
 
     def get_input_hint(self) -> str:
         """Return text describing different input functionality."""

@@ -88,5 +88,3 @@ class _PressureToggle(QToolButton):
             self.setChecked(enabled)
 
         Cache().connect(self, key, _on_config_update)
-
-

@@ -52,7 +52,7 @@
         "translate": false
     },
     "last_brush_color": {
-        "label": "Last brush color:",
+        "label": "Color",
         "category": "Cache",
         "description": "Last brush color",
         "type": "string",
@@ -498,6 +498,111 @@
         "description": "Drawing tablet pen pressure affects smudge tool brush hardness.",
         "type": "bool",
         "default": false,
+        "saved": true
+    },
+    "shape_tool_mode": {
+        "label": "Shape Type:",
+        "category": "Cache",
+        "subcategory": "Shape Tool",
+        "description": "Type of shape to draw.",
+        "type": "string",
+        "default": "",
+        "saved": true
+    },
+    "shape_tool_vertex_count": {
+        "label": "Vertex count:",
+        "category": "Cache",
+        "subcategory": "Shape Tool",
+        "description": "Polygon vertex count.",
+        "type": "int",
+        "default": 5,
+        "saved": true,
+        "range_options": {
+            "min": 3,
+            "max": 100,
+            "step": 1
+        }
+    },
+    "shape_tool_star_inner_point_fraction": {
+        "label": "Inner radius fraction:",
+        "category": "Cache",
+        "subcategory": "Shape Tool",
+        "description": "Distance from the center to inner star points, as a fraction of the distance to the outer points",
+        "type": "float",
+        "default": 0.5,
+        "saved": true,
+        "range_options": {
+            "min": 0.01,
+            "max": 1.0,
+            "step": 0.05
+        }
+    },
+    "shape_tool_line_color": {
+        "label": "Line color",
+        "category": "Cache",
+        "subcategory": "Shape Tool",
+        "description": "Shape outline color.",
+        "type": "string",
+        "default": "#FF000000",
+        "saved": true
+    },
+    "shape_tool_line_style": {
+        "label": "Line style:",
+        "category": "Cache",
+        "subcategory": "Shape Tool",
+        "description": "Shape outline drawing style.",
+        "type": "string",
+        "default": "",
+        "saved": true
+    },
+    "shape_tool_line_join_style": {
+        "label": "Line join style:",
+        "category": "Cache",
+        "subcategory": "Shape Tool",
+        "description": "Shape outline connection drawing style.",
+        "type": "string",
+        "default": "",
+        "saved": true
+    },
+    "shape_tool_dash_pattern": {
+        "label": "Dash pattern:",
+        "category": "Cache",
+        "subcategory": "Shape Tool",
+        "description": "Dash length followed by space length, for any number of dash/space pairs.",
+        "type": "string",
+        "default": "",
+        "saved": true
+    },
+    "shape_tool_line_width": {
+        "label": "Line width:",
+        "category": "Cache",
+        "subcategory": "Shape Tool",
+        "description": "Shape tool line width.",
+        "type": "int",
+        "default": 3,
+        "saved": true,
+        "range_options": {
+            "min": 0,
+            "max": 300,
+            "step": 1
+        }
+    },
+    "shape_tool_fill_pattern": {
+        "label": "Pattern:",
+        "category": "Cache",
+        "subcategory": "Shape Tool",
+        "description": "Shape fill pattern",
+        "type": "string",
+        "default": "",
+        "saved": true
+    },
+    "shape_tool_fill_color": {
+        "label": "Fill Color",
+        "category": "Cache",
+        "subcategory": "Shape Tool",
+        "description": "Shape fill color.",
+        "type": "string",
+        "default": "#FFFFFFFF",
         "saved": true
     },
     "saved_main_window_pos": {

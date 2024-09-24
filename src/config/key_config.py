@@ -268,6 +268,7 @@ class KeyConfig(Config, metaclass=Singleton):
     SELECT_TOOL_TAB: str
     SETTINGS_SHORTCUT: str
     SHAPE_SELECTION_TOOL_KEY: str
+    SHAPE_TOOL_KEY: str
     SHARPEN_SHORTCUT: str
     SHOW_LAYER_MENU_SHORTCUT: str
     SHRINK_SELECTION_SHORTCUT: str

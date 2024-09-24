@@ -23,7 +23,6 @@ from src.util.math_utils import clamp
 from src.util.shared_constants import PROJECT_DIR, FLOAT_MAX
 from src.util.visual.text_drawing_utils import left_button_hint_text, right_button_hint_text
 
-RESOURCES_BRUSH_ICON = f'{PROJECT_DIR}/resources/icons/tools/brush_icon.svg'
 RESOURCES_CURSOR = f'{PROJECT_DIR}/resources/cursors/brush_cursor.svg'
 RESOURCES_MIN_CURSOR = f'{PROJECT_DIR}/resources/cursors/min_cursor.svg'
 
@@ -54,9 +53,10 @@ class BrushTool(BaseTool):
     that brush. Implementations are responsible for providing their own control panel and configuring brush properties.
     """
 
-    def __init__(self, image_stack: ImageStack, image_viewer: ImageViewer, brush: LayerBrush,
+    def __init__(self, activation_config_key: str,  label_text: str, tooltip_text: str, icon: QIcon,
+                 image_stack: ImageStack, image_viewer: ImageViewer, brush: LayerBrush,
                  enable_selection_restrictions=True, follow_active_layer=True) -> None:
-        super().__init__()
+        super().__init__(activation_config_key, label_text, tooltip_text, icon)
         self._layer: Optional[ImageLayer] = None
         self._drawing = False
         self._cached_size: Optional[int] = None
@@ -399,7 +399,7 @@ class BrushTool(BaseTool):
                 output_range = max_pressure - min_pressure
                 pressure = min_pressure + output_range * input_fraction
             else:
-                logger.warning(f'Invalid pressure threshold or bounds, ignoring pressure threshold/bounds settings')
+                logger.warning('Invalid pressure threshold or bounds, ignoring pressure threshold/bounds settings')
                 pressure = event.pressure()
             self._tablet_pressure = pressure
             self._last_pressure = pressure

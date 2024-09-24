@@ -70,7 +70,7 @@ class Cache(Config, metaclass=Singleton):
         to_clear = []
         to_update = []
         for widget, bounds in self._last_bounds.items():
-            if bounds == self._last_bounds[widget]:
+            if widget.geometry() == bounds:
                 to_clear.append(widget)
             else:
                 to_update.append(widget)
@@ -82,7 +82,6 @@ class Cache(Config, metaclass=Singleton):
             self._last_bounds[widget] = QRect(widget.geometry())
         if len(self._last_bounds) == 0:
             self._geometry_timer.stop()
-            return
 
     # DYNAMIC PROPERTIES:
     # Generate with `python /home/anthony/Workspace/ML/IntraPaint/scripts/dynamic_import_typing.py src/config/cache.py`
@@ -156,6 +155,16 @@ class Cache(Config, metaclass=Singleton):
     SAVED_MAIN_WINDOW_POS: str
     SEED: str
     SELECTION_BRUSH_SIZE: str
+    SHAPE_TOOL_DASH_PATTERN: str
+    SHAPE_TOOL_FILL_COLOR: str
+    SHAPE_TOOL_FILL_PATTERN: str
+    SHAPE_TOOL_LINE_COLOR: str
+    SHAPE_TOOL_LINE_JOIN_STYLE: str
+    SHAPE_TOOL_LINE_STYLE: str
+    SHAPE_TOOL_LINE_WIDTH: str
+    SHAPE_TOOL_MODE: str
+    SHAPE_TOOL_STAR_INNER_POINT_FRACTION: str
+    SHAPE_TOOL_VERTEX_COUNT: str
     SKIP_STEPS: str
     SMUDGE_TOOL_BRUSH_SIZE: str
     SMUDGE_TOOL_HARDNESS: str

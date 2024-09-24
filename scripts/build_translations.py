@@ -32,6 +32,7 @@ for file in python_files:
     try:
         shutil.copyfile(file, file + '_backup')
         file_text = file_text.replace("_tr('", f"QApplication.translate('{tr_id}', '")
+        file_text = file_text.replace("_tr(\"\"\"", f"QApplication.translate('{tr_id}', \"\"\"")
         with open(file, 'w') as py_file:
             py_file.write(file_text)
     except Exception as err:

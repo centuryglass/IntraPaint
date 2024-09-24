@@ -3,11 +3,8 @@ A QFrame with minor adjustments to default properties and interface.
 """
 from typing import Optional
 
-from PySide6.QtCore import QMargins
 from PySide6.QtGui import QColor, QPalette
 from PySide6.QtWidgets import QFrame, QWidget
-
-from src.util.visual.contrast_color import contrast_color
 
 DEFAULT_LINE_WIDTH = 3
 

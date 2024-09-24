@@ -1,5 +1,4 @@
 """Editable path item used to create a polygon."""
-import logging
 from typing import List, Optional
 
 from PySide6.QtCore import QPointF, QRectF, QLineF, Signal
@@ -11,11 +10,6 @@ from src.ui.graphics_items.transform_handle import TransformHandle
 from src.undo_stack import UndoStack
 
 PEN_WIDTH = 4
-
-MAX_DASH_OFFSET = 560
-ANIM_DURATION = 36000
-
-logger = logging.getLogger(__name__)
 
 
 class PathCreationItem(AnimatedDashItem):

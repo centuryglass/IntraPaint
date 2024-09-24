@@ -30,8 +30,6 @@ WIDTH_MULT_BOX_TOOLTIP = _tr('New image width (as multiplier)')
 HEIGHT_MULT_BOX_LABEL = _tr('Height scale:')
 HEIGHT_MULT_BOX_TOOLTIP = _tr('New image height (as multiplier)')
 UPSCALE_METHOD_LABEL = _tr('Upscale Method:')
-CONTROLNET_TILE_LABEL = _tr('Use ControlNet Tiles')
-CONTROLNET_DOWNSAMPLE_LABEL = _tr('ControlNet Downsample:')
 SCALE_BUTTON_LABEL = _tr('Scale image')
 CANCEL_BUTTON_LABEL = _tr('Cancel')
 

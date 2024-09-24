@@ -269,7 +269,7 @@ def color_fill(image: QImage, color: QColor, threshold: float) -> QImage:
              color.alpha()]
     np_color = np.array(color, dtype=np_image.dtype).reshape(1, 1, 4)
     diff = np.linalg.norm(np_image - np_color, axis=-1)
-    within_threshold = (diff <= threshold)
+    within_threshold = diff <= threshold
     mask_image = create_transparent_image(image.size())
     np_mask_image = image_data_as_numpy_8bit(mask_image)
     np_mask_image[within_threshold, 3] = 255
@@ -351,6 +351,7 @@ def get_color_icon(color: QColor | Qt.GlobalColor, size: Optional[QSize] = None)
         pixmap = QPixmap(size)
         pixmap.fill(color)
         painter = QPainter(pixmap)
+    painter.setPen(Qt.GlobalColor.black if color.lightness() > 128 else Qt.GlobalColor.white)
     painter.drawRect(QRect(QPoint(), size).adjusted(0, 0, -1, -1))
     painter.end()
     return pixmap

@@ -1,7 +1,7 @@
 """Draw tool variant meant for erasing only."""
 from typing import Optional
 
-from PySide6.QtGui import QIcon, QKeySequence
+from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import QApplication, QWidget
 
 from src.config.cache import Cache
@@ -33,7 +33,8 @@ class EraserTool(QtPaintBrushTool):
     """Draw tool variant meant for erasing only."""
 
     def __init__(self, image_stack: ImageStack, image_viewer: ImageViewer) -> None:
-        super().__init__(image_stack, image_viewer, size_key=Cache.ERASER_TOOL_SIZE,
+        super().__init__(KeyConfig.ERASER_TOOL_KEY, LABEL_TEXT_ERASER_TOOL, TOOLTIP_ERASER_TOOL,
+                         QIcon(ICON_ERASER_TOOL), image_stack, image_viewer, size_key=Cache.ERASER_TOOL_SIZE,
                          pressure_size_key=Cache.ERASER_TOOL_PRESSURE_SIZE, opacity_key=Cache.ERASER_TOOL_OPACITY,
                          pressure_opacity_key=Cache.DRAW_TOOL_PRESSURE_OPACITY,
                          hardness_key=Cache.ERASER_TOOL_HARDNESS,
@@ -42,7 +43,6 @@ class EraserTool(QtPaintBrushTool):
 
         cache = Cache()
         cache.disconnect(self, Cache.LAST_BRUSH_COLOR)
-        self._icon = QIcon(ICON_ERASER_TOOL)
         self._control_panel: Optional[EraserToolPanel] = None
 
     def get_control_panel(self) -> Optional[QWidget]:
@@ -50,22 +50,6 @@ class EraserTool(QtPaintBrushTool):
         if self._control_panel is None:
             self._control_panel = EraserToolPanel()
         return self._control_panel
-
-    def get_hotkey(self) -> QKeySequence:
-        """Returns the hotkey(s) that should activate this tool."""
-        return KeyConfig().get_keycodes(KeyConfig.ERASER_TOOL_KEY)
-
-    def get_icon(self) -> QIcon:
-        """Returns an icon used to represent this tool."""
-        return self._icon
-
-    def get_label_text(self) -> str:
-        """Returns label text used to represent this tool."""
-        return LABEL_TEXT_ERASER_TOOL
-
-    def get_tooltip_text(self) -> str:
-        """Returns tooltip text used to describe this tool."""
-        return TOOLTIP_ERASER_TOOL
 
     def get_input_hint(self) -> str:
         """Return text describing different input functionality."""

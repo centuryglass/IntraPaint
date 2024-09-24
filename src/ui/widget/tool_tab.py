@@ -2,7 +2,7 @@
    widgets for selecting the active tool."""
 from typing import Dict, Optional, List
 
-from PySide6.QtGui import QIcon, QResizeEvent
+from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import QWidget, QApplication
 
 from src.config.application_config import AppConfig
@@ -119,6 +119,7 @@ class ToolTab(Tab):
     def _add_tool_slot(self, added_tool: BaseTool) -> None:
         assert added_tool not in self._toolbar_tool_widgets
         tool_button = ToolButton(added_tool)
+        tool_button.hide()
         tool_button.tool_selected.connect(self._tool_controller.set_active_tool)
         self._toolbar_tool_widgets[added_tool] = tool_button
         self.add_tab_bar_widget(tool_button)

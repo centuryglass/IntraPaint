@@ -3,7 +3,7 @@
 from typing import Optional, cast
 
 from PySide6.QtCore import Qt, QRect, QPoint, QSize, QPointF
-from PySide6.QtGui import QMouseEvent, QKeyEvent, QCursor, QIcon, QKeySequence
+from PySide6.QtGui import QMouseEvent, QKeyEvent, QCursor, QIcon
 from PySide6.QtWidgets import QWidget, QApplication
 
 from src.config.cache import Cache
@@ -35,29 +35,13 @@ class GenerationAreaTool(BaseTool):
     """An image editing tool that moves the selected editing region."""
 
     def __init__(self, image_stack: ImageStack, image_viewer: ImageViewer) -> None:
-        super().__init__()
+        super().__init__(KeyConfig.GENERATION_AREA_TOOL_KEY, GENERATION_AREA_LABEL, GENERATION_AREA_TOOLTIP,
+                         QIcon(RESOURCES_GENERATION_AREA_ICON))
         self._image_stack = image_stack
         self._image_viewer = image_viewer
-        self._icon = QIcon(RESOURCES_GENERATION_AREA_ICON)
         self._resizing = False
         self.cursor = QCursor(Qt.CursorShape.CrossCursor)
         self._control_panel = GenerationAreaToolPanel(image_stack)
-
-    def get_hotkey(self) -> QKeySequence:
-        """Returns the hotkey(s) that should activate this tool."""
-        return KeyConfig().get_keycodes(KeyConfig.GENERATION_AREA_TOOL_KEY)
-
-    def get_icon(self) -> QIcon:
-        """Returns an icon used to represent this tool."""
-        return self._icon
-
-    def get_label_text(self) -> str:
-        """Returns label text used to represent this tool."""
-        return GENERATION_AREA_LABEL
-
-    def get_tooltip_text(self) -> str:
-        """Returns tooltip text used to describe this tool."""
-        return GENERATION_AREA_TOOLTIP
 
     def get_input_hint(self) -> str:
         """Return text describing different input functionality."""
@@ -138,5 +122,3 @@ class GenerationAreaTool(BaseTool):
                 return False
         self._image_stack.generation_area = self._image_stack.generation_area.translated(translation)
         return True
-
-

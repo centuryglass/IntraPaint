@@ -1,13 +1,11 @@
 """A control panel for the Stable-Diffusion WebUI image generator."""
-import logging
 from typing import Tuple, List
 
 from PySide6.QtCore import Qt, Signal
-from PySide6.QtWidgets import QSizePolicy, QGridLayout, QLabel, QPushButton, \
-    QApplication, QWidget, QBoxLayout, QVBoxLayout, QHBoxLayout, QSpacerItem
+from PySide6.QtWidgets import QSizePolicy, QLabel, QPushButton, \
+    QApplication, QWidget, QVBoxLayout, QHBoxLayout
 
 from src.config.cache import Cache
-from src.ui.input_fields.size_field import SizeField
 from src.ui.input_fields.slider_spinbox import IntSliderSpinbox
 from src.ui.layout.divider import Divider
 from src.ui.panel.generators.generator_panel import GeneratorPanel
@@ -29,8 +27,6 @@ def _tr(*args):
 
 BUTTON_TEXT_INTERROGATE = _tr('Interrogate')
 BUTTON_TOOLTIP_INTERROGATE = _tr('Attempt to generate a prompt that describes the current image generation area')
-
-logger = logging.getLogger(__name__)
 
 
 class SDWebUIPanel(GeneratorPanel):
@@ -102,7 +98,7 @@ class SDWebUIPanel(GeneratorPanel):
         self._toolbar_generate_button = RotatingToolbarButton(BUTTON_TEXT_GENERATE)
         self._toolbar_generate_button.setToolTip(BUTTON_TOOLTIP_GENERATE)
         self._toolbar_generate_button.clicked.connect(self.generate_signal)
-        self._toolbar_generate_button.setVisible(False)
+        self._toolbar_generate_button.hide()
 
         def _edit_mode_control_update(edit_mode: str) -> None:
             self._denoising_strength_label.setVisible(edit_mode != EDIT_MODE_TXT2IMG)
@@ -113,6 +109,7 @@ class SDWebUIPanel(GeneratorPanel):
             self._padding_slider.setVisible(edit_mode == EDIT_MODE_INPAINT)
             self._masked_content_label.setVisible(edit_mode == EDIT_MODE_INPAINT)
             self._masked_content_combobox.setVisible(edit_mode == EDIT_MODE_INPAINT)
+
         _edit_mode_control_update(cache.get(Cache.EDIT_MODE))
         cache.connect(self, Cache.EDIT_MODE, _edit_mode_control_update)
 
@@ -120,6 +117,7 @@ class SDWebUIPanel(GeneratorPanel):
             """Only show the 'full-res padding' spin box if 'inpaint full-res' is checked."""
             self._padding_label.setVisible(inpaint_full_res)
             self._padding_slider.setVisible(inpaint_full_res)
+
         cache.connect(self, Cache.INPAINT_FULL_RES, padding_layout_update)
         padding_layout_update(cache.get(Cache.INPAINT_FULL_RES))
         self._build_layout()
@@ -149,10 +147,10 @@ class SDWebUIPanel(GeneratorPanel):
             self._gen_size_input.orientation = Qt.Orientation.Horizontal
 
             # Alignment lists:
-            left_labels = []
-            center_labels = []
-            right_labels = []
-            right_inputs = []
+            left_labels: List[QWidget] = []
+            center_labels: List[QWidget] = []
+            right_labels: List[QWidget] = []
+            right_inputs: List[QWidget] = []
             all_inner_layouts += [primary_layout, button_layout, left_panel_layout, right_panel_layout]
 
             for label, textbox in ((self._prompt_label, self._prompt_textbox),
@@ -186,8 +184,8 @@ class SDWebUIPanel(GeneratorPanel):
                 left_labels.append(label)
 
             for label, input_widget in ((self._gen_size_label, self._gen_size_input),
-                                 (self._batch_size_label, self._batch_size_spinbox),
-                                 (self._batch_count_label, self._batch_count_spinbox)):
+                                        (self._batch_size_label, self._batch_size_spinbox),
+                                        (self._batch_count_label, self._batch_count_spinbox)):
                 input_row = QHBoxLayout()
                 input_row.setAlignment(Qt.AlignmentFlag.AlignLeft)
                 input_row.addWidget(label)

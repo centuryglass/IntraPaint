@@ -1,7 +1,7 @@
 """Implements image smudge operations."""
 from typing import Optional
 
-from PySide6.QtGui import QIcon, QKeySequence
+from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import QApplication, QWidget
 
 from src.config.cache import Cache
@@ -26,7 +26,6 @@ def _tr(*args):
     return QApplication.translate(TR_ID, *args)
 
 
-RESOURCES_SMUDGE_BRUSH = f'{PROJECT_DIR}/resources/brushes/classic/smudge.myb'
 RESOURCES_SMUDGE_ICON = f'{PROJECT_DIR}/resources/icons/tools/smudge_icon.svg'
 SMUDGE_LABEL = _tr('Smudge')
 SMUDGE_TOOLTIP = _tr('Smudge image content')
@@ -38,9 +37,9 @@ class SmudgeTool(BrushTool):  # type: ignore
 
     def __init__(self, image_stack: ImageStack, image_viewer: ImageViewer) -> None:
         brush = SmudgeBrush()
-        super().__init__(image_stack, image_viewer, brush)
+        super().__init__(KeyConfig.SMUDGE_TOOL_KEY, SMUDGE_LABEL, SMUDGE_TOOLTIP, QIcon(RESOURCES_SMUDGE_ICON),
+                         image_stack, image_viewer, brush)
         self._control_panel = SmudgeToolPanel()
-        self._icon = QIcon(RESOURCES_SMUDGE_ICON)
         cache = Cache()
         key_filter = HotkeyFilter.instance()
 
@@ -108,25 +107,6 @@ class SmudgeTool(BrushTool):  # type: ignore
             control_panel = self.get_control_panel()
             assert isinstance(control_panel, BrushToolPanel)
             control_panel.show_pressure_checkboxes()
-
-    # noinspection PyMethodMayBeStatic
-    def get_hotkey(self) -> QKeySequence:
-        """Returns the hotkey(s) that should activate this tool."""
-        return KeyConfig().get_keycodes(KeyConfig.SMUDGE_TOOL_KEY)
-
-    def get_icon(self) -> QIcon:
-        """Returns an icon used to represent this tool."""
-        return self._icon
-
-    # noinspection PyMethodMayBeStatic
-    def get_label_text(self) -> str:
-        """Returns label text used to represent this tool."""
-        return SMUDGE_LABEL
-
-    # noinspection PyMethodMayBeStatic
-    def get_tooltip_text(self) -> str:
-        """Returns tooltip text used to describe this tool."""
-        return SMUDGE_TOOLTIP
 
     def get_input_hint(self) -> str:
         """Return text describing different input functionality."""

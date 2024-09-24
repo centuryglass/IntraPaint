@@ -39,7 +39,7 @@ THUMBNAIL_FILE_NAME = 'thumbnail.png'
 MERGED_IMAGE_FILE_NAME = 'mergedimage'
 
 BOOLEAN_TRUE_STR = 'true'
-BOOLEAN_FALSE_STR = 'false'
+# BOOLEAN_FALSE_STR = 'false'
 
 # XML tags and constants:
 ORA_SPEC_VERSION = '0.0.3'
@@ -53,8 +53,8 @@ IMAGE_ELEMENT = 'image'
 IMAGE_TAG_VERSION = 'version'
 IMAGE_TAG_WIDTH = 'w'  # int
 IMAGE_TAG_HEIGHT = 'h'  # int
-IMAGE_TAG_XRES = 'xres'  # int, optional (pixels per inch)
-IMAGE_TAG_YRES = 'yres'  # int, optional (pixels per inch)
+# IMAGE_TAG_XRES = 'xres'  # int, optional (pixels per inch)
+# IMAGE_TAG_YRES = 'yres'  # int, optional (pixels per inch)
 IMAGE_TAG_NAME = 'name'  # str
 
 # layerCommonAttributes XML tags:

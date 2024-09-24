@@ -3,7 +3,7 @@ from PySide6.QtGui import QColor
 from PySide6.QtWidgets import QWidget, QFormLayout
 
 from src.config.cache import Cache
-from src.ui.input_fields.pattern_combo_box import PatternComboBox
+from src.ui.input_fields.fill_style_combo_box import FillStyleComboBox
 from src.ui.widget.color_button import ColorButton
 
 
@@ -16,7 +16,7 @@ class FillToolPanel(QWidget):
         self._layout = QFormLayout(self)
         color_button = ColorButton(parent=self)
         self._layout.addRow(color_button)
-        pattern_dropdown = PatternComboBox(Cache.FILL_TOOL_BRUSH_PATTERN)
+        pattern_dropdown = FillStyleComboBox(Cache.FILL_TOOL_BRUSH_PATTERN)
         self._layout.addRow(cache.get_label(Cache.FILL_TOOL_BRUSH_PATTERN), pattern_dropdown)
         threshold_slider = cache.get_control_widget(Cache.FILL_THRESHOLD)
         self._layout.addRow(cache.get_label(Cache.FILL_THRESHOLD), threshold_slider)

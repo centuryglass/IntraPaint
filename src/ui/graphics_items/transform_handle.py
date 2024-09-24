@@ -26,7 +26,8 @@ class TransformHandle(QGraphicsObject):
     clicked = Signal(str, QPointF)
     dragged = Signal(str, QPointF, QPointF)
 
-    def __init__(self, parent: QGraphicsItem, handle_id: str, base_arrow_angle: int = 0, draw_arrows: bool = True) -> None:
+    def __init__(self, parent: QGraphicsItem, handle_id: str, base_arrow_angle: int = 0,
+                 draw_arrows: bool = True) -> None:
         super().__init__(parent)
         self.setZValue(parent.zValue() + 2)
         self._draw_arrows = draw_arrows

@@ -4,25 +4,14 @@ from typing import Optional, Dict, List
 
 from PySide6.QtCore import Qt, Signal, QSize, QMargins, QObject
 from PySide6.QtGui import QResizeEvent
-from PySide6.QtWidgets import QWidget, QLabel, QHBoxLayout, QVBoxLayout, QSizePolicy, QScrollArea, QGridLayout, QLayout, \
-    QApplication, QTabWidget
+from PySide6.QtWidgets import (QWidget, QLabel, QHBoxLayout, QVBoxLayout, QSizePolicy, QScrollArea, QGridLayout,
+                               QLayout, QTabWidget)
 
 from src.tools.base_tool import BaseTool
 from src.ui.layout.draggable_divider import DraggableDivider
 from src.ui.layout.reactive_layout_widget import ReactiveLayoutWidget
 from src.ui.widget.tool_button import ToolButton
 from src.util.layout import clear_layout
-
-# The `QCoreApplication.translate` context for strings in this file
-TR_ID = 'ui.panel.tool_panel'
-
-
-def _tr(*args):
-    """Helper to make `QCoreApplication.translate` more concise."""
-    return QApplication.translate(TR_ID, *args)
-
-
-TOOL_PANEL_TITLE = _tr('Tools')
 
 TOOL_LIST_STRETCH = 0
 TOOL_PANEL_STRETCH = 50
@@ -202,12 +191,12 @@ class ToolPanel(QWidget):
             return
         button_size = button_list[0].sizeHint()
         if self._orientation == Qt.Orientation.Vertical:
-            num_cols = 7
-            num_rows = 2
+            num_cols = 5
+            num_rows = 3
             self._tool_button_layout.setAlignment(Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignHCenter)
         else:  # Horizontal
-            num_rows = 7
-            num_cols = 2
+            num_rows = 5
+            num_cols = 3
             self.setMinimumHeight(0)
             self._tool_button_layout.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
         if self._row_count == num_rows and self._column_count == num_cols \

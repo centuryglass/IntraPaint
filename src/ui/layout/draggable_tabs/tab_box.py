@@ -81,18 +81,17 @@ class TabBox(BorderedWidget):
         if self.is_open:
             assert self._open_tab_widget is not None and self._open_tab_widget.parentWidget() == self
             return self.minimumSizeHint()
-        else:
-            own_minimum = self.minimumSizeHint()
-            if self._active_tab is None:
-                return own_minimum
-            tab_content = self._active_tab.content_widget
-            assert tab_content is not None
-            content_minimum = tab_content.minimumSizeHint()
-            if self._orientation == Qt.Orientation.Horizontal:
-                return QSize(max(own_minimum.width(), content_minimum.width()),
-                             own_minimum.height() + content_minimum.height())
-            return QSize(own_minimum.width() + content_minimum.width(),
-                         max(own_minimum.height(), content_minimum.height()))
+        own_minimum = self.minimumSizeHint()
+        if self._active_tab is None:
+            return own_minimum
+        tab_content = self._active_tab.content_widget
+        assert tab_content is not None
+        content_minimum = tab_content.minimumSizeHint()
+        if self._orientation == Qt.Orientation.Horizontal:
+            return QSize(max(own_minimum.width(), content_minimum.width()),
+                         own_minimum.height() + content_minimum.height())
+        return QSize(own_minimum.width() + content_minimum.width(),
+                     max(own_minimum.height(), content_minimum.height()))
 
     def add_widget(self, widget: QWidget, index: int = -1) -> None:
         """Add or insert a widget into the tab bar."""

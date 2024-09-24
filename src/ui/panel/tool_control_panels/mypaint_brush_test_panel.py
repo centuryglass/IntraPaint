@@ -70,4 +70,3 @@ class MyPaintBrushTestPanel(QWidget):
         if brush_data is None:
             return
         self._brush.set_value(brush_data.id, value)
-

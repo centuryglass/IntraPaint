@@ -2,7 +2,7 @@
 from typing import Optional
 
 from PySide6.QtCore import Qt, QPoint, QRect
-from PySide6.QtGui import QIcon, QCursor, QMouseEvent, QKeySequence, QColor, QPainter, QTransform, QBrush
+from PySide6.QtGui import QIcon, QCursor, QMouseEvent, QColor, QPainter, QTransform, QBrush
 from PySide6.QtWidgets import QWidget, QApplication
 
 from src.config.cache import Cache
@@ -11,7 +11,7 @@ from src.image.layers.image_layer import ImageLayer
 from src.image.layers.image_stack import ImageStack
 from src.image.layers.layer import Layer
 from src.tools.base_tool import BaseTool
-from src.ui.input_fields.pattern_combo_box import PatternComboBox
+from src.ui.input_fields.fill_style_combo_box import FillStyleComboBox
 from src.ui.panel.tool_control_panels.fill_tool_panel import FillToolPanel
 from src.util.shared_constants import PROJECT_DIR, COLOR_PICK_HINT
 from src.util.visual.image_utils import flood_fill, create_transparent_image
@@ -33,18 +33,16 @@ CURSOR_SIZE = 50
 FILL_LABEL = _tr('Color fill')
 FILL_TOOLTIP = _tr('Fill areas with solid colors')
 FILL_CONTROL_HINT = _tr('{left_mouse_icon}: fill')
-FILL_BUTTON_TOOLTIP = _tr('Set fill color')
 
 
 class FillTool(BaseTool):
     """Lets the user fill image areas with solid colors."""
 
     def __init__(self, image_stack: ImageStack) -> None:
-        super().__init__()
+        super().__init__(KeyConfig.FILL_TOOL_KEY, FILL_LABEL, FILL_TOOLTIP, QIcon(RESOURCES_FILL_ICON))
         cache = Cache()
         self._control_panel: Optional[FillToolPanel] = None
         self._image_stack = image_stack
-        self._icon = QIcon(RESOURCES_FILL_ICON)
         self._color = cache.get_color(Cache.LAST_BRUSH_COLOR, Qt.GlobalColor.black)
         self._threshold = cache.get(Cache.FILL_THRESHOLD)
         self._sample_merged = cache.get(Cache.SAMPLE_MERGED)
@@ -58,22 +56,6 @@ class FillTool(BaseTool):
         self._layer.lock_changed.connect(self._layer_lock_change_slot)
         image_stack.active_layer_changed.connect(self._active_layer_change_slot)
         self._layer_lock_change_slot(self._layer, self._layer.locked)
-
-    def get_hotkey(self) -> QKeySequence:
-        """Returns the hotkey(s) that should activate this tool."""
-        return KeyConfig().get_keycodes(KeyConfig.FILL_TOOL_KEY)
-
-    def get_icon(self) -> QIcon:
-        """Returns an icon used to represent this tool."""
-        return self._icon
-
-    def get_label_text(self) -> str:
-        """Returns label text used to represent this tool."""
-        return FILL_LABEL
-
-    def get_tooltip_text(self) -> str:
-        """Returns tooltip text used to describe this tool."""
-        return FILL_TOOLTIP
 
     def get_input_hint(self) -> str:
         """Return text describing different input functionality."""
@@ -117,10 +99,11 @@ class FillTool(BaseTool):
             mask = flood_fill(fill_image, layer_point, self._color, self._threshold, False)
             assert mask is not None
             fill_pattern = Cache().get(Cache.FILL_TOOL_BRUSH_PATTERN)
+            fill_brush = QBrush()
             try:
-                fill_brush = PatternComboBox.get_brush(fill_pattern)
+                fill_brush.setStyle(FillStyleComboBox.get_style(fill_pattern))
             except KeyError:
-                fill_brush = QBrush(Qt.BrushStyle.SolidPattern)
+                fill_brush.setStyle(Qt.BrushStyle.SolidPattern)
             selection_only = Cache().get(Cache.PAINT_SELECTION_ONLY)
             if selection_only or fill_brush.style() != Qt.BrushStyle.SolidPattern:
                 mask_painter = QPainter(mask)

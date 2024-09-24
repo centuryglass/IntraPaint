@@ -36,7 +36,6 @@ DELETE_BUTTON_TOOLTIP = _tr('Delete the active layer.')
 LAYER_UP_BUTTON_TOOLTIP = _tr('Move the active layer up.')
 LAYER_DOWN_BUTTON_TOOLTIP = _tr('Move the active layer down.')
 MERGE_DOWN_BUTTON_TOOLTIP = _tr('Merge the active layer with the one below it.')
-MERGE_BUTTON_LABEL = _tr('Merge Down')
 OPACITY_LABEL_TEXT = _tr('Opacity:')
 MODE_LABEL_TEXT = _tr('Layer mode:')
 
@@ -343,4 +342,3 @@ class LayerPanel(QWidget):
                        self._merge_down_button,
                        self._delete_button):
             widget.setEnabled(not is_locked)
-

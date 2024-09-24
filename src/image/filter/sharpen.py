@@ -12,7 +12,6 @@ from src.util.shared_constants import PROJECT_DIR
 from src.util.visual.pil_image_utils import pil_image_to_qimage, qimage_to_pil_image
 from src.util.parameter import Parameter, TYPE_FLOAT
 
-
 # The `QCoreApplication.translate` context for strings in this file
 TR_ID = 'image.filter.sharpen'
 
@@ -60,7 +59,9 @@ class SharpenFilter(ImageFilter):
 
     def radius(self, parameter_values: List[Any]) -> float:
         """Given a set of valid parameters, estimate how far each pixel's influence extends in the final image."""
-        return 5.0  # TODO: this is just a guess, test for accuracy
+        # This might be larger than necessary, but it's probably not worth finding the exact value to cut a few extra
+        # pixel lines out of the change bounds.
+        return 5.0
 
     @staticmethod
     def sharpen(image: QImage, factor: float) -> QImage:

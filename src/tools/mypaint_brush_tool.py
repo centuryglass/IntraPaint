@@ -3,7 +3,7 @@ import logging
 import os
 from typing import Optional
 
-from PySide6.QtGui import QColor, QIcon, QKeySequence, Qt
+from PySide6.QtGui import QColor, QIcon, Qt
 from PySide6.QtWidgets import QWidget, QApplication
 
 from src.config.cache import Cache
@@ -39,14 +39,14 @@ class MyPaintBrushTool(BrushTool):
     """Implements brush controls using a MyPaint surface."""
 
     def __init__(self, image_stack: ImageStack, image_viewer: ImageViewer, size_key: Optional[str] = None) -> None:
-        super().__init__(image_stack, image_viewer, MyPaintLayerBrush())
+        super().__init__(KeyConfig.BRUSH_TOOL_KEY, BRUSH_LABEL, BRUSH_TOOLTIP, QIcon(RESOURCES_BRUSH_ICON),
+                         image_stack, image_viewer, MyPaintLayerBrush())
         self._size_key = Cache.PAINT_TOOL_BRUSH_SIZE if size_key is None else size_key
         self._last_click = None
         self._control_panel: Optional[MyPaintBrushToolPanel] = None
         self._active = False
         self._drawing = False
         self._cached_size = None
-        self._icon = QIcon(RESOURCES_BRUSH_ICON)
 
         # Load brush and size from cache
         cache = Cache()
@@ -71,22 +71,6 @@ class MyPaintBrushTool(BrushTool):
             self.brush_path = brush_path
         cache.connect(self, Cache.MYPAINT_BRUSH, set_active_brush)
         self.update_brush_cursor()
-
-    def get_hotkey(self) -> QKeySequence:
-        """Returns the hotkey(s) that should activate this tool."""
-        return KeyConfig().get_keycodes(KeyConfig.BRUSH_TOOL_KEY)
-
-    def get_icon(self) -> QIcon:
-        """Returns an icon used to represent this tool."""
-        return self._icon
-
-    def get_label_text(self) -> str:
-        """Returns label text used to represent this tool."""
-        return BRUSH_LABEL
-
-    def get_tooltip_text(self) -> str:
-        """Returns tooltip text used to describe this tool."""
-        return BRUSH_TOOLTIP
 
     def get_input_hint(self) -> str:
         """Return text describing different input functionality."""

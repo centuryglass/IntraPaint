@@ -283,7 +283,8 @@ def _item_at_maximum_size(item: Optional[QWidget | QLayout | QSpacerItem]) -> Tu
         at_maximum_height = not any(size_check[1] is False for size_check in max_tuples)
     else:
 
-        def _widget_at_maximum(size: int, fixed_max: int, size_hint_dim: int, dim_size_policy: QSizePolicy.Policy) -> bool:
+        def _widget_at_maximum(size: int, fixed_max: int, size_hint_dim: int,
+                               dim_size_policy: QSizePolicy.Policy) -> bool:
             if size >= fixed_max:
                 return True
             if size < size_hint_dim:

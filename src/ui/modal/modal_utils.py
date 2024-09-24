@@ -130,11 +130,12 @@ def request_confirmation(parent: Optional[QWidget], title: str, message: str,
     return confirmed_action
 
 
-def open_image_file(parent: QWidget, mode: str = 'load',
+def open_image_file(parent: QWidget, mode: str = LOAD_IMAGE_MODE,
                     selected_file: str = '') -> Optional[str]:
     """Opens an image file for editing, saving, etc."""
     file_filter = IMAGE_LOAD_FILTER if mode == LOAD_IMAGE_MODE else IMAGE_SAVE_FILTER
     file_dialog = QFileDialog(parent, filter=file_filter)
+    file_dialog.setWindowTitle(TITLE_LOAD_IMAGE if mode == LOAD_IMAGE_MODE else TITLE_SAVE_IMAGE)
     if os.path.isfile(selected_file):
         file_dialog.selectFile(selected_file)
     if mode == LOAD_IMAGE_MODE:

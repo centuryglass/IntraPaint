@@ -1,5 +1,4 @@
 """View available extra networks/models."""
-import logging
 import re
 from typing import Dict, Optional, List, cast
 
@@ -13,9 +12,6 @@ from src.ui.layout.bordered_widget import BorderedWidget
 from src.ui.widget.image_widget import ImageWidget
 from src.util.shared_constants import APP_ICON_PATH
 from src.util.visual.text_drawing_utils import max_font_size
-
-logger = logging.getLogger(__name__)
-
 
 # The `QCoreApplication.translate` context for strings in this file
 TR_ID = 'ui.window.extra_network_window'
@@ -48,6 +44,7 @@ class ExtraNetworkWindow(QDialog):
         super().__init__()
 
         self.setWindowIcon(QIcon(APP_ICON_PATH))
+        self.setWindowTitle(PAGE_TITLE)
         self._layout = QVBoxLayout(self)
         self._loras: List[Dict[str, str]] = []
         self._list_items: List[_LoraItem] = []

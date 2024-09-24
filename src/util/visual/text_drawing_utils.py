@@ -2,7 +2,7 @@
 from typing import Optional, cast
 
 from PySide6.QtCore import QRect, QMargins, QSize, QPoint, Qt
-from PySide6.QtGui import QFont, QPainter, Qt, QFontMetrics, QPainterPath, QTransform, QColor, QPalette, QImage, \
+from PySide6.QtGui import QFont, QPainter, QFontMetrics, QPainterPath, QTransform, QColor, QPalette, QImage, \
     QKeySequence
 from PySide6.QtWidgets import QApplication
 
@@ -78,7 +78,7 @@ def create_text_path(text: str, font: QFont, bounds: Optional[QRect] = None, ali
     if orientation == Qt.Orientation.Vertical and bounds is not None:
         bounds = bounds.transposed()
     path = QPainterPath()
-    if text.strip() == "":
+    if text.strip() == '':
         return path
     path.addText(QPoint(), font, text)
     text_bounds = path.boundingRect().toAlignedRect()
@@ -155,6 +155,12 @@ def rich_text_key_hint(key_str: str) -> str:
         return image
 
     return temp_rich_text_image(key_str, _draw_text_image)
+
+
+def rich_text_code_block(code_string: str) -> str:
+    """Formats some text as a rich text code block."""
+    return ('<pre style="font-family: \'Courier New\', monospace; background-color: #f0f0f0; color: #000000;'
+            f' padding: 5px; border: 1px solid #ccc; margin-right: 100px;">{code_string}</pre>')
 
 
 def _rich_text_image(img_path: str) -> str:

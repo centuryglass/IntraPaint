@@ -7,9 +7,6 @@ import sys
 from enum import Enum
 from typing import Optional, Dict, List, Set
 
-from src.config.cache import Cache
-from src.ui.panel.generators.generator_panel import GeneratorPanel
-
 try:
     from enum import StrEnum
 except ImportError:  # Use third-party StrEnum if python version < 3.11
@@ -20,6 +17,7 @@ from PySide6.QtCore import Qt, QRect, QSize, Signal
 from PySide6.QtGui import QIcon, QMouseEvent, QResizeEvent, QKeySequence, QCloseEvent, QImage, QAction, QMoveEvent
 from PySide6.QtWidgets import QMainWindow, QWidget, QVBoxLayout, QStackedWidget, QApplication, QSizePolicy
 
+from src.config.cache import Cache
 from src.hotkey_filter import HotkeyFilter
 from src.image.layers.image_stack import ImageStack
 from src.ui.generated_image_selector import GeneratedImageSelector
@@ -29,6 +27,8 @@ from src.ui.layout.draggable_tabs.tab_box import TabBox
 from src.ui.panel.image_panel import ImagePanel
 from src.ui.panel.layer_ui.layer_panel import LayerPanel
 from src.ui.panel.tool_panel import ToolPanel
+from src.ui.panel.generators.generator_panel import GeneratorPanel
+
 from src.ui.widget.loading_widget import LoadingWidget
 from src.ui.window.image_window import ImageWindow
 from src.util.application_state import AppStateTracker, APP_STATE_LOADING, APP_STATE_NO_IMAGE, APP_STATE_EDITING, \
@@ -272,7 +272,7 @@ class MainWindow(QMainWindow):
             if '--dev' in sys.argv:  # Developer mode only: add layout debug action
                 def _tab_box_debug(_, box=tab_box, box_id=tab_box_id):
                     print(f'\n{box_id} DEBUG:')
-                    print(f'\tBOX:')
+                    print('\tBOX:')
                     box_info = all_layout_info(box)
                     for k, v in box_info.items():
                         print(f'\t\t{k}: {v}')

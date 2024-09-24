@@ -37,8 +37,6 @@ LABEL_TEXT_TEXT_INPUT = _tr('Enter Text:')
 LABEL_TEXT_FONT_STRETCH = _tr('Stretch')
 BUTTON_TEXT_FONT_COLOR = _tr('Text Color')
 BUTTON_TEXT_BACKGROUND_COLOR = _tr('Background Color')
-TOOLTIP_BOUNDS_TO_TEXT = _tr('Update width and height to fit the current text exactly.')
-TOOLTIP_FONT_SIZE_TO_BOUNDS = _tr('Change the font size to the largest size that will fit in the text bounds.')
 TOOLTIP_COLOR = _tr('Set text color')
 TOOLTIP_BACKGROUND_COLOR = _tr('Set text background color')
 
@@ -93,6 +91,8 @@ class TextToolPanel(QWidget):
         super().__init__()
         self._text_rect = TextRect()
         self._layout = QGridLayout(self)
+        self._layout.setContentsMargins(1, 1, 1, 1)
+        self._layout.setSpacing(2)
         self._orientation = Qt.Orientation.Horizontal
         self._change_signal_enabled = True
         self._calculated_size = QSize()

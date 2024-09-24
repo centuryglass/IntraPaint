@@ -21,6 +21,7 @@ from src.tools.layer_transform_tool import LayerTransformTool
 from src.tools.selection_fill_tool import SelectionFillTool
 from src.tools.selection_brush_tool import SelectionBrushTool
 from src.tools.shape_selection_tool import ShapeSelectionTool
+from src.tools.shape_tool import ShapeTool
 from src.tools.smudge_tool import SmudgeTool
 from src.tools.text_tool import TextTool
 from src.ui.image_viewer import ImageViewer
@@ -88,6 +89,7 @@ class ToolController(QObject):
         self.add_tool(eyedropper_tool)
         text_tool = TextTool(image_stack, image_viewer)
         self.add_tool(text_tool)
+        self.add_tool(ShapeTool(image_stack, image_viewer))
         self.add_tool(LayerTransformTool(image_stack, image_viewer))
         self.add_tool(FreeSelectionTool(image_stack, image_viewer))
         self.add_tool(SelectionBrushTool(image_stack, image_viewer))
@@ -130,7 +132,7 @@ class ToolController(QObject):
         """Register key(s) that should load a specific tool."""
         if not self._use_hotkeys:
             return
-        keys = tool.get_hotkey()
+        config_key = tool.get_activation_config_key()
 
         def set_active():
             """On hotkey press, set the active tool and consume the event if another tool was previously active."""
@@ -140,7 +142,7 @@ class ToolController(QObject):
             self._image_viewer.focusWidget()
             return True
         binding_id = f'{tool.label}_{id(self)}'
-        HotkeyFilter.instance().register_keybinding(binding_id, set_active, keys, Qt.KeyboardModifier.NoModifier)
+        HotkeyFilter.instance().register_config_keybinding(binding_id, set_active, config_key)
 
     def unregister_hotkeys(self, tool: BaseTool) -> None:
         """Disconnects tool hotkey bindings."""
@@ -294,4 +296,3 @@ class ToolController(QObject):
             del self._tool_modifier_delegates[removed_tool]
         self._all_tools.remove(removed_tool)
         self.tool_removed.emit(removed_tool)
-

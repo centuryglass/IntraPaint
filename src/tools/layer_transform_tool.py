@@ -2,7 +2,7 @@
 from typing import Optional, Callable
 
 from PySide6.QtCore import Qt, QRect, QRectF, QSize
-from PySide6.QtGui import QCursor, QIcon, QKeySequence, QTransform
+from PySide6.QtGui import QCursor, QIcon, QTransform
 from PySide6.QtWidgets import QWidget, QSpinBox, QDoubleSpinBox, QApplication
 
 from src.config.key_config import KeyConfig
@@ -32,9 +32,6 @@ TRANSFORM_LABEL = _tr('Transform Layers')
 TRANSFORM_TOOLTIP = _tr('Move, scale, or rotate the active layer.')
 TRANSFORM_CONTROL_HINT = _tr('{left_mouse_icon}, drag: move layer')
 
-SCALE_STEP = 0.05
-MIN_WIDTH_FOR_PREVIEW = 600
-CONTROL_GRID_SPACING = 10
 RESOURCES_TRANSFORM_TOOL_ICON = f'{PROJECT_DIR}/resources/icons/tools/layer_transform_icon.svg'
 
 
@@ -42,11 +39,11 @@ class LayerTransformTool(BaseTool):
     """Applies transformations to the active layer."""
 
     def __init__(self, image_stack: ImageStack, image_viewer: ImageViewer) -> None:
-        super().__init__()
+        super().__init__(KeyConfig.TRANSFORM_TOOL_KEY, TRANSFORM_LABEL, TRANSFORM_TOOLTIP,
+                         QIcon(RESOURCES_TRANSFORM_TOOL_ICON))
         self._layer: Optional[TransformLayer] = None
         self._image_stack = image_stack
         self._image_viewer = image_viewer
-        self._icon = QIcon(RESOURCES_TRANSFORM_TOOL_ICON)
         self._initial_transform = QTransform()
         self._transform_outline = TransformOutline(QRectF())
         self._transform_outline.offset_changed.connect(self._offset_change_slot)
@@ -83,22 +80,6 @@ class LayerTransformTool(BaseTool):
 
         self._control_panel.reset_signal.connect(_reset)
         self._control_panel.clear_signal.connect(_clear)
-
-    def get_hotkey(self) -> QKeySequence:
-        """Returns the hotkey(s) that should activate this tool."""
-        return KeyConfig().get_keycodes(KeyConfig.TRANSFORM_TOOL_KEY)
-
-    def get_icon(self) -> QIcon:
-        """Returns an icon used to represent this tool."""
-        return self._icon
-
-    def get_label_text(self) -> str:
-        """Returns label text used to represent this tool."""
-        return TRANSFORM_LABEL
-
-    def get_tooltip_text(self) -> str:
-        """Returns tooltip text used to describe this tool."""
-        return TRANSFORM_TOOLTIP
 
     def get_input_hint(self) -> str:
         """Return text describing different input functionality."""

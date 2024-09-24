@@ -27,9 +27,9 @@ def _tr(*args):
 
 
 ZOOM_LABEL = _tr('Move view')
+ZOOM_TOOLTIP = _tr('Left-click to pan, right-click to draw viewport')
 IMAGE_GEN_LABEL_SHORT = _tr('Move gen. area')
 BUTTON_TEXT_RESET_VIEW = _tr('Reset view')
-BORDER_OPACITY = 0.4
 
 RESOURCES_ZOOM_ICON = f'{PROJECT_DIR}/resources/icons/tools/zoom_icon.svg'
 MIN_AREA = 4
@@ -39,22 +39,13 @@ class ZoomTool(BaseTool):
     """Tool used to control the zoom level of the primary image view from within the image window."""
 
     def __init__(self, main_view: ImageViewer, controller_view: ImageViewer) -> None:
-        super().__init__()
+        super().__init__('', ZOOM_LABEL, ZOOM_TOOLTIP, QIcon(RESOURCES_ZOOM_ICON))
         self._main_view = main_view
         self._control_view = controller_view
         scene = controller_view.scene()
         self._selection_handler = ClickAndDragSelection(scene)
         self._dragging = False
-        self._icon = QIcon(RESOURCES_ZOOM_ICON)
         self.cursor = QCursor(Qt.CursorShape.OpenHandCursor)
-
-    def get_icon(self) -> QIcon:
-        """Returns an icon used to represent this tool."""
-        return self._icon
-
-    def get_label_text(self) -> str:
-        """Returns the tool's localized label text."""
-        return ZOOM_LABEL
 
     def get_input_hint(self) -> str:
         """Return text describing different input functionality."""

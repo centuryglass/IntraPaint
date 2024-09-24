@@ -45,7 +45,7 @@ class Tab(Label):
         self._clicking = False
         self._dragging = False
         self._click_time = 0.0
-        if True or shortcut_config_key is not None:
+        if shortcut_config_key is not None:
             self._key_hint: Optional[KeyHintLabel] = KeyHintLabel(None, shortcut_config_key, parent=self)
 
             def _activate_key() -> bool:

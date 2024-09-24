@@ -145,7 +145,7 @@ class Label(QLabel):
 
     def _draw_text_pixmaps(self) -> tuple[QPixmap, QPixmap]:
         """Re-renders the label text."""
-        drawn_text = '     ' if self._text is None else (self._text)
+        drawn_text = '     ' if self._text is None else self._text
         font = QFont(self._font)
         if self._scale_text_to_bounds:
             text_size = self.size().transposed() if self._orientation == Qt.Orientation.Vertical else self.size()

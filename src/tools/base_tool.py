@@ -9,7 +9,7 @@ Supports the following:
 from typing import Optional
 
 from PySide6.QtCore import QObject, Signal, QPoint, QEvent, Qt
-from PySide6.QtGui import QCursor, QPixmap, QMouseEvent, QTabletEvent, QWheelEvent, QIcon, QKeySequence
+from PySide6.QtGui import QCursor, QPixmap, QMouseEvent, QTabletEvent, QWheelEvent, QIcon
 from PySide6.QtWidgets import QWidget, QApplication
 
 from src.config.key_config import KeyConfig
@@ -80,10 +80,14 @@ class BaseTool(QObject):
 
     cursor_change = Signal()
 
-    def __init__(self) -> None:
+    def __init__(self, activation_config_key: str, label_text: str, tooltip_text: str, icon: QIcon) -> None:
         super().__init__()
+        self._activation_config_key = activation_config_key
         self._cursor: Optional[QCursor | QPixmap] = None
         self._active = False
+        self._label_text = label_text
+        self._tooltip_text = tooltip_text
+        self._icon = icon
 
     @staticmethod
     def modifier_hint(modifier_key: str, modifier_hint_str: str) -> str:
@@ -133,21 +137,21 @@ class BaseTool(QObject):
         self._active = True
         self._on_activate(True)
 
-    def get_hotkey(self) -> QKeySequence:
-        """Returns a hotkey or list of keys that should activate this tool."""
-        raise NotImplementedError('BaseTool.get_hotkey needs to be implemented to return a QKeySequence.')
+    def get_activation_config_key(self) -> str:
+        """Returns the KeyConfig value key for the hotkey that activates this tool."""
+        return self._activation_config_key
 
     def get_icon(self) -> QIcon:
         """Returns an icon used to represent this tool."""
-        raise NotImplementedError('BaseTool.get_icon needs to be implemented to return a QIcon.')
+        return self._icon
 
     def get_label_text(self) -> str:
         """Returns label text used to represent this tool."""
-        raise NotImplementedError('BaseTool.get_label_text needs to be implemented to return a string.')
+        return self._label_text
 
     def get_tooltip_text(self) -> str:
         """Returns tooltip text used to describe this tool."""
-        raise NotImplementedError('BaseTool.get_tooltip_text needs to be implemented to return a string.')
+        return self._tooltip_text
 
     def get_input_hint(self) -> str:
         """Return text describing different input functionality."""

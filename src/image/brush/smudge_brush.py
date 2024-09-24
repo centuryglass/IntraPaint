@@ -13,9 +13,6 @@ from src.util.math_utils import clamp
 from src.util.visual.image_utils import create_transparent_image, image_data_as_numpy_8bit
 
 PAINT_BUFFER_DELAY_MS = 50
-AVG_COUNT = 20
-
-debug_save_idx = 0
 
 
 class SmudgeBrush(LayerBrush):
@@ -226,4 +223,3 @@ class _SmudgePoint:
                                    QColor(Qt.GlobalColor.black), image_center, None)
         painter.end()
         return image
-

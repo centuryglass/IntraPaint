@@ -2,7 +2,7 @@
 import json
 from typing import Optional, List
 
-from PySide6.QtGui import QIcon, QKeySequence
+from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import QApplication, QWidget
 
 from src.config.cache import Cache
@@ -71,33 +71,14 @@ class FilterTool(QtPaintBrushTool):
         self._active_filter = initial_filter
         brush = FilterBrush(initial_filter)
         brush.parameter_values = self._filter_params[self._active_filter.get_name()]
-        super().__init__(image_stack, image_viewer, size_key=Cache.FILTER_TOOL_BRUSH_SIZE,
+        super().__init__(KeyConfig.FILTER_TOOL_KEY, FILTER_LABEL, FILTER_TOOLTIP, QIcon(RESOURCES_FILTER_ICON),
+                         image_stack, image_viewer, size_key=Cache.FILTER_TOOL_BRUSH_SIZE,
                          pressure_size_key=Cache.FILTER_TOOL_PRESSURE_SIZE, opacity_key=Cache.FILTER_TOOL_OPACITY,
                          pressure_opacity_key=Cache.FILTER_TOOL_PRESSURE_OPACITY,
                          hardness_key=Cache.FILTER_TOOL_HARDNESS,
                          pressure_hardness_key=Cache.FILTER_TOOL_PRESSURE_HARDNESS, brush=brush)
-        self._icon = QIcon(RESOURCES_FILTER_ICON)
         cache.connect(self, Cache.FILTER_TOOL_SELECTED_FILTER, self._filter_update_slot)
         cache.connect(self, Cache.FILTER_TOOL_CACHED_PARAMETERS, self._filter_param_update_slot)
-
-    # noinspection PyMethodMayBeStatic
-    def get_hotkey(self) -> QKeySequence:
-        """Returns the hotkey(s) that should activate this tool."""
-        return KeyConfig().get_keycodes(KeyConfig.FILTER_TOOL_KEY)
-
-    def get_icon(self) -> QIcon:
-        """Returns an icon used to represent this tool."""
-        return self._icon
-
-    # noinspection PyMethodMayBeStatic
-    def get_label_text(self) -> str:
-        """Returns label text used to represent this tool."""
-        return FILTER_LABEL
-
-    # noinspection PyMethodMayBeStatic
-    def get_tooltip_text(self) -> str:
-        """Returns tooltip text used to describe this tool."""
-        return FILTER_TOOLTIP
 
     def get_input_hint(self) -> str:
         """Return text describing different input functionality."""

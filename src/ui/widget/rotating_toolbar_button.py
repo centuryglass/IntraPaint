@@ -26,6 +26,7 @@ class RotatingToolbarButton(QToolButton):
     def set_orientation(self, orientation: Qt.Orientation) -> None:
         """Updates the button orientation."""
         self._label.set_orientation(orientation)
+        self.resize(self.sizeHint())
 
     def text(self) -> str:
         """Returns the label's text"""

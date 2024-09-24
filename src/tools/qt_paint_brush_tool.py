@@ -2,7 +2,7 @@
 import logging
 from typing import Optional
 
-from PySide6.QtGui import QColor, Qt
+from PySide6.QtGui import QColor, Qt, QIcon, QBrush
 
 from src.config.cache import Cache
 from src.config.key_config import KeyConfig
@@ -11,7 +11,7 @@ from src.image.brush.qt_paint_brush import QtPaintBrush
 from src.image.layers.image_stack import ImageStack
 from src.tools.brush_tool import BrushTool
 from src.ui.image_viewer import ImageViewer
-from src.ui.input_fields.pattern_combo_box import PatternComboBox, BRUSH_PATTERN_SOLID
+from src.ui.input_fields.fill_style_combo_box import FillStyleComboBox, BRUSH_PATTERN_SOLID
 from src.ui.panel.tool_control_panels.brush_tool_panel import BrushToolPanel
 from src.ui.panel.tool_control_panels.draw_tool_panel import DrawToolPanel
 from src.util.math_utils import clamp
@@ -22,7 +22,8 @@ logger = logging.getLogger(__name__)
 class QtPaintBrushTool(BrushTool):
     """Base implementation for BrushTool classes that use a QtPaintBrush."""
 
-    def __init__(self, image_stack: ImageStack, image_viewer: ImageViewer,
+    def __init__(self, activation_config_key: str, label_text: str, tooltip_text: str, icon: QIcon,
+                 image_stack: ImageStack, image_viewer: ImageViewer,
                  size_key: Optional[str] = None, pressure_size_key: Optional[str] = None,
                  opacity_key: Optional[str] = None, pressure_opacity_key: Optional[str] = None,
                  hardness_key: Optional[str] = None, pressure_hardness_key: Optional[str] = None,
@@ -32,7 +33,7 @@ class QtPaintBrushTool(BrushTool):
             brush = QtPaintBrush()
         else:
             assert isinstance(brush, QtPaintBrush)
-        super().__init__(image_stack, image_viewer, brush)
+        super().__init__(activation_config_key, label_text, tooltip_text, icon, image_stack, image_viewer, brush)
         self._last_click = None
         self._control_panel: Optional[DrawToolPanel] = None
         self._drawing = False
@@ -128,9 +129,9 @@ class QtPaintBrushTool(BrushTool):
         if pattern_key is not None:
             def _update_pattern(pattern_str: str) -> None:
                 try:
-                    pattern_brush = PatternComboBox.get_brush(pattern_str)
-                    if pattern_brush.style() != Qt.BrushStyle.SolidPattern:
-                        brush.set_pattern_brush(pattern_brush)
+                    fill_style = FillStyleComboBox.get_style(pattern_str)
+                    if fill_style != Qt.BrushStyle.SolidPattern:
+                        brush.set_pattern_brush(QBrush(fill_style))
                     else:
                         brush.set_pattern_brush(None)
                 except KeyError:

@@ -2,7 +2,7 @@
 from typing import Optional
 
 from PySide6.QtCore import QPoint, QPointF, QSizeF, QSize, QRect
-from PySide6.QtGui import QIcon, QKeySequence, QMouseEvent, Qt, QTransform
+from PySide6.QtGui import QIcon, QMouseEvent, Qt, QTransform
 from PySide6.QtWidgets import QWidget, QApplication
 
 from src.config.cache import Cache
@@ -19,8 +19,8 @@ from src.ui.graphics_items.placement_outline import PlacementOutline
 from src.ui.image_viewer import ImageViewer
 from src.ui.panel.tool_control_panels.text_tool_panel import TextToolPanel
 from src.undo_stack import UndoStack
-from src.util.visual.text_drawing_utils import left_button_hint_text
 from src.util.shared_constants import PROJECT_DIR
+from src.util.visual.text_drawing_utils import left_button_hint_text
 
 # The `QCoreApplication.translate` context for strings in this file
 TR_ID = 'tools.text_tool'
@@ -44,7 +44,7 @@ class TextTool(BaseTool):
     """Lets the user fill image areas with solid colors."""
 
     def __init__(self, image_stack: ImageStack, image_viewer: ImageViewer) -> None:
-        super().__init__()
+        super().__init__(KeyConfig.TEXT_TOOL_KEY, TEXT_LABEL, TEXT_TOOLTIP, QIcon(RESOURCES_TEXT_ICON))
         scene = image_viewer.scene()
         assert scene is not None
         self._scene = scene
@@ -56,29 +56,12 @@ class TextTool(BaseTool):
         self._text_layer: Optional[TextLayer] = None
         self._selection_handler = ClickAndDragSelection(scene)
         self._dragging = False
-        self._icon = QIcon(RESOURCES_TEXT_ICON)
         self._image_stack.active_layer_changed.connect(self._active_layer_change_slot)
 
         def _use_fixed_aspect_ratio(modifiers: Qt.KeyboardModifier) -> None:
             self._placement_outline.preserve_aspect_ratio = KeyConfig.modifier_held(KeyConfig.FIXED_ASPECT_MODIFIER,
                                                                                     held_modifiers=modifiers)
         HotkeyFilter.instance().modifiers_changed.connect(_use_fixed_aspect_ratio)
-
-    def get_hotkey(self) -> QKeySequence:
-        """Returns the hotkey(s) that should activate this tool."""
-        return KeyConfig().get_keycodes(KeyConfig.TEXT_TOOL_KEY)
-
-    def get_icon(self) -> QIcon:
-        """Returns an icon used to represent this tool."""
-        return self._icon
-
-    def get_label_text(self) -> str:
-        """Returns label text used to represent this tool."""
-        return TEXT_LABEL
-
-    def get_tooltip_text(self) -> str:
-        """Returns tooltip text used to describe this tool."""
-        return TEXT_TOOLTIP
 
     def get_input_hint(self) -> str:
         """Return text describing different input functionality."""

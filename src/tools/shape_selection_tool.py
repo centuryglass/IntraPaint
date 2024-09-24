@@ -2,19 +2,19 @@
 from typing import Optional
 
 from PySide6.QtCore import Qt, QPoint
-from PySide6.QtGui import QKeySequence, QIcon, QMouseEvent, QPainter, QColor, QBrush, QPainterPath
-from PySide6.QtWidgets import QWidget, QLayout, QApplication
+from PySide6.QtGui import QIcon, QMouseEvent, QPainter, QColor, QBrush, QPainterPath
+from PySide6.QtWidgets import QWidget, QApplication
 
 from src.config.application_config import AppConfig
 from src.config.key_config import KeyConfig
 from src.image.layers.image_stack import ImageStack
 from src.tools.base_tool import BaseTool
-from src.ui.graphics_items.click_and_drag_selection import ClickAndDragSelection, SELECTION_MODE_RECT, \
-    SELECTION_MODE_ELLIPSE
+from src.ui.graphics_items.click_and_drag_selection import ClickAndDragSelection
 from src.ui.image_viewer import ImageViewer
 from src.ui.panel.tool_control_panels.shape_selection_panel import ShapeSelectionPanel
-from src.util.visual.text_drawing_utils import left_button_hint_text, right_button_hint_text
 from src.util.shared_constants import PROJECT_DIR
+from src.util.visual.shape_mode import ShapeMode
+from src.util.visual.text_drawing_utils import left_button_hint_text, right_button_hint_text
 
 # The `QCoreApplication.translate` context for strings in this file
 TR_ID = 'tools.shape_selection_tool'
@@ -29,9 +29,8 @@ RESOURCES_SHAPE_SELECT_ICON = f'{PROJECT_DIR}/resources/icons/tools/shape_select
 
 SHAPE_SELECTION_LABEL = _tr('Rectangle/Ellipse selection')
 SHAPE_SELECTION_TOOLTIP = _tr('Select or de-select rectangles or ellipses')
-SHAPE_SELECTION_CONTROL_HINT = _tr('{left_mouse_icon}, drag:select - {right_mouse_icon}, drag: deselect')
+SHAPE_SELECTION_CONTROL_HINT = _tr('{left_mouse_icon}, drag: select - {right_mouse_icon}, drag: deselect')
 
-GRAPHICS_ITEM_OPACITY = 0.6
 ERASING_COLOR = Qt.GlobalColor.white
 
 
@@ -39,13 +38,13 @@ class ShapeSelectionTool(BaseTool):
     """Select or deselect rectangular or ellipsoid areas."""
 
     def __init__(self, image_stack: ImageStack, image_viewer: ImageViewer) -> None:
-        super().__init__()
+        super().__init__(KeyConfig.SHAPE_SELECTION_TOOL_KEY, SHAPE_SELECTION_LABEL, SHAPE_SELECTION_TOOLTIP,
+                         QIcon(RESOURCES_SHAPE_SELECT_ICON))
         scene = image_viewer.scene()
         assert scene is not None
         self._scene = scene
         self._image_stack = image_stack
         self._control_panel = ShapeSelectionPanel(image_stack.selection_layer)
-        self._control_layout: Optional[QLayout] = None
         self._selection_handler = ClickAndDragSelection(scene)
         self._dragging = False
         self._clearing = False
@@ -55,7 +54,11 @@ class ShapeSelectionTool(BaseTool):
         self._erasing_brush = QBrush(ERASING_COLOR, Qt.BrushStyle.DiagCrossPattern)
 
         def _update_mode(mode_str: str) -> None:
-            self._selection_handler.mode = mode_str
+            try:
+                mode = ShapeMode.from_text(mode_str)
+                self._selection_handler.mode = mode
+            except KeyError:
+                pass
         self._control_panel.tool_mode_changed.connect(_update_mode)
 
         def _update_color(color_str: str) -> None:
@@ -64,22 +67,6 @@ class ShapeSelectionTool(BaseTool):
             self._selection_brush.setColor(self._color)
         _update_color(AppConfig().get(AppConfig.SELECTION_COLOR))
         AppConfig().connect(self, AppConfig.SELECTION_COLOR, _update_color)
-
-    def get_hotkey(self) -> QKeySequence:
-        """Returns the hotkey(s) that should activate this tool."""
-        return KeyConfig().get_keycodes(KeyConfig.SHAPE_SELECTION_TOOL_KEY)
-
-    def get_icon(self) -> QIcon:
-        """Returns an icon used to represent this tool."""
-        return self._icon
-
-    def get_label_text(self) -> str:
-        """Returns label text used to represent this tool."""
-        return SHAPE_SELECTION_LABEL
-
-    def get_tooltip_text(self) -> str:
-        """Returns tooltip text used to describe this tool."""
-        return SHAPE_SELECTION_TOOLTIP
 
     def get_input_hint(self) -> str:
         """Return text describing different input functionality."""
@@ -93,11 +80,12 @@ class ShapeSelectionTool(BaseTool):
 
     def set_shape_mode(self, mode: str) -> None:
         """Switches between rectangle and ellipse selection."""
-        if self._selection_handler.mode == mode:
+        shape_mode = ShapeMode.from_text(mode)
+        if self._selection_handler.mode == shape_mode:
             return
-        if mode not in (SELECTION_MODE_ELLIPSE, SELECTION_MODE_RECT):
+        if shape_mode not in (ShapeMode.RECTANGLE, ShapeMode.ELLIPSE):
             raise ValueError(f'Unexpected selection mode {mode}')
-        self._selection_handler.mode = mode
+        self._selection_handler.mode = shape_mode
 
     def mouse_click(self, event: Optional[QMouseEvent], image_coordinates: QPoint) -> bool:
         """Start selecting on click."""

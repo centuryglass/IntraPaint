@@ -287,6 +287,15 @@
         "default": "X",
         "saved": true
     },
+    "shape_tool_key": {
+        "label": "Switch to the shape drawing tool:",
+        "category": "Keybindings",
+        "subcategory": "Tool Selection",
+        "description": "Activate the shape drawing tool.",
+        "type": "string",
+        "default": "Shift+S",
+        "saved": true
+    },
     "generation_area_tool_key": {
         "label": "Switch to the image generation area selection tool:",
         "category": "Keybindings",

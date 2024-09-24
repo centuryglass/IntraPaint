@@ -77,4 +77,3 @@ class ToastMessageItem(QGraphicsObject):
         painter.setFont(self._font)
         painter.drawText(self._bounds, Qt.AlignmentFlag.AlignCenter, self._message)
         painter.restore()
-

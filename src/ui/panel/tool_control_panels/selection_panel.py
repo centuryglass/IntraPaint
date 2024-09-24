@@ -6,7 +6,7 @@ from PySide6.QtWidgets import QWidget, QApplication, QVBoxLayout, QPushButton, Q
 from src.config.cache import Cache
 from src.config.key_config import KeyConfig
 from src.image.layers.selection_layer import SelectionLayer
-from src.util.shared_constants import PROJECT_DIR, ICON_SIZE
+from src.util.shared_constants import PROJECT_DIR, SMALL_ICON_SIZE
 from src.util.visual.text_drawing_utils import get_key_display_string
 
 # The `QCoreApplication.translate` context for strings in this file
@@ -45,14 +45,14 @@ class SelectionPanel(QWidget):
         clear_selection_button.setText(CLEAR_BUTTON_LABEL if clear_shortcut is None
                                        else CLEAR_BUTTON_LABEL_WITH_KEY.format(clear_shortcut=clear_shortcut))
         clear_selection_button.setIcon(QIcon(QPixmap(ICON_PATH_CLEAR)))
-        clear_selection_button.setIconSize(QSize(ICON_SIZE, ICON_SIZE))
+        clear_selection_button.setIconSize(QSize(SMALL_ICON_SIZE, SMALL_ICON_SIZE))
         clear_selection_button.clicked.connect(lambda: selection_layer.clear())
 
         fill_selection_button = QPushButton()
         fill_selection_button.setText(FILL_BUTTON_LABEL if select_all_shortcut is None
                                       else FILL_BUTTON_LABEL_WITH_KEY.format(select_all_shortcut=select_all_shortcut))
         fill_selection_button.setIcon(QIcon(QPixmap(ICON_PATH_FILL)))
-        fill_selection_button.setIconSize(QSize(ICON_SIZE, ICON_SIZE))
+        fill_selection_button.setIconSize(QSize(SMALL_ICON_SIZE, SMALL_ICON_SIZE))
         fill_selection_button.clicked.connect(lambda: selection_layer.select_all())
         clear_fill_line_layout = QHBoxLayout()
         clear_fill_line_layout.addWidget(clear_selection_button)

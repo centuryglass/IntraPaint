@@ -2,7 +2,7 @@
 from typing import Optional
 
 from PySide6.QtCore import Qt, QPoint, QRect
-from PySide6.QtGui import QIcon, QCursor, QMouseEvent, QKeySequence, QColor, QPainter, QTransform
+from PySide6.QtGui import QIcon, QCursor, QMouseEvent, QColor, QPainter, QTransform
 from PySide6.QtWidgets import QWidget, QApplication
 
 from src.config.application_config import AppConfig
@@ -38,10 +38,10 @@ class SelectionFillTool(BaseTool):
     """Lets the user select image areas with solid colors."""
 
     def __init__(self, image_stack: ImageStack) -> None:
-        super().__init__()
+        super().__init__(KeyConfig.SELECTION_FILL_TOOL_KEY, SELECTION_FILL_LABEL, SELECTION_FILL_TOOLTIP,
+                         QIcon(RESOURCES_FILL_ICON))
         self._image_stack = image_stack
         self._control_panel = FillSelectionPanel(image_stack.selection_layer)
-        self._icon = QIcon(RESOURCES_FILL_ICON)
         self._color = QColor()
 
         def _update_color(color_str: str) -> None:
@@ -53,22 +53,6 @@ class SelectionFillTool(BaseTool):
         AppConfig().connect(self, AppConfig.SELECTION_COLOR, _update_color)
         cursor_icon = QIcon(RESOURCES_FILL_CURSOR)
         self.cursor = QCursor(cursor_icon.pixmap(CURSOR_SIZE, CURSOR_SIZE))
-
-    def get_hotkey(self) -> QKeySequence:
-        """Returns the hotkey(s) that should activate this tool."""
-        return KeyConfig().get_keycodes(KeyConfig.SELECTION_FILL_TOOL_KEY)
-
-    def get_icon(self) -> QIcon:
-        """Returns an icon used to represent this tool."""
-        return self._icon
-
-    def get_label_text(self) -> str:
-        """Returns label text used to represent this tool."""
-        return SELECTION_FILL_LABEL
-
-    def get_tooltip_text(self) -> str:
-        """Returns tooltip text used to describe this tool."""
-        return SELECTION_FILL_TOOLTIP
 
     def get_input_hint(self) -> str:
         """Return text describing different input functionality."""

@@ -252,8 +252,8 @@ class ImageViewer(ImageGraphicsView):
         if layer_item.isVisible():
             self.resetCachedContent()
             self.update()
-        for outline in (self._generation_area_outline, self._generation_area_selection_outline, self._active_layer_outline,
-                        self._generation_area_border):
+        for outline in (self._generation_area_outline, self._generation_area_selection_outline,
+                        self._active_layer_outline, self._generation_area_border):
             assert isinstance(outline, (Outline, Border))
             outline.setZValue(max(self._generation_area_outline.zValue(), new_layer.z_value + 1))
 

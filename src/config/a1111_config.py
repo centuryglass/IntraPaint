@@ -64,12 +64,14 @@ class A1111Config(Config, metaclass=Singleton):
                     options = self.get_options(key)
                     match_found = False
                     for option in options:
+                        if not isinstance(option, str) or not isinstance(value, str):
+                            continue
                         if option.startswith(value) or value.startswith(option):
                             self.set(key, option)
                             match_found = True
                             break
                     if not match_found:
-                        raise RuntimeError(f'No match found in {len(options)} available options.')
+                        raise RuntimeError(f'No match found in {len(options)} available options.') from load_err
                 except (RuntimeError, TypeError, ValueError) as err:
                     logger.error(f'Applying "{key}"="{value}" failed: {load_err}, {err}')
         for key, value in missing.items():

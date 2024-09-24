@@ -36,8 +36,6 @@ def _tr(*args):
 CANCEL_BUTTON_LABEL = _tr('Cancel')
 SAVE_BUTTON_LABEL = _tr('Save')
 
-WINDOW_PADDING = 50
-
 logger = logging.getLogger(__name__)
 
 
@@ -95,7 +93,7 @@ class SettingsModal(QDialog):
             for subcategory in subcategories:
                 subcategory_key_map[subcategory] = []
                 for key in config.get_category_keys(category, subcategory):
-                    subcategory_key_map[""].remove(key)
+                    subcategory_key_map[''].remove(key)
                     subcategory_key_map[subcategory].append(key)
             for subcategory in ['', *subcategories]:
                 key_set = subcategory_key_map[subcategory]

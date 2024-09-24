@@ -71,3 +71,4 @@ PIL_SCALING_MODES = {
 }
 COLOR_PICK_HINT = _tr('{modifier_or_modifiers}: pick color')
 ICON_SIZE = 32
+SMALL_ICON_SIZE = 24

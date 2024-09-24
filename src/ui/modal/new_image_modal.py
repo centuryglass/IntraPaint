@@ -118,13 +118,12 @@ class NewImageModal(QDialog):
             dropdown_text = self._color_dropdown.currentText()
         if dropdown_text == BACKGROUND_COLOR_OPTION_TRANSPARENT:
             return QColor(Qt.GlobalColor.transparent)
-        elif dropdown_text == BACKGROUND_COLOR_OPTION_WHITE:
+        if dropdown_text == BACKGROUND_COLOR_OPTION_WHITE:
             return QColor(Qt.GlobalColor.white)
-        elif dropdown_text == BACKGROUND_COLOR_OPTION_BLACK:
+        if dropdown_text == BACKGROUND_COLOR_OPTION_BLACK:
             return QColor(Qt.GlobalColor.black)
-        else:
-            assert dropdown_text == BACKGROUND_COLOR_OPTION_CUSTOM
-            return self._color_button.color
+        assert dropdown_text == BACKGROUND_COLOR_OPTION_CUSTOM
+        return self._color_button.color
 
     def _set_dropdown_to_color(self, color: QColor) -> None:
         if color == Qt.GlobalColor.transparent:

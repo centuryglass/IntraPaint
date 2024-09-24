@@ -43,11 +43,14 @@ Changes made since the port to PyQt 5.x:
   both with and without a reporting callback set.
 """
 
-__author__ = "Stephan Sokolow; Filip Van Raemdonck; Gustavo J A M Carneiro"
-__license__ = "Public Domain"
+__author__ = 'Stephan Sokolow; Filip Van Raemdonck; Gustavo J A M Carneiro'
+__license__ = 'Public Domain'
 
 
-import getpass, socket, sys, traceback
+import getpass
+import socket
+import sys
+import traceback
 from gettext import gettext as _
 from smtplib import SMTP, SMTPException
 from typing import Callable, Optional

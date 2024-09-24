@@ -152,10 +152,10 @@ def load_libmypaint(default_library_path: Optional[str]) -> CDLL:
                 lib = cdll.LoadLibrary(f'{PROJECT_DIR}/lib/libmypaint-1-4-0.dll')
             else:
                 lib = CDLL(library_path)
-        except OSError:
+        except OSError as err:
             alt_library_dir = AppConfig().get(AppConfig.LIBMYPAINT_LIBRARY_DIR)
             if not os.path.isdir(alt_library_dir):
-                raise RuntimeError(f'libmypaint alternate library directory {alt_library_dir} does not exist')
+                raise RuntimeError(f'libmypaint alternate library directory {alt_library_dir} does not exist') from err
             mypaint_lib_path = ''
             for lib_file in os.listdir(alt_library_dir):
                 file_path = os.path.join(alt_library_dir, lib_file)
@@ -167,7 +167,7 @@ def load_libmypaint(default_library_path: Optional[str]) -> CDLL:
                     cdll.LoadLibrary(file_path)
             if mypaint_lib_path == '':
                 raise RuntimeError(f'No mypaint library found: exactly one file in {alt_library_dir} should have a '
-                                   f'name that includes "mypaint" (e.g. libmypaint.dll, libmypaint.so, etc.)')
+                                   'name that includes "mypaint" (e.g. libmypaint.dll, libmypaint.so, etc.)') from err
             lib = cdll.LoadLibrary(mypaint_lib_path)
     except (OSError, RuntimeError) as err:
         raise ImportError(f'Failed to find {LIBRARY_NAME} library: last path tried: {library_path}') from err

@@ -22,6 +22,7 @@ class TestControlPanel(GeneratorPanel):
         self._generate_button = QPushButton()
         self._generate_button.setText('Generate')
         self._generate_button.clicked.connect(self.generate_signal.emit)
+        self._generate_button.hide()
         gen_size_input = Cache().get_control_widget(Cache.GENERATION_SIZE)
         self._layout.addWidget(gen_size_input, stretch=1)
         self._mode_box = Cache().get_control_widget(Cache.EDIT_MODE)

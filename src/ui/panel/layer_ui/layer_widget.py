@@ -209,12 +209,12 @@ class LayerWidget(BorderedWidget):
             painter.fillRect(QRect(QPoint(), self.size()), bg_color)
             path = QPainterPath()
             path.addRoundedRect(3, 2, self.width() - 5, self.height() - 5, 6, 6)
-            painter.setPen(QPen(self.color, 2))
+            painter.setPen(QPen(self.frame_color, 2))
             painter.drawRect(QRect(0, 0, self.width() - 1, self.height() - 1))
-            painter.setPen(QPen(self.color, 6))
+            painter.setPen(QPen(self.frame_color, 6))
             painter.drawPath(path)
-            highlight_color = QColor.fromHsv(self.color.hue(), self.color.saturation(),
-                                             255 if self.color.lightness() < 128 else 0)
+            highlight_color = QColor.fromHsv(self.frame_color.hue(), self.frame_color.saturation(),
+                                             255 if self.frame_color.lightness() < 128 else 0)
             painter.setPen(QPen(highlight_color, 2))
             painter.drawPath(path)
         if not paint_bounds.isEmpty():
@@ -266,7 +266,7 @@ class LayerWidget(BorderedWidget):
     def active(self, is_active: bool) -> None:
         """Updates whether this layer is active."""
         if is_active != self._active:
-            self.color = self._active_color if is_active else self._inactive_color
+            self.frame_color = self._active_color if is_active else self._inactive_color
             self.line_width = 0 if is_active else 1
             self._active = is_active
             self.update()

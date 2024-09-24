@@ -69,7 +69,6 @@ class BlurFilter(ImageFilter):
         self.validate_parameter_values(parameter_values)
         mode = cast(str, parameter_values[0])
         radius = cast(float, parameter_values[1])
-        # TODO: these need to be validated:
         if mode == MODE_SIMPLE:
             return 5.0
         return radius

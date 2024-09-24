@@ -4,7 +4,7 @@ from typing import List, Optional
 from PySide6.QtCore import Signal, Qt
 from PySide6.QtGui import QMouseEvent, QImage, QFont, QResizeEvent, QIcon
 from PySide6.QtWidgets import QWidget, QHBoxLayout, QVBoxLayout, QApplication, QLabel, QScrollArea, QSizePolicy, \
-    QPushButton
+    QPushButton, QTextBrowser
 
 from src.controller.image_generation.image_generator import ImageGenerator
 from src.ui.layout.bordered_widget import BorderedWidget
@@ -60,16 +60,15 @@ class GeneratorSetupWindow(QWidget):
         self._detail_panel_layout.addLayout(self._title_layout)
 
         def _setup_scrolling_text():
-            label = QLabel()
-            label.setWordWrap(True)
-            label.setOpenExternalLinks(True)
-            label.setAlignment(Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignLeft)
+            text_widget = QTextBrowser()
+            text_widget.setOpenExternalLinks(True)
+            text_widget.setAlignment(Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignLeft)
             scroll_area = QScrollArea()
-            scroll_area.setWidget(label)
+            scroll_area.setWidget(text_widget)
             scroll_area.setWidgetResizable(True)
-            label.setSizePolicy(QSizePolicy.Policy.MinimumExpanding, QSizePolicy.Policy.MinimumExpanding)
+            text_widget.setSizePolicy(QSizePolicy.Policy.MinimumExpanding, QSizePolicy.Policy.MinimumExpanding)
             scroll_area.setSizePolicy(QSizePolicy.Policy.MinimumExpanding, QSizePolicy.Policy.MinimumExpanding)
-            return label, scroll_area
+            return text_widget, scroll_area
 
         self._description, description_scroll = _setup_scrolling_text()
         self._detail_panel_layout.addWidget(description_scroll, stretch=20)
@@ -100,7 +99,7 @@ class GeneratorSetupWindow(QWidget):
             scroll_widget.setMaximumWidth(inner_width)
 
     def _update_status_text(self, status_text: str) -> None:
-        self._status.setText(self._status.text() + f'<p>{status_text}</p>')
+        self._status.setHtml(self._status.toPlainText() + f'<p>{status_text}</p>')
 
     def add_generator(self, generator: ImageGenerator) -> None:
         """Add a new generator to the list"""
@@ -129,7 +128,7 @@ class GeneratorSetupWindow(QWidget):
         self._setup.setText(generator.get_setup_text())
         self._activate_button.setEnabled(not selected_widget.active)
         if selected_widget.active:
-            if ACTIVE_STATUS_TEXT not in self._status.text():
+            if ACTIVE_STATUS_TEXT not in self._status.toPlainText():
                 self._update_status_text(ACTIVE_STATUS_TEXT)
         elif generator.is_available():
             self._update_status_text(AVAILABLE_STATUS_TEXT)

@@ -195,7 +195,7 @@ function-naming-style=snake_case
 #function-rgx=
 
 # Good variable names which should always be accepted, separated by a comma.
-# Most of these are pyQt5 inherited class methods.
+# Most of these are class methods inherited from Qt.
 good-names=i,
            j,
            k,
@@ -203,20 +203,38 @@ good-names=i,
            Run,
            IntraPaint,
            IntraPaint_server,
+           installEventFilter,
+           removeEventFilter,
            mousePressEvent,
+           mouseDoubleClickEvent,
            mouseMoveEvent,
            mouseReleaseEvent,
+           focusInEvent,
+           focusOutEvent,
+           keyPressEvent,
+           dragEnterEvent,
+           dragMoveEvent,
+           dragLeaveEvent,
+           dropEvent,
            paintEvent,
            resizeEvent,
+           moveEvent,
+           closeEvent,
            showEvent,
            hideEvent,
            tabletEvent,
            eventFilter,
            sizeHint,
+           minimumSizeHint,
            setValue,
+           setHorizontalScrollBarPolicy
            setSingleStep,
            setText,
            setIcon,
+           setTransformations,
+           setTransform,
+           setZValue,
+           setRect,
            stepBy,
            stepEnabled,
            singleStep,
@@ -225,8 +243,10 @@ good-names=i,
            setRange,
            setVisible,
            setOpacity,
+           setFont
            drawBackground,
            drawForeground,
+           boundingRect
            _
 
 # Good variable names regexes, separated by a comma. If names match any regex,
@@ -652,7 +672,7 @@ signature-mutators=
 additional-builtins=
 
 # Tells whether unused global variables should be treated as a violation.
-allow-global-unused-variables=yes
+allow-global-unused-variables=no
 
 # List of names allowed to shadow builtins
 allowed-redefined-builtins=
@@ -664,7 +684,7 @@ callbacks=cb_,
 
 # A regular expression matching the name of dummy variables (i.e. expected to
 # not be used).
-dummy-variables-rgx=_+$|(_[a-zA-Z0-9_]*[a-zA-Z0-9]+?$)|dummy|^ignored_|^unused_|event
+dummy-variables-rgx=_+$|(_[a-zA-Z0-9_]*[a-zA-Z0-9]+?$)|dummy|^ignored_|^unused_|^event$|^args$|^kwargs$
 
 # Argument names that match this expression will be ignored.
 ignored-argument-names=_.*|^ignored_|^unused_

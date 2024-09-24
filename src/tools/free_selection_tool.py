@@ -34,15 +34,13 @@ FREE_SELECTION_CONTROL_HINT = _tr('{left_mouse_icon}: add or move point<br/>{ent
                                   ' or {left_mouse_icon}+first point: finish selection<br/>'
                                   '{escape_key}: cancel selection')
 
-GRAPHICS_ITEM_OPACITY = 0.6
-ERASING_COLOR = Qt.GlobalColor.white
-
 
 class FreeSelectionTool(BaseTool):
     """Select or deselect polygonal areas."""
 
     def __init__(self, image_stack: ImageStack, image_viewer: ImageViewer) -> None:
-        super().__init__()
+        super().__init__(KeyConfig.FREE_SELECTION_TOOL_KEY, FREE_SELECTION_LABEL, FREE_SELECTION_TOOLTIP,
+                         QIcon(RESOURCES_FREE_SELECT_ICON))
         scene = image_viewer.scene()
         assert scene is not None
         self._scene = scene
@@ -51,7 +49,6 @@ class FreeSelectionTool(BaseTool):
         self._path_item = PathCreationItem(self._scene)
         self._preview_line = TempDashedLineItem(scene)
         self._clearing = False
-        self._icon = QIcon(RESOURCES_FREE_SELECT_ICON)
 
         def _update_clearing(mode: str) -> None:
             self._clearing = mode == TOOL_MODE_DESELECT
@@ -76,22 +73,6 @@ class FreeSelectionTool(BaseTool):
                                                     _cancel_on_escape, QKeySequence(Qt.Key.Key_Escape))
 
         self._path_item.first_handle_clicked.connect(self._first_handle_click_slot)
-
-    def get_hotkey(self) -> QKeySequence:
-        """Returns the hotkey(s) that should activate this tool."""
-        return KeyConfig().get_keycodes(KeyConfig.FREE_SELECTION_TOOL_KEY)
-
-    def get_icon(self) -> QIcon:
-        """Returns an icon used to represent this tool."""
-        return self._icon
-
-    def get_label_text(self) -> str:
-        """Returns label text used to represent this tool."""
-        return FREE_SELECTION_LABEL
-
-    def get_tooltip_text(self) -> str:
-        """Returns tooltip text used to describe this tool."""
-        return FREE_SELECTION_TOOLTIP
 
     def get_input_hint(self) -> str:
         """Return text describing different input functionality."""

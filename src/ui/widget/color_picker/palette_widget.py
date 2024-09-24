@@ -13,6 +13,8 @@ from src.ui.widget.color_picker.screen_color import ScreenColorWidget
 CELL_WIDTH = 28
 CELL_HEIGHT = 24
 NUM_COLUMNS = 8
+NUM_STANDARD_PALETTE_ROWS = 6
+NUM_CUSTOM_PALETTE_ROWS = 3
 
 
 class _PaletteGrid(QWidget):
@@ -455,7 +457,7 @@ class StandardColorPaletteWidget(PaletteWidget):
     """Select between predefined colors."""
 
     def __init__(self):
-        super().__init__(6, 8, standard_colors())
+        super().__init__(NUM_STANDARD_PALETTE_ROWS, NUM_COLUMNS, standard_colors())
         self.setAcceptDrops(False)
 
 
@@ -463,8 +465,8 @@ class CustomColorPaletteWidget(PaletteWidget):
     """Select and update custom colors."""
 
     def __init__(self):
-        colors = config_colors(24)
-        super().__init__(3, 8, colors)
+        colors = config_colors(NUM_CUSTOM_PALETTE_ROWS * NUM_COLUMNS)
+        super().__init__(NUM_CUSTOM_PALETTE_ROWS, NUM_COLUMNS, colors)
         self.color_changed.connect(self._update_config_color_slot)
         AppConfig().connect(self, AppConfig.SAVED_COLORS, self._update_on_color_change)
         self._last_added_idx = -1
@@ -473,9 +475,9 @@ class CustomColorPaletteWidget(PaletteWidget):
                 self._last_added_idx = i - 1
                 break
 
-    def _update_config_color_slot(self, i: int, color: QColor) -> None:
+    def _update_config_color_slot(self, idx: int, color: QColor) -> None:
         colors = config_colors(self.num_rows() * self.num_cols())
-        colors[i] = color
+        colors[idx] = color
         AppConfig().set(AppConfig.SAVED_COLORS, [col.name(QColor.NameFormat.HexArgb) for col in colors])
         for i in range(self.num_cols() * 2):
             # QColorDialog is indexed by column instead of row.  This is intentional, it makes it less of a hassle
@@ -500,10 +502,8 @@ class CustomColorPaletteWidget(PaletteWidget):
             if prev_color in colors_traversed:
                 next_idx = i
                 break
-            else:
-                colors_traversed.add(prev_color)
+            colors_traversed.add(prev_color)
         if next_idx >= self.color_count():
             next_idx = 0
         self.set_color(next_idx, color)
         self._last_added_idx = next_idx
-

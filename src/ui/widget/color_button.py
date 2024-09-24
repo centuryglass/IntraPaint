@@ -1,10 +1,12 @@
 """Opens a color picker to set a cached color, setting the brush color by default."""
 from typing import Optional
 
+from PySide6.QtCore import QSize
 from PySide6.QtGui import QColor, QIcon, QPixmap
 from PySide6.QtWidgets import QPushButton, QColorDialog, QApplication, QWidget
 
 from src.config.config_from_key import get_config_from_key
+from src.util.shared_constants import SMALL_ICON_SIZE
 from src.util.visual.image_utils import get_color_icon
 
 # The `QCoreApplication.translate` context for strings in this file
@@ -25,16 +27,20 @@ class ColorButton(QPushButton):
 
     def __init__(self, config_key: Optional[str] = 'last_brush_color', parent: Optional[QWidget] = None):
         super().__init__(parent=parent)
+        self.setIconSize(QSize(SMALL_ICON_SIZE, SMALL_ICON_SIZE))
         self._color = QColor()
         self._icon = QPixmap()
         self._config_key = config_key
         if config_key is not None:
             config = get_config_from_key(config_key)
             config.connect(self, config_key, self._update_color)
+            self.setText(config.get_label(config_key))
+            self.setToolTip(config.get_tooltip(config_key))
             self._update_color(config.get(config_key))
+        else:
+            self.setText(COLOR_BUTTON_LABEL)
+            self.setToolTip(COLOR_BUTTON_TOOLTIP)
         self.clicked.connect(self.select_color)
-        self.setText(COLOR_BUTTON_LABEL)
-        self.setToolTip(COLOR_BUTTON_TOOLTIP)
 
     def disconnect_config(self) -> None:
         """Disconnects this color button from its config value."""

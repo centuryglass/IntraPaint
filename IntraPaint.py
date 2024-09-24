@@ -7,11 +7,24 @@ import atexit
 import logging
 import os
 import sys
+import traceback
 
-from PySide6.QtCore import QTranslator
+from PySide6.QtCore import QTranslator, QObject, QEvent
 from PySide6.QtGui import QPixmap
-from PySide6.QtWidgets import QApplication, QSplashScreen
+from PySide6.QtWidgets import QApplication, QSplashScreen, QWidget, QDialog, QLabel
 
+from src.ui.modal.image_filter_modal import ImageFilterModal
+from src.ui.modal.image_scale_modal import ImageScaleModal
+from src.ui.modal.login_modal import LoginModal
+from src.ui.modal.new_image_modal import NewImageModal
+from src.ui.modal.resize_canvas_modal import ResizeCanvasModal
+from src.ui.modal.settings_modal import SettingsModal
+from src.ui.panel.layer_ui.layer_panel import LayerPanel
+from src.ui.window.extra_network_window import ExtraNetworkWindow
+from src.ui.window.generator_setup_window import GeneratorSetupWindow
+from src.ui.window.image_window import ImageWindow
+from src.ui.window.main_window import MainWindow
+from src.ui.window.prompt_style_window import PromptStyleWindow
 from src.util.arg_parser import build_arg_parser
 from src.util.visual.geometry_utils import get_scaled_placement
 from src.util.optional_import import check_import
@@ -76,6 +89,38 @@ def exit_log():
 atexit.register(exit_log)
 
 app = QApplication.instance() or QApplication(sys.argv)
+
+if args.dev:
+    # If a QWidget isn't properly assigned to a parent or hidden after being removed, it will pop up as a new window.
+    # If the problem is addressed relatively quickly but not quickly enough to prevent this, we end up with tiny
+    # windows that appear for an instant and then disappear.  This is undesirable, and tricky to debug. If running
+    # in dev mode, this will cause an immediate crash whenever one of these invalid windows shows up, making it
+    # much easier to fix them.
+    print('Enabling invalid window debugging')
+
+
+    class WindowEventFilter(QObject):
+        """Crash whenever a window appears that's not in the list of expected window types"""
+
+        def eventFilter(self, obj, event):
+            """Check for appropriate top-level ShowEvents, consume no events."""
+            if not isinstance(obj, QWidget) or isinstance(obj, (QSplashScreen, QDialog, MainWindow, ImageWindow,
+                                                                ExtraNetworkWindow, GeneratorSetupWindow, LayerPanel,
+                                                                PromptStyleWindow, ImageFilterModal, ImageScaleModal,
+                                                                LoginModal, NewImageModal, ResizeCanvasModal,
+                                                                SettingsModal)):
+                return False
+            # noinspection SpellCheckingInspection
+            if isinstance(obj, QLabel) and obj.objectName() == 'qtooltip_label':
+                return False
+            if event.type() == QEvent.Type.Show and obj.isTopLevel():
+                print(f'unexpected window: {obj} at {obj.geometry()}')
+                traceback.print_stack()
+                sys.exit(1)
+            return False
+
+    event_filter = WindowEventFilter()
+    app.installEventFilter(event_filter)
 
 # close pyinstaller splash screen, if running from bundled executable:
 try:

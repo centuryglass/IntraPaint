@@ -33,8 +33,6 @@ FAVORITES_CATEGORY_NAME = _tr('favorites')
 
 BRUSH_DIR = f'{PROJECT_DIR}/resources/brushes'
 FAVORITES_ICON = f'{PROJECT_DIR}/resources/icons/tabs/star.svg'
-MIN_COLUMNS = 2
-MAX_COLUMNS = 10
 FAV_CONFIG_KEY = 'brush_favorites'
 
 BRUSH_CONF_FILE = 'brushes.conf'

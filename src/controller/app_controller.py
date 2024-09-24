@@ -166,13 +166,6 @@ RELOAD_CONFIRMATION_TITLE = _tr('Reload image?')
 RELOAD_CONFIRMATION_MESSAGE = _tr('This will discard all unsaved changes.')
 METADATA_UPDATE_TITLE = _tr('Metadata updated')
 METADATA_UPDATE_MESSAGE = _tr('On save, current image generation parameters will be stored within the image')
-RESIZE_ERROR_TITLE = _tr('Resize failed')
-GENERATE_ERROR_TITLE_UNEXPECTED = _tr('Inpainting failure')
-GENERATE_ERROR_TITLE_NO_IMAGE = _tr('Save failed')
-GENERATE_ERROR_TITLE_EXISTING_OP = _tr('Failed')
-GENERATE_ERROR_MESSAGE_EXISTING_OP = _tr('Existing image generation operation not yet finished, wait a little longer.')
-SETTINGS_ERROR_MESSAGE = _tr('Settings not supported in this mode.')
-SETTINGS_ERROR_TITLE = _tr('Failed to open settings')
 LOAD_LAYER_ERROR_TITLE = _tr('Opening layers failed')
 LOAD_LAYER_ERROR_MESSAGE = _tr('Could not open the following images: ')
 
@@ -748,11 +741,11 @@ class AppController(MenuBuilder):
 
                 class _Encoder(json.JSONEncoder):
 
-                    def default(self, obj):
+                    def default(self, o):
                         """Convert byte strings to ASCII when serializing."""
-                        if isinstance(obj, bytes):
-                            return obj.decode()
-                        return super().default(obj)
+                        if isinstance(o, bytes):
+                            return o.decode()
+                        return super().default(o)
 
                 save_ora_image(self._image_stack, file_path, json.dumps(self._metadata, cls=_Encoder))
             else:

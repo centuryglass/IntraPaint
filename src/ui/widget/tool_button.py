@@ -24,14 +24,10 @@ class ToolButton(QToolButton):
         self.setSizePolicy(QSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed))
         self.setContentsMargins(2, 2, 2, 2)
         label_text = connected_tool.label
-        if connected_tool.get_hotkey() is not None:
-            self._key_hint: Optional[KeyHintLabel] = KeyHintLabel(connected_tool.get_hotkey(), parent=self)
-            self._key_hint.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
-            self._key_hint.setSizePolicy(QSizePolicy.Policy.MinimumExpanding, QSizePolicy.Policy.MinimumExpanding)
-            self._key_hint.setMinimumSize(self._key_hint.sizeHint())
-
-        else:
-            self._key_hint = None
+        self._key_hint = KeyHintLabel(None, connected_tool.get_activation_config_key(), parent=self)
+        self._key_hint.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+        self._key_hint.setSizePolicy(QSizePolicy.Policy.MinimumExpanding, QSizePolicy.Policy.MinimumExpanding)
+        self._key_hint.setMinimumSize(self._key_hint.sizeHint())
         self.setToolTip(label_text)
         self._icon_bounds = QRect()
         self._active = False
@@ -53,13 +49,12 @@ class ToolButton(QToolButton):
     def resizeEvent(self, unused_event: Optional[QResizeEvent]):
         """Recalculate and cache icon bounds on size change."""
         self._icon_bounds = get_scaled_placement(self.size(), QSize(1, 1), 8)
-        if self._key_hint is not None:
-            hint_size = self._key_hint.sizeHint()
-            width = hint_size.width()
-            height = hint_size.height()
-            x = self.width() - width
-            y = self.height() - height
-            self._key_hint.setGeometry(QRect(QPoint(x, y), hint_size))
+        hint_size = self._key_hint.sizeHint()
+        width = hint_size.width()
+        height = hint_size.height()
+        x = self.width() - width
+        y = self.height() - height
+        self._key_hint.setGeometry(QRect(QPoint(x, y), hint_size))
 
     @property
     def is_active(self) -> bool:

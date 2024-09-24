@@ -1,11 +1,15 @@
 """Control panel widget for GLID-3-XL inpainting."""
+from typing import List
+
 from PySide6.QtCore import Signal, Qt
 from PySide6.QtWidgets import QPushButton, QLabel, QGridLayout, QSizePolicy, QWidget
 
 from src.config.cache import Cache
 from src.ui.panel.generators.generator_panel import GeneratorPanel
+from src.ui.widget.rotating_toolbar_button import RotatingToolbarButton
 from src.util.application_state import APP_STATE_EDITING, AppStateTracker
-from src.util.layout import extract_layout_item, clear_layout
+from src.util.layout import clear_layout
+from src.util.shared_constants import BUTTON_TEXT_GENERATE, BUTTON_TOOLTIP_GENERATE
 
 INPAINT_BUTTON_TEXT = 'Start inpainting'
 
@@ -58,6 +62,11 @@ class GlidPanel(GeneratorPanel):
         self._inpaint_button = QPushButton()
         self._inpaint_button.setText(INPAINT_BUTTON_TEXT)
         self._inpaint_button.clicked.connect(self.generate_signal)
+
+        self._toolbar_generate_button = RotatingToolbarButton(BUTTON_TEXT_GENERATE)
+        self._toolbar_generate_button.setToolTip(BUTTON_TOOLTIP_GENERATE)
+        self._toolbar_generate_button.clicked.connect(self.generate_signal)
+        self._toolbar_generate_button.hide()
         self._build_layout()
 
     def _build_layout(self) -> None:
@@ -124,3 +133,6 @@ class GlidPanel(GeneratorPanel):
     def orientation(self, new_orientation: Qt.Orientation) -> None:
         self.set_orientation(new_orientation)
 
+    def get_tab_bar_widgets(self) -> List[QWidget]:
+        """Returns the toolbar generate button as the only toolbar widget."""
+        return [self._toolbar_generate_button]

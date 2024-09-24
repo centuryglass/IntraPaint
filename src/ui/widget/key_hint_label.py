@@ -1,16 +1,14 @@
 """Shows formatted key suggestions to the user."""
 from typing import Optional
 
-
 from PySide6.QtCore import Qt, QRect, QPoint, QSize
-from PySide6.QtGui import QKeySequence, QResizeEvent, QPainter, QPainterPath, QPaintEvent, QFont
+from PySide6.QtGui import QKeySequence, QPainter, QPainterPath, QPaintEvent, QFont
 from PySide6.QtWidgets import QLabel, QWidget
 
 from src.config.application_config import AppConfig
 from src.config.key_config import KeyConfig
-from src.util.visual.text_drawing_utils import find_text_size, max_font_size, get_key_display_string
 from src.util.key_code_utils import get_key_with_modifiers, get_modifier_string, KEY_REQUIRES_SHIFT
-from src.util.math_utils import clamp
+from src.util.visual.text_drawing_utils import find_text_size, get_key_display_string
 
 
 class KeyHintLabel(QLabel):
@@ -134,4 +132,3 @@ class KeyHintLabel(QLabel):
 
     def _key_update_slot(self, key_string: str) -> None:
         self._update_text(key_string)
-
