@@ -1,7 +1,6 @@
 # Development tasks
 
 ## Before next release:
-- implement shape tool (< 2 days)
 - Connect move/pan keys to text layer placement  (< 1 hour)
 - transform tool: make sure clear/rotate button is in all panel layouts  (< 30 minutes)
 - Finish README cleanup and examples (< 1 day)
@@ -10,7 +9,7 @@
 
 ## Misc. bugs and minor issues:
 - In-depth pressure opacity testing
-- vertical inpaint full res text fix
+- vertical "inpaint full res" text fix
 - fill tool cursor offset needs fixing
 - seed/last seed field updates don't seem to be working properly
 - loading icon text gets cut off
@@ -40,11 +39,6 @@ Scripted to make use of every tool, in-video text explaining what I'm doing
 - Generation area control: effects of generation area on content
 - Stable-diffusion settings: what do all those options do:
 - ControlNet model guides
-
-### Shape tool
-- Circle, polygons with n sides
-- stroke+fill controls
-- Probably best to just render directly for now, but maybe use with SVGLayer + graphics items in the future
 
 ## Possible lurking bugs
 Things I never fixed but can no longer reproduce, or that come from external issues:

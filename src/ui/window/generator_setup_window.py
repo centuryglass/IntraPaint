@@ -3,11 +3,11 @@ from typing import List, Optional
 
 from PySide6.QtCore import Signal, Qt
 from PySide6.QtGui import QMouseEvent, QImage, QFont, QResizeEvent, QIcon
-from PySide6.QtWidgets import QWidget, QHBoxLayout, QVBoxLayout, QApplication, QLabel, QScrollArea, QSizePolicy, \
-    QPushButton, QTextBrowser
+from PySide6.QtWidgets import QWidget, QHBoxLayout, QVBoxLayout, QApplication, QLabel, QPushButton, QTextBrowser
 
 from src.controller.image_generation.image_generator import ImageGenerator
 from src.ui.layout.bordered_widget import BorderedWidget
+from src.ui.layout.divider import Divider
 from src.ui.layout.draggable_divider import DraggableDivider
 from src.ui.widget.image_widget import ImageWidget
 from src.util.shared_constants import APP_ICON_PATH
@@ -27,6 +27,7 @@ GEN_STATUS_HEADER = _tr('<h2>Status:</h2>')
 ACTIVE_STATUS_TEXT = _tr('Generator is active.')
 AVAILABLE_STATUS_TEXT = _tr('Generator is available.')
 GEN_LIST_HEADER = _tr('<h1>Generator Options:</h1>')
+PREVIEW_IMAGE_TITLE = _tr('<u>Preview: {generator_name}</u>')
 
 SCROLL_CONTENT_MARGIN = 25
 
@@ -43,6 +44,8 @@ class GeneratorSetupWindow(QWidget):
         self._option_list_layout = QVBoxLayout(self._option_list)
         self._option_list_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
         self._option_list_layout.addWidget(QLabel(GEN_LIST_HEADER))
+        self._option_spacer = QWidget(self)
+        self._option_list_layout.addWidget(self._option_spacer, stretch=10)
         self._layout.addWidget(self._option_list, stretch=10)
         self._layout.addWidget(DraggableDivider())
         self._detail_panel = QWidget(self)
@@ -53,34 +56,34 @@ class GeneratorSetupWindow(QWidget):
         self._title_layout = QHBoxLayout()
         self._title_layout.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignHCenter)
         self._preview_image = ImageWidget(QImage())
-        self._title_layout.addWidget(self._preview_image, stretch=1)
+        self._preview_title = QLabel('', parent=self)
+        self._preview_title.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self._option_list_layout.addWidget(Divider(Qt.Orientation.Horizontal))
+        self._option_list_layout.addWidget(self._preview_title)
+        self._option_list_layout.addWidget(self._preview_image, stretch=5)
+        self._option_list_layout.addSpacing(20)
         self._title = QLabel()
         self._title.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
         self._title_layout.addWidget(self._title, stretch=2)
         self._detail_panel_layout.addLayout(self._title_layout)
 
-        def _setup_scrolling_text():
+        def _setup_rich_text_section():
             text_widget = QTextBrowser()
             text_widget.setOpenExternalLinks(True)
             text_widget.setAlignment(Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignLeft)
-            scroll_area = QScrollArea()
-            scroll_area.setWidget(text_widget)
-            scroll_area.setWidgetResizable(True)
-            text_widget.setSizePolicy(QSizePolicy.Policy.MinimumExpanding, QSizePolicy.Policy.MinimumExpanding)
-            scroll_area.setSizePolicy(QSizePolicy.Policy.MinimumExpanding, QSizePolicy.Policy.MinimumExpanding)
-            return text_widget, scroll_area
+            return text_widget
 
-        self._description, description_scroll = _setup_scrolling_text()
-        self._detail_panel_layout.addWidget(description_scroll, stretch=20)
+        self._description = _setup_rich_text_section()
+        self._detail_panel_layout.addWidget(self._description, stretch=20)
 
         self._detail_panel_layout.addWidget(DraggableDivider())
 
-        self._setup, setup_scroll = _setup_scrolling_text()
-        self._detail_panel_layout.addWidget(setup_scroll, stretch=20)
+        self._setup = _setup_rich_text_section()
+        self._detail_panel_layout.addWidget(self._setup, stretch=20)
         self._detail_panel_layout.addWidget(DraggableDivider())
 
-        self._status, self._status_scroll = _setup_scrolling_text()
-        self._detail_panel_layout.addWidget(self._status_scroll, stretch=10)
+        self._status = _setup_rich_text_section()
+        self._detail_panel_layout.addWidget(self._status, stretch=1)
 
         self._activate_button = QPushButton()
         self._activate_button.setText(GEN_SETUP_ACTIVATE_BUTTON_TEXT)
@@ -107,7 +110,8 @@ class GeneratorSetupWindow(QWidget):
         self._generators.append(generator)
         widget = _GeneratorWidget(generator)
         self._generator_list_widgets.append(widget)
-        self._option_list_layout.addWidget(widget)
+        layout_index = self._option_list_layout.indexOf(self._option_spacer)
+        self._option_list_layout.insertWidget(layout_index, widget)
 
     def select_generator(self, generator: ImageGenerator) -> None:
         """Select a generator in the list, showing details"""
@@ -125,6 +129,8 @@ class GeneratorSetupWindow(QWidget):
         assert selected_widget is not None
         self._description.setText(generator.get_description())
         self._preview_image.image = generator.get_preview_image()
+        preview_text = PREVIEW_IMAGE_TITLE.format(generator_name=generator.get_display_name())
+        self._preview_title.setText(preview_text)
         self._setup.setText(generator.get_setup_text())
         self._activate_button.setEnabled(not selected_widget.active)
         if selected_widget.active:

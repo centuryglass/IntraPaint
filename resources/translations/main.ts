@@ -4,14 +4,14 @@
   <context>
     <name>application_config</name>
     <message>
-      <location filename="../../src/controller/image_generation/sd_webui_generator.py" line="106"/>
+      <location filename="../../src/controller/image_generation/sd_webui_generator.py" line="135"/>
       <location filename="../../src/controller/app_controller.py" line="204"/>
       <source>Stable-Diffusion</source>
       <translation>Stable-Diffusion</translation>
     </message>
     <message>
-      <location filename="../../src/controller/image_generation/glid3_webservice_generator.py" line="34"/>
-      <location filename="../../src/controller/image_generation/glid3_xl_generator.py" line="48"/>
+      <location filename="../../src/controller/image_generation/glid3_webservice_generator.py" line="35"/>
+      <location filename="../../src/controller/image_generation/glid3_xl_generator.py" line="50"/>
       <location filename="../../src/controller/app_controller.py" line="205"/>
       <source>GLID-3-XL</source>
       <translation>GLID-3-XL</translation>
@@ -1846,27 +1846,126 @@
   <context>
     <name>controller.image_generation.glid3_webservice_generator</name>
     <message>
-      <location filename="../../src/controller/image_generation/glid3_webservice_generator.py" line="35"/>
+      <location filename="../../src/controller/image_generation/glid3_webservice_generator.py" line="36"/>
       <source>GLID-3-XL image generation server</source>
       <translation>GLID-3-XL image generation server</translation>
     </message>
     <message>
-      <location filename="../../src/controller/image_generation/glid3_webservice_generator.py" line="36"/>
-      <source>&lt;h2&gt;GLID-3-XL server setup&lt;/h2&gt;&lt;p&gt;NOTE: Because GLID-3-XL is mainly a historical curiosity at this point, few steps have been taken to simplify the setup process. As the software involved becomes increasingly outdated, further steps may be necessary to get this generator to work.&lt;/p&gt;&lt;p&gt;The original preferred way to use this mode relied on a Google Colab notebook, found &lt;a href="https://colab.research.google.com/github/centuryglass/IntraPaint/blob/colab-refactor/colabFiles/IntraPaint_colab_server.ipynb"&gt;here&lt;/a&gt;. This approach is discouraged by Google and no longer seems to work using the free tier of Google Colab. It may or may not work on the paid tier, or if additional steps are taken to replace the ngrok service used to handle external connections. Steps for running the server on your own machine are as follows:&lt;ol&gt;&lt;li&gt;Make sure the server system has a NVIDIA GPU with at least 8GB of VRAM. Other GPUsor slightly less memory may work, but are not tested.&lt;/li&gt;&lt;li&gt;Install required dependencies:&lt;/li&gt;&lt;ol&gt;&lt;li&gt;&lt;a href="https://www.python.org/"&gt;Python3&lt;/a&gt;&lt;/li&gt;&lt;li&gt;&lt;a href="https://git-scm.com/"&gt;Git&lt;/a&gt;&lt;/li&gt;&lt;li&gt;&lt;a href="https://developer.nvidia.com/cuda-toolkit"&gt;CUDA&lt;/a&gt; (if using a NVIDIA graphics card)&lt;/li&gt;&lt;li&gt;&lt;a href="https://www.anaconda.com/download/"&gt;Anaconda&lt;/a&gt;&lt;/li&gt;&lt;/ol&gt;&lt;li&gt;Depending on your system, you may need to take extra steps to add Python, Git, and Anaconda to your system path, or perform other configuration steps. Refer to the sites linked above for full documentation.&lt;/li&gt;&lt;li&gt;In a terminal window, run `&lt;code&gt;conda create -n intrapaint-server&lt;/code&gt;`, then `&lt;code&gt;conda activate intrapaint-server&lt;/code&gt;` to prepare to install additional dependencies.&lt;/li&gt;&lt;li&gt;Next run `&lt;code&gt;git clone https://github.com/centuryglass/IntraPaint.git&lt;/code&gt;` to download the full IntraPaint repository, then change directory to the new IntraPaint folder that this creates.&lt;/li&gt;&lt;li&gt;Within the the terminal in the IntraPaint directory with the `intrapaint-server`environment active, install the appropriate versions of torch and torchvision found &lt;a href="https://pytorch.org/get-started/locally/"&gt;here&lt;/a&gt;.&lt;li&gt;Run `&lt;code&gt;conda install pip&lt;/code&gt;` to make sure the environment has its own copy of the python package manager.&lt;/li&gt;&lt;li&gt;Run `&lt;code&gt;pip install -r requirements-glid.txt&lt;/code&gt;` to install additional dependencies.&lt;/li&gt;&lt;li&gt;Run the following Git commands to add two other required dependencies:&lt;li&gt;&lt;ol&gt;&lt;li&gt;`&lt;code&gt;git clone https://github.com/CompVis/taming-transformers.git&lt;/code&gt;`&lt;/li&gt;&lt;li&gt;`&lt;code&gt;git clone https://github.com/CompVis/latent-diffusion.git&lt;/code&gt;`&lt;/li&gt;&lt;li&gt;Download one or more GLID-3-XL inpainting models, and place them in the IntraPaint/models/ directory. These are the main options available:&lt;li&gt;&lt;ol&gt;&lt;li&gt;&lt;a href="https://dall-3.com/models/glid-3-xl/"&gt;inpaint.pt&lt;/a&gt;, the original GLID-3-XL inpainting model&lt;/li&gt;&lt;li&gt;&lt;a href="https://huggingface.co/laion/ongo/resolve/main/ongo.pt&gt;ongo.pt&lt;/a&gt;, trained by LAION on paintings from the Wikiart dataset&lt;/li&gt;&lt;li&gt;&lt;a href="https://huggingface.co/laion/erlich/resolve/main/model/ema_0.9999_120000.pt"&gt;erlich.pt&lt;/a&gt;, trained on the LAION large logo dataset&lt;/li&gt;&lt;/ol&gt;&lt;li&gt;Start the server by running &lt;code&gt;python IntraPaint_server.py&lt;/code&gt;. If you are using a model other than the default inpaint.pt, instead run `&lt;code&gt;python Intrapaint_server.py --model_path models/model.pt&lt;/code&gt;`, replacing "model.pt" with the file name of whatever model you are using.&lt;/li&gt;&lt;li&gt;If the setup was successful, something like "* Running on http://192.168.0.XXX:5555" will be printed in the console  after a short delay. You can now activate this generator, entering that URL when prompted.</source>
-      <translation>&lt;h2&gt;GLID-3-XL server setup&lt;/h2&gt;&lt;p&gt;NOTE: Because GLID-3-XL is mainly a historical curiosity at this point, few steps have been taken to simplify the setup process. As the software involved becomes increasingly outdated, further steps may be necessary to get this generator to work.&lt;/p&gt;&lt;p&gt;The original preferred way to use this mode relied on a Google Colab notebook, found &lt;a href="https://colab.research.google.com/github/centuryglass/IntraPaint/blob/colab-refactor/colabFiles/IntraPaint_colab_server.ipynb"&gt;here&lt;/a&gt;. This approach is discouraged by Google and no longer seems to work using the free tier of Google Colab. It may or may not work on the paid tier, or if additional steps are taken to replace the ngrok service used to handle external connections. Steps for running the server on your own machine are as follows:&lt;ol&gt;&lt;li&gt;Make sure the server system has a NVIDIA GPU with at least 8GB of VRAM. Other GPUsor slightly less memory may work, but are not tested.&lt;/li&gt;&lt;li&gt;Install required dependencies:&lt;/li&gt;&lt;ol&gt;&lt;li&gt;&lt;a href="https://www.python.org/"&gt;Python3&lt;/a&gt;&lt;/li&gt;&lt;li&gt;&lt;a href="https://git-scm.com/"&gt;Git&lt;/a&gt;&lt;/li&gt;&lt;li&gt;&lt;a href="https://developer.nvidia.com/cuda-toolkit"&gt;CUDA&lt;/a&gt; (if using a NVIDIA graphics card)&lt;/li&gt;&lt;li&gt;&lt;a href="https://www.anaconda.com/download/"&gt;Anaconda&lt;/a&gt;&lt;/li&gt;&lt;/ol&gt;&lt;li&gt;Depending on your system, you may need to take extra steps to add Python, Git, and Anaconda to your system path, or perform other configuration steps. Refer to the sites linked above for full documentation.&lt;/li&gt;&lt;li&gt;In a terminal window, run `&lt;code&gt;conda create -n intrapaint-server&lt;/code&gt;`, then `&lt;code&gt;conda activate intrapaint-server&lt;/code&gt;` to prepare to install additional dependencies.&lt;/li&gt;&lt;li&gt;Next run `&lt;code&gt;git clone https://github.com/centuryglass/IntraPaint.git&lt;/code&gt;` to download the full IntraPaint repository, then change directory to the new IntraPaint folder that this creates.&lt;/li&gt;&lt;li&gt;Within the the terminal in the IntraPaint directory with the `intrapaint-server`environment active, install the appropriate versions of torch and torchvision found &lt;a href="https://pytorch.org/get-started/locally/"&gt;here&lt;/a&gt;.&lt;li&gt;Run `&lt;code&gt;conda install pip&lt;/code&gt;` to make sure the environment has its own copy of the python package manager.&lt;/li&gt;&lt;li&gt;Run `&lt;code&gt;pip install -r requirements-glid.txt&lt;/code&gt;` to install additional dependencies.&lt;/li&gt;&lt;li&gt;Run the following Git commands to add two other required dependencies:&lt;li&gt;&lt;ol&gt;&lt;li&gt;`&lt;code&gt;git clone https://github.com/CompVis/taming-transformers.git&lt;/code&gt;`&lt;/li&gt;&lt;li&gt;`&lt;code&gt;git clone https://github.com/CompVis/latent-diffusion.git&lt;/code&gt;`&lt;/li&gt;&lt;li&gt;Download one or more GLID-3-XL inpainting models, and place them in the IntraPaint/models/ directory. These are the main options available:&lt;li&gt;&lt;ol&gt;&lt;li&gt;&lt;a href="https://dall-3.com/models/glid-3-xl/"&gt;inpaint.pt&lt;/a&gt;, the original GLID-3-XL inpainting model&lt;/li&gt;&lt;li&gt;&lt;a href="https://huggingface.co/laion/ongo/resolve/main/ongo.pt&gt;ongo.pt&lt;/a&gt;, trained by LAION on paintings from the Wikiart dataset&lt;/li&gt;&lt;li&gt;&lt;a href="https://huggingface.co/laion/erlich/resolve/main/model/ema_0.9999_120000.pt"&gt;erlich.pt&lt;/a&gt;, trained on the LAION large logo dataset&lt;/li&gt;&lt;/ol&gt;&lt;li&gt;Start the server by running &lt;code&gt;python IntraPaint_server.py&lt;/code&gt;. If you are using a model other than the default inpaint.pt, instead run `&lt;code&gt;python Intrapaint_server.py --model_path models/model.pt&lt;/code&gt;`, replacing "model.pt" with the file name of whatever model you are using.&lt;/li&gt;&lt;li&gt;If the setup was successful, something like "* Running on http://192.168.0.XXX:5555" will be printed in the console  after a short delay. You can now activate this generator, entering that URL when prompted.</translation>
+      <location filename="../../src/controller/image_generation/glid3_webservice_generator.py" line="120"/>
+      <source>
+&lt;h2&gt;Colab server setup&lt;/h2&gt;
+&lt;p&gt;
+    This is the easier way to set up this mode. It does not require a powerful GPU, but it does require an internet
+     connection and a Google account.
+&lt;/p&gt;
+&lt;ol&gt;
+    &lt;li&gt;
+        You'll need a free ngrok account to handle the connection between IntraPaint and  the Colab Notebook. Sign up
+        for that account at &lt;a&gt;https://ngrok.com&lt;/a&gt;
+    &lt;/li&gt;
+    &lt;li&gt;
+        After you sign up for an ngrok account, log in to their site and find your ngrok AuthToken on 
+        &lt;a href="https://dashboard.ngrok.com/get-started/your-authtoken"&gt;this page. Copy it, and save it somewhere safe
+        (e.g. a password manager).
+    &lt;/li&gt;
+    &lt;li&gt;
+        Open the &lt;a href="https://colab.research.google.com/github/centuryglass/IntraPaint/blob/colab-refactor
+        /colabFiles/IntraPaint_colab_server.ipynb"&gt;IntraPaint Server notebook&lt;/a&gt; in Google Colab.
+    &lt;/li&gt;
+    &lt;li&gt;
+        Click "connect" in the upper right, after making sure that the dropdown to the right of the connect button is
+        set to "GPU". If you don't pay for Google Colab there is a chance that a GPU server won't be available, and
+        you'll have to try again later.
+    &lt;/li&gt;
+    &lt;li&gt;
+        By default, the server uses Google Drive to save configuration info to simplify the process of starting it
+        again later.  If you don't want to do this, scroll down through the notebook, find where it says
+        "use_google_drive=True", and change it to "use_google_drive=False"
+    &lt;/li&gt;
+    &lt;li&gt;
+        If you have an extra 10GB of space free in Google Drive, you can scroll down, find the line that says
+        "save_missing_models_to_drive=False", and change False to True, and it will start up much more quickly in the
+         future.
+    &lt;/li&gt;
+    &lt;li&gt;
+        Under the "Runtime" menu, select "Run All".  You'll see a popup warning you that the notebook is not from
+         Google. Click "Run anyway".
+    &lt;/li&gt;
+    &lt;li&gt;
+        If you chose to use Google Drive, another popup will appear asking you to grant permission to access Google
+        Drive. Click "Connect to Google Drive", and follow on-screen instructions to allow it to read and write files.
+    &lt;/li&gt;'
+    &lt;li&gt;
+        Below the first section of code on the page, a dialog asking you to enter your ngrok AuthToken will appear.
+        Paste in the auth token you saved earlier, and press enter. If you are using Google Drive, you won't need to do
+         this again the next time you start the server.
+    &lt;/li&gt;
+    &lt;li&gt;
+        Scroll down, and the server URL you need should be printed at the end of all log entries after a few minutes.
+        Click the "activate" button below these instructions, and enter that URL when prompted.
+    &lt;/li&gt;'
+&lt;/ol&gt;</source>
+      <translation>
+&lt;h2&gt;Colab server setup&lt;/h2&gt;
+&lt;p&gt;
+    This is the easier way to set up this mode. It does not require a powerful GPU, but it does require an internet
+     connection and a Google account.
+&lt;/p&gt;
+&lt;ol&gt;
+    &lt;li&gt;
+        You'll need a free ngrok account to handle the connection between IntraPaint and  the Colab Notebook. Sign up
+        for that account at &lt;a&gt;https://ngrok.com&lt;/a&gt;
+    &lt;/li&gt;
+    &lt;li&gt;
+        After you sign up for an ngrok account, log in to their site and find your ngrok AuthToken on 
+        &lt;a href="https://dashboard.ngrok.com/get-started/your-authtoken"&gt;this page. Copy it, and save it somewhere safe
+        (e.g. a password manager).
+    &lt;/li&gt;
+    &lt;li&gt;
+        Open the &lt;a href="https://colab.research.google.com/github/centuryglass/IntraPaint/blob/colab-refactor
+        /colabFiles/IntraPaint_colab_server.ipynb"&gt;IntraPaint Server notebook&lt;/a&gt; in Google Colab.
+    &lt;/li&gt;
+    &lt;li&gt;
+        Click "connect" in the upper right, after making sure that the dropdown to the right of the connect button is
+        set to "GPU". If you don't pay for Google Colab there is a chance that a GPU server won't be available, and
+        you'll have to try again later.
+    &lt;/li&gt;
+    &lt;li&gt;
+        By default, the server uses Google Drive to save configuration info to simplify the process of starting it
+        again later.  If you don't want to do this, scroll down through the notebook, find where it says
+        "use_google_drive=True", and change it to "use_google_drive=False"
+    &lt;/li&gt;
+    &lt;li&gt;
+        If you have an extra 10GB of space free in Google Drive, you can scroll down, find the line that says
+        "save_missing_models_to_drive=False", and change False to True, and it will start up much more quickly in the
+         future.
+    &lt;/li&gt;
+    &lt;li&gt;
+        Under the "Runtime" menu, select "Run All".  You'll see a popup warning you that the notebook is not from
+         Google. Click "Run anyway".
+    &lt;/li&gt;
+    &lt;li&gt;
+        If you chose to use Google Drive, another popup will appear asking you to grant permission to access Google
+        Drive. Click "Connect to Google Drive", and follow on-screen instructions to allow it to read and write files.
+    &lt;/li&gt;'
+    &lt;li&gt;
+        Below the first section of code on the page, a dialog asking you to enter your ngrok AuthToken will appear.
+        Paste in the auth token you saved earlier, and press enter. If you are using Google Drive, you won't need to do
+         this again the next time you start the server.
+    &lt;/li&gt;
+    &lt;li&gt;
+        Scroll down, and the server URL you need should be printed at the end of all log entries after a few minutes.
+        Click the "activate" button below these instructions, and enter that URL when prompted.
+    &lt;/li&gt;'
+&lt;/ol&gt;</translation>
     </message>
     <message>
-      <location filename="../../src/controller/image_generation/glid3_webservice_generator.py" line="94"/>
-      <source>&lt;h2&gt;Colab server setup&lt;/h2&gt;&lt;p&gt;This is the easier way to set up this mode. It does not require a powerful GPU, but it does require an internet connection and a Google account.&lt;/p&gt;&lt;ol&gt;&lt;li&gt;You'll need a free ngrok account to handle the connection between IntraPaint and the Colab Notebook, sign up for that at &lt;a&gt;https://ngrok.com&lt;/a&gt;&lt;/li&gt;&lt;li&gt;Once you sign up for an ngrok account, log in to their site, find your ngrok AuthToken on &lt;a href="https://dashboard.ngrok.com/get-started/your-authtoken"&gt;this page. Copy it, and save it somewhere safe (e.g. a password manager).&lt;/li&gt;&lt;li&gt;Open the &lt;a href="https://colab.research.google.com/github/centuryglass/IntraPaint/blob/colab-refactor/colabFiles/IntraPaint_colab_server.ipynb"&gt;IntraPaint Server notebook&lt;/a&gt; in Google Colab.&lt;/li&gt;&lt;li&gt;Click "connect" in the upper right, after making sure that the dropdown to the right of the connect button is set to "GPU". If you don't pay for Google Colab there is a chance that a GPU server won't be available, and you'll have to try again later.&lt;/li&gt;&lt;li&gt;By default, the server uses Google Drive to save configuration info to simplify theprocess of starting it again later.  If you don't want to do this, scroll down through the notebook, find where it says "use_google_drive=True", and change it to "use_google_drive=False"&lt;/li&gt;&lt;li&gt;If you have an extra 10GB of space free in Google Drive, you can scroll down, find the line that says "save_missing_models_to_drive=False", and change False to True, and it will start up much more quickly in the future.&lt;/li&gt;&lt;li&gt;Under the "Runtime" menu, select "Run All".  You'll see a popup warning you thatthe notebook is not from Google. Click "Run anyway".&lt;/li&gt;&lt;li&gt;If you chose to use Google Drive, another popup will appear asking you to grantpermission to access Google Drive. Click "Connect to Google Drive", and follow on-screen instructions to allow it to read and write files.&lt;/li&gt;&lt;li&gt;Below the first section of code on the page, a dialog asking you to enter your ngrok AuthToken will appear.  Paste in the auth token you saved earlier, and press enter. If you are using Google Drive, you won't need to do this again the next time you start the server.&lt;/li&gt;&lt;li&gt;Scroll down, and the server URL you need should be printed at the end of all log entries after a few minutes.&lt;/li&gt;&lt;/ol&gt;</source>
-      <translation>&lt;h2&gt;Colab server setup&lt;/h2&gt;&lt;p&gt;This is the easier way to set up this mode. It does not require a powerful GPU, but it does require an internet connection and a Google account.&lt;/p&gt;&lt;ol&gt;&lt;li&gt;You'll need a free ngrok account to handle the connection between IntraPaint and the Colab Notebook, sign up for that at &lt;a&gt;https://ngrok.com&lt;/a&gt;&lt;/li&gt;&lt;li&gt;Once you sign up for an ngrok account, log in to their site, find your ngrok AuthToken on &lt;a href="https://dashboard.ngrok.com/get-started/your-authtoken"&gt;this page. Copy it, and save it somewhere safe (e.g. a password manager).&lt;/li&gt;&lt;li&gt;Open the &lt;a href="https://colab.research.google.com/github/centuryglass/IntraPaint/blob/colab-refactor/colabFiles/IntraPaint_colab_server.ipynb"&gt;IntraPaint Server notebook&lt;/a&gt; in Google Colab.&lt;/li&gt;&lt;li&gt;Click "connect" in the upper right, after making sure that the dropdown to the right of the connect button is set to "GPU". If you don't pay for Google Colab there is a chance that a GPU server won't be available, and you'll have to try again later.&lt;/li&gt;&lt;li&gt;By default, the server uses Google Drive to save configuration info to simplify theprocess of starting it again later.  If you don't want to do this, scroll down through the notebook, find where it says "use_google_drive=True", and change it to "use_google_drive=False"&lt;/li&gt;&lt;li&gt;If you have an extra 10GB of space free in Google Drive, you can scroll down, find the line that says "save_missing_models_to_drive=False", and change False to True, and it will start up much more quickly in the future.&lt;/li&gt;&lt;li&gt;Under the "Runtime" menu, select "Run All".  You'll see a popup warning you thatthe notebook is not from Google. Click "Run anyway".&lt;/li&gt;&lt;li&gt;If you chose to use Google Drive, another popup will appear asking you to grantpermission to access Google Drive. Click "Connect to Google Drive", and follow on-screen instructions to allow it to read and write files.&lt;/li&gt;&lt;li&gt;Below the first section of code on the page, a dialog asking you to enter your ngrok AuthToken will appear.  Paste in the auth token you saved earlier, and press enter. If you are using Google Drive, you won't need to do this again the next time you start the server.&lt;/li&gt;&lt;li&gt;Scroll down, and the server URL you need should be printed at the end of all log entries after a few minutes.&lt;/li&gt;&lt;/ol&gt;</translation>
-    </message>
-    <message>
-      <location filename="../../src/controller/image_generation/glid3_webservice_generator.py" line="129"/>
+      <location filename="../../src/controller/image_generation/glid3_webservice_generator.py" line="173"/>
       <source>No GLID-3-XL server address was provided.</source>
       <translation>No GLID-3-XL server address was provided.</translation>
     </message>
     <message>
-      <location filename="../../src/controller/image_generation/glid3_webservice_generator.py" line="130"/>
+      <location filename="../../src/controller/image_generation/glid3_webservice_generator.py" line="174"/>
       <source>Could not find a valid GLID-3-XL server at "{server_address}"</source>
       <translation>Could not find a valid GLID-3-XL server at "{server_address}"</translation>
     </message>
@@ -1874,12 +1973,12 @@
   <context>
     <name>controller.image_generation.glid3_xl_generator</name>
     <message>
-      <location filename="../../src/controller/image_generation/glid3_xl_generator.py" line="49"/>
+      <location filename="../../src/controller/image_generation/glid3_xl_generator.py" line="51"/>
       <source>GLID-3-XL image generation</source>
       <translation>GLID-3-XL image generation</translation>
     </message>
     <message>
-      <location filename="../../src/controller/image_generation/glid3_xl_generator.py" line="50"/>
+      <location filename="../../src/controller/image_generation/glid3_xl_generator.py" line="52"/>
       <source>
 &lt;h1&gt;GLID-3-XL&lt;/h1&gt;
 &lt;p&gt;
@@ -1912,22 +2011,22 @@
 </translation>
     </message>
     <message>
-      <location filename="../../src/controller/image_generation/glid3_xl_generator.py" line="145"/>
+      <location filename="../../src/controller/image_generation/glid3_xl_generator.py" line="146"/>
       <source>Required dependencies are missing: &lt;code&gt;{dependency_list}&lt;/code&gt;</source>
       <translation>Required dependencies are missing: &lt;code&gt;{dependency_list}&lt;/code&gt;</translation>
     </message>
     <message>
-      <location filename="../../src/controller/image_generation/glid3_xl_generator.py" line="146"/>
+      <location filename="../../src/controller/image_generation/glid3_xl_generator.py" line="147"/>
       <source>Not enough VRAM for the GLID-3-XL generator: {mem_free} free memory found, expected at least {min_vram}</source>
       <translation>Not enough VRAM for the GLID-3-XL generator: {mem_free} free memory found, expected at least {min_vram}</translation>
     </message>
     <message>
-      <location filename="../../src/controller/image_generation/glid3_xl_generator.py" line="148"/>
+      <location filename="../../src/controller/image_generation/glid3_xl_generator.py" line="149"/>
       <source>{model_name} model file expected at "{model_path}" is missing</source>
       <translation>{model_name} model file expected at "{model_path}" is missing</translation>
     </message>
     <message>
-      <location filename="../../src/controller/image_generation/glid3_xl_generator.py" line="152"/>
+      <location filename="../../src/controller/image_generation/glid3_xl_generator.py" line="153"/>
       <source>Missing required {repo_name} repository, please run `git clone {repo_url}` within the IntraPaint directory.</source>
       <translation>Missing required {repo_name} repository, please run `git clone {repo_url}` within the IntraPaint directory.</translation>
     </message>
@@ -1987,86 +2086,242 @@
     </message>
     <message>
       <location filename="../../src/controller/image_generation/sd_webui_generator.py" line="50"/>
-      <source>&lt;h2&gt;Stable-Diffusion: via WebUI API&lt;/h2&gt;&lt;p&gt;Released in August 2022, Stable-Diffusion remains the most versatile and useful free image generation model.&lt;/p&gt;&lt;h2&gt;Generator capabilities and limits:&lt;/h2&gt;&lt;ul&gt;&lt;li&gt;Requires only 4GB of VRAM, or 8GB if using an SDXL model.&lt;/li&gt;&lt;li&gt;Tuned for an ideal resolution of 512x512 (1024x1024 for SDXL).&lt;/li&gt;&lt;li&gt;A huge variety of fine-tuned variant models are available.&lt;/li&gt;&lt;li&gt;The magnitude of changes made to existing images can be precisely controlled by varying denoising strength.&lt;/li&gt;&lt;li&gt;Supports LORAs, miniature extension models adding support for new styles and subjects.&lt;/li&gt;&lt;li&gt;Supports positive and negative prompting, where (parentheses) draw additional attention to prompt sections, and [square brackets] reduce attention.&lt;/li&gt;&lt;li&gt;Supports ControlNet modules, allowing image generation to be guided by arbitrary constraints like depth maps, existing image lines, and more.&lt;/li&gt;&lt;/ul&gt;&lt;h3&gt;Stable-Diffusion WebUI:&lt;/h3&gt;&lt;p&gt;The Stable-Diffusion WebUI is one of the first interfaces created for using Stable-Diffusion. This IntraPaint generator offloads image generation to that system through a network connection.  The WebUI instance can be run on the same computer as IntraPaint, or remotely on a separate server.&lt;/p&gt;</source>
-      <translation>&lt;h2&gt;Stable-Diffusion: via WebUI API&lt;/h2&gt;&lt;p&gt;Released in August 2022, Stable-Diffusion remains the most versatile and useful free image generation model.&lt;/p&gt;&lt;h2&gt;Generator capabilities and limits:&lt;/h2&gt;&lt;ul&gt;&lt;li&gt;Requires only 4GB of VRAM, or 8GB if using an SDXL model.&lt;/li&gt;&lt;li&gt;Tuned for an ideal resolution of 512x512 (1024x1024 for SDXL).&lt;/li&gt;&lt;li&gt;A huge variety of fine-tuned variant models are available.&lt;/li&gt;&lt;li&gt;The magnitude of changes made to existing images can be precisely controlled by varying denoising strength.&lt;/li&gt;&lt;li&gt;Supports LORAs, miniature extension models adding support for new styles and subjects.&lt;/li&gt;&lt;li&gt;Supports positive and negative prompting, where (parentheses) draw additional attention to prompt sections, and [square brackets] reduce attention.&lt;/li&gt;&lt;li&gt;Supports ControlNet modules, allowing image generation to be guided by arbitrary constraints like depth maps, existing image lines, and more.&lt;/li&gt;&lt;/ul&gt;&lt;h3&gt;Stable-Diffusion WebUI:&lt;/h3&gt;&lt;p&gt;The Stable-Diffusion WebUI is one of the first interfaces created for using Stable-Diffusion. This IntraPaint generator offloads image generation to that system through a network connection.  The WebUI instance can be run on the same computer as IntraPaint, or remotely on a separate server.&lt;/p&gt;</translation>
+      <source>
+&lt;h2&gt;Stable-Diffusion: via WebUI API&lt;/h2&gt;
+&lt;p&gt;
+    Released in August 2022, Stable-Diffusion remains the most versatile and useful free image generation model.
+&lt;/p&gt;
+&lt;h2&gt;Generator capabilities and limits:&lt;/h2&gt;
+&lt;ul&gt;
+    &lt;li&gt;Requires only 4GB of VRAM, or 8GB if using an SDXL model.&lt;/li&gt;
+    &lt;li&gt;Tuned for an ideal resolution of 512x512 (1024x1024 for SDXL).&lt;/li&gt;
+    &lt;li&gt;A huge variety of fine-tuned variant models are available.&lt;/li&gt;
+    &lt;li&gt;
+        The magnitude of changes made to existing images can be precisely controlled by varying denoising strength.
+    &lt;/li&gt;
+    &lt;li&gt;
+        Supports LORAs, miniature extension models adding support for new styles and subjects.
+    &lt;/li&gt;
+    &lt;li&gt;
+        Supports positive and negative prompting, where (parentheses) draw additional attention to prompt sections,
+        and [square brackets] reduce attention.
+    &lt;/li&gt;
+    &lt;li&gt;
+        Supports ControlNet modules, allowing image generation to be guided by arbitrary constraints like depth maps,
+        existing image lines, and pose analysis.
+    &lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3&gt;Stable-Diffusion WebUI:&lt;/h3&gt;
+&lt;p&gt;
+    The Stable-Diffusion WebUI is one of the first interfaces created for using Stable-Diffusion. This IntraPaint
+    generator offloads image generation to that system through a network connection.  The WebUI instance can be run on
+    the same computer as IntraPaint, or remotely on a separate server.
+&lt;/p&gt;</source>
+      <translation>
+&lt;h2&gt;Stable-Diffusion: via WebUI API&lt;/h2&gt;
+&lt;p&gt;
+    Released in August 2022, Stable-Diffusion remains the most versatile and useful free image generation model.
+&lt;/p&gt;
+&lt;h2&gt;Generator capabilities and limits:&lt;/h2&gt;
+&lt;ul&gt;
+    &lt;li&gt;Requires only 4GB of VRAM, or 8GB if using an SDXL model.&lt;/li&gt;
+    &lt;li&gt;Tuned for an ideal resolution of 512x512 (1024x1024 for SDXL).&lt;/li&gt;
+    &lt;li&gt;A huge variety of fine-tuned variant models are available.&lt;/li&gt;
+    &lt;li&gt;
+        The magnitude of changes made to existing images can be precisely controlled by varying denoising strength.
+    &lt;/li&gt;
+    &lt;li&gt;
+        Supports LORAs, miniature extension models adding support for new styles and subjects.
+    &lt;/li&gt;
+    &lt;li&gt;
+        Supports positive and negative prompting, where (parentheses) draw additional attention to prompt sections,
+        and [square brackets] reduce attention.
+    &lt;/li&gt;
+    &lt;li&gt;
+        Supports ControlNet modules, allowing image generation to be guided by arbitrary constraints like depth maps,
+        existing image lines, and pose analysis.
+    &lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3&gt;Stable-Diffusion WebUI:&lt;/h3&gt;
+&lt;p&gt;
+    The Stable-Diffusion WebUI is one of the first interfaces created for using Stable-Diffusion. This IntraPaint
+    generator offloads image generation to that system through a network connection.  The WebUI instance can be run on
+    the same computer as IntraPaint, or remotely on a separate server.
+&lt;/p&gt;</translation>
     </message>
     <message>
-      <location filename="../../src/controller/image_generation/sd_webui_generator.py" line="73"/>
-      <source>&lt;h2&gt;Installing Stable-Diffusion&lt;/h2&gt;&lt;p&gt;To use Stable-Diffusion with IntraPaint, you will need to install the Stable-Diffusion WebUI. You can choose either the &lt;a href="https://github.com/lllyasviel/stable-diffusion-webui-forge"&gt;Forge WebUI&lt;/a&gt; or the  original &lt;a href="https://github.com/AUTOMATIC1111/stable-diffusion-webui"&gt;Stable-Diffusion WebUI&lt;/a&gt;, but the Forge WebUI is the recommended version. The easiest way to install either of these options is through &lt;a href="https://github.com/LykosAI/StabilityMatrix"&gt;Stability Matrix&lt;/a&gt;.&lt;/p&gt;&lt;ol&gt;&lt;li&gt;Install the appropriate version of Stability Matrix for your system:&lt;ul&gt;&lt;li&gt;&lt;a href="https://github.com/LykosAI/StabilityMatrix/releases/latest/download/StabilityMatrix-win-x64.zip"&gt;Windows 10, 11&lt;/a&gt;&lt;/li&gt;&lt;li&gt;&lt;a href="https://github.com/LykosAI/StabilityMatrix/releases/latest/download/StabilityMatrix-linux-x64.zip"&gt;Linux AppImage&lt;/a&gt;&lt;/li&gt;&lt;li&gt;&lt;a href="https://aur.archlinux.org/packages/stabilitymatrix"&gt;Arch Linux AUR&lt;/a&gt;&lt;/li&gt;&lt;li&gt;&lt;a href="https://github.com/LykosAI/StabilityMatrix/releases/latest/download/StabilityMatrix-macos-arm64.dmg"&gt;macOS, Apple Silicon&lt;/a&gt;&lt;/li&gt;&lt;/ul&gt;&lt;/li&gt;&lt;li&gt;Open Stability Matrix, click "Add Package", select "Stable Diffusion WebUI Forge", and wait for it to install.&lt;/li&gt;&lt;li&gt;Once the installation finishes, click the gear icon next to Forge on the package screen to open launch options. Scroll to the bottom of the launch options, add `--api` to "Extra Launch Arguments", and click "Save".&lt;/li&gt;&lt;li&gt;Click "Launch", and wait for the WebUI to finish starting up.&lt;/li&gt;&lt;li&gt;Once the WebUI has started completely, you should be able to click "Activate" below, and IntraPaint will connect to it automatically.  If you configure the WebUI to use any URL other than the default or to use a username and password, IntraPaint will ask for that information before connecting.&lt;/li&gt;&lt;/ol&gt;</source>
-      <translation>&lt;h2&gt;Installing Stable-Diffusion&lt;/h2&gt;&lt;p&gt;To use Stable-Diffusion with IntraPaint, you will need to install the Stable-Diffusion WebUI. You can choose either the &lt;a href="https://github.com/lllyasviel/stable-diffusion-webui-forge"&gt;Forge WebUI&lt;/a&gt; or the  original &lt;a href="https://github.com/AUTOMATIC1111/stable-diffusion-webui"&gt;Stable-Diffusion WebUI&lt;/a&gt;, but the Forge WebUI is the recommended version. The easiest way to install either of these options is through &lt;a href="https://github.com/LykosAI/StabilityMatrix"&gt;Stability Matrix&lt;/a&gt;.&lt;/p&gt;&lt;ol&gt;&lt;li&gt;Install the appropriate version of Stability Matrix for your system:&lt;ul&gt;&lt;li&gt;&lt;a href="https://github.com/LykosAI/StabilityMatrix/releases/latest/download/StabilityMatrix-win-x64.zip"&gt;Windows 10, 11&lt;/a&gt;&lt;/li&gt;&lt;li&gt;&lt;a href="https://github.com/LykosAI/StabilityMatrix/releases/latest/download/StabilityMatrix-linux-x64.zip"&gt;Linux AppImage&lt;/a&gt;&lt;/li&gt;&lt;li&gt;&lt;a href="https://aur.archlinux.org/packages/stabilitymatrix"&gt;Arch Linux AUR&lt;/a&gt;&lt;/li&gt;&lt;li&gt;&lt;a href="https://github.com/LykosAI/StabilityMatrix/releases/latest/download/StabilityMatrix-macos-arm64.dmg"&gt;macOS, Apple Silicon&lt;/a&gt;&lt;/li&gt;&lt;/ul&gt;&lt;/li&gt;&lt;li&gt;Open Stability Matrix, click "Add Package", select "Stable Diffusion WebUI Forge", and wait for it to install.&lt;/li&gt;&lt;li&gt;Once the installation finishes, click the gear icon next to Forge on the package screen to open launch options. Scroll to the bottom of the launch options, add `--api` to "Extra Launch Arguments", and click "Save".&lt;/li&gt;&lt;li&gt;Click "Launch", and wait for the WebUI to finish starting up.&lt;/li&gt;&lt;li&gt;Once the WebUI has started completely, you should be able to click "Activate" below, and IntraPaint will connect to it automatically.  If you configure the WebUI to use any URL other than the default or to use a username and password, IntraPaint will ask for that information before connecting.&lt;/li&gt;&lt;/ol&gt;</translation>
+      <location filename="../../src/controller/image_generation/sd_webui_generator.py" line="83"/>
+      <source>
+&lt;h2&gt;Installing Stable-Diffusion&lt;/h2&gt;
+&lt;p&gt;
+    To use Stable-Diffusion with IntraPaint, you will need to install the Stable-Diffusion WebUI. You can choose either
+    the &lt;a href="https://github.com/lllyasviel/stable-diffusion-webui-forge"&gt;Forge WebUI&lt;/a&gt; or the original
+    &lt;a href="https://github.com/AUTOMATIC1111/stable-diffusion-webui"&gt; Stable-Diffusion WebUI&lt;/a&gt;, but the Forge
+    WebUI is the recommended version. The easiest way to install either of these options is through &lt;a href=
+    "https://github.com/LykosAI/StabilityMatrix"&gt;Stability Matrix&lt;/a&gt;.
+&lt;/p&gt;
+&lt;ol&gt;
+    &lt;li&gt;
+        Install the appropriate version of Stability Matrix for your system:
+        &lt;ul&gt;
+            &lt;li&gt;
+                &lt;a
+                 href="https://github.com/LykosAI/StabilityMatrix/releases/latest/download/StabilityMatrix-win-x64.zip"
+                 &gt;Windows 10, 11
+                &lt;/a&gt;
+            &lt;/li&gt;
+            &lt;li&gt;
+                &lt;a
+                href="https://github.com/LykosAI/StabilityMatrix/releases/latest/download/StabilityMatrix-linux-x64.zip"
+                &gt;Linux AppImage
+                &lt;/a&gt;
+            &lt;/li&gt;
+            &lt;li&gt;&lt;a href="https://aur.archlinux.org/packages/stabilitymatrix"&gt; Arch Linux AUR&lt;/a&gt;&lt;/li&gt;
+            &lt;li&gt;
+                &lt;a
+              href="https://github.com/LykosAI/StabilityMatrix/releases/latest/download/StabilityMatrix-macos-arm64.dmg"
+                 &gt;macOS, Apple Silicon
+                &lt;/a&gt;
+            &lt;/li&gt;
+        &lt;/ul&gt;
+    &lt;/li&gt;
+    &lt;li&gt;
+        Open Stability Matrix, click "Add Package", select "Stable Diffusion WebUI Forge",and wait for it to install.
+    &lt;/li&gt;
+    &lt;li&gt;
+        Once the installation finishes, click the gear icon next to Forge on the package screen to open launch options.
+         Scroll to the bottom of the launch options, add "--api" to "Extra Launch Arguments", and click "Save".
+    &lt;/li&gt;
+    &lt;li&gt;Click "Launch", and wait for the WebUI to finish starting up.&lt;/li&gt;
+    &lt;li&gt;
+        Once the WebUI has started completely, you should be able to click "Activate" below, and IntraPaint will
+        connect to it automatically.  If you configure the WebUI to use any URL other than the default or to use a
+        username and password, IntraPaint will ask for that information before connecting.
+    &lt;/li&gt;
+&lt;/ol&gt;
+</source>
+      <translation>
+&lt;h2&gt;Installing Stable-Diffusion&lt;/h2&gt;
+&lt;p&gt;
+    To use Stable-Diffusion with IntraPaint, you will need to install the Stable-Diffusion WebUI. You can choose either
+    the &lt;a href="https://github.com/lllyasviel/stable-diffusion-webui-forge"&gt;Forge WebUI&lt;/a&gt; or the original
+    &lt;a href="https://github.com/AUTOMATIC1111/stable-diffusion-webui"&gt; Stable-Diffusion WebUI&lt;/a&gt;, but the Forge
+    WebUI is the recommended version. The easiest way to install either of these options is through &lt;a href=
+    "https://github.com/LykosAI/StabilityMatrix"&gt;Stability Matrix&lt;/a&gt;.
+&lt;/p&gt;
+&lt;ol&gt;
+    &lt;li&gt;
+        Install the appropriate version of Stability Matrix for your system:
+        &lt;ul&gt;
+            &lt;li&gt;
+                &lt;a
+                 href="https://github.com/LykosAI/StabilityMatrix/releases/latest/download/StabilityMatrix-win-x64.zip"
+                 &gt;Windows 10, 11
+                &lt;/a&gt;
+            &lt;/li&gt;
+            &lt;li&gt;
+                &lt;a
+                href="https://github.com/LykosAI/StabilityMatrix/releases/latest/download/StabilityMatrix-linux-x64.zip"
+                &gt;Linux AppImage
+                &lt;/a&gt;
+            &lt;/li&gt;
+            &lt;li&gt;&lt;a href="https://aur.archlinux.org/packages/stabilitymatrix"&gt; Arch Linux AUR&lt;/a&gt;&lt;/li&gt;
+            &lt;li&gt;
+                &lt;a
+              href="https://github.com/LykosAI/StabilityMatrix/releases/latest/download/StabilityMatrix-macos-arm64.dmg"
+                 &gt;macOS, Apple Silicon
+                &lt;/a&gt;
+            &lt;/li&gt;
+        &lt;/ul&gt;
+    &lt;/li&gt;
+    &lt;li&gt;
+        Open Stability Matrix, click "Add Package", select "Stable Diffusion WebUI Forge",and wait for it to install.
+    &lt;/li&gt;
+    &lt;li&gt;
+        Once the installation finishes, click the gear icon next to Forge on the package screen to open launch options.
+         Scroll to the bottom of the launch options, add "--api" to "Extra Launch Arguments", and click "Save".
+    &lt;/li&gt;
+    &lt;li&gt;Click "Launch", and wait for the WebUI to finish starting up.&lt;/li&gt;
+    &lt;li&gt;
+        Once the WebUI has started completely, you should be able to click "Activate" below, and IntraPaint will
+        connect to it automatically.  If you configure the WebUI to use any URL other than the default or to use a
+        username and password, IntraPaint will ask for that information before connecting.
+    &lt;/li&gt;
+&lt;/ol&gt;
+</translation>
     </message>
     <message>
-      <location filename="../../src/controller/image_generation/sd_webui_generator.py" line="108"/>
+      <location filename="../../src/controller/image_generation/sd_webui_generator.py" line="137"/>
       <source>Not authenticated</source>
       <translation>Not authenticated</translation>
     </message>
     <message>
-      <location filename="../../src/controller/image_generation/sd_webui_generator.py" line="109"/>
+      <location filename="../../src/controller/image_generation/sd_webui_generator.py" line="138"/>
       <source>Open or create an image first.</source>
       <translation>Open or create an image first.</translation>
     </message>
     <message>
-      <location filename="../../src/controller/image_generation/sd_webui_generator.py" line="110"/>
+      <location filename="../../src/controller/image_generation/sd_webui_generator.py" line="139"/>
       <source>Existing operation still in progress</source>
       <translation>Existing operation still in progress</translation>
     </message>
     <message>
-      <location filename="../../src/controller/image_generation/sd_webui_generator.py" line="111"/>
+      <location filename="../../src/controller/image_generation/sd_webui_generator.py" line="140"/>
       <source>Interrogate failure</source>
       <translation>Interrogate failure</translation>
     </message>
     <message>
-      <location filename="../../src/controller/image_generation/sd_webui_generator.py" line="112"/>
+      <location filename="../../src/controller/image_generation/sd_webui_generator.py" line="141"/>
       <source>Running CLIP interrogate</source>
       <translation>Running CLIP interrogate</translation>
     </message>
     <message>
-      <location filename="../../src/controller/image_generation/sd_webui_generator.py" line="113"/>
+      <location filename="../../src/controller/image_generation/sd_webui_generator.py" line="142"/>
       <source>Inpainting UI</source>
       <translation>Inpainting UI</translation>
     </message>
     <message>
-      <location filename="../../src/controller/image_generation/sd_webui_generator.py" line="114"/>
+      <location filename="../../src/controller/image_generation/sd_webui_generator.py" line="143"/>
       <source>Enter server URL:</source>
       <translation>Enter server URL:</translation>
     </message>
     <message>
-      <location filename="../../src/controller/image_generation/sd_webui_generator.py" line="115"/>
+      <location filename="../../src/controller/image_generation/sd_webui_generator.py" line="144"/>
       <source>Server connection failed, enter a new URL or click "OK" to retry</source>
       <translation>Server connection failed, enter a new URL or click "OK" to retry</translation>
     </message>
     <message>
-      <location filename="../../src/controller/image_generation/sd_webui_generator.py" line="117"/>
+      <location filename="../../src/controller/image_generation/sd_webui_generator.py" line="146"/>
       <source>Upscale failure</source>
       <translation>Upscale failure</translation>
     </message>
     <message>
-      <location filename="../../src/controller/image_generation/sd_webui_generator.py" line="121"/>
+      <location filename="../../src/controller/image_generation/sd_webui_generator.py" line="150"/>
       <source>Updating prompt styles failed</source>
       <translation>Updating prompt styles failed</translation>
     </message>
     <message>
-      <location filename="../../src/controller/image_generation/sd_webui_generator.py" line="123"/>
+      <location filename="../../src/controller/image_generation/sd_webui_generator.py" line="152"/>
       <source>Image generation failed</source>
       <translation>Image generation failed</translation>
     </message>
     <message>
-      <location filename="../../src/controller/image_generation/sd_webui_generator.py" line="124"/>
+      <location filename="../../src/controller/image_generation/sd_webui_generator.py" line="153"/>
       <source>Nothing was selected in the image generation area. Either use the selection tool to mark part of the image generation area for inpainting, move the image generation area to cover selected content, or switch to another image generation mode.</source>
       <translation>Nothing was selected in the image generation area. Either use the selection tool to mark part of the image generation area for inpainting, move the image generation area to cover selected content, or switch to another image generation mode.</translation>
     </message>
     <message>
-      <location filename="../../src/controller/image_generation/sd_webui_generator.py" line="128"/>
+      <location filename="../../src/controller/image_generation/sd_webui_generator.py" line="157"/>
       <source>ControlNet</source>
       <translation>ControlNet</translation>
     </message>
     <message>
-      <location filename="../../src/controller/image_generation/sd_webui_generator.py" line="129"/>
+      <location filename="../../src/controller/image_generation/sd_webui_generator.py" line="158"/>
       <source>ControlNet Unit {unit_number}</source>
       <translation>ControlNet Unit {unit_number}</translation>
     </message>
     <message>
-      <location filename="../../src/controller/image_generation/sd_webui_generator.py" line="130"/>
+      <location filename="../../src/controller/image_generation/sd_webui_generator.py" line="159"/>
       <source>Login cancelled.</source>
       <translation>Login cancelled.</translation>
     </message>
@@ -4256,6 +4511,11 @@ Press ESC to cancel</translation>
       <location filename="../../src/ui/window/generator_setup_window.py" line="29"/>
       <source>&lt;h1&gt;Generator Options:&lt;/h1&gt;</source>
       <translation>&lt;h1&gt;Generator Options:&lt;/h1&gt;</translation>
+    </message>
+    <message>
+      <location filename="../../src/ui/window/generator_setup_window.py" line="30"/>
+      <source>&lt;u&gt;Preview: {generator_name}&lt;/u&gt;</source>
+      <translation>&lt;u&gt;Preview: {generator_name}&lt;/u&gt;</translation>
     </message>
   </context>
   <context>

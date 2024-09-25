@@ -47,59 +47,88 @@ def _tr(*args):
 MENU_TOOLS = _tr('Tools')
 
 SD_WEBUI_GENERATOR_NAME = _tr('Stable-Diffusion WebUI API')
-SD_WEBUI_GENERATOR_DESCRIPTION = _tr('<h2>Stable-Diffusion: via WebUI API</h2>'
-                                     '<p>Released in August 2022, Stable-Diffusion remains the most versatile and '
-                                     'useful free image generation model.</p>'
-                                     '<h2>Generator capabilities and limits:</h2>'
-                                     '<ul>'
-                                     '<li>Requires only 4GB of VRAM, or 8GB if using an SDXL model.</li>'
-                                     '<li>Tuned for an ideal resolution of 512x512 (1024x1024 for SDXL).</li>'
-                                     '<li>A huge variety of fine-tuned variant models are available.</li>'
-                                     '<li>The magnitude of changes made to existing images can be precisely controlled'
-                                     ' by varying denoising strength.</li>'
-                                     '<li>Supports LORAs, miniature extension models adding support for new styles and'
-                                     ' subjects.</li>'
-                                     '<li>Supports positive and negative prompting, where (parentheses) draw additional'
-                                     ' attention to prompt sections, and [square brackets] reduce attention.</li>'
-                                     '<li>Supports ControlNet modules, allowing image generation to be guided by '
-                                     'arbitrary constraints like depth maps, existing image lines, and more.</li>'
-                                     '</ul><h3>Stable-Diffusion WebUI:</h3><p>The Stable-Diffusion WebUI is one of the '
-                                     'first interfaces created for using Stable-Diffusion. This IntraPaint generator '
-                                     'offloads image generation to that system through a network connection.  The '
-                                     'WebUI instance can be run on the same computer as IntraPaint, or remotely on a '
-                                     'separate server.</p>')
+SD_WEBUI_GENERATOR_DESCRIPTION = _tr("""
+<h2>Stable-Diffusion: via WebUI API</h2>
+<p>
+    Released in August 2022, Stable-Diffusion remains the most versatile and useful free image generation model.
+</p>
+<h2>Generator capabilities and limits:</h2>
+<ul>
+    <li>Requires only 4GB of VRAM, or 8GB if using an SDXL model.</li>
+    <li>Tuned for an ideal resolution of 512x512 (1024x1024 for SDXL).</li>
+    <li>A huge variety of fine-tuned variant models are available.</li>
+    <li>
+        The magnitude of changes made to existing images can be precisely controlled by varying denoising strength.
+    </li>
+    <li>
+        Supports LORAs, miniature extension models adding support for new styles and subjects.
+    </li>
+    <li>
+        Supports positive and negative prompting, where (parentheses) draw additional attention to prompt sections,
+        and [square brackets] reduce attention.
+    </li>
+    <li>
+        Supports ControlNet modules, allowing image generation to be guided by arbitrary constraints like depth maps,
+        existing image lines, and pose analysis.
+    </li>
+</ul>
+<h3>Stable-Diffusion WebUI:</h3>
+<p>
+    The Stable-Diffusion WebUI is one of the first interfaces created for using Stable-Diffusion. This IntraPaint
+    generator offloads image generation to that system through a network connection.  The WebUI instance can be run on
+    the same computer as IntraPaint, or remotely on a separate server.
+</p>""")
 
 # noinspection SpellCheckingInspection
-SD_WEBUI_GENERATOR_SETUP = _tr('<h2>Installing Stable-Diffusion</h2><p>To use Stable-Diffusion with IntraPaint, '
-                               'you will need to install the Stable-Diffusion WebUI. You can choose either the <a href='
-                               '"https://github.com/lllyasviel/stable-diffusion-webui-forge">Forge WebUI</a> or the '
-                               ' original <a href="https://github.com/AUTOMATIC1111/stable-diffusion-webui">'
-                               'Stable-Diffusion WebUI</a>, but the Forge WebUI is the recommended version. The easiest'
-                               ' way to install either of these options is through <a href='
-                               '"https://github.com/LykosAI/StabilityMatrix">Stability Matrix</a>.</p>'
-                               '<ol>'
-                               '<li>Install the appropriate version of Stability Matrix for your system:'
-                               '<ul>'
-                               '<li><a href="https://github.com/LykosAI/StabilityMatrix/releases/latest/download/'
-                               'StabilityMatrix-win-x64.zip">Windows 10, 11</a></li>'
-                               '<li><a href="https://github.com/LykosAI/StabilityMatrix/releases/latest/download/'
-                               'StabilityMatrix-linux-x64.zip">Linux AppImage</a></li>'
-                               '<li><a href="https://aur.archlinux.org/packages/stabilitymatrix">'
-                               'Arch Linux AUR</a></li>'
-                               '<li><a href="https://github.com/LykosAI/StabilityMatrix/releases/latest/download/'
-                               'StabilityMatrix-macos-arm64.dmg">macOS, Apple Silicon</a></li>'
-                               '</ul>'
-                               '</li>'
-                               '<li>Open Stability Matrix, click "Add Package", select "Stable Diffusion WebUI Forge",'
-                               ' and wait for it to install.</li>'
-                               '<li>Once the installation finishes, click the gear icon next to Forge on the package'
-                               ' screen to open launch options. Scroll to the bottom of the launch options, add'
-                               ' `--api` to "Extra Launch Arguments", and click "Save".</li>'
-                               '<li>Click "Launch", and wait for the WebUI to finish starting up.</li>'
-                               '<li>Once the WebUI has started completely, you should be able to click "Activate" below'
-                               ', and IntraPaint will connect to it automatically.  If you configure the WebUI to use '
-                               'any URL other than the default or to use a username and password, IntraPaint will ask'
-                               ' for that information before connecting.</li></ol>')
+SD_WEBUI_GENERATOR_SETUP = _tr("""
+<h2>Installing Stable-Diffusion</h2>
+<p>
+    To use Stable-Diffusion with IntraPaint, you will need to install the Stable-Diffusion WebUI. You can choose either
+    the <a href="https://github.com/lllyasviel/stable-diffusion-webui-forge">Forge WebUI</a> or the original
+    <a href="https://github.com/AUTOMATIC1111/stable-diffusion-webui"> Stable-Diffusion WebUI</a>, but the Forge
+    WebUI is the recommended version. The easiest way to install either of these options is through <a href=
+    "https://github.com/LykosAI/StabilityMatrix">Stability Matrix</a>.
+</p>
+<ol>
+    <li>
+        Install the appropriate version of Stability Matrix for your system:
+        <ul>
+            <li>
+                <a
+                 href="https://github.com/LykosAI/StabilityMatrix/releases/latest/download/StabilityMatrix-win-x64.zip"
+                 >Windows 10, 11
+                </a>
+            </li>
+            <li>
+                <a
+                href="https://github.com/LykosAI/StabilityMatrix/releases/latest/download/StabilityMatrix-linux-x64.zip"
+                >Linux AppImage
+                </a>
+            </li>
+            <li><a href="https://aur.archlinux.org/packages/stabilitymatrix"> Arch Linux AUR</a></li>
+            <li>
+                <a
+              href="https://github.com/LykosAI/StabilityMatrix/releases/latest/download/StabilityMatrix-macos-arm64.dmg"
+                 >macOS, Apple Silicon
+                </a>
+            </li>
+        </ul>
+    </li>
+    <li>
+        Open Stability Matrix, click "Add Package", select "Stable Diffusion WebUI Forge",and wait for it to install.
+    </li>
+    <li>
+        Once the installation finishes, click the gear icon next to Forge on the package screen to open launch options.
+         Scroll to the bottom of the launch options, add "--api" to "Extra Launch Arguments", and click "Save".
+    </li>
+    <li>Click "Launch", and wait for the WebUI to finish starting up.</li>
+    <li>
+        Once the WebUI has started completely, you should be able to click "Activate" below, and IntraPaint will
+        connect to it automatically.  If you configure the WebUI to use any URL other than the default or to use a
+        username and password, IntraPaint will ask for that information before connecting.
+    </li>
+</ol>
+""")
 SD_PREVIEW_IMAGE = f'{PROJECT_DIR}/resources/generator_preview/stable-diffusion.png'
 CONTROLNET_TAB_ICON = f'{PROJECT_DIR}/resources/icons/tabs/hex.svg'
 DEFAULT_SD_URL = 'http://localhost:7860'
