@@ -1,7 +1,6 @@
 # Development tasks
 
 ## Before next release:
-- transform tool: make sure clear/rotate button is in all panel layouts  (< 30 minutes)
 - Finish README cleanup and examples (< 1 day)
 - Basic workflow tutorials (< 1 day)
 - Final timelapse video (< 5 days)
@@ -15,8 +14,6 @@
 - Menu capitalization has inconsistencies
 - Interrogate seems to have issues
 - Layer re-ordering only updates after something else triggers re-render
-- Extra x-scale labels on mid-size vertical transform tool
-- Can't actually edit transform controls? Seems like it breaks after switching to the smallest layout
 - Filter: blur mode box not showing
 - panel resize issues on debian
 

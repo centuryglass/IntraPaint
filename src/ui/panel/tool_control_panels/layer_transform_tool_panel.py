@@ -1,24 +1,23 @@
 """Control panel for the layer transformation tool."""
-from typing import Optional, Tuple, Dict
+from typing import Optional, Tuple, Dict, List
 
 from PySide6.QtCore import QRect, QPoint, QSize, QRectF, Signal
-from PySide6.QtGui import QPaintEvent, QTransform, QColor, Qt, QPolygonF, QPainter, QPen, QKeySequence
-from PySide6.QtWidgets import QSizePolicy, QApplication, QGridLayout, QWidget, QDoubleSpinBox, QCheckBox, QSpinBox, \
-    QPushButton, QLabel
+from PySide6.QtGui import QPaintEvent, QTransform, QColor, Qt, QPolygonF, QPainter, QPen, QKeySequence, QResizeEvent
+from PySide6.QtWidgets import QSizePolicy, QApplication, QGridLayout, QWidget, QPushButton
 
 from src.config.cache import Cache
 from src.config.key_config import KeyConfig
 from src.hotkey_filter import HotkeyFilter
 from src.image.layers.image_stack import ImageStack
 from src.ui.input_fields.check_box import CheckBox
+from src.ui.input_fields.slider_spinbox import IntSliderSpinbox, FloatSliderSpinbox
 from src.ui.layout.reactive_layout_widget import ReactiveLayoutWidget
 from src.ui.widget.key_hint_label import KeyHintLabel
-from src.util.layout import clear_layout
+from src.util.layout import clear_layout, wrap_widget_with_key_hints
 from src.util.shared_constants import FLOAT_MIN, FLOAT_MAX, MIN_NONZERO, ASPECT_RATIO_CHECK_LABEL, INT_MAX
 from src.util.signals_blocked import signals_blocked
 from src.util.visual.geometry_utils import get_rect_transformation, get_scaled_placement
 from src.util.visual.image_utils import get_transparency_tile_pixmap
-from src.util.visual.text_drawing_utils import find_text_size
 
 # The `QCoreApplication.translate` context for strings in this file
 TR_ID = 'ui.panel.tool_control_panels.layer_transform_tool_panel'
@@ -64,25 +63,38 @@ class LayerTransformToolPanel(ReactiveLayoutWidget):
         self._preview = _TransformPreview(image_stack.size, QRectF(), QTransform())
         image_stack.size_changed.connect(self._preview.set_image_size)
 
-        def _init_control(default_val, min_val, max_val, signal):
-            new_control = QSpinBox() if isinstance(default_val, int) else QDoubleSpinBox()
+        def _key_predicate() -> bool:
+            return self.isVisible() and self.isEnabled() and not image_stack.active_layer.locked
+
+        def _init_control(default_val: float | int, min_val: float | int, max_val: float | int, signal: Signal,
+                          text: str, down_key: Optional[str] = None, up_key: Optional[str] = None):
+            new_control = IntSliderSpinbox(parent=self) if isinstance(default_val, int) else FloatSliderSpinbox()
+            new_control.set_slider_included(False)
             new_control.setRange(min_val, max_val)
             new_control.setValue(default_val)
+            new_control.setText(text)
+            if down_key is not None and up_key is not None:
+                HotkeyFilter.instance().bind_slider_controls(new_control, down_key, up_key, _key_predicate)
             new_control.valueChanged.connect(signal)
             return new_control
 
-        self._x_pos_box = _init_control(0.0, FLOAT_MIN, FLOAT_MAX, self.x_changed)
-        self._y_pos_box = _init_control(0.0, FLOAT_MIN, FLOAT_MAX, self.y_changed)
+        self._x_pos_box = _init_control(0.0, FLOAT_MIN, FLOAT_MAX, self.x_changed, X_LABEL,
+                                        KeyConfig.MOVE_LEFT, KeyConfig.MOVE_RIGHT)
+        self._y_pos_box = _init_control(0.0, FLOAT_MIN, FLOAT_MAX, self.y_changed, Y_LABEL,
+                                        KeyConfig.MOVE_UP, KeyConfig.MOVE_DOWN)
         edit_size = Cache().get(Cache.EDIT_SIZE)
-        self._width_box = _init_control(float(edit_size.width()), MIN_NONZERO, FLOAT_MAX, self.width_changed)
-        self._height_box = _init_control(float(edit_size.height()), MIN_NONZERO, FLOAT_MAX, self.height_changed)
+        self._width_box = _init_control(float(edit_size.width()), MIN_NONZERO, FLOAT_MAX, self.width_changed,
+                                        WIDTH_LABEL, KeyConfig.PAN_LEFT, KeyConfig.PAN_RIGHT)
+        self._height_box = _init_control(float(edit_size.height()), MIN_NONZERO, FLOAT_MAX, self.height_changed,
+                                         HEIGHT_LABEL, KeyConfig.PAN_DOWN, KeyConfig.PAN_UP)
 
-        self._x_scale_box = _init_control(1.0, FLOAT_MIN, FLOAT_MAX, self.x_scale_changed)
-        self._y_scale_box = _init_control(1.0, FLOAT_MIN, FLOAT_MAX, self.y_scale_changed)
+        self._x_scale_box = _init_control(1.0, FLOAT_MIN, FLOAT_MAX, self.x_scale_changed, X_SCALE_LABEL)
+        self._y_scale_box = _init_control(1.0, FLOAT_MIN, FLOAT_MAX, self.y_scale_changed, Y_SCALE_LABEL)
 
         for scale_box in (self._y_scale_box, self._x_scale_box):
             scale_box.setSingleStep(SCALE_STEP)
-        self._rotate_box = _init_control(0.0, FLOAT_MIN, FLOAT_MAX, self.angle_changed)
+        self._rotate_box = _init_control(0.0, FLOAT_MIN, FLOAT_MAX, self.angle_changed, DEGREE_LABEL,
+                                         KeyConfig.ROTATE_CCW_KEY, KeyConfig.ROTATE_CW_KEY)
         self._aspect_ratio_checkbox = CheckBox()
         self._aspect_ratio_checkbox.setText(ASPECT_RATIO_CHECK_LABEL)
         self._aspect_ratio_checkbox.valueChanged.connect(self.preserve_aspect_ratio_changed)
@@ -98,6 +110,7 @@ class LayerTransformToolPanel(ReactiveLayoutWidget):
             elif self.isVisible() and self._aspect_ratio_checkbox.isChecked() and self._modifier_set_aspect_ratio \
                     and not KeyConfig.modifier_held(KeyConfig.FIXED_ASPECT_MODIFIER, held_modifiers=modifiers):
                 self._aspect_ratio_checkbox.setChecked(False)
+
         HotkeyFilter.instance().modifiers_changed.connect(_set_checkbox_when_modifier_held)
 
         self._down_keys: Dict[QWidget, Tuple[QKeySequence, str]] = {}
@@ -113,90 +126,27 @@ class LayerTransformToolPanel(ReactiveLayoutWidget):
         self._clear_button.setMinimumHeight(self._clear_button.sizeHint().height())
         self._clear_button.clicked.connect(self.clear_signal)
 
-        # Register movement key overrides, tied to control panel visibility:
-        config = KeyConfig()
-        for control, up_key_code, down_key_code in ((self._x_pos_box, KeyConfig.MOVE_RIGHT, KeyConfig.MOVE_LEFT),
-                                                    (self._y_pos_box, KeyConfig.MOVE_DOWN, KeyConfig.MOVE_UP),
-                                                    (self._width_box, KeyConfig.PAN_RIGHT, KeyConfig.PAN_LEFT),
-                                                    (self._height_box, KeyConfig.PAN_UP, KeyConfig.PAN_DOWN),
-                                                    (self._rotate_box, KeyConfig.ROTATE_CW_KEY,
-                                                     KeyConfig.ROTATE_CCW_KEY)):
-            self._up_keys[control] = (config.get_keycodes(up_key_code), up_key_code)
-            self._down_keys[control] = (config.get_keycodes(down_key_code), down_key_code)
-
-            for key, sign in ((up_key_code, 1), (down_key_code, -1)):
-                def _binding(mult, n=sign, box=control) -> bool:
-                    steps = n * mult
-                    if not self.isVisible() or image_stack.active_layer.locked:
-                        return False
-                    box.stepBy(steps)
-                    return True
-                binding_id = f'LayerTransformToolPanel_{id(self)}_key'
-                HotkeyFilter.instance().register_speed_modified_keybinding(binding_id, _binding, key)
         self.setContentsMargins(0, 0, 0, 0)
         self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Ignored)
         grid = self._layout
         grid.setAlignment(Qt.AlignmentFlag.AlignCenter)
         grid.setSpacing(CONTROL_GRID_SPACING)
 
-        labels = [X_LABEL, Y_LABEL, WIDTH_LABEL, HEIGHT_LABEL, X_SCALE_LABEL, Y_SCALE_LABEL, DEGREE_LABEL,
-                  ASPECT_RATIO_CHECK_LABEL]
+        self._aspect_ratio_hint = KeyHintLabel(None, KeyConfig.FIXED_ASPECT_MODIFIER, parent=self)
+        self._aspect_ratio_wrapper = wrap_widget_with_key_hints(self._aspect_ratio_checkbox,
+                                                                right_hint=self._aspect_ratio_hint,
+                                                                alignment=Qt.AlignmentFlag.AlignLeft)
+
         controls = [self._x_pos_box, self._y_pos_box, self._width_box, self._height_box, self._x_scale_box,
-                    self._y_scale_box, self._rotate_box, self._aspect_ratio_checkbox]
-
-        label_width = 0
-        label_height = 0
-        for label in labels:
-            text_size = find_text_size(label)
-            label_width = max(text_size.width(), label_width)
-            label_height = max(text_size.height(), label_height)
-        aspect_ratio_hint = KeyHintLabel(None, KeyConfig.FIXED_ASPECT_MODIFIER, parent=self)
-
-        def _get_down_hint(control_widget: QWidget) -> Optional[KeyHintLabel]:
-            if control_widget == self._aspect_ratio_checkbox:
-                return aspect_ratio_hint
-            if control_widget in self._down_keys:
-                down_keycode, down_config_key = self._down_keys[control_widget]
-                down_hint_widget = KeyHintLabel(down_keycode, down_config_key, parent=self)
-                down_hint_widget.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
-                return down_hint_widget
-            return None
-
-        def _get_up_hint(control_widget: QWidget) -> Optional[KeyHintLabel]:
-            if control_widget in self._up_keys:
-                up_keycode, up_config_key = self._up_keys[control_widget]
-                up_hint_widget = KeyHintLabel(up_keycode, up_config_key, parent=self)
-                up_hint_widget.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
-                return up_hint_widget
-            return None
-
-        down_control_hints = [_get_down_hint(control) for control in controls]
-        up_control_hints = [_get_up_hint(control) for control in controls]
-        item_map = {}
-        for i, label in enumerate(labels):
-            item_map[label] = (controls[i], down_control_hints[i], up_control_hints[i])
-        item_map[RESET_BUTTON_TEXT] = (self._reset_button, None, None)
-        item_map[CLEAR_BUTTON_TEXT] = (self._clear_button, None, None)
+                    self._y_scale_box, self._rotate_box, self._aspect_ratio_wrapper, self._clear_button,
+                    self._reset_button]
 
         control_width = 0
         control_height = 0
-        for control, down_hint, up_hint in zip(controls, down_control_hints, up_control_hints):
-            control_size = control.minimumSize()
-            hint_size = QSize()
-            if down_hint is not None:
-                hint_size = down_hint.sizeHint()
-            if up_hint is not None:
-                up_hint_size = up_hint.sizeHint()
-                hint_size = QSize(up_hint_size.width() + hint_size.width(),
-                                  max(hint_size.height(), up_hint_size.height()))
-            width = control_size.width() + hint_size.width()
-            if control == self._aspect_ratio_checkbox:
-                width -= label_width
-            control_width = max(width, control_width)
-            control_height = max(control_size.height() + hint_size.height(), control_height)
-
-        column_width = label_width + control_width + CONTROL_GRID_SPACING
-        row_height = max(label_height, control_height) + CONTROL_GRID_SPACING
+        for control in controls:
+            min_size = control.minimumSizeHint()
+            control_width = max(min_size.width(), control_width)
+            control_height = max(min_size.height(), control_height)
         preview_size = self._preview.sizeHint()
 
         # Layout setup functions:
@@ -220,7 +170,7 @@ class LayerTransformToolPanel(ReactiveLayoutWidget):
             assert column_span is not None
             return widget, row_span, column_span
 
-        def _set_grid_weights() -> None:
+        def _final_grid_adjustments(hide_key_hints=False) -> None:
             row_heights = {}
             column_widths = {}
             for row in range(grid.rowCount()):
@@ -238,53 +188,55 @@ class LayerTransformToolPanel(ReactiveLayoutWidget):
                 grid.setRowStretch(row, stretch)
             for column, stretch in column_widths.items():
                 grid.setColumnStretch(column, stretch)
+            spinbox_map: Dict[int, List[IntSliderSpinbox | FloatSliderSpinbox]] = {}
+            for control_widget in controls:
+                control_idx = grid.indexOf(control_widget)
+                if control_idx < 0:
+                    continue
+                control_widget.show()
+                if isinstance(control_widget, (IntSliderSpinbox, FloatSliderSpinbox)):
+                    control_widget.set_key_hints_visible(not hide_key_hints)
+                    _, column, _, _ = grid.getItemPosition(control_idx)
+                    if column not in spinbox_map:
+                        spinbox_map[column] = []
+                    spinbox_map[column].append(control_widget)
+            for spinbox_column in spinbox_map.values():
+                IntSliderSpinbox.align_slider_spinboxes(spinbox_column)
+            self._aspect_ratio_hint.setVisible(not hide_key_hints)
+            if grid.indexOf(self._preview) >= 0:
+                self._preview.show()
 
-        def _add_control(label_text: str, row: int, column: int, use_hints: bool = True) -> None:
-            control_widget, up_key_hint, down_key_hint = item_map[label_text]
-            control_widget.setMinimumHeight(control.sizeHint().height())
-            if use_hints is False:
-                up_key_hint = None
-                down_key_hint = None
-            grid_column = column * 4
-            if not isinstance(control_widget, (QPushButton, QCheckBox)):
-                ctrl_label = QLabel(label_text)
-                ctrl_label.setMinimumHeight(control_widget.sizeHint().height())
-                grid.addWidget(ctrl_label, row, grid_column, 1, 2 if up_key_hint is None else 1)
-            if up_key_hint is not None:
-                grid.addWidget(up_key_hint, row, grid_column + 1)
-                up_key_hint.show()
-            grid.addWidget(control_widget, row, grid_column + 2)
-            control_widget.show()
-            if down_key_hint is not None:
-                grid.addWidget(down_key_hint, row, grid_column + 3)
-                down_key_hint.show()
-
-        self.setMinimumWidth(column_width - 10)
-        self.setMinimumHeight(row_height * 3)
-        wide_layout_size = QSize(column_width * 3, row_height * 3)
+        self.setMinimumWidth(control_width - 10)
+        self.setMinimumHeight(control_height * 3)
+        wide_layout_size = QSize(control_width * 3, control_height * 3)
         extra_wide_layout_size = QSize(wide_layout_size.width() + preview_size.width(),
                                        max(wide_layout_size.height(), preview_size.height()))
 
-        tall_layout_size = QSize(column_width, row_height * len(controls))
+        tall_layout_size = QSize(control_width, control_height * len(controls))
         extra_tall_layout_size = QSize(tall_layout_size.width(), tall_layout_size.height() + preview_size.height())
 
         # Wide layout: 3x3 control grid
+        wide_layout: Tuple[Tuple[QWidget, int, int], ...] = (
+            (self._x_pos_box, 1, 0),
+            (self._y_pos_box, 1, 1),
+            (self._rotate_box, 1, 2),
+            (self._width_box, 2, 0),
+            (self._height_box, 2, 1),
+            (self._aspect_ratio_wrapper, 2, 2),
+            (self._x_scale_box, 3, 0),
+            (self._y_scale_box, 3, 1),
+            (self._clear_button, 3, 2),
+            (self._reset_button, 3, 8)
+        )
+        wide_layout_row_stretch = {0: 50, 4: 100}
+
         def _build_wide_layout() -> None:
             _clear_grid()
-            grid.setRowStretch(0, 50)
-            _add_control(X_LABEL, 1, 0)
-            _add_control(Y_LABEL, 1, 1)
-            _add_control(DEGREE_LABEL, 1, 2)
-            _add_control(WIDTH_LABEL, 2, 0)
-            _add_control(HEIGHT_LABEL, 2, 1)
-            _add_control(ASPECT_RATIO_CHECK_LABEL, 2, 2)
-            _add_control(X_SCALE_LABEL, 3, 0)
-            _add_control(Y_SCALE_LABEL, 3, 1)
-            _add_control(RESET_BUTTON_TEXT, 3, 2)
-            grid.addWidget(self._clear_button, 3, 8)
-            self._clear_button.show()
-            grid.setRowStretch(4, 100)
-            _set_grid_weights()
+            for widget, row, column in wide_layout:
+                grid.addWidget(widget, row, column)
+            for row, row_stretch in wide_layout_row_stretch.items():
+                grid.setRowStretch(row, row_stretch)
+            _final_grid_adjustments()
 
         wide_layout_max = QSize(extra_wide_layout_size.width() - 1, INT_MAX)
         self.add_layout_mode('wide layout', _build_wide_layout, wide_layout_size, wide_layout_max)
@@ -298,76 +250,67 @@ class LayerTransformToolPanel(ReactiveLayoutWidget):
                 preview_stretch += grid.rowStretch(row)
             grid.setColumnStretch(12, preview_stretch)
             self._preview.show()
+
         extra_wide_layout_max = QSize(INT_MAX, INT_MAX)
         self.add_layout_mode('extra wide layout', _build_extra_wide_layout,
                              extra_wide_layout_size, extra_wide_layout_max)
 
         # Tall layout: one column
+        tall_layout: Tuple[Tuple[QWidget, int, int, int], ...] = (
+            (self._x_pos_box, 0, 0, 2),
+            (self._y_pos_box, 1, 0, 2),
+            (self._width_box, 2, 0, 2),
+            (self._height_box, 3, 0, 2),
+            (self._x_scale_box, 4, 0, 2),
+            (self._y_scale_box, 5, 0, 2),
+            (self._rotate_box, 6, 0, 2),
+            (self._aspect_ratio_wrapper, 7, 0, 2),
+            (self._reset_button, 8, 0, 1),
+            (self._clear_button, 8, 1, 1)
+        )
+
         def _build_tall_layout() -> None:
             _clear_grid()
-            _add_control(X_LABEL, 0, 0)
-            _add_control(Y_LABEL, 1, 0)
-            _add_control(WIDTH_LABEL, 2, 0)
-            _add_control(HEIGHT_LABEL, 3, 0)
-            _add_control(X_SCALE_LABEL, 4, 0)
-            _add_control(Y_SCALE_LABEL, 5, 0)
-            _add_control(DEGREE_LABEL, 6, 0)
-            grid.addWidget(self._aspect_ratio_checkbox, 7, 0, 1, 4)
-            self._aspect_ratio_checkbox.show()
-            grid.addWidget(self._reset_button, 8, 0, 1, 4)
-            self._reset_button.show()
-            grid.addWidget(self._clear_button, 8, 0, 1, 4)
-            self._clear_button.show()
-            _set_grid_weights()
+            for widget, row, col, col_stretch in tall_layout:
+                grid.addWidget(widget, row, col, 1, col_stretch)
+            _final_grid_adjustments()
+
         self.add_layout_mode('tall layout', _build_tall_layout, tall_layout_size,
                              QSize(wide_layout_size.width() - 1, extra_tall_layout_size.height() - 1))
 
         # Extra tall layout: add preview
+        extra_tall_row_stretch = {0: 30, 1: 30, 2: 100, 13: 30}
 
         def _build_extra_tall_layout() -> None:
             _clear_grid()
-            grid.setRowStretch(0, 30)
-            grid.setRowStretch(1, 30)
+            for row, row_stretch in extra_tall_row_stretch.items():
+                grid.setRowStretch(row, row_stretch)
             grid.addWidget(self._preview, 1, 1, 1, 4)
-            self._preview.show()
-            grid.setRowStretch(2, 100)
-            _add_control(X_LABEL, 3, 0)
-            _add_control(Y_LABEL, 4, 0)
-            _add_control(WIDTH_LABEL, 5, 0)
-            _add_control(HEIGHT_LABEL, 6, 0)
-            _add_control(X_SCALE_LABEL, 7, 0)
-            _add_control(Y_SCALE_LABEL, 8, 0)
-            _add_control(DEGREE_LABEL, 9, 0)
-            grid.addWidget(self._aspect_ratio_checkbox, 10, 0, 1, 4)
-            self._aspect_ratio_checkbox.show()
-            grid.addWidget(self._reset_button, 11, 0, 1, 4)
-            self._reset_button.show()
-            grid.addWidget(self._clear_button, 12, 0, 1, 4)
-            self._clear_button.show()
-            grid.setRowStretch(13, 30)
-            _set_grid_weights()
+            for widget, row, col, col_stretch in tall_layout:
+                grid.addWidget(widget, row + 3, col, 1, col_stretch)
+            _final_grid_adjustments()
+
         self.add_layout_mode('extra tall layout', _build_extra_tall_layout, extra_tall_layout_size,
                              QSize(wide_layout_size.width() - 1, INT_MAX))
 
         # Reduced layout: leave out width, height, control hints
+        self._reduced_layout: Tuple[Tuple[QWidget, int, int, int], ...] = (
+            (self._x_pos_box, 0, 0, 2),
+            (self._y_pos_box, 1, 0, 2),
+            (self._width_box, 2, 0, 2),
+            (self._height_box, 3, 0, 2),
+            (self._rotate_box, 4, 0, 2),
+            (self._aspect_ratio_wrapper, 5, 0, 2),
+            (self._reset_button, 6, 0, 1),
+            (self._clear_button, 6, 1, 1)
+        )
+
         def _build_reduced_layout() -> None:
             _clear_grid()
-            _add_control(X_LABEL, 0, 0)
-            _add_control(Y_LABEL, 1, 0)
-            _add_control(X_SCALE_LABEL, 2, 0)
-            _add_control(Y_SCALE_LABEL, 3, 0)
-            _add_control(DEGREE_LABEL, 4, 0)
-            grid.addWidget(self._aspect_ratio_checkbox, 5, 0, 1, 3)
-            self._aspect_ratio_checkbox.show()
-            grid.addWidget(self._reset_button, 6, 0)
-            grid.addWidget(self._clear_button, 6, 2)
-            self._reset_button.show()
-            self._clear_button.show()
-            for hint_widget in [*up_control_hints, *down_control_hints]:
-                if hint_widget is not None:
-                    grid.removeWidget(hint_widget)
-                    hint_widget.hide()
-            _set_grid_weights()
+            for widget, row, col, col_stretch in self._reduced_layout:
+                grid.addWidget(widget, row, col, 1, col_stretch)
+            _final_grid_adjustments(True)
+
         self.add_default_layout_mode(_build_reduced_layout)
 
     @property

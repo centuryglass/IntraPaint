@@ -70,12 +70,10 @@ class ToolPanelTest(unittest.TestCase):
         """ToolPanel should show the panel widget and mark the button as active when a tool is activated."""
         test_tool = DrawTool(self._image_stack, self._image_panel.image_viewer)
         self._tool_panel.add_tool_button(test_tool)
-        tool_button_1 = self._tool_panel._tool_widgets[test_tool.label]
-        tool_button_2 = self._tool_panel._toolbar_tool_widgets[test_tool.label]
+        tool_button = self._tool_panel._tool_widgets[test_tool.label]
         self.assertEqual(self._tool_panel._tool_control_label.text(), '')
         self.assertIsNone(self._tool_panel._active_tool_panel)
-        self.assertFalse(tool_button_1.is_active)
-        self.assertFalse(tool_button_2.is_active)
+        self.assertFalse(tool_button.is_active)
         control_panel = test_tool.get_control_panel()
         assert control_panel is not None
         self.assertFalse(control_panel.isVisible())
@@ -84,6 +82,5 @@ class ToolPanelTest(unittest.TestCase):
         self.assertEqual(self._tool_panel._tool_control_label.text(),
                          f'{test_tool.label} - {test_tool.get_tooltip_text()}')
         self.assertEqual(self._tool_panel._active_tool_panel, control_panel)
-        self.assertTrue(tool_button_1.is_active)
-        self.assertTrue(tool_button_2.is_active)
+        self.assertTrue(tool_button.is_active)
         self.assertTrue(control_panel.isVisible())

@@ -226,6 +226,8 @@ class HotkeyFilter(QObject):
             self.register_speed_modified_keybinding(binding_id, _binding, key)
         down_hint = KeyHintLabel(None, down_key, slider)
         up_hint = KeyHintLabel(None, up_key, slider)
+        up_hint.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+        down_hint.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
         slider.insert_key_hint_labels(down_hint, up_hint)
 
     def eventFilter(self, source: Optional[QObject], event: Optional[QEvent]) -> bool:

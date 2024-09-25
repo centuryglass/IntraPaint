@@ -2,7 +2,7 @@
 from typing import Optional, List
 
 from PySide6.QtCore import Qt
-from PySide6.QtWidgets import QLayout, QLayoutItem, QSpacerItem, QWidget, QGridLayout, QHBoxLayout, QSlider
+from PySide6.QtWidgets import QLayout, QLayoutItem, QSpacerItem, QWidget, QGridLayout, QHBoxLayout
 
 
 def extract_layout_item(item: Optional[QLayoutItem]) -> QWidget | QLayout | QSpacerItem | None:
@@ -80,7 +80,7 @@ def wrap_widget_with_key_hints(widget: QWidget, left_hint: Optional[QWidget] = N
     layout.setContentsMargins(1, 1, 1, 1)
     if left_hint is not None:
         layout.addWidget(left_hint)
-    layout.addWidget(widget, stretch=1)
+    layout.addWidget(widget)
     if right_hint is not None:
         layout.addWidget(right_hint)
     return container

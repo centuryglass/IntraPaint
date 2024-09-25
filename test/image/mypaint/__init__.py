@@ -1,0 +1,1 @@
+"""Test modules for MyPaint wrapper package"""

@@ -17,7 +17,7 @@ class _SliderSpinbox(QWidget):
             return
         rows = [] if extra_rows is None else extra_rows
         for box in boxes:
-            row = [box.label, box.slider, box.spinbox]
+            row = [box.label, box.down_key_label, box.slider, box.up_key_label, box.spinbox]
             rows.append(row)
         synchronize_row_widths(rows)
 
@@ -33,11 +33,15 @@ class _SliderSpinbox(QWidget):
         else:
             self._label.setVisible(False)
             self._label.setEnabled(False)
+        self._down_hint = QWidget(self)
+        self._layout.addWidget(self._down_hint)
         self._slider = QSlider(Qt.Orientation.Horizontal)
         self._layout.addWidget(self._slider)
         self._slider.setValue(initial_value if isinstance(initial_value, int) else int(initial_value * 100))
         self._slider.valueChanged.connect(self.setValue)
         self._slider.setTickPosition(QSlider.TickPosition.TicksAbove)
+        self._up_hint = QWidget(self)
+        self._layout.addWidget(self._up_hint)
         if isinstance(initial_value, float):
             self._spinbox = QDoubleSpinBox()
         else:
@@ -47,8 +51,6 @@ class _SliderSpinbox(QWidget):
         self._spinbox.valueChanged.connect(self.setValue)
         self._spinbox.setSizePolicy(QSizePolicy.Policy.MinimumExpanding, QSizePolicy.Policy.Preferred)
         self._label.setBuddy(self._spinbox)
-        self._down_hint: Optional[QWidget] = None
-        self._up_hint: Optional[QWidget] = None
 
     def _update_slider_ticks(self) -> None:
         full_range = self._slider.maximum() - self._slider.minimum()
@@ -68,13 +70,23 @@ class _SliderSpinbox(QWidget):
 
     def insert_key_hint_labels(self, down_hint: QWidget, up_hint: QWidget) -> None:
         """Inserts key hint widgets into the inner layout of the SliderSpinbox."""
-        if self._down_hint is not None or self._up_hint is not None:
-            raise RuntimeError('Attempted to bind keys to the same widget twice.')
+        for old_hint in self._down_hint, self._up_hint:
+            old_hint.height()
+            self._layout.removeWidget(old_hint)
+            old_hint.setParent(None)
+            old_hint.deleteLater()
         self._down_hint = down_hint
         self._up_hint = up_hint
         slider_index = self._layout.indexOf(self._slider)
         self._layout.insertWidget(slider_index + (1 if self._slider.isVisible() else 2), self._up_hint)
         self._layout.insertWidget(slider_index, self._down_hint)
+
+    def set_key_hints_visible(self, visible: bool) -> None:
+        """Show or hide key hint labels, if present."""
+        if self._down_hint is not None:
+            self._down_hint.setVisible(visible)
+        if self._up_hint is not None:
+            self._up_hint.setVisible(visible)
 
     def value(self) -> int | float:
         """Returns the input field's current value."""
@@ -180,6 +192,16 @@ class _SliderSpinbox(QWidget):
     def spinbox(self) -> QSpinBox | QDoubleSpinBox:
         """Access the internal spinbox"""
         return self._spinbox
+
+    @property
+    def down_key_label(self) -> QWidget:
+        """Access the down keybinding label."""
+        return self._down_hint
+
+    @property
+    def up_key_label(self) -> QWidget:
+        """Access the up keybinding label."""
+        return self._up_hint
 
 
 class IntSliderSpinbox(_SliderSpinbox):
