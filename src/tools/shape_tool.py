@@ -56,7 +56,7 @@ class ShapeTool(BaseTool):
         # load mode:
         try:
             self._selection_handler.mode = ShapeMode.from_text(cache.get(Cache.SHAPE_TOOL_MODE))
-        except KeyError:
+        except ValueError:
             self._selection_handler.mode = ShapeMode.ELLIPSE
         self._selection_handler.inner_radius_fraction = cache.get(Cache.SHAPE_TOOL_STAR_INNER_POINT_FRACTION)
         self._selection_handler.vertex_count = cache.get(Cache.SHAPE_TOOL_VERTEX_COUNT)
