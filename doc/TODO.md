@@ -1,7 +1,6 @@
 # Development tasks
 
 ## Before next release:
-- Connect move/pan keys to text layer placement  (< 1 hour)
 - transform tool: make sure clear/rotate button is in all panel layouts  (< 30 minutes)
 - Finish README cleanup and examples (< 1 day)
 - Basic workflow tutorials (< 1 day)
@@ -19,6 +18,7 @@
 - Extra x-scale labels on mid-size vertical transform tool
 - Can't actually edit transform controls? Seems like it breaks after switching to the smallest layout
 - Filter: blur mode box not showing
+- panel resize issues on debian
 
 ## Timelapse video: using latest interface
 Scripted to make use of every tool, in-video text explaining what I'm doing

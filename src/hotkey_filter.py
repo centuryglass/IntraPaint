@@ -9,6 +9,8 @@ from PySide6.QtWidgets import QApplication, QWidget, QTextEdit, QLineEdit, QPlai
 
 from src.config.application_config import AppConfig
 from src.config.key_config import KeyConfig
+from src.ui.input_fields.slider_spinbox import IntSliderSpinbox, FloatSliderSpinbox
+from src.ui.widget.key_hint_label import KeyHintLabel
 from src.util.key_code_utils import get_modifiers, get_modifier_string, get_key_string, get_key_with_modifiers
 
 logger = logging.getLogger(__name__)
@@ -208,6 +210,23 @@ class HotkeyFilter(QObject):
             KeyConfig().disconnect(_id, _config_key)
             self.register_speed_modified_keybinding(str_id, _action, _config_key)
         KeyConfig().connect(str_id, config_key, _update_config)
+
+    def bind_slider_controls(self, slider: IntSliderSpinbox | FloatSliderSpinbox, down_key: str, up_key: str,
+                             predicate: Callable[[], bool]) -> None:
+        """Applies speed modified keybindings to a SliderSpinbox, and sets its control hints."""
+        for key, sign in ((down_key, -1), (up_key, 1)):
+            def _binding(mult, n=sign, widget=slider) -> bool:
+                if not predicate():
+                    return False
+                steps = n * mult
+                widget.stepBy(steps)
+                return True
+
+            binding_id = f'_SliderSpinBox_{id(slider)}_{key}'
+            self.register_speed_modified_keybinding(binding_id, _binding, key)
+        down_hint = KeyHintLabel(None, down_key, slider)
+        up_hint = KeyHintLabel(None, up_key, slider)
+        slider.insert_key_hint_labels(down_hint, up_hint)
 
     def eventFilter(self, source: Optional[QObject], event: Optional[QEvent]) -> bool:
         """Check for registered keys and trigger associated actions."""

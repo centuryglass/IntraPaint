@@ -1,14 +1,16 @@
 """Provides a control panel class for the text tool."""
 import os.path
-from typing import Optional, Callable
+from typing import Optional, Callable, Tuple
 
 from PySide6.QtCore import Signal, QSize, QPoint, QRect
 from PySide6.QtGui import QFont, QFontDatabase, Qt, QImage, QColor, QPainter, QResizeEvent, QIcon
 from PySide6.QtWidgets import QApplication, QWidget, QListWidget, QGridLayout, QLabel, QSizePolicy, QComboBox, \
-    QVBoxLayout, QScrollArea
+    QVBoxLayout, QScrollArea, QHBoxLayout
 
 from src.config.application_config import AppConfig
 from src.config.cache import Cache
+from src.config.key_config import KeyConfig
+from src.hotkey_filter import HotkeyFilter
 from src.image.text_rect import TextRect
 from src.ui.input_fields.check_box import CheckBox
 from src.ui.input_fields.plain_text_edit import PlainTextEdit
@@ -16,11 +18,11 @@ from src.ui.input_fields.slider_spinbox import IntSliderSpinbox
 from src.ui.widget.color_button import ColorButton
 from src.ui.widget.image_widget import ImageWidget
 from src.util.layout import clear_layout
-from src.util.visual.text_drawing_utils import find_text_size
-from src.util.visual.geometry_utils import get_scaled_placement, fill_outside_rect
-from src.util.visual.image_utils import create_transparent_image
 from src.util.shared_constants import PROJECT_DIR, SHORT_LABEL_X_POS, SHORT_LABEL_Y_POS, SHORT_LABEL_WIDTH, \
     SHORT_LABEL_HEIGHT, INT_MAX
+from src.util.visual.geometry_utils import get_scaled_placement, fill_outside_rect
+from src.util.visual.image_utils import create_transparent_image
+from src.util.visual.text_drawing_utils import find_text_size
 
 # The `QCoreApplication.translate` context for strings in this file
 TR_ID = 'ui.panel.tool_control_panels.text_panel'
@@ -34,11 +36,9 @@ def _tr(*args):
 LABEL_TEXT_FONT_FAMILY = _tr('Font:')
 LABEL_TEXT_FONT_SIZE = _tr('Font Size:')
 LABEL_TEXT_TEXT_INPUT = _tr('Enter Text:')
-LABEL_TEXT_FONT_STRETCH = _tr('Stretch')
+LABEL_TEXT_FONT_STRETCH = _tr('Stretch:')
 BUTTON_TEXT_FONT_COLOR = _tr('Text Color')
 BUTTON_TEXT_BACKGROUND_COLOR = _tr('Background Color')
-TOOLTIP_COLOR = _tr('Set text color')
-TOOLTIP_BACKGROUND_COLOR = _tr('Set text background color')
 
 LABEL_TEXT_ALIGNMENT_DROPDOWN = _tr('Alignment:')
 OPTION_TEXT_LEFT_ALIGN = _tr('Left')
@@ -59,6 +59,11 @@ CHECKBOX_LABEL_KERNING = _tr('Kerning')
 CHECKBOX_LABEL_FILL_BACKGROUND = _tr('Fill Background')
 CHECKBOX_LABEL_RESIZE_FONT = _tr('Resize Font to Bounds')
 CHECKBOX_LABEL_RESIZE_BOUNDS = _tr('Resize Bounds to Text')
+
+TOOLTIP_COLOR = _tr('Set text color')
+TOOLTIP_BACKGROUND_COLOR = _tr('Set text background color')
+TOOLTIP_FONT_TO_BOUNDS = _tr('Change font size to fit the text in the available space.')
+TOOLTIP_BOUNDS_TO_TEXT = _tr('Resize the text layer to fit the text.')
 
 
 # Icons:
@@ -108,7 +113,7 @@ class TextToolPanel(QWidget):
 
         self._text_box = PlainTextEdit()
         self._text_box.setPlaceholderText(LABEL_TEXT_TEXT_INPUT)
-        self._text_box.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
+        self._text_box.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         self._text_box.setValue(self._text_rect.text)
         self._text_box.valueChanged.connect(self._text_changed_slot)
 
@@ -119,22 +124,23 @@ class TextToolPanel(QWidget):
             font_size = selected_font.pointSize()
             font_size_format = OPTION_TEXT_POINT_SIZE_FORMAT
 
-        self._size_slider = IntSliderSpinbox()
-        self._size_slider.setMinimum(1)
-        self._size_slider.setMaximum(MAX_FONT_SIZE)
-        self._size_slider.setValue(font_size)
-        self._size_slider.setText(LABEL_TEXT_FONT_SIZE)
+        self._font_size_slider = IntSliderSpinbox()
+        self._font_size_slider.setText(LABEL_TEXT_FONT_SIZE)
+        self._font_size_slider.setMinimum(1)
+        self._font_size_slider.setMaximum(MAX_FONT_SIZE)
+        self._font_size_slider.setValue(font_size)
 
         self._size_type_dropdown = QComboBox()
         self._size_type_dropdown.addItem(OPTION_TEXT_PIXEL_SIZE_FORMAT)
         self._size_type_dropdown.addItem(OPTION_TEXT_POINT_SIZE_FORMAT)
         self._size_type_dropdown.setCurrentText(font_size_format)
-        self._size_slider.setValue(font_size)
-        self._size_slider.valueChanged.connect(self._size_change_slot)
+        self._font_size_slider.setValue(font_size)
+        self._font_size_slider.valueChanged.connect(self._size_change_slot)
         self._size_type_dropdown.currentIndexChanged.connect(self._size_format_change_slot)
 
+        self._stretch_label = QLabel(LABEL_TEXT_FONT_STRETCH, self)
         self._stretch_spinbox = IntSliderSpinbox()
-        self._stretch_spinbox.setText(LABEL_TEXT_FONT_STRETCH)
+        self._stretch_label.setBuddy(self._stretch_spinbox)
         self._stretch_spinbox.set_slider_included(False)
         self._stretch_spinbox.setMinimum(0)
         self._stretch_spinbox.setMaximum(MAX_STRETCH)
@@ -162,28 +168,40 @@ class TextToolPanel(QWidget):
         self._height_input = _init_spinbox(SHORT_LABEL_HEIGHT, self._text_height_changed_slot, initial_size.height(),
                                            False)
 
-        self._scale_bounds_to_text_checkbox = CheckBox()
-        self._scale_bounds_to_text_checkbox.setText(CHECKBOX_LABEL_RESIZE_BOUNDS)
-        self._scale_bounds_to_text_checkbox.setIcon(QIcon(ICON_BOUNDS_TO_TEXT))
-        self._scale_bounds_to_text_checkbox.setSizePolicy(QSizePolicy.Policy.MinimumExpanding,
-                                                          QSizePolicy.Policy.MinimumExpanding)
-        self._scale_bounds_to_text_checkbox.valueChanged.connect(self._scale_bounds_to_text_slot)
+        def _make_resize_label(text: str, tooltip: str, icon_path: str,
+                               change_fn: Callable[[bool], None]) -> Tuple[CheckBox, QWidget]:
+            checkbox = CheckBox(parent=self)
+            checkbox.setIcon(QIcon(icon_path))
+            label = QLabel(text, self)
+            checkbox.setToolTip(tooltip)
+            label.setToolTip(tooltip)
+            label.setWordWrap(True)
+            label.setBuddy(checkbox)
+            checkbox.valueChanged.connect(change_fn)
+            wrapper = QWidget(self)
+            wrapper_layout = QHBoxLayout(wrapper)
+            wrapper_layout.setSpacing(2)
+            wrapper_layout.setContentsMargins(2, 2, 2, 2)
+            wrapper_layout.addWidget(checkbox)
+            wrapper_layout.addWidget(label)
+            return checkbox, wrapper
 
-        self._scale_text_to_bounds_checkbox = CheckBox()
-        self._scale_text_to_bounds_checkbox.setText(CHECKBOX_LABEL_RESIZE_FONT)
-        self._scale_text_to_bounds_checkbox.setIcon(QIcon(ICON_TEXT_TO_BOUNDS))
-        self._scale_text_to_bounds_checkbox.setSizePolicy(QSizePolicy.Policy.MinimumExpanding,
-                                                          QSizePolicy.Policy.MinimumExpanding)
-        self._scale_text_to_bounds_checkbox.valueChanged.connect(self._scale_text_to_bounds_slot)
+        self._scale_bounds_to_text_checkbox, self._scale_bounds_to_text_wrapper \
+            = _make_resize_label(CHECKBOX_LABEL_RESIZE_BOUNDS, TOOLTIP_BOUNDS_TO_TEXT, ICON_BOUNDS_TO_TEXT,
+                                 self._scale_bounds_to_text_slot)
+
+        self._scale_text_to_bounds_checkbox, self._scale_text_to_bounds_wrapper \
+            = _make_resize_label(CHECKBOX_LABEL_RESIZE_FONT, TOOLTIP_FONT_TO_BOUNDS, ICON_TEXT_TO_BOUNDS,
+                                 self._scale_text_to_bounds_slot)
 
         # Text feature checkboxes:
         self._checkbox_label = QLabel(LABEL_TEXT_CHECKBOX_CONTAINER)
         self._checkbox_container = QWidget(self)
+        self._checkbox_label.setBuddy(self._checkbox_container)
         self._checkbox_layout = QVBoxLayout(self._checkbox_container)
         self._checkbox_scroll = QScrollArea()
         self._checkbox_scroll.setWidget(self._checkbox_container)
         self._checkbox_scroll.setWidgetResizable(True)
-        self._checkbox_label.setBuddy(self._checkbox_container)
         self._checkbox_container.setSizePolicy(QSizePolicy.Policy.Preferred,
                                                QSizePolicy.Policy.MinimumExpanding)
         self._checkbox_scroll.setSizePolicy(QSizePolicy.Policy.MinimumExpanding,
@@ -256,6 +274,7 @@ class TextToolPanel(QWidget):
         # Font selection panel:
         self._font_list_label = QLabel(LABEL_TEXT_FONT_FAMILY)
         self._font_list = QListWidget()
+        self._font_list_label.setBuddy(self._font_list)
         self._font_list.setSelectionMode(QListWidget.SelectionMode.SingleSelection)
         custom_font_dir = AppConfig().get(AppConfig.ADDED_FONT_DIR)
         if os.path.isdir(custom_font_dir):
@@ -291,6 +310,18 @@ class TextToolPanel(QWidget):
             except (KeyError, AssertionError):
                 cache.set(Cache.TEXT_TOOL_PARAMS, self._text_rect.serialize(True))
 
+        # Register movement key overrides, tied to control panel visibility:
+
+        def _key_predicate() -> bool:
+            return self.isVisible() and self.isEnabled()
+        key_filter = HotkeyFilter.instance()
+        key_filter.bind_slider_controls(self._x_input, KeyConfig.MOVE_LEFT, KeyConfig.MOVE_RIGHT, _key_predicate)
+        key_filter.bind_slider_controls(self._y_input, KeyConfig.MOVE_UP, KeyConfig.MOVE_DOWN, _key_predicate)
+        key_filter.bind_slider_controls(self._width_input, KeyConfig.PAN_LEFT, KeyConfig.PAN_RIGHT, _key_predicate)
+        key_filter.bind_slider_controls(self._height_input, KeyConfig.PAN_UP, KeyConfig.PAN_DOWN, _key_predicate)
+        key_filter.bind_slider_controls(self._font_size_slider, KeyConfig.ROTATE_CCW_KEY, KeyConfig.ROTATE_CW_KEY,
+                                         _key_predicate)
+
         # Final layout:
         self._build_layout()
         self._draw_preview()
@@ -299,6 +330,11 @@ class TextToolPanel(QWidget):
         clear_layout(self._layout, unparent=False)
         if self._orientation == Qt.Orientation.Horizontal:
             self._layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            self._layout.setColumnStretch(5, 10)
+            self._layout.setColumnStretch(0, 0)
+            self._layout.setColumnStretch(1, 0)
+            self._font_size_slider.set_slider_included(False)
+
             self._layout.addWidget(self._font_list_label, 0, 0)
             self._layout.addWidget(self._font_list, 1, 0, 6, 2)
 
@@ -307,16 +343,17 @@ class TextToolPanel(QWidget):
 
             self._layout.addWidget(self._preview, 0, 4, 4, 4, Qt.AlignmentFlag.AlignCenter)
             self._layout.addWidget(self._text_box, 3, 4, 3, 4)
-            self._layout.addWidget(self._size_slider, 6, 4, 1, 3)
+            self._layout.addWidget(self._font_size_slider, 6, 4, 1, 3)
             self._layout.addWidget(self._size_type_dropdown, 6, 7)
 
-            self._layout.addWidget(self._scale_text_to_bounds_checkbox, 3, 8)
-            self._layout.addWidget(self._scale_bounds_to_text_checkbox, 4, 8)
+            self._layout.addWidget(self._scale_text_to_bounds_wrapper, 3, 8)
+            self._layout.addWidget(self._scale_bounds_to_text_wrapper, 4, 8)
             self._layout.addWidget(self._color_button, 3, 9)
             self._layout.addWidget(self._background_color_button, 4, 9)
             self._layout.addWidget(self._alignment_label, 5, 8)
             self._layout.addWidget(self._alignment_dropdown, 5, 9)
-            self._layout.addWidget(self._stretch_spinbox, 6, 8, 1, 2)
+            self._layout.addWidget(self._stretch_label, 6, 8)
+            self._layout.addWidget(self._stretch_spinbox, 6, 9)
 
             self._layout.addWidget(self._x_input, 1, 8)
             self._layout.addWidget(self._y_input, 2, 8)
@@ -325,15 +362,16 @@ class TextToolPanel(QWidget):
 
         else:
             assert self._orientation == Qt.Orientation.Vertical
-            self._layout.setRowStretch(3, 0)
-            self._layout.setColumnStretch(1, 0)
-            self._layout.setColumnStretch(2, 0)
+            self._layout.setColumnStretch(5, 0)
+            self._layout.setColumnStretch(0, 2)
+            self._layout.setColumnStretch(1, 2)
+            self._font_size_slider.set_slider_included(True)
 
             self._layout.addWidget(self._text_box, 2, 0, 4, 4)
             self._layout.addWidget(self._color_button, 0, 2, 1, 2)
             self._layout.addWidget(self._background_color_button, 1, 2, 1, 2)
             self._layout.addWidget(self._preview, 0, 0, 2, 2, Qt.AlignmentFlag.AlignTop)
-            self._layout.addWidget(self._size_slider, 6, 0, 1, 3)
+            self._layout.addWidget(self._font_size_slider, 6, 0, 1, 3)
             self._layout.addWidget(self._size_type_dropdown, 6, 3)
 
             self._layout.addWidget(self._x_input, 7, 0)
@@ -341,8 +379,8 @@ class TextToolPanel(QWidget):
             self._layout.addWidget(self._width_input, 7, 1)
             self._layout.addWidget(self._height_input, 8, 1)
 
-            self._layout.addWidget(self._scale_text_to_bounds_checkbox, 7, 2, 1, 2)
-            self._layout.addWidget(self._scale_bounds_to_text_checkbox, 8, 2, 1, 2)
+            self._layout.addWidget(self._scale_text_to_bounds_wrapper, 7, 2, 1, 2)
+            self._layout.addWidget(self._scale_bounds_to_text_wrapper, 8, 2, 1, 2)
 
             self._layout.setAlignment(Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignLeft
                                       | Qt.AlignmentFlag.AlignTop)
@@ -353,7 +391,10 @@ class TextToolPanel(QWidget):
             self._layout.addWidget(self._checkbox_scroll, 11, 2, 3, 2)
             self._layout.addWidget(self._alignment_label, 14, 2)
             self._layout.addWidget(self._alignment_dropdown, 14, 3)
-            self._layout.addWidget(self._stretch_spinbox, 15, 2, 1, 2)
+            self._layout.addWidget(self._stretch_label, 15, 2)
+            self._layout.addWidget(self._stretch_spinbox, 15, 3)
+
+        IntSliderSpinbox.align_slider_spinboxes([self._x_input, self._y_input, self._width_input, self._height_input])
 
         self._font_list.scrollToItem(self._font_list.currentItem())
 
@@ -405,8 +446,8 @@ class TextToolPanel(QWidget):
         if font_size <= 0:
             font_size = new_font.pointSize()
             font_size_format = OPTION_TEXT_POINT_SIZE_FORMAT
-        if self._size_slider.value() != font_size:
-            self._size_slider.setValue(font_size)
+        if self._font_size_slider.value() != font_size:
+            self._font_size_slider.setValue(font_size)
         if self._size_type_dropdown.currentText() != font_size_format:
             self._size_type_dropdown.setCurrentText(font_size_format)
         self._bold_checkbox.setChecked(new_font.bold())
@@ -453,7 +494,7 @@ class TextToolPanel(QWidget):
 
     def resizeEvent(self, event: Optional[QResizeEvent]) -> None:
         """Adjust preview and text box size limits based on orientation and panel size."""
-        self._preview.setMaximumHeight(self.height() // 4 if self._orientation == Qt.Orientation.Horizontal else
+        self._preview.setMaximumHeight(self.height() // 3 if self._orientation == Qt.Orientation.Horizontal else
                                        self.height() // 10)
         self._text_box.setMaximumHeight(self._checkbox_label.sizeHint().height() * 4)
 
@@ -610,7 +651,7 @@ class TextToolPanel(QWidget):
             self._handle_change()
 
     def _size_format_change_slot(self, _) -> None:
-        self._size_change_slot(int(self._size_slider.value()))
+        self._size_change_slot(int(self._font_size_slider.value()))
 
     def _text_x_changed_slot(self, x_coordinate: int) -> None:
         if x_coordinate != self._offset.x():

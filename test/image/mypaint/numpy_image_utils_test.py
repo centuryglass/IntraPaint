@@ -14,6 +14,7 @@ app = QApplication.instance() or QApplication(sys.argv)
 
 TEST_IMAGE_PATH = 'test/resources/test_images/layer_move_test.png'
 
+
 class NumpyImageUtilsTest(unittest.TestCase):
     """Test conversion between QImage and libmypaint image data formats."""
 

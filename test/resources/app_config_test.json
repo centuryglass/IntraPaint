@@ -1,8 +1,30 @@
 {
     "style": "Breeze",
     "theme": "None",
-    "font_point_size": 10,
-    "tab_font_point_size": 12,
+    "font_point_size": {
+        "min": 1,
+        "max": 100,
+        "step": 1,
+        "value": 10
+    },
+    "tab_font_point_size": {
+        "min": 1,
+        "max": 100,
+        "step": 1,
+        "value": 12
+    },
+    "key_hint_font_size": {
+        "min": 1,
+        "max": 100,
+        "step": 1,
+        "value": 8
+    },
+    "toolbar_tool_button_count": {
+        "min": 0,
+        "max": 99,
+        "step": 1,
+        "value": 4
+    },
     "show_tool_control_hints": true,
     "animate_outlines": true,
     "selection_color": "#55ff0000",
@@ -15,7 +37,26 @@
     "min_edit_size": "8x8",
     "max_generation_size": "2048x2048",
     "min_generation_size": "256x256",
-    "brush_favorites": [],
+    "brush_favorites": [
+        "experimental/basic",
+        "classic/pencil",
+        "classic/kabura",
+        "classic/marker_small",
+        "classic/bulk",
+        "classic/knife",
+        "classic/blend+paint",
+        "classic/blending_knife",
+        "deevad/detail_brush_large",
+        "deevad/kneaded_eraser",
+        "deevad/basic_digital_brush",
+        "deevad/basic_digital_brush_smudging",
+        "deevad/only_water_fringe",
+        "deevad/soft-dip-pen",
+        "deevad/liner",
+        "deevad/blending",
+        "tanda/acrylic-03-with-water",
+        "tanda/acrylic-04-with-water"
+    ],
     "max_undo": 30,
     "undo_merge_interval": 0.2,
     "speed_modifier_multiplier": 5,
@@ -44,7 +85,6 @@
         "step": 0.05,
         "value": 0.9
     },
-    "masked_content": "original",
     "interrogate_model": "clip",
     "controlnet_tile_model": "control_v11f1e_sd15_tile [a371b31b]",
     "mask_blur": {

@@ -2,7 +2,7 @@
 from typing import Optional, List
 
 from PySide6.QtCore import Signal, Qt
-from PySide6.QtWidgets import QWidget, QHBoxLayout, QLabel, QSlider, QDoubleSpinBox, QSpinBox
+from PySide6.QtWidgets import QWidget, QHBoxLayout, QLabel, QSlider, QDoubleSpinBox, QSpinBox, QSizePolicy
 
 from src.util.layout import synchronize_row_widths
 
@@ -23,18 +23,18 @@ class _SliderSpinbox(QWidget):
 
     def __init__(self, initial_value: float | int, parent: Optional[QWidget] = None, label: Optional[str] = None):
         super().__init__(parent)
-        layout = QHBoxLayout(self)
-        layout.setSpacing(0)
-        layout.setContentsMargins(0, 0, 0, 0)
+        self._layout = QHBoxLayout(self)
+        self._layout.setSpacing(0)
+        self._layout.setContentsMargins(0, 0, 0, 0)
         self._label = QLabel()
-        layout.addWidget(self._label)
+        self._layout.addWidget(self._label)
         if label is not None:
             self._label.setText(label)
         else:
             self._label.setVisible(False)
             self._label.setEnabled(False)
         self._slider = QSlider(Qt.Orientation.Horizontal)
-        layout.addWidget(self._slider)
+        self._layout.addWidget(self._slider)
         self._slider.setValue(initial_value if isinstance(initial_value, int) else int(initial_value * 100))
         self._slider.valueChanged.connect(self.setValue)
         self._slider.setTickPosition(QSlider.TickPosition.TicksAbove)
@@ -42,10 +42,13 @@ class _SliderSpinbox(QWidget):
             self._spinbox = QDoubleSpinBox()
         else:
             self._spinbox = QSpinBox()
-        layout.addWidget(self._spinbox)
+        self._layout.addWidget(self._spinbox)
         self._spinbox.setValue(initial_value)
         self._spinbox.valueChanged.connect(self.setValue)
+        self._spinbox.setSizePolicy(QSizePolicy.Policy.MinimumExpanding, QSizePolicy.Policy.Preferred)
         self._label.setBuddy(self._spinbox)
+        self._down_hint: Optional[QWidget] = None
+        self._up_hint: Optional[QWidget] = None
 
     def _update_slider_ticks(self) -> None:
         full_range = self._slider.maximum() - self._slider.minimum()
@@ -62,6 +65,16 @@ class _SliderSpinbox(QWidget):
         if isinstance(self._spinbox, QDoubleSpinBox):
             tick_interval *= 100
         self._slider.setTickInterval(tick_interval)
+
+    def insert_key_hint_labels(self, down_hint: QWidget, up_hint: QWidget) -> None:
+        """Inserts key hint widgets into the inner layout of the SliderSpinbox."""
+        if self._down_hint is not None or self._up_hint is not None:
+            raise RuntimeError('Attempted to bind keys to the same widget twice.')
+        self._down_hint = down_hint
+        self._up_hint = up_hint
+        slider_index = self._layout.indexOf(self._slider)
+        self._layout.insertWidget(slider_index + (1 if self._slider.isVisible() else 2), self._up_hint)
+        self._layout.insertWidget(slider_index, self._down_hint)
 
     def value(self) -> int | float:
         """Returns the input field's current value."""
@@ -118,6 +131,10 @@ class _SliderSpinbox(QWidget):
         self._slider.setSingleStep(int(step_size * 100) if isinstance(self._spinbox, QDoubleSpinBox) else step_size)
         self._spinbox.setSingleStep(step_size)
 
+    def stepBy(self, steps: int) -> None:
+        """Advance the spinbox by a specific number of steps."""
+        self._spinbox.stepBy(steps)
+
     def text(self) -> str:
         """Returns the current label text."""
         return self._label.text()
@@ -132,8 +149,14 @@ class _SliderSpinbox(QWidget):
 
     def set_slider_included(self, included: bool) -> None:
         """Show or hide the slider."""
+        if included == self._slider.isVisible() == self._slider.isEnabled():
+            return
         self._slider.setVisible(included)
         self._slider.setEnabled(included)
+        if self._up_hint is not None:
+            self._layout.removeWidget(self._up_hint)
+            index = self._layout.indexOf(self._slider) + (1 if included else 2)
+            self._layout.insertWidget(index, self._up_hint)
 
     def slider_included(self) -> bool:
         """Return whether the slider is currently included."""
