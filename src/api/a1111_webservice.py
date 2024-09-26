@@ -410,6 +410,12 @@ class A1111Webservice(WebService):
                         images.append(QImage(buffer))
                 elif isinstance(image, str):
                     images.append(qimage_from_base64(image))
+        if isinstance(info, str):
+            try:
+                info = json.loads(info)
+            except json.JSONDecodeError:
+                logger.error(f'Image response info not valid JSON, got {info}')
+                info = None
         return images, info
 
     # Load misc. service info:

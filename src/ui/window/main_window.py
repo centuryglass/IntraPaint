@@ -521,8 +521,9 @@ class MainWindow(QMainWindow):
         """Applies the most appropriate layout when the window size changes."""
         self._size_and_bounds_updates()
         if hasattr(self, '_loading_widget') and TIMELAPSE_MODE_FLAG not in sys.argv:
-            loading_widget_size = int(self.height() / 8)
-            loading_bounds = QRect(self.width() // 2 - loading_widget_size // 2, loading_widget_size * 3,
+            loading_widget_size = int(self.height() / 3)
+            loading_bounds = QRect(self.width() // 2 - loading_widget_size // 2,
+                                   self.height() // 2 - loading_widget_size // 2,
                                    loading_widget_size, loading_widget_size)
             self._loading_widget.setGeometry(loading_bounds)
         # Cache window placement:

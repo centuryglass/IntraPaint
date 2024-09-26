@@ -89,6 +89,7 @@ class DraggableDivider(QWidget):
 
     def mousePressEvent(self, event: Optional[QMouseEvent]) -> None:
         """Starts dragging the widget when clicked."""
+        assert event is not None
         if self._hidden:
             return
         self._dragging = True

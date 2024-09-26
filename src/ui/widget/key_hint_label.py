@@ -42,7 +42,8 @@ class KeyHintLabel(QLabel):
     def deleteLater(self) -> None:
         """Disconnect from config before scheduling deletion."""
         AppConfig().disconnect(self, AppConfig.KEY_HINT_FONT_SIZE)
-        KeyConfig().disconnect(self, self._config_key)
+        if self._config_key is not None:
+            KeyConfig().disconnect(self, self._config_key)
         super().deleteLater()
 
     def sizeHint(self) -> QSize:

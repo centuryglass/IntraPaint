@@ -5,12 +5,6 @@
 - Basic workflow tutorials (< 1 day)
 - Final timelapse video (< 5 days)
 
-## Misc. bugs and minor issues:
-- seed/last seed field updates don't seem to be working properly
-- loading icon text gets cut off
-- Layer re-ordering only updates after something else triggers re-render
-- panel resize issues on debian
-
 ## Timelapse video: using latest interface
 Scripted to make use of every tool, in-video text explaining what I'm doing
 

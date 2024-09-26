@@ -2,7 +2,7 @@
 from typing import Optional, Tuple, Dict, List
 
 from PySide6.QtCore import QRect, QPoint, QSize, QRectF, Signal
-from PySide6.QtGui import QPaintEvent, QTransform, QColor, Qt, QPolygonF, QPainter, QPen, QKeySequence, QResizeEvent
+from PySide6.QtGui import QPaintEvent, QTransform, QColor, Qt, QPolygonF, QPainter, QPen, QKeySequence
 from PySide6.QtWidgets import QSizePolicy, QApplication, QGridLayout, QWidget, QPushButton
 
 from src.config.cache import Cache

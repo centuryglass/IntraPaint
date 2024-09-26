@@ -339,6 +339,13 @@ class LayerStack(Layer, LayerParent):
             return
         self._layers.remove(layer)
         self._layers.insert(new_index, layer)
+        if isinstance(layer, TransformLayer):
+            change_bounds = layer.transformed_bounds
+        else:
+            change_bounds = layer.bounds
+        self._image_cache.invalidate()
+        self.invalidate_pixmap()
+        self.content_changed.emit(self, change_bounds)
 
     def save_state(self) -> Any:
         """Export the current layer state, so it can be restored later."""

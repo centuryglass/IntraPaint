@@ -130,6 +130,9 @@ class LoadingSpinner(QGraphicsObject):
         painter.setBrush(QBrush(TEXT_COLOR, Qt.BrushStyle.SolidPattern))
         text_bounds = QRect(int(scene.sceneRect().x()), ellipse_y + ellipse_radius * 2,
                             int(scene.width()), ellipse_radius // 4)
+        text_bg_path = QPainterPath()
+        text_bg_path.addRoundedRect(text_bounds, ellipse_radius // 4, ellipse_radius // 4)
+        painter.fillPath(text_bg_path, background_color)
         font = painter.font()
         if self._font_size is None:
             self._font_size = int(clamp(font.pointSize(), 1,

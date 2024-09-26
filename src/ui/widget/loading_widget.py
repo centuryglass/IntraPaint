@@ -3,8 +3,11 @@ Animated widget used to indicate a loading state.
 """
 from typing import Optional
 from PySide6.QtWidgets import QWidget
-from PySide6.QtGui import QPainter, QPen, QBrush, QColor, QShowEvent, QHideEvent, QPaintEvent
+from PySide6.QtGui import QPainter, QPen, QBrush, QColor, QShowEvent, QHideEvent, QPaintEvent, QResizeEvent
 from PySide6.QtCore import Qt, QRect, QPointF, Property, QPropertyAnimation
+
+from src.util.math_utils import clamp
+from src.util.visual.text_drawing_utils import max_font_size
 
 
 class LoadingWidget(QWidget):
@@ -15,6 +18,7 @@ class LoadingWidget(QWidget):
         super().__init__(parent=parent)
         self._message = message
         self._rotation = 0
+        self._font_size: Optional[int] = None
         self._anim = QPropertyAnimation(self, b'rotation')
         self._anim.setLoopCount(-1)
         self._anim.setStartValue(0)
@@ -55,6 +59,7 @@ class LoadingWidget(QWidget):
     def message(self, message: str) -> None:
         """Sets the loading message displayed."""
         self._message = message
+        self._font_size = None
         self.paused = False
         self.update()
 
@@ -77,6 +82,10 @@ class LoadingWidget(QWidget):
         """Stops the animation when the widget is hidden."""
         self._anim.stop()
 
+    def resizeEvent(self, unused_event: Optional[QResizeEvent]) -> None:
+        """Clear cached font size on resize."""
+        self._font_size = None
+
     def paintEvent(self, unused_event: Optional[QPaintEvent]) -> None:
         """Draws a circle with optional message text and an animated indicator."""
         painter = QPainter(self)
@@ -85,6 +94,8 @@ class LoadingWidget(QWidget):
                              (self.height() // 2 - ellipse_dim // 2),
                              ellipse_dim,
                              ellipse_dim)
+        font_margin = int(clamp(0, paint_bounds.width() // 10, paint_bounds.height() // 10))
+        text_bounds = paint_bounds.adjusted(font_margin, font_margin, -font_margin, -font_margin)
 
         # draw background circle:
         painter.setPen(QPen(Qt.GlobalColor.black, 4, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap,
@@ -96,7 +107,13 @@ class LoadingWidget(QWidget):
         painter.setPen(QPen(Qt.GlobalColor.white, 4, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap,
                             Qt.PenJoinStyle.RoundJoin))
         painter.setBrush(QBrush(Qt.GlobalColor.white, Qt.BrushStyle.SolidPattern))
-        painter.drawText(QRect(0, 0, self.width(), self.height()), Qt.AlignmentFlag.AlignCenter, self._message)
+        font = painter.font()
+        if self._font_size is None:
+            self._font_size = int(clamp(font.pointSize(), 1,
+                                        max_font_size(self._message, font, text_bounds.size())))
+        font.setPointSize(self._font_size)
+        painter.setFont(font)
+        painter.drawText(text_bounds, Qt.AlignmentFlag.AlignCenter, self._message)
 
         # Draw animated indicator:
         painter.translate(QPointF(self.width() / 2, self.height() / 2))

@@ -634,13 +634,9 @@ class SDWebUIGenerator(ImageGenerator):
                 self._cache_generated_image(response_image, i)
             if info is not None:
                 logger.info(f'Image generation result info: {info}')
-                try:
-                    info = json.loads(info)
-                    if 'seed' in info:
-                        status = {'seed': str(info['seed'])}
-                        status_signal.emit(status)
-                except json.JSONDecodeError as err:
-                    logger.error(f'Parsing seed from info failed: {err}')
+                if isinstance(info, dict) and  'seed' in info:
+                    status = {'seed': str(info['seed'])}
+                    status_signal.emit(status)
 
         except RuntimeError as image_gen_error:
             logger.error(f'request failed: {image_gen_error}')
