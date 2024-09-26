@@ -165,7 +165,7 @@ class GenerationAreaToolPanel(QWidget):
             _add(self._h_spinbox, 5, 5)
             _add(self._select_layer_button, 6, 0, 1, 3)
             _add(self._match_resolution_button, 6, 3, 1, 3)
-            _add(Divider(Qt.Orientation.Horizontal), 7, 0, 1, 5)
+            _add(Divider(Qt.Orientation.Horizontal), 7, 0, 1, 6)
             _add(self._gen_size_label, 8, 0, 1, 6)
             self._gen_size_control.orientation = Qt.Orientation.Horizontal
             _add(self._gen_size_control, 9, 0, 2, 6)

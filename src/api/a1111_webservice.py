@@ -362,27 +362,28 @@ class A1111Webservice(WebService):
             A1111Webservice.ImgParams.SAMPLER_IDX: cache.get(Cache.SAMPLING_METHOD),
             A1111Webservice.ImgParams.ALWAYS_ON_SCRIPTS: {}
         }
-        controlnet = dict(cache.get(Cache.CONTROLNET_ARGS_0))
-        if len(controlnet) > 0 and 'model' in controlnet:
-            if 'image' in controlnet:
-                if controlnet['image'] == CONTROLNET_REUSE_IMAGE_CODE and image is not None:
-                    controlnet['image'] = image_to_base64(image, include_prefix=True)
-                elif os.path.exists(controlnet['image']):
-                    try:
-                        controlnet['image'] = image_to_base64(controlnet['image'], include_prefix=True)
-                    except (IOError, KeyError) as err:
-                        logger.error(f"Error loading controlnet image {controlnet['image']}: {err}")
+        for controlnet_key in (Cache.CONTROLNET_ARGS_0, Cache.CONTROLNET_ARGS_1, Cache.CONTROLNET_ARGS_2):
+            controlnet = dict(cache.get(controlnet_key))
+            if len(controlnet) > 0 and 'model' in controlnet:
+                if 'image' in controlnet:
+                    if controlnet['image'] == CONTROLNET_REUSE_IMAGE_CODE and image is not None:
+                        controlnet['image'] = image_to_base64(image, include_prefix=True)
+                    elif os.path.exists(controlnet['image']):
+                        try:
+                            controlnet['image'] = image_to_base64(controlnet['image'], include_prefix=True)
+                        except (IOError, KeyError) as err:
+                            logger.error(f"Error loading controlnet image {controlnet['image']}: {err}")
+                            del controlnet['image']
+                    else:
                         del controlnet['image']
-                else:
-                    del controlnet['image']
-                empty_keys = [k for k, value in controlnet.items() if value is None]
-                for empty_key in empty_keys:
-                    del controlnet[empty_key]
-            if scripts is None:
-                scripts = {}
-            if 'controlNet' not in scripts:
-                scripts['controlNet'] = {'args': []}
-            scripts['controlNet']['args'].append(controlnet)
+                    empty_keys = [k for k, value in controlnet.items() if value is None]
+                    for empty_key in empty_keys:
+                        del controlnet[empty_key]
+                if scripts is None:
+                    scripts = {}
+                if 'controlNet' not in scripts:
+                    scripts['controlNet'] = {'args': []}
+                scripts['controlNet']['args'].append(controlnet)
         if scripts is not None:
             body['alwayson_scripts'] = scripts
         return body

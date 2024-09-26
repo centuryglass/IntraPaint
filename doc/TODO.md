@@ -28,7 +28,6 @@ Scripted to make use of every tool, in-video text explaining what I'm doing
 ## Possible lurking bugs
 Things I never fixed but can no longer reproduce, or that come from external issues:
 - Nested layer selection state shown in the layer panel isn't updating properly (recursive active layer update logic in LayerPanel looks fine)
-- Txt2Img + ControlNet doesn't seem to work with the image as source. Looks like a webui error, `'StableDiffusionProcessingTxt2Img' object has no attribute 'resize_mode'`, shows up in logs. After trying other settings I can no longer reproduce this, but I don't think it's fixed (input size needs to be a multiple of 32?).
 - changing gen. area size still doesn't always sync fully - width changes but not height. Possibly fixed, keep an eye out for it.
 
 
@@ -37,6 +36,7 @@ Things I never fixed but can no longer reproduce, or that come from external iss
 ## General concerns and ideas
 * Solid color selection layer is less than ideal, even with a configurable color.  Maybe some sort of animated fill?
 * Fill and color fill algorithms are not ideal, look into measuring color differences with a perceptual algorithm instead of plain distance
+  - Adaptive thresholding and texture fill are possibilities. scikit provides useful tools for this.
 * Do more profiling, performance is adequate but there's still some noticeable lag in a few places
 * TabBar should have some mechanism for scrolling so the UI doesn't break when you turn up the tab bar shortcut count
 * There should be a mechanism for sending UI tabs to new windows
