@@ -194,7 +194,7 @@ class TabBox(BorderedWidget):
             for i, stretch in enumerate(stretch_values):
                 if i == own_idx or stretch < 2:
                     continue
-                stretch_taken = min(round(stretch / max(active_stretch_item_count, 3)), stretch - 1, 0)
+                stretch_taken = min(round(stretch / max(active_stretch_item_count, 3)), stretch - 1)
                 if stretch_taken > 0:
                     parent_layout.setStretch(i, stretch - stretch_taken)
                     added_stretch += stretch_taken
