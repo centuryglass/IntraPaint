@@ -149,6 +149,7 @@ PROGRESS_KEY_FRACTION = 'progress'
 PROGRESS_KEY_ETA_RELATIVE = 'eta_relative'
 STYLE_ERROR_TITLE = _tr('Updating prompt styles failed')
 
+
 GENERATE_ERROR_TITLE = _tr('Image generation failed')
 GENERATE_ERROR_MESSAGE_EMPTY_MASK = _tr('Nothing was selected in the image generation area. Either use the selection'
                                         ' tool to mark part of the image generation area for inpainting, move the image'
@@ -629,10 +630,17 @@ class SDWebUIGenerator(ImageGenerator):
             else:
                 assert source_image is not None
                 image_data, info = self._webservice.img2img(source_image, mask=mask_image)
-            if info is not None:
-                logger.debug(f'Image generation result info: {info}')
             for i, response_image in enumerate(image_data):
                 self._cache_generated_image(response_image, i)
+            if info is not None:
+                logger.info(f'Image generation result info: {info}')
+                try:
+                    info = json.loads(info)
+                    if 'seed' in info:
+                        status = {'seed': str(info['seed'])}
+                        status_signal.emit(status)
+                except json.JSONDecodeError as err:
+                    logger.error(f'Parsing seed from info failed: {err}')
 
         except RuntimeError as image_gen_error:
             logger.error(f'request failed: {image_gen_error}')

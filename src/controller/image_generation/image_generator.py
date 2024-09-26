@@ -240,7 +240,7 @@ class ImageGenerator(MenuBuilder):
             self._generated_images.pop(index)
         self._generated_images.insert(index, image)
         # Load in main thread:
-        QTimer.singleShot(1, lambda: self._load_generated_image_for_selection(index))
+        QTimer.singleShot(0, self._window, lambda: self._load_generated_image_for_selection(index))
 
     def _apply_status_update(self, status_dict: Dict[str, str]) -> None:
         """Show status updates in the UI."""
