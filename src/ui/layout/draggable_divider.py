@@ -27,6 +27,7 @@ class DraggableDivider(QWidget):
             self.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Expanding)
         else:
             self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+        self._last_pos: Optional[QPoint] = None
         self._hidden = False
         self._center_box = QRect(0, 0, 0, 0)
         self.resizeEvent(None)
@@ -86,11 +87,12 @@ class DraggableDivider(QWidget):
             p2 = QPoint(self.width() - DIVIDER_SIZE, self.height() // 2)
         painter.drawLine(p1, p2)
 
-    def mousePressEvent(self, unused_event: Optional[QMouseEvent]) -> None:
+    def mousePressEvent(self, event: Optional[QMouseEvent]) -> None:
         """Starts dragging the widget when clicked."""
         if self._hidden:
             return
         self._dragging = True
+        self._last_pos = event.pos() + self.pos()
         self.setCursor(self._dragging_cursor)
         self.update()
 
@@ -109,6 +111,9 @@ class DraggableDivider(QWidget):
         assert parent_layout is not None
         own_index = parent_layout.indexOf(self)
         if own_index in (0, -1, parent_layout.count() - 1):
+            return
+        if self._last_pos is None:
+            self._last_pos = pos + self.pos()
             return
         prev_items = []
         next_items = []
@@ -133,6 +138,7 @@ class DraggableDivider(QWidget):
         is_horizontal = self._mode == Qt.Orientation.Horizontal
         divider_pos = (self.x() + self.width() // 2) if is_horizontal else (self.y() + self.height() // 2)
         drag_pos = (self.x() + pos.x()) if is_horizontal else (self.y() + pos.y())
+        last_pos = self._last_pos.x() if is_horizontal else self._last_pos.y()
 
         parent = self.parent()
         assert isinstance(parent, QWidget)
@@ -140,10 +146,10 @@ class DraggableDivider(QWidget):
 
         start = 0
         end = parent_size.width() if is_horizontal else parent_size.height()
-        stretch_change_value = round(total_stretch * (abs(drag_pos - divider_pos) / abs(end - start)))
+        stretch_change_value = round(total_stretch * (abs(drag_pos - last_pos) / abs(end - start)))
         if stretch_change_value < 1:
             return  # Offset hasn't changed enough to justify changing stretch
-
+        self._last_pos = pos + self.pos()
         if drag_pos > divider_pos:
             grow_items = prev_items
             shrink_items = next_items
@@ -226,6 +232,7 @@ class DraggableDivider(QWidget):
         """Exits the dragging state when the mouse is released. """
         if self._dragging:
             self._dragging = False
+            self._last_pos = None
             self.setCursor(self._inactive_cursor)
             self.update()
 
