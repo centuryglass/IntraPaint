@@ -436,22 +436,23 @@ class SDWebUIGenerator(ImageGenerator):
                 logger.error(f'err:{err}')
                 error_signal.emit(err)
 
-        task = _InterrogateTask(_interrogate)
-        AppStateTracker.set_app_state(APP_STATE_LOADING)
+        task = _InterrogateTask(_interrogate, True)
 
         def set_prompt(prompt_text: str) -> None:
             """Update the image prompt in config with the interrogate results."""
             Cache().set(Cache.PROMPT, prompt_text)
+            AppStateTracker().set_app_state(APP_STATE_EDITING)
 
         task.prompt_ready.connect(set_prompt)
 
         def handle_error(err: BaseException) -> None:
             """Show an error popup if interrogate fails."""
             assert self._window is not None
-            self._window.set_is_loading(False)
+            AppStateTracker().set_app_state(APP_STATE_EDITING)
             show_error_dialog(self._window, INTERROGATE_ERROR_TITLE, err)
 
         task.error_signal.connect(handle_error)
+        task.start()
 
     def get_control_panel(self) -> Optional[GeneratorPanel]:
         """Returns a widget with inputs for controlling this generator."""

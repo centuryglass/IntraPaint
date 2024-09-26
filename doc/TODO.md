@@ -6,11 +6,8 @@
 - Final timelapse video (< 5 days)
 
 ## Misc. bugs and minor issues:
-- In-depth pressure opacity testing
-- fill tool cursor offset needs fixing
 - seed/last seed field updates don't seem to be working properly
 - loading icon text gets cut off
-- Interrogate seems to have issues
 - Layer re-ordering only updates after something else triggers re-render
 - panel resize issues on debian
 

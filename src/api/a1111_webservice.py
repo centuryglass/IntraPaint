@@ -332,7 +332,7 @@ class A1111Webservice(WebService):
             'model': AppConfig().get(AppConfig.INTERROGATE_MODEL),
             'image': image_to_base64(image, include_prefix=True)
         }
-        res = self.post(A1111Webservice.Endpoints.INTERROGATE, body)
+        res = self.post(A1111Webservice.Endpoints.INTERROGATE, body, timeout=60)
         return res.json()['caption']
 
     def interrupt(self) -> dict:

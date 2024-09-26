@@ -24,8 +24,8 @@ class _SliderSpinbox(QWidget):
     def __init__(self, initial_value: float | int, parent: Optional[QWidget] = None, label: Optional[str] = None):
         super().__init__(parent)
         self._layout = QHBoxLayout(self)
-        self._layout.setSpacing(0)
-        self._layout.setContentsMargins(0, 0, 0, 0)
+        self._layout.setSpacing(2)
+        self._layout.setContentsMargins(2, 2, 2, 2)
         self._label = QLabel()
         self._layout.addWidget(self._label)
         if label is not None:

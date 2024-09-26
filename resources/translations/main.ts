@@ -25,42 +25,42 @@
   <context>
     <name>config.config</name>
     <message>
-      <location filename="../../src/config/config.py" line="36"/>
+      <location filename="../../src/config/config.py" line="37"/>
       <source>Config definition file not found at {definition_path}</source>
       <translation>Config definition file not found at {definition_path}</translation>
     </message>
     <message>
-      <location filename="../../src/config/config.py" line="37"/>
+      <location filename="../../src/config/config.py" line="38"/>
       <source>Config value definition for {key} had invalid data type {value_type}</source>
       <translation>Config value definition for {key} had invalid data type {value_type}</translation>
     </message>
     <message>
-      <location filename="../../src/config/config.py" line="38"/>
+      <location filename="../../src/config/config.py" line="39"/>
       <source>Loading {key} failed: {err}</source>
       <translation>Loading {key} failed: {err}</translation>
     </message>
     <message>
-      <location filename="../../src/config/config.py" line="39"/>
+      <location filename="../../src/config/config.py" line="40"/>
       <source>Reading JSON config definitions failed: {err}</source>
       <translation>Reading JSON config definitions failed: {err}</translation>
     </message>
     <message>
-      <location filename="../../src/config/config.py" line="40"/>
+      <location filename="../../src/config/config.py" line="41"/>
       <source>Reading JSON config values failed: {err}</source>
       <translation>Reading JSON config values failed: {err}</translation>
     </message>
     <message>
-      <location filename="../../src/config/config.py" line="41"/>
+      <location filename="../../src/config/config.py" line="42"/>
       <source>Tried to access unknown config value "{key}"</source>
       <translation>Tried to access unknown config value "{key}"</translation>
     </message>
     <message>
-      <location filename="../../src/config/config.py" line="42"/>
+      <location filename="../../src/config/config.py" line="43"/>
       <source>Tried to get key code "{key}", found "{code_string}"</source>
       <translation>Tried to get key code "{key}", found "{code_string}"</translation>
     </message>
     <message>
-      <location filename="../../src/config/config.py" line="43"/>
+      <location filename="../../src/config/config.py" line="44"/>
       <source>Tried to add duplicate config entry for key "{key}"</source>
       <translation>Tried to add duplicate config entry for key "{key}"</translation>
     </message>
@@ -814,8 +814,8 @@
     </message>
     <message>
       <location filename="../config/key_config_definitions.json" line="399"/>
-      <source>New Image</source>
-      <translation>New Image</translation>
+      <source>New image</source>
+      <translation>New image</translation>
     </message>
     <message>
       <location filename="../config/key_config_definitions.json" line="402"/>
@@ -864,8 +864,8 @@
     </message>
     <message>
       <location filename="../config/key_config_definitions.json" line="426"/>
-      <source>Load Image</source>
-      <translation>Load Image</translation>
+      <source>Load image</source>
+      <translation>Load image</translation>
     </message>
     <message>
       <location filename="../config/key_config_definitions.json" line="429"/>
@@ -879,8 +879,8 @@
     </message>
     <message>
       <location filename="../config/key_config_definitions.json" line="435"/>
-      <source>Open as Layers</source>
-      <translation>Open as Layers</translation>
+      <source>Open as layers</source>
+      <translation>Open as layers</translation>
     </message>
     <message>
       <location filename="../config/key_config_definitions.json" line="438"/>
@@ -1104,8 +1104,8 @@
     </message>
     <message>
       <location filename="../config/key_config_definitions.json" line="570"/>
-      <source>Select All</source>
-      <translation>Select All</translation>
+      <source>Select all</source>
+      <translation>Select all</translation>
     </message>
     <message>
       <location filename="../config/key_config_definitions.json" line="573"/>
@@ -1119,8 +1119,8 @@
     </message>
     <message>
       <location filename="../config/key_config_definitions.json" line="579"/>
-      <source>Deselect All</source>
-      <translation>Deselect All</translation>
+      <source>Deselect all</source>
+      <translation>Deselect all</translation>
     </message>
     <message>
       <location filename="../config/key_config_definitions.json" line="582"/>
@@ -1464,8 +1464,8 @@
     </message>
     <message>
       <location filename="../config/key_config_definitions.json" line="783"/>
-      <source>LCM Mode</source>
-      <translation>LCM Mode</translation>
+      <source>LCM mode</source>
+      <translation>LCM mode</translation>
     </message>
     <message>
       <location filename="../config/key_config_definitions.json" line="786"/>
@@ -1479,8 +1479,8 @@
     </message>
     <message>
       <location filename="../config/key_config_definitions.json" line="792"/>
-      <source>Show Image Window</source>
-      <translation>Show Image Window</translation>
+      <source>Show image window</source>
+      <translation>Show image window</translation>
     </message>
     <message>
       <location filename="../config/key_config_definitions.json" line="795"/>
@@ -1494,8 +1494,8 @@
     </message>
     <message>
       <location filename="../config/key_config_definitions.json" line="801"/>
-      <source>Select Image Generator</source>
-      <translation>Select Image Generator</translation>
+      <source>Select image generator</source>
+      <translation>Select image generator</translation>
     </message>
     <message>
       <location filename="../config/key_config_definitions.json" line="804"/>
@@ -1509,8 +1509,8 @@
     </message>
     <message>
       <location filename="../config/key_config_definitions.json" line="810"/>
-      <source>RGBA Color Balance</source>
-      <translation>RGBA Color Balance</translation>
+      <source>RGBA color balance</source>
+      <translation>RGBA color balance</translation>
     </message>
     <message>
       <location filename="../config/key_config_definitions.json" line="813"/>
@@ -1524,8 +1524,8 @@
     </message>
     <message>
       <location filename="../config/key_config_definitions.json" line="819"/>
-      <source>Brightness/Contrast</source>
-      <translation>Brightness/Contrast</translation>
+      <source>Brightness/contrast</source>
+      <translation>Brightness/contrast</translation>
     </message>
     <message>
       <location filename="../config/key_config_definitions.json" line="822"/>
@@ -1599,13 +1599,13 @@
     </message>
     <message>
       <location filename="../config/key_config_definitions.json" line="864"/>
-      <source>View Lora models</source>
-      <translation>View Lora models</translation>
+      <source>View LORA models</source>
+      <translation>View LORA models</translation>
     </message>
     <message>
       <location filename="../config/key_config_definitions.json" line="867"/>
-      <source>Access available Lora models.</source>
-      <translation>Access available Lora models.</translation>
+      <source>Access available LORA models.</source>
+      <translation>Access available LORA models.</translation>
     </message>
     <message>
       <location filename="../config/key_config_definitions.json" line="857"/>
@@ -2584,8 +2584,8 @@ Please remember to include the traceback from the Details expander.</translation
     </message>
     <message>
       <location filename="../../src/image/filter/blur.py" line="30"/>
-      <source>Blurring mode</source>
-      <translation>Blurring mode</translation>
+      <source>Blurring mode:</source>
+      <translation>Blurring mode:</translation>
     </message>
     <message>
       <location filename="../../src/image/filter/blur.py" line="31"/>
@@ -2594,8 +2594,8 @@ Please remember to include the traceback from the Details expander.</translation
     </message>
     <message>
       <location filename="../../src/image/filter/blur.py" line="33"/>
-      <source>Radius</source>
-      <translation>Radius</translation>
+      <source>Radius:</source>
+      <translation>Radius:</translation>
     </message>
     <message>
       <location filename="../../src/image/filter/blur.py" line="34"/>
@@ -4093,47 +4093,47 @@ Please remember to include the traceback from the Details expander.</translation
   <context>
     <name>ui.panel.tool_control_panels.layer_transform_tool_panel</name>
     <message>
-      <location filename="../../src/ui/panel/tool_control_panels/layer_transform_tool_panel.py" line="32"/>
+      <location filename="../../src/ui/panel/tool_control_panels/layer_transform_tool_panel.py" line="31"/>
       <source>X:</source>
       <translation>X:</translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/tool_control_panels/layer_transform_tool_panel.py" line="33"/>
+      <location filename="../../src/ui/panel/tool_control_panels/layer_transform_tool_panel.py" line="32"/>
       <source>Y:</source>
       <translation>Y:</translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/tool_control_panels/layer_transform_tool_panel.py" line="34"/>
+      <location filename="../../src/ui/panel/tool_control_panels/layer_transform_tool_panel.py" line="33"/>
       <source>X-Scale:</source>
       <translation>X-Scale:</translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/tool_control_panels/layer_transform_tool_panel.py" line="35"/>
+      <location filename="../../src/ui/panel/tool_control_panels/layer_transform_tool_panel.py" line="34"/>
       <source>Y-Scale:</source>
       <translation>Y-Scale:</translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/tool_control_panels/layer_transform_tool_panel.py" line="36"/>
+      <location filename="../../src/ui/panel/tool_control_panels/layer_transform_tool_panel.py" line="35"/>
       <source>W:</source>
       <translation>W:</translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/tool_control_panels/layer_transform_tool_panel.py" line="37"/>
+      <location filename="../../src/ui/panel/tool_control_panels/layer_transform_tool_panel.py" line="36"/>
       <source>H:</source>
       <translation>H:</translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/tool_control_panels/layer_transform_tool_panel.py" line="38"/>
+      <location filename="../../src/ui/panel/tool_control_panels/layer_transform_tool_panel.py" line="37"/>
       <source>Angle:</source>
       <translation>Angle:</translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/tool_control_panels/layer_transform_tool_panel.py" line="39"/>
+      <location filename="../../src/ui/panel/tool_control_panels/layer_transform_tool_panel.py" line="38"/>
       <source>Reset</source>
       <translation>Reset</translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/tool_control_panels/layer_transform_tool_panel.py" line="40"/>
+      <location filename="../../src/ui/panel/tool_control_panels/layer_transform_tool_panel.py" line="39"/>
       <source>Clear</source>
       <translation>Clear</translation>
     </message>
@@ -4195,44 +4195,34 @@ Please remember to include the traceback from the Details expander.</translation
   <context>
     <name>ui.panel.tool_control_panels.text_panel</name>
     <message>
-      <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py" line="34"/>
+      <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py" line="36"/>
       <source>Font:</source>
       <translation>Font:</translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py" line="35"/>
+      <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py" line="37"/>
       <source>Font Size:</source>
       <translation>Font Size:</translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py" line="36"/>
+      <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py" line="38"/>
       <source>Enter Text:</source>
       <translation>Enter Text:</translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py" line="37"/>
-      <source>Stretch</source>
-      <translation>Stretch</translation>
+      <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py" line="39"/>
+      <source>Stretch:</source>
+      <translation>Stretch:</translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py" line="38"/>
+      <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py" line="40"/>
       <source>Text Color</source>
       <translation>Text Color</translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py" line="39"/>
+      <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py" line="41"/>
       <source>Background Color</source>
       <translation>Background Color</translation>
-    </message>
-    <message>
-      <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py" line="40"/>
-      <source>Set text color</source>
-      <translation>Set text color</translation>
-    </message>
-    <message>
-      <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py" line="41"/>
-      <source>Set text background color</source>
-      <translation>Set text background color</translation>
     </message>
     <message>
       <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py" line="43"/>
@@ -4318,6 +4308,26 @@ Please remember to include the traceback from the Details expander.</translation
       <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py" line="61"/>
       <source>Resize Bounds to Text</source>
       <translation>Resize Bounds to Text</translation>
+    </message>
+    <message>
+      <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py" line="63"/>
+      <source>Set text color</source>
+      <translation>Set text color</translation>
+    </message>
+    <message>
+      <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py" line="64"/>
+      <source>Set text background color</source>
+      <translation>Set text background color</translation>
+    </message>
+    <message>
+      <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py" line="65"/>
+      <source>Change font size to fit the text in the available space.</source>
+      <translation>Change font size to fit the text in the available space.</translation>
+    </message>
+    <message>
+      <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py" line="66"/>
+      <source>Resize the text layer to fit the text.</source>
+      <translation>Resize the text layer to fit the text.</translation>
     </message>
   </context>
   <context>
