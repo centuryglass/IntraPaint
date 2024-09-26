@@ -49,7 +49,7 @@ class _SliderSpinbox(QWidget):
         self._layout.addWidget(self._spinbox)
         self._spinbox.setValue(initial_value)
         self._spinbox.valueChanged.connect(self.setValue)
-        self._spinbox.setSizePolicy(QSizePolicy.Policy.MinimumExpanding, QSizePolicy.Policy.Preferred)
+        self._spinbox.setSizePolicy(QSizePolicy.Policy.MinimumExpanding, QSizePolicy.Policy.Maximum)
         self._label.setBuddy(self._spinbox)
 
     def _update_slider_ticks(self) -> None:

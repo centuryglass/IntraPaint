@@ -26,7 +26,7 @@ class KeyHintLabel(QLabel):
         self.setTextFormat(Qt.TextFormat.RichText)
         self.setContentsMargins(3, 3, 3, 3)
         self._saved_size: Optional[QSize] = None
-
+        self._config_key = config_key
         if keys is None and config_key is not None:
             keys = KeyConfig().get(config_key)
         self._update_text(keys)
@@ -38,6 +38,12 @@ class KeyHintLabel(QLabel):
             updated_font.setPointSize(size)
             self.setFont(updated_font)
         AppConfig().connect(self, AppConfig.KEY_HINT_FONT_SIZE, _update_size)
+
+    def deleteLater(self) -> None:
+        """Disconnect from config before scheduling deletion."""
+        AppConfig().disconnect(self, AppConfig.KEY_HINT_FONT_SIZE)
+        KeyConfig().disconnect(self, self._config_key)
+        super().deleteLater()
 
     def sizeHint(self) -> QSize:
         """Calculate size hint with adjusted margins"""

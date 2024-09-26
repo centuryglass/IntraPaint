@@ -396,7 +396,7 @@
         "saved": true
     },
     "new_image_shortcut": {
-        "label": "New Image",
+        "label": "New image",
         "category": "Menu Shortcuts",
         "subcategory": "File Menu",
         "description": "Open a new image for editing.",
@@ -423,7 +423,7 @@
         "saved": true
     },
     "load_shortcut": {
-        "label": "Load Image",
+        "label": "Load image",
         "category": "Menu Shortcuts",
         "subcategory": "File Menu",
         "description": "Open an image file for editing.",
@@ -432,7 +432,7 @@
         "saved": true
     },
     "load_layers_shortcut": {
-        "label": "Open as Layers",
+        "label": "Open as layers",
         "category": "Menu Shortcuts",
         "subcategory": "File Menu",
         "description": "Open images as new layers.",
@@ -567,7 +567,7 @@
         "saved": true
     },
     "select_all_shortcut": {
-        "label": "Select All",
+        "label": "Select all",
         "category": "Menu Shortcuts",
         "subcategory": "Selection Menu",
         "description": "Select the entire image",
@@ -576,7 +576,7 @@
         "saved": true
     },
     "select_none_shortcut": {
-        "label": "Deselect All",
+        "label": "Deselect all",
         "category": "Menu Shortcuts",
         "subcategory": "Selection Menu",
         "description": "Clear the selection",
@@ -780,7 +780,7 @@
         "saved": true
     },
     "lcm_mode_shortcut": {
-        "label": "LCM Mode",
+        "label": "LCM mode",
         "category": "Menu Shortcuts",
         "subcategory": "Tool Menu",
         "description": "Apply appropriate settings for the LCM LORA.",
@@ -789,7 +789,7 @@
         "saved": true
     },
     "image_window_shortcut": {
-        "label": "Show Image Window",
+        "label": "Show image window",
         "category": "Menu Shortcuts",
         "subcategory": "Tool Menu",
         "description": "Open a new window showing the edited image.",
@@ -798,7 +798,7 @@
         "saved": true
     },
     "generator_select_shortcut": {
-        "label": "Select Image Generator",
+        "label": "Select image generator",
         "category": "Menu Shortcuts",
         "subcategory": "Tool Menu",
         "description": "Selects an AI image generator",
@@ -807,7 +807,7 @@
         "saved": true
     },
     "color_balance_shortcut": {
-        "label": "RGBA Color Balance",
+        "label": "RGBA color balance",
         "category": "Menu Shortcuts",
         "subcategory": "Filter Menu",
         "description": "Adjust RGBA color channels",
@@ -816,7 +816,7 @@
         "saved": true
     },
     "brightness_contrast_shortcut": {
-        "label": "Brightness/Contrast",
+        "label": "Brightness/contrast",
         "category": "Menu Shortcuts",
         "subcategory": "Filter Menu",
         "description": "Adjust image brightness/contrast",
@@ -861,10 +861,10 @@
         "saved": true
     },
     "lora_shortcut": {
-        "label": "View Lora models",
+        "label": "View LORA models",
         "category": "Menu Shortcuts",
         "subcategory": "Stable-Diffusion Menu",
-        "description": "Access available Lora models.",
+        "description": "Access available LORA models.",
         "type": "string",
         "default": "Ctrl+Alt+2",
         "saved": true

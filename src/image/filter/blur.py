@@ -27,10 +27,10 @@ MODE_GAUSSIAN = _tr('Gaussian')
 BLUR_FILTER_TITLE = _tr('Blur')
 BLUR_FILTER_DESCRIPTION = _tr('Blur the image')
 
-MODE_LABEL = _tr('Blurring mode')
+MODE_LABEL = _tr('Blurring mode:')
 MODE_DESCRIPTION = _tr('Image blurring algorithm')
 
-RADIUS_LABEL = _tr('Radius')
+RADIUS_LABEL = _tr('Radius:')
 RADIUS_DESCRIPTION = _tr('Pixel blur radius (no effect in simple mode).')
 
 BLUR_ICON_PATH = f'{PROJECT_DIR}/resources/icons/filter/blur_icon.svg'

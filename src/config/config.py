@@ -11,6 +11,7 @@ Main features
 import json
 import logging
 import os.path
+import re
 from inspect import signature
 from threading import Lock
 from typing import Optional, Any, Callable, List, Dict
@@ -319,13 +320,20 @@ class Config:
                     self._save_timer.timeout.connect(write_change)
                     self._save_timer.start(10)
         # Pass change to connected callback functions:
-        callbacks = [*self._connected[key].values()]  # <- So callbacks can disconnect or replace themselves
-        for callback in callbacks:
+        callbacks = [*self._connected[key].items()]  # <- So callbacks can disconnect or replace themselves
+        for source, callback in callbacks:
             num_args = len(signature(callback).parameters)
             if num_args == 0 and inner_key is None:
                 callback()
             elif num_args == 1 and inner_key is None:
-                callback(new_value)
+                try:
+                    callback(new_value)
+                except RuntimeError as err:
+                    if 'already deleted' in str(err):
+                        logger.warning(f'Disconnecting from {key}, got error={err}')
+                        self.disconnect(source, key)
+                    else:
+                        raise err
             elif num_args == 2:
                 callback(new_value, inner_key)
             if self.get(key, inner_key) != value:

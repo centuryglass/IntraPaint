@@ -7,14 +7,11 @@
 
 ## Misc. bugs and minor issues:
 - In-depth pressure opacity testing
-- vertical "inpaint full res" text fix
 - fill tool cursor offset needs fixing
 - seed/last seed field updates don't seem to be working properly
 - loading icon text gets cut off
-- Menu capitalization has inconsistencies
 - Interrogate seems to have issues
 - Layer re-ordering only updates after something else triggers re-render
-- Filter: blur mode box not showing
 - panel resize issues on debian
 
 ## Timelapse video: using latest interface

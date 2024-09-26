@@ -146,8 +146,10 @@ class FilterToolPanel(BrushToolPanel):
             else:
                 widget_label = QLabel(parameter.name)
                 widget_label.setBuddy(widget)
+                widget_label.setToolTip(parameter.description)
                 widget_container = QWidget(self)
-                widget_layout = QHBoxLayout()
+                widget_layout = QHBoxLayout(widget_container)
+                widget_layout.setSpacing(1)
                 widget_layout.setAlignment(Qt.AlignmentFlag.AlignLeft)
                 widget_layout.addWidget(widget_label)
                 widget_layout.addWidget(widget)
