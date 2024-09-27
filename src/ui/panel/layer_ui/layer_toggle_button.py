@@ -26,7 +26,7 @@ class LayerToggleButton(QToolButton):
 
         if disable_when_locked:
             connected_layer.lock_changed.connect(self._lock_change_slot)
-            if connected_layer.locked:
+            if connected_layer.locked or connected_layer.parent_locked:
                 self.setEnabled(False)
 
     def _lock_change_slot(self, _, is_locked: bool) -> None:

@@ -211,7 +211,7 @@ class LayerPanel(QWidget):
             self._scroll_timer.stop()
 
     def resizeEvent(self, event):
-        """Keep at least one layer visible."""
+        """Keep at least one layer visible, block horizontal scrolling.."""
         self._scroll_area.setMinimumHeight(self._parent_group_item.layer_item.sizeHint().height() + LIST_SPACING)
         min_scroll_width = self._parent_group_item.sizeHint().width()
         vertical_scrollbar = self._scroll_area.verticalScrollBar()
@@ -271,33 +271,31 @@ class LayerPanel(QWidget):
             active_layer.composition_mode = mode
 
     def _find_layer_parent_widgets(self, layer: Layer) -> List[LayerGroupWidget]:
-        parent_map: List[Tuple[Layer, int]] = []
-        first_parent_group = layer.layer_parent
-        assert first_parent_group is None or isinstance(first_parent_group, Layer)
-        layer_iter: Optional[Layer] = first_parent_group
-        if layer_iter is None:
-            return []
-        parent_iter: Optional[LayerParent] = layer_iter.layer_parent
+        """Returns a list of all LayerGroupWidgets connected to layers that contain the given layer"""
+        parent_layers: List[LayerStack] = []
+        # Iterate through parent/child pairs, starting with layer.layer_parent and layer, and continue up the tree
+        # until the topmost layer stack is reached. For each pair, insert (parent, child_index) into parent_map
+        # at the start.
+        parent_iter: Optional[LayerParent] = layer.layer_parent
         while parent_iter is not None:
             assert isinstance(parent_iter, LayerStack)
-            idx = parent_iter.get_layer_index(layer_iter)
-            assert idx is not None
-            parent_map.insert(0, (layer_iter, idx))
-            layer_iter = parent_iter
-            parent_iter = layer_iter.layer_parent
-        assert layer_iter == self._image_stack.layer_stack
-        parent_list: List[LayerGroupWidget] = [self._parent_group_item]
+            parent_layers.insert(0, parent_iter)
+            parent_iter = parent_iter.layer_parent
+        assert len(parent_layers) == 0 or parent_layers[0] == self._image_stack.layer_stack
+
+        # Follow the parent map in reverse through the layer widget tree, appending each parent layer widget to a list:
+        parent_widgets: List[LayerGroupWidget] = []
         widget_iter: LayerGroupWidget = self._parent_group_item
         assert isinstance(widget_iter, LayerGroupWidget)
-        for mapped_layer, idx in parent_map:
+        for i, parent_layer in enumerate(parent_layers):
+            assert widget_iter.layer == parent_layer
             assert isinstance(widget_iter, LayerGroupWidget)
-            child_group = widget_iter.child_items[idx]
-            if not isinstance(child_group, LayerGroupWidget):
-                continue
-            widget_iter = child_group
-            assert widget_iter.layer == mapped_layer
-            parent_list.append(widget_iter)
-        return parent_list
+            parent_widgets.append(widget_iter)
+            if i < (len(parent_layers) - 1):
+                child_item = widget_iter.get_child_item(parent_layers[i + 1])
+                assert isinstance(child_item, LayerGroupWidget)
+                widget_iter = child_item
+        return parent_widgets
 
     def _open_parent_groups(self, layer: Layer) -> None:
         parent_widget_list = self._find_layer_parent_widgets(layer)
@@ -334,8 +332,7 @@ class LayerPanel(QWidget):
         self._open_parent_groups(new_layer)
 
     def _lock_change_slot(self, layer: Layer, is_locked: bool) -> None:
-        assert layer == self._image_stack.active_layer, (f'active is {self._image_stack.active_layer.name},'
-                                                         f' got {layer.name}')
+        assert layer == self._image_stack.active_layer or layer.contains(self._image_stack.active_layer)
         for widget in (self._opacity_spinbox,
                        self._opacity_slider,
                        self._mode_box,
