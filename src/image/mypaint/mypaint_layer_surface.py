@@ -195,7 +195,7 @@ class MyPaintLayerSurface(QObject):
         if self._layer is None:
             logger.warning('attempted to draw with no layer connected.')
             return False
-        if self._layer.locked:
+        if self._layer.locked or self._layer.parent_locked:
             logger.warning('attempted to draw to a locked layer.')
             return False
         if not self._layer.visible:

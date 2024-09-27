@@ -25,9 +25,11 @@ def _tr(*args):
     return QApplication.translate(TR_ID, *args)
 
 
-CROP_TO_CONTENT_ERROR_TITLE = _tr('Layer cropping failed')
-CROP_TO_CONTENT_ERROR_MESSAGE_EMPTY = _tr('Layer has no image content.')
-CROP_TO_CONTENT_ERROR_MESSAGE_FULL = _tr('Layer is already cropped to fit image content.')
+CROP_LAYER_ERROR_TITLE = _tr('Layer cropping failed')
+CROP_LAYER_ERROR_MESSAGE_NO_CONTENT = _tr('Layer has no image content.')
+CROP_LAYER_ERROR_MESSAGE_ALREADY_CONTENT_CROPPED = _tr('Layer is already cropped to fit image content.')
+CROP_LAYER_ERROR_MESSAGE_SELECTION_EMPTY = _tr('No layer content is selected.')
+CROP_LAYER_ERROR_MESSAGE_SELECTION_FULL = _tr('Selection contains the entire layer.')
 
 
 class ImageLayer(TransformLayer):
@@ -91,7 +93,7 @@ class ImageLayer(TransformLayer):
 
     def set_qimage(self, image: QImage) -> None:
         """Replaces the layer's QImage content."""
-        assert not self.locked, 'Tried to change image in a locked layer'
+        assert not self.locked and not self.parent_locked, 'Tried to change image in a locked layer'
         initial_image = self._image
         if image.format() != QImage.Format.Format_ARGB32_Premultiplied:
             self._image = image.convertToFormat(QImage.Format.Format_ARGB32_Premultiplied)
@@ -113,7 +115,7 @@ class ImageLayer(TransformLayer):
     def _image_prop_setter(self, new_image: QImage | Tuple[QImage, QPoint]) -> None:
         """Replaces the layer's QImage content.  Unlike other setters, subsequent changes won't be combined in the
            undo history."""
-        assert not self.locked, 'Tried to change image in a locked layer'
+        assert not self.locked and not self.parent_locked, 'Tried to change image in a locked layer'
         if isinstance(new_image, tuple):
             new_image, offset = new_image
             undo_offset = None if offset is None else -offset
@@ -132,7 +134,7 @@ class ImageLayer(TransformLayer):
 
     def set_image(self, new_image: QImage, offset: Optional[QPoint] = None) -> None:
         """Updates the layer image."""
-        assert self.locked is not True, 'Tried to change image in a locked layer'
+        assert not self.locked and not self.parent_locked, 'Tried to change image in a locked layer'
         assert not new_image.isNull()
         size_changed = new_image.size() != self._size
         send_size_change_signal = size_changed and not self._size.isNull()
@@ -152,7 +154,7 @@ class ImageLayer(TransformLayer):
     @contextmanager
     def borrow_image(self, change_bounds: Optional[QRect] = None) -> Generator[Optional[QImage], None, None]:
         """Provides direct access to the image for editing, automatically marking it as changed when complete."""
-        assert self.locked is not True, 'Tried to change image in a locked layer'
+        assert not self.locked and not self.parent_locked, 'Tried to change image in a locked layer'
         if change_bounds is None or change_bounds.isEmpty():
             change_bounds = self.bounds
         if not self.bounds.contains(change_bounds):
@@ -322,22 +324,22 @@ class ImageLayer(TransformLayer):
                 return
             numpy_source_over_composition(source_intersect, dst_intersect)
 
-    def crop_to_content(self, show_warnings: bool = True):
-        """Crops the layer to remove transparent areas."""
+    def crop_to_bounds(self, bounds: QRect, show_warnings: bool = True) -> None:
+        """Crop the layer to a bounding rectangle."""
         full_bounds = QRect(QPoint(), self.size)
-        cropped_bounds = image_content_bounds(self._image)
-        if cropped_bounds.isNull():
+        bounds = bounds.intersected(full_bounds)
+        if bounds.isNull():
             if show_warnings:
-                show_error_dialog(None, CROP_TO_CONTENT_ERROR_TITLE, CROP_TO_CONTENT_ERROR_MESSAGE_EMPTY)
-        elif cropped_bounds.size() == full_bounds.size():
+                show_error_dialog(None, CROP_LAYER_ERROR_TITLE, CROP_LAYER_ERROR_MESSAGE_SELECTION_EMPTY)
+        elif bounds.size() == full_bounds.size():
             if show_warnings:
-                show_error_dialog(None, CROP_TO_CONTENT_ERROR_TITLE, CROP_TO_CONTENT_ERROR_MESSAGE_FULL)
+                show_error_dialog(None, CROP_LAYER_ERROR_TITLE, CROP_LAYER_ERROR_MESSAGE_SELECTION_FULL)
         else:
             full_image = self._image.copy()
-            cropped_image = full_image.copy(cropped_bounds)
+            cropped_image = full_image.copy(bounds)
             transform = self.transform
             crop_transform = QTransform(transform)
-            crop_transform.translate(float(cropped_bounds.x()), float(cropped_bounds.y()))
+            crop_transform.translate(float(bounds.x()), float(bounds.y()))
 
             def _do_crop(img=cropped_image, matrix=crop_transform):
                 with self.with_alpha_lock_disabled():
@@ -350,6 +352,19 @@ class ImageLayer(TransformLayer):
                     self.set_transform(matrix)
 
             UndoStack().commit_action(_do_crop, _undo_crop, 'ImageLayer.crop_to_content')
+
+    def crop_to_content(self, show_warnings: bool = True):
+        """Crops the layer to remove transparent areas."""
+        full_bounds = QRect(QPoint(), self.size)
+        cropped_bounds = image_content_bounds(self._image)
+        if cropped_bounds.isNull():
+            if show_warnings:
+                show_error_dialog(None, CROP_LAYER_ERROR_TITLE, CROP_LAYER_ERROR_MESSAGE_NO_CONTENT)
+        elif cropped_bounds.size() == full_bounds.size():
+            if show_warnings:
+                show_error_dialog(None, CROP_LAYER_ERROR_TITLE, CROP_LAYER_ERROR_MESSAGE_ALREADY_CONTENT_CROPPED)
+        else:
+            self.crop_to_bounds(cropped_bounds, False)
 
     def cut_masked(self, image_mask: QImage) -> None:
         """Clear the contents of an area in the parent image."""

@@ -74,7 +74,7 @@ class MyPaintLayerTile:
 
     def write_pixels_to_layer_image(self, layer_image: QImage) -> None:
         """Write image data from the MyPaint pixel buffer into a layer image."""
-        if self._layer is None or self._bounds.isEmpty() or self._layer.locked:
+        if self._layer is None or self._bounds.isEmpty() or self._layer.locked or self._layer.parent_locked:
             return
         np_image = numpy_bounds_index(image_data_as_numpy_8bit(layer_image), self._bounds)
         np_image, np_pixels = self._image_and_pixel_intersect_arrays(np_image)
@@ -98,7 +98,7 @@ class MyPaintLayerTile:
 
     def write_pixels_to_layer(self) -> None:
         """Write image data from the MyPaint pixel buffer into the connected image layer."""
-        if self._layer is None or self._bounds.isEmpty() or self._layer.locked:
+        if self._layer is None or self._bounds.isEmpty() or self._layer.locked or self._layer.parent_locked:
             return
         self._layer.content_changed.disconnect(self._layer_content_changed_slot)
         with self._layer.borrow_image(self._bounds) as layer_image:
@@ -167,6 +167,7 @@ class MyPaintLayerTile:
 
     def _layer_lock_change_slot(self, layer: ImageLayer, locked: bool) -> None:
         """Reset the pixel buffer on unlock"""
-        assert layer == self._layer
+        assert self._layer is not None
+        assert layer == self._layer or layer.contains_recursive(self._layer)
         if not locked:
             self.load_pixels_from_layer()

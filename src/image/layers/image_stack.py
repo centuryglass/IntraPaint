@@ -2,7 +2,7 @@
 import logging
 import os
 import re
-from typing import Optional, Tuple, cast, List, Callable, TypeAlias
+from typing import Optional, Tuple, cast, List, Callable, TypeAlias, Dict
 
 import numpy as np
 from PIL import Image
@@ -10,6 +10,7 @@ from PySide6.QtCore import QObject, QSize, QPoint, QRect, Signal
 from PySide6.QtGui import QPainter, QPixmap, QImage, QColor, QTransform
 from PySide6.QtWidgets import QApplication
 
+from src.config.application_config import AppConfig
 from src.config.cache import Cache
 from src.image.composite_mode import CompositeMode
 from src.image.layers.image_layer import ImageLayer
@@ -19,7 +20,7 @@ from src.image.layers.selection_layer import SelectionLayer
 from src.image.layers.text_layer import TextLayer
 from src.image.layers.transform_layer import TransformLayer
 from src.image.text_rect import TextRect
-from src.ui.modal.modal_utils import show_error_dialog
+from src.ui.modal.modal_utils import show_error_dialog, show_warning_dialog
 from src.undo_stack import UndoStack, _UndoAction, _UndoGroup
 from src.util.application_state import AppStateTracker, APP_STATE_NO_IMAGE, APP_STATE_EDITING
 from src.util.cached_data import CachedData
@@ -44,12 +45,31 @@ NEW_IMAGE_LAYER_GROUP_NAME = _tr('new image')
 ACTION_NAME_MERGE_LAYERS = _tr('merge layers')
 ACTION_NAME_LAYER_TO_IMAGE_SIZE = _tr('resize layer to image')
 ACTION_NAME_CLEAR_SELECTED = _tr('cut/clear selection')
+ACTION_NAME_RESIZE_IMAGE_CANVAS = _tr('resize image canvas')
+ACTION_NAME_CROP_LAYER_TO_SELECTION = _tr('crop layer to selection')
 
 ERROR_TITLE_RESIZE_FAILED = _tr('Resizing image canvas failed')
 ERROR_MESSAGE_RESIZE_FAILED_SINGULAR = _tr('Locked layer {layer_name} would be cropped, unlock or move the layer '
                                            'before retrying')
 ERROR_MESSAGE_RESIZE_FAILED_PLURAL = _tr('Locked layers {comma_separated_layer_names} would be cropped, unlock or '
                                          'move these layers before retrying.')
+
+ERROR_TITLE_CROP_FAILED = _tr('Crop to selection bounds failed')
+ERROR_MESSAGE_CROP_FAILED_NO_SELECTION = _tr('Nothing is selected, select an area in the image first.')
+ERROR_MESSAGE_CROP_FAILED_NO_OVERLAP = _tr('The selection does not cover any part of the layer.')
+ERROR_MESSAGE_CROP_FAILED_FULLY_CONTAINED = _tr('The selection does not cut out any part of the layer.')
+ERROR_MESSAGE_CROP_FAILED_MULTI = _tr('All selected layers are either fully covered by the selection or do not '
+                                      'intersect with it at all.')
+
+ERROR_TITLE_LOCKED_LAYER = _tr('Error: tried to change a locked layer')
+ERROR_MESSAGE_LOCKED_LAYER = _tr('Unlock the layer before attempting any changes.')
+
+ERROR_TITLE_LOCKED_GROUP = _tr('Layer group "{group_name}" is locked')
+ERROR_MESSAGE_LOCKED_GROUP = _tr('Unlock the layer group before trying to change layers within the group.')
+
+WARNING_TITLE_CROP_DELETED_LAYERS = _tr('Warning: cropping deleted layer(s)')
+WARNING_MESSAGE_CROP_DELETED_LAYERS = _tr('<p>Cropping to selection deleted the following layers:</p><ul>'
+                                          '{layer_names}</ul>')
 
 RenderAdjustFn: TypeAlias = Callable[[int, QImage, QRect, QPainter], Optional[QImage]]
 
@@ -206,6 +226,11 @@ class ImageStack(QObject):
         return [layer for layer in self.layers if isinstance(layer, ImageLayer)]
 
     @property
+    def text_layers(self) -> list[TextLayer]:
+        """Returns the list of all child text layers, including nested layers"""
+        return [layer for layer in self.layers if isinstance(layer, TextLayer)]
+
+    @property
     def selection_layer(self) -> SelectionLayer:
         """Returns the unique SelectionLayer used for highlighting image regions."""
         return self._selection_layer
@@ -321,7 +346,8 @@ class ImageStack(QObject):
 
     # IMAGE ACCESS / MANIPULATION FUNCTIONS:
 
-    def resize_canvas(self, new_size: QSize, x_offset: int, y_offset: int) -> None:
+    def resize_canvas(self, new_size: QSize, x_offset: int, y_offset: int,
+                      parent_group: Optional[LayerStack] = None) -> None:
         """
         Changes all layer sizes without scaling existing image content.
 
@@ -333,25 +359,31 @@ class ImageStack(QObject):
             X offset where existing image content will be placed in the adjusted image
         y_offset: int
             Y offset where existing image content will be placed in the adjusted layer
+        parent_group: Optional[LayerStack], default=None
+            If provided, changes will be restricted to layers contained beneath this group.
         """
         assert isinstance(new_size, QSize)
         last_size = self.size
         selection_state = self.selection_layer.save_state()
-        layer_state = self._layer_stack.save_state()
         transform = QTransform.fromTranslate(x_offset, y_offset)
         canvas_image_bounds = QRect(QPoint(), new_size)
 
-        intersect_bounds = canvas_image_bounds.translated(x_offset, y_offset)
+        intersect_bounds = canvas_image_bounds.translated(-x_offset, -y_offset)
         interfering_locked_layers = []
+        affected_text_layers = []
         for tested_layer in self._all_layers():
-            if not tested_layer.locked:
+            if not (tested_layer.locked or tested_layer.parent_locked or isinstance(tested_layer, TextLayer)):
                 continue
             if isinstance(tested_layer, TransformLayer):
                 layer_bounds = tested_layer.transformed_bounds
             else:
                 layer_bounds = tested_layer.bounds
             if not intersect_bounds.contains(layer_bounds):
-                interfering_locked_layers.append(tested_layer)
+                if tested_layer.locked or tested_layer.parent_locked:
+                    interfering_locked_layers.append(tested_layer)
+                if isinstance(tested_layer, TextLayer):
+                    print(f'{layer_bounds} not in {intersect_bounds}')
+                    affected_text_layers.append(tested_layer)
         if len(interfering_locked_layers) > 0:
             if len(interfering_locked_layers) > 1:
                 layer_names = ', '.join([f'"{layer.name}"' for layer in interfering_locked_layers])
@@ -362,25 +394,38 @@ class ImageStack(QObject):
             show_error_dialog(None, ERROR_TITLE_RESIZE_FAILED, error_message)
             return
 
-        @self._with_batch_content_update
-        def _resize(bounds=canvas_image_bounds, translate=transform):
-            self.size = bounds.size()
-            self.selection_layer.set_transform(self.selection_layer.transform * translate)
-            mapped_bounds = self.selection_layer.map_rect_from_image(bounds)
-            self.selection_layer.adjust_local_bounds(mapped_bounds, False)
-            for layer in self.image_layers:
-                with layer.with_alpha_lock_disabled() and layer.with_lock_disabled():
-                    layer.set_transform(layer.transform * translate)
-                    mapped_bounds = layer.map_rect_from_image(bounds)
-                    layer.adjust_local_bounds(mapped_bounds, False)
+        with UndoStack().combining_actions('ImageStack.resize_canvas'):
+            if len(affected_text_layers) > 0:
+                text_layer_names = [layer.name for layer in affected_text_layers]
+                if not TextLayer.confirm_or_cancel_render_to_image(text_layer_names, ACTION_NAME_RESIZE_IMAGE_CANVAS):
+                    return
+                for text_layer in affected_text_layers:
+                    self.replace_text_layer_with_image(text_layer)
 
-        @self._with_batch_content_update
-        def _undo_resize(size=last_size, sel_state=selection_state, stack_state=layer_state):
-            self.size = size
-            self._layer_stack.restore_state(stack_state)
-            self._selection_layer.restore_state(sel_state)
+            layer_state = self._layer_stack.save_state()
 
-        UndoStack().commit_action(_resize, _undo_resize, 'ImageStack.resize_canvas')
+            @self._with_batch_content_update
+            def _resize(bounds=canvas_image_bounds, translate=transform):
+                self.size = bounds.size()
+                self.selection_layer.set_transform(self.selection_layer.transform * translate)
+                mapped_bounds = self.selection_layer.map_rect_from_image(bounds)
+                self.selection_layer.adjust_local_bounds(mapped_bounds, False)
+                for layer in self.image_layers:
+                    with layer.with_alpha_lock_disabled(), layer.with_lock_disabled():
+                        layer.set_transform(layer.transform * translate)
+                        mapped_bounds = layer.map_rect_from_image(bounds)
+                        layer.adjust_local_bounds(mapped_bounds, False)
+                for layer in self.text_layers:
+                    with layer.with_lock_disabled():
+                        layer.set_transform(layer.transform * translate)
+
+            @self._with_batch_content_update
+            def _undo_resize(size=last_size, sel_state=selection_state, stack_state=layer_state):
+                self.size = size
+                self._layer_stack.restore_state(stack_state)
+                self._selection_layer.restore_state(sel_state)
+
+            UndoStack().commit_action(_resize, _undo_resize, 'ImageStack.resize_canvas')
 
     def qimage(self, crop_to_image: bool = True) -> QImage:
         """Returns combined visible layer content as a QImage object, optionally including unsaved layers."""
@@ -404,6 +449,16 @@ class ImageStack(QObject):
         """Resizes the image to match image content."""
         full_bounds = self.merged_layer_bounds
         self.resize_canvas(full_bounds.size(), -full_bounds.x(), -full_bounds.y())
+
+    def crop_image_to_selection(self) -> None:
+        """Crop the image to match the bounds of selected content."""
+        np_selection = self._selection_layer.image_bits_readonly
+        selection_pos = self._selection_layer.position
+        selection_bounds = image_content_bounds(np_selection).translated(selection_pos.x(), selection_pos.y())
+        if selection_bounds.isEmpty():
+            show_error_dialog(None, ERROR_TITLE_CROP_FAILED, ERROR_MESSAGE_CROP_FAILED_NO_SELECTION)
+            return
+        self.resize_canvas(selection_bounds.size(), -selection_bounds.x(), -selection_bounds.y())
 
     def render(self, base_image: Optional[QImage] = None,
                paint_param_adjuster: Optional[RenderAdjustFn] = None) -> QImage:
@@ -598,10 +653,10 @@ class ImageStack(QObject):
             layer: Layer | None, default=None
                 The layer object to copy, or its id. If None, the active layer will be used.
         """
-        if layer == self._layer_stack:
-            return
         if layer is None:
             layer = self.active_layer
+        if layer == self._layer_stack:
+            return
         assert layer.layer_parent is not None and layer.layer_parent.contains(layer)
         layer_parent = cast(LayerStack, layer.layer_parent)
         layer_parent, layer_index = self._get_new_layer_placement(layer_parent)
@@ -628,6 +683,7 @@ class ImageStack(QObject):
         if layer is None:
             layer = self.active_layer
         if layer.locked or layer.parent_locked:
+            show_error_dialog(None, ERROR_TITLE_LOCKED_LAYER, ERROR_MESSAGE_LOCKED_LAYER)
             return
         assert layer.layer_parent is not None and layer.layer_parent.contains(layer)
         layer_parent = cast(LayerStack, layer.layer_parent)
@@ -649,13 +705,14 @@ class ImageStack(QObject):
 
         def _replace(to_remove: Layer, to_insert: Layer) -> None:
             assert self._layer_stack.contains_recursive(to_remove), (f'removed layer {to_remove.name} was not in the'
-                                                                     f' layer stack.')
+                                                                     f' layer stack. (layer: {to_remove})')
             assert to_insert.layer_parent is None and not self._layer_stack.contains_recursive(to_insert)
             layer_parent = to_remove.layer_parent
             assert isinstance(layer_parent, LayerStack)
             layer_index = layer_parent.get_layer_index(to_remove)
             assert layer_index is not None
             self._insert_layer_internal(to_insert, layer_parent, layer_index)
+            assert self._layer_stack.contains_recursive(to_insert)
             if self.active_layer == to_remove or (isinstance(to_remove, LayerStack) and
                                                   to_remove.contains_recursive(self.active_layer)):
                 self._set_active_layer_internal(to_insert)
@@ -699,6 +756,7 @@ class ImageStack(QObject):
     def move_layer(self, layer: Layer, new_parent: LayerStack, new_index: int) -> None:
         """Moves a layer to a specific index under a parent group."""
         if new_parent.locked or new_parent.parent_locked or layer.parent_locked:
+            show_error_dialog(None, ERROR_TITLE_LOCKED_LAYER, ERROR_MESSAGE_LOCKED_LAYER)
             return
         assert self._layer_stack.contains_recursive(layer)
         assert self._layer_stack == new_parent or self._layer_stack.contains_recursive(new_parent)
@@ -795,6 +853,7 @@ class ImageStack(QObject):
         if layer is None:
             layer = self.active_layer
         if layer == self._layer_stack or layer.locked or layer.parent_locked:
+            show_error_dialog(None, ERROR_TITLE_LOCKED_LAYER, ERROR_MESSAGE_LOCKED_LAYER)
             return
         parent = layer.layer_parent
         assert isinstance(parent, LayerStack)
@@ -889,6 +948,7 @@ class ImageStack(QObject):
         if layer is None:
             layer = self.active_layer
         if layer == self._layer_stack or layer.locked or layer.parent_locked:
+            show_error_dialog(None, ERROR_TITLE_LOCKED_LAYER, ERROR_MESSAGE_LOCKED_LAYER)
             return
         assert layer.layer_parent is not None \
                and layer.layer_parent.contains(layer), f'invalid layer: {layer.name}:{layer.id}'
@@ -901,7 +961,9 @@ class ImageStack(QObject):
         if layer_index == layer_parent.count - 1:
             return
         base_layer = layer_parent.get_layer_by_index(layer_index + 1)
-        if not isinstance(base_layer, TransformLayer) or base_layer.locked or not base_layer.visible:
+        if not isinstance(base_layer, TransformLayer) or base_layer.locked or base_layer.parent_locked \
+                or not base_layer.visible:
+            show_error_dialog(None, ERROR_TITLE_LOCKED_LAYER, ERROR_MESSAGE_LOCKED_LAYER)
             return
         base_layer = cast(TransformLayer, base_layer)
 
@@ -1008,6 +1070,7 @@ class ImageStack(QObject):
             layer_image_bounds = layer.transformed_bounds
             image_bounds = self.bounds
             if layer_image_bounds == image_bounds or layer.locked or layer.parent_locked:
+                show_error_dialog(None, ERROR_TITLE_LOCKED_LAYER, ERROR_MESSAGE_LOCKED_LAYER)
                 return
             base_state = layer.save_state()
             layer_image, offset_transform = layer.transformed_image()
@@ -1110,7 +1173,8 @@ class ImageStack(QObject):
         """Replaces all masked image content in a layer with transparency."""
         if layer is None:
             layer = self.active_layer
-        if layer.locked:
+        if layer.locked or layer.parent_locked:
+            show_error_dialog(None, ERROR_TITLE_LOCKED_LAYER, ERROR_MESSAGE_LOCKED_LAYER)
             return
         transformed_mask = self.get_layer_mask(layer)
         if isinstance(layer, TextLayer):
@@ -1138,6 +1202,74 @@ class ImageStack(QObject):
         """Replaces all masked image content in a layer with transparency, saving it in the copy buffer."""
         self.clear_selected(layer, True)
 
+    def crop_layer_to_selection(self, layer: Optional[Layer] = None) -> None:
+        """Crop a layer to perfectly fit selected content within that layer."""
+        if layer is None:
+            layer = self.active_layer
+        if layer.locked or layer.parent_locked:
+            show_error_dialog(None, ERROR_TITLE_LOCKED_LAYER, ERROR_MESSAGE_LOCKED_LAYER)
+            return
+        if isinstance(layer, LayerStack):
+            all_layers = layer.recursive_child_layers
+        else:
+            all_layers = [layer]
+        text_layers = [crop_layer for crop_layer in all_layers if isinstance(crop_layer, TextLayer)]
+        if len(text_layers) > 0:
+            text_layer_names = [text_layer.name for text_layer in text_layers]
+            if not TextLayer.confirm_or_cancel_render_to_image(text_layer_names,
+                                                               ACTION_NAME_CROP_LAYER_TO_SELECTION):
+                return
+        with UndoStack().combining_actions('ImageStack.crop_layer_to_selection'):
+            no_overlap_count = 0
+            no_content_cropped_count = 0
+            crop_success_count = 0
+            to_delete = []
+            deleted_layer_names = []
+            if len(text_layers) > 0:
+                replacements: Dict[int, Layer] = {}
+                for i, updated_layer in enumerate(all_layers):
+                    if isinstance(updated_layer, TextLayer):
+                        replacements[i] = self.replace_text_layer_with_image(updated_layer)
+                for i, image_layer in replacements.items():
+                    all_layers[i] = image_layer
+            for cropped_layer in all_layers:
+                if not isinstance(cropped_layer, ImageLayer):
+                    assert isinstance(cropped_layer, LayerStack)
+                    continue
+                layer_mask = self.get_layer_mask(cropped_layer)
+                content_bounds = image_content_bounds(layer_mask)
+                layer_bounds = cropped_layer.bounds
+                if content_bounds == layer_bounds:
+                    no_content_cropped_count += 1
+                    continue
+                if content_bounds.isEmpty():
+                    if len(all_layers) > 1:
+                        to_delete.append(cropped_layer)
+                    else:
+                        no_overlap_count += 1
+                    continue
+                cropped_layer.crop_to_bounds(content_bounds, False)
+                crop_success_count += 1
+            for deleted_layer in to_delete:
+                deleted_layer_names.append(deleted_layer.name)
+                self.remove_layer(deleted_layer)
+                crop_success_count += 1
+            if crop_success_count == 0:
+                if no_overlap_count > 0 and no_content_cropped_count > 0:
+                    show_error_dialog(None, ERROR_TITLE_CROP_FAILED, ERROR_MESSAGE_CROP_FAILED_MULTI)
+                elif no_overlap_count > 0:
+                    show_error_dialog(None, ERROR_TITLE_CROP_FAILED, ERROR_MESSAGE_CROP_FAILED_NO_OVERLAP)
+                else:
+                    assert no_content_cropped_count > 0
+                    show_error_dialog(None, ERROR_TITLE_CROP_FAILED,ERROR_MESSAGE_CROP_FAILED_FULLY_CONTAINED)
+                if not layer_bounds.intersects(content_bounds):
+                    return
+            if len(deleted_layer_names) > 0:
+                warning_message = WARNING_MESSAGE_CROP_DELETED_LAYERS.format(
+                    layer_names=' '.join((f'<li>{name}</li>' for name in deleted_layer_names)))
+                show_warning_dialog(None,WARNING_TITLE_CROP_DELETED_LAYERS, warning_message,
+                                    AppConfig.WARN_WHEN_CROP_DELETES_LAYERS)
+
     def paste(self) -> None:
         """If the copy buffer contains image data, paste it into a new layer."""
         if self._copy_buffer is not None:
@@ -1164,7 +1296,8 @@ class ImageStack(QObject):
         """
         if layer is None:
             layer = self.active_layer
-        if layer.locked:
+        if layer.locked or layer.parent_locked:
+            show_error_dialog(None, ERROR_TITLE_LOCKED_LAYER, ERROR_MESSAGE_LOCKED_LAYER)
             return
         scale = QTransform.fromScale(self._generation_area.width() / image_data.width(),
                                      self._generation_area.height() / image_data.height())

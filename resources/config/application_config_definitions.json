@@ -460,6 +460,14 @@
         "default": "always_ask",
         "saved": true
     },
+    "warn_when_crop_deletes_layers": {
+        "label": "Warn when cropping deletes layers:",
+        "category": "Alerts",
+        "description": "Warn when cropping the image or a layer group deletes one or more layers.",
+        "type": "bool",
+        "default": true,
+        "saved": true
+    },
     "added_font_dir": {
         "label": "Added font directory:",
         "category": "Files",

@@ -55,7 +55,7 @@ class FillTool(BaseTool):
         self._layer = image_stack.active_layer
         self._layer.lock_changed.connect(self._layer_lock_change_slot)
         image_stack.active_layer_changed.connect(self._active_layer_change_slot)
-        self._layer_lock_change_slot(self._layer, self._layer.locked)
+        self._layer_lock_change_slot(self._layer, self._layer.locked or self._layer.parent_locked)
 
     def get_input_hint(self) -> str:
         """Return text describing different input functionality."""
@@ -76,7 +76,7 @@ class FillTool(BaseTool):
         assert event is not None
         if event.buttons() == Qt.MouseButton.LeftButton:
             layer = self._layer
-            if not isinstance(layer, ImageLayer) or layer.locked:
+            if not isinstance(layer, ImageLayer) or layer.locked or layer.parent_locked:
                 return False
             layer_point = layer.map_from_image(image_coordinates)
             if not layer.bounds.contains(layer_point):
@@ -128,11 +128,12 @@ class FillTool(BaseTool):
             self._layer.lock_changed.disconnect(self._layer_lock_change_slot)
             active_layer.lock_changed.connect(self._layer_lock_change_slot)
             self._layer = active_layer
-            self._layer_lock_change_slot(self._layer, self._layer.locked)
+            self._layer_lock_change_slot(self._layer, self._layer.locked or self._layer.parent_locked)
 
     def _layer_lock_change_slot(self, layer: Layer, locked: bool) -> None:
+        assert layer == self._layer or layer.contains_recursive(self._layer)
         if self._control_panel is not None:
-            self._control_panel.setEnabled(isinstance(layer, ImageLayer) and not locked)
+            self._control_panel.setEnabled(isinstance(self._layer, ImageLayer) and not locked)
 
     def _update_color(self, color_str: str) -> None:
         self._color = QColor(color_str)

@@ -1,6 +1,6 @@
 """Shows image layers, and allows the user to manipulate them."""
 import logging
-from typing import Optional, List, Callable, Any, Tuple
+from typing import Optional, List, Callable, Any
 
 from PySide6.QtCore import Qt, QSize, QPointF, QTimer
 from PySide6.QtGui import QIcon
@@ -211,7 +211,7 @@ class LayerPanel(QWidget):
             self._scroll_timer.stop()
 
     def resizeEvent(self, event):
-        """Keep at least one layer visible, block horizontal scrolling.."""
+        """Keep at least one layer visible, block horizontal scrolling."""
         self._scroll_area.setMinimumHeight(self._parent_group_item.layer_item.sizeHint().height() + LIST_SPACING)
         min_scroll_width = self._parent_group_item.sizeHint().width()
         vertical_scrollbar = self._scroll_area.verticalScrollBar()
@@ -332,7 +332,7 @@ class LayerPanel(QWidget):
         self._open_parent_groups(new_layer)
 
     def _lock_change_slot(self, layer: Layer, is_locked: bool) -> None:
-        assert layer == self._image_stack.active_layer or layer.contains(self._image_stack.active_layer)
+        assert layer == self._image_stack.active_layer or layer.contains_recursive(self._image_stack.active_layer)
         for widget in (self._opacity_spinbox,
                        self._opacity_slider,
                        self._mode_box,

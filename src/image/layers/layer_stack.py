@@ -98,7 +98,7 @@ class LayerStack(Layer, LayerParent):
         assert image_mask.size() == self.bounds.size(), 'Mask should be pre-converted to layer group size'
         with UndoStack().combining_actions('image.layers.layer_stack.cut_masked'):
             for layer in self.recursive_child_layers:
-                if isinstance(layer, LayerStack) or layer.locked:
+                if isinstance(layer, LayerStack) or layer.locked or layer.parent_locked:
                     continue
                 layer_mask = create_transparent_image(layer.size)
                 painter = QPainter(layer_mask)
@@ -113,14 +113,14 @@ class LayerStack(Layer, LayerParent):
                 painter.end()
                 layer.cut_masked(layer_mask)
 
-    def crop_to_content(self):
+    def crop_to_content(self) -> None:
         """Crops the layer to remove transparent areas."""
         with UndoStack().combining_actions('image.layers.layer_stack.crop_to_content'):
             for layer in self.recursive_child_layers:
-                if isinstance(layer, (LayerStack, TextLayer)) or layer.locked:
+                if isinstance(layer, (LayerStack, TextLayer)) or layer.locked or layer.parent_locked:
                     continue
                 assert isinstance(layer, (ImageLayer, LayerStack))
-                layer.crop_to_content(False)
+                layer.crop_to_content()
 
     def get_qimage(self) -> QImage:
         """Returns combined visible layer content as a QImage object."""
@@ -395,6 +395,23 @@ class LayerStack(Layer, LayerParent):
             if not layer.is_empty(layer_bounds):
                 return False
         return True
+
+    def set_locked(self, locked: bool) -> None:
+        """Locks or unlocks the layer."""
+        if locked != self.locked:
+            super().set_locked(locked)
+            self.propagate_parent_lock_signal(self)
+
+    def propagate_parent_lock_signal(self, source: Layer) -> None:
+        """Pass on the lock signal from a parent layer through all child layers as appropriate."""
+        assert source == self or source.contains_recursive(self)
+        if not source.locked and self.locked:
+            return
+        for layer in self._layers:
+            if source.locked or not layer.locked:
+                layer.lock_changed.emit(source, source.locked)
+            if isinstance(layer, LayerStack):
+                layer.propagate_parent_lock_signal(source)
 
     def _layer_content_change_slot(self, layer: Layer, _=None) -> None:
         if layer.visible and layer in self._layers:

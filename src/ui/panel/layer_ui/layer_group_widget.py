@@ -284,6 +284,6 @@ class LayerGroupWidget(BorderedWidget):
                 widget.reorder_child_layers()
 
     def _update_layer_lock_slot(self, layer: Layer, locked: bool) -> None:
-        assert layer == self._layer or layer.contains(self._layer)
+        assert layer == self._layer or layer.contains_recursive(self._layer)
         if locked and self.is_expanded():
             self.set_expanded(False)

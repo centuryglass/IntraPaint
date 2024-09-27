@@ -100,3 +100,6 @@ class TestGenerator(ImageGenerator):
         self._cache_generated_image(recolored_image, 3)
         sharpened_image = SharpenFilter.sharpen(source_image, 5.0)
         self._cache_generated_image(sharpened_image, 4)
+
+    def disconnect_or_disable(self) -> None:
+        """No-op (there's nothing to disconnect/disable)."""

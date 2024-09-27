@@ -164,7 +164,8 @@ class ShapeTool(BaseTool):
 
     def _on_activate(self, restoring_after_delegation=False) -> None:
         if self._control_panel is not None:
-            self._control_panel.setEnabled(self._layer is not None and not self._layer.locked)
+            self._control_panel.setEnabled(self._layer is not None and not self._layer.locked
+                                           and not self._layer.parent_locked)
 
     def _on_deactivate(self) -> None:
         if self._selection_handler.selecting:
@@ -263,11 +264,10 @@ class ShapeTool(BaseTool):
             active_layer.lock_changed.connect(self._layer_lock_slot)
 
     def _layer_lock_slot(self, layer: Layer, locked: bool) -> None:
-        if layer != self._layer:
-            layer.lock_changed.disconnect(self._layer_lock_slot)
-            return
+        assert self._layer is not None
+        assert layer == self._layer or layer.contains_recursive(self._layer)
         if self.is_active and self._control_panel is not None:
-            self._control_panel.setEnabled(not locked)
+            self._control_panel.setEnabled(not locked and isinstance(self._layer, ImageLayer))
         if locked and self._selection_handler.selecting:
             self._selection_handler.end_selection(QPoint())
             self._dragging = False

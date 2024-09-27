@@ -245,7 +245,7 @@ class Layer(QObject):
             while parent is not None:
                 assert isinstance(parent, Layer)
                 if not parent._visible:
-                    if parent.locked:
+                    if parent.locked or parent.parent_locked:
                         error_message = ERROR_MESSAGE_LOCKED_PARENT.format(layer_name=self.name,
                                                                            parent_name=parent.name)
                         show_error_dialog(None, ERROR_TITLE_SHOW_LAYER_FAILED, error_message)
@@ -400,6 +400,10 @@ class Layer(QObject):
 
     def contains(self, child_layer: 'Layer') -> bool:
         """Returns whether this layer contains a given child layer."""
+        return False
+
+    def contains_recursive(self, child_layer: 'Layer') -> bool:
+        """Returns whether this layer recursively contains a given child layer."""
         return False
 
     # Misc. utility:

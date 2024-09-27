@@ -49,6 +49,7 @@ MENU_OPTION_CLEAR_SELECTED = _tr('Clear selected')
 MENU_OPTION_COPY_SELECTED = _tr('Copy selected to new layer')
 MENU_OPTION_LAYER_TO_IMAGE_SIZE = _tr('Layer to image size')
 MENU_OPTION_CROP_TO_CONTENT = _tr('Crop layer to content')
+MENU_OPTION_CROP_TO_SELECTION = _tr('Crop layer to selection')
 MENU_OPTION_MIRROR_VERTICAL = _tr('Mirror vertically')
 MENU_OPTION_MIRROR_HORIZONTAL = _tr('Mirror horizontally')
 MENU_OPTION_SELECT_CONTENT = _tr('Select layer contents')
@@ -370,6 +371,7 @@ class LayerWidget(BorderedWidget):
 
         if isinstance(self._layer, ImageLayer):
             _add_action(MENU_OPTION_CROP_TO_CONTENT, self._layer.crop_to_content, True)
+        _add_action(MENU_OPTION_CROP_TO_SELECTION, lambda: self._image_stack.crop_layer_to_selection(self._layer), True)
 
         if isinstance(self._layer, TransformLayer):
             _add_action(MENU_OPTION_MIRROR_HORIZONTAL, self._layer.flip_horizontal, True)

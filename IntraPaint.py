@@ -11,7 +11,7 @@ import traceback
 
 from PySide6.QtCore import QTranslator, QObject, QEvent
 from PySide6.QtGui import QPixmap
-from PySide6.QtWidgets import QApplication, QSplashScreen, QWidget, QDialog, QLabel
+from PySide6.QtWidgets import QApplication, QSplashScreen, QWidget, QDialog, QLabel, QMenu
 
 from src.ui.modal.image_filter_modal import ImageFilterModal
 from src.ui.modal.image_scale_modal import ImageScaleModal
@@ -107,13 +107,13 @@ if args.dev:
             if not isinstance(obj, QWidget) or isinstance(obj, (QSplashScreen, QDialog, MainWindow, ImageWindow,
                                                                 ExtraNetworkWindow, GeneratorSetupWindow, LayerPanel,
                                                                 PromptStyleWindow, ImageFilterModal, ImageScaleModal,
-                                                                LoginModal, NewImageModal, ResizeCanvasModal,
+                                                                LoginModal, NewImageModal, ResizeCanvasModal, QMenu,
                                                                 SettingsModal)):
                 return False
             # noinspection SpellCheckingInspection
             if isinstance(obj, QLabel) and obj.objectName() == 'qtooltip_label':
                 return False
-            if event.type() == QEvent.Type.Show and obj.isTopLevel():
+            if event.type() == QEvent.Type.Show and obj.parentWidget() is None:
                 print(f'unexpected window: {obj} at {obj.geometry()}')
                 traceback.print_stack()
                 sys.exit(1)

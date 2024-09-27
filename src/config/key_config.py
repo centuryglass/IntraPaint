@@ -198,6 +198,8 @@ class KeyConfig(Config, metaclass=Singleton):
     COLOR_BALANCE_SHORTCUT: str
     COPY_LAYER_SHORTCUT: str
     COPY_SHORTCUT: str
+    CROP_IMAGE_SHORTCUT: str
+    CROP_LAYER_TO_SELECTION_SHORTCUT: str
     CROP_TO_CONTENT_SHORTCUT: str
     CUT_SHORTCUT: str
     DELETE_LAYER_SHORTCUT: str

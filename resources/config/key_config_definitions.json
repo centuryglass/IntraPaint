@@ -539,6 +539,15 @@
         "default": "F3",
         "saved": true
     },
+    "crop_image_shortcut": {
+        "label": "Crop image to selection",
+        "category": "Menu Shortcuts",
+        "subcategory": "Image Menu",
+        "description": "Crop the image to fit the current selected area.",
+        "type": "string",
+        "default": "Ctrl+Alt+C",
+        "saved": true
+    },
     "image_to_layers_shortcut": {
         "label": "Resize image to content",
         "category": "Menu Shortcuts",
@@ -726,6 +735,15 @@
         "description": "Expand or crop the active layer to match the image bounds.",
         "type": "string",
         "default": "Ctrl+Shift+I",
+        "saved": true
+    },
+    "crop_layer_to_selection_shortcut": {
+        "label": "Crop layer to selection",
+        "category": "Menu Shortcuts",
+        "subcategory": "Layer Menu",
+        "description": "Crop the layer to fit the current selected area.",
+        "type": "string",
+        "default": "Ctrl+Shift+E",
         "saved": true
     },
     "crop_to_content_shortcut": {

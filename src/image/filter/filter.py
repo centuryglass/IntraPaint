@@ -250,13 +250,13 @@ class ImageFilter:
             active_layer = self._image_stack.active_layer
             if isinstance(active_layer, LayerStack):
                 changed_parent_group = active_layer
-            elif isinstance(active_layer, TextLayer) and not active_layer.locked:
+            elif isinstance(active_layer, TextLayer) and not active_layer.locked and not active_layer.parent_locked:
                 changed_text_layers.append(active_layer)
         else:
             changed_parent_group = self._image_stack.layer_stack
         if changed_parent_group is not None:
             for child_layer in changed_parent_group.recursive_child_layers:
-                if isinstance(child_layer, TextLayer) and not child_layer.locked:
+                if isinstance(child_layer, TextLayer) and not child_layer.locked and not child_layer.parent_locked:
                     changed_text_layers.append(child_layer)
 
         text_layer_names = [layer.name for layer in changed_text_layers]

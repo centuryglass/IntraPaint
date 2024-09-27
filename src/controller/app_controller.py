@@ -449,8 +449,9 @@ class AppController(MenuBuilder):
                     if self._glid_generator.is_available():
                         self.load_image_generator(self._glid_generator)
                         return
-                logger.info('No valid generator detected, starting with null generator enabled.')
-                self.load_image_generator(self._null_generator)
+                else:
+                    logger.info('No valid generator detected, starting with null generator enabled.')
+                    self.load_image_generator(self._null_generator)
 
         # Restore previous active tool, save future active tool changes
         last_active_tool_name = cache.get(Cache.LAST_ACTIVE_TOOL)
@@ -594,7 +595,9 @@ class AppController(MenuBuilder):
             self.copy,
             self.clear,
             self.grow_selection,
-            self.shrink_selection
+            self.shrink_selection,
+            self.crop_image_to_selection,
+            self.crop_layer_to_selection
         }
         unlocked_layer_methods: Set[Callable[..., None]] = {
             self.cut,
@@ -607,7 +610,8 @@ class AppController(MenuBuilder):
             self.merge_layer_down,
             self.flatten_layer,
             self.layer_to_image_size,
-            self.crop_layer_to_content
+            self.crop_layer_to_content,
+            self.crop_layer_to_selection
 
         }
         not_bottom_layer_methods: Set[Callable[..., None]] = {
@@ -624,7 +628,8 @@ class AppController(MenuBuilder):
             self.move_layer_up,
             self.move_layer_down,
             self.move_layer_to_top,
-            self.flatten_layer
+            self.flatten_layer,
+            self.copy_layer
         }
         not_flat_methods: Set[Callable[..., None]] = {self.flatten_layer}
         not_layer_group_methods: Set[Callable[..., None]] = {self.merge_layer_down}
@@ -647,7 +652,8 @@ class AppController(MenuBuilder):
                 continue
             action.setEnabled(True)
             for method_set, disable_condition in ((selection_methods, selection_is_empty),
-                                                  (unlocked_layer_methods, active_layer.locked),
+                                                  (unlocked_layer_methods, active_layer.locked
+                                                                           or active_layer.parent_locked),
                                                   (not_bottom_layer_methods, is_bottom_layer),
                                                   (not_top_layer_methods, is_top_layer),
                                                   (not_layer_stack_methods,
@@ -1060,7 +1066,12 @@ class AppController(MenuBuilder):
                     return
             self._scale(new_size)
 
-    @menu_action(MENU_IMAGE, 'image_to_layers_shortcut', 202, valid_app_states=[APP_STATE_EDITING])
+    @menu_action(MENU_IMAGE, 'crop_image_shortcut', 202, valid_app_states=[APP_STATE_EDITING])
+    def crop_image_to_selection(self) -> None:
+        """Crop the image to fit selected content."""
+        self._image_stack.crop_image_to_selection()
+
+    @menu_action(MENU_IMAGE, 'image_to_layers_shortcut', 203, valid_app_states=[APP_STATE_EDITING])
     def resize_image_to_content(self) -> None:
         """Update the image size to match all layer content."""
         self._image_stack.resize_to_content()
@@ -1086,7 +1097,7 @@ class AppController(MenuBuilder):
             return False
         return self._metadata is not None and self._updated_metadata_params() == self._metadata[METADATA_PARAMETER_KEY]
 
-    @menu_action(MENU_IMAGE, 'update_metadata_shortcut', 203,
+    @menu_action(MENU_IMAGE, 'update_metadata_shortcut', 204,
                  valid_app_states=[APP_STATE_EDITING, APP_STATE_SELECTION])
     def update_metadata(self, show_messagebox: bool = True) -> None:
         """
@@ -1113,7 +1124,7 @@ class AppController(MenuBuilder):
             message_box.setStandardButtons(QMessageBox.StandardButton.Ok)
             message_box.exec()
 
-    @menu_action(MENU_IMAGE, 'generate_shortcut', 204, valid_app_states=[APP_STATE_EDITING])
+    @menu_action(MENU_IMAGE, 'generate_shortcut', 205, valid_app_states=[APP_STATE_EDITING])
     def start_and_manage_inpainting(self) -> None:
         """Start inpainting/image editing based on the current state of the UI."""
         if AppStateTracker.app_state() != APP_STATE_EDITING:
@@ -1264,7 +1275,12 @@ class AppController(MenuBuilder):
         """Crop or expand the active layer to match the image size."""
         self._image_stack.layer_to_image_size()
 
-    @menu_action(MENU_LAYERS, 'crop_to_content_shortcut', 446,
+    @menu_action(MENU_LAYERS, 'crop_layer_to_selection_shortcut', 446, valid_app_states=[APP_STATE_EDITING])
+    def crop_layer_to_selection(self) -> None:
+        """Crop the active layer to fit overlapping selection bounds."""
+        self._image_stack.crop_layer_to_selection()
+
+    @menu_action(MENU_LAYERS, 'crop_to_content_shortcut', 447,
                  valid_app_states=[APP_STATE_EDITING])
     def crop_layer_to_content(self) -> None:
         """Crop the active layer to remove fully transparent border pixels."""

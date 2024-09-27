@@ -98,7 +98,7 @@ class LayerBrush:
 
     def start_stroke(self) -> None:
         """Signals the start of a brush stroke, to be called once whenever user input starts or resumes."""
-        if self._layer is None or not self._layer.visible or self._layer.locked:
+        if self._layer is None or not self._layer.visible or self._layer.locked or self._layer.parent_locked:
             return
         if self._drawing:
             self.end_stroke()
@@ -112,7 +112,7 @@ class LayerBrush:
             error_message = ERROR_MESSAGE_LAYER_NONE
         elif not self._layer.visible:
             error_message = ERROR_MESSAGE_LAYER_HIDDEN
-        elif self._layer.locked:
+        elif self._layer.locked or self._layer.parent_locked:
             error_message = ERROR_MESSAGE_LAYER_LOCKED
         elif self._mask is not None:
             if image_is_fully_transparent(self._mask):

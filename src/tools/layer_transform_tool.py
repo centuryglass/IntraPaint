@@ -219,7 +219,8 @@ class LayerTransformTool(BaseTool):
             self._transform_outline.setVisible(layer.visible and not layer.size.isEmpty())
             self._control_panel.set_preview_transform(self._initial_transform)
             self._transform_outline.setTransform(self._initial_transform)
-        self._control_panel.setEnabled(layer is not None and not layer.locked and not self._layer.size.isEmpty())
+        self._control_panel.setEnabled(layer is not None and not layer.locked and not layer.parent_locked
+                                       and not self._layer.size.isEmpty())
         self._update_all_controls()
 
     def _on_activate(self, restoring_after_delegation=False) -> None:
@@ -235,7 +236,9 @@ class LayerTransformTool(BaseTool):
     def _active_layer_change_slot(self, active_layer: Layer) -> None:
         self.set_layer(active_layer)
 
-    def _layer_lock_change_slot(self, _unused_layer: Layer, locked: bool) -> None:
+    def _layer_lock_change_slot(self, layer: Layer, locked: bool) -> None:
+        assert self._layer is not None
+        assert layer == self._layer or layer.contains_recursive(self._layer)
         if self._control_panel is not None:
             self._control_panel.setEnabled(not locked)
 

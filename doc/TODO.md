@@ -5,6 +5,9 @@
 - Basic workflow tutorials (< 1 day)
 - Final timelapse video (< 5 days)
 
+## More bugs + testing:
+- Double-check lock and parent group lock properly block changes
+
 ## Timelapse video: using latest interface
 Scripted to make use of every tool, in-video text explaining what I'm doing
 

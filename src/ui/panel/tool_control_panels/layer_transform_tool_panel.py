@@ -64,7 +64,8 @@ class LayerTransformToolPanel(ReactiveLayoutWidget):
         image_stack.size_changed.connect(self._preview.set_image_size)
 
         def _key_predicate() -> bool:
-            return self.isVisible() and self.isEnabled() and not image_stack.active_layer.locked
+            return (self.isVisible() and self.isEnabled() and not image_stack.active_layer.locked
+                    and not image_stack.active_layer.parent_locked)
 
         def _init_control(default_val: float | int, min_val: float | int, max_val: float | int, signal: Signal,
                           text: str, down_key: Optional[str] = None, up_key: Optional[str] = None):

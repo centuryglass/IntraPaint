@@ -166,7 +166,7 @@ class BrushTool(BaseTool):
         self._layer = layer
         if layer is not None:
             layer.lock_changed.connect(self._layer_lock_slot)
-            self._layer_lock_slot(layer, layer.locked)
+            self._layer_lock_slot(layer, layer.locked or layer.parent_locked)
             if layer != self._image_stack.selection_layer and Cache().get(Cache.PAINT_SELECTION_ONLY):
                 mask = self._image_stack.get_layer_mask(layer)
                 self._brush.set_input_mask(mask)
@@ -181,7 +181,7 @@ class BrushTool(BaseTool):
         control_panel = self.get_control_panel()
         if control_panel is not None:
             control_panel.setEnabled(layer is not None and isinstance(layer, ImageLayer) and not layer.locked
-                                     and layer.visible)
+                                     and not layer.parent_locked and layer.visible)
 
     @property
     def brush(self) -> LayerBrush:
@@ -191,7 +191,8 @@ class BrushTool(BaseTool):
     def _layer_lock_slot(self, layer: ImageLayer, locked: bool) -> None:
         if not self.is_active:
             return
-        assert layer == self._layer
+        assert self._layer is not None
+        assert layer == self._layer or layer.contains_recursive(self._layer)
         control_panel = self.get_control_panel()
         if control_panel is not None:
             control_panel.setEnabled(not locked)
