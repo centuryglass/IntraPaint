@@ -1,62 +1,68 @@
 ![IntraPaint_banner.jpg](./resources/IntraPaint_banner.jpg)  
 
-IntraPaint is a free and open source image editor with integrated AI image generation support, for Linux, Windows, and macOS.
+**IntraPaint** is a free and open-source image editor for desktop PCs. It combines standard digital painting
+and image editing tools with advanced AI-based features, including image generation and inpainting. IntraPaint bridges
+the gap between traditional digital editing and AI-driven workflows, combining the precision of manual techniques with
+the efficiency of AI tools for a more seamless creative process. IntraPaint is available for Windows and Linux. macOS
+support is possible with manual setup and compilation.
 
-## Goals:
-- Combine standard image editing and digital painting tools with AI image generation and inpainting tools. Make it
-  easier for established artists to integrate AI into their workflow, and for AI enthusiasts to adopt more traditional
-  image editing tools and gain finer control over the images they create.
+## Getting Started with IntraPaint:
 
-## Features:
+
+|        ![example-1.png](./examples/example-1.png)        |      ![example-2.png](./examples/example-2.png)       | 
+|:--------------------------------------------------------:|:-----------------------------------------------------:| 
+|       *1. Draw and paint with conventional tools*        | *2. Select areas for AI editing and provide a prompt* |
+
+
+| ![example-3.png](./examples/example-3.png) | ![example-4.png](./examples/example-4.png) | 
+|:------------------------------------------:|:------------------------------------------:| 
+|     *3. Choose from generated options*     |     *4. Refine and repeat as needed.*      |
+
+
+## Key Features:
 
 ### AI image generation features:
-- Uses Stable-Diffusion, either running on the same machine or remotely over a network connection, via the --api option
-  in either [Forge WebUI](https://github.com/lllyasviel/stable-diffusion-webui-forge) or the [Automatic1111 WebUI](https://github.com/AUTOMATIC1111/stable-diffusion-webui).
-- All AI features areSupports either completely new image generation (text to image), generating variant images (image to image), or 
-  precise detail editing (inpainting), guided by natural-language descriptive prompts and various configurable
-  parameters.
-- Use ControlNet modules for more advanced AI guidance features (depth mapping, recoloring, pose duplication, etc.)
-- Support for AI upscaling using stable-diffusion + ControlNet or through a bunch of different alternate models.
-- Image interrogation to generate a prompt to describe any image.
+- Integrates with Stable-Diffusion, running locally or remotely (via API) using [Forge WebUI](https://github.com/lllyasviel/stable-diffusion-webui-forge) or [Automatic1111 WebUI](https://github.com/AUTOMATIC1111/stable-diffusion-webui).
+- Supports **text-to-image**, **image-to-image**, and **inpainting**, allowing users to generate new images, refine existing ones, or apply specific edits using natural language prompts.
+- Advanced AI guidance through **ControlNet modules**, enabling features like depth mapping, recoloring, pose replication, and more.
+- **AI upscaling** via Stable-Diffusion + ControlNet or other specialized models.
 
 
-### Standard raster editing features:
-- All AI features are optional, IntraPaint still functions like standard image editing software when AI is disabled.
-- Full-featured layer stack, with support for all the usual features: layer transformations, layer groups, advanced
-  composition and blending modes, etc.
-- Digital painting using the [libmypaint](https://github.com/mypaint/libmypaint) brush engine, full support for drawing
-  tablets.
-- All the usual tools you'd expect: selection, text editing, paint bucket, filters, etc.
+### Traditional Image Editing Tools:
+- Full-featured layer stack with advanced blending modes, layer groups, and transformations.
+- Digital painting capabilities powered by the [libmypaint](https://github.com/mypaint/libmypaint) brush engine, with
+- full support for pressure-sensitive drawing tablets.
+- Standard tools such as selection, text editing, paint bucket, filters, and more are available even when AI features are disabled.
 
-### What can you do with this combination?
-Benefit from partial automation: you draw the parts that you want to draw, let image generation take care of the parts
-that you don't want to do. Quickly explore alternatives.
+### Why Combine AI and Traditional Tools?
+- Automate repetitive tasks: Focus on drawing what matters to you, and let the AI handle the rest.
+- Explore creative alternatives: Quickly iterate on multiple ideas without manually creating each variation.
 
-|                                                                                                                                                   |                                                                                                                                                                                       |                                                                                                                |
-|---------------------------------------------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------|
-| Quickly refine sketches                                                                                                                           | Clean up and color line art                                                                                                                                                           | "Stanford bunny, \[text in image frame below\]"                                                                 |
-|![An extremely rough sketch of a person walking down a road under a sunset on the left, a more detailed AI-refined version on the right.](./examples/sketch_example.jpg)  | ![A black and white stylized drawing of a dense city, animated to transition to a colored version of the same image](examples/color_example.webp)                                     | ![Animation showing a simple drawing alternating between many different styles](./examples/style_example.webp) |
-| "A small figure walking down a road under a massive cloudy sky, billowing clouds, sunset, fiery fields, god rays, sun"                            | "organic sprawling colorful city, ultra dense, gigantic twisted textured detailed realistic climbing vines, pareidolia, stained glass, blue sky, billowing clouds, runes and symbols" | Experiment with alternate styles.                                                                              |
+|                                                                                                                                                                          |                                                                                                                                                                                               |                                                                                                                |
+|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------|
+| Quickly refine sketches                                                                                                                                                  | Clean up and color line art                                                                                                                                                                   | Experiment with different styles.                                                                              |
+| ![An extremely rough sketch of a person walking down a road under a sunset on the left, a more detailed AI-refined version on the right.](./examples/sketch_example.jpg) | ![A black and white stylized drawing of a dense city, animated to transition to a colored version of the same image](examples/color_example.webp)                                             | ![Animation showing a simple drawing alternating between many different styles](./examples/style_example.webp) |
+| Prompt: "A small figure walking down a road under a massive cloudy sky, billowing clouds, sunset, fiery fields, god rays, sun"                                           | Prompt: "organic sprawling colorful city, ultra dense, gigantic twisted textured detailed realistic climbing vines, pareidolia, stained glass, blue sky, billowing clouds, runes and symbols" | Prompt: "Stanford bunny, \[text in image frame above\]"                                                        |
 
-Control image generation visually. No complex prompts needed, scribble in rough art, describe it briefly, and let Stable-Diffusion figure out the details you want from visual cues.
+Control image generation visually by providing rough sketches and brief descriptions, letting Stable-Diffusion handle the rest.
 
 Prompt: "on the left, a red lizard with a yellow hat standing on a green pillar in an orange desert under a blue sky, looking at a silver robot in a cowboy hat on the right "
 
 |                                                                                                                              |                                                                                                                                                                      |                                                                                                                          |
 |------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------|
 | ![Fully AI generated image of a robot and a lizard in a desert. The image is oddly arranged.](./examples/comp_example_1.jpg) | ![A simple human-made digital drawing of the lizard and robot. Details are rough, but the image is much more accurate to the prompt.](./examples/comp_example_2.jpg) | ![An image combining the detail of the first example with the composition of the second.](./examples/comp_example_3.jpg) |
-| AI does okay with details, but struggles with combining them correctly in complex arrangements.                              | A human artist can easily get the composition right, but similar details require lots of time and practice.                                                          | IntraPaint drawing plus AI inpainting gives you the best of both with minimal hassle.                                    |
+| AI-generated image showcasing polished details but with spatial confusion between the lizard and the robot, blending traits and causing visual mixups between subjects.         | A manually drawn scene, offering clear and precise subject placement with no mixups, but lacking the fine detail and polish of the AI-generated version.                                                        | A hybrid approach, combining manual precision with AI enhancements for detailed, coherent subjects and a balanced result  |
 
-Generate images with levels of detail and precision far higher than unguided image generation allows.
+Generate images with greater detail and precision by using guided inpainting to enhance specific areas.
 
-|                                                                            |                                                  |                                                |
-|----------------------------------------------------------------------------|--------------------------------------------------|------------------------------------------------|
-| IMG: Huge empty canvas, partial landscape over tiles                       | GIF: refining details, selecting generated items | GIF: Sweep from low to high detail             |
-| Generate images piece by piece to avoid image generation size restrictions | Use guided inpainting to refine small details    | Final results are dramatically higher quality. |
+|                                                                                                                                                          |                                                                                                                                                                    |                                                                                                                                                  |
+|----------------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------|
+| ![Faded image of a city landscape with incongruous library elements, incomplete, visible within the IntraPaint UI.](./examples/example-modularity-1.png) | ![Close-up detail from the previous image, animated, poor quality distorted buildings become polished and smoothly rendered](./examples/example-modularity-2.webp) | ![Image of the same city with incongruous library elements, now completed, displayed in the IntraPaint UI.](./examples/example-modularity-3.png) |
+| Avoid size restrictions by generating images in segments                                                                            | Refine small details with guided inpainting                                                                                                                  | Final results are dramatically higher quality.                                                                                                   |
 
 
 ### More examples:
-All the images below were created using IntraPaint:
+All images below were created using IntraPaint:
 <table>
     <tr>
         <td colspan="1" rowspan="1">
@@ -118,14 +124,14 @@ All the images below were created using IntraPaint:
 </table>
 
 
-### Setup and install:
+### Installation and Setup:
 
 #### Pre-packaged builds:
-Windows and Linux users (x86_64) can download a pre-packaged version of IntraPaint from the releases page:
-- Windows: https://github.com/centuryglass/IntraPaint/releases/download/v0.2.0-alpha/IntraPaint.exe
-- Linux: https://github.com/centuryglass/IntraPaint/releases/download/v0.2.0-alpha/IntraPaint-linux
+Pre-compiled versions for x86_64 Linux and Windows are available on the [releases page](Pre-compiled versions for x86_64 Linux and Windows are available on the releases page.).
+- Windows: [IntraPaint.exe](https://github.com/centuryglass/IntraPaint/releases/download/v0.2.0-alpha/IntraPaint.exe)
+- Linux: [IntraPaint-linux](https://github.com/centuryglass/IntraPaint/releases/download/v0.2.0-alpha/IntraPaint-linux)
 
-This version requires no setup or installation in order to use non-AI features, just run it directly.
+No installation is required to use non-AI features. Just run the executable directly.
 
 #### Install from GitHub:
 On other systems, you will need to use git and python to install IntraPaint.  Make sure you have git, python 3.9 or
@@ -141,11 +147,11 @@ python IntraPaint.py
 ```
 
 
-#### Stable-Diffusion setup:
-For AI image generation features, you will need to install a Stable-Diffusion client (either [Forge WebUI](https://github.com/lllyasviel/stable-diffusion-webui-forge) or the
-[Automatic1111 WebUI](https://github.com/AUTOMATIC1111/stable-diffusion-webui)), and run it with the `--api` flag.  The easiest way to do this is to install [Stability Matrix](https://github.com/LykosAI/StabilityMatrix).
+#### AI Setup (Stable-Diffusion):
+To use AI features, you'll need a running Stable-Diffusion client (either [Forge WebUI](https://github.com/lllyasviel/stable-diffusion-webui-forge) or the
+[Automatic1111 WebUI](https://github.com/AUTOMATIC1111/stable-diffusion-webui)) with API access enabled.  The simplest method for getting this is through. [Stability Matrix](https://github.com/LykosAI/StabilityMatrix).
 
-1. Install the appropriate version of Stability Matrix for your system:
+1. Download and install Stability Matrix for your system:
    * [Windows 10, 11](https://github.com/LykosAI/StabilityMatrix/releases/latest/download/StabilityMatrix-win-x64.zip)
    * [Linux AppImage](https://github.com/LykosAI/StabilityMatrix/releases/latest/download/StabilityMatrix-linux-x64.zip)
    * [Arch Linux AUR](https://aur.archlinux.org/packages/stabilitymatrix)
@@ -158,20 +164,20 @@ For AI image generation features, you will need to install a Stable-Diffusion cl
 
 ### Guides and tutorials
 
-### IntraPaint-specific:
-- [Tools](./doc/tools.md): A brief overview of IntraPaint's image editing tools.
-- [Stable-Diffusion Controls](./doc/stable-diffusion.md): Descriptions of all Stable-Diffusion controls available in IntraPaint.
+### IntraPaint Documentation:
+- [Tools Overview](./doc/tools.md)
+- [Stable-Diffusion Controls](./doc/stable-diffusion.md)
 
-### Stable-Diffusion, ControlNet:
-I didn't create any of these resources.
+### Related Resources
+These are third-party resources that I've found useful, I did not create or contribute to them.
 
-- [The Ultimate Guide to ControlNet](https://education.civitai.com/civitai-guide-to-controlnet/#what-do-the-models-do): An extremely useful overview of ControlNet's vast capabilities.
+- [The Ultimate Guide to ControlNet](https://education.civitai.com/civitai-guide-to-controlnet/#what-do-the-models-do): An in-depth overview of ControlNet's capabilities.
 - [Stable Diffusion Samplers: A Comprehensive Guide](https://stable-diffusion-art.com/samplers/): Explains what the difference between Euler A/DPM++/UniPC/etc. is, and why you might want to choose any particular option.
 - [Automatic1111 WebUI Features](https://github.com/AUTOMATIC1111/stable-diffusion-webui/wiki/Features): All prompt-related features listed here will work within IntraPaint. 
 
 ### Help and Troubleshooting:
 
-#### Q: Why can't I see the brush tool?
+#### Q: Why isn't the brush tool visible?
 
 On systems other than 64-bit Linux and Windows, the brush tool may not work, because you will need a system-specific
 build of the libmypaint brush engine library.  If pre-packaged libmypaint versions can't be used, IntraPaint will try
@@ -181,7 +187,6 @@ If you need help locating libmypaint files for a particular system, open a GitHu
 #### Q: Where are the ControlNet options?
 
 The ControlNet panel only appears if the WebUI backend has a working ControlNet extension installed with API support.
-Unfortunately, this requires some extra configuration in both Forge and Automatic1111 right now.
 
 *If using WebUI Forge*:  The most recent version of the Forge WebUI (as of 8/30/24) does not have a working ControlNet
 API. Use Git to revert to commit `bfee03d8`, or install the [v0.0.17 release](https://github.com/lllyasviel/stable-diffusion-webui-forge/releases/download/previous/webui_forge_cu121_torch21_f0017.7z).
@@ -189,16 +194,9 @@ API. Use Git to revert to commit `bfee03d8`, or install the [v0.0.17 release](ht
 *If using the Automatic1111 WebUI*: The ControlNet panel only appears after you've installed the sd-webui-controlnet 
 extension.  Installation instructions and links to required ControlNet model files can be found [here](https://github.com/Mikubill/sd-webui-controlnet).
 
-#### Q: How do I use alternate Stable-Diffusion models?
-
-Any Stable-Diffusion model supported by the WebUI will work with IntraPaint.  If you drag and drop a Stable-Diffusion
-model file into the WebUI Stable-Diffusion model directory, you will be able to load it in the IntraPaint settings
-
 ### Alternatives:
-- The [Krita AI Plugin](https://github.com/Acly/krita-ai-diffusion) has almost the same set of goals as this project, and accomplishes them admirably. If you already use [Krita](https://krita-artists.org/) or [ComfyUI](https://github.com/comfyanonymous/ComfyUI), this might be a better fit for you.  This is the only item on this list that I've personally tested.
+- The [Krita AI Plugin](https://github.com/Acly/krita-ai-diffusion) shares many of the same goals as IntraPaint and executes them very well. If you already use [Krita](https://krita-artists.org/) or [ComfyUI](https://github.com/comfyanonymous/ComfyUI), this could be a great option for you.  This is the only item on this list that I've personally tested.
 - Several plugins exist for [GIMP](https://www.gimp.org/) with similar functionality:
   * [Stable-Gimpfusion](https://github.com/ArtBIT/stable-gimpfusion)
   * [gimp-stable-diffusion](https://github.com/blueturtleai/gimp-stable-diffusion)
   * [Stable Boy](https://github.com/thndrbrrr/gimp-stable-boy)
-
-If you know of any other projects with similar goals that you think are worth mentioning, let me know, and I'll add them to the list.

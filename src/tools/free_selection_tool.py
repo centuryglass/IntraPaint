@@ -96,6 +96,7 @@ class FreeSelectionTool(BaseTool):
         layer_pos = layer.transformed_bounds.topLeft()
         bounds = polygon.boundingRect().toAlignedRect()
         bounds.translate(-layer_pos.x(), -layer_pos.y())
+        bounds = bounds.intersected(layer.bounds)
         with layer.borrow_image(bounds) as selection_img:
             painter = QPainter(selection_img)
             if self._clearing:

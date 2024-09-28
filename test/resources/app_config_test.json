@@ -110,6 +110,7 @@
     "warn_on_libmypaint_error": true,
     "always_init_metadata_on_save": "always_ask",
     "always_update_metadata_on_save": "always_ask",
+    "warn_when_crop_deletes_layers": true,
     "added_font_dir": "",
     "added_mypaint_brush_dir": "",
     "libmypaint_library_dir": ""

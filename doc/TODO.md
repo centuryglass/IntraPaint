@@ -4,9 +4,22 @@
 - Finish README cleanup and examples (< 1 day)
 - Basic workflow tutorials (< 1 day)
 - Final timelapse video (< 5 days)
+- Upscale: make new layer, scale up existing layers
 
 ## More bugs + testing:
 - Double-check lock and parent group lock properly block changes
+- Save fails silently on missing extension, a warning should appear
+- shape type dropdown isn't updating
+- color dialog has no effect on shape tool
+- ctrl shouldn't break tools if you're already dragging
+- Blur filter doing some strange things when trying to blur lineart over alpha, other filters not much better
+- partial hardness plus pressure=size is causing dropped strokes (better min. handling needed?)
+- merge into hidden errors say that the base layer is locked, use different messages for locked and hidden
+- fill tool should be blocked on hidden layers
+- add 'sample merged' option to smudge and filter tools
+- smudge tool: something's not right with small brush strokes
+- when selecting generated imagery tries to insert into a locked layer, an error is shown but the selection is lost
+- SliderSpinbox: spinbox is getting stretched out, most of the space should go to the slider
 
 ## Timelapse video: using latest interface
 Scripted to make use of every tool, in-video text explaining what I'm doing
