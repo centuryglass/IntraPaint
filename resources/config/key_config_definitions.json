@@ -203,7 +203,7 @@
         "subcategory": "Tool Selection",
         "description": "Activate the filter tool to apply image filters to brush strokes.",
         "type": "string",
-        "default": "U",
+        "default": "I",
         "saved": true
     },
     "smudge_tool_key": {

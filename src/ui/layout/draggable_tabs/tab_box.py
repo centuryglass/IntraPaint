@@ -5,19 +5,22 @@ The sole responsibility of the TabBox is to create, display and provide access t
 content widget if the TabBar is in the open state.
 """
 
-from typing import Optional, List
+from typing import Optional, List, Set
 
 from PySide6.QtCore import Signal, Qt, QSize
 from PySide6.QtGui import QAction
 from PySide6.QtWidgets import QHBoxLayout, QVBoxLayout, QWidget, QSizePolicy, QBoxLayout
 
+from src.config.cache import Cache
 from src.ui.layout.bordered_widget import BorderedWidget
 from src.ui.layout.draggable_tabs.tab import Tab
 from src.ui.layout.draggable_tabs.tab_bar import TabBar
 from src.util.layout import extract_layout_item
+from src.util.math_utils import clamp
 
 EMPTY_MARGIN = 0
 NONEMPTY_MARGIN = 2
+INITIAL_STRETCH = 10
 
 
 class TabBox(BorderedWidget):
@@ -36,6 +39,7 @@ class TabBox(BorderedWidget):
         self._layout = QHBoxLayout(self) if orientation == Qt.Orientation.Vertical else QVBoxLayout(self)
         self._layout.setSpacing(0)
         self._layout.setContentsMargins(1, 1, 1, 1)
+        self._last_stretch = INITIAL_STRETCH
         self.setSizePolicy(QSizePolicy.Policy.MinimumExpanding, QSizePolicy.Policy.MinimumExpanding)
         if orientation == Qt.Orientation.Horizontal:
             if at_parent_start:
@@ -175,36 +179,44 @@ class TabBox(BorderedWidget):
         total_stretch = 0
         own_idx = -1
         stretch_values = []
+        skipped_indexes: Set[int] = set()
         for i in range(parent_layout.count()):
             stretch = parent_layout.stretch(i)
             total_stretch += stretch
             widget = extract_layout_item(parent_layout.itemAt(i))
             stretch_values.append(stretch)
+            if isinstance(widget, BorderedWidget):
+                skipped_indexes.add(i)
             if widget == self:
                 own_idx = i
         assert own_idx >= 0
         own_stretch = stretch_values[own_idx]
-        active_stretch_item_count = len([stretch for stretch in stretch_values if stretch > 1])
-        if own_stretch > 1:
-            active_stretch_item_count -= 1
+        active_stretch_item_count = len([stretch for i, stretch in enumerate(stretch_values) if stretch > 1
+                                         and i not in skipped_indexes])
         if active_stretch_item_count == 0:
             return
-        if self.is_open:  # Reclaim stretch from inline items, taking up to 1/3 total stretch:
+        if self.is_open:  # Reclaim stretch from inline items, taking back any previously relinquished stretch:
+            requested_stretch = self._last_stretch
+            if requested_stretch < own_stretch:
+                return
             added_stretch = 0
             for i, stretch in enumerate(stretch_values):
-                if i == own_idx or stretch < 2:
+                if i in skipped_indexes or stretch < 2:
                     continue
-                stretch_taken = min(round(stretch / max(active_stretch_item_count, 3)), stretch - 1)
+                stretch_taken = min(stretch - 1,
+                                    (requested_stretch // active_stretch_item_count),
+                                    (requested_stretch - added_stretch))
                 if stretch_taken > 0:
                     parent_layout.setStretch(i, stretch - stretch_taken)
                     added_stretch += stretch_taken
             if added_stretch > 0:
                 parent_layout.setStretch(own_idx, own_stretch + added_stretch)
         else:  # Divide all stretch except one among inline items with more than one stretch:
+            self._last_stretch = own_stretch
             items_left = active_stretch_item_count
             stretch_remaining = own_stretch - 1
             for i, stretch in enumerate(stretch_values):
-                if i == own_idx or stretch < 2:
+                if i in skipped_indexes or stretch < 2:
                     continue
                 if items_left == 1:
                     stretch_given = stretch_remaining

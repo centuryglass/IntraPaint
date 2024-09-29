@@ -36,7 +36,7 @@ class _SliderSpinbox(QWidget):
         self._down_hint = QWidget(self)
         self._layout.addWidget(self._down_hint)
         self._slider = QSlider(Qt.Orientation.Horizontal)
-        self._layout.addWidget(self._slider)
+        self._layout.addWidget(self._slider, stretch=1)
         self._slider.setValue(initial_value if isinstance(initial_value, int) else int(initial_value * 100))
         self._slider.valueChanged.connect(self.setValue)
         self._slider.setTickPosition(QSlider.TickPosition.TicksAbove)

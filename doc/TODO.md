@@ -1,28 +1,46 @@
 # Development tasks
 
 ## Before next release:
-- Finish README cleanup and examples (< 1 day)
 - Basic workflow tutorials (< 1 day)
 - Final timelapse video (< 5 days)
 - Upscale: make new layer, scale up existing layers
 
-## More bugs + testing:
+## Priority issues:
 - Double-check lock and parent group lock properly block changes
 - Save fails silently on missing extension, a warning should appear
 - shape type dropdown isn't updating
-- color dialog has no effect on shape tool
-- ctrl shouldn't break tools if you're already dragging
-- Blur filter doing some strange things when trying to blur lineart over alpha, other filters not much better
-- partial hardness plus pressure=size is causing dropped strokes (better min. handling needed?)
+- color dialog has no effect on shape tool: when shape tool is active, changes to the brush color should propagate to the fill color.
+- ctrl shouldn't interrupt tools if you're already dragging
+- Blur filter doing some strange things when trying to blur lineart over alpha, other filters not much better. Results from the filter tool should be comparable to filter menu options
+- partial hardness plus pressure=size is causing dropped strokes (better min. hardness handling needed?)
 - merge into hidden errors say that the base layer is locked, use different messages for locked and hidden
 - fill tool should be blocked on hidden layers
-- add 'sample merged' option to smudge and filter tools
-- smudge tool: something's not right with small brush strokes
+- add 'sample merged' option to smudge tool, possibly also filter tools
+- smudge tool: short brush strokes are often ignored
 - when selecting generated imagery tries to insert into a locked layer, an error is shown but the selection is lost
-- SliderSpinbox: spinbox is getting stretched out, most of the space should go to the slider
+- RGBA filter: alpha not working with filter tool, or when constrained to selection
+- Sharpen filter tool: displaces image content? factor capped at 2?
+- Filter previews really slow on large images, are they not being scaled?
+- Layer transforms: "maximum recursion depth exceeded" errors. even rarer: "non-invertible transform" errors
 
-## Timelapse video: using latest interface
-Scripted to make use of every tool, in-video text explaining what I'm doing
+## Timelapse video
+
+### Prompt component ideas: 
+- Fauvism, Cubo-Futurism, Glitch Art, Post-Impressionism, outsider art, mosaic, papercraft
+
+
+### Step-by-step process:
+- Script this to make use of every tool.
+- Text tool: insert process description notes directly into timelapse footage.
+- Text-to-Image: generate reference images
+- Transform tool: arrange reference images outside of image border
+- Brush tool (pencil): initial image sketch and planning.
+- Filter tool (blur): hide sketch details before adding line art.
+- Draw tool: rough line-art
+- Shape tool, brush tool, smudge tool: rough background painting
+- Image-to-Image: refine backgrounds
+- Inpainting, ControlNet scribble module: refine line-art
+- Brush tool (acrylics): 
 
 ## Documentation + Release
 - Create example images for README, finish missing sections and improve writing

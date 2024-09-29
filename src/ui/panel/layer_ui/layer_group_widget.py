@@ -120,19 +120,12 @@ class LayerGroupWidget(BorderedWidget):
         """Return whether the widget is expanded to show child layers."""
         return self._toggle_button.isChecked()
 
-    def set_expanded(self, expanded: bool) -> None:
-        """Open or close the widget."""
-        if expanded != self._toggle_button.isChecked():
-            with signals_blocked(self._toggle_button):
-                self._toggle_button.setChecked(expanded)
-        self._toggle_button.setArrowType(Qt.ArrowType.DownArrow if expanded else Qt.ArrowType.RightArrow)
-        for child_item in self.child_items:
-            child_item.setVisible(expanded)
-
-        # TODO: Sometimes the outer layer refuses to update when a group is expanded or collapsed. The normal methods
-        #  for fixing this kind of issue (updateGeometry, adjustSize, update, layout.invalidate) all make no difference,
-        #  but removing and re-inserting the widget fixes the problem. This is an acceptable solution for now, but
-        #  there really should be a better way to fix this.
+    def _refresh_layout(self) -> None:
+        """Refresh the layout by removing and replacing this widget within its parent."""
+        # TODO: Sometimes the outer layer refuses to update when a group is expanded or collapsed or when child items
+        #  change. The normal methods for fixing this kind of issue (updateGeometry, adjustSize, update,
+        #  layout.invalidate) all make no difference, but removing and re-inserting the widget fixes the problem.
+        #  This is an acceptable solution for now, but there really should be a better way to fix this.
         parent_widget = self.parentWidget()
         if parent_widget is None:
             return
@@ -145,6 +138,16 @@ class LayerGroupWidget(BorderedWidget):
         row, col, row_stretch, col_stretch = parent_layout.getItemPosition(own_index)
         parent_layout.removeWidget(self)
         parent_layout.addWidget(self, row, col, row_stretch, col_stretch)
+
+    def set_expanded(self, expanded: bool) -> None:
+        """Open or close the widget."""
+        if expanded != self._toggle_button.isChecked():
+            with signals_blocked(self._toggle_button):
+                self._toggle_button.setChecked(expanded)
+        self._toggle_button.setArrowType(Qt.ArrowType.DownArrow if expanded else Qt.ArrowType.RightArrow)
+        for child_item in self.child_items:
+            child_item.setVisible(expanded)
+        self._refresh_layout()
 
     def resizeEvent(self, event: Optional[QResizeEvent]) -> None:
         """Keep child layers in line with the parent group layer"""
@@ -257,6 +260,7 @@ class LayerGroupWidget(BorderedWidget):
         self._layer_items[layer] = child_widget
         self._layout.addWidget(child_widget, index + 1, 1)
         child_widget.setVisible(self.is_expanded())
+        self._refresh_layout()
 
     def remove_child_layer(self, layer: Layer) -> None:
         """Remove one of the group's child layers from the list."""
@@ -270,6 +274,7 @@ class LayerGroupWidget(BorderedWidget):
             self._layout.takeAt(index)
         del self._layer_items[layer]
         layer_item.deleteLater()
+        self._refresh_layout()
 
     def reorder_child_layers(self) -> None:
         """Update child layer order based on layer z-values."""
