@@ -6,11 +6,6 @@
 - Upscale: make new layer, scale up existing layers
 
 ## Priority issues:
-- Double-check lock and parent group lock properly block changes
-- Save fails silently on missing extension, a warning should appear
-- shape type dropdown isn't updating
-- color dialog has no effect on shape tool: when shape tool is active, changes to the brush color should propagate to the fill color.
-- ctrl shouldn't interrupt tools if you're already dragging
 - Blur filter doing some strange things when trying to blur lineart over alpha, other filters not much better. Results from the filter tool should be comparable to filter menu options
 - partial hardness plus pressure=size is causing dropped strokes (better min. hardness handling needed?)
 - merge into hidden errors say that the base layer is locked, use different messages for locked and hidden
@@ -21,8 +16,6 @@
 - RGBA filter: alpha not working with filter tool, or when constrained to selection
 - Sharpen filter tool: displaces image content? factor capped at 2?
 - Filter previews really slow on large images, are they not being scaled?
-- Layer transforms: "maximum recursion depth exceeded" errors. even rarer: "non-invertible transform" errors
-- Shape tool: line is drawn even at width 0
 - Make sure non-ai scaling is always possible via PIL scaling modes
 
 ## Timelapse video

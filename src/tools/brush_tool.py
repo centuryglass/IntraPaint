@@ -309,7 +309,8 @@ class BrushTool(BaseTool):
 
     def mouse_click(self, event: Optional[QMouseEvent], image_coordinates: QPoint) -> bool:
         """Starts drawing when the mouse is clicked in the scene."""
-        if self._layer is None or event is None or not self._image_stack.has_image:
+        if event is None or not self._image_stack.has_image or not self.validate_layer(self._layer,
+                                                                                       image_stack=self._image_stack):
             return False
         if KeyConfig.modifier_held(KeyConfig.PAN_VIEW_MODIFIER, True):
             return False

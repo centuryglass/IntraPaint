@@ -159,6 +159,7 @@ class LayerTransformTool(BaseTool):
             self._layer.transform_changed.connect(self._layer_transform_change_slot)
             self._layer.size_changed.connect(self._layer_size_change_slot)
             self._layer.lock_changed.connect(self._layer_lock_change_slot)
+            self._layer_lock_change_slot(self._layer, self._layer.locked)
         else:
             self._control_panel.set_preview_bounds(QRect())
             self._transform_outline.setVisible(False)
@@ -238,9 +239,10 @@ class LayerTransformTool(BaseTool):
 
     def _layer_lock_change_slot(self, layer: Layer, locked: bool) -> None:
         assert self._layer is not None
-        assert layer == self._layer or layer.contains_recursive(self._layer)
+        assert layer == self._layer or layer.contains_recursive(self._layer) or isinstance(layer, TransformGroup)
         if self._control_panel is not None:
             self._control_panel.setEnabled(not locked)
+            self._transform_outline.setEnabled(not locked)
 
     # noinspection PyUnusedLocal
     def _layer_transform_change_slot(self, layer: Layer, transform: QTransform) -> None:

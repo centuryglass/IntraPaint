@@ -76,8 +76,9 @@ class FillTool(BaseTool):
         assert event is not None
         if event.buttons() == Qt.MouseButton.LeftButton:
             layer = self._layer
-            if not isinstance(layer, ImageLayer) or layer.locked or layer.parent_locked:
+            if not self.validate_layer(layer, image_stack=self._image_stack):
                 return False
+            assert isinstance(layer, ImageLayer)
             layer_point = layer.map_from_image(image_coordinates)
             if not layer.bounds.contains(layer_point):
                 return True

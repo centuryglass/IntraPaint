@@ -2,27 +2,12 @@
 from typing import Optional
 
 from PySide6.QtGui import QColor, QImage
-from PySide6.QtWidgets import QApplication
 
 from src.image.layers.image_layer import ImageLayer
 from src.ui.modal.modal_utils import show_error_dialog
+from src.util.shared_constants import ERROR_MESSAGE_LAYER_NONE, ERROR_MESSAGE_LAYER_HIDDEN, ERROR_MESSAGE_LAYER_LOCKED, \
+    ERROR_MESSAGE_EMPTY_MASK, ERROR_TITLE_EDIT_FAILED, ERROR_MESSAGE_LAYER_GROUP_LOCKED
 from src.util.visual.image_utils import image_is_fully_transparent
-
-# The `QCoreApplication.translate` context for strings in this file
-TR_ID = 'image.brush.layer_brush'
-
-
-def _tr(*args):
-    """Helper to make `QCoreApplication.translate` more concise."""
-    return QApplication.translate(TR_ID, *args)
-
-
-ERROR_TITLE_EDIT_FAILED = _tr('Editing failed')
-ERROR_MESSAGE_LAYER_LOCKED = _tr('The selected layer is locked, unlock it or select a different layer.')
-ERROR_MESSAGE_LAYER_HIDDEN = _tr('The selected layer is hidden, un-hide it before trying to edit it.')
-ERROR_MESSAGE_LAYER_NONE = _tr('The selected layer is not an image layer, select an image layer first.')
-ERROR_MESSAGE_EMPTY_MASK = _tr('Changes are restricted to selected content only, but nothing is selected in this layer.'
-                               ' Select layer content or enable changes in unselected areas.')
 
 
 class LayerBrush:
@@ -112,8 +97,10 @@ class LayerBrush:
             error_message = ERROR_MESSAGE_LAYER_NONE
         elif not self._layer.visible:
             error_message = ERROR_MESSAGE_LAYER_HIDDEN
-        elif self._layer.locked or self._layer.parent_locked:
+        elif self._layer.locked:
             error_message = ERROR_MESSAGE_LAYER_LOCKED
+        elif self._layer.parent_locked:
+            error_message = ERROR_MESSAGE_LAYER_GROUP_LOCKED
         elif self._mask is not None:
             if image_is_fully_transparent(self._mask):
                 error_message = ERROR_MESSAGE_EMPTY_MASK

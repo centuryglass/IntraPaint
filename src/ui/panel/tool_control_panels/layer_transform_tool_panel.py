@@ -382,7 +382,7 @@ class LayerTransformToolPanel(ReactiveLayoutWidget):
     @rotation.setter
     def rotation(self, rotation: float) -> None:
         """Accesses the layer's transformation angle"""
-        with signals_blocked(self._y_scale_box):
+        with signals_blocked(self._rotate_box):
             self._rotate_box.setValue(rotation)
 
     @property

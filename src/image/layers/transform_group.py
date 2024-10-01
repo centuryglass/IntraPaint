@@ -26,6 +26,7 @@ class TransformGroup(TransformLayer):
         self._groups: List[LayerStack] = []
         self._transform_layers: List[TransformLayer] = []
         self._layer_added_slot(layer_stack)
+        layer_stack.lock_changed.connect(lambda locked: self.set_locked(locked))
 
     def __del__(self) -> None:
         self.remove_all()
@@ -65,6 +66,13 @@ class TransformGroup(TransformLayer):
             layer.set_transform(layer.transform * last_transform_inverted * transform, send_signals)
         super().set_transform(transform, send_signals)
 
+    def _layer_locked_slot(self, layer: Layer, locked: bool) -> None:
+        if locked:
+            self.set_locked(True)
+        elif not any((inner_layer.locked or inner_layer.parent_locked
+                      for inner_layer in (self._groups + self._transform_layers))):
+            self.set_locked(False)
+
     def _layer_added_slot(self, layer: Layer) -> None:
         assert isinstance(layer, (TransformLayer, LayerStack))
         if isinstance(layer, TransformLayer):
@@ -79,6 +87,7 @@ class TransformGroup(TransformLayer):
                 self._groups.append(layer)
                 for child in layer.child_layers:
                     self._layer_added_slot(child)
+        layer.lock_changed.connect(self._layer_locked_slot)
         self._get_local_bounds()  # Updates size, emits size_changed if needed
 
     def _layer_removed_slot(self, layer: Layer) -> None:
@@ -95,4 +104,5 @@ class TransformGroup(TransformLayer):
             self._groups.remove(layer)
             for child in layer.child_layers:
                 self._layer_removed_slot(child)
+        layer.lock_changed.disconnect(self._layer_locked_slot)
         self._get_local_bounds()  # Updates size, emits size_changed if needed

@@ -238,7 +238,6 @@ class ToolController(QObject):
 
         # Handle expected event types:
         event_handled = False
-        pan_modifier_held = KeyConfig.modifier_held(KeyConfig.PAN_VIEW_MODIFIER, True)
         match event.type():
             case QEvent.Type.MouseButtonDblClick:
                 event = cast(QMouseEvent, event)
@@ -246,7 +245,7 @@ class ToolController(QObject):
             case QEvent.Type.MouseButtonPress:
                 event = cast(QMouseEvent, event)
                 event_handled = active_tool.mouse_click(event, find_image_coordinates(event))
-            case QEvent.Type.MouseMove if not pan_modifier_held:
+            case QEvent.Type.MouseMove:
                 event = cast(QMouseEvent, event)
                 event_handled = active_tool.mouse_move(event, find_image_coordinates(event))
             case QEvent.Type.MouseButtonRelease:

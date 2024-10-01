@@ -33,10 +33,9 @@ class ShapeModeComboBox(QComboBox):
         radius = (drawn_icon_size // 2) - 8
         inner_radius = round(inner_radius_fraction * radius)
         painter = QPainter(pixmap)
-        painter.setBrush(fill_brush)
         painter.setPen(line_pen)
         path = shape_mode.painter_path(bounds, radius, vertex_count, inner_radius)
-        painter.fillPath(path, painter.brush())
+        painter.fillPath(path, fill_brush)
         painter.drawPath(path)
         painter.end()
         return QIcon(pixmap)
@@ -71,10 +70,10 @@ class ShapeModeComboBox(QComboBox):
             Cache().set(cache_key, new_style_name)
         self.currentTextChanged.connect(_apply_change_to_config)
 
-    def update_icon_style(self, line_pen: QPen, fill_brush: QBrush) -> None:
+    def update_icon_style(self, line_pen: QPen, fill_brush: QBrush, vertex_count=3, inner_radius_fraction=0.5) -> None:
         """Updates all icons with new outline and fill styles."""
         for mode in ShapeMode:
-            icon = ShapeModeComboBox.draw_icon(mode, line_pen, fill_brush)
+            icon = ShapeModeComboBox.draw_icon(mode, line_pen, fill_brush, vertex_count, inner_radius_fraction)
             index = self.findText(mode.display_text())
             self.setItemIcon(index, icon)
 

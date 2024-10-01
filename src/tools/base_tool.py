@@ -9,10 +9,18 @@ Supports the following:
 from typing import Optional
 
 from PySide6.QtCore import QObject, Signal, QPoint, QEvent, Qt
-from PySide6.QtGui import QCursor, QPixmap, QMouseEvent, QTabletEvent, QWheelEvent, QIcon
+from PySide6.QtGui import QCursor, QPixmap, QMouseEvent, QTabletEvent, QWheelEvent, QIcon, QImage
 from PySide6.QtWidgets import QWidget, QApplication
 
+from src.config.cache import Cache
 from src.config.key_config import KeyConfig
+from src.image.layers.image_layer import ImageLayer
+from src.image.layers.image_stack import ImageStack
+from src.image.layers.layer import Layer
+from src.ui.modal.modal_utils import show_error_dialog
+from src.util.shared_constants import ERROR_MESSAGE_LAYER_NONE, ERROR_MESSAGE_LAYER_LOCKED, \
+    ERROR_MESSAGE_LAYER_GROUP_LOCKED, ERROR_MESSAGE_LAYER_HIDDEN, ERROR_MESSAGE_EMPTY_MASK, ERROR_TITLE_EDIT_FAILED
+from src.util.visual.image_utils import image_is_fully_transparent
 from src.util.visual.text_drawing_utils import left_button_hint_text, middle_button_hint_text, \
     vertical_scroll_hint_text, get_key_display_string
 
@@ -88,6 +96,7 @@ class BaseTool(QObject):
         self._label_text = label_text
         self._tooltip_text = tooltip_text
         self._icon = icon
+
 
     @staticmethod
     def modifier_hint(modifier_key: str, modifier_hint_str: str) -> str:
@@ -169,6 +178,26 @@ class BaseTool(QObject):
     def get_control_panel(self) -> Optional[QWidget]:
         """Returns a panel providing controls for customizing tool behavior, or None if no such panel is needed."""
         return None
+
+    def validate_layer(self, layer: Optional[Layer], require_image_layer=True, show_error_messages=True,
+                       image_stack: Optional[ImageStack] = None) -> bool:
+        """Check if a layer can accept changes."""
+        error_message: Optional[str] = None
+        if layer is None or (require_image_layer and not isinstance(layer, ImageLayer)):
+            error_message = ERROR_MESSAGE_LAYER_NONE
+        elif layer.locked:
+            error_message = ERROR_MESSAGE_LAYER_LOCKED
+        elif layer.parent_locked:
+            error_message = ERROR_MESSAGE_LAYER_GROUP_LOCKED
+        elif not layer.visible:
+            error_message = ERROR_MESSAGE_LAYER_HIDDEN
+        elif image_stack is not None and Cache().get(Cache.PAINT_SELECTION_ONLY):
+            mask_image = image_stack.selection_layer.image_bits_readonly
+            if image_is_fully_transparent(mask_image):
+                error_message = ERROR_MESSAGE_EMPTY_MASK
+        if show_error_messages:
+            show_error_dialog(None, ERROR_TITLE_EDIT_FAILED, error_message)
+        return error_message is None
 
     def _on_activate(self, restoring_after_delegation=False) -> None:
         """Called when the tool becomes active, implement to handle any setup that needs to be done."""

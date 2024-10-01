@@ -58,6 +58,16 @@ BUTTON_TEXT_ZOOM_IN = _tr('Zoom In')
 BUTTON_TEXT_RESET_ZOOM = _tr('Reset Zoom')
 ASPECT_RATIO_CHECK_LABEL = _tr('Keep aspect ratio')
 
+# Layer change failure errors:
+ERROR_TITLE_EDIT_FAILED = _tr('Editing failed')
+ERROR_MESSAGE_LAYER_LOCKED = _tr('The selected layer is locked, unlock it or select a different layer.')
+ERROR_MESSAGE_LAYER_GROUP_LOCKED = _tr('The selected layer is in a locked group, unlock it or select a different'
+                                       ' layer.')
+ERROR_MESSAGE_LAYER_HIDDEN = _tr('The selected layer is hidden, un-hide it before trying to edit it.')
+ERROR_MESSAGE_LAYER_NONE = _tr('The selected layer is not an image layer, select an image layer first.')
+ERROR_MESSAGE_EMPTY_MASK = _tr('Changes are restricted to selected content only, but nothing is selected in this layer.'
+                               ' Select layer content or enable changes in unselected areas.')
+
 # Argument used to disable or alter certain UI elements for better use in timelapse footage:
 TIMELAPSE_MODE_FLAG = '--timelapse_mode'
 

@@ -136,12 +136,10 @@ class Layer(QObject):
             return
 
         def _update_lock(locked=lock) -> None:
-            self._locked = locked
-            self.lock_changed.emit(self, locked)
+            self.set_locked(locked)
 
         def _undo(locked=not lock) -> None:
-            self._locked = locked
-            self.lock_changed.emit(self, locked)
+            self.set_locked(locked)
 
         UndoStack().commit_action(_update_lock, _undo, 'src.layers.layer.locked')
 

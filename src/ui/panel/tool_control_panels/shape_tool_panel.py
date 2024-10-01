@@ -1,4 +1,5 @@
 """Shape tool control panel. Sets shape type, stroke properties, and fill properties."""
+import logging
 from typing import Optional, Tuple
 
 from PySide6.QtCore import Qt, QSize, QRegularExpression
@@ -16,6 +17,8 @@ from src.ui.widget.color_button import ColorButton
 from src.util.layout import clear_layout
 from src.util.shared_constants import ICON_SIZE
 from src.util.visual.shape_mode import ShapeMode
+
+logger = logging.getLogger(__name__)
 
 
 class ShapeToolPanel(QWidget):
@@ -49,6 +52,30 @@ class ShapeToolPanel(QWidget):
             self._vertex_spinbox.setVisible(shape_mode in (ShapeMode.POLYGON, ShapeMode.STAR))
             self._inner_radius_spinbox.setVisible(shape_mode == ShapeMode.STAR)
         cache.connect(self._shape_mode_combobox, Cache.SHAPE_TOOL_MODE, _on_mode_change)
+
+        def _update_shape_dropdown_icons(_=None) -> None:
+            try:
+                pen = QPen()
+                pen.setStyle(PenStyleComboBox.get_pen_style(cache.get(Cache.SHAPE_TOOL_LINE_STYLE)))
+                pen.setWidth(min(cache.get(Cache.SHAPE_TOOL_LINE_WIDTH), ICON_SIZE // 3))
+                pen.setColor(cache.get_color(Cache.SHAPE_TOOL_LINE_COLOR, Qt.GlobalColor.black))
+                if pen.style() == Qt.PenStyle.CustomDashLine:
+                    pen.setStyle(Qt.PenStyle.DashLine)
+
+                brush = QBrush()
+                brush.setStyle(FillStyleComboBox.get_style(cache.get(Cache.SHAPE_TOOL_FILL_PATTERN)))
+                brush.setColor(cache.get_color(Cache.SHAPE_TOOL_FILL_COLOR, Qt.GlobalColor.white))
+
+                vertex_count = cache.get(Cache.SHAPE_TOOL_VERTEX_COUNT)
+                inner_radius = cache.get(Cache.SHAPE_TOOL_STAR_INNER_POINT_FRACTION)
+                self._shape_mode_combobox.update_icon_style(pen, brush, vertex_count, inner_radius)
+            except (KeyError, ValueError) as err:
+                logger.error('Invalid shape cache value: {err}')
+        for cache_key in (Cache.SHAPE_TOOL_LINE_STYLE, Cache.SHAPE_TOOL_LINE_WIDTH, Cache.SHAPE_TOOL_LINE_COLOR,
+                          Cache.SHAPE_TOOL_FILL_PATTERN, Cache.SHAPE_TOOL_FILL_COLOR, Cache.SHAPE_TOOL_VERTEX_COUNT,
+                          Cache.SHAPE_TOOL_STAR_INNER_POINT_FRACTION):
+            cache.connect(self._shape_mode_combobox, cache_key, _update_shape_dropdown_icons)
+        _update_shape_dropdown_icons()
 
         # Shape-specific extra parameters:
         self._vertex_spinbox = cache.get_control_widget(Cache.SHAPE_TOOL_VERTEX_COUNT)
@@ -180,41 +207,8 @@ class ShapeToolPanel(QWidget):
         self._dash_label.setVisible(line_style == Qt.PenStyle.CustomDashLine)
         self._dash_textbox.setVisible(line_style == Qt.PenStyle.CustomDashLine)
 
-    # noinspection PyUnusedLocal
-    def _update_mode_icons(self, *args, **kwargs) -> None:
-        for mode in ShapeMode:
-            mode_icon = self._draw_shape_preview_icon(mode)
-            self._shape_mode_combobox.setItemIcon(mode.value, mode_icon)
-
     def set_orientation(self, orientation: Qt.Orientation) -> None:
         """Update the panel orientation."""
         if self._orientation != orientation:
             self._orientation = orientation
             self._build_layout()
-
-    @staticmethod
-    def _draw_shape_preview_icon(mode: ShapeMode) -> QIcon:
-        cache = Cache()
-
-        # Create pen from config properties:
-        drawn_icon_size = ICON_SIZE * 4
-        line_color = cache.get_color(Cache.SHAPE_TOOL_LINE_COLOR, Qt.GlobalColor.black)
-        line_width = min(cache.get(Cache.SHAPE_TOOL_LINE_WIDTH), drawn_icon_size // 8)
-        try:
-            line_style = PenStyleComboBox.get_pen_style(cache.get(Cache.SHAPE_TOOL_LINE_STYLE))
-        except KeyError:
-            line_style = Qt.PenStyle.SolidLine
-        if line_style == Qt.PenStyle.CustomDashLine:
-            line_style = Qt.PenStyle.DashLine  # Don't worry about line style on preview icons
-        line_pen = QPen(line_color, line_width, line_style)
-
-        # Create brush from config properties:
-        fill_color = cache.get_color(Cache.SHAPE_TOOL_FILL_COLOR, Qt.GlobalColor.white)
-        fill_brush = QBrush(fill_color)
-        try:
-            fill_brush.setStyle(FillStyleComboBox.get_style(cache.get(Cache.SHAPE_TOOL_FILL_PATTERN)))
-        except KeyError:
-            fill_brush.setStyle(Qt.BrushStyle.SolidPattern)
-
-        return ShapeModeComboBox.draw_icon(mode, line_pen, fill_brush, cache.get(Cache.SHAPE_TOOL_VERTEX_COUNT),
-                                           cache.get(Cache.SHAPE_TOOL_STAR_INNER_POINT_FRACTION))

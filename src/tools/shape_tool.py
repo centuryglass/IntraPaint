@@ -102,6 +102,15 @@ class ShapeTool(BaseTool):
                              (Cache.SHAPE_TOOL_FILL_COLOR, self._fill_color_update_slot)):
             cache.connect(self, key, handler)
 
+        # When the tool is active, changes to the primary brush color will propagate to the last shape mode tool that
+        # changes.
+        self._last_color_changed = Cache.SHAPE_TOOL_FILL_COLOR
+
+        def _update_last_color(color_str: str) -> None:
+            if self.is_active and QColor.isValidColor(color_str):
+                cache.set(self._last_color_changed, color_str)
+        cache.connect(self, Cache.LAST_BRUSH_COLOR, _update_last_color)
+
     def get_input_hint(self) -> str:
         """Return text describing different input functionality."""
         shape_selection_hint = SHAPE_TOOL_CONTROL_HINT.format(left_mouse_icon=left_button_hint_text(),
@@ -112,14 +121,16 @@ class ShapeTool(BaseTool):
         """Returns a panel providing controls for customizing tool behavior, or None if no such panel is needed."""
         if self._control_panel is None:
             self._control_panel = ShapeToolPanel()
+            self._control_panel.setEnabled(self._layer is not None and not self._layer.locked
+                                           and not self._layer.parent_locked)
         return self._control_panel
 
     def mouse_click(self, event: Optional[QMouseEvent], image_coordinates: QPoint) -> bool:
         """Start selecting on click."""
         assert event is not None
-        if KeyConfig.modifier_held(KeyConfig.PAN_VIEW_MODIFIER, True):
-            return False
-        if event.buttons() != Qt.MouseButton.LeftButton:
+        if KeyConfig.modifier_held(KeyConfig.PAN_VIEW_MODIFIER, True) \
+                or event.buttons() != Qt.MouseButton.LeftButton \
+                or not self.validate_layer(self._layer):
             return False
         self._selection_handler.set_brush(self._brush)
         self._selection_handler.start_selection(image_coordinates)
@@ -158,8 +169,9 @@ class ShapeTool(BaseTool):
             painter = QPainter(layer_image)
             painter.setTransform(self._layer.transform.inverted()[0])
             painter.fillPath(path, self._brush)
-            painter.setPen(self._pen)
-            painter.drawPath(path)
+            if self._pen.width() > 0:
+                painter.setPen(self._pen)
+                painter.drawPath(path)
             painter.end()
 
     def _on_activate(self, restoring_after_delegation=False) -> None:
@@ -186,8 +198,9 @@ class ShapeTool(BaseTool):
         self._selection_handler.inner_radius_fraction = radius_fraction
 
     def _line_color_update_slot(self, color_str: str) -> None:
+        self._last_color_changed = Cache.SHAPE_TOOL_LINE_COLOR
         if QColor.isValidColor(color_str):
-            color = color_str
+            color = QColor(color_str)
             if self._pen.color() == color:
                 return
             self._pen.setColor(color)
@@ -242,6 +255,7 @@ class ShapeTool(BaseTool):
         self._selection_handler.set_brush(self._brush)
 
     def _fill_color_update_slot(self, color_str: str) -> None:
+        self._last_color_changed = Cache.SHAPE_TOOL_FILL_COLOR
         if not QColor.isValidColor(color_str):
             return
         color = QColor(color_str)

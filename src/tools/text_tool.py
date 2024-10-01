@@ -162,6 +162,7 @@ class TextTool(BaseTool):
         self._placement_outline.setVisible(True)
         self._connect_signals()
         self._control_panel.focus_text_input()
+        self._layer_lock_change_slot(layer, layer.locked)
 
     def _disconnect_text_layer(self) -> None:
         if self._text_layer is not None:
@@ -174,6 +175,7 @@ class TextTool(BaseTool):
 
     def _disconnect_signals(self) -> None:
         if self._text_layer is not None:
+            self._text_layer.lock_changed.disconnect(self._layer_lock_change_slot)
             self._text_layer.transform_changed.disconnect(self._layer_transform_change_slot)
             self._text_layer.size_changed.disconnect(self._layer_size_change_slot)
         self._control_panel.text_rect_changed.disconnect(self._control_text_data_changed_slot)
@@ -182,6 +184,7 @@ class TextTool(BaseTool):
 
     def _connect_signals(self):
         if self._text_layer is not None:
+            self._text_layer.lock_changed.connect(self._layer_lock_change_slot)
             self._text_layer.transform_changed.connect(self._layer_transform_change_slot)
             self._text_layer.size_changed.connect(self._layer_size_change_slot)
         self._control_panel.text_rect_changed.connect(self._control_text_data_changed_slot)
@@ -255,6 +258,13 @@ class TextTool(BaseTool):
         self._control_panel.offset = layer.offset.toPoint()
         self._placement_outline.setTransform(transform)
         self._connect_signals()
+
+    def _layer_lock_change_slot(self, layer: Layer, locked: bool) -> None:
+        if not self.is_active:
+            return
+        should_enable = self._text_layer is None or (not self._text_layer.locked and not self._text_layer.parent_locked)
+        self._control_panel.setEnabled(should_enable)
+        self._placement_outline.setEnabled(should_enable)
 
     def _active_layer_change_slot(self, active_layer: Layer) -> None:
         if active_layer == self._text_layer or not self.is_active:

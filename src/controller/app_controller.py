@@ -836,7 +836,7 @@ class AppController(MenuBuilder):
             if not os.path.isfile(file_path):
                 raise RuntimeError(f'Unknown error: saving {file_path} failed')
             cache.set(Cache.LAST_FILE_PATH, file_path)
-        except (IOError, TypeError, RuntimeError) as save_err:
+        except (IOError, TypeError, ValueError, RuntimeError) as save_err:
             logger.error(f'save failed: {save_err}')
             show_error_dialog(self._window, SAVE_ERROR_TITLE, str(save_err))
             raise save_err
