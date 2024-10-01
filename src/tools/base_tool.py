@@ -195,7 +195,7 @@ class BaseTool(QObject):
             mask_image = image_stack.selection_layer.image_bits_readonly
             if image_is_fully_transparent(mask_image):
                 error_message = ERROR_MESSAGE_EMPTY_MASK
-        if show_error_messages:
+        if show_error_messages and error_message is not None:
             show_error_dialog(None, ERROR_TITLE_EDIT_FAILED, error_message)
         return error_message is None
 

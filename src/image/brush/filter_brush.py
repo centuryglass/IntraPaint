@@ -2,12 +2,14 @@
 import math
 from typing import Optional, List, Any
 
+import numpy as np
 from PySide6.QtCore import QPoint, QRect
 from PySide6.QtGui import QImage, QPainter
 
 from src.image.brush.qt_paint_brush import QtPaintBrush
 from src.image.filter.filter import ImageFilter
 from src.image.layers.image_layer import ImageLayer
+from src.util.visual.image_utils import image_data_as_numpy_8bit, numpy_bounds_index, NpUInt8Array
 
 
 class FilterBrush(QtPaintBrush):
@@ -73,32 +75,21 @@ class FilterBrush(QtPaintBrush):
                               bounds: QRect) -> None:
         """Handles the final drawing operation that copies an input segment to the layer image."""
         copy_bounds = self._filter_bounds(bounds)
-        filter_source = layer_image.copy(copy_bounds)
-        final_source_bounds = bounds.translated(-copy_bounds.x() + bounds.x() - copy_bounds.x(),
-                                                -copy_bounds.y() + bounds.y() - copy_bounds.y())
+        filter_source = self._prev_image_buffer.copy(copy_bounds)
         filtered_image = self._filter.get_filter()(filter_source, *self._parameter_values[self._filter])
-        filter_painter = QPainter(filtered_image)
-        filter_painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_DestinationIn)
-        filter_painter.drawImage(final_source_bounds, segment_image, bounds)
-        filter_painter.end()
-        layer_painter.save()
-        layer_painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_SourceOver)
-        layer_painter.drawImage(bounds, filtered_image, final_source_bounds)
-        layer_painter.restore()
 
-    def end_stroke(self) -> None:
-        """Re-apply the filter across the entire stroke for consistency."""
-        self._draw_buffered_events()
-        bounds = self._change_bounds.toAlignedRect()
-        filter_bounds = self._filter_bounds(bounds)
-        prev_content = self._prev_image_buffer.copy(filter_bounds)
-        layer = self.layer
-        assert layer is not None
-        with layer.borrow_image(filter_bounds) as layer_image:
-            layer_painter = QPainter(layer_image)
-            layer_painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_Source)
-            layer_painter.drawImage(filter_bounds, prev_content)
-            layer_painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_SourceOver)
-            self.draw_segment_to_image(self._brush_stroke_buffer, layer_image, layer_painter, bounds)
-            layer_painter.end()
-        super().end_stroke()
+        np_image = numpy_bounds_index(image_data_as_numpy_8bit(layer_image), copy_bounds)
+        np_filtered = image_data_as_numpy_8bit(filtered_image)
+
+        # Use the brush stroke segment as a mask to select between filtered and original content:
+        np_stroke_mask = numpy_bounds_index(image_data_as_numpy_8bit(segment_image), copy_bounds)[:, :, 3] / 255.0
+
+        # Where the brush stroke mask is 100% opaque, the filter completely overrides the source:
+        stroke_alpha_max = np_stroke_mask[:, :] == 1.0
+        np_image[stroke_alpha_max, :] = np_filtered[stroke_alpha_max, :]
+
+        # Where the brush stroke has partial alpha, fade between filter and source based on mask alpha level:
+        partial_mask = (np_stroke_mask[:, :] > 0) & (~stroke_alpha_max)
+        if np.any(partial_mask):
+            np_image[partial_mask, :] = (np_filtered[partial_mask, :] * np_stroke_mask[partial_mask, None]
+                                         + np_image[partial_mask, :] * (1 - np_stroke_mask[partial_mask, None]))
