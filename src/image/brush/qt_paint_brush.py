@@ -133,9 +133,9 @@ class QtPaintBrush(LayerBrush):
         painter.setOpacity(opacity)
         pen = QPen(color, size, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap, Qt.PenJoinStyle.RoundJoin)
         painter.setPen(pen)
-        if hardness < 1.0 and round(size - (size * hardness)) > 0:
-            min_size = size * hardness
-            size_range = round(size - min_size)
+        min_size = max(size * hardness, 1.0)
+        size_range = round(size - min_size)
+        if size_range > 0:
             painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_Source)
             alpha_step = opacity / size_range
             alpha = alpha_step
@@ -341,7 +341,7 @@ class QtPaintBrush(LayerBrush):
                     if pressure_opacity:
                         self.opacity = float(clamp(self.opacity * pressure, 0.0, 1.0))
                     if pressure_hardness:
-                        self.hardness = float(clamp(self.opacity * pressure, 0.0, 1.0))
+                        self.hardness = float(clamp(self.hardness * pressure, 0.0, 1.0))
 
             self.change_pt = QPointF(x - layer_bounds.x(), y - layer_bounds.y())
             self.last_pt = None if last_point is None else QPointF(last_point.x() - layer_bounds.x(),

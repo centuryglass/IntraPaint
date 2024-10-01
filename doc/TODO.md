@@ -6,7 +6,6 @@
 - Upscale: make new layer, scale up existing layers
 
 ## Priority issues:
-- partial hardness plus pressure=size is causing dropped strokes (better min. hardness handling needed?)
 - merge into hidden errors say that the base layer is locked, use different messages for locked and hidden
 - fill tool should be blocked on hidden layers
 - add 'sample merged' option to smudge tool, possibly also filter tools
