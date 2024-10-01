@@ -3747,11 +3747,16 @@ Please remember to include the traceback from the Details expander.</translation
     <name>ui.modal.settings_modal</name>
     <message>
       <location filename="../../src/ui/modal/settings_modal.py" line="36"/>
+      <source>Settings</source>
+      <translation>Settings</translation>
+    </message>
+    <message>
+      <location filename="../../src/ui/modal/settings_modal.py" line="37"/>
       <source>Cancel</source>
       <translation>Cancel</translation>
     </message>
     <message>
-      <location filename="../../src/ui/modal/settings_modal.py" line="37"/>
+      <location filename="../../src/ui/modal/settings_modal.py" line="38"/>
       <source>Save</source>
       <translation>Save</translation>
     </message>
@@ -3759,72 +3764,72 @@ Please remember to include the traceback from the Details expander.</translation
   <context>
     <name>ui.panel.controlnet_panel</name>
     <message>
-      <location filename="../../src/ui/panel/controlnet_panel.py" line="33"/>
+      <location filename="../../src/ui/panel/controlnet_panel.py" line="34"/>
       <source>ControlNet</source>
       <translation>ControlNet</translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/controlnet_panel.py" line="34"/>
+      <location filename="../../src/ui/panel/controlnet_panel.py" line="35"/>
       <source>ControlNet Unit {unit_number}</source>
       <translation>ControlNet Unit {unit_number}</translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/controlnet_panel.py" line="35"/>
+      <location filename="../../src/ui/panel/controlnet_panel.py" line="36"/>
       <source>Enable ControlNet Unit</source>
       <translation>Enable ControlNet Unit</translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/controlnet_panel.py" line="36"/>
+      <location filename="../../src/ui/panel/controlnet_panel.py" line="37"/>
       <source>Low VRAM</source>
       <translation>Low VRAM</translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/controlnet_panel.py" line="37"/>
+      <location filename="../../src/ui/panel/controlnet_panel.py" line="38"/>
       <source>Pixel Perfect</source>
       <translation>Pixel Perfect</translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/controlnet_panel.py" line="38"/>
+      <location filename="../../src/ui/panel/controlnet_panel.py" line="39"/>
       <source>Control Image:</source>
       <translation>Control Image:</translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/controlnet_panel.py" line="39"/>
+      <location filename="../../src/ui/panel/controlnet_panel.py" line="40"/>
       <source>Set Control Image</source>
       <translation>Set Control Image</translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/controlnet_panel.py" line="40"/>
+      <location filename="../../src/ui/panel/controlnet_panel.py" line="41"/>
       <source>Generation Area as Control</source>
       <translation>Generation Area as Control</translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/controlnet_panel.py" line="41"/>
+      <location filename="../../src/ui/panel/controlnet_panel.py" line="42"/>
       <source>Control Type</source>
       <translation>Control Type</translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/controlnet_panel.py" line="42"/>
+      <location filename="../../src/ui/panel/controlnet_panel.py" line="43"/>
       <source>Control Module</source>
       <translation>Control Module</translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/controlnet_panel.py" line="43"/>
+      <location filename="../../src/ui/panel/controlnet_panel.py" line="44"/>
       <source>Control Model</source>
       <translation>Control Model</translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/controlnet_panel.py" line="44"/>
+      <location filename="../../src/ui/panel/controlnet_panel.py" line="45"/>
       <source>Control Weight</source>
       <translation>Control Weight</translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/controlnet_panel.py" line="45"/>
+      <location filename="../../src/ui/panel/controlnet_panel.py" line="46"/>
       <source>Starting Control Step</source>
       <translation>Starting Control Step</translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/controlnet_panel.py" line="46"/>
+      <location filename="../../src/ui/panel/controlnet_panel.py" line="47"/>
       <source>Ending Control Step</source>
       <translation>Ending Control Step</translation>
     </message>
@@ -4576,8 +4581,8 @@ Press ESC to cancel</translation>
     <name>ui.window.extra_network_window</name>
     <message>
       <location filename="../../src/ui/window/extra_network_window.py" line="25"/>
-      <source>Lora Models</source>
-      <translation>Lora Models</translation>
+      <source>LORA Models</source>
+      <translation>LORA Models</translation>
     </message>
     <message>
       <location filename="../../src/ui/window/extra_network_window.py" line="27"/>
@@ -4641,6 +4646,11 @@ Press ESC to cancel</translation>
   <context>
     <name>ui.window.image_window</name>
     <message>
+      <location filename="../../src/ui/window/image_window.py" line="28"/>
+      <source>Navigate</source>
+      <translation>Navigate</translation>
+    </message>
+    <message>
       <location filename="../../src/ui/window/image_window.py" line="29"/>
       <source>Move view</source>
       <translation>Move view</translation>
@@ -4698,36 +4708,41 @@ Press ESC to cancel</translation>
     <name>ui.window.prompt_style_window</name>
     <message>
       <location filename="../../src/ui/window/prompt_style_window.py" line="27"/>
+      <source>Saved Prompt Styles</source>
+      <translation>Saved Prompt Styles</translation>
+    </message>
+    <message>
+      <location filename="../../src/ui/window/prompt_style_window.py" line="28"/>
       <source>Name:</source>
       <translation>Name:</translation>
     </message>
     <message>
-      <location filename="../../src/ui/window/prompt_style_window.py" line="28"/>
+      <location filename="../../src/ui/window/prompt_style_window.py" line="29"/>
       <source>Prompt:</source>
       <translation>Prompt:</translation>
     </message>
     <message>
-      <location filename="../../src/ui/window/prompt_style_window.py" line="29"/>
+      <location filename="../../src/ui/window/prompt_style_window.py" line="30"/>
       <source>Negative:</source>
       <translation>Negative:</translation>
     </message>
     <message>
-      <location filename="../../src/ui/window/prompt_style_window.py" line="30"/>
+      <location filename="../../src/ui/window/prompt_style_window.py" line="31"/>
       <source>Add to prompt</source>
       <translation>Add to prompt</translation>
     </message>
     <message>
-      <location filename="../../src/ui/window/prompt_style_window.py" line="31"/>
+      <location filename="../../src/ui/window/prompt_style_window.py" line="32"/>
       <source>Replace prompt</source>
       <translation>Replace prompt</translation>
     </message>
     <message>
-      <location filename="../../src/ui/window/prompt_style_window.py" line="32"/>
+      <location filename="../../src/ui/window/prompt_style_window.py" line="33"/>
       <source>Save changes</source>
       <translation>Save changes</translation>
     </message>
     <message>
-      <location filename="../../src/ui/window/prompt_style_window.py" line="33"/>
+      <location filename="../../src/ui/window/prompt_style_window.py" line="34"/>
       <source>Close</source>
       <translation>Close</translation>
     </message>
@@ -4874,8 +4889,8 @@ Press ESC to cancel</translation>
     </message>
     <message>
       <location filename="../config/a1111_setting_definitions.json" line="4"/>
-      <source>Remote Stable-Diffusion Config</source>
-      <translation>Remote Stable-Diffusion Config</translation>
+      <source>Connected generator</source>
+      <translation>Connected generator</translation>
     </message>
     <message>
       <location filename="../config/a1111_setting_definitions.json" line="10"/>

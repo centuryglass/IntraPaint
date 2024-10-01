@@ -48,9 +48,9 @@ class ImageScaleModal(QDialog):
         self._should_scale = False
         self.setModal(True)
         self.setWindowIcon(QIcon(APP_ICON_PATH))
+        self.setWindowTitle(TITLE_TEXT)
         self._layout = QFormLayout(self)
 
-        self.setWindowTitle(TITLE_TEXT)
 
         self._upscale_method_box: QComboBox = cast(QComboBox, cache.get_control_widget(Cache.UPSCALE_METHOD))
         self._layout.addRow(UPSCALE_METHOD_LABEL, self._upscale_method_box)
@@ -120,15 +120,15 @@ class ImageScaleModal(QDialog):
         self._layout.addRow(button_row)
         button_layout = QHBoxLayout(button_row)
 
-        self._cancel_button = QPushButton(self)
-        self._cancel_button.setText(CANCEL_BUTTON_LABEL)
-        self._cancel_button.clicked.connect(lambda: on_finish(False))
-        button_layout.addWidget(self._cancel_button)
-
         self._create_button = QPushButton(self)
         self._create_button.setText(SCALE_BUTTON_LABEL)
         self._create_button.clicked.connect(lambda: on_finish(True))
         button_layout.addWidget(self._create_button)
+
+        self._cancel_button = QPushButton(self)
+        self._cancel_button.setText(CANCEL_BUTTON_LABEL)
+        self._cancel_button.clicked.connect(lambda: on_finish(False))
+        button_layout.addWidget(self._cancel_button)
 
     def show_image_modal(self) -> Optional[QSize]:
         """Show the modal, returning the selected size when the modal closes."""

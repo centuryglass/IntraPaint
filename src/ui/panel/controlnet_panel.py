@@ -17,6 +17,7 @@ from src.ui.modal.modal_utils import open_image_file
 from src.util.layout import clear_layout
 from src.util.parameter import Parameter, TYPE_FLOAT, TYPE_INT
 from src.util.shared_constants import CONTROLNET_REUSE_IMAGE_CODE
+from src.util.signals_blocked import signals_blocked
 
 logger = logging.getLogger(__name__)
 
@@ -177,7 +178,6 @@ class ControlnetPanel(BorderedWidget):
 
         self._load_image_button = QPushButton()
         self._load_image_button.setText(CONTROL_IMAGE_BUTTON_LABEL)
-        self._load_image_button.setEnabled(not use_generation_area)
         self._image_path_edit = QLineEdit('' if use_generation_area or CONTROL_CONFIG_IMAGE_KEY
                                           not in initial_control_state
                                           else initial_control_state[CONTROL_CONFIG_IMAGE_KEY])
@@ -188,18 +188,23 @@ class ControlnetPanel(BorderedWidget):
 
         def open_control_image_file() -> None:
             """Select an image to use as the control image."""
+            if self._reuse_image_checkbox.isChecked():
+                with signals_blocked(self._reuse_image_checkbox):
+                    self._reuse_image_checkbox.setChecked(False)
             image_path = open_image_file(self)
             if image_path is not None:
                 if isinstance(image_path, list):
                     image_path = image_path[0]
                 if isinstance(image_path, str):
                     self._image_path_edit.setText(image_path)
+                self._image_path_edit.setEnabled(True)
+                self._control_image_label.setEnabled(True)
         self._load_image_button.clicked.connect(open_control_image_file)
 
         def reuse_image_update(checked: bool):
             """Update config, disable/enable appropriate components if the 'reuse image as control' box changes."""
             value = CONTROLNET_REUSE_IMAGE_CODE if checked else self._image_path_edit.text()
-            for control_img_widget in (self._control_image_label, self._load_image_button, self._image_path_edit):
+            for control_img_widget in (self._control_image_label, self._image_path_edit):
                 control_img_widget.setEnabled(not checked)
             if checked:
                 self._image_path_edit.setText('')
@@ -257,7 +262,6 @@ class ControlnetPanel(BorderedWidget):
             ] + self._dynamic_slider_labels + self._dynamic_sliders
             control_image_widgets = [
                 self._control_image_label,
-                self._load_image_button,
                 self._image_path_edit
             ]
             for widget in main_control_widgets:
@@ -335,10 +339,10 @@ class ControlnetPanel(BorderedWidget):
                 (self._enabled_checkbox, 0, 0, 1, 1),
                 (self._vram_checkbox, 0, 1, 1, 1),
                 (self._px_perfect_checkbox, 1, 0, 1, 1),
-                (self._control_image_label, 2, 0, 1, 1),
-                (self._image_path_edit, 2, 1, 1, 1),
-                (self._reuse_image_checkbox, 3, 0, 1, 1),
-                (self._load_image_button, 3, 1, 1, 1)
+                (self._reuse_image_checkbox, 2, 0, 1, 1),
+                (self._load_image_button, 2, 1, 1, 1),
+                (self._control_image_label, 3, 0, 1, 1),
+                (self._image_path_edit, 3, 1, 1, 1)
             ]
             if self._control_type_combobox is not None:
                 layout_items += [

@@ -15,6 +15,7 @@ class BorderedWidget(QFrame):
     def __init__(self, parent: Optional[QWidget] = None):
         """Initialize the widget, optionally adding it to a parent."""
         super().__init__(parent)
+        self._default_color = self.frame_color
         self.setFrameStyle(QFrame.Shape.Panel | QFrame.Shadow.Raised)
         self.setLineWidth(DEFAULT_LINE_WIDTH)
         self.setAutoFillBackground(True)
@@ -31,6 +32,10 @@ class BorderedWidget(QFrame):
             palette = self.palette()
             palette.setColor(QPalette.ColorRole.Mid, new_color)
             self.setPalette(palette)
+            if new_color == self._default_color:
+                self.setFrameStyle(QFrame.Shape.Panel | QFrame.Shadow.Raised)
+            else:
+                self.setFrameStyle(QFrame.Shape.Box | QFrame.Shadow.Raised)
             self.update()
 
     @property

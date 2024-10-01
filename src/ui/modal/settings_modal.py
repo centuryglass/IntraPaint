@@ -33,6 +33,7 @@ def _tr(*args):
     return QApplication.translate(TR_ID, *args)
 
 
+WINDOW_TITLE = _tr('Settings')
 CANCEL_BUTTON_LABEL = _tr('Cancel')
 SAVE_BUTTON_LABEL = _tr('Save')
 
@@ -48,6 +49,7 @@ class SettingsModal(QDialog):
         super().__init__(parent)
         self.setModal(True)
         self.setWindowIcon(QIcon(APP_ICON_PATH))
+        self.setWindowTitle(WINDOW_TITLE)
 
         self._tabs: Dict[str, QWidget] = {}
         self._tab_layouts: Dict[str, QFormLayout] = {}
@@ -65,11 +67,6 @@ class SettingsModal(QDialog):
         bottom_panel_layout = QHBoxLayout()
         bottom_panel.setLayout(bottom_panel_layout)
 
-        cancel_button = QPushButton()
-        cancel_button.setText(CANCEL_BUTTON_LABEL)
-        cancel_button.clicked.connect(self.hide)
-        bottom_panel_layout.addWidget(cancel_button, stretch=1)
-
         save_button = QPushButton()
         save_button.setText(SAVE_BUTTON_LABEL)
 
@@ -80,6 +77,12 @@ class SettingsModal(QDialog):
 
         save_button.clicked.connect(on_save)
         bottom_panel_layout.addWidget(save_button, stretch=1)
+
+        cancel_button = QPushButton()
+        cancel_button.setText(CANCEL_BUTTON_LABEL)
+        cancel_button.clicked.connect(self.hide)
+        bottom_panel_layout.addWidget(cancel_button, stretch=1)
+
         layout.addWidget(bottom_panel, stretch=1)
 
     def load_from_config(self, config: Config, categories: Optional[List[str]] = None) -> None:

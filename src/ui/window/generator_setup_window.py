@@ -39,6 +39,8 @@ class GeneratorSetupWindow(QWidget):
 
     def __init__(self) -> None:
         super().__init__()
+        self.setWindowTitle(GEN_SETUP_WINDOW_TITLE)
+        self.setWindowIcon(QIcon(APP_ICON_PATH))
         self._layout = QHBoxLayout(self)
         self._option_list = BorderedWidget()
         self._option_list_layout = QVBoxLayout(self._option_list)
@@ -89,7 +91,6 @@ class GeneratorSetupWindow(QWidget):
         self._activate_button.setText(GEN_SETUP_ACTIVATE_BUTTON_TEXT)
         self._detail_panel_layout.addWidget(self._activate_button)
         self._activate_button.clicked.connect(lambda _unused_param: self.activate_signal.emit(self._selected_generator))
-        self.setWindowTitle(GEN_SETUP_WINDOW_TITLE)
 
         self._generators: List[ImageGenerator] = []
         self._generator_list_widgets: List[_GeneratorWidget] = []

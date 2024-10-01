@@ -22,6 +22,8 @@
 - Sharpen filter tool: displaces image content? factor capped at 2?
 - Filter previews really slow on large images, are they not being scaled?
 - Layer transforms: "maximum recursion depth exceeded" errors. even rarer: "non-invertible transform" errors
+- Shape tool: line is drawn even at width 0
+- Make sure non-ai scaling is always possible via PIL scaling modes
 
 ## Timelapse video
 

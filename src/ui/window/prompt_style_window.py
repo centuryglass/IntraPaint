@@ -24,6 +24,7 @@ def _tr(*args):
     return QApplication.translate(TR_ID, *args)
 
 
+STYLE_TITLE = _tr('Saved Prompt Styles')
 NAME_LABEL = _tr('Name:')
 PROMPT_LABEL = _tr('Prompt:')
 NEGATIVE_LABEL = _tr('Negative:')
@@ -47,6 +48,7 @@ class PromptStyleWindow(QDialog):
         """View, apply, and update saved stable-diffusion WebUI prompt info."""
         super().__init__()
         self.setWindowIcon(QIcon(APP_ICON_PATH))
+        self.setWindowTitle(STYLE_TITLE)
         self._save_enabled = save_enabled
         self._layout = QVBoxLayout(self)
 
@@ -71,40 +73,44 @@ class PromptStyleWindow(QDialog):
         self._layout.addLayout(name_row)
         name_row.addWidget(QLabel(NAME_LABEL), stretch=0)
         self._name_box = LineEdit()
+        self._name_box.setReadOnly(not save_enabled)
         name_row.addWidget(self._name_box, stretch=1)
 
         self._layout.addWidget(QLabel(PROMPT_LABEL))
         self._prompt_box = PlainTextEdit()
+        self._prompt_box.setReadOnly(not save_enabled)
         self._layout.addWidget(self._prompt_box)
         self._layout.addWidget(QLabel(NEGATIVE_LABEL))
         self._negative_box = PlainTextEdit()
+        self._negative_box.setReadOnly(not save_enabled)
         self._layout.addWidget(self._negative_box)
 
         button_layout = QHBoxLayout()
         self._layout.addLayout(button_layout)
-        append_button = QPushButton()
-        append_button.setText(ADD_BUTTON_LABEL)
-        append_button.clicked.connect(self._append_prompt)
-        button_layout.addWidget(append_button, stretch=1)
-        button_layout.addStretch(1)
+        self._append_button = QPushButton()
+        self._append_button.setText(ADD_BUTTON_LABEL)
+        self._append_button.clicked.connect(self._append_prompt)
+        self._append_button.setEnabled(False)
+        button_layout.addWidget(self._append_button, stretch=1)
 
-        replace_button = QPushButton()
-        replace_button.setText(REPLACE_BUTTON_LABEL)
-        replace_button.clicked.connect(self._replace_prompt)
-        button_layout.addWidget(replace_button, stretch=1)
-        button_layout.addStretch(1)
+        self._replace_button = QPushButton()
+        self._replace_button.setText(REPLACE_BUTTON_LABEL)
+        self._replace_button.clicked.connect(self._replace_prompt)
+        self._replace_button.setEnabled(False)
+        button_layout.addWidget(self._replace_button, stretch=1)
 
         text_fields: List[TextField] = [self._name_box, self._prompt_box, self._negative_box]
         for text_field in text_fields:
             text_field.valueChanged.connect(self._update_cached_styles)
 
         if save_enabled:
-            self._save_button = QPushButton()
+            self._save_button: Optional[QPushButton] = QPushButton()
             self._save_button.setEnabled(False)
             self._save_button.setText(SAVE_BUTTON_LABEL)
             self._save_button.clicked.connect(lambda: self.should_save_changes.emit(self._style_options))
-            button_layout.addWidget(self._save_button)
-            button_layout.addStretch(1)
+            button_layout.addWidget(self._save_button, stretch=1)
+        else:
+            self._save_button = None
 
         close_button = QPushButton()
         close_button.setText(CLOSE_BUTTON_LABEL)
@@ -137,6 +143,8 @@ class PromptStyleWindow(QDialog):
 
     def _update_preview(self) -> None:
         selected = self._get_selected_style()
+        self._append_button.setEnabled(selected is not None)
+        self._replace_button.setEnabled(selected is not None)
         text_fields: List[TextField] = [self._name_box, self._prompt_box, self._negative_box]
         field_keys = (NAME_KEY, PROMPT_KEY, NEGATIVE_KEY)
         if selected is None:
@@ -164,5 +172,6 @@ class PromptStyleWindow(QDialog):
             field_value = box.value()
             current_value = selected[key]
             if current_value != field_value:
-                self._save_button.setEnabled(True)
+                if self._save_button is not None:
+                    self._save_button.setEnabled(True)
                 selected[key] = field_value

@@ -25,7 +25,7 @@ def _tr(*args):
     """Helper to make `QCoreApplication.translate` more concise."""
     return QApplication.translate(TR_ID, *args)
 
-
+WINDOW_TITLE = _tr('Navigate')
 ZOOM_LABEL = _tr('Move view')
 ZOOM_TOOLTIP = _tr('Left-click to pan, right-click to draw viewport')
 IMAGE_GEN_LABEL_SHORT = _tr('Move gen. area')
@@ -106,6 +106,7 @@ class ImageWindow(ImagePanel):
         super().__init__(image_stack, include_zoom_controls=include_zoom_controls, use_keybindings=use_keybindings)
         self._main_image_viewer = main_image_view
         self.setWindowIcon(QIcon(APP_ICON_PATH))
+        self.setWindowTitle(WINDOW_TITLE)
         self._image_stack = image_stack
         self._tool_controller = ToolController(image_stack, self.image_viewer, False, False)
         self._tool_controller.active_tool_changed.connect(self._update_tool_slot)

@@ -428,11 +428,13 @@ class TabBar(QFrame):
             margin_top = BASE_MARGIN if self._at_parent_start else EDGE_MARGIN
             margin_bottom = EDGE_MARGIN if self._at_parent_start else BASE_MARGIN
             self._layout.setContentsMargins(INLINE_MARGIN, margin_top, INLINE_MARGIN, margin_bottom)
+            self.setMinimumHeight(BASE_EMPTY_BAR_SIZE)
         else:
             self._spacer_widget.setSizePolicy(QSizePolicy.Policy.Maximum, QSizePolicy.Policy.Expanding)
             margin_left = BASE_MARGIN if self._at_parent_start else EDGE_MARGIN
             margin_right = EDGE_MARGIN if self._at_parent_start else BASE_MARGIN
             self._layout.setContentsMargins(margin_left, INLINE_MARGIN, margin_right, INLINE_MARGIN)
+            self.setMinimumWidth(BASE_EMPTY_BAR_SIZE)
 
         self._apply_widget_orientation(self)
         self._apply_widget_orientation(self._toggle_button)
@@ -445,6 +447,7 @@ class TabBar(QFrame):
         for widget in self._widgets:
             self._apply_widget_orientation(widget)
         self._update_toggle_arrow(self._toggle_button.isChecked())
+        self.setSizePolicy(self._size_policy(self))
 
     def _update_insert_pos(self, point: QPointF):
         """When dragging in a Tab or other widget, find where the tab will be placed."""

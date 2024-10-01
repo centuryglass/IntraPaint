@@ -22,7 +22,7 @@ def _tr(*args):
     return QApplication.translate(TR_ID, *args)
 
 
-PAGE_TITLE = _tr('Lora Models')
+PAGE_TITLE = _tr('LORA Models')
 
 ADD_BUTTON_LABEL = _tr('Add to prompt')
 REMOVE_BUTTON_LABEL = _tr('Remove from prompt')
@@ -143,6 +143,8 @@ class _LoraItem(BorderedWidget):
     def __init__(self, lora: Dict[str, str], thumbnail: QImage) -> None:
         super().__init__()
         self._lora = lora
+        self._default_color = self.frame_color
+        self._selected_color = Qt.GlobalColor.white if self._default_color.lightness() < 128 else Qt.GlobalColor.black
         self._selected = False
         self._layout = QHBoxLayout(self)
         self._layout.setAlignment(Qt.AlignmentFlag.AlignLeft)
@@ -176,5 +178,6 @@ class _LoraItem(BorderedWidget):
             return
         self._selected = is_selected
         self.line_width = 6 if is_selected else 2
+        self.frame_color = self._selected_color if is_selected else self._default_color
         if is_selected:
             self.selected.emit(self)

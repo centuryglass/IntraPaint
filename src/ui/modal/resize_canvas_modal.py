@@ -90,18 +90,18 @@ class ResizeCanvasModal(QDialog):
 
         center_button.clicked.connect(center)
 
-        self._resize_button = QPushButton(self)
-        self._resize_button.setText(RESIZE_BUTTON_LABEL)
-        self._resize_button.clicked.connect(self._confirm)
-
         self._cancel_button = QPushButton(self)
         self._cancel_button.setText(CANCEL_BUTTON_LABEL)
         self._cancel_button.clicked.connect(self._cancel)
 
+        self._resize_button = QPushButton(self)
+        self._resize_button.setText(RESIZE_BUTTON_LABEL)
+        self._resize_button.clicked.connect(self._confirm)
+
         option_bar = QWidget(self)
         layout = QHBoxLayout(option_bar)
-        layout.addWidget(self._cancel_button)
         layout.addWidget(self._resize_button)
+        layout.addWidget(self._cancel_button)
 
         self._layout = QVBoxLayout()
         ordered_widgets = [

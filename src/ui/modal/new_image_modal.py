@@ -67,8 +67,7 @@ class NewImageModal(QDialog):
         self._color = Cache().get_color(Cache.NEW_IMAGE_BACKGROUND_COLOR, Qt.GlobalColor.white)
         self.setModal(True)
 
-        self._title = QLabel(self)
-        self._title.setText(CREATE_IMAGE_TITLE)
+        self.setWindowTitle(CREATE_IMAGE_TITLE)
 
         self._width_box = LabeledSpinbox(self, WIDTH_LABEL, WIDTH_TOOLTIP, MIN_PX_VALUE, default_width, MAX_PX_VALUE)
         self._height_box = LabeledSpinbox(self, HEIGHT_LABEL, HEIGHT_TOOLTIP, MIN_PX_VALUE, default_height,
@@ -96,19 +95,19 @@ class NewImageModal(QDialog):
         self._button_row = QWidget(self)
         self._button_row_layout = QHBoxLayout(self._button_row)
 
-        self._cancel_button = QPushButton(self)
-        self._cancel_button.setText(CANCEL_BUTTON_TEXT)
-        self._cancel_button.clicked.connect(self._cancel)
-        self._button_row_layout.addWidget(self._cancel_button)
-
         self._create_button = QPushButton(self)
         self._create_button.setText(CREATE_BUTTON_TEXT)
         self._create_button.clicked.connect(self._confirm)
         self._button_row_layout.addWidget(self._create_button)
 
+        self._cancel_button = QPushButton(self)
+        self._cancel_button.setText(CANCEL_BUTTON_TEXT)
+        self._cancel_button.clicked.connect(self._cancel)
+        self._button_row_layout.addWidget(self._cancel_button)
+
+
         self._layout = QVBoxLayout()
-        for widget in [self._title, self._width_box, self._height_box, self._color_row, self._color_button,
-                       self._button_row]:
+        for widget in [self._width_box, self._height_box, self._color_row, self._color_button, self._button_row]:
             self._layout.addWidget(widget)
 
         self.setLayout(self._layout)

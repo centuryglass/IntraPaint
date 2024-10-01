@@ -2,7 +2,7 @@
 from typing import List, Callable, Optional, TypeAlias, Any
 
 from PySide6.QtCore import QSize, Signal
-from PySide6.QtGui import QImage, QIcon
+from PySide6.QtGui import QImage, QIcon, Qt
 from PySide6.QtWidgets import QDialog, QFormLayout, QLabel, QWidget, QHBoxLayout, QPushButton, QApplication
 
 from src.ui.input_fields.check_box import CheckBox
@@ -54,7 +54,9 @@ class ImageFilterModal(QDialog):
         self._apply_filter = apply_filter
 
         self.setWindowTitle(title)
-        self._layout.addWidget(QLabel(description))
+        label = QLabel(description)
+        label.setAlignment(Qt.AlignmentFlag.AlignLeft)
+        self._layout.addRow(label)
         for param in parameters:
             field_widget = param.get_input_widget()
             self._param_inputs.append(field_widget)
@@ -78,15 +80,16 @@ class ImageFilterModal(QDialog):
         self._layout.addRow(self._preview)
         self._button_row = QWidget(self)
         button_layout = QHBoxLayout(self._button_row)
-        self._cancel_button = QPushButton()
-        self._cancel_button.setText(CANCEL_BUTTON_TEXT)
-        self._cancel_button.clicked.connect(self.close)
-        button_layout.addWidget(self._cancel_button)
+        button_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self._apply_button = QPushButton()
         self._apply_button.setText(APPLY_BUTTON_TEXT)
         self._apply_button.clicked.connect(self._apply_change)
-        button_layout.addWidget(self._apply_button)
-        self._layout.addWidget(self._button_row)
+        button_layout.addWidget(self._apply_button, stretch=1)
+        self._cancel_button = QPushButton()
+        self._cancel_button.setText(CANCEL_BUTTON_TEXT)
+        self._cancel_button.clicked.connect(self.close)
+        button_layout.addWidget(self._cancel_button, stretch=1)
+        self._layout.addRow(self._button_row)
         self._update_preview()
 
     def _update_preview(self, _=None) -> None:
