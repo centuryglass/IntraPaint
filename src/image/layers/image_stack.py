@@ -1406,7 +1406,7 @@ class ImageStack(QObject):
         new_layer = self._create_layer_internal(None, image_data)
         new_size = new_layer.size
         gen_area = QRect(self._generation_area)
-        new_gen_area = gen_area.intersected(new_layer.transformed_bounds)
+        new_gen_area = self._get_closest_valid_generation_area(gen_area, new_layer.transformed_bounds)
         last_active_id = self.active_layer_id
 
         @self._with_batch_content_update
@@ -1614,14 +1614,16 @@ class ImageStack(QObject):
         self._active_layer_id = layer_id
         self.active_layer_changed.emit(layer)
 
-    def _get_closest_valid_generation_area(self, initial_area: QRect) -> QRect:
+    def _get_closest_valid_generation_area(self, initial_area: QRect, image_bounds: Optional[QRect] = None) -> QRect:
+        if image_bounds is None:
+            image_bounds = self.bounds
         adjusted_area = QRect(initial_area)
         # Make sure that the image generation area fits within allowed size limits:
         min_size = self.min_generation_area_size
         adjusted_area = adjusted_area.united(QRect(adjusted_area.topLeft(), min_size))
         max_size = self.max_generation_area_size
         adjusted_area = adjusted_area.intersected(QRect(adjusted_area.topLeft(), max_size))
-        return adjusted_placement_in_bounds(adjusted_area, self.bounds)
+        return adjusted_placement_in_bounds(adjusted_area, image_bounds)
 
     def _set_generation_area_internal(self, bounds_rect: QRect) -> None:
         """Updates the image generation area, adjusting as needed based on image bounds, and sending the
