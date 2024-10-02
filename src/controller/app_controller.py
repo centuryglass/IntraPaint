@@ -76,6 +76,7 @@ from src.image.layers.transform_layer import TransformLayer
 from src.image.open_raster import save_ora_image, read_ora_image
 from src.tools.base_tool import BaseTool
 from src.tools.generation_area_tool import GenerationAreaTool
+from src.ui.input_fields.pressure_curve_input import PressureCurveInput
 from src.ui.layout.draggable_tabs.tab import Tab
 from src.ui.modal.image_scale_modal import ImageScaleModal
 from src.ui.modal.modal_utils import show_error_dialog, request_confirmation, open_image_file, open_image_layers, \
@@ -538,10 +539,19 @@ class AppController(MenuBuilder):
     def init_settings(self, settings_modal: SettingsModal) -> None:
         """Load application settings into a SettingsModal"""
         categories = _get_config_categories()
-        settings_modal.load_from_config(AppConfig(), categories)
+        app_config = AppConfig()
+        settings_modal.load_from_config(app_config, categories)
         settings_modal.load_from_config(KeyConfig())
         if self._generator is not None:
             self._generator.init_settings(settings_modal)
+        # Add custom setting controls:
+        pressure_curve_input = PressureCurveInput()
+        curve_values = app_config.get(AppConfig.TABLET_PRESSURE_CURVE)
+        try:
+            pressure_curve_input.setValue(curve_values)
+        except ValueError:
+            app_config.set(AppConfig.TABLET_PRESSURE_CURVE, pressure_curve_input.value())
+        settings_modal.add_custom_control(pressure_curve_input, app_config, AppConfig.TABLET_PRESSURE_CURVE)
 
     def refresh_settings(self, settings_modal: SettingsModal):
         """Updates a SettingsModal to reflect any changes."""

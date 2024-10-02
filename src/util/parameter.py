@@ -9,6 +9,7 @@ from src.ui.input_fields.combo_box import ComboBox
 from src.ui.input_fields.dual_toggle import DualToggle
 from src.ui.input_fields.line_edit import LineEdit
 from src.ui.input_fields.plain_text_edit import PlainTextEdit
+from src.ui.input_fields.pressure_curve_input import PressureCurveInput
 from src.ui.input_fields.size_field import SizeField
 from src.ui.input_fields.slider_spinbox import IntSliderSpinbox, FloatSliderSpinbox
 from src.util.shared_constants import INT_MIN, INT_MAX, FLOAT_MIN, FLOAT_MAX
@@ -46,7 +47,7 @@ def get_parameter_type(value: Any) -> str:
 ParamType: TypeAlias = int | float | str | bool | QSize | list | dict
 
 DynamicFieldWidget: TypeAlias = (BigIntSpinbox | CheckBox | ComboBox | DualToggle | LineEdit | PlainTextEdit |
-                                 SizeField | IntSliderSpinbox | FloatSliderSpinbox)
+                                 SizeField | IntSliderSpinbox | FloatSliderSpinbox | PressureCurveInput)
 
 
 class Parameter:

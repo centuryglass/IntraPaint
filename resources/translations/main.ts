@@ -5,19 +5,19 @@
     <name>application_config</name>
     <message>
       <location filename="../../src/controller/image_generation/sd_webui_generator.py" line="135"/>
-      <location filename="../../src/controller/app_controller.py" line="204"/>
+      <location filename="../../src/controller/app_controller.py" line="205"/>
       <source>Stable-Diffusion</source>
       <translation>Stable-Diffusion</translation>
     </message>
     <message>
       <location filename="../../src/controller/image_generation/glid3_webservice_generator.py" line="35"/>
       <location filename="../../src/controller/image_generation/glid3_xl_generator.py" line="50"/>
-      <location filename="../../src/controller/app_controller.py" line="205"/>
+      <location filename="../../src/controller/app_controller.py" line="206"/>
       <source>GLID-3-XL</source>
       <translation>GLID-3-XL</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="206"/>
+      <location filename="../../src/controller/app_controller.py" line="207"/>
       <source>Developer</source>
       <translation>Developer</translation>
     </message>
@@ -25,42 +25,42 @@
   <context>
     <name>config.config</name>
     <message>
-      <location filename="../../src/config/config.py" line="37"/>
+      <location filename="../../src/config/config.py" line="36"/>
       <source>Config definition file not found at {definition_path}</source>
       <translation>Config definition file not found at {definition_path}</translation>
     </message>
     <message>
-      <location filename="../../src/config/config.py" line="38"/>
+      <location filename="../../src/config/config.py" line="37"/>
       <source>Config value definition for {key} had invalid data type {value_type}</source>
       <translation>Config value definition for {key} had invalid data type {value_type}</translation>
     </message>
     <message>
-      <location filename="../../src/config/config.py" line="39"/>
+      <location filename="../../src/config/config.py" line="38"/>
       <source>Loading {key} failed: {err}</source>
       <translation>Loading {key} failed: {err}</translation>
     </message>
     <message>
-      <location filename="../../src/config/config.py" line="40"/>
+      <location filename="../../src/config/config.py" line="39"/>
       <source>Reading JSON config definitions failed: {err}</source>
       <translation>Reading JSON config definitions failed: {err}</translation>
     </message>
     <message>
-      <location filename="../../src/config/config.py" line="41"/>
+      <location filename="../../src/config/config.py" line="40"/>
       <source>Reading JSON config values failed: {err}</source>
       <translation>Reading JSON config values failed: {err}</translation>
     </message>
     <message>
-      <location filename="../../src/config/config.py" line="42"/>
+      <location filename="../../src/config/config.py" line="41"/>
       <source>Tried to access unknown config value "{key}"</source>
       <translation>Tried to access unknown config value "{key}"</translation>
     </message>
     <message>
-      <location filename="../../src/config/config.py" line="43"/>
+      <location filename="../../src/config/config.py" line="42"/>
       <source>Tried to get key code "{key}", found "{code_string}"</source>
       <translation>Tried to get key code "{key}", found "{code_string}"</translation>
     </message>
     <message>
-      <location filename="../../src/config/config.py" line="44"/>
+      <location filename="../../src/config/config.py" line="43"/>
       <source>Tried to add duplicate config entry for key "{key}"</source>
       <translation>Tried to add duplicate config entry for key "{key}"</translation>
     </message>
@@ -1646,229 +1646,229 @@
   <context>
     <name>controller.app_controller</name>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="142"/>
-      <location filename="../../src/controller/app_controller.py" line="127"/>
+      <location filename="../../src/controller/app_controller.py" line="143"/>
+      <location filename="../../src/controller/app_controller.py" line="128"/>
       <source>Layers</source>
       <translation>Layers</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="128"/>
+      <location filename="../../src/controller/app_controller.py" line="129"/>
       <source>Color</source>
       <translation>Color</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="129"/>
+      <location filename="../../src/controller/app_controller.py" line="130"/>
       <source>Navigation</source>
       <translation>Navigation</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="138"/>
+      <location filename="../../src/controller/app_controller.py" line="139"/>
       <source>File</source>
       <translation>File</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="139"/>
+      <location filename="../../src/controller/app_controller.py" line="140"/>
       <source>Edit</source>
       <translation>Edit</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="140"/>
+      <location filename="../../src/controller/app_controller.py" line="141"/>
       <source>Image</source>
       <translation>Image</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="141"/>
+      <location filename="../../src/controller/app_controller.py" line="142"/>
       <source>Selection</source>
       <translation>Selection</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="143"/>
+      <location filename="../../src/controller/app_controller.py" line="144"/>
       <source>Tools</source>
       <translation>Tools</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="144"/>
+      <location filename="../../src/controller/app_controller.py" line="145"/>
       <source>Filters</source>
       <translation>Filters</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="146"/>
+      <location filename="../../src/controller/app_controller.py" line="147"/>
       <source>Move</source>
       <translation>Move</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="147"/>
+      <location filename="../../src/controller/app_controller.py" line="148"/>
       <source>Select</source>
       <translation>Select</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="148"/>
+      <location filename="../../src/controller/app_controller.py" line="149"/>
       <source>Transform</source>
       <translation>Transform</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="150"/>
+      <location filename="../../src/controller/app_controller.py" line="151"/>
       <source>Image Generation</source>
       <translation>Image Generation</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="154"/>
+      <location filename="../../src/controller/app_controller.py" line="155"/>
       <source>Loading image generator failed</source>
       <translation>Loading image generator failed</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="155"/>
+      <location filename="../../src/controller/app_controller.py" line="156"/>
       <source>Unable to load the {generator_name} image generator</source>
       <translation>Unable to load the {generator_name} image generator</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="156"/>
+      <location filename="../../src/controller/app_controller.py" line="157"/>
       <source>Quit now?</source>
       <translation>Quit now?</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="157"/>
+      <location filename="../../src/controller/app_controller.py" line="158"/>
       <source>All unsaved changes will be lost.</source>
       <translation>All unsaved changes will be lost.</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="158"/>
+      <location filename="../../src/controller/app_controller.py" line="159"/>
       <source>Create new image?</source>
       <translation>Create new image?</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="166"/>
-      <location filename="../../src/controller/app_controller.py" line="159"/>
+      <location filename="../../src/controller/app_controller.py" line="167"/>
+      <location filename="../../src/controller/app_controller.py" line="160"/>
       <source>This will discard all unsaved changes.</source>
       <translation>This will discard all unsaved changes.</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="160"/>
+      <location filename="../../src/controller/app_controller.py" line="161"/>
       <source>Save failed</source>
       <translation>Save failed</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="161"/>
+      <location filename="../../src/controller/app_controller.py" line="162"/>
       <source>Open failed</source>
       <translation>Open failed</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="162"/>
+      <location filename="../../src/controller/app_controller.py" line="163"/>
       <source>Reload failed</source>
       <translation>Reload failed</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="163"/>
+      <location filename="../../src/controller/app_controller.py" line="164"/>
       <source>Image path "{file_path}" is not a valid image file.</source>
       <translation>Image path "{file_path}" is not a valid image file.</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="164"/>
+      <location filename="../../src/controller/app_controller.py" line="165"/>
       <source>Enter an image path or click "Open Image" first.</source>
       <translation>Enter an image path or click "Open Image" first.</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="165"/>
+      <location filename="../../src/controller/app_controller.py" line="166"/>
       <source>Reload image?</source>
       <translation>Reload image?</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="167"/>
+      <location filename="../../src/controller/app_controller.py" line="168"/>
       <source>Metadata updated</source>
       <translation>Metadata updated</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="168"/>
+      <location filename="../../src/controller/app_controller.py" line="169"/>
       <source>On save, current image generation parameters will be stored within the image</source>
       <translation>On save, current image generation parameters will be stored within the image</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="169"/>
+      <location filename="../../src/controller/app_controller.py" line="170"/>
       <source>Opening layers failed</source>
       <translation>Opening layers failed</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="170"/>
+      <location filename="../../src/controller/app_controller.py" line="171"/>
       <source>Could not open the following images: </source>
       <translation>Could not open the following images: </translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="172"/>
+      <location filename="../../src/controller/app_controller.py" line="173"/>
       <source>Save image generation metadata?</source>
       <translation>Save image generation metadata?</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="173"/>
+      <location filename="../../src/controller/app_controller.py" line="174"/>
       <source>No image metadata is cached, would you like to save image generation parameters to this image?</source>
       <translation>No image metadata is cached, would you like to save image generation parameters to this image?</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="175"/>
+      <location filename="../../src/controller/app_controller.py" line="176"/>
       <source>Update image generation metadata?</source>
       <translation>Update image generation metadata?</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="176"/>
+      <location filename="../../src/controller/app_controller.py" line="177"/>
       <source>Image generation parameters have changed, would you like this image to be saved with the most recent values?</source>
       <translation>Image generation parameters have changed, would you like this image to be saved with the most recent values?</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="180"/>
+      <location filename="../../src/controller/app_controller.py" line="181"/>
       <source>Image saved without layer data</source>
       <translation>Image saved without layer data</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="181"/>
+      <location filename="../../src/controller/app_controller.py" line="182"/>
       <source>To save layer data, images must be saved in .ora format.</source>
       <translation>To save layer data, images must be saved in .ora format.</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="183"/>
+      <location filename="../../src/controller/app_controller.py" line="184"/>
       <source>Image saved without full transparency</source>
       <translation>Image saved without full transparency</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="184"/>
+      <location filename="../../src/controller/app_controller.py" line="185"/>
       <source>To preserve transparency, save using one of the following file formats: {alpha_formats}</source>
       <translation>To preserve transparency, save using one of the following file formats: {alpha_formats}</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="187"/>
+      <location filename="../../src/controller/app_controller.py" line="188"/>
       <source>Image saved without image generation metadata</source>
       <translation>Image saved without image generation metadata</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="188"/>
+      <location filename="../../src/controller/app_controller.py" line="189"/>
       <source>To preserve image generation metadata, save using one of the following file formats: {metadata_formats}</source>
       <translation>To preserve image generation metadata, save using one of the following file formats: {metadata_formats}</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="191"/>
+      <location filename="../../src/controller/app_controller.py" line="192"/>
       <source>Image saved in a write-only format</source>
       <translation>Image saved in a write-only format</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="192"/>
+      <location filename="../../src/controller/app_controller.py" line="193"/>
       <source>IntraPaint can write images in the {file_format} format, but cannot load them. Use another file format if you want to be able to load this image in IntraPaint again.</source>
       <translation>IntraPaint can write images in the {file_format} format, but cannot load them. Use another file format if you want to be able to load this image in IntraPaint again.</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="195"/>
+      <location filename="../../src/controller/app_controller.py" line="196"/>
       <source>Image saved in a format that changes size</source>
       <translation>Image saved in a format that changes size</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="196"/>
+      <location filename="../../src/controller/app_controller.py" line="197"/>
       <source>The image is {width_px}x{height_px}, but the {file_format} format saves all images at {saved_width_px}x{saved_height_px} resolution. Use another file format if you want to preserve the original image size.</source>
       <translation>The image is {width_px}x{height_px}, but the {file_format} format saves all images at {saved_width_px}x{saved_height_px} resolution. Use another file format if you want to preserve the original image size.</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="200"/>
+      <location filename="../../src/controller/app_controller.py" line="201"/>
       <source>Image saved without color</source>
       <translation>Image saved without color</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="201"/>
+      <location filename="../../src/controller/app_controller.py" line="202"/>
       <source>The {file_format} format saves the image without color. Use another format if you want to preserve image colors.</source>
       <translation>The {file_format} format saves the image without color. Use another format if you want to preserve image colors.</translation>
     </message>
@@ -2455,34 +2455,6 @@ Please remember to include the traceback from the Details expander.</translation
     </message>
   </context>
   <context>
-    <name>image.brush.layer_brush</name>
-    <message>
-      <location filename="../../src/image/brush/layer_brush.py" line="20"/>
-      <source>Editing failed</source>
-      <translation>Editing failed</translation>
-    </message>
-    <message>
-      <location filename="../../src/image/brush/layer_brush.py" line="21"/>
-      <source>The selected layer is locked, unlock it or select a different layer.</source>
-      <translation>The selected layer is locked, unlock it or select a different layer.</translation>
-    </message>
-    <message>
-      <location filename="../../src/image/brush/layer_brush.py" line="22"/>
-      <source>The selected layer is hidden, un-hide it before trying to edit it.</source>
-      <translation>The selected layer is hidden, un-hide it before trying to edit it.</translation>
-    </message>
-    <message>
-      <location filename="../../src/image/brush/layer_brush.py" line="23"/>
-      <source>The selected layer is not an image layer, select an image layer first.</source>
-      <translation>The selected layer is not an image layer, select an image layer first.</translation>
-    </message>
-    <message>
-      <location filename="../../src/image/brush/layer_brush.py" line="24"/>
-      <source>Changes are restricted to selected content only, but nothing is selected in this layer. Select layer content or enable changes in unselected areas.</source>
-      <translation>Changes are restricted to selected content only, but nothing is selected in this layer. Select layer content or enable changes in unselected areas.</translation>
-    </message>
-  </context>
-  <context>
     <name>image.composite_mode</name>
     <message>
       <location filename="../../src/image/composite_mode.py" line="34"/>
@@ -2913,17 +2885,17 @@ Please remember to include the traceback from the Details expander.</translation
   <context>
     <name>tools.base_tool</name>
     <message>
-      <location filename="../../src/tools/base_tool.py" line="28"/>
+      <location filename="../../src/tools/base_tool.py" line="36"/>
       <source>{modifier_or_modifiers}+{left_mouse_icon} or {middle_mouse_icon}, drag: pan view</source>
       <translation>{modifier_or_modifiers}+{left_mouse_icon} or {middle_mouse_icon}, drag: pan view</translation>
     </message>
     <message>
-      <location filename="../../src/tools/base_tool.py" line="29"/>
+      <location filename="../../src/tools/base_tool.py" line="37"/>
       <source>{v_scroll_icon}: zoom</source>
       <translation>{v_scroll_icon}: zoom</translation>
     </message>
     <message>
-      <location filename="../../src/tools/base_tool.py" line="30"/>
+      <location filename="../../src/tools/base_tool.py" line="38"/>
       <source>{modifier_or_modifiers}: Fixed aspect ratio</source>
       <translation>{modifier_or_modifiers}: Fixed aspect ratio</translation>
     </message>
@@ -2946,12 +2918,12 @@ Please remember to include the traceback from the Details expander.</translation
       <translation>{left_mouse_icon}: draw - {right_mouse_icon}: 1px draw</translation>
     </message>
     <message>
-      <location filename="../../src/tools/brush_tool.py" line="38"/>
+      <location filename="../../src/tools/brush_tool.py" line="39"/>
       <source>{modifier_or_modifiers}+{left_mouse_icon}/{right_mouse_icon}: draw line</source>
       <translation>{modifier_or_modifiers}+{left_mouse_icon}/{right_mouse_icon}: draw line</translation>
     </message>
     <message>
-      <location filename="../../src/tools/brush_tool.py" line="39"/>
+      <location filename="../../src/tools/brush_tool.py" line="40"/>
       <source>{modifier_or_modifiers}: fixed angle</source>
       <translation>{modifier_or_modifiers}: fixed angle</translation>
     </message>
@@ -3438,6 +3410,19 @@ Please remember to include the traceback from the Details expander.</translation
       <location filename="../../src/ui/input_fields/pen_style_combo_box.py" line="28"/>
       <source>Custom pattern</source>
       <translation>Custom pattern</translation>
+    </message>
+  </context>
+  <context>
+    <name>ui.input_fields.pressure_curve_input</name>
+    <message>
+      <location filename="../../src/ui/input_fields/pressure_curve_input.py" line="21"/>
+      <source>Input: {input_fraction}, Output: {output_fraction}</source>
+      <translation>Input: {input_fraction}, Output: {output_fraction}</translation>
+    </message>
+    <message>
+      <location filename="../../src/ui/input_fields/pressure_curve_input.py" line="22"/>
+      <source>Reset</source>
+      <translation>Reset</translation>
     </message>
   </context>
   <context>
@@ -4840,37 +4825,67 @@ Press ESC to cancel</translation>
       <translation>Keep aspect ratio</translation>
     </message>
     <message>
-      <location filename="../../src/util/shared_constants.py" line="65"/>
+      <location filename="../../src/util/shared_constants.py" line="62"/>
+      <source>Editing failed</source>
+      <translation>Editing failed</translation>
+    </message>
+    <message>
+      <location filename="../../src/util/shared_constants.py" line="63"/>
+      <source>The selected layer is locked, unlock it or select a different layer.</source>
+      <translation>The selected layer is locked, unlock it or select a different layer.</translation>
+    </message>
+    <message>
+      <location filename="../../src/util/shared_constants.py" line="64"/>
+      <source>The selected layer is in a locked group, unlock it or select a different layer.</source>
+      <translation>The selected layer is in a locked group, unlock it or select a different layer.</translation>
+    </message>
+    <message>
+      <location filename="../../src/util/shared_constants.py" line="66"/>
+      <source>The selected layer is hidden, un-hide it before trying to edit it.</source>
+      <translation>The selected layer is hidden, un-hide it before trying to edit it.</translation>
+    </message>
+    <message>
+      <location filename="../../src/util/shared_constants.py" line="67"/>
+      <source>The selected layer is not an image layer, select an image layer first.</source>
+      <translation>The selected layer is not an image layer, select an image layer first.</translation>
+    </message>
+    <message>
+      <location filename="../../src/util/shared_constants.py" line="68"/>
+      <source>Changes are restricted to selected content only, but nothing is selected in this layer. Select layer content or enable changes in unselected areas.</source>
+      <translation>Changes are restricted to selected content only, but nothing is selected in this layer. Select layer content or enable changes in unselected areas.</translation>
+    </message>
+    <message>
+      <location filename="../../src/util/shared_constants.py" line="75"/>
       <source>Bilinear</source>
       <translation>Bilinear</translation>
     </message>
     <message>
-      <location filename="../../src/util/shared_constants.py" line="66"/>
+      <location filename="../../src/util/shared_constants.py" line="76"/>
       <source>Nearest</source>
       <translation>Nearest</translation>
     </message>
     <message>
-      <location filename="../../src/util/shared_constants.py" line="67"/>
+      <location filename="../../src/util/shared_constants.py" line="77"/>
       <source>Hamming</source>
       <translation>Hamming</translation>
     </message>
     <message>
-      <location filename="../../src/util/shared_constants.py" line="68"/>
+      <location filename="../../src/util/shared_constants.py" line="78"/>
       <source>Bicubic</source>
       <translation>Bicubic</translation>
     </message>
     <message>
-      <location filename="../../src/util/shared_constants.py" line="69"/>
+      <location filename="../../src/util/shared_constants.py" line="79"/>
       <source>Lanczos</source>
       <translation>Lanczos</translation>
     </message>
     <message>
-      <location filename="../../src/util/shared_constants.py" line="70"/>
+      <location filename="../../src/util/shared_constants.py" line="80"/>
       <source>Box</source>
       <translation>Box</translation>
     </message>
     <message>
-      <location filename="../../src/util/shared_constants.py" line="72"/>
+      <location filename="../../src/util/shared_constants.py" line="82"/>
       <source>{modifier_or_modifiers}: pick color</source>
       <translation>{modifier_or_modifiers}: pick color</translation>
     </message>
@@ -5252,13 +5267,13 @@ Press ESC to cancel</translation>
     </message>
     <message>
       <location filename="../config/application_config_definitions.json" line="240"/>
-      <source>Minimum pressure value</source>
-      <translation>Minimum pressure value</translation>
+      <source>Pen tablet pressure curve:</source>
+      <translation>Pen tablet pressure curve:</translation>
     </message>
     <message>
       <location filename="../config/application_config_definitions.json" line="242"/>
-      <source>All nonzero pen pressure readings will be boosted up to this value at a minimum.</source>
-      <translation>All nonzero pen pressure readings will be boosted up to this value at a minimum.</translation>
+      <source>Controls how pen tablet pressure values are applied.</source>
+      <translation>Controls how pen tablet pressure values are applied.</translation>
     </message>
     <message>
       <location filename="../config/application_config_definitions.json" line="241"/>
@@ -5266,322 +5281,292 @@ Press ESC to cancel</translation>
       <translation>Drawing tablet settings</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="254"/>
-      <source>Maximum pressure value</source>
-      <translation>Maximum pressure value</translation>
-    </message>
-    <message>
-      <location filename="../config/application_config_definitions.json" line="256"/>
-      <source>All pen pressure readings will be capped at this value.</source>
-      <translation>All pen pressure readings will be capped at this value.</translation>
-    </message>
-    <message>
-      <location filename="../config/application_config_definitions.json" line="267"/>
-      <source>Minimum pressure threshold</source>
-      <translation>Minimum pressure threshold</translation>
-    </message>
-    <message>
-      <location filename="../config/application_config_definitions.json" line="269"/>
-      <source>Lower bounds of pen pressure input. Pressure values will be scaled so that this value becomes the minimum pressure value.</source>
-      <translation>Lower bounds of pen pressure input. Pressure values will be scaled so that this value becomes the minimum pressure value.</translation>
-    </message>
-    <message>
-      <location filename="../config/application_config_definitions.json" line="280"/>
-      <source>Maximum pressure threshold</source>
-      <translation>Maximum pressure threshold</translation>
-    </message>
-    <message>
-      <location filename="../config/application_config_definitions.json" line="282"/>
-      <source>Upper bounds of pen pressure input. Pressure values will be scaled so that this value becomes the maximum pressure value</source>
-      <translation>Upper bounds of pen pressure input. Pressure values will be scaled so that this value becomes the maximum pressure value</translation>
-    </message>
-    <message>
-      <location filename="../config/application_config_definitions.json" line="293"/>
+      <location filename="../config/application_config_definitions.json" line="248"/>
       <source>Image interrogation model:</source>
       <translation>Image interrogation model:</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="295"/>
+      <location filename="../config/application_config_definitions.json" line="250"/>
       <source>Model used when auto-generating appropriate prompts using the 'interrogate' button. Supported values will vary based on what extensions you've installed into the stable-generation-webui, but 'clip' should always be accepted.</source>
       <translation>Model used when auto-generating appropriate prompts using the 'interrogate' button. Supported values will vary based on what extensions you've installed into the stable-generation-webui, but 'clip' should always be accepted.</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="294"/>
+      <location filename="../config/application_config_definitions.json" line="249"/>
       <source>Stable-Diffusion</source>
       <translation>Stable-Diffusion</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="301"/>
+      <location filename="../config/application_config_definitions.json" line="256"/>
       <source>ControlNet tiled upscaling model:</source>
       <translation>ControlNet tiled upscaling model:</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="303"/>
+      <location filename="../config/application_config_definitions.json" line="258"/>
       <source>ControlNet model to use for tiled upscaling, in the 'filename [hash]' format used by the webui. This only needs to change if a newer model is available if using a stable diffusion model not based on stable-diffusion 1.5.</source>
       <translation>ControlNet model to use for tiled upscaling, in the 'filename [hash]' format used by the webui. This only needs to change if a newer model is available if using a stable diffusion model not based on stable-diffusion 1.5.</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="309"/>
+      <location filename="../config/application_config_definitions.json" line="264"/>
       <source>Mask blur:</source>
       <translation>Mask blur:</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="311"/>
+      <location filename="../config/application_config_definitions.json" line="266"/>
       <source>Pixel radius to blur in the inpainting mask to smoothly combine edited and original image content.</source>
       <translation>Pixel radius to blur in the inpainting mask to smoothly combine edited and original image content.</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="322"/>
+      <location filename="../config/application_config_definitions.json" line="277"/>
       <source>Restore faces</source>
       <translation>Restore faces</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="325"/>
+      <location filename="../config/application_config_definitions.json" line="280"/>
       <source>Use a face restoration model to correct image data after stable-diffusion runs. In most cases you'll probably get better results without it.</source>
       <translation>Use a face restoration model to correct image data after stable-diffusion runs. In most cases you'll probably get better results without it.</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="324"/>
+      <location filename="../config/application_config_definitions.json" line="279"/>
       <source>Extra Features</source>
       <translation>Extra Features</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="331"/>
+      <location filename="../config/application_config_definitions.json" line="286"/>
       <source>Tiling</source>
       <translation>Tiling</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="334"/>
+      <location filename="../config/application_config_definitions.json" line="289"/>
       <source>Generate tiling images that can be seamlessly repeated.</source>
       <translation>Generate tiling images that can be seamlessly repeated.</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="324"/>
+      <location filename="../config/application_config_definitions.json" line="279"/>
       <source>Extra Features</source>
       <translation>Extra Features</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="340"/>
+      <location filename="../config/application_config_definitions.json" line="295"/>
       <source>GLID-3-XL model path:</source>
       <translation>GLID-3-XL model path:</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="343"/>
+      <location filename="../config/application_config_definitions.json" line="298"/>
       <source>Path to the main GLID-3-XL model file</source>
       <translation>Path to the main GLID-3-XL model file</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="340"/>
+      <location filename="../config/application_config_definitions.json" line="295"/>
       <source>GLID-3-XL</source>
       <translation>GLID-3-XL</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="342"/>
+      <location filename="../config/application_config_definitions.json" line="297"/>
       <source>Models</source>
       <translation>Models</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="349"/>
+      <location filename="../config/application_config_definitions.json" line="304"/>
       <source>BERT model path:</source>
       <translation>BERT model path:</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="352"/>
+      <location filename="../config/application_config_definitions.json" line="307"/>
       <source>Path to the BERT language model file</source>
       <translation>Path to the BERT language model file</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="342"/>
+      <location filename="../config/application_config_definitions.json" line="297"/>
       <source>Models</source>
       <translation>Models</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="358"/>
+      <location filename="../config/application_config_definitions.json" line="313"/>
       <source>GLID-3-XL VAE model path:</source>
       <translation>GLID-3-XL VAE model path:</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="361"/>
+      <location filename="../config/application_config_definitions.json" line="316"/>
       <source>Path to the VAE latent image encoding/decoding model file</source>
       <translation>Path to the VAE latent image encoding/decoding model file</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="342"/>
+      <location filename="../config/application_config_definitions.json" line="297"/>
       <source>Models</source>
       <translation>Models</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="367"/>
+      <location filename="../config/application_config_definitions.json" line="322"/>
       <source>CLIP model name:</source>
       <translation>CLIP model name:</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="370"/>
+      <location filename="../config/application_config_definitions.json" line="325"/>
       <source>Name of the CLIP language model to use.</source>
       <translation>Name of the CLIP language model to use.</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="342"/>
+      <location filename="../config/application_config_definitions.json" line="297"/>
       <source>Models</source>
       <translation>Models</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="376"/>
+      <location filename="../config/application_config_definitions.json" line="331"/>
       <source>Enable global error handler:</source>
       <translation>Enable global error handler:</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="378"/>
+      <location filename="../config/application_config_definitions.json" line="333"/>
       <source>Attempt to catch and report global application errors instead of crashing. Disabling this makes it easier to debug certain errors.</source>
       <translation>Attempt to catch and report global application errors instead of crashing. Disabling this makes it easier to debug certain errors.</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="384"/>
+      <location filename="../config/application_config_definitions.json" line="339"/>
       <source>Warn about keybinding issues:</source>
       <translation>Warn about keybinding issues:</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="386"/>
+      <location filename="../config/application_config_definitions.json" line="341"/>
       <source>Show an alert when keybinding issues are found on startup.</source>
       <translation>Show an alert when keybinding issues are found on startup.</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="385"/>
+      <location filename="../config/application_config_definitions.json" line="340"/>
       <source>Alerts</source>
       <translation>Alerts</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="392"/>
+      <location filename="../config/application_config_definitions.json" line="347"/>
       <source>Warn when saving without layers:</source>
       <translation>Warn when saving without layers:</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="394"/>
+      <location filename="../config/application_config_definitions.json" line="349"/>
       <source>Show a warning popup when saving a multi-layer image in a format that discards layer data.</source>
       <translation>Show a warning popup when saving a multi-layer image in a format that discards layer data.</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="400"/>
+      <location filename="../config/application_config_definitions.json" line="355"/>
       <source>Warn when saving without transparency:</source>
       <translation>Warn when saving without transparency:</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="402"/>
+      <location filename="../config/application_config_definitions.json" line="357"/>
       <source>Show a warning popup when saving an image with transparency in a format that doesn't support it.</source>
       <translation>Show a warning popup when saving an image with transparency in a format that doesn't support it.</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="408"/>
+      <location filename="../config/application_config_definitions.json" line="363"/>
       <source>Warn when saving without metadata:</source>
       <translation>Warn when saving without metadata:</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="410"/>
+      <location filename="../config/application_config_definitions.json" line="365"/>
       <source>Show a warning popup when saving an image in a format that discards metadata.</source>
       <translation>Show a warning popup when saving an image in a format that discards metadata.</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="416"/>
+      <location filename="../config/application_config_definitions.json" line="371"/>
       <source>Warn when saving in a format that cannot be loaded:</source>
       <translation>Warn when saving in a format that cannot be loaded:</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="418"/>
+      <location filename="../config/application_config_definitions.json" line="373"/>
       <source>Show a warning popup when saving an image in a format that can't be loaded.</source>
       <translation>Show a warning popup when saving an image in a format that can't be loaded.</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="424"/>
+      <location filename="../config/application_config_definitions.json" line="379"/>
       <source>Warn when saving in a format that changes image size:</source>
       <translation>Warn when saving in a format that changes image size:</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="426"/>
+      <location filename="../config/application_config_definitions.json" line="381"/>
       <source>Show a warning popup when saving an image in a format requires a specific resolution.</source>
       <translation>Show a warning popup when saving an image in a format requires a specific resolution.</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="432"/>
+      <location filename="../config/application_config_definitions.json" line="387"/>
       <source>Warn when saving in a format that removes color:</source>
       <translation>Warn when saving in a format that removes color:</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="434"/>
+      <location filename="../config/application_config_definitions.json" line="389"/>
       <source>Show a warning popup when saving an image in a format that does not support color.</source>
       <translation>Show a warning popup when saving an image in a format that does not support color.</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="440"/>
+      <location filename="../config/application_config_definitions.json" line="395"/>
       <source>Warn when loading libmypaint fails:</source>
       <translation>Warn when loading libmypaint fails:</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="442"/>
+      <location filename="../config/application_config_definitions.json" line="397"/>
       <source>Show a warning popup when the brush tool cannot be used because of missing libraries.</source>
       <translation>Show a warning popup when the brush tool cannot be used because of missing libraries.</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="448"/>
+      <location filename="../config/application_config_definitions.json" line="403"/>
       <source>Always save metadata:</source>
       <translation>Always save metadata:</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="450"/>
+      <location filename="../config/application_config_definitions.json" line="405"/>
       <source>Always save metadata when no previous metadata exists(confirm), never do that(cancel), or ask every time(always_ask).</source>
       <translation>Always save metadata when no previous metadata exists(confirm), never do that(cancel), or ask every time(always_ask).</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="456"/>
+      <location filename="../config/application_config_definitions.json" line="411"/>
       <source>Always update metadata:</source>
       <translation>Always update metadata:</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="458"/>
+      <location filename="../config/application_config_definitions.json" line="413"/>
       <source>Always update metadata when images are saved(confirm), never do that(cancel), or ask every time(always_ask).</source>
       <translation>Always update metadata when images are saved(confirm), never do that(cancel), or ask every time(always_ask).</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="464"/>
+      <location filename="../config/application_config_definitions.json" line="419"/>
       <source>Warn when cropping deletes layers:</source>
       <translation>Warn when cropping deletes layers:</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="466"/>
+      <location filename="../config/application_config_definitions.json" line="421"/>
       <source>Warn when cropping the image or a layer group deletes one or more layers.</source>
       <translation>Warn when cropping the image or a layer group deletes one or more layers.</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="472"/>
+      <location filename="../config/application_config_definitions.json" line="427"/>
       <source>Added font directory:</source>
       <translation>Added font directory:</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="474"/>
+      <location filename="../config/application_config_definitions.json" line="429"/>
       <source>Directory to search for additional font files to load</source>
       <translation>Directory to search for additional font files to load</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="473"/>
+      <location filename="../config/application_config_definitions.json" line="428"/>
       <source>Files</source>
       <translation>Files</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="480"/>
+      <location filename="../config/application_config_definitions.json" line="435"/>
       <source>Added MyPaint brush directory:</source>
       <translation>Added MyPaint brush directory:</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="482"/>
+      <location filename="../config/application_config_definitions.json" line="437"/>
       <source>Directory to search for additional MyPaint brush files to load</source>
       <translation>Directory to search for additional MyPaint brush files to load</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="488"/>
+      <location filename="../config/application_config_definitions.json" line="443"/>
       <source>libmypaint library directory:</source>
       <translation>libmypaint library directory:</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="490"/>
+      <location filename="../config/application_config_definitions.json" line="445"/>
       <source>Directory to search for libmypaint library files if unable to load default libraries</source>
       <translation>Directory to search for libmypaint library files if unable to load default libraries</translation>
     </message>

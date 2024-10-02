@@ -11,7 +11,6 @@ Main features
 import json
 import logging
 import os.path
-import re
 from inspect import signature
 from threading import Lock
 from typing import Optional, Any, Callable, List, Dict
@@ -202,6 +201,18 @@ class Config:
             raise KeyError(UNKNOWN_KEY_ERROR.format(key=key))
         with self._lock:
             return self._entries[key].get_value(inner_key)
+
+    def get_category(self, key: str) -> str:
+        """Returns a config value's category, raising KeyError if the value does not exist."""
+        if key not in self._entries:
+            raise KeyError(UNKNOWN_KEY_ERROR.format(key=key))
+        return self._entries[key].category
+
+    def get_subcategory(self, key: str) -> Optional[str]:
+        """Returns a config value's subcategory, raising KeyError if the value does not exist."""
+        if key not in self._entries:
+            raise KeyError(UNKNOWN_KEY_ERROR.format(key=key))
+        return self._entries[key].subcategory
 
     def get_color(self, key: str, default_color: QColor | Qt.GlobalColor) -> QColor:
         """Returns a color value from config.

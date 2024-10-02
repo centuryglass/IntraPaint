@@ -81,13 +81,9 @@ class AppConfig(Config, metaclass=Singleton):
     MASK_BLUR: str
     MAX_EDIT_SIZE: str
     MAX_GENERATION_SIZE: str
-    MAX_PRESSURE_THRESHOLD: str
-    MAX_PRESSURE_VALUE: str
     MAX_UNDO: str
     MIN_EDIT_SIZE: str
     MIN_GENERATION_SIZE: str
-    MIN_PRESSURE_THRESHOLD: str
-    MIN_PRESSURE_VALUE: str
     OPENGL_ACCELERATION: str
     RESTORE_FACES: str
     SAVED_COLORS: str
@@ -98,6 +94,7 @@ class AppConfig(Config, metaclass=Singleton):
     SHOW_TOOL_CONTROL_HINTS: str
     SPEED_MODIFIER_MULTIPLIER: str
     STYLE: str
+    TABLET_PRESSURE_CURVE: str
     TAB_FONT_POINT_SIZE: str
     THEME: str
     TILING: str

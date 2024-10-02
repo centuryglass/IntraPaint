@@ -1,7 +1,8 @@
 """Base template for tools that use a MyPaint surface within an image layer."""
 import datetime
 import logging
-from typing import Optional
+import math
+from typing import Optional, List
 
 from PySide6.QtCore import Qt, QPoint, QLineF, QPointF, QEvent, QRect
 from PySide6.QtGui import QCursor, QTabletEvent, QMouseEvent, QColor, QIcon, QWheelEvent, QPointingDevice
@@ -66,6 +67,12 @@ class BrushTool(BaseTool):
         self._tablet_y_tilt: Optional[float] = None
         self._tablet_input: Optional[QPointingDevice.PointerType] = None
         self._tablet_event_timestamp = 0.0
+        self._pressure_curve: List[float] = AppConfig().get(AppConfig.TABLET_PRESSURE_CURVE)
+
+        def _update_pressure_curve(new_curve: List[float]) -> None:
+            self._pressure_curve = new_curve
+        AppConfig().connect(self, AppConfig.TABLET_PRESSURE_CURVE, _update_pressure_curve)
+
         self._last_pos: Optional[QPoint] = None
         self._fixed_angle: Optional[int] = None
         scene = image_viewer.scene()
@@ -389,20 +396,20 @@ class BrushTool(BaseTool):
         if event.pointerType() is not None:
             self._tablet_input = event.pointerType()
         if event.pressure() > 0.00001:
-            config = AppConfig()
-            min_pressure = config.get(AppConfig.MIN_PRESSURE_VALUE)
-            max_pressure = config.get(AppConfig.MAX_PRESSURE_VALUE)
-            min_threshold = config.get(AppConfig.MIN_PRESSURE_THRESHOLD)
-            max_threshold = config.get(AppConfig.MAX_PRESSURE_THRESHOLD)
-            if max_pressure > min_pressure and max_threshold > min_threshold:
-                input_range = max_threshold - min_threshold
-                pressure_input = float(clamp(event.pressure(), min_threshold, max_threshold))
-                input_fraction = (pressure_input - min_threshold) / input_range
-                output_range = max_pressure - min_pressure
-                pressure = min_pressure + output_range * input_fraction
-            else:
-                logger.warning('Invalid pressure threshold or bounds, ignoring pressure threshold/bounds settings')
+            if len(self._pressure_curve) < 2:
+                logger.warning('Ignoring invalid pressure curve')
                 pressure = event.pressure()
+            else:
+                float_index = (len(self._pressure_curve) - 1) * event.pressure()
+                low_idx = math.floor(float_index)
+
+                if low_idx == len(self._pressure_curve) - 1:
+                    pressure = self._pressure_curve[-1]
+                else:
+                    low_value = self._pressure_curve[low_idx]
+                    high_value = self._pressure_curve[low_idx + 1]
+                    fraction = float_index - low_idx
+                    pressure = low_value + fraction * (high_value - low_value)
             self._tablet_pressure = pressure
             self._last_pressure = pressure
         else:

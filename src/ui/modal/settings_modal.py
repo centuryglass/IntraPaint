@@ -121,15 +121,44 @@ class SettingsModal(QDialog):
                     control_widget.valueChanged.connect(_add_change)
                     self._add_setting(key, category, control_widget, label)
 
+    def add_custom_control(self, control_widget: DynamicFieldWidget, config: Config, key: str) -> None:
+        """Adds a non-standard control to the grid."""
+        assert hasattr(control_widget, 'valueChanged')
+        category = config.get_category(key)
+        if key in self._inputs:
+            self.remove_entry(config, key, category)
+        self._add_tab_if_missing(category)
+        control_widget.setValue(config.get(key))
+        control_widget.setToolTip(config.get_tooltip(key))
+
+        def _add_change(new_value: Any, name=key):
+            self._add_change(name, new_value)
+        control_widget.valueChanged.connect(_add_change)
+        self._add_setting(key, category, control_widget, config.get_label(key))
+
+    def remove_entry(self, config: Config, key: str, category: Optional[str] = None) -> None:
+        """Remove a single item from the modal"""
+        if category is None:
+            category = config.get_category(key)
+        if category not in self._tabs:
+            return
+        input_widget: Optional[DynamicFieldWidget] = None
+        if key in self._inputs:
+            input_widget = self._inputs[key]
+            del self._inputs[key]
+        if key in self._changes:
+            del self._changes[key]
+        if input_widget is not None:
+            layout = self._tab_layouts[category]
+            layout.takeRow(input_widget)
+            input_widget.deleteLater()
+
     def remove_category(self, config: Config, category: str) -> None:
         """Remove a category from the modal"""
         if category not in self._tabs:
             return
         for key in config.get_category_keys(category):
-            if key in self._inputs:
-                del self._inputs[key]
-            if key in self._changes:
-                del self._changes[key]
+            self.remove_entry(config, key, category)
         assert category in self._tab_layouts
         layout = self._tab_layouts[category]
         del self._tab_layouts[category]
@@ -179,7 +208,10 @@ class SettingsModal(QDialog):
             else:
                 assert not isinstance(new_value, QSize)
                 try:
-                    if isinstance(widget, (LineEdit, PlainTextEdit, DualToggle, ComboBox)):
+                    if not isinstance(widget, (LineEdit, PlainTextEdit, DualToggle, ComboBox, BigIntSpinbox,
+                                               IntSliderSpinbox, CheckBox)):
+                        widget.setValue(new_value)  # Custom widget used, let it figure out typing on its own
+                    elif isinstance(widget, (LineEdit, PlainTextEdit, DualToggle, ComboBox)):
                         widget.setValue(str(new_value))
                     else:
                         if new_value is None:
