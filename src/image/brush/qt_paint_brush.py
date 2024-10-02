@@ -139,7 +139,6 @@ class QtPaintBrush(LayerBrush):
             painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_Source)
             alpha_step = opacity / size_range
             alpha = alpha_step
-            size = size - 1
             while size >= min_size:
                 pen.setWidth(size)
                 painter.setOpacity(alpha)
@@ -148,7 +147,7 @@ class QtPaintBrush(LayerBrush):
                     painter.drawPoint(change_pt)
                 else:
                     painter.drawLine(last_pt, change_pt)
-                alpha += alpha_step
+                alpha = min(alpha + alpha_step, opacity)
                 size -= 1
         else:
             if last_pt is None:
