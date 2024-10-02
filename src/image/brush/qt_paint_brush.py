@@ -199,7 +199,9 @@ class QtPaintBrush(LayerBrush):
             return
 
         # Only operate on numpy images within the change bounds:
-        bounds = input_event.change_bounds.intersected(QRect(QPoint(), self._paint_buffer.size()))
+        layer = self.layer
+        assert layer is not None
+        bounds = input_event.change_bounds.intersected(layer.bounds)
         if bounds.isEmpty():
             return
         np_paint_buf = numpy_bounds_index(np_paint_buf, bounds)
