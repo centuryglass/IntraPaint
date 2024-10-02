@@ -100,6 +100,8 @@ class ImageLayer(TransformLayer):
         else:
             self._image = image.copy()
         self._handle_content_change(self._image, initial_image)
+        if self.size != image.size():
+            self.set_size(image.size())
 
     # LAYER/IMAGE FUNCTIONS:
 
@@ -147,9 +149,9 @@ class ImageLayer(TransformLayer):
             self.set_transform(transform)
         self.set_qimage(new_image)
         self._pixmap.invalidate()
-        self.content_changed.emit(self, self.bounds)
         if send_size_change_signal:
             self.size_changed.emit(self, self.size)
+        self.content_changed.emit(self, self.bounds)
 
     @contextmanager
     def borrow_image(self, change_bounds: Optional[QRect] = None) -> Generator[Optional[QImage], None, None]:

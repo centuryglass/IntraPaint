@@ -7,6 +7,7 @@ import numpy as np
 from PIL import Image
 from PySide6.QtCore import QRect, QPoint, QSize, Signal, QPointF
 from PySide6.QtGui import QImage, QPolygonF, QPainter, QColor
+from PySide6.QtWidgets import QApplication
 
 from src.config.application_config import AppConfig
 from src.config.cache import Cache
@@ -15,9 +16,18 @@ from src.util.visual.image_utils import (image_content_bounds, NpAnyArray, image
                                          image_is_fully_transparent)
 from src.util.visual.pil_image_utils import qimage_to_pil_image
 
+# The `QCoreApplication.translate` context for strings in this file
+TR_ID = 'image.layers.selection_layer'
+
+
+def _tr(*args):
+    """Helper to make `QCoreApplication.translate` more concise."""
+    return QApplication.translate(TR_ID, *args)
+
+
 logger = logging.getLogger(__name__)
 
-SELECTION_LAYER_NAME = 'Selection'
+SELECTION_LAYER_NAME = _tr('Selection')
 DEFAULT_BRUSH_COLOR_STR = '#55ff0000'
 
 

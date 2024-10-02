@@ -1,10 +1,11 @@
 """
 Performs drawing operations on an image layer using basic Qt drawing operations.
 """
+import logging
 from typing import Optional, List
 
 import numpy as np
-from PySide6.QtCore import Qt, QPoint, QPointF, QRectF, QTimer, QRect
+from PySide6.QtCore import Qt, QPoint, QPointF, QRectF, QTimer, QRect, QSize
 from PySide6.QtGui import QPainter, QPen, QImage, QColor, QBrush
 
 from src.image.brush.layer_brush import LayerBrush
@@ -16,6 +17,7 @@ from src.util.visual.image_utils import create_transparent_image, image_data_as_
 
 PAINT_BUFFER_DELAY_MS = 50
 AVG_COUNT = 20
+logger = logging.getLogger(__name__)
 
 
 class QtPaintBrush(LayerBrush):
@@ -95,13 +97,24 @@ class QtPaintBrush(LayerBrush):
 
     def connect_to_layer(self, new_layer: Optional[ImageLayer]):
         """Disconnects from the current layer, and connects to a new one."""
+        last_layer = self.layer
+        if last_layer is not None:
+            last_layer.size_changed.disconnect(self._layer_size_change_slot)
         super().connect_to_layer(new_layer)
         if new_layer is not None:
             self._brush_stroke_buffer = create_transparent_image(new_layer.size)
             self._paint_buffer = create_transparent_image(new_layer.size)
+            new_layer.size_changed.connect(self._layer_size_change_slot)
         else:
             self._brush_stroke_buffer = QImage()
             self._paint_buffer = QImage()
+
+    def _layer_size_change_slot(self, layer: ImageLayer, size: QSize) -> None:
+        if layer != self.layer:
+            layer.size_changed.disconnect(self._layer_size_change_slot)
+            return
+        self._brush_stroke_buffer = create_transparent_image(size)
+        self._paint_buffer = create_transparent_image(size)
 
     def start_stroke(self) -> None:
         self._change_bounds = QRectF()
@@ -201,7 +214,13 @@ class QtPaintBrush(LayerBrush):
         # Only operate on numpy images within the change bounds:
         layer = self.layer
         assert layer is not None
-        bounds = input_event.change_bounds.intersected(layer.bounds)
+        layer_bounds = layer.bounds
+        if (layer_bounds.y() + layer_bounds.height()) != np_image.shape[0] \
+                or (layer_bounds.x() + layer_bounds.width()) != np_image.shape[1]:
+            logger.error(f'bounds mismatch: layer image is shape {np_image.shape}, but layer bounds'
+                         f' are {layer_bounds}')
+            return
+        bounds = input_event.change_bounds.intersected(layer_bounds)
         if bounds.isEmpty():
             return
         np_paint_buf = numpy_bounds_index(np_paint_buf, bounds)
@@ -275,6 +294,8 @@ class QtPaintBrush(LayerBrush):
         change_bounds = change_bounds.intersected(layer.bounds)
         new_input_painter = QPainter(self._paint_buffer)
         with layer.borrow_image(change_bounds) as layer_image:
+            assert layer_image.size() == layer.bounds.size(), (f'Size mismatch, layer bounds are {layer.bounds} but'
+                                                               f' image is size {layer_image.size()}')
             self._change_bounds = self._change_bounds.united(change_bounds)
             img_painter = QPainter(layer_image)
             assert isinstance(layer_image, QImage)

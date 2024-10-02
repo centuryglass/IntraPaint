@@ -270,7 +270,6 @@ class ImageStack(QObject):
         if not QRect(QPoint(0, 0), new_size).contains(self._generation_area):
             self._set_generation_area_internal(self._generation_area)
         self.size_changed.emit(self.size)
-        self._selection_layer.set_size(new_size, False)
 
     @property
     def width(self) -> int:

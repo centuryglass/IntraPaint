@@ -198,16 +198,13 @@ class Layer(QObject):
         """Returns the layer's bounds."""
         return self._get_local_bounds()
 
+    def _get_size(self) -> QSize:
+        return self._size
+
     @property
     def size(self) -> QSize:
         """Returns the layer size in pixels as a QSize object."""
-        return self._size
-
-    @size.setter
-    def size(self, new_size: QSize):
-        """Updates the layer size."""
-        assert new_size.width() >= self.get_qimage().width() and new_size.height() >= self.get_qimage().height()
-        self.size = new_size
+        return self._get_size()
 
     @property
     def width(self) -> int:
