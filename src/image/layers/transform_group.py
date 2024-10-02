@@ -66,6 +66,7 @@ class TransformGroup(TransformLayer):
             layer.set_transform(layer.transform * last_transform_inverted * transform, send_signals)
         super().set_transform(transform, send_signals)
 
+    # noinspection PyUnusedLocal
     def _layer_locked_slot(self, layer: Layer, locked: bool) -> None:
         if locked:
             self.set_locked(True)

@@ -105,7 +105,6 @@ class NewImageModal(QDialog):
         self._cancel_button.clicked.connect(self._cancel)
         self._button_row_layout.addWidget(self._cancel_button)
 
-
         self._layout = QVBoxLayout()
         for widget in [self._width_box, self._height_box, self._color_row, self._color_button, self._button_row]:
             self._layout.addWidget(widget)

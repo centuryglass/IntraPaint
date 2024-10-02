@@ -3,7 +3,7 @@ import logging
 from typing import Optional, Tuple
 
 from PySide6.QtCore import Qt, QSize, QRegularExpression
-from PySide6.QtGui import QIcon, QPen, QBrush, QColor, QRegularExpressionValidator
+from PySide6.QtGui import QPen, QBrush, QColor, QRegularExpressionValidator
 from PySide6.QtWidgets import QWidget, QLabel, QGridLayout, QSizePolicy
 
 from src.config.cache import Cache
@@ -70,7 +70,7 @@ class ShapeToolPanel(QWidget):
                 inner_radius = cache.get(Cache.SHAPE_TOOL_STAR_INNER_POINT_FRACTION)
                 self._shape_mode_combobox.update_icon_style(pen, brush, vertex_count, inner_radius)
             except (KeyError, ValueError) as err:
-                logger.error('Invalid shape cache value: {err}')
+                logger.error(f'Invalid shape cache value: {err}')
         for cache_key in (Cache.SHAPE_TOOL_LINE_STYLE, Cache.SHAPE_TOOL_LINE_WIDTH, Cache.SHAPE_TOOL_LINE_COLOR,
                           Cache.SHAPE_TOOL_FILL_PATTERN, Cache.SHAPE_TOOL_FILL_COLOR, Cache.SHAPE_TOOL_VERTEX_COUNT,
                           Cache.SHAPE_TOOL_STAR_INNER_POINT_FRACTION):

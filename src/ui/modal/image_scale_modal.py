@@ -51,7 +51,6 @@ class ImageScaleModal(QDialog):
         self.setWindowTitle(TITLE_TEXT)
         self._layout = QFormLayout(self)
 
-
         self._upscale_method_box: QComboBox = cast(QComboBox, cache.get_control_widget(Cache.UPSCALE_METHOD))
         self._layout.addRow(UPSCALE_METHOD_LABEL, self._upscale_method_box)
 

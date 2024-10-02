@@ -11,6 +11,7 @@ from src.config.key_config import KeyConfig
 from src.hotkey_filter import HotkeyFilter
 from src.image.layers.image_stack import ImageStack
 from src.tools.base_tool import BaseTool
+from src.tools.clone_stamp_tool import CloneStampTool
 from src.tools.draw_tool import DrawTool
 from src.tools.eraser_tool import EraserTool
 from src.tools.eyedropper_tool import EyedropperTool
@@ -85,6 +86,7 @@ class ToolController(QObject):
         self.add_tool(fill_tool)
         self.add_tool(FilterTool(image_stack, image_viewer))
         self.add_tool(SmudgeTool(image_stack, image_viewer))
+        self.add_tool(CloneStampTool(image_stack, image_viewer))
         eyedropper_tool = EyedropperTool(image_stack)
         self.add_tool(eyedropper_tool)
         text_tool = TextTool(image_stack, image_viewer)

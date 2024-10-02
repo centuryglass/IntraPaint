@@ -149,7 +149,6 @@ PROGRESS_KEY_FRACTION = 'progress'
 PROGRESS_KEY_ETA_RELATIVE = 'eta_relative'
 STYLE_ERROR_TITLE = _tr('Updating prompt styles failed')
 
-
 GENERATE_ERROR_TITLE = _tr('Image generation failed')
 GENERATE_ERROR_MESSAGE_EMPTY_MASK = _tr('Nothing was selected in the image generation area. Either use the selection'
                                         ' tool to mark part of the image generation area for inpainting, move the image'
@@ -394,11 +393,13 @@ class SDWebUIGenerator(ImageGenerator):
             def _update_config() -> None:
                 assert self._webservice is not None
                 self._webservice.set_config(changed_settings)
+
             update_task = AsyncTask(_update_config, True)
 
             def _update_setting():
                 AppStateTracker.set_app_state(APP_STATE_EDITING if self._image_stack.has_image else APP_STATE_NO_IMAGE)
                 update_task.finish_signal.disconnect(_update_setting)
+
             update_task.finish_signal.connect(_update_setting)
             update_task.start()
 
@@ -634,7 +635,7 @@ class SDWebUIGenerator(ImageGenerator):
                 self._cache_generated_image(response_image, i)
             if info is not None:
                 logger.info(f'Image generation result info: {info}')
-                if isinstance(info, dict) and  'seed' in info:
+                if isinstance(info, dict) and 'seed' in info:
                     status = {'seed': str(info['seed'])}
                     status_signal.emit(status)
 

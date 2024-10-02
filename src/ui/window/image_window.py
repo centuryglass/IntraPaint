@@ -25,6 +25,7 @@ def _tr(*args):
     """Helper to make `QCoreApplication.translate` more concise."""
     return QApplication.translate(TR_ID, *args)
 
+
 WINDOW_TITLE = _tr('Navigate')
 ZOOM_LABEL = _tr('Move view')
 ZOOM_TOOLTIP = _tr('Left-click to pan, right-click to draw viewport')

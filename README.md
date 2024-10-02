@@ -61,10 +61,10 @@ Control image generation visually by providing rough sketches and brief descript
 
 Prompt: "on the left, a red lizard with a yellow hat standing on a green pillar in an orange desert under a blue sky, looking at a silver robot in a cowboy hat on the right "
 
-|                                                                                                                              |                                                                                                                                                                      |                                                                                                                          |
-|------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------|
-| ![Fully AI generated image of a robot and a lizard in a desert. The image is oddly arranged.](./examples/comp_example_1.jpg) | ![A simple human-made digital drawing of the lizard and robot. Details are rough, but the image is much more accurate to the prompt.](./examples/comp_example_2.jpg) | ![An image combining the detail of the first example with the composition of the second.](./examples/comp_example_3.jpg) |
-| AI-generated image showcasing polished details but with spatial confusion between the lizard and the robot, blending traits and causing visual mixups between subjects.         | A manually drawn scene, offering clear and precise subject placement with no mixups, but lacking the fine detail and polish of the AI-generated version.                                                        | A hybrid approach, combining manual precision with AI enhancements for detailed, coherent subjects and a balanced result  |
+|                                                                                                                                                                            |                                                                                                                                                                      |                                                                                                                          |
+|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------|
+| ![Fully AI generated image of a robot and a lizard in a desert. The image is oddly arranged.](./examples/comp_example_1.jpg)                                               | ![A simple human-made digital drawing of the lizard and robot. Details are rough, but the image is much more accurate to the prompt.](./examples/comp_example_2.jpg) | ![An image combining the detail of the first example with the composition of the second.](./examples/comp_example_3.jpg) |
+| AI-generated image showcasing polished details but with spatial confusion between the lizard and the robot, blending traits and causing visual confusion between subjects. | A manually drawn scene, offering clear and precise subject placement with no confusion, but lacking the fine detail and polish of the AI-generated version.          | A hybrid approach, combining manual precision with AI enhancements for detailed, coherent subjects and a balanced result |
 
 Generate images with greater detail and precision by using guided inpainting to enhance specific areas.
 
@@ -141,7 +141,7 @@ All images below were created using IntraPaint:
 ## Installation and Setup:
 
 ### Pre-packaged builds:
-Pre-compiled versions for x86_64 Linux and Windows are available on the [releases page](Pre-compiled versions for x86_64 Linux and Windows are available on the releases page.).
+Pre-compiled versions for x86_64 Linux and Windows are available on the [releases page](https://github.com/centuryglass/IntraPaint/releases).
 - Windows: [IntraPaint.exe](https://github.com/centuryglass/IntraPaint/releases/download/v0.2.0-alpha/IntraPaint.exe)
 - Linux: [IntraPaint-linux](https://github.com/centuryglass/IntraPaint/releases/download/v0.2.0-alpha/IntraPaint-linux)
 

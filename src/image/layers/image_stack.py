@@ -64,6 +64,9 @@ ERROR_MESSAGE_CROP_FAILED_MULTI = _tr('All selected layers are either fully cove
 ERROR_TITLE_LOCKED_LAYER = _tr('Error: tried to change a locked layer')
 ERROR_MESSAGE_LOCKED_LAYER = _tr('Unlock the layer before attempting any changes.')
 
+ERROR_TITLE_MERGE_FAILED = _tr('Merging layers failed')
+ERROR_MESSAGE_HIDDEN_LAYER_MERGE = _tr('Only visible layers can be merged.')
+
 ERROR_TITLE_LOCKED_GROUP = _tr('Layer group "{group_name}" is locked')
 ERROR_MESSAGE_LOCKED_GROUP = _tr('Unlock the layer group before trying to change layers within the group.')
 
@@ -346,8 +349,7 @@ class ImageStack(QObject):
 
     # IMAGE ACCESS / MANIPULATION FUNCTIONS:
 
-    def resize_canvas(self, new_size: QSize, x_offset: int, y_offset: int,
-                      parent_group: Optional[LayerStack] = None) -> None:
+    def resize_canvas(self, new_size: QSize, x_offset: int, y_offset: int) -> None:
         """
         Changes all layer sizes without scaling existing image content.
 
@@ -359,8 +361,6 @@ class ImageStack(QObject):
             X offset where existing image content will be placed in the adjusted image
         y_offset: int
             Y offset where existing image content will be placed in the adjusted layer
-        parent_group: Optional[LayerStack], default=None
-            If provided, changes will be restricted to layers contained beneath this group.
         """
         assert isinstance(new_size, QSize)
         last_size = self.size
@@ -876,6 +876,7 @@ class ImageStack(QObject):
                 return None
 
             return _render_adjust
+
         if isinstance(layer, LayerStack):
             last_child = layer.child_layers[-1]
             base_z = last_child.z_value - 1
@@ -939,7 +940,7 @@ class ImageStack(QObject):
         if layer is None:
             layer = self.active_layer
         if layer == self._layer_stack or layer.locked or layer.parent_locked:
-            show_error_dialog(None, ERROR_TITLE_LOCKED_LAYER, ERROR_MESSAGE_LOCKED_LAYER)
+            show_error_dialog(None, ERROR_TITLE_MERGE_FAILED, ERROR_MESSAGE_LOCKED_LAYER)
             return
         assert layer.layer_parent is not None \
                and layer.layer_parent.contains(layer), f'invalid layer: {layer.name}:{layer.id}'
@@ -952,9 +953,11 @@ class ImageStack(QObject):
         if layer_index == layer_parent.count - 1:
             return
         base_layer = layer_parent.get_layer_by_index(layer_index + 1)
-        if not isinstance(base_layer, TransformLayer) or base_layer.locked or base_layer.parent_locked \
-                or not base_layer.visible:
+        if not isinstance(base_layer, TransformLayer) or base_layer.locked or base_layer.parent_locked:
             show_error_dialog(None, ERROR_TITLE_LOCKED_LAYER, ERROR_MESSAGE_LOCKED_LAYER)
+            return
+        if not top_layer.visible or not base_layer.visible:
+            show_error_dialog(None, ERROR_TITLE_MERGE_FAILED, ERROR_MESSAGE_HIDDEN_LAYER_MERGE)
             return
         base_layer = cast(TransformLayer, base_layer)
 
@@ -1252,13 +1255,13 @@ class ImageStack(QObject):
                     show_error_dialog(None, ERROR_TITLE_CROP_FAILED, ERROR_MESSAGE_CROP_FAILED_NO_OVERLAP)
                 else:
                     assert no_content_cropped_count > 0
-                    show_error_dialog(None, ERROR_TITLE_CROP_FAILED,ERROR_MESSAGE_CROP_FAILED_FULLY_CONTAINED)
+                    show_error_dialog(None, ERROR_TITLE_CROP_FAILED, ERROR_MESSAGE_CROP_FAILED_FULLY_CONTAINED)
                 if not layer_bounds.intersects(content_bounds):
                     return
             if len(deleted_layer_names) > 0:
                 warning_message = WARNING_MESSAGE_CROP_DELETED_LAYERS.format(
                     layer_names=' '.join((f'<li>{name}</li>' for name in deleted_layer_names)))
-                show_warning_dialog(None,WARNING_TITLE_CROP_DELETED_LAYERS, warning_message,
+                show_warning_dialog(None, WARNING_TITLE_CROP_DELETED_LAYERS, warning_message,
                                     AppConfig.WARN_WHEN_CROP_DELETES_LAYERS)
 
     def paste(self) -> None:

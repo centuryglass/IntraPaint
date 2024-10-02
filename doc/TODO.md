@@ -6,13 +6,9 @@
 - Upscale: make new layer, scale up existing layers
 
 ## Priority issues:
-- merge into hidden errors say that the base layer is locked, use different messages for locked and hidden
-- fill tool should be blocked on hidden layers
-- add 'sample merged' option to smudge tool, possibly also filter tools
-- smudge tool: short brush strokes are often ignored
+- add 'sample merged' option to smudge, stamp, and filter tools
 - when selecting generated imagery tries to insert into a locked layer, an error is shown but the selection is lost
 - RGBA filter: alpha not working with filter tool, or when constrained to selection
-- Sharpen filter tool: displaces image content? factor capped at 2?
 - Filter previews really slow on large images, are they not being scaled?
 - Make sure non-ai scaling is always possible via PIL scaling modes
 
@@ -56,6 +52,7 @@
 Things I never fixed but can no longer reproduce, or that come from external issues:
 - Nested layer selection state shown in the layer panel isn't updating properly (recursive active layer update logic in LayerPanel looks fine)
 - changing gen. area size still doesn't always sync fully - width changes but not height. Possibly fixed, keep an eye out for it.
+- smudge tool: short brush strokes being lost (only on old laptop, perhaps?)
 
 
 # Lower priority/post-release:
@@ -113,12 +110,6 @@ Things I never fixed but can no longer reproduce, or that come from external iss
 - Find some way to mitigate delays when smudging linearly over long distances:
 - Try numpy compositing again now that the algorithm's worked out (see ImagePanel alpha-lock implementation)
 - When the drawing buffer has huge numbers of pending operations, see if we can defer some of them to give the window time to update
-
-### Stamp tool
-- Clone stamp brush, using the same color sampling approach as smudge tool, complete with usual modifiers
-- Right-click/ctrl-click to set sample point, visible as graphics item
-- Left click to draw, sample point moves with brush strokes
-- Sample point content as cursor?
 
 ## libmypaint
 - Import latest code/changes

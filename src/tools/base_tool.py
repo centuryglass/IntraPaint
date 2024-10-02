@@ -9,7 +9,7 @@ Supports the following:
 from typing import Optional
 
 from PySide6.QtCore import QObject, Signal, QPoint, QEvent, Qt
-from PySide6.QtGui import QCursor, QPixmap, QMouseEvent, QTabletEvent, QWheelEvent, QIcon, QImage
+from PySide6.QtGui import QCursor, QPixmap, QMouseEvent, QTabletEvent, QWheelEvent, QIcon
 from PySide6.QtWidgets import QWidget, QApplication
 
 from src.config.cache import Cache
@@ -96,7 +96,6 @@ class BaseTool(QObject):
         self._label_text = label_text
         self._tooltip_text = tooltip_text
         self._icon = icon
-
 
     @staticmethod
     def modifier_hint(modifier_key: str, modifier_hint_str: str) -> str:

@@ -3,13 +3,13 @@ import math
 from typing import Optional, List, Any
 
 import numpy as np
-from PySide6.QtCore import QPoint, QRect
+from PySide6.QtCore import QRect
 from PySide6.QtGui import QImage, QPainter
 
 from src.image.brush.qt_paint_brush import QtPaintBrush
 from src.image.filter.filter import ImageFilter
 from src.image.layers.image_layer import ImageLayer
-from src.util.visual.image_utils import image_data_as_numpy_8bit, numpy_bounds_index, NpUInt8Array
+from src.util.visual.image_utils import image_data_as_numpy_8bit, numpy_bounds_index
 
 
 class FilterBrush(QtPaintBrush):
@@ -19,7 +19,6 @@ class FilterBrush(QtPaintBrush):
         super().__init__(layer)
         self._filter = image_filter
         filter_params = image_filter.get_parameters()
-        self._last_point: Optional[QPoint] = None
         self._parameter_values = {self._filter: [param.default_value for param in filter_params]}
 
     @property
@@ -47,15 +46,6 @@ class FilterBrush(QtPaintBrush):
         for i, parameter in enumerate(parameters):
             parameter.validate(values[i])
         self._parameter_values[self._filter] = list(values)
-
-    @property
-    def pressure_size(self) -> bool:
-        """Access whether pressure data controls brush size."""
-        return self._pressure_size
-
-    @pressure_size.setter
-    def pressure_size(self, pressure_sets_size: bool) -> None:
-        self._pressure_size = pressure_sets_size
 
     def _filter_bounds(self, base_bounds: QRect) -> QRect:
         if self._filter.is_local():

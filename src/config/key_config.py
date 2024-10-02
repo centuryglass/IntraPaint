@@ -195,6 +195,7 @@ class KeyConfig(Config, metaclass=Singleton):
     BRUSH_SIZE_INCREASE: str
     BRUSH_TOOL_KEY: str
     CLEAR_SHORTCUT: str
+    CLONE_STAMP_TOOL_KEY: str
     COLOR_BALANCE_SHORTCUT: str
     COPY_LAYER_SHORTCUT: str
     COPY_SHORTCUT: str

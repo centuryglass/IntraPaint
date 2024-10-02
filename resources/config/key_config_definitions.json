@@ -215,6 +215,15 @@
         "default": "M",
         "saved": true
     },
+    "clone_stamp_tool_key": {
+        "label": "Switch to the clone stamp tool:",
+        "category": "Keybindings",
+        "subcategory": "Tool Selection",
+        "description": "Activate the clone stamp tool to copy image content.",
+        "type": "string",
+        "default": "N",
+        "saved": true
+    },
     "eyedropper_tool_key": {
         "label": "Switch to the color picker tool:",
         "category": "Keybindings",

@@ -259,6 +259,7 @@ class TextTool(BaseTool):
         self._placement_outline.setTransform(transform)
         self._connect_signals()
 
+    # noinspection PyUnusedLocal
     def _layer_lock_change_slot(self, layer: Layer, locked: bool) -> None:
         if not self.is_active:
             return
