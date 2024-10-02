@@ -67,20 +67,20 @@ TOOLTIP_BOUNDS_TO_TEXT = _tr('Resize the text layer to fit the text.')
 
 
 # Icons:
-ICON_BOLD = f'{PROJECT_DIR}/resources/icons/text/bold.svg'
-ICON_ITALIC = f'{PROJECT_DIR}/resources/icons/text/italic.svg'
-ICON_OVERLINE = f'{PROJECT_DIR}/resources/icons/text/overline.svg'
-ICON_STRIKETHROUGH = f'{PROJECT_DIR}/resources/icons/text/strikethrough.svg'
-ICON_UNDERLINE = f'{PROJECT_DIR}/resources/icons/text/underline.svg'
-ICON_FIXED_PITCH = f'{PROJECT_DIR}/resources/icons/text/fixed_pitch.svg'
-ICON_KERNING = f'{PROJECT_DIR}/resources/icons/text/kerning.svg'
-ICON_FILL_BACKGROUND = f'{PROJECT_DIR}/resources/icons/text/fill_background.svg'
-ICON_BOUNDS_TO_TEXT = f'{PROJECT_DIR}/resources/icons/text/scale_bounds_to_text.svg'
-ICON_TEXT_TO_BOUNDS = f'{PROJECT_DIR}/resources/icons/text/scale_text_to_bounds.svg'
+ICON_PATH_BOLD = f'{PROJECT_DIR}/resources/icons/text/bold.svg'
+ICON_PATH_ITALIC = f'{PROJECT_DIR}/resources/icons/text/italic.svg'
+ICON_PATH_OVERLINE = f'{PROJECT_DIR}/resources/icons/text/overline.svg'
+ICON_PATH_STRIKETHROUGH = f'{PROJECT_DIR}/resources/icons/text/strikethrough.svg'
+ICON_PATH_UNDERLINE = f'{PROJECT_DIR}/resources/icons/text/underline.svg'
+ICON_PATH_FIXED_PITCH = f'{PROJECT_DIR}/resources/icons/text/fixed_pitch.svg'
+ICON_PATH_KERNING = f'{PROJECT_DIR}/resources/icons/text/kerning.svg'
+ICON_PATH_FILL_BACKGROUND = f'{PROJECT_DIR}/resources/icons/text/fill_background.svg'
+ICON_PATH_BOUNDS_TO_TEXT = f'{PROJECT_DIR}/resources/icons/text/scale_bounds_to_text.svg'
+ICON_PATH_TEXT_TO_BOUNDS = f'{PROJECT_DIR}/resources/icons/text/scale_text_to_bounds.svg'
 
-ICON_LEFT = f'{PROJECT_DIR}/resources/icons/text/left.svg'
-ICON_RIGHT = f'{PROJECT_DIR}/resources/icons/text/right.svg'
-ICON_CENTER = f'{PROJECT_DIR}/resources/icons/text/center.svg'
+ICON_PATH_LEFT_ALIGN = f'{PROJECT_DIR}/resources/icons/text/left.svg'
+ICON_PATH_RIGHT_ALIGN = f'{PROJECT_DIR}/resources/icons/text/right.svg'
+ICON_PATH_CENTER_ALIGN = f'{PROJECT_DIR}/resources/icons/text/center.svg'
 
 MAX_FONT_SIZE = 1000
 MAX_STRETCH = 4000
@@ -187,11 +187,11 @@ class TextToolPanel(QWidget):
             return checkbox, wrapper
 
         self._scale_bounds_to_text_checkbox, self._scale_bounds_to_text_wrapper \
-            = _make_resize_label(CHECKBOX_LABEL_RESIZE_BOUNDS, TOOLTIP_BOUNDS_TO_TEXT, ICON_BOUNDS_TO_TEXT,
+            = _make_resize_label(CHECKBOX_LABEL_RESIZE_BOUNDS, TOOLTIP_BOUNDS_TO_TEXT, ICON_PATH_BOUNDS_TO_TEXT,
                                  self._scale_bounds_to_text_slot)
 
         self._scale_text_to_bounds_checkbox, self._scale_text_to_bounds_wrapper \
-            = _make_resize_label(CHECKBOX_LABEL_RESIZE_FONT, TOOLTIP_FONT_TO_BOUNDS, ICON_TEXT_TO_BOUNDS,
+            = _make_resize_label(CHECKBOX_LABEL_RESIZE_FONT, TOOLTIP_FONT_TO_BOUNDS, ICON_PATH_TEXT_TO_BOUNDS,
                                  self._scale_text_to_bounds_slot)
 
         # Text feature checkboxes:
@@ -216,38 +216,38 @@ class TextToolPanel(QWidget):
             checkbox.valueChanged.connect(change_handler)
             self._checkbox_layout.addWidget(checkbox)
             return checkbox
-        self._bold_checkbox = _init_checkbox(CHECKBOX_LABEL_BOLD, ICON_BOLD, lambda font: font.bold(),
+        self._bold_checkbox = _init_checkbox(CHECKBOX_LABEL_BOLD, ICON_PATH_BOLD, lambda font: font.bold(),
                                              lambda font, value: font.setBold(value))
-        self._italic_checkbox = _init_checkbox(CHECKBOX_LABEL_ITALIC, ICON_ITALIC, lambda font: font.italic(),
+        self._italic_checkbox = _init_checkbox(CHECKBOX_LABEL_ITALIC, ICON_PATH_ITALIC, lambda font: font.italic(),
                                                lambda font, value: font.setItalic(value))
-        self._overline_checkbox = _init_checkbox(CHECKBOX_LABEL_OVERLINE, ICON_OVERLINE,
+        self._overline_checkbox = _init_checkbox(CHECKBOX_LABEL_OVERLINE, ICON_PATH_OVERLINE,
                                                  lambda font: font.overline(),
                                                  lambda font, value: font.setOverline(value))
-        self._strikethrough_checkbox = _init_checkbox(CHECKBOX_LABEL_STRIKEOUT, ICON_STRIKETHROUGH,
+        self._strikethrough_checkbox = _init_checkbox(CHECKBOX_LABEL_STRIKEOUT, ICON_PATH_STRIKETHROUGH,
                                                       lambda font: font.strikeOut(),
                                                       lambda font, value: font.setStrikeOut(value))
-        self._underline_checkbox = _init_checkbox(CHECKBOX_LABEL_UNDERLINE, ICON_UNDERLINE,
+        self._underline_checkbox = _init_checkbox(CHECKBOX_LABEL_UNDERLINE, ICON_PATH_UNDERLINE,
                                                   lambda font: font.underline(),
                                                   lambda font, value: font.setUnderline(value))
-        self._fixed_pitch_checkbox = _init_checkbox(CHECKBOX_LABEL_FIXED_PITCH, ICON_FIXED_PITCH,
+        self._fixed_pitch_checkbox = _init_checkbox(CHECKBOX_LABEL_FIXED_PITCH, ICON_PATH_FIXED_PITCH,
                                                     lambda font: font.fixedPitch(),
                                                     lambda font, value: font.setFixedPitch(value))
-        self._kerning_checkbox = _init_checkbox(CHECKBOX_LABEL_KERNING, ICON_KERNING,
+        self._kerning_checkbox = _init_checkbox(CHECKBOX_LABEL_KERNING, ICON_PATH_KERNING,
                                                 lambda font: font.kerning(),
                                                 lambda font, value: font.setKerning(value))
         self._fill_background_checkbox = CheckBox()
         self._fill_background_checkbox.setText(CHECKBOX_LABEL_FILL_BACKGROUND)
-        self._fill_background_checkbox.setIcon(QIcon(ICON_FILL_BACKGROUND))
+        self._fill_background_checkbox.setIcon(QIcon(ICON_PATH_FILL_BACKGROUND))
         self._fill_background_checkbox.toggled.connect(self._fill_background_change_slot)
         self._checkbox_layout.addWidget(self._fill_background_checkbox)
 
         self._alignment_label = QLabel(LABEL_TEXT_ALIGNMENT_DROPDOWN)
         self._alignment_dropdown = QComboBox()
         self._alignment_label.setBuddy(self._alignment_dropdown)
-        self._alignment_dropdown.addItem(QIcon(ICON_LEFT), OPTION_TEXT_LEFT_ALIGN, userData=Qt.AlignmentFlag.AlignLeft)
-        self._alignment_dropdown.addItem(QIcon(ICON_CENTER), OPTION_TEXT_CENTER_ALIGN,
+        self._alignment_dropdown.addItem(QIcon(ICON_PATH_LEFT_ALIGN), OPTION_TEXT_LEFT_ALIGN, userData=Qt.AlignmentFlag.AlignLeft)
+        self._alignment_dropdown.addItem(QIcon(ICON_PATH_CENTER_ALIGN), OPTION_TEXT_CENTER_ALIGN,
                                          userData=Qt.AlignmentFlag.AlignHCenter)
-        self._alignment_dropdown.addItem(QIcon(ICON_RIGHT), OPTION_TEXT_RIGHT_ALIGN,
+        self._alignment_dropdown.addItem(QIcon(ICON_PATH_RIGHT_ALIGN), OPTION_TEXT_RIGHT_ALIGN,
                                          userData=Qt.AlignmentFlag.AlignRight)
         align_index = self._alignment_dropdown.findData(self._text_rect.text_alignment)
         assert align_index >= 0

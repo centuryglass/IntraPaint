@@ -26,7 +26,7 @@ def _tr(*args):
     return QApplication.translate(TR_ID, *args)
 
 
-RESOURCES_FREE_SELECT_ICON = f'{PROJECT_DIR}/resources/icons/tools/free_selection_icon.svg'
+ICON_PATH_FREE_SELECT_TOOL = f'{PROJECT_DIR}/resources/icons/tools/free_selection_icon.svg'
 
 FREE_SELECTION_LABEL = _tr('Free selection')
 FREE_SELECTION_TOOLTIP = _tr('Select or de-select polygonal areas')
@@ -40,7 +40,7 @@ class FreeSelectionTool(BaseTool):
 
     def __init__(self, image_stack: ImageStack, image_viewer: ImageViewer) -> None:
         super().__init__(KeyConfig.FREE_SELECTION_TOOL_KEY, FREE_SELECTION_LABEL, FREE_SELECTION_TOOLTIP,
-                         QIcon(RESOURCES_FREE_SELECT_ICON))
+                         QIcon(ICON_PATH_FREE_SELECT_TOOL))
         scene = image_viewer.scene()
         assert scene is not None
         self._scene = scene

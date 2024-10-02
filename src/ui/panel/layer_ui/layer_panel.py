@@ -39,12 +39,12 @@ MERGE_DOWN_BUTTON_TOOLTIP = _tr('Merge the active layer with the one below it.')
 OPACITY_LABEL_TEXT = _tr('Opacity:')
 MODE_LABEL_TEXT = _tr('Layer mode:')
 
-ADD_BUTTON_ICON = f'{PROJECT_DIR}/resources/icons/layer/plus_icon.svg'
-ADD_GROUP_BUTTON_ICON = f'{PROJECT_DIR}/resources/icons/layer/plus_group_icon.svg'
-DELETE_BUTTON_ICON = f'{PROJECT_DIR}/resources/icons/layer/minus_icon.svg'
-LAYER_UP_BUTTON_ICON = f'{PROJECT_DIR}/resources/icons/layer/up_icon.svg'
-LAYER_DOWN_BUTTON_ICON = f'{PROJECT_DIR}/resources/icons/layer/down_icon.svg'
-MERGE_DOWN_BUTTON_ICON = f'{PROJECT_DIR}/resources/icons/layer/merge_down_icon.svg'
+ICON_PATH_ADD_BUTTON = f'{PROJECT_DIR}/resources/icons/layer/plus_icon.svg'
+ICON_PATH_ADD_GROUP_BUTTON = f'{PROJECT_DIR}/resources/icons/layer/plus_group_icon.svg'
+ICON_PATH_DELETE_BUTTON = f'{PROJECT_DIR}/resources/icons/layer/minus_icon.svg'
+ICON_PATH_LAYER_UP_BUTTON = f'{PROJECT_DIR}/resources/icons/layer/up_icon.svg'
+ICON_PATH_LAYER_DOWN_BUTTON = f'{PROJECT_DIR}/resources/icons/layer/down_icon.svg'
+ICON_PATH_MERGE_BUTTON = f'{PROJECT_DIR}/resources/icons/layer/merge_down_icon.svg'
 
 SCROLL_TIMER_INTERVAL_MS = 50
 
@@ -147,16 +147,16 @@ class LayerPanel(QWidget):
             self._button_bar_layout.addWidget(button)
             return button
 
-        self._add_button = _create_button(ADD_BUTTON_ICON, ADD_BUTTON_TOOLTIP, self._image_stack.create_layer)
-        self._add_group_button = _create_button(ADD_GROUP_BUTTON_ICON, ADD_GROUP_BUTTON_TOOLTIP,
+        self._add_button = _create_button(ICON_PATH_ADD_BUTTON, ADD_BUTTON_TOOLTIP, self._image_stack.create_layer)
+        self._add_group_button = _create_button(ICON_PATH_ADD_GROUP_BUTTON, ADD_GROUP_BUTTON_TOOLTIP,
                                                 self._image_stack.create_layer_group)
-        self._delete_button = _create_button(DELETE_BUTTON_ICON, DELETE_BUTTON_TOOLTIP, self._image_stack.remove_layer)
-        self._move_up_button = _create_button(LAYER_UP_BUTTON_ICON, LAYER_UP_BUTTON_TOOLTIP,
+        self._delete_button = _create_button(ICON_PATH_DELETE_BUTTON, DELETE_BUTTON_TOOLTIP, self._image_stack.remove_layer)
+        self._move_up_button = _create_button(ICON_PATH_LAYER_UP_BUTTON, LAYER_UP_BUTTON_TOOLTIP,
                                               lambda: self._image_stack.move_layer_by_offset(-1))
-        self._move_up_button = _create_button(LAYER_DOWN_BUTTON_ICON, LAYER_DOWN_BUTTON_TOOLTIP,
+        self._move_up_button = _create_button(ICON_PATH_LAYER_DOWN_BUTTON, LAYER_DOWN_BUTTON_TOOLTIP,
                                               lambda: self._image_stack.move_layer_by_offset(1))
 
-        self._merge_down_button = _create_button(MERGE_DOWN_BUTTON_ICON, MERGE_DOWN_BUTTON_TOOLTIP,
+        self._merge_down_button = _create_button(ICON_PATH_MERGE_BUTTON, MERGE_DOWN_BUTTON_TOOLTIP,
                                                  self._image_stack.merge_layer_down)
 
         self._image_stack.active_layer_changed.connect(self._active_layer_change_slot)

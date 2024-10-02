@@ -26,7 +26,8 @@ def _tr(*args):
     return QApplication.translate(TR_ID, *args)
 
 
-RESOURCES_SMUDGE_ICON = f'{PROJECT_DIR}/resources/icons/tools/smudge_icon.svg'
+ICON_PATH_SMUDGE_TOOL = f'{PROJECT_DIR}/resources/icons/tools/smudge_icon.svg'
+CURSOR_PATH_SMUDGE_TOOL = f'{PROJECT_DIR}/resources/cursors/smudge_cursor.svg'
 SMUDGE_LABEL = _tr('Smudge')
 SMUDGE_TOOLTIP = _tr('Smudge image content')
 SMUDGE_CONTROL_HINT = _tr('{left_mouse_icon}: smudge - {right_mouse_icon}: 1px smudge')
@@ -37,8 +38,9 @@ class SmudgeTool(BrushTool):  # type: ignore
 
     def __init__(self, image_stack: ImageStack, image_viewer: ImageViewer) -> None:
         brush = SmudgeBrush()
-        super().__init__(KeyConfig.SMUDGE_TOOL_KEY, SMUDGE_LABEL, SMUDGE_TOOLTIP, QIcon(RESOURCES_SMUDGE_ICON),
+        super().__init__(KeyConfig.SMUDGE_TOOL_KEY, SMUDGE_LABEL, SMUDGE_TOOLTIP, QIcon(ICON_PATH_SMUDGE_TOOL),
                          image_stack, image_viewer, brush)
+        self.set_scaling_icon_cursor(QIcon(CURSOR_PATH_SMUDGE_TOOL))
         self._control_panel = SmudgeToolPanel()
         cache = Cache()
         key_filter = HotkeyFilter.instance()

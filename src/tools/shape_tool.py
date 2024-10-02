@@ -2,7 +2,7 @@
 from typing import Optional, List
 
 from PySide6.QtCore import Qt, QPoint
-from PySide6.QtGui import QIcon, QMouseEvent, QPainter, QColor, QBrush, QPainterPath, QPen
+from PySide6.QtGui import QIcon, QMouseEvent, QPainter, QColor, QBrush, QPainterPath, QPen, QCursor
 from PySide6.QtWidgets import QWidget, QApplication
 
 from src.config.cache import Cache
@@ -30,7 +30,7 @@ def _tr(*args):
     return QApplication.translate(TR_ID, *args)
 
 
-RESOURCES_SHAPE_ICON = f'{PROJECT_DIR}/resources/icons/tools/shape_icon.svg'
+ICON_PATH_SHAPE_TOOL = f'{PROJECT_DIR}/resources/icons/tools/shape_icon.svg'
 
 SHAPE_TOOL_LABEL = _tr('Draw Shapes')
 SHAPE_TOOL_TOOLTIP = _tr('Create rectangles, ellipses, and other polygons')
@@ -41,7 +41,8 @@ class ShapeTool(BaseTool):
     """Draws various geometric shapes."""
 
     def __init__(self, image_stack: ImageStack, image_viewer: ImageViewer) -> None:
-        super().__init__(KeyConfig.SHAPE_TOOL_KEY, SHAPE_TOOL_LABEL, SHAPE_TOOL_TOOLTIP, QIcon(RESOURCES_SHAPE_ICON))
+        super().__init__(KeyConfig.SHAPE_TOOL_KEY, SHAPE_TOOL_LABEL, SHAPE_TOOL_TOOLTIP, QIcon(ICON_PATH_SHAPE_TOOL))
+        self.cursor = QCursor(Qt.CursorShape.CrossCursor)
         cache = Cache()
         scene = image_viewer.scene()
         assert scene is not None
@@ -274,12 +275,14 @@ class ShapeTool(BaseTool):
         self._layer = active_layer
         if self.is_active and self._control_panel is not None:
             self._control_panel.setEnabled(active_layer is not None)
+            self.set_disabled_cursor(active_layer is None)
         if active_layer is not None:
             active_layer.lock_changed.connect(self._layer_lock_slot)
 
     def _layer_lock_slot(self, layer: Layer, locked: bool) -> None:
         assert self._layer is not None
         assert layer == self._layer or layer.contains_recursive(self._layer)
+        self.set_disabled_cursor(locked or not isinstance(self._layer, ImageLayer))
         if self.is_active and self._control_panel is not None:
             self._control_panel.setEnabled(not locked and isinstance(self._layer, ImageLayer))
         if locked and self._selection_handler.selecting:

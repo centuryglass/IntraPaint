@@ -29,8 +29,8 @@ LABEL_TEXT_SELECTION_TOOL = _tr('Selection Brush')
 TOOLTIP_SELECTION_TOOL = _tr('Draw to select areas for editing or inpainting.')
 CONTROL_HINT_SELECTION_TOOL = _tr('{left_mouse_icon}: select - {right_mouse_icon}:1px select')
 
-CURSOR_SELECTION_TOOL = f'{PROJECT_DIR}/resources/cursors/selection_cursor.svg'
-ICON_SELECTION_TOOL = f'{PROJECT_DIR}/resources/icons/tools/selection_icon.svg'
+ICON_PATH_SELECTION_TOOL = f'{PROJECT_DIR}/resources/icons/tools/selection_icon.svg'
+CURSOR_PATH_SELECTION_TOOL = f'{PROJECT_DIR}/resources/cursors/selection_cursor.svg'
 
 
 class SelectionBrushTool(BrushTool):
@@ -39,14 +39,14 @@ class SelectionBrushTool(BrushTool):
     def __init__(self, image_stack: ImageStack, image_viewer: ImageViewer) -> None:
         brush = QtPaintBrush(None)
         super().__init__(KeyConfig.SELECTION_BRUSH_TOOL_KEY, LABEL_TEXT_SELECTION_TOOL, TOOLTIP_SELECTION_TOOL,
-                         QIcon(ICON_SELECTION_TOOL), image_stack, image_viewer, brush, False, False)
+                         QIcon(ICON_PATH_SELECTION_TOOL), image_stack, image_viewer, brush, False, False)
         self._last_click = None
         self._control_panel = BrushSelectionPanel(image_stack.selection_layer)
         self._control_panel.tool_mode_changed.connect(self._tool_toggle_slot)
         self._active = False
         self._drawing = False
         self._cached_size: Optional[int] = None
-        self.set_scaling_icon_cursor(QIcon(CURSOR_SELECTION_TOOL))
+        self.set_scaling_icon_cursor(QIcon(CURSOR_PATH_SELECTION_TOOL))
 
         # Setup brush, load size from config
         self.brush_color = QColor()

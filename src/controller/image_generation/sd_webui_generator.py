@@ -130,7 +130,7 @@ SD_WEBUI_GENERATOR_SETUP = _tr("""
 </ol>
 """)
 SD_PREVIEW_IMAGE = f'{PROJECT_DIR}/resources/generator_preview/stable-diffusion.png'
-CONTROLNET_TAB_ICON = f'{PROJECT_DIR}/resources/icons/tabs/hex.svg'
+ICON_PATH_CONTROLNET_TAB = f'{PROJECT_DIR}/resources/icons/tabs/hex.svg'
 DEFAULT_SD_URL = 'http://localhost:7860'
 STABLE_DIFFUSION_CONFIG_CATEGORY = QApplication.translate('application_config', 'Stable-Diffusion')
 AUTH_ERROR_DETAIL_KEY = 'detail'
@@ -167,8 +167,6 @@ LCM_LORA_1_5 = 'lcm-lora-sdv1-5'
 LCM_LORA_XL = 'lcm-lora-sdxl'
 
 MENU_STABLE_DIFFUSION = 'Stable-Diffusion'
-
-GEN_TAB_ICON = f'{PROJECT_DIR}/resources/icons/tabs/sparkle.svg'
 
 
 def _check_lcm_mode_available(_) -> bool:
@@ -324,7 +322,7 @@ class SDWebUIGenerator(ImageGenerator):
                 self._controlnet_tab = Tab(CONTROLNET_TITLE, controlnet_panel, KeyConfig.SELECT_CONTROLNET_TAB,
                                            parent=self.menu_window)
                 self._controlnet_tab.hide()
-                self._controlnet_tab.setIcon(QIcon(CONTROLNET_TAB_ICON))
+                self._controlnet_tab.setIcon(QIcon(ICON_PATH_CONTROLNET_TAB))
 
             assert self._window is not None
             self._window.cancel_generation.connect(self.cancel_generation)

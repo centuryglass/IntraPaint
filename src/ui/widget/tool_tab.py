@@ -25,7 +25,7 @@ def _tr(*args):
 
 TOOL_TAB_NAME = _tr('Tools')
 
-TOOL_TAB_ICON = f'{PROJECT_DIR}/resources/icons/tabs/wrench.svg'
+ICON_PATH_TOOL_TAB = f'{PROJECT_DIR}/resources/icons/tabs/wrench.svg'
 
 
 class ToolTab(Tab):
@@ -34,7 +34,7 @@ class ToolTab(Tab):
 
     def __init__(self, tool_panel: QWidget, tool_controller: ToolController, parent: Optional[QWidget] = None) -> None:
         super().__init__(TOOL_TAB_NAME, tool_panel, KeyConfig.SELECT_TOOL_TAB, parent=parent)
-        self.setIcon(QIcon(TOOL_TAB_ICON))
+        self.setIcon(QIcon(ICON_PATH_TOOL_TAB))
         self._toolbar_tool_widgets: Dict[BaseTool, QWidget] = {}
         self._recent_tools: List[BaseTool] = []
         self._recent_tool_count = AppConfig().get(AppConfig.TOOLBAR_TOOL_BUTTON_COUNT)

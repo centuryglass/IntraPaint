@@ -25,8 +25,8 @@ def _tr(*args):
     return QApplication.translate(TR_ID, *args)
 
 
-RESOURCES_FILL_ICON = f'{PROJECT_DIR}/resources/icons/tools/selection_fill_icon.svg'
-RESOURCES_FILL_CURSOR = f'{PROJECT_DIR}/resources/cursors/selection_fill_cursor.svg'
+ICON_PATH_SELECTION_FILL_TOOL = f'{PROJECT_DIR}/resources/icons/tools/selection_fill_icon.svg'
+CURSOR_PATH_SELECTION_FILL_TOOL = f'{PROJECT_DIR}/resources/cursors/selection_fill_cursor.svg'
 CURSOR_SIZE = 25
 
 SELECTION_FILL_LABEL = _tr('Selection fill')
@@ -39,7 +39,7 @@ class SelectionFillTool(BaseTool):
 
     def __init__(self, image_stack: ImageStack) -> None:
         super().__init__(KeyConfig.SELECTION_FILL_TOOL_KEY, SELECTION_FILL_LABEL, SELECTION_FILL_TOOLTIP,
-                         QIcon(RESOURCES_FILL_ICON))
+                         QIcon(ICON_PATH_SELECTION_FILL_TOOL))
         self._image_stack = image_stack
         self._control_panel = FillSelectionPanel(image_stack.selection_layer)
         self._color = QColor()
@@ -51,7 +51,7 @@ class SelectionFillTool(BaseTool):
             self._color.setAlphaF(1.0)
         _update_color(AppConfig().get(AppConfig.SELECTION_COLOR))
         AppConfig().connect(self, AppConfig.SELECTION_COLOR, _update_color)
-        cursor_icon = QIcon(RESOURCES_FILL_CURSOR)
+        cursor_icon = QIcon(CURSOR_PATH_SELECTION_FILL_TOOL)
         self.cursor = QCursor(cursor_icon.pixmap(CURSOR_SIZE, CURSOR_SIZE))
 
     def get_input_hint(self) -> str:

@@ -29,14 +29,14 @@ GREEN_LABEL = _tr('Green')
 BLUE_LABEL = _tr('Blue')
 ALPHA_LABEL = _tr('Alpha')
 MAX_VALUE = 8.0
-RGBA_ICON_PATH = f'{PROJECT_DIR}/resources/icons/filter/rgba_icon.svg'
+ICON_PATH_RGBA_FILTER = f'{PROJECT_DIR}/resources/icons/filter/rgba_icon.svg'
 
 
 class RGBColorBalanceFilter(ImageFilter):
     """Filter used to adjust  RGB color levels."""
 
     def __init__(self, image_stack: ImageStack) -> None:
-        super().__init__(image_stack, RGBA_ICON_PATH)
+        super().__init__(image_stack, ICON_PATH_RGBA_FILTER)
 
     def get_name(self) -> str:
         """Return the modal's title string."""

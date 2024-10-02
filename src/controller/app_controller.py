@@ -150,7 +150,7 @@ SUBMENU_TRANSFORM = _tr('Transform')
 
 CONTROL_TAB_NAME = _tr('Image Generation')
 
-GEN_TAB_ICON = f'{PROJECT_DIR}/resources/icons/tabs/sparkle.svg'
+ICON_PATH_GEN_TAB = f'{PROJECT_DIR}/resources/icons/tabs/sparkle.svg'
 
 GENERATOR_LOAD_ERROR_TITLE = _tr('Loading image generator failed')
 GENERATOR_LOAD_ERROR_MESSAGE = _tr('Unable to load the {generator_name} image generator')
@@ -408,7 +408,7 @@ class AppController(MenuBuilder):
         self._generator_control_panel: Optional[GeneratorPanel] = None
         self._generator_tab = Tab(CONTROL_TAB_NAME, None, KeyConfig.SELECT_GENERATOR_TAB, parent=self._window)
         self._generator_tab.hide()
-        self._generator_tab.setIcon(QIcon(GEN_TAB_ICON))
+        self._generator_tab.setIcon(QIcon(ICON_PATH_GEN_TAB))
 
         # Prepare image generator options, and select one based on availability and command line arguments.
         self._null_generator = NullGenerator(self._window, self._image_stack)

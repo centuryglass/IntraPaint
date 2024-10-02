@@ -32,7 +32,7 @@ ZOOM_TOOLTIP = _tr('Left-click to pan, right-click to draw viewport')
 IMAGE_GEN_LABEL_SHORT = _tr('Move gen. area')
 BUTTON_TEXT_RESET_VIEW = _tr('Reset view')
 
-RESOURCES_ZOOM_ICON = f'{PROJECT_DIR}/resources/icons/tools/zoom_icon.svg'
+ICON_PATH_ZOOM_TOOL = f'{PROJECT_DIR}/resources/icons/tools/zoom_icon.svg'
 MIN_AREA = 4
 
 
@@ -40,7 +40,7 @@ class ZoomTool(BaseTool):
     """Tool used to control the zoom level of the primary image view from within the image window."""
 
     def __init__(self, main_view: ImageViewer, controller_view: ImageViewer) -> None:
-        super().__init__('', ZOOM_LABEL, ZOOM_TOOLTIP, QIcon(RESOURCES_ZOOM_ICON))
+        super().__init__('', ZOOM_LABEL, ZOOM_TOOLTIP, QIcon(ICON_PATH_ZOOM_TOOL))
         self._main_view = main_view
         self._control_view = controller_view
         scene = controller_view.scene()

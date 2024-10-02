@@ -32,7 +32,7 @@ TRANSFORM_LABEL = _tr('Transform Layers')
 TRANSFORM_TOOLTIP = _tr('Move, scale, or rotate the active layer.')
 TRANSFORM_CONTROL_HINT = _tr('{left_mouse_icon}, drag: move layer')
 
-RESOURCES_TRANSFORM_TOOL_ICON = f'{PROJECT_DIR}/resources/icons/tools/layer_transform_icon.svg'
+ICON_PATH_TRANSFORM_TOOL = f'{PROJECT_DIR}/resources/icons/tools/layer_transform_icon.svg'
 
 
 class LayerTransformTool(BaseTool):
@@ -40,7 +40,7 @@ class LayerTransformTool(BaseTool):
 
     def __init__(self, image_stack: ImageStack, image_viewer: ImageViewer) -> None:
         super().__init__(KeyConfig.TRANSFORM_TOOL_KEY, TRANSFORM_LABEL, TRANSFORM_TOOLTIP,
-                         QIcon(RESOURCES_TRANSFORM_TOOL_ICON))
+                         QIcon(ICON_PATH_TRANSFORM_TOOL))
         self._layer: Optional[TransformLayer] = None
         self._image_stack = image_stack
         self._image_viewer = image_viewer
@@ -220,8 +220,10 @@ class LayerTransformTool(BaseTool):
             self._transform_outline.setVisible(layer.visible and not layer.size.isEmpty())
             self._control_panel.set_preview_transform(self._initial_transform)
             self._transform_outline.setTransform(self._initial_transform)
-        self._control_panel.setEnabled(layer is not None and not layer.locked and not layer.parent_locked
-                                       and not self._layer.size.isEmpty())
+        should_enable = (layer is not None and not layer.locked and not layer.parent_locked
+                         and not self._layer.size.isEmpty())
+        self._control_panel.setEnabled(should_enable)
+        self.set_disabled_cursor(not should_enable)
         self._update_all_controls()
 
     def _on_activate(self, restoring_after_delegation=False) -> None:
@@ -242,7 +244,8 @@ class LayerTransformTool(BaseTool):
         assert layer == self._layer or layer.contains_recursive(self._layer) or isinstance(layer, TransformGroup)
         if self._control_panel is not None:
             self._control_panel.setEnabled(not locked)
-            self._transform_outline.setEnabled(not locked)
+        self._transform_outline.setEnabled(not locked)
+        self.set_disabled_cursor(locked)
 
     # noinspection PyUnusedLocal
     def _layer_transform_change_slot(self, layer: Layer, transform: QTransform) -> None:

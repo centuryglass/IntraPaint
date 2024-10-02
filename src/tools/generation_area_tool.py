@@ -25,7 +25,7 @@ def _tr(*args):
     return QApplication.translate(TR_ID, *args)
 
 
-RESOURCES_GENERATION_AREA_ICON = f'{PROJECT_DIR}/resources/icons/tools/gen_area_icon.svg'
+ICON_PATH_GEN_AREA_TOOL = f'{PROJECT_DIR}/resources/icons/tools/gen_area_icon.svg'
 GENERATION_AREA_LABEL = _tr('Set Image Generation Area')
 GENERATION_AREA_TOOLTIP = _tr('Select an image region for AI image generation')
 GEN_AREA_CONTROL_HINT = _tr('{left_mouse_icon}: move area - {right_mouse_icon}: resize area')
@@ -36,7 +36,7 @@ class GenerationAreaTool(BaseTool):
 
     def __init__(self, image_stack: ImageStack, image_viewer: ImageViewer) -> None:
         super().__init__(KeyConfig.GENERATION_AREA_TOOL_KEY, GENERATION_AREA_LABEL, GENERATION_AREA_TOOLTIP,
-                         QIcon(RESOURCES_GENERATION_AREA_ICON))
+                         QIcon(ICON_PATH_GEN_AREA_TOOL))
         self._image_stack = image_stack
         self._image_viewer = image_viewer
         self._resizing = False

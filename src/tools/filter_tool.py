@@ -31,7 +31,8 @@ def _tr(*args):
     return QApplication.translate(TR_ID, *args)
 
 
-RESOURCES_FILTER_ICON = f'{PROJECT_DIR}/resources/icons/tools/filter_icon.svg'
+ICON_PATH_FILTER_TOOL = f'{PROJECT_DIR}/resources/icons/tools/filter_icon.svg'
+CURSOR_PATH_FILTER_TOOL = f'{PROJECT_DIR}/resources/cursors/filter_cursor.svg'
 FILTER_LABEL = _tr('Filter')
 FILTER_TOOLTIP = _tr('Draw to apply an image filter')
 FILTER_CONTROL_HINT = _tr('{left_mouse_icon}: filter - {right_mouse_icon}: 1px filter')
@@ -71,7 +72,7 @@ class FilterTool(QtPaintBrushTool):
         self._active_filter = initial_filter
         brush = FilterBrush(initial_filter)
         brush.parameter_values = self._filter_params[self._active_filter.get_name()]
-        super().__init__(KeyConfig.FILTER_TOOL_KEY, FILTER_LABEL, FILTER_TOOLTIP, QIcon(RESOURCES_FILTER_ICON),
+        super().__init__(KeyConfig.FILTER_TOOL_KEY, FILTER_LABEL, FILTER_TOOLTIP, QIcon(ICON_PATH_FILTER_TOOL),
                          image_stack, image_viewer, size_key=Cache.FILTER_TOOL_BRUSH_SIZE,
                          pressure_size_key=Cache.FILTER_TOOL_PRESSURE_SIZE, opacity_key=Cache.FILTER_TOOL_OPACITY,
                          pressure_opacity_key=Cache.FILTER_TOOL_PRESSURE_OPACITY,
@@ -79,6 +80,7 @@ class FilterTool(QtPaintBrushTool):
                          pressure_hardness_key=Cache.FILTER_TOOL_PRESSURE_HARDNESS, brush=brush)
         cache.connect(self, Cache.FILTER_TOOL_SELECTED_FILTER, self._filter_update_slot)
         cache.connect(self, Cache.FILTER_TOOL_CACHED_PARAMETERS, self._filter_param_update_slot)
+        self.set_scaling_icon_cursor(QIcon(CURSOR_PATH_FILTER_TOOL))
 
     def get_input_hint(self) -> str:
         """Return text describing different input functionality."""

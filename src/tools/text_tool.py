@@ -2,7 +2,7 @@
 from typing import Optional
 
 from PySide6.QtCore import QPoint, QPointF, QSizeF, QSize, QRect
-from PySide6.QtGui import QIcon, QMouseEvent, Qt, QTransform
+from PySide6.QtGui import QIcon, QMouseEvent, Qt, QTransform, QCursor
 from PySide6.QtWidgets import QWidget, QApplication
 
 from src.config.cache import Cache
@@ -31,7 +31,7 @@ def _tr(*args):
     return QApplication.translate(TR_ID, *args)
 
 
-RESOURCES_TEXT_ICON = f'{PROJECT_DIR}/resources/icons/tools/text_icon.svg'
+ICON_PATH_TEXT_TOOL = f'{PROJECT_DIR}/resources/icons/tools/text_icon.svg'
 MIN_DRAG_SIZE = 4
 
 TEXT_LABEL = _tr('Text')
@@ -44,7 +44,8 @@ class TextTool(BaseTool):
     """Lets the user fill image areas with solid colors."""
 
     def __init__(self, image_stack: ImageStack, image_viewer: ImageViewer) -> None:
-        super().__init__(KeyConfig.TEXT_TOOL_KEY, TEXT_LABEL, TEXT_TOOLTIP, QIcon(RESOURCES_TEXT_ICON))
+        super().__init__(KeyConfig.TEXT_TOOL_KEY, TEXT_LABEL, TEXT_TOOLTIP, QIcon(ICON_PATH_TEXT_TOOL))
+        self.cursor = QCursor(Qt.CursorShape.CrossCursor)
         scene = image_viewer.scene()
         assert scene is not None
         self._scene = scene
@@ -266,6 +267,7 @@ class TextTool(BaseTool):
         should_enable = self._text_layer is None or (not self._text_layer.locked and not self._text_layer.parent_locked)
         self._control_panel.setEnabled(should_enable)
         self._placement_outline.setEnabled(should_enable)
+        self.set_disabled_cursor(not should_enable)
 
     def _active_layer_change_slot(self, active_layer: Layer) -> None:
         if active_layer == self._text_layer or not self.is_active:

@@ -29,7 +29,7 @@ def _tr(*args):
     return QApplication.translate(TR_ID, *args)
 
 
-RESOURCES_BRUSH_ICON = f'{PROJECT_DIR}/resources/icons/tools/brush_icon.svg'
+ICON_PATH_MYPAINT_BRUSH_TOOL = f'{PROJECT_DIR}/resources/icons/tools/brush_icon.svg'
 BRUSH_LABEL = _tr('Brush')
 BRUSH_TOOLTIP = _tr('Paint into the image')
 BRUSH_CONTROL_HINT = _tr('{left_mouse_icon}: draw - {right_mouse_icon}: 1px draw')
@@ -39,7 +39,7 @@ class MyPaintBrushTool(BrushTool):
     """Implements brush controls using a MyPaint surface."""
 
     def __init__(self, image_stack: ImageStack, image_viewer: ImageViewer, size_key: Optional[str] = None) -> None:
-        super().__init__(KeyConfig.BRUSH_TOOL_KEY, BRUSH_LABEL, BRUSH_TOOLTIP, QIcon(RESOURCES_BRUSH_ICON),
+        super().__init__(KeyConfig.BRUSH_TOOL_KEY, BRUSH_LABEL, BRUSH_TOOLTIP, QIcon(ICON_PATH_MYPAINT_BRUSH_TOOL),
                          image_stack, image_viewer, MyPaintLayerBrush())
         self._size_key = Cache.PAINT_TOOL_BRUSH_SIZE if size_key is None else size_key
         self._last_click = None

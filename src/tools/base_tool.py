@@ -92,6 +92,8 @@ class BaseTool(QObject):
         super().__init__()
         self._activation_config_key = activation_config_key
         self._cursor: Optional[QCursor | QPixmap] = None
+        self._saved_cursor: Optional[QCursor | QPixmap] = None
+        self._disabled_cursor = QCursor(Qt.CursorShape.ForbiddenCursor)
         self._active = False
         self._label_text = label_text
         self._tooltip_text = tooltip_text
@@ -121,8 +123,25 @@ class BaseTool(QObject):
     @cursor.setter
     def cursor(self, new_cursor: Optional[QCursor | QPixmap]) -> None:
         """Sets the active tool cursor or tool pixmap."""
-        self._cursor = new_cursor
-        self.cursor_change.emit()
+        if self._cursor != self._disabled_cursor:
+            self._cursor = new_cursor
+            if self.is_active:
+                self.cursor_change.emit()
+        else:
+            self._saved_cursor = new_cursor
+
+    def set_disabled_cursor(self, use_disabled_cursor: bool) -> None:
+        """Sets or removes a cursor indicating that input is disabled."""
+        if use_disabled_cursor == (self._cursor == self._disabled_cursor):
+            return
+        if use_disabled_cursor:
+            self._saved_cursor = self._cursor
+            self._cursor = self._disabled_cursor
+        else:
+            self._cursor = self._saved_cursor
+            self._saved_cursor = None
+        if self.is_active:
+            self.cursor_change.emit()
 
     @property
     def is_active(self) -> bool:

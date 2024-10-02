@@ -60,9 +60,9 @@ MENU_OPTION_SELECT_ALL = _tr('Select all in active layer')
 MENU_OPTION_INVERT_SELECTION = _tr('Invert selection')
 MENU_OPTION_CLEAR_SELECTION = _tr('Clear selection')
 
-GROUP_FRAME = f'{PROJECT_DIR}/resources/icons/layer/group_frame.svg'
-IMAGE_FRAME = f'{PROJECT_DIR}/resources/icons/layer/img_frame.svg'
-TEXT_FRAME = f'{PROJECT_DIR}/resources/icons/layer/txt_frame.svg'
+IMAGE_PATH_GROUP_FRAME = f'{PROJECT_DIR}/resources/icons/layer/group_frame.svg'
+IMAGE_PATH_BASIC_FRAME = f'{PROJECT_DIR}/resources/icons/layer/img_frame.svg'
+IMAGE_PATH_TEXT_FRAME = f'{PROJECT_DIR}/resources/icons/layer/txt_frame.svg'
 
 
 def _preview_size() -> QSize:
@@ -94,11 +94,11 @@ class LayerWidget(BorderedWidget):
         self._clicking = False
         self._click_pos = QPoint()
         if isinstance(layer, LayerStack):
-            self._frame = QIcon(GROUP_FRAME)
+            self._frame = QIcon(IMAGE_PATH_GROUP_FRAME)
         elif isinstance(layer, TextLayer):
-            self._frame = QIcon(TEXT_FRAME)
+            self._frame = QIcon(IMAGE_PATH_TEXT_FRAME)
         else:
-            self._frame = QIcon(IMAGE_FRAME)
+            self._frame = QIcon(IMAGE_PATH_BASIC_FRAME)
         if layer == image_stack.selection_layer:
             self._label = QLabel(layer.name, self)
         else:

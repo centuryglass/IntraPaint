@@ -22,8 +22,8 @@ def _tr(*args):
     return QApplication.translate(TR_ID, *args)
 
 
-RESOURCES_EYEDROPPER_ICON = f'{PROJECT_DIR}/resources/icons/tools/eyedropper_icon.svg'
-RESOURCES_EYEDROPPER_CURSOR = f'{PROJECT_DIR}/resources/cursors/eyedropper_cursor.svg'
+ICON_PATH_EYEDROPPER_TOOL = f'{PROJECT_DIR}/resources/icons/tools/eyedropper_icon.svg'
+CURSOR_PATH_EYEDROPPER_TOOL = f'{PROJECT_DIR}/resources/cursors/eyedropper_cursor.svg'
 CURSOR_SIZE = 50
 
 EYEDROPPER_LABEL = _tr('Color Picker')
@@ -36,10 +36,10 @@ class EyedropperTool(BaseTool):
 
     def __init__(self, image_stack: ImageStack) -> None:
         super().__init__(KeyConfig.EYEDROPPER_TOOL_KEY, EYEDROPPER_LABEL, EYEDROPPER_TOOLTIP,
-                         QIcon(RESOURCES_EYEDROPPER_ICON))
+                         QIcon(ICON_PATH_EYEDROPPER_TOOL))
         self._image_stack = image_stack
         self._control_panel: Optional[QColorDialog] = None
-        cursor_icon = QIcon(RESOURCES_EYEDROPPER_CURSOR)
+        cursor_icon = QIcon(CURSOR_PATH_EYEDROPPER_TOOL)
         self.cursor = QCursor(cursor_icon.pixmap(CURSOR_SIZE, CURSOR_SIZE), 0, CURSOR_SIZE)
 
     def get_input_hint(self) -> str:

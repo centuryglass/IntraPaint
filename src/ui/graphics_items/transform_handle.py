@@ -11,8 +11,8 @@ from src.util.visual.geometry_utils import extract_transform_parameters
 from src.util.visual.graphics_scene_utils import map_scene_item_point_to_view_point, get_scene_item_bounds_of_view_rect
 from src.util.shared_constants import MIN_NONZERO, PROJECT_DIR
 
-CORNER_SCALE_ARROW_FILE = f'{PROJECT_DIR}/resources/icons/transform/arrow_corner.svg'
-CORNER_ROTATE_ARROW_FILE = f'{PROJECT_DIR}/resources/icons/transform/arrow_corner_rot.svg'
+IMAGE_PATH_CORNER_SCALE_ARROW = f'{PROJECT_DIR}/resources/icons/transform/arrow_corner.svg'
+IMAGE_PATH_CORNER_ROTATE_ARROW = f'{PROJECT_DIR}/resources/icons/transform/arrow_corner_rot.svg'
 
 TRANSFORM_MODE_SCALE = 'scale'
 TRANSFORM_MODE_ROTATE = 'rotate'
@@ -42,8 +42,8 @@ class TransformHandle(QGraphicsObject):
         self._brush = Qt.GlobalColor.black
         self._pen = Qt.GlobalColor.white
         self._rect = QRectF()
-        self._arrow_icon = QIcon(CORNER_SCALE_ARROW_FILE)
-        self._rot_arrow_icon = QIcon(CORNER_ROTATE_ARROW_FILE)
+        self._arrow_icon = QIcon(IMAGE_PATH_CORNER_SCALE_ARROW)
+        self._rot_arrow_icon = QIcon(IMAGE_PATH_CORNER_ROTATE_ARROW)
         self._saved_bounds = None
         self._saved_arrow_bounds = None
         self._icon = self._arrow_icon

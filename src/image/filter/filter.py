@@ -34,13 +34,13 @@ ACTION_NAME_FILTER = _tr('Apply image filter')
 
 MAX_PREVIEW_SIZE = 800
 MIN_PREVIEW_SIZE = 200
-FILTER_ICON_PATH = f'{PROJECT_DIR}/resources/icons/tools/filter_icon.svg'
+ICON_PATH_FILTER_GENERIC = f'{PROJECT_DIR}/resources/icons/tools/filter_icon.svg'
 
 
 class ImageFilter:
     """Interface for image filtering functions exposed through a modal UI."""
 
-    def __init__(self, image_stack: ImageStack, icon_path=FILTER_ICON_PATH) -> None:
+    def __init__(self, image_stack: ImageStack, icon_path=ICON_PATH_FILTER_GENERIC) -> None:
         self._image_stack = image_stack
         self._filter_selection_only = True
         self._filter_active_layer_only = True

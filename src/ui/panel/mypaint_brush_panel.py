@@ -32,7 +32,7 @@ def _tr(*args):
 FAVORITES_CATEGORY_NAME = _tr('favorites')
 
 BRUSH_DIR = f'{PROJECT_DIR}/resources/brushes'
-FAVORITES_ICON = f'{PROJECT_DIR}/resources/icons/tabs/star.svg'
+ICON_PATH_FAVORITES = f'{PROJECT_DIR}/resources/icons/tabs/star.svg'
 FAV_CONFIG_KEY = 'brush_favorites'
 
 BRUSH_CONF_FILE = 'brushes.conf'
@@ -127,7 +127,7 @@ class MypaintBrushPanel(QTabWidget):
             favorite_brushes.append(brush_icon)
         if len(favorite_brushes) > 0:
             self._create_tab(FAVORITES_CATEGORY_NAME, index=0)
-            self.setTabIcon(0, QIcon(FAVORITES_ICON))
+            self.setTabIcon(0, QIcon(ICON_PATH_FAVORITES))
             for brush_widget in favorite_brushes:
                 self._pages[FAVORITES_CATEGORY_NAME].add_widget(brush_widget)
             self.setCurrentIndex(0)

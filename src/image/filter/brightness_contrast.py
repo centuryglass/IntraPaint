@@ -26,14 +26,14 @@ BRIGHTNESS_CONTRAST_FILTER_DESCRIPTION = _tr('Adjust image brightness and contra
 BRIGHTNESS_LABEL = _tr('Brightness:')
 CONTRAST_LABEL = _tr('Contrast')
 
-BRIGHTNESS_CONTRAST_ICON_PATH = f'{PROJECT_DIR}/resources/icons/filter/brightness_contrast_icon.svg'
+ICON_PATH_BRIGHTNESS_CONTRAST_FILTER = f'{PROJECT_DIR}/resources/icons/filter/brightness_contrast_icon.svg'
 
 
 class BrightnessContrastFilter(ImageFilter):
     """Filter used to adjust image brightness and contrast."""
 
     def __init__(self, image_stack: ImageStack) -> None:
-        super().__init__(image_stack, BRIGHTNESS_CONTRAST_ICON_PATH)
+        super().__init__(image_stack, ICON_PATH_BRIGHTNESS_CONTRAST_FILTER)
 
     def get_name(self) -> str:
         """Return the modal's title string."""

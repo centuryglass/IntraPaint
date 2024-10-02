@@ -27,14 +27,14 @@ SHARPEN_FILTER_DESCRIPTION = _tr('Sharpen the image')
 FACTOR_LABEL = _tr('Factor')
 FACTOR_DESCRIPTION = _tr('Sharpness factor (1.0: no change)')
 
-SHARPEN_ICON_PATH = f'{PROJECT_DIR}/resources/icons/filter/sharpen.png'
+ICON_PATH_SHARPEN_FILTER = f'{PROJECT_DIR}/resources/icons/filter/sharpen.png'
 
 
 class SharpenFilter(ImageFilter):
     """Filter used to sharpen image details."""
 
     def __init__(self, image_stack: ImageStack) -> None:
-        super().__init__(image_stack, SHARPEN_ICON_PATH)
+        super().__init__(image_stack, ICON_PATH_SHARPEN_FILTER)
 
     def get_name(self) -> str:
         """Return the modal's title string."""

@@ -2,7 +2,7 @@
 from typing import Optional
 
 from PySide6.QtCore import Qt, QPoint
-from PySide6.QtGui import QIcon, QMouseEvent, QPainter, QColor, QBrush, QPainterPath
+from PySide6.QtGui import QIcon, QMouseEvent, QPainter, QColor, QBrush, QPainterPath, QCursor
 from PySide6.QtWidgets import QWidget, QApplication
 
 from src.config.application_config import AppConfig
@@ -25,7 +25,7 @@ def _tr(*args):
     return QApplication.translate(TR_ID, *args)
 
 
-RESOURCES_SHAPE_SELECT_ICON = f'{PROJECT_DIR}/resources/icons/tools/shape_selection_icon.svg'
+ICON_PATH_SHAPE_SELECT_TOOL = f'{PROJECT_DIR}/resources/icons/tools/shape_selection_icon.svg'
 
 SHAPE_SELECTION_LABEL = _tr('Rectangle/Ellipse selection')
 SHAPE_SELECTION_TOOLTIP = _tr('Select or de-select rectangles or ellipses')
@@ -39,7 +39,8 @@ class ShapeSelectionTool(BaseTool):
 
     def __init__(self, image_stack: ImageStack, image_viewer: ImageViewer) -> None:
         super().__init__(KeyConfig.SHAPE_SELECTION_TOOL_KEY, SHAPE_SELECTION_LABEL, SHAPE_SELECTION_TOOLTIP,
-                         QIcon(RESOURCES_SHAPE_SELECT_ICON))
+                         QIcon(ICON_PATH_SHAPE_SELECT_TOOL))
+        self.cursor = QCursor(Qt.CursorShape.CrossCursor)
         scene = image_viewer.scene()
         assert scene is not None
         self._scene = scene
@@ -48,7 +49,7 @@ class ShapeSelectionTool(BaseTool):
         self._selection_handler = ClickAndDragSelection(scene)
         self._dragging = False
         self._clearing = False
-        self._icon = QIcon(RESOURCES_SHAPE_SELECT_ICON)
+        self._icon = QIcon(ICON_PATH_SHAPE_SELECT_TOOL)
         self._color = QColor()
         self._selection_brush = QBrush(QColor(), Qt.BrushStyle.Dense5Pattern)
         self._erasing_brush = QBrush(ERASING_COLOR, Qt.BrushStyle.DiagCrossPattern)

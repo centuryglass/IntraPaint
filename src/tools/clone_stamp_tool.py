@@ -1,7 +1,7 @@
 """Use brush strokes to transfer image content over an offset."""
 from typing import Optional
 
-from PySide6.QtCore import QPoint
+from PySide6.QtCore import QPoint, QSize
 from PySide6.QtGui import QIcon, QCursor, QPixmap, QMouseEvent, Qt
 from PySide6.QtWidgets import QApplication, QWidget, QGraphicsPixmapItem
 
@@ -9,7 +9,7 @@ from src.config.cache import Cache
 from src.config.key_config import KeyConfig
 from src.image.brush.clone_stamp_brush import CloneStampBrush
 from src.image.layers.image_stack import ImageStack
-from src.tools.brush_tool import BrushTool, RESOURCES_CURSOR
+from src.tools.brush_tool import BrushTool, CURSOR_PATH_BRUSH_DEFAULT
 from src.tools.qt_paint_brush_tool import QtPaintBrushTool
 from src.ui.image_viewer import ImageViewer
 from src.ui.panel.tool_control_panels.clone_stamp_tool_panel import CloneStampToolPanel
@@ -26,7 +26,10 @@ def _tr(*args):
     return QApplication.translate(TR_ID, *args)
 
 
-RESOURCES_STAMP_ICON = f'{PROJECT_DIR}/resources/icons/tools/stamp_icon.svg'
+ICON_PATH_CLONE_STAMP_TOOL = f'{PROJECT_DIR}/resources/icons/tools/stamp_icon.svg'
+CURSOR_PATH_CLONE_STAMP_TOOL = f'{PROJECT_DIR}/resources/cursors/stamp_cursor.svg'
+IMAGE_PATH_CLONE_SAMPLE_POINT = f'{PROJECT_DIR}/resources/cursors/stamp_cursor_source.svg'
+
 CLONE_STAMP_LABEL = _tr('Clone Stamp')
 CLONE_STAMP_TOOLTIP = _tr('Copy image content from one area to another')
 CLONE_STAMP_CONTROL_HINT = _tr('{right_mouse_icon}: set source - {left_mouse_icon}: draw')
@@ -36,26 +39,27 @@ class CloneStampTool(QtPaintBrushTool):
     """Use brush strokes to transfer image content over an offset."""
 
     def __init__(self, image_stack: ImageStack, image_viewer: ImageViewer) -> None:
-        self._offset_marker = QGraphicsPixmapItem()
+        self._offset = QPoint()
+        self._offset_source_pixmap = QPixmap(IMAGE_PATH_CLONE_SAMPLE_POINT)
+        self._offset_marker = QGraphicsPixmapItem(self._offset_source_pixmap)
         self._offset_marker.setOpacity(0.5)
+        self._pending_offset_point: Optional[QPoint] = None
+        self._view = image_viewer
         scene = image_viewer.scene()
         assert scene is not None
+        self._scene = scene
         scene.addItem(self._offset_marker)
         super().__init__(KeyConfig.CLONE_STAMP_TOOL_KEY, CLONE_STAMP_LABEL, CLONE_STAMP_TOOLTIP,
-                         QIcon(RESOURCES_STAMP_ICON),
+                         QIcon(ICON_PATH_CLONE_STAMP_TOOL),
                          image_stack, image_viewer, size_key=Cache.CLONE_STAMP_TOOL_BRUSH_SIZE,
                          pressure_size_key=Cache.CLONE_STAMP_TOOL_PRESSURE_SIZE,
                          opacity_key=Cache.CLONE_STAMP_TOOL_OPACITY,
                          pressure_opacity_key=Cache.CLONE_STAMP_TOOL_PRESSURE_OPACITY,
                          hardness_key=Cache.CLONE_STAMP_TOOL_HARDNESS,
                          pressure_hardness_key=Cache.CLONE_STAMP_TOOL_PRESSURE_HARDNESS, brush=CloneStampBrush())
-        self._offset_marker.setPixmap(self._cursor_pixmap())
         self._control_panel: Optional[CloneStampToolPanel] = None
-        self._view = image_viewer
-        self._scene = scene
         self._offset_marker.setVisible(False)
-        self._pending_offset_point: Optional[QPoint] = None
-        self._offset = QPoint()
+        self.set_scaling_icon_cursor(QIcon(CURSOR_PATH_CLONE_STAMP_TOOL))
 
     def get_input_hint(self) -> str:
         """Return text describing different input functionality."""
@@ -85,24 +89,19 @@ class CloneStampTool(QtPaintBrushTool):
     def update_brush_cursor(self) -> None:
         """Adjust the offset marker when the brush cursor changes."""
         super().update_brush_cursor()
-        self._offset_marker.setPixmap(self._cursor_pixmap())
-
-    def _cursor_pixmap(self) -> QPixmap:
-        cursor = self.cursor
-        if isinstance(cursor, QCursor):
-            cursor = cursor.pixmap()
-        if cursor is None:
-            cursor = QPixmap(RESOURCES_CURSOR)
-        assert isinstance(cursor, QPixmap)
-        return cursor
+        if self.brush_size != self._offset_marker.pixmap().width():
+            self._update_offset_cursor()
 
     def _update_offset_cursor(self):
+        cursor_size = round(self._offset_marker.pixmap().width() * self._offset_marker.scale())
+        if self.brush_size != cursor_size:
+            new_scale = self.brush_size / self._offset_marker.pixmap().width()
+            self._offset_marker.setScale(new_scale)
         if self._pending_offset_point is not None:
             offset_scene_pos = self._pending_offset_point
         else:
             offset_scene_pos = self._view.mapToScene(self._view.mapFromGlobal(QCursor.pos())) + self._offset
-        offset_cursor_pos = offset_scene_pos - QPoint(self._offset_marker.pixmap().width() // 2,
-                                                      self._offset_marker.pixmap().height() // 2)
+        offset_cursor_pos = offset_scene_pos - QPoint(cursor_size // 2, cursor_size // 2)
         self._offset_marker.setPos(offset_cursor_pos)
 
     def mouse_click(self, event: Optional[QMouseEvent], image_coordinates: QPoint) -> bool:

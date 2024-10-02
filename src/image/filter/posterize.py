@@ -27,14 +27,14 @@ POSTERIZE_FILTER_DESCRIPTION = _tr('Reduce color range by reducing image color b
 PARAM_LABEL = _tr('Bit Count:')
 PARAM_TEXT = _tr('Image color bits to preserve (1-8)')
 
-POSTERIZE_ICON_PATH = f'{PROJECT_DIR}/resources/icons/filter/posterize.png'
+ICON_PATH_POSTERIZE_FILTER = f'{PROJECT_DIR}/resources/icons/filter/posterize.png'
 
 
 class PosterizeFilter(ImageFilter):
     """Filter used to reduce image color range."""
 
     def __init__(self, image_stack: ImageStack) -> None:
-        super().__init__(image_stack, POSTERIZE_ICON_PATH)
+        super().__init__(image_stack, ICON_PATH_POSTERIZE_FILTER)
 
     def get_name(self) -> str:
         """Return the modal's title string."""

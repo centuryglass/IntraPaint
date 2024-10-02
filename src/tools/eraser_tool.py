@@ -23,7 +23,8 @@ def _tr(*args):
     return QApplication.translate(TR_ID, *args)
 
 
-ICON_ERASER_TOOL = f'{PROJECT_DIR}/resources/icons/tools/eraser_icon.svg'
+ICON_PATH_ERASER_TOOL = f'{PROJECT_DIR}/resources/icons/tools/eraser_icon.svg'
+CURSOR_PATH_ERASER_TOOL = f'{PROJECT_DIR}/resources/cursors/eraser_cursor.svg'
 LABEL_TEXT_ERASER_TOOL = _tr('Erase')
 TOOLTIP_ERASER_TOOL = _tr('Erase image layer content')
 CONTROL_HINT_DRAW_TOOL = _tr('{left_mouse_icon}: erase - {right_mouse_icon}: 1px erase')
@@ -34,7 +35,7 @@ class EraserTool(QtPaintBrushTool):
 
     def __init__(self, image_stack: ImageStack, image_viewer: ImageViewer) -> None:
         super().__init__(KeyConfig.ERASER_TOOL_KEY, LABEL_TEXT_ERASER_TOOL, TOOLTIP_ERASER_TOOL,
-                         QIcon(ICON_ERASER_TOOL), image_stack, image_viewer, size_key=Cache.ERASER_TOOL_SIZE,
+                         QIcon(ICON_PATH_ERASER_TOOL), image_stack, image_viewer, size_key=Cache.ERASER_TOOL_SIZE,
                          pressure_size_key=Cache.ERASER_TOOL_PRESSURE_SIZE, opacity_key=Cache.ERASER_TOOL_OPACITY,
                          pressure_opacity_key=Cache.DRAW_TOOL_PRESSURE_OPACITY,
                          hardness_key=Cache.ERASER_TOOL_HARDNESS,
@@ -44,6 +45,7 @@ class EraserTool(QtPaintBrushTool):
         cache = Cache()
         cache.disconnect(self, Cache.LAST_BRUSH_COLOR)
         self._control_panel: Optional[EraserToolPanel] = None
+        self.set_scaling_icon_cursor(QIcon(CURSOR_PATH_ERASER_TOOL))
 
     def get_control_panel(self) -> Optional[QWidget]:
         """Returns the brush control panel."""

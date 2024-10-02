@@ -26,8 +26,8 @@ def _tr(*args):
     return QApplication.translate(TR_ID, *args)
 
 
-RESOURCES_FILL_ICON = f'{PROJECT_DIR}/resources/icons/tools/fill_icon.svg'
-RESOURCES_FILL_CURSOR = f'{PROJECT_DIR}/resources/cursors/fill_cursor.svg'
+ICON_PATH_FILL_TOOL = f'{PROJECT_DIR}/resources/icons/tools/fill_icon.svg'
+CURSOR_PATH_FILL_TOOL = f'{PROJECT_DIR}/resources/cursors/fill_cursor.svg'
 CURSOR_SIZE = 50
 
 FILL_LABEL = _tr('Color fill')
@@ -39,14 +39,14 @@ class FillTool(BaseTool):
     """Lets the user fill image areas with solid colors."""
 
     def __init__(self, image_stack: ImageStack) -> None:
-        super().__init__(KeyConfig.FILL_TOOL_KEY, FILL_LABEL, FILL_TOOLTIP, QIcon(RESOURCES_FILL_ICON))
+        super().__init__(KeyConfig.FILL_TOOL_KEY, FILL_LABEL, FILL_TOOLTIP, QIcon(ICON_PATH_FILL_TOOL))
         cache = Cache()
         self._control_panel: Optional[FillToolPanel] = None
         self._image_stack = image_stack
         self._color = cache.get_color(Cache.LAST_BRUSH_COLOR, Qt.GlobalColor.black)
         self._threshold = cache.get(Cache.FILL_THRESHOLD)
         self._sample_merged = cache.get(Cache.SAMPLE_MERGED)
-        cursor_icon = QIcon(RESOURCES_FILL_CURSOR)
+        cursor_icon = QIcon(CURSOR_PATH_FILL_TOOL)
         self.cursor = QCursor(cursor_icon.pixmap(CURSOR_SIZE, CURSOR_SIZE), 0, CURSOR_SIZE)
         cache.connect(self, Cache.LAST_BRUSH_COLOR, self._update_color)
         cache.connect(self, Cache.FILL_THRESHOLD, self._update_threshold)
@@ -133,8 +133,10 @@ class FillTool(BaseTool):
 
     def _layer_lock_change_slot(self, layer: Layer, locked: bool) -> None:
         assert layer == self._layer or layer.contains_recursive(self._layer)
+        should_enable = isinstance(self._layer, ImageLayer) and not locked
         if self._control_panel is not None:
-            self._control_panel.setEnabled(isinstance(self._layer, ImageLayer) and not locked)
+            self._control_panel.setEnabled(should_enable)
+        self.set_disabled_cursor(not should_enable)
 
     def _update_color(self, color_str: str) -> None:
         self._color = QColor(color_str)

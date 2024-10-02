@@ -23,8 +23,8 @@ from src.ui.panel.tool_control_panels.brush_tool_panel import BrushToolPanel
 from src.util.shared_constants import PROJECT_DIR, FLOAT_MAX
 from src.util.visual.text_drawing_utils import left_button_hint_text, right_button_hint_text
 
-RESOURCES_CURSOR = f'{PROJECT_DIR}/resources/cursors/brush_cursor.svg'
-RESOURCES_MIN_CURSOR = f'{PROJECT_DIR}/resources/cursors/min_cursor.svg'
+CURSOR_PATH_BRUSH_DEFAULT = f'{PROJECT_DIR}/resources/cursors/brush_cursor.svg'
+CURSOR_PATH_BRUSH_MIN = f'{PROJECT_DIR}/resources/cursors/min_cursor.svg'
 
 # The `QCoreApplication.translate` context for strings in this file
 TR_ID = 'tools.brush_tool'
@@ -78,9 +78,9 @@ class BrushTool(BaseTool):
         assert scene is not None
         self._preview_line = TempDashedLineItem(scene)
 
-        self._small_brush_icon = QIcon(RESOURCES_MIN_CURSOR)
+        self._small_brush_icon = QIcon(CURSOR_PATH_BRUSH_MIN)
         self._small_brush_cursor = QCursor(self._small_brush_icon.pixmap(MIN_SMALL_CURSOR_SIZE, MIN_SMALL_CURSOR_SIZE))
-        self._default_scaled_cursor_icon = QIcon(RESOURCES_CURSOR)
+        self._default_scaled_cursor_icon = QIcon(CURSOR_PATH_BRUSH_DEFAULT)
         self._scaled_icon_cursor: Optional[QIcon] = self._default_scaled_cursor_icon
         self._scaling_cursor = True
         image_viewer.scale_changed.connect(self.update_brush_cursor)
@@ -185,9 +185,11 @@ class BrushTool(BaseTool):
         else:
             self._brush.connect_to_layer(layer)
         control_panel = self.get_control_panel()
+        should_enable = (layer is not None and isinstance(layer, ImageLayer) and not layer.locked
+                         and not layer.parent_locked and layer.visible)
         if control_panel is not None:
-            control_panel.setEnabled(layer is not None and isinstance(layer, ImageLayer) and not layer.locked
-                                     and not layer.parent_locked and layer.visible)
+            control_panel.setEnabled(should_enable)
+        self.set_disabled_cursor(not should_enable)
 
     @property
     def brush(self) -> LayerBrush:
@@ -202,6 +204,7 @@ class BrushTool(BaseTool):
         control_panel = self.get_control_panel()
         if control_panel is not None:
             control_panel.setEnabled(not locked)
+        self.set_disabled_cursor(locked)
 
     @property
     def brush_size(self) -> int:

@@ -25,7 +25,8 @@ def _tr(*args):
     return QApplication.translate(TR_ID, *args)
 
 
-ICON_DRAW_TOOL = f'{PROJECT_DIR}/resources/icons/tools/pen_icon.svg'
+ICON_PATH_DRAW_TOOL = f'{PROJECT_DIR}/resources/icons/tools/pen_icon.svg'
+CURSOR_PATH_DRAW_TOOL = f'{PROJECT_DIR}/resources/cursors/draw_cursor.svg'
 LABEL_TEXT_DRAW_TOOL = _tr('Draw')
 TOOLTIP_DRAW_TOOL = _tr('Draw into the image')
 CONTROL_HINT_DRAW_TOOL = _tr('{left_mouse_icon}: draw - {right_mouse_icon}: 1px draw')
@@ -35,13 +36,14 @@ class DrawTool(QtPaintBrushTool):
     """Implements brush controls using a minimal QPainter-based brush engine."""
 
     def __init__(self, image_stack: ImageStack, image_viewer: ImageViewer) -> None:
-        super().__init__(KeyConfig.DRAW_TOOL_KEY, LABEL_TEXT_DRAW_TOOL, TOOLTIP_DRAW_TOOL, QIcon(ICON_DRAW_TOOL),
+        super().__init__(KeyConfig.DRAW_TOOL_KEY, LABEL_TEXT_DRAW_TOOL, TOOLTIP_DRAW_TOOL, QIcon(ICON_PATH_DRAW_TOOL),
                          image_stack, image_viewer, size_key=Cache.DRAW_TOOL_BRUSH_SIZE,
                          pressure_size_key=Cache.DRAW_TOOL_PRESSURE_SIZE, opacity_key=Cache.DRAW_TOOL_OPACITY,
                          pressure_opacity_key=Cache.DRAW_TOOL_PRESSURE_OPACITY,
                          hardness_key=Cache.DRAW_TOOL_HARDNESS, pressure_hardness_key=Cache.DRAW_TOOL_PRESSURE_HARDNESS,
                          color_key=Cache.LAST_BRUSH_COLOR, pattern_key=Cache.DRAW_TOOL_BRUSH_PATTERN)
         self._control_panel: Optional[DrawToolPanel] = None
+        self.set_scaling_icon_cursor(QIcon(CURSOR_PATH_DRAW_TOOL))
 
     def get_input_hint(self) -> str:
         """Return text describing different input functionality."""

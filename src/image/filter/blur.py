@@ -33,7 +33,7 @@ MODE_DESCRIPTION = _tr('Image blurring algorithm')
 RADIUS_LABEL = _tr('Radius:')
 RADIUS_DESCRIPTION = _tr('Pixel blur radius (no effect in simple mode).')
 
-BLUR_ICON_PATH = f'{PROJECT_DIR}/resources/icons/filter/blur_icon.svg'
+ICON_PATH_BLUR_FILTER = f'{PROJECT_DIR}/resources/icons/filter/blur_icon.svg'
 MAX_VALUE = 100.0
 
 
@@ -41,7 +41,7 @@ class BlurFilter(ImageFilter):
     """Filter used to blur image content."""
 
     def __init__(self, image_stack: ImageStack) -> None:
-        super().__init__(image_stack, BLUR_ICON_PATH)
+        super().__init__(image_stack, ICON_PATH_BLUR_FILTER)
 
     def get_name(self) -> str:
         """Return the modal's title string."""
