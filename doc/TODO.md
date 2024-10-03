@@ -11,6 +11,11 @@
 - RGBA filter: alpha not working with filter tool, or when constrained to selection
 - Filter previews really slow on large images, are they not being scaled?
 - Make sure non-ai scaling is always possible via PIL scaling modes
+- Layer to image size fails: false lock error message
+- vertical text panel stretches oddly: color buttons get all the stretch space
+- color component tab not properly affecting color
+- MMB+drag blocked by layer change locks
+- smudge tool: short brush strokes being lost. Seems more common on larger images.
 
 ## Timelapse video
 
@@ -52,7 +57,7 @@
 Things I never fixed but can no longer reproduce, or that come from external issues:
 - Nested layer selection state shown in the layer panel isn't updating properly (recursive active layer update logic in LayerPanel looks fine)
 - changing gen. area size still doesn't always sync fully - width changes but not height. Possibly fixed, keep an eye out for it.
-- smudge tool: short brush strokes being lost (only on old laptop, perhaps?)
+- Some of the MyPaint brushes are clearly not working. Cross-test on Windows and with actual MyPaint, refer to images in examples folder.
 
 
 # Lower priority/post-release:
@@ -66,6 +71,7 @@ Things I never fixed but can no longer reproduce, or that come from external iss
 * There should be a mechanism for sending UI tabs to new windows
 * Color picker could use other options: RGB cube, color wheel, OKLab perceptual color
 * Switch color picker to horizontal tabs
+* Transform tool: clicking a layer should activate it, or there should be an option to do that at least.
 
 ## Help window
 - Rich text tutorial content, with images and dynamic hotkeys.

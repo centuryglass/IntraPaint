@@ -145,7 +145,7 @@ def save_ora_image(image_stack: ImageStack, file_path: str,  metadata: str) -> N
         layer_transform = layer.transform
         if layer_transform != offset_transform or layer.alpha_locked:
             extended_layer_data: dict[str, str] = {}
-            if layer.alpha_locked:
+            if isinstance(layer, ImageLayer) and layer.alpha_locked:
                 extended_layer_data[ATTR_TAG_ALPHA_LOCKED] = BOOLEAN_TRUE_STR
             if layer_transform != offset_transform:
                 layer_transform_str = _get_transform_str(layer_transform)

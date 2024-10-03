@@ -1,7 +1,7 @@
 """Use brush strokes to transfer image content over an offset."""
 from typing import Optional
 
-from PySide6.QtCore import QPoint, QSize
+from PySide6.QtCore import QPoint
 from PySide6.QtGui import QIcon, QCursor, QPixmap, QMouseEvent, Qt
 from PySide6.QtWidgets import QApplication, QWidget, QGraphicsPixmapItem
 
@@ -9,7 +9,7 @@ from src.config.cache import Cache
 from src.config.key_config import KeyConfig
 from src.image.brush.clone_stamp_brush import CloneStampBrush
 from src.image.layers.image_stack import ImageStack
-from src.tools.brush_tool import BrushTool, CURSOR_PATH_BRUSH_DEFAULT
+from src.tools.brush_tool import BrushTool
 from src.tools.qt_paint_brush_tool import QtPaintBrushTool
 from src.ui.image_viewer import ImageViewer
 from src.ui.panel.tool_control_panels.clone_stamp_tool_panel import CloneStampToolPanel
