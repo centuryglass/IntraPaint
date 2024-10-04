@@ -6,7 +6,6 @@
 - Upscale: make new layer, scale up existing layers
 
 ## Priority issues:
-- add 'sample merged' option to smudge, stamp, and filter tools
 - when selecting generated imagery tries to insert into a locked layer, an error is shown but the selection is lost
 - RGBA filter: alpha not working with filter tool, or when constrained to selection
 - Filter previews really slow on large images, are they not being scaled?
@@ -16,6 +15,7 @@
 - color component tab not properly affecting color
 - MMB+drag blocked by layer change locks
 - smudge tool: short brush strokes being lost. Seems more common on larger images.
+- stape tool bounds aren't quite correct, breaking undo/redo
 
 ## Timelapse video
 
@@ -72,6 +72,8 @@ Things I never fixed but can no longer reproduce, or that come from external iss
 * Color picker could use other options: RGB cube, color wheel, OKLab perceptual color
 * Switch color picker to horizontal tabs
 * Transform tool: clicking a layer should activate it, or there should be an option to do that at least.
+* ImageViewer: add sidebar rulers
+* add 'sample merged' option to smudge, stamp, and filter tools
 
 ## Help window
 - Rich text tutorial content, with images and dynamic hotkeys.

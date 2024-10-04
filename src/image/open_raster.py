@@ -143,7 +143,7 @@ def save_ora_image(image_stack: ImageStack, file_path: str,  metadata: str) -> N
 
         # Store untransformed images and transformations in a separate extended data section:
         layer_transform = layer.transform
-        if layer_transform != offset_transform or layer.alpha_locked:
+        if layer_transform != offset_transform or (isinstance(layer, ImageLayer) and layer.alpha_locked):
             extended_layer_data: dict[str, str] = {}
             if isinstance(layer, ImageLayer) and layer.alpha_locked:
                 extended_layer_data[ATTR_TAG_ALPHA_LOCKED] = BOOLEAN_TRUE_STR

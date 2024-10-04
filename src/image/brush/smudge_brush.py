@@ -170,6 +170,8 @@ class SmudgeBrush(LayerBrush):
     def _draw(self, x: float, y: float, pressure: Optional[float], x_tilt: Optional[float],
               y_tilt: Optional[float]) -> None:
         """Use active settings to draw with the brush using the given inputs."""
+        if self._last_point is not None and self._last_point.x() == round(x) and self._last_point.y() == round(y):
+            return
         layer = self.layer
         assert layer is not None
         size = self.brush_size
@@ -177,7 +179,7 @@ class SmudgeBrush(LayerBrush):
         hardness = self.hardness
         if pressure is not None:
             if self._pressure_size:
-                size = round(size * pressure)
+                size = max(round(size * pressure), 1)
             if self._pressure_opacity:
                 opacity *= pressure
             if self._pressure_hardness:
@@ -191,15 +193,16 @@ class SmudgeBrush(LayerBrush):
             y1 = round(y)
             dx = x1 - x0
             dy = y1 - y0
-            if dx == 0 and dy == 0:
-                return
-            step_count = max(abs(dx), abs(dy))
-            x_step = dx / step_count
-            y_step = dy / step_count
-            for i in range(1, step_count, 1):
-                xi = round(x0 + x_step * i)
-                yi = round(y0 + y_step * i)
-                self._input_buffer.append(_SmudgePoint(xi, yi, size, opacity, hardness))
+            if dx < 2 and dy < 2:
+                self._input_buffer.append(_SmudgePoint(x, y, size, opacity, hardness))
+            else:
+                step_count = max(abs(dx), abs(dy))
+                x_step = dx / step_count
+                y_step = dy / step_count
+                for i in range(1, step_count, 1):
+                    xi = round(x0 + x_step * i)
+                    yi = round(y0 + y_step * i)
+                    self._input_buffer.append(_SmudgePoint(xi, yi, size, opacity, hardness))
         self._last_point = QPointF(x, y)
         if not self._buffer_timer.isActive():
             self._buffer_timer.start()

@@ -161,7 +161,7 @@ class GenerationAreaToolPanel(QWidget):
             _add(self._w_slider, 4, 1, 1, 4)
             _add(self._w_spinbox, 4, 5)
             _add(self._h_label, 5, 0)
-            _add(self._h_slider, 5, 2, 1, 4)
+            _add(self._h_slider, 5, 1, 1, 4)
             _add(self._h_spinbox, 5, 5)
             _add(self._select_layer_button, 6, 0, 1, 3)
             _add(self._match_resolution_button, 6, 3, 1, 3)

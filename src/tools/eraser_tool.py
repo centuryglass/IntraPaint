@@ -37,7 +37,7 @@ class EraserTool(QtPaintBrushTool):
         super().__init__(KeyConfig.ERASER_TOOL_KEY, LABEL_TEXT_ERASER_TOOL, TOOLTIP_ERASER_TOOL,
                          QIcon(ICON_PATH_ERASER_TOOL), image_stack, image_viewer, size_key=Cache.ERASER_TOOL_SIZE,
                          pressure_size_key=Cache.ERASER_TOOL_PRESSURE_SIZE, opacity_key=Cache.ERASER_TOOL_OPACITY,
-                         pressure_opacity_key=Cache.DRAW_TOOL_PRESSURE_OPACITY,
+                         pressure_opacity_key=Cache.ERASER_TOOL_PRESSURE_OPACITY,
                          hardness_key=Cache.ERASER_TOOL_HARDNESS,
                          pressure_hardness_key=Cache.ERASER_TOOL_PRESSURE_HARDNESS)
         self.brush.eraser = True

@@ -33,7 +33,7 @@ def _tr(*args):
 
 ICON_PATH_FILTER_TOOL = f'{PROJECT_DIR}/resources/icons/tools/filter_icon.svg'
 CURSOR_PATH_FILTER_TOOL = f'{PROJECT_DIR}/resources/cursors/filter_cursor.svg'
-FILTER_LABEL = _tr('Filter')
+FILTER_LABEL = _tr('Filter Brush')
 FILTER_TOOLTIP = _tr('Draw to apply an image filter')
 FILTER_CONTROL_HINT = _tr('{left_mouse_icon}: filter - {right_mouse_icon}: 1px filter')
 

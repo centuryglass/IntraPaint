@@ -440,16 +440,12 @@ class AppController(MenuBuilder):
                     self.load_image_generator(self._glid_web_generator)
                 if self._sd_generator.is_available():
                     self.load_image_generator(self._sd_generator)
-                    return
-                if not is_pyinstaller_bundle() and self._glid_web_generator.is_available():
+                elif not is_pyinstaller_bundle() and self._glid_web_generator.is_available():
                     self.load_image_generator(self._glid_generator)
-                    return
-                if args.dev:
+                elif args.dev:
                     self.load_image_generator(self._test_generator)
-                elif not is_pyinstaller_bundle():
-                    if self._glid_generator.is_available():
-                        self.load_image_generator(self._glid_generator)
-                        return
+                elif not is_pyinstaller_bundle() and self._glid_generator.is_available():
+                    self.load_image_generator(self._glid_generator)
                 else:
                     logger.info('No valid generator detected, starting with null generator enabled.')
                     self.load_image_generator(self._null_generator)
