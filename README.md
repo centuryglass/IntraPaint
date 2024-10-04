@@ -180,7 +180,7 @@ To use AI features, you'll need a running Stable-Diffusion client (either [Forge
 ### Guides and tutorials
 
 ### IntraPaint Documentation:
-- [Tools Overview](./doc/tools.md)
+- [Tools Overview](./doc/tool_guide)
 - [Stable-Diffusion Controls](./doc/stable-diffusion.md)
 
 ### Related Resources

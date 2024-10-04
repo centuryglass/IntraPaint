@@ -656,9 +656,6 @@ class SDWebUIGenerator(ImageGenerator):
         cache.set(Cache.GUIDANCE_SCALE, 1.5)
         cache.set(Cache.SAMPLING_STEPS, 8)
         cache.set(Cache.SAMPLING_METHOD, 'LCM')
-        cache.set(Cache.SEED, -1)
-        if cache.get(Cache.BATCH_SIZE) < 5:
-            cache.set(Cache.BATCH_SIZE, 5)
 
     def _update_styles(self, style_list: List[Dict[str, str]]) -> None:
         try:

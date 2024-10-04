@@ -16,6 +16,15 @@
 - MMB+drag blocked by layer change locks
 - smudge tool: short brush strokes being lost. Seems more common on larger images.
 - stape tool bounds aren't quite correct, breaking undo/redo
+- text tool: size slider out of sync with size when "resize font to bounds" is or was checked.
+- Weird issues with new images loading pre-transformed
+- Fill selection: "Select all by color" and "Fill selection holes" should be mutually exclusive.
+- display text: change de-select to deselect.
+- Make sure multi-use bindings reflect alternate uses.
+- Layer name shouldn't be editable in locked layers
+- "delete layer" button should be disabled when the active layer is locked or is the layer stack.
+- Double-check layer merge behavior with layer groups.
+- "Show image window" should be "show navigation window"
 
 ## Timelapse video
 
