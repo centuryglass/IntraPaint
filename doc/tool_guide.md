@@ -163,11 +163,11 @@ Apply any image filter to the image using brush strokes.
 <img src="./labeled_screenshots/tools/filter.png" alt="Screenshot of the filter brush tool controls, with specific elements numbered."/>
 
 1. **Filter selection dropdown**: Choose between any of the available filters.  These are the current options:
-   - RGBA color filter: Increase or decrease the strength of the red, green, blue and/or alpha color channels across filtered content.
-   - Brightness/contrast filter: Increase or decrease image brightness and/or contrast.
-   - Blur filter: Blur image content.
-   - Sharpen filter: Strengthen edges within image content.
-   - Posterize filter: Reduce color depth within the image.
+   - **RGBA color filter**: Increase or decrease the strength of the red, green, blue and/or alpha color channels across filtered content.
+   - **Brightness/contrast filter**: Increase or decrease image brightness and/or contrast.
+   - **Blur filter**: Blur image content.
+   - **Sharpen filter**: Strengthen edges within image content.
+   - **Posterize filter**: Reduce color depth within the image.
 2. **Filter-specific options**: These change based on the selected filter.  Hold the mouse over any control to see a description of what it does. 
 3. **Brush size slider**: Sets the exact brush width.
 4. **Brush opacity slider**: Sets the exact brush opacity, between 0.0 (fully transparent) and 1.0 (fully opaque).
@@ -296,7 +296,7 @@ Draws geometric shapes within the image.
 
 #### Basic controls
 - **Left-click and drag**: Draw a shape into the image.
-- **Hold ctrl**: Restricts new shapes to a 1:1 aspect ratio.
+- **Hold Ctrl**: Restricts new shapes to a 1:1 aspect ratio.
 
 #### User interface
 <img src="./labeled_screenshots/tools/shape.png"  alt="Screenshot of the shape tool controls, with specific elements numbered.">
@@ -443,7 +443,7 @@ Controls the area of the image in use for AI image generation. AI generators are
 - **Left-click**: Move the image generation area, without changing its size.
 - **Right-click**: Resize the image generation area, without changing its position.
 - **Arrow keys**: Move the image generation area.
-- - **Hold Shift**: Increase speed when moving the image generation area using keyboard keys.
+- **Hold Shift**: Increase speed when moving the image generation area using keyboard keys.
 
 ### User interface
 <img src="./labeled_screenshots/tools/gen_area.png" alt="Screenshot of the generation area tool controls, with specific elements numbered."/>
@@ -499,12 +499,12 @@ The navigation window uses the same basic mouse controls as the main window:
 - **Middle-click and drag, or Ctrl + left-click and drag**: Pan image content.
 - **Mouse scroll wheel**: Zoom in or zoom out.
 
-Additional controls vary depending on which option is active: "Move gen. area" or "Move view".  If AI image generation is inactive, only the "Move view" mode will be available:
+Additional controls vary depending on which option is active: "Move gen. area" or "Move view".  If AI image generation is inactive, only the "**Move view"** mode will be available:
  
 - **Left-click**: Move the main window viewport so that its upper-left corner is at the clicked spot.
 - **Right-click and drag**: Draw a rectangle that covers where the main window viewport should be.  When the mouse button is released, the viewport will update to match the window.
 
-When "Move gen. area" is active, mouse controls match the image generation area tool:
+When **"Move gen. area"** is active, mouse controls match the image generation area tool:
  
 - **Left-click**: Move the image generation area, without changing its size.
 - **Right-click**: Resize the image generation area, without changing its position.
