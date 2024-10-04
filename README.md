@@ -15,6 +15,9 @@ support is possible with manual setup and compilation.
 5. [Installation](#installation-and-setup)
 6. [AI Setup (Stable-Diffusion)](#ai-setup-stable-diffusion)
 7. [Guides and Tutorials](#guides-and-tutorials)
+   - [IntraPaint tool overview](./doc/tool_guide.md)
+   - [Stable-Diffusion Controls](./doc/stable-diffusion.md)
+   - [Guide to AI Inpainting](./doc/inpainting_guide.md)
 8. [Help and Troubleshooting](#help-and-troubleshooting)
 9. [Alternatives](#alternatives)
 ---
@@ -180,8 +183,9 @@ To use AI features, you'll need a running Stable-Diffusion client (either [Forge
 ### Guides and tutorials
 
 ### IntraPaint Documentation:
-- [Tools Overview](./doc/tool_guide)
+- [Tools Overview](./doc/tool_guide.md)
 - [Stable-Diffusion Controls](./doc/stable-diffusion.md)
+- [Guide to AI Inpainting](./doc/inpainting_guide.md)
 
 ### Related Resources
 These are third-party resources that I've found useful, I did not create or contribute to them.
