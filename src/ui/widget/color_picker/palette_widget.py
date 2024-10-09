@@ -1,7 +1,7 @@
 """Widget holding multiple color options, largely ported from the internal QWellArray class within QColorDialog."""
 from typing import Optional, List, Tuple, Set
 
-from PySide6.QtCore import Qt, Signal, QRect, QSize, QPoint, QMimeData
+from PySide6.QtCore import Qt, Signal, QRect, QSize, QPoint, QMimeData, QTimer
 from PySide6.QtGui import QColor, QPaintEvent, QPainter, QMouseEvent, QFocusEvent, QKeyEvent, QPixmap, QDrag, \
     QDragEnterEvent, QDragLeaveEvent, QDragMoveEvent, QDropEvent
 from PySide6.QtWidgets import QWidget, QStyleOptionFrame, QStyle, QStyleOptionFocusRect, QSizePolicy, QApplication, \
@@ -9,6 +9,8 @@ from PySide6.QtWidgets import QWidget, QStyleOptionFrame, QStyle, QStyleOptionFo
 
 from src.config.application_config import AppConfig
 from src.ui.widget.color_picker.screen_color import ScreenColorWidget
+from src.undo_stack import UndoStack
+from src.util.signals_blocked import signals_blocked
 
 CELL_WIDTH = 28
 CELL_HEIGHT = 24
@@ -361,9 +363,15 @@ class PaletteWidget(_PaletteGrid):
     def set_color(self, i: int, color: QColor) -> None:
         """Changes one of the colors in the grid."""
         assert 0 <= i < len(self._colors)
-        if self._colors[i] != color:
-            self._colors[i] = color
-            self.color_changed.emit(i, color)
+        if self._colors[i].toRgb() != color.toRgb():
+            last_color = QColor(self._colors[i])
+            new_color = QColor(color)
+
+            def _update(next_color: QColor, idx=i) -> None:
+                self._colors[idx] = next_color
+                QTimer.singleShot(0, lambda: self.color_changed.emit(idx, next_color))
+            UndoStack().commit_action(lambda: _update(new_color), lambda: _update(last_color),
+                                      'PaletteWidget.set_color')
         self.update()
 
     def get_color(self, i: int) -> QColor:
@@ -410,7 +418,8 @@ class PaletteWidget(_PaletteGrid):
         """Selects a particular color if it's present in the grid."""
         row, col = self._find_color_in_grid(color)
         if row >= 0 and col >= 0:
-            self.set_selected(row, col)
+            with signals_blocked(self):
+                self.set_selected(row, col)
 
     def _started_color_picking_slot(self) -> None:
         self._ignoring_inputs = True

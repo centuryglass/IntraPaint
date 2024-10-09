@@ -28,7 +28,7 @@ CURSOR_SIZE = 50
 
 EYEDROPPER_LABEL = _tr('Color Picker')
 EYEDROPPER_TOOLTIP = _tr('Select a brush color')
-EYEDROPPER_CONTROL_HINT = _tr('{left_mouse_icon}: pick color')
+EYEDROPPER_CONTROL_HINT = _tr('{left_mouse_icon}: pick color - ')
 
 
 class EyedropperTool(BaseTool):

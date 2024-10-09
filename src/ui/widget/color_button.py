@@ -3,7 +3,7 @@ from typing import Optional
 
 from PySide6.QtCore import QSize
 from PySide6.QtGui import QColor, QIcon, QPixmap
-from PySide6.QtWidgets import QPushButton, QColorDialog, QApplication, QWidget
+from PySide6.QtWidgets import QPushButton, QColorDialog, QApplication, QWidget, QSizePolicy
 
 from src.config.config_from_key import get_config_from_key
 from src.util.shared_constants import SMALL_ICON_SIZE
@@ -28,6 +28,7 @@ class ColorButton(QPushButton):
     def __init__(self, config_key: Optional[str] = 'last_brush_color', parent: Optional[QWidget] = None):
         super().__init__(parent=parent)
         self.setIconSize(QSize(SMALL_ICON_SIZE, SMALL_ICON_SIZE))
+        self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
         self._color = QColor()
         self._icon = QPixmap()
         self._config_key = config_key

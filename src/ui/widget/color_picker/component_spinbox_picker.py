@@ -144,18 +144,22 @@ class ComponentSpinboxPicker(QWidget):
             return
         self._color = color
         hsv_color = color.toHsv()
-        self._hue_box.setValue(hsv_color.hue())
-        self._sat_box.setValue(hsv_color.saturation())
-        self._val_box.setValue(hsv_color.value())
-        rgb_color = color.toRgb()
-        self._r_box.setValue(rgb_color.red())
-        self._g_box.setValue(rgb_color.green())
-        self._b_box.setValue(rgb_color.blue())
-        self._a_box.setValue(rgb_color.alpha())
-        self._html_edit.textChanged.disconnect(self._text_change_slot)
-        self._html_edit.setText(rgb_color.name(QColor.NameFormat.HexArgb))
-        self._html_edit.textChanged.connect(self._text_change_slot)
+        # Avoid letting value changes tweak hue and saturation when unnecessary:
+        if color.toRgb() == color.fromHsv(self._color.hue(), self._color.saturation(), color.value(),
+                                          color.alpha()).toRgb():
+            color.setHsv(self._color.hsvHue(), self._color.hsvSaturation(), color.value(), color.alpha())
+        with signals_blocked(self):
+            self._hue_box.setValue(hsv_color.hue())
+            self._sat_box.setValue(hsv_color.saturation())
+            self._val_box.setValue(hsv_color.value())
+            rgb_color = color.toRgb()
+            self._r_box.setValue(rgb_color.red())
+            self._g_box.setValue(rgb_color.green())
+            self._b_box.setValue(rgb_color.blue())
+            self._a_box.setValue(rgb_color.alpha())
+            self._html_edit.setText(rgb_color.name(QColor.NameFormat.HexArgb))
         self._color_label.color = rgb_color
+        self.color_selected.emit(color)
 
     @property
     def _label_input_pairs(self) -> Tuple[Tuple[QLabel, QWidget], ...]:

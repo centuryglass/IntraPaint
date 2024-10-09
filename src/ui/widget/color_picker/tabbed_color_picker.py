@@ -146,6 +146,10 @@ class TabbedColorPicker(ScreenColorWidget):
         """Sets the current selected color."""
         if color == self._color:
             return
+        # Avoid letting value changes tweak hue and saturation when unnecessary:
+        if color.toRgb() == color.fromHsv(self._color.hue(), self._color.saturation(), color.value(),
+                                          color.alpha()).toRgb():
+            color.setHsv(self._color.hsvHue(), self._color.hsvSaturation(), color.value(), color.alpha())
         self._color = color
         self._basic_palette.color_selected.disconnect(self.set_current_color)
         self._custom_palette.color_selected.disconnect(self.set_current_color)

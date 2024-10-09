@@ -258,12 +258,12 @@ class TextToolPanel(QWidget):
         self._color_button = ColorButton(parent=self)
         self._color_button.setText(BUTTON_TEXT_FONT_COLOR)
         self._color_button.setToolTip(TOOLTIP_COLOR)
-        self._color_button.setSizePolicy(QSizePolicy.Policy.MinimumExpanding, QSizePolicy.Policy.MinimumExpanding)
+        self._color_button.setSizePolicy(QSizePolicy.Policy.MinimumExpanding, QSizePolicy.Policy.Preferred)
         self._background_color_button = ColorButton(Cache.TEXT_BACKGROUND_COLOR, parent=self)
         self._background_color_button.setText(BUTTON_TEXT_BACKGROUND_COLOR)
         self._background_color_button.setToolTip(TOOLTIP_BACKGROUND_COLOR)
         self._background_color_button.setSizePolicy(QSizePolicy.Policy.MinimumExpanding,
-                                                    QSizePolicy.Policy.MinimumExpanding)
+                                                    QSizePolicy.Policy.Preferred)
 
         self._text_rect.text_color = self._color_button.color
         self._text_rect.background_color = self._background_color_button.color
@@ -496,7 +496,8 @@ class TextToolPanel(QWidget):
         """Adjust preview and text box size limits based on orientation and panel size."""
         self._preview.setMaximumHeight(self.height() // 3 if self._orientation == Qt.Orientation.Horizontal else
                                        self.height() // 10)
-        self._text_box.setMaximumHeight(self._checkbox_label.sizeHint().height() * 4)
+        self._text_box.setMaximumHeight(max(self._checkbox_label.sizeHint().height() * 4,
+                                            self.height() - self.sizeHint().height()))
 
     def _draw_preview(self) -> None:
         """Redraws the text preview image."""

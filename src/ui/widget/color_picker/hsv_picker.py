@@ -7,6 +7,7 @@ from PySide6.QtWidgets import QWidget, QHBoxLayout
 from src.ui.widget.color_picker.hs_box import HSBox
 from src.ui.widget.color_picker.hsv_value_picker import HsvValuePicker
 from src.ui.widget.color_picker.screen_color import ScreenColorWidget
+from src.util.signals_blocked import signals_blocked
 
 
 class HsvPicker(QWidget):
@@ -46,21 +47,21 @@ class HsvPicker(QWidget):
     @property
     def color(self) -> QColor:
         """Access the current selected color."""
-        return self._color.toRgb()
+        return self._color
 
     @color.setter
     def color(self, color: QColor) -> None:
-        color = color.toHsv()
-        if color == self._color:
+        if color.toRgb() == self._color.toRgb():
             return
+        color = color.toHsv()
+        # Avoid letting value changes tweak hue and saturation when unnecessary:
+        if color.toRgb() == color.fromHsv(self._color.hue(), self._color.saturation(), color.value(),
+                                          color.alpha()).toRgb():
+            color.setHsv(self._color.hsvHue(), self._color.hsvSaturation(), color.value(), color.alpha())
         self._color = color
-        self._hs_box.color_values_chosen.disconnect(self._hs_change_slot)
-        self._hs_box.set_components(color.hsvHue(), self._color.saturation())
-        self._hs_box.color_values_chosen.connect(self._hs_change_slot)
-
-        self._value_picker.value_changed.disconnect(self._value_change_slot)
-        self._value_picker.set_color(self._color.hue(), self._color.saturation(), self._color.value())
-        self._value_picker.value_changed.connect(self._value_change_slot)
+        with signals_blocked(self):
+            self._hs_box.set_components(color.hsvHue(), self._color.saturation())
+            self._value_picker.set_color(self._color.hue(), self._color.saturation(), self._color.value())
         self.update()
         self.color_selected.emit(self.color)
 
@@ -72,7 +73,10 @@ class HsvPicker(QWidget):
     def _value_change_slot(self, value: int) -> None:
         if value == self._color.value():
             return
-        self.color = QColor.fromHsv(self._color.hue(), self._color.saturation(), value)
+        hue = self._color.hue()
+        color = QColor.fromHsv(self._color.hue(), self._color.saturation(), value)
+        assert color.hue() == hue
+        self.color = color
 
     def _started_color_picking_slot(self) -> None:
         self._hs_box.set_input_enabled(False)

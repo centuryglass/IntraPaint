@@ -195,8 +195,8 @@ class ToolPanel(QWidget):
             num_rows = 2
             self._tool_button_layout.setAlignment(Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignHCenter)
         else:  # Horizontal
-            num_rows = 4
-            num_cols = 4
+            num_rows = 8
+            num_cols = 2
             self.setMinimumHeight(0)
             self._tool_button_layout.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
         if self._row_count == num_rows and self._column_count == num_cols \

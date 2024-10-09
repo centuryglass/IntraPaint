@@ -6,12 +6,9 @@
 - Upscale: make new layer, scale up existing layers
 
 ## Priority issues:
-- Layer to image size fails: false lock error message
-- vertical text panel stretches oddly: color buttons get all the stretch space
-- color component tab not properly affecting color
 - MMB+drag blocked by layer change locks
 - smudge tool: short brush strokes being lost. Seems more common on larger images.
-- stape tool bounds aren't quite correct, breaking undo/redo
+- shape tool bounds aren't quite correct, breaking undo/redo
 - text tool: size slider out of sync with size when "resize font to bounds" is or was checked.
 - Weird issues with new images loading pre-transformed
 - Fill selection: "Select all by color" and "Fill selection holes" should be mutually exclusive.
