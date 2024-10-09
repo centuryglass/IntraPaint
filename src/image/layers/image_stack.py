@@ -2,7 +2,8 @@
 import logging
 import os
 import re
-from typing import Optional, Tuple, cast, List, Callable, TypeAlias, Dict
+from contextlib import contextmanager
+from typing import Optional, Tuple, cast, List, Callable, TypeAlias, Dict, Generator
 
 import numpy as np
 from PIL import Image
@@ -28,7 +29,7 @@ from src.util.math_utils import clamp
 from src.util.visual.geometry_utils import adjusted_placement_in_bounds, map_rect_precise
 from src.util.visual.image_utils import create_transparent_image, image_content_bounds, \
     image_is_fully_transparent, image_data_as_numpy_8bit
-from src.util.visual.pil_image_utils import qimage_to_pil_image
+from src.util.visual.pil_image_utils import qimage_to_pil_image, pil_image_scaling
 
 logger = logging.getLogger(__name__)
 
@@ -49,10 +50,11 @@ ACTION_NAME_RESIZE_IMAGE_CANVAS = _tr('resize image canvas')
 ACTION_NAME_CROP_LAYER_TO_SELECTION = _tr('crop layer to selection')
 
 ERROR_TITLE_RESIZE_FAILED = _tr('Resizing image canvas failed')
-ERROR_MESSAGE_RESIZE_FAILED_SINGULAR = _tr('Locked layer {layer_name} would be cropped, unlock or move the layer '
+ERROR_TITLE_IMAGE_SCALE_FAILED = _tr('Image scaling failed')
+ERROR_MESSAGE_LOCK_CONFLICT_SINGULAR = _tr('Locked layer {layer_name} would be affected, unlock the layer '
                                            'before retrying')
-ERROR_MESSAGE_RESIZE_FAILED_PLURAL = _tr('Locked layers {comma_separated_layer_names} would be cropped, unlock or '
-                                         'move these layers before retrying.')
+ERROR_MESSAGE_LOCK_CONFLICT_PLURAL = _tr('Locked layers {comma_separated_layer_names} would be affected, unlock these'
+                                         ' layers before retrying.')
 
 ERROR_TITLE_CROP_FAILED = _tr('Crop to selection bounds failed')
 ERROR_MESSAGE_CROP_FAILED_NO_SELECTION = _tr('Nothing is selected, select an area in the image first.')
@@ -374,29 +376,30 @@ class ImageStack(QObject):
         intersect_bounds = canvas_image_bounds.translated(-x_offset, -y_offset)
         interfering_locked_layers = []
         affected_text_layers = []
-        for tested_layer in self._all_layers():
-            if not (tested_layer.locked or tested_layer.parent_locked or isinstance(tested_layer, TextLayer)):
-                continue
+
+        # Exit with an appropriate error message if the resize would need to crop a locked layer:
+
+        def _layer_within_bounds(locked_layer) -> bool:
+            if isinstance(tested_layer, LayerGroup):
+                return True
             if isinstance(tested_layer, TransformLayer):
-                layer_bounds = tested_layer.transformed_bounds
+                locked_layer_bounds = locked_layer.transformed_bounds
             else:
-                layer_bounds = tested_layer.bounds
+                locked_layer_bounds = locked_layer.bounds
+            return intersect_bounds.contains(locked_layer_bounds)
+
+        if not self.confirm_no_locked_layers(ERROR_TITLE_RESIZE_FAILED, _layer_within_bounds):
+            return
+
+        for tested_layer in self._all_layers():
+            if not isinstance(tested_layer, TextLayer):
+                continue
+            layer_bounds = tested_layer.transformed_bounds
             if not intersect_bounds.contains(layer_bounds):
                 if tested_layer.locked or tested_layer.parent_locked:
                     interfering_locked_layers.append(tested_layer)
                 if isinstance(tested_layer, TextLayer):
-                    print(f'{layer_bounds} not in {intersect_bounds}')
                     affected_text_layers.append(tested_layer)
-        if len(interfering_locked_layers) > 0:
-            if len(interfering_locked_layers) > 1:
-                layer_names = ', '.join([f'"{layer.name}"' for layer in interfering_locked_layers])
-                error_message = ERROR_MESSAGE_RESIZE_FAILED_PLURAL.format(comma_separated_layer_names=layer_names)
-            else:
-                layer_name = f'"{interfering_locked_layers[0].name}"'
-                error_message = ERROR_MESSAGE_RESIZE_FAILED_SINGULAR.format(layer_name=layer_name)
-            show_error_dialog(None, ERROR_TITLE_RESIZE_FAILED, error_message)
-            return
-
         with UndoStack().combining_actions('ImageStack.resize_canvas'):
             if len(affected_text_layers) > 0:
                 text_layer_names = [layer.name for layer in affected_text_layers]
@@ -503,6 +506,45 @@ class ImageStack(QObject):
         """
         max_size = self.max_generation_area_size
         return QSize(min(max_size.width(), self.width), min(max_size.height(), self.height))
+
+    def scale_all(self, width: int, height: int, image_scale_mode: Optional[Image.Resampling] = None) -> None:
+        """Scale all layer content by applying PIL scaling or adjusting layer transformations."""
+        if width == self.width and height == self.height:
+            return
+        if width <= 0 or height <= 0:
+            raise ValueError(f'size must be greater than zero, got {width}x{height}')
+        x_scale = width / self.width
+        y_scale = height / self.height
+
+        if not self.confirm_no_locked_layers(ERROR_TITLE_IMAGE_SCALE_FAILED):
+            return
+
+        scale_transform = QTransform.fromScale(x_scale, y_scale)
+        with UndoStack().combining_actions('ImageStack.scale_all') and self.batching_content_updates():
+            for layer in self._all_layers():
+                if not isinstance(layer, TransformLayer):
+                    continue
+                if isinstance(layer, ImageLayer) and image_scale_mode is not None:
+                    image = layer.image
+                    if image.size() == self.size:
+                        new_size = QSize(width, height)
+                    else:
+                        new_size = QSize(round(image.width() * x_scale), round(image.height() * y_scale))
+                    layer.image = pil_image_scaling(image, new_size, image_scale_mode)
+                else:
+                    layer.transform = layer.transform * scale_transform
+            old_size = self.size
+            new_size = QSize(width, height)
+
+            def _final_size_update(size=new_size) -> None:
+                self.size = size
+
+            def _revert(size=old_size) -> None:
+                self.size = size
+
+            UndoStack().commit_action(_final_size_update, _revert, 'ImageStack.scale_all')
+
+
 
     def cropped_qimage_content(self, bounds_rect: QRect) -> QImage:
         """Returns the contents of a bounding QRect as a QImage."""
@@ -1716,12 +1758,45 @@ class ImageStack(QObject):
            suppress the signal while the function is executing, then emit it once at the end."""
 
         def _wrapper():
-            self._content_change_signal_enabled = False
-            func()
-            self._content_change_signal_enabled = True
-            self._emit_content_changed()
+            if self._content_change_signal_enabled:
+                self._content_change_signal_enabled = False
+                func()
+                self._content_change_signal_enabled = True
+                self._emit_content_changed()
 
         return _wrapper
+
+    def confirm_no_locked_layers(self, error_title: Optional[str] = None,
+                                 locked_layer_validator: Optional[Callable[[Layer], bool]] = None) -> bool:
+        """Check if any locked layers across the entire image stack might interfere with an operation, optionally
+           showing an error dialog if issues are discovered."""
+        interfering_locked_layers = []
+
+        for tested_layer in self._all_layers():
+            if not (tested_layer.locked or tested_layer.parent_locked) or (locked_layer_validator is not None
+                                                                           and locked_layer_validator(tested_layer)):
+                continue
+            interfering_locked_layers.append(tested_layer)
+        if len(interfering_locked_layers) > 0 and error_title is not None:
+            if len(interfering_locked_layers) > 1:
+                layer_names = ', '.join([f'"{layer.name}"' for layer in interfering_locked_layers])
+                error_message = ERROR_MESSAGE_LOCK_CONFLICT_PLURAL.format(comma_separated_layer_names=layer_names)
+            else:
+                layer_name = f'"{interfering_locked_layers[0].name}"'
+                error_message = ERROR_MESSAGE_LOCK_CONFLICT_SINGULAR.format(layer_name=layer_name)
+            show_error_dialog(None, error_title, error_message)
+        return len(interfering_locked_layers) == 0
+
+
+
+    @contextmanager
+    def batching_content_updates(self) -> Generator[None, None, None]:
+        """Combines content change signals within a contextmanager block."""
+        if self._content_change_signal_enabled:
+            self._content_change_signal_enabled = False
+            yield
+            self._content_change_signal_enabled = True
+            self._emit_content_changed()
 
     @staticmethod
     def _find_offset_index(layer: Layer, offset: int, allow_end_indices=True) -> Tuple[LayerGroup, int]:

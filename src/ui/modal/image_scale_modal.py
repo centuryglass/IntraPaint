@@ -9,7 +9,7 @@ from PySide6.QtWidgets import QDialog, QFormLayout, QPushButton, QComboBox, QSpi
 from src.config.cache import Cache
 from src.ui.input_fields.check_box import CheckBox
 from src.ui.input_fields.slider_spinbox import FloatSliderSpinbox
-from src.util.shared_constants import APP_ICON_PATH
+from src.util.shared_constants import APP_ICON_PATH, PIL_SCALING_MODES
 
 # The `QCoreApplication.translate` context for strings in this file
 TR_ID = 'ui.modal.image_scale_modal'
@@ -42,7 +42,7 @@ Spinbox: TypeAlias = QSpinBox | QDoubleSpinBox
 class ImageScaleModal(QDialog):
     """Popup modal window used for scaling the edited image."""
 
-    def __init__(self, default_width: int, default_height: int):
+    def __init__(self, default_width: int, default_height: int, multi_layer: bool = False):
         super().__init__()
         cache = Cache()
         self._should_scale = False
@@ -51,8 +51,19 @@ class ImageScaleModal(QDialog):
         self.setWindowTitle(TITLE_TEXT)
         self._layout = QFormLayout(self)
 
+        if len(cache.get_options(Cache.UPSCALE_METHOD)) == 0:
+            upscale_modes = list(PIL_SCALING_MODES.keys())
+            cache.update_options(Cache.UPSCALE_METHOD, upscale_modes)
+
         self._upscale_method_box: QComboBox = cast(QComboBox, cache.get_control_widget(Cache.UPSCALE_METHOD))
         self._layout.addRow(UPSCALE_METHOD_LABEL, self._upscale_method_box)
+
+        if multi_layer:
+            self._layer_handling_box: QComboBox = cast(QComboBox,
+                                                       cache.get_control_widget(Cache.IMAGE_LAYER_SCALING_BEHAVIOR))
+            self._layout.addRow(cache.get_label(Cache.IMAGE_LAYER_SCALING_BEHAVIOR), self._layer_handling_box)
+        else:
+            self._layer_handling_box = None
 
         def _add_input(default_value, min_val, max_val, title, tooltip) -> Spinbox:
             box = QSpinBox() if isinstance(default_value, int) else QDoubleSpinBox()
@@ -112,6 +123,8 @@ class ImageScaleModal(QDialog):
         def on_finish(should_scale: bool) -> None:
             """Cleanup, set choice, and close on 'scale image'/'cancel'."""
             cache.disconnect(self._upscale_method_box, Cache.UPSCALE_METHOD)
+            if self._layer_handling_box is not None:
+                cache.disconnect(self._layer_handling_box, Cache.IMAGE_LAYER_SCALING_BEHAVIOR)
             self._should_scale = should_scale
             self.hide()
 

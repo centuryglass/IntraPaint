@@ -4,11 +4,12 @@ from typing import Optional
 from PySide6.QtGui import QImage
 from PySide6.QtWidgets import QApplication
 
+from src.config.cache import Cache
 from src.controller.image_generation.image_generator import ImageGenerator
 from src.image.layers.image_stack import ImageStack
 from src.ui.panel.generators.generator_panel import GeneratorPanel
 from src.ui.window.main_window import MainWindow
-from src.util.shared_constants import PROJECT_DIR
+from src.util.shared_constants import PROJECT_DIR, PIL_SCALING_MODES
 
 # The QCoreApplication.translate context for strings in this file
 TR_ID = 'controller.image_generation.null_generator'
@@ -56,6 +57,8 @@ class NullGenerator(ImageGenerator):
     def configure_or_connect(self) -> bool:
         """Handles any required steps necessary to configure the generator, install required components, and/or
            connect to required external services, returning whether the process completed correctly."""
+        upscale_modes = list(PIL_SCALING_MODES.keys())
+        Cache().update_options(Cache.UPSCALE_METHOD, upscale_modes)
         return True
 
     def disconnect_or_disable(self) -> None:

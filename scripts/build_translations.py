@@ -112,6 +112,9 @@ for content_key, json_prefix in (
             continue
         add_message(context_elem, saved_json_path, entry['label'], _find_line_num(entry['label']))
         add_message(context_elem, saved_json_path, entry['description'], _find_line_num(entry['description']))
+        if 'options' in entry:
+            for option in entry['options']:
+                add_message(context_elem, saved_json_path, option, _find_line_num(option))
         if 'category' not in entry:
             print('missing category in ' + entry['label'])
             sys.exit(1)

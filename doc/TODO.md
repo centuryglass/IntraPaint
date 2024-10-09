@@ -6,7 +6,6 @@
 - Upscale: make new layer, scale up existing layers
 
 ## Priority issues:
-- Make sure non-ai scaling is always possible via PIL scaling modes
 - Layer to image size fails: false lock error message
 - vertical text panel stretches oddly: color buttons get all the stretch space
 - color component tab not properly affecting color
@@ -23,6 +22,7 @@
 - Double-check layer merge behavior with layer groups.
 - "Show image window" should be "show navigation window"
 - Retrofuture.ora: hiding the "sketch" layer group is unusually slow; why?
+- Re-ordering locked layers is blocked, but that should only be true if the layer group is locked.
 
 ## Timelapse video
 

@@ -27,11 +27,13 @@ from src.ui.panel.generators.sd_webui_panel import SDWebUIPanel
 from src.ui.window.extra_network_window import ExtraNetworkWindow
 from src.ui.window.main_window import MainWindow
 from src.ui.window.prompt_style_window import PromptStyleWindow
+from src.undo_stack import UndoStack
 from src.util.application_state import AppStateTracker, APP_STATE_LOADING, APP_STATE_EDITING, APP_STATE_NO_IMAGE
 from src.util.async_task import AsyncTask
 from src.util.menu_builder import menu_action
 from src.util.parameter import ParamType
-from src.util.shared_constants import EDIT_MODE_TXT2IMG, EDIT_MODE_INPAINT, EDIT_MODE_IMG2IMG, PROJECT_DIR
+from src.util.shared_constants import EDIT_MODE_TXT2IMG, EDIT_MODE_INPAINT, EDIT_MODE_IMG2IMG, PROJECT_DIR, \
+    PIL_SCALING_MODES
 
 logger = logging.getLogger(__name__)
 
@@ -148,6 +150,7 @@ PROGRESS_KEY_CURRENT_IMAGE = 'current_image'
 PROGRESS_KEY_FRACTION = 'progress'
 PROGRESS_KEY_ETA_RELATIVE = 'eta_relative'
 STYLE_ERROR_TITLE = _tr('Updating prompt styles failed')
+UPSCALED_LAYER_NAME = _tr('Upscaled image content')
 
 GENERATE_ERROR_TITLE = _tr('Image generation failed')
 GENERATE_ERROR_MESSAGE_EMPTY_MASK = _tr('Nothing was selected in the image generation area. Either use the selection'
@@ -540,6 +543,10 @@ class SDWebUIGenerator(ImageGenerator):
         if new_size.width() <= width and new_size.height() <= height:
             return False
 
+        upscale_method = Cache().get(Cache.UPSCALE_METHOD)
+        if upscale_method in PIL_SCALING_MODES.keys():
+            return super().upscale(new_size)
+
         class _UpscaleTask(AsyncTask):
             image_ready = Signal(QImage)
             error_signal = Signal(Exception)
@@ -568,7 +575,22 @@ class SDWebUIGenerator(ImageGenerator):
 
         def apply_upscaled(img: QImage) -> None:
             """Copy the upscaled image into the image stack."""
-            self._image_stack.load_image(img)
+            with UndoStack().combining_actions('SDWebUIGenerator.upscale'):
+                if self._image_stack.confirm_no_locked_layers():
+                    self._image_stack.scale_all(img.width(), img.height())
+                else:
+                    old_size = self._image_stack.size
+                    scaled_size = img.size()
+
+                    def _update_size(size=scaled_size) -> None:
+                        self._image_stack.size = size
+
+                    def _revert_size(size=old_size) -> None:
+                        self._image_stack.size=size
+
+                    UndoStack().commit_action(_update_size, _revert_size, 'SDWebUIGenerator.upscale_resize')
+                self._image_stack.create_layer(layer_name=UPSCALED_LAYER_NAME,
+                                               layer_parent=self._image_stack.layer_stack, image_data=img)
 
         task.image_ready.connect(apply_upscaled)
 

@@ -106,7 +106,8 @@ class ImageGenerator(MenuBuilder):
 
     def upscale(self, new_size: QSize) -> bool:
         """Optionally upscale using a custom upscaler, returning whether upscaling was attempted."""
-        return False
+        self._image_stack.scale_all(new_size.width(), new_size.height())
+        return True
 
     def generate(self,
                  status_signal: Signal,

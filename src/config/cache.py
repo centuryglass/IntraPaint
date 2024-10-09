@@ -137,6 +137,7 @@ class Cache(Config, metaclass=Singleton):
     GENERATION_SIZE: str
     GENERATION_TAB_BAR: str
     GUIDANCE_SCALE: str
+    IMAGE_LAYER_SCALING_BEHAVIOR: str
     INPAINT_FULL_RES: str
     INPAINT_FULL_RES_PADDING: str
     LAST_ACTIVE_TOOL: str

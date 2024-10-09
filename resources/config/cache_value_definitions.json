@@ -831,10 +831,24 @@
         "label": "Upscale method:",
         "category": "Cache",
         "subcategory": "Image generation",
-        "description": "Method to use when increasing image resolution. Available options will be loaded from the stable-diffusion-webui on launch.",
+        "description": "Method to use when increasing image resolution. Available options will be loaded from the active image generator.",
         "type": "string",
         "default": "None",
         "options": [],
+        "saved": true
+    },
+    "image_layer_scaling_behavior": {
+        "label": "Image scaling behavior:",
+        "category": "Cache",
+        "subcategory": "Image generation",
+        "description": "Controls how multi-layer images are scaled.",
+        "type": "string",
+        "default": "Scale merged, keep source layers",
+        "options": [
+            "Independent layer scaling",
+            "Scale merged, keep source layers",
+            "Scale merged, discard source layers"
+        ],
         "saved": true
     },
     "seed": {

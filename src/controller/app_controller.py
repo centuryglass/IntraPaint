@@ -100,7 +100,7 @@ from src.util.menu_builder import MenuBuilder, menu_action, MENU_DATA_ATTR, Menu
 from src.util.optional_import import optional_import
 from src.util.pyinstaller import is_pyinstaller_bundle
 from src.util.qtexcepthook import QtExceptHook
-from src.util.shared_constants import PROJECT_DIR
+from src.util.shared_constants import PROJECT_DIR, PIL_SCALING_MODES
 from src.util.visual.display_size import get_screen_size
 from src.util.visual.image_format_utils import save_image_with_metadata, save_image, load_image, \
     IMAGE_FORMATS_SUPPORTING_METADATA, IMAGE_FORMATS_SUPPORTING_ALPHA, IMAGE_FORMATS_SUPPORTING_PARTIAL_ALPHA, \
@@ -293,7 +293,7 @@ class AppController(MenuBuilder):
 
             def _open_filter_modal(filter_instance=image_filter) -> None:
                 modal = filter_instance.get_filter_modal()
-                self._set_alt_window_fractional_bounds(modal)
+                self._set_alt_window_centered_bounds(modal)
                 modal.exec()
 
             config_key = image_filter.get_config_key()
@@ -670,10 +670,6 @@ class AppController(MenuBuilder):
                 if menu_method in method_set and disable_condition:
                     action.setEnabled(False)
                     break
-        # Completely hide the upscaling option if the generator doesn't support it:
-        upscale_methods_available = len(Cache().get_options(Cache.UPSCALE_METHOD)) > 1
-        upscale_action = self.get_action_for_method(self.scale_image)
-        upscale_action.setVisible(upscale_methods_available)
 
     # Menu action definitions:
 
@@ -1063,7 +1059,9 @@ class AppController(MenuBuilder):
         """Scale the edited image based on user input into a popup modal."""
         width = self._image_stack.width
         height = self._image_stack.height
-        scale_modal = ImageScaleModal(width, height)
+        # TODO: more consideration re. scaling with multiple layers
+        is_multi_layer = False  # (len(self._image_stack.image_layers) + len(self._image_stack.text_layers)) > 1
+        scale_modal = ImageScaleModal(width, height, is_multi_layer)
         self._set_alt_window_centered_bounds(scale_modal)
         new_size = scale_modal.show_image_modal()
         if new_size is not None:
@@ -1365,8 +1363,9 @@ class AppController(MenuBuilder):
         alt_window.setGeometry(window_bounds)
 
     def _scale(self, new_size: QSize) -> None:  # Override to allow alternate or external upscalers:
-        image = self._image_stack.qimage()
-        if image.size() == new_size:
-            return
-        scaled_image = pil_image_scaling(image, new_size)
-        self._image_stack.load_image(scaled_image)
+        scaling_mode_name = Cache().get(Cache.UPSCALE_METHOD)
+        if scaling_mode_name in PIL_SCALING_MODES:
+            scaling_mode = PIL_SCALING_MODES[scaling_mode_name]
+        else:
+            scaling_mode = None
+        self._image_stack.scale_all(new_size.width(), new_size.height(), scaling_mode)
