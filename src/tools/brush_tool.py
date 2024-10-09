@@ -318,30 +318,28 @@ class BrushTool(BaseTool):
 
     def mouse_click(self, event: Optional[QMouseEvent], image_coordinates: QPoint) -> bool:
         """Starts drawing when the mouse is clicked in the scene."""
-        if event is None or not self._image_stack.has_image or not self.validate_layer(self._layer,
-                                                                                       image_stack=self._image_stack):
+        if event is None or (event.buttons() != Qt.MouseButton.LeftButton
+                             and event.buttons() != Qt.MouseButton.RightButton) or not self._image_stack.has_image \
+                or KeyConfig.modifier_held(KeyConfig.PAN_VIEW_MODIFIER, True) \
+                or not self.validate_layer(self._layer, image_stack=self._image_stack):
             return False
-        if KeyConfig.modifier_held(KeyConfig.PAN_VIEW_MODIFIER, True):
-            return False
-        if event.buttons() == Qt.MouseButton.LeftButton or event.buttons() == Qt.MouseButton.RightButton:
-            if self._drawing:
-                self._brush.end_stroke()
-            self._drawing = True
-            self._fixed_angle = None
-            self._last_pressure = None
-            if KeyConfig.modifier_held(KeyConfig.FIXED_ANGLE_MODIFIER):
-                self._last_pos = image_coordinates  # Update so previous clicks don't constrain the angle
-            if self._cached_size is not None and event.buttons() == Qt.MouseButton.LeftButton:
-                self.brush_size = self._cached_size
-                self._cached_size = None
-            elif event.buttons() == Qt.MouseButton.RightButton:
-                if self._cached_size is None:
-                    self._cached_size = self._brush.brush_size
-                self.brush_size = 1
-            self._brush.start_stroke()
-            self._stroke_to(image_coordinates)
-            return True
-        return False
+        if self._drawing:
+            self._brush.end_stroke()
+        self._drawing = True
+        self._fixed_angle = None
+        self._last_pressure = None
+        if KeyConfig.modifier_held(KeyConfig.FIXED_ANGLE_MODIFIER):
+            self._last_pos = image_coordinates  # Update so previous clicks don't constrain the angle
+        if self._cached_size is not None and event.buttons() == Qt.MouseButton.LeftButton:
+            self.brush_size = self._cached_size
+            self._cached_size = None
+        elif event.buttons() == Qt.MouseButton.RightButton:
+            if self._cached_size is None:
+                self._cached_size = self._brush.brush_size
+            self.brush_size = 1
+        self._brush.start_stroke()
+        self._stroke_to(image_coordinates)
+        return True
 
     def mouse_move(self, event: Optional[QMouseEvent], image_coordinates: QPoint) -> bool:
         """Receives a mouse move event, returning whether the tool consumed the event."""

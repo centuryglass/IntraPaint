@@ -6,11 +6,6 @@
 - Upscale: make new layer, scale up existing layers
 
 ## Priority issues:
-- MMB+drag blocked by layer change locks
-- smudge tool: short brush strokes being lost. Seems more common on larger images.
-- shape tool bounds aren't quite correct, breaking undo/redo
-- text tool: size slider out of sync with size when "resize font to bounds" is or was checked.
-- Weird issues with new images loading pre-transformed
 - Fill selection: "Select all by color" and "Fill selection holes" should be mutually exclusive.
 - display text: change de-select to deselect.
 - Make sure multi-use bindings reflect alternate uses.
@@ -25,7 +20,6 @@
 
 ### Prompt component ideas: 
 - Fauvism, Cubo-Futurism, Glitch Art, Post-Impressionism, outsider art, mosaic, papercraft
-
 
 ### Step-by-step process:
 - Script this to make use of every tool.
@@ -61,7 +55,7 @@
 Things I never fixed but can no longer reproduce, or that come from external issues:
 - Nested layer selection state shown in the layer panel isn't updating properly (recursive active layer update logic in LayerPanel looks fine)
 - changing gen. area size still doesn't always sync fully - width changes but not height. Possibly fixed, keep an eye out for it.
-- Some of the MyPaint brushes are clearly not working. Cross-test on Windows and with actual MyPaint, refer to images in examples folder.
+- Weird bug where every new image loads with a seemingly-arbitrary transformation pre-applied.  Maybe a bug with layer group transforms? Haven't been able to reproduce.
 
 
 # Lower priority/post-release:
@@ -74,14 +68,17 @@ Things I never fixed but can no longer reproduce, or that come from external iss
 * TabBar should have some mechanism for scrolling so the UI doesn't break when you turn up the tab bar shortcut count
 * There should be a mechanism for sending UI tabs to new windows
 * Color picker could use other options: RGB cube, color wheel, OKLab perceptual color
-* Switch color picker to horizontal tabs
+* Switch color picker to horizontal icon tabs
 * Transform tool: clicking a layer should activate it, or there should be an option to do that at least.
 * ImageViewer: add sidebar rulers
 * add 'sample merged' option to smudge, stamp, and filter tools
 
+## Minor bugs:
+- Some of the MyPaint brushes are clearly not working. Cross-test on Windows and with actual MyPaint, refer to images in examples folder.
+- LayerPanel layout still shows some odd glitches on occasion
+
 ## Help window
 - Rich text tutorial content, with images and dynamic hotkeys.
-
 
 ## ORA format: Preserve information from other programs
 - SVG layers:
@@ -106,11 +103,10 @@ Things I never fixed but can no longer reproduce, or that come from external iss
 - Filters: just throw in whatever fun stuff PIL/CV2 have to offer
 
 ### Draw tool
-- Add custom brush fill patterns
+- Add custom brush fill patterns, alternate brush shapes
   
 ### Smudge tool
 - Find some way to mitigate delays when smudging linearly over long distances:
-- Try numpy compositing again now that the algorithm's worked out (see ImagePanel alpha-lock implementation)
 - When the drawing buffer has huge numbers of pending operations, see if we can defer some of them to give the window time to update
 
 ## libmypaint

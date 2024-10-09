@@ -2,7 +2,7 @@
 from typing import Optional, List
 
 from PySide6.QtCore import Qt, QPoint
-from PySide6.QtGui import QIcon, QMouseEvent, QPainter, QColor, QBrush, QPainterPath, QPen, QCursor
+from PySide6.QtGui import QIcon, QMouseEvent, QPainter, QColor, QBrush, QPainterPath, QPen, QCursor, QPainterPathStroker
 from PySide6.QtWidgets import QWidget, QApplication
 
 from src.config.cache import Cache
@@ -164,7 +164,12 @@ class ShapeTool(BaseTool):
         if not isinstance(self._layer, ImageLayer):
             return
         line_width = self._pen.width()
-        bounds = path.boundingRect().adjusted(-line_width, -line_width, line_width, line_width).toAlignedRect()
+        if line_width > 0:
+            stroke_creator = QPainterPathStroker(self._pen)
+            stroked_path = stroke_creator.createStroke(path)
+            bounds = stroked_path.boundingRect().toAlignedRect()
+        else:
+            bounds = path.boundingRect().toAlignedRect()
         intersect_bounds = bounds.intersected(self._layer.bounds)
         with self._layer.borrow_image(intersect_bounds) as layer_image:
             painter = QPainter(layer_image)

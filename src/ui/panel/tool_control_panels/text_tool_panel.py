@@ -20,6 +20,7 @@ from src.ui.widget.image_widget import ImageWidget
 from src.util.layout import clear_layout
 from src.util.shared_constants import PROJECT_DIR, SHORT_LABEL_X_POS, SHORT_LABEL_Y_POS, SHORT_LABEL_WIDTH, \
     SHORT_LABEL_HEIGHT, INT_MAX
+from src.util.signals_blocked import signals_blocked
 from src.util.visual.geometry_utils import get_scaled_placement, fill_outside_rect
 from src.util.visual.image_utils import create_transparent_image
 from src.util.visual.text_drawing_utils import find_text_size
@@ -570,6 +571,7 @@ class TextToolPanel(QWidget):
         if should_scale:
             self._scale_text_to_bounds_checkbox.setChecked(False)
         self._text_rect.scale_bounds_to_text = should_scale
+        self._sync_size_changes()
         self._handle_change()
 
     def _scale_text_to_bounds_slot(self, should_scale: bool) -> None:
@@ -579,6 +581,7 @@ class TextToolPanel(QWidget):
         if should_scale:
             self._scale_bounds_to_text_checkbox.setChecked(False)
         self._text_rect.scale_text_to_bounds = should_scale
+        self._sync_size_changes()
         self._handle_change()
 
     def _handle_change(self) -> None:
@@ -598,6 +601,7 @@ class TextToolPanel(QWidget):
     def _text_changed_slot(self, text: str) -> None:
         if self._text_rect.text != text:
             self._text_rect.text = text
+            self._sync_size_changes()
             self._handle_change()
 
     def _color_change_slot(self, color_str: str) -> None:
@@ -642,6 +646,7 @@ class TextToolPanel(QWidget):
         else:
             selected_font.setPixelSize(size)
         self._text_rect.font = selected_font
+        self._sync_size_changes()
         self._handle_change()
 
     def _stretch_change_slot(self, stretch: int) -> None:
@@ -649,6 +654,7 @@ class TextToolPanel(QWidget):
         if stretch != selected_font.stretch():
             selected_font.setStretch(stretch)
             self._text_rect.font = selected_font
+            self._sync_size_changes()
             self._handle_change()
 
     def _size_format_change_slot(self, _) -> None:
@@ -667,6 +673,7 @@ class TextToolPanel(QWidget):
         if width != text_size.width():
             text_size.setWidth(width)
             self._text_rect.size = text_size
+            self._sync_size_changes()
             self._handle_change()
 
     def _text_height_changed_slot(self, height: int) -> None:
@@ -674,4 +681,22 @@ class TextToolPanel(QWidget):
         if height != text_size.width():
             text_size.setHeight(height)
             self._text_rect.size = text_size
+            self._sync_size_changes()
             self._handle_change()
+
+    def _sync_size_changes(self) -> None:
+        if self._scale_text_to_bounds_checkbox.isChecked():
+            if self._size_type_dropdown.currentText() == OPTION_TEXT_PIXEL_SIZE_FORMAT:
+                text_size = self._text_rect.font.pixelSize()
+            else:
+                text_size = self._text_rect.font.pointSize()
+            if text_size != self._font_size_slider.value():
+                with signals_blocked(self._font_size_slider):
+                    self._font_size_slider.setValue(text_size)
+        elif self._scale_bounds_to_text_checkbox.isChecked():
+            size = self._text_rect.size
+            for value, input in ((size.width(), self._width_input), (size.height(), self._height_input)):
+                if input.value() != value:
+                    with signals_blocked(input):
+                        input.setValue(value)
+
