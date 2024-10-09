@@ -28,7 +28,8 @@ temp_image_dir = ''
 def create_transparent_image(size: QSize) -> QImage:
     """Returns a new image filled with transparency, set to the requested size."""
     image = QImage(size, QImage.Format.Format_ARGB32_Premultiplied)
-    image.fill(Qt.GlobalColor.transparent)
+    if not size.isEmpty():
+        image.fill(Qt.GlobalColor.transparent)
     return image
 
 
@@ -306,6 +307,9 @@ def numpy_8bit_to_qimage(np_image: NpAnyArray) -> QImage:
 def numpy_bounds_index(np_image: NpAnyArray, bounds: QRect) -> NpAnyArray:
     """Gets a numpy array that points to a smaller region within a larger array."""
     assert not bounds.isEmpty() and bounds.isValid(), f'invalid bounds {bounds}, array shape={np_image.shape}'
+    if bounds.x() == 0 and bounds.y() == 0 and bounds.height() == np_image.shape[0] \
+            and bounds.width() == np_image.shape[1]:
+        return np_image
     left = bounds.x()
     top = bounds.y()
     right = left + bounds.width()

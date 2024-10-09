@@ -11,7 +11,7 @@ from src.config.cache import Cache
 from src.image.composite_mode import CompositeMode
 from src.image.layers.image_stack import ImageStack
 from src.image.layers.layer import Layer, LayerParent
-from src.image.layers.layer_stack import LayerStack
+from src.image.layers.layer_group import LayerGroup
 from src.ui.panel.layer_ui.layer_group_widget import LayerGroupWidget
 from src.ui.panel.layer_ui.layer_widget import PREVIEW_SIZE, LAYER_PADDING, MAX_WIDTH, LayerWidget
 from src.util.shared_constants import PROJECT_DIR, APP_ICON_PATH, ICON_SIZE
@@ -139,9 +139,10 @@ class LayerPanel(QWidget):
         def _create_button(icon_path: str, tooltip: str, action: Callable[..., Any]) -> QToolButton:
             button = QToolButton()
             button.setToolTip(tooltip)
-            button.setContentsMargins(0, 0, 0, 0)
+            button.setContentsMargins(2, 2, 2, 2)
             icon = QIcon(icon_path)
             button.setIcon(icon)
+            button.setIconSize(QSize(ICON_SIZE, ICON_SIZE))
             button.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonIconOnly)
             button.clicked.connect(lambda: action())
             self._button_bar_layout.addWidget(button)
@@ -272,13 +273,13 @@ class LayerPanel(QWidget):
 
     def _find_layer_parent_widgets(self, layer: Layer) -> List[LayerGroupWidget]:
         """Returns a list of all LayerGroupWidgets connected to layers that contain the given layer"""
-        parent_layers: List[LayerStack] = []
+        parent_layers: List[LayerGroup] = []
         # Iterate through parent/child pairs, starting with layer.layer_parent and layer, and continue up the tree
-        # until the topmost layer stack is reached. For each pair, insert (parent, child_index) into parent_map
+        # until the topmost layer group is reached. For each pair, insert (parent, child_index) into parent_map
         # at the start.
         parent_iter: Optional[LayerParent] = layer.layer_parent
         while parent_iter is not None:
-            assert isinstance(parent_iter, LayerStack)
+            assert isinstance(parent_iter, LayerGroup)
             parent_layers.insert(0, parent_iter)
             parent_iter = parent_iter.layer_parent
         assert len(parent_layers) == 0 or parent_layers[0] == self._image_stack.layer_stack

@@ -1,7 +1,7 @@
 """Image composition mode management: Handles conversion between QPainter CompositionModes, open raster composite
  operations, and equivalent display text, and provides implementations for composite modes not supported by QPainter."""
 
-from typing import Optional, Callable
+from typing import Optional, Callable, TypeAlias
 
 import cv2
 import numpy as np
@@ -27,6 +27,10 @@ TR_ID = 'image.composite_mode'
 def _tr(*args):
     """Helper to make `QCoreApplication.translate` more concise."""
     return QApplication.translate(TR_ID, *args)
+
+
+CompositeOp: TypeAlias = Callable[[QImage, QImage, float, Optional[QTransform],
+                                         Optional[QRect]], None]
 
 
 class CompositeMode(StrEnum):
@@ -136,7 +140,7 @@ class CompositeMode(StrEnum):
                 mode = 'svg:dst-atop'
         return mode
 
-    def custom_composite_op(self) -> Callable[[QImage, QImage, float, Optional[QTransform]], None]:
+    def custom_composite_op(self) -> CompositeOp:
         """Gets the custom composite method for a CompositeMode. Throws ValueError if called on a CompositeMode that
         uses a QPainter CompositionMode."""
         match self:
@@ -175,28 +179,39 @@ class CompositeMode(StrEnum):
                              base_image: QImage,
                              blending_op: Callable[[NpUInt8Array, NpUInt8Array], NpUInt8Array],
                              opacity: float = 1.0,
-                             top_transform: Optional[QTransform] = None) -> None:
+                             transform: Optional[QTransform] = None,
+                             base_bounds: Optional[QRect] = None) -> None:
         assert source_image.format() == base_image.format() == QImage.Format.Format_ARGB32_Premultiplied
         assert not source_image.isNull() and not base_image.isNull()
         if opacity == 0 or image_is_fully_transparent(source_image):
             return
-        if top_transform is None:
-            top_transform = QTransform()
-        base_bounds = QRect(QPoint(), base_image.size())
-        if not top_transform.isIdentity():
-            source_bounds = map_rect_precise(QRect(QPoint(), source_image.size()), top_transform).toAlignedRect()
-            transformed_source = create_transparent_image(source_bounds.size())
-            source_painter = QPainter(transformed_source)
-            source_painter.setTransform(top_transform * QTransform.fromTranslate(-source_bounds.x(),
-                                                                                 -source_bounds.y()))
-            source_painter.drawImage(QPoint(), source_image)
-            source_painter.end()
+        source_image_bounds = QRect(QPoint(), source_image.size())
+        if base_bounds is None:
+            base_bounds = QRect(QPoint(), base_image.size())
         else:
-            source_bounds = QRect(QPoint(), source_image.size())
-            transformed_source = source_image
-        assert base_bounds.contains(source_bounds)
-        np_top = image_data_as_numpy_8bit(transformed_source)
-        np_base = numpy_bounds_index(image_data_as_numpy_8bit(base_image), source_bounds)
+            base_bounds = base_bounds.intersected(QRect(QPoint(), base_image.size()))
+        if transform is None:
+            transform = QTransform()
+        if transform is not None and not base_bounds.isEmpty():
+            inverse = transform.inverted()[0]
+            transform_src_bounds = map_rect_precise(base_bounds, inverse).toAlignedRect()
+            if not transform_src_bounds.intersects(source_image_bounds):
+                return
+            transformed_source = create_transparent_image(base_bounds.size())
+            transform_painter = QPainter(transformed_source)
+            transform_painter.setTransform(transform * QTransform.fromTranslate(-base_bounds.x(), -base_bounds.y()))
+            transform_painter.drawImage(transform_src_bounds, source_image, transform_src_bounds)
+            transform_painter.end()
+            source_image = transformed_source
+            source_bounds = QRect(QPoint(), base_bounds.size())
+        else:
+            base_bounds = base_bounds.intersected(source_image_bounds)
+            source_bounds = base_bounds
+        if base_bounds.isEmpty():
+            return
+
+        np_top = numpy_bounds_index(image_data_as_numpy_8bit(source_image), source_bounds)
+        np_base = numpy_bounds_index(image_data_as_numpy_8bit(base_image), base_bounds)
         assert np_top.shape == np_base.shape
 
         # calculate final alpha:
@@ -213,17 +228,21 @@ class CompositeMode(StrEnum):
         final_hls = blending_op(top_hls, base_hls)
         blended_rgb = cv2.cvtColor(final_hls, cv2.COLOR_HLS2BGR)
 
+        base_empty = alpha_base == 0
+
         # final compositing onto the base image:
         for c in range(3):
             np_base[nonzero_alpha, c] = (blended_rgb[nonzero_alpha, c] * alpha_top[nonzero_alpha]
                                          + np_base[nonzero_alpha, c]
                                          * alpha_base[nonzero_alpha] * (1 - alpha_top[nonzero_alpha])
                                          / alpha_combined[nonzero_alpha])
-        np_base[:, :, 3] = alpha_combined * 255
+
+            np_base[:, :, 3] = alpha_combined * 255
+        np_base[base_empty, :] = np_top[base_empty, :]
 
     @classmethod
     def color_composite_blend(cls, top_image: QImage, base_image: QImage, opacity: float = 1.0,
-                              top_transform: Optional[QTransform] = None) -> None:
+                              transform: Optional[QTransform] = None, base_bounds: Optional[QRect] = None) -> None:
         """Composite top_image over base_image, blending top image hue and saturation with base image luminosity.
 
         Parameters:
@@ -235,19 +254,22 @@ class CompositeMode(StrEnum):
             composited image.
         opacity: float, default=1.0
             Opacity of the top layer.
-        top_transform: QTransform | None
+        transform: QTransform | None
             Optional transformation to apply to the top image before compositing.
+        base_bounds: QRect | None, default = None
+            Optional bounds within the base image to use for the composite operation. If not provided, the intersection
+            between the source and base will be updated.
         """
 
         def _color_blend(top_hls: NpUInt8Array, base_hls: NpUInt8Array) -> NpUInt8Array:
             top_hls[:, :, 1] = base_hls[:, :, 1]
             return top_hls
 
-        CompositeMode._hsl_composite_blend(top_image, base_image, _color_blend, opacity, top_transform)
+        CompositeMode._hsl_composite_blend(top_image, base_image, _color_blend, opacity, transform, base_bounds)
 
     @classmethod
     def luminosity_composite_blend(cls, top_image: QImage, base_image: QImage, opacity: float = 1.0,
-                                   top_transform: Optional[QTransform] = None) -> None:
+                                   transform: Optional[QTransform] = None, base_bounds: Optional[QRect] = None) -> None:
         """Composite top_image over base_image, blending top image luminosity with base image hue and saturation.
 
         Parameters:
@@ -259,19 +281,22 @@ class CompositeMode(StrEnum):
             composited image.
         opacity: float, default=1.0
             Opacity of the top layer.
-        top_transform: QTransform | None
+        transform: QTransform | None
             Optional transformation to apply to the top image before compositing.
+        base_bounds: QRect | None, default = None
+            Optional bounds within the base image to use for the composite operation. If not provided, the intersection
+            between the source and base will be updated.
         """
 
         def _luminosity_blend(top_hls: NpUInt8Array, base_hls: NpUInt8Array) -> NpUInt8Array:
             base_hls[:, :, 1] = top_hls[:, :, 1]
             return base_hls
 
-        CompositeMode._hsl_composite_blend(top_image, base_image, _luminosity_blend, opacity, top_transform)
+        CompositeMode._hsl_composite_blend(top_image, base_image, _luminosity_blend, opacity, transform, base_bounds)
 
     @classmethod
     def hue_composite_blend(cls, top_image: QImage, base_image: QImage, opacity: float = 1.0,
-                            top_transform: Optional[QTransform] = None) -> None:
+                            transform: Optional[QTransform] = None, base_bounds: Optional[QRect] = None) -> None:
         """Composite top_image over base_image, blending top image hue with base image luminosity and saturation.
 
         Parameters:
@@ -283,19 +308,22 @@ class CompositeMode(StrEnum):
             composited image.
         opacity: float, default=1.0
             Opacity of the top layer.
-        top_transform: QTransform | None
+        transform: QTransform | None
             Optional transformation to apply to the top image before compositing.
+        base_bounds: QRect | None, default = None
+            Optional bounds within the base image to use for the composite operation. If not provided, the intersection
+            between the source and base will be updated.
         """
 
         def _hue_blend(top_hls: NpUInt8Array, base_hls: NpUInt8Array) -> NpUInt8Array:
             base_hls[:, :, 0] = top_hls[:, :, 0]
             return base_hls
 
-        CompositeMode._hsl_composite_blend(top_image, base_image, _hue_blend, opacity, top_transform)
+        CompositeMode._hsl_composite_blend(top_image, base_image, _hue_blend, opacity, transform, base_bounds)
 
     @classmethod
     def saturation_composite_blend(cls, top_image: QImage, base_image: QImage, opacity: float = 1.0,
-                                   top_transform: Optional[QTransform] = None) -> None:
+                                   transform: Optional[QTransform] = None, base_bounds: Optional[QRect] = None) -> None:
         """Composite top_image over base_image, blending top image saturation with base image hue and luminosity.
 
         Parameters:
@@ -307,12 +335,18 @@ class CompositeMode(StrEnum):
             composited image.
         opacity: float, default=1.0
             Opacity of the top layer.
-        top_transform: QTransform | None
+        transform: QTransform | None
             Optional transformation to apply to the top image before compositing.
+        source_bounds: QRect | None, default = None
+            Optional bounds within the source image to use for the composite operation. If not provided, the entire
+            intersection of the source and base images will be used, with zero offset.
+        base_bounds: QRect | None, default = None
+            Optional bounds within the base image to use for the composite operation. If not provided, the intersection
+            between the source and base will be updated.
         """
 
         def _saturation_blend(top_hls: NpUInt8Array, base_hls: NpUInt8Array) -> NpUInt8Array:
             base_hls[:, :, 2] = top_hls[:, :, 2]
             return base_hls
 
-        CompositeMode._hsl_composite_blend(top_image, base_image, _saturation_blend, opacity, top_transform)
+        CompositeMode._hsl_composite_blend(top_image, base_image, _saturation_blend, opacity, transform, base_bounds)

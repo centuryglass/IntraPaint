@@ -5,7 +5,7 @@ from PySide6.QtCore import QRect
 from PySide6.QtGui import QTransform
 
 from src.image.layers.layer import Layer
-from src.image.layers.layer_stack import LayerStack
+from src.image.layers.layer_group import LayerGroup
 from src.image.layers.transform_layer import TransformLayer
 
 
@@ -13,20 +13,20 @@ class TransformGroup(TransformLayer):
     """A temporary layer class used to coordinate transformations applied to multiple layers.
 
     TransformGroups are created as needed when applying transformations across multiple layers. TransformGroups are
-    not saved, nor are they added to the layer stack. All transformations applied to them immediately propagate to all
+    not saved, nor are they added to the layer group. All transformations applied to them immediately propagate to all
     TransformLayers assigned to them.
 
-    I'm using this approach because storing persistent transforms within a LayerStack is far more trouble than its
+    I'm using this approach because storing persistent transforms within a LayerGroup is far more trouble than its
     worth, accommodating arbitrary numbers of nested transformations exponentially increases the difficulty of testing
     and maintaining almost every feature.
     """
 
-    def __init__(self, layer_stack: LayerStack) -> None:
-        super().__init__(f'TransformGroup-{layer_stack.name}')
-        self._groups: List[LayerStack] = []
+    def __init__(self, layer_group: LayerGroup) -> None:
+        super().__init__(f'TransformGroup-{layer_group.name}')
+        self._groups: List[LayerGroup] = []
         self._transform_layers: List[TransformLayer] = []
-        self._layer_added_slot(layer_stack)
-        layer_stack.lock_changed.connect(lambda locked: self.set_locked(locked))
+        self._layer_added_slot(layer_group)
+        layer_group.lock_changed.connect(lambda _, locked: self.set_locked(locked))
 
     def __del__(self) -> None:
         self.remove_all()
@@ -67,7 +67,7 @@ class TransformGroup(TransformLayer):
         super().set_transform(transform, send_signals)
 
     # noinspection PyUnusedLocal
-    def _layer_locked_slot(self, layer: Layer, locked: bool) -> None:
+    def _layer_locked_slot(self, _, locked: bool) -> None:
         if locked:
             self.set_locked(True)
         elif not any((inner_layer.locked or inner_layer.parent_locked
@@ -75,13 +75,13 @@ class TransformGroup(TransformLayer):
             self.set_locked(False)
 
     def _layer_added_slot(self, layer: Layer) -> None:
-        assert isinstance(layer, (TransformLayer, LayerStack))
+        assert isinstance(layer, (TransformLayer, LayerGroup))
         if isinstance(layer, TransformLayer):
             if layer not in self._transform_layers:
                 layer.set_transform(layer.transform * self.transform)
                 self._transform_layers.append(layer)
         else:
-            assert isinstance(layer, LayerStack)
+            assert isinstance(layer, LayerGroup)
             if layer not in self._groups:
                 layer.layer_added.connect(self._layer_added_slot)
                 layer.layer_removed.connect(self._layer_removed_slot)
@@ -92,13 +92,13 @@ class TransformGroup(TransformLayer):
         self._get_local_bounds()  # Updates size, emits size_changed if needed
 
     def _layer_removed_slot(self, layer: Layer) -> None:
-        assert isinstance(layer, (TransformLayer, LayerStack))
+        assert isinstance(layer, (TransformLayer, LayerGroup))
         if isinstance(layer, TransformLayer):
             assert layer in self._transform_layers
             layer.set_transform(layer.transform * self.transform.inverted()[0])
             self._transform_layers.remove(layer)
         else:
-            assert isinstance(layer, LayerStack)
+            assert isinstance(layer, LayerGroup)
             assert layer in self._groups
             layer.layer_added.disconnect(self._layer_added_slot)
             layer.layer_removed.disconnect(self._layer_removed_slot)

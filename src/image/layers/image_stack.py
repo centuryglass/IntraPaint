@@ -15,7 +15,7 @@ from src.config.cache import Cache
 from src.image.composite_mode import CompositeMode
 from src.image.layers.image_layer import ImageLayer
 from src.image.layers.layer import Layer, LayerParent
-from src.image.layers.layer_stack import LayerStack
+from src.image.layers.layer_group import LayerGroup
 from src.image.layers.selection_layer import SelectionLayer
 from src.image.layers.text_layer import TextLayer
 from src.image.layers.transform_layer import TransformLayer
@@ -70,6 +70,10 @@ ERROR_MESSAGE_HIDDEN_LAYER_MERGE = _tr('Only visible layers can be merged.')
 ERROR_TITLE_LOCKED_GROUP = _tr('Layer group "{group_name}" is locked')
 ERROR_MESSAGE_LOCKED_GROUP = _tr('Unlock the layer group before trying to change layers within the group.')
 
+ERROR_TITLE_TOP_GROUP_CHANGE = _tr('Blocked action on main layer group')
+ERROR_MESSAGE_TOP_GROUP_CHANGE = _tr('To edit the main layer group, edit its layers individually or use the options'
+                                     ' under the Image menu.')
+
 WARNING_TITLE_CROP_DELETED_LAYERS = _tr('Warning: cropping deleted layer(s)')
 WARNING_MESSAGE_CROP_DELETED_LAYERS = _tr('<p>Cropping to selection deleted the following layers:</p><ul>'
                                           '{layer_names}</ul>')
@@ -109,7 +113,7 @@ class ImageStack(QObject):
 
         Cache().connect(self, Cache.EDIT_SIZE, _update_gen_area_size)
 
-        self._layer_stack = LayerStack(NEW_IMAGE_LAYER_GROUP_NAME)
+        self._layer_stack = LayerGroup(NEW_IMAGE_LAYER_GROUP_NAME)
         self._image = CachedData(None)
         self._active_layer_id = self._layer_stack.id
 
@@ -209,7 +213,7 @@ class ImageStack(QObject):
         self._active_layer_id = new_active_id
 
     @property
-    def layer_stack(self) -> LayerStack:
+    def layer_stack(self) -> LayerGroup:
         """Returns the root layer group."""
         return self._layer_stack
 
@@ -436,12 +440,14 @@ class ImageStack(QObject):
             size.setHeight(max(self.height, size.height()))
             image = create_transparent_image(size)
             return image
-        image = self.render()
-        assert image.size() == self.merged_layer_bounds.size()
         if crop_to_image:
-            offset = -self.merged_layer_bounds.topLeft()
-            image = image.copy(QRect(offset, self.size))
-            self._image.data = image
+            image = create_transparent_image(self.size)
+            transform = QTransform()
+        else:
+            stack_bounds = self._layer_stack.bounds
+            image = create_transparent_image(stack_bounds.size())
+            transform = QTransform.fromTranslate(-stack_bounds.x(), -stack_bounds.y())
+        self.render(image, transform)
         return image
 
     def resize_to_content(self) -> None:
@@ -459,25 +465,28 @@ class ImageStack(QObject):
             return
         self.resize_canvas(selection_bounds.size(), -selection_bounds.x(), -selection_bounds.y())
 
-    def render(self, base_image: Optional[QImage] = None,
-               paint_param_adjuster: Optional[RenderAdjustFn] = None) -> QImage:
-        """Render all layers to a QImage with a custom base image and accepting a function to control layer painting on
-        a per-layer basis.
+    def render(self, base_image: QImage, transform: Optional[QTransform] = None,
+               image_bounds: Optional[QRect] = None, z_max: Optional[int] = None,
+               image_adjuster: Optional[Callable[['Layer', QImage], QImage]] = None) -> None:
+        """Renders all layers to QImage, optionally specifying render bounds, transformation, a z-level cutoff, and/or
+           a final image transformation function.
 
         Parameters
         ----------
         base_image: QImage, optional, default=None.
-            The base image that all layer content will be painted onto.  If None, a new image will be created that's
-            large enough to fit all layers.
-        paint_param_adjuster: Optional[Callable[[int, QImage, QRect, QPainter) -> Optional[QImage]]
-            Default=None. If provided, it will be called before each layer is painted, allowing it to directly make
-            changes to the image, paint bounds, or painter as needed. Parameters are layer_id, layer_image,
-            paint_bounds and layer_painter.  If it returns a QImage, that image will replace the layer image.
-        Returns
-        -------
-        QImage: The final rendered image.
+            The base image that all layer content will be painted onto.
+        transform: QTransform, optional, default=None
+            Optional transformation to apply to image content before rendering.
+        image_bounds: QRect, optional, default=None.
+            Optional bounds that should be rendered within the base image. If None, the intersection of the base and the
+            all layers will be used.
+        z_max: int, optional, default=None
+            If not None, rendering will be blocked at z-levels above this number.
+        image_adjuster: Callable[[Layer, QImage], QImage], optional, default=None
+            Image adjusting function to pass on to child layers when rendering, to run on each non-group layer and
+            potentially return a transformed image for each.
         """
-        return self._layer_stack.render(base_image, paint_param_adjuster)
+        self._layer_stack.render(base_image, transform, image_bounds, z_max, image_adjuster)
 
     def pixmap(self) -> QPixmap:
         """Returns combined visible layer content as a QPixmap, optionally including unsaved layers."""
@@ -543,7 +552,7 @@ class ImageStack(QObject):
     def create_layer(self,
                      layer_name: Optional[str] = None,
                      image_data: Optional[Image.Image | QImage | QPixmap] = None,
-                     layer_parent: Optional[LayerStack] = None,
+                     layer_parent: Optional[LayerGroup] = None,
                      layer_index: Optional[int] = None,
                      transform: Optional[QTransform] = None) -> ImageLayer:
         """
@@ -589,8 +598,8 @@ class ImageStack(QObject):
 
     def create_layer_group(self,
                            layer_name: Optional[str] = None,
-                           layer_parent: Optional[LayerStack] = None,
-                           layer_index: Optional[int] = None) -> LayerStack:
+                           layer_parent: Optional[LayerGroup] = None,
+                           layer_index: Optional[int] = None) -> LayerGroup:
         """Creates and inserts a new layer group.
 
         Parameters
@@ -606,7 +615,7 @@ class ImageStack(QObject):
             layer_parent, layer_index = self._get_new_layer_placement(layer_parent)
         if layer_name is None:
             layer_name = self._get_default_new_layer_name()
-        layer = LayerStack(layer_name)
+        layer = LayerGroup(layer_name)
 
         def _create_new(group=layer, parent=layer_parent, idx=layer_index) -> None:
             self._insert_layer_internal(group, parent, idx)
@@ -619,7 +628,7 @@ class ImageStack(QObject):
 
     def create_text_layer(self,
                           layer_data: Optional[TextRect] = None,
-                          layer_parent: Optional[LayerStack] = None,
+                          layer_parent: Optional[LayerGroup] = None,
                           layer_index: Optional[int] = None) -> TextLayer:
         """Creates and inserts a new text layer.
 
@@ -654,10 +663,10 @@ class ImageStack(QObject):
         """
         if layer is None:
             layer = self.active_layer
-        if layer == self._layer_stack:
+        if not self._validate_layer_showing_errors(layer, allow_lock=True, allow_parent_lock=True):
             return
         assert layer.layer_parent is not None and layer.layer_parent.contains(layer)
-        layer_parent = cast(LayerStack, layer.layer_parent)
+        layer_parent = cast(LayerGroup, layer.layer_parent)
         layer_parent, layer_index = self._get_new_layer_placement(layer_parent)
         layer_copy = layer.copy()
         layer_copy.set_name(layer.name + ' copy')
@@ -677,15 +686,12 @@ class ImageStack(QObject):
             layer: Layer | None, default=None
                 The layer object to remove. If None, the active layer will be used.
         """
-        if layer == self._layer_stack:
-            return
         if layer is None:
             layer = self.active_layer
-        if layer.locked or layer.parent_locked:
-            show_error_dialog(None, ERROR_TITLE_LOCKED_LAYER, ERROR_MESSAGE_LOCKED_LAYER)
+        if not self._validate_layer_showing_errors(layer):
             return
         assert layer.layer_parent is not None and layer.layer_parent.contains(layer)
-        layer_parent = cast(LayerStack, layer.layer_parent)
+        layer_parent = cast(LayerGroup, layer.layer_parent)
         layer_index = layer_parent.get_layer_index(layer)
         last_active_id = self.active_layer_id
 
@@ -707,12 +713,12 @@ class ImageStack(QObject):
                                                                      f' layer stack. (layer: {to_remove})')
             assert to_insert.layer_parent is None and not self._layer_stack.contains_recursive(to_insert)
             layer_parent = to_remove.layer_parent
-            assert isinstance(layer_parent, LayerStack)
+            assert isinstance(layer_parent, LayerGroup)
             layer_index = layer_parent.get_layer_index(to_remove)
             assert layer_index is not None
             self._insert_layer_internal(to_insert, layer_parent, layer_index)
             assert self._layer_stack.contains_recursive(to_insert)
-            if self.active_layer == to_remove or (isinstance(to_remove, LayerStack) and
+            if self.active_layer == to_remove or (isinstance(to_remove, LayerGroup) and
                                                   to_remove.contains_recursive(self.active_layer)):
                 self._set_active_layer_internal(to_insert)
             self._remove_layer_internal(to_remove)
@@ -752,15 +758,14 @@ class ImageStack(QObject):
             return
         self.active_layer = layer
 
-    def move_layer(self, layer: Layer, new_parent: LayerStack, new_index: int) -> None:
+    def move_layer(self, layer: Layer, new_parent: LayerGroup, new_index: int) -> None:
         """Moves a layer to a specific index under a parent group."""
-        if new_parent.locked or new_parent.parent_locked or layer.parent_locked:
-            show_error_dialog(None, ERROR_TITLE_LOCKED_LAYER, ERROR_MESSAGE_LOCKED_LAYER)
+        if not self._validate_layer_showing_errors(layer):
             return
         assert self._layer_stack.contains_recursive(layer)
         assert self._layer_stack == new_parent or self._layer_stack.contains_recursive(new_parent)
         layer_parent = layer.layer_parent
-        assert layer_parent is not None and isinstance(layer_parent, LayerStack)
+        assert layer_parent is not None and isinstance(layer_parent, LayerGroup)
         if layer_parent == new_parent and new_index == new_parent.get_layer_index(layer):
             return
         max_idx = new_parent.count - 1 if layer_parent == new_parent else new_parent.count
@@ -815,7 +820,7 @@ class ImageStack(QObject):
         """
         if layer is None:
             layer = self.active_layer
-        if layer == self._layer_stack or layer.parent_locked:
+        if not self._validate_layer_showing_errors(layer, allow_lock=True):
             return
         assert layer.layer_parent is not None and layer.layer_parent.contains(layer)
         assert offset in (1, -1), f'Unexpected offset {offset}'
@@ -831,7 +836,7 @@ class ImageStack(QObject):
         if isinstance(layer, ImageLayer):
             return layer.composition_mode == CompositeMode.NORMAL and layer.opacity == 1.0 \
                 and layer.transform == QTransform.fromTranslate(layer.bounds.x(), layer.bounds.y())
-        if isinstance(layer, LayerStack):
+        if isinstance(layer, LayerGroup):
             return layer.count == 0
         return False
 
@@ -851,39 +856,23 @@ class ImageStack(QObject):
         """
         if layer is None:
             layer = self.active_layer
-        if layer == self._layer_stack or layer.locked or layer.parent_locked:
-            show_error_dialog(None, ERROR_TITLE_LOCKED_LAYER, ERROR_MESSAGE_LOCKED_LAYER)
+        if not self._validate_layer_showing_errors(layer):
             return
         parent = layer.layer_parent
-        assert isinstance(parent, LayerStack)
+        assert isinstance(parent, LayerGroup)
 
         if self.layer_is_flat(layer):
             logger.warning(f'Skipping flatten, layer {layer.name} cannot be simplified further.')
             return
 
-        def _stop_render_above_z_level(level: int) -> RenderAdjustFn:
-
-            # noinspection PyUnusedLocal
-            def _render_adjust(layer_id: int, img: QImage, bounds: QRect, painter: QPainter) -> Optional[QImage]:
-                rendered_layer = self._layer_stack.get_layer_by_id(layer_id)
-                assert rendered_layer is not None
-                if rendered_layer.z_value > level:
-                    painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_SourceOver)
-                    if not (isinstance(rendered_layer, LayerStack) and rendered_layer.contains_recursive(layer)):
-                        painter.setOpacity(0)
-                        return QImage()
-                return None
-
-            return _render_adjust
-
-        if isinstance(layer, LayerStack):
+        if isinstance(layer, LayerGroup):
             last_child = layer.child_layers[-1]
             base_z = last_child.z_value - 1
         else:
             base_z = layer.z_value - 1
 
-        base_render = parent.render(paint_param_adjuster=_stop_render_above_z_level(base_z))
-        top_render = parent.render(paint_param_adjuster=_stop_render_above_z_level(layer.z_value))
+        base_render = parent.render_to_new_image(z_max=base_z)
+        top_render = parent.render_to_new_image(z_max=layer.z_value)
         # Subtract out base from top:
         np_base = image_data_as_numpy_8bit(base_render)
         np_combined = image_data_as_numpy_8bit(top_render)
@@ -938,15 +927,14 @@ class ImageStack(QObject):
         """
         if layer is None:
             layer = self.active_layer
-        if layer == self._layer_stack or layer.locked or layer.parent_locked:
-            show_error_dialog(None, ERROR_TITLE_MERGE_FAILED, ERROR_MESSAGE_LOCKED_LAYER)
+        if not self._validate_layer_showing_errors(layer):
             return
         assert layer.layer_parent is not None \
                and layer.layer_parent.contains(layer), f'invalid layer: {layer.name}:{layer.id}'
         if not isinstance(layer, TransformLayer):
             return
         top_layer = cast(TransformLayer, layer)
-        layer_parent = cast(LayerStack, top_layer.layer_parent)
+        layer_parent = cast(LayerGroup, top_layer.layer_parent)
         layer_index = layer_parent.get_layer_index(top_layer)
         assert layer_index is not None
         if layer_index == layer_parent.count - 1:
@@ -1002,7 +990,7 @@ class ImageStack(QObject):
             else:
                 painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_SourceOver)
                 composite_op = top_layer.composition_mode.custom_composite_op()
-                composite_op(top_image, merged_image, top_layer.opacity, painter.transform())
+                composite_op(top_image, merged_image, top_layer.opacity, painter.transform(), None)
             if base_layer.alpha_locked:
                 painter.setTransform(base_paint_transform)
                 painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_DestinationIn)
@@ -1041,10 +1029,10 @@ class ImageStack(QObject):
             layer: ImageLayer | int | None, default=None
                 The layer object to copy, or its id. If None, the active layer will be used.
         """
-        if layer == self._layer_stack:
-            return
         if layer is None:
             layer = self.active_layer
+        if not self._validate_layer_showing_errors(layer):
+            return
         with UndoStack().combining_actions('ImageStack.layer_to_image_size'):
             if isinstance(layer, TextLayer):
                 layer_bounds = layer.transformed_bounds
@@ -1053,7 +1041,7 @@ class ImageStack(QObject):
                 if TextLayer.confirm_or_cancel_render_to_image([layer.name], ACTION_NAME_LAYER_TO_IMAGE_SIZE):
                     layer = self.replace_text_layer_with_image(layer)
             if not isinstance(layer, ImageLayer):
-                assert isinstance(layer, LayerStack)
+                assert isinstance(layer, LayerGroup)
                 layers = layer.recursive_child_layers
                 for child_layer in layers:
                     if child_layer.locked or child_layer.parent_locked or not isinstance(child_layer, ImageLayer):
@@ -1166,8 +1154,7 @@ class ImageStack(QObject):
         """Replaces all masked image content in a layer with transparency."""
         if layer is None:
             layer = self.active_layer
-        if layer.locked or layer.parent_locked:
-            show_error_dialog(None, ERROR_TITLE_LOCKED_LAYER, ERROR_MESSAGE_LOCKED_LAYER)
+        if not self._validate_layer_showing_errors(layer, allow_layer_stack=True):
             return
         transformed_mask = self.get_layer_mask(layer)
         if isinstance(layer, TextLayer):
@@ -1199,10 +1186,9 @@ class ImageStack(QObject):
         """Crop a layer to perfectly fit selected content within that layer."""
         if layer is None:
             layer = self.active_layer
-        if layer.locked or layer.parent_locked:
-            show_error_dialog(None, ERROR_TITLE_LOCKED_LAYER, ERROR_MESSAGE_LOCKED_LAYER)
+        if not self._validate_layer_showing_errors(layer, allow_layer_stack=True):
             return
-        if isinstance(layer, LayerStack):
+        if isinstance(layer, LayerGroup):
             all_layers = layer.recursive_child_layers
         else:
             all_layers = [layer]
@@ -1227,7 +1213,7 @@ class ImageStack(QObject):
                     all_layers[i] = image_layer
             for cropped_layer in all_layers:
                 if not isinstance(cropped_layer, ImageLayer):
-                    assert isinstance(cropped_layer, LayerStack)
+                    assert isinstance(cropped_layer, LayerGroup)
                     continue
                 layer_mask = self.get_layer_mask(cropped_layer)
                 content_bounds = image_content_bounds(layer_mask)
@@ -1289,8 +1275,7 @@ class ImageStack(QObject):
         """
         if layer is None:
             layer = self.active_layer
-        if layer.locked or layer.parent_locked:
-            show_error_dialog(None, ERROR_TITLE_LOCKED_LAYER, ERROR_MESSAGE_LOCKED_LAYER)
+        if not self._validate_layer_showing_errors(layer, allow_layer_stack=True):
             return
         scale = QTransform.fromScale(self._generation_area.width() / image_data.width(),
                                      self._generation_area.height() / image_data.height())
@@ -1299,12 +1284,12 @@ class ImageStack(QObject):
         if not isinstance(layer, ImageLayer):
             new_layer = self._create_layer_internal(image_data=image_data)
             new_layer.set_transform(data_transform)
-            if isinstance(layer, LayerStack):
+            if isinstance(layer, LayerGroup):
                 parent: Optional[LayerParent] = layer
                 insert_index = 0
             else:
                 parent = layer.layer_parent
-                assert isinstance(parent, LayerStack)
+                assert isinstance(parent, LayerGroup)
                 layer_index = parent.get_layer_index(layer)
                 assert layer_index is not None and layer_index >= 0
                 insert_index = layer_index
@@ -1329,7 +1314,7 @@ class ImageStack(QObject):
                 image_data = transformed_image
             layer.insert_image_content(image_data, target_bounds, composition_mode)
 
-    def load_layer_stack(self, layer_stack: LayerStack, new_size: QSize,
+    def load_layer_stack(self, layer_stack: LayerGroup, new_size: QSize,
                          new_active_layer: Optional[Layer] = None) -> None:
         """Loads a new image from layer data."""
         assert not self._layer_stack.contains_recursive(layer_stack)
@@ -1467,7 +1452,7 @@ class ImageStack(QObject):
                 max_missing_layer = max(max_missing_layer, int(match.group(1)) + 1)
         return f'layer {max_missing_layer}'
 
-    def _get_new_layer_placement(self, layer_parent: Optional[LayerStack] = None) -> Tuple[LayerStack, int]:
+    def _get_new_layer_placement(self, layer_parent: Optional[LayerGroup] = None) -> Tuple[LayerGroup, int]:
         """Default layer placement:
         1. If no parent is provided, use the active layer if it is a layer group, otherwise use the active layer's
            parent
@@ -1478,18 +1463,18 @@ class ImageStack(QObject):
         layer_index: Optional[int] = 0
         if layer_parent is None:
             active_layer = self.active_layer
-            if isinstance(active_layer, LayerStack):
+            if isinstance(active_layer, LayerGroup):
                 layer_parent = active_layer
                 index_layer: Optional[Layer] = None
             else:
                 next_parent = active_layer.layer_parent
-                assert next_parent is None or isinstance(next_parent, LayerStack)
+                assert next_parent is None or isinstance(next_parent, LayerGroup)
                 layer_parent = next_parent
                 index_layer = active_layer
             while layer_parent is not None and layer_parent.locked:
                 index_layer = layer_parent
                 next_parent = layer_parent.layer_parent
-                assert next_parent is None or isinstance(next_parent, LayerStack)
+                assert next_parent is None or isinstance(next_parent, LayerGroup)
                 layer_parent = next_parent
             assert layer_parent is not None, 'root layer stack was locked or layer stack was broken'
             if index_layer is not None:
@@ -1523,7 +1508,7 @@ class ImageStack(QObject):
         if isinstance(layer, TransformLayer):
             layer.transform_changed.connect(self._layer_content_change_slot)
         layer.visibility_changed.connect(self._layer_visibility_change_slot)
-        if isinstance(layer, LayerStack):
+        if isinstance(layer, LayerGroup):
             for child_layer in layer.recursive_child_layers:
                 self._connect_layer(child_layer)
 
@@ -1544,7 +1529,7 @@ class ImageStack(QObject):
         self._disconnect_layer(layer)
         self.layer_removed.emit(layer)
 
-    def _insert_layer_internal(self, layer: Layer, parent: LayerStack, index: int):
+    def _insert_layer_internal(self, layer: Layer, parent: LayerGroup, index: int):
         assert layer is not None and layer.layer_parent is None and not self._layer_stack.contains_recursive(layer)
         assert parent is not None and (parent == self._layer_stack or self._layer_stack.contains_recursive(parent))
         layer.z_value = parent.z_value - (index + 1)
@@ -1564,19 +1549,19 @@ class ImageStack(QObject):
         """Removes a layer from the stack, optionally disconnect layer signals, and emit all required image stack
            signals. This does not alter the undo history."""
         assert layer is not None
-        layer_parent = cast(LayerStack, layer.layer_parent)
+        layer_parent = cast(LayerGroup, layer.layer_parent)
         assert layer_parent is not None
         assert layer_parent.contains(layer)
         self._disconnect_layer(layer)
         if self.active_layer_id == layer.id:
             active_layer = self.active_layer
             next_active_layer = self.next_layer(active_layer)
-            if isinstance(active_layer, LayerStack):
+            if isinstance(active_layer, LayerGroup):
                 while next_active_layer is not None and active_layer.contains_recursive(next_active_layer):
                     next_active_layer = self.next_layer(next_active_layer)
             if next_active_layer is None:
                 next_active_layer = self.prev_layer(active_layer)
-                if isinstance(active_layer, LayerStack):
+                if isinstance(active_layer, LayerGroup):
                     while next_active_layer is not None and active_layer.contains_recursive(next_active_layer):
                         next_active_layer = self.prev_layer(next_active_layer)
             if next_active_layer is None or next_active_layer == layer or not \
@@ -1658,33 +1643,33 @@ class ImageStack(QObject):
     def _all_layers(self) -> List[Layer]:
         return [self._layer_stack, *self._layer_stack.recursive_child_layers]
 
-    def _next_insert_index(self, layer: Layer) -> Tuple[LayerStack, int]:
+    def _next_insert_index(self, layer: Layer) -> Tuple[LayerGroup, int]:
         assert layer is not None and layer.layer_parent is not None and self._layer_stack.contains_recursive(layer)
-        parent = cast(LayerStack, layer.layer_parent)
+        parent = cast(LayerGroup, layer.layer_parent)
         current_index = parent.get_layer_index(layer)
         assert current_index is not None
         if current_index == (parent.count - 1):
-            outer_parent = cast(LayerStack, parent.layer_parent)
+            outer_parent = cast(LayerGroup, parent.layer_parent)
             if outer_parent is None:
                 return parent, current_index
             parent_index = outer_parent.get_layer_index(parent)
             assert parent_index is not None
             return outer_parent, parent_index + 1
         next_layer = parent.get_layer_by_index(current_index + 1)
-        if isinstance(next_layer, LayerStack):
+        if isinstance(next_layer, LayerGroup):
             return next_layer, 0
         return parent, current_index + 1
 
     def next_layer(self, layer: Layer) -> Optional[Layer]:
         """Given a layer in the stack, return the layer directly below it, or None if it's the bottom layer."""
         assert layer is not None and layer.layer_parent is not None and self._layer_stack.contains_recursive(layer)
-        if isinstance(layer, LayerStack) and layer.count > 0:
+        if isinstance(layer, LayerGroup) and layer.count > 0:
             return layer.get_layer_by_index(0)
-        parent = cast(LayerStack, layer.layer_parent)
+        parent = cast(LayerGroup, layer.layer_parent)
         current_index = parent.get_layer_index(layer)
         assert current_index is not None
         while current_index == (parent.count - 1):
-            outer_parent = cast(LayerStack, parent.layer_parent)
+            outer_parent = cast(LayerGroup, parent.layer_parent)
             if outer_parent is None:
                 return None
             current_index = outer_parent.get_layer_index(parent)
@@ -1695,30 +1680,30 @@ class ImageStack(QObject):
     def prev_layer(self, layer: Layer) -> Optional[Layer]:
         """Given a layer in the stack, return the layer directly above it, or None if it's the top layer."""
         assert layer is not None and layer.layer_parent is not None and self._layer_stack.contains_recursive(layer)
-        parent = cast(LayerStack, layer.layer_parent)
+        parent = cast(LayerGroup, layer.layer_parent)
         current_index = parent.get_layer_index(layer)
         assert current_index is not None
         if current_index == 0:
             return parent
         prev_layer = parent.get_layer_by_index(current_index - 1)
-        while isinstance(prev_layer, LayerStack) and prev_layer.count > 0:
+        while isinstance(prev_layer, LayerGroup) and prev_layer.count > 0:
             prev_layer = prev_layer.get_layer_by_index(prev_layer.count - 1)
         return prev_layer
 
-    def _prev_insert_index(self, layer: Layer) -> Tuple[LayerStack, int]:
+    def _prev_insert_index(self, layer: Layer) -> Tuple[LayerGroup, int]:
         assert layer is not None and layer.layer_parent is not None and self._layer_stack.contains_recursive(layer)
-        parent = cast(LayerStack, layer.layer_parent)
+        parent = cast(LayerGroup, layer.layer_parent)
         current_index = parent.get_layer_index(layer)
         assert current_index is not None
         if current_index == 0:
-            outer_parent = cast(LayerStack, parent.layer_parent)
+            outer_parent = cast(LayerGroup, parent.layer_parent)
             if outer_parent is None:
                 return parent, current_index
             parent_index = outer_parent.get_layer_index(parent)
             assert parent_index is not None
             return outer_parent, parent_index
         last_layer = parent.get_layer_by_index(current_index - 1)
-        if isinstance(last_layer, LayerStack):
+        if isinstance(last_layer, LayerGroup):
             return last_layer, last_layer.count
         return parent, current_index - 1
 
@@ -1739,9 +1724,9 @@ class ImageStack(QObject):
         return _wrapper
 
     @staticmethod
-    def _find_offset_index(layer: Layer, offset: int, allow_end_indices=True) -> Tuple[LayerStack, int]:
+    def _find_offset_index(layer: Layer, offset: int, allow_end_indices=True) -> Tuple[LayerGroup, int]:
 
-        def _recursive_offset(parent: LayerStack, index: int, off: int) -> Tuple[LayerStack, int]:
+        def _recursive_offset(parent: LayerGroup, index: int, off: int) -> Tuple[LayerGroup, int]:
             max_idx = parent.count
             if allow_end_indices:
                 max_idx += 1
@@ -1751,7 +1736,7 @@ class ImageStack(QObject):
                     if parent.layer_parent is None:
                         return parent, int(clamp(index, 0, max_idx))
                     next_parent = parent.layer_parent
-                    assert isinstance(next_parent, LayerStack)
+                    assert isinstance(next_parent, LayerGroup)
                     parent_idx = next_parent.get_layer_index(parent)
                     assert parent_idx is not None
                     if index > 0:
@@ -1766,7 +1751,7 @@ class ImageStack(QObject):
                     layer_at_index = parent.get_layer_by_index(index)
                     assert layer_at_index != layer, ('something is seriously wrong with layer hierarchy...'
                                                      '(multiple parents?)')
-                    if isinstance(layer_at_index, LayerStack):
+                    if isinstance(layer_at_index, LayerGroup):
                         if step == 1:
                             inner_index = 0
                         else:
@@ -1777,7 +1762,21 @@ class ImageStack(QObject):
             return parent, int(clamp(index, 0, max_idx))
 
         assert layer.layer_parent is not None
-        layer_parent = cast(LayerStack, layer.layer_parent)
+        layer_parent = cast(LayerGroup, layer.layer_parent)
         layer_index = layer_parent.get_layer_index(layer)
         assert layer_index is not None
         return _recursive_offset(layer_parent, layer_index, offset)
+
+    def _validate_layer_showing_errors(self, layer: Layer, allow_lock=False, allow_parent_lock=False,
+                                       allow_layer_stack=False) -> bool:
+        """Return whether a change is appropriate for a given layer, and if not, show a relevant error dialog."""
+        if not allow_layer_stack and layer == self._layer_stack:
+            show_error_dialog(None, ERROR_TITLE_TOP_GROUP_CHANGE, ERROR_MESSAGE_TOP_GROUP_CHANGE)
+            return False
+        if not allow_lock and layer.locked:
+            show_error_dialog(None, ERROR_TITLE_MERGE_FAILED, ERROR_MESSAGE_LOCKED_LAYER)
+            return False
+        if not allow_parent_lock and layer.parent_locked:
+            show_error_dialog(None, ERROR_TITLE_LOCKED_GROUP, ERROR_MESSAGE_LOCKED_GROUP)
+            return False
+        return True

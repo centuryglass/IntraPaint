@@ -2472,102 +2472,102 @@ Please remember to include the traceback from the Details expander.</translation
   <context>
     <name>image.composite_mode</name>
     <message>
-      <location filename="../../src/image/composite_mode.py" line="34"/>
+      <location filename="../../src/image/composite_mode.py" line="38"/>
       <source>Normal</source>
       <translation>Normal</translation>
     </message>
     <message>
-      <location filename="../../src/image/composite_mode.py" line="35"/>
+      <location filename="../../src/image/composite_mode.py" line="39"/>
       <source>Multiply</source>
       <translation>Multiply</translation>
     </message>
     <message>
-      <location filename="../../src/image/composite_mode.py" line="36"/>
+      <location filename="../../src/image/composite_mode.py" line="40"/>
       <source>Screen</source>
       <translation>Screen</translation>
     </message>
     <message>
-      <location filename="../../src/image/composite_mode.py" line="37"/>
+      <location filename="../../src/image/composite_mode.py" line="41"/>
       <source>Overlay</source>
       <translation>Overlay</translation>
     </message>
     <message>
-      <location filename="../../src/image/composite_mode.py" line="38"/>
+      <location filename="../../src/image/composite_mode.py" line="42"/>
       <source>Darken</source>
       <translation>Darken</translation>
     </message>
     <message>
-      <location filename="../../src/image/composite_mode.py" line="39"/>
+      <location filename="../../src/image/composite_mode.py" line="43"/>
       <source>Lighten</source>
       <translation>Lighten</translation>
     </message>
     <message>
-      <location filename="../../src/image/composite_mode.py" line="40"/>
+      <location filename="../../src/image/composite_mode.py" line="44"/>
       <source>Color Dodge</source>
       <translation>Color Dodge</translation>
     </message>
     <message>
-      <location filename="../../src/image/composite_mode.py" line="41"/>
+      <location filename="../../src/image/composite_mode.py" line="45"/>
       <source>Color Burn</source>
       <translation>Color Burn</translation>
     </message>
     <message>
-      <location filename="../../src/image/composite_mode.py" line="42"/>
+      <location filename="../../src/image/composite_mode.py" line="46"/>
       <source>Hard Light</source>
       <translation>Hard Light</translation>
     </message>
     <message>
-      <location filename="../../src/image/composite_mode.py" line="43"/>
+      <location filename="../../src/image/composite_mode.py" line="47"/>
       <source>Soft Light</source>
       <translation>Soft Light</translation>
     </message>
     <message>
-      <location filename="../../src/image/composite_mode.py" line="44"/>
+      <location filename="../../src/image/composite_mode.py" line="48"/>
       <source>Difference</source>
       <translation>Difference</translation>
     </message>
     <message>
-      <location filename="../../src/image/composite_mode.py" line="45"/>
+      <location filename="../../src/image/composite_mode.py" line="49"/>
       <source>Color</source>
       <translation>Color</translation>
     </message>
     <message>
-      <location filename="../../src/image/composite_mode.py" line="46"/>
+      <location filename="../../src/image/composite_mode.py" line="50"/>
       <source>Luminosity</source>
       <translation>Luminosity</translation>
     </message>
     <message>
-      <location filename="../../src/image/composite_mode.py" line="47"/>
+      <location filename="../../src/image/composite_mode.py" line="51"/>
       <source>Hue</source>
       <translation>Hue</translation>
     </message>
     <message>
-      <location filename="../../src/image/composite_mode.py" line="48"/>
+      <location filename="../../src/image/composite_mode.py" line="52"/>
       <source>Saturation</source>
       <translation>Saturation</translation>
     </message>
     <message>
-      <location filename="../../src/image/composite_mode.py" line="49"/>
+      <location filename="../../src/image/composite_mode.py" line="53"/>
       <source>Plus</source>
       <translation>Plus</translation>
     </message>
     <message>
-      <location filename="../../src/image/composite_mode.py" line="50"/>
+      <location filename="../../src/image/composite_mode.py" line="54"/>
       <source>Destination In</source>
       <translation>Destination In</translation>
     </message>
     <message>
-      <location filename="../../src/image/composite_mode.py" line="51"/>
+      <location filename="../../src/image/composite_mode.py" line="55"/>
       <source>Destination Out</source>
       <translation>Destination Out</translation>
     </message>
     <message>
-      <location filename="../../src/image/composite_mode.py" line="52"/>
+      <location filename="../../src/image/composite_mode.py" line="56"/>
       <source>Source Atop</source>
       <translation>Source Atop</translation>
     </message>
     <message>
-      <location filename="../../src/image/composite_mode.py" line="53"/>
+      <location filename="../../src/image/composite_mode.py" line="57"/>
       <source>Destination Atop</source>
       <translation>Destination Atop</translation>
     </message>
@@ -2646,7 +2646,7 @@ Please remember to include the traceback from the Details expander.</translation
   <context>
     <name>image.filter.filter</name>
     <message>
-      <location filename="../../src/image/filter/filter.py" line="32"/>
+      <location filename="../../src/image/filter/filter.py" line="34"/>
       <source>Apply image filter</source>
       <translation>Apply image filter</translation>
     </message>
@@ -2875,13 +2875,31 @@ Please remember to include the traceback from the Details expander.</translation
     </message>
     <message>
       <location filename="../../src/image/layers/image_stack.py" line="73"/>
+      <source>Blocked action on main layer group</source>
+      <translation>Blocked action on main layer group</translation>
+    </message>
+    <message>
+      <location filename="../../src/image/layers/image_stack.py" line="74"/>
+      <source>To edit the main layer group, edit its layers individually or use the options under the Image menu.</source>
+      <translation>To edit the main layer group, edit its layers individually or use the options under the Image menu.</translation>
+    </message>
+    <message>
+      <location filename="../../src/image/layers/image_stack.py" line="77"/>
       <source>Warning: cropping deleted layer(s)</source>
       <translation>Warning: cropping deleted layer(s)</translation>
     </message>
     <message>
-      <location filename="../../src/image/layers/image_stack.py" line="74"/>
+      <location filename="../../src/image/layers/image_stack.py" line="78"/>
       <source>&lt;p&gt;Cropping to selection deleted the following layers:&lt;/p&gt;&lt;ul&gt;{layer_names}&lt;/ul&gt;</source>
       <translation>&lt;p&gt;Cropping to selection deleted the following layers:&lt;/p&gt;&lt;ul&gt;{layer_names}&lt;/ul&gt;</translation>
+    </message>
+  </context>
+  <context>
+    <name>image.layers.selection_layer</name>
+    <message>
+      <location filename="../../src/image/layers/selection_layer.py" line="30"/>
+      <source>Selection</source>
+      <translation>Selection</translation>
     </message>
   </context>
   <context>
@@ -2956,17 +2974,17 @@ Please remember to include the traceback from the Details expander.</translation
   <context>
     <name>tools.clone_stamp_tool</name>
     <message>
-      <location filename="../../src/tools/clone_stamp_tool.py" line="30"/>
+      <location filename="../../src/tools/clone_stamp_tool.py" line="33"/>
       <source>Clone Stamp</source>
       <translation>Clone Stamp</translation>
     </message>
     <message>
-      <location filename="../../src/tools/clone_stamp_tool.py" line="31"/>
+      <location filename="../../src/tools/clone_stamp_tool.py" line="34"/>
       <source>Copy image content from one area to another</source>
       <translation>Copy image content from one area to another</translation>
     </message>
     <message>
-      <location filename="../../src/tools/clone_stamp_tool.py" line="32"/>
+      <location filename="../../src/tools/clone_stamp_tool.py" line="35"/>
       <source>{right_mouse_icon}: set source - {left_mouse_icon}: draw</source>
       <translation>{right_mouse_icon}: set source - {left_mouse_icon}: draw</translation>
     </message>
@@ -2974,17 +2992,17 @@ Please remember to include the traceback from the Details expander.</translation
   <context>
     <name>tools.draw_tool</name>
     <message>
-      <location filename="../../src/tools/draw_tool.py" line="29"/>
+      <location filename="../../src/tools/draw_tool.py" line="30"/>
       <source>Draw</source>
       <translation>Draw</translation>
     </message>
     <message>
-      <location filename="../../src/tools/draw_tool.py" line="30"/>
+      <location filename="../../src/tools/draw_tool.py" line="31"/>
       <source>Draw into the image</source>
       <translation>Draw into the image</translation>
     </message>
     <message>
-      <location filename="../../src/tools/draw_tool.py" line="31"/>
+      <location filename="../../src/tools/draw_tool.py" line="32"/>
       <source>{left_mouse_icon}: draw - {right_mouse_icon}: 1px draw</source>
       <translation>{left_mouse_icon}: draw - {right_mouse_icon}: 1px draw</translation>
     </message>
@@ -2992,17 +3010,17 @@ Please remember to include the traceback from the Details expander.</translation
   <context>
     <name>tools.eraser_tool</name>
     <message>
-      <location filename="../../src/tools/eraser_tool.py" line="27"/>
+      <location filename="../../src/tools/eraser_tool.py" line="28"/>
       <source>Erase</source>
       <translation>Erase</translation>
     </message>
     <message>
-      <location filename="../../src/tools/eraser_tool.py" line="28"/>
+      <location filename="../../src/tools/eraser_tool.py" line="29"/>
       <source>Erase image layer content</source>
       <translation>Erase image layer content</translation>
     </message>
     <message>
-      <location filename="../../src/tools/eraser_tool.py" line="29"/>
+      <location filename="../../src/tools/eraser_tool.py" line="30"/>
       <source>{left_mouse_icon}: erase - {right_mouse_icon}: 1px erase</source>
       <translation>{left_mouse_icon}: erase - {right_mouse_icon}: 1px erase</translation>
     </message>
@@ -3046,17 +3064,17 @@ Please remember to include the traceback from the Details expander.</translation
   <context>
     <name>tools.filter_tool</name>
     <message>
-      <location filename="../../src/tools/filter_tool.py" line="35"/>
-      <source>Filter</source>
-      <translation>Filter</translation>
+      <location filename="../../src/tools/filter_tool.py" line="36"/>
+      <source>Filter Brush</source>
+      <translation>Filter Brush</translation>
     </message>
     <message>
-      <location filename="../../src/tools/filter_tool.py" line="36"/>
+      <location filename="../../src/tools/filter_tool.py" line="37"/>
       <source>Draw to apply an image filter</source>
       <translation>Draw to apply an image filter</translation>
     </message>
     <message>
-      <location filename="../../src/tools/filter_tool.py" line="37"/>
+      <location filename="../../src/tools/filter_tool.py" line="38"/>
       <source>{left_mouse_icon}: filter - {right_mouse_icon}: 1px filter</source>
       <translation>{left_mouse_icon}: filter - {right_mouse_icon}: 1px filter</translation>
     </message>
@@ -3190,17 +3208,17 @@ Please remember to include the traceback from the Details expander.</translation
   <context>
     <name>tools.smudge_tool</name>
     <message>
-      <location filename="../../src/tools/smudge_tool.py" line="30"/>
+      <location filename="../../src/tools/smudge_tool.py" line="31"/>
       <source>Smudge</source>
       <translation>Smudge</translation>
     </message>
     <message>
-      <location filename="../../src/tools/smudge_tool.py" line="31"/>
+      <location filename="../../src/tools/smudge_tool.py" line="32"/>
       <source>Smudge image content</source>
       <translation>Smudge image content</translation>
     </message>
     <message>
-      <location filename="../../src/tools/smudge_tool.py" line="32"/>
+      <location filename="../../src/tools/smudge_tool.py" line="33"/>
       <source>{left_mouse_icon}: smudge - {right_mouse_icon}: 1px smudge</source>
       <translation>{left_mouse_icon}: smudge - {right_mouse_icon}: 1px smudge</translation>
     </message>
@@ -3226,102 +3244,127 @@ Please remember to include the traceback from the Details expander.</translation
   <context>
     <name>ui.generated_image_selector</name>
     <message>
-      <location filename="../../src/ui/generated_image_selector.py" line="47"/>
+      <location filename="../../src/ui/generated_image_selector.py" line="48"/>
       <source>Zoom to changes</source>
       <translation>Zoom to changes</translation>
     </message>
     <message>
-      <location filename="../../src/ui/generated_image_selector.py" line="48"/>
+      <location filename="../../src/ui/generated_image_selector.py" line="49"/>
       <source>Show selection</source>
       <translation>Show selection</translation>
     </message>
     <message>
-      <location filename="../../src/ui/generated_image_selector.py" line="49"/>
+      <location filename="../../src/ui/generated_image_selector.py" line="50"/>
       <source>Inpaint</source>
       <translation>Inpaint</translation>
     </message>
     <message>
-      <location filename="../../src/ui/generated_image_selector.py" line="50"/>
+      <location filename="../../src/ui/generated_image_selector.py" line="51"/>
       <source>Cancel</source>
       <translation>Cancel</translation>
     </message>
     <message>
-      <location filename="../../src/ui/generated_image_selector.py" line="51"/>
+      <location filename="../../src/ui/generated_image_selector.py" line="52"/>
       <source>This will discard all generated images.</source>
       <translation>This will discard all generated images.</translation>
     </message>
     <message>
-      <location filename="../../src/ui/generated_image_selector.py" line="52"/>
+      <location filename="../../src/ui/generated_image_selector.py" line="53"/>
       <source>Previous</source>
       <translation>Previous</translation>
     </message>
     <message>
-      <location filename="../../src/ui/generated_image_selector.py" line="53"/>
+      <location filename="../../src/ui/generated_image_selector.py" line="54"/>
       <source>Toggle zoom</source>
       <translation>Toggle zoom</translation>
     </message>
     <message>
-      <location filename="../../src/ui/generated_image_selector.py" line="54"/>
+      <location filename="../../src/ui/generated_image_selector.py" line="55"/>
       <source>Next</source>
       <translation>Next</translation>
     </message>
     <message>
-      <location filename="../../src/ui/generated_image_selector.py" line="56"/>
+      <location filename="../../src/ui/generated_image_selector.py" line="57"/>
       <source>Original image content</source>
       <translation>Original image content</translation>
     </message>
     <message>
-      <location filename="../../src/ui/generated_image_selector.py" line="57"/>
+      <location filename="../../src/ui/generated_image_selector.py" line="58"/>
       <source>Option {index}</source>
       <translation>Option {index}</translation>
     </message>
     <message>
-      <location filename="../../src/ui/generated_image_selector.py" line="58"/>
+      <location filename="../../src/ui/generated_image_selector.py" line="59"/>
       <source>Loading...</source>
       <translation>Loading...</translation>
     </message>
     <message>
-      <location filename="../../src/ui/generated_image_selector.py" line="60"/>
+      <location filename="../../src/ui/generated_image_selector.py" line="61"/>
       <source>Select this option</source>
       <translation>Select this option</translation>
     </message>
     <message>
-      <location filename="../../src/ui/generated_image_selector.py" line="61"/>
+      <location filename="../../src/ui/generated_image_selector.py" line="62"/>
       <source>Save to new file</source>
       <translation>Save to new file</translation>
     </message>
     <message>
-      <location filename="../../src/ui/generated_image_selector.py" line="62"/>
+      <location filename="../../src/ui/generated_image_selector.py" line="63"/>
       <source>Send to new layer</source>
       <translation>Send to new layer</translation>
     </message>
     <message>
-      <location filename="../../src/ui/generated_image_selector.py" line="64"/>
+      <location filename="../../src/ui/generated_image_selector.py" line="65"/>
       <source>Saved image option to {image_path}</source>
       <translation>Saved image option to {image_path}</translation>
     </message>
     <message>
-      <location filename="../../src/ui/generated_image_selector.py" line="65"/>
+      <location filename="../../src/ui/generated_image_selector.py" line="66"/>
       <source>Created new layer "{layer_name}"</source>
       <translation>Created new layer "{layer_name}"</translation>
     </message>
     <message>
-      <location filename="../../src/ui/generated_image_selector.py" line="66"/>
+      <location filename="../../src/ui/generated_image_selector.py" line="67"/>
       <source>Cancelled saving image option to file.</source>
       <translation>Cancelled saving image option to file.</translation>
     </message>
     <message>
-      <location filename="../../src/ui/generated_image_selector.py" line="68"/>
+      <location filename="../../src/ui/generated_image_selector.py" line="69"/>
+      <source>Failed to insert into layer "{layer_name}"</source>
+      <translation>Failed to insert into layer "{layer_name}"</translation>
+    </message>
+    <message>
+      <location filename="../../src/ui/generated_image_selector.py" line="70"/>
+      <source>Changes were blocked because the layer is locked. </source>
+      <translation>Changes were blocked because the layer is locked. </translation>
+    </message>
+    <message>
+      <location filename="../../src/ui/generated_image_selector.py" line="71"/>
+      <source>Changes were blocked because the layer is hidden. </source>
+      <translation>Changes were blocked because the layer is hidden. </translation>
+    </message>
+    <message>
+      <location filename="../../src/ui/generated_image_selector.py" line="72"/>
+      <source>The active layer is not an image layer, image content cannot be inserted. </source>
+      <translation>The active layer is not an image layer, image content cannot be inserted. </translation>
+    </message>
+    <message>
+      <location filename="../../src/ui/generated_image_selector.py" line="73"/>
+      <source>Image content was added as new layer "{new_layer_name}"</source>
+      <translation>Image content was added as new layer "{new_layer_name}"</translation>
+    </message>
+    <message>
+      <location filename="../../src/ui/generated_image_selector.py" line="75"/>
       <source>Select from generated image options.</source>
       <translation>Select from generated image options.</translation>
     </message>
     <message>
-      <location filename="../../src/ui/generated_image_selector.py" line="73"/>
+      <location filename="../../src/ui/generated_image_selector.py" line="80"/>
       <source>Ctrl+LMB or MMB and drag: pan view, mouse wheel: zoom, Esc: discard all options</source>
       <translation>Ctrl+LMB or MMB and drag: pan view, mouse wheel: zoom, Esc: discard all options</translation>
     </message>
     <message>
-      <location filename="../../src/ui/generated_image_selector.py" line="74"/>
+      <location filename="../../src/ui/generated_image_selector.py" line="81"/>
       <source>Ctrl+LMB or MMB and drag: pan view, mouse wheel: zoom, Enter: select option, Esc: return to full view</source>
       <translation>Ctrl+LMB or MMB and drag: pan view, mouse wheel: zoom, Enter: select option, Esc: return to full view</translation>
     </message>
@@ -3916,92 +3959,97 @@ Please remember to include the traceback from the Details expander.</translation
   <context>
     <name>ui.panel.layer.image_layer_widget</name>
     <message>
-      <location filename="../../src/ui/panel/layer_ui/layer_widget.py" line="42"/>
+      <location filename="../../src/ui/panel/layer_ui/layer_widget.py" line="43"/>
       <source>Move up</source>
       <translation>Move up</translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/layer_ui/layer_widget.py" line="43"/>
+      <location filename="../../src/ui/panel/layer_ui/layer_widget.py" line="44"/>
       <source>Move down</source>
       <translation>Move down</translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/layer_ui/layer_widget.py" line="44"/>
+      <location filename="../../src/ui/panel/layer_ui/layer_widget.py" line="45"/>
       <source>Copy</source>
       <translation>Copy</translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/layer_ui/layer_widget.py" line="45"/>
+      <location filename="../../src/ui/panel/layer_ui/layer_widget.py" line="46"/>
       <source>Delete</source>
       <translation>Delete</translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/layer_ui/layer_widget.py" line="46"/>
+      <location filename="../../src/ui/panel/layer_ui/layer_widget.py" line="47"/>
       <source>Merge down</source>
       <translation>Merge down</translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/layer_ui/layer_widget.py" line="47"/>
+      <location filename="../../src/ui/panel/layer_ui/layer_widget.py" line="48"/>
       <source>Flatten</source>
       <translation>Flatten</translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/layer_ui/layer_widget.py" line="48"/>
+      <location filename="../../src/ui/panel/layer_ui/layer_widget.py" line="49"/>
+      <source>Rename</source>
+      <translation>Rename</translation>
+    </message>
+    <message>
+      <location filename="../../src/ui/panel/layer_ui/layer_widget.py" line="50"/>
       <source>Clear selected</source>
       <translation>Clear selected</translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/layer_ui/layer_widget.py" line="49"/>
+      <location filename="../../src/ui/panel/layer_ui/layer_widget.py" line="51"/>
       <source>Copy selected to new layer</source>
       <translation>Copy selected to new layer</translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/layer_ui/layer_widget.py" line="50"/>
+      <location filename="../../src/ui/panel/layer_ui/layer_widget.py" line="52"/>
       <source>Layer to image size</source>
       <translation>Layer to image size</translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/layer_ui/layer_widget.py" line="51"/>
+      <location filename="../../src/ui/panel/layer_ui/layer_widget.py" line="53"/>
       <source>Crop layer to content</source>
       <translation>Crop layer to content</translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/layer_ui/layer_widget.py" line="52"/>
+      <location filename="../../src/ui/panel/layer_ui/layer_widget.py" line="54"/>
       <source>Crop layer to selection</source>
       <translation>Crop layer to selection</translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/layer_ui/layer_widget.py" line="53"/>
+      <location filename="../../src/ui/panel/layer_ui/layer_widget.py" line="55"/>
       <source>Mirror vertically</source>
       <translation>Mirror vertically</translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/layer_ui/layer_widget.py" line="54"/>
+      <location filename="../../src/ui/panel/layer_ui/layer_widget.py" line="56"/>
       <source>Mirror horizontally</source>
       <translation>Mirror horizontally</translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/layer_ui/layer_widget.py" line="55"/>
+      <location filename="../../src/ui/panel/layer_ui/layer_widget.py" line="57"/>
       <source>Select layer contents</source>
       <translation>Select layer contents</translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/layer_ui/layer_widget.py" line="56"/>
+      <location filename="../../src/ui/panel/layer_ui/layer_widget.py" line="58"/>
       <source>{src_layer_name} copied content</source>
       <translation>{src_layer_name} copied content</translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/layer_ui/layer_widget.py" line="59"/>
+      <location filename="../../src/ui/panel/layer_ui/layer_widget.py" line="61"/>
       <source>Select all in active layer</source>
       <translation>Select all in active layer</translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/layer_ui/layer_widget.py" line="60"/>
+      <location filename="../../src/ui/panel/layer_ui/layer_widget.py" line="62"/>
       <source>Invert selection</source>
       <translation>Invert selection</translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/layer_ui/layer_widget.py" line="61"/>
+      <location filename="../../src/ui/panel/layer_ui/layer_widget.py" line="63"/>
       <source>Clear selection</source>
       <translation>Clear selection</translation>
     </message>
@@ -4012,6 +4060,14 @@ Please remember to include the traceback from the Details expander.</translation
       <location filename="../../src/ui/panel/layer_ui/layer_alpha_lock_button.py" line="20"/>
       <source>Toggle layer transparency lock</source>
       <translation>Toggle layer transparency lock</translation>
+    </message>
+  </context>
+  <context>
+    <name>ui.panel.layer.layer_isolate_button</name>
+    <message>
+      <location filename="../../src/ui/panel/layer_ui/layer_isolate_button.py" line="20"/>
+      <source>Toggle layer group isolation</source>
+      <translation>Toggle layer group isolation</translation>
     </message>
   </context>
   <context>
@@ -5593,36 +5649,46 @@ Press ESC to cancel</translation>
     </message>
     <message>
       <location filename="../config/application_config_definitions.json" line="427"/>
+      <source>Warn when layer lock or visibility forces new layer creation</source>
+      <translation>Warn when layer lock or visibility forces new layer creation</translation>
+    </message>
+    <message>
+      <location filename="../config/application_config_definitions.json" line="429"/>
+      <source>Warn when image generation creates a new layer because it cannot insert into the active layer.</source>
+      <translation>Warn when image generation creates a new layer because it cannot insert into the active layer.</translation>
+    </message>
+    <message>
+      <location filename="../config/application_config_definitions.json" line="435"/>
       <source>Added font directory:</source>
       <translation>Added font directory:</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="429"/>
+      <location filename="../config/application_config_definitions.json" line="437"/>
       <source>Directory to search for additional font files to load</source>
       <translation>Directory to search for additional font files to load</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="428"/>
+      <location filename="../config/application_config_definitions.json" line="436"/>
       <source>Files</source>
       <translation>Files</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="435"/>
+      <location filename="../config/application_config_definitions.json" line="443"/>
       <source>Added MyPaint brush directory:</source>
       <translation>Added MyPaint brush directory:</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="437"/>
+      <location filename="../config/application_config_definitions.json" line="445"/>
       <source>Directory to search for additional MyPaint brush files to load</source>
       <translation>Directory to search for additional MyPaint brush files to load</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="443"/>
+      <location filename="../config/application_config_definitions.json" line="451"/>
       <source>libmypaint library directory:</source>
       <translation>libmypaint library directory:</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="445"/>
+      <location filename="../config/application_config_definitions.json" line="453"/>
       <source>Directory to search for libmypaint library files if unable to load default libraries</source>
       <translation>Directory to search for libmypaint library files if unable to load default libraries</translation>
     </message>

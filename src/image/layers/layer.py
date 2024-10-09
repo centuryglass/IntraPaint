@@ -3,8 +3,8 @@ import datetime
 from contextlib import contextmanager
 from typing import Any, Callable, Optional, Set, Generator
 
-from PySide6.QtCore import QObject, Signal, QRect, QPoint, QSize
-from PySide6.QtGui import QImage, QPixmap, QPainter
+from PySide6.QtCore import QObject, Signal, QRect, QPoint, QSize, QRectF
+from PySide6.QtGui import QImage, QPixmap, QPainter, QTransform, QPainterPath, QPolygonF
 from PySide6.QtWidgets import QApplication
 
 from src.config.application_config import AppConfig
@@ -12,9 +12,9 @@ from src.image.composite_mode import CompositeMode
 from src.ui.modal.modal_utils import show_error_dialog
 from src.undo_stack import UndoStack, _UndoAction, _UndoGroup
 from src.util.cached_data import CachedData
+from src.util.visual.geometry_utils import map_rect_precise
 from src.util.visual.image_utils import (create_transparent_image, NpAnyArray, image_data_as_numpy_8bit_readonly,
                                          image_is_fully_transparent)
-
 
 # The QCoreApplication.translate context for strings in this file
 TR_ID = 'image.layer.layer'
@@ -262,6 +262,7 @@ class Layer(QObject):
             def _toggle_all():
                 for layer in toggled_layers:
                     layer.set_visible(not layer._visible)
+
             UndoStack().commit_action(_toggle_all, _toggle_all, 'layer.visible')
         else:
             self._apply_combinable_change(visible, self._visible, self.set_visible, 'layer.visibility')
@@ -402,51 +403,138 @@ class Layer(QObject):
         return False
 
     # Misc. utility:
-    def render(self, base_image: Optional[QImage] = None,
-               paint_param_adjuster: Optional[Callable[[int, QImage, QRect, QPainter], Optional[QImage]]]
-               = None) -> QImage:
-        """Render all layers to a QImage with a custom base image and accepting a function to control layer painting on
-        a per-layer basis.
+
+    def render(self, base_image: QImage, transform: Optional[QTransform] = None,
+               image_bounds: Optional[QRect] = None, z_max: Optional[int] = None,
+               image_adjuster: Optional[Callable[['Layer', QImage], QImage]] = None,
+               returned_mask: Optional[QImage] = None) -> None:
+        """Renders the layer to QImage, optionally specifying render bounds, transformation, a z-level cutoff, and/or
+           a final image transformation function.
 
         Parameters
         ----------
-        base_image: QImage, optional, default=None.
-            The base image that all layer content will be painted onto.  If None, a new image will be created that's
-            large enough to fit all layers.
-        paint_param_adjuster: Optional[Callable[[int, QImage, QRect, QPainter) -> Optional[QImage]]
-            Default=None. If provided, it will be called before each layer is painted, allowing it to directly make
-            changes to the image, paint bounds, or painter as needed. Parameters are layer_id, layer_image,
-            paint_bounds and layer_painter.  If it returns a QImage, that image will replace the layer image.
-        Returns
-        -------
-        QImage: The final rendered image.
+        base_image: QImage
+            The base image that all layer content will be painted onto.
+        transform: QTransform, optional, default=None
+            Optional transformation to apply to image content before rendering.
+        image_bounds: QRect, optional, default=None.
+            Optional bounds that should be rendered within the base image. If None, the intersection of the base and the
+            transformed layer will be used.
+        z_max: int, optional, default=None
+            If not None, rendering will be blocked at z-levels above this number.
+        image_adjuster: Callable[[Layer, QImage], QImage], optional, default=None
+            If not None, apply this final transformation function to the rendered image before compositing it onto
+            the base.
+        returned_mask: QImage, optional, default=None
+            If not None, draw the rendered bounds onto this image, to use when determining what parts of the base image
+            were rendered onto.
         """
-        if base_image is None:
-            image_bounds = self.bounds
-            base_image = create_transparent_image(image_bounds.size())
+        if self.render_would_be_empty(base_image, transform, image_bounds, z_max):
+            return
+
+        # Find the final bounds of all changes within base_image:
+        if image_bounds is not None:
+            final_bounds = QRect(image_bounds)
         else:
-            image_bounds = QRect(QPoint(), base_image.size())
+            if transform is not None:
+                final_bounds = map_rect_precise(self.bounds, transform).toAlignedRect()
+            else:
+                final_bounds = self.bounds
+        base_image_bounds = QRect(QPoint(), base_image.size())
+        final_bounds = final_bounds.intersected(base_image_bounds)
+        clip_path = QPainterPath()
+
+        # find source bounds: the rectangle within the layer image painted in the final painting operation
+        if transform is not None:
+            # Minimize unnecessary transformation: find the smallest area within the source that we can transform
+            # without excluding any transformed layer content that should render into the base image.
+            final_bounds = image_bounds if image_bounds is not None else base_image_bounds
+
+            # Use the inverse to find the smallest rectangle that completely covers the final bounds once transformed:
+            inverse = transform.inverted()[0]
+            source_bounds = map_rect_precise(final_bounds, inverse).toAlignedRect()
+
+            # Any part of source_bounds that doesn't intersect with the layer can also be excluded:
+            source_bounds = source_bounds.intersected(self.bounds)
+
+            clip_path.addPolygon(inverse.map(QPolygonF(QRectF(final_bounds))))
+        else:  # transform is None
+            source_bounds = self.bounds.intersected(final_bounds)
+            clip_path.addRect(final_bounds)
+
         layer_image = self.get_qimage()
-        if not self.visible or self.opacity == 0.0 or image_bounds.isEmpty() or layer_image is None \
-                or layer_image.isNull():
-            return base_image
-        painter = QPainter(base_image)
-        layer_bounds = self.bounds
-        if paint_param_adjuster is not None:
-            new_image = paint_param_adjuster(self.id, layer_image, layer_bounds, painter)
-            if new_image is not None:
-                layer_image = new_image
-        qt_composite_mode = self.composition_mode.qt_composite_mode()
-        if qt_composite_mode is None:
-            composite_op = self.composition_mode.custom_composite_op()
-            layer_image = layer_image.copy()
-            composite_op(layer_image, base_image, self.opacity, painter.transform())
-        else:
-            painter.setOpacity(self.opacity)
-            painter.setCompositionMode(qt_composite_mode)
-            painter.drawImage(layer_bounds, layer_image)
-        painter.end()
+        if layer_image is not None and not layer_image.isNull():
+            if image_adjuster is not None:
+                layer_image = image_adjuster(self, layer_image.copy())
+            qt_composite_mode = self.composition_mode.qt_composite_mode()
+            if qt_composite_mode is None:
+                if transform is not None:
+                    composite_transform = transform
+                else:
+                    composite_transform = QTransform.fromTranslate(final_bounds.x(), final_bounds.y())
+                composite_op = self.composition_mode.custom_composite_op()
+                composite_op(layer_image, base_image, self.opacity, composite_transform, final_bounds)
+            else:
+                painter = QPainter(base_image)
+                painter.setOpacity(self.opacity)
+                painter.setCompositionMode(qt_composite_mode)
+                if transform is not None:
+                    painter.setTransform(transform)
+                painter.setClipPath(clip_path)
+                painter.drawImage(source_bounds, layer_image, source_bounds)
+                painter.end()
+
+        if returned_mask is not None:
+            assert returned_mask.size() == base_image.size()
+            bounds_painter = QPainter(returned_mask)
+            if transform is not None:
+                bounds_painter.setTransform(transform)
+            bounds_painter.setClipPath(clip_path)
+            bounds_painter.drawImage(source_bounds, layer_image, source_bounds)
+            bounds_painter.end()
+
+    def render_to_new_image(self, transform: Optional[QTransform] = None,
+                            inner_bounds: Optional[QRect] = None, z_max: Optional[int] = None,
+                            image_adjuster: Optional[Callable[['Layer', QImage], QImage]] = None) -> QImage:
+        """Render the layer to a new image, adjusting offset so that layer content fits exactly into the image."""
+
+        bounds = self.bounds
+        if transform is not None:
+            bounds = map_rect_precise(bounds, transform).toAlignedRect()
+        if inner_bounds is not None:
+            bounds = bounds.intersected(inner_bounds)
+        if not bounds.topLeft().isNull():
+            if transform is None:
+                transform = QTransform.fromTranslate(-bounds.x(), -bounds.y())
+            else:
+                transform = transform * QTransform.fromTranslate(-bounds.x(), -bounds.y())
+
+        base_image = create_transparent_image(bounds.size())
+
+        self.render(base_image, transform, image_bounds=bounds.translated(-bounds.x(), -bounds.y()),
+                    z_max=z_max,
+                    image_adjuster=image_adjuster)
         return base_image
+
+    def render_would_be_empty(self, base_image: QImage, transform: Optional[QTransform] = None,
+                              image_bounds: Optional[QRect] = None, z_max: Optional[int] = None) -> bool:
+        """Given a set of rendering parameters, return True if nothing would be rendered."""
+        base_image_bounds = QRect(QPoint(), base_image.size())
+
+        # Exit early in any of the cases where nothing would render:
+        # - If the layer is hidden or has opacity 0.0
+        # - If z_max is defined, and this layer has a higher z-value
+        # - If image_bounds is completely outside the base image
+        # - If the layer transformation places the layer completely outside the base image.
+        if (not self.visible or self.opacity == 0.0 or (z_max is not None and self.z_value > z_max) or
+                (image_bounds is not None and not QRect(QPoint(), base_image.size()).intersects(image_bounds))):
+            return True
+        if transform is not None:
+            transformed_bounds = map_rect_precise(self.bounds, transform).toAlignedRect()
+            intersect_test_bounds = image_bounds if image_bounds is not None else base_image_bounds
+            if not intersect_test_bounds.intersects(transformed_bounds):
+                return True
+        return False
 
     def cropped_image_content(self, bounds_rect: QRect) -> QImage:
         """Returns the contents of a bounding QRect as a QImage."""

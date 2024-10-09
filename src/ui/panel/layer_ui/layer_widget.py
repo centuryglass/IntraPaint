@@ -11,13 +11,14 @@ from src.config.cache import Cache
 from src.image.layers.image_layer import ImageLayer
 from src.image.layers.image_stack import ImageStack
 from src.image.layers.layer import Layer
-from src.image.layers.layer_stack import LayerStack
+from src.image.layers.layer_group import LayerGroup
 from src.image.layers.text_layer import TextLayer
 from src.image.layers.transform_layer import TransformLayer
 from src.tools.selection_brush_tool import LABEL_TEXT_SELECTION_TOOL
 from src.ui.input_fields.editable_label import EditableLabel
 from src.ui.layout.bordered_widget import BorderedWidget
 from src.ui.panel.layer_ui.layer_alpha_lock_button import LayerAlphaLockButton
+from src.ui.panel.layer_ui.layer_isolate_button import LayerIsolateButton
 from src.ui.panel.layer_ui.layer_lock_button import LayerLockButton
 from src.ui.panel.layer_ui.layer_visibility_button import LayerVisibilityButton
 from src.util.shared_constants import ICON_SIZE, PROJECT_DIR
@@ -45,6 +46,7 @@ MENU_OPTION_COPY = _tr('Copy')
 MENU_OPTION_DELETE = _tr('Delete')
 MENU_OPTION_MERGE_DOWN = _tr('Merge down')
 MENU_OPTION_FLATTEN = _tr('Flatten')
+MENU_OPTION_RENAME = _tr('Rename')
 MENU_OPTION_CLEAR_SELECTED = _tr('Clear selected')
 MENU_OPTION_COPY_SELECTED = _tr('Copy selected to new layer')
 MENU_OPTION_LAYER_TO_IMAGE_SIZE = _tr('Layer to image size')
@@ -93,7 +95,7 @@ class LayerWidget(BorderedWidget):
         self._preview_pixmap = QPixmap()
         self._clicking = False
         self._click_pos = QPoint()
-        if isinstance(layer, LayerStack):
+        if isinstance(layer, LayerGroup):
             self._frame = QIcon(IMAGE_PATH_GROUP_FRAME)
         elif isinstance(layer, TextLayer):
             self._frame = QIcon(IMAGE_PATH_TEXT_FRAME)
@@ -127,6 +129,9 @@ class LayerWidget(BorderedWidget):
         if isinstance(layer, ImageLayer):
             self._alpha_lock_button = LayerAlphaLockButton(layer)
             self._layout.addWidget(self._alpha_lock_button, stretch=10)
+        elif isinstance(layer, LayerGroup) and layer != image_stack.layer_stack:
+            self._isolate_button = LayerIsolateButton(layer)
+            self._layout.addWidget(self._isolate_button, stretch=10)
         if layer != image_stack.layer_stack:
             self._lock_button = LayerLockButton(self._layer)
             self._layout.addWidget(self._lock_button, stretch=10)
@@ -327,9 +332,11 @@ class LayerWidget(BorderedWidget):
 
         if self._layer != self._image_stack.selection_layer and self._layer.layer_parent is not None:
             index = None
-            parent = cast(LayerStack, self._layer.layer_parent)
+            parent = cast(LayerGroup, self._layer.layer_parent)
             if parent is not None:
                 index = parent.get_layer_index(self._layer)
+
+            _add_action(MENU_OPTION_RENAME, self._label.activate_input_mode, disable_if_locked=True)
 
             if index is not None:
                 _add_action(MENU_OPTION_MOVE_UP, lambda: self._image_stack.move_layer_by_offset(-1, self.layer))

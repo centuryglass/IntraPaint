@@ -9,7 +9,7 @@ from PySide6.QtWidgets import QWidget, QHBoxLayout, QToolButton, QGridLayout
 
 from src.image.layers.image_stack import ImageStack
 from src.image.layers.layer import Layer
-from src.image.layers.layer_stack import LayerStack
+from src.image.layers.layer_group import LayerGroup
 from src.ui.layout.bordered_widget import BorderedWidget
 from src.ui.panel.layer_ui.layer_widget import LayerWidget
 from src.util.layout import clear_layout
@@ -24,7 +24,7 @@ class LayerGroupWidget(BorderedWidget):
     dragging = Signal(QPointF)
     drag_ended = Signal()
 
-    def __init__(self, layer_stack: LayerStack, image_stack: ImageStack) -> None:
+    def __init__(self, layer_stack: LayerGroup, image_stack: ImageStack) -> None:
         super().__init__()
         self._layout = QGridLayout(self)
         self._layout.setSpacing(4)
@@ -57,7 +57,7 @@ class LayerGroupWidget(BorderedWidget):
         self._parent_item.drag_ended.connect(self.drag_ended)
 
         # Tracking where drag and drop would insert child items:
-        self._insert_parent: Optional[LayerStack] = None
+        self._insert_parent: Optional[LayerGroup] = None
         self._insert_index = -1
         self._insert_pos = -1
 
@@ -90,7 +90,7 @@ class LayerGroupWidget(BorderedWidget):
                 parent = layer.layer_parent
                 if parent is None:
                     continue
-                assert isinstance(parent, LayerStack)
+                assert isinstance(parent, LayerGroup)
                 insert_index = parent.get_layer_index(layer)
                 assert insert_index is not None
                 insert_pos = y_min
@@ -150,8 +150,8 @@ class LayerGroupWidget(BorderedWidget):
         self._refresh_layout()
 
     def resizeEvent(self, event: Optional[QResizeEvent]) -> None:
-        """Keep child layers in line with the parent group layer"""
-        self._layout.setColumnMinimumWidth(0, self._parent_item.x())
+        """Keep child layers indented under the parent group layer"""
+        self._layout.setColumnMinimumWidth(0, self._parent_item.x() // 3)
 
     def dragEnterEvent(self, event: Optional[QDragEnterEvent]) -> None:
         """Accept drag events from layer widgets."""
@@ -192,7 +192,7 @@ class LayerGroupWidget(BorderedWidget):
         self._insert_index = -1
         if new_parent is None:
             return  # Not a valid insert position.
-        if new_parent == moved_layer or isinstance(moved_layer, LayerStack) and moved_layer.contains_recursive(
+        if new_parent == moved_layer or isinstance(moved_layer, LayerGroup) and moved_layer.contains_recursive(
                 new_parent):
             return  # Layer can't move inside itself.
         if new_parent == moved_layer.layer_parent:
@@ -200,7 +200,7 @@ class LayerGroupWidget(BorderedWidget):
             assert current_index is not None
             if insert_index > current_index:
                 insert_index -= 1
-        assert isinstance(new_parent, LayerStack)
+        assert isinstance(new_parent, LayerGroup)
         self._image_stack.move_layer(moved_layer, new_parent, insert_index)
         self.update()
 
@@ -232,7 +232,7 @@ class LayerGroupWidget(BorderedWidget):
         return self._layer_items[child_layer]
 
     @property
-    def layer(self) -> LayerStack:
+    def layer(self) -> LayerGroup:
         """Return the connected layer."""
         return self._layer
 
@@ -248,7 +248,7 @@ class LayerGroupWidget(BorderedWidget):
                 logger.warning(f'Tried to add layer {layer.name}:{layer.id} to unrelated group'
                                f' {self._layer.name}:{self._layer.id}')
             return
-        if isinstance(layer, LayerStack):
+        if isinstance(layer, LayerGroup):
             child_widget = LayerGroupWidget(layer, self._image_stack)
 
             def _handle_drag(pos: QPointF) -> None:

@@ -12,11 +12,12 @@ from src.config.application_config import AppConfig
 from src.config.cache import Cache
 from src.config.key_config import KeyConfig
 from src.image.layers.image_stack import ImageStack
-from src.image.layers.layer_stack import LayerStack
+from src.image.layers.layer_group import LayerGroup
 from src.image.layers.selection_layer import SelectionLayer
 from src.image.layers.transform_layer import TransformLayer
 from src.image.open_raster import read_ora_image
 from src.undo_stack import UndoStack
+from src.util.visual.image_utils import create_transparent_image
 
 IMG_SIZE = QSize(512, 512)
 GEN_AREA_SIZE = QSize(300, 300)
@@ -78,7 +79,7 @@ class ImageStackTest(unittest.TestCase):
         self.assertEqual(len(layer_list), 1)
         # Layer stack should be only layer, name should sync with last file
         layer_stack = layer_list[0]
-        self.assertIsInstance(layer_stack, LayerStack)
+        self.assertIsInstance(layer_stack, LayerGroup)
         self.assertEqual(layer_stack.name, 'new image')
         Cache().set(Cache.LAST_FILE_PATH, '/mock/file/path.png')
         self.assertEqual(layer_stack.name, 'path.png')
@@ -93,8 +94,8 @@ class ImageStackTest(unittest.TestCase):
         self.assertEqual(self.image_stack.min_generation_area_size, MIN_GEN_AREA)
         self.assertEqual(self.image_stack.max_generation_area_size, MAX_GEN_AREA)
         self.assertEqual(self.image_stack.generation_area, QRect(QPoint(), GEN_AREA_SIZE))
-        # image should be null:
-        self.assertTrue(self.image_stack.qimage().isNull())
+        # image should be transparent:
+        self.assertEqual(self.image_stack.qimage(), create_transparent_image(IMG_SIZE))
         self.assert_no_signals()
 
     def test_load_image(self) -> None:
@@ -250,7 +251,7 @@ class ImageStackTest(unittest.TestCase):
             if isinstance(layer, TransformLayer):
                 self.assertFalse(layer.transform.isIdentity())
                 image_count += 1
-            elif isinstance(layer, LayerStack):
+            elif isinstance(layer, LayerGroup):
                 group_count += 1
         self.assertEqual(3, group_count)
         self.assertEqual(8, image_count)
@@ -296,7 +297,7 @@ class ImageStackTest(unittest.TestCase):
             painter.end()
         self.image_stack.active_layer = self.image_stack.layer_stack
         self.image_stack.clear_selected()
-        image = self.image_stack.render()
+        image = self.image_stack.qimage(crop_to_image=False)
         test_path = SELECTION_CLEARED_PNG + '_tested.png'
         image.save(test_path)
         expected_content = QImage(SELECTION_CLEARED_PNG).convertToFormat(QImage.Format.Format_ARGB32_Premultiplied)

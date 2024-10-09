@@ -294,7 +294,9 @@ class QtPaintBrush(LayerBrush):
         change_bounds = change_bounds.intersected(layer.bounds)
         new_input_painter = QPainter(self._paint_buffer)
         with layer.borrow_image(change_bounds) as layer_image:
-            assert layer_image.size() == layer.bounds.size(), (f'Size mismatch, layer bounds are {layer.bounds} but'
+            assert isinstance(layer_image, QImage)
+            bounds = layer.bounds
+            assert layer_image.size() == bounds.size(), (f'Size mismatch, layer bounds are {bounds} but'
                                                                f' image is size {layer_image.size()}')
             self._change_bounds = self._change_bounds.united(change_bounds)
             img_painter = QPainter(layer_image)

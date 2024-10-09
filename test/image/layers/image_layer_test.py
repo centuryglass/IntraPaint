@@ -5,7 +5,7 @@ import unittest
 from unittest.mock import MagicMock
 
 from PySide6.QtCore import QSize, QRect, QPoint
-from PySide6.QtGui import QImage, QPainter
+from PySide6.QtGui import QImage, QPainter, QTransform, Qt
 from PySide6.QtWidgets import QApplication
 
 from src.config.application_config import AppConfig
@@ -14,13 +14,23 @@ from src.config.key_config import KeyConfig
 from src.image.composite_mode import CompositeMode
 from src.image.layers.image_layer import ImageLayer
 from src.undo_stack import UndoStack
-from src.util.visual.image_utils import image_is_fully_transparent
+from src.util.visual.geometry_utils import map_rect_precise
+from src.util.visual.image_utils import image_is_fully_transparent, create_transparent_image
 
 IMG_SIZE = QSize(512, 512)
 LAYER_NAME = 'test layer'
 INIT_IMAGE = 'test/resources/test_images/source.png'
+TRANSFORM_TEST_IMAGE = 'test/resources/test_images/render_transform_1.png'
 app = QApplication.instance() or QApplication(sys.argv)
 
+def save_temporary(name, expected, actual):
+    expected.save(f'expected_{name}.png')
+    actual.save(f'actual_{name}.png')
+
+def clear_temporary(name):
+    for img_path in (f'expected_{name}.png', f'actual_{name}.png'):
+        if os.path.isfile(img_path):
+            os.remove(img_path)
 
 class ImageLayerTest(unittest.TestCase):
     """Tests the ImageLayer class"""
@@ -120,3 +130,175 @@ class ImageLayerTest(unittest.TestCase):
         final_image = self.image_layer.image
         self.assertNotEqual(final_image, init_image)
         self.assertEqual(expected_image, final_image)
+
+    # Render testing, no base image:
+
+    def test_basic_render(self) -> None:
+        """Test basic rendering with no complicating factors."""
+        init_image = QImage(INIT_IMAGE).convertToFormat(QImage.Format.Format_ARGB32_Premultiplied)
+        self.image_layer.image = init_image
+        render = self.image_layer.render_to_new_image()
+        self.assertEqual(init_image, render)
+
+    def test_bounded_render(self) -> None:
+        """Test rendering when image bounds are defined."""
+        init_image = QImage(INIT_IMAGE).convertToFormat(QImage.Format.Format_ARGB32_Premultiplied)
+        self.image_layer.image = init_image
+        bounds = QRect(50, 5, 100, 150)
+        expected_image = self.image_layer.image.copy(bounds)
+        render = self.image_layer.render_to_new_image(inner_bounds=bounds)
+        save_temporary('test_bounded_render', expected_image, render)
+        self.assertEqual(expected_image, render)
+        clear_temporary('test_bounded_render')
+
+    def test_transformed_render(self) -> None:
+        """Test rendering when a transformation is provided."""
+        init_image = QImage(INIT_IMAGE).convertToFormat(QImage.Format.Format_ARGB32_Premultiplied)
+        self.image_layer.image = init_image
+        transform = (QTransform.fromTranslate(5, 10) * QTransform.fromScale(.5, 1)
+                     * QTransform().rotate(50))
+
+        source_bounds = QRect(QPoint(), init_image.size())
+        final_bounds = map_rect_precise(source_bounds, transform).toAlignedRect()
+        painter_transform = transform * QTransform.fromTranslate(-final_bounds.x(), - final_bounds.y())
+        assert map_rect_precise(source_bounds, painter_transform).toAlignedRect() == QRect(QPoint(), final_bounds.size())
+        transform_image = create_transparent_image(final_bounds.size())
+        painter = QPainter(transform_image)
+        painter.setTransform(painter_transform)
+        painter.drawImage(source_bounds, self.image_layer.image)
+        painter.end()
+
+        render = self.image_layer.render_to_new_image(transform=transform)
+        save_temporary('test_transformed_render', transform_image, render)
+        self.assertEqual(transform_image, render)
+        clear_temporary('test_transformed_render')
+
+        # Results should be the same when the transform is applied through the layer instead of the render function
+        self.image_layer.transform = transform
+        render2 = self.image_layer.render_to_new_image()
+
+        save_temporary('test_transformed_render_owntransform', transform_image, render2)
+        self.assertEqual(transform_image, render2)
+        clear_temporary('test_transformed_render_owntransform')
+
+    def test_render_with_transform_and_bounds(self) -> None:
+        """Test rendering with both transformation and rendering bounds"""
+
+        init_image = QImage(INIT_IMAGE).convertToFormat(QImage.Format.Format_ARGB32_Premultiplied)
+        self.image_layer.image = init_image
+        transform = (QTransform.fromTranslate(5, 10) * QTransform.fromScale(.5, 1)
+                     * QTransform().rotate(50))
+        image_bounds = QRect(50, 50, 100, 100)
+        source_bounds = QRect(QPoint(), init_image.size())
+        final_bounds = map_rect_precise(source_bounds, transform).toAlignedRect().intersected(image_bounds)
+
+        expected_image = create_transparent_image(final_bounds.size())
+        painter_transform = transform * QTransform.fromTranslate(-final_bounds.x(), -final_bounds.y())
+        painter = QPainter(expected_image)
+        painter.setTransform(painter_transform)
+        painter.drawImage(source_bounds, self.image_layer.image)
+        painter.end()
+
+        render = self.image_layer.render_to_new_image(transform=transform, inner_bounds=image_bounds)
+        save_temporary('test_render_with_transform_and_bounds', expected_image, render)
+        self.assertEqual(render.size(), image_bounds.size())
+        self.assertEqual(expected_image, render)
+        clear_temporary('test_render_with_transform_and_bounds')
+
+    def test_render_onto_base(self):
+        """"Test rendering onto a pre-existing base"""
+        init_image = QImage(INIT_IMAGE).convertToFormat(QImage.Format.Format_ARGB32_Premultiplied)
+        self.image_layer.image = init_image
+        base_image = QImage(IMG_SIZE, QImage.Format.Format_ARGB32_Premultiplied)
+        base_image.fill(Qt.GlobalColor.red)
+
+        expected_image = base_image.copy()
+        painter = QPainter(expected_image)
+        painter.drawImage(0, 0, init_image)
+        painter.end()
+
+        self.image_layer.render(base_image=base_image)
+        save_temporary('test_render_onto_base', expected_image, base_image)
+        self.assertEqual(expected_image, base_image)
+        clear_temporary('test_render_onto_base')
+
+    def test_render_onto_base_with_bounds(self):
+        """"Test rendering onto a pre-existing base, with render bounds provided"""
+        init_image = QImage(INIT_IMAGE).convertToFormat(QImage.Format.Format_ARGB32_Premultiplied)
+        self.image_layer.image = init_image
+        base_image = QImage(IMG_SIZE, QImage.Format.Format_ARGB32_Premultiplied)
+        base_image.fill(Qt.GlobalColor.red)
+
+        image_bounds = QRect(50, 50, 100, 100)
+
+        expected_image = base_image.copy()
+        painter = QPainter(expected_image)
+        painter.drawImage(image_bounds, init_image, image_bounds)
+        painter.end()
+
+        self.image_layer.render(base_image=base_image, image_bounds=image_bounds)
+        save_temporary('test_render_onto_base_with_bounds', expected_image, base_image)
+        self.assertEqual(expected_image, base_image)
+        clear_temporary('test_render_onto_base_with_bounds')
+
+    def test_render_onto_base_with_transform_and_bounds(self):
+        """"Test rendering onto a pre-existing base, with render bounds provided"""
+        init_image = QImage(INIT_IMAGE).convertToFormat(QImage.Format.Format_ARGB32_Premultiplied)
+        self.image_layer.image = init_image
+        base_image = QImage(IMG_SIZE, QImage.Format.Format_ARGB32_Premultiplied)
+        base_image.fill(Qt.GlobalColor.red)
+        image_bounds = QRect(50, 50, 100, 100)
+
+        # Apply the transformation, then copy into the render bounds
+        transform = QTransform.fromTranslate(5, 10) * QTransform.fromScale(2, 1.5)
+        source_bounds = QRect(QPoint(), init_image.size())
+        final_bounds = map_rect_precise(source_bounds, transform).toAlignedRect().united(source_bounds)
+
+        transform_image = create_transparent_image(final_bounds.size())
+        painter = QPainter(transform_image)
+        painter.setTransform(transform)
+        painter.drawImage(source_bounds, self.image_layer.image)
+        painter.end()
+
+        expected_image = base_image.copy()
+        painter = QPainter(expected_image)
+        painter.drawImage(image_bounds, transform_image, image_bounds)
+        painter.end()
+
+        # Confirm that the rendered layer matches:
+        self.image_layer.render(base_image=base_image, transform=transform, image_bounds=image_bounds)
+        save_temporary('test_render_onto_base_with_transform_and_bounds', expected_image, base_image)
+        self.assertEqual(expected_image, base_image)
+        clear_temporary('test_render_onto_base_with_transform_and_bounds')
+
+    def test_render_onto_base_with_transform_and_bounds_masked(self):
+        """"Test rendering onto a pre-existing base, with render bounds provided, and with a transformation that will
+        need to be masked internally to conform to the bounds."""
+        init_image = QImage(INIT_IMAGE).convertToFormat(QImage.Format.Format_ARGB32_Premultiplied)
+        self.image_layer.image = init_image
+        # self.image_layer.composition_mode = CompositeMode.LUMINOSITY
+        base_image = QImage(IMG_SIZE, QImage.Format.Format_ARGB32_Premultiplied)
+        base_image.fill(Qt.GlobalColor.red)
+
+        image_bounds = QRect(50, 50, 100, 100)
+
+        transform = (QTransform.fromTranslate(5, 10) * QTransform.fromScale(2, 1.5)
+                     * QTransform().rotate(50))
+        source_bounds = QRect(QPoint(), init_image.size())
+        final_bounds = map_rect_precise(source_bounds, transform).toAlignedRect().united(source_bounds)
+
+        transform_image = create_transparent_image(final_bounds.size())
+        painter = QPainter(transform_image)
+        painter.setTransform(transform)
+        painter.drawImage(source_bounds, self.image_layer.image)
+        painter.end()
+
+        expected_image = base_image.copy()
+        painter = QPainter(expected_image)
+        painter.drawImage(image_bounds, transform_image, image_bounds)
+        painter.end()
+
+        self.image_layer.render(base_image=base_image, transform=transform, image_bounds=image_bounds)
+        save_temporary('test_render_onto_base_with_transform_and_bounds_masked', expected_image, base_image)
+        self.assertEqual(expected_image, base_image)
+        clear_temporary('test_render_onto_base_with_transform_and_bounds_masked')

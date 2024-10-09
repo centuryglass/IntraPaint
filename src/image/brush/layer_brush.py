@@ -5,8 +5,9 @@ from PySide6.QtGui import QColor, QImage
 
 from src.image.layers.image_layer import ImageLayer
 from src.ui.modal.modal_utils import show_error_dialog
-from src.util.shared_constants import ERROR_MESSAGE_LAYER_NONE, ERROR_MESSAGE_LAYER_HIDDEN, ERROR_MESSAGE_LAYER_LOCKED, \
-    ERROR_MESSAGE_EMPTY_MASK, ERROR_TITLE_EDIT_FAILED, ERROR_MESSAGE_LAYER_GROUP_LOCKED
+from src.util.shared_constants import (ERROR_MESSAGE_LAYER_NONE, ERROR_MESSAGE_LAYER_HIDDEN,
+                                       ERROR_MESSAGE_LAYER_LOCKED, ERROR_MESSAGE_EMPTY_MASK, ERROR_TITLE_EDIT_FAILED,
+                                       ERROR_MESSAGE_LAYER_GROUP_LOCKED)
 from src.util.visual.image_utils import image_is_fully_transparent
 
 

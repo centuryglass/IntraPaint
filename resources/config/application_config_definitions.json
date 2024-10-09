@@ -423,6 +423,14 @@
         "default": true,
         "saved": true
     },
+    "warn_when_lock_forces_layer_create": {
+        "label": "Warn when layer lock or visibility forces new layer creation",
+        "category": "Alerts",
+        "description": "Warn when image generation creates a new layer because it cannot insert into the active layer.",
+        "type": "bool",
+        "default": true,
+        "saved": true
+    },
     "added_font_dir": {
         "label": "Added font directory:",
         "category": "Files",

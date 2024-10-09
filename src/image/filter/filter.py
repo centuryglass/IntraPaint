@@ -1,24 +1,26 @@
 """Generic interface for image filtering functions. Handles the process of opening modal windows to apply the filter
 and provides the information needed to add the function as a menu action."""
+import math
 from typing import Callable, List, Optional, Dict, Any
 
-from PySide6.QtCore import QPoint
+from PySide6.QtCore import QPoint, QRect, QSize
 from PySide6.QtGui import QImage, QPainter, QTransform, QIcon
 from PySide6.QtWidgets import QApplication
 
 from src.image.layers.image_layer import ImageLayer
 from src.image.layers.image_stack import ImageStack
-from src.image.layers.layer_stack import LayerStack
+from src.image.layers.layer import Layer
+from src.image.layers.layer_group import LayerGroup
 from src.image.layers.text_layer import TextLayer
 from src.image.layers.transform_layer import TransformLayer
 from src.ui.modal.image_filter_modal import ImageFilterModal
 from src.undo_stack import UndoStack
 from src.util.application_state import APP_STATE_EDITING, AppStateTracker
 from src.util.async_task import AsyncTask
-from src.util.shared_constants import PROJECT_DIR
-from src.util.visual.geometry_utils import adjusted_placement_in_bounds
-from src.util.visual.image_utils import get_transparency_tile_pixmap, image_content_bounds
 from src.util.parameter import Parameter
+from src.util.shared_constants import PROJECT_DIR
+from src.util.visual.image_utils import get_transparency_tile_pixmap, image_content_bounds, image_data_as_numpy_8bit, \
+    numpy_bounds_index
 
 # The `QCoreApplication.translate` context for strings in this file
 TR_ID = 'image.filter.filter'
@@ -132,9 +134,11 @@ class ImageFilter:
         """Apply any required filtering in-place to a layer image, returning whether changes were made."""
         layer = self._image_stack.get_layer_by_id(layer_id)
         assert layer is not None
+        if isinstance(layer, LayerGroup):
+            return False
         if self._filter_active_layer_only:
             active_layer = self._image_stack.active_layer
-            if active_layer.id != layer_id and not (isinstance(active_layer, LayerStack)
+            if active_layer.id != layer_id and not (isinstance(active_layer, LayerGroup)
                                                     and active_layer.contains_recursive(layer)):
                 return False
         if self._filter_selection_only:
@@ -148,38 +152,33 @@ class ImageFilter:
             layer_mask = self._image_stack.get_layer_mask(layer)
             if layer_mask.size() != layer_image.size():
                 layer_mask = layer_mask.scaled(layer_image.width(), layer_image.height())
-            if self.is_local():
-                masked_bounds = image_content_bounds(layer_mask)
-                if masked_bounds.size() == layer_image.size():
-                    filtered_selection_image = self.get_filter()(layer_image, *filter_param_values)
-                else:
-                    filtered_section = layer_image.copy(masked_bounds)
-                    cropped_filtered_image = self.get_filter()(filtered_section, *filter_param_values)
-                    filtered_selection_image = layer_image.copy()
-                    cropped_change_painter = QPainter(filtered_selection_image)
-                    cropped_change_painter.drawImage(masked_bounds, cropped_filtered_image)
-                    cropped_change_painter.end()
-            else:
+            masked_bounds = image_content_bounds(layer_mask)
+            if not self.is_local():
+                radius = math.ceil(self.radius(filter_param_values))
+                masked_bounds.adjust(-radius, -radius, radius, radius)
+                masked_bounds = masked_bounds.intersected(layer.bounds)
+            if masked_bounds.size() == layer_image.size():
                 filtered_selection_image = self.get_filter()(layer_image, *filter_param_values)
-            # Clear areas where the filter may have altered image data outside the selection:
-            filter_painter = QPainter(filtered_selection_image)
-            filter_painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_DestinationIn)
-            filter_painter.drawImage(QPoint(), layer_mask)
+            else:
+                filtered_section = layer_image.copy(masked_bounds)
+                filtered_selection_image = self.get_filter()(filtered_section, *filter_param_values)
+            # Copy filtered content into masked areas:
 
-            # Fully replace the selected area with the filtered content:
-            filtered_image = layer_image.copy()
-            filter_painter = QPainter(filtered_image)
-            filter_painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_DestinationOut)
-            filter_painter.drawImage(QPoint(), layer_mask)
-            filter_painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_SourceOver)
-            filter_painter.drawImage(QPoint(), filtered_selection_image)
-            filter_painter.end()
+            np_mask = image_data_as_numpy_8bit(layer_mask)
+            np_filtered = image_data_as_numpy_8bit(filtered_selection_image)
+            np_final = image_data_as_numpy_8bit(layer_image)
+
+            if masked_bounds != layer.bounds:
+                np_mask = numpy_bounds_index(np_mask, masked_bounds)
+                np_final = numpy_bounds_index(np_final, masked_bounds)
+            selected = np_mask[:, :, 3] > 0
+            np_final[selected, :] = np_filtered[selected, :]
         else:
             filtered_image = self.get_filter()(layer_image, *filter_param_values)
-        painter = QPainter(layer_image)
-        painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_Source)
-        painter.drawImage(QPoint(), filtered_image)
-        painter.end()
+            painter = QPainter(layer_image)
+            painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_Source)
+            painter.drawImage(QPoint(), filtered_image)
+            painter.end()
         return True
 
     def get_preview_image(self, filter_param_values: List[Any]) -> QImage:
@@ -195,42 +194,41 @@ class ImageFilter:
                 The new preview image, possibly downscaled to avoid excess image processing time.
         """
         bounds = self._image_stack.layer_stack.bounds
+        preview_bounds = QRect(bounds)
+        if self.active_layer_only:
+            active_layer = self._image_stack.active_layer
+            if isinstance(active_layer, TransformLayer):
+                active_bounds = active_layer.transformed_bounds
+            else:
+                active_bounds = active_layer.bounds
+            preview_bounds = preview_bounds.intersected(active_bounds)
         if self._filter_selection_only:
-            cropped_preview_bounds = self._image_stack.selection_layer.get_content_bounds()
-            center = cropped_preview_bounds.center()
-            cropped_preview_bounds.setWidth(max(int(cropped_preview_bounds.width() * 1.2), MIN_PREVIEW_SIZE))
-            cropped_preview_bounds.setHeight(max(int(cropped_preview_bounds.height() * 1.2), MIN_PREVIEW_SIZE))
-            cropped_preview_bounds.moveCenter(center)
-            cropped_preview_bounds = adjusted_placement_in_bounds(cropped_preview_bounds, bounds)
-            scale = min(MAX_PREVIEW_SIZE / cropped_preview_bounds.width(),
-                        MAX_PREVIEW_SIZE / cropped_preview_bounds.height())
-        else:
-            cropped_preview_bounds = None
-            scale = min(MAX_PREVIEW_SIZE / bounds.width(), MAX_PREVIEW_SIZE / bounds.height())
-        scale = min(1.0, scale)
+            selection_bounds = self._image_stack.selection_layer.get_content_bounds()
+            if not selection_bounds.isEmpty() and preview_bounds.contains(selection_bounds):
+                preview_bounds = preview_bounds.intersected(selection_bounds)
+        change_size = QSize(preview_bounds.size())
+        preview_bounds.setX(max(bounds.x(), preview_bounds.x() - round(change_size.width() * 0.1)))
+        preview_bounds.setWidth(min(bounds.x() + bounds.width() - preview_bounds.x(),
+                                    round(change_size.width() * 1.2)))
+        preview_bounds.setY(max(bounds.y(), preview_bounds.y() - round(change_size.height() * 0.1)))
+        preview_bounds.setHeight(min(bounds.y() + bounds.height() - preview_bounds.y(),
+                                     round(change_size.height() * 1.2)))
+        if preview_bounds.isEmpty():
+            return QImage()
 
-        preview_transform = QTransform.fromScale(scale, scale)
-        bounds = preview_transform.mapRect(bounds)
-        if cropped_preview_bounds is not None:
-            cropped_preview_bounds = preview_transform.mapRect(cropped_preview_bounds)
-        preview_image = QImage(bounds.size(), QImage.Format.Format_ARGB32_Premultiplied)
+        preview_transform = QTransform.fromTranslate(-preview_bounds.x(), -preview_bounds.y())
+        preview_image = QImage(preview_bounds.size(), QImage.Format.Format_ARGB32_Premultiplied)
         background_painter = QPainter(preview_image)
         transparency_pattern = get_transparency_tile_pixmap()
         background_painter.drawTiledPixmap(0, 0, preview_image.width(), preview_image.height(), transparency_pattern)
         background_painter.end()
 
-        def _adjust_layer_paint_params(layer_id: int, layer_image: QImage, _, painter: QPainter) -> Optional[QImage]:
-            if scale != 1.0:
-                layer_image = layer_image.scaled(int(layer_image.width() * scale), int(layer_image.height() * scale))
-                painter.setTransform(preview_transform, True)
-            else:
-                layer_image = layer_image.copy()
-            self._filter_layer_image(filter_param_values, layer_id, layer_image)
+        def apply_filter(layer: Layer, layer_image: QImage) -> QImage:
+            """Apply the filter to each layer image as an intermediate step."""
+            self._filter_layer_image(filter_param_values, layer.id, layer_image)
             return layer_image
 
-        self._image_stack.render(preview_image, _adjust_layer_paint_params)
-        if cropped_preview_bounds is not None:
-            return preview_image.copy(cropped_preview_bounds)
+        self._image_stack.render(base_image=preview_image, transform=preview_transform, image_adjuster=apply_filter)
         return preview_image
 
     def apply_filter(self, filter_param_values: List[Any]) -> None:
@@ -245,10 +243,10 @@ class ImageFilter:
         updated_layer_images: Dict[int, QImage] = {}
 
         changed_text_layers: List[TextLayer] = []
-        changed_parent_group: Optional[LayerStack] = None
+        changed_parent_group: Optional[LayerGroup] = None
         if self._filter_active_layer_only:
             active_layer = self._image_stack.active_layer
-            if isinstance(active_layer, LayerStack):
+            if isinstance(active_layer, LayerGroup):
                 changed_parent_group = active_layer
             elif isinstance(active_layer, TextLayer) and not active_layer.locked and not active_layer.parent_locked:
                 changed_text_layers.append(active_layer)
@@ -300,13 +298,13 @@ class ImageFilter:
             def _apply_filters():
                 for updated_id, image in updated_layer_images.items():
                     updated_layer = self._image_stack.get_layer_by_id(updated_id)
-                    if isinstance(updated_layer, (ImageLayer, LayerStack)):
+                    if isinstance(updated_layer, (ImageLayer, LayerGroup)):
                         updated_layer.set_image(image)
 
             def _undo_filters():
                 for updated_id, image in source_images.items():
                     updated_layer = self._image_stack.get_layer_by_id(updated_id)
-                    if isinstance(updated_layer, (ImageLayer, LayerStack)):
+                    if isinstance(updated_layer, (ImageLayer, LayerGroup)):
                         updated_layer.set_image(image)
 
             UndoStack().commit_action(_apply_filters, _undo_filters, 'ImageFilter.apply_filters')

@@ -457,6 +457,8 @@ class TransformOutline(QGraphicsObject):
     def boundingRect(self) -> QRectF:
         """Set bounding rect to the scene item size, preserving minimums so that mouse input still works at small
            scales."""
+        if self.scene() is None:
+            return self.rect()
         rect = get_view_bounds_of_scene_item_rect(self.rect(), self)
         if rect.width() < MIN_SCENE_DIM:
             rect.adjust(-(MIN_SCENE_DIM - rect.width()) / 2, 0.0, (MIN_SCENE_DIM - rect.width()) / 2, 0.0)

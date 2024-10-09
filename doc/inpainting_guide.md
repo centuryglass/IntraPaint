@@ -43,7 +43,7 @@ drawn within the generation area around selected content.
 
 ---
 
-# AI .odel selection
+# AI Model selection
 Choosing the right model is crucial for achieving the best results. Here are some tips for model selection:
 
 ## Base model selection

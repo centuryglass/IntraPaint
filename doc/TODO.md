@@ -6,9 +6,6 @@
 - Upscale: make new layer, scale up existing layers
 
 ## Priority issues:
-- when selecting generated imagery tries to insert into a locked layer, an error is shown but the selection is lost
-- RGBA filter: alpha not working with filter tool, or when constrained to selection
-- Filter previews really slow on large images, are they not being scaled?
 - Make sure non-ai scaling is always possible via PIL scaling modes
 - Layer to image size fails: false lock error message
 - vertical text panel stretches oddly: color buttons get all the stretch space
@@ -25,6 +22,7 @@
 - "delete layer" button should be disabled when the active layer is locked or is the layer stack.
 - Double-check layer merge behavior with layer groups.
 - "Show image window" should be "show navigation window"
+- Retrofuture.ora: hiding the "sketch" layer group is unusually slow; why?
 
 ## Timelapse video
 
@@ -87,20 +85,10 @@ Things I never fixed but can no longer reproduce, or that come from external iss
 ## Help window
 - Rich text tutorial content, with images and dynamic hotkeys.
 
-### "Isolate" layer group attribute:
-- With isolate:
-  * Render all group layers to a transparent group image
-  * Render the group image to the backdrop using group settings.
-- Without isolate:
-  * Render all group layers to a group image that's a copy of the backdrop
-  * (?) also render all layers to a transparent mask image
-  * (?) draw the mask over the group using DestinationIn to crop out backdrop content that doesn't overlap with the group content
-  * Render the group image to the backdrop using group settings.
-
 
 ## ORA format: Preserve information from other programs
 - SVG layers:
-  * Create SVGLayer class that functions as imagelayer, but preserves the original SVG file
+  * Create SVGLayer class that functions as image layer, but preserves the original SVG file
   * Disable painting+destructive changes, use "convert to ImageLayer" logic the same way TextLayer does
 - Check for and preserve non-standard image and layer tags from the original .ora file (also, the "isolate" tag).
 - Check for and preserve non-standard files

@@ -8,7 +8,7 @@ from PySide6.QtWidgets import QWidget, QSpinBox, QDoubleSpinBox, QApplication
 from src.config.key_config import KeyConfig
 from src.image.layers.image_stack import ImageStack
 from src.image.layers.layer import Layer
-from src.image.layers.layer_stack import LayerStack
+from src.image.layers.layer_group import LayerGroup
 from src.image.layers.transform_group import TransformGroup
 from src.image.layers.transform_layer import TransformLayer
 from src.tools.base_tool import BaseTool
@@ -152,7 +152,7 @@ class LayerTransformTool(BaseTool):
         if layer is None or isinstance(layer, TransformLayer):
             self._layer = layer
         else:
-            assert isinstance(layer, LayerStack)
+            assert isinstance(layer, LayerGroup)
             self._layer = TransformGroup(layer)
         self._reload_scene_item()
         if self._layer is not None:

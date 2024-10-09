@@ -17,13 +17,14 @@ from PySide6.QtWidgets import QWidget, QGraphicsPixmapItem, QVBoxLayout, QLabel,
 from src.config.application_config import AppConfig
 from src.config.cache import Cache
 from src.config.key_config import KeyConfig
+from src.image.layers.image_layer import ImageLayer
 from src.image.layers.image_stack import ImageStack
 from src.image.layers.layer import Layer
 from src.ui.graphics_items.outline import Outline
 from src.ui.graphics_items.polygon_outline import PolygonOutline
 from src.ui.graphics_items.toast_message import ToastMessageItem
 from src.ui.input_fields.check_box import CheckBox
-from src.ui.modal.modal_utils import open_image_file, SAVE_IMAGE_MODE
+from src.ui.modal.modal_utils import open_image_file, SAVE_IMAGE_MODE, show_warning_dialog
 from src.ui.widget.image_graphics_view import ImageGraphicsView
 from src.util.application_state import AppStateTracker, APP_STATE_LOADING, APP_STATE_EDITING
 from src.util.visual.text_drawing_utils import max_font_size, get_key_display_string
@@ -64,6 +65,12 @@ MENU_ACTION_SEND_TO_NEW_LAYER = _tr('Send to new layer')
 TOAST_MESSAGE_SAVED = _tr('Saved image option to {image_path}')
 TOAST_MESSAGE_LAYER_CREATED = _tr('Created new layer "{layer_name}"')
 TOAST_MESSAGE_SAVE_CANCELED = _tr('Cancelled saving image option to file.')
+
+WARNING_TITLE_INSERT_FAILED = _tr('Failed to insert into layer "{layer_name}"')
+WARNING_MESSAGE_1_LAYER_LOCKED = _tr('Changes were blocked because the layer is locked. ')
+WARNING_MESSAGE_1_LAYER_HIDDEN = _tr('Changes were blocked because the layer is hidden. ')
+WARNING_MESSAGE_1_NOT_IMAGE = _tr('The active layer is not an image layer, image content cannot be inserted. ')
+WARNING_MESSAGE_2_CREATED_NEW = _tr('Image content was added as new layer "{new_layer_name}"')
 
 SELECTION_TITLE = _tr('Select from generated image options.')
 VIEW_MARGIN = 6
@@ -456,6 +463,21 @@ class GeneratedImageSelector(QWidget):
             painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_DestinationIn)
             painter.drawImage(QRect(QPoint(0, 0), image.size()), inpaint_mask)
             painter.end()
+        warning_message: Optional[str] = None
+        if not isinstance(layer, ImageLayer):
+            warning_message = WARNING_MESSAGE_1_NOT_IMAGE
+        elif layer.locked or layer.parent_locked:
+            warning_message = WARNING_MESSAGE_1_LAYER_LOCKED
+        elif not layer.visible:
+            warning_message = WARNING_MESSAGE_1_LAYER_HIDDEN
+        if warning_message is not None:
+            warning_title = WARNING_MESSAGE_1_LAYER_HIDDEN.format(layer_name=layer.name)
+            new_layer_name = ORIGINAL_CONTENT_LABEL if option_index == 0 \
+                else LABEL_TEXT_IMAGE_OPTION.format(index=option_index)
+            warning_message += WARNING_MESSAGE_2_CREATED_NEW.format(new_layer_name=new_layer_name)
+            layer = self._image_stack.create_layer(layer_name=new_layer_name)
+            assert warning_message is not None
+            show_warning_dialog(None, warning_title, warning_message, AppConfig.WARN_WHEN_LOCK_FORCES_LAYER_CREATE)
         self._image_stack.generation_area = self._generation_area
         self._image_stack.set_generation_area_content(image, layer)
 

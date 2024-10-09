@@ -72,10 +72,14 @@ class EditableLabel(QWidget):
             self._field.setText(self._label.text())
         self._switch_to_display_mode()
 
-    def mouseDoubleClickEvent(self, _) -> None:
-        """Start editing when double-clicked."""
+    def activate_input_mode(self) -> None:
+        """Enter input mode if it's not already active."""
         if not self.is_requesting_input():
             self._switch_to_input_mode()
+
+    def mouseDoubleClickEvent(self, _) -> None:
+        """Start editing when double-clicked."""
+        self.activate_input_mode()
 
     def keyPressEvent(self, event: Optional[QKeyEvent]) -> None:
         """Confirm input with enter/return, cancel with escape."""

@@ -62,4 +62,3 @@ class CloneStampBrush(QtPaintBrush):
         if np.any(partial_mask):
             np_image[partial_mask, :] = (np_source[partial_mask, :] * np_stroke_mask[partial_mask, None]
                                          + np_image[partial_mask, :] * (1 - np_stroke_mask[partial_mask, None]))
-

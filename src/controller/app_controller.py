@@ -69,7 +69,7 @@ from src.image.filter.sharpen import SharpenFilter
 from src.image.layers.image_layer import ImageLayer
 from src.image.layers.image_stack import ImageStack
 from src.image.layers.layer import Layer
-from src.image.layers.layer_stack import LayerStack
+from src.image.layers.layer_group import LayerGroup
 from src.image.layers.text_layer import TextLayer
 from src.image.layers.transform_group import TransformGroup
 from src.image.layers.transform_layer import TransformLayer
@@ -665,7 +665,7 @@ class AppController(MenuBuilder):
                                                   (not_layer_stack_methods,
                                                    active_layer == self._image_stack.layer_stack),
                                                   (not_flat_methods, self._image_stack.layer_is_flat(active_layer)),
-                                                  (not_layer_group_methods, isinstance(active_layer, LayerStack)),
+                                                  (not_layer_group_methods, isinstance(active_layer, LayerGroup)),
                                                   (not_text_layer_methods, isinstance(active_layer, TextLayer))):
                 if menu_method in method_set and disable_condition:
                     action.setEnabled(False)
@@ -1211,7 +1211,7 @@ class AppController(MenuBuilder):
         active_layer = self._image_stack.active_layer
         if isinstance(active_layer, TransformLayer):
             return active_layer
-        assert isinstance(active_layer, LayerStack)
+        assert isinstance(active_layer, LayerGroup)
         return TransformGroup(active_layer)
 
     @menu_action(f'{MENU_LAYERS}.{SUBMENU_TRANSFORM}', 'layer_mirror_horizontal_shortcut', 430,
@@ -1291,7 +1291,7 @@ class AppController(MenuBuilder):
     def crop_layer_to_content(self) -> None:
         """Crop the active layer to remove fully transparent border pixels."""
         layer = self._image_stack.active_layer
-        assert isinstance(layer, (ImageLayer, LayerStack))
+        assert isinstance(layer, (ImageLayer, LayerGroup))
         layer.crop_to_content()
 
     # Tool menu:

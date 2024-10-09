@@ -110,3 +110,4 @@ class AppConfig(Config, metaclass=Singleton):
     WARN_ON_KEY_ERROR: str
     WARN_ON_LIBMYPAINT_ERROR: str
     WARN_WHEN_CROP_DELETES_LAYERS: str
+    WARN_WHEN_LOCK_FORCES_LAYER_CREATE: str

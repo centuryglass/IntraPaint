@@ -68,11 +68,15 @@ class FilterBrush(QtPaintBrush):
         filter_source = self._prev_image_buffer.copy(copy_bounds)
         filtered_image = self._filter.get_filter()(filter_source, *self._parameter_values[self._filter])
 
-        np_image = numpy_bounds_index(image_data_as_numpy_8bit(layer_image), copy_bounds)
+        np_image = numpy_bounds_index(image_data_as_numpy_8bit(layer_image), bounds)
         np_filtered = image_data_as_numpy_8bit(filtered_image)
+        if copy_bounds != bounds:
+            assert copy_bounds.contains(bounds)
+            filter_bounds = bounds.translated(-copy_bounds.x(), -copy_bounds.y())
+            np_filtered = numpy_bounds_index(np_filtered, filter_bounds)
 
         # Use the brush stroke segment as a mask to select between filtered and original content:
-        np_stroke_mask = numpy_bounds_index(image_data_as_numpy_8bit(segment_image), copy_bounds)[:, :, 3] / 255.0
+        np_stroke_mask = numpy_bounds_index(image_data_as_numpy_8bit(segment_image), bounds)[:, :, 3] / 255.0
 
         # Where the brush stroke mask is 100% opaque, the filter completely overrides the source:
         stroke_alpha_max = np_stroke_mask[:, :] == 1.0

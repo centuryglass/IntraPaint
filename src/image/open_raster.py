@@ -21,7 +21,7 @@ from src.image.composite_mode import CompositeMode
 from src.image.layers.image_layer import ImageLayer
 from src.image.layers.image_stack import ImageStack
 from src.image.layers.layer import Layer
-from src.image.layers.layer_stack import LayerStack
+from src.image.layers.layer_group import LayerGroup
 from src.image.layers.text_layer import TextLayer
 from src.util.visual.geometry_utils import get_scaled_placement
 
@@ -158,8 +158,8 @@ def save_ora_image(image_stack: ImageStack, file_path: str,  metadata: str) -> N
             extended_data[image_path] = extended_layer_data
         return layer_data
 
-    def encode_layer_group(layer: LayerStack) -> Dict[str, Any]:
-        """Encode a LayerStack as stack data."""
+    def encode_layer_group(layer: LayerGroup) -> Dict[str, Any]:
+        """Encode a LayerGroup as stack data."""
         stack_data: Dict[str, Any] = {
             DICT_ELEMENT_NAME: STACK_ELEMENT,
             ATTR_TAG_NAME: layer.name
@@ -173,11 +173,10 @@ def save_ora_image(image_stack: ImageStack, file_path: str,  metadata: str) -> N
             stack_data[ATTR_TAG_SELECTED] = BOOLEAN_TRUE_STR
         stack_data[ATTR_TAG_OPACITY] = layer.opacity
         stack_data[ATTR_TAG_VISIBILITY] = ATTR_VISIBLE if layer.visible else ATTR_HIDDEN
-        # TODO: properly support 'isolate' attribute in layer stacks
-        stack_data[STACK_TAG_ISOLATION] = ISOLATION_AUTO
+        stack_data[STACK_TAG_ISOLATION] = ISOLATION_ISOLATE if layer.isolate else ISOLATION_AUTO
         stack_data[DICT_NESTED_CONTENT_NAME] = []
         for child_layer in layer.child_layers:
-            if isinstance(child_layer, LayerStack):
+            if isinstance(child_layer, LayerGroup):
                 stack_data[DICT_NESTED_CONTENT_NAME].append(encode_layer_group(child_layer))
             else:
                 assert isinstance(child_layer, (ImageLayer, TextLayer))
@@ -355,13 +354,15 @@ def read_ora_image(image_stack: ImageStack, file_path: str) -> Optional[str]:
             layer.set_transform(layer_transform)
         return layer, is_active
 
-    def parse_stack_element(element: Element) -> Tuple[LayerStack, Optional[Layer]]:
+    def parse_stack_element(element: Element) -> Tuple[LayerGroup, Optional[Layer]]:
         """Load a layer group from its saved XML definition, return the selected layer (if found)"""
         assert element.tag == STACK_ELEMENT
-        layer = LayerStack('')
+        layer = LayerGroup('')
         active_layer = None
         if _parse_common_attributes(layer, element):
             active_layer = layer
+        if STACK_TAG_ISOLATION in element.keys() and element.get(STACK_TAG_ISOLATION) == ISOLATION_ISOLATE:
+            layer.isolate = True
         for child_element in element:
             is_active = False
             if child_element.tag == STACK_ELEMENT:

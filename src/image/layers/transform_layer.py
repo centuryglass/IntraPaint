@@ -112,29 +112,56 @@ class TransformLayer(Layer):
         """Flip the layer vertically, on top of any previous transformations."""
         self._flip(False)
 
-    def render(self, base_image: Optional[QImage] = None,
-               paint_param_adjuster: Optional[Callable[[int, QImage, QRect, QPainter], Optional[QImage]]]
-               = None) -> QImage:
-        """Render all layers to a QImage with a custom base image and accepting a function to control layer painting on
-        a per-layer basis.
+    def render(self, base_image: QImage, transform: Optional[QTransform] = None,
+               image_bounds: Optional[QRect] = None, z_max: Optional[int] = None,
+               image_adjuster: Optional[Callable[['Layer', QImage], QImage]] = None,
+               returned_mask: Optional[QImage] = None) -> None:
+        """Renders the layer to QImage, optionally specifying render bounds, transformation, a z-level cutoff, and/or
+           a final image transformation function.
 
         Parameters
         ----------
         base_image: QImage, optional, default=None.
-            The base image that all layer content will be painted onto.  If None, a new image will be created that's
-            large enough to fit all layers.
-        paint_param_adjuster: Optional[Callable[[int, QImage, QRect, QPainter) -> Optional[QImage]]
-            Default=None. If provided, it will be called before each layer is painted, allowing it to directly make
-            changes to the image, paint bounds, or painter as needed. Parameters are layer_id, layer_image,
-            paint_bounds and layer_painter.  If it returns a QImage, that image will replace the layer image.
-        Returns
-        -------
-        QImage: The final rendered image.
+            The base image that all layer content will be painted onto.
+        transform: QTransform, optional, default=None
+            Optional transformation to apply to image content before rendering.
+        image_bounds: QRect, optional, default=None.
+            Optional bounds that should be rendered within the base image. If None, the intersection of the base and the
+            transformed layer will be used.  If base_image was None, image content will be translated so that the
+            position of the bounded region is at (0, 0) within the new base image.
+        z_max: int, optional, default=None
+            If not None, rendering will be blocked at z-levels above this number.
+        image_adjuster: Callable[[Layer, QImage], QImage], optional, default=None
+            If not None, apply this final transformation function to the rendered image and return the result.
+        returned_mask: QImage, optional, default=None
+            If not None, draw the rendered bounds onto this image, to use when determining what parts of the base image
+            were rendered onto.
         """
-        def _transform_adjuster(layer_id: int, layer_image: QImage, paint_bounds: QRect,
-                                painter: QPainter) -> Optional[QImage]:
-            painter.setTransform(self.transform)
-            if paint_param_adjuster is not None:
-                return paint_param_adjuster(layer_id, layer_image, paint_bounds, painter)
-            return None
-        return super().render(base_image, _transform_adjuster)
+        if transform is None:
+            transform = self.transform
+        else:
+            transform = self.transform * transform
+        super().render(base_image, transform, image_bounds, z_max, image_adjuster, returned_mask)
+
+    def render_to_new_image(self, transform: Optional[QTransform] = None,
+                            inner_bounds: Optional[QRect] = None, z_max: Optional[int] = None,
+                            image_adjuster: Optional[Callable[['Layer', QImage], QImage]] = None) -> QImage:
+        """Render the layer to a new image, adjusting offset so that layer content fits exactly into the image."""
+
+        if transform is None:
+            transform = self.transform
+        else:
+            transform = self.transform * transform
+        bounds = map_rect_precise(self.bounds, transform).toAlignedRect()
+        if inner_bounds is not None:
+            bounds = bounds.intersected(inner_bounds)
+        if not bounds.topLeft().isNull():
+            if transform is None:
+                transform = QTransform.fromTranslate(-bounds.x(), -bounds.y())
+            else:
+                transform = transform * QTransform.fromTranslate(-bounds.x(), -bounds.y())
+        base_image = create_transparent_image(bounds.size())
+        super().render(base_image, transform, image_bounds=bounds.translated(-bounds.x(), -bounds.y()),
+                       z_max=z_max,
+                       image_adjuster=image_adjuster)
+        return base_image
