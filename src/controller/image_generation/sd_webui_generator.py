@@ -586,7 +586,7 @@ class SDWebUIGenerator(ImageGenerator):
                         self._image_stack.size = size
 
                     def _revert_size(size=old_size) -> None:
-                        self._image_stack.size=size
+                        self._image_stack.size = size
 
                     UndoStack().commit_action(_update_size, _revert_size, 'SDWebUIGenerator.upscale_resize')
                 self._image_stack.create_layer(layer_name=UPSCALED_LAYER_NAME,

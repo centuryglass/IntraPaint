@@ -9,6 +9,7 @@ from PySide6.QtWidgets import QWidget, QGraphicsItem, QStyleOptionGraphicsItem, 
     QGraphicsObject
 
 from src.ui.graphics_items.transform_handle import TransformHandle, TRANSFORM_MODE_SCALE, TRANSFORM_MODE_ROTATE
+from src.util.signals_blocked import signals_blocked
 from src.util.visual.geometry_utils import extract_transform_parameters, combine_transform_parameters
 from src.util.visual.graphics_scene_utils import (get_view_bounds_of_scene_item_rect,
                                                   map_scene_item_point_to_view_point,
@@ -84,6 +85,19 @@ class TransformOutline(QGraphicsObject):
         self._handles[ORIGIN_HANDLE_ID].drawn_angle = 45
         self.transformation_origin = self.rect().center()
         self._update_handles()
+
+    def reset(self, new_initial_bounds: QRectF) -> None:
+        """Reset the outline with a new initial rectangle, sending no signals."""
+        with signals_blocked(self):
+            self._rect = QRectF(new_initial_bounds.normalized())
+            self._x_offset = 0.0
+            self._y_offset = 0.0
+            self._x_scale = 0.0
+            self._y_scale = 0.0
+            self._degrees = 0.0
+            self._preserve_aspect_ratio = False
+            self.transformation_origin = self.rect().center()
+            self._update_handles()
 
     @property
     def transformed_scene_bounds(self) -> QRectF:

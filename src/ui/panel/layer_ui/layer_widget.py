@@ -106,6 +106,7 @@ class LayerWidget(BorderedWidget):
         else:
             self._label = EditableLabel(layer.name, self)
             self._label.text_changed.connect(self.rename_layer)
+            self._label.set_changes_allowed(not layer.locked and not layer.parent_locked)
         text_alignment = Qt.AlignmentFlag.AlignCenter
         self._label.setAlignment(text_alignment)
         self._label.setWordWrap(True)
@@ -114,6 +115,7 @@ class LayerWidget(BorderedWidget):
         image_stack.active_layer_changed.connect(self._active_layer_change_slot)
         self._layer.content_changed.connect(self._layer_content_change_slot)
         self._layer.name_changed.connect(self._layer_name_change_slot)
+        self._layer.lock_changed.connect(self._layer_lock_change_slot)
         self._layer.visibility_changed.connect(self.update)
         if isinstance(self._layer, TransformLayer):
             self._layer.transform_changed.connect(self._layer_content_change_slot)
@@ -193,6 +195,10 @@ class LayerWidget(BorderedWidget):
 
     def _layer_name_change_slot(self, _, name: str) -> None:
         self._label.set_text(name)
+
+    def _layer_lock_change_slot(self, _, locked: bool) -> None:
+        if isinstance(self._label, EditableLabel):
+            self._label.set_changes_allowed(not locked)
 
     def resizeEvent(self, event: Optional[QResizeEvent]) -> None:
         """Resize the layer pixmap on resize"""
@@ -330,13 +336,13 @@ class LayerWidget(BorderedWidget):
                 action.setEnabled(not self._layer.locked and not self._layer.parent_locked)
             return action
 
+        _add_action(MENU_OPTION_RENAME, self._label.activate_input_mode, disable_if_locked=True)
+
         if self._layer != self._image_stack.selection_layer and self._layer.layer_parent is not None:
             index = None
             parent = cast(LayerGroup, self._layer.layer_parent)
             if parent is not None:
                 index = parent.get_layer_index(self._layer)
-
-            _add_action(MENU_OPTION_RENAME, self._label.activate_input_mode, disable_if_locked=True)
 
             if index is not None:
                 _add_action(MENU_OPTION_MOVE_UP, lambda: self._image_stack.move_layer_by_offset(-1, self.layer))
@@ -380,8 +386,9 @@ class LayerWidget(BorderedWidget):
             _add_action(MENU_OPTION_CROP_TO_CONTENT, self._layer.crop_to_content, True)
         _add_action(MENU_OPTION_CROP_TO_SELECTION, lambda: self._image_stack.crop_layer_to_selection(self._layer), True)
 
-        if isinstance(self._layer, TransformLayer):
-            _add_action(MENU_OPTION_MIRROR_HORIZONTAL, self._layer.flip_horizontal, True)
-            _add_action(MENU_OPTION_MIRROR_VERTICAL, self._layer.flip_vertical, True)
-
+        mirror_actions = [_add_action(MENU_OPTION_MIRROR_HORIZONTAL, self._layer.flip_horizontal, True),
+                          _add_action(MENU_OPTION_MIRROR_VERTICAL, self._layer.flip_vertical, True)]
+        if isinstance(self._layer, LayerGroup) and any (layer.locked for layer in self._layer.recursive_child_layers):
+            for action in mirror_actions:
+                action.setEnabled(False)
         menu.exec(self.mapToGlobal(pos))

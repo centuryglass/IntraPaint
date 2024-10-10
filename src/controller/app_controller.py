@@ -107,7 +107,6 @@ from src.util.visual.image_format_utils import save_image_with_metadata, save_im
     METADATA_PARAMETER_KEY, IMAGE_WRITE_FORMATS, IMAGE_READ_FORMATS, IMAGE_FORMATS_WITH_FIXED_SIZE, \
     GREYSCALE_IMAGE_FORMATS, METADATA_COMMENT_KEY
 from src.util.visual.image_utils import image_is_fully_opaque, image_has_partial_alpha, create_transparent_image
-from src.util.visual.pil_image_utils import pil_image_scaling
 
 # Optional spacenav support and extended theming:
 qdarktheme = optional_import('qdarktheme')
@@ -635,10 +634,14 @@ class AppController(MenuBuilder):
             self.move_layer_down,
             self.move_layer_to_top,
             self.flatten_layer,
-            self.copy_layer
+            self.copy_layer,
+            self.delete_layer
         }
         not_flat_methods: Set[Callable[..., None]] = {self.flatten_layer}
-        not_layer_group_methods: Set[Callable[..., None]] = {self.merge_layer_down}
+        not_layer_group_methods: Set[Callable[..., None]] = {
+            self.merge_layer_down,
+            self.layer_to_image_size
+        }
 
         not_text_layer_methods: Set[Callable[..., None]] = {self.crop_layer_to_content}
 

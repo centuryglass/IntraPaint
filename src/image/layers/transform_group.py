@@ -1,7 +1,7 @@
 """A temporary layer class used to coordinate transformations applied to multiple layers."""
 from typing import List
 
-from PySide6.QtCore import QRect
+from PySide6.QtCore import QRect, Signal
 from PySide6.QtGui import QTransform
 
 from src.image.layers.layer import Layer
@@ -21,8 +21,12 @@ class TransformGroup(TransformLayer):
     and maintaining almost every feature.
     """
 
+    bounds_changed = Signal(QRect)
+
     def __init__(self, layer_group: LayerGroup) -> None:
+        self._bounds = QRect()
         super().__init__(f'TransformGroup-{layer_group.name}')
+        self._primary_group = layer_group
         self._groups: List[LayerGroup] = []
         self._transform_layers: List[TransformLayer] = []
         self._layer_added_slot(layer_group)
@@ -44,6 +48,9 @@ class TransformGroup(TransformLayer):
             bounds = self.transform.inverted()[0].mapRect(bounds)
         if self.size != bounds.size():
             self.set_size(bounds.size())
+        if bounds != self._bounds:
+            self._bounds = QRect(bounds)
+            self.bounds_changed.emit(bounds)
         return bounds
 
     @property
@@ -59,12 +66,13 @@ class TransformGroup(TransformLayer):
         self._groups.clear()
         self._transform_layers.clear()
 
-    def set_transform(self, transform: QTransform, send_signals: bool = True) -> None:
+    def set_transform(self, transform: QTransform) -> None:
         """Propagate the transformation to all associated layers."""
         last_transform_inverted = self.transform.inverted()[0]
-        for layer in self._transform_layers:
-            layer.set_transform(layer.transform * last_transform_inverted * transform, send_signals)
-        super().set_transform(transform, send_signals)
+        with self._primary_group.all_signals_delayed():
+            for layer in self._transform_layers:
+                layer.set_transform(layer.transform * last_transform_inverted * transform)
+        super().set_transform(transform)
 
     # noinspection PyUnusedLocal
     def _layer_locked_slot(self, _, locked: bool) -> None:
@@ -80,11 +88,15 @@ class TransformGroup(TransformLayer):
             if layer not in self._transform_layers:
                 layer.set_transform(layer.transform * self.transform)
                 self._transform_layers.append(layer)
+                layer.size_changed.connect(self._handle_external_changes)
+                layer.transform_changed.connect(self._handle_external_changes)
         else:
             assert isinstance(layer, LayerGroup)
             if layer not in self._groups:
                 layer.layer_added.connect(self._layer_added_slot)
                 layer.layer_removed.connect(self._layer_removed_slot)
+                layer.size_changed.connect(self._handle_external_changes)
+                layer.bounds_changed.connect(self._handle_external_changes)
                 self._groups.append(layer)
                 for child in layer.child_layers:
                     self._layer_added_slot(child)
@@ -94,16 +106,23 @@ class TransformGroup(TransformLayer):
     def _layer_removed_slot(self, layer: Layer) -> None:
         assert isinstance(layer, (TransformLayer, LayerGroup))
         if isinstance(layer, TransformLayer):
-            assert layer in self._transform_layers
+            assert layer in self._transform_layers, f'layer {layer.name} not found in {self.name}'
             layer.set_transform(layer.transform * self.transform.inverted()[0])
+            layer.size_changed.disconnect(self._handle_external_changes)
+            layer.transform_changed.disconnect(self._handle_external_changes)
             self._transform_layers.remove(layer)
         else:
             assert isinstance(layer, LayerGroup)
             assert layer in self._groups
             layer.layer_added.disconnect(self._layer_added_slot)
             layer.layer_removed.disconnect(self._layer_removed_slot)
+            layer.size_changed.disconnect(self._handle_external_changes)
+            layer.bounds_changed.disconnect(self._handle_external_changes)
             self._groups.remove(layer)
             for child in layer.child_layers:
                 self._layer_removed_slot(child)
         layer.lock_changed.disconnect(self._layer_locked_slot)
+        self._get_local_bounds()  # Updates size, emits size_changed if needed
+
+    def _handle_external_changes(self, layer: Layer, _) -> None:
         self._get_local_bounds()  # Updates size, emits size_changed if needed

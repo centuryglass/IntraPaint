@@ -1,4 +1,5 @@
 """Manages an edited image composed of multiple layers."""
+import datetime
 import logging
 import os
 import re
@@ -7,7 +8,7 @@ from typing import Optional, Tuple, cast, List, Callable, TypeAlias, Dict, Gener
 
 import numpy as np
 from PIL import Image
-from PySide6.QtCore import QObject, QSize, QPoint, QRect, Signal
+from PySide6.QtCore import QObject, QSize, QPoint, QRect, Signal, QTimer
 from PySide6.QtGui import QPainter, QPixmap, QImage, QColor, QTransform
 from PySide6.QtWidgets import QApplication
 
@@ -82,6 +83,8 @@ WARNING_MESSAGE_CROP_DELETED_LAYERS = _tr('<p>Cropping to selection deleted the 
 
 RenderAdjustFn: TypeAlias = Callable[[int, QImage, QRect, QPainter], Optional[QImage]]
 
+RENDER_DELAY_MS = 10
+
 
 class ImageStack(QObject):
     """Manages an edited image composed of multiple layers."""
@@ -108,6 +111,8 @@ class ImageStack(QObject):
         self._copy_buffer_transform: Optional[QTransform] = None
         self._content_change_signal_enabled = True
         self.generation_area = self._generation_area
+        self._last_change_timestamp = 0.0
+        self._connected_layers: List[Layer] = []  # Track which layers have signals connected
 
         def _update_gen_area_size(size: QSize) -> None:
             if size != self._generation_area.size():
@@ -117,6 +122,10 @@ class ImageStack(QObject):
 
         self._layer_stack = LayerGroup(NEW_IMAGE_LAYER_GROUP_NAME)
         self._image = CachedData(None)
+        self._render_timer = QTimer()
+        self._render_timer.setSingleShot(True)
+        self._render_timer.setInterval(RENDER_DELAY_MS)
+        self._render_timer.timeout.connect(self._invalidate_cache)
         self._active_layer_id = self._layer_stack.id
 
         # Create selection layer:
@@ -543,8 +552,6 @@ class ImageStack(QObject):
                 self.size = size
 
             UndoStack().commit_action(_final_size_update, _revert, 'ImageStack.scale_all')
-
-
 
     def cropped_qimage_content(self, bounds_rect: QRect) -> QImage:
         """Returns the contents of a bounding QRect as a QImage."""
@@ -1471,19 +1478,21 @@ class ImageStack(QObject):
         UndoStack().commit_action(_load, _undo_load, 'ImageStack.set_image')
 
     # INTERNAL:
+
+    def _invalidate_cache(self) -> None:
+        self._image.invalidate()
+        self._emit_content_changed()
+
+    def _trigger_content_render(self) -> None:
+        if not self._render_timer.isActive():
+            self._render_timer.start()
+
     def _layer_content_change_slot(self, layer: Layer, _=None) -> None:
         if layer.visible and (layer == self._layer_stack or layer == self.selection_layer
                               or self._layer_stack.contains_recursive(layer)):
-            if layer != self.selection_layer:
-                self._image.invalidate()
-            self._emit_content_changed()
-
-    def _layer_visibility_change_slot(self, layer: Layer, _) -> None:
-        if layer == self._layer_stack or layer == self.selection_layer or self._layer_stack.contains_recursive(layer):
-            if layer != self.selection_layer:
-                self._image.invalidate()
-            if not layer.empty:
-                self._emit_content_changed()
+            if layer != self.selection_layer and layer.content_change_timestamp > self._last_change_timestamp:
+                self._last_change_timestamp = layer.content_change_timestamp
+                self._trigger_content_render()
 
     def _get_default_new_layer_name(self) -> str:
         default_name_pattern = r'^layer (\d+)'
@@ -1543,25 +1552,20 @@ class ImageStack(QObject):
         assert layer == self._layer_stack or self._layer_stack.contains_recursive(layer), (f'layer {layer.name}:'
                                                                                            f'{layer.id} is not in the'
                                                                                            ' image stack.')
-        layer.size_changed.connect(self._layer_content_change_slot)
-        layer.content_changed.connect(self._layer_content_change_slot)
-        layer.opacity_changed.connect(self._layer_content_change_slot)
-        layer.composition_mode_changed.connect(self._layer_content_change_slot)
-        if isinstance(layer, TransformLayer):
-            layer.transform_changed.connect(self._layer_content_change_slot)
-        layer.visibility_changed.connect(self._layer_visibility_change_slot)
-        if isinstance(layer, LayerGroup):
-            for child_layer in layer.recursive_child_layers:
-                self._connect_layer(child_layer)
+        if layer not in self._connected_layers:
+            self._connected_layers.append(layer)
+            layer.content_changed.connect(self._layer_content_change_slot)
+            if isinstance(layer, LayerGroup):
+                for child_layer in layer.recursive_child_layers:
+                    self._connect_layer(child_layer)
 
     def _disconnect_layer(self, layer: Layer) -> None:
-        layer.size_changed.disconnect(self._layer_content_change_slot)
-        layer.content_changed.disconnect(self._layer_content_change_slot)
-        layer.opacity_changed.disconnect(self._layer_content_change_slot)
-        layer.composition_mode_changed.disconnect(self._layer_content_change_slot)
-        if isinstance(layer, TransformLayer):
-            layer.transform_changed.disconnect(self._layer_content_change_slot)
-        layer.visibility_changed.disconnect(self._layer_visibility_change_slot)
+        if layer in self._connected_layers:
+            layer.content_changed.disconnect(self._layer_content_change_slot)
+            self._connected_layers.remove(layer)
+            if isinstance(layer, LayerGroup):
+                for child_layer in layer.recursive_child_layers:
+                    self._disconnect_layer(child_layer)
 
     def _layer_added_slot(self, layer: Layer) -> None:
         self._connect_layer(layer)
@@ -1584,8 +1588,8 @@ class ImageStack(QObject):
                 self._active_layer_id = layer.id
                 self.active_layer_changed.emit(layer)
         if layer.visible and not layer.empty:
-            self._image.invalidate()
-            self._emit_content_changed()
+            self._last_change_timestamp = datetime.datetime.now().timestamp()
+            self._trigger_content_render()
 
     def _remove_layer_internal(self, layer: Layer) -> None:
         """Removes a layer from the stack, optionally disconnect layer signals, and emit all required image stack
@@ -1620,8 +1624,8 @@ class ImageStack(QObject):
         if self._layer_stack.count == 0:
             AppStateTracker.set_app_state(APP_STATE_NO_IMAGE)
         if layer.visible and not layer.empty:
-            self._image.invalidate()
-            self._emit_content_changed()
+            self._last_change_timestamp = datetime.datetime.now().timestamp()
+            self._trigger_content_render()
 
     def _set_active_layer_internal(self, new_active_layer: Layer | int) -> None:
         if isinstance(new_active_layer, Layer):
@@ -1680,7 +1684,8 @@ class ImageStack(QObject):
         if changed_values:
             self.layer_order_changed.emit()
         if visible_changes:
-            self._emit_content_changed()
+            self._last_change_timestamp = datetime.datetime.now().timestamp()
+            self._trigger_content_render()
 
     def _all_layers(self) -> List[Layer]:
         return [self._layer_stack, *self._layer_stack.recursive_child_layers]
@@ -1786,8 +1791,6 @@ class ImageStack(QObject):
                 error_message = ERROR_MESSAGE_LOCK_CONFLICT_SINGULAR.format(layer_name=layer_name)
             show_error_dialog(None, error_title, error_message)
         return len(interfering_locked_layers) == 0
-
-
 
     @contextmanager
     def batching_content_updates(self) -> Generator[None, None, None]:

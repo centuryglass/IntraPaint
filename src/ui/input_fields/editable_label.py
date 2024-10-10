@@ -27,6 +27,13 @@ class EditableLabel(QWidget):
         self._confirm_button.setIcon(get_standard_qt_icon(QStyle.StandardPixmap.SP_DialogOkButton))
         self._confirm_button.clicked.connect(self.apply_changes)
         self._layout.addWidget(self._label)
+        self._changes_allowed = True
+
+    def set_changes_allowed(self, allow_changes: bool) -> None:
+        """Set whether the label is allowed to enter editing mode."""
+        self._changes_allowed = allow_changes
+        if self.is_requesting_input() and not allow_changes:
+            self.discard_changes()
 
     def text(self) -> str:
         """Return the label text, ignoring unconfirmed input."""
@@ -54,6 +61,9 @@ class EditableLabel(QWidget):
 
     def apply_changes(self) -> None:
         """Update the label text with the contents of the input field."""
+        if not self._changes_allowed:
+            self.discard_changes()
+            return
         if not self.is_requesting_input():
             return
         if self._field.text() != self._label.text():
@@ -74,7 +84,7 @@ class EditableLabel(QWidget):
 
     def activate_input_mode(self) -> None:
         """Enter input mode if it's not already active."""
-        if not self.is_requesting_input():
+        if not self.is_requesting_input() and self._changes_allowed:
             self._switch_to_input_mode()
 
     def mouseDoubleClickEvent(self, _) -> None:

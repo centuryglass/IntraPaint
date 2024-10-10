@@ -17,6 +17,7 @@ from src.ui.image_viewer import ImageViewer
 from src.ui.panel.tool_control_panels.layer_transform_tool_panel import LayerTransformToolPanel
 from src.undo_stack import UndoStack
 from src.util.shared_constants import PROJECT_DIR
+from src.util.signals_blocked import signals_blocked
 from src.util.visual.text_drawing_utils import left_button_hint_text
 
 # The `QCoreApplication.translate` context for strings in this file
@@ -149,6 +150,8 @@ class LayerTransformTool(BaseTool):
             last_layer.transform_changed.disconnect(self._layer_transform_change_slot)
             last_layer.size_changed.disconnect(self._layer_size_change_slot)
             last_layer.lock_changed.disconnect(self._layer_lock_change_slot)
+            if isinstance(last_layer, TransformGroup):
+                last_layer.bounds_changed.disconnect(self._update_transform_group_bounds)
         if layer is None or isinstance(layer, TransformLayer):
             self._layer = layer
         else:
@@ -160,6 +163,8 @@ class LayerTransformTool(BaseTool):
             self._layer.size_changed.connect(self._layer_size_change_slot)
             self._layer.lock_changed.connect(self._layer_lock_change_slot)
             self._layer_lock_change_slot(self._layer, self._layer.locked)
+            if isinstance(self._layer, TransformGroup):
+                self._layer.bounds_changed.connect(self._update_transform_group_bounds)
         else:
             self._control_panel.set_preview_bounds(QRect())
             self._transform_outline.setVisible(False)
@@ -185,46 +190,30 @@ class LayerTransformTool(BaseTool):
         """Reset all transformations and reload properties from the layer."""
         layer = self._layer
 
-        # Clear old transform outline:
-        self._transform_outline.offset_changed.disconnect(self._offset_change_slot)
-        self._transform_outline.scale_changed.disconnect(self._scale_change_slot)
-        self._transform_outline.angle_changed.disconnect(self._angle_change_slot)
-        self._transform_outline.transform_changed.disconnect(self._transform_change_slot)
-        scene = self._transform_outline.scene()
-        if scene is not None:
-            scene.removeItem(self._transform_outline)
-        scene = self._image_viewer.scene()
-        assert scene is not None
+        # Reset transform outline:
+        with signals_blocked(self._transform_outline):
+            self._transform_outline.reset(QRectF() if layer is None else QRectF(layer.bounds))
+            self._transform_outline.setZValue(self._image_stack.selection_layer.z_value + 1)
 
-        # Re-create for new layer:
-        self._transform_outline = TransformOutline(QRectF() if layer is None else QRectF(layer.bounds))
-        self._transform_outline.setZValue(self._image_stack.selection_layer.z_value + 1)
-        self._transform_outline.offset_changed.connect(self._offset_change_slot)
-        self._transform_outline.scale_changed.connect(self._scale_change_slot)
-        self._transform_outline.angle_changed.connect(self._angle_change_slot)
-        self._transform_outline.transform_changed.connect(self._transform_change_slot)
-        self._transform_outline.setVisible(False)
-        scene.addItem(self._transform_outline)
-
-        # Load layer image, set visibility and zValues:
-        self._transform_outline.prepareGeometryChange()
-        if layer is None:
-            self._transform_outline.setVisible(False)
-            self._transform_outline.setRect(QRectF())
-            self._control_panel.set_preview_bounds(QRect())
-            self._control_panel.set_preview_transform(QTransform())
-            self._transform_outline.setVisible(False)
-        else:
-            self._initial_transform = layer.transform
-            self._control_panel.set_preview_bounds(layer.bounds)
-            self._transform_outline.setVisible(layer.visible and not layer.size.isEmpty())
-            self._control_panel.set_preview_transform(self._initial_transform)
-            self._transform_outline.setTransform(self._initial_transform)
-        should_enable = (layer is not None and not layer.locked and not layer.parent_locked
-                         and not self._layer.size.isEmpty())
-        self._control_panel.setEnabled(should_enable)
-        self.set_disabled_cursor(not should_enable)
-        self._update_all_controls()
+            # Load layer image, set visibility and zValues:
+            self._transform_outline.prepareGeometryChange()
+            if layer is None:
+                self._transform_outline.setVisible(False)
+                self._transform_outline.setRect(QRectF())
+                self._control_panel.set_preview_bounds(QRect())
+                self._control_panel.set_preview_transform(QTransform())
+                self._transform_outline.setVisible(False)
+            else:
+                self._initial_transform = layer.transform
+                self._control_panel.set_preview_bounds(layer.bounds)
+                self._transform_outline.setVisible(layer.visible and not layer.size.isEmpty())
+                self._control_panel.set_preview_transform(self._initial_transform)
+                self._transform_outline.setTransform(self._initial_transform)
+            should_enable = (layer is not None and not layer.locked and not layer.parent_locked
+                             and not self._layer.size.isEmpty())
+            self._control_panel.setEnabled(should_enable)
+            self.set_disabled_cursor(not should_enable)
+            self._update_all_controls()
 
     def _on_activate(self, restoring_after_delegation=False) -> None:
         """Connect to the active layer."""
@@ -238,6 +227,12 @@ class LayerTransformTool(BaseTool):
 
     def _active_layer_change_slot(self, active_layer: Layer) -> None:
         self.set_layer(active_layer)
+
+    def _update_transform_group_bounds(self, bounds: QRect) -> None:
+        preview_bounds = QRect(round(self._transform_outline.x_pos), round(self._transform_outline.y_pos),
+                               round(self._transform_outline.width), round(self._transform_outline.height))
+        if preview_bounds != bounds:
+            self._reload_scene_item()
 
     def _layer_lock_change_slot(self, layer: Layer, locked: bool) -> None:
         assert self._layer is not None

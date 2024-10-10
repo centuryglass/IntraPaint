@@ -139,19 +139,16 @@ class ImageLayer(TransformLayer):
         assert not self.locked and not self.parent_locked, 'Tried to change image in a locked layer'
         assert not new_image.isNull()
         size_changed = new_image.size() != self._size
-        send_size_change_signal = size_changed and not self._size.isNull()
         if size_changed:
             new_size = new_image.size()
-            self.set_size(new_size, False)
+            self.set_size(new_size)
         if offset is not None and not offset.isNull():
             transform = self.transform
             transform.translate(offset.x(), offset.y())
             self.set_transform(transform)
         self.set_qimage(new_image)
         self._pixmap.invalidate()
-        if send_size_change_signal:
-            self.size_changed.emit(self, self.size)
-        self.content_changed.emit(self, self.bounds)
+        self.signal_content_changed(self.bounds)
 
     @contextmanager
     def borrow_image(self, change_bounds: Optional[QRect] = None) -> Generator[Optional[QImage], None, None]:
@@ -182,18 +179,18 @@ class ImageLayer(TransformLayer):
                 np.copyto(np_layer_image, np_content)
                 self.invalidate_pixmap()
                 self._handle_content_change(self._image, init_image, bounds)
-                self.content_changed.emit(self, bounds)
+                self.signal_content_changed(bounds)
 
             def _apply(c: QImage = updated_content, b: QRect = change_bounds) -> None:
                 _apply_change(c, b)
 
             def _undo(c: QImage = initial_bounds_content, b: QRect = change_bounds) -> None:
                 _apply_change(c, b)
-                self.content_changed.emit(self, change_bounds)
+                self.signal_content_changed(change_bounds)
 
             UndoStack().commit_action(_apply, _undo, 'ImageLayer.borrow_image', skip_initial_call=True)
 
-            self.content_changed.emit(self, change_bounds)
+            self.signal_content_changed(change_bounds)
 
     def adjust_local_bounds(self, relative_bounds: QRect, register_to_undo_history: bool = True) -> None:
         """Changes local image bounds, cropping or extending the layer image.

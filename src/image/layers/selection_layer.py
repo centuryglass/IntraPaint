@@ -84,7 +84,7 @@ class SelectionLayer(ImageLayer):
         """Update the area marked for image generation."""
         self._generation_area = QRect(new_area)
         self._update_bounds()
-        self.content_changed.emit(self, self.bounds)
+        self.signal_content_changed(self.bounds)
 
     # Disabling unwanted layer functionality:
     def copy(self) -> 'SelectionLayer':

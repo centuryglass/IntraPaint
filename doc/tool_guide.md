@@ -35,7 +35,7 @@ All tools share the same set of basic controls for adjusting the image viewport.
 - **Middle-click and drag, or Ctrl + left-click and drag**: Pan image content.
 - **Mouse scroll wheel, Page Up, or Page Down**: Zoom in or zoom out.
 - **"Z" key**: Zoom in on the image generation area, or reset the zoom level.
-- **Hold shift**: Speed up key or mouse wheel inputs.
+- **Hold Alt**: Speed up key or mouse wheel inputs.
 - **Escape, while any input has keyboard focus**: Return keyboard focus to the image.
 
 The following controls are shared by most tools, but certain tools will override them:
@@ -57,7 +57,7 @@ Draw, paint, blur, smudge, or erase within the image using the [MyPaint](https:/
 - **Hold Alt while drawing**: Force the brush to follow a fixed angle.
 - **"\[", "]", or mouse scroll wheel left/right**:  Change the brush size. **Hold shift** to change size faster.
 - **Hold Ctrl**: temporarily switch to the color picker tool.
-- **Hold Shift**: Increase speed when changing brush size using keyboard keys.
+- **Hold Alt**: Increase speed when changing brush size using keyboard keys.
 
 #### User interface
 <img src="./labeled_screenshots/tools/brush.png" alt="Screenshot of the brush tool controls, with specific elements numbered."/>
@@ -88,7 +88,7 @@ A basic brush tool with easily adjustable properties.
 - **"\[", "]", or mouse scroll wheel left/right**:  Change the brush size.
 - **"<" and ">" keys**: Change the brush opacity.
 - **"{" and "}"keys**: Change the brush hardness.
-- **Hold Shift**: Increase speed when changing size, opacity, or hardness using keyboard keys.
+- **Hold Alt**: Increase speed when changing size, opacity, or hardness using keyboard keys.
 - **Hold Ctrl**: Temporarily switch to the color picker tool.
 
 #### User interface
@@ -115,7 +115,7 @@ Erase image content.
 - **"\[", "]", or mouse scroll wheel left/right**:  Change the eraser size.
 - **"<" and ">" keys**: Change the eraser opacity.
 - **"{" and "}"keys**: Change the eraser hardness.
-- **Hold Shift**: Increase speed when changing size, opacity, or hardness using keyboard keys.
+- **Hold Alt**: Increase speed when changing size, opacity, or hardness using keyboard keys.
 
 #### User interface
 <img src="./labeled_screenshots/tools/eraser.png" alt="Screenshot of the eraser tool controls, with specific elements numbered."/>
@@ -157,7 +157,7 @@ Apply any image filter to the image using brush strokes.
 - **"\[", "]", or mouse scroll wheel left/right**:  Change the brush size.
 - **"<" and ">" keys**: Change the brush opacity.
 - **"{" and "}"keys**: Change the brush hardness.
-- **Hold Shift**: Increase speed when changing size, opacity, or hardness using keyboard keys.
+- **Hold Alt**: Increase speed when changing size, opacity, or hardness using keyboard keys.
 
 #### User interface
 <img src="./labeled_screenshots/tools/filter.png" alt="Screenshot of the filter brush tool controls, with specific elements numbered."/>
@@ -188,7 +188,7 @@ Smudge image content to adjust the placement of image elements and smooth away u
 - **"\[", "]", or mouse scroll wheel left/right**:  Change the cursor size.
 - **"<" and ">" keys**: Adjust smudge tool opacity.
 - **"{" and "}"keys**: Adjust smudge tool hardness.
-- **Hold Shift**: Increase speed when changing size, opacity, or hardness.
+- **Hold Alt**: Increase speed when changing size, opacity, or hardness.
 
 #### User interface
 <img src="./labeled_screenshots/tools/smudge.png" alt="Screenshot of the smudge tool controls, with specific elements numbered."/>
@@ -213,7 +213,7 @@ Copy image content from one area to another using a brush.
 - **"\[", "]", or mouse scroll wheel left/right**:  Change the brush size.
 - **"<" and ">" keys**: Change the brush opacity.
 - **"{" and "}"keys**: Change the brush hardness.
-- **Hold Shift**: Increase speed when changing size, opacity, or hardness using keyboard keys.
+- **Hold Alt**: Increase speed when changing size, opacity, or hardness using keyboard keys.
 
 #### User interface
 <img src="./labeled_screenshots/tools/clone_stamp.png"  alt="Screenshot of the clone stamp tool controls, with specific elements numbered."/>
@@ -266,6 +266,7 @@ Create and edit text within the image.  Each piece of text remains within its ow
 - **Arrow keys**: move the active text layer.
 - **Ctrl + arrow keys**: resize the active text layer.
 - **"O", "P"**: Increase or decrease the text size, unless "Resize Font to Bounds" is checked.
+- **Hold Alt**: Increase speed when changing text size or placement using keyboard keys.
 
 #### User interface, first page:
 <img src="./labeled_screenshots/tools/text-1.png" alt="Screenshot of the text tool controls, with specific elements numbered."/>
@@ -324,7 +325,8 @@ Move, scale, or rotate image layers or layer groups. Transformations are lossles
 - **Arrow keys**: Move the layer within the image.
 - **Ctrl + arrow keys**: Resize the layer.
 - **"O", "P" keys**: Rotate the layer counter-clockwise or clockwise.
-- **Hold Shift**: When resizing the layer using the corner points, keep the layer's aspect ratio the same. Also increases speed when changing layer scale, position, or rotation using keyboard keys.
+- **Hold Shift**: When resizing the layer using the corner points, keep the layer's aspect ratio the same.
+- **Hold Alt**: Increase speed when changing layer scale, position, or rotation using keyboard keys.
 
 #### User interface
 <img src="./labeled_screenshots/tools/transform.png" alt="Screenshot of the layer transformation tool controls, with specific elements numbered."/>
@@ -381,7 +383,7 @@ Select content by drawing over it in the image, similar to the brush tool.  If u
 - **Hold shift and left-click**: Select a line from the last place you clicked.
 - **Hold Alt while drawing**: Force the brush to follow a fixed angle.
 - **"\[", "]", or mouse scroll wheel left/right**:  Change the brush size. **Hold shift** to change size faster.
-- **Hold Shift**: Increase speed when changing brush size using keyboard keys.
+- **Hold Alt**: Increase speed when changing brush size using keyboard keys.
 - **"Q" key**: Toggle between selection and deselection.
 
 #### User interface
@@ -443,7 +445,7 @@ Controls the area of the image in use for AI image generation. AI generators are
 - **Left-click**: Move the image generation area, without changing its size.
 - **Right-click**: Resize the image generation area, without changing its position.
 - **Arrow keys**: Move the image generation area.
-- **Hold Shift**: Increase speed when moving the image generation area using keyboard keys.
+- **Hold Alt**: Increase speed when moving the image generation area using keyboard keys.
 
 ### User interface
 <img src="./labeled_screenshots/tools/gen_area.png" alt="Screenshot of the generation area tool controls, with specific elements numbered."/>

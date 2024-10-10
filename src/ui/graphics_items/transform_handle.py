@@ -197,7 +197,7 @@ class TransformHandle(QGraphicsObject):
         self.dragged.emit(self._handle_id, event.scenePos(), event.lastScenePos())
 
     def mouseReleaseEvent(self, event: Optional[QGraphicsSceneMouseEvent]) -> None:
-        """Send the final handle position change to the transformation outline, and de-select the handle."""
+        """Send the final handle position change to the transformation outline, and deselect the handle."""
         assert event is not None
         if not self.isSelected():
             self.parentItem().mouseMoveEvent(event)

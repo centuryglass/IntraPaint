@@ -6,15 +6,15 @@
 - Upscale: make new layer, scale up existing layers
 
 ## Priority issues:
-- Fill selection: "Select all by color" and "Fill selection holes" should be mutually exclusive.
-- display text: change de-select to deselect.
-- Make sure multi-use bindings reflect alternate uses.
 - Layer name shouldn't be editable in locked layers
 - "delete layer" button should be disabled when the active layer is locked or is the layer stack.
 - Double-check layer merge behavior with layer groups.
 - "Show image window" should be "show navigation window"
 - Retrofuture.ora: hiding the "sketch" layer group is unusually slow; why?
 - Re-ordering locked layers is blocked, but that should only be true if the layer group is locked.
+- Transform tool x/y fields go out of sync
+- Use improved input hints on generated image picker
+- layer drag auto-scroll is painfully slow.
 
 ## Timelapse video
 
@@ -42,7 +42,7 @@
     * Filling in details with controlNet + tile
 - New timelapse editing video with improved UI, scripted to showcase features.
 - Update Windows libmypaint DLLs
-- Add Mac OS, ARM linux libmypaint libraries
+- Add Mac OS (intel and M1), ARM linux libmypaint libraries
 
 
 ## Tutorial topics

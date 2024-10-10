@@ -695,8 +695,8 @@ class TextToolPanel(QWidget):
                     self._font_size_slider.setValue(text_size)
         elif self._scale_bounds_to_text_checkbox.isChecked():
             size = self._text_rect.size
-            for value, input in ((size.width(), self._width_input), (size.height(), self._height_input)):
-                if input.value() != value:
-                    with signals_blocked(input):
-                        input.setValue(value)
+            for value, size_input in ((size.width(), self._width_input), (size.height(), self._height_input)):
+                if size_input.value() != value:
+                    with signals_blocked(size_input):
+                        size_input.setValue(value)
 

@@ -289,13 +289,13 @@
     </message>
     <message>
       <location filename="../config/key_config_definitions.json" line="84"/>
-      <source>Pan left:</source>
-      <translation>Pan left:</translation>
+      <source>Pan left/decrease width:</source>
+      <translation>Pan left/decrease width:</translation>
     </message>
     <message>
       <location filename="../config/key_config_definitions.json" line="87"/>
-      <source>Scroll the image view left</source>
-      <translation>Scroll the image view left</translation>
+      <source>Scroll the image view left, or decrease layer width in the layer transformation and text tools.</source>
+      <translation>Scroll the image view left, or decrease layer width in the layer transformation and text tools.</translation>
     </message>
     <message>
       <location filename="../config/key_config_definitions.json" line="59"/>
@@ -304,13 +304,13 @@
     </message>
     <message>
       <location filename="../config/key_config_definitions.json" line="93"/>
-      <source>Pan right:</source>
-      <translation>Pan right:</translation>
+      <source>Pan right/increase width:</source>
+      <translation>Pan right/increase width:</translation>
     </message>
     <message>
       <location filename="../config/key_config_definitions.json" line="96"/>
-      <source>Scroll the image view right</source>
-      <translation>Scroll the image view right</translation>
+      <source>Scroll the image view right, or increase layer width in the layer transformation and text tools.</source>
+      <translation>Scroll the image view right, or increase layer width in the layer transformation and text tools.</translation>
     </message>
     <message>
       <location filename="../config/key_config_definitions.json" line="59"/>
@@ -319,13 +319,13 @@
     </message>
     <message>
       <location filename="../config/key_config_definitions.json" line="102"/>
-      <source>Pan up:</source>
-      <translation>Pan up:</translation>
+      <source>Pan up/increase height:</source>
+      <translation>Pan up/increase height:</translation>
     </message>
     <message>
       <location filename="../config/key_config_definitions.json" line="105"/>
-      <source>Scroll the image view up</source>
-      <translation>Scroll the image view up</translation>
+      <source>Scroll the image view up, or increase layer height in the layer transformation and text tools.</source>
+      <translation>Scroll the image view up, or increase layer height in the layer transformation and text tools.</translation>
     </message>
     <message>
       <location filename="../config/key_config_definitions.json" line="59"/>
@@ -334,13 +334,13 @@
     </message>
     <message>
       <location filename="../config/key_config_definitions.json" line="111"/>
-      <source>Pan down:</source>
-      <translation>Pan down:</translation>
+      <source>Pan down/decrease height:</source>
+      <translation>Pan down/decrease height:</translation>
     </message>
     <message>
       <location filename="../config/key_config_definitions.json" line="114"/>
-      <source>Scroll the image view down</source>
-      <translation>Scroll the image view down</translation>
+      <source>Scroll the image view down, or decrease layer height in the layer transformation and text tools.</source>
+      <translation>Scroll the image view down, or decrease layer height in the layer transformation and text tools.</translation>
     </message>
     <message>
       <location filename="../config/key_config_definitions.json" line="59"/>
@@ -354,8 +354,8 @@
     </message>
     <message>
       <location filename="../config/key_config_definitions.json" line="123"/>
-      <source>Move the image generation area left</source>
-      <translation>Move the image generation area left</translation>
+      <source>Move the image generation area left, move active layer left, or view previous generated image option</source>
+      <translation>Move the image generation area left, move active layer left, or view previous generated image option</translation>
     </message>
     <message>
       <location filename="../config/key_config_definitions.json" line="59"/>
@@ -369,8 +369,8 @@
     </message>
     <message>
       <location filename="../config/key_config_definitions.json" line="132"/>
-      <source>Move the image generation area right</source>
-      <translation>Move the image generation area right</translation>
+      <source>Move the image generation area right, move active layer right, or view next generated image option</source>
+      <translation>Move the image generation area right, move active layer right, or view next generated image option</translation>
     </message>
     <message>
       <location filename="../config/key_config_definitions.json" line="59"/>
@@ -384,8 +384,8 @@
     </message>
     <message>
       <location filename="../config/key_config_definitions.json" line="141"/>
-      <source>Move the image generation area up</source>
-      <translation>Move the image generation area up</translation>
+      <source>Move the image generation area up, move active layer up, or zoom in on first generated image option</source>
+      <translation>Move the image generation area up, move active layer up, or zoom in on first generated image option</translation>
     </message>
     <message>
       <location filename="../config/key_config_definitions.json" line="59"/>
@@ -399,8 +399,8 @@
     </message>
     <message>
       <location filename="../config/key_config_definitions.json" line="150"/>
-      <source>Move the image generation area down</source>
-      <translation>Move the image generation area down</translation>
+      <source>Move the image generation area down, move active layer down, or zoom to show all generated image options</source>
+      <translation>Move the image generation area down, move active layer down, or zoom to show all generated image options</translation>
     </message>
     <message>
       <location filename="../config/key_config_definitions.json" line="59"/>
@@ -784,13 +784,13 @@
     </message>
     <message>
       <location filename="../config/key_config_definitions.json" line="381"/>
-      <source>Rotate layer counter-clockwise:</source>
-      <translation>Rotate layer counter-clockwise:</translation>
+      <source>Rotate layer counter-clockwise/text size down:</source>
+      <translation>Rotate layer counter-clockwise/text size down:</translation>
     </message>
     <message>
       <location filename="../config/key_config_definitions.json" line="384"/>
-      <source>Rotates the layer when the layer transformation tool is active</source>
-      <translation>Rotates the layer when the layer transformation tool is active</translation>
+      <source>Rotates the layer when the layer transformation tool is active, or decrease font size in the text tool.</source>
+      <translation>Rotates the layer when the layer transformation tool is active, or decrease font size in the text tool.</translation>
     </message>
     <message>
       <location filename="../config/key_config_definitions.json" line="329"/>
@@ -799,13 +799,13 @@
     </message>
     <message>
       <location filename="../config/key_config_definitions.json" line="390"/>
-      <source>Rotate layer clockwise:</source>
-      <translation>Rotate layer clockwise:</translation>
+      <source>Rotate layer clockwise/text size up:</source>
+      <translation>Rotate layer clockwise/text size up:</translation>
     </message>
     <message>
       <location filename="../config/key_config_definitions.json" line="384"/>
-      <source>Rotates the layer when the layer transformation tool is active</source>
-      <translation>Rotates the layer when the layer transformation tool is active</translation>
+      <source>Rotates the layer when the layer transformation tool is active, or decrease font size in the text tool.</source>
+      <translation>Rotates the layer when the layer transformation tool is active, or decrease font size in the text tool.</translation>
     </message>
     <message>
       <location filename="../config/key_config_definitions.json" line="329"/>
@@ -3049,8 +3049,8 @@ Please remember to include the traceback from the Details expander.</translation
     </message>
     <message>
       <location filename="../../src/tools/eyedropper_tool.py" line="31"/>
-      <source>{left_mouse_icon}: pick color</source>
-      <translation>{left_mouse_icon}: pick color</translation>
+      <source>{left_mouse_icon}: pick color - </source>
+      <translation>{left_mouse_icon}: pick color - </translation>
     </message>
   </context>
   <context>
@@ -3116,8 +3116,8 @@ Please remember to include the traceback from the Details expander.</translation
     </message>
     <message>
       <location filename="../../src/tools/free_selection_tool.py" line="32"/>
-      <source>Select or de-select polygonal areas</source>
-      <translation>Select or de-select polygonal areas</translation>
+      <source>Select or deselect polygonal areas</source>
+      <translation>Select or deselect polygonal areas</translation>
     </message>
     <message>
       <location filename="../../src/tools/free_selection_tool.py" line="33"/>
@@ -3188,8 +3188,8 @@ Please remember to include the traceback from the Details expander.</translation
     </message>
     <message>
       <location filename="../../src/tools/shape_selection_tool.py" line="31"/>
-      <source>Select or de-select rectangles or ellipses</source>
-      <translation>Select or de-select rectangles or ellipses</translation>
+      <source>Select or deselect rectangles or ellipses</source>
+      <translation>Select or deselect rectangles or ellipses</translation>
     </message>
     <message>
       <location filename="../../src/tools/shape_selection_tool.py" line="32"/>
@@ -4417,137 +4417,137 @@ Please remember to include the traceback from the Details expander.</translation
   <context>
     <name>ui.panel.tool_control_panels.text_panel</name>
     <message>
-      <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py" line="36"/>
+      <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py" line="37"/>
       <source>Font:</source>
       <translation>Font:</translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py" line="37"/>
+      <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py" line="38"/>
       <source>Font Size:</source>
       <translation>Font Size:</translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py" line="38"/>
+      <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py" line="39"/>
       <source>Enter Text:</source>
       <translation>Enter Text:</translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py" line="39"/>
+      <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py" line="40"/>
       <source>Stretch:</source>
       <translation>Stretch:</translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py" line="40"/>
+      <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py" line="41"/>
       <source>Text Color</source>
       <translation>Text Color</translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py" line="41"/>
+      <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py" line="42"/>
       <source>Background Color</source>
       <translation>Background Color</translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py" line="43"/>
+      <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py" line="44"/>
       <source>Alignment:</source>
       <translation>Alignment:</translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py" line="44"/>
+      <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py" line="45"/>
       <source>Left</source>
       <translation>Left</translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py" line="45"/>
+      <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py" line="46"/>
       <source>Center</source>
       <translation>Center</translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py" line="46"/>
+      <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py" line="47"/>
       <source>Right</source>
       <translation>Right</translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py" line="48"/>
+      <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py" line="49"/>
       <source>Pixels</source>
       <translation>Pixels</translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py" line="49"/>
+      <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py" line="50"/>
       <source>Point</source>
       <translation>Point</translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py" line="51"/>
+      <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py" line="52"/>
       <source>Text Style:</source>
       <translation>Text Style:</translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py" line="52"/>
+      <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py" line="53"/>
       <source>Bold</source>
       <translation>Bold</translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py" line="53"/>
+      <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py" line="54"/>
       <source>Italic</source>
       <translation>Italic</translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py" line="54"/>
+      <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py" line="55"/>
       <source>Overline</source>
       <translation>Overline</translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py" line="55"/>
+      <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py" line="56"/>
       <source>Strikeout</source>
       <translation>Strikeout</translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py" line="56"/>
+      <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py" line="57"/>
       <source>Underline</source>
       <translation>Underline</translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py" line="57"/>
+      <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py" line="58"/>
       <source>Fixed Pitch</source>
       <translation>Fixed Pitch</translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py" line="58"/>
+      <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py" line="59"/>
       <source>Kerning</source>
       <translation>Kerning</translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py" line="59"/>
+      <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py" line="60"/>
       <source>Fill Background</source>
       <translation>Fill Background</translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py" line="60"/>
+      <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py" line="61"/>
       <source>Resize Font to Bounds</source>
       <translation>Resize Font to Bounds</translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py" line="61"/>
+      <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py" line="62"/>
       <source>Resize Bounds to Text</source>
       <translation>Resize Bounds to Text</translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py" line="63"/>
+      <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py" line="64"/>
       <source>Set text color</source>
       <translation>Set text color</translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py" line="64"/>
+      <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py" line="65"/>
       <source>Set text background color</source>
       <translation>Set text background color</translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py" line="65"/>
+      <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py" line="66"/>
       <source>Change font size to fit the text in the available space.</source>
       <translation>Change font size to fit the text in the available space.</translation>
     </message>
     <message>
-      <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py" line="66"/>
+      <location filename="../../src/ui/panel/tool_control_panels/text_tool_panel.py" line="67"/>
       <source>Resize the text layer to fit the text.</source>
       <translation>Resize the text layer to fit the text.</translation>
     </message>

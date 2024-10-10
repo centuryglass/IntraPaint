@@ -101,7 +101,7 @@ class ImageLayerTest(unittest.TestCase):
         undo_count = UndoStack().undo_count()
 
         self.image_layer.image = new_image
-        self.content_changed_mock.assert_called_once()
+        self.content_changed_mock.assert_called()
         self.size_changed_mock.assert_called_once()
         self.assertEqual(UndoStack().undo_count(), undo_count + 1)
         final_image = self.image_layer.image

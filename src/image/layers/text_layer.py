@@ -112,8 +112,10 @@ class TextLayer(TransformLayer):
             self.invalidate_pixmap()
             self.set_name(self._get_name_from_text())
             self.set_size(new_text.size)
-            self.content_changed.emit(self, self.bounds)
+            self.signal_content_changed(self.bounds)
             self.text_data_changed.emit(new_text)
+            if self.visible and self.opacity > 0.0:
+                self.signal_content_changed(self.bounds)
 
     def set_qimage(self, image: QImage) -> None:
         """Throw an error when attempting to directly set this layer's image data."""

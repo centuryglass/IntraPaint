@@ -81,37 +81,37 @@
         "saved": true
     },
     "pan_left": {
-        "label": "Pan left:",
+        "label": "Pan left/decrease width:",
         "category": "Keybindings",
         "subcategory": "Navigation",
-        "description": "Scroll the image view left",
+        "description": "Scroll the image view left, or decrease layer width in the layer transformation and text tools.",
         "type": "string",
         "default": "Ctrl+Left",
         "saved": true
     },
     "pan_right": {
-        "label": "Pan right:",
+        "label": "Pan right/increase width:",
         "category": "Keybindings",
         "subcategory": "Navigation",
-        "description": "Scroll the image view right",
+        "description": "Scroll the image view right, or increase layer width in the layer transformation and text tools.",
         "type": "string",
         "default": "Ctrl+Right",
         "saved": true
     },
     "pan_up": {
-        "label": "Pan up:",
+        "label": "Pan up/increase height:",
         "category": "Keybindings",
         "subcategory": "Navigation",
-        "description": "Scroll the image view up",
+        "description": "Scroll the image view up, or increase layer height in the layer transformation and text tools.",
         "type": "string",
         "default": "Ctrl+Up",
         "saved": true
     },
     "pan_down": {
-        "label": "Pan down:",
+        "label": "Pan down/decrease height:",
         "category": "Keybindings",
         "subcategory": "Navigation",
-        "description": "Scroll the image view down",
+        "description": "Scroll the image view down, or decrease layer height in the layer transformation and text tools.",
         "type": "string",
         "default": "Ctrl+Down",
         "saved": true
@@ -120,7 +120,7 @@
         "label": "Move left:",
         "category": "Keybindings",
         "subcategory": "Navigation",
-        "description": "Move the image generation area left",
+        "description": "Move the image generation area left, move active layer left, or view previous generated image option",
         "type": "string",
         "default": "Left,H",
         "saved": true
@@ -129,7 +129,7 @@
         "label": "Move right:",
         "category": "Keybindings",
         "subcategory": "Navigation",
-        "description": "Move the image generation area right",
+        "description": "Move the image generation area right, move active layer right, or view next generated image option",
         "type": "string",
         "default": "Right,L",
         "saved": true
@@ -138,7 +138,7 @@
         "label": "Move up:",
         "category": "Keybindings",
         "subcategory": "Navigation",
-        "description": "Move the image generation area up",
+        "description": "Move the image generation area up, move active layer up, or zoom in on first generated image option",
         "type": "string",
         "default": "Up,K",
         "saved": true
@@ -147,7 +147,7 @@
         "label": "Move down:",
         "category": "Keybindings",
         "subcategory": "Navigation",
-        "description": "Move the image generation area down",
+        "description": "Move the image generation area down, move active layer down, or zoom to show all generated image options",
         "type": "string",
         "default": "Down,J",
         "saved": true
@@ -378,19 +378,19 @@
         "saved": true
     },
     "rotate_ccw_key": {
-        "label": "Rotate layer counter-clockwise:",
+        "label": "Rotate layer counter-clockwise/text size down:",
         "category": "Keybindings",
         "subcategory": "Tool Shortcuts",
-        "description": "Rotates the layer when the layer transformation tool is active",
+        "description": "Rotates the layer when the layer transformation tool is active, or decrease font size in the text tool.",
         "type": "string",
         "default": "o",
         "saved": true
     },
     "rotate_cw_key": {
-        "label": "Rotate layer clockwise:",
+        "label": "Rotate layer clockwise/text size up:",
         "category": "Keybindings",
         "subcategory": "Tool Shortcuts",
-        "description": "Rotates the layer when the layer transformation tool is active",
+        "description": "Rotates the layer when the layer transformation tool is active, or decrease font size in the text tool.",
         "type": "string",
         "default": "p",
         "saved": true

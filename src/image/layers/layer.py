@@ -88,6 +88,7 @@ class Layer(QObject):
         self._parent: Optional[LayerParent] = None
         self._locked = False
         self._z_value = 0
+        self._content_change_timestamp = 0.0
         Layer._next_layer_id += 1
 
     # PROPERTY DEFINITIONS:
@@ -314,45 +315,52 @@ class Layer(QObject):
                 self._pixmap.data = QPixmap()
         return self._pixmap.data
 
+    @property
+    def content_change_timestamp(self) -> float:
+        """Returns the timestamp from the last content_changed signal emitted by this layer."""
+        return self._content_change_timestamp
+
     # Function interface:
     # Unlike the property interface, these changes are not registered in the undo history. Broadcasting changes through
     # signals is optional, enabled by default, and will never occur if the new value parameter matches the old value.
 
-    def set_name(self, new_name: str, send_signals: bool = True) -> None:
+    def set_name(self, new_name: str) -> None:
         """Set the layer's display name."""
         if new_name != self._name:
             self._name = new_name
-            if send_signals:
-                self.name_changed.emit(self, new_name)
+            self.name_changed.emit(self, new_name)
 
-    def set_opacity(self, opacity: float, send_signals: bool = True) -> None:
+    def set_opacity(self, opacity: float) -> None:
         """Set the layer's opacity."""
         if opacity != self._opacity:
             self._opacity = opacity
-            if send_signals:
-                self.opacity_changed.emit(self, opacity)
+            self.opacity_changed.emit(self, opacity)
+            if self.visible:
+                self.signal_content_changed(self.bounds)
 
-    def set_composition_mode(self, mode: CompositeMode, send_signals: bool = True) -> None:
+    def set_composition_mode(self, mode: CompositeMode) -> None:
         """Set the layer's composition mode."""
         if mode != self._mode:
             self._mode = mode
-            if send_signals:
-                self.composition_mode_changed.emit(self, mode)
+            self.composition_mode_changed.emit(self, mode)
+            if self.visible and self.opacity > 0.0:
+                self.signal_content_changed(self.bounds)
 
-    def set_visible(self, visible: bool, send_signals: bool = True) -> None:
+    def set_visible(self, visible: bool) -> None:
         """Sets whether this layer is visible."""
         if visible != self._visible:
             self._visible = visible
-            if send_signals:
-                self.visibility_changed.emit(self, visible)
+            self.visibility_changed.emit(self, visible)
+            self.signal_content_changed(self.bounds)
 
-    def set_size(self, new_size: QSize, send_signals: bool = True) -> None:
+    def set_size(self, new_size: QSize) -> None:
         """Updates the layer's size."""
         if self._size != QSize:
             self._size = QSize(new_size)
             self._pixmap.invalidate()
-            if send_signals:
-                self.size_changed.emit(self, new_size)
+            self.size_changed.emit(self, new_size)
+            if self.visible and self.opacity > 0.0:
+                self.signal_content_changed(self.bounds)
 
     def set_locked(self, locked: bool) -> None:
         """Locks or unlocks the layer."""
@@ -540,14 +548,14 @@ class Layer(QObject):
         """Returns the contents of a bounding QRect as a QImage."""
         return self.get_qimage().copy(bounds_rect)
 
+    def signal_content_changed(self, change_bounds: QRect) -> None:
+        """Send the content change signal, saving the timestamp."""
+        self._content_change_timestamp = datetime.datetime.now().timestamp()
+        self.content_changed.emit(self, change_bounds)
+
     def invalidate_pixmap(self) -> None:
         """Mark the cached pixmap as invalid to ensure it gets recreated when needed next."""
         self._pixmap.invalidate()
-
-    def refresh_pixmap(self) -> None:
-        """Regenerate the image pixmap cache and notify self.content_changed subscribers."""
-        self._pixmap.data = QPixmap.fromImage(self.get_qimage())
-        self.content_changed.emit(self, self.bounds)
 
     def _apply_combinable_change(self,
                                  new_value: Any,

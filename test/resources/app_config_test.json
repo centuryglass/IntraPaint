@@ -61,7 +61,19 @@
     "undo_merge_interval": 0.2,
     "speed_modifier_multiplier": 5,
     "saved_colors": [],
-    "tablet_pressure_curve": [],
+    "tablet_pressure_curve": [
+        0.0,
+        0.1,
+        0.2,
+        0.30000000000000004,
+        0.4,
+        0.5,
+        0.6000000000000001,
+        0.7000000000000001,
+        0.8,
+        0.9,
+        1.0
+    ],
     "interrogate_model": "clip",
     "controlnet_tile_model": "control_v11f1e_sd15_tile [a371b31b]",
     "mask_blur": {

@@ -60,6 +60,16 @@ class FillSelectionPanel(SelectionPanel):
         self._fill_by_selection_checkbox.setToolTip(FILL_BY_SELECTION_TOOLTIP)
         checkbox_row.addWidget(self._fill_by_selection_checkbox)
 
+        def _selection_fill_disables_color(enabled: bool) -> None:
+            if enabled and self._color_select_checkbox.isChecked():
+                self._color_select_checkbox.setChecked(False)
+        self._fill_by_selection_checkbox.valueChanged.connect(_selection_fill_disables_color)
+
+        def _color_fill_disables_selection_fill(enabled: bool) -> None:
+            if enabled and self._fill_by_selection_checkbox.isChecked():
+                self._fill_by_selection_checkbox.setChecked(False)
+        cache.connect(self._fill_by_selection_checkbox, Cache.COLOR_SELECT_MODE, _color_fill_disables_selection_fill)
+
         self.insert_into_layout(checkbox_row)
         self.insert_into_layout(Divider(Qt.Orientation.Horizontal))
 

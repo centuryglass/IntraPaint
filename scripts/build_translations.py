@@ -12,6 +12,9 @@ TS_PATH = 'resources/translations/main.ts'
 
 python_files = []
 
+if os.path.isfile(TS_PATH):
+    os.remove(TS_PATH)
+
 for root, _, files in os.walk('src'):
     for file in files:
         if file.endswith('.py'):

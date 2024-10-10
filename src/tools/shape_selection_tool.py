@@ -28,7 +28,7 @@ def _tr(*args):
 ICON_PATH_SHAPE_SELECT_TOOL = f'{PROJECT_DIR}/resources/icons/tools/shape_selection_icon.svg'
 
 SHAPE_SELECTION_LABEL = _tr('Rectangle/Ellipse selection')
-SHAPE_SELECTION_TOOLTIP = _tr('Select or de-select rectangles or ellipses')
+SHAPE_SELECTION_TOOLTIP = _tr('Select or deselect rectangles or ellipses')
 SHAPE_SELECTION_CONTROL_HINT = _tr('{left_mouse_icon}, drag: select - {right_mouse_icon}, drag: deselect')
 
 ERASING_COLOR = Qt.GlobalColor.white

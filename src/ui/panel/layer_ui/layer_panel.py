@@ -14,7 +14,7 @@ from src.image.layers.layer import Layer, LayerParent
 from src.image.layers.layer_group import LayerGroup
 from src.ui.panel.layer_ui.layer_group_widget import LayerGroupWidget
 from src.ui.panel.layer_ui.layer_widget import PREVIEW_SIZE, LAYER_PADDING, MAX_WIDTH, LayerWidget
-from src.util.shared_constants import PROJECT_DIR, APP_ICON_PATH, ICON_SIZE
+from src.util.shared_constants import PROJECT_DIR, APP_ICON_PATH, SMALL_ICON_SIZE
 
 logger = logging.getLogger(__name__)
 
@@ -142,7 +142,7 @@ class LayerPanel(QWidget):
             button.setContentsMargins(2, 2, 2, 2)
             icon = QIcon(icon_path)
             button.setIcon(icon)
-            button.setIconSize(QSize(ICON_SIZE, ICON_SIZE))
+            button.setIconSize(QSize(SMALL_ICON_SIZE, SMALL_ICON_SIZE))
             button.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonIconOnly)
             button.clicked.connect(lambda: action())
             self._button_bar_layout.addWidget(button)
@@ -227,8 +227,8 @@ class LayerPanel(QWidget):
 
     def sizeHint(self) -> QSize:
         """At minimum, always show one layer."""
-        layer_width = PREVIEW_SIZE.width() + ICON_SIZE + 2 * LAYER_PADDING
-        layer_height = max(ICON_SIZE, PREVIEW_SIZE.height())
+        layer_width = PREVIEW_SIZE.width() + SMALL_ICON_SIZE + 2 * LAYER_PADDING
+        layer_height = max(SMALL_ICON_SIZE, PREVIEW_SIZE.height())
         width = min(MAX_WIDTH, layer_width + LAYER_PADDING)
         height = layer_height + LAYER_PADDING
         scrollbar = self._scroll_area.verticalScrollBar()

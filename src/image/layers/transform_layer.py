@@ -40,13 +40,14 @@ class TransformLayer(Layer):
         bounds = self.bounds
         return map_rect_precise(bounds, self._transform).toAlignedRect()
 
-    def set_transform(self, transform: QTransform, send_signals: bool = True) -> None:
+    def set_transform(self, transform: QTransform) -> None:
         """Updates the layer's matrix transformation."""
         if transform != self._transform:
             assert transform.isInvertible(), f'layer {self.name}:{self.id} given non-invertible transform'
             self._transform = transform
-            if send_signals:
-                self.transform_changed.emit(self, transform)
+            self.transform_changed.emit(self, transform)
+            if self.visible and self.opacity > 0.0:
+                self.signal_content_changed(self.bounds)
 
     def transformed_image(self) -> Tuple[QImage, QTransform]:
         """Apply all non-translating transformations to a copy of the image, returning it with the final translation."""

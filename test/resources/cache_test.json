@@ -192,6 +192,7 @@
     "masked_content": "original",
     "sampling_method": "Euler a",
     "upscale_method": "None",
+    "image_layer_scaling_behavior": "Scale merged, keep source layers",
     "seed": {
         "min": -1,
         "max": 18446744073709551615,

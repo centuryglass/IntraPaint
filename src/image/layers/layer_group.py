@@ -1,9 +1,11 @@
 """Represents a group of linked image layers that can be manipulated as one in limited ways."""
-from typing import List, Optional, Dict, Any, TypeAlias, Callable
+from contextlib import contextmanager, ExitStack
+from typing import List, Optional, Dict, Any, TypeAlias, Callable, Generator, Set
 
-from PySide6.QtCore import QRect, Signal, QPoint
+from PySide6.QtCore import QRect, Signal, QPoint, QSize, QTimer
 from PySide6.QtGui import QPainter, QImage, QTransform
 
+from src.image.composite_mode import CompositeMode
 from src.image.layers.image_layer import ImageLayer, ImageLayerState
 from src.image.layers.layer import Layer, LayerParent
 from src.image.layers.text_layer import TextLayer
@@ -17,6 +19,8 @@ from src.util.visual.geometry_utils import map_rect_precise
 from src.util.visual.image_utils import create_transparent_image, image_data_as_numpy_8bit
 
 RenderAdjustFn: TypeAlias = Callable[[int, QImage, QRect, QPainter], Optional[QImage]]
+
+RENDER_DELAY_MS = 10
 
 
 class LayerGroup(Layer, LayerParent):
@@ -34,6 +38,10 @@ class LayerGroup(Layer, LayerParent):
         self._layers: List[Layer] = []
         self._bounds = QRect()
         self._isolate = False
+        self._render_timer = QTimer()
+        self._render_timer.setSingleShot(True)
+        self._render_timer.setInterval(RENDER_DELAY_MS)
+        self._render_timer.timeout.connect(self._start_render)
 
     # PROPERTY DEFINITIONS:
 
@@ -67,7 +75,49 @@ class LayerGroup(Layer, LayerParent):
             return QRect()
         if self.size != bounds.size():
             self.set_size(bounds.size())
+        self._bounds = QRect(bounds)
         return bounds
+
+    def flip_horizontal(self) -> None:
+        """Flip the group horizontally."""
+        if self.locked:
+            raise ValueError('Attempted transformation on locked layer group.')
+        for layer in self.recursive_child_layers:
+            if layer.locked:
+                raise ValueError(f'Attempted transformation on layer group containing locked layer {layer.name}.')
+        bounds = self.bounds
+        right_edge = self.bounds.x() + self.bounds.width()
+
+        with UndoStack().combining_actions('LayerGroup.flip_horizontal') and self.all_signals_delayed():
+            for layer in self.recursive_child_layers:
+                if isinstance(layer, TransformLayer):
+                    initial_bounds = layer.transformed_bounds
+                    initial_x_offset = initial_bounds.x() - bounds.x()
+                    final_x = right_edge - initial_x_offset - initial_bounds.width()
+                    transform = layer.transform * QTransform.fromScale(-1.0, 1.0)
+                    intermediate_transform_bounds = map_rect_precise(layer.bounds, transform).toAlignedRect()
+                    transform = transform * QTransform.fromTranslate(final_x - intermediate_transform_bounds.x(), 0)
+                    layer.transform = transform
+
+    def flip_vertical(self, added_offset: int = 0, top_level=True) -> None:
+        """Flip the group vertically."""
+        if self.locked:
+            raise ValueError('Attempted transformation on locked layer group.')
+        for layer in self.recursive_child_layers:
+            if layer.locked:
+                raise ValueError(f'Attempted transformation on layer group containing locked layer {layer.name}.')
+        bounds = self.bounds
+        bottom_edge = self.bounds.y() + self.bounds.height()
+        with UndoStack().combining_actions('LayerGroup.flip_vertical') and self.all_signals_delayed():
+            for layer in self.recursive_child_layers:
+                if isinstance(layer, TransformLayer):
+                    initial_bounds = layer.transformed_bounds
+                    initial_y_offset = initial_bounds.y() - bounds.y()
+                    final_y = bottom_edge - initial_y_offset - initial_bounds.height() + added_offset
+                    transform = layer.transform * QTransform.fromScale(1.0, -1.0)
+                    intermediate_transform_bounds = map_rect_precise(layer.bounds, transform).toAlignedRect()
+                    transform = transform * QTransform.fromTranslate(0, final_y - intermediate_transform_bounds.y())
+                    layer.transform = transform
 
     @property
     def has_image(self) -> bool:
@@ -139,7 +189,7 @@ class LayerGroup(Layer, LayerParent):
             self._isolate = isolate
             self.isolate_changed.emit(self, isolate)
             if self.count > 0:
-                self.content_changed.emit(self, self.bounds)
+                self.signal_content_changed(self.bounds)
 
     def get_qimage(self) -> QImage:
         """Returns combined visible layer content as a QImage object."""
@@ -312,9 +362,6 @@ class LayerGroup(Layer, LayerParent):
         """
         assert layer in self._layers, f'layer {layer.name} is not in the image group.'
         layer.content_changed.disconnect(self._layer_content_change_slot)
-        layer.opacity_changed.disconnect(self._layer_content_change_slot)
-        layer.composition_mode_changed.disconnect(self._layer_content_change_slot)
-        layer.visibility_changed.disconnect(self._layer_visibility_change_slot)
         if isinstance(layer, TransformLayer):
             layer.transform_changed.disconnect(self._layer_bounds_change_slot)
         elif isinstance(layer, LayerGroup):
@@ -326,11 +373,11 @@ class LayerGroup(Layer, LayerParent):
         self._layers.pop(index)
         layer.layer_parent = None
         if layer.visible:
-            self._image_cache.invalidate()
-            self.invalidate_pixmap()
-            self.content_changed.emit(self, layer.bounds if not isinstance(layer, TransformLayer)
-                                      else layer.transformed_bounds)
-        self._get_local_bounds()  # Ensure size is correct
+            self._trigger_render()
+        last_bounds = self._bounds
+        bounds = self._get_local_bounds()  # Ensure size is correct
+        if bounds != last_bounds:
+            self.bounds_changed.emit(self, bounds)
         if isinstance(layer, LayerGroup):
             child_layers = layer.child_layers
             for child_layer in child_layers:
@@ -348,9 +395,6 @@ class LayerGroup(Layer, LayerParent):
         empty_image = layer.empty
         assert_valid_index(index, self._layers, allow_end=True)
         layer.content_changed.connect(self._layer_content_change_slot)
-        layer.opacity_changed.connect(self._layer_content_change_slot)
-        layer.composition_mode_changed.connect(self._layer_content_change_slot)
-        layer.visibility_changed.connect(self._layer_visibility_change_slot)
         layer_bounds = layer.bounds
         if isinstance(layer, TransformLayer):
             layer_bounds = layer.transformed_bounds
@@ -364,9 +408,7 @@ class LayerGroup(Layer, LayerParent):
         if len(self._layers) == 1 and AppStateTracker.app_state() == APP_STATE_NO_IMAGE:
             AppStateTracker.set_app_state(APP_STATE_EDITING)
         if layer.visible and not empty_image:
-            self._image_cache.invalidate()
-            self.invalidate_pixmap()
-            self.content_changed.emit(self, self.bounds)
+            self._trigger_render()
         self.layer_added.emit(layer)
         if bounds_changing:
             self._layer_bounds_change_slot(layer)
@@ -385,13 +427,7 @@ class LayerGroup(Layer, LayerParent):
             return
         self._layers.remove(layer)
         self._layers.insert(new_index, layer)
-        if isinstance(layer, TransformLayer):
-            change_bounds = layer.transformed_bounds
-        else:
-            change_bounds = layer.bounds
-        self._image_cache.invalidate()
-        self.invalidate_pixmap()
-        self.content_changed.emit(self, change_bounds)
+        self._trigger_render()
 
     def save_state(self) -> Any:
         """Export the current layer state, so it can be restored later."""
@@ -426,8 +462,8 @@ class LayerGroup(Layer, LayerParent):
             assert extra_layer is not None
             self.remove_layer(extra_layer)
 
-    def set_visible(self, visible: bool, send_signals: bool = True) -> None:
-        super().set_visible(visible, send_signals)
+    def set_visible(self, visible: bool) -> None:
+        super().set_visible(visible)
         for layer in self.recursive_child_layers:
             layer.visibility_changed.emit(layer, layer.visible)
 
@@ -449,6 +485,92 @@ class LayerGroup(Layer, LayerParent):
             super().set_locked(locked)
             self.propagate_parent_lock_signal(self)
 
+    @contextmanager
+    def all_signals_delayed(self) -> Generator[None, None, None]:
+        """Blocks signals from this layer and all child layers, sending the delayed signals together when the context
+           exits."""
+        # Cache all signal-relevant non-image data from this layer and all children, recursive.
+        content_change_timestamps: Dict[Layer, float] = {}
+        layer_names: Dict[Layer, str] = {}
+        visibility_states: Dict[Layer, bool] = {}
+        opacity_states: Dict[Layer, float] = {}
+        layer_sizes: Dict[Layer, QSize] = {}
+        layer_modes: Dict[Layer, CompositeMode] = {}
+        layer_z_values: Dict[Layer, int] = {}
+        lock_states: Dict[Layer, bool] = {}
+        parent_states: Dict[Layer, Optional[LayerGroup]] = {}
+        layer_transforms: Dict[TransformLayer, QTransform] = {}
+        alpha_lock_states: Dict[ImageLayer, bool] = {}
+        isolate_states: Dict[LayerGroup, bool] = {}
+        layer_bounds: Dict[LayerGroup, QRect] = {}
+        layer_text_data: Dict[TextLayer, str] = {}
+
+        all_layers: Set[Layer] = {self, *self.recursive_child_layers}
+        for layer in all_layers:
+            content_change_timestamps[layer] = layer.content_change_timestamp
+            layer_names[layer] = layer.name
+            visibility_states[layer] = layer.visible
+            opacity_states[layer] = layer.opacity
+            layer_sizes[layer] = layer.size
+            layer_modes[layer] = layer.composition_mode
+            layer_z_values[layer] = layer.z_value
+            lock_states[layer] = layer.locked
+            parent = layer.layer_parent
+            assert parent is None or isinstance(parent, LayerGroup)
+            parent_states[layer] = parent
+            if isinstance(layer, TransformLayer):
+                layer_transforms[layer] = layer.transform
+            if isinstance(layer, ImageLayer):
+                alpha_lock_states[layer] = layer.alpha_locked
+            if isinstance(layer, LayerGroup):
+                isolate_states[layer] = layer.isolate
+                layer_bounds[layer] = layer.bounds
+            if isinstance(layer, TextLayer):
+                layer_text_data[layer] = layer.text_rect.serialize(False)
+
+        try:
+            with ExitStack() as stack:
+                for layer in all_layers:
+                    stack.enter_context(signals_blocked(layer))
+                yield
+        finally:
+            updated_layer_list: Set[Layer] = {self, *self.recursive_child_layers}
+            for layer in all_layers:
+                old_parent = parent_states[layer]
+                new_parent = layer.layer_parent
+                if old_parent != new_parent:
+                    if isinstance(old_parent, LayerGroup) and old_parent in all_layers:
+                        old_parent.layer_removed.emit(layer)
+                    if isinstance(new_parent, LayerGroup) and new_parent in all_layers:
+                        new_parent.layer_added.emit(layer)
+                if layer not in updated_layer_list:
+                    assert new_parent not in updated_layer_list
+                    continue
+                if layer.content_change_timestamp > content_change_timestamps[layer]:
+                    layer.content_changed.emit(layer, layer.bounds)
+                if layer_names[layer] != layer.name:
+                    layer.name_changed.emit(layer, layer.name)
+                if visibility_states[layer] != layer.visible:
+                    layer.visibility_changed.emit(layer, layer.visible)
+                if opacity_states[layer] != layer.opacity:
+                    layer.opacity_changed.emit(layer, layer.opacity)
+                if layer_modes[layer] != layer.composition_mode:
+                    layer.composition_mode_changed.emit(layer, layer.composition_mode)
+                if layer_z_values[layer] != layer.z_value:
+                    layer.z_value_changed.emit(layer, layer.z_value)
+                if lock_states[layer] != layer.locked:
+                    layer.lock_changed.emit(layer, layer.locked)
+                if isinstance(layer, TransformLayer) and layer_transforms[layer] != layer.transform:
+                    layer.transform_changed.emit(layer, layer.transform)
+                if isinstance(layer, ImageLayer) and alpha_lock_states[layer] != layer.alpha_locked:
+                    layer.alpha_lock_changed.emit(layer, layer.alpha_locked)
+                if isinstance(layer, LayerGroup) and isolate_states[layer] != layer.isolate:
+                    layer.isolate_changed.emit(layer, layer.isolate)
+                if isinstance(layer, LayerGroup) and layer_bounds[layer] != layer.bounds:
+                    layer.bounds_changed.emit(layer, layer.bounds)
+                if isinstance(layer, TextLayer) and layer_text_data[layer] != layer.text_rect.serialize(False):
+                    layer.text_data_changed.emit(layer.text_rect)
+
     def propagate_parent_lock_signal(self, source: Layer) -> None:
         """Pass on the lock signal from a parent layer through all child layers as appropriate."""
         assert source == self or source.contains_recursive(self)
@@ -461,25 +583,29 @@ class LayerGroup(Layer, LayerParent):
                 layer.propagate_parent_lock_signal(source)
 
     def _layer_content_change_slot(self, layer: Layer, _=None) -> None:
-        if layer.visible and layer in self._layers:
-            self._image_cache.invalidate()
-            self.invalidate_pixmap()
-            bounds = self._get_local_bounds()  # Ensure size is correct
-            self.content_changed.emit(self, bounds)
-
-    def _layer_visibility_change_slot(self, layer: Layer, _=None) -> None:
-        if layer in self._layers:
-            self._image_cache.invalidate()
-            self.invalidate_pixmap()
-            self.content_changed.emit(self, self.bounds)
+        if layer.visible and layer in self._layers and layer.content_change_timestamp > self.content_change_timestamp:
+            self._trigger_render()
 
     def _layer_bounds_change_slot(self, layer: Layer, _=None) -> None:
         if layer in self._layers:
-            self._image_cache.invalidate()
-            self.invalidate_pixmap()
+            last_bounds = self._bounds
             bounds = self._get_local_bounds()  # Ensure size is correct
-            self.content_changed.emit(self, bounds)
-            self.bounds_changed.emit(self, bounds)
+            if bounds != last_bounds:
+                self.bounds_changed.emit(self, bounds)
+                if bounds.size() != last_bounds.size() and layer.content_change_timestamp \
+                        > self.content_change_timestamp:
+                    self._trigger_render()
+
+    def _trigger_render(self) -> None:
+        if not self._render_timer.isActive():
+            self._render_timer.start()
+
+    def _start_render(self) -> None:
+        self._render_timer.stop()
+        bounds = self._get_local_bounds()  # Ensure size is correct
+        self._image_cache.invalidate()
+        self.invalidate_pixmap()
+        self.signal_content_changed(bounds)
 
 
 class LayerGroupState:

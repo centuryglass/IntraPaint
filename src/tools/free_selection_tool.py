@@ -29,7 +29,7 @@ def _tr(*args):
 ICON_PATH_FREE_SELECT_TOOL = f'{PROJECT_DIR}/resources/icons/tools/free_selection_icon.svg'
 
 FREE_SELECTION_LABEL = _tr('Free selection')
-FREE_SELECTION_TOOLTIP = _tr('Select or de-select polygonal areas')
+FREE_SELECTION_TOOLTIP = _tr('Select or deselect polygonal areas')
 FREE_SELECTION_CONTROL_HINT = _tr('{left_mouse_icon}: add or move point<br/>{enter_key}'
                                   ' or {left_mouse_icon}+first point: finish selection<br/>'
                                   '{escape_key}: cancel selection')
