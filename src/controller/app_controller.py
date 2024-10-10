@@ -621,7 +621,8 @@ class AppController(MenuBuilder):
         }
         not_bottom_layer_methods: Set[Callable[..., None]] = {
             self.select_next_layer,
-            self.move_layer_down
+            self.move_layer_down,
+            self.merge_layer_down
         }
         not_top_layer_methods: Set[Callable[..., None]] = {
             self.select_previous_layer,
@@ -673,6 +674,15 @@ class AppController(MenuBuilder):
                 if menu_method in method_set and disable_condition:
                     action.setEnabled(False)
                     break
+
+        # "Merge down" should also check the next layer:
+        merge_down_action = self.get_action_for_method(self.merge_layer_down)
+        if merge_down_action.isEnabled():
+            next_layer = self._image_stack.next_layer(active_layer)
+            if next_layer is None or next_layer.locked or next_layer.parent_locked or not next_layer.visible \
+                    or not isinstance(next_layer, TransformLayer) \
+                    or next_layer.layer_parent != active_layer.layer_parent:
+                merge_down_action.setEnabled(False)
 
     # Menu action definitions:
 

@@ -482,7 +482,7 @@ Click and drag any layer to move it within the list.  Right-click a layer to sho
 7. **Closed layer group**: Another layer group below all other image content, hidden so that its contents are preserved but not seen.
 8. **Layer name**:  Each layer has a name, used for organizational purposes only.  Double-click a layer's name to edit it.
 9. **Isolate button**: Available only on layer groups, activating isolation makes it so the blending mode of layers within the group will never blend with layers outside of the group.
-10. **Alpha lock button**:  Available only on image layers, alpha locking prevents all changes to layer opacity. When the alpha lock is set, drawing within the layer will only affect non-transparent areas, and erasers will change image content to black instead of erasing it.
+10. **Alpha lock button**:  Available only on image layers, alpha locking prevents all changes to layer opacity. When the alpha lock is set, drawing within the layer will only affect non-transparent areas, and the eraser tool will do nothing.
 11. **Lock button**: When locked, layers cannot be moved or edited in any way.  When a layer group is locked, the same restriction applies to all layers within it.
 12. **Visibility button**: Click to hide the layer within the image, or to reveal it if it was previously hidden.  Most changes to hidden layer content will also be prevented.
 13. **New layer button**: Click to create a new layer. If an unlocked layer group is the active layer the new layer will be created at the top of that group, otherwise it will be created above the active layer.

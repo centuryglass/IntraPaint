@@ -332,6 +332,7 @@ class LayerPanel(QWidget):
             if mode_index >= 0:
                 self._mode_box.setCurrentIndex(mode_index)
 
+
     def _layer_added_slot(self, new_layer: Layer) -> None:
         self._open_parent_groups(new_layer)
 

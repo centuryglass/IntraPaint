@@ -101,6 +101,8 @@ class TransformGroup(TransformLayer):
                 for child in layer.child_layers:
                     self._layer_added_slot(child)
         layer.lock_changed.connect(self._layer_locked_slot)
+        if layer.locked or layer.parent_locked:
+            self.set_locked(True)
         self._get_local_bounds()  # Updates size, emits size_changed if needed
 
     def _layer_removed_slot(self, layer: Layer) -> None:
@@ -110,6 +112,7 @@ class TransformGroup(TransformLayer):
                 layer.set_transform(layer.transform * self.transform.inverted()[0])
                 layer.size_changed.disconnect(self._handle_external_changes)
                 layer.transform_changed.disconnect(self._handle_external_changes)
+                layer.lock_changed.disconnect(self._layer_locked_slot)
                 self._transform_layers.remove(layer)
         else:
             assert isinstance(layer, LayerGroup)
@@ -118,10 +121,10 @@ class TransformGroup(TransformLayer):
                 layer.layer_removed.disconnect(self._layer_removed_slot)
                 layer.size_changed.disconnect(self._handle_external_changes)
                 layer.bounds_changed.disconnect(self._handle_external_changes)
+                layer.lock_changed.disconnect(self._layer_locked_slot)
                 self._groups.remove(layer)
                 for child in layer.child_layers:
                     self._layer_removed_slot(child)
-        layer.lock_changed.disconnect(self._layer_locked_slot)
         self._get_local_bounds()  # Updates size, emits size_changed if needed
 
     def _handle_external_changes(self, layer: Layer, _) -> None:

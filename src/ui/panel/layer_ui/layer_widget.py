@@ -301,6 +301,7 @@ class LayerWidget(BorderedWidget):
         drag_distance = (self._click_pos - event.pos()).manhattanLength()
 
         if (drag_distance > QApplication.startDragDistance() and self._layer != self._image_stack.layer_stack
+                and not self._layer.parent_locked
                 and event.buttons() == Qt.MouseButton.LeftButton):
             self._clicking = True
             self.update()
@@ -329,12 +330,12 @@ class LayerWidget(BorderedWidget):
         menu.setTitle(self._layer.name)
 
         def _add_action(name: str, action_callback: Callable[..., None], disable_if_locked=False) -> QAction:
-            action = menu.addAction(name)
-            assert action is not None
-            action.triggered.connect(action_callback)
+            new_action = menu.addAction(name)
+            assert new_action is not None
+            new_action.triggered.connect(action_callback)
             if disable_if_locked:
-                action.setEnabled(not self._layer.locked and not self._layer.parent_locked)
-            return action
+                new_action.setEnabled(not self._layer.locked and not self._layer.parent_locked)
+            return new_action
 
         _add_action(MENU_OPTION_RENAME, self._label.activate_input_mode, disable_if_locked=True)
 
@@ -356,9 +357,13 @@ class LayerWidget(BorderedWidget):
             if index is not None and index < self._image_stack.count - 1:
                 merge_option = _add_action(MENU_OPTION_MERGE_DOWN,
                                            lambda: self._image_stack.merge_layer_down(self.layer), True)
-                next_layer = self._image_stack.next_layer(self._layer)
-                if next_layer is None or next_layer.locked or next_layer.parent_locked or not next_layer.visible:
+                if not isinstance(self.layer, TransformLayer):
                     merge_option.setEnabled(False)
+                else:
+                    next_layer = self._image_stack.next_layer(self._layer)
+                    if next_layer is None or next_layer.locked or next_layer.parent_locked or not next_layer.visible \
+                            or not isinstance(next_layer, TransformLayer):
+                        merge_option.setEnabled(False)
 
             flatten_action = _add_action(MENU_OPTION_FLATTEN, lambda: self._image_stack.flatten_layer(self.layer),
                                          True)

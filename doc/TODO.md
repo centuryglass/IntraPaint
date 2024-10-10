@@ -6,9 +6,6 @@
 - Upscale: make new layer, scale up existing layers
 
 ## Priority issues:
-- Double-check layer merge behavior with layer groups.
-- Re-ordering locked layers is blocked, but that should only be true if the layer group is locked.
-- Transform tool x/y fields go out of sync
 - Use improved input hints on generated image picker
 - "crop layer to selection": overlap handling on layer groups needs fixes
 - layer flattening issue on groups containing groups: test with "group compositing" in layer_blend_test.ora

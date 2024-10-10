@@ -69,8 +69,9 @@ ERROR_MESSAGE_LOCKED_LAYER = _tr('Unlock the layer before attempting any changes
 
 ERROR_TITLE_MERGE_FAILED = _tr('Merging layers failed')
 ERROR_MESSAGE_HIDDEN_LAYER_MERGE = _tr('Only visible layers can be merged.')
+ERROR_MESSAGE_GROUP_MERGE_BLOCKED = _tr('The layer below is a layer group, flatten the group into a single image layer first.')
 
-ERROR_TITLE_LOCKED_GROUP = _tr('Layer group "{group_name}" is locked')
+ERROR_TITLE_LOCKED_GROUP = _tr('Layer "{layer_name}" is in a locked group')
 ERROR_MESSAGE_LOCKED_GROUP = _tr('Unlock the layer group before trying to change layers within the group.')
 
 ERROR_TITLE_TOP_GROUP_CHANGE = _tr('Blocked action on main layer group')
@@ -809,7 +810,7 @@ class ImageStack(QObject):
 
     def move_layer(self, layer: Layer, new_parent: LayerGroup, new_index: int) -> None:
         """Moves a layer to a specific index under a parent group."""
-        if not self._validate_layer_showing_errors(layer):
+        if not self._validate_layer_showing_errors(layer, allow_lock=True):
             return
         assert self._layer_stack.contains_recursive(layer)
         assert self._layer_stack == new_parent or self._layer_stack.contains_recursive(new_parent)
@@ -982,6 +983,8 @@ class ImageStack(QObject):
         assert layer.layer_parent is not None \
                and layer.layer_parent.contains(layer), f'invalid layer: {layer.name}:{layer.id}'
         if not isinstance(layer, TransformLayer):
+            logger.error('merge_layer_down should be blocked on non-transform layers but was called on'
+                         f' {layer.name}:{layer.id}')
             return
         top_layer = cast(TransformLayer, layer)
         layer_parent = cast(LayerGroup, top_layer.layer_parent)
@@ -990,6 +993,9 @@ class ImageStack(QObject):
         if layer_index == layer_parent.count - 1:
             return
         base_layer = layer_parent.get_layer_by_index(layer_index + 1)
+        if isinstance(base_layer, LayerGroup):
+            show_error_dialog(None, ERROR_TITLE_MERGE_FAILED, ERROR_MESSAGE_GROUP_MERGE_BLOCKED)
+            return
         if not isinstance(base_layer, TransformLayer) or base_layer.locked or base_layer.parent_locked:
             show_error_dialog(None, ERROR_TITLE_LOCKED_LAYER, ERROR_MESSAGE_LOCKED_LAYER)
             return
@@ -1707,7 +1713,7 @@ class ImageStack(QObject):
             assert parent_index is not None
             return outer_parent, parent_index + 1
         next_layer = parent.get_layer_by_index(current_index + 1)
-        if isinstance(next_layer, LayerGroup):
+        if isinstance(next_layer, LayerGroup) and not (next_layer.locked or next_layer.parent_locked):
             return next_layer, 0
         return parent, current_index + 1
 
@@ -1754,7 +1760,7 @@ class ImageStack(QObject):
             assert parent_index is not None
             return outer_parent, parent_index
         last_layer = parent.get_layer_by_index(current_index - 1)
-        if isinstance(last_layer, LayerGroup):
+        if isinstance(last_layer, LayerGroup) and not (last_layer.locked or last_layer.parent_locked):
             return last_layer, last_layer.count
         return parent, current_index - 1
 
@@ -1805,50 +1811,6 @@ class ImageStack(QObject):
             self._content_change_signal_enabled = True
             self._emit_content_changed()
 
-    @staticmethod
-    def _find_offset_index(layer: Layer, offset: int, allow_end_indices=True) -> Tuple[LayerGroup, int]:
-
-        def _recursive_offset(parent: LayerGroup, index: int, off: int) -> Tuple[LayerGroup, int]:
-            max_idx = parent.count
-            if allow_end_indices:
-                max_idx += 1
-            step = 1 if off > 0 else -1
-            while off != 0:
-                if index < 0 or index >= max_idx:
-                    if parent.layer_parent is None:
-                        return parent, int(clamp(index, 0, max_idx))
-                    next_parent = parent.layer_parent
-                    assert isinstance(next_parent, LayerGroup)
-                    parent_idx = next_parent.get_layer_index(parent)
-                    assert parent_idx is not None
-                    if index > 0:
-                        parent_idx += 1
-                    return _recursive_offset(next_parent, parent_idx, off)
-                if index > max_idx:
-                    if parent.layer_parent is None:
-                        return parent, max_idx
-                index += step
-                off -= step
-                if 0 <= index < parent.count:
-                    layer_at_index = parent.get_layer_by_index(index)
-                    assert layer_at_index != layer, ('something is seriously wrong with layer hierarchy...'
-                                                     '(multiple parents?)')
-                    if isinstance(layer_at_index, LayerGroup):
-                        if step == 1:
-                            inner_index = 0
-                        else:
-                            inner_index = layer_at_index.count
-                            if allow_end_indices:
-                                inner_index += 1
-                        return _recursive_offset(layer_at_index, inner_index, off)
-            return parent, int(clamp(index, 0, max_idx))
-
-        assert layer.layer_parent is not None
-        layer_parent = cast(LayerGroup, layer.layer_parent)
-        layer_index = layer_parent.get_layer_index(layer)
-        assert layer_index is not None
-        return _recursive_offset(layer_parent, layer_index, offset)
-
     def _validate_layer_showing_errors(self, layer: Layer, allow_lock=False, allow_parent_lock=False,
                                        allow_layer_stack=False) -> bool:
         """Return whether a change is appropriate for a given layer, and if not, show a relevant error dialog."""
@@ -1859,6 +1821,7 @@ class ImageStack(QObject):
             show_error_dialog(None, ERROR_TITLE_MERGE_FAILED, ERROR_MESSAGE_LOCKED_LAYER)
             return False
         if not allow_parent_lock and layer.parent_locked:
-            show_error_dialog(None, ERROR_TITLE_LOCKED_GROUP, ERROR_MESSAGE_LOCKED_GROUP)
+            show_error_dialog(None, ERROR_TITLE_LOCKED_GROUP.format(layer_name=layer.name),
+                              ERROR_MESSAGE_LOCKED_GROUP)
             return False
         return True

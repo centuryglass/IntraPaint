@@ -163,8 +163,9 @@ class Layer(QObject):
     @z_value.setter
     def z_value(self, new_z_value: int) -> None:
         if new_z_value != self._z_value:
-            self._z_value = new_z_value
-            self.z_value_changed.emit(self, new_z_value)
+            with self.with_lock_disabled():  # locked layers can still be reordered
+                self._z_value = new_z_value
+                self.z_value_changed.emit(self, new_z_value)
 
     @property
     def id(self) -> int:
@@ -241,11 +242,6 @@ class Layer(QObject):
             while parent is not None:
                 assert isinstance(parent, Layer)
                 if not parent._visible:
-                    if parent.locked or parent.parent_locked:
-                        error_message = ERROR_MESSAGE_LOCKED_PARENT.format(layer_name=self.name,
-                                                                           parent_name=parent.name)
-                        show_error_dialog(None, ERROR_TITLE_SHOW_LAYER_FAILED, error_message)
-                        return
                     toggled_layers.add(parent)
                     i = 0
                     while True:
@@ -349,9 +345,10 @@ class Layer(QObject):
     def set_visible(self, visible: bool) -> None:
         """Sets whether this layer is visible."""
         if visible != self._visible:
-            self._visible = visible
-            self.visibility_changed.emit(self, visible)
-            self.signal_content_changed(self.bounds)
+            with self.with_lock_disabled():  # Showing and hiding locked layers should be allowed
+                self._visible = visible
+                self.visibility_changed.emit(self, visible)
+                self.signal_content_changed(self.bounds)
 
     def get_visible(self) -> None:
         """Returns whether this layer is set to visible. Unlike the visible property, this ignores parent visibility."""
@@ -566,7 +563,8 @@ class Layer(QObject):
                                  last_value: Any,
                                  value_setter: Callable[[Any], None],
                                  change_type: str) -> None:
-        assert not self.locked and not self.parent_locked, f'Tried to change {change_type} in a locked layer'
+        if value_setter != self.set_visible:
+            assert not self.locked and not self.parent_locked, f'Tried to change {change_type} in a locked layer'
         if last_value == new_value:
             return
 

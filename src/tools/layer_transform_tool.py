@@ -47,7 +47,7 @@ class LayerTransformTool(BaseTool):
         self._image_viewer = image_viewer
         self._initial_transform = QTransform()
         self._transform_outline = TransformOutline(QRectF())
-        self._transform_outline.offset_changed.connect(self._offset_change_slot)
+        self._transform_outline.pos_changed.connect(self._pos_change_slot)
         self._transform_outline.scale_changed.connect(self._scale_change_slot)
         self._transform_outline.angle_changed.connect(self._angle_change_slot)
         self._transform_outline.transform_changed.connect(self._transform_change_slot)
@@ -255,11 +255,11 @@ class LayerTransformTool(BaseTool):
 
     def _transform_change_slot(self, transform: QTransform) -> None:
         layer = self._layer
-        if layer is None:
+        if layer is None or layer.locked or layer.parent_locked:
             return
         try:
             layer.transform = transform
-        except RuntimeError:  # undo stack conflict, just don't register this one in the undo history
+        except RuntimeError:  # undo stack conflict: just don't register this one in the undo history
             layer.set_transform(transform)
         self._control_panel.set_preview_transform(layer.transform)
 
@@ -274,7 +274,7 @@ class LayerTransformTool(BaseTool):
         field.valueChanged.connect(change_handler)
 
     # noinspection PyUnusedLocal
-    def _offset_change_slot(self, *unused_args) -> None:
+    def _pos_change_slot(self, *unused_args) -> None:
         self._control_panel.x_position = self._transform_outline.x_pos
         self._control_panel.y_position = self._transform_outline.y_pos
 
@@ -288,6 +288,6 @@ class LayerTransformTool(BaseTool):
         self._control_panel.rotation = angle
 
     def _update_all_controls(self) -> None:
-        self._offset_change_slot()
+        self._pos_change_slot()
         self._scale_change_slot(*self._transform_outline.transform_scale)
         self._angle_change_slot(self._transform_outline.rotation_angle)

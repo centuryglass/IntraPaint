@@ -27,7 +27,7 @@ class LayerVisibilityButton(LayerToggleButton):
 
     def __init__(self, connected_layer: Layer) -> None:
         """Connect to the layer and load the initial icon."""
-        super().__init__(connected_layer, ICON_PATH_VISIBLE_LAYER, ICON_PATH_HIDDEN_LAYER)
+        super().__init__(connected_layer, ICON_PATH_VISIBLE_LAYER, ICON_PATH_HIDDEN_LAYER, disable_when_locked=False)
         self.setToolTip(VISIBILITY_TOOLTIP)
 
     def _get_boolean(self, layer: Layer) -> bool:

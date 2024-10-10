@@ -49,7 +49,7 @@ class TransformOutline(QGraphicsObject):
     """
 
     transform_changed = Signal(QTransform)
-    offset_changed = Signal(float, float)
+    pos_changed = Signal(float, float)
     scale_changed = Signal(float, float)
     angle_changed = Signal(float)
 
@@ -114,7 +114,6 @@ class TransformOutline(QGraphicsObject):
             dx, dy, sx, sy, angle = extract_transform_parameters(self.transform() * matrix, self.transformation_origin)
         else:
             dx, dy, sx, sy, angle = extract_transform_parameters(matrix, self.transformation_origin)
-        offset_changed = dx != self._x_offset or dy != self._y_offset
         scale_changed = sx != self._x_scale or sy != self._y_scale
         angle_changed = angle != self._degrees
         self._x_offset = dx
@@ -122,11 +121,16 @@ class TransformOutline(QGraphicsObject):
         self._x_scale = sx
         self._y_scale = sy
         self._degrees = angle
+        x0 = self.x_pos
+        y0 = self.y_pos
         super().setTransform(matrix, combine)
+        x1 = self.x_pos
+        y1 = self.y_pos
+        offset_changed = x0 != x1 or y0 != y1
         if offset_changed or scale_changed or angle_changed:
             self.transform_changed.emit(self.transform())
         if offset_changed:
-            self.offset_changed.emit(dx, dy)
+            self.pos_changed.emit(x1, y1)
         if scale_changed:
             self.scale_changed.emit(sx, sy)
         if angle_changed:
