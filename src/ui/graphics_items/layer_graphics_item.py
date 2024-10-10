@@ -1,4 +1,5 @@
 """Renders an image layer into a QGraphicsScene."""
+from PySide6.QtCore import QRect
 from PySide6.QtGui import QTransform
 from PySide6.QtWidgets import QGraphicsItem
 
@@ -16,6 +17,7 @@ class LayerGraphicsItem(PixmapItem):
         super().__init__()
         self._layer = layer
         self._hidden = False
+        self._pending_bounds = QRect()
         self.composition_mode = layer.composition_mode
 
         layer.visibility_changed.connect(self._update_visibility)
@@ -57,6 +59,9 @@ class LayerGraphicsItem(PixmapItem):
     # noinspection PyUnusedLocal
     def _update_pixmap(self, *args) -> None:
         self.setPixmap(self._layer.pixmap)
+        if not self._pending_bounds.isNull() and self._pending_bounds.size() == self.pixmap().size():
+            self.setTransform(QTransform.fromTranslate(self._pending_bounds.x(), self._pending_bounds.y()))
+            self._pending_bounds = QRect()
         self.composition_mode = self._layer.composition_mode
         self.update()
 
@@ -77,4 +82,9 @@ class LayerGraphicsItem(PixmapItem):
     # noinspection PyUnusedLocal
     def _update_bounds(self, *args) -> None:
         bounds = self._layer.bounds
-        self.setTransform(QTransform.fromTranslate(bounds.x(), bounds.y()))
+        if bounds.size() == self.pixmap().size():
+            self._pending_bounds = QRect()
+            self.setTransform(QTransform.fromTranslate(bounds.x(), bounds.y()))
+        else:
+            self._pending_bounds = QRect(bounds)  # Wait for the pixmap to update
+

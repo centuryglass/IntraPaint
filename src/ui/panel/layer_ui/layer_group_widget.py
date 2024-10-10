@@ -35,6 +35,7 @@ class LayerGroupWidget(BorderedWidget):
 
         # Own layer item and toggle switch:
         self._parent_frame = BorderedWidget(self)
+        self._parent_frame.setAutoFillBackground(False)
         parent_frame_layout = QHBoxLayout(self._parent_frame)
         parent_frame_layout.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
 
@@ -60,6 +61,7 @@ class LayerGroupWidget(BorderedWidget):
         self._insert_parent: Optional[LayerGroup] = None
         self._insert_index = -1
         self._insert_pos = -1
+        self._insert_width = -1
 
         for layer in layer_stack.child_layers:
             self.add_child_layer(layer)
@@ -74,14 +76,14 @@ class LayerGroupWidget(BorderedWidget):
             if self._insert_parent != self._parent_item.layer or self._insert_index != 0:
                 self._insert_parent = self._parent_item.layer
                 self._insert_index = 0
-                self._insert_pos = self.mapFromGlobal(self._parent_item.mapToGlobal(
-                    QPoint(0, self._parent_item.height()))).y()
+                self._insert_pos = self._parent_frame.y() + self._parent_frame.height() + (self._layout.spacing() // 2)
                 self.update()
         top_y = self.height()
         for layer, layer_item in self._layer_items.items():
             parent_item = layer_item.parent()
             assert parent_item is not None and isinstance(parent_item, QWidget)
             offset = self.mapFromGlobal(parent_item.mapToGlobal(QPoint())).y()
+            width = parent_item.width()
             y_min = offset + layer_item.y() - (self._layout.spacing() // 2)
             y_max = offset + layer_item.y() + layer_item.height() + (self._layout.spacing() // 2)
             top_y = min(y_min, top_y)
@@ -102,13 +104,14 @@ class LayerGroupWidget(BorderedWidget):
                     self._insert_parent = parent
                     self._insert_index = insert_index
                     self._insert_pos = insert_pos
+                    self._insert_width = width
                     self.update()
                 return
         if point.y() < top_y:
             if self._insert_parent != self._parent_item.layer or self._insert_index != 0:
                 self._insert_parent = self._parent_item.layer
                 self._insert_index = 0
-                self._insert_pos = top_y
+                self._insert_pos = self._parent_frame.y() + self._parent_frame.height() + (self._layout.spacing() // 2)
                 self.update()
         elif self._insert_parent is not None:
             self._insert_parent = None
@@ -174,6 +177,7 @@ class LayerGroupWidget(BorderedWidget):
         if self._insert_pos > 0:
             self._insert_parent = None
             self._insert_pos = -1
+            self._insert_width = -1
             self._insert_index = -1
             self.update()
 
@@ -209,9 +213,12 @@ class LayerGroupWidget(BorderedWidget):
         super().paintEvent(event)
         if self._insert_pos < 0:
             return
+        width = self._insert_width if self._insert_width > 0 else self.width()
+        x0 = (self.width() - width) // 2
+        x1 = x0 + width
         painter = QPainter(self)
         painter.setPen(self.palette().color(self.foregroundRole()))
-        painter.drawLine(QLine(0, self._insert_pos, self.width(), self._insert_pos))
+        painter.drawLine(QLine(x0, self._insert_pos, x1, self._insert_pos))
         painter.end()
 
     @property

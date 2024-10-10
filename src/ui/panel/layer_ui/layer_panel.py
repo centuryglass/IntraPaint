@@ -47,6 +47,9 @@ ICON_PATH_LAYER_DOWN_BUTTON = f'{PROJECT_DIR}/resources/icons/layer/down_icon.sv
 ICON_PATH_MERGE_BUTTON = f'{PROJECT_DIR}/resources/icons/layer/merge_down_icon.svg'
 
 SCROLL_TIMER_INTERVAL_MS = 50
+SCROLL_HEIGHT_THRESHOLD = 1/8
+MIN_SCROLL_SPEED = 2
+MAX_SCROLL_SPEED = 10
 
 
 class LayerPanel(QWidget):
@@ -154,8 +157,8 @@ class LayerPanel(QWidget):
         self._delete_button = _create_button(ICON_PATH_DELETE_BUTTON, DELETE_BUTTON_TOOLTIP, self._image_stack.remove_layer)
         self._move_up_button = _create_button(ICON_PATH_LAYER_UP_BUTTON, LAYER_UP_BUTTON_TOOLTIP,
                                               lambda: self._image_stack.move_layer_by_offset(-1))
-        self._move_up_button = _create_button(ICON_PATH_LAYER_DOWN_BUTTON, LAYER_DOWN_BUTTON_TOOLTIP,
-                                              lambda: self._image_stack.move_layer_by_offset(1))
+        self._move_down_button = _create_button(ICON_PATH_LAYER_DOWN_BUTTON, LAYER_DOWN_BUTTON_TOOLTIP,
+                                               lambda: self._image_stack.move_layer_by_offset(1))
 
         self._merge_down_button = _create_button(ICON_PATH_MERGE_BUTTON, MERGE_DOWN_BUTTON_TOOLTIP,
                                                  self._image_stack.merge_layer_down)
@@ -186,26 +189,24 @@ class LayerPanel(QWidget):
 
     def _layer_drag_slot(self, position: QPointF) -> None:
         local_pos = self.mapFromGlobal(self._parent_group_item.mapToGlobal(position))
-        top_threshold = self._scroll_area.y() + (self.height() // 8)
-        bottom_threshold = self._button_bar.y() - (self.height() // 8)
+        threshold_size = round(self._scroll_area.height() * SCROLL_HEIGHT_THRESHOLD)
+        top_threshold = self._scroll_area.y() + threshold_size
+        bottom_threshold = self._scroll_area.y() + self._scroll_area.height() - threshold_size
         scroll_bar = self._scroll_area.verticalScrollBar()
         assert scroll_bar is not None
         if scroll_bar.value() > scroll_bar.minimum() and local_pos.y() < top_threshold:
-            self._scroll_offset = -1
-            if local_pos.y() < (top_threshold - self.height() // 16):
-                self._scroll_offset -= 1
-            if not self._scroll_timer.isActive():
-                self._scroll_timer.start(SCROLL_TIMER_INTERVAL_MS)
+            speed_fraction = (top_threshold - local_pos.y()) / threshold_size
+            self._scroll_offset = -(MIN_SCROLL_SPEED + round(1 + (MAX_SCROLL_SPEED - MIN_SCROLL_SPEED)
+                                                             * speed_fraction))
         elif scroll_bar.value() < scroll_bar.maximum() and local_pos.y() > bottom_threshold:
-            self._scroll_offset = 1
-            if local_pos.y() > (bottom_threshold + self.height() // 16):
-                self._scroll_offset += 1
-            if not self._scroll_timer.isActive():
-                self._scroll_timer.start(SCROLL_TIMER_INTERVAL_MS)
+            speed_fraction = (local_pos.y() - bottom_threshold) / threshold_size
+            self._scroll_offset = MIN_SCROLL_SPEED + round(1 + (MAX_SCROLL_SPEED - MIN_SCROLL_SPEED) * speed_fraction)
         else:
             self._scroll_offset = 0
             if self._scroll_timer.isActive():
                 self._scroll_timer.stop()
+        if self._scroll_offset != 0 and not self._scroll_timer.isActive():
+            self._scroll_timer.start(SCROLL_TIMER_INTERVAL_MS)
 
     def _layer_drag_end_slot(self) -> None:
         if self._scroll_timer.isActive():
@@ -310,6 +311,8 @@ class LayerPanel(QWidget):
         self._active_layer = new_active_layer
         self._open_parent_groups(new_active_layer)
         new_active_layer.lock_changed.connect(self._lock_change_slot)
+        for button in (self._move_up_button, self._move_down_button):
+            button.setEnabled(new_active_layer != self._image_stack.layer_stack)
         self._lock_change_slot(new_active_layer, new_active_layer.locked)
         layer_id = new_active_layer.id
         layer_groups: List[LayerGroupWidget] = [self._parent_group_item]
@@ -335,8 +338,7 @@ class LayerPanel(QWidget):
     def _lock_change_slot(self, layer: Layer, is_locked: bool) -> None:
         assert layer == self._image_stack.active_layer or layer.contains_recursive(self._image_stack.active_layer)
         for widget in (self._opacity_spinbox,
-                       self._opacity_slider,
-                       self._mode_box,
-                       self._merge_down_button,
-                       self._delete_button):
-            widget.setEnabled(not is_locked)
+                       self._opacity_slider):
+            widget.setEnabled(not is_locked and not layer.parent_locked)
+        for widget in (self._mode_box, self._merge_down_button, self._delete_button):
+            widget.setEnabled(not is_locked and not layer.parent_locked and not layer == self._image_stack.layer_stack)

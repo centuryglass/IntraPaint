@@ -1,4 +1,4 @@
-"""Shows the edited image in its own window."""
+"""Shows the edited image in its own window, with controls for adjusting the main image view and generation area."""
 from typing import Optional
 
 from PySide6.QtCore import QPoint
@@ -18,7 +18,7 @@ from src.ui.panel.image_panel import ImagePanel
 from src.util.shared_constants import APP_ICON_PATH, PROJECT_DIR, ICON_SIZE
 
 # The `QCoreApplication.translate` context for strings in this file
-TR_ID = 'ui.window.image_window'
+TR_ID = 'ui.window.navigation_window'
 
 
 def _tr(*args):
@@ -37,7 +37,7 @@ MIN_AREA = 4
 
 
 class ZoomTool(BaseTool):
-    """Tool used to control the zoom level of the primary image view from within the image window."""
+    """Tool used to control the zoom level of the primary image view from within the navigation window."""
 
     def __init__(self, main_view: ImageViewer, controller_view: ImageViewer) -> None:
         super().__init__('', ZOOM_LABEL, ZOOM_TOOLTIP, QIcon(ICON_PATH_ZOOM_TOOL))
@@ -99,8 +99,9 @@ class ZoomTool(BaseTool):
         return True
 
 
-class ImageWindow(ImagePanel):
-    """Shows the edited image in its own window."""
+class NavigationWindow(ImagePanel):
+    """Shows the edited image in its own window, with controls for adjusting the main image view and generation
+     area."""
 
     def __init__(self, image_stack: ImageStack, main_image_view: ImageViewer, include_zoom_controls=True,
                  use_keybindings=False) -> None:
@@ -194,6 +195,6 @@ class ImageWindow(ImagePanel):
         self._main_view_outline.outlined_region = self._main_image_viewer.view_scene_bounds
 
     def resizeEvent(self, event: Optional[QResizeEvent]) -> None:
-        """Save image window bounds changes when visible."""
+        """Save navigation window bounds changes when visible."""
         if self.isVisible():
-            Cache().save_bounds(Cache.SAVED_IMAGE_WINDOW_POS, self)
+            Cache().save_bounds(Cache.SAVED_NAVIGATION_WINDOW_POS, self)

@@ -22,7 +22,7 @@ from src.ui.modal.settings_modal import SettingsModal
 from src.ui.panel.layer_ui.layer_panel import LayerPanel
 from src.ui.window.extra_network_window import ExtraNetworkWindow
 from src.ui.window.generator_setup_window import GeneratorSetupWindow
-from src.ui.window.image_window import ImageWindow
+from src.ui.window.navigation_window import NavigationWindow
 from src.ui.window.main_window import MainWindow
 from src.ui.window.prompt_style_window import PromptStyleWindow
 from src.util.arg_parser import build_arg_parser
@@ -104,7 +104,7 @@ if args.dev:
 
         def eventFilter(self, obj, event):
             """Check for appropriate top-level ShowEvents, consume no events."""
-            if not isinstance(obj, QWidget) or isinstance(obj, (QSplashScreen, QDialog, MainWindow, ImageWindow,
+            if not isinstance(obj, QWidget) or isinstance(obj, (QSplashScreen, QDialog, MainWindow, NavigationWindow,
                                                                 ExtraNetworkWindow, GeneratorSetupWindow, LayerPanel,
                                                                 PromptStyleWindow, ImageFilterModal, ImageScaleModal,
                                                                 LoginModal, NewImageModal, ResizeCanvasModal, QMenu,

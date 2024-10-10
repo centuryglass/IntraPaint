@@ -30,7 +30,7 @@ from src.ui.panel.tool_panel import ToolPanel
 from src.ui.panel.generators.generator_panel import GeneratorPanel
 
 from src.ui.widget.loading_widget import LoadingWidget
-from src.ui.window.image_window import ImageWindow
+from src.ui.window.navigation_window import NavigationWindow
 from src.util.application_state import AppStateTracker, APP_STATE_LOADING, APP_STATE_NO_IMAGE, APP_STATE_EDITING, \
     APP_STATE_SELECTION
 from src.util.visual.display_size import get_screen_size
@@ -228,7 +228,7 @@ class MainWindow(QMainWindow):
 
         # Optional extra windows:
         self._layer_panel: Optional[LayerPanel] = None
-        self._image_window = ImageWindow(image_stack, self._image_panel.image_viewer)
+        self._navigation_window = NavigationWindow(image_stack, self._image_panel.image_viewer)
 
         # Image/Mask editing layout:
 
@@ -358,16 +358,16 @@ class MainWindow(QMainWindow):
                 return
 
     @property
-    def image_window(self) -> ImageWindow:
-        """Access the secondary image window."""
-        return self._image_window
+    def navigation_window(self) -> NavigationWindow:
+        """Access the navigation window."""
+        return self._navigation_window
 
-    def show_image_window(self) -> None:
-        """Show or raise the image window."""
-        if not self._image_window.isVisible():
-            Cache().load_bounds(Cache.SAVED_IMAGE_WINDOW_POS, self._image_window)
-            self._image_window.show()
-            self._image_window.raise_()
+    def show_navigation_window(self) -> None:
+        """Show or raise the navigation window."""
+        if not self._navigation_window.isVisible():
+            Cache().load_bounds(Cache.SAVED_NAVIGATION_WINDOW_POS, self._navigation_window)
+            self._navigation_window.show()
+            self._navigation_window.raise_()
 
     def is_image_selector_visible(self) -> bool:
         """Returns whether the generated image selection screen is showing."""

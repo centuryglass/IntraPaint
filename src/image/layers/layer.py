@@ -353,6 +353,10 @@ class Layer(QObject):
             self.visibility_changed.emit(self, visible)
             self.signal_content_changed(self.bounds)
 
+    def get_visible(self) -> None:
+        """Returns whether this layer is set to visible. Unlike the visible property, this ignores parent visibility."""
+        return self._visible
+
     def set_size(self, new_size: QSize) -> None:
         """Updates the layer's size."""
         if self._size != QSize:

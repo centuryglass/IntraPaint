@@ -157,9 +157,9 @@ class Cache(Config, metaclass=Singleton):
     SAMPLE_MERGED: str
     SAMPLING_METHOD: str
     SAMPLING_STEPS: str
-    SAVED_IMAGE_WINDOW_POS: str
     SAVED_LAYER_WINDOW_POS: str
     SAVED_MAIN_WINDOW_POS: str
+    SAVED_NAVIGATION_WINDOW_POS: str
     SEED: str
     SELECTION_BRUSH_SIZE: str
     SHAPE_TOOL_DASH_PATTERN: str

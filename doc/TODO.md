@@ -6,14 +6,10 @@
 - Upscale: make new layer, scale up existing layers
 
 ## Priority issues:
-- "delete layer" button should be disabled when the active layer is locked or is the layer stack.
 - Double-check layer merge behavior with layer groups.
-- "Show image window" should be "show navigation window"
-- Retrofuture.ora: hiding the "sketch" layer group is unusually slow; why?
 - Re-ordering locked layers is blocked, but that should only be true if the layer group is locked.
 - Transform tool x/y fields go out of sync
 - Use improved input hints on generated image picker
-- layer drag auto-scroll is painfully slow.
 - "crop layer to selection": overlap handling on layer groups needs fixes
 - layer flattening issue on groups containing groups: test with "group compositing" in layer_blend_test.ora
 

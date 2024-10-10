@@ -815,11 +815,11 @@
         "default": "F10",
         "saved": true
     },
-    "image_window_shortcut": {
-        "label": "Show image window",
+    "navigation_window_shortcut": {
+        "label": "Show navigation window",
         "category": "Menu Shortcuts",
         "subcategory": "Tool Menu",
-        "description": "Open a new window showing the edited image.",
+        "description": "Open a navigation window showing the entire edited image.",
         "type": "string",
         "default": "Ctrl+Alt+W",
         "saved": true

@@ -58,7 +58,7 @@
     "show_layer_menu_shortcut": "F7",
     "settings_shortcut": "F9",
     "lcm_mode_shortcut": "F10",
-    "image_window_shortcut": "Ctrl+Alt+W",
+    "navigation_window_shortcut": "Ctrl+Alt+W",
     "color_balance_shortcut": "Ctrl+1",
     "brightness_contrast_shortcut": "Ctrl+2",
     "blur_shortcut": "Ctrl+3",

@@ -5,19 +5,19 @@
     <name>application_config</name>
     <message>
       <location filename="../../src/controller/image_generation/sd_webui_generator.py" line="137"/>
-      <location filename="../../src/controller/app_controller.py" line="205"/>
+      <location filename="../../src/controller/app_controller.py" line="204"/>
       <source>Stable-Diffusion</source>
       <translation>Stable-Diffusion</translation>
     </message>
     <message>
       <location filename="../../src/controller/image_generation/glid3_webservice_generator.py" line="35"/>
       <location filename="../../src/controller/image_generation/glid3_xl_generator.py" line="50"/>
-      <location filename="../../src/controller/app_controller.py" line="206"/>
+      <location filename="../../src/controller/app_controller.py" line="205"/>
       <source>GLID-3-XL</source>
       <translation>GLID-3-XL</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="207"/>
+      <location filename="../../src/controller/app_controller.py" line="206"/>
       <source>Developer</source>
       <translation>Developer</translation>
     </message>
@@ -1524,13 +1524,13 @@
     </message>
     <message>
       <location filename="../config/key_config_definitions.json" line="819"/>
-      <source>Show image window</source>
-      <translation>Show image window</translation>
+      <source>Show navigation window</source>
+      <translation>Show navigation window</translation>
     </message>
     <message>
       <location filename="../config/key_config_definitions.json" line="822"/>
-      <source>Open a new window showing the edited image.</source>
-      <translation>Open a new window showing the edited image.</translation>
+      <source>Open a navigation window showing the entire edited image.</source>
+      <translation>Open a navigation window showing the entire edited image.</translation>
     </message>
     <message>
       <location filename="../config/key_config_definitions.json" line="803"/>
@@ -1661,229 +1661,229 @@
   <context>
     <name>controller.app_controller</name>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="143"/>
-      <location filename="../../src/controller/app_controller.py" line="128"/>
+      <location filename="../../src/controller/app_controller.py" line="142"/>
+      <location filename="../../src/controller/app_controller.py" line="127"/>
       <source>Layers</source>
       <translation>Layers</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="129"/>
+      <location filename="../../src/controller/app_controller.py" line="128"/>
       <source>Color</source>
       <translation>Color</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="130"/>
+      <location filename="../../src/controller/app_controller.py" line="129"/>
       <source>Navigation</source>
       <translation>Navigation</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="139"/>
+      <location filename="../../src/controller/app_controller.py" line="138"/>
       <source>File</source>
       <translation>File</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="140"/>
+      <location filename="../../src/controller/app_controller.py" line="139"/>
       <source>Edit</source>
       <translation>Edit</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="141"/>
+      <location filename="../../src/controller/app_controller.py" line="140"/>
       <source>Image</source>
       <translation>Image</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="142"/>
+      <location filename="../../src/controller/app_controller.py" line="141"/>
       <source>Selection</source>
       <translation>Selection</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="144"/>
+      <location filename="../../src/controller/app_controller.py" line="143"/>
       <source>Tools</source>
       <translation>Tools</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="145"/>
+      <location filename="../../src/controller/app_controller.py" line="144"/>
       <source>Filters</source>
       <translation>Filters</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="147"/>
+      <location filename="../../src/controller/app_controller.py" line="146"/>
       <source>Move</source>
       <translation>Move</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="148"/>
+      <location filename="../../src/controller/app_controller.py" line="147"/>
       <source>Select</source>
       <translation>Select</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="149"/>
+      <location filename="../../src/controller/app_controller.py" line="148"/>
       <source>Transform</source>
       <translation>Transform</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="151"/>
+      <location filename="../../src/controller/app_controller.py" line="150"/>
       <source>Image Generation</source>
       <translation>Image Generation</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="155"/>
+      <location filename="../../src/controller/app_controller.py" line="154"/>
       <source>Loading image generator failed</source>
       <translation>Loading image generator failed</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="156"/>
+      <location filename="../../src/controller/app_controller.py" line="155"/>
       <source>Unable to load the {generator_name} image generator</source>
       <translation>Unable to load the {generator_name} image generator</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="157"/>
+      <location filename="../../src/controller/app_controller.py" line="156"/>
       <source>Quit now?</source>
       <translation>Quit now?</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="158"/>
+      <location filename="../../src/controller/app_controller.py" line="157"/>
       <source>All unsaved changes will be lost.</source>
       <translation>All unsaved changes will be lost.</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="159"/>
+      <location filename="../../src/controller/app_controller.py" line="158"/>
       <source>Create new image?</source>
       <translation>Create new image?</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="167"/>
-      <location filename="../../src/controller/app_controller.py" line="160"/>
+      <location filename="../../src/controller/app_controller.py" line="166"/>
+      <location filename="../../src/controller/app_controller.py" line="159"/>
       <source>This will discard all unsaved changes.</source>
       <translation>This will discard all unsaved changes.</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="161"/>
+      <location filename="../../src/controller/app_controller.py" line="160"/>
       <source>Save failed</source>
       <translation>Save failed</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="162"/>
+      <location filename="../../src/controller/app_controller.py" line="161"/>
       <source>Open failed</source>
       <translation>Open failed</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="163"/>
+      <location filename="../../src/controller/app_controller.py" line="162"/>
       <source>Reload failed</source>
       <translation>Reload failed</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="164"/>
+      <location filename="../../src/controller/app_controller.py" line="163"/>
       <source>Image path "{file_path}" is not a valid image file.</source>
       <translation>Image path "{file_path}" is not a valid image file.</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="165"/>
+      <location filename="../../src/controller/app_controller.py" line="164"/>
       <source>Enter an image path or click "Open Image" first.</source>
       <translation>Enter an image path or click "Open Image" first.</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="166"/>
+      <location filename="../../src/controller/app_controller.py" line="165"/>
       <source>Reload image?</source>
       <translation>Reload image?</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="168"/>
+      <location filename="../../src/controller/app_controller.py" line="167"/>
       <source>Metadata updated</source>
       <translation>Metadata updated</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="169"/>
+      <location filename="../../src/controller/app_controller.py" line="168"/>
       <source>On save, current image generation parameters will be stored within the image</source>
       <translation>On save, current image generation parameters will be stored within the image</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="170"/>
+      <location filename="../../src/controller/app_controller.py" line="169"/>
       <source>Opening layers failed</source>
       <translation>Opening layers failed</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="171"/>
+      <location filename="../../src/controller/app_controller.py" line="170"/>
       <source>Could not open the following images: </source>
       <translation>Could not open the following images: </translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="173"/>
+      <location filename="../../src/controller/app_controller.py" line="172"/>
       <source>Save image generation metadata?</source>
       <translation>Save image generation metadata?</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="174"/>
+      <location filename="../../src/controller/app_controller.py" line="173"/>
       <source>No image metadata is cached, would you like to save image generation parameters to this image?</source>
       <translation>No image metadata is cached, would you like to save image generation parameters to this image?</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="176"/>
+      <location filename="../../src/controller/app_controller.py" line="175"/>
       <source>Update image generation metadata?</source>
       <translation>Update image generation metadata?</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="177"/>
+      <location filename="../../src/controller/app_controller.py" line="176"/>
       <source>Image generation parameters have changed, would you like this image to be saved with the most recent values?</source>
       <translation>Image generation parameters have changed, would you like this image to be saved with the most recent values?</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="181"/>
+      <location filename="../../src/controller/app_controller.py" line="180"/>
       <source>Image saved without layer data</source>
       <translation>Image saved without layer data</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="182"/>
+      <location filename="../../src/controller/app_controller.py" line="181"/>
       <source>To save layer data, images must be saved in .ora format.</source>
       <translation>To save layer data, images must be saved in .ora format.</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="184"/>
+      <location filename="../../src/controller/app_controller.py" line="183"/>
       <source>Image saved without full transparency</source>
       <translation>Image saved without full transparency</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="185"/>
+      <location filename="../../src/controller/app_controller.py" line="184"/>
       <source>To preserve transparency, save using one of the following file formats: {alpha_formats}</source>
       <translation>To preserve transparency, save using one of the following file formats: {alpha_formats}</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="188"/>
+      <location filename="../../src/controller/app_controller.py" line="187"/>
       <source>Image saved without image generation metadata</source>
       <translation>Image saved without image generation metadata</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="189"/>
+      <location filename="../../src/controller/app_controller.py" line="188"/>
       <source>To preserve image generation metadata, save using one of the following file formats: {metadata_formats}</source>
       <translation>To preserve image generation metadata, save using one of the following file formats: {metadata_formats}</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="192"/>
+      <location filename="../../src/controller/app_controller.py" line="191"/>
       <source>Image saved in a write-only format</source>
       <translation>Image saved in a write-only format</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="193"/>
+      <location filename="../../src/controller/app_controller.py" line="192"/>
       <source>IntraPaint can write images in the {file_format} format, but cannot load them. Use another file format if you want to be able to load this image in IntraPaint again.</source>
       <translation>IntraPaint can write images in the {file_format} format, but cannot load them. Use another file format if you want to be able to load this image in IntraPaint again.</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="196"/>
+      <location filename="../../src/controller/app_controller.py" line="195"/>
       <source>Image saved in a format that changes size</source>
       <translation>Image saved in a format that changes size</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="197"/>
+      <location filename="../../src/controller/app_controller.py" line="196"/>
       <source>The image is {width_px}x{height_px}, but the {file_format} format saves all images at {saved_width_px}x{saved_height_px} resolution. Use another file format if you want to preserve the original image size.</source>
       <translation>The image is {width_px}x{height_px}, but the {file_format} format saves all images at {saved_width_px}x{saved_height_px} resolution. Use another file format if you want to preserve the original image size.</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="201"/>
+      <location filename="../../src/controller/app_controller.py" line="200"/>
       <source>Image saved without color</source>
       <translation>Image saved without color</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="202"/>
+      <location filename="../../src/controller/app_controller.py" line="201"/>
       <source>The {file_format} format saves the image without color. Use another format if you want to preserve image colors.</source>
       <translation>The {file_format} format saves the image without color. Use another format if you want to preserve image colors.</translation>
     </message>
@@ -2779,127 +2779,127 @@ Please remember to include the traceback from the Details expander.</translation
   <context>
     <name>image.layers.image_stack</name>
     <message>
-      <location filename="../../src/image/layers/image_stack.py" line="45"/>
+      <location filename="../../src/image/layers/image_stack.py" line="46"/>
       <source>new image</source>
       <translation>new image</translation>
     </message>
     <message>
-      <location filename="../../src/image/layers/image_stack.py" line="46"/>
+      <location filename="../../src/image/layers/image_stack.py" line="47"/>
       <source>merge layers</source>
       <translation>merge layers</translation>
     </message>
     <message>
-      <location filename="../../src/image/layers/image_stack.py" line="47"/>
+      <location filename="../../src/image/layers/image_stack.py" line="48"/>
       <source>resize layer to image</source>
       <translation>resize layer to image</translation>
     </message>
     <message>
-      <location filename="../../src/image/layers/image_stack.py" line="48"/>
+      <location filename="../../src/image/layers/image_stack.py" line="49"/>
       <source>cut/clear selection</source>
       <translation>cut/clear selection</translation>
     </message>
     <message>
-      <location filename="../../src/image/layers/image_stack.py" line="49"/>
+      <location filename="../../src/image/layers/image_stack.py" line="50"/>
       <source>resize image canvas</source>
       <translation>resize image canvas</translation>
     </message>
     <message>
-      <location filename="../../src/image/layers/image_stack.py" line="50"/>
+      <location filename="../../src/image/layers/image_stack.py" line="51"/>
       <source>crop layer to selection</source>
       <translation>crop layer to selection</translation>
     </message>
     <message>
-      <location filename="../../src/image/layers/image_stack.py" line="52"/>
+      <location filename="../../src/image/layers/image_stack.py" line="53"/>
       <source>Resizing image canvas failed</source>
       <translation>Resizing image canvas failed</translation>
     </message>
     <message>
-      <location filename="../../src/image/layers/image_stack.py" line="53"/>
+      <location filename="../../src/image/layers/image_stack.py" line="54"/>
       <source>Image scaling failed</source>
       <translation>Image scaling failed</translation>
     </message>
     <message>
-      <location filename="../../src/image/layers/image_stack.py" line="54"/>
+      <location filename="../../src/image/layers/image_stack.py" line="55"/>
       <source>Locked layer {layer_name} would be affected, unlock the layer before retrying</source>
       <translation>Locked layer {layer_name} would be affected, unlock the layer before retrying</translation>
     </message>
     <message>
-      <location filename="../../src/image/layers/image_stack.py" line="56"/>
+      <location filename="../../src/image/layers/image_stack.py" line="57"/>
       <source>Locked layers {comma_separated_layer_names} would be affected, unlock these layers before retrying.</source>
       <translation>Locked layers {comma_separated_layer_names} would be affected, unlock these layers before retrying.</translation>
     </message>
     <message>
-      <location filename="../../src/image/layers/image_stack.py" line="59"/>
+      <location filename="../../src/image/layers/image_stack.py" line="60"/>
       <source>Crop to selection bounds failed</source>
       <translation>Crop to selection bounds failed</translation>
     </message>
     <message>
-      <location filename="../../src/image/layers/image_stack.py" line="60"/>
+      <location filename="../../src/image/layers/image_stack.py" line="61"/>
       <source>Nothing is selected, select an area in the image first.</source>
       <translation>Nothing is selected, select an area in the image first.</translation>
     </message>
     <message>
-      <location filename="../../src/image/layers/image_stack.py" line="61"/>
+      <location filename="../../src/image/layers/image_stack.py" line="62"/>
       <source>The selection does not cover any part of the layer.</source>
       <translation>The selection does not cover any part of the layer.</translation>
     </message>
     <message>
-      <location filename="../../src/image/layers/image_stack.py" line="62"/>
+      <location filename="../../src/image/layers/image_stack.py" line="63"/>
       <source>The selection does not cut out any part of the layer.</source>
       <translation>The selection does not cut out any part of the layer.</translation>
     </message>
     <message>
-      <location filename="../../src/image/layers/image_stack.py" line="63"/>
+      <location filename="../../src/image/layers/image_stack.py" line="64"/>
       <source>All selected layers are either fully covered by the selection or do not intersect with it at all.</source>
       <translation>All selected layers are either fully covered by the selection or do not intersect with it at all.</translation>
     </message>
     <message>
-      <location filename="../../src/image/layers/image_stack.py" line="66"/>
+      <location filename="../../src/image/layers/image_stack.py" line="67"/>
       <source>Error: tried to change a locked layer</source>
       <translation>Error: tried to change a locked layer</translation>
     </message>
     <message>
-      <location filename="../../src/image/layers/image_stack.py" line="67"/>
+      <location filename="../../src/image/layers/image_stack.py" line="68"/>
       <source>Unlock the layer before attempting any changes.</source>
       <translation>Unlock the layer before attempting any changes.</translation>
     </message>
     <message>
-      <location filename="../../src/image/layers/image_stack.py" line="69"/>
+      <location filename="../../src/image/layers/image_stack.py" line="70"/>
       <source>Merging layers failed</source>
       <translation>Merging layers failed</translation>
     </message>
     <message>
-      <location filename="../../src/image/layers/image_stack.py" line="70"/>
+      <location filename="../../src/image/layers/image_stack.py" line="71"/>
       <source>Only visible layers can be merged.</source>
       <translation>Only visible layers can be merged.</translation>
     </message>
     <message>
-      <location filename="../../src/image/layers/image_stack.py" line="72"/>
+      <location filename="../../src/image/layers/image_stack.py" line="73"/>
       <source>Layer group "{group_name}" is locked</source>
       <translation>Layer group "{group_name}" is locked</translation>
     </message>
     <message>
-      <location filename="../../src/image/layers/image_stack.py" line="73"/>
+      <location filename="../../src/image/layers/image_stack.py" line="74"/>
       <source>Unlock the layer group before trying to change layers within the group.</source>
       <translation>Unlock the layer group before trying to change layers within the group.</translation>
     </message>
     <message>
-      <location filename="../../src/image/layers/image_stack.py" line="75"/>
+      <location filename="../../src/image/layers/image_stack.py" line="76"/>
       <source>Blocked action on main layer group</source>
       <translation>Blocked action on main layer group</translation>
     </message>
     <message>
-      <location filename="../../src/image/layers/image_stack.py" line="76"/>
+      <location filename="../../src/image/layers/image_stack.py" line="77"/>
       <source>To edit the main layer group, edit its layers individually or use the options under the Image menu.</source>
       <translation>To edit the main layer group, edit its layers individually or use the options under the Image menu.</translation>
     </message>
     <message>
-      <location filename="../../src/image/layers/image_stack.py" line="79"/>
+      <location filename="../../src/image/layers/image_stack.py" line="80"/>
       <source>Warning: cropping deleted layer(s)</source>
       <translation>Warning: cropping deleted layer(s)</translation>
     </message>
     <message>
-      <location filename="../../src/image/layers/image_stack.py" line="80"/>
+      <location filename="../../src/image/layers/image_stack.py" line="81"/>
       <source>&lt;p&gt;Cropping to selection deleted the following layers:&lt;/p&gt;&lt;ul&gt;{layer_names}&lt;/ul&gt;</source>
       <translation>&lt;p&gt;Cropping to selection deleted the following layers:&lt;/p&gt;&lt;ul&gt;{layer_names}&lt;/ul&gt;</translation>
     </message>
@@ -3128,17 +3128,17 @@ Please remember to include the traceback from the Details expander.</translation
   <context>
     <name>tools.layer_transform_tool</name>
     <message>
-      <location filename="../../src/tools/layer_transform_tool.py" line="31"/>
+      <location filename="../../src/tools/layer_transform_tool.py" line="32"/>
       <source>Transform Layers</source>
       <translation>Transform Layers</translation>
     </message>
     <message>
-      <location filename="../../src/tools/layer_transform_tool.py" line="32"/>
+      <location filename="../../src/tools/layer_transform_tool.py" line="33"/>
       <source>Move, scale, or rotate the active layer.</source>
       <translation>Move, scale, or rotate the active layer.</translation>
     </message>
     <message>
-      <location filename="../../src/tools/layer_transform_tool.py" line="33"/>
+      <location filename="../../src/tools/layer_transform_tool.py" line="34"/>
       <source>{left_mouse_icon}, drag: move layer</source>
       <translation>{left_mouse_icon}, drag: move layer</translation>
     </message>
@@ -4751,34 +4751,6 @@ Press ESC to cancel</translation>
     </message>
   </context>
   <context>
-    <name>ui.window.image_window</name>
-    <message>
-      <location filename="../../src/ui/window/image_window.py" line="29"/>
-      <source>Navigate</source>
-      <translation>Navigate</translation>
-    </message>
-    <message>
-      <location filename="../../src/ui/window/image_window.py" line="30"/>
-      <source>Move view</source>
-      <translation>Move view</translation>
-    </message>
-    <message>
-      <location filename="../../src/ui/window/image_window.py" line="31"/>
-      <source>Left-click to pan, right-click to draw viewport</source>
-      <translation>Left-click to pan, right-click to draw viewport</translation>
-    </message>
-    <message>
-      <location filename="../../src/ui/window/image_window.py" line="32"/>
-      <source>Move gen. area</source>
-      <translation>Move gen. area</translation>
-    </message>
-    <message>
-      <location filename="../../src/ui/window/image_window.py" line="33"/>
-      <source>Reset view</source>
-      <translation>Reset view</translation>
-    </message>
-  </context>
-  <context>
     <name>ui.window.main_window</name>
     <message>
       <location filename="../../src/ui/window/main_window.py" line="51"/>
@@ -4809,6 +4781,34 @@ Press ESC to cancel</translation>
       <location filename="../../src/ui/window/main_window.py" line="58"/>
       <source>Loading...</source>
       <translation>Loading...</translation>
+    </message>
+  </context>
+  <context>
+    <name>ui.window.navigation_window</name>
+    <message>
+      <location filename="../../src/ui/window/navigation_window.py" line="29"/>
+      <source>Navigate</source>
+      <translation>Navigate</translation>
+    </message>
+    <message>
+      <location filename="../../src/ui/window/navigation_window.py" line="30"/>
+      <source>Move view</source>
+      <translation>Move view</translation>
+    </message>
+    <message>
+      <location filename="../../src/ui/window/navigation_window.py" line="31"/>
+      <source>Left-click to pan, right-click to draw viewport</source>
+      <translation>Left-click to pan, right-click to draw viewport</translation>
+    </message>
+    <message>
+      <location filename="../../src/ui/window/navigation_window.py" line="32"/>
+      <source>Move gen. area</source>
+      <translation>Move gen. area</translation>
+    </message>
+    <message>
+      <location filename="../../src/ui/window/navigation_window.py" line="33"/>
+      <source>Reset view</source>
+      <translation>Reset view</translation>
     </message>
   </context>
   <context>
@@ -6536,27 +6536,12 @@ Press ESC to cancel</translation>
       <translation>Window placement</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="696"/>
-      <source>Saved image window placement</source>
-      <translation>Saved image window placement</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="699"/>
-      <source>display, position, and size where the image window last was.</source>
-      <translation>display, position, and size where the image window last was.</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="680"/>
-      <source>Window placement</source>
-      <translation>Window placement</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="704"/>
+      <location filename="../config/cache_value_definitions.json" line="705"/>
       <source>Prompt:</source>
       <translation>Prompt:</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="707"/>
+      <location filename="../config/cache_value_definitions.json" line="708"/>
       <source>Description that generated images should match.</source>
       <translation>Description that generated images should match.</translation>
     </message>
@@ -6566,12 +6551,12 @@ Press ESC to cancel</translation>
       <translation>Image generation</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="713"/>
+      <location filename="../config/cache_value_definitions.json" line="714"/>
       <source>Negative prompt:</source>
       <translation>Negative prompt:</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="716"/>
+      <location filename="../config/cache_value_definitions.json" line="717"/>
       <source>Description that generated images should not match.</source>
       <translation>Description that generated images should not match.</translation>
     </message>
@@ -6581,12 +6566,12 @@ Press ESC to cancel</translation>
       <translation>Image generation</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="722"/>
+      <location filename="../config/cache_value_definitions.json" line="723"/>
       <source>Guidance scale:</source>
       <translation>Guidance scale:</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="725"/>
+      <location filename="../config/cache_value_definitions.json" line="726"/>
       <source>Controls how strongly the prompt and negative prompt are applied.</source>
       <translation>Controls how strongly the prompt and negative prompt are applied.</translation>
     </message>
@@ -6596,12 +6581,12 @@ Press ESC to cancel</translation>
       <translation>Image generation</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="736"/>
+      <location filename="../config/cache_value_definitions.json" line="737"/>
       <source>Batch size:</source>
       <translation>Batch size:</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="739"/>
+      <location filename="../config/cache_value_definitions.json" line="740"/>
       <source>Number of image options to simultaneously create in a single image editing operation.</source>
       <translation>Number of image options to simultaneously create in a single image editing operation.</translation>
     </message>
@@ -6611,12 +6596,12 @@ Press ESC to cancel</translation>
       <translation>Image generation</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="750"/>
+      <location filename="../config/cache_value_definitions.json" line="751"/>
       <source>Batch count:</source>
       <translation>Batch count:</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="753"/>
+      <location filename="../config/cache_value_definitions.json" line="754"/>
       <source>Number of image batches to create in a single image editing operation. Increasing this value doesn't require additional memory, but it slows down image editing more than increasing the batch size does.</source>
       <translation>Number of image batches to create in a single image editing operation. Increasing this value doesn't require additional memory, but it slows down image editing more than increasing the batch size does.</translation>
     </message>
@@ -6626,27 +6611,27 @@ Press ESC to cancel</translation>
       <translation>Image generation</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="764"/>
+      <location filename="../config/cache_value_definitions.json" line="765"/>
       <source>Edit mode:</source>
       <translation>Edit mode:</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="767"/>
+      <location filename="../config/cache_value_definitions.json" line="768"/>
       <source>Stable-Diffusion image editing mode. 'Text to Image' completely replaces the selected image section with new content, 'Image to Image' creates altered versions of the image selection, and 'Inpaint' works like 'Image to Image' except that it only affects areas selected by the mask tool</source>
       <translation>Stable-Diffusion image editing mode. 'Text to Image' completely replaces the selected image section with new content, 'Image to Image' creates altered versions of the image selection, and 'Inpaint' works like 'Image to Image' except that it only affects areas selected by the mask tool</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="767"/>
+      <location filename="../config/cache_value_definitions.json" line="768"/>
       <source>Inpaint</source>
       <translation>Inpaint</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="767"/>
+      <location filename="../config/cache_value_definitions.json" line="768"/>
       <source>Image to Image</source>
       <translation>Image to Image</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="767"/>
+      <location filename="../config/cache_value_definitions.json" line="768"/>
       <source>Text to Image</source>
       <translation>Text to Image</translation>
     </message>
@@ -6656,12 +6641,12 @@ Press ESC to cancel</translation>
       <translation>Image generation</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="778"/>
+      <location filename="../config/cache_value_definitions.json" line="779"/>
       <source>Masked content:</source>
       <translation>Masked content:</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="781"/>
+      <location filename="../config/cache_value_definitions.json" line="782"/>
       <source>Determines what should be used to fill the masked area before inpainting. 'fill' replaces it with a solid color, 'original' keeps it as-is, 'latent noise' replaces it with random data, and 'latent nothing' clears it. Unless you're inpainting with a denoising strength &gt;0.8, 'original' will almost always be the best option</source>
       <translation>Determines what should be used to fill the masked area before inpainting. 'fill' replaces it with a solid color, 'original' keeps it as-is, 'latent noise' replaces it with random data, and 'latent nothing' clears it. Unless you're inpainting with a denoising strength &gt;0.8, 'original' will almost always be the best option</translation>
     </message>
@@ -6671,17 +6656,17 @@ Press ESC to cancel</translation>
       <translation>fill</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="781"/>
+      <location filename="../config/cache_value_definitions.json" line="782"/>
       <source>original</source>
       <translation>original</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="781"/>
+      <location filename="../config/cache_value_definitions.json" line="782"/>
       <source>latent noise</source>
       <translation>latent noise</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="781"/>
+      <location filename="../config/cache_value_definitions.json" line="782"/>
       <source>latent nothing</source>
       <translation>latent nothing</translation>
     </message>
@@ -6691,12 +6676,12 @@ Press ESC to cancel</translation>
       <translation>Image generation</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="793"/>
+      <location filename="../config/cache_value_definitions.json" line="794"/>
       <source>Sampling steps:</source>
       <translation>Sampling steps:</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="796"/>
+      <location filename="../config/cache_value_definitions.json" line="797"/>
       <source>Number of diffusion operations to perform when generating image data. Higher values take longer, but often produce more detailed and accurate results. Different stable-diffusion models and samplers have different requirements, but in most cates setting this higher than 30 has only minimal benefits</source>
       <translation>Number of diffusion operations to perform when generating image data. Higher values take longer, but often produce more detailed and accurate results. Different stable-diffusion models and samplers have different requirements, but in most cates setting this higher than 30 has only minimal benefits</translation>
     </message>
@@ -6706,12 +6691,12 @@ Press ESC to cancel</translation>
       <translation>Image generation</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="807"/>
+      <location filename="../config/cache_value_definitions.json" line="808"/>
       <source>Denoising strength:</source>
       <translation>Denoising strength:</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="810"/>
+      <location filename="../config/cache_value_definitions.json" line="811"/>
       <source>Controls how dramatically inpainting and image-to-image operations will change the initial image data. At 0.0, the image will be completely unedited, at 1.0 the image will be completely different</source>
       <translation>Controls how dramatically inpainting and image-to-image operations will change the initial image data. At 0.0, the image will be completely unedited, at 1.0 the image will be completely different</translation>
     </message>
@@ -6721,12 +6706,12 @@ Press ESC to cancel</translation>
       <translation>Image generation</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="821"/>
+      <location filename="../config/cache_value_definitions.json" line="822"/>
       <source>Sampling method:</source>
       <translation>Sampling method:</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="824"/>
+      <location filename="../config/cache_value_definitions.json" line="825"/>
       <source>Mathematical technique used to transform image data during the generation process. 'Euler a' works well in most cases, but certain models or extensions might perform better with other options.</source>
       <translation>Mathematical technique used to transform image data during the generation process. 'Euler a' works well in most cases, but certain models or extensions might perform better with other options.</translation>
     </message>
@@ -6736,12 +6721,12 @@ Press ESC to cancel</translation>
       <translation>Image generation</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="831"/>
+      <location filename="../config/cache_value_definitions.json" line="832"/>
       <source>Upscale method:</source>
       <translation>Upscale method:</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="834"/>
+      <location filename="../config/cache_value_definitions.json" line="835"/>
       <source>Method to use when increasing image resolution. Available options will be loaded from the active image generator.</source>
       <translation>Method to use when increasing image resolution. Available options will be loaded from the active image generator.</translation>
     </message>
@@ -6751,27 +6736,27 @@ Press ESC to cancel</translation>
       <translation>Image generation</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="841"/>
+      <location filename="../config/cache_value_definitions.json" line="842"/>
       <source>Image scaling behavior:</source>
       <translation>Image scaling behavior:</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="844"/>
+      <location filename="../config/cache_value_definitions.json" line="845"/>
       <source>Controls how multi-layer images are scaled.</source>
       <translation>Controls how multi-layer images are scaled.</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="848"/>
+      <location filename="../config/cache_value_definitions.json" line="849"/>
       <source>Independent layer scaling</source>
       <translation>Independent layer scaling</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="846"/>
+      <location filename="../config/cache_value_definitions.json" line="847"/>
       <source>Scale merged, keep source layers</source>
       <translation>Scale merged, keep source layers</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="850"/>
+      <location filename="../config/cache_value_definitions.json" line="851"/>
       <source>Scale merged, discard source layers</source>
       <translation>Scale merged, discard source layers</translation>
     </message>
@@ -6781,12 +6766,12 @@ Press ESC to cancel</translation>
       <translation>Image generation</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="855"/>
+      <location filename="../config/cache_value_definitions.json" line="856"/>
       <source>Seed:</source>
       <translation>Seed:</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="858"/>
+      <location filename="../config/cache_value_definitions.json" line="859"/>
       <source>Number used to control pseudo-random aspects of image generation, in most cases using the same seed with the same settings and inputs will always produce the same results. If set to -1, a different random seed will be used for each image generation. </source>
       <translation>Number used to control pseudo-random aspects of image generation, in most cases using the same seed with the same settings and inputs will always produce the same results. If set to -1, a different random seed will be used for each image generation. </translation>
     </message>
@@ -6796,12 +6781,12 @@ Press ESC to cancel</translation>
       <translation>Image generation</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="869"/>
+      <location filename="../config/cache_value_definitions.json" line="870"/>
       <source>Last seed:</source>
       <translation>Last seed:</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="872"/>
+      <location filename="../config/cache_value_definitions.json" line="873"/>
       <source>Last seed used for image generation</source>
       <translation>Last seed used for image generation</translation>
     </message>
@@ -6811,12 +6796,12 @@ Press ESC to cancel</translation>
       <translation>Image generation</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="878"/>
+      <location filename="../config/cache_value_definitions.json" line="879"/>
       <source>Inpaint Full Resolution</source>
       <translation>Inpaint Full Resolution</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="881"/>
+      <location filename="../config/cache_value_definitions.json" line="882"/>
       <source>If true, inpaint the masked area at higher resolution by ignoring the unmasked area. This can increase image quality by sacrificing awareness of additional image content.</source>
       <translation>If true, inpaint the masked area at higher resolution by ignoring the unmasked area. This can increase image quality by sacrificing awareness of additional image content.</translation>
     </message>
@@ -6826,12 +6811,12 @@ Press ESC to cancel</translation>
       <translation>Image generation</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="887"/>
+      <location filename="../config/cache_value_definitions.json" line="888"/>
       <source>Padding:</source>
       <translation>Padding:</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="890"/>
+      <location filename="../config/cache_value_definitions.json" line="891"/>
       <source>Pixel radius outside of the masked area to include when inpainting when the 'Inpaint Full Resolution' option is enabled. Higher values increase contextual awareness while decreasing overall level of detail.</source>
       <translation>Pixel radius outside of the masked area to include when inpainting when the 'Inpaint Full Resolution' option is enabled. Higher values increase contextual awareness while decreasing overall level of detail.</translation>
     </message>
@@ -6841,12 +6826,12 @@ Press ESC to cancel</translation>
       <translation>Image generation</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="919"/>
+      <location filename="../config/cache_value_definitions.json" line="920"/>
       <source>Detail reference count (cutn):</source>
       <translation>Detail reference count (cutn):</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="922"/>
+      <location filename="../config/cache_value_definitions.json" line="923"/>
       <source>Determines how many random cutouts from the input image are used to guide image generation (GLID-3-XL). Higher values can introduce more detail and variation, but may also introduce more noise and irrelevant information.</source>
       <translation>Determines how many random cutouts from the input image are used to guide image generation (GLID-3-XL). Higher values can introduce more detail and variation, but may also introduce more noise and irrelevant information.</translation>
     </message>
@@ -6856,12 +6841,12 @@ Press ESC to cancel</translation>
       <translation>Image generation</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="933"/>
+      <location filename="../config/cache_value_definitions.json" line="934"/>
       <source>Skip steps:</source>
       <translation>Skip steps:</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="936"/>
+      <location filename="../config/cache_value_definitions.json" line="937"/>
       <source>Number of diffusion steps to skip (GLID-3-XL). Higher values will result in faster image generation with decreased detail and accuracy.</source>
       <translation>Number of diffusion steps to skip (GLID-3-XL). Higher values will result in faster image generation with decreased detail and accuracy.</translation>
     </message>
@@ -6871,12 +6856,12 @@ Press ESC to cancel</translation>
       <translation>Image generation</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="947"/>
+      <location filename="../config/cache_value_definitions.json" line="948"/>
       <source>Upscale mode:</source>
       <translation>Upscale mode:</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="950"/>
+      <location filename="../config/cache_value_definitions.json" line="951"/>
       <source>Upscaling mode used when the inpainting resolution doesn't match the image generation area size.</source>
       <translation>Upscaling mode used when the inpainting resolution doesn't match the image generation area size.</translation>
     </message>
@@ -6886,12 +6871,12 @@ Press ESC to cancel</translation>
       <translation>Image generation</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="957"/>
+      <location filename="../config/cache_value_definitions.json" line="958"/>
       <source>Downscale mode:</source>
       <translation>Downscale mode:</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="960"/>
+      <location filename="../config/cache_value_definitions.json" line="961"/>
       <source>Downscaling mode used when the inpainting resolution doesn't match the image generation area size.</source>
       <translation>Downscaling mode used when the inpainting resolution doesn't match the image generation area size.</translation>
     </message>
@@ -6901,12 +6886,12 @@ Press ESC to cancel</translation>
       <translation>Image generation</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="967"/>
+      <location filename="../config/cache_value_definitions.json" line="968"/>
       <source>ControlNet tiled upscaling</source>
       <translation>ControlNet tiled upscaling</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="970"/>
+      <location filename="../config/cache_value_definitions.json" line="971"/>
       <source>Whether to use the ControlNet tile model to improve image upscaling. When enabled and supported, all other image generation options will influence upscaling results. To use this, the ControlNet extension needs to be installed in the stable-diffusion-webui, and the controlnet tile model needs to be downloaded to the correct folder.</source>
       <translation>Whether to use the ControlNet tile model to improve image upscaling. When enabled and supported, all other image generation options will influence upscaling results. To use this, the ControlNet extension needs to be installed in the stable-diffusion-webui, and the controlnet tile model needs to be downloaded to the correct folder.</translation>
     </message>
@@ -6916,12 +6901,12 @@ Press ESC to cancel</translation>
       <translation>ControlNet</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="976"/>
+      <location filename="../config/cache_value_definitions.json" line="977"/>
       <source>Tile downsample rate:</source>
       <translation>Tile downsample rate:</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="979"/>
+      <location filename="../config/cache_value_definitions.json" line="980"/>
       <source>Adjusts how strongly the ControlNet tile model preserves the original image data, higher values result in fewer changes.</source>
       <translation>Adjusts how strongly the ControlNet tile model preserves the original image data, higher values result in fewer changes.</translation>
     </message>

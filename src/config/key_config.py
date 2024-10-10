@@ -219,7 +219,6 @@ class KeyConfig(Config, metaclass=Singleton):
     GENERATOR_SELECT_SHORTCUT: str
     GROW_SELECTION_SHORTCUT: str
     IMAGE_TO_LAYERS_SHORTCUT: str
-    IMAGE_WINDOW_SHORTCUT: str
     INVERT_SELECTION_SHORTCUT: str
     LAYER_MIRROR_HORIZONTAL_SHORTCUT: str
     LAYER_MIRROR_VERTICAL_SHORTCUT: str
@@ -239,6 +238,7 @@ class KeyConfig(Config, metaclass=Singleton):
     MOVE_LEFT: str
     MOVE_RIGHT: str
     MOVE_UP: str
+    NAVIGATION_WINDOW_SHORTCUT: str
     NEW_IMAGE_SHORTCUT: str
     NEW_LAYER_GROUP_SHORTCUT: str
     NEW_LAYER_SHORTCUT: str

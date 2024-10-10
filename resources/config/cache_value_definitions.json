@@ -692,14 +692,15 @@
         "default": "",
         "saved": true
     },
-    "saved_image_window_pos": {
-        "label": "Saved image window placement",
+    "saved_navigation_window_pos": {
+        "label": "Saved navigation window placement",
         "category": "Cache",
         "subcategory": "Window placement",
-        "description": "display, position, and size where the image window last was.",
+        "description": "display, position, and size where the navigation window was last.",
         "type": "string",
         "default": "",
-        "saved": true
+        "saved": true,
+        "translate": false
     },"prompt": {
         "label": "Prompt:",
         "category": "Cache",

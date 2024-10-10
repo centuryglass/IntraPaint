@@ -90,7 +90,7 @@ from src.ui.panel.layer_ui.layer_panel import LayerPanel
 from src.ui.panel.tool_panel import ToolPanel
 from src.ui.widget.tool_tab import ToolTab
 from src.ui.window.generator_setup_window import GeneratorSetupWindow
-from src.ui.window.image_window import ImageWindow
+from src.ui.window.navigation_window import NavigationWindow
 from src.ui.window.main_window import MainWindow, TabBoxID
 from src.undo_stack import UndoStack
 from src.util.application_state import AppStateTracker, APP_STATE_NO_IMAGE, APP_STATE_EDITING, APP_STATE_LOADING, \
@@ -360,8 +360,8 @@ class AppController(MenuBuilder):
         self._last_active_tool: Optional[BaseTool] = None
 
         # Add utility widgets to the tool panel:
-        self._tool_panel_navigation_panel = ImageWindow(self._image_stack, self._image_viewer,
-                                                        include_zoom_controls=False, use_keybindings=False)
+        self._tool_panel_navigation_panel = NavigationWindow(self._image_stack, self._image_viewer,
+                                                             include_zoom_controls=False, use_keybindings=False)
         self._tool_panel.add_utility_widget_tab(LayerPanel(self._image_stack), TOOL_PANEL_LAYER_TAB)
         self._tool_panel_color_picker = ColorControlPanel(disable_extended_layouts=True)
         self._tool_panel_color_picker.set_four_tab_mode()
@@ -526,7 +526,7 @@ class AppController(MenuBuilder):
             self._tool_controller.remove_tool(gen_area_tool)
         elif gen_area_tool is None and show_image_gen_controls:
             self._tool_controller.add_tool(self._generation_area_tool)
-        image_panels = (self._window.image_panel, self._tool_panel_navigation_panel, self._window.image_window)
+        image_panels = (self._window.image_panel, self._tool_panel_navigation_panel, self._window.navigation_window)
         for image_panel in image_panels:
             image_panel.set_image_generation_controls_visible(show_image_gen_controls)
         self._update_enabled_actions()
@@ -1312,10 +1312,10 @@ class AppController(MenuBuilder):
         self._layer_panel.show()
         self._layer_panel.raise_()
 
-    @menu_action(MENU_TOOLS, 'image_window_shortcut', 501)
+    @menu_action(MENU_TOOLS, 'navigation_window_shortcut', 501)
     def show_image_window(self) -> None:
         """Show the image preview window."""
-        self._window.show_image_window()
+        self._window.show_navigation_window()
 
     @menu_action(MENU_TOOLS, 'generator_select_shortcut', 502)
     def show_generator_window(self) -> None:
