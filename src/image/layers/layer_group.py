@@ -226,7 +226,13 @@ class LayerGroup(Layer, LayerParent):
             If not None, draw the rendered bounds onto this image, to use when determining what parts of the base image
             were rendered onto.
         """
-        if self.render_would_be_empty(base_image, transform, image_bounds, z_max):
+        if z_max is not None:
+            min_z = self.z_value
+            for child in self.recursive_child_layers:
+                min_z = min(min_z, child.z_value)
+            if min_z > z_max:
+                return
+        if self.render_would_be_empty(base_image, transform, image_bounds):
             return
 
         # Validate that transform only contains offset, extract that offset:
