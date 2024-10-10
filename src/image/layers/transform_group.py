@@ -106,21 +106,21 @@ class TransformGroup(TransformLayer):
     def _layer_removed_slot(self, layer: Layer) -> None:
         assert isinstance(layer, (TransformLayer, LayerGroup))
         if isinstance(layer, TransformLayer):
-            assert layer in self._transform_layers, f'layer {layer.name} not found in {self.name}'
-            layer.set_transform(layer.transform * self.transform.inverted()[0])
-            layer.size_changed.disconnect(self._handle_external_changes)
-            layer.transform_changed.disconnect(self._handle_external_changes)
-            self._transform_layers.remove(layer)
+            if layer in self._transform_layers:
+                layer.set_transform(layer.transform * self.transform.inverted()[0])
+                layer.size_changed.disconnect(self._handle_external_changes)
+                layer.transform_changed.disconnect(self._handle_external_changes)
+                self._transform_layers.remove(layer)
         else:
             assert isinstance(layer, LayerGroup)
-            assert layer in self._groups
-            layer.layer_added.disconnect(self._layer_added_slot)
-            layer.layer_removed.disconnect(self._layer_removed_slot)
-            layer.size_changed.disconnect(self._handle_external_changes)
-            layer.bounds_changed.disconnect(self._handle_external_changes)
-            self._groups.remove(layer)
-            for child in layer.child_layers:
-                self._layer_removed_slot(child)
+            if layer in self._groups:
+                layer.layer_added.disconnect(self._layer_added_slot)
+                layer.layer_removed.disconnect(self._layer_removed_slot)
+                layer.size_changed.disconnect(self._handle_external_changes)
+                layer.bounds_changed.disconnect(self._handle_external_changes)
+                self._groups.remove(layer)
+                for child in layer.child_layers:
+                    self._layer_removed_slot(child)
         layer.lock_changed.disconnect(self._layer_locked_slot)
         self._get_local_bounds()  # Updates size, emits size_changed if needed
 

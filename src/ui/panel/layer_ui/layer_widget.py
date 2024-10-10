@@ -372,8 +372,9 @@ class LayerWidget(BorderedWidget):
                 self._image_stack.create_layer(COPIED_LAYER_NAME.format(src_layer_name=self._layer.name), masked,
                                                layer_index=index)
             _add_action(MENU_OPTION_COPY_SELECTED, do_copy)
-            _add_action(MENU_OPTION_LAYER_TO_IMAGE_SIZE, lambda: self._image_stack.layer_to_image_size(self.layer),
-                        True)
+            if isinstance(self._layer, ImageLayer):
+                _add_action(MENU_OPTION_LAYER_TO_IMAGE_SIZE, lambda: self._image_stack.layer_to_image_size(self.layer),
+                            True)
 
             _add_action(MENU_OPTION_SELECT_CONTENT, lambda: self._image_stack.select_layer_content(self.layer))
 

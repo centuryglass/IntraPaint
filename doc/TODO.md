@@ -6,7 +6,6 @@
 - Upscale: make new layer, scale up existing layers
 
 ## Priority issues:
-- Layer name shouldn't be editable in locked layers
 - "delete layer" button should be disabled when the active layer is locked or is the layer stack.
 - Double-check layer merge behavior with layer groups.
 - "Show image window" should be "show navigation window"
@@ -15,6 +14,8 @@
 - Transform tool x/y fields go out of sync
 - Use improved input hints on generated image picker
 - layer drag auto-scroll is painfully slow.
+- "crop layer to selection": overlap handling on layer groups needs fixes
+- layer flattening issue on groups containing groups: test with "group compositing" in layer_blend_test.ora
 
 ## Timelapse video
 

@@ -583,7 +583,7 @@ class LayerGroup(Layer, LayerParent):
                 layer.propagate_parent_lock_signal(source)
 
     def _layer_content_change_slot(self, layer: Layer, _=None) -> None:
-        if layer.visible and layer in self._layers and layer.content_change_timestamp > self.content_change_timestamp:
+        if layer in self._layers and layer.content_change_timestamp > self.content_change_timestamp:
             self._trigger_render()
 
     def _layer_bounds_change_slot(self, layer: Layer, _=None) -> None:

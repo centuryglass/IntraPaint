@@ -915,8 +915,9 @@ class ImageStack(QObject):
             return
 
         if isinstance(layer, LayerGroup):
-            last_child = layer.child_layers[-1]
-            base_z = last_child.z_value - 1
+            base_z = layer.z_value - 1
+            for child_layer in layer.recursive_child_layers:
+                base_z = min(base_z, child_layer.z_value - 1)
         else:
             base_z = layer.z_value - 1
 
@@ -1236,6 +1237,9 @@ class ImageStack(QObject):
         if layer is None:
             layer = self.active_layer
         if not self._validate_layer_showing_errors(layer, allow_layer_stack=True):
+            return
+        if self._selection_layer.is_empty():
+            show_error_dialog(None, ERROR_TITLE_CROP_FAILED, ERROR_MESSAGE_CROP_FAILED_NO_OVERLAP)
             return
         if isinstance(layer, LayerGroup):
             all_layers = layer.recursive_child_layers
