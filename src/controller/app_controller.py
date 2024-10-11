@@ -140,7 +140,6 @@ MENU_EDIT = _tr('Edit')
 MENU_IMAGE = _tr('Image')
 MENU_SELECTION = _tr('Selection')
 MENU_LAYERS = _tr('Layers')
-MENU_TOOLS = _tr('Tools')
 MENU_FILTERS = _tr('Filters')
 
 SUBMENU_MOVE = _tr('Move')
@@ -535,6 +534,8 @@ class AppController(MenuBuilder):
         image_panels = (self._window.image_panel, self._tool_panel_navigation_panel, self._window.navigation_window)
         for image_panel in image_panels:
             image_panel.set_image_generation_controls_visible(show_image_gen_controls)
+        generate_action = self.get_action_for_method(self.start_and_manage_inpainting)
+        generate_action.setEnabled(self._generator is not None and not isinstance(self._generator, NullGenerator))
         self._update_enabled_actions()
 
     def init_settings(self, settings_modal: SettingsModal) -> None:
@@ -1063,6 +1064,11 @@ class AppController(MenuBuilder):
 
     # Image menu:
 
+    @menu_action(MENU_IMAGE, 'navigation_window_shortcut', 199)
+    def show_navigation_window(self) -> None:
+        """Show the image preview window."""
+        self._window.show_navigation_window()
+
     @menu_action(MENU_IMAGE, 'resize_canvas_shortcut', 200, valid_app_states=[APP_STATE_EDITING])
     def resize_canvas(self) -> None:
         """Crop or extend the edited image without scaling its contents based on user input into a popup modal."""
@@ -1147,6 +1153,25 @@ class AppController(MenuBuilder):
             message_box.setStandardButtons(QMessageBox.StandardButton.Ok)
             message_box.exec()
 
+    @menu_action(MENU_IMAGE, 'generator_select_shortcut', 206)
+    def show_generator_window(self) -> None:
+        """Show the generator selection window."""
+        assert self._generator is not None
+        if self._generator_window is None:
+            self._generator_window = GeneratorSetupWindow()
+            self._generator_window.add_generator(self._sd_generator)
+            if not is_pyinstaller_bundle():
+                self._generator_window.add_generator(self._glid_generator)
+            self._generator_window.add_generator(self._glid_web_generator)
+            if '--dev' in sys.argv or self._generator == self._test_generator:
+                self._generator_window.add_generator(self._test_generator)
+            self._generator_window.add_generator(self._null_generator)
+            self._generator_window.activate_signal.connect(self.load_image_generator)
+        self._generator_window.mark_active_generator(self._generator)
+        self._set_alt_window_fractional_bounds(self._generator_window)
+        self._generator_window.show()
+        self._generator_window.raise_()
+
     @menu_action(MENU_IMAGE, 'generate_shortcut', 205, valid_app_states=[APP_STATE_EDITING])
     def start_and_manage_inpainting(self) -> None:
         """Start inpainting/image editing based on the current state of the UI."""
@@ -1193,6 +1218,20 @@ class AppController(MenuBuilder):
         self._image_stack.selection_layer.grow_or_shrink_selection(-num_pixels)
 
     # Layer menu:
+    @menu_action(MENU_LAYERS, 'show_layer_menu_shortcut', 399)
+    def show_layer_panel(self) -> None:
+        """Opens the layer panel window"""
+        if self._layer_panel is None:
+            self._layer_panel = LayerPanel(self._image_stack)
+            if not Cache().load_bounds(Cache.SAVED_LAYER_WINDOW_POS, self._layer_panel):
+                width = int(self._layer_panel.sizeHint().width() * 1.5)
+                height = self._window.height() // 3
+                x = self._window.x() + self._window.width() - int(width * 1.5)
+                y = self._window.y() + height
+                Cache().set(Cache.SAVED_LAYER_WINDOW_POS, f'{x},{y},{width},{height}')
+                Cache().load_bounds(Cache.SAVED_LAYER_WINDOW_POS, self._layer_panel)
+        self._layer_panel.show()
+        self._layer_panel.raise_()
 
     @menu_action(f'{MENU_LAYERS}.{SUBMENU_SELECT}', 'select_previous_layer_shortcut', 400,
                  valid_app_states=[APP_STATE_EDITING, APP_STATE_SELECTION])
@@ -1310,47 +1349,6 @@ class AppController(MenuBuilder):
         layer = self._image_stack.active_layer
         assert isinstance(layer, (ImageLayer, LayerGroup))
         layer.crop_to_content()
-
-    # Tool menu:
-
-    @menu_action(MENU_TOOLS, 'show_layer_menu_shortcut', 500)
-    def show_layer_panel(self) -> None:
-        """Opens the layer panel window"""
-        if self._layer_panel is None:
-            self._layer_panel = LayerPanel(self._image_stack)
-            if not Cache().load_bounds(Cache.SAVED_LAYER_WINDOW_POS, self._layer_panel):
-                width = int(self._layer_panel.sizeHint().width() * 1.5)
-                height = self._window.height() // 3
-                x = self._window.x() + self._window.width() - int(width * 1.5)
-                y = self._window.y() + height
-                Cache().set(Cache.SAVED_LAYER_WINDOW_POS, f'{x},{y},{width},{height}')
-                Cache().load_bounds(Cache.SAVED_LAYER_WINDOW_POS, self._layer_panel)
-        self._layer_panel.show()
-        self._layer_panel.raise_()
-
-    @menu_action(MENU_TOOLS, 'navigation_window_shortcut', 501)
-    def show_image_window(self) -> None:
-        """Show the image preview window."""
-        self._window.show_navigation_window()
-
-    @menu_action(MENU_TOOLS, 'generator_select_shortcut', 502)
-    def show_generator_window(self) -> None:
-        """Show the generator selection window."""
-        assert self._generator is not None
-        if self._generator_window is None:
-            self._generator_window = GeneratorSetupWindow()
-            self._generator_window.add_generator(self._sd_generator)
-            if not is_pyinstaller_bundle():
-                self._generator_window.add_generator(self._glid_generator)
-            self._generator_window.add_generator(self._glid_web_generator)
-            if '--dev' in sys.argv or self._generator == self._test_generator:
-                self._generator_window.add_generator(self._test_generator)
-            self._generator_window.add_generator(self._null_generator)
-            self._generator_window.activate_signal.connect(self.load_image_generator)
-        self._generator_window.mark_active_generator(self._generator)
-        self._set_alt_window_fractional_bounds(self._generator_window)
-        self._generator_window.show()
-        self._generator_window.raise_()
 
     # Internal/protected:
 

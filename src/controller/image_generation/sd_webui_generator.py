@@ -46,8 +46,6 @@ def _tr(*args):
     return QApplication.translate(TR_ID, *args)
 
 
-MENU_TOOLS = _tr('Tools')
-
 SD_WEBUI_GENERATOR_NAME = _tr('Stable-Diffusion WebUI API')
 SD_WEBUI_GENERATOR_DESCRIPTION = _tr("""
 <h2>Stable-Diffusion: via WebUI API</h2>
@@ -662,23 +660,6 @@ class SDWebUIGenerator(ImageGenerator):
         except RuntimeError as image_gen_error:
             logger.error(f'request failed: {image_gen_error}')
 
-    @menu_action(MENU_TOOLS, 'lcm_mode_shortcut', 99, condition_check=_check_lcm_mode_available)
-    def set_lcm_mode(self) -> None:
-        """Apply all settings required for using an LCM LoRA module."""
-        cache = Cache()
-        loras = [lora['name'] for lora in Cache().get(Cache.LORA_MODELS)]
-        if LCM_LORA_1_5 in loras:
-            lora_name = LCM_LORA_1_5
-        else:
-            lora_name = LCM_LORA_XL
-        lora_key = f'<lora:{lora_name}:1>'
-        prompt = cache.get(Cache.PROMPT)
-        if lora_key not in prompt:
-            cache.set(Cache.PROMPT, f'{prompt} {lora_key}')
-        cache.set(Cache.GUIDANCE_SCALE, 1.5)
-        cache.set(Cache.SAMPLING_STEPS, 8)
-        cache.set(Cache.SAMPLING_METHOD, 'LCM')
-
     def _update_styles(self, style_list: List[Dict[str, str]]) -> None:
         try:
             assert self._webservice is not None
@@ -741,3 +722,20 @@ class SDWebUIGenerator(ImageGenerator):
         else:
             lora_window = ExtraNetworkWindow(loras, self._lora_images)
             lora_window.exec()
+
+    @menu_action(MENU_STABLE_DIFFUSION, 'lcm_mode_shortcut', 210, condition_check=_check_lcm_mode_available)
+    def set_lcm_mode(self) -> None:
+        """Apply all settings required for using an LCM LoRA module."""
+        cache = Cache()
+        loras = [lora['name'] for lora in Cache().get(Cache.LORA_MODELS)]
+        if LCM_LORA_1_5 in loras:
+            lora_name = LCM_LORA_1_5
+        else:
+            lora_name = LCM_LORA_XL
+        lora_key = f'<lora:{lora_name}:1>'
+        prompt = cache.get(Cache.PROMPT)
+        if lora_key not in prompt:
+            cache.set(Cache.PROMPT, f'{prompt} {lora_key}')
+        cache.set(Cache.GUIDANCE_SCALE, 1.5)
+        cache.set(Cache.SAMPLING_STEPS, 8)
+        cache.set(Cache.SAMPLING_METHOD, 'LCM')

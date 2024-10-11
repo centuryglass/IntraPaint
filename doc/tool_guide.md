@@ -1,12 +1,13 @@
 # IntraPaint Tools
 
 
-This guide covers the editing tools found under the "Tools" panel, and the extra options found under the "Tools" menu. All hotkeys can be changed in settings (F9) under the keybindings tab.
+This guide covers the editing tools found within the "Tools" panel. and the extra options found under the "Tools" menu. All hotkeys can be changed in settings (F9) under the keybindings tab.
 
 
 ---
 ## Table of Contents
-1. [Image editing tools](#image-editing-tools)
+1. [Shared controls](#shared-controls)
+2. [Image editing tools](#image-editing-tools)
    - [Brush tool](#-brush-tool-b)
    - [Draw tool](#-draw-tool-d)
    - [Eraser tool](#-eraser-tool-e)
@@ -22,12 +23,6 @@ This guide covers the editing tools found under the "Tools" panel, and the extra
    - [Rectangle/Ellipse selection tool](#-rectangleellipse-selection-r)
    - [Selection fill tool](#-selection-fill-tool-a)
 3. [Image generation area tool](#-image-generation-area-tool-g)
-4. [Tool menu options](#tool-menu-options)
-   - [Show layer window](#show-layer-window-f7)
-   - [Show navigation window](#show-navigation-window-ctrlaltw)
-   - [Select image generator](#select-image-generator-f11)
-   - [LCM mode](#lcm-mode-f10)
-
 ---
 
 ## Shared controls
@@ -464,88 +459,3 @@ Controls the area of the image in use for AI image generation. AI generators are
 The Tool menu provides a few extra options for controlling IntraPaint, most as secondary windows.
 
 ---
-### Show layer window (F7)
-
-This opens a window you can use to manage image layers.  Layer controls are also available as one of the options on the tool tab under the tool control panel.
-
-### User interface
-<img src="./labeled_screenshots/layers.png" alt="Screenshot of the layer window, with specific elements numbered."/>
-
-Click and drag any layer to move it within the list.  Right-click a layer to show more options for editing that layer.
-
-1. **Opacity slider**: Controls the opacity of the active layer.
-2. **Layer mode**:  Sets the blending/compositing mode of the active layer, controlling how its content is rendered into the image.  See the [W3 Compositing and Blending Standard](https://www.w3.org/TR/compositing-1/) for in-depth descriptions and example images of the available modes.
-3. **Main layer group**:  The group that contains all layers in the image.  Unlike other layer groups, this one cannot be locked, deleted, or moved.
-4. **Open layer group**: A layer group containing several inner layers. Clicking the arrow icon shows and hides the inner layers. 
-5. **Active layer**:  The active layer, a text layer.  Active layer status is indicated by the outline and highlighting.  Only one layer can be active at a time, and most tools and layer menu options are applied to the active layer only.
-6. **Image layers**: Several image layers, shown in the order that they're stacked within the image. All drawing and painting tools work by editing an active image layer.
-7. **Closed layer group**: Another layer group below all other image content, hidden so that its contents are preserved but not seen.
-8. **Layer name**:  Each layer has a name, used for organizational purposes only.  Double-click a layer's name to edit it.
-9. **Isolate button**: Available only on layer groups, activating isolation makes it so the blending mode of layers within the group will never blend with layers outside of the group.
-10. **Alpha lock button**:  Available only on image layers, alpha locking prevents all changes to layer opacity. When the alpha lock is set, drawing within the layer will only affect non-transparent areas, and the eraser tool will do nothing.
-11. **Lock button**: When locked, layers cannot be moved or edited in any way.  When a layer group is locked, the same restriction applies to all layers within it.
-12. **Visibility button**: Click to hide the layer within the image, or to reveal it if it was previously hidden.  Most changes to hidden layer content will also be prevented.
-13. **New layer button**: Click to create a new layer. If an unlocked layer group is the active layer the new layer will be created at the top of that group, otherwise it will be created above the active layer.
-14. **New layer group button**: Click to create a new layer group.  New layer groups are always empty, but existing layers can be dragged into them.
-15. **Delete layer button**: Click to delete the active layer.
-16. **Move up button**: Click to move the active layer up within the layer stack. This can move layers into and out of unlocked groups.
-17. **Move up button**: Click to move the active layer down within the layer stack.
-18. **Merge down button**: Click to merge the active layer with the one beneath it.  This will only work when both layers are visible and unlocked.
-
----
-### Show navigation window (Ctrl+Alt+W)
-Opens another window with a view of the entire edited image. This can be used to adjust the image viewport within the main window, and to move the image generation area.
-
-### Basic controls
-The navigation window uses the same basic mouse controls as the main window:
-
-- **Middle-click and drag, or Ctrl + left-click and drag**: Pan image content.
-- **Mouse scroll wheel**: Zoom in or zoom out.
-
-Additional controls vary depending on which option is active: "Move gen. area" or "Move view".  If AI image generation is inactive, only the "**Move view"** mode will be available:
- 
-- **Left-click**: Move the main window viewport so that its upper-left corner is at the clicked spot.
-- **Right-click and drag**: Draw a rectangle that covers where the main window viewport should be.  When the mouse button is released, the viewport will update to match the window.
-
-When **"Move gen. area"** is active, mouse controls match the image generation area tool:
- 
-- **Left-click**: Move the image generation area, without changing its size.
-- **Right-click**: Resize the image generation area, without changing its position.
-
-### User interface
-<img src="./labeled_screenshots/navigation.png" alt="Screenshot of the navigation window, with specific elements numbered."/>
-
-1. **Image scale slider**: Set the scale the image is drawn within the navigation window.
-2. **"Reset View" button**: Resets the navigation window to the default view, centering image content.
-3. **Mode toggle: "Move gen. area"**: Switches to generation area tool mode, where clicking within the navigation window adjusts the image generation area.
-4. **Mode toggle: "Move view"**: Switches to move view mode, where clicking within the navigation window adjusts the main window image viewport.
-5. **Main window viewport outline**: The solid rectangle outlines the portion of the image currently visible within the main window.
-6. **Image generation area outline**: The dotted rectangle shows the area within the image selected for AI image generation.  This won't be shown if AI image generation is inactive.
-7. **"Inpaint full resolution" outline**: This inner rectangle shows the reduced area within the image generation area that will be used for inpainting if "inpaint full resolution" is selected.  This won't be visible if nothing is selected, if "inpaint full resolution" is unchecked, or if AI image generation is unavailable.
-8. **Selected image content**: All selected areas are also visible within the navigation window.
-
----
-### Select image generator (F11)
-Opens a window where you can enable or disable AI image generation, or select alternate AI image generators.  IntraPaint still provides limited support for the obsolete GLID-3-XL image generator, but in most cases you'll probably want to use the Stable-Diffusion image generator instead.  Support for other AI image generators may become available in the future.
-
-### User interface
-<img src="./labeled_screenshots/generator_window.png" alt="Screenshot of the image generator selection window, with specific elements numbered."/>
-
-1. The list of available image generation modes. The active mode will be underlined.  Click any option to show more information on the right.
-   - 1a. **Stable-Diffusion WebUI API**: The primary AI image generation mode.
-   - 1b. **GLID-3-XL image generation**: Runs the outdated GLID-3-XL image generator directly within IntraPaint.  This option is not available when running the pre-bundled version of IntraPaint, and it requires significant additional setup.
-   - 1c. **GLID-3-XL image generation server**: Use GLID-3-XL image generation over a network.
-   - 1d. **No image generator**: Use IntraPaint without any AI image generation.
-2. **Generator description**: A brief overview of the capabilities and limitations of the selected generator.
-3. **Setup and installation instructions**: Instructions for installing the selected image generator and getting it working with IntraPaint.
-4. **Status window**: Lists any issues detected that would prevent the generator from being used.
-5. **"Activate" button**:  Click to try and activate the selected generator.
-
----
-### LCM Mode [F10]
-This option is only visible when using Stable-Diffusion, when the LCM LORA model and support for the LCM sampler are detected.  LCM mode dramatically decreases image generation time, and gives more predictable but less creative results. Selecting this option adjusts image generation parameters to match the settings needed by LCM models:
-
-- The image sampling mode is set to LCM
-- The activation text for the LCM LORA is inserted into the prompt, if not already there.
-- The prompt guidance scale is set to 1.5 (1.5 - 2.0 is the recommended range for LCM).
-- The number of image generation steps is set to 8 (5 - 10 is the recommended range for LCM).

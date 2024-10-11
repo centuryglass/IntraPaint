@@ -66,6 +66,7 @@ Things I never fixed but can no longer reproduce, or that come from external iss
 * Transform tool: clicking a layer should activate it, or there should be an option to do that at least.
 * ImageViewer: add sidebar rulers
 * add 'sample merged' option to smudge, stamp, and filter tools
+* Ctrl+C, Ctrl+V already behave contextually when text input is active (thanks to Qt), but not when chosen directly from the edit menu. I should fix that.
 
 ## Minor bugs:
 - Some of the MyPaint brushes are clearly not working. Cross-test on Windows and with actual MyPaint, refer to images in examples folder.

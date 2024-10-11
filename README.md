@@ -196,7 +196,7 @@ These are third-party resources that I've found useful, I did not create or cont
 - [Stable Diffusion Samplers: A Comprehensive Guide](https://stable-diffusion-art.com/samplers/): Explains what the difference between Euler A/DPM++/UniPC/etc. is, and why you might want to choose any particular option.
 - [Automatic1111 WebUI Features](https://github.com/AUTOMATIC1111/stable-diffusion-webui/wiki/Features): All prompt-related features listed here will work within IntraPaint. 
 
-### Help and Troubleshooting:
+### FAQ:
 
 #### Q: Why isn't the brush tool visible?
 
@@ -215,7 +215,9 @@ API. Use Git to revert to commit `bfee03d8`, or install the [v0.0.17 release](ht
 *If using the Automatic1111 WebUI*: The ControlNet panel only appears after you've installed the sd-webui-controlnet 
 extension.  Installation instructions and links to required ControlNet model files can be found [here](https://github.com/Mikubill/sd-webui-controlnet).
 
+#### Q: Wasn't there something else here before?
 
+Version 0.1.0 of IntraPaint, released July 2022, was a much simpler program that used the old [GLID-3-XL](https://github.com/Jack000/glid-3-xl) AI image generation model for inpainting.
 
 ### Alternatives:
 - The [Krita AI Plugin](https://github.com/Acly/krita-ai-diffusion) shares many of the same goals as IntraPaint and executes them very well. If you already use [Krita](https://krita-artists.org/) or [ComfyUI](https://github.com/comfyanonymous/ComfyUI), this could be a great option for you.  This is the only item on this list that I've personally tested.
