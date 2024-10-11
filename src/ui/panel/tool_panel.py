@@ -3,7 +3,7 @@
 from typing import Optional, Dict, List
 
 from PySide6.QtCore import Qt, Signal, QSize, QMargins, QObject
-from PySide6.QtGui import QResizeEvent
+from PySide6.QtGui import QResizeEvent, QIcon
 from PySide6.QtWidgets import (QWidget, QLabel, QHBoxLayout, QVBoxLayout, QSizePolicy, QScrollArea, QGridLayout,
                                QLayout, QTabWidget)
 
@@ -103,10 +103,13 @@ class ToolPanel(QWidget):
             button.setParent(None)
         self._build_tool_button_layout()
 
-    def add_utility_widget_tab(self, widget: QWidget, tab_name: str) -> None:
+    def add_utility_widget_tab(self, widget: QWidget, tab_name: str, icon: Optional[QIcon] = None) -> None:
         """Adds a tabbed utility widget to the tabs at the end of the panel."""
         self._utility_tab_panels.append(widget)
-        self._utility_tab_panel.addTab(widget, tab_name)
+        if icon is not None:
+            self._utility_tab_panel.addTab(widget, icon, tab_name)
+        else:
+            self._utility_tab_panel.addTab(widget, tab_name)
 
     @property
     def orientation(self) -> Qt.Orientation:

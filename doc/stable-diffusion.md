@@ -54,3 +54,5 @@ This lets you select between different mathematical models that can be used for 
 A number used to control randomness during image generation.  If all other factors are unchanged, using the same seed value should produce the same images each time. If set to -1, a different random seed will be used each time you generate images.
 
 Batch size 
+
+## ControlNet

@@ -46,13 +46,13 @@ support is possible with manual setup and compilation.
 
 ### Traditional Image Editing Tools:
 - Full-featured layer stack with advanced blending modes, layer groups, and transformations.
-- Digital painting capabilities powered by the [libmypaint](https://github.com/mypaint/libmypaint) brush engine, with
-- full support for pressure-sensitive drawing tablets.
+- Digital painting capabilities powered by the [libmypaint](https://github.com/mypaint/libmypaint) brush engine, with full support for pressure-sensitive drawing tablets.
 - Standard tools such as selection, text editing, paint bucket, filters, and more are available even when AI features are disabled.
 
 ## Why Combine AI and Traditional Tools?
 - Automate repetitive tasks: Focus on drawing what matters to you, and let the AI handle the rest.
 - Explore creative alternatives: Quickly iterate on multiple ideas without manually creating each variation.
+- Complete control in one package: Use familiar editing tools without needing to export files to another application.
 
 |                                                                                                                                                                          |                                                                                                                                                                                               |                                                                                                                |
 |--------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------|
@@ -183,9 +183,11 @@ To use AI features, you'll need a running Stable-Diffusion client (either [Forge
 ### Guides and tutorials
 
 ### IntraPaint Documentation:
-- [Tools Overview](./doc/tool_guide.md)
-- [Stable-Diffusion Controls](./doc/stable-diffusion.md)
-- [Guide to AI Inpainting](./doc/inpainting_guide.md)
+- [IntraPaint Controls](./doc/controls.md): An overview of the main application interface.
+- [IntraPaint Tools](./doc/tool_guide.md): Guides to each of IntraPaint's image editing tools.
+- [Main Menu Options](./doc/menu_options.md): Detailed guide to all main menu options.
+- [Stable-Diffusion Controls](./doc/stable-diffusion.md): In-depth descriptions of all Stable-Diffusion image generation options.
+- [Guide to AI Inpainting](./doc/inpainting_guide.md): Tips and tricks for effective AI inpainting.
 
 ### Related Resources
 These are third-party resources that I've found useful, I did not create or contribute to them.

@@ -20,6 +20,7 @@ from src.config.key_config import KeyConfig
 from src.image.layers.image_layer import ImageLayer
 from src.image.layers.image_stack import ImageStack
 from src.image.layers.layer import Layer
+from src.tools.base_tool import BaseTool
 from src.ui.graphics_items.outline import Outline
 from src.ui.graphics_items.polygon_outline import PolygonOutline
 from src.ui.graphics_items.toast_message import ToastMessageItem
@@ -27,7 +28,8 @@ from src.ui.input_fields.check_box import CheckBox
 from src.ui.modal.modal_utils import open_image_file, SAVE_IMAGE_MODE, show_warning_dialog
 from src.ui.widget.image_graphics_view import ImageGraphicsView
 from src.util.application_state import AppStateTracker, APP_STATE_LOADING, APP_STATE_EDITING
-from src.util.visual.text_drawing_utils import max_font_size, get_key_display_string
+from src.util.visual.text_drawing_utils import max_font_size, get_key_display_string, left_button_hint_text, \
+    middle_button_hint_text, vertical_scroll_hint_text
 from src.util.visual.geometry_utils import get_scaled_placement
 from src.util.visual.image_utils import get_standard_qt_icon, get_transparency_tile_pixmap
 from src.util.visual.image_format_utils import save_image
@@ -77,9 +79,51 @@ VIEW_MARGIN = 6
 IMAGE_MARGIN_FRACTION = 1 / 6
 SCROLL_DEBOUNCE_MS = 100
 
-DEFAULT_CONTROL_HINT = _tr('Ctrl+LMB or MMB and drag: pan view, mouse wheel: zoom, Esc: discard all options')
-ZOOM_CONTROL_HINT = _tr('Ctrl+LMB or MMB and drag: pan view, mouse wheel: zoom, Enter: select option, Esc: return to'
-                        ' full view')
+# TODO: Using <pre> tags to force spacing is not ideal, figure out why Qt rich text table spacing properties don't work
+DEFAULT_CONTROL_HINT = _tr("""
+                           <table>
+                             <tr>
+                               <td>
+                                 {modifier_or_modifiers}+{left_mouse_icon} or {middle_mouse_icon} and drag: pan view
+                               </td>
+                               <td><pre>    </pre></td>
+                               <td>
+                                 {v_scroll_icon} or {zoom_in_hint}/{zoom_out_hint}: zoom
+                               </td>
+                             </tr>
+                             <tr>
+                               <td>
+                                 {up_key_hint}: zoom to first option
+                               </td>
+                               <td><pre>    </pre></td>
+                               <td>
+                                 {escape_key_hint}: discard all options
+                               </td>
+                              </tr>
+                            </table>
+                           """)
+ZOOM_CONTROL_HINT = _tr("""
+                           <table>
+                             <tr>
+                               <td>
+                                 {modifier_or_modifiers}+{left_mouse_icon} or {middle_mouse_icon} and drag: pan view
+                               </td>
+                               <td><pre>    </pre></td>
+                               <td>
+                                 {v_scroll_icon} or {zoom_in_hint}/{zoom_out_hint}: zoom
+                               </td>
+                             </tr>
+                             <tr>
+                               <td>
+                                 {enter_key_hint}: select option
+                               </td>
+                               <td><pre>    </pre></td>
+                               <td>
+                                 {escape_key_hint}/{down_key_hint}: return to full view
+                               </td>
+                              </tr>
+                            </table>
+                           """)
 
 VIEW_BACKGROUND = Qt.GlobalColor.black
 
@@ -177,7 +221,7 @@ class GeneratedImageSelector(QWidget):
 
         self._button_bar_layout.addStretch(255)
 
-        self._status_label = QLabel(DEFAULT_CONTROL_HINT)
+        self._status_label = QLabel(self._get_control_hint())
         self._button_bar_layout.addWidget(self._status_label)
         self._button_bar_layout.addStretch(255)
 
@@ -323,7 +367,7 @@ class GeneratedImageSelector(QWidget):
             self._option_scale_offset = 0.0
             for option in self._options:
                 option.setOpacity(1.0)
-            self._status_label.setText(DEFAULT_CONTROL_HINT)
+            self._status_label.setText(self._get_control_hint())
             self._page_top_label.setText(SELECTION_TITLE)
         self.resizeEvent(None)
 
@@ -524,7 +568,7 @@ class GeneratedImageSelector(QWidget):
             option.setOpacity(1.0 if not self._zoomed_in or i == self._zoom_index else 0.5)
         if option_index is not None:
             self._page_top_label.setText(self._options[option_index].text)
-        self._status_label.setText(ZOOM_CONTROL_HINT)
+        self._status_label.setText(self._get_control_hint())
 
     def _zoom_prev(self):
         idx = len(self._options) - 1 if self._zoom_index <= 0 else self._zoom_index - 1
@@ -592,6 +636,33 @@ class GeneratedImageSelector(QWidget):
                 scale = self._options[idx].bounds.width() / self._image_stack.generation_area.width()
                 selection.setScale(scale)
                 selection.move_to(QPointF(x / selection.scale(), y / selection.scale()))
+
+    def _get_control_hint(self) -> str:
+        config = KeyConfig()
+        pan_view_modifier = config.get(KeyConfig.PAN_VIEW_MODIFIER)
+        zoom_in_key = config.get(KeyConfig.ZOOM_IN)
+        zoom_out_key = config.get(KeyConfig.ZOOM_OUT)
+        up_key = config.get(KeyConfig.MOVE_UP)
+        down_key = config.get(KeyConfig.MOVE_DOWN)
+        if self._zoomed_in:
+
+            return ZOOM_CONTROL_HINT.format(modifier_or_modifiers=get_key_display_string(pan_view_modifier),
+                                            left_mouse_icon=left_button_hint_text(),
+                                            middle_mouse_icon=middle_button_hint_text(),
+                                            v_scroll_icon=vertical_scroll_hint_text(),
+                                            zoom_in_hint=get_key_display_string(zoom_in_key),
+                                            zoom_out_hint=get_key_display_string(zoom_out_key),
+                                            enter_key_hint=get_key_display_string(Qt.Key.Key_Enter),
+                                            down_key_hint=get_key_display_string(down_key),
+                                            escape_key_hint=get_key_display_string(Qt.Key.Key_Escape))
+        return DEFAULT_CONTROL_HINT.format(modifier_or_modifiers=get_key_display_string(pan_view_modifier),
+                                           left_mouse_icon=left_button_hint_text(),
+                                           middle_mouse_icon=middle_button_hint_text(),
+                                           v_scroll_icon=vertical_scroll_hint_text(),
+                                           zoom_in_hint=get_key_display_string(zoom_in_key),
+                                           zoom_out_hint=get_key_display_string(zoom_out_key),
+                                           up_key_hint=get_key_display_string(up_key),
+                                           escape_key_hint=get_key_display_string(Qt.Key.Key_Escape))
 
 
 class _ImageOption(QGraphicsPixmapItem):

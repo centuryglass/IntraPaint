@@ -150,6 +150,9 @@ SUBMENU_TRANSFORM = _tr('Transform')
 CONTROL_TAB_NAME = _tr('Image Generation')
 
 ICON_PATH_GEN_TAB = f'{PROJECT_DIR}/resources/icons/tabs/sparkle.svg'
+ICON_PATH_LAYER_TAB = f'{PROJECT_DIR}/resources/icons/tabs/layers.svg'
+ICON_PATH_NAVIGATION_TAB = f'{PROJECT_DIR}/resources/icons/tabs/navigation.svg'
+ICON_PATH_COLOR_TAB = f'{PROJECT_DIR}/resources/icons/tabs/colors.svg'
 
 GENERATOR_LOAD_ERROR_TITLE = _tr('Loading image generator failed')
 GENERATOR_LOAD_ERROR_MESSAGE = _tr('Unable to load the {generator_name} image generator')
@@ -362,11 +365,14 @@ class AppController(MenuBuilder):
         # Add utility widgets to the tool panel:
         self._tool_panel_navigation_panel = NavigationWindow(self._image_stack, self._image_viewer,
                                                              include_zoom_controls=False, use_keybindings=False)
-        self._tool_panel.add_utility_widget_tab(LayerPanel(self._image_stack), TOOL_PANEL_LAYER_TAB)
+        self._tool_panel.add_utility_widget_tab(LayerPanel(self._image_stack), TOOL_PANEL_LAYER_TAB,
+                                                QIcon(ICON_PATH_LAYER_TAB))
         self._tool_panel_color_picker = ColorControlPanel(disable_extended_layouts=True)
         self._tool_panel_color_picker.set_four_tab_mode()
-        self._tool_panel.add_utility_widget_tab(self._tool_panel_color_picker, TOOL_PANEL_COLOR_TAB)
-        self._tool_panel.add_utility_widget_tab(self._tool_panel_navigation_panel, TOOL_PANEL_NAV_TAB)
+        self._tool_panel.add_utility_widget_tab(self._tool_panel_color_picker, TOOL_PANEL_COLOR_TAB,
+                                                QIcon(ICON_PATH_COLOR_TAB))
+        self._tool_panel.add_utility_widget_tab(self._tool_panel_navigation_panel, TOOL_PANEL_NAV_TAB,
+                                                QIcon(ICON_PATH_NAVIGATION_TAB))
 
         # Add all tools to the panel except for the generation area tool:
         for tool in self._tool_controller.tools:

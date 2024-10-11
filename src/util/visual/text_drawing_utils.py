@@ -143,7 +143,7 @@ def rich_text_key_hint(key_str: str) -> str:
         image = create_transparent_image(image_bounds.size())
         palette = QApplication.palette()
         bg_color = palette.color(QPalette.ColorRole.Base)
-        text_color = palette.color(QPalette.ColorRole.BrightText)
+        text_color = palette.color(QPalette.ColorRole.Text)
         key_rect_path = QPainterPath()
         key_rect_path.addRoundedRect(image_bounds.adjusted(0, 0, -1, -1), 3, 3)
         painter = QPainter(image)
