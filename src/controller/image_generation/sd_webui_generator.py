@@ -288,6 +288,9 @@ class SDWebUIGenerator(ImageGenerator):
                 (Cache.UPSCALE_METHOD, self._webservice.get_upscalers)
             )
 
+            # Enable inpainting cropping and padding:
+            cache.set(Cache.INPAINT_OPTIONS_AVAILABLE, True)
+
             # load various option lists:
             for config_key, option_loading_fn in option_loading_params:
                 try:
@@ -337,6 +340,8 @@ class SDWebUIGenerator(ImageGenerator):
         if self._webservice is not None:
             self._webservice.disconnect()
             self._webservice = None
+        # Turn off inpainting cropping and padding again:
+        Cache().set(Cache.INPAINT_OPTIONS_AVAILABLE, False)
         # Clear cached webservice data:
         if self._lora_images is not None:
             self._lora_images.clear()

@@ -1,7 +1,15 @@
 # Stable-Diffusion Image Generation Controls
-These controls are shown in either a panel at the bottom of the main window, or within a tab above the window, depending on how large the window is.  Additional controls can be found in the settings window (F9) under the "Stable-Diffusion" tab, and in the "Stable-Diffusion" menu.
+
+This guide covers the controls IntraPaint provides for AI image generation.  To access these controls, first install and configure Stable-Diffusion following instructions [here](../README.md#ai-setup-stable-diffusion), and activate it in the [generator selection window](./menu_options.md#image-generator-selection-window).
+
+---
+## Table of Contents
+1. [Image Generation Panel](#image-generation-panel)
+2. [ControlNet Panel](#controlnet-panel)
+---
 
 ## Image Generation Panel
+This panel is the main place where you'll control image generation.
 
 <img src="./labeled_screenshots/gen_panel.png" alt="Screenshot of the image generation panel, with specific elements numbered."/>
 
@@ -12,20 +20,20 @@ These controls are shown in either a panel at the bottom of the main window, or 
    - **Text to Image**: Previous image content is ignored, a new image is generated using only prompt data and other settings.
 3. **"Sampling method" dropdown**: Selects between different mathematical approaches to dividing the image generation process into steps.  The differences between these can be subtle, see [sampling methods](#sampling-methods) below for more details.
 4. **"Masked content" dropdown**: Controls how selected areas are processed when inpainting, usually best left unchanged. Available options:
-    - **original**:
-    - **fill**:
-    - **latent noise**:
-    - **latent nothing**:
+    - **original**: Make no changes to inpainting content before generating. This is the best option in most circumstances.
+    - **fill**:  Fill the inpainting selection with a solid color before generating. This is sometimes useful when trying to completely remove elements, but is usually best done manually with the brush tool.
+    - **latent noise**:  Fill the inpainting selection with random noise before generating.  When used with denoising strength set around 0.7-0.8, this can be useful for filling in empty space around an existing image.
+    - **latent nothing**:  Completely zeroes out the inpainting content before generating.
 5. **Prompt**: Describe in plain text exactly what kind of imagery the model should generate. Prompts can also use various control formats to affect image generation, see [prompt control formatting](#prompt-control-formatting) below for details.
 6. **Negative Prompt**: Describe in plain text exactly what kind of imagery the model should *not* generate. All prompt control formats also work on the negative prompt.
-7. **Generation size**:
-8. **Batch size**:
-9. **Batch count**:
+7. **Generation size**: The resolution of generated images.  Most Stable-Diffusion models can be somewhat flexible with this, but usually provide best performance at specific resolutions. See also: [generation resolution tips](./inpainting_guide.md#generation-resolution-tips)
+8. **Batch size**:  The number of images to generate at once.  Generating multiple images at the same time can be faster, but requires more VRAM.
+9. **Batch count**: The number of image batches to generate in sequence before switching to the selection view. This doesn't increase VRAM usage like batch size does, but it provides no speed benefits compared to generating batches individually.
 10. **Sampling steps**: Controls how many steps the generator takes to create images. Increasing step count makes image generation take longer, but often provides better results.  Benefits of increasing step count are usually fairly low above 30 steps. Certain specialty models (e.g. LCM and Turbo) can produce good results at far fewer steps.
 11. **Guidance scale**: Controls how strongly the generator will follow the prompt. Low values produce more random imagery, while high values de-prioritize image composition to focus more on exactly matching the AI model's understanding of your prompt.  Values in the 6-12 range usually produce the best results.
 12. **Denoising strength**: In "Inpaint" and "Image to Image" modes, this controls exactly how much of the source image the AI generator will include in its output. See [denoising strength comparisons](#denoising-strength-comparisons) below for examples.
-13. **"Inpaint Full Resolution" checkbox**:
-14. **"Inpaint Full Resolution" padding slider**:
+13. **"Inpaint Full Resolution" checkbox**:  When inpainting, crop to selected content within the generated area, increasing detail quality at the cost of situational awareness. Refer to the [inpainting guide](./inpainting_guide.md) for more details about using this effectively.
+14. **"Inpaint Full Resolution" padding slider**:  When "inpaint full resolution" is checked, this controls how much extra padding space is left around selected content when cropping for inpainting. This allows you to finely balance the trade-offs between detail quality and situational awareness.
 15. **"Seed" input**: A number used to control randomness during image generation.  If all other factors are unchanged, using the same seed value should produce the same images each time. If set to -1, a different random seed will be used each time you generate images.
 16. **Last seed value**: Holds the seed used the last time the generate button was pressed.
 17. **Interrogate button**: Use AI image analysis to automatically generate a description of the edited image.
@@ -35,9 +43,18 @@ These controls are shown in either a panel at the bottom of the main window, or 
 
 ## ControlNet Panel
 
+[ControlNet](https://github.com/lllyasviel/ControlNet) is an add-on for Stable-Diffusion that lets you restrict image generation in useful ways, usually by forcing it to not change parts of a source image.  The first three examples under [this section of the README](../README.md#why-combine-ai-and-traditional-tools) all use the ControlNet sketch module to preserve initial image composition.
+
+
+If the ControlNet tab isn't visible or isn't working properly, refer to [this section of the FAQ](../README.md#q-where-are-the-controlnet-options).
+
+
+ControlNet works with two components: a pre-processing **module**, and an AI **model**. The module identifies the elements that need to be preserved, and the model forces stable-diffusion to preserve those elements.  Not all modules and models are compatible, but it's usually obvious from their names which ones are meant to be used together.
+The wide variety of ControlNet models and modules available can be challenging to sort through, but I've found [this guide](https://education.civitai.com/civitai-guide-to-controlnet/#what-do-the-models-do) to be extremely helpful for sorting through them all.
+
 <img src="./labeled_screenshots/controlnet_panel.png" alt="Screenshot of the ControlNet panel, with specific elements numbered."/>
 
-1. **ControlNet tab**:
+1. **ControlNet tab**: Show or hide the generate panel, or move it to any of the window tab bars.
 2. **ControlNet unit tabs**:
 3. **"Enable ControlNet Unit" checkbox**:
 4. **"Low VRAM" checkbox**:
@@ -45,7 +62,7 @@ These controls are shown in either a panel at the bottom of the main window, or 
 6. **"Generation Area as Control" checkbox**:
 7. **"Set Control Image" button**:
 8. **Control image file path**:
-9. **"Control Type" dropdown**:
+9. **"Control Type" dropdown**:  An optional dropdown that lets you limit module and model dropdowns to a few useful presets.  This option won't be available if you're using the Forge WebUI to handle Stable-Diffusion.
 10. **"Control Module" dropdown**:
 11. **"Control Model" dropdown**:
 12. **"Control Weight" slider**:

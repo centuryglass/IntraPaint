@@ -140,6 +140,7 @@ class Cache(Config, metaclass=Singleton):
     IMAGE_LAYER_SCALING_BEHAVIOR: str
     INPAINT_FULL_RES: str
     INPAINT_FULL_RES_PADDING: str
+    INPAINT_OPTIONS_AVAILABLE: str
     LAST_ACTIVE_TOOL: str
     LAST_BRUSH_COLOR: str
     LAST_FILE_PATH: str

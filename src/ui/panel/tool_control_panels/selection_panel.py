@@ -73,19 +73,39 @@ class SelectionPanel(QWidget):
         padding_spinbox = cache.get_control_widget(Cache.INPAINT_FULL_RES_PADDING)
         padding_line_layout.addWidget(padding_spinbox)
 
-        def _show_hide_padding(should_show: bool) -> None:
-            if should_show:
+        def _set_inpaint_padding_visibility(should_show: bool) -> None:
+            """Toggle padding controls based on the inpaint full res checkbox state:"""
+            if should_show and cache.get(Cache.INPAINT_OPTIONS_AVAILABLE):
                 padding_label.show()
                 padding_spinbox.show()
             else:
                 padding_label.hide()
                 padding_spinbox.hide()
-        padding_checkbox.stateChanged.connect(lambda state: _show_hide_padding(bool(state)))
+        padding_checkbox.stateChanged.connect(lambda state: _set_inpaint_padding_visibility(bool(state)))
+
         full_res_padding_tip = cache.get_tooltip(Cache.INPAINT_FULL_RES_PADDING)
         for padding_widget in (padding_label, padding_spinbox):
             padding_widget.setToolTip(full_res_padding_tip)
         self._layout.addLayout(padding_line_layout)
-        _show_hide_padding(padding_checkbox.isChecked())
+        _set_inpaint_padding_visibility(padding_checkbox.isChecked())
+
+        def _set_inpainting_control_visibility(should_show: bool) -> None:
+            """Toggle all inpainting controls based on available generator features:"""
+            assert should_show == cache.get(Cache.INPAINT_OPTIONS_AVAILABLE)
+            if should_show:
+                padding_checkbox.show()
+                if padding_checkbox.isChecked():
+                    padding_label.show()
+                    padding_spinbox.show()
+                else:
+                    padding_label.hide()
+                    padding_spinbox.hide()
+            else:
+                padding_checkbox.hide()
+                padding_label.hide()
+                padding_spinbox.hide()
+        cache.connect(self, Cache.INPAINT_OPTIONS_AVAILABLE, _set_inpainting_control_visibility)
+        _set_inpainting_control_visibility(cache.get(Cache.INPAINT_OPTIONS_AVAILABLE))
 
     def insert_into_layout(self, layout_item: QWidget | QLayout, stretch=0) -> None:
         """Insert an item into the layout above all default items but below previously inserted content."""

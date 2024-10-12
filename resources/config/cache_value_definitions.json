@@ -875,6 +875,16 @@
         "default": "-1",
         "saved": false
     },
+    "inpaint_options_available": {
+        "label": "Inpaint options available",
+        "category": "Cache",
+        "subcategory": "Image generation",
+        "description": "Whether the \"inpaint full resolution\" and \"inpaint full resolution padding\" features are available.",
+        "type": "bool",
+        "default": false,
+        "saved": false,
+        "translate": false
+    },
     "inpaint_full_res": {
         "label": "Inpaint Full Resolution",
         "category": "Cache",

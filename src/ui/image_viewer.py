@@ -156,7 +156,8 @@ class ImageViewer(ImageGraphicsView):
         self._generation_area_outline.outlined_region = generation_area
         self._generation_area_border.windowed_area = generation_area.toAlignedRect()
         self._generation_area_selection_outline.setVisible(
-            image_loaded and Cache().get(Cache.INPAINT_FULL_RES) and self._generation_area_outline.isVisible())
+            image_loaded and Cache().get(Cache.INPAINT_OPTIONS_AVAILABLE) and Cache().get(Cache.INPAINT_FULL_RES)
+            and self._generation_area_outline.isVisible())
         self._active_layer_outline.setVisible(True)
         self._active_layer_outline.outlined_region = QRectF(self._image_stack.active_layer.bounds)
         selection_layer = self._image_stack.selection_layer
