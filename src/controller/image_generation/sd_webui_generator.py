@@ -446,7 +446,15 @@ class SDWebUIGenerator(ImageGenerator):
 
         def set_prompt(prompt_text: str) -> None:
             """Update the image prompt in config with the interrogate results."""
-            Cache().set(Cache.PROMPT, prompt_text)
+            last_prompt = Cache().get(Cache.PROMPT)
+
+            def _update_prompt(text=prompt_text) -> None:
+                Cache().set(Cache.PROMPT, text)
+
+            def _restore_prompt(text=last_prompt) -> None:
+                Cache().set(Cache.PROMPT, text)
+
+            UndoStack().commit_action(_update_prompt, _restore_prompt, 'SDWebUIGenerator._interrogate')
             AppStateTracker().set_app_state(APP_STATE_EDITING)
 
         task.prompt_ready.connect(set_prompt)

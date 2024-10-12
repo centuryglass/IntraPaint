@@ -171,14 +171,15 @@ class ShapeTool(BaseTool):
         else:
             bounds = path.boundingRect().toAlignedRect()
         intersect_bounds = bounds.intersected(self._layer.bounds)
-        with self._layer.borrow_image(intersect_bounds) as layer_image:
-            painter = QPainter(layer_image)
-            painter.setTransform(self._layer.transform.inverted()[0])
-            painter.fillPath(path, self._brush)
-            if self._pen.width() > 0:
-                painter.setPen(self._pen)
-                painter.drawPath(path)
-            painter.end()
+        if not intersect_bounds.isEmpty():
+            with self._layer.borrow_image(intersect_bounds) as layer_image:
+                painter = QPainter(layer_image)
+                painter.setTransform(self._layer.transform.inverted()[0])
+                painter.fillPath(path, self._brush)
+                if self._pen.width() > 0:
+                    painter.setPen(self._pen)
+                    painter.drawPath(path)
+                painter.end()
 
     def _on_activate(self, restoring_after_delegation=False) -> None:
         if self._control_panel is not None:

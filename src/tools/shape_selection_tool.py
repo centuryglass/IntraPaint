@@ -125,16 +125,17 @@ class ShapeSelectionTool(BaseTool):
     def _end_drag(self, image_coordinates: QPoint) -> None:
         assert self._dragging and self._selection_handler.selecting
         selection = self._selection_handler.end_selection(image_coordinates)
-        with self._image_stack.selection_layer.borrow_image() as selection_image:
-            selection.translate(-self._image_stack.selection_layer.position)
-            path = QPainterPath()
-            path.addPolygon(selection)
-            painter = QPainter(selection_image)
-            fill_color = self._color
-            if self._clearing:
-                painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_Clear)
-            painter.fillPath(path, fill_color)
-            painter.end()
+        if self._image_stack.merged_layer_bounds.contains(selection.boundingRect().toAlignedRect()):
+            with self._image_stack.selection_layer.borrow_image() as selection_image:
+                selection.translate(-self._image_stack.selection_layer.position)
+                path = QPainterPath()
+                path.addPolygon(selection)
+                painter = QPainter(selection_image)
+                fill_color = self._color
+                if self._clearing:
+                    painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_Clear)
+                painter.fillPath(path, fill_color)
+                painter.end()
         self._clearing = False
         self._dragging = False
 

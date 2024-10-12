@@ -169,8 +169,11 @@ class ControlnetPanel(BorderedWidget):
         self._enabled_checkbox = CheckBox()
         self._enabled_checkbox.setText(ENABLE_CONTROLNET_CHECKBOX_LABEL)
         self._vram_checkbox = _ControlnetCheckbox(cache_key, CONTROL_CONFIG_LOW_VRAM_KEY, LOW_VRAM_LABEL)
+
         self._px_perfect_checkbox = _ControlnetCheckbox(cache_key, CONTROL_CONFIG_PX_PERFECT_KEY,
                                                         PX_PERFECT_CHECKBOX_LABEL)
+        if CONTROL_CONFIG_PX_PERFECT_KEY not in initial_control_state:
+            self._px_perfect_checkbox.setChecked(True)
 
         # Control image inputs:
         use_generation_area = bool(CONTROL_CONFIG_IMAGE_KEY not in initial_control_state

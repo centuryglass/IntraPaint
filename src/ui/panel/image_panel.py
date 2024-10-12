@@ -234,14 +234,14 @@ class ImagePanel(QWidget):
         return self._right_tab_box
 
     def _show_control_hint_config_slot(self, show_hints: bool):
-        assert self._control_bar is not None
-        if show_hints:
-            self._control_bar.removeAction(self._show_hint_action)
-            self._control_bar.addAction(self._hide_hint_action)
-        else:
-            self._control_bar.removeAction(self._hide_hint_action)
-            self._control_bar.addAction(self._show_hint_action)
-        self._update_widget_visibility()
+        if self._control_bar is not None:
+            if show_hints:
+                self._control_bar.removeAction(self._show_hint_action)
+                self._control_bar.addAction(self._hide_hint_action)
+            else:
+                self._control_bar.removeAction(self._hide_hint_action)
+                self._control_bar.addAction(self._show_hint_action)
+            self._update_widget_visibility()
 
     def _update_widget_visibility(self) -> None:
         if self._control_hint_label is not None:

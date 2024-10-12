@@ -76,7 +76,7 @@ class HotkeyFilter(QObject):
            returns focus to the focus widget."""
         self._default_focus = focus_widget
 
-    def register_keybinding(self, str_id: str, action: Callable[[], bool], keys: QKeySequence,
+    def register_keybinding(self, str_id: str, action: Callable[[], bool] | Callable[[], None], keys: QKeySequence,
                             modifiers: Qt.KeyboardModifier = Qt.KeyboardModifier.NoModifier
                             ) -> List[Tuple[Qt.Key, 'HotkeyFilter.KeyBinding']]:
         """Register a keystroke that should invoke an action.
@@ -89,7 +89,8 @@ class HotkeyFilter(QObject):
         str_id: str
             Identifier to assign to this binding, to be used if needed to remove the binding later.
         action: Callable
-            Function the key binding should invoke. Returns whether the function consumed the key event.
+            Function the key binding should invoke. Optionally returns whether the function consumed the key event.
+            If None is returned, it is assumed to always consume the event.
         keys: QKeySequence
             List of valid keys that should invoke the action.
         modifiers: Qt.KeyboardModifiers, optional
@@ -127,7 +128,8 @@ class HotkeyFilter(QObject):
         for key, idx in reversed(sorted(to_remove, key=lambda entry: entry[1])):
             self._bindings[key].pop(idx)
 
-    def register_config_keybinding(self, str_id: str, action: Callable[[], bool], config_key: str) -> None:
+    def register_config_keybinding(self, str_id: str, action: Callable[[], bool] | Callable[[], None],
+                                   config_key: str) -> None:
         """Register a keybinding defined in application config.
 
         Parameters
@@ -135,7 +137,8 @@ class HotkeyFilter(QObject):
         str_id: str
             Identifier to assign to this binding, to be used if needed to remove the binding later.
         action: Callable
-            Function the key binding should invoke. Returns whether the function consumed the key event.
+            Function the key binding should invoke. Optionally returns whether the function consumed the key event.
+            If None is returned, it is assumed to always consume the event.
         config_key: str
             Key string for the appropriate key or keys.
         """
@@ -161,7 +164,8 @@ class HotkeyFilter(QObject):
             self.register_config_keybinding(str_id, _action, _config_key)
         KeyConfig().connect(str_id, config_key, _update_config)
 
-    def register_speed_modified_keybinding(self, str_id: str, scaling_action: Callable[[int], bool],
+    def register_speed_modified_keybinding(self, str_id: str,
+                                           scaling_action: Callable[[int], bool] | Callable[[int], None],
                                            config_key: str) -> None:
         """Register a keybinding defined in application config that's affected by the speed modifier.
 
@@ -174,7 +178,8 @@ class HotkeyFilter(QObject):
             Identifier to assign to this binding, to be used if needed to remove the binding later.
         scaling_action: Callable[[int], bool]
             Function the key binding should invoke. The int parameter is a multiplier that the function should apply to
-            some scalar action it performs. Return value is whether the function consumed the key event.
+            some scalar action it performs. Return value is whether the function consumed the key event, or None if
+            the function always consumes the event.
         config_key: str
             Key string for the appropriate key or keys.
         """
@@ -212,7 +217,7 @@ class HotkeyFilter(QObject):
         KeyConfig().connect(str_id, config_key, _update_config)
 
     def bind_slider_controls(self, slider: IntSliderSpinbox | FloatSliderSpinbox, down_key: str, up_key: str,
-                             predicate: Callable[[], bool]) -> None:
+                             predicate: Callable[[], bool] | Callable[[], None]) -> None:
         """Applies speed modified keybindings to a SliderSpinbox, and sets its control hints."""
         for key, sign in ((down_key, -1), (up_key, 1)):
             def _binding(mult, n=sign, widget=slider) -> bool:
@@ -240,11 +245,71 @@ class HotkeyFilter(QObject):
 
         # Avoid blocking inputs to text fields:
         focused_widget = QApplication.focusWidget()
-        if isinstance(focused_widget, (QLineEdit, QTextEdit, QLineEdit, QPlainTextEdit, QAbstractSpinBox, QComboBox)):
+        if (isinstance(focused_widget, (QLineEdit, QTextEdit, QPlainTextEdit, QAbstractSpinBox, QComboBox))
+                and focused_widget.isVisible()):
+            # Cut/copy/paste/clear bindings can dynamically handle selecting between text and image content, so let
+            # these run as usual.
+            is_text_control_event = False
+            text_control_bindings = (
+                KeyConfig.CUT_SHORTCUT,
+                KeyConfig.COPY_SHORTCUT,
+                KeyConfig.PASTE_SHORTCUT,
+                KeyConfig.CLEAR_SHORTCUT,
+                KeyConfig.UNDO_SHORTCUT,
+                KeyConfig.REDO_SHORTCUT
+            )
+            for control_binding in text_control_bindings:
+                if is_text_control_event:
+                    break
+                binding_string = KeyConfig().get(control_binding)
+                binding_key, binding_modifiers = get_key_with_modifiers(binding_string)
+                if binding_key is not None and event.key() == binding_key \
+                        and (binding_modifiers is None or QApplication.keyboardModifiers() == binding_modifiers):
+                    is_text_control_event = True
             if event.key() == Qt.Key.Key_Escape and self._default_focus is not None and self._default_focus.isVisible():
                 self._default_focus.setFocus()
                 return True
-            return False
+            if (not is_text_control_event and isinstance(focused_widget, QAbstractSpinBox)
+                    and event.key() in self._bindings):
+                # Let keybindings work within numeric fields if they're not also keys used by the input:
+                numeric_inputs = {
+                    Qt.Key.Key_1,
+                    Qt.Key.Key_2,
+                    Qt.Key.Key_3,
+                    Qt.Key.Key_4,
+                    Qt.Key.Key_5,
+                    Qt.Key.Key_6,
+                    Qt.Key.Key_7,
+                    Qt.Key.Key_8,
+                    Qt.Key.Key_9,
+                    Qt.Key.Key_0,
+                    Qt.Key.Key_Period,
+                    # Navigation:
+                    Qt.Key.Key_Minus,
+                    Qt.Key.Key_Left,
+                    Qt.Key.Key_Right,
+                    Qt.Key.Key_Up,
+                    Qt.Key.Key_Down,
+                    Qt.Key.Key_Home,
+                    Qt.Key.Key_End,
+                    Qt.Key.Key_PageUp,
+                    Qt.Key.Key_PageDown,
+                    Qt.Key.Key_Backspace,
+                    Qt.Key.Key_Delete
+                }
+                if event.key() in numeric_inputs:
+                    return False
+                if QApplication.keyboardModifiers() == Qt.KeyboardModifier.ControlModifier:
+                    shortcut_keys = {
+                        Qt.Key.Key_A,
+                        Qt.Key.Key_C,
+                        Qt.Key.Key_V,
+                        Qt.Key.Key_X
+                    }
+                    if event.key() in shortcut_keys:
+                        return False
+            elif not is_text_control_event:
+                return False
         if event.key() not in self._bindings:
             return super().eventFilter(source, event)
         event_handled = False
@@ -256,7 +321,8 @@ class HotkeyFilter(QObject):
                     f' {get_modifier_string(QApplication.keyboardModifiers())}')
                 continue
             event_handled = binding.action()
-            if event_handled:
+            if event_handled or event_handled is None:
+                event_handled = True
                 logger.debug(f'{event.text()}: claimed by handler {i} of {len(self._bindings[event.key()])}')
                 break
             logger.debug(f'{event.text()}: not claimed by handler {i} of {len(self._bindings[event.key()])}: '

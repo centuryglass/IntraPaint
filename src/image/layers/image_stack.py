@@ -26,7 +26,6 @@ from src.ui.modal.modal_utils import show_error_dialog, show_warning_dialog
 from src.undo_stack import UndoStack, _UndoAction, _UndoGroup
 from src.util.application_state import AppStateTracker, APP_STATE_NO_IMAGE, APP_STATE_EDITING
 from src.util.cached_data import CachedData
-from src.util.math_utils import clamp
 from src.util.visual.geometry_utils import adjusted_placement_in_bounds, map_rect_precise
 from src.util.visual.image_utils import create_transparent_image, image_content_bounds, \
     image_is_fully_transparent, image_data_as_numpy_8bit
@@ -84,7 +83,8 @@ WARNING_MESSAGE_CROP_DELETED_LAYERS = _tr('<p>Cropping to selection deleted the 
 
 RenderAdjustFn: TypeAlias = Callable[[int, QImage, QRect, QPainter], Optional[QImage]]
 
-RENDER_DELAY_MS = 10
+RENDER_DELAY_MS = 5
+SELECTION_UPDATE_DELAY_MS = 50
 
 
 class ImageStack(QObject):
@@ -133,6 +133,18 @@ class ImageStack(QObject):
         self._selection_layer = SelectionLayer(image_size, self.generation_area_bounds_changed)
         self._selection_layer.update_generation_area(self._generation_area)
 
+        self._selection_update_timer = QTimer()
+        self._selection_update_timer.setInterval(SELECTION_UPDATE_DELAY_MS)
+        self._selection_update_timer.setSingleShot(True)
+
+        def _refresh_selection_bounds() -> None:
+            selection_bounds = self._selection_layer.transformed_bounds
+            content_bounds = self._layer_stack.bounds.united(self.bounds)
+            if not selection_bounds == content_bounds:
+                self._selection_layer.adjust_local_bounds(self._selection_layer.map_rect_from_image(content_bounds),
+                                                          False)
+        self._selection_update_timer.timeout.connect(_refresh_selection_bounds)
+
         # Layer stack update handling:
         def _set_name(name: str) -> None:
             self._layer_stack.set_name(os.path.basename(name))
@@ -142,18 +154,10 @@ class ImageStack(QObject):
 
         # noinspection PyUnusedLocal
         def _content_change(*args):
-            selection_bounds = self._selection_layer.transformed_bounds
-            content_bounds = self._layer_stack.bounds.united(self.bounds).united(selection_bounds)
-            if content_bounds.isNull():
-                return
-            if not selection_bounds.contains(content_bounds) or (selection_bounds.width() * selection_bounds.height()) \
-                    > (content_bounds.width() * content_bounds.height() * 10):
-                self._selection_layer.adjust_local_bounds(self._selection_layer.map_rect_from_image(content_bounds),
-                                                          False)
-                assert self._selection_layer.transformed_bounds.contains(content_bounds, proper=False), \
-                    f'expected containing {content_bounds}, got {self._selection_layer.transformed_bounds}'
-            self._image.invalidate()
-            self._emit_content_changed()
+            if not self._render_timer.isActive():
+                self._render_timer.start()
+            if not self._selection_update_timer.isActive():
+                self._selection_update_timer.start()
 
         self._layer_stack.content_changed.connect(_content_change)
         self._layer_stack.visibility_changed.connect(_content_change)

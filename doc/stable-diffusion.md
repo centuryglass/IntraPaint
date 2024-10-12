@@ -6,6 +6,9 @@ This guide covers the controls IntraPaint provides for AI image generation.  To 
 ## Table of Contents
 1. [Image Generation Panel](#image-generation-panel)
 2. [ControlNet Panel](#controlnet-panel)
+3. [Prompt control formatting](#prompt-control-formatting)
+4. [Denoising strength comparisons](#denoising-strength-comparisons)
+5. [Sampling methods](#sampling-methods)
 ---
 
 ## Image Generation Panel
@@ -55,20 +58,20 @@ The wide variety of ControlNet models and modules available can be challenging t
 <img src="./labeled_screenshots/controlnet_panel.png" alt="Screenshot of the ControlNet panel, with specific elements numbered."/>
 
 1. **ControlNet tab**: Show or hide the generate panel, or move it to any of the window tab bars.
-2. **ControlNet unit tabs**:
-3. **"Enable ControlNet Unit" checkbox**:
-4. **"Low VRAM" checkbox**:
-5. **"Pixel Perfect" checkbox**:
-6. **"Generation Area as Control" checkbox**:
-7. **"Set Control Image" button**:
-8. **Control image file path**:
+2. **ControlNet unit tabs**: Up to three different ControlNet units can be used at once. These tabs let you switch between the three and configure them independently.
+3. **"Enable ControlNet Unit" checkbox**: Enable or disable the current ControlNet unit.
+4. **"Low VRAM" checkbox**: Systems with limited VRAM might fail to generate images with ControlNet active. Selecting this option will fix some of these issues, but may also slow down image generation.
+5. **"Pixel Perfect" checkbox**: Enables hidden automatic size adjustments to improve ControlNet results. In most cases, it's probably best to just keep this checked.
+6. **"Generation Area as Control" checkbox**: Most ControlNet modules need an initial image to function. If this box is checked, the contents of the image generation area will be used.
+7. **"Set Control Image" button**: This button lets you select a separate image file to use as the control image.
+8. **Control image file path**: Shows the path of the selected control image, if any.
 9. **"Control Type" dropdown**:  An optional dropdown that lets you limit module and model dropdowns to a few useful presets.  This option won't be available if you're using the Forge WebUI to handle Stable-Diffusion.
-10. **"Control Module" dropdown**:
-11. **"Control Model" dropdown**:
-12. **"Control Weight" slider**:
-13. **"Starting Control Step" slider**:
-14. **"Ending Control Step" slider**:
-15. **Possible extra model/module controls**:
+10. **"Control Module" dropdown**: Selects the pre-processing module used to prepare the control image for use.
+11. **"Control Model" dropdown**: Selects the control model used to guide image generation.
+12. **"Control Weight" slider**: Controls how strictly the model will guide image generation. 1.0 is the default value, lower values decrease the effect of ControlNet.
+13. **"Starting Control Step" slider**: Sets the step in the image generation process where ControlNet is activated, as a fraction of the total step count.  The default is 0.0, which starts ControlNet before the first.
+14. **"Ending Control Step" slider**: Sets the step in the image generation process where ControlNet is deactivated, as a fraction of the total step count.  The default is 1.0, which starts the process at the first step.
+15. **Possible extra model/module controls**: Some modules or models might add extra controls. If they do, those will be shown here.
 
 
 ---

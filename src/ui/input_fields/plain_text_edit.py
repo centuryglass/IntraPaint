@@ -13,6 +13,7 @@ class PlainTextEdit(QPlainTextEdit):
     def __init__(self, parent: Optional[QWidget] = None) -> None:
         super().__init__(parent)
         self.textChanged.connect(lambda: self.valueChanged.emit(self.toPlainText()))
+        self.setTabChangesFocus(True)
 
     def value(self) -> str:
         """Return the text value."""

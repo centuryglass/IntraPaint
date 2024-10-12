@@ -80,6 +80,7 @@ class SDWebUIPanel(GeneratorPanel):
         self._masked_content_label, self._masked_content_combobox = _get_control_with_label(Cache.MASKED_CONTENT)
         self._full_res_label, self._full_res_checkbox = _get_control_with_label(Cache.INPAINT_FULL_RES)
         self._full_res_checkbox.setText('')
+        self._full_res_label.setSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Minimum)
         self._padding_label, self._padding_slider = _get_control_with_label(Cache.INPAINT_FULL_RES_PADDING)
         self._seed_label, self._seed_textbox = _get_control_with_label(Cache.SEED)
         self._last_seed_label = QLabel(Cache().get_label(Cache.LAST_SEED))
@@ -105,8 +106,8 @@ class SDWebUIPanel(GeneratorPanel):
             self._denoising_strength_slider.setVisible(edit_mode != EDIT_MODE_TXT2IMG)
             self._full_res_label.setVisible(edit_mode == EDIT_MODE_INPAINT)
             self._full_res_checkbox.setVisible(edit_mode == EDIT_MODE_INPAINT)
-            self._padding_label.setVisible(edit_mode == EDIT_MODE_INPAINT)
-            self._padding_slider.setVisible(edit_mode == EDIT_MODE_INPAINT)
+            self._padding_label.setVisible(edit_mode == EDIT_MODE_INPAINT and self._full_res_checkbox.isChecked())
+            self._padding_slider.setVisible(edit_mode == EDIT_MODE_INPAINT and self._full_res_checkbox.isChecked())
             self._masked_content_label.setVisible(edit_mode == EDIT_MODE_INPAINT)
             self._masked_content_combobox.setVisible(edit_mode == EDIT_MODE_INPAINT)
 
@@ -115,8 +116,9 @@ class SDWebUIPanel(GeneratorPanel):
 
         def padding_layout_update(inpaint_full_res: bool) -> None:
             """Only show the 'full-res padding' spin box if 'inpaint full-res' is checked."""
-            self._padding_label.setVisible(inpaint_full_res)
-            self._padding_slider.setVisible(inpaint_full_res)
+            currently_inpainting = cache.get(Cache.EDIT_MODE) == EDIT_MODE_INPAINT
+            self._padding_label.setVisible(inpaint_full_res and currently_inpainting)
+            self._padding_slider.setVisible(inpaint_full_res and currently_inpainting)
 
         cache.connect(self, Cache.INPAINT_FULL_RES, padding_layout_update)
         padding_layout_update(cache.get(Cache.INPAINT_FULL_RES))

@@ -61,6 +61,7 @@ from src.controller.image_generation.null_generator import NullGenerator
 from src.controller.image_generation.sd_webui_generator import SDWebUIGenerator, DEFAULT_SD_URL
 from src.controller.image_generation.test_generator import TestGenerator
 from src.controller.tool_controller import ToolController
+from src.hotkey_filter import HotkeyFilter
 from src.image.filter.blur import BlurFilter
 from src.image.filter.brightness_contrast import BrightnessContrastFilter
 from src.image.filter.posterize import PosterizeFilter
@@ -90,9 +91,10 @@ from src.ui.panel.layer_ui.layer_panel import LayerPanel
 from src.ui.panel.tool_panel import ToolPanel
 from src.ui.widget.tool_tab import ToolTab
 from src.ui.window.generator_setup_window import GeneratorSetupWindow
-from src.ui.window.navigation_window import NavigationWindow
 from src.ui.window.main_window import MainWindow, TabBoxID
+from src.ui.window.navigation_window import NavigationWindow
 from src.undo_stack import UndoStack
+from src.util.active_text_field_tracker import ActiveTextFieldTracker
 from src.util.application_state import AppStateTracker, APP_STATE_NO_IMAGE, APP_STATE_EDITING, APP_STATE_LOADING, \
     APP_STATE_SELECTION
 from src.util.math_utils import clamp
@@ -281,6 +283,7 @@ class AppController(MenuBuilder):
 
         # Set up menus:
         self.build_menus()
+
         # Since image filter menus follow a very simple pattern, add them here instead of using @menu_action.
         # At the same time, make sure the filter tool's list of available options contains all filters.
         filter_class_names: List[str] = []
@@ -304,6 +307,28 @@ class AppController(MenuBuilder):
             assert action is not None
             AppStateTracker.set_enabled_states(action, [APP_STATE_EDITING])
         cache.update_options(Cache.FILTER_TOOL_SELECTED_FILTER, filter_class_names)  # type: ignore
+
+        # Because Qt has its own bindings on the cut/copy/clear/paste keyboard events, we need to bind these at the
+        # hotkeyFilter to ensure that the menu hotkeys can override the Qt bindings. The goal is to ensure that even
+        # when a text field is active, these events will get handled in the context of the ImageStack if they wouldn't
+        # do anything to the text.
+        for binding_key, handler in ((KeyConfig.UNDO_SHORTCUT, self.undo),
+                                     (KeyConfig.REDO_SHORTCUT, self.redo),
+                                     (KeyConfig.CUT_SHORTCUT, self.cut),
+                                     (KeyConfig.COPY_SHORTCUT, self.copy),
+                                     (KeyConfig.PASTE_SHORTCUT, self.paste),
+                                     (KeyConfig.CLEAR_SHORTCUT, self.clear)):
+            HotkeyFilter.instance().register_config_keybinding(f'AppController_{binding_key}', handler,
+                                                               binding_key)
+        # We'll also want flags for tracking whether cut/copy/paste/clear are currently valid for image content, so
+        # that we don't need to recalculate that every time they become invalid for an active text field:
+        self._can_copy_image = False
+        self._can_paste_image = False
+        self._can_clear_or_cut_image = False
+
+        # Finally, track active text inputs so we always know when text-relevant events should be available:
+        self._active_text_field_tracker = ActiveTextFieldTracker()
+        self._active_text_field_tracker.status_changed.connect(self._update_enabled_text_relevant_actions)
 
         self._last_active = self._image_stack.active_layer
         self._lock_connection = self._last_active.lock_changed.connect(
@@ -395,6 +420,7 @@ class AppController(MenuBuilder):
             new_active_tool.cursor_change.connect(_update_image_cursor)
             self._last_active_tool = new_active_tool
             _update_image_cursor()
+
         self._tool_controller.active_tool_changed.connect(_update_cursor_and_control_hint)
         active_tool = self._tool_controller.active_tool
         assert active_tool is not None
@@ -463,6 +489,7 @@ class AppController(MenuBuilder):
         def _update_last_active_tool(new_active_tool: BaseTool) -> None:
             tool_value = '' if not isinstance(new_active_tool, BaseTool) else new_active_tool.label
             cache.set(Cache.LAST_ACTIVE_TOOL, tool_value)
+
         self._tool_controller.active_tool_changed.connect(_update_last_active_tool)
 
     def start_app(self) -> None:
@@ -472,6 +499,9 @@ class AppController(MenuBuilder):
             QtExceptHook().enable()
         self._window.show()
         self._update_enabled_actions()
+
+        # Discard anything saved to the undo stack during the setup process:
+        UndoStack().clear()
 
         AppStateTracker.set_app_state(APP_STATE_EDITING if self._image_stack.has_image else APP_STATE_NO_IMAGE)
         app.exec()
@@ -589,8 +619,6 @@ class AppController(MenuBuilder):
             self._generator.update_settings(changed_settings)
 
     def _update_enabled_actions(self) -> None:
-        self.get_action_for_method(self.undo).setEnabled(UndoStack().undo_count() > 0)
-        self.get_action_for_method(self.redo).setEnabled(UndoStack().redo_count() > 0)
 
         def _test_state(menu_action_method: Callable[..., None]) -> bool:
             app_state = AppStateTracker.app_state()
@@ -603,17 +631,12 @@ class AppController(MenuBuilder):
 
         selection_is_empty = self._image_stack.selection_layer.empty
         selection_methods: Set[Callable[..., None]] = {
-            self.cut,
-            self.copy,
-            self.clear,
             self.grow_selection,
             self.shrink_selection,
             self.crop_image_to_selection,
             self.crop_layer_to_selection
         }
         unlocked_layer_methods: Set[Callable[..., None]] = {
-            self.cut,
-            self.clear,
             self.layer_mirror_horizontal,
             self.layer_mirror_vertical,
             self.layer_rotate_cw,
@@ -661,6 +684,7 @@ class AppController(MenuBuilder):
                        in (None, self._image_stack.layer_stack)
         is_bottom_layer = active_layer != self._image_stack.layer_stack \
                           and self._image_stack.next_layer(active_layer) is None
+        is_locked = active_layer.locked or active_layer.parent_locked
         for menu_method in managed_menu_methods:
             action = self.get_action_for_method(menu_method)
             assert action is not None
@@ -669,8 +693,7 @@ class AppController(MenuBuilder):
                 continue
             action.setEnabled(True)
             for method_set, disable_condition in ((selection_methods, selection_is_empty),
-                                                  (unlocked_layer_methods, active_layer.locked
-                                                                           or active_layer.parent_locked),
+                                                  (unlocked_layer_methods, is_locked),
                                                   (not_bottom_layer_methods, is_bottom_layer),
                                                   (not_top_layer_methods, is_top_layer),
                                                   (not_layer_stack_methods,
@@ -690,6 +713,21 @@ class AppController(MenuBuilder):
                     or not isinstance(next_layer, TransformLayer) \
                     or next_layer.layer_parent != active_layer.layer_parent:
                 merge_down_action.setEnabled(False)
+
+        self._can_clear_or_cut_image = not is_locked and not selection_is_empty
+        self._can_copy_image = not selection_is_empty
+        self._update_enabled_text_relevant_actions()
+
+    def _update_enabled_text_relevant_actions(self) -> None:
+        """Update menu action enablement state that varies when a text input is active."""
+        for method, valid_for_image, valid_for_text in (
+                (self.undo, UndoStack().undo_count() > 0, self._active_text_field_tracker.focused_can_undo()),
+                (self.redo, UndoStack().redo_count() > 0, self._active_text_field_tracker.focused_can_redo()),
+                (self.copy, self._can_copy_image, self._active_text_field_tracker.focused_can_copy()),
+                (self.paste, self._can_paste_image, self._active_text_field_tracker.focused_can_paste()),
+                (self.cut, self._can_clear_or_cut_image, self._active_text_field_tracker.focused_can_cut_or_clear()),
+                (self.clear, self._can_clear_or_cut_image, self._active_text_field_tracker.focused_can_cut_or_clear())):
+            self.get_action_for_method(method).setEnabled(valid_for_image or valid_for_text)
 
     # Menu action definitions:
 
@@ -1024,32 +1062,67 @@ class AppController(MenuBuilder):
                  valid_app_states=[APP_STATE_EDITING, APP_STATE_NO_IMAGE])
     def undo(self) -> None:
         """Revert the most recent significant change made."""
-        UndoStack().undo()
+        if self._active_text_field_tracker.focused_can_undo():
+            text_field = self._active_text_field_tracker.focused_text_input
+            assert text_field is not None
+            text_field.undo()
+        else:
+            UndoStack().undo()
 
-    @menu_action(MENU_EDIT, 'redo_shortcut', 101, valid_app_states=[APP_STATE_EDITING, APP_STATE_NO_IMAGE])
+    @menu_action(MENU_EDIT, 'redo_shortcut', 101,
+                 valid_app_states=[APP_STATE_EDITING, APP_STATE_NO_IMAGE])
     def redo(self) -> None:
         """Restore the most recent reverted change."""
-        UndoStack().redo()
+        if self._active_text_field_tracker.focused_can_redo():
+            text_field = self._active_text_field_tracker.focused_text_input
+            assert text_field is not None
+            text_field.redo()
+        else:
+            UndoStack().redo()
 
     @menu_action(MENU_EDIT, 'cut_shortcut', 102, valid_app_states=[APP_STATE_EDITING])
     def cut(self) -> None:
-        """Cut selected content from the active image layer."""
-        self._image_stack.cut_selected()
+        """Cut selected content from the active image layer, or selected text in an active text field."""
+        if self._active_text_field_tracker.focused_can_cut_or_clear():
+            text_field = self._active_text_field_tracker.focused_text_input
+            assert text_field is not None
+            text_field.cut()
+        else:
+            self._image_stack.cut_selected()
+            if not self._can_paste_image:
+                self._can_paste_image = True
+                self._update_enabled_actions()
 
     @menu_action(MENU_EDIT, 'copy_shortcut', 103, valid_app_states=[APP_STATE_EDITING])
     def copy(self) -> None:
-        """Copy selected content from the active image layer."""
-        self._image_stack.copy_selected()
+        """Copy selected content from the active image layer, or selected text in an active text field."""
+        if self._active_text_field_tracker.focused_can_copy():
+            text_field = self._active_text_field_tracker.focused_text_input
+            assert text_field is not None
+            text_field.copy()
+        else:
+            self._image_stack.copy_selected()
+            if not self._can_paste_image:
+                self._can_paste_image = True
+                self._update_enabled_actions()
 
     @menu_action(MENU_EDIT, 'paste_shortcut', 104, valid_app_states=[APP_STATE_EDITING])
     def paste(self) -> None:
-        """Paste copied image content into a new layer."""
-        self._image_stack.paste()
+        """Paste copied image content into a new layer, or copied text in an active text field."""
+        if self._active_text_field_tracker.focused_can_paste():
+            text_field = self._active_text_field_tracker.focused_text_input
+            assert text_field is not None
+            text_field.paste()
+        else:
+            self._image_stack.paste()
 
     @menu_action(MENU_EDIT, 'clear_shortcut', 105, valid_app_states=[APP_STATE_EDITING])
     def clear(self) -> None:
-        """Clear selected content from the active image layer."""
-        self._image_stack.clear_selected()
+        """Clear selected content from the active image layer, or selected text in an active text field."""
+        if self._active_text_field_tracker.focused_can_cut_or_clear():
+            self._active_text_field_tracker.clear_selected_in_focused()
+        else:
+            self._image_stack.clear_selected()
 
     @menu_action(MENU_EDIT, 'settings_shortcut', 106)
     def show_settings(self) -> None:
@@ -1153,7 +1226,7 @@ class AppController(MenuBuilder):
             message_box.setStandardButtons(QMessageBox.StandardButton.Ok)
             message_box.exec()
 
-    @menu_action(MENU_IMAGE, 'generator_select_shortcut', 206)
+    @menu_action(MENU_IMAGE, 'generator_select_shortcut', 205)
     def show_generator_window(self) -> None:
         """Show the generator selection window."""
         assert self._generator is not None
@@ -1172,7 +1245,7 @@ class AppController(MenuBuilder):
         self._generator_window.show()
         self._generator_window.raise_()
 
-    @menu_action(MENU_IMAGE, 'generate_shortcut', 205, valid_app_states=[APP_STATE_EDITING])
+    @menu_action(MENU_IMAGE, 'generate_shortcut', 206, valid_app_states=[APP_STATE_EDITING])
     def start_and_manage_inpainting(self) -> None:
         """Start inpainting/image editing based on the current state of the UI."""
         if AppStateTracker.app_state() != APP_STATE_EDITING:
@@ -1187,7 +1260,7 @@ class AppController(MenuBuilder):
     @menu_action(MENU_SELECTION, 'select_all_shortcut', 300, valid_app_states=[APP_STATE_EDITING])
     def select_all(self) -> None:
         """Selects the entire image."""
-        self._image_stack.selection_layer.select_all()
+        self._image_stack.selection_layer.image = self._image_stack.qimage(crop_to_image=False)
 
     @menu_action(MENU_SELECTION, 'select_none_shortcut', 301, valid_app_states=[APP_STATE_EDITING])
     def select_none(self) -> None:

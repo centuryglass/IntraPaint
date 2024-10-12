@@ -343,7 +343,8 @@ class BrushTool(BaseTool):
 
     def mouse_move(self, event: Optional[QMouseEvent], image_coordinates: QPoint) -> bool:
         """Receives a mouse move event, returning whether the tool consumed the event."""
-        if self._layer is None or event is None or not self._image_stack.has_image:
+        if self._layer is None or event is None or not self._image_stack.has_image \
+                or (KeyConfig.modifier_held(KeyConfig.PAN_VIEW_MODIFIER) and not self._drawing):
             return False
 
         if KeyConfig.modifier_held(KeyConfig.LINE_MODIFIER) and self._last_pos is not None:

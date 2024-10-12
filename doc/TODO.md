@@ -66,7 +66,7 @@ Things I never fixed but can no longer reproduce, or that come from external iss
 * Transform tool: clicking a layer should activate it, or there should be an option to do that at least.
 * ImageViewer: add sidebar rulers
 * add 'sample merged' option to smudge, stamp, and filter tools
-* Ctrl+C, Ctrl+V already behave contextually when text input is active (thanks to Qt), but not when chosen directly from the edit menu. I should fix that.
+* A lot of unnecessary complexity could probably be removed from undo history management if I just used QUndoStack instead of my own implementation.  It'd take a fair bit of refactoring though, so it probably isn't a priority 
 
 ## Minor bugs:
 - Some of the MyPaint brushes are clearly not working. Cross-test on Windows and with actual MyPaint, refer to images in examples folder.
