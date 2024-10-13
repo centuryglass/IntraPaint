@@ -36,7 +36,7 @@
     * Filling in details with controlNet + tile
 - New timelapse editing video with improved UI, scripted to showcase features.
 - Update Windows libmypaint DLLs
-- Add Mac OS (intel and M1), ARM linux libmypaint libraries
+- Add macOS (intel and M1), ARM linux libmypaint libraries
 
 
 ## Tutorial topics

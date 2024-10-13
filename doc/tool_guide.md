@@ -12,17 +12,17 @@ This guide covers the editing tools found within the "Tools" panel. and the extr
    - [Draw tool](#-draw-tool-d)
    - [Eraser tool](#-eraser-tool-e)
    - [Fill tool](#-fill-tool-f)
-   - [Filter brush tool](#-filter-tool-i)
+   - [Filter brush tool](#-filter-brush-tool-i)
    - [Smudge tool](#-smudge-tool-m)
    - [Clone stamp tool](#-clone-stamp-tool-n)
    - [Color picker tool](#-color-picker-tool-c)
    - [Text tool](#-text-tool-x)
-2. [Selection Tools](#selection-tools)
+3[Selection Tools](#selection-tools)
    - [Free selection tool](#-free-selection-tool-l)
    - [Selection brush tool](#-selection-brush-tool-s)
    - [Rectangle/Ellipse selection tool](#-rectangleellipse-selection-r)
    - [Selection fill tool](#-selection-fill-tool-a)
-3. [Image generation area tool](#-image-generation-area-tool-g)
+4[Image generation area tool](#-image-generation-area-tool-g)
 ---
 
 ## Shared controls
@@ -453,9 +453,3 @@ Controls the area of the image in use for AI image generation. AI generators are
 6. **"Gen. area size to resolution" button**: Resizes the image generation area, so that its size exactly matches the AI image generation resolution.
 7. **"Image generation resolution" inputs**: Sets the resolution used for AI image generation.
 8. **"Resolution to gen. area size" button**: Update the AI image generation resolution so that it matches the size of the generation area.
----
-
-## Tool menu options:
-The Tool menu provides a few extra options for controlling IntraPaint, most as secondary windows.
-
----

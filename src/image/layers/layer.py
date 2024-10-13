@@ -9,7 +9,6 @@ from PySide6.QtWidgets import QApplication
 
 from src.config.application_config import AppConfig
 from src.image.composite_mode import CompositeMode
-from src.ui.modal.modal_utils import show_error_dialog
 from src.undo_stack import UndoStack, _UndoAction, _UndoGroup
 from src.util.cached_data import CachedData
 from src.util.visual.geometry_utils import map_rect_precise
@@ -350,7 +349,7 @@ class Layer(QObject):
                 self.visibility_changed.emit(self, visible)
                 self.signal_content_changed(self.bounds)
 
-    def get_visible(self) -> None:
+    def get_visible(self) -> bool:
         """Returns whether this layer is set to visible. Unlike the visible property, this ignores parent visibility."""
         return self._visible
 

@@ -127,5 +127,6 @@ class TransformGroup(TransformLayer):
                     self._layer_removed_slot(child)
         self._get_local_bounds()  # Updates size, emits size_changed if needed
 
+    # noinspection PyUnusedLocal
     def _handle_external_changes(self, layer: Layer, _) -> None:
         self._get_local_bounds()  # Updates size, emits size_changed if needed

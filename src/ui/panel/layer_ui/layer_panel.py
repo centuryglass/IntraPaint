@@ -158,7 +158,7 @@ class LayerPanel(QWidget):
         self._move_up_button = _create_button(ICON_PATH_LAYER_UP_BUTTON, LAYER_UP_BUTTON_TOOLTIP,
                                               lambda: self._image_stack.move_layer_by_offset(-1))
         self._move_down_button = _create_button(ICON_PATH_LAYER_DOWN_BUTTON, LAYER_DOWN_BUTTON_TOOLTIP,
-                                               lambda: self._image_stack.move_layer_by_offset(1))
+                                                lambda: self._image_stack.move_layer_by_offset(1))
 
         self._merge_down_button = _create_button(ICON_PATH_MERGE_BUTTON, MERGE_DOWN_BUTTON_TOOLTIP,
                                                  self._image_stack.merge_layer_down)
@@ -331,7 +331,6 @@ class LayerPanel(QWidget):
             mode_index = self._mode_box.findText(image_mode)
             if mode_index >= 0:
                 self._mode_box.setCurrentIndex(mode_index)
-
 
     def _layer_added_slot(self, new_layer: Layer) -> None:
         self._open_parent_groups(new_layer)

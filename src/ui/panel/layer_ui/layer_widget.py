@@ -394,7 +394,7 @@ class LayerWidget(BorderedWidget):
 
         mirror_actions = [_add_action(MENU_OPTION_MIRROR_HORIZONTAL, self._layer.flip_horizontal, True),
                           _add_action(MENU_OPTION_MIRROR_VERTICAL, self._layer.flip_vertical, True)]
-        if isinstance(self._layer, LayerGroup) and any (layer.locked for layer in self._layer.recursive_child_layers):
+        if isinstance(self._layer, LayerGroup) and any(layer.locked for layer in self._layer.recursive_child_layers):
             for action in mirror_actions:
                 action.setEnabled(False)
         menu.exec(self.mapToGlobal(pos))

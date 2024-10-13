@@ -7,10 +7,10 @@ import time
 from typing import Callable, Optional, cast, List
 
 from PIL import Image
-from PySide6.QtWidgets import QApplication, QMenu
 from PySide6.QtCore import Qt, QRect, QSize, QSizeF, QRectF, QEvent, Signal, QPointF, QObject, QPoint
 from PySide6.QtGui import QImage, QResizeEvent, QPixmap, QPainter, QWheelEvent, QMouseEvent, \
     QPainterPath, QKeyEvent, QPolygonF, QSinglePointEvent, QAction
+from PySide6.QtWidgets import QApplication, QMenu
 from PySide6.QtWidgets import QWidget, QGraphicsPixmapItem, QVBoxLayout, QLabel, \
     QStyleOptionGraphicsItem, QHBoxLayout, QPushButton, QStyle
 
@@ -20,7 +20,6 @@ from src.config.key_config import KeyConfig
 from src.image.layers.image_layer import ImageLayer
 from src.image.layers.image_stack import ImageStack
 from src.image.layers.layer import Layer
-from src.tools.base_tool import BaseTool
 from src.ui.graphics_items.outline import Outline
 from src.ui.graphics_items.polygon_outline import PolygonOutline
 from src.ui.graphics_items.toast_message import ToastMessageItem
@@ -28,15 +27,15 @@ from src.ui.input_fields.check_box import CheckBox
 from src.ui.modal.modal_utils import open_image_file, SAVE_IMAGE_MODE, show_warning_dialog
 from src.ui.widget.image_graphics_view import ImageGraphicsView
 from src.util.application_state import AppStateTracker, APP_STATE_LOADING, APP_STATE_EDITING
-from src.util.visual.text_drawing_utils import max_font_size, get_key_display_string, left_button_hint_text, \
-    middle_button_hint_text, vertical_scroll_hint_text
-from src.util.visual.geometry_utils import get_scaled_placement
-from src.util.visual.image_utils import get_standard_qt_icon, get_transparency_tile_pixmap
-from src.util.visual.image_format_utils import save_image
-from src.util.visual.pil_image_utils import pil_image_to_qimage, pil_image_scaling
 from src.util.math_utils import clamp
 from src.util.shared_constants import TIMELAPSE_MODE_FLAG, EDIT_MODE_INPAINT
 from src.util.validation import assert_valid_index
+from src.util.visual.geometry_utils import get_scaled_placement
+from src.util.visual.image_format_utils import save_image
+from src.util.visual.image_utils import get_standard_qt_icon, get_transparency_tile_pixmap
+from src.util.visual.pil_image_utils import pil_image_to_qimage, pil_image_scaling
+from src.util.visual.text_drawing_utils import max_font_size, get_key_display_string, left_button_hint_text, \
+    middle_button_hint_text, vertical_scroll_hint_text
 
 # The `QCoreApplication.translate` context for strings in this file
 TR_ID = 'ui.generated_image_selector'

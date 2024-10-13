@@ -6,9 +6,13 @@ This guide covers the controls IntraPaint provides for AI image generation.  To 
 ## Table of Contents
 1. [Image Generation Panel](#image-generation-panel)
 2. [ControlNet Panel](#controlnet-panel)
-3. [Prompt control formatting](#prompt-control-formatting)
-4. [Denoising strength comparisons](#denoising-strength-comparisons)
-5. [Sampling methods](#sampling-methods)
+3. [Settings and AI model installation](#settings-and-ai-model-installation)
+   - [Stable-Diffusion settings](#stable-diffusion-settings)
+   - [Connected generator settings](#connected-generator-settings)
+   - [Installing new AI model files](#installing-new-ai-model-files)
+4. [Prompt control formatting](#prompt-control-formatting)
+5. [Denoising strength comparisons](#denoising-strength-comparisons)
+6. [Sampling methods](#sampling-methods)
 ---
 
 ## Image Generation Panel
@@ -29,7 +33,7 @@ This panel is the main place where you'll control image generation.
     - **latent nothing**:  Completely zeroes out the inpainting content before generating.
 5. **Prompt**: Describe in plain text exactly what kind of imagery the model should generate. Prompts can also use various control formats to affect image generation, see [prompt control formatting](#prompt-control-formatting) below for details.
 6. **Negative Prompt**: Describe in plain text exactly what kind of imagery the model should *not* generate. All prompt control formats also work on the negative prompt.
-7. **Generation size**: The resolution of generated images.  Most Stable-Diffusion models can be somewhat flexible with this, but usually provide best performance at specific resolutions. See also: [generation resolution tips](./inpainting_guide.md#generation-resolution-tips)
+7. **Generation size**: The resolution of generated images.  Most Stable-Diffusion models can be somewhat flexible with this, but usually will perform best at specific resolutions. See also: [generation resolution tips](./inpainting_guide.md#generation-resolution)
 8. **Batch size**:  The number of images to generate at once.  Generating multiple images at the same time can be faster, but requires more VRAM.
 9. **Batch count**: The number of image batches to generate in sequence before switching to the selection view. This doesn't increase VRAM usage like batch size does, but it provides no speed benefits compared to generating batches individually.
 10. **Sampling steps**: Controls how many steps the generator takes to create images. Increasing step count makes image generation take longer, but often provides better results.  Benefits of increasing step count are usually fairly low above 30 steps. Certain specialty models (e.g. LCM and Turbo) can produce good results at far fewer steps.
@@ -73,6 +77,45 @@ The wide variety of ControlNet models and modules available can be challenging t
 14. **"Ending Control Step" slider**: Sets the step in the image generation process where ControlNet is deactivated, as a fraction of the total step count.  The default is 1.0, which starts the process at the first step.
 15. **Possible extra model/module controls**: Some modules or models might add extra controls. If they do, those will be shown here.
 
+---
+
+## Settings and AI model installation
+
+### Stable-Diffusion settings
+
+These settings are stored locally, and provide a few extra options and infrequently-used features that you shouldn't need to change often.  They will only be visible if the Stable-Diffusion WebUI image generator is active.
+
+<img src="./labeled_screenshots/sd_local_options.png" alt="Screenshot of the Stable-Diffusion settings category, with specific elements numbered."/>
+
+1. **Stable-Diffusion tab**: Click this tab in the settings window to access these options.
+2. **Image interrogation model**: Enter the image recognition model that the Stable-Diffusion WebUI will use when the "Interrogate" button is pressed.  Any option other than "clip" will probably need to be configured separately within the WebUI.
+3. **ControlNet tiled upscaling model**: Enter the ControlNet model that should be used for [AI tiled upscaling](#ai-upscaling-with-intrapaint). To use another ControlNet tile model, you'll need to find one online, download it, and put the file within the WebUI's **models/ControlNet** directory.
+4. **Mask blur**: Radius of pixel blurring to use around edited areas when inpainting.
+5. **"Restore faces" checkbox**: If checked, apply an extra face restoration model to generated images. This option is rarely useful, most recent Stable-Diffusion models already produce better results than dedicated face restoration models.
+6. **"Tiling" checkbox**: If checked, Stable-Diffusion will attempt to generate images that can be seamlessly repeated in a grid. This is mostly useful for generating texture files and tiling wallpapers.
+7. **Save button**: Once clicked, settings will be immediately saved to the local config file, and they will be applied on the next image generation operation. 
+
+### Connected generator settings
+
+These settings are sent directly to the connected Stable-Diffusion WebUI when saved.  They will only be visible if the Stable-Diffusion WebUI image generator is active.
+
+
+<img src="./labeled_screenshots/sd_remote_options.png" alt="Screenshot of the Connected Generator settings category, with specific elements numbered."/>
+
+1. **Connected generator tab**: Click this tab in the settings window to access these options.
+2. **Stable-Diffusion Model**: Select an installed Stable-Diffusion model file to use for image generation.
+3. **Only keep one model on GPU/TPU**: If checked, the Stable-Diffusion WebUI will fully unload any previously selected model from the GPU before loading a new one.  Unchecking this allows for faster model swapping, but it is very likely to cause out-of-memory errors on most GPUs.
+4. **Max checkpoints loaded**: Sets how many recent Stable-Diffusion models are held in RAM at one time.  Keeping models in RAM allows for faster model swapping, but not quite as fast as keeping them on the GPU.
+5. **Stable-Diffusion VAE model**: Sets the secondary model that Stable-Diffusion uses for encoding and decoding latent image data. These models are not as influential as the primary model files, but they can have significant impact on color balance and detail quality.
+6. **Stable-Diffusion VAE models cached**: Number of VAE models to keep loaded in RAM at one time.
+7. **CLIP skip**: Sets how many final image generation steps are taken without the guidance of the CLIP image recognition module.  In most cases this is best left at 1, but some models recommend setting it to 2.
+
+### Installing new AI model files
+1. Download Stable-Diffusion models, usually found on platforms like [HuggingFace](https://huggingface.co/) and [Civitai](https://civitai.com/). Model files should have the **.safetensors** extension.
+2. Locate the directory where the Stable-Diffusion WebUI was installed. If you used the [recommended process with Stability Matrix](../README.md#ai-setup-stable-diffusion), you'll find it at (TODO: where does Windows put this?).
+3. Copy the model files into the **models/Stable-diffusion** within the WebUI directory.
+4. Restart the WebUI, or open the control page at http://localhost:7860 and click the refresh button next to the model list. If you open the control page, you can select the new model directly from that page and skip the next step.
+5. Restart IntraPaint, or use the ["Select Image generator" window](./menu_options.md#select-image-generator-f11) to disconnect from the Stable-Diffusion WebUI, and then reconnect. You can now select the new model file in the settings under the connected generator tab.
 
 ---
 ## Prompt control formatting:
@@ -87,8 +130,6 @@ Prompt text can be formatted in various ways to control its behavior. These cont
 | Prompt editing      | `blue sky, [painting:photograph:8]`                 | After eight steps, the prompt switches from `painting` to `photograph`                                                                                     |
 | Alternating prompts | `a friendly [dog\|cat]`                             | Switch between `dog` and `cat` after each image generation step                                                                                            |
 | Composable prompts  | `photograph of a house:0.5 AND charcoal sketch:1.0` | Sections split by AND are treated as individual prompts, to be applied simultaneously. The numbers at the end control how much that prompt is prioritized. |
-
-
 
 ## Denoising strength comparisons
 The examples below were created by applying increasing denoising strengths to a small elliptical area within an AI-generated image using inpainting mode. All other parameters remain the same for each option.
@@ -119,3 +160,20 @@ The sampling method controls how the image diffusion process is divided into sma
 - Heun: A slower but more precise variant of Euler.
 - LMS (Linear Multi-Step), PLMS (Pseudo Linear Multi-Step), and DDIM (Denoising Diffusion Implicit Model): Older methods, not commonly used.
 - Turbo: Extremely fast image generation (1 step), but requires an SDXL Turbo model.
+
+### AI upscaling with IntraPaint:
+For an overview of the basic image scaling interface, see the [menu option guide's image scaling section](./menu_options.md#scale-image-window).
+
+#### Prerequisites for effective upscaling:
+1. For the absolute best results, you'll need ControlNet support and the ControlNet tile model.  See [this section](../README.md#q-where-are-the-controlnet-options) if the ControlNet tab and upscaling options aren't showing up.
+2. The default installation of ControlNet only includes a version of the tile model that supports Stable-Diffusion 1.5, so make sure you're not using an SDXL model.  If you do want to use SDXL, you'll need to find and install an SDXL control model within the Stable-Diffusion webUI.  Once you've done that, you'll also need to go to the Stable-Diffusion tab in IntraPaint's settings, and update the "ControlNet tiled upscaling model" option with the new model's name. 
+3. If you've installed the [ultimate-upscale-for-automatic1111 extension](https://github.com/Coyote-A/ultimate-upscale-for-automatic1111), IntraPaint will use it to improve tiled upscaling. If you're using a standard installation of the Stable-Diffusion WebUI, you can open http://localhost:7680 in a web browser, and from there follow [these instructions](https://github.com/Coyote-A/ultimate-upscale-for-automatic1111/wiki/How-to) to install the extension.
+
+#### Steps for getting the best results:
+1. When using ControlNet tiled upscaling, the settings you enter into the image generation panel affect the results. Make sure to select appropriate values:
+   * **Prompt**: Should accurately describe your entire image, ideally without being too focused on specific details.
+   * **Generation Size**: Set this to the resolution your model works best at, *not* the resolution of the final image.
+   * **Denoising Strength**: Keep this value relatively low, certainly no higher than 0.5. If you didn't install the ultimate upscale extension, you may need to reduce it even more.
+2. Select an initial upscaler from the "Upscale Method" dropdown that works well with the type of image you're adjusting, as this gets used as an initial step even when ControlNet upscaling is active.  I've found SwinIR_4x to be a good choice in most cases.
+3. Make sure the "ControlNet tiled upscaling" checkbox is both visible and checked. If it isn't, only the basic upscaling method will be used.
+

@@ -99,7 +99,7 @@ class LayerGroup(Layer, LayerParent):
                     transform = transform * QTransform.fromTranslate(final_x - intermediate_transform_bounds.x(), 0)
                     layer.transform = transform
 
-    def flip_vertical(self, added_offset: int = 0, top_level=True) -> None:
+    def flip_vertical(self, added_offset: int = 0) -> None:
         """Flip the group vertically."""
         if self.locked:
             raise ValueError('Attempted transformation on locked layer group.')

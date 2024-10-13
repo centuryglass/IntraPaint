@@ -7,6 +7,7 @@ from PySide6.QtWidgets import QLineEdit, QTextEdit, QPlainTextEdit, QWidget, QAb
 
 TextInput: TypeAlias = QLineEdit | QTextEdit | QPlainTextEdit
 
+
 class ActiveTextFieldTracker(QObject):
     """Track the active widget, see if it's a text input field, and notify when cut/copy/clear/paste/undo/redo
        action availability change for an active text widget."""
@@ -102,12 +103,13 @@ class ActiveTextFieldTracker(QObject):
                 self._active_widget.textChanged.disconnect(self._send_update_signal)
 
         self._active_widget = widget
-        if isinstance(widget, TextInput):
-            widget.selectionChanged.connect(self._send_update_signal)
+        if isinstance(self._active_widget, TextInput):
+            self._active_widget.selectionChanged.connect(self._send_update_signal)
             if isinstance(self._active_widget, (QTextEdit, QPlainTextEdit)):
                 self._active_widget.undoAvailable.connect(self._send_update_signal)
                 self._active_widget.redoAvailable.connect(self._send_update_signal)
             else:
+                assert self._active_widget is not None
                 self._active_widget.textChanged.connect(self._send_update_signal)
         self.status_changed.emit()
 

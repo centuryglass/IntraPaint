@@ -1,7 +1,7 @@
 """Passes ImageViewer input events to an active editing tool."""
 import logging
 from dataclasses import dataclass
-from typing import Optional, Dict, Callable, List, cast, Tuple
+from typing import Optional, Dict, Callable, List, cast, Tuple, TypeAlias
 
 from PySide6.QtCore import Qt, QObject, QEvent, Signal, QTimer
 from PySide6.QtGui import QKeyEvent, QKeySequence
@@ -17,6 +17,7 @@ logger = logging.getLogger(__name__)
 
 MODIFIER_TIMER_INTERVAL_MS = 100
 
+KeybindingAction: TypeAlias = Callable[[], bool] | Callable[[], None] | Callable[[], bool | None]
 
 class HotkeyFilter(QObject):
     """Registers and handles window-level hotkeys."""
@@ -38,14 +39,14 @@ class HotkeyFilter(QObject):
         KeyBinding.str_id:
             String used to identify this binding.
         KeyBinding.action:
-            Function the key binding should invoke. Returns whether the function consumed the key event.
+            Function the key binding should invoke. Optionally returns whether the function consumed the key event.
         KeyBinding.key:
             Key that should invoke the action.
         KeyBinding.modifiers:
             Exact keyboard modifiers required to invoke the action.  If none, modifiers will be ignored.
         """
         str_id: str
-        action: Callable[[], bool]
+        action: KeybindingAction
         key: Qt.Key | int
         modifiers: Qt.KeyboardModifier = Qt.KeyboardModifier.NoModifier
 
@@ -76,7 +77,7 @@ class HotkeyFilter(QObject):
            returns focus to the focus widget."""
         self._default_focus = focus_widget
 
-    def register_keybinding(self, str_id: str, action: Callable[[], bool] | Callable[[], None], keys: QKeySequence,
+    def register_keybinding(self, str_id: str, action: KeybindingAction, keys: QKeySequence,
                             modifiers: Qt.KeyboardModifier = Qt.KeyboardModifier.NoModifier
                             ) -> List[Tuple[Qt.Key, 'HotkeyFilter.KeyBinding']]:
         """Register a keystroke that should invoke an action.
@@ -128,8 +129,7 @@ class HotkeyFilter(QObject):
         for key, idx in reversed(sorted(to_remove, key=lambda entry: entry[1])):
             self._bindings[key].pop(idx)
 
-    def register_config_keybinding(self, str_id: str, action: Callable[[], bool] | Callable[[], None],
-                                   config_key: str) -> None:
+    def register_config_keybinding(self, str_id: str, action: KeybindingAction, config_key: str) -> None:
         """Register a keybinding defined in application config.
 
         Parameters
@@ -217,7 +217,7 @@ class HotkeyFilter(QObject):
         KeyConfig().connect(str_id, config_key, _update_config)
 
     def bind_slider_controls(self, slider: IntSliderSpinbox | FloatSliderSpinbox, down_key: str, up_key: str,
-                             predicate: Callable[[], bool] | Callable[[], None]) -> None:
+                             predicate: KeybindingAction) -> None:
         """Applies speed modified keybindings to a SliderSpinbox, and sets its control hints."""
         for key, sign in ((down_key, -1), (up_key, 1)):
             def _binding(mult, n=sign, widget=slider) -> bool:
@@ -320,9 +320,9 @@ class HotkeyFilter(QObject):
                     f' mismatch, expected {get_modifier_string(binding.modifiers)}, found'
                     f' {get_modifier_string(QApplication.keyboardModifiers())}')
                 continue
-            event_handled = binding.action()
-            if event_handled or event_handled is None:
-                event_handled = True
+            result = binding.action()
+            event_handled = result if result is not None else True
+            if event_handled:
                 logger.debug(f'{event.text()}: claimed by handler {i} of {len(self._bindings[event.key()])}')
                 break
             logger.debug(f'{event.text()}: not claimed by handler {i} of {len(self._bindings[event.key()])}: '
