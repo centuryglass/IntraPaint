@@ -39,12 +39,12 @@ PX_PERFECT_CHECKBOX_LABEL = _tr('Pixel Perfect')
 CONTROL_IMAGE_LABEL = _tr('Control Image:')
 CONTROL_IMAGE_BUTTON_LABEL = _tr('Set Control Image')
 GENERATION_AREA_AS_CONTROL = _tr('Generation Area as Control')
-CONTROL_TYPE_BOX_TITLE = _tr('Control Type')
-MODULE_BOX_TITLE = _tr('Control Module')
-MODEL_BOX_TITLE = _tr('Control Model')
-CONTROL_WEIGHT_TITLE = _tr('Control Weight')
-CONTROL_START_STEP_TITLE = _tr('Starting Control Step')
-CONTROL_END_STEP_TITLE = _tr('Ending Control Step')
+CONTROL_TYPE_BOX_TITLE = _tr('Control Type:')
+MODULE_BOX_TITLE = _tr('Preprocessor:')
+MODEL_BOX_TITLE = _tr('Control Model:')
+CONTROL_WEIGHT_TITLE = _tr('Control Weight:')
+CONTROL_START_STEP_TITLE = _tr('Starting Control Step:')
+CONTROL_END_STEP_TITLE = _tr('Ending Control Step:')
 
 # Config/request body keys:
 CONTROL_CONFIG_LOW_VRAM_KEY = 'low_vram'

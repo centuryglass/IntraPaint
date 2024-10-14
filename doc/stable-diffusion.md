@@ -56,8 +56,8 @@ This panel is the main place where you'll control image generation.
 If the ControlNet tab isn't visible or isn't working properly, refer to [this section of the FAQ](../README.md#q-where-are-the-controlnet-options).
 
 
-ControlNet works with two components: a pre-processing **module**, and an AI **model**. The module identifies the elements that need to be preserved, and the model forces stable-diffusion to preserve those elements.  Not all modules and models are compatible, but it's usually obvious from their names which ones are meant to be used together.
-The wide variety of ControlNet models and modules available can be challenging to sort through, but I've found [this guide](https://education.civitai.com/civitai-guide-to-controlnet/#what-do-the-models-do) to be extremely helpful for sorting through them all.
+ControlNet works with two components: a **preprocessor**, and an AI **model**. The preprocessor identifies the elements that need to be preserved, and the model forces stable-diffusion to preserve those elements.  Not all preprocessors and models are compatible, but it's usually obvious from their names which ones are meant to be used together.
+The wide variety of ControlNet preprocessors and models available can be challenging to sort through, but I've found [this guide](https://education.civitai.com/civitai-guide-to-controlnet/#what-do-the-models-do) to be extremely helpful for sorting through them all.
 
 <img src="./labeled_screenshots/controlnet_panel.png" alt="Screenshot of the ControlNet panel, with specific elements numbered."/>
 
@@ -70,7 +70,7 @@ The wide variety of ControlNet models and modules available can be challenging t
 7. **"Set Control Image" button**: This button lets you select a separate image file to use as the control image.
 8. **Control image file path**: Shows the path of the selected control image, if any.
 9. **"Control Type" dropdown**:  An optional dropdown that lets you limit module and model dropdowns to a few useful presets.  This option won't be available if you're using the Forge WebUI to handle Stable-Diffusion.
-10. **"Control Module" dropdown**: Selects the pre-processing module used to prepare the control image for use.
+10. **"Preprocessor" dropdown**: Selects the pre-processing module used to prepare the control image for use.
 11. **"Control Model" dropdown**: Selects the control model used to guide image generation.
 12. **"Control Weight" slider**: Controls how strictly the model will guide image generation. 1.0 is the default value, lower values decrease the effect of ControlNet.
 13. **"Starting Control Step" slider**: Sets the step in the image generation process where ControlNet is activated, as a fraction of the total step count.  The default is 0.0, which starts ControlNet before the first.
@@ -112,7 +112,7 @@ These settings are sent directly to the connected Stable-Diffusion WebUI when sa
 
 ### Installing new AI model files
 1. Download Stable-Diffusion models, usually found on platforms like [HuggingFace](https://huggingface.co/) and [Civitai](https://civitai.com/). Model files should have the **.safetensors** extension.
-2. Locate the directory where the Stable-Diffusion WebUI was installed. If you used the [recommended process with Stability Matrix](../README.md#ai-setup-stable-diffusion), you'll find it at (TODO: where does Windows put this?).
+2. Locate the directory where the Stable-Diffusion WebUI was installed. If you used the [recommended process with Stability Matrix](../README.md#ai-setup-stable-diffusion), you'll find it in the StabilityMatrix folder under **Data/Packages/stable-diffusion-webui-forge**.
 3. Copy the model files into the **models/Stable-diffusion** within the WebUI directory.
 4. Restart the WebUI, or open the control page at http://localhost:7860 and click the refresh button next to the model list. If you open the control page, you can select the new model directly from that page and skip the next step.
 5. Restart IntraPaint, or use the ["Select Image generator" window](./menu_options.md#select-image-generator-f11) to disconnect from the Stable-Diffusion WebUI, and then reconnect. You can now select the new model file in the settings under the connected generator tab.

@@ -365,318 +365,1591 @@
     </message>
     <message>
       <location filename="../config/application_config_definitions.json" line="249"/>
+      <source>Upscale mode:</source>
+      <translation>Upscale mode:</translation>
+    </message>
+    <message>
+      <location filename="../config/application_config_definitions.json" line="251"/>
+      <source>Upscaling mode used when the inpainting resolution doesn't match the image generation area size.</source>
+      <translation>Upscaling mode used when the inpainting resolution doesn't match the image generation area size.</translation>
+    </message>
+    <message>
+      <location filename="../config/application_config_definitions.json" line="258"/>
+      <source>Downscale mode:</source>
+      <translation>Downscale mode:</translation>
+    </message>
+    <message>
+      <location filename="../config/application_config_definitions.json" line="260"/>
+      <source>Downscaling mode used when the inpainting resolution doesn't match the image generation area size.</source>
+      <translation>Downscaling mode used when the inpainting resolution doesn't match the image generation area size.</translation>
+    </message>
+    <message>
+      <location filename="../config/application_config_definitions.json" line="267"/>
       <source>Pen tablet pressure curve:</source>
       <translation>Pen tablet pressure curve:</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="251"/>
+      <location filename="../config/application_config_definitions.json" line="269"/>
       <source>Controls how pen tablet pressure values are applied. The x-axis represents the pressure value reported by the drawing tablet, and the y-axis represents the actual pressure value IntraPaint will register when it receives that value.</source>
       <translation>Controls how pen tablet pressure values are applied. The x-axis represents the pressure value reported by the drawing tablet, and the y-axis represents the actual pressure value IntraPaint will register when it receives that value.</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="250"/>
+      <location filename="../config/application_config_definitions.json" line="268"/>
       <source>Drawing tablet settings</source>
       <translation>Drawing tablet settings</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="257"/>
+      <location filename="../config/application_config_definitions.json" line="275"/>
       <source>Image interrogation model:</source>
       <translation>Image interrogation model:</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="259"/>
+      <location filename="../config/application_config_definitions.json" line="277"/>
       <source>Model used when auto-generating appropriate prompts using the 'interrogate' button. Supported values will vary based on what extensions you've installed into the stable-generation-webui, but 'clip' should always be accepted.</source>
       <translation>Model used when auto-generating appropriate prompts using the 'interrogate' button. Supported values will vary based on what extensions you've installed into the stable-generation-webui, but 'clip' should always be accepted.</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="258"/>
+      <location filename="../config/application_config_definitions.json" line="276"/>
       <source>Stable-Diffusion</source>
       <translation>Stable-Diffusion</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="265"/>
+      <location filename="../config/application_config_definitions.json" line="283"/>
       <source>ControlNet tiled upscaling model:</source>
       <translation>ControlNet tiled upscaling model:</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="267"/>
+      <location filename="../config/application_config_definitions.json" line="285"/>
       <source>ControlNet model to use for tiled upscaling, in the 'filename [hash]' format used by the webui. This only needs to change if a newer model is available if using a stable diffusion model not based on stable-diffusion 1.5.</source>
       <translation>ControlNet model to use for tiled upscaling, in the 'filename [hash]' format used by the webui. This only needs to change if a newer model is available if using a stable diffusion model not based on stable-diffusion 1.5.</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="273"/>
+      <location filename="../config/application_config_definitions.json" line="291"/>
       <source>Mask blur:</source>
       <translation>Mask blur:</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="275"/>
+      <location filename="../config/application_config_definitions.json" line="293"/>
       <source>Pixel radius to blur in the inpainting mask to smoothly combine edited and original image content.</source>
       <translation>Pixel radius to blur in the inpainting mask to smoothly combine edited and original image content.</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="286"/>
+      <location filename="../config/application_config_definitions.json" line="304"/>
       <source>Restore faces</source>
       <translation>Restore faces</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="289"/>
+      <location filename="../config/application_config_definitions.json" line="307"/>
       <source>Use a face restoration model to correct image data after stable-diffusion runs. In most cases you'll probably get better results without it.</source>
       <translation>Use a face restoration model to correct image data after stable-diffusion runs. In most cases you'll probably get better results without it.</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="288"/>
+      <location filename="../config/application_config_definitions.json" line="306"/>
       <source>Extra Features</source>
       <translation>Extra Features</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="295"/>
+      <location filename="../config/application_config_definitions.json" line="313"/>
       <source>Tiling</source>
       <translation>Tiling</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="298"/>
+      <location filename="../config/application_config_definitions.json" line="316"/>
       <source>Generate tiling images that can be seamlessly repeated.</source>
       <translation>Generate tiling images that can be seamlessly repeated.</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="288"/>
+      <location filename="../config/application_config_definitions.json" line="306"/>
       <source>Extra Features</source>
       <translation>Extra Features</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="304"/>
+      <location filename="../config/application_config_definitions.json" line="322"/>
       <source>GLID-3-XL model path:</source>
       <translation>GLID-3-XL model path:</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="307"/>
+      <location filename="../config/application_config_definitions.json" line="325"/>
       <source>Path to the main GLID-3-XL model file</source>
       <translation>Path to the main GLID-3-XL model file</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="304"/>
+      <location filename="../config/application_config_definitions.json" line="322"/>
       <source>GLID-3-XL</source>
       <translation>GLID-3-XL</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="306"/>
-      <source>Models</source>
-      <translation>Models</translation>
-    </message>
-    <message>
-      <location filename="../config/application_config_definitions.json" line="313"/>
-      <source>BERT model path:</source>
-      <translation>BERT model path:</translation>
-    </message>
-    <message>
-      <location filename="../config/application_config_definitions.json" line="316"/>
-      <source>Path to the BERT language model file</source>
-      <translation>Path to the BERT language model file</translation>
-    </message>
-    <message>
-      <location filename="../config/application_config_definitions.json" line="306"/>
-      <source>Models</source>
-      <translation>Models</translation>
-    </message>
-    <message>
-      <location filename="../config/application_config_definitions.json" line="322"/>
-      <source>GLID-3-XL VAE model path:</source>
-      <translation>GLID-3-XL VAE model path:</translation>
-    </message>
-    <message>
-      <location filename="../config/application_config_definitions.json" line="325"/>
-      <source>Path to the VAE latent image encoding/decoding model file</source>
-      <translation>Path to the VAE latent image encoding/decoding model file</translation>
-    </message>
-    <message>
-      <location filename="../config/application_config_definitions.json" line="306"/>
+      <location filename="../config/application_config_definitions.json" line="324"/>
       <source>Models</source>
       <translation>Models</translation>
     </message>
     <message>
       <location filename="../config/application_config_definitions.json" line="331"/>
-      <source>CLIP model name:</source>
-      <translation>CLIP model name:</translation>
+      <source>BERT model path:</source>
+      <translation>BERT model path:</translation>
     </message>
     <message>
       <location filename="../config/application_config_definitions.json" line="334"/>
-      <source>Name of the CLIP language model to use.</source>
-      <translation>Name of the CLIP language model to use.</translation>
+      <source>Path to the BERT language model file</source>
+      <translation>Path to the BERT language model file</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="306"/>
+      <location filename="../config/application_config_definitions.json" line="324"/>
       <source>Models</source>
       <translation>Models</translation>
     </message>
     <message>
       <location filename="../config/application_config_definitions.json" line="340"/>
+      <source>GLID-3-XL VAE model path:</source>
+      <translation>GLID-3-XL VAE model path:</translation>
+    </message>
+    <message>
+      <location filename="../config/application_config_definitions.json" line="343"/>
+      <source>Path to the VAE latent image encoding/decoding model file</source>
+      <translation>Path to the VAE latent image encoding/decoding model file</translation>
+    </message>
+    <message>
+      <location filename="../config/application_config_definitions.json" line="324"/>
+      <source>Models</source>
+      <translation>Models</translation>
+    </message>
+    <message>
+      <location filename="../config/application_config_definitions.json" line="349"/>
+      <source>CLIP model name:</source>
+      <translation>CLIP model name:</translation>
+    </message>
+    <message>
+      <location filename="../config/application_config_definitions.json" line="352"/>
+      <source>Name of the CLIP language model to use.</source>
+      <translation>Name of the CLIP language model to use.</translation>
+    </message>
+    <message>
+      <location filename="../config/application_config_definitions.json" line="324"/>
+      <source>Models</source>
+      <translation>Models</translation>
+    </message>
+    <message>
+      <location filename="../config/application_config_definitions.json" line="358"/>
       <source>Enable global error handler:</source>
       <translation>Enable global error handler:</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="342"/>
+      <location filename="../config/application_config_definitions.json" line="360"/>
       <source>Attempt to catch and report global application errors instead of crashing. Disabling this makes it easier to debug certain errors.</source>
       <translation>Attempt to catch and report global application errors instead of crashing. Disabling this makes it easier to debug certain errors.</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="348"/>
+      <location filename="../config/application_config_definitions.json" line="366"/>
       <source>Warn about keybinding issues:</source>
       <translation>Warn about keybinding issues:</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="350"/>
+      <location filename="../config/application_config_definitions.json" line="368"/>
       <source>Show an alert when keybinding issues are found on startup.</source>
       <translation>Show an alert when keybinding issues are found on startup.</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="349"/>
+      <location filename="../config/application_config_definitions.json" line="367"/>
       <source>Alerts</source>
       <translation>Alerts</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="356"/>
+      <location filename="../config/application_config_definitions.json" line="374"/>
       <source>Warn when saving without layers:</source>
       <translation>Warn when saving without layers:</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="358"/>
+      <location filename="../config/application_config_definitions.json" line="376"/>
       <source>Show a warning popup when saving a multi-layer image in a format that discards layer data.</source>
       <translation>Show a warning popup when saving a multi-layer image in a format that discards layer data.</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="364"/>
+      <location filename="../config/application_config_definitions.json" line="382"/>
       <source>Warn when saving without transparency:</source>
       <translation>Warn when saving without transparency:</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="366"/>
+      <location filename="../config/application_config_definitions.json" line="384"/>
       <source>Show a warning popup when saving an image with transparency in a format that doesn't support it.</source>
       <translation>Show a warning popup when saving an image with transparency in a format that doesn't support it.</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="372"/>
+      <location filename="../config/application_config_definitions.json" line="390"/>
       <source>Warn when saving without metadata:</source>
       <translation>Warn when saving without metadata:</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="374"/>
+      <location filename="../config/application_config_definitions.json" line="392"/>
       <source>Show a warning popup when saving an image in a format that discards metadata.</source>
       <translation>Show a warning popup when saving an image in a format that discards metadata.</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="380"/>
+      <location filename="../config/application_config_definitions.json" line="398"/>
       <source>Warn when saving in a format that cannot be loaded:</source>
       <translation>Warn when saving in a format that cannot be loaded:</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="382"/>
+      <location filename="../config/application_config_definitions.json" line="400"/>
       <source>Show a warning popup when saving an image in a format that can't be loaded.</source>
       <translation>Show a warning popup when saving an image in a format that can't be loaded.</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="388"/>
+      <location filename="../config/application_config_definitions.json" line="406"/>
       <source>Warn when saving in a format that changes image size:</source>
       <translation>Warn when saving in a format that changes image size:</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="390"/>
+      <location filename="../config/application_config_definitions.json" line="408"/>
       <source>Show a warning popup when saving an image in a format requires a specific resolution.</source>
       <translation>Show a warning popup when saving an image in a format requires a specific resolution.</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="396"/>
+      <location filename="../config/application_config_definitions.json" line="414"/>
       <source>Warn when saving in a format that removes color:</source>
       <translation>Warn when saving in a format that removes color:</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="398"/>
+      <location filename="../config/application_config_definitions.json" line="416"/>
       <source>Show a warning popup when saving an image in a format that does not support color.</source>
       <translation>Show a warning popup when saving an image in a format that does not support color.</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="404"/>
+      <location filename="../config/application_config_definitions.json" line="422"/>
       <source>Warn when loading libmypaint fails:</source>
       <translation>Warn when loading libmypaint fails:</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="406"/>
+      <location filename="../config/application_config_definitions.json" line="424"/>
       <source>Show a warning popup when the brush tool cannot be used because of missing libraries.</source>
       <translation>Show a warning popup when the brush tool cannot be used because of missing libraries.</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="412"/>
+      <location filename="../config/application_config_definitions.json" line="430"/>
       <source>Always save metadata:</source>
       <translation>Always save metadata:</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="414"/>
+      <location filename="../config/application_config_definitions.json" line="432"/>
       <source>Always save metadata when no previous metadata exists(confirm), never do that(cancel), or ask every time(always_ask).</source>
       <translation>Always save metadata when no previous metadata exists(confirm), never do that(cancel), or ask every time(always_ask).</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="420"/>
+      <location filename="../config/application_config_definitions.json" line="432"/>
+      <source>confirm</source>
+      <translation>confirm</translation>
+    </message>
+    <message>
+      <location filename="../config/application_config_definitions.json" line="432"/>
+      <source>cancel</source>
+      <translation>cancel</translation>
+    </message>
+    <message>
+      <location filename="../config/application_config_definitions.json" line="432"/>
+      <source>always_ask</source>
+      <translation>always_ask</translation>
+    </message>
+    <message>
+      <location filename="../config/application_config_definitions.json" line="443"/>
       <source>Always update metadata:</source>
       <translation>Always update metadata:</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="422"/>
+      <location filename="../config/application_config_definitions.json" line="445"/>
       <source>Always update metadata when images are saved(confirm), never do that(cancel), or ask every time(always_ask).</source>
       <translation>Always update metadata when images are saved(confirm), never do that(cancel), or ask every time(always_ask).</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="428"/>
+      <location filename="../config/application_config_definitions.json" line="432"/>
+      <source>confirm</source>
+      <translation>confirm</translation>
+    </message>
+    <message>
+      <location filename="../config/application_config_definitions.json" line="432"/>
+      <source>cancel</source>
+      <translation>cancel</translation>
+    </message>
+    <message>
+      <location filename="../config/application_config_definitions.json" line="432"/>
+      <source>always_ask</source>
+      <translation>always_ask</translation>
+    </message>
+    <message>
+      <location filename="../config/application_config_definitions.json" line="456"/>
       <source>Warn when cropping deletes layers:</source>
       <translation>Warn when cropping deletes layers:</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="430"/>
+      <location filename="../config/application_config_definitions.json" line="458"/>
       <source>Warn when cropping the image or a layer group deletes one or more layers.</source>
       <translation>Warn when cropping the image or a layer group deletes one or more layers.</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="436"/>
+      <location filename="../config/application_config_definitions.json" line="464"/>
       <source>Warn when layer lock or visibility forces new layer creation</source>
       <translation>Warn when layer lock or visibility forces new layer creation</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="438"/>
+      <location filename="../config/application_config_definitions.json" line="466"/>
       <source>Warn when image generation creates a new layer because it cannot insert into the active layer.</source>
       <translation>Warn when image generation creates a new layer because it cannot insert into the active layer.</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="444"/>
+      <location filename="../config/application_config_definitions.json" line="472"/>
       <source>Added font directory:</source>
       <translation>Added font directory:</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="446"/>
+      <location filename="../config/application_config_definitions.json" line="474"/>
       <source>Directory to search for additional font files to load</source>
       <translation>Directory to search for additional font files to load</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="445"/>
+      <location filename="../config/application_config_definitions.json" line="473"/>
       <source>Files</source>
       <translation>Files</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="452"/>
+      <location filename="../config/application_config_definitions.json" line="480"/>
       <source>Added MyPaint brush directory:</source>
       <translation>Added MyPaint brush directory:</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="454"/>
+      <location filename="../config/application_config_definitions.json" line="482"/>
       <source>Directory to search for additional MyPaint brush files to load</source>
       <translation>Directory to search for additional MyPaint brush files to load</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="460"/>
+      <location filename="../config/application_config_definitions.json" line="488"/>
       <source>libmypaint library directory:</source>
       <translation>libmypaint library directory:</translation>
     </message>
     <message>
-      <location filename="../config/application_config_definitions.json" line="462"/>
+      <location filename="../config/application_config_definitions.json" line="490"/>
       <source>Directory to search for libmypaint library files if unable to load default libraries</source>
       <translation>Directory to search for libmypaint library files if unable to load default libraries</translation>
+    </message>
+  </context>
+  <context>
+    <name>config.cache</name>
+    <message>
+      <location filename="../../src/config/cache.py" line="26"/>
+      <source>None</source>
+      <translation>None</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="3"/>
+      <source>Editing size:</source>
+      <translation>Editing size:</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="5"/>
+      <source>Current/initial size in pixels of the area selected for editing</source>
+      <translation>Current/initial size in pixels of the area selected for editing</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="4"/>
+      <source>Cache</source>
+      <translation>Cache</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="11"/>
+      <source>Generation size:</source>
+      <translation>Generation size:</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="13"/>
+      <source>Current/initial size in pixels used for AI image generation</source>
+      <translation>Current/initial size in pixels used for AI image generation</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="55"/>
+      <source>Color</source>
+      <translation>Color</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="57"/>
+      <source>Last brush color</source>
+      <translation>Last brush color</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="63"/>
+      <source>New image background color:</source>
+      <translation>New image background color:</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="65"/>
+      <source>Last new image background color</source>
+      <translation>Last new image background color</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="71"/>
+      <source>Text background color:</source>
+      <translation>Text background color:</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="74"/>
+      <source>Last background color (text tool)</source>
+      <translation>Last background color (text tool)</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="73"/>
+      <source>Text Tool</source>
+      <translation>Text Tool</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="117"/>
+      <source>Color threshold:</source>
+      <translation>Color threshold:</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="119"/>
+      <source>Sets how closely colors need to match the clicked color to be selected. 0.0 only changes exact matching colors, higher values are more permissive.</source>
+      <translation>Sets how closely colors need to match the clicked color to be selected. 0.0 only changes exact matching colors, higher values are more permissive.</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="130"/>
+      <source>Pattern:</source>
+      <translation>Pattern:</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="133"/>
+      <source>Fill tool Qt brush style to apply</source>
+      <translation>Fill tool Qt brush style to apply</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="132"/>
+      <source>Fill Tool</source>
+      <translation>Fill Tool</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="139"/>
+      <source>Sample Merged</source>
+      <translation>Sample Merged</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="141"/>
+      <source>If checked, fill based on the entire image contents, not just the current layer</source>
+      <translation>If checked, fill based on the entire image contents, not just the current layer</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="147"/>
+      <source>Select all by color</source>
+      <translation>Select all by color</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="149"/>
+      <source>If checked, ignore boundaries and select all content within the color threshold</source>
+      <translation>If checked, ignore boundaries and select all content within the color threshold</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="155"/>
+      <source>Paint selection only</source>
+      <translation>Paint selection only</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="157"/>
+      <source>If checked, only paint within the selection bounds</source>
+      <translation>If checked, only paint within the selection bounds</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="173"/>
+      <source>Size:</source>
+      <translation>Size:</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="176"/>
+      <source>Current/initial brush size (in pixels) for the MyPaint brush tool.</source>
+      <translation>Current/initial brush size (in pixels) for the MyPaint brush tool.</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="165"/>
+      <source>Paint Tool</source>
+      <translation>Paint Tool</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="173"/>
+      <source>Size:</source>
+      <translation>Size:</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="190"/>
+      <source>Current/initial brush size (in pixels) for the selection tool.</source>
+      <translation>Current/initial brush size (in pixels) for the selection tool.</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="189"/>
+      <source>Brush Selection</source>
+      <translation>Brush Selection</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="173"/>
+      <source>Size:</source>
+      <translation>Size:</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="204"/>
+      <source>Current/initial brush size (in pixels) for the draw tool.</source>
+      <translation>Current/initial brush size (in pixels) for the draw tool.</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="203"/>
+      <source>Draw Tool</source>
+      <translation>Draw Tool</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="215"/>
+      <source>Opacity:</source>
+      <translation>Opacity:</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="218"/>
+      <source>Draw tool color opacity</source>
+      <translation>Draw tool color opacity</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="203"/>
+      <source>Draw Tool</source>
+      <translation>Draw Tool</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="229"/>
+      <source>Hardness:</source>
+      <translation>Hardness:</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="232"/>
+      <source>Draw tool brush hardness</source>
+      <translation>Draw tool brush hardness</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="203"/>
+      <source>Draw Tool</source>
+      <translation>Draw Tool</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="243"/>
+      <source>Pen pressure=size:</source>
+      <translation>Pen pressure=size:</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="246"/>
+      <source>Drawing tablet pen pressure affects draw tool brush size.</source>
+      <translation>Drawing tablet pen pressure affects draw tool brush size.</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="203"/>
+      <source>Draw Tool</source>
+      <translation>Draw Tool</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="252"/>
+      <source>Pen pressure=opacity:</source>
+      <translation>Pen pressure=opacity:</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="255"/>
+      <source>Drawing tablet pen pressure affects draw tool brush opacity.</source>
+      <translation>Drawing tablet pen pressure affects draw tool brush opacity.</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="203"/>
+      <source>Draw Tool</source>
+      <translation>Draw Tool</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="261"/>
+      <source>Pen pressure=hardness:</source>
+      <translation>Pen pressure=hardness:</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="264"/>
+      <source>Drawing tablet pen pressure affects draw tool brush hardness.</source>
+      <translation>Drawing tablet pen pressure affects draw tool brush hardness.</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="203"/>
+      <source>Draw Tool</source>
+      <translation>Draw Tool</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="130"/>
+      <source>Pattern:</source>
+      <translation>Pattern:</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="273"/>
+      <source>Draw tool Qt brush style to apply</source>
+      <translation>Draw tool Qt brush style to apply</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="203"/>
+      <source>Draw Tool</source>
+      <translation>Draw Tool</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="279"/>
+      <source>Eraser size:</source>
+      <translation>Eraser size:</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="282"/>
+      <source>Current/initial brush size (in pixels) for the eraser tool.</source>
+      <translation>Current/initial brush size (in pixels) for the eraser tool.</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="281"/>
+      <source>Eraser Tool</source>
+      <translation>Eraser Tool</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="215"/>
+      <source>Opacity:</source>
+      <translation>Opacity:</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="218"/>
+      <source>Draw tool color opacity</source>
+      <translation>Draw tool color opacity</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="281"/>
+      <source>Eraser Tool</source>
+      <translation>Eraser Tool</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="229"/>
+      <source>Hardness:</source>
+      <translation>Hardness:</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="232"/>
+      <source>Draw tool brush hardness</source>
+      <translation>Draw tool brush hardness</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="281"/>
+      <source>Eraser Tool</source>
+      <translation>Eraser Tool</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="243"/>
+      <source>Pen pressure=size:</source>
+      <translation>Pen pressure=size:</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="246"/>
+      <source>Drawing tablet pen pressure affects draw tool brush size.</source>
+      <translation>Drawing tablet pen pressure affects draw tool brush size.</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="281"/>
+      <source>Eraser Tool</source>
+      <translation>Eraser Tool</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="252"/>
+      <source>Pen pressure=opacity:</source>
+      <translation>Pen pressure=opacity:</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="255"/>
+      <source>Drawing tablet pen pressure affects draw tool brush opacity.</source>
+      <translation>Drawing tablet pen pressure affects draw tool brush opacity.</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="281"/>
+      <source>Eraser Tool</source>
+      <translation>Eraser Tool</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="261"/>
+      <source>Pen pressure=hardness:</source>
+      <translation>Pen pressure=hardness:</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="264"/>
+      <source>Drawing tablet pen pressure affects draw tool brush hardness.</source>
+      <translation>Drawing tablet pen pressure affects draw tool brush hardness.</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="281"/>
+      <source>Eraser Tool</source>
+      <translation>Eraser Tool</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="348"/>
+      <source>Filter:</source>
+      <translation>Filter:</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="351"/>
+      <source>Selected image filter</source>
+      <translation>Selected image filter</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="350"/>
+      <source>Filter Tool</source>
+      <translation>Filter Tool</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="357"/>
+      <source>Filter parameters:</source>
+      <translation>Filter parameters:</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="360"/>
+      <source>Cached parameters for all filters</source>
+      <translation>Cached parameters for all filters</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="350"/>
+      <source>Filter Tool</source>
+      <translation>Filter Tool</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="173"/>
+      <source>Size:</source>
+      <translation>Size:</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="369"/>
+      <source>Current/initial brush size (in pixels) for the filter tool.</source>
+      <translation>Current/initial brush size (in pixels) for the filter tool.</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="350"/>
+      <source>Filter Tool</source>
+      <translation>Filter Tool</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="215"/>
+      <source>Opacity:</source>
+      <translation>Opacity:</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="383"/>
+      <source>Filter tool color opacity</source>
+      <translation>Filter tool color opacity</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="350"/>
+      <source>Filter Tool</source>
+      <translation>Filter Tool</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="229"/>
+      <source>Hardness:</source>
+      <translation>Hardness:</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="397"/>
+      <source>Filter tool brush hardness</source>
+      <translation>Filter tool brush hardness</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="350"/>
+      <source>Filter Tool</source>
+      <translation>Filter Tool</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="243"/>
+      <source>Pen pressure=size:</source>
+      <translation>Pen pressure=size:</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="411"/>
+      <source>Drawing tablet pen pressure affects filter tool brush size.</source>
+      <translation>Drawing tablet pen pressure affects filter tool brush size.</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="350"/>
+      <source>Filter Tool</source>
+      <translation>Filter Tool</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="252"/>
+      <source>Pen pressure=opacity:</source>
+      <translation>Pen pressure=opacity:</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="420"/>
+      <source>Drawing tablet pen pressure affects filter tool brush opacity.</source>
+      <translation>Drawing tablet pen pressure affects filter tool brush opacity.</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="350"/>
+      <source>Filter Tool</source>
+      <translation>Filter Tool</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="261"/>
+      <source>Pen pressure=hardness:</source>
+      <translation>Pen pressure=hardness:</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="429"/>
+      <source>Drawing tablet pen pressure affects filter tool brush hardness.</source>
+      <translation>Drawing tablet pen pressure affects filter tool brush hardness.</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="428"/>
+      <source>Smudge Tool</source>
+      <translation>Smudge Tool</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="173"/>
+      <source>Size:</source>
+      <translation>Size:</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="438"/>
+      <source>Current/initial brush size (in pixels) for the smudge tool.</source>
+      <translation>Current/initial brush size (in pixels) for the smudge tool.</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="428"/>
+      <source>Smudge Tool</source>
+      <translation>Smudge Tool</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="215"/>
+      <source>Opacity:</source>
+      <translation>Opacity:</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="452"/>
+      <source>Smudge tool color opacity</source>
+      <translation>Smudge tool color opacity</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="428"/>
+      <source>Smudge Tool</source>
+      <translation>Smudge Tool</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="229"/>
+      <source>Hardness:</source>
+      <translation>Hardness:</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="466"/>
+      <source>Smudge tool brush hardness</source>
+      <translation>Smudge tool brush hardness</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="428"/>
+      <source>Smudge Tool</source>
+      <translation>Smudge Tool</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="243"/>
+      <source>Pen pressure=size:</source>
+      <translation>Pen pressure=size:</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="480"/>
+      <source>Drawing tablet pen pressure affects smudge tool brush size.</source>
+      <translation>Drawing tablet pen pressure affects smudge tool brush size.</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="428"/>
+      <source>Smudge Tool</source>
+      <translation>Smudge Tool</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="252"/>
+      <source>Pen pressure=opacity:</source>
+      <translation>Pen pressure=opacity:</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="489"/>
+      <source>Drawing tablet pen pressure affects smudge tool brush opacity.</source>
+      <translation>Drawing tablet pen pressure affects smudge tool brush opacity.</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="428"/>
+      <source>Smudge Tool</source>
+      <translation>Smudge Tool</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="261"/>
+      <source>Pen pressure=hardness:</source>
+      <translation>Pen pressure=hardness:</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="498"/>
+      <source>Drawing tablet pen pressure affects smudge tool brush hardness.</source>
+      <translation>Drawing tablet pen pressure affects smudge tool brush hardness.</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="428"/>
+      <source>Smudge Tool</source>
+      <translation>Smudge Tool</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="173"/>
+      <source>Size:</source>
+      <translation>Size:</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="507"/>
+      <source>Current/initial brush size (in pixels) for the clone stamp tool.</source>
+      <translation>Current/initial brush size (in pixels) for the clone stamp tool.</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="506"/>
+      <source>Clone Stamp Tool</source>
+      <translation>Clone Stamp Tool</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="215"/>
+      <source>Opacity:</source>
+      <translation>Opacity:</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="521"/>
+      <source>Clone stamp tool color opacity</source>
+      <translation>Clone stamp tool color opacity</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="506"/>
+      <source>Clone Stamp Tool</source>
+      <translation>Clone Stamp Tool</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="229"/>
+      <source>Hardness:</source>
+      <translation>Hardness:</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="535"/>
+      <source>Clone stamp tool brush hardness</source>
+      <translation>Clone stamp tool brush hardness</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="506"/>
+      <source>Clone Stamp Tool</source>
+      <translation>Clone Stamp Tool</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="243"/>
+      <source>Pen pressure=size:</source>
+      <translation>Pen pressure=size:</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="549"/>
+      <source>Drawing tablet pen pressure affects clone stamp tool brush size.</source>
+      <translation>Drawing tablet pen pressure affects clone stamp tool brush size.</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="506"/>
+      <source>Clone Stamp Tool</source>
+      <translation>Clone Stamp Tool</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="252"/>
+      <source>Pen pressure=opacity:</source>
+      <translation>Pen pressure=opacity:</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="558"/>
+      <source>Drawing tablet pen pressure affects clone stamp tool brush opacity.</source>
+      <translation>Drawing tablet pen pressure affects clone stamp tool brush opacity.</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="506"/>
+      <source>Clone Stamp Tool</source>
+      <translation>Clone Stamp Tool</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="261"/>
+      <source>Pen pressure=hardness:</source>
+      <translation>Pen pressure=hardness:</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="567"/>
+      <source>Drawing tablet pen pressure affects clone stamp tool brush hardness.</source>
+      <translation>Drawing tablet pen pressure affects clone stamp tool brush hardness.</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="506"/>
+      <source>Clone Stamp Tool</source>
+      <translation>Clone Stamp Tool</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="573"/>
+      <source>Shape Type:</source>
+      <translation>Shape Type:</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="576"/>
+      <source>Type of shape to draw.</source>
+      <translation>Type of shape to draw.</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="575"/>
+      <source>Shape Tool</source>
+      <translation>Shape Tool</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="582"/>
+      <source>Vertex count:</source>
+      <translation>Vertex count:</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="585"/>
+      <source>Polygon vertex count.</source>
+      <translation>Polygon vertex count.</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="575"/>
+      <source>Shape Tool</source>
+      <translation>Shape Tool</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="596"/>
+      <source>Inner radius fraction:</source>
+      <translation>Inner radius fraction:</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="599"/>
+      <source>Distance from the center to inner star points, as a fraction of the distance to the outer points</source>
+      <translation>Distance from the center to inner star points, as a fraction of the distance to the outer points</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="575"/>
+      <source>Shape Tool</source>
+      <translation>Shape Tool</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="610"/>
+      <source>Line color</source>
+      <translation>Line color</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="613"/>
+      <source>Shape outline color.</source>
+      <translation>Shape outline color.</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="575"/>
+      <source>Shape Tool</source>
+      <translation>Shape Tool</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="619"/>
+      <source>Line style:</source>
+      <translation>Line style:</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="622"/>
+      <source>Shape outline drawing style.</source>
+      <translation>Shape outline drawing style.</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="575"/>
+      <source>Shape Tool</source>
+      <translation>Shape Tool</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="628"/>
+      <source>Line join style:</source>
+      <translation>Line join style:</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="631"/>
+      <source>Shape outline connection drawing style.</source>
+      <translation>Shape outline connection drawing style.</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="575"/>
+      <source>Shape Tool</source>
+      <translation>Shape Tool</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="637"/>
+      <source>Dash pattern:</source>
+      <translation>Dash pattern:</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="640"/>
+      <source>Dash length followed by space length, for any number of dash/space pairs.</source>
+      <translation>Dash length followed by space length, for any number of dash/space pairs.</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="575"/>
+      <source>Shape Tool</source>
+      <translation>Shape Tool</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="646"/>
+      <source>Line width:</source>
+      <translation>Line width:</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="649"/>
+      <source>Shape tool line width.</source>
+      <translation>Shape tool line width.</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="575"/>
+      <source>Shape Tool</source>
+      <translation>Shape Tool</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="130"/>
+      <source>Pattern:</source>
+      <translation>Pattern:</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="663"/>
+      <source>Shape fill pattern</source>
+      <translation>Shape fill pattern</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="575"/>
+      <source>Shape Tool</source>
+      <translation>Shape Tool</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="669"/>
+      <source>Fill Color</source>
+      <translation>Fill Color</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="672"/>
+      <source>Shape fill color.</source>
+      <translation>Shape fill color.</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="575"/>
+      <source>Shape Tool</source>
+      <translation>Shape Tool</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="678"/>
+      <source>Saved main window placement</source>
+      <translation>Saved main window placement</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="681"/>
+      <source>display, position, and size where the main window last was.</source>
+      <translation>display, position, and size where the main window last was.</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="680"/>
+      <source>Window placement</source>
+      <translation>Window placement</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="687"/>
+      <source>Saved layer window placement</source>
+      <translation>Saved layer window placement</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="690"/>
+      <source>display, position, and size where the layer window last was.</source>
+      <translation>display, position, and size where the layer window last was.</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="680"/>
+      <source>Window placement</source>
+      <translation>Window placement</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="705"/>
+      <source>Prompt:</source>
+      <translation>Prompt:</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="708"/>
+      <source>Description that generated images should match.</source>
+      <translation>Description that generated images should match.</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="28"/>
+      <source>Image generation</source>
+      <translation>Image generation</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="714"/>
+      <source>Negative prompt:</source>
+      <translation>Negative prompt:</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="717"/>
+      <source>Description that generated images should not match.</source>
+      <translation>Description that generated images should not match.</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="28"/>
+      <source>Image generation</source>
+      <translation>Image generation</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="723"/>
+      <source>Guidance scale:</source>
+      <translation>Guidance scale:</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="726"/>
+      <source>Controls how strongly the prompt and negative prompt are applied.</source>
+      <translation>Controls how strongly the prompt and negative prompt are applied.</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="28"/>
+      <source>Image generation</source>
+      <translation>Image generation</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="737"/>
+      <source>Batch size:</source>
+      <translation>Batch size:</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="740"/>
+      <source>Number of image options to simultaneously create in a single image editing operation.</source>
+      <translation>Number of image options to simultaneously create in a single image editing operation.</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="28"/>
+      <source>Image generation</source>
+      <translation>Image generation</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="751"/>
+      <source>Batch count:</source>
+      <translation>Batch count:</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="754"/>
+      <source>Number of image batches to create in a single image editing operation. Increasing this value doesn't require additional memory, but it slows down image editing more than increasing the batch size does.</source>
+      <translation>Number of image batches to create in a single image editing operation. Increasing this value doesn't require additional memory, but it slows down image editing more than increasing the batch size does.</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="28"/>
+      <source>Image generation</source>
+      <translation>Image generation</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="765"/>
+      <source>Edit mode:</source>
+      <translation>Edit mode:</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="768"/>
+      <source>Stable-Diffusion image editing mode. 'Text to Image' completely replaces the selected image section with new content, 'Image to Image' creates altered versions of the image selection, and 'Inpaint' works like 'Image to Image' except that it only affects areas selected by the mask tool</source>
+      <translation>Stable-Diffusion image editing mode. 'Text to Image' completely replaces the selected image section with new content, 'Image to Image' creates altered versions of the image selection, and 'Inpaint' works like 'Image to Image' except that it only affects areas selected by the mask tool</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="768"/>
+      <source>Inpaint</source>
+      <translation>Inpaint</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="768"/>
+      <source>Image to Image</source>
+      <translation>Image to Image</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="768"/>
+      <source>Text to Image</source>
+      <translation>Text to Image</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="28"/>
+      <source>Image generation</source>
+      <translation>Image generation</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="779"/>
+      <source>Masked content:</source>
+      <translation>Masked content:</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="782"/>
+      <source>Determines what should be used to fill the masked area before inpainting. 'fill' replaces it with a solid color, 'original' keeps it as-is, 'latent noise' replaces it with random data, and 'latent nothing' clears it. Unless you're inpainting with a denoising strength &gt;0.8, 'original' will almost always be the best option</source>
+      <translation>Determines what should be used to fill the masked area before inpainting. 'fill' replaces it with a solid color, 'original' keeps it as-is, 'latent noise' replaces it with random data, and 'latent nothing' clears it. Unless you're inpainting with a denoising strength &gt;0.8, 'original' will almost always be the best option</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="116"/>
+      <source>fill</source>
+      <translation>fill</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="782"/>
+      <source>original</source>
+      <translation>original</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="782"/>
+      <source>latent noise</source>
+      <translation>latent noise</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="782"/>
+      <source>latent nothing</source>
+      <translation>latent nothing</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="28"/>
+      <source>Image generation</source>
+      <translation>Image generation</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="794"/>
+      <source>Sampling steps:</source>
+      <translation>Sampling steps:</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="797"/>
+      <source>Number of diffusion operations to perform when generating image data. Higher values take longer, but often produce more detailed and accurate results. Different stable-diffusion models and samplers have different requirements, but in most cates setting this higher than 30 has only minimal benefits</source>
+      <translation>Number of diffusion operations to perform when generating image data. Higher values take longer, but often produce more detailed and accurate results. Different stable-diffusion models and samplers have different requirements, but in most cates setting this higher than 30 has only minimal benefits</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="28"/>
+      <source>Image generation</source>
+      <translation>Image generation</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="808"/>
+      <source>Denoising strength:</source>
+      <translation>Denoising strength:</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="811"/>
+      <source>Controls how dramatically inpainting and image-to-image operations will change the initial image data. At 0.0, the image will be completely unedited, at 1.0 the image will be completely different</source>
+      <translation>Controls how dramatically inpainting and image-to-image operations will change the initial image data. At 0.0, the image will be completely unedited, at 1.0 the image will be completely different</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="28"/>
+      <source>Image generation</source>
+      <translation>Image generation</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="822"/>
+      <source>Sampling method:</source>
+      <translation>Sampling method:</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="825"/>
+      <source>Mathematical technique used to transform image data during the generation process. 'Euler a' works well in most cases, but certain models or extensions might perform better with other options.</source>
+      <translation>Mathematical technique used to transform image data during the generation process. 'Euler a' works well in most cases, but certain models or extensions might perform better with other options.</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="28"/>
+      <source>Image generation</source>
+      <translation>Image generation</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="832"/>
+      <source>Upscale method:</source>
+      <translation>Upscale method:</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="835"/>
+      <source>Method to use when increasing image resolution. Available options will be loaded from the active image generator.</source>
+      <translation>Method to use when increasing image resolution. Available options will be loaded from the active image generator.</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="28"/>
+      <source>Image generation</source>
+      <translation>Image generation</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="842"/>
+      <source>Image scaling behavior:</source>
+      <translation>Image scaling behavior:</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="845"/>
+      <source>Controls how multi-layer images are scaled.</source>
+      <translation>Controls how multi-layer images are scaled.</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="849"/>
+      <source>Independent layer scaling</source>
+      <translation>Independent layer scaling</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="847"/>
+      <source>Scale merged, keep source layers</source>
+      <translation>Scale merged, keep source layers</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="851"/>
+      <source>Scale merged, discard source layers</source>
+      <translation>Scale merged, discard source layers</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="28"/>
+      <source>Image generation</source>
+      <translation>Image generation</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="856"/>
+      <source>Layer expand mode:</source>
+      <translation>Layer expand mode:</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="859"/>
+      <source>Sets which layers should be expanded to fill the image when resized</source>
+      <translation>Sets which layers should be expanded to fill the image when resized</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="863"/>
+      <source>Expand all unlocked layers</source>
+      <translation>Expand all unlocked layers</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="861"/>
+      <source>Only expand full-image layers</source>
+      <translation>Only expand full-image layers</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="865"/>
+      <source>Do not expand layers</source>
+      <translation>Do not expand layers</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="858"/>
+      <source>Resize image canvas</source>
+      <translation>Resize image canvas</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="871"/>
+      <source>Crop layers to new image bounds</source>
+      <translation>Crop layers to new image bounds</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="874"/>
+      <source>Sets whether layers should be cropped to image bounds when the image is resized.</source>
+      <translation>Sets whether layers should be cropped to image bounds when the image is resized.</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="858"/>
+      <source>Resize image canvas</source>
+      <translation>Resize image canvas</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="880"/>
+      <source>Seed:</source>
+      <translation>Seed:</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="883"/>
+      <source>Number used to control pseudo-random aspects of image generation, in most cases using the same seed with the same settings and inputs will always produce the same results. If set to -1, a different random seed will be used for each image generation. </source>
+      <translation>Number used to control pseudo-random aspects of image generation, in most cases using the same seed with the same settings and inputs will always produce the same results. If set to -1, a different random seed will be used for each image generation. </translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="28"/>
+      <source>Image generation</source>
+      <translation>Image generation</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="894"/>
+      <source>Last seed:</source>
+      <translation>Last seed:</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="897"/>
+      <source>Last seed used for image generation</source>
+      <translation>Last seed used for image generation</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="28"/>
+      <source>Image generation</source>
+      <translation>Image generation</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="913"/>
+      <source>Inpaint Full Resolution</source>
+      <translation>Inpaint Full Resolution</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="916"/>
+      <source>If true, inpaint the masked area at higher resolution by ignoring the unmasked area. This can increase image quality by sacrificing awareness of additional image content.</source>
+      <translation>If true, inpaint the masked area at higher resolution by ignoring the unmasked area. This can increase image quality by sacrificing awareness of additional image content.</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="28"/>
+      <source>Image generation</source>
+      <translation>Image generation</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="922"/>
+      <source>Padding:</source>
+      <translation>Padding:</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="925"/>
+      <source>Pixel radius outside of the masked area to include when inpainting when the 'Inpaint Full Resolution' option is enabled. Higher values increase contextual awareness while decreasing overall level of detail.</source>
+      <translation>Pixel radius outside of the masked area to include when inpainting when the 'Inpaint Full Resolution' option is enabled. Higher values increase contextual awareness while decreasing overall level of detail.</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="28"/>
+      <source>Image generation</source>
+      <translation>Image generation</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="972"/>
+      <source>Detail reference count (cutn):</source>
+      <translation>Detail reference count (cutn):</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="975"/>
+      <source>Determines how many random cutouts from the input image are used to guide image generation (GLID-3-XL). Higher values can introduce more detail and variation, but may also introduce more noise and irrelevant information.</source>
+      <translation>Determines how many random cutouts from the input image are used to guide image generation (GLID-3-XL). Higher values can introduce more detail and variation, but may also introduce more noise and irrelevant information.</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="28"/>
+      <source>Image generation</source>
+      <translation>Image generation</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="986"/>
+      <source>Skip steps:</source>
+      <translation>Skip steps:</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="989"/>
+      <source>Number of diffusion steps to skip (GLID-3-XL). Higher values will result in faster image generation with decreased detail and accuracy.</source>
+      <translation>Number of diffusion steps to skip (GLID-3-XL). Higher values will result in faster image generation with decreased detail and accuracy.</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="28"/>
+      <source>Image generation</source>
+      <translation>Image generation</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="1000"/>
+      <source>ControlNet tiled upscaling</source>
+      <translation>ControlNet tiled upscaling</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="1003"/>
+      <source>Whether to use the ControlNet tile model to improve image upscaling. When enabled and supported, all other image generation options will influence upscaling results. To use this, the ControlNet extension needs to be installed in the stable-diffusion-webui, and the controlnet tile model needs to be downloaded to the correct folder.</source>
+      <translation>Whether to use the ControlNet tile model to improve image upscaling. When enabled and supported, all other image generation options will influence upscaling results. To use this, the ControlNet extension needs to be installed in the stable-diffusion-webui, and the controlnet tile model needs to be downloaded to the correct folder.</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="37"/>
+      <source>ControlNet</source>
+      <translation>ControlNet</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="1009"/>
+      <source>Tile downsample rate:</source>
+      <translation>Tile downsample rate:</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="1012"/>
+      <source>Adjusts how strongly the ControlNet tile model preserves the original image data, higher values result in fewer changes.</source>
+      <translation>Adjusts how strongly the ControlNet tile model preserves the original image data, higher values result in fewer changes.</translation>
+    </message>
+    <message>
+      <location filename="../config/cache_value_definitions.json" line="37"/>
+      <source>ControlNet</source>
+      <translation>ControlNet</translation>
     </message>
   </context>
   <context>
@@ -4296,58 +5569,58 @@ Please remember to include the traceback from the Details expander.</translation
   <context>
     <name>ui.modal.image_scale_modal</name>
     <message>
-      <location filename="../../src/ui/modal/image_scale_modal.py" line="33"/>
-      <location filename="../../src/ui/modal/image_scale_modal.py" line="23"/>
+      <location filename="../../src/ui/modal/image_scale_modal.py" line="34"/>
+      <location filename="../../src/ui/modal/image_scale_modal.py" line="24"/>
       <source>Scale image</source>
       <translation>Scale image</translation>
     </message>
     <message>
-      <location filename="../../src/ui/modal/image_scale_modal.py" line="24"/>
+      <location filename="../../src/ui/modal/image_scale_modal.py" line="25"/>
       <source>Width:</source>
       <translation>Width:</translation>
     </message>
     <message>
-      <location filename="../../src/ui/modal/image_scale_modal.py" line="25"/>
+      <location filename="../../src/ui/modal/image_scale_modal.py" line="26"/>
       <source>New image width in pixels</source>
       <translation>New image width in pixels</translation>
     </message>
     <message>
-      <location filename="../../src/ui/modal/image_scale_modal.py" line="26"/>
+      <location filename="../../src/ui/modal/image_scale_modal.py" line="27"/>
       <source>Height:</source>
       <translation>Height:</translation>
     </message>
     <message>
-      <location filename="../../src/ui/modal/image_scale_modal.py" line="27"/>
+      <location filename="../../src/ui/modal/image_scale_modal.py" line="28"/>
       <source>New image height in pixels</source>
       <translation>New image height in pixels</translation>
     </message>
     <message>
-      <location filename="../../src/ui/modal/image_scale_modal.py" line="28"/>
+      <location filename="../../src/ui/modal/image_scale_modal.py" line="29"/>
       <source>Width scale:</source>
       <translation>Width scale:</translation>
     </message>
     <message>
-      <location filename="../../src/ui/modal/image_scale_modal.py" line="29"/>
+      <location filename="../../src/ui/modal/image_scale_modal.py" line="30"/>
       <source>New image width (as multiplier)</source>
       <translation>New image width (as multiplier)</translation>
     </message>
     <message>
-      <location filename="../../src/ui/modal/image_scale_modal.py" line="30"/>
+      <location filename="../../src/ui/modal/image_scale_modal.py" line="31"/>
       <source>Height scale:</source>
       <translation>Height scale:</translation>
     </message>
     <message>
-      <location filename="../../src/ui/modal/image_scale_modal.py" line="31"/>
+      <location filename="../../src/ui/modal/image_scale_modal.py" line="32"/>
       <source>New image height (as multiplier)</source>
       <translation>New image height (as multiplier)</translation>
     </message>
     <message>
-      <location filename="../../src/ui/modal/image_scale_modal.py" line="32"/>
+      <location filename="../../src/ui/modal/image_scale_modal.py" line="33"/>
       <source>Upscale Method:</source>
       <translation>Upscale Method:</translation>
     </message>
     <message>
-      <location filename="../../src/ui/modal/image_scale_modal.py" line="34"/>
+      <location filename="../../src/ui/modal/image_scale_modal.py" line="35"/>
       <source>Cancel</source>
       <translation>Cancel</translation>
     </message>
@@ -4436,67 +5709,67 @@ Please remember to include the traceback from the Details expander.</translation
   <context>
     <name>ui.modal.new_image_modal</name>
     <message>
-      <location filename="../../src/ui/modal/new_image_modal.py" line="23"/>
+      <location filename="../../src/ui/modal/new_image_modal.py" line="24"/>
       <source>Create new image</source>
       <translation>Create new image</translation>
     </message>
     <message>
-      <location filename="../../src/ui/modal/new_image_modal.py" line="24"/>
+      <location filename="../../src/ui/modal/new_image_modal.py" line="25"/>
       <source>Width:</source>
       <translation>Width:</translation>
     </message>
     <message>
-      <location filename="../../src/ui/modal/new_image_modal.py" line="25"/>
+      <location filename="../../src/ui/modal/new_image_modal.py" line="26"/>
       <source>New image width in pixels</source>
       <translation>New image width in pixels</translation>
     </message>
     <message>
-      <location filename="../../src/ui/modal/new_image_modal.py" line="26"/>
+      <location filename="../../src/ui/modal/new_image_modal.py" line="27"/>
       <source>Height:</source>
       <translation>Height:</translation>
     </message>
     <message>
-      <location filename="../../src/ui/modal/new_image_modal.py" line="27"/>
+      <location filename="../../src/ui/modal/new_image_modal.py" line="28"/>
       <source>New image height in pixels</source>
       <translation>New image height in pixels</translation>
     </message>
     <message>
-      <location filename="../../src/ui/modal/new_image_modal.py" line="28"/>
+      <location filename="../../src/ui/modal/new_image_modal.py" line="29"/>
       <source>Create</source>
       <translation>Create</translation>
     </message>
     <message>
-      <location filename="../../src/ui/modal/new_image_modal.py" line="29"/>
+      <location filename="../../src/ui/modal/new_image_modal.py" line="30"/>
       <source>Cancel</source>
       <translation>Cancel</translation>
     </message>
     <message>
-      <location filename="../../src/ui/modal/new_image_modal.py" line="30"/>
+      <location filename="../../src/ui/modal/new_image_modal.py" line="31"/>
       <source>Background Color:</source>
       <translation>Background Color:</translation>
     </message>
     <message>
-      <location filename="../../src/ui/modal/new_image_modal.py" line="32"/>
+      <location filename="../../src/ui/modal/new_image_modal.py" line="33"/>
       <source>transparent</source>
       <translation>transparent</translation>
     </message>
     <message>
-      <location filename="../../src/ui/modal/new_image_modal.py" line="33"/>
+      <location filename="../../src/ui/modal/new_image_modal.py" line="34"/>
       <source>white</source>
       <translation>white</translation>
     </message>
     <message>
-      <location filename="../../src/ui/modal/new_image_modal.py" line="34"/>
+      <location filename="../../src/ui/modal/new_image_modal.py" line="35"/>
       <source>black</source>
       <translation>black</translation>
     </message>
     <message>
-      <location filename="../../src/ui/modal/new_image_modal.py" line="35"/>
+      <location filename="../../src/ui/modal/new_image_modal.py" line="36"/>
       <source>custom</source>
       <translation>custom</translation>
     </message>
     <message>
-      <location filename="../../src/ui/modal/new_image_modal.py" line="37"/>
+      <location filename="../../src/ui/modal/new_image_modal.py" line="38"/>
       <source>Select background color</source>
       <translation>Select background color</translation>
     </message>
@@ -4632,33 +5905,33 @@ Please remember to include the traceback from the Details expander.</translation
     </message>
     <message>
       <location filename="../../src/ui/panel/controlnet_panel.py" line="42"/>
-      <source>Control Type</source>
-      <translation>Control Type</translation>
+      <source>Control Type:</source>
+      <translation>Control Type:</translation>
     </message>
     <message>
       <location filename="../../src/ui/panel/controlnet_panel.py" line="43"/>
-      <source>Control Module</source>
-      <translation>Control Module</translation>
+      <source>Preprocessor:</source>
+      <translation>Preprocessor:</translation>
     </message>
     <message>
       <location filename="../../src/ui/panel/controlnet_panel.py" line="44"/>
-      <source>Control Model</source>
-      <translation>Control Model</translation>
+      <source>Control Model:</source>
+      <translation>Control Model:</translation>
     </message>
     <message>
       <location filename="../../src/ui/panel/controlnet_panel.py" line="45"/>
-      <source>Control Weight</source>
-      <translation>Control Weight</translation>
+      <source>Control Weight:</source>
+      <translation>Control Weight:</translation>
     </message>
     <message>
       <location filename="../../src/ui/panel/controlnet_panel.py" line="46"/>
-      <source>Starting Control Step</source>
-      <translation>Starting Control Step</translation>
+      <source>Starting Control Step:</source>
+      <translation>Starting Control Step:</translation>
     </message>
     <message>
       <location filename="../../src/ui/panel/controlnet_panel.py" line="47"/>
-      <source>Ending Control Step</source>
-      <translation>Ending Control Step</translation>
+      <source>Ending Control Step:</source>
+      <translation>Ending Control Step:</translation>
     </message>
   </context>
   <context>
@@ -5824,1254 +7097,6 @@ Press ESC to cancel</translation>
       <location filename="../config/a1111_setting_definitions.json" line="47"/>
       <source>Number of final image generation steps taken without prompt guidance.</source>
       <translation>Number of final image generation steps taken without prompt guidance.</translation>
-    </message>
-  </context>
-  <context>
-    <name>config.cache</name>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="3"/>
-      <source>Editing size:</source>
-      <translation>Editing size:</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="5"/>
-      <source>Current/initial size in pixels of the area selected for editing</source>
-      <translation>Current/initial size in pixels of the area selected for editing</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="4"/>
-      <source>Cache</source>
-      <translation>Cache</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="11"/>
-      <source>Generation size:</source>
-      <translation>Generation size:</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="13"/>
-      <source>Current/initial size in pixels used for AI image generation</source>
-      <translation>Current/initial size in pixels used for AI image generation</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="55"/>
-      <source>Color</source>
-      <translation>Color</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="57"/>
-      <source>Last brush color</source>
-      <translation>Last brush color</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="63"/>
-      <source>New image background color:</source>
-      <translation>New image background color:</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="65"/>
-      <source>Last new image background color</source>
-      <translation>Last new image background color</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="71"/>
-      <source>Text background color:</source>
-      <translation>Text background color:</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="74"/>
-      <source>Last background color (text tool)</source>
-      <translation>Last background color (text tool)</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="73"/>
-      <source>Text Tool</source>
-      <translation>Text Tool</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="117"/>
-      <source>Color threshold:</source>
-      <translation>Color threshold:</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="119"/>
-      <source>Sets how closely colors need to match the clicked color to be selected. 0.0 only changes exact matching colors, higher values are more permissive.</source>
-      <translation>Sets how closely colors need to match the clicked color to be selected. 0.0 only changes exact matching colors, higher values are more permissive.</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="130"/>
-      <source>Pattern:</source>
-      <translation>Pattern:</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="133"/>
-      <source>Fill tool Qt brush style to apply</source>
-      <translation>Fill tool Qt brush style to apply</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="132"/>
-      <source>Fill Tool</source>
-      <translation>Fill Tool</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="139"/>
-      <source>Sample Merged</source>
-      <translation>Sample Merged</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="141"/>
-      <source>If checked, fill based on the entire image contents, not just the current layer</source>
-      <translation>If checked, fill based on the entire image contents, not just the current layer</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="147"/>
-      <source>Select all by color</source>
-      <translation>Select all by color</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="149"/>
-      <source>If checked, ignore boundaries and select all content within the color threshold</source>
-      <translation>If checked, ignore boundaries and select all content within the color threshold</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="155"/>
-      <source>Paint selection only</source>
-      <translation>Paint selection only</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="157"/>
-      <source>If checked, only paint within the selection bounds</source>
-      <translation>If checked, only paint within the selection bounds</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="173"/>
-      <source>Size:</source>
-      <translation>Size:</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="176"/>
-      <source>Current/initial brush size (in pixels) for the MyPaint brush tool.</source>
-      <translation>Current/initial brush size (in pixels) for the MyPaint brush tool.</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="165"/>
-      <source>Paint Tool</source>
-      <translation>Paint Tool</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="173"/>
-      <source>Size:</source>
-      <translation>Size:</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="190"/>
-      <source>Current/initial brush size (in pixels) for the selection tool.</source>
-      <translation>Current/initial brush size (in pixels) for the selection tool.</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="189"/>
-      <source>Brush Selection</source>
-      <translation>Brush Selection</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="173"/>
-      <source>Size:</source>
-      <translation>Size:</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="204"/>
-      <source>Current/initial brush size (in pixels) for the draw tool.</source>
-      <translation>Current/initial brush size (in pixels) for the draw tool.</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="203"/>
-      <source>Draw Tool</source>
-      <translation>Draw Tool</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="215"/>
-      <source>Opacity:</source>
-      <translation>Opacity:</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="218"/>
-      <source>Draw tool color opacity</source>
-      <translation>Draw tool color opacity</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="203"/>
-      <source>Draw Tool</source>
-      <translation>Draw Tool</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="229"/>
-      <source>Hardness:</source>
-      <translation>Hardness:</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="232"/>
-      <source>Draw tool brush hardness</source>
-      <translation>Draw tool brush hardness</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="203"/>
-      <source>Draw Tool</source>
-      <translation>Draw Tool</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="243"/>
-      <source>Pen pressure=size:</source>
-      <translation>Pen pressure=size:</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="246"/>
-      <source>Drawing tablet pen pressure affects draw tool brush size.</source>
-      <translation>Drawing tablet pen pressure affects draw tool brush size.</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="203"/>
-      <source>Draw Tool</source>
-      <translation>Draw Tool</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="252"/>
-      <source>Pen pressure=opacity:</source>
-      <translation>Pen pressure=opacity:</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="255"/>
-      <source>Drawing tablet pen pressure affects draw tool brush opacity.</source>
-      <translation>Drawing tablet pen pressure affects draw tool brush opacity.</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="203"/>
-      <source>Draw Tool</source>
-      <translation>Draw Tool</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="261"/>
-      <source>Pen pressure=hardness:</source>
-      <translation>Pen pressure=hardness:</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="264"/>
-      <source>Drawing tablet pen pressure affects draw tool brush hardness.</source>
-      <translation>Drawing tablet pen pressure affects draw tool brush hardness.</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="203"/>
-      <source>Draw Tool</source>
-      <translation>Draw Tool</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="130"/>
-      <source>Pattern:</source>
-      <translation>Pattern:</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="273"/>
-      <source>Draw tool Qt brush style to apply</source>
-      <translation>Draw tool Qt brush style to apply</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="203"/>
-      <source>Draw Tool</source>
-      <translation>Draw Tool</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="279"/>
-      <source>Eraser size:</source>
-      <translation>Eraser size:</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="282"/>
-      <source>Current/initial brush size (in pixels) for the eraser tool.</source>
-      <translation>Current/initial brush size (in pixels) for the eraser tool.</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="281"/>
-      <source>Eraser Tool</source>
-      <translation>Eraser Tool</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="215"/>
-      <source>Opacity:</source>
-      <translation>Opacity:</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="218"/>
-      <source>Draw tool color opacity</source>
-      <translation>Draw tool color opacity</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="281"/>
-      <source>Eraser Tool</source>
-      <translation>Eraser Tool</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="229"/>
-      <source>Hardness:</source>
-      <translation>Hardness:</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="232"/>
-      <source>Draw tool brush hardness</source>
-      <translation>Draw tool brush hardness</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="281"/>
-      <source>Eraser Tool</source>
-      <translation>Eraser Tool</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="243"/>
-      <source>Pen pressure=size:</source>
-      <translation>Pen pressure=size:</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="246"/>
-      <source>Drawing tablet pen pressure affects draw tool brush size.</source>
-      <translation>Drawing tablet pen pressure affects draw tool brush size.</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="281"/>
-      <source>Eraser Tool</source>
-      <translation>Eraser Tool</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="252"/>
-      <source>Pen pressure=opacity:</source>
-      <translation>Pen pressure=opacity:</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="255"/>
-      <source>Drawing tablet pen pressure affects draw tool brush opacity.</source>
-      <translation>Drawing tablet pen pressure affects draw tool brush opacity.</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="281"/>
-      <source>Eraser Tool</source>
-      <translation>Eraser Tool</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="261"/>
-      <source>Pen pressure=hardness:</source>
-      <translation>Pen pressure=hardness:</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="264"/>
-      <source>Drawing tablet pen pressure affects draw tool brush hardness.</source>
-      <translation>Drawing tablet pen pressure affects draw tool brush hardness.</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="281"/>
-      <source>Eraser Tool</source>
-      <translation>Eraser Tool</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="348"/>
-      <source>Filter:</source>
-      <translation>Filter:</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="351"/>
-      <source>Selected image filter</source>
-      <translation>Selected image filter</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="350"/>
-      <source>Filter Tool</source>
-      <translation>Filter Tool</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="357"/>
-      <source>Filter parameters:</source>
-      <translation>Filter parameters:</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="360"/>
-      <source>Cached parameters for all filters</source>
-      <translation>Cached parameters for all filters</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="350"/>
-      <source>Filter Tool</source>
-      <translation>Filter Tool</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="173"/>
-      <source>Size:</source>
-      <translation>Size:</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="369"/>
-      <source>Current/initial brush size (in pixels) for the filter tool.</source>
-      <translation>Current/initial brush size (in pixels) for the filter tool.</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="350"/>
-      <source>Filter Tool</source>
-      <translation>Filter Tool</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="215"/>
-      <source>Opacity:</source>
-      <translation>Opacity:</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="383"/>
-      <source>Filter tool color opacity</source>
-      <translation>Filter tool color opacity</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="350"/>
-      <source>Filter Tool</source>
-      <translation>Filter Tool</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="229"/>
-      <source>Hardness:</source>
-      <translation>Hardness:</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="397"/>
-      <source>Filter tool brush hardness</source>
-      <translation>Filter tool brush hardness</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="350"/>
-      <source>Filter Tool</source>
-      <translation>Filter Tool</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="243"/>
-      <source>Pen pressure=size:</source>
-      <translation>Pen pressure=size:</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="411"/>
-      <source>Drawing tablet pen pressure affects filter tool brush size.</source>
-      <translation>Drawing tablet pen pressure affects filter tool brush size.</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="350"/>
-      <source>Filter Tool</source>
-      <translation>Filter Tool</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="252"/>
-      <source>Pen pressure=opacity:</source>
-      <translation>Pen pressure=opacity:</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="420"/>
-      <source>Drawing tablet pen pressure affects filter tool brush opacity.</source>
-      <translation>Drawing tablet pen pressure affects filter tool brush opacity.</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="350"/>
-      <source>Filter Tool</source>
-      <translation>Filter Tool</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="261"/>
-      <source>Pen pressure=hardness:</source>
-      <translation>Pen pressure=hardness:</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="429"/>
-      <source>Drawing tablet pen pressure affects filter tool brush hardness.</source>
-      <translation>Drawing tablet pen pressure affects filter tool brush hardness.</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="428"/>
-      <source>Smudge Tool</source>
-      <translation>Smudge Tool</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="173"/>
-      <source>Size:</source>
-      <translation>Size:</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="438"/>
-      <source>Current/initial brush size (in pixels) for the smudge tool.</source>
-      <translation>Current/initial brush size (in pixels) for the smudge tool.</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="428"/>
-      <source>Smudge Tool</source>
-      <translation>Smudge Tool</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="215"/>
-      <source>Opacity:</source>
-      <translation>Opacity:</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="452"/>
-      <source>Smudge tool color opacity</source>
-      <translation>Smudge tool color opacity</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="428"/>
-      <source>Smudge Tool</source>
-      <translation>Smudge Tool</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="229"/>
-      <source>Hardness:</source>
-      <translation>Hardness:</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="466"/>
-      <source>Smudge tool brush hardness</source>
-      <translation>Smudge tool brush hardness</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="428"/>
-      <source>Smudge Tool</source>
-      <translation>Smudge Tool</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="243"/>
-      <source>Pen pressure=size:</source>
-      <translation>Pen pressure=size:</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="480"/>
-      <source>Drawing tablet pen pressure affects smudge tool brush size.</source>
-      <translation>Drawing tablet pen pressure affects smudge tool brush size.</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="428"/>
-      <source>Smudge Tool</source>
-      <translation>Smudge Tool</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="252"/>
-      <source>Pen pressure=opacity:</source>
-      <translation>Pen pressure=opacity:</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="489"/>
-      <source>Drawing tablet pen pressure affects smudge tool brush opacity.</source>
-      <translation>Drawing tablet pen pressure affects smudge tool brush opacity.</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="428"/>
-      <source>Smudge Tool</source>
-      <translation>Smudge Tool</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="261"/>
-      <source>Pen pressure=hardness:</source>
-      <translation>Pen pressure=hardness:</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="498"/>
-      <source>Drawing tablet pen pressure affects smudge tool brush hardness.</source>
-      <translation>Drawing tablet pen pressure affects smudge tool brush hardness.</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="428"/>
-      <source>Smudge Tool</source>
-      <translation>Smudge Tool</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="173"/>
-      <source>Size:</source>
-      <translation>Size:</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="507"/>
-      <source>Current/initial brush size (in pixels) for the clone stamp tool.</source>
-      <translation>Current/initial brush size (in pixels) for the clone stamp tool.</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="506"/>
-      <source>Clone Stamp Tool</source>
-      <translation>Clone Stamp Tool</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="215"/>
-      <source>Opacity:</source>
-      <translation>Opacity:</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="521"/>
-      <source>Clone stamp tool color opacity</source>
-      <translation>Clone stamp tool color opacity</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="506"/>
-      <source>Clone Stamp Tool</source>
-      <translation>Clone Stamp Tool</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="229"/>
-      <source>Hardness:</source>
-      <translation>Hardness:</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="535"/>
-      <source>Clone stamp tool brush hardness</source>
-      <translation>Clone stamp tool brush hardness</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="506"/>
-      <source>Clone Stamp Tool</source>
-      <translation>Clone Stamp Tool</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="243"/>
-      <source>Pen pressure=size:</source>
-      <translation>Pen pressure=size:</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="549"/>
-      <source>Drawing tablet pen pressure affects clone stamp tool brush size.</source>
-      <translation>Drawing tablet pen pressure affects clone stamp tool brush size.</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="506"/>
-      <source>Clone Stamp Tool</source>
-      <translation>Clone Stamp Tool</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="252"/>
-      <source>Pen pressure=opacity:</source>
-      <translation>Pen pressure=opacity:</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="558"/>
-      <source>Drawing tablet pen pressure affects clone stamp tool brush opacity.</source>
-      <translation>Drawing tablet pen pressure affects clone stamp tool brush opacity.</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="506"/>
-      <source>Clone Stamp Tool</source>
-      <translation>Clone Stamp Tool</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="261"/>
-      <source>Pen pressure=hardness:</source>
-      <translation>Pen pressure=hardness:</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="567"/>
-      <source>Drawing tablet pen pressure affects clone stamp tool brush hardness.</source>
-      <translation>Drawing tablet pen pressure affects clone stamp tool brush hardness.</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="506"/>
-      <source>Clone Stamp Tool</source>
-      <translation>Clone Stamp Tool</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="573"/>
-      <source>Shape Type:</source>
-      <translation>Shape Type:</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="576"/>
-      <source>Type of shape to draw.</source>
-      <translation>Type of shape to draw.</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="575"/>
-      <source>Shape Tool</source>
-      <translation>Shape Tool</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="582"/>
-      <source>Vertex count:</source>
-      <translation>Vertex count:</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="585"/>
-      <source>Polygon vertex count.</source>
-      <translation>Polygon vertex count.</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="575"/>
-      <source>Shape Tool</source>
-      <translation>Shape Tool</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="596"/>
-      <source>Inner radius fraction:</source>
-      <translation>Inner radius fraction:</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="599"/>
-      <source>Distance from the center to inner star points, as a fraction of the distance to the outer points</source>
-      <translation>Distance from the center to inner star points, as a fraction of the distance to the outer points</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="575"/>
-      <source>Shape Tool</source>
-      <translation>Shape Tool</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="610"/>
-      <source>Line color</source>
-      <translation>Line color</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="613"/>
-      <source>Shape outline color.</source>
-      <translation>Shape outline color.</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="575"/>
-      <source>Shape Tool</source>
-      <translation>Shape Tool</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="619"/>
-      <source>Line style:</source>
-      <translation>Line style:</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="622"/>
-      <source>Shape outline drawing style.</source>
-      <translation>Shape outline drawing style.</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="575"/>
-      <source>Shape Tool</source>
-      <translation>Shape Tool</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="628"/>
-      <source>Line join style:</source>
-      <translation>Line join style:</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="631"/>
-      <source>Shape outline connection drawing style.</source>
-      <translation>Shape outline connection drawing style.</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="575"/>
-      <source>Shape Tool</source>
-      <translation>Shape Tool</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="637"/>
-      <source>Dash pattern:</source>
-      <translation>Dash pattern:</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="640"/>
-      <source>Dash length followed by space length, for any number of dash/space pairs.</source>
-      <translation>Dash length followed by space length, for any number of dash/space pairs.</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="575"/>
-      <source>Shape Tool</source>
-      <translation>Shape Tool</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="646"/>
-      <source>Line width:</source>
-      <translation>Line width:</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="649"/>
-      <source>Shape tool line width.</source>
-      <translation>Shape tool line width.</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="575"/>
-      <source>Shape Tool</source>
-      <translation>Shape Tool</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="130"/>
-      <source>Pattern:</source>
-      <translation>Pattern:</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="663"/>
-      <source>Shape fill pattern</source>
-      <translation>Shape fill pattern</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="575"/>
-      <source>Shape Tool</source>
-      <translation>Shape Tool</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="669"/>
-      <source>Fill Color</source>
-      <translation>Fill Color</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="672"/>
-      <source>Shape fill color.</source>
-      <translation>Shape fill color.</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="575"/>
-      <source>Shape Tool</source>
-      <translation>Shape Tool</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="678"/>
-      <source>Saved main window placement</source>
-      <translation>Saved main window placement</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="681"/>
-      <source>display, position, and size where the main window last was.</source>
-      <translation>display, position, and size where the main window last was.</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="680"/>
-      <source>Window placement</source>
-      <translation>Window placement</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="687"/>
-      <source>Saved layer window placement</source>
-      <translation>Saved layer window placement</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="690"/>
-      <source>display, position, and size where the layer window last was.</source>
-      <translation>display, position, and size where the layer window last was.</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="680"/>
-      <source>Window placement</source>
-      <translation>Window placement</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="705"/>
-      <source>Prompt:</source>
-      <translation>Prompt:</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="708"/>
-      <source>Description that generated images should match.</source>
-      <translation>Description that generated images should match.</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="28"/>
-      <source>Image generation</source>
-      <translation>Image generation</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="714"/>
-      <source>Negative prompt:</source>
-      <translation>Negative prompt:</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="717"/>
-      <source>Description that generated images should not match.</source>
-      <translation>Description that generated images should not match.</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="28"/>
-      <source>Image generation</source>
-      <translation>Image generation</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="723"/>
-      <source>Guidance scale:</source>
-      <translation>Guidance scale:</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="726"/>
-      <source>Controls how strongly the prompt and negative prompt are applied.</source>
-      <translation>Controls how strongly the prompt and negative prompt are applied.</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="28"/>
-      <source>Image generation</source>
-      <translation>Image generation</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="737"/>
-      <source>Batch size:</source>
-      <translation>Batch size:</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="740"/>
-      <source>Number of image options to simultaneously create in a single image editing operation.</source>
-      <translation>Number of image options to simultaneously create in a single image editing operation.</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="28"/>
-      <source>Image generation</source>
-      <translation>Image generation</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="751"/>
-      <source>Batch count:</source>
-      <translation>Batch count:</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="754"/>
-      <source>Number of image batches to create in a single image editing operation. Increasing this value doesn't require additional memory, but it slows down image editing more than increasing the batch size does.</source>
-      <translation>Number of image batches to create in a single image editing operation. Increasing this value doesn't require additional memory, but it slows down image editing more than increasing the batch size does.</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="28"/>
-      <source>Image generation</source>
-      <translation>Image generation</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="765"/>
-      <source>Edit mode:</source>
-      <translation>Edit mode:</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="768"/>
-      <source>Stable-Diffusion image editing mode. 'Text to Image' completely replaces the selected image section with new content, 'Image to Image' creates altered versions of the image selection, and 'Inpaint' works like 'Image to Image' except that it only affects areas selected by the mask tool</source>
-      <translation>Stable-Diffusion image editing mode. 'Text to Image' completely replaces the selected image section with new content, 'Image to Image' creates altered versions of the image selection, and 'Inpaint' works like 'Image to Image' except that it only affects areas selected by the mask tool</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="768"/>
-      <source>Inpaint</source>
-      <translation>Inpaint</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="768"/>
-      <source>Image to Image</source>
-      <translation>Image to Image</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="768"/>
-      <source>Text to Image</source>
-      <translation>Text to Image</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="28"/>
-      <source>Image generation</source>
-      <translation>Image generation</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="779"/>
-      <source>Masked content:</source>
-      <translation>Masked content:</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="782"/>
-      <source>Determines what should be used to fill the masked area before inpainting. 'fill' replaces it with a solid color, 'original' keeps it as-is, 'latent noise' replaces it with random data, and 'latent nothing' clears it. Unless you're inpainting with a denoising strength &gt;0.8, 'original' will almost always be the best option</source>
-      <translation>Determines what should be used to fill the masked area before inpainting. 'fill' replaces it with a solid color, 'original' keeps it as-is, 'latent noise' replaces it with random data, and 'latent nothing' clears it. Unless you're inpainting with a denoising strength &gt;0.8, 'original' will almost always be the best option</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="116"/>
-      <source>fill</source>
-      <translation>fill</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="782"/>
-      <source>original</source>
-      <translation>original</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="782"/>
-      <source>latent noise</source>
-      <translation>latent noise</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="782"/>
-      <source>latent nothing</source>
-      <translation>latent nothing</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="28"/>
-      <source>Image generation</source>
-      <translation>Image generation</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="794"/>
-      <source>Sampling steps:</source>
-      <translation>Sampling steps:</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="797"/>
-      <source>Number of diffusion operations to perform when generating image data. Higher values take longer, but often produce more detailed and accurate results. Different stable-diffusion models and samplers have different requirements, but in most cates setting this higher than 30 has only minimal benefits</source>
-      <translation>Number of diffusion operations to perform when generating image data. Higher values take longer, but often produce more detailed and accurate results. Different stable-diffusion models and samplers have different requirements, but in most cates setting this higher than 30 has only minimal benefits</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="28"/>
-      <source>Image generation</source>
-      <translation>Image generation</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="808"/>
-      <source>Denoising strength:</source>
-      <translation>Denoising strength:</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="811"/>
-      <source>Controls how dramatically inpainting and image-to-image operations will change the initial image data. At 0.0, the image will be completely unedited, at 1.0 the image will be completely different</source>
-      <translation>Controls how dramatically inpainting and image-to-image operations will change the initial image data. At 0.0, the image will be completely unedited, at 1.0 the image will be completely different</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="28"/>
-      <source>Image generation</source>
-      <translation>Image generation</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="822"/>
-      <source>Sampling method:</source>
-      <translation>Sampling method:</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="825"/>
-      <source>Mathematical technique used to transform image data during the generation process. 'Euler a' works well in most cases, but certain models or extensions might perform better with other options.</source>
-      <translation>Mathematical technique used to transform image data during the generation process. 'Euler a' works well in most cases, but certain models or extensions might perform better with other options.</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="28"/>
-      <source>Image generation</source>
-      <translation>Image generation</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="832"/>
-      <source>Upscale method:</source>
-      <translation>Upscale method:</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="835"/>
-      <source>Method to use when increasing image resolution. Available options will be loaded from the active image generator.</source>
-      <translation>Method to use when increasing image resolution. Available options will be loaded from the active image generator.</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="28"/>
-      <source>Image generation</source>
-      <translation>Image generation</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="842"/>
-      <source>Image scaling behavior:</source>
-      <translation>Image scaling behavior:</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="845"/>
-      <source>Controls how multi-layer images are scaled.</source>
-      <translation>Controls how multi-layer images are scaled.</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="849"/>
-      <source>Independent layer scaling</source>
-      <translation>Independent layer scaling</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="847"/>
-      <source>Scale merged, keep source layers</source>
-      <translation>Scale merged, keep source layers</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="851"/>
-      <source>Scale merged, discard source layers</source>
-      <translation>Scale merged, discard source layers</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="28"/>
-      <source>Image generation</source>
-      <translation>Image generation</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="856"/>
-      <source>Layer expand mode:</source>
-      <translation>Layer expand mode:</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="859"/>
-      <source>Sets which layers should be expanded to fill the image when resized</source>
-      <translation>Sets which layers should be expanded to fill the image when resized</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="863"/>
-      <source>Expand all unlocked layers</source>
-      <translation>Expand all unlocked layers</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="861"/>
-      <source>Only expand full-image layers</source>
-      <translation>Only expand full-image layers</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="865"/>
-      <source>Do not expand layers</source>
-      <translation>Do not expand layers</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="858"/>
-      <source>Resize image canvas</source>
-      <translation>Resize image canvas</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="871"/>
-      <source>Crop layers to new image bounds</source>
-      <translation>Crop layers to new image bounds</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="874"/>
-      <source>Sets whether layers should be cropped to image bounds when the image is resized.</source>
-      <translation>Sets whether layers should be cropped to image bounds when the image is resized.</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="858"/>
-      <source>Resize image canvas</source>
-      <translation>Resize image canvas</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="880"/>
-      <source>Seed:</source>
-      <translation>Seed:</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="883"/>
-      <source>Number used to control pseudo-random aspects of image generation, in most cases using the same seed with the same settings and inputs will always produce the same results. If set to -1, a different random seed will be used for each image generation. </source>
-      <translation>Number used to control pseudo-random aspects of image generation, in most cases using the same seed with the same settings and inputs will always produce the same results. If set to -1, a different random seed will be used for each image generation. </translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="28"/>
-      <source>Image generation</source>
-      <translation>Image generation</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="894"/>
-      <source>Last seed:</source>
-      <translation>Last seed:</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="897"/>
-      <source>Last seed used for image generation</source>
-      <translation>Last seed used for image generation</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="28"/>
-      <source>Image generation</source>
-      <translation>Image generation</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="913"/>
-      <source>Inpaint Full Resolution</source>
-      <translation>Inpaint Full Resolution</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="916"/>
-      <source>If true, inpaint the masked area at higher resolution by ignoring the unmasked area. This can increase image quality by sacrificing awareness of additional image content.</source>
-      <translation>If true, inpaint the masked area at higher resolution by ignoring the unmasked area. This can increase image quality by sacrificing awareness of additional image content.</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="28"/>
-      <source>Image generation</source>
-      <translation>Image generation</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="922"/>
-      <source>Padding:</source>
-      <translation>Padding:</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="925"/>
-      <source>Pixel radius outside of the masked area to include when inpainting when the 'Inpaint Full Resolution' option is enabled. Higher values increase contextual awareness while decreasing overall level of detail.</source>
-      <translation>Pixel radius outside of the masked area to include when inpainting when the 'Inpaint Full Resolution' option is enabled. Higher values increase contextual awareness while decreasing overall level of detail.</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="28"/>
-      <source>Image generation</source>
-      <translation>Image generation</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="954"/>
-      <source>Detail reference count (cutn):</source>
-      <translation>Detail reference count (cutn):</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="957"/>
-      <source>Determines how many random cutouts from the input image are used to guide image generation (GLID-3-XL). Higher values can introduce more detail and variation, but may also introduce more noise and irrelevant information.</source>
-      <translation>Determines how many random cutouts from the input image are used to guide image generation (GLID-3-XL). Higher values can introduce more detail and variation, but may also introduce more noise and irrelevant information.</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="28"/>
-      <source>Image generation</source>
-      <translation>Image generation</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="968"/>
-      <source>Skip steps:</source>
-      <translation>Skip steps:</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="971"/>
-      <source>Number of diffusion steps to skip (GLID-3-XL). Higher values will result in faster image generation with decreased detail and accuracy.</source>
-      <translation>Number of diffusion steps to skip (GLID-3-XL). Higher values will result in faster image generation with decreased detail and accuracy.</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="28"/>
-      <source>Image generation</source>
-      <translation>Image generation</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="982"/>
-      <source>Upscale mode:</source>
-      <translation>Upscale mode:</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="985"/>
-      <source>Upscaling mode used when the inpainting resolution doesn't match the image generation area size.</source>
-      <translation>Upscaling mode used when the inpainting resolution doesn't match the image generation area size.</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="28"/>
-      <source>Image generation</source>
-      <translation>Image generation</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="992"/>
-      <source>Downscale mode:</source>
-      <translation>Downscale mode:</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="995"/>
-      <source>Downscaling mode used when the inpainting resolution doesn't match the image generation area size.</source>
-      <translation>Downscaling mode used when the inpainting resolution doesn't match the image generation area size.</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="28"/>
-      <source>Image generation</source>
-      <translation>Image generation</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="1002"/>
-      <source>ControlNet tiled upscaling</source>
-      <translation>ControlNet tiled upscaling</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="1005"/>
-      <source>Whether to use the ControlNet tile model to improve image upscaling. When enabled and supported, all other image generation options will influence upscaling results. To use this, the ControlNet extension needs to be installed in the stable-diffusion-webui, and the controlnet tile model needs to be downloaded to the correct folder.</source>
-      <translation>Whether to use the ControlNet tile model to improve image upscaling. When enabled and supported, all other image generation options will influence upscaling results. To use this, the ControlNet extension needs to be installed in the stable-diffusion-webui, and the controlnet tile model needs to be downloaded to the correct folder.</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="37"/>
-      <source>ControlNet</source>
-      <translation>ControlNet</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="1011"/>
-      <source>Tile downsample rate:</source>
-      <translation>Tile downsample rate:</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="1014"/>
-      <source>Adjusts how strongly the ControlNet tile model preserves the original image data, higher values result in fewer changes.</source>
-      <translation>Adjusts how strongly the ControlNet tile model preserves the original image data, higher values result in fewer changes.</translation>
-    </message>
-    <message>
-      <location filename="../config/cache_value_definitions.json" line="37"/>
-      <source>ControlNet</source>
-      <translation>ControlNet</translation>
     </message>
   </context>
 </TS>
