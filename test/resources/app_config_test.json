@@ -33,6 +33,7 @@
     "show_options_full_resolution": false,
     "opengl_acceleration": false,
     "default_image_size": "1024x1024",
+    "max_image_size": "10000x10000",
     "max_edit_size": "10240x10240",
     "min_edit_size": "8x8",
     "max_generation_size": "2048x2048",

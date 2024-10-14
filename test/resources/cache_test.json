@@ -167,7 +167,7 @@
     },
     "shape_tool_fill_pattern": "",
     "shape_tool_fill_color": "#FFFFFFFF",
-    "saved_main_window_pos": "0,0,800,600",
+    "saved_main_window_pos": "",
     "saved_layer_window_pos": "",
     "saved_navigation_window_pos": "",
     "guidance_scale": {
@@ -193,6 +193,8 @@
     "sampling_method": "Euler a",
     "upscale_method": "None",
     "image_layer_scaling_behavior": "Scale merged, keep source layers",
+    "canvas_resize_layer_mode": "Only expand full-image layers",
+    "canvas_resize_crop_layers": true,
     "seed": {
         "min": -1,
         "max": 18446744073709551615,

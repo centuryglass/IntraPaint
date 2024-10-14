@@ -52,6 +52,13 @@ class _SliderSpinbox(QWidget):
         self._spinbox.setSizePolicy(QSizePolicy.Policy.MinimumExpanding, QSizePolicy.Policy.Maximum)
         self._label.setBuddy(self._spinbox)
 
+        if initial_value is not None:
+            if self.minimum() > initial_value:
+                self.setMinimum(initial_value)
+            if self.maximum() < initial_value:
+                self.setMaximum(initial_value)
+            self.setValue(initial_value)
+
     def _update_slider_ticks(self) -> None:
         full_range = self._slider.maximum() - self._slider.minimum()
         if full_range < 20:

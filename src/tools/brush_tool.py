@@ -105,7 +105,7 @@ class BrushTool(BaseTool):
                 if not self.is_active or self._layer is None or self._layer == image_stack.selection_layer:
                     return
                 if selected_only:
-                    mask = image_stack.get_layer_mask(self._layer)
+                    mask = image_stack.get_layer_selection_mask(self._layer)
                     self._brush.set_input_mask(mask)
                 else:
                     self._brush.set_input_mask(None)
@@ -118,7 +118,7 @@ class BrushTool(BaseTool):
                 if not Cache().get(Cache.PAINT_SELECTION_ONLY) or not self.is_active or self._layer is None \
                         or self._layer == image_stack.selection_layer:
                     return
-                mask = image_stack.get_layer_mask(self._layer)
+                mask = image_stack.get_layer_selection_mask(self._layer)
                 self._brush.set_input_mask(mask)
 
             image_stack.selection_layer.content_changed.connect(_selection_layer_update)
@@ -174,7 +174,7 @@ class BrushTool(BaseTool):
             layer.lock_changed.connect(self._layer_lock_slot)
             self._layer_lock_slot(layer, layer.locked or layer.parent_locked)
             if layer != self._image_stack.selection_layer and Cache().get(Cache.PAINT_SELECTION_ONLY):
-                mask = self._image_stack.get_layer_mask(layer)
+                mask = self._image_stack.get_layer_selection_mask(layer)
                 self._brush.set_input_mask(mask)
             else:
                 self._brush.set_input_mask(None)

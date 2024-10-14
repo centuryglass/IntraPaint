@@ -61,6 +61,7 @@ This guide explains all of IntraPaint's menu options. All menu option shortcuts 
    - [Copy layer](#copy-layer-ctrlshiftc)
    - [Delete layer](#delete-layer-ctrlshiftd)
    - [Flatten layer](#flatten-layer-ctrlshiftf)
+   - [Merge layer down](#merge-layer-down-ctrlshiftm)
    - [Crop layer to selection](#crop-layer-to-selection-ctrlshifte)
    - [Crop layer to contents](#crop-layer-to-contents-ctrlshiftp)
 6. [Filters menu](#filters-menu)
@@ -79,68 +80,114 @@ This guide explains all of IntraPaint's menu options. All menu option shortcuts 
 
 ### New image (Ctrl+N)
 
+Opens a window where you can create a new image with a single layer, discarding all unsaved old image data.
+
 #### New image window
 
 <img src="./labeled_screenshots/new_image.png" alt="Screenshot of the new image window, with specific elements numbered."/>
 
-1. **Width and height controls**:
-2. **Background color dropdown**:
-3. **Custom background color button**:
-4. **Create button**
-5. **Cancel button**
+1. **Width and height controls**: Sets the new image's initial resolution. The default value is configurable, found in [settings](#settings-f9) under the **"Editing"** category as **"Default image size"**.
+2. **Background color dropdown**:  The initial color of the new image's starting layer. Options are **white**, **black**, **transparent**, and **custom**.
+3. **Custom background color button**:  Only visible when the background color dropdown is set to **custom**, clicking this button will open a color picker where you can select any color.
+4. **Create button**:  When clicked, all previous image data is removed, and a new image is opened with the chosen settings.  This can be reversed using [undo](#undo-ctrlz).
+5. **Cancel button**  Close the new image window without changing anything.
 
 ### Save (Ctrl+S)
 
+If the image was loaded from a file or already saved, choosing this option will immediately update the same file. If the image hasn't been saved before, it will open a file picker dialog, as if **Save as** was selected.
+
 ### Save as (Ctrl+Alt+S)
+
+Open a file picker dialog to select where to save the current image and which format to use. IntraPaint supports most common image formats.  The recommended format for saving files you intend to keep editing is **.ora/OpenRaster**. This is the only format that will save individual layers separately.
 
 ### Load image (Ctrl+O)
 
+Open a file picker dialog to select an existing image for editing.  Loading a new image will discard the current image, but this can be reversed with [undo](#undo-ctrlz).
+
 ### Open as layers (Ctrl+Shift+O)
+
+Open a file picker dialog to load one or more images for editing as new layers.  Unlike "Load image", this option does not clear image layers that were already open.
 
 ### Reload (F5)
 
+Reload the current image from its file, discarding all changes made since the last save.  This can be reversed with [undo](#undo-ctrlz).
+
 ### Quit (Ctrl+Q)
+
+Exit IntraPaint, discarding unsaved changes.
 
 ---
 ## Edit menu
 
+The main options in the edit menu (undo, redo, cut, copy, paste, clear), all behave differently if text is selected for editing.  If currently editing text, IntraPaint will try and apply the action to the text first.  If it can't, it will instead apply the action to the image as usual.
+
 ### Undo (Ctrl+Z)
+
+Reverses the last change made to the image (or active text).  IntraPaint allows most actions to be reversed with undo, with a few notable exceptions:
+
+- Undo will not change saved image files.
+- Undo will not affect most changes that affect the UI only, like switching tools or moving tabs.
+- Undo will not affect changes to settings.
+
+IntraPaint will try to combine saved actions when possible, merging actions that occur within a 0.2 second interval.  This value is configurable in [settings](#settings-f9) under **Editing/Undo merge interval(seconds)**.  The maximum number of previous actions to save for undo is also configurable, under **Editing/Maximum undo count**.
 
 ### Redo (Ctrl+Shift+Z)
 
+Restore an action that was previously reversed using undo.
+
 ### Cut (Ctrl+X)
+
+When an unlocked, visible [layer](#show-layer-window-f7) is active, and part of that layer is [selected](./tool_guide.md#selection-tools), choosing cut will replace the selected areas with transparency, and cache the removed image data for [pasting](#paste-ctrlv) until something else gets cut or copied.
+
+
+When text is selected and focused, this will instead clear the selected text and place it in the system clipboard.
 
 ### Copy (Ctrl+C)
 
+When a visible [layer](#show-layer-window-f7) is active, and part of that layer is [selected](./tool_guide.md#selection-tools), choosing copy will cache the selected areas so that they can be duplicated using [paste](#paste-ctrlv).  Copy and cut only act on the active layer, and will not affect other layers.  If you want to copy across all visible layers, select the main layer group (the top item) in the layer panel.
+
+
+
+When text is selected and focused, this will instead copy that text into the system clipboard.
+
 ### Paste (Ctrl+V)
+
+Creates a new image layer from selected image content.  The new layer will be placed above the current active layer, or at the top of the group if the active layer is an unlocked group.  It can then be moved using the [layer transformation tool](./tool_guide.md#-transform-layer-tool-t), or merged into another layer with the [merge down option](#merge-layer-down-ctrlshiftm).
+
+
+If a text field is focused and the system clipboard is not empty, this will instead paste that text into the text field.
 
 ### Clear (Delete)
 
+Behaves identically to [cut](#cut-ctrlx), except that cut image data can't be pasted, and cut text isn't saved in the system clipboard.
+
 ### Settings (F9)
+
+Opens a window where you can edit IntraPaint's saved settings. Hold your mouse over any item in settings to see a tooltip describing what it does. The location where settings files are saved is automatically selected and varies depending on your OS, but you can view that location under the "Files" tab.
 
 #### Settings window
 
 <img src="./labeled_screenshots/settings.png" alt="Screenshot of the settings window, with specific elements numbered."/>
 
-1. **"Interface" tab**:
-2. **"Editing" tab**:
-3. **"Drawing tablet settings" tab**:
-4. **"Alerts" tab**:
-5. **"Files" tab**:
-6. **"Keybindings" tab**:
-7. **"Menu Shortcuts" tab**:
-8. **"Connected Generator" tab**:
-9. **"Stable-Diffusion" tab**:
-10. **Current category settings**:
-11. **Save button**:
-12. **Cancel button**:
+1. **"Interface" tab**:  Contains various settings related to IntraPaint's appearance and the ways it displays data.
+2. **"Editing" tab**:  Contains settings related to undo/redo behavior and image sizes.
+3. **"Drawing tablet settings" tab**:  Provides controls you can use to adjust the sensitivity of a pressure-sensitive drawing tablet.
+4. **"Alerts" tab**:  Enable or disable various warnings that IntraPaint will occasionally show you.  If a popup window has a "don't show this again" or "remember my choice" option, picking that option will change one of the entries in this category.
+5. **"Files" tab**:  Sets the directories IntraPaint will search for extra fonts, MyPaint brush files, or (if necessary) MyPaint library files.  This section also shows you where settings are saved as files, although those values can't be changed.
+6. **"Keybindings" tab**:  Sets editing control keys, navigation keys, and tool shortcuts. You'll need to type in the key's name to set it, e.g. typing "PgDown" instead of pressing the page down key.  You can bind multiple keys to the same action by separating the key names with commas, e.g. "PgDown,D" to bind both page down and D.
+7. **"Menu Shortcuts" tab**:  Sets keyboard shortcuts for all menu options.
+8. **"Connected Generator" tab**:  Visible only when the Stable-Diffusion WebUI generator is active, these settings are sent directly to the image generator instead of being saved to a file. See [Stable-Diffusion generator settings](./stable-diffusion.md#connected-generator-settings) for more details.
+9. **"Stable-Diffusion" tab**:  Visible only when the Stable-Diffusion WebUI generator is active, this tab provides access to infrequently-needed image generation settings. See [Stable-Diffusion settings](./stable-diffusion.md#stable-diffusion-settings) for details.
+10. **Current category settings**:  Settings for the current selected tab, replaced when a new tab is selected. Hold the mouse over the control for any of these (*not* the label) to see a tooltip describing it.
+11. **Save button**:  Close the settings window, saving changes made across all tabs.  Most changes will be applied immediately, but you may need to restart IntraPaint before some of them take effect.
+12. **Cancel button**:  Close the settings window, discarding all changes.
 
 ---
 
 ## Image menu
 
 ### Show navigation window (Ctrl+Alt+W)
-Opens another window with a view of the entire edited image. This can be used to adjust the image viewport within the main window, and to move the image generation area.
+Opens another window with a view of the entire edited image. This can be used to adjust the image viewport within the main window, and to move the image generation area.  The Navigation tab on the tool panel behaves identically to this window.
 
 ### Basic controls
 The navigation window uses the same basic mouse controls as the main window:
@@ -175,15 +222,23 @@ When **"Move gen. area"** is active, mouse controls match the image generation a
 
 #### Resize image canvas window
 
+Opens a window that lets you change the image size without scaling image content.
+
 <img src="./labeled_screenshots/resize_canvas.png" alt="Screenshot of the resize canvas window, with specific elements numbered."/>
 
-1. **Width and height controls**:
-2. **Horizontal and vertical offset**:
-3. **Preview - new image bounds**:
-4. **Preview - existing image content**:
-5. **Center button**:
-6. **"Resize image canvas" button**:
-7. **Cancel button**:
+1. **Width and height controls**: Sets the new image resolution.
+2. **Horizontal and vertical offset**:  Sets the offset applied to existing image content within the new image bounds.
+3. **Layer expansion mode**:  Sets which layers, if any, should be resized to fill the updated image bounds. Regardless of which option is chosen, locked layers and layers in locked groups will never be expanded. Available options:
+   - **Expand all unlocked layers**: All unlocked layers are expanded to fill the image bounds.
+   - **Only expand full-image layers**: Layers will only be expanded if their initial bounds exactly matched the previous image bounds.
+   - **Do not expand layers**: Layers will not be expanded.
+4. **"Crop layers to new image bounds" checkbox**: If checked, any layer content outside the new image bounds will be cropped. If any locked layers or layers in locked groups are outside the new image bounds, the image will not change.
+5. **Preview image**:  Shows a preview of the image with the new size and offset applied.
+    - 5a. **New image bounds**:  This rectangle shows where the new image bounds will be. Once resized, if the image is saved in any format other than .ora, the content outside of this rectangle will not be saved.
+    - 5b. **Cropped/excluded image content**:  Original image content that lies outside the new bounds is highlighted.  If "crop layers to new image bounds" is selected, it's highlighted in red to indicate that the those are the areas that will be cropped.
+6. **Center button**:  Adjusts the offset to center the new image bounds over the old image bounds.
+7. **"Resize image canvas" button**:  Closes the window, resizes the image, and crops and/or expands layers as necessary.
+8. **Cancel button**:  Closes the window, making no changes to the image.
 
 ### Scale image (F3)
 
@@ -306,6 +361,8 @@ Click and drag any layer to move it within the list.  Right-click a layer to sho
 ### Delete layer (Ctrl+Shift+D)
 
 ### Flatten layer (Ctrl+Shift+F)
+
+### Merge layer down (Ctrl+Shift+M)
 
 ### Crop layer to selection (Ctrl+Shift+E)
 

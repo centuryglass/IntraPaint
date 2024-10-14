@@ -6,6 +6,7 @@ from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import QDialog, QFormLayout, QPushButton, QComboBox, QSpinBox, QHBoxLayout, QDoubleSpinBox, \
     QWidget, QApplication
 
+from src.config.application_config import AppConfig
 from src.config.cache import Cache
 from src.ui.input_fields.check_box import CheckBox
 from src.ui.input_fields.slider_spinbox import FloatSliderSpinbox
@@ -34,7 +35,6 @@ SCALE_BUTTON_LABEL = _tr('Scale image')
 CANCEL_BUTTON_LABEL = _tr('Cancel')
 
 MIN_PX_VALUE = 8
-MAX_PX_VALUE = 20000
 
 Spinbox: TypeAlias = QSpinBox | QDoubleSpinBox
 
@@ -73,9 +73,10 @@ class ImageScaleModal(QDialog):
             self._layout.addRow(title, box)
             return box
 
-        self._width_box = _add_input(default_width, MIN_PX_VALUE, MAX_PX_VALUE, WIDTH_PX_BOX_LABEL,
+        max_size = cast(QSize, AppConfig().get(AppConfig.MAX_IMAGE_SIZE))
+        self._width_box = _add_input(default_width, MIN_PX_VALUE, max_size.width(), WIDTH_PX_BOX_LABEL,
                                      WIDTH_PX_BOX_TOOLTIP)
-        self._height_box = _add_input(default_height, MIN_PX_VALUE, MAX_PX_VALUE, HEIGHT_PX_BOX_LABEL,
+        self._height_box = _add_input(default_height, MIN_PX_VALUE, max_size.height(), HEIGHT_PX_BOX_LABEL,
                                       HEIGHT_PX_BOX_TOOLTIP)
         self._x_mult_box = _add_input(1.0, 0.0, 999.0, WIDTH_MULT_BOX_LABEL,
                                       WIDTH_MULT_BOX_TOOLTIP)

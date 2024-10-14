@@ -17,6 +17,8 @@ This guide covers the editing tools found within the "Tools" panel. and the extr
    - [Clone stamp tool](#-clone-stamp-tool-n)
    - [Color picker tool](#-color-picker-tool-c)
    - [Text tool](#-text-tool-x)
+   - [Shape tool](#-shape-tool-shifts)
+   - [Transform layer tool](#-transform-layer-tool-t)
 3[Selection Tools](#selection-tools)
    - [Free selection tool](#-free-selection-tool-l)
    - [Selection brush tool](#-selection-brush-tool-s)
@@ -313,6 +315,7 @@ Draws geometric shapes within the image.
 Move, scale, or rotate image layers or layer groups. Transformations are lossless when editing, or when saving in the .ora file format.
 
 #### Basic controls
+- **Left-click outside the active layer**: Activate the topmost visible layer at the clicked point.
 - **Left-click and drag within the active layer**: Move the layer within the image.
 - **Double-click the active layer**: Switch between scaling and rotation modes.
 - **Left-click and drag layer corners**: Either scale or rotate the layer, depending on whether you're in scaling mode or rotation mode.

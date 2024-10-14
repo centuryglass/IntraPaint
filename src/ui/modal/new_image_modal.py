@@ -1,10 +1,11 @@
 """Popup modal window used for creating a new image at an arbitrary size."""
-from typing import Optional
+from typing import Optional, cast
 
 from PySide6.QtGui import QIcon, QColor, Qt, QPixmap, QPainter
 from PySide6.QtWidgets import QDialog, QLabel, QVBoxLayout, QPushButton, QApplication, QWidget, QHBoxLayout, QComboBox
 from PySide6.QtCore import QSize, QRect, QPoint
 
+from src.config.application_config import AppConfig
 from src.config.cache import Cache
 from src.ui.input_fields.labeled_spinbox import LabeledSpinbox
 from src.ui.widget.color_button import ColorButton
@@ -36,8 +37,7 @@ BACKGROUND_COLOR_OPTION_CUSTOM = _tr('custom')
 
 BUTTON_TEXT_PICK_CUSTOM_COLOR = _tr('Select background color')
 
-MIN_PX_VALUE = 8
-MAX_PX_VALUE = 20000
+MIN_PX_VALUE = 1
 
 
 def _custom_color_icon() -> QPixmap:
@@ -69,9 +69,11 @@ class NewImageModal(QDialog):
 
         self.setWindowTitle(CREATE_IMAGE_TITLE)
 
-        self._width_box = LabeledSpinbox(self, WIDTH_LABEL, WIDTH_TOOLTIP, MIN_PX_VALUE, default_width, MAX_PX_VALUE)
+        max_size = cast(QSize, AppConfig().get(AppConfig.MAX_IMAGE_SIZE))
+        self._width_box = LabeledSpinbox(self, WIDTH_LABEL, WIDTH_TOOLTIP, MIN_PX_VALUE, default_width,
+                                         max_size.width())
         self._height_box = LabeledSpinbox(self, HEIGHT_LABEL, HEIGHT_TOOLTIP, MIN_PX_VALUE, default_height,
-                                          MAX_PX_VALUE)
+                                          max_size.height())
 
         self._color_row = QWidget(self)
         self._color_row_layout = QHBoxLayout(self._color_row)

@@ -8,6 +8,7 @@ from PySide6.QtWidgets import QApplication
 
 from src.config.cache import Cache
 from src.image.layers.image_stack import ImageStack
+from src.image.layers.image_stack_utils import scale_all_layers
 from src.ui.layout.draggable_tabs.tab import Tab
 from src.ui.modal.modal_utils import show_error_dialog
 from src.ui.modal.settings_modal import SettingsModal
@@ -106,7 +107,7 @@ class ImageGenerator(MenuBuilder):
 
     def upscale(self, new_size: QSize) -> bool:
         """Optionally upscale using a custom upscaler, returning whether upscaling was attempted."""
-        self._image_stack.scale_all(new_size.width(), new_size.height())
+        scale_all_layers(self._image_stack, new_size.width(), new_size.height())
         return True
 
     def generate(self,

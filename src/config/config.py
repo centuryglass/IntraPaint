@@ -180,6 +180,12 @@ class Config:
         """Override this to perform any adjustments to default values needed before file IO, e.g. loading list options
            from an external source."""
 
+    @property
+    def json_path(self) -> Optional[str]:
+        """Returns the path where this config object saves changes. If None, the config object does not save data to
+         disk."""
+        return self._json_path
+
     def get(self, key: str, inner_key: Optional[str] = None) -> Any:
         """Returns a value from config.
 

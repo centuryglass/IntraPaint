@@ -69,6 +69,8 @@ from src.image.filter.rgb_color_balance import RGBColorBalanceFilter
 from src.image.filter.sharpen import SharpenFilter
 from src.image.layers.image_layer import ImageLayer
 from src.image.layers.image_stack import ImageStack
+from src.image.layers.image_stack_utils import resize_image_stack_to_content, crop_image_stack_to_selection, \
+    scale_all_layers, crop_layer_to_selection
 from src.image.layers.layer import Layer
 from src.image.layers.layer_group import LayerGroup
 from src.image.layers.text_layer import TextLayer
@@ -1145,7 +1147,7 @@ class AppController(MenuBuilder):
     @menu_action(MENU_IMAGE, 'resize_canvas_shortcut', 200, valid_app_states=[APP_STATE_EDITING])
     def resize_canvas(self) -> None:
         """Crop or extend the edited image without scaling its contents based on user input into a popup modal."""
-        resize_modal = ResizeCanvasModal(self._image_stack.qimage())
+        resize_modal = ResizeCanvasModal(self._image_stack)
         self._set_alt_window_centered_bounds(resize_modal)
         new_size, offset = resize_modal.show_resize_modal()
         if new_size is None or offset is None:
@@ -1171,12 +1173,12 @@ class AppController(MenuBuilder):
     @menu_action(MENU_IMAGE, 'crop_image_shortcut', 202, valid_app_states=[APP_STATE_EDITING])
     def crop_image_to_selection(self) -> None:
         """Crop the image to fit selected content."""
-        self._image_stack.crop_image_to_selection()
+        crop_image_stack_to_selection(self._image_stack)
 
     @menu_action(MENU_IMAGE, 'image_to_layers_shortcut', 203, valid_app_states=[APP_STATE_EDITING])
     def resize_image_to_content(self) -> None:
         """Update the image size to match all layer content."""
-        self._image_stack.resize_to_content()
+        resize_image_stack_to_content(self._image_stack)
 
     def _metadata_will_be_saved(self) -> bool:
         return self._metadata is not None and METADATA_PARAMETER_KEY in self._metadata
@@ -1413,7 +1415,7 @@ class AppController(MenuBuilder):
     @menu_action(MENU_LAYERS, 'crop_layer_to_selection_shortcut', 446, valid_app_states=[APP_STATE_EDITING])
     def crop_layer_to_selection(self) -> None:
         """Crop the active layer to fit overlapping selection bounds."""
-        self._image_stack.crop_layer_to_selection()
+        crop_layer_to_selection(self._image_stack)
 
     @menu_action(MENU_LAYERS, 'crop_to_content_shortcut', 447,
                  valid_app_states=[APP_STATE_EDITING])
@@ -1458,4 +1460,4 @@ class AppController(MenuBuilder):
             scaling_mode = PIL_SCALING_MODES[scaling_mode_name]
         else:
             scaling_mode = None
-        self._image_stack.scale_all(new_size.width(), new_size.height(), scaling_mode)
+        scale_all_layers(self._image_stack, new_size.width(), new_size.height(), scaling_mode)

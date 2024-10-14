@@ -1,17 +1,19 @@
 """An image editing tool that moves the selected editing region."""
 from typing import Optional, Callable
 
-from PySide6.QtCore import Qt, QRect, QRectF, QSize
-from PySide6.QtGui import QCursor, QIcon, QTransform
+from PySide6.QtCore import Qt, QRect, QRectF, QSize, QPoint
+from PySide6.QtGui import QCursor, QIcon, QTransform, QMouseEvent
 from PySide6.QtWidgets import QWidget, QSpinBox, QDoubleSpinBox, QApplication
 
 from src.config.key_config import KeyConfig
 from src.image.layers.image_stack import ImageStack
+from src.image.layers.image_stack_utils import top_layer_at_point
 from src.image.layers.layer import Layer
 from src.image.layers.layer_group import LayerGroup
 from src.image.layers.transform_group import TransformGroup
 from src.image.layers.transform_layer import TransformLayer
 from src.tools.base_tool import BaseTool
+from src.ui.graphics_items.layer_lock_alert_item import LayerLockAlertItem
 from src.ui.graphics_items.transform_outline import TransformOutline
 from src.ui.image_viewer import ImageViewer
 from src.ui.panel.tool_control_panels.layer_transform_tool_panel import LayerTransformToolPanel
@@ -31,7 +33,7 @@ def _tr(*args):
 
 TRANSFORM_LABEL = _tr('Transform Layers')
 TRANSFORM_TOOLTIP = _tr('Move, scale, or rotate the active layer.')
-TRANSFORM_CONTROL_HINT = _tr('{left_mouse_icon}, drag: move layer')
+TRANSFORM_CONTROL_HINT = _tr('{left_mouse_icon}: select layer<br/>{left_mouse_icon}, drag: move layer')
 
 ICON_PATH_TRANSFORM_TOOL = f'{PROJECT_DIR}/resources/icons/tools/layer_transform_icon.svg'
 
@@ -91,6 +93,20 @@ class LayerTransformTool(BaseTool):
         """Ensure that the aspect ratio is constant."""
         max_scale = max(self._transform_outline.transform_scale)
         self._transform_outline.transform_scale = (max_scale, max_scale)
+
+    def mouse_click(self, event: Optional[QMouseEvent], image_coordinates: QPoint) -> bool:
+        """Activate inactive unlocked TransformLayers when they're clicked."""
+        assert event is not None
+        if event.buttons() == Qt.MouseButton.LeftButton \
+                and QApplication.keyboardModifiers() == Qt.KeyboardModifier.NoModifier:
+
+            clicked_layer = top_layer_at_point(self._image_stack, image_coordinates)
+            if clicked_layer is not None and isinstance(clicked_layer, TransformLayer) and clicked_layer != self._layer:
+                if clicked_layer.locked or clicked_layer.parent_locked:
+                    LayerLockAlertItem(clicked_layer, self._image_viewer)
+                self._image_stack.active_layer = clicked_layer
+            return True
+        return False
 
     def get_control_panel(self) -> Optional[QWidget]:
         """Returns a panel providing controls for customizing tool behavior, or None if no such panel is needed."""

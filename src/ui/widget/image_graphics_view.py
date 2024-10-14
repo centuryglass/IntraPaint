@@ -115,7 +115,7 @@ class ImageGraphicsView(QGraphicsView):
                     self.scene_scale = self.scene_scale + change * mult
                     self.resizeEvent(None)
                     return True
-                binding_id = f'ImageGraphicsView_{id(self)}_zoom'
+                binding_id = f'ImageGraphicsView_{id(self)}_{config_key}'
                 HotkeyFilter.instance().register_speed_modified_keybinding(binding_id, _zoom, config_key)
 
     @property

@@ -19,6 +19,7 @@ MODIFIER_TIMER_INTERVAL_MS = 100
 
 KeybindingAction: TypeAlias = Callable[[], bool] | Callable[[], None] | Callable[[], bool | None]
 
+
 class HotkeyFilter(QObject):
     """Registers and handles window-level hotkeys."""
 

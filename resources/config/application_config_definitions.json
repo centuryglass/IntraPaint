@@ -48,7 +48,7 @@
         }
     },
     "key_hint_font_size": {
-        "label": "Key hint font size::",
+        "label": "Key hint font size:",
         "category": "Interface",
         "subcategory": "Appearance",
         "description": "Font point size to use for key hint labels.",
@@ -62,7 +62,7 @@
         }
     },
     "toolbar_tool_button_count": {
-        "label": "Recent tool toolbar icon count",
+        "label": "Recent tool toolbar icon count:",
         "category": "Interface",
         "subcategory": "Layout",
         "description": "Number of tool selection buttons to show on the toolbar when the tool tab is closed or inactive.",
@@ -119,7 +119,7 @@
     "show_options_full_resolution": {
         "label": "Show generated image options at original size",
         "category": "Interface",
-        "description": "When the selected image size doesn't match the image generation resolution, preview options using the generated size.",
+        "description": "Preview AI-generated image options at their original size, instead of the size they would be scaled to if inserted into the generation area..",
         "type": "bool",
         "default": false,
         "saved": true
@@ -141,6 +141,15 @@
         "default": "1024x1024",
         "saved": true
     },
+    "max_image_size": {
+        "label": "Maximum image size:",
+        "category": "Editing",
+        "subcategory": "Size",
+        "description": "Maximum size to allow when creating or resizing images",
+        "type": "Size",
+        "default": "10000x10000",
+        "saved": true
+    },
     "max_edit_size": {
         "label": "Maximum editing size:",
         "category": "Editing",
@@ -151,25 +160,25 @@
         "saved": true
     },
     "min_edit_size": {
-        "label": "Minimum editing size:",
+        "label": "Minimum generation area size:",
         "category": "Editing",
         "subcategory": "Size",
-        "description": "Minimum size in pixels of the area selected for editing",
+        "description": "Minimum size in pixels of the AI image generation area",
         "type": "Size",
         "default": "8x8",
         "saved": true
     },
     "max_generation_size": {
-        "label": "Maximum generation size:",
+        "label": "Maximum generation area size:",
         "category": "Editing",
         "subcategory": "Size",
-        "description": "Maximum size in pixels allowed for AI image generation",
+        "description": "Maximum size in pixels of the AI image generation area",
         "type": "Size",
         "default": "2048x2048",
         "saved": true
     },
     "min_generation_size": {
-        "label": "Minimum generation size:",
+        "label": "Minimum generation resolution:",
         "category": "Editing",
         "subcategory": "Size",
         "description": "Minimum size in pixels allowed for AI image generation",
@@ -223,7 +232,7 @@
     "speed_modifier_multiplier": {
         "label": "'Speed modifier' key multiplier:",
         "category": "Editing",
-        "description": "Controls how much faster changes happen when the 'speed_modifier' key is held down",
+        "description": "Controls how much faster keyboard and mouse wheel changes happen when the 'speed modifier' key is held down",
         "type": "int",
         "default": 5,
         "saved": true
@@ -231,7 +240,7 @@
     "saved_colors": {
         "label": "Saved colors:",
         "category": "Editing",
-        "description": "List of saved custom color values.",
+        "description": "List of saved custom color values, used in the color picker tool's custom palette section.",
         "type": "list",
         "default": [],
         "saved": true
@@ -239,7 +248,7 @@
     "tablet_pressure_curve": {
         "label": "Pen tablet pressure curve:",
         "category": "Drawing tablet settings",
-        "description": "Controls how pen tablet pressure values are applied.",
+        "description": "Controls how pen tablet pressure values are applied. The x-axis represents the pressure value reported by the drawing tablet, and the y-axis represents the actual pressure value IntraPaint will register when it receives that value.",
         "type": "list",
         "default": [],
         "saved": true

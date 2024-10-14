@@ -149,7 +149,7 @@ class ImageFilter:
             selection_bounds = self._image_stack.selection_layer.map_rect_from_image(layer_bounds)
             if self._image_stack.selection_layer.is_empty(selection_bounds):
                 return False
-            layer_mask = self._image_stack.get_layer_mask(layer)
+            layer_mask = self._image_stack.get_layer_selection_mask(layer)
             if layer_mask.size() != layer_image.size():
                 layer_mask = layer_mask.scaled(layer_image.width(), layer_image.height())
             masked_bounds = image_content_bounds(layer_mask)

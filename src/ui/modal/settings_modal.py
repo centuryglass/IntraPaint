@@ -3,12 +3,12 @@ Popup modal providing a dynamic settings interface, to be populated by the contr
 stable_diffusion_controller.
 """
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Set
 
 from PySide6.QtCore import Signal, QSize, Qt
 from PySide6.QtGui import QIcon, QFont
 from PySide6.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QPushButton, QWidget, QTabWidget, QFormLayout, \
-    QScrollArea, QApplication, QLabel
+    QScrollArea, QApplication, QLabel, QPlainTextEdit
 
 from src.config.config import Config
 from src.ui.input_fields.big_int_spinbox import BigIntSpinbox
@@ -34,8 +34,11 @@ def _tr(*args):
 
 
 WINDOW_TITLE = _tr('Settings')
+CONFIG_PATH_LABEL = _tr('Settings file locations:')
+CONFIG_PATH_TOOLTIP = _tr('IntraPaint saves its settings to these files. This section is only for reference, their locations cannot be changed here.')
 CANCEL_BUTTON_LABEL = _tr('Cancel')
 SAVE_BUTTON_LABEL = _tr('Save')
+FILE_CATEGORY = QApplication.translate('config.application_config', 'Files')
 
 logger = logging.getLogger(__name__)
 
@@ -56,6 +59,12 @@ class SettingsModal(QDialog):
         self._inputs: Dict[str, DynamicFieldWidget] = {}
         self._changes: Dict[str, Any] = {}
 
+        self._config_paths: Set[str] = set()
+        self._config_path_widget = QPlainTextEdit(parent=self)
+        self._config_path_widget.setReadOnly(True)
+        self._config_path_widget.setHidden(True)
+        self._config_path_widget.setToolTip(CONFIG_PATH_TOOLTIP)
+
         layout = QVBoxLayout()
         self.setLayout(layout)
 
@@ -64,8 +73,7 @@ class SettingsModal(QDialog):
         layout.addWidget(self._tab_widget, stretch=20)
 
         bottom_panel = BorderedWidget(self)
-        bottom_panel_layout = QHBoxLayout()
-        bottom_panel.setLayout(bottom_panel_layout)
+        bottom_panel_layout = QHBoxLayout(bottom_panel)
 
         save_button = QPushButton()
         save_button.setText(SAVE_BUTTON_LABEL)
@@ -120,6 +128,18 @@ class SettingsModal(QDialog):
 
                     control_widget.valueChanged.connect(_add_change)
                     self._add_setting(key, category, control_widget, label)
+        config_path = config.json_path
+        if config_path is not None:
+            if config_path not in self._config_paths:
+                self._config_paths.add(config_path)
+            if FILE_CATEGORY not in self._tab_layouts:
+                self._add_tab_if_missing(FILE_CATEGORY)
+            if self._config_path_widget.isHidden():
+                file_tab_layout = self._tab_layouts[FILE_CATEGORY]
+                self._add_subcategory_header(FILE_CATEGORY, CONFIG_PATH_LABEL)
+                file_tab_layout.addRow(self._config_path_widget)
+                self._config_path_widget.setHidden(False)
+            self._config_path_widget.setPlainText("\n".join(list(self._config_paths)))
 
     def add_custom_control(self, control_widget: DynamicFieldWidget, config: Config, key: str) -> None:
         """Adds a non-standard control to the grid."""

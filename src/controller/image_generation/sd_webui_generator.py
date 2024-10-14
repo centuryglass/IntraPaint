@@ -18,6 +18,7 @@ from src.config.cache import Cache
 from src.config.key_config import KeyConfig
 from src.controller.image_generation.image_generator import ImageGenerator
 from src.image.layers.image_stack import ImageStack
+from src.image.layers.image_stack_utils import scale_all_layers
 from src.ui.layout.draggable_tabs.tab import Tab
 from src.ui.modal.modal_utils import show_error_dialog
 from src.ui.modal.settings_modal import SettingsModal
@@ -132,7 +133,7 @@ SD_WEBUI_GENERATOR_SETUP = _tr("""
 SD_PREVIEW_IMAGE = f'{PROJECT_DIR}/resources/generator_preview/stable-diffusion.png'
 ICON_PATH_CONTROLNET_TAB = f'{PROJECT_DIR}/resources/icons/tabs/hex.svg'
 DEFAULT_SD_URL = 'http://localhost:7860'
-STABLE_DIFFUSION_CONFIG_CATEGORY = QApplication.translate('application_config', 'Stable-Diffusion')
+STABLE_DIFFUSION_CONFIG_CATEGORY = QApplication.translate('config.application_config', 'Stable-Diffusion')
 AUTH_ERROR_DETAIL_KEY = 'detail'
 AUTH_ERROR_MESSAGE = _tr('Not authenticated')
 INTERROGATE_ERROR_MESSAGE_NO_IMAGE = _tr('Open or create an image first.')
@@ -588,7 +589,7 @@ class SDWebUIGenerator(ImageGenerator):
             """Copy the upscaled image into the image stack."""
             with UndoStack().combining_actions('SDWebUIGenerator.upscale'):
                 if self._image_stack.confirm_no_locked_layers():
-                    self._image_stack.scale_all(img.width(), img.height())
+                    scale_all_layers(self._image_stack, img.width(), img.height())
                 else:
                     old_size = self._image_stack.size
                     scaled_size = img.size()

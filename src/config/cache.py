@@ -88,6 +88,8 @@ class Cache(Config, metaclass=Singleton):
 
     BATCH_COUNT: str
     BATCH_SIZE: str
+    CANVAS_RESIZE_CROP_LAYERS: str
+    CANVAS_RESIZE_LAYER_MODE: str
     CLONE_STAMP_TOOL_BRUSH_SIZE: str
     CLONE_STAMP_TOOL_HARDNESS: str
     CLONE_STAMP_TOOL_OPACITY: str

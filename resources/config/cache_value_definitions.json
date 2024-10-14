@@ -852,6 +852,30 @@
         ],
         "saved": true
     },
+    "canvas_resize_layer_mode": {
+        "label": "Layer expand mode:",
+        "category": "Cache",
+        "subcategory": "Resize image canvas",
+        "description": "Sets which layers should be expanded to fill the image when resized",
+        "type": "string",
+        "default": "Only expand full-image layers",
+        "options": [
+            "Expand all unlocked layers",
+            "Only expand full-image layers",
+            "Do not expand layers"
+
+        ],
+        "saved": true
+    },
+    "canvas_resize_crop_layers": {
+        "label": "Crop layers to new image bounds",
+        "category": "Cache",
+        "subcategory": "Resize image canvas",
+        "description": "Sets whether layers should be cropped to image bounds when the image is resized.",
+        "type": "bool",
+        "default": true,
+        "saved": true
+    },
     "seed": {
         "label": "Seed:",
         "category": "Cache",

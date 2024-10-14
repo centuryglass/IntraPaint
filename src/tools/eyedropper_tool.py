@@ -8,6 +8,7 @@ from PySide6.QtWidgets import QWidget, QColorDialog, QApplication
 from src.config.cache import Cache
 from src.config.key_config import KeyConfig
 from src.image.layers.image_stack import ImageStack
+from src.image.layers.image_stack_utils import image_stack_color_at_point
 from src.tools.base_tool import BaseTool
 from src.ui.panel.color_panel import ColorControlPanel
 from src.util.shared_constants import PROJECT_DIR
@@ -58,7 +59,7 @@ class EyedropperTool(BaseTool):
         """Copy the color under the mouse on left-click."""
         assert event is not None
         if event.buttons() == Qt.MouseButton.LeftButton:
-            color = self._image_stack.get_color_at_point(image_coordinates)
+            color = image_stack_color_at_point(self._image_stack, image_coordinates)
             Cache().set(Cache.LAST_BRUSH_COLOR, color.name(QColor.NameFormat.HexArgb))
             return True
         return False

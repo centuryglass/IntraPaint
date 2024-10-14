@@ -10,6 +10,7 @@ from PySide6.QtWidgets import QWidget, QHBoxLayout, QLabel, QSizePolicy, QMenu, 
 from src.config.cache import Cache
 from src.image.layers.image_layer import ImageLayer
 from src.image.layers.image_stack import ImageStack
+from src.image.layers.image_stack_utils import crop_layer_to_selection
 from src.image.layers.layer import Layer
 from src.image.layers.layer_group import LayerGroup
 from src.image.layers.text_layer import TextLayer
@@ -390,7 +391,7 @@ class LayerWidget(BorderedWidget):
 
         if isinstance(self._layer, ImageLayer):
             _add_action(MENU_OPTION_CROP_TO_CONTENT, self._layer.crop_to_content, True)
-        _add_action(MENU_OPTION_CROP_TO_SELECTION, lambda: self._image_stack.crop_layer_to_selection(self._layer), True)
+        _add_action(MENU_OPTION_CROP_TO_SELECTION, lambda: crop_layer_to_selection(self._image_stack, self._layer), True)
 
         mirror_actions = [_add_action(MENU_OPTION_MIRROR_HORIZONTAL, self._layer.flip_horizontal, True),
                           _add_action(MENU_OPTION_MIRROR_VERTICAL, self._layer.flip_vertical, True)]

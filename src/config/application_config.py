@@ -81,6 +81,7 @@ class AppConfig(Config, metaclass=Singleton):
     MASK_BLUR: str
     MAX_EDIT_SIZE: str
     MAX_GENERATION_SIZE: str
+    MAX_IMAGE_SIZE: str
     MAX_UNDO: str
     MIN_EDIT_SIZE: str
     MIN_GENERATION_SIZE: str

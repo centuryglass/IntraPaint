@@ -143,7 +143,7 @@ class TransformHandle(QGraphicsObject):
             painter.drawRect(rect)
             painter.rotate(-self.drawn_angle)
 
-            if self._draw_arrows and self.parentItem() is not None:
+            if self._draw_arrows and self.parentItem() is not None and self.isEnabled():
                 arrow_pixmap = self._icon.pixmap(rect.size().toSize())
                 arrow_bounds = QRectF(rect.topLeft() - QPointF(rect.width(), rect.height()), rect.size())
                 # get base rotation:

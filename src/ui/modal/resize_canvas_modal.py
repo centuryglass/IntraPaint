@@ -1,11 +1,15 @@
 """Popup modal window used for cropping or extending the edited image without scaling its contents."""
-from typing import Optional
+from typing import Optional, cast
 import math
-from PySide6.QtWidgets import QWidget, QDialog, QVBoxLayout, QHBoxLayout, QPushButton, QApplication
-from PySide6.QtCore import Qt, QSize, QRect, QPoint
-from PySide6.QtGui import QPainter, QPen, QImage, QResizeEvent, QPaintEvent, QIcon
-from src.ui.input_fields.labeled_spinbox import LabeledSpinbox
-from src.util.visual.geometry_utils import get_scaled_placement
+from PySide6.QtWidgets import QWidget, QDialog, QVBoxLayout, QHBoxLayout, QPushButton, QApplication, QLabel
+from PySide6.QtCore import QSize, QRect, QPoint
+from PySide6.QtGui import QResizeEvent, QIcon
+
+from src.config.application_config import AppConfig
+from src.config.cache import Cache
+from src.image.layers.image_stack import ImageStack
+from src.ui.input_fields.slider_spinbox import IntSliderSpinbox
+from src.ui.widget.canvas_change_preview_widget import CanvasChangePreviewWidget
 from src.util.shared_constants import APP_ICON_PATH
 
 # The `QCoreApplication.translate` context for strings in this file
@@ -28,75 +32,88 @@ X_OFFSET_TOOLTIP = _tr('Distance in pixels from the left edge of the resized can
 Y_OFFSET_LABEL = _tr('Y Offset:')
 Y_OFFSET_TOOLTIP = _tr('Distance in pixels from the top edge of the resized canvas to the top edge of the current '
                        'image content')
+
 CENTER_BUTTON_LABEL = _tr('Center')
 CANCEL_BUTTON_LABEL = _tr('Cancel')
 RESIZE_BUTTON_LABEL = _tr('Resize image canvas')
 
-MIN_PX_VALUE = 8
-MAX_PX_VALUE = 20000
+MIN_PX_VALUE = 1
 
 
 class ResizeCanvasModal(QDialog):
     """Popup modal window used for cropping or extending the edited image without scaling its contents."""
 
-    def __init__(self, qimage: QImage) -> None:
+    def __init__(self, image_stack: ImageStack) -> None:
         super().__init__()
         self.setWindowIcon(QIcon(APP_ICON_PATH))
+        initial_size = image_stack.size
 
         self._resize = False
         self.setModal(True)
         self.setWindowTitle(WINDOW_TITLE)
 
+        max_size: QSize = cast(QSize, AppConfig().get(AppConfig.MAX_IMAGE_SIZE))
+
         # Main controls:
-        self._image = qimage
-        current_width = qimage.width()
-        current_height = qimage.height()
+        current_width = initial_size.width()
+        current_height = initial_size.height()
 
-        self._width_box = LabeledSpinbox(self, WIDTH_LABEL, WIDTH_TOOLTIP, MIN_PX_VALUE, current_width, MAX_PX_VALUE)
-        self._height_box = LabeledSpinbox(self, HEIGHT_LABEL, HEIGHT_TOOLTIP, MIN_PX_VALUE, current_height,
-                                          MAX_PX_VALUE)
-        self._x_offset_box = LabeledSpinbox(self, X_OFFSET_LABEL, X_OFFSET_TOOLTIP
-                                            + '', -current_width, 0,
-                                            current_width)
-        self._y_offset_box = LabeledSpinbox(self, Y_OFFSET_LABEL, Y_OFFSET_TOOLTIP, -current_height, 0,
-                                            current_height)
+        self._width_slider = IntSliderSpinbox(current_width, self, WIDTH_LABEL)
+        self._width_slider.setToolTip(WIDTH_TOOLTIP)
+        self._width_slider.setRange(MIN_PX_VALUE, max_size.width())
 
-        self._preview = _PreviewWidget(self, qimage, self._width_box, self._height_box, self._x_offset_box,
-                                       self._y_offset_box)
+        self._height_slider = IntSliderSpinbox(current_height, self, HEIGHT_LABEL)
+        self._height_slider.setToolTip(HEIGHT_TOOLTIP)
+        self._height_slider.setRange(MIN_PX_VALUE, max_size.height())
 
-        def _on_dim_change(old_value: int | float,
-                           new_value: int | float,
-                           labeled_offset_box: LabeledSpinbox) -> None:
-            """Adjust offset box ranges when width/height change."""
-            labeled_offset_box.spinbox.setRange(int(-old_value), int(old_value) + int(new_value))
-            self._preview.resizeEvent(None)
+        self._x_offset_slider = IntSliderSpinbox(0, self, X_OFFSET_LABEL)
+        self._x_offset_slider.setToolTip(X_OFFSET_TOOLTIP)
+        self._x_offset_slider.setRange(-max_size.width(), max_size.width())
 
-        self._width_box.spinbox.valueChanged.connect(lambda w: _on_dim_change(current_width, w, self._x_offset_box))
-        self._height_box.spinbox.valueChanged.connect(lambda h: _on_dim_change(current_height, h, self._y_offset_box))
-        for offset in [self._x_offset_box, self._y_offset_box]:
-            offset.spinbox.valueChanged.connect(lambda v: self._preview.resizeEvent(None))
+        self._y_offset_slider = IntSliderSpinbox(0, self, Y_OFFSET_LABEL)
+        self._y_offset_slider.setToolTip(Y_OFFSET_TOOLTIP)
+        self._y_offset_slider.setRange(-max_size.height(), max_size.height())
+
+        cache = Cache()
+        self._layer_mode_label = QLabel(cache.get_label(Cache.CANVAS_RESIZE_LAYER_MODE))
+        self._layer_mode_dropdown = cache.get_control_widget(Cache.CANVAS_RESIZE_LAYER_MODE)
+        self._layer_mode_row = QWidget(self)
+        self._layer_mode_row.setToolTip(cache.get_tooltip(Cache.CANVAS_RESIZE_LAYER_MODE))
+        layer_mode_row_layout = QHBoxLayout(self._layer_mode_row)
+        layer_mode_row_layout.addWidget(self._layer_mode_label)
+        layer_mode_row_layout.addWidget(self._layer_mode_dropdown, stretch=1)
+
+        self._crop_checkbox = cache.get_control_widget(Cache.CANVAS_RESIZE_CROP_LAYERS)
+        self._crop_checkbox.setText(cache.get_label(Cache.CANVAS_RESIZE_CROP_LAYERS))
+        self._crop_checkbox.setParent(self)
+        self._crop_checkbox.valueChanged.connect(self.update)
+
+        self._preview = CanvasChangePreviewWidget(image_stack)
+
+        for input_field in (self._width_slider, self._height_slider, self._x_offset_slider, self._y_offset_slider):
+            input_field.valueChanged.connect(self._update_preview)
+
+        self._resize_button = QPushButton(self)
+        self._resize_button.setText(RESIZE_BUTTON_LABEL)
+        self._resize_button.clicked.connect(self._confirm)
 
         center_button = QPushButton(self)
         center_button.setText(CENTER_BUTTON_LABEL)
 
         def center() -> None:
             """Adjust offsets to center existing image content in the brush."""
-            width = self._width_box.spinbox.value()
-            height = self._height_box.spinbox.value()
+            width = self._width_slider.value()
+            height = self._height_slider.value()
             x_off = (width // 2) - (current_width // 2)
             y_off = (height // 2) - (current_height // 2)
-            self._x_offset_box.spinbox.setValue(x_off)
-            self._y_offset_box.spinbox.setValue(y_off)
+            self._x_offset_slider.setValue(x_off)
+            self._y_offset_slider.setValue(y_off)
 
         center_button.clicked.connect(center)
 
         self._cancel_button = QPushButton(self)
         self._cancel_button.setText(CANCEL_BUTTON_LABEL)
         self._cancel_button.clicked.connect(self._cancel)
-
-        self._resize_button = QPushButton(self)
-        self._resize_button.setText(RESIZE_BUTTON_LABEL)
-        self._resize_button.clicked.connect(self._confirm)
 
         option_bar = QWidget(self)
         layout = QHBoxLayout(option_bar)
@@ -105,10 +122,12 @@ class ResizeCanvasModal(QDialog):
 
         self._layout = QVBoxLayout()
         ordered_widgets = [
-            self._width_box,
-            self._height_box,
-            self._x_offset_box,
-            self._y_offset_box,
+            self._width_slider,
+            self._height_slider,
+            self._x_offset_slider,
+            self._y_offset_slider,
+            self._layer_mode_row,
+            self._crop_checkbox,
             self._preview,
             center_button,
             option_bar
@@ -116,8 +135,16 @@ class ResizeCanvasModal(QDialog):
 
         for widget in ordered_widgets:
             self._layout.addWidget(widget)
+        self._layout.setStretch(self._layout.indexOf(self._preview), 1)
         self.setLayout(self._layout)
         self.resizeEvent(None)
+
+    def _update_preview(self, _) -> None:
+        canvas_bounds = QRect(-self._x_offset_slider.value(),
+                              -self._y_offset_slider.value(),
+                              self._width_slider.value(),
+                              self._height_slider.value())
+        self._preview.set_new_bounds(canvas_bounds)
 
     def _confirm(self) -> None:
         self._resize = True
@@ -127,91 +154,18 @@ class ResizeCanvasModal(QDialog):
         self._resize = False
         self.hide()
 
-    def _center(self) -> None:
-        """Adjust offsets to center existing image content in the brush."""
-        current_width = self._image.width()
-        current_height = self._image.height()
-        width = self._width_box.spinbox.value()
-        height = self._height_box.spinbox.value()
-        x_off = (width // 2) - (current_width // 2)
-        y_off = (height // 2) - (current_height // 2)
-        self._x_offset_box.spinbox.setValue(x_off)
-        self._y_offset_box.spinbox.setValue(y_off)
-
     def resizeEvent(self, unused_event: Optional[QResizeEvent]) -> None:
         """Recalculate preview bounds on resize."""
         min_preview = math.ceil(min(self.width(), self.height()) * 0.8)
         self._preview.setMinimumSize(QSize(min_preview, min_preview))
+        IntSliderSpinbox.align_slider_spinboxes([self._width_slider, self._height_slider,
+                                                 self._x_offset_slider, self._y_offset_slider])
 
     def show_resize_modal(self) -> tuple[QSize, QPoint] | tuple[None, None]:
         """Show this modal, returning QSize new_size and QPoint offset if changes are confirmed."""
         self.exec()
         if self._resize:
-            new_size = QSize(self._width_box.spinbox.value(), self._height_box.spinbox.value())
-            offset = QPoint(self._x_offset_box.spinbox.value(), self._y_offset_box.spinbox.value())
+            new_size = QSize(self._width_slider.value(), self._height_slider.value())
+            offset = QPoint(self._x_offset_slider.value(), self._y_offset_slider.value())
             return new_size, offset
         return None, None
-
-
-class _PreviewWidget(QWidget):
-    """Shows a preview of how the image will look after the canvas is resized."""
-
-    def __init__(self,
-                 parent: Optional[QWidget],
-                 image: QImage,
-                 width_box: LabeledSpinbox,
-                 height_box: LabeledSpinbox,
-                 x_offset_box: LabeledSpinbox,
-                 y_offset_box: LabeledSpinbox) -> None:
-        super().__init__(parent)
-        self._qimage = image
-        self._image_bounds: Optional[QRect] = None
-        self._canvas_bounds: Optional[QRect] = None
-        self._width_box = width_box
-        self._height_box = height_box
-        self._x_offset_box = x_offset_box
-        self._y_offset_box = y_offset_box
-        self.resizeEvent(None)
-
-    def resizeEvent(self, unused_event: Optional[QResizeEvent]) -> None:
-        """Recalculate bounds on widget size update."""
-        width = self._width_box.spinbox.value()
-        height = self._height_box.spinbox.value()
-        x_off = self._x_offset_box.spinbox.value()
-        y_off = self._y_offset_box.spinbox.value()
-        current_width = self._qimage.width()
-        current_height = self._qimage.height()
-        image_rect = QRect(0, 0, current_width, current_height)
-        canvas_rect = QRect(-x_off, -y_off, width, height)
-        full_rect = image_rect.united(canvas_rect)
-        if (full_rect.x() != 0) or (full_rect.y() != 0):
-            rect_offset = QPoint(-full_rect.x(), -full_rect.y())
-            for r in [full_rect, image_rect, canvas_rect]:
-                r.translate(rect_offset)
-        draw_area = get_scaled_placement(self.size(), full_rect.size())
-        scale = draw_area.width() / full_rect.width()
-
-        def get_draw_rect(src: QRect) -> QRect:
-            """Converts full image coordinates to preview drawing coordinates."""
-            return QRect(draw_area.x() + int(src.x() * scale),
-                         draw_area.y() + int(src.y() * scale),
-                         int(src.width() * scale),
-                         int(src.height() * scale))
-
-        self._image_bounds = get_draw_rect(image_rect)
-        self._canvas_bounds = get_draw_rect(canvas_rect)
-        self.update()
-
-    def paintEvent(self, unused_event: Optional[QPaintEvent]) -> None:
-        """Draw image with proposed changes to brush bounds."""
-        if self._canvas_bounds is None:
-            return
-        painter = QPainter(self)
-        line_pen = QPen(Qt.GlobalColor.black, 2, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap,
-                        Qt.PenJoinStyle.RoundJoin)
-        painter.setPen(line_pen)
-        painter.fillRect(self._canvas_bounds, Qt.GlobalColor.darkGray)
-        if self._image_bounds is not None:
-            painter.drawImage(self._image_bounds, self._qimage)
-            painter.drawRect(self._canvas_bounds)
-            painter.drawRect(self._image_bounds)

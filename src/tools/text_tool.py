@@ -9,12 +9,14 @@ from src.config.cache import Cache
 from src.config.key_config import KeyConfig
 from src.hotkey_filter import HotkeyFilter
 from src.image.layers.image_stack import ImageStack
+from src.image.layers.image_stack_utils import top_layer_at_point
 from src.image.layers.layer import Layer
 from src.image.layers.text_layer import TextLayer
 from src.image.layers.transform_layer import TransformLayer
 from src.image.text_rect import TextRect
 from src.tools.base_tool import BaseTool
 from src.ui.graphics_items.click_and_drag_selection import ClickAndDragSelection
+from src.ui.graphics_items.layer_lock_alert_item import LayerLockAlertItem
 from src.ui.graphics_items.placement_outline import PlacementOutline
 from src.ui.image_viewer import ImageViewer
 from src.ui.panel.tool_control_panels.text_tool_panel import TextToolPanel
@@ -51,6 +53,7 @@ class TextTool(BaseTool):
         self._scene = scene
         self._control_panel = TextToolPanel()
         self._image_stack = image_stack
+        self._image_viewer = image_viewer
         self._placement_outline = PlacementOutline(QPointF(), QSizeF())
         scene.addItem(self._placement_outline)
         self._placement_outline.setVisible(False)
@@ -87,9 +90,11 @@ class TextTool(BaseTool):
             if active_bounds.contains(image_coordinates):
                 return False
         if event.buttons() == Qt.MouseButton.LeftButton:
-            clicked_layer = self._image_stack.top_layer_at_point(image_coordinates)
+            clicked_layer = top_layer_at_point(self._image_stack, image_coordinates)
             if isinstance(clicked_layer, TextLayer):
                 self._connect_text_layer(clicked_layer)
+                if clicked_layer.locked or clicked_layer.parent_locked:
+                    LayerLockAlertItem(clicked_layer, self._image_viewer)
                 return True
             self._dragging = True
             self._selection_handler.start_selection(image_coordinates)

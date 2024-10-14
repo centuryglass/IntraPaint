@@ -110,7 +110,7 @@ class FillTool(BaseTool):
                 mask_painter = QPainter(mask)
                 mask_painter.setCompositionMode(QPainter.CompositionMode.CompositionMode_DestinationIn)
                 if selection_only:
-                    selection_mask = self._image_stack.get_layer_mask(layer)
+                    selection_mask = self._image_stack.get_layer_selection_mask(layer)
                     mask_painter.drawImage(0, 0, selection_mask)
                 if fill_brush.style() != Qt.BrushStyle.SolidPattern:
                     fill_brush.setColor(self._color)
