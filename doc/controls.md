@@ -8,13 +8,13 @@
 2. **Tool panel**: The main control panel for manual image editing.
     - 2a. **Tool buttons**: The full set of available tools. Click one to activate it, or press the key shown in the bottom right corner of the tool button icon.
     - 2b. **Active tool control panel**: This panel changes depending on what tool is selected. Refer to the [IntraPaint tool guide](./tool_guide.md) for an in-depth overview of all tools and tool panels.
-    - 2c. **Extra control tabs**: Provides smaller versions of the [layer window](./menu_options.md#show-layer-window-f7), [color picker control panel](./tool_guide.md#user-interface-color-component-tab), and [navigation window](./menu_options.md#show-navigation-window-ctrlaltw).
+    - 2c. **Extra control tabs**: Provides smaller versions of the [layer window](./menu_options.md#show-layer-window-f7), [color picker control panel](./tool_guide.md#user-interface-color-component-tab), and [navigation window](./menu_options.md#show-navigation-window-ctrlaltw). See [layer menu options](./menu_options.md#layers-menu) for more information on IntraPaint's layer system.
 3. **Image Generation panel**: The main control panel for AI image editing. This panel is only available after you've installed and configured Stable-Diffusion, [click here](../README.md#ai-setup-stable-diffusion) for details.
     - 3a. **Stable-Diffusion AI settings**:  See the [Stable-Diffusion control guide](./stable-diffusion.md) for detailed descriptions of these controls.
     - 3b. **"Interrogate" button**:  Use AI image analysis to automatically generate a description of the edited image.
     - 3c. **"Generate" button**:  Click to trigger AI image generation, creating or altering image content to insert into the [image generation area](./inpainting_guide.md#generation-area). Clicking this will switch IntraPaint to the [generated image selection view](#generated-image-selection-view).
 4. **Image viewport**: View and interact with the edited image.
-    - 4a. **Selected content**: The dashed lines and red tint show areas specifically marked for editing. See the [selection tool guide](./tool_guide.md#selection-tools) for more details.
+    - 4a. **Selected content**: The dashed lines and red tint show areas specifically marked for editing. See the [selection tool guide](./tool_guide.md#selection-tools) for more information on the way IntraPaint uses selection.
     - 4b. **Image generation area**:  This rectangle marks the area used for AI image generation, placed using the [Generation area tool](./tool_guide.md#-image-generation-area-tool-g).
     - 4c. **Inpaint padding bounds**: The reduced image generation area used when the image generation editing mode is set to "inpaint" and "Inpaint Full Resolution" is checked. See the [inpainting guide](./inpainting_guide.md#inpaint-full-resolution-checkbox) for more details.
     - 4d. **Brush cursor**: When over the image viewport, the mouse cursor will change based on the current active tool.

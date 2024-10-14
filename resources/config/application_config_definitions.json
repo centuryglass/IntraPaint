@@ -245,6 +245,24 @@
         "default": [],
         "saved": true
     },
+    "pil_upscale_mode": {
+        "label": "Upscale mode:",
+        "category": "Editing",
+        "description": "Upscaling mode used when the inpainting resolution doesn't match the image generation area size.",
+        "type": "string",
+        "default": "Lanczos",
+        "options":  [],
+        "saved": true
+    },
+    "pil_downscale_mode": {
+        "label": "Downscale mode:",
+        "category": "Editing",
+        "description": "Downscaling mode used when the inpainting resolution doesn't match the image generation area size.",
+        "type": "string",
+        "default": "Lanczos",
+        "options": [],
+        "saved": true
+    },
     "tablet_pressure_curve": {
         "label": "Pen tablet pressure curve:",
         "category": "Drawing tablet settings",
@@ -414,6 +432,11 @@
         "description": "Always save metadata when no previous metadata exists(confirm), never do that(cancel), or ask every time(always_ask).",
         "type": "string",
         "default": "always_ask",
+        "options": [
+            "confirm",
+            "cancel",
+            "always_ask"
+        ],
         "saved": true
     },
     "always_update_metadata_on_save": {
@@ -422,6 +445,11 @@
         "description": "Always update metadata when images are saved(confirm), never do that(cancel), or ask every time(always_ask).",
         "type": "string",
         "default": "always_ask",
+        "options": [
+            "confirm",
+            "cancel",
+            "always_ask"
+        ],
         "saved": true
     },
     "warn_when_crop_deletes_layers": {

@@ -4,6 +4,7 @@ from typing import List
 from PySide6.QtCore import Signal, Qt
 from PySide6.QtWidgets import QPushButton, QLabel, QGridLayout, QSizePolicy, QWidget
 
+from src.config.application_config import AppConfig
 from src.config.cache import Cache
 from src.ui.panel.generators.generator_panel import GeneratorPanel
 from src.ui.widget.rotating_toolbar_button import RotatingToolbarButton
@@ -22,6 +23,7 @@ class GlidPanel(GeneratorPanel):
     def __init__(self):
         super().__init__()
         cache = Cache()
+        config = AppConfig()
         self._orientation = Qt.Orientation.Horizontal
         self._layout = QGridLayout(self)
         self._layout.setSpacing(3)
@@ -54,10 +56,10 @@ class GlidPanel(GeneratorPanel):
 
         self._enable_scale_checkbox = cache.get_control_widget(Cache.INPAINT_FULL_RES)
         self._enable_scale_checkbox.setText(cache.get_label(Cache.INPAINT_FULL_RES))
-        self._upscale_mode_label = QLabel(cache.get_label(Cache.UPSCALE_MODE), self)
-        self._upscale_mode_list = cache.get_control_widget(Cache.UPSCALE_MODE)
-        self._downscale_mode_label = QLabel(cache.get_label(Cache.DOWNSCALE_MODE), self)
-        self._downscale_mode_list = cache.get_control_widget(Cache.DOWNSCALE_MODE)
+        self._upscale_mode_label = QLabel(config.get_label(AppConfig.PIL_UPSCALE_MODE), self)
+        self._upscale_mode_list = config.get_control_widget(AppConfig.PIL_UPSCALE_MODE)
+        self._downscale_mode_label = QLabel(config.get_label(AppConfig.PIL_DOWNSCALE_MODE), self)
+        self._downscale_mode_list = config.get_control_widget(AppConfig.PIL_DOWNSCALE_MODE)
 
         self._inpaint_button = QPushButton()
         self._inpaint_button.setText(INPAINT_BUTTON_TEXT)

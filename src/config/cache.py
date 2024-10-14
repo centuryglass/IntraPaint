@@ -3,15 +3,27 @@ from argparse import Namespace
 from typing import Dict
 
 from PySide6.QtCore import QRect, QTimer
-from PySide6.QtWidgets import QWidget
+from PySide6.QtWidgets import QWidget, QApplication
 
 from src.config.config import Config
-from src.util.shared_constants import PROJECT_DIR, DATA_DIR, PIL_SCALING_MODES
+from src.util.shared_constants import PROJECT_DIR, DATA_DIR
 from src.util.singleton import Singleton
 
 CONFIG_DEFINITIONS = f'{PROJECT_DIR}/resources/config/cache_value_definitions.json'
 DEFAULT_FILE_PATH = f'{DATA_DIR}/.cache.json'
 GEOMETRY_CHECK_INTERVAL = 100
+
+
+# The QCoreApplication.translate context for strings in this file
+TR_ID = 'config.cache'
+
+
+def _tr(*args):
+    """Helper to make `QCoreApplication.translate` more concise."""
+    return QApplication.translate(TR_ID, *args)
+
+
+SCALING_OPTION_NONE = _tr('None')
 
 
 class Cache(Config, metaclass=Singleton):
@@ -25,12 +37,6 @@ class Cache(Config, metaclass=Singleton):
         self._geometry_timer.timeout.connect(self._check_bounds)
         self._final_bounds: Dict[QWidget, QRect] = {}
         self._last_bounds: Dict[QWidget, QRect] = {}
-
-    def _adjust_defaults(self):
-        """Dynamically initialize application style and theme options based on available modules."""
-        scaling_options = PIL_SCALING_MODES.keys()
-        self.update_options(Cache.UPSCALE_MODE, scaling_options)
-        self.update_options(Cache.DOWNSCALE_MODE, scaling_options)
 
     def apply_args(self, args: Namespace) -> None:
         """Loads expected parameters from command line arguments"""
@@ -109,7 +115,6 @@ class Cache(Config, metaclass=Singleton):
     CONTROLNET_VERSION: str
     CUTN: str
     DENOISING_STRENGTH: str
-    DOWNSCALE_MODE: str
     DRAW_TOOL_BRUSH_PATTERN: str
     DRAW_TOOL_BRUSH_SIZE: str
     DRAW_TOOL_HARDNESS: str
@@ -163,6 +168,8 @@ class Cache(Config, metaclass=Singleton):
     SAVED_LAYER_WINDOW_POS: str
     SAVED_MAIN_WINDOW_POS: str
     SAVED_NAVIGATION_WINDOW_POS: str
+    SCRIPTS_IMG2IMG: str
+    SCRIPTS_TXT2IMG: str
     SEED: str
     SELECTION_BRUSH_SIZE: str
     SHAPE_TOOL_DASH_PATTERN: str
@@ -187,4 +194,3 @@ class Cache(Config, metaclass=Singleton):
     TEXT_TOOL_PARAMS: str
     TOOL_TAB_BAR: str
     UPSCALE_METHOD: str
-    UPSCALE_MODE: str

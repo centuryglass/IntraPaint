@@ -18,15 +18,17 @@ from src.api.webservice import WebService
 from src.config.application_config import AppConfig
 from src.config.cache import Cache
 from src.ui.modal.login_modal import LoginModal
-from src.util.visual.image_utils import image_to_base64, qimage_from_base64
-from src.util.visual.pil_image_utils import pil_image_from_base64
 from src.util.shared_constants import CONTROLNET_REUSE_IMAGE_CODE
+from src.util.visual.image_utils import image_to_base64, qimage_from_base64
 
 logger = logging.getLogger(__name__)
 
 
 class AuthError(Exception):
     """Identifies login failures."""
+
+
+UPSCALE_SCRIPT = 'ultimate sd upscale'
 
 
 class A1111Webservice(WebService):
@@ -283,27 +285,29 @@ class A1111Webservice(WebService):
             }
             upscaler = cache.get(Cache.UPSCALE_METHOD)
             if upscaler != 'None':
-                overrides['script_name'] = 'ultimate sd upscale'
-                overrides['script_args'] = [
-                    None,  # not used
-                    cache.get(Cache.GENERATION_SIZE).width(),  # tile width
-                    cache.get(Cache.GENERATION_SIZE).height(),  # tile height
-                    8,  # mask_blur
-                    32,  # padding
-                    64,  # seams_fix_width
-                    0.35,  # seams_fix_denoise
-                    32,  # seams_fix_padding
-                    cache.get_options(Cache.UPSCALE_METHOD).index(upscaler),  # upscaler_index
-                    False,  # save_upscaled_image a.k.a Upscaled
-                    0,  # redraw_mode (linear)
-                    False,  # save_seams_fix_image a.k.a Seams fix
-                    8,  # seams_fix_mask_blur
-                    0,  # seams_fix_type (none)
-                    1,  # target_size_type (use below)
-                    width,  # custom_width
-                    height,  # custom_height
-                    None  # custom_scale (ignored)
-                ]
+                scripts = cache.get(Cache.SCRIPTS_IMG2IMG)
+                if UPSCALE_SCRIPT in scripts:
+                    overrides['script_name'] = UPSCALE_SCRIPT
+                    overrides['script_args'] = [
+                        None,  # not used
+                        cache.get(Cache.GENERATION_SIZE).width(),  # tile width
+                        cache.get(Cache.GENERATION_SIZE).height(),  # tile height
+                        8,  # mask_blur
+                        32,  # padding
+                        64,  # seams_fix_width
+                        0.35,  # seams_fix_denoise
+                        32,  # seams_fix_padding
+                        cache.get_options(Cache.UPSCALE_METHOD).index(upscaler),  # upscaler_index
+                        False,  # save_upscaled_image a.k.a Upscaled
+                        0,  # redraw_mode (linear)
+                        False,  # save_seams_fix_image a.k.a Seams fix
+                        8,  # seams_fix_mask_blur
+                        0,  # seams_fix_type (none)
+                        1,  # target_size_type (use below)
+                        width,  # custom_width
+                        height,  # custom_height
+                        None  # custom_scale (ignored)
+                    ]
             return self.img2img(image, width=width, height=height, overrides=overrides, scripts=scripts)
         # otherwise, normal upscaling without controlNet:
         body = {
@@ -395,7 +399,7 @@ class A1111Webservice(WebService):
         info = res_body['info'] if 'info' in res_body else None
         images = []
         if 'image' in res_body:
-            images.append(pil_image_from_base64(res_body['image']))
+            images.append(qimage_from_base64(res_body['image']))
         if 'images' in res_body:
             for image in res_body['images']:
                 if isinstance(image, dict):

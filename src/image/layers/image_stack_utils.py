@@ -15,6 +15,7 @@ from src.image.layers.image_stack import ImageStack, ERROR_TITLE_CROP_FAILED, ER
     WARNING_TITLE_CROP_DELETED_LAYERS
 from src.image.layers.layer import Layer
 from src.image.layers.layer_group import LayerGroup
+from src.image.layers.layer_resize_mode import LayerResizeMode
 from src.image.layers.text_layer import TextLayer
 from src.image.layers.transform_layer import TransformLayer
 from src.ui.modal.modal_utils import show_error_dialog, show_warning_dialog
@@ -34,7 +35,8 @@ def _tr(*args):
 def resize_image_stack_to_content(image_stack: ImageStack) -> None:
     """Resizes the image to match image content."""
     full_bounds = image_stack.merged_layer_bounds
-    image_stack.resize_canvas(full_bounds.size(), -full_bounds.x(), -full_bounds.y())
+    image_stack.resize_canvas(full_bounds.size(), -full_bounds.x(), -full_bounds.y(), LayerResizeMode.RESIZE_NONE,
+                              False)
 
 
 def crop_image_stack_to_selection(image_stack: ImageStack) -> None:

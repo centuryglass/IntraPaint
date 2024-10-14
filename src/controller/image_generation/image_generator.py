@@ -17,7 +17,7 @@ from src.ui.window.main_window import MainWindow
 from src.util.application_state import AppStateTracker, APP_STATE_LOADING, APP_STATE_EDITING
 from src.util.async_task import AsyncTask
 from src.util.menu_builder import MenuBuilder
-from src.util.shared_constants import EDIT_MODE_INPAINT
+from src.util.shared_constants import EDIT_MODE_INPAINT, PIL_SCALING_MODES
 from src.util.visual.pil_image_utils import pil_image_to_qimage, qimage_to_pil_image, pil_image_scaling
 
 # The QCoreApplication.translate context for strings in this file
@@ -107,7 +107,11 @@ class ImageGenerator(MenuBuilder):
 
     def upscale(self, new_size: QSize) -> bool:
         """Optionally upscale using a custom upscaler, returning whether upscaling was attempted."""
-        scale_all_layers(self._image_stack, new_size.width(), new_size.height())
+        upscale_mode = Cache().get(Cache.UPSCALE_METHOD)
+        if upscale_mode in PIL_SCALING_MODES:
+            scale_all_layers(self._image_stack, new_size.width(), new_size.height(), PIL_SCALING_MODES[upscale_mode])
+        else:
+            scale_all_layers(self._image_stack, new_size.width(), new_size.height())
         return True
 
     def generate(self,

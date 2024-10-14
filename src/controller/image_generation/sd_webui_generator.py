@@ -304,6 +304,15 @@ class SDWebUIGenerator(ImageGenerator):
                 except (KeyError, RuntimeError) as err:
                     logger.error(f'error loading {config_key} from {self._server_url}: {err}')
 
+            try:
+                scripts = self._webservice.get_scripts()
+                if 'txt2img' in scripts:
+                    cache.set(Cache.SCRIPTS_TXT2IMG, scripts['txt2img'])
+                if 'img2img' in scripts:
+                    cache.set(Cache.SCRIPTS_IMG2IMG, scripts['img2img'])
+            except (KeyError, RuntimeError) as err:
+                logger.error(f'error loading scripts from {self._server_url}: {err}')
+
             data_params = (
                 (Cache.STYLES, self._webservice.get_styles),
                 (Cache.CONTROLNET_CONTROL_TYPES, self._webservice.get_controlnet_control_types),

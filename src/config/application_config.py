@@ -6,7 +6,7 @@ from PySide6.QtWidgets import QStyleFactory
 
 from src.config.config import Config
 from src.util.optional_import import optional_import
-from src.util.shared_constants import PROJECT_DIR, DATA_DIR
+from src.util.shared_constants import PROJECT_DIR, DATA_DIR, PIL_SCALING_MODES
 from src.util.singleton import Singleton
 
 # Optional theme modules:
@@ -59,6 +59,10 @@ class AppConfig(Config, metaclass=Singleton):
                 if os.path.isdir(dir_path):
                     self.set(config_key, dir_path)
 
+        scaling_options = list(PIL_SCALING_MODES.keys())
+        self.update_options(AppConfig.PIL_UPSCALE_MODE, scaling_options)
+        self.update_options(AppConfig.PIL_DOWNSCALE_MODE, scaling_options)
+
     # DYNAMIC PROPERTIES:
     # Generate with `python /home/anthony/Workspace/ML/IntraPaint/scripts/dynamic_import_typing.py src/config/application_config.py`
 
@@ -86,6 +90,8 @@ class AppConfig(Config, metaclass=Singleton):
     MIN_EDIT_SIZE: str
     MIN_GENERATION_SIZE: str
     OPENGL_ACCELERATION: str
+    PIL_DOWNSCALE_MODE: str
+    PIL_UPSCALE_MODE: str
     RESTORE_FACES: str
     SAVED_COLORS: str
     SELECTION_COLOR: str

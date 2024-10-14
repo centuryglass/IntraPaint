@@ -244,21 +244,41 @@ Opens a window that lets you change the image size without scaling image content
 
 #### Scale image window
 
+Opens a window that lets you resize the image by scaling image content.  If the Stable-Diffusion image generator is connected, this will also provide options for AI image upscaling. See the [IntraPaint Stable-Diffusion guide](./stable-diffusion.md#ai-upscaling-with-intrapaint) for more details.
+
+Scaling the image behaves differently depending on whether AI upscaling is in use:
+
+- If the image size is decreasing or the image is being scaled while Stable-Diffusion is not connected, each layer will be individually scaled with the chosen scaling algorithm.
+- If Stable-Diffusion is not connected and "None" is chosen, image data will not be resized. Instead, all layers will have a scaling [transformation](./tool_guide.md#-transform-layer-tool-t) applied to make them display at the new size.
+- If AI upscaling is in use, the entire merged image will be used for scaling.  The upscaled image will be created as a new layer above all the previous layers.  As long as none of the layers are locked, all existing layers will have scaling transformations applied so that they are shown at the new size.
+
 <img src="./labeled_screenshots/scale_image.png" alt="Screenshot of the image scaling window, with specific elements numbered."/>
 
-1. **Upscale method selection**:
-2. **New resolution (pixels)**:
-3. **New resolution (scale)**:
-4. **ControlNet tiled upscaling**:
-5. **ControlNet tile downsample rate**:
-6. **"Scale image" button**:
-7. **Cancel button**:
+1. **Upscale method selection**:  Choose between different methods for upscaling the image.
+2. **New resolution (pixels)**:  Set the new image size in pixels.  When changed, "Width scale" and "Height scale" will automatically update to match.
+3. **New resolution (scale)**:  Set the new image size as a multiple of the original size.  When changed, "Width" and "Height" will automatically update to match.
+4. **ControlNet tiled upscaling**:  Only available if the Stable-Diffusion generator is active and ControlNet is working.  When checked, use Stable-Diffusion with the Tile ControlNet model to upscale the image.
+5. **ControlNet tile downsample rate**:  When "ControlNet tiled upscaling" is checked, increase this value to give Stable-Diffusion more freedom to alter details while upscaling.
+6. **"Scale image" button**:  Closes the scaling window and begins scaling the image.
+7. **Cancel button**: Closes the scaling window without making changes.
 
 ### Crop image to selection (Ctrl+Alt+C)
+Crops the image to the largest rectangle that contains all [selected content](./tool_guide.md#selection-tools).  This will be applied to every layer in the image.  If any locked layers aren't totally within the selected area, this will fail, and an error message will list which layers blocked the change.  Any text layers that need to be cropped will first need to be converted to image layers, and a popup will appear asking to confirm or deny the change.
 
 ### Resize image to content (Ctrl+Alt+R)
+Resizes the image to fit all layers. This change does not alter layer data.
 
 ### Update metadata (Ctrl+Alt+D)
+IntraPaint can read and write the following AI image generation parameters in image file metadata:
+- Prompt
+- Negative prompt
+- Generation size
+- Sampling method
+- Sampling steps
+- Guidance scale
+- Seed
+
+It does this in a format compatible with the Stable-Diffusion WebUI, so IntraPaint can load those values directly into the image generation panel when the image is opened in IntraPaint.  When saving, IntraPaint will ask you if you want to save this metadata to the file, and you have the option to make it always save metadata automatically, or never save automatically or ask again.  If automatic metadata updates are disabled, choosing "update metadata" will manually prepare the metadata update, so it'll be written to the image file on the next save.
 
 ### Select image generator (F11)
 Opens a window where you can enable or disable AI image generation, or select alternate AI image generators.  IntraPaint still provides limited support for the obsolete GLID-3-XL image generator, but in most cases you'll probably want to use the Stable-Diffusion image generator instead.  Support for other AI image generators may become available in the future.
@@ -279,29 +299,49 @@ Opens a window where you can enable or disable AI image generation, or select al
 
 ### Generate (F4)
 
+Triggers AI image generation, creating or altering image content to insert into the [image generation area](./inpainting_guide.md#generation-area). Clicking this will switch IntraPaint to the [generated image selection view](./controls.md#generated-image-selection-view). This has the same effect as the Generate button on the [Image Generation Panel](./stable-diffusion.md#image-generation-panel).  This option will only be available if the [image generator is configured and active](../README.md#ai-setup-stable-diffusion).
+
 ---
 
 ## Selection menu
 
+The selection menu controls what image content is selected for editing. See [selection tools](./tool_guide.md#selection-tools) for more information on the way IntraPaint uses image selection.  None of the options in the selection menu alter image content in the selected areas.
+
 ### Select all (Ctrl+A)
+Selects everything in the entire image across all layers, only excluding completely transparent areas.
 
 ### Deselect all (Ctrl+D)
+Removes all selections.
 
 ### Invert selection (Ctrl+I)
+Swaps selected and deselected areas.  Every spot that wasn't selected will be selected, and every spot that was selected will be deselected. 
 
 ### Select layer content (Ctrl+Shift+A)
+Removes any previous selections, and selects all pixels in the current active layer or layer group that aren't completely transparent.
 
 ### Expand selection (Ctrl+=)
+Expands all selected areas in all directions by one pixel.
 
 ### Shrink selection (Ctrl+-)
+Shrinks all selected areas by one pixel.
 
 ---
 
 ## Layers menu
 
+Like most image editors, IntraPaint represents the image as a set of layers.  Layers are arranged in a stack, with each being drawn above the one below it to create the final image.  Only one layer is active at a time; most tools and layer menu options are applied to the active layer.  The active layer can be changed by clicking any layer in the [layer window](#layer-window), or with the [select previous](#select-previous-layer-ctrlpgup)/[select next](#select-next-layer-ctrlpgdown) layer menu options.
+
+IntraPaint supports three types of layers:
+
+- **Image layers**: These contain any image content, and are the only layers that can be directly altered by drawing, painting, or AI image generation.
+- **Text layers**: Each of these contains exactly one block of text. These can only be created using the [text tool](./tool_guide.md#-text-tool-x). Many operations that alter layers will need to convert text layers into image layers before they can be edited. If this is necessary, IntraPaint will always ask for confirmation first.
+- **Layer groups**:  These group together several layers. This lets you edit all of them together in some ways. The [layer transformation tool](./tool_guide.md#-transform-layer-tool-t) is the only tool that can edit a layer group. When a layer group is active, [Cut](#cut-ctrlx), [Copy](#copy-ctrlc), and [Clear](#clear-delete) from the Edit menu can be applied to an active layer group.
+
+The entire image itself is treated as a layer group, which can be selected and edited.  This group can't be locked, deleted, moved, copied, or have isolation enabled, but it can otherwise be edited like any other layer group.
+
 ### Show layer window (F7)
 
-This opens a window you can use to manage image layers.  Layer controls are also available as one of the options on the tool tab under the tool control panel.
+This opens a window you can use to manage image layers.  Layer controls are also available as one of the options on the tool tab under the [tool control panel](./controls.md#main-view).
 
 #### Layer window
 <img src="./labeled_screenshots/layers.png" alt="Screenshot of the layer window, with specific elements numbered."/>
@@ -329,133 +369,163 @@ Click and drag any layer to move it within the list.  Right-click a layer to sho
 
 
 ### Select:
+Options for changing which layer is currently active.
 
 #### Select previous layer (Ctrl+PgUp)
+Selects the layer directly above the current active layer as the new active layer.
+
+- If the current active layer is the top layer in a layer group, this will select the entire group as the active layer.
+- If the next layer up is a layer group, this will select the bottom layer within that group.
 
 #### Select next layer (Ctrl+PgDown)
+Selects the layer directly below the current active layer as the new active layer.
+- If the current active layer is a layer group, this will select the topmost layer within that group. 
+- If the current active layer is the last one in a layer group, this will select the first layer below the group.
 
 ### Move:
+Options for changing the order of layers within the image.
 
 #### Move layer up (Ctrl+Home)
+Moves the active layer up within the layer stack.
+
+- If the next layer up is an unlocked layer group, this moves the layer into that group, placing it at the bottom of the group.
+- If the active layer is at the top of a layer group, this moves it out of that group, placing it above the group.
+- Otherwise, this swaps the layer's position with the one above it.
 
 #### Move layer down (Ctrl+End)
+Moves the active layer down within the layer stack.
+
+- If the next layer down is an unlocked layer group, this moves the layer into that group, placing it at the top of the group.
+- If the active layer is at the bottom of a layer group, this moves it out of that group, placing it below the group.
+- Otherwise, this swaps the layer's position with the one below it.
 
 #### Move layer to top (Ctrl+Shift+Home)
+Moves the active layer above all other layers.
 
 ### Transform:
+Applies basic transformations to the active layer. All of these transformations transform the layer without moving its center.
 
 #### Mirror layer horizontally (Ctrl+Shift+H)
+Flips the active layer from left to right.
 
 #### Mirror layer vertically (Ctrl+Shift+V)
+Flips the active layer from top to bottom.
 
 #### Rotate layer 90° CW (Ctrl+Shift+R)
+Rotates the layer ninety degrees clockwise.
 
 #### Rotate layer 90° CCW (Ctrl+Shift+L)
+Rotates the layer ninety degrees counter-clockwise.
 
 ### New layer (Ctrl+Shift+N)
+Creates a new image layer.  If the active layer is an unlocked layer group, the new layer will be placed within that group at the top. Otherwise, the new layer will be placed directly above the active layer. New image layers will always start with the same size and position as the main image bounds.
 
 ### New layer group (Ctrl+Shift+G)
+Creates a new layer group.  If the active layer is an unlocked layer group, the new group will be placed within that group at the top. Otherwise, the new group will be placed directly above the active layer.
 
 ### Copy layer (Ctrl+Shift+C)
+Creates a new copy of the current active layer, placing it above the active layer.
 
 ### Delete layer (Ctrl+Shift+D)
+Deletes the active layer, selecting the next layer below it as the new active layer.
 
 ### Flatten layer (Ctrl+Shift+F)
+Attempts to simplify the active layer as much as possible without changing the overall appearance of the image.  This makes the following changes:
+- If a layer group is active, all layers within that group will be merged into a single image layer.
+- If a text layer is active, it will be converted into an image layer.
+- If the layer is scaled or rotated, the transformation will be applied directly to layer image data, resetting the layer's scale to 1.0 and rotation to zero degrees.
+- If the layer's opacity is not at 1.0, the image's color values will be directly adjusted to the layer's opacity, and the layer opacity is set to 1.0.
+- If the layer uses any layer mode other than "normal", the effects of that mode will be rendered directly into the layer's image data, and the layer mode will switch to "normal".
+
+If none of these changes are relevant for the current active layer, the "flatten layer" option will be disabled.
 
 ### Merge layer down (Ctrl+Shift+M)
+Attempts to merge a layer with the one beneath it.  This will only be allowed when both layers are unlocked and visible, both are within the same group, and neither layer is also a group.
 
 ### Crop layer to selection (Ctrl+Shift+E)
+Finds the smallest rectangle that contains all selected content within the active layer's bounds, and crops the layer to fit that rectangle.  This will fail if nothing is selected within the layer bounds.
 
 ### Crop layer to contents (Ctrl+Shift+P)
+Crops the layer to the smallest rectangle within the layer that only excludes completely transparent pixels.  This will fail if the entire layer is completely transparent.
 
 ---
 
 ## Filters menu
 
-### RGBA color balance (Ctrl+1)
+The Filters menu lets you apply various changes to image content. When selected, filter menu options will open the filter window:
 
-<img src="./labeled_screenshots/rgba_filter.png" alt="Screenshot of the RGBA filter window, with specific elements numbered."/>
+<img src="./labeled_screenshots/filter.png" alt="Screenshot of the filter window, with specific elements numbered."/>
 
-1. **Color component sliders**:
+1. **Filter-specific label and controls**: These controls will vary depending on the selected filter. Each filter menu options controls are described in its section in this guide.
 2. **"Change selected areas only" checkbox**:  If checked, the filter will only be applied to [selected](./tool_guide.md#selection-tools) areas in the image.
 3. **"Change active layer only" checkbox**:  If checked, the filter will only be applied to the current active layer.
 4. **Filter preview**: Shows a preview of the filter with the current settings applied.
 5. **Apply button**: Closes the window and applies the filter to the image.
 6. **Cancel button**: Closes the window without changing the image.
+
+All filters are available in both the filter menu and the [filter brush tool](./tool_guide.md#-filter-brush-tool-i).
+
+### RGBA color balance (Ctrl+1)
+
+This filter lets you multiply the intensity of each color component. It includes sliders for red, green, blue, and alpha (transparency) values, each starting at 1.0. These can be increased to strengthen their component, or decreased to weaken it.
 
 ### Brightness/contrast (Ctrl+2)
 
-<img src="./labeled_screenshots/brightness_contrast_filter.png" alt="Screenshot of the brightness/contrast filter window, with specific elements numbered."/>
-
-1. **Brightness slider**:
-2. **Contrast slider**:
-3. **"Change selected areas only" checkbox**:  If checked, the filter will only be applied to [selected](./tool_guide.md#selection-tools) areas in the image.
-4. **"Change active layer only" checkbox**:  If checked, the filter will only be applied to the current active layer.
-5. **Filter preview**: Shows a preview of the filter with the current settings applied.
-6. **Apply button**: Closes the window and applies the filter to the image.
-7. **Cancel button**: Closes the window without changing the image.
+This filter provides control over image brightness and contrast. Brightness and contrast values are also multipliers, when set to 1.0 they have no effect.
 
 ### Blur (Ctrl+3)
 
-<img src="./labeled_screenshots/blur_filter.png" alt="Screenshot of the blur filter window, with specific elements numbered."/>
+This filter blurs image content.  The blur filter provides the following controls:
 
-1. **Blurring algorithm**:
-2. **Radius slider**:
-3. **"Change selected areas only" checkbox**:  If checked, the filter will only be applied to [selected](./tool_guide.md#selection-tools) areas in the image.
-4. **"Change active layer only" checkbox**:  If checked, the filter will only be applied to the current active layer.
-5. **Filter preview**: Shows a preview of the filter with the current settings applied.
-6. **Apply button**: Closes the window and applies the filter to the image.
-7. **Cancel button**: Closes the window without changing the image.
+1. **"Blurring mode" dropdown**: Selects between three blurring methods: **Box**, **Gaussian**, and **Simple**. Each produces slightly different results, visible in the filter preview window.
+2. **Radius slider**:  In Box and Gaussian modes only, this slider controls the strength of the blurring operation.
 
 ### Sharpen (Ctrl+4)
 
-<img src="./labeled_screenshots/sharpen_filter.png" alt="Screenshot of the sharpen filter window, with specific elements numbered."/>
-
-1. **Sharpness factor**:
-2. **"Change selected areas only" checkbox**:  If checked, the filter will only be applied to [selected](./tool_guide.md#selection-tools) areas in the image.
-3. **"Change active layer only" checkbox**:  If checked, the filter will only be applied to the current active layer.
-4. **Filter preview**: Shows a preview of the filter with the current settings applied.
-5. **Apply button**: Closes the window and applies the filter to the image.
-6. **Cancel button**: Closes the window without changing the image.
+This filter enhances noise and edges, reducing blurring.  It has only one control, a **factor** spinbox. Increasing the sharpness factor will increase how significant its changes are.
 
 ### Posterize (Ctrl+5)
 
-<img src="./labeled_screenshots/posterize_filter.png" alt="Screenshot of the posterize filter window, with specific elements numbered."/>
-
-1. **Color bit count**:
-2. **"Change selected areas only" checkbox**:  If checked, the filter will only be applied to [selected](./tool_guide.md#selection-tools) areas in the image.
-3. **"Change active layer only" checkbox**:  If checked, the filter will only be applied to the current active layer.
-4. **Filter preview**: Shows a preview of the filter with the current settings applied.
-5. **Apply button**: Closes the window and applies the filter to the image.
-6. **Cancel button**: Closes the window without changing the image.
-
+This filter simplifies image colors, reducing the color complexity of the image.  Its only control is the **bit count** slider, which controls the range of color values allowed within the filtered areas.  At eight the image is unchanged, and colors become increasingly limited as it decreases.
 
 ---
 
 ## Stable-Diffusion menu
 
+This menu is only available when the Stable-Diffusion WebUI image generator is active.  Each of these options will only be provided if IntraPaint detects that the WebUI supports it.
+
+
 ### View saved prompt styles (Ctrl+Alt+1)
+
+This option opens a window where you can access prompt presets saved with the WebUI's [prompt style feature](https://github.com/AUTOMATIC1111/stable-diffusion-webui/wiki/Features#styles).  If you haven't saved any prompt presets within the WebUI, this option won't be visible.
+
+I'd like to provide support for adding and editing styles directly within IntraPaint, but the WebUI API does not currently support style editing. I'll probably eventually either have IntraPaint save new custom styles to a file, or let it directly edit the WebUI's styles.csv file if it can access it.
 
 <img src="./labeled_screenshots/prompt_style_window.png" alt="Screenshot of the prompt style window, with specific elements numbered."/>
 
-1. **Prompt style list**:
-2. **Prompt style name**:
-3. **Prompt text**:
-4. **Negative prompt text**:
-5. **"Add to prompt" button**:
-6. **"Replace prompt" button**:
-7. **Close button**:
+1. **Prompt style list**:  Shows the list of all saved style presets, with the selected one highlighted.
+2. **Prompt style name**:  Shows the name of the selected prompt preset. 
+3. **Prompt text**:  The image generation prompt stored in the selected preset.
+4. **Negative prompt text**:  The negative image generation prompt stored in the selected preset.
+5. **"Add to prompt" button**:  If clicked, the selected preset's prompt and negative prompt are added to the end of the prompt and negative prompt sections in the [image generation panel](./stable-diffusion.md#image-generation-panel).
+6. **"Replace prompt" button**:  If clicked, the selected preset's prompt and negative prompt completely replace the contents of the prompt and negative prompt sections in the [image generation panel](./stable-diffusion.md#image-generation-panel).
+7. **Close button**:  Closes the window.
 
 ### View LORA models (Ctrl+Alt+2)
 
+This option opens a window where you can view and select between LORA models. LORA models provide extensions to Stable-Diffusion models, usually to introduce new concepts or styles not found in the original training data.  LORA model files need to be copied to the **models/Lora** directory within the Stable-Diffusion WebUI before IntraPaint can use them.  This menu option will only appear if IntraPaint detects at least one available LORA model.
+
+
+LORA models are activated by adding text to the prompt in the **\<lora:LORA_NAME:LORA_STRENGTH>** format. LORA_NAME needs to be replaced by the name of the LORA model's file without the extension, and LORA_STRENGTH should be replaced with a multiplier controlling how strongly the LORA will be applied, usually defaulting to 1.0.
+
+
 <img src="./labeled_screenshots/lora_window.png" alt="Screenshot of the LORA window, with specific elements numbered."/>
 
-1. **LORA model option, not selected**:
-2. **Selected LORA model option**:
-3. **LORA model option, no preview**:
-4. **"Add to prompt"/"Remove from prompt" button:**:
-5. **Close button**:
-
+1. **LORA model option, not selected**:  Click any option in the list to select it.
+2. **Selected LORA model option**:  Once selected, the "add to prompt"/"remove from prompt" button will use that LORA.
+3. **LORA model option, no preview**:  The LORA preview images can be set within the Stable-Diffusion WebUI's LORA interface, and IntraPaint will load them when the LORA selection window is opened.  Any LORA without a preview will use this placeholder image.
+4. **"Add to prompt"/"Remove from prompt" button:**:  If the LORA is not already enabled, clicking this button will add it to the prompt field in the [image generation panel](./stable-diffusion.md#image-generation-panel).  If the selected LORA has already been added to the prompt, clicking this button will remove it.
+5. **Close button**:  Close the LORA window.
 
 ### LCM Mode [F10]
 This option is only visible when using Stable-Diffusion, when the LCM LORA model and support for the LCM sampler are detected.  LCM mode dramatically decreases image generation time, and gives more predictable but less creative results. Selecting this option adjusts image generation parameters to match the settings needed by LCM models:

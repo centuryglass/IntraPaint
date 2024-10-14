@@ -128,6 +128,8 @@ class ToolTab(Tab):
         assert removed_tool in self._toolbar_tool_widgets
         self.remove_tab_bar_widget(self._toolbar_tool_widgets[removed_tool])
         del self._toolbar_tool_widgets[removed_tool]
+        if removed_tool in self._recent_tools:
+            self._recent_tools.remove(removed_tool)
 
     def _update_active_tool_slot(self, active_tool: BaseTool) -> None:
         for tool, tool_button in self._toolbar_tool_widgets.items():

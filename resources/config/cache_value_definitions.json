@@ -946,7 +946,25 @@
         "category": "Cache",
         "description": "LoRA model definitions loaded from the webui",
         "type": "list",
-        "default": {},
+        "default": [],
+        "saved": false,
+        "translate": false
+    },
+    "scripts_txt2img": {
+        "label": "Text to image scripts:",
+        "category": "Cache",
+        "description": "Available text-to-image scripts loaded from the webui",
+        "type": "list",
+        "default": [],
+        "saved": false,
+        "translate": false
+    },
+    "scripts_img2img": {
+        "label": "Image to image scripts:",
+        "category": "Cache",
+        "description": "Available image-to-image scripts loaded from the webui",
+        "type": "list",
+        "default": [],
         "saved": false,
         "translate": false
     },
@@ -977,26 +995,6 @@
             "max": 27,
             "step": 1
         }
-    },
-    "upscale_mode": {
-        "label": "Upscale mode:",
-        "category": "Cache",
-        "subcategory": "Image generation",
-        "description": "Upscaling mode used when the inpainting resolution doesn't match the image generation area size.",
-        "type": "string",
-        "default": "Lanczos",
-        "options":  [],
-        "saved": true
-    },
-    "downscale_mode": {
-        "label": "Downscale mode:",
-        "category": "Cache",
-        "subcategory": "Image generation",
-        "description": "Downscaling mode used when the inpainting resolution doesn't match the image generation area size.",
-        "type": "string",
-        "default": "Lanczos",
-        "options": [],
-        "saved": true
     },
     "controlnet_upscaling": {
         "label": "ControlNet tiled upscaling",

@@ -368,10 +368,11 @@ class ImageStack(QObject):
 
     # IMAGE ACCESS / MANIPULATION FUNCTIONS:
 
-    def resize_canvas(self, new_size: QSize, x_offset: int, y_offset: int) -> None:
+    def resize_canvas(self, new_size: QSize, x_offset: int, y_offset: int,
+                      resize_mode: Optional[LayerResizeMode] = None,
+                      crop_layers: Optional[bool] = None) -> None:
         """
-        Changes image size, possibly resizing, translating, or cropping layers, depending on new bounds and cache
-        resize settings.
+        Changes image size, possibly resizing, translating, or cropping layers to match.
 
         Parameters
         ----------
@@ -381,14 +382,21 @@ class ImageStack(QObject):
             X offset where existing image content will be placed in the adjusted image
         y_offset: int
             Y offset where existing image content will be placed in the adjusted layer
+        resize_mode: LayerResizeMode, optional, default=None
+            Sets which layers will be expanded to the new image bounds. If None, the value stored in
+            Cache.CANVAS_RESIZE_LAYER_MODE is used.
+        crop_layers: bool, optional, default=None
+            Sets whether layers should be cropped to fit the new bounds. if None, the value stored in
+            Cache.CANVAS_RESIZE_CROP_LAYERS is used.
         """
         assert isinstance(new_size, QSize)
         last_size = self.size
         selection_state = self.selection_layer.save_state()
         transform = QTransform.fromTranslate(x_offset, y_offset)
         canvas_image_bounds = QRect(QPoint(), new_size)
-        expand_mode = LayerResizeMode.get_from_text(Cache().get(Cache.CANVAS_RESIZE_LAYER_MODE))
-        should_crop_layers = Cache().get(Cache.CANVAS_RESIZE_CROP_LAYERS)
+        expand_mode = resize_mode if resize_mode is not None \
+            else LayerResizeMode.get_from_text(Cache().get(Cache.CANVAS_RESIZE_LAYER_MODE))
+        should_crop_layers = crop_layers if crop_layers is not None else Cache().get(Cache.CANVAS_RESIZE_CROP_LAYERS)
 
         intersect_bounds = canvas_image_bounds.translated(-x_offset, -y_offset)
         interfering_locked_layers = []

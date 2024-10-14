@@ -146,6 +146,8 @@ Fill connected image areas with solid colors or basic patterns.
 ### ![Filter brush tool icon](./tool_icons/filter_icon.png) Filter Brush tool (I)
 Apply any image filter to the image using brush strokes.
 
+This tool uses the same filters that are found in the Filters menu.  See [Filter menu documentation](./menu_options.md#filters-menu) for more information about individual filters and their tool panel options.
+
 #### Basic controls
 - **Left-click**: Draw within the image.
 - **Right-click**: Draw with one-pixel brush width.
