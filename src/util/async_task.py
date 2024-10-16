@@ -15,6 +15,8 @@ class AsyncTask(QObject):
     def __init__(self, action: ThreadAction, set_loading_state: bool = False) -> None:
         super().__init__()
         self._action = action
+        if QThreadPool.globalInstance().maxThreadCount() < 3:
+            QThreadPool.globalInstance().setMaxThreadCount(3)
         if set_loading_state:
             AppStateTracker.set_app_state(APP_STATE_LOADING)
 

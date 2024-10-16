@@ -204,6 +204,7 @@ class SDWebUIGenerator(ImageGenerator):
         self._preview = QImage(SD_PREVIEW_IMAGE)
         self._controlnet_tab: Optional[Tab] = None
         self._controlnet_panel: Optional[TabbedControlnetPanel] = None
+        self._active_task_id = 0
 
     def get_display_name(self) -> str:
         """Returns a display name identifying the generator."""
@@ -501,12 +502,15 @@ class SDWebUIGenerator(ImageGenerator):
     def _async_progress_check(self, external_status_signal: Optional[Signal] = None):
         webservice = self._webservice
         assert webservice is not None
+        self._active_task_id += 1
+        generator = self
 
         class _ProgressTask(AsyncTask):
             status_signal = Signal(dict)
 
-            def __init__(self) -> None:
+            def __init__(self, id: int) -> None:
                 super().__init__(self._check_progress)
+                self._id = id
                 self.should_stop = False
 
             def signals(self) -> List[Signal]:
@@ -525,7 +529,8 @@ class SDWebUIGenerator(ImageGenerator):
                         assert webservice is not None
                         status = webservice.progress_check()
                         progress_percent = int(status[PROGRESS_KEY_FRACTION] * 100)
-                        if progress_percent < max_progress or progress_percent >= 100:
+                        if (progress_percent < max_progress or progress_percent >= 100
+                                or generator._active_task_id != self._id):
                             break
                         if progress_percent <= 1:
                             continue
@@ -556,7 +561,7 @@ class SDWebUIGenerator(ImageGenerator):
                             break
                         continue
 
-        task = _ProgressTask()
+        task = _ProgressTask(self._active_task_id)
         assert self._window is not None
         if external_status_signal is None:
             task.status_signal.connect(self._apply_status_update)
