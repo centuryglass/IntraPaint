@@ -447,7 +447,7 @@ class AppController(MenuBuilder):
         self._sd_generator = SDWebUIGenerator(self._window, self._image_stack, args)
         if not is_pyinstaller_bundle():
             self._glid_generator = Glid3XLGenerator(self._window, self._image_stack, args)
-            self._glid_web_generator = Glid3WebserviceGenerator(self._window, self._image_stack, args)
+        self._glid_web_generator = Glid3WebserviceGenerator(self._window, self._image_stack, args)
         self._test_generator = TestGenerator(self._window, self._image_stack)
 
         mode = args.mode
