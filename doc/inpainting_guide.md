@@ -149,7 +149,8 @@ It's much easier to get the AI to do exactly what you want if you can manually s
 |                                  0.6 denoising strength, Stable-Diffusion tries to apply the whole prompt to a small area.                                   | With the prompt adjusted, high denoising strength no longer causes problems. | With denoising strength reduced to 0.2, even a completely incorrect prompt can sometimes work. |
 
 ## Effective ControlNet use
-- When inpainting with ControlNet, you can increase the denoising strength much higher, even up to 100%, and ControlNet will make sure the appropriate content is still preserved.  For this to work well, it's important to have selected an accurate prompt and a model trained to understand the type of image you're making, or it will struggle to get good results.
+- When inpainting with ControlNet, you can increase the denoising strength much higher, even up to 100%, and ControlNet will make sure the appropriate content is still preserved.
+- For this to work well, it's important to have selected an accurate prompt and a model trained to understand the type of image you're making, or it will struggle to get good results.
 - Many of the available ControlNet models are extremely similar. For example, the Canny, Lineart, scribble, and MLSD models all provide slightly different methods of preserving initial lines. None of them are objectively best, you'll need to try out several to find which one you prefer.
    * For coloring line art, I personally prefer the Canny model (control-canny-fp16). Canny is particularly strict about preserving original lines, making it a good choice when you don't want to alter those at all.
    * For cleaning up rough sketches, I've gotten best results from the Scribble model (control-scribble-fp16), using the scribble_xdog preprocessor.
