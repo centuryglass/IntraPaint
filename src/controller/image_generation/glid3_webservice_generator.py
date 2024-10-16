@@ -222,6 +222,7 @@ class Glid3WebserviceGenerator(ImageGenerator):
             if not url_entered:
                 return False
             self._server_url = new_url
+        Cache().set(Cache.GLID_SERVER_URL, self._server_url)
         Cache().set(Cache.GENERATION_SIZE, QSize(256, 256))
         Cache().set(Cache.EDIT_MODE, EDIT_MODE_INPAINT)
         return True

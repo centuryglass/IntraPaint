@@ -271,7 +271,10 @@ class SDWebUIGenerator(ImageGenerator):
                                                             text=self._server_url)
                 if not url_entered:
                     return False
-                return self.connect_to_url(new_url)
+                if self.connect_to_url(new_url):
+                    Cache().set(Cache.SD_SERVER_URL, new_url)
+                    return True
+                return False
 
             # If a login is required and none is defined in the environment, the webservice will automatically request
             # one during the following setup process:

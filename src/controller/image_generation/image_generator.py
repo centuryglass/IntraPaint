@@ -48,6 +48,7 @@ class ImageGenerator(MenuBuilder):
         self._window = window
         self._image_stack = image_stack
         self._generated_images: List[QImage] = []
+        self._generating = False
 
         class _SignalObject(QObject):
             status_signal = Signal(str)
@@ -137,9 +138,13 @@ class ImageGenerator(MenuBuilder):
 
     def start_and_manage_image_generation(self) -> None:
         """Start inpainting/image editing based on the current state of the UI."""
+        if self._generating:
+            logger.error('Caught and ignored duplicate image generation request.')
+            return
         assert self._window is not None
         cache = Cache()
         self._generated_images.clear()
+        self._generating = True
 
         source_selection = self._image_stack.qimage_generation_area_content()
         inpaint_image = source_selection.copy()
@@ -189,11 +194,14 @@ class ImageGenerator(MenuBuilder):
             """Close sample selector and show an error popup if anything goes wrong."""
             assert self._window is not None
             self._window.set_image_selector_visible(False)
+            self._window.set_is_loading(False)
+            self._generating = False
             show_error_dialog(self._window, GENERATE_ERROR_TITLE_UNEXPECTED, err)
 
         def _finished():
             assert self._window is not None
             self._window.set_is_loading(False)
+            self._generating = False
             inpaint_task.error_signal.disconnect(handle_error)
             inpaint_task.status_signal.disconnect(self._apply_status_update)
             inpaint_task.finish_signal.disconnect(_finished)
