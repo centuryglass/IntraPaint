@@ -179,7 +179,7 @@ class Glid3WebserviceGenerator(ImageGenerator):
 
     def __init__(self, window: MainWindow, image_stack: ImageStack, args: Namespace) -> None:
         super().__init__(window, image_stack)
-        self._server_url = args.server_url if args.server_url != '' else DEFAULT_GLID_URL
+        self._server_url = args.server_url if args.server_url != '' else Cache().get(Cache.GLID_SERVER_URL)
         self._fast_ngrok_connection = args.fast_ngrok_connection
         self._control_panel: Optional[GlidPanel] = None
         self._preview = QImage(GLID_PREVIEW_IMAGE)
@@ -217,7 +217,8 @@ class Glid3WebserviceGenerator(ImageGenerator):
            connect to required external services, returning whether the process completed correctly."""
         while self._server_url == '' or not self.is_available():
             prompt_text = URL_REQUEST_MESSAGE if self._server_url == '' else URL_REQUEST_RETRY_MESSAGE
-            new_url, url_entered = QInputDialog.getText(self.menu_window, URL_REQUEST_TITLE, prompt_text)
+            new_url, url_entered = QInputDialog.getText(self.menu_window, URL_REQUEST_TITLE, prompt_text,
+                                                        text=self._server_url)
             if not url_entered:
                 return False
             self._server_url = new_url

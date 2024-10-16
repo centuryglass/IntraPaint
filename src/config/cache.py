@@ -143,6 +143,7 @@ class Cache(Config, metaclass=Singleton):
     FILTER_TOOL_SELECTED_FILTER: str
     GENERATION_SIZE: str
     GENERATION_TAB_BAR: str
+    GLID_SERVER_URL: str
     GUIDANCE_SCALE: str
     IMAGE_LAYER_SCALING_BEHAVIOR: str
     INPAINT_FULL_RES: str
@@ -170,6 +171,7 @@ class Cache(Config, metaclass=Singleton):
     SAVED_NAVIGATION_WINDOW_POS: str
     SCRIPTS_IMG2IMG: str
     SCRIPTS_TXT2IMG: str
+    SD_SERVER_URL: str
     SEED: str
     SELECTION_BRUSH_SIZE: str
     SHAPE_TOOL_DASH_PATTERN: str

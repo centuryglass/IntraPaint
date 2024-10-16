@@ -195,7 +195,7 @@ class SDWebUIGenerator(ImageGenerator):
 
     def __init__(self, window: MainWindow, image_stack: ImageStack, args: Namespace) -> None:
         super().__init__(window, image_stack)
-        self._server_url = args.server_url if args.server_url != '' else DEFAULT_SD_URL
+        self._server_url = args.server_url if args.server_url != '' else Cache().get(Cache.SD_SERVER_URL)
         self._webservice: Optional[A1111Webservice] = A1111Webservice(self._server_url)
         self._lora_images: Optional[Dict[str, Optional[QImage]]] = None
         self._menu_actions: Dict[str, List[QAction]] = {}
@@ -267,7 +267,8 @@ class SDWebUIGenerator(ImageGenerator):
                 self._webservice = A1111Webservice(self._server_url)
             while self._server_url == '' or not self.is_available():
                 prompt_text = URL_REQUEST_MESSAGE if self._server_url == '' else URL_REQUEST_RETRY_MESSAGE
-                new_url, url_entered = QInputDialog.getText(self.menu_window, URL_REQUEST_TITLE, prompt_text)
+                new_url, url_entered = QInputDialog.getText(self.menu_window, URL_REQUEST_TITLE, prompt_text,
+                                                            text=self._server_url)
                 if not url_entered:
                     return False
                 return self.connect_to_url(new_url)
@@ -694,6 +695,10 @@ class SDWebUIGenerator(ImageGenerator):
             raise RuntimeError(ERROR_MESSAGE_TIMEOUT)
         except (RuntimeError, ConnectionError) as image_gen_error:
             logger.error(f'request failed: {image_gen_error}')
+            raise RuntimeError(f'request failed: {image_gen_error}') from image_gen_error
+        except Exception as unexpected_err:
+            logger.error('Unexpected error:', unexpected_err)
+            raise RuntimeError(f'unexpected error: {unexpected_err}') from unexpected_err
 
     def _update_styles(self, style_list: List[Dict[str, str]]) -> None:
         try:

@@ -996,6 +996,26 @@
             "step": 1
         }
     },
+    "sd_server_url": {
+        "label": "Stable-Diffusion server URL:",
+        "category": "Cache",
+        "subcategory": "Image generation",
+        "description": "Cached URL for the Stable-Diffusion image generation server.",
+        "type": "string",
+        "default": "http://localhost:7860",
+        "saved": true,
+        "translate": false
+    },
+    "glid_server_url": {
+        "label": "GLID-3-XL server URL:",
+        "category": "Cache",
+        "subcategory": "Image generation",
+        "description": "Cached URL for the GLID-3-XL image generation server.",
+        "type": "string",
+        "default": "http://localhost:5555",
+        "saved": true,
+        "translate": false
+    },
     "controlnet_upscaling": {
         "label": "ControlNet tiled upscaling",
         "category": "Cache",

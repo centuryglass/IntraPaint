@@ -1,4 +1,5 @@
 """Interface for providing image generation capabilities."""
+import logging
 from typing import List, Dict, Optional, Any
 
 from PIL import Image, ImageFilter
@@ -33,6 +34,8 @@ GENERATE_ERROR_TITLE_UNEXPECTED = _tr('Inpainting failure')
 GENERATE_ERROR_TITLE_NO_IMAGE = _tr('Save failed')
 GENERATE_ERROR_TITLE_EXISTING_OP = _tr('Failed')
 GENERATE_ERROR_MESSAGE_EXISTING_OP = _tr('Existing image generation operation not yet finished, wait a little longer.')
+
+logger = logging.getLogger(__name__)
 
 
 class ImageGenerator(MenuBuilder):
@@ -176,6 +179,9 @@ class ImageGenerator(MenuBuilder):
                 self.generate(status_signal, image, mask)
             except (IOError, ValueError, RuntimeError) as err:
                 error_signal.emit(err)
+            except Exception as unexpected_err:
+                logger.error('Unexpected error:', unexpected_err)
+                error_signal.emit(unexpected_err)
 
         inpaint_task = _AsyncInpaintTask(_do_inpaint)
 
