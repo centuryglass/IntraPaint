@@ -125,7 +125,7 @@ class ShapeSelectionTool(BaseTool):
     def _end_drag(self, image_coordinates: QPoint) -> None:
         assert self._dragging and self._selection_handler.selecting
         selection = self._selection_handler.end_selection(image_coordinates)
-        if self._image_stack.merged_layer_bounds.contains(selection.boundingRect().toAlignedRect()):
+        if self._image_stack.merged_layer_bounds.intersects(selection.boundingRect().toAlignedRect()):
             with self._image_stack.selection_layer.borrow_image() as selection_image:
                 selection.translate(-self._image_stack.selection_layer.position)
                 path = QPainterPath()

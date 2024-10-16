@@ -21,6 +21,7 @@ from src.ui.graphics_items.temp_dashed_line_item import TempDashedLineItem
 from src.ui.image_viewer import ImageViewer
 from src.ui.panel.tool_control_panels.brush_tool_panel import BrushToolPanel
 from src.util.shared_constants import PROJECT_DIR, FLOAT_MAX
+from src.util.visual.geometry_utils import closest_point_keeping_angle, closest_point_at_angle_option
 from src.util.visual.text_drawing_utils import left_button_hint_text, right_button_hint_text
 
 CURSOR_PATH_BRUSH_DEFAULT = f'{PROJECT_DIR}/resources/cursors/brush_cursor.svg'
@@ -277,28 +278,14 @@ class BrushTool(BaseTool):
 
         if KeyConfig.modifier_held(KeyConfig.FIXED_ANGLE_MODIFIER) and self._last_pos is not None \
                 and self._last_pos != image_coordinates:
-            closest_point = None
             last_pos = QPointF(self._last_pos)
+            current_pos = QPointF(image_coordinates)
             if self._fixed_angle is None:
-                distance_line = QLineF(last_pos, QPointF(image_coordinates))
-                min_distance = FLOAT_MAX
-                for angle in range(0, 360, 45):
-                    distance_line.setAngle(angle)
-                    distance_from_mouse = QLineF(QPointF(image_coordinates), distance_line.p2()).length()
-                    if distance_from_mouse < min_distance:
-                        self._fixed_angle = angle
-                        min_distance = distance_from_mouse
-                        closest_point = distance_line.p2().toPoint()
+                closest_point_f, self._fixed_angle = closest_point_at_angle_option(last_pos, current_pos,
+                                                                                   list(range(0, 360, 45)))
+                closest_point = closest_point_f.toPoint()
             else:
-                line = QLineF(last_pos, last_pos + QPointF(1.0, 0.0))
-                line.setAngle(self._fixed_angle)
-                normal_line = QLineF(QPointF(image_coordinates), QPointF(image_coordinates) + QPointF(1.0, 0.0))
-                normal_line.setAngle(self._fixed_angle + 90)
-                intersect_type, closest_point = line.intersects(normal_line)
-                assert intersect_type != QLineF.IntersectionType.NoIntersection, f'{line} parallel to {normal_line}'
-                assert isinstance(closest_point, QPointF)
-                closest_point = closest_point.toPoint()
-            assert isinstance(closest_point, QPoint)
+                closest_point = closest_point_keeping_angle(last_pos, current_pos, self._fixed_angle).toPoint()
             image_coordinates = closest_point
         if KeyConfig.modifier_held(KeyConfig.LINE_MODIFIER) and self._last_pos is not None:
             pressure = self._last_pressure if self._tablet_pressure is None else self._tablet_pressure
@@ -308,6 +295,7 @@ class BrushTool(BaseTool):
                                   self._tablet_y_tilt)
             self._brush.stroke_to(image_coordinates.x(), image_coordinates.y(), pressure,
                                   self._tablet_x_tilt, self._tablet_y_tilt)
+            self._preview_line.setVisible(False)  # Hide it until it can update with new last_pos value
         else:
             self._brush.stroke_to(image_coordinates.x(), image_coordinates.y(), self._tablet_pressure,
                                   self._tablet_x_tilt, self._tablet_y_tilt)
@@ -328,7 +316,8 @@ class BrushTool(BaseTool):
         self._drawing = True
         self._fixed_angle = None
         self._last_pressure = None
-        if KeyConfig.modifier_held(KeyConfig.FIXED_ANGLE_MODIFIER):
+        if KeyConfig.modifier_held(KeyConfig.FIXED_ANGLE_MODIFIER) and not \
+                KeyConfig.modifier_held(KeyConfig.LINE_MODIFIER):
             self._last_pos = image_coordinates  # Update so previous clicks don't constrain the angle
         if self._cached_size is not None and event.buttons() == Qt.MouseButton.LeftButton:
             self.brush_size = self._cached_size
@@ -349,7 +338,12 @@ class BrushTool(BaseTool):
 
         if KeyConfig.modifier_held(KeyConfig.LINE_MODIFIER) and self._last_pos is not None:
             self._preview_line.setVisible(True)
-            self._preview_line.set_line(QLineF(QPointF(self._last_pos), QPointF(image_coordinates)))
+            line_end = QPointF(image_coordinates)
+            if KeyConfig.modifier_held(KeyConfig.FIXED_ANGLE_MODIFIER):
+
+                line_end, angle = closest_point_at_angle_option(QPointF(self._last_pos), line_end,
+                                                                list(range(0, 360, 45)))
+            self._preview_line.set_line(QLineF(QPointF(self._last_pos), line_end))
         if (event.buttons() == Qt.MouseButton.LeftButton or event.buttons() == Qt.MouseButton.RightButton
                 and self._drawing):
             self._stroke_to(image_coordinates)

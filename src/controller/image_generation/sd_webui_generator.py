@@ -10,6 +10,7 @@ import requests
 from PySide6.QtCore import Signal, QSize, QThread
 from PySide6.QtGui import QImage, QAction, QIcon
 from PySide6.QtWidgets import QInputDialog, QApplication
+from requests import ReadTimeout
 
 from src.api.a1111_webservice import A1111Webservice, AuthError
 from src.config.a1111_config import A1111Config
@@ -138,6 +139,7 @@ AUTH_ERROR_DETAIL_KEY = 'detail'
 AUTH_ERROR_MESSAGE = _tr('Not authenticated')
 INTERROGATE_ERROR_MESSAGE_NO_IMAGE = _tr('Open or create an image first.')
 ERROR_MESSAGE_EXISTING_OPERATION = _tr('Existing operation still in progress')
+ERROR_MESSAGE_TIMEOUT = _tr('Request timed out')
 INTERROGATE_ERROR_TITLE = _tr('Interrogate failure')
 INTERROGATE_LOADING_TEXT = _tr('Running CLIP interrogate')
 URL_REQUEST_TITLE = _tr('Inpainting UI')
@@ -406,7 +408,10 @@ class SDWebUIGenerator(ImageGenerator):
         if len(web_changes) > 0:
             def _update_config() -> None:
                 assert self._webservice is not None
-                self._webservice.set_config(changed_settings)
+                try:
+                    self._webservice.set_config(changed_settings)
+                except ReadTimeout:
+                    logger.error('Settings update timed out')
 
             update_task = AsyncTask(_update_config, True)
 
@@ -448,6 +453,8 @@ class SDWebUIGenerator(ImageGenerator):
             try:
                 assert self._webservice is not None
                 prompt_ready.emit(self._webservice.interrogate(image))
+            except ReadTimeout:
+                raise RuntimeError(ERROR_MESSAGE_TIMEOUT)
             except (RuntimeError, AssertionError) as err:
                 logger.error(f'err:{err}')
                 error_signal.emit(err)
@@ -535,6 +542,8 @@ class SDWebUIGenerator(ImageGenerator):
                                 else:
                                     status_text = f'{status_text} ETA: {seconds}s'
                         status_signal.emit({'progress': status_text})
+                    except ReadTimeout:
+                        error_count += 1
                     except RuntimeError as err:
                         error_count += 1
                         logger.error(f'Error {error_count}: {err}')
@@ -583,6 +592,8 @@ class SDWebUIGenerator(ImageGenerator):
                 if info is not None:
                     logger.debug(f'Upscaling result info: {info}')
                 image_ready.emit(images[-1])
+            except ReadTimeout:
+                error_signal.emit(RuntimeError(ERROR_MESSAGE_TIMEOUT))
             except IOError as err:
                 error_signal.emit(err)
 
@@ -659,11 +670,11 @@ class SDWebUIGenerator(ImageGenerator):
 
             # Check progress before starting:
         assert self._webservice is not None
-        init_data = self._webservice.progress_check()
-        if init_data[PROGRESS_KEY_CURRENT_IMAGE] is not None:
-            raise RuntimeError(ERROR_MESSAGE_EXISTING_OPERATION)
-        self._async_progress_check(status_signal)
         try:
+            init_data = self._webservice.progress_check()
+            if init_data[PROGRESS_KEY_CURRENT_IMAGE] is not None:
+                raise RuntimeError(ERROR_MESSAGE_EXISTING_OPERATION)
+            self._async_progress_check(status_signal)
             if edit_mode == EDIT_MODE_TXT2IMG:
                 gen_size = Cache().get(Cache.GENERATION_SIZE)
                 width = gen_size.width()
@@ -679,8 +690,9 @@ class SDWebUIGenerator(ImageGenerator):
                 if isinstance(info, dict) and 'seed' in info:
                     status = {'seed': str(info['seed'])}
                     status_signal.emit(status)
-
-        except RuntimeError as image_gen_error:
+        except ReadTimeout:
+            raise RuntimeError(ERROR_MESSAGE_TIMEOUT)
+        except (RuntimeError, ConnectionError) as image_gen_error:
             logger.error(f'request failed: {image_gen_error}')
 
     def _update_styles(self, style_list: List[Dict[str, str]]) -> None:

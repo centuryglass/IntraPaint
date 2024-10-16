@@ -1,13 +1,11 @@
 # Development tasks
 
-## Before next release:
-- Basic workflow tutorials (< 1 day)
-- Final timelapse video (< 5 days)
-- Upscale: make new layer, scale up existing layers
+
+- I've been missing angle-snapping on straight line drawing that I think it's worth prioritizing.
+
 
 ## Priority issues:
 - Use improved input hints on generated image picker
-- "crop layer to selection": overlap handling on layer groups needs fixes
 - layer flattening issue on groups containing groups: test with "group compositing" in layer_blend_test.ora
 
 ## Timelapse video
@@ -29,21 +27,8 @@
 - Brush tool (acrylics): 
 
 ## Documentation + Release
-- Create example images for README, finish missing sections and improve writing
-- Prioritize examples showing the actual interface over standalone outputs
-- Create tutorials for common workflows
-    * Editing with the sketch layer
-    * Filling in details with controlNet + tile
 - New timelapse editing video with improved UI, scripted to showcase features.
-- Update Windows libmypaint DLLs
-- Add macOS (intel and M1), ARM linux libmypaint libraries
 
-
-## Tutorial topics
-- Visual influence on control: sketching details to guide inpainting
-- Generation area control: effects of generation area on content
-- Stable-diffusion settings: what do all those options do:
-- ControlNet model guides
 
 ## Possible lurking bugs
 Things I never fixed but can no longer reproduce, or that come from external issues:
@@ -71,6 +56,7 @@ Things I never fixed but can no longer reproduce, or that come from external iss
 ## Minor bugs:
 - Some of the MyPaint brushes are clearly not working. Cross-test on Windows and with actual MyPaint, refer to images in examples folder.
 - LayerPanel layout still shows some odd glitches on occasion
+- "crop layer to selection": overlap handling on layer groups may still have some issues with groups overlapping the selection boundary
 
 ## Help window
 - Rich text tutorial content, with images and dynamic hotkeys.
@@ -105,6 +91,8 @@ Things I never fixed but can no longer reproduce, or that come from external iss
 - When the drawing buffer has huge numbers of pending operations, see if we can defer some of them to give the window time to update
 
 ## libmypaint
+- Update Windows libmypaint DLLs
+- Add macOS (intel and M1), ARM linux libmypaint libraries
 - Import latest code/changes
 - Get the demo app working again
 - Port to qtpy for maximum compatibility
