@@ -1,6 +1,6 @@
 """Provides a utility function for handling image or widget placement."""
 import math
-from typing import Tuple, Optional
+from typing import Tuple, Optional, List
 
 from PySide6.QtCore import QRect, QSize, QRectF, QSizeF, QPoint, QPointF, QLineF, Qt, QMargins
 from PySide6.QtGui import QTransform, QPolygonF, QPainter, QColor
@@ -318,3 +318,32 @@ def closest_size_keeping_aspect_ratio(new_size: QSizeF, aspect_ratio: float) -> 
     closest_point = closest_point_keeping_aspect_ratio(QPointF(new_size.width(), new_size.height()), QPointF(),
                                                        aspect_ratio)
     return QSizeF(closest_point.x(), closest_point.y())
+
+
+def closest_point_keeping_angle(start_point: QPointF, end_point: QPointF, angle_degrees: float) -> QPointF:
+    """Given a start point, an end point, and an angle, return the closest point to the end point that keeps
+       the angle of the line fixed at angle_degrees."""
+    fixed_line = QLineF(start_point, end_point)
+    fixed_line.setAngle(angle_degrees)
+    perpendicular_line = QLineF(end_point, end_point + QPointF(1.0, 0.0))
+    perpendicular_line.setAngle(angle_degrees + 90.0)
+    return fixed_line.intersects(perpendicular_line)[1]
+
+
+def closest_point_at_angle_option(start_point: QPointF, end_point: QPointF,
+                                  angles: List[float]) -> Tuple[QPointF, float]:
+    """Given a start point, an end point, and a list of possible angles, return the closest point to the end point that
+       fixes the angle at a value in the list, and the angle selected."""
+    closest_point: Optional[QPointF] = None
+    distance = FLOAT_MAX
+    closest_angle = -1.0
+    for angle in angles:
+        closest_at_angle = closest_point_keeping_angle(start_point, end_point, angle)
+        test_distance = QLineF(end_point, closest_at_angle).length()
+        if test_distance < distance:
+            closest_point = closest_at_angle
+            distance = test_distance
+            closest_angle = angle
+    assert closest_point is not None
+    return closest_point, closest_angle
+

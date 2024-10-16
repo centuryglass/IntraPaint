@@ -167,6 +167,7 @@ class MenuBuilder:
         if len([act for act in menu.actions() if act.isEnabled()]) == 0:
             _menu_set_visible(menu, False)
 
+
     # noinspection PyUnresolvedReferences
     def build_menus(self) -> None:
         """Add all @menu_action methods from this class to the window as menu items."""
@@ -178,15 +179,16 @@ class MenuBuilder:
             menu_name = menu_data.menu_name
             key = menu_data.config_key
             title = KeyConfig().get_label(key)
-            # Check if the action already exists. If so, remove it if checks are no longer passing.
-            existing_action = self._find_action(menu_name, title)
-            if existing_action is not None:
-                if menu_data.condition_check is not None and menu_data.condition_check(self) is False:
+
+            # Make sure any condition check passes before adding/restoring the menu item:
+            if menu_data.condition_check is not None and menu_data.condition_check(self) is False:
+                # Blocked by the condition check, disable the action if it's already present:
+                existing_action = self._find_action(menu_name, title)
+                if existing_action is not None:
                     self.remove_menu_action(menu_name, title)
                 continue
-            # If not blocked by condition checks, create and add the new item:
-            if menu_data.condition_check is not None and menu_data.condition_check(self) is False:
-                continue
+
+            # Condition check passed, add or restore menu item:
             action = self.add_menu_action(menu_name, menu_action_method, key)
             if action is not None and menu_data.valid_app_states is not None:
                 AppStateTracker.set_enabled_states(action, menu_data.valid_app_states)

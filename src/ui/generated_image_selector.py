@@ -691,12 +691,15 @@ class _ImageOption(QGraphicsPixmapItem):
         config = AppConfig()
         full_size = cache.get(Cache.GENERATION_SIZE)
         final_size = cache.get(Cache.EDIT_SIZE)
-        if new_image.size() == full_size:
+        if new_image.size() != full_size:
             self._full_image = new_image
             self._scaled_image = pil_image_scaling(new_image, final_size)
-        elif new_image.size() == final_size:
+        if new_image.size() == final_size:
             self._full_image = pil_image_scaling(new_image, full_size)
             self._scaled_image = new_image
+        else:
+            self._full_image = new_image
+            self._scaled_image = pil_image_scaling(new_image, final_size)
         self.setPixmap(QPixmap.fromImage(self._full_image if config.get(AppConfig.SHOW_OPTIONS_FULL_RESOLUTION)
                                          else self._scaled_image))
         self.update()

@@ -74,7 +74,7 @@ class KeyConfig(Config, metaclass=Singleton):
             for modifier in keys:
                 if modifier == Qt.KeyboardModifier.NoModifier:
                     continue
-                test_value = held_modifiers if exclusive else (modifier and held_modifiers)
+                test_value = held_modifiers if exclusive else (modifier & held_modifiers)
                 if test_value == modifier:
                     return True
             return False
@@ -200,6 +200,7 @@ class KeyConfig(Config, metaclass=Singleton):
     COPY_LAYER_SHORTCUT: str
     COPY_SHORTCUT: str
     CROP_IMAGE_SHORTCUT: str
+    CROP_IMAGE_TO_GEN_SHORTCUT: str
     CROP_LAYER_TO_SELECTION_SHORTCUT: str
     CROP_TO_CONTENT_SHORTCUT: str
     CUT_SHORTCUT: str

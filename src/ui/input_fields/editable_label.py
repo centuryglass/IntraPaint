@@ -120,4 +120,5 @@ class EditableLabel(QWidget):
             self._layout.addWidget(widget)
             widget.setEnabled(True)
             widget.setVisible(True)
+        self._field.setFocus(Qt.FocusReason.OtherFocusReason)
         self.update()

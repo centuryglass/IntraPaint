@@ -74,16 +74,23 @@ Most Stable-Diffusion models are variants of two different base model types, eac
 - Flux: Not a Stable-Diffusion model, but many Stable-Diffusion clients support it. Its capabilities dramatically surpass SDXL, but it's even slower and more resource-intensive.
 
 ### Community Models
-It's rarely recommended to use the base models directly, as they are usually surpassed by fine-tuned model variants and mixes released by hobbyists and enthusiasts on platforms like [HuggingFace](https://huggingface.co/) and [Civitai](https://civitai.com/). Some models specialize in styles (anime, realism), while others have more general improvements. There's no one best option, it really depends on what you're trying to do. Keep experimenting since new models are released frequently.
+It's rarely recommended to use the base models directly, as they are usually surpassed by fine-tuned model variants and mixes released by hobbyists and enthusiasts on platforms like [HuggingFace](https://huggingface.co/) and [Civitai](https://civitai.com/). Some models specialize in specific artistic styles, while others have more general improvements. There's no one best option, it really depends on what you're trying to do. Keep experimenting since new models are released frequently.
 
+#### Some examples:
 
-| Model name and link          |      Example image       | Strengths and weaknesses |
-|:-----------------------------|:------------------------:|:-------------------------|
-| TODO: a realistic model      | model_example_{name}.png | TODO: describe           |
-| TODO: a painterly model      | model_example_{name}.png | TODO: describe           |
-| TODO: an anime/cartoon model | model_example_{name}.png | TODO: describe           |
+| Stable-Diffusion 1.5 (base model)                                               |       [Photon](https://civitai.com/models/84728/photon)        |   [Arthemy Comics](https://civitai.com/models/54073?modelVersionId=830649)    | [Oil painting](https://civitai.com/models/20184/oil-painting?modelVersionId=23979) |
+|:-------------------------------------------------------------------------------:|:--------------------------------------------------------------:|:-----------------------------------------------------------------------------:|:----------------------------------------------------------------------------------:|
+| ![Model example, base Stable-Diffusion 1.5](../examples/model_example_SD15.png) | ![Model example, Photon](../examples/model_example_photon.png) | ![Model example, Arthemy Comics](../examples/model_example_arthemyComics.png) |     ![Model example, Oil painting](../examples/model_example_oilpainting.png)      |
 
-TODO: Prompt, negative, step count, CFG scale, strength for whatever prompt I decide to use for an example.
+Each of those images were generated at 640x640 with the exact same parameters:
+- **Prompt**: Cinematic, photoshoot, Legendary hacker outlaw, 90's fashion, pastel colors, creative anachronism, weird tattoos, balding, realistic hologram, Soviet art, tapestry, sitting at retro computer, many CRTs
+- **Negative prompt**: poor quality, worst quality
+- **Sampling steps**: 30
+- **Guidance scale**: 8.0
+- **Sampling method**: Euler a
+- **Seed**: 3915102715
+
+In each case the only difference is the AI model chosen. All models used are variants of Stable-Diffusion 1.5.
 
 ---
 # Inpainting strategies
@@ -92,73 +99,70 @@ TODO: Prompt, negative, step count, CFG scale, strength for whatever prompt I de
 
 **Know Your Model’s Capabilities**: Models based on SD1.5 work best at 512x512, but fine-tuned models based on SD1.5 can often perform well at 640x640 or higher. SDXL models work best at 1024x1024.
 
-|                                                   TODO: resolution_example_1.png                                                    |                                                                             TODO: resolution_example_2.png                                                                             |                                                                  TODO: resolution_example_3.png                                                                   |
-|:-----------------------------------------------------------------------------------------------------------------------------------:|:--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------:|:-----------------------------------------------------------------------------------------------------------------------------------------------------------------:|
-| Base Stable-Diffusion 1.5, 512x1024. Although technically possible, pushing resolution beyond normal levels creates strange errors. | Stable-Diffusion XL, 256x256 and 1024x1024 downscaled. Reducing image resolution too much also creates worse images, it's often better to generate larger than you need and downscale. | (TODO: selected SD1.5 model here) at 512x512, 640x480, and 500x750. If not too extreme, going slightly outside of normal bounds can still produce decent results. |
+|                                ![Stable-diffusion 1.5 at unrecommended resolutions](../examples/resolution_example_1.png)                                |                                                                                       ![Stable-diffusion XL at unrecommended resolutions](../examples/resolution_example_2.png)                                                                                       |                                                         ![Reasonable resolution variation example](../examples/resolution_example_3.png)                                                          |
+|:--------------------------------------------------------------------------------------------------------------------------------------------------------:|:---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------:|:-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------:|
+| Base Stable-Diffusion 1.5, original size 1200x512. Although possible, pushing resolution beyond normal levels creates worse images with far more errors. | Stable-Diffusion XL, generated at 512x512 directly on the left, downscaled from 1024x1024 on the right, all other settings unchanged. Reducing image resolution too much also creates worse images, it's often better to generate larger than you need and downscale. | CyberRealistic model (SD 1.5-based) at 512x512, 640x480, and 512x768, all other settings unchanged. If not too extreme, going slightly outside of normal bounds can still produce decent results. |
 
-**Use Downscaling for Detail Work**: Set your generation resolution higher than your generation area size to allow for error correction during downscaling.
+**Use Downscaling for Detail Work**: Set your generation resolution higher than your generation area size to allow for error correction during downscaling.  This provides the same effect as the "inpaint full resolution" option.
 
-|        TODO: downscaling_example_1.png         |                 TODO: downscaling_example_2.png                  |
-|:----------------------------------------------:|:----------------------------------------------------------------:|
-| With zero scaling, adjusted details are fuzzy. | Generating at 512x512 within a 256x256 area for sharper results. |
+| ![Downscaling example, before changes](../examples/downscaling_example_1.png) |         ![Downscaling example, at full resolution](../examples/downscaling_example_2.png)         | ![Downscaling example, generating at 2x resolution](../examples/downscaling_example_3.png) |
+|:-----------------------------------------------------------------------------:|:-------------------------------------------------------------------------------------------------:|:------------------------------------------------------------------------------------------:|
+|                 The original image selection, before editing                  | Inpainted at 640x640, best option of eight chosen. With zero scaling, adjusted details are fuzzy. |              Generating at 640x640 within a 280x280 area for sharper results.              |
+
+---
 
 ## Generation Area control
 Balancing fine detail with scene awareness is key.
 - *Fine Detail*: For maximum focus and accuracy, select small areas and enable "inpaint full resolution" with low padding.
 - *Scene Awareness*: To help the image generator recognize patterns or maintain composition, increase padding or generation area size. You can extend padding by right-clicking with the selection brush to add a single pixel outside the selection—this extends the padding without affecting content.
 
-| Full resolution inpainting enabled, padding value 5 | Full resolution inpainting disabled                | Full resolution inpainting enabled, padding value 50 |
-|:----------------------------------------------------|:---------------------------------------------------|:-----------------------------------------------------|
-| TODO: padding_example_1.png                         | TODO: padding_example_2.png                        | TODO: padding_example_3.png                          |
-| TODO: description                                   | TODO: description                                  | TODO: description                                    |
+|                             Original, before inpainting                              | Full resolution inpainting disabled                                                              | Full resolution inpainting enabled, padding set to 2px                            | Full resolution inpainting enabled, padding set to 70px                            |
+|:------------------------------------------------------------------------------------:|:-------------------------------------------------------------------------------------------------|:----------------------------------------------------------------------------------|:-----------------------------------------------------------------------------------|
+| ![Original image, one cloud selected for changes](../examples/padding_example_1.png) | ![The same image, with one changed, slightly more detailed](../examples/padding_example_2.png)   | ![Inpaint full resolution disabled](../examples/padding_example_3.png)            | ![Inpaint full resolution disabled](../examples/padding_example_4.png)             |
+|             The full image, where I've selected a cloud for inpainting.              | Without full resolution inpainting there's some improvement in the results, but we can do better | Results are much more detailed, but they look out of place within the full image. | Getting the padding just right provides a compromise between detail and awareness. |
 
-- TODO: add image example of contextual issues at low padding values
-- TODO: add image example of poor detail refinement at high/no padding values
-- TODO: add image example of superior results with both factors balanced.
+---
 
-### Selecting areas for inpainting
-Small changes are good: The less that the AI has to do in a single operation, the less likely it'll be to get something critically wrong, and small changes generate faster.  Gen. area control is especially important when doing this.
+## Selecting areas for inpainting
+Small changes are good: The less that the AI has to do in a single operation, the less likely it'll be to get something critically wrong, and small changes generate faster.  Padding and denoising strength can be adjusted at every step as necessary for maximum control.
 
-| TODO: inpainting_in_steps_1.png |       TODO: inpainting_in_steps_2.png       |        TODO: inpainting_in_steps_3.png        |
-|:-------------------------------:|:-------------------------------------------:|:---------------------------------------------:|
-|     Original image section      |             Edited in one step              |            Edited in several steps            |
+| ![Original image](../examples/inpainting_in_steps_1.png) |                   ![One large change](../examples/inpainting_in_steps_2.png)                   |     ![Many small changes in-progress](../examples/inpainting_in_steps_3.webp)      | ![Original image](../examples/inpainting_in_steps_4.png) |
+|:--------------------------------------------------------:|:----------------------------------------------------------------------------------------------:|:----------------------------------------------------------------------------------:|:--------------------------------------------------------:|
+|   Starting with a rough AI-generated image, zoomed-in.   | A large area edited in one step. It's only slightly improved, and changes are hard to control. | In-progress, editing in many small steps. This allows for more deliberate changes. | Final result: the same area edited in 20 small sections. |
 
- If generating a pattern or repeating features, it usually works best to select the whole thing at once.  AI is better at redoing an entire pattern than it is at fixing a small area while matching the overall pattern exactly.
 
-| TODO: pattern_example_1.png |     TODO: pattern_example_2.png     |  TODO:pattern_example_3.png   |
-|:---------------------------:|:-----------------------------------:|:-----------------------------:|
-|  Original partial pattern   | Attempted pattern matching in steps | Pattern generated all at once |
-
-### Visually guiding image generation
+## Visually guiding image generation
 It's much easier to get the AI to do exactly what you want if you can manually start the process.  It's easier to roughly sketch a scene and let the AI clean it up than it is to get the AI to make that same exact scene using only prompting.
 
-|            TODO: visual_guidance_1.png             |                    TODO: visual_guidance_2.png                    |  TODO: visual_guidance_3.png   |
-|:--------------------------------------------------:|:-----------------------------------------------------------------:|:------------------------------:|
-| TODO: repeated failures to get a hand detail right | TODO: I scribble in the shadows it repeatedly fails to figure out | TODO: it does okay after that. |
+|                                                           ![Example 1: AI fails to get it](../examples/visual_guidance_1.png)                                                           |                    ![Example 2: Better results after the sketch is adjusted](../examples/visual_guidance_2.png)                     |                   ![Example 3: finished editing](../examples/visual_guidance_3.png)                    |
+|:---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------:|:-----------------------------------------------------------------------------------------------------------------------------------:|:------------------------------------------------------------------------------------------------------:|
+| AI still struggles to get hands right, especially in unusual positions. Given fifteen chances, not once did Stable-Diffusion get the pinky finger right, even with ControlNet guidance. | After I added darker lines to emphasize the missing finger, the next fifteen attempts all completely avoid making the same mistake. | Repeating the process for other details that don't look right eventually leads to much better results. |
 
 
-### Prompt adjusting
-- Since the AI only sees the gen. area, leaving anything in the prompt that's outside the gen. area is likely to result in duplicate content, especially at higher denoising strength. Consider temporarily removing parts, or adding more text related to the specific spot you're editing.
+## Prompt adjusting
+- Since the AI only sees the image generation area, leaving anything in the prompt that's outside the generation area is likely to result in duplicate content, especially at higher denoising strength. Consider temporarily removing parts, or adding more text related to the specific spot you're editing.
 - At lower denoising strengths (< 30% or so), image context often matters more than prompt context, so you often won't need to change the prompt much.
 
-|                   TODO: prompt_adjusting_1.png                    |        TODO: prompt_adjusting_2.png         |                        TODO: prompt_adjusting_3.png                         |
-|:-----------------------------------------------------------------:|:-------------------------------------------:|:---------------------------------------------------------------------------:|
-|                          TODO: prompt 1                           |               TODO: prompt 2                |                               TODO: prompt 3                                |
-| Stable-diffusion tries to apply the whole prompt to a small area. | With the prompt adjusted, problems go away. | With low denoising strength, problems are minimal even with a worse prompt. |
+|                                      ![Example 1: Prompt mismatch in a small area](../examples/prompt_adjusting_1.png)                                       | ![Example 2: Prompt mismatch corrected](../examples/prompt_adjusting_2.png)  |   ![Example 3: Low denoising to sidestep prompt issues](../examples/prompt_adjusting_3.png)    |
+|:------------------------------------------------------------------------------------------------------------------------------------------------------------:|:----------------------------------------------------------------------------:|:----------------------------------------------------------------------------------------------:|
+| prompt: "Detailed painting of an outlandish colorful fantasy marketplace at the top of a mountain, filled with strange creatures and beautiful architecture" |            prompt: "Detailed painting of billowing orange clouds"            |                   prompt: "photograph of an abandoned rusty car in a ditch"                    |
+|                                  0.6 denoising strength, Stable-Diffusion tries to apply the whole prompt to a small area.                                   | With the prompt adjusted, high denoising strength no longer causes problems. | With denoising strength reduced to 0.2, even a completely incorrect prompt can sometimes work. |
 
-### Effective ControlNet use
-- When inpainting with ControlNet, you can increase the denoising strength much higher, even up to 100%, and ControlNet will make sure the appropriate content is still preserved.
+## Effective ControlNet use
+- When inpainting with ControlNet, you can increase the denoising strength much higher, even up to 100%, and ControlNet will make sure the appropriate content is still preserved.  For this to work well, it's important to have selected an accurate prompt and a model trained to understand the type of image you're making, or it will struggle to get good results.
 - Many of the available ControlNet models are extremely similar. For example, the Canny, Lineart, scribble, and MLSD models all provide slightly different methods of preserving initial lines. None of them are objectively best, you'll need to try out several to find which one you prefer.
    * For coloring line art, I personally prefer the Canny model (control-canny-fp16). Canny is particularly strict about preserving original lines, making it a good choice when you don't want to alter those at all.
    * For cleaning up rough sketches, I've gotten best results from the Scribble model (control-scribble-fp16), using the scribble_xdog preprocessor.
 - If you want to clean up fine details and textures but change almost nothing about the overall composition, use the tile ControlNet module. It ensures that individual multi-pixel blocks within the image stay around the same average color.
 
-|        TODO: controlnet_example_tile.png         |      TODO: controlnet_example_canny.png      |         TODO: controlnet_example_scribble.png          |
-|:------------------------------------------------:|:--------------------------------------------:|:------------------------------------------------------:|
-| Refined details and textures, heavily restricted | Line art is preserved while colors are added | Lines are adjusted, but the composition stays the same | 
+Example prompt: ""infinite cityscapes across recursive realities, maximalist variation, fractal pilgrims, tesseract soul, symbol as reality, infinite information density"
+
+| ![Example 1:ControlNet example original](../examples/controlnet_example_source.png) |    ![Example 2: ControlNet Tile](../examples/controlnet_example_tile.png)     | ![Example 3: ControlNet Canny](../examples/controlnet_example_canny.png) | ![Example 4: ControlNet Scribble](../examples/controlnet_example_scribble.png) |
+|:-----------------------------------------------------------------------------------:|:-----------------------------------------------------------------------------:|:------------------------------------------------------------------------:|:------------------------------------------------------------------------------:|
+|                                   Original image                                    | Denoising strength 1.0, "(abstract illusionism)" added to the original prompt |    Denoising strength 1.0, "(ruby red)" added to the original prompt     |   Denoising strength 1.0, "(macro photography)" added to the original prompt   | 
 
 
-### Other tips and tricks
+## Other tips and tricks
 - If a particular inpainting result is excellent in most ways, but gets one area wrong:
   * Right-click the image option in the selection screen, click "send to new layer", exit the selection screen
   * Select the new layer, erase the part that you don't like, select "merge down" to manually add the rest of the change to the edited layer.
@@ -166,6 +170,6 @@ It's much easier to get the AI to do exactly what you want if you can manually s
 - AI upscaling is extremely effective, but it's much easier to fix large-scale image issues when the image is lower-resolution.  Sometimes it's even worthwhile to scale down an image to make large-scale changes go more smoothly, then upscale it again once the issues are resolved. See [Stable-Diffusion upscaling](./stable-diffusion.md#ai-upscaling-with-intrapaint) for more tips for effective upscaling.
 - AI is excellent at cleaning up rough edges. You can copy/paste whole blocks of content, roughly scale and transform image regions, or drop in mismatched sketches, and a quick inpainting pass will clean it up easily.
 
-|     TODO: cleanup_example_1.png     | TODO: cleanup_example_2.png |
-|:-----------------------------------:|:---------------------------:|
-| TODO: describe awful photoshopping  |   TODO: describe the fix    |
+|                         ![Example 1: Rough photomanipulation](../examples/photomanipulation_rough.png)                         |           ![Example 2: Photomanipulation polished](../examples/photomanipulation_polished.png)            |
+|:------------------------------------------------------------------------------------------------------------------------------:|:---------------------------------------------------------------------------------------------------------:|
+| Initial image, roughly assembled in IntraPaint from random CC0-licensed images using selection and layer transformation tools. | It only took about an hour of editing and inpainting to get from the previous image to this final result. |

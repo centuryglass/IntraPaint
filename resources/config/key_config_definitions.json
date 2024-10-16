@@ -566,6 +566,15 @@
         "default": "Ctrl+Alt+C",
         "saved": true
     },
+    "crop_image_to_gen_shortcut": {
+        "label": "Crop image to generation area",
+        "category": "Menu Shortcuts",
+        "subcategory": "Image Menu",
+        "description": "Crop the image to fit image generation area.",
+        "type": "string",
+        "default": "Ctrl+Alt+G",
+        "saved": true
+    },
     "image_to_layers_shortcut": {
         "label": "Resize image to content",
         "category": "Menu Shortcuts",

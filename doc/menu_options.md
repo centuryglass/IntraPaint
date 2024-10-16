@@ -29,6 +29,7 @@ This guide explains all of IntraPaint's menu options. All menu option shortcuts 
    - [Scale image](#scale-image-f3)
        * [Scale image window](#scale-image-window)
    - [Crop image to selection](#crop-image-to-selection-ctrlaltc)
+   - [Crop image to generation area](#crop-image-to-generation-area-ctrlaltg)
    - [Resize image to content](#resize-image-to-content-ctrlaltr)
    - [Update metadata](#update-metadata-ctrlaltd)
    - [Select image generator](#select-image-generator-f11)
@@ -265,8 +266,11 @@ Scaling the image behaves differently depending on whether AI upscaling is in us
 ### Crop image to selection (Ctrl+Alt+C)
 Crops the image to the largest rectangle that contains all [selected content](./tool_guide.md#selection-tools).  This will be applied to every layer in the image.  If any locked layers aren't totally within the selected area, this will fail, and an error message will list which layers blocked the change.  Any text layers that need to be cropped will first need to be converted to image layers, and a popup will appear asking to confirm or deny the change.
 
+### Crop image to generation area (Ctrl+Alt+G)
+Crops the image to the [image generation area](./tool_guide.md#-image-generation-area-tool-g). Layer cropping, locked layers, and text layers are handled exactly as they are in "Crop image to selection".  Like all functionality related to the image generation area, this option is hidden when there's no AI image generator connected.
+
 ### Resize image to content (Ctrl+Alt+R)
-Resizes the image to fit all layers. This change does not alter layer data.
+Resizes the image to fit all layers. This does not alter layer data.
 
 ### Update metadata (Ctrl+Alt+D)
 IntraPaint can read and write the following AI image generation parameters in image file metadata:

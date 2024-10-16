@@ -3,7 +3,7 @@
 from typing import Optional, Dict
 
 from PIL import Image
-from PySide6.QtCore import QSize, QPoint, QRectF
+from PySide6.QtCore import QSize, QPoint, QRectF, QRect
 from PySide6.QtGui import QTransform, QColor, QPolygonF, QPainterPath
 from PySide6.QtWidgets import QApplication
 
@@ -39,6 +39,11 @@ def resize_image_stack_to_content(image_stack: ImageStack) -> None:
                               False)
 
 
+def crop_image_stack_to_bounds(image_stack: ImageStack, bounds: QRect) -> None:
+    """Crops the image stack to an arbitrary bounding rectangle."""
+    image_stack.resize_canvas(bounds.size(), -bounds.x(), -bounds.y(), LayerResizeMode.RESIZE_NONE, crop_layers=True)
+
+
 def crop_image_stack_to_selection(image_stack: ImageStack) -> None:
     """Crops the image stack to match its selection bounds"""
     selection_layer = image_stack.selection_layer
@@ -48,7 +53,13 @@ def crop_image_stack_to_selection(image_stack: ImageStack) -> None:
     if selection_bounds.isEmpty():
         show_error_dialog(None, ERROR_TITLE_CROP_FAILED, ERROR_MESSAGE_CROP_FAILED_NO_SELECTION)
         return
-    image_stack.resize_canvas(selection_bounds.size(), -selection_bounds.x(), -selection_bounds.y())
+    crop_image_stack_to_bounds(image_stack, selection_bounds)
+
+
+def crop_image_stack_to_gen_area(image_stack: ImageStack) -> None:
+    """Crops the image stack to the generation area."""
+    gen_area_bounds = image_stack.generation_area
+    crop_image_stack_to_bounds(image_stack, gen_area_bounds)
 
 
 def crop_layer_to_selection(image_stack: ImageStack, layer: Optional[Layer] = None) -> None:

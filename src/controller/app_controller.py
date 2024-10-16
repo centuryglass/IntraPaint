@@ -70,7 +70,7 @@ from src.image.filter.sharpen import SharpenFilter
 from src.image.layers.image_layer import ImageLayer
 from src.image.layers.image_stack import ImageStack
 from src.image.layers.image_stack_utils import resize_image_stack_to_content, crop_image_stack_to_selection, \
-    scale_all_layers, crop_layer_to_selection
+    scale_all_layers, crop_layer_to_selection, crop_image_stack_to_gen_area
 from src.image.layers.layer import Layer
 from src.image.layers.layer_group import LayerGroup
 from src.image.layers.text_layer import TextLayer
@@ -514,6 +514,7 @@ class AppController(MenuBuilder):
             show_error_dialog(self._window, GENERATOR_LOAD_ERROR_TITLE,
                               GENERATOR_LOAD_ERROR_MESSAGE.format(generator_name=generator.get_display_name()))
             return
+        # unload last generator:
         if self._generator is not None:
             for tab in self._generator.get_extra_tabs():
                 self._window.remove_tab(tab)
@@ -523,6 +524,8 @@ class AppController(MenuBuilder):
             self._generator.unload_settings(self._settings_modal)
             self._generator.clear_menus()
             self._generator.disconnect_or_disable()
+
+        # load new generator:
         self._generator = generator
         self._generator.menu_window = self._window
         self._generator.init_settings(self._settings_modal)
@@ -706,6 +709,10 @@ class AppController(MenuBuilder):
                 if menu_method in method_set and disable_condition:
                     action.setEnabled(False)
                     break
+
+        # Hide everything related to generation area if no generator is in use:
+        crop_to_gen_action = self.get_action_for_method(self.crop_image_to_gen_area)
+        crop_to_gen_action.setVisible(self._generator != self._null_generator)
 
         # "Merge down" should also check the next layer:
         merge_down_action = self.get_action_for_method(self.merge_layer_down)
@@ -1174,6 +1181,11 @@ class AppController(MenuBuilder):
     def crop_image_to_selection(self) -> None:
         """Crop the image to fit selected content."""
         crop_image_stack_to_selection(self._image_stack)
+
+    @menu_action(MENU_IMAGE, 'crop_image_to_gen_shortcut', 202, valid_app_states=[APP_STATE_EDITING])
+    def crop_image_to_gen_area(self) -> None:
+        """Crop the image to fit the generation area."""
+        crop_image_stack_to_gen_area(self._image_stack)
 
     @menu_action(MENU_IMAGE, 'image_to_layers_shortcut', 203, valid_app_states=[APP_STATE_EDITING])
     def resize_image_to_content(self) -> None:

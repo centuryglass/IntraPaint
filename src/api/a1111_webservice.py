@@ -29,6 +29,8 @@ class AuthError(Exception):
 
 
 UPSCALE_SCRIPT = 'ultimate sd upscale'
+DEFAULT_TIMEOUT = 30
+SETTINGS_UPDATE_TIMEOUT = 90
 
 
 class A1111Webservice(WebService):
@@ -113,7 +115,7 @@ class A1111Webservice(WebService):
             Maps settings that should change to their updated values. Use the get_settings method's response body
             to check available options.
         """
-        return self.post(A1111Webservice.Endpoints.OPTIONS, config_updates, timeout=30).json()
+        return self.post(A1111Webservice.Endpoints.OPTIONS, config_updates, timeout=SETTINGS_UPDATE_TIMEOUT).json()
 
     def refresh_checkpoints(self) -> requests.Response:
         """Requests an updated list of available stable-diffusion models.
@@ -426,7 +428,7 @@ class A1111Webservice(WebService):
     # Load misc. service info:
     def get_config(self) -> dict:
         """Returns a dict containing the current Stable-Diffusion-WebUI configuration."""
-        return self.get('/sdapi/v1/options', timeout=30).json()
+        return self.get('/sdapi/v1/options', timeout=DEFAULT_TIMEOUT).json()
 
     def get_styles(self) -> list:
         """Returns a list of image generation style objects saved by the Stable-Diffusion-WebUI.
@@ -490,7 +492,7 @@ class A1111Webservice(WebService):
 
         If available models may have changed, instead consider using the slower refresh_checkpoints method.
         """
-        return self.get(A1111Webservice.Endpoints.SD_MODELS, timeout=30).json()
+        return self.get(A1111Webservice.Endpoints.SD_MODELS, timeout=DEFAULT_TIMEOUT).json()
 
     def get_vae(self) -> list[dict]:
         """Returns the list of available stable-diffusion VAE models cached by the webui.
@@ -498,44 +500,45 @@ class A1111Webservice(WebService):
         If available models may have changed, instead consider using the slower refresh_vae method.
         """
         try:
-            return self.get(A1111Webservice.Endpoints.VAE_MODELS, timeout=30).json()
+            return self.get(A1111Webservice.Endpoints.VAE_MODELS, timeout=DEFAULT_TIMEOUT).json()
         except RuntimeError:
-            return self.get(A1111Webservice.ForgeEndpoints.SD_MODULES, timeout=30).json()
+            return self.get(A1111Webservice.ForgeEndpoints.SD_MODULES, timeout=DEFAULT_TIMEOUT).json()
 
     def get_controlnet_version(self) -> int:
         """
         Returns the installed version of the stable-diffusion ControlNet extension, or raises if the exception is not
         installed.
         """
-        return self.get(A1111Webservice.Endpoints.CONTROLNET_VERSION, timeout=30).json()['version']
+        return self.get(A1111Webservice.Endpoints.CONTROLNET_VERSION, timeout=DEFAULT_TIMEOUT).json()['version']
 
     def get_controlnet_models(self) -> dict:
         """Returns a dict defining the models available to the stable-diffusion ControlNet extension."""
-        return self.get(A1111Webservice.Endpoints.CONTROLNET_MODELS, timeout=30).json()
+        return self.get(A1111Webservice.Endpoints.CONTROLNET_MODELS, timeout=DEFAULT_TIMEOUT).json()
 
     def get_controlnet_modules(self) -> dict:
         """Returns a dict defining the modules available to the stable-diffusion ControlNet extension."""
-        return self.get(A1111Webservice.Endpoints.CONTROLNET_MODULES, timeout=30).json()
+        return self.get(A1111Webservice.Endpoints.CONTROLNET_MODULES, timeout=DEFAULT_TIMEOUT).json()
 
     def get_controlnet_control_types(self) -> dict:
         """Returns a dict defining the control types available to the stable-diffusion ControlNet extension."""
-        return self.get(A1111Webservice.Endpoints.CONTROLNET_CONTROL_TYPES, timeout=30).json()['control_types']
+        return self.get(A1111Webservice.Endpoints.CONTROLNET_CONTROL_TYPES,
+                        timeout=DEFAULT_TIMEOUT).json()['control_types']
 
     def get_controlnet_settings(self) -> dict:
         """Returns the current settings applied to the stable-diffusion ControlNet extension."""
-        return self.get(A1111Webservice.Endpoints.CONTROLNET_SETTINGS, timeout=30).json()
+        return self.get(A1111Webservice.Endpoints.CONTROLNET_SETTINGS, timeout=DEFAULT_TIMEOUT).json()
 
     def get_loras(self) -> list:
         """Returns the list of available stable-diffusion LORA models cached by the webui.
 
         If available models may have changed, instead consider using the slower refresh_loras method.
         """
-        return self.get(A1111Webservice.Endpoints.LORA_MODELS, timeout=30).json()
+        return self.get(A1111Webservice.Endpoints.LORA_MODELS, timeout=DEFAULT_TIMEOUT).json()
 
     def get_thumbnail(self, file_path: str) -> Optional[QImage]:
         """Attempts to load one of the extra model thumbnails given a path parameter."""
         try:
-            res = self.get(A1111Webservice.Endpoints.EXTRA_NW_THUMB, timeout=30,
+            res = self.get(A1111Webservice.Endpoints.EXTRA_NW_THUMB, timeout=DEFAULT_TIMEOUT,
                            url_params={'filename': file_path})
             if not res.ok:
                 return None
@@ -549,7 +552,8 @@ class A1111Webservice(WebService):
     def login(self, username: str, password: str) -> requests.Response:
         """Attempt to log in with a username and password."""
         body = {'username': username, 'password': password}
-        return self.post(A1111Webservice.Endpoints.LOGIN, body, 'x-www-form-urlencoded', timeout=30,
+        return self.post(A1111Webservice.Endpoints.LOGIN, body, 'x-www-form-urlencoded',
+                         timeout=DEFAULT_TIMEOUT,
                          throw_on_failure=False)
 
     def _handle_auth_error(self):
