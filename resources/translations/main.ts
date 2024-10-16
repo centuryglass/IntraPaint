@@ -4242,8 +4242,8 @@
     </message>
     <message>
       <location filename="../../src/controller/image_generation/sd_webui_generator.py" line="141"/>
-      <source>Existing operation still in progress</source>
-      <translation>Existing operation still in progress</translation>
+      <source>Stable-Diffusion is busy generating other images, try again later.</source>
+      <translation>Stable-Diffusion is busy generating other images, try again later.</translation>
     </message>
     <message>
       <location filename="../../src/controller/image_generation/sd_webui_generator.py" line="142"/>
@@ -4350,32 +4350,32 @@
   <context>
     <name>excepthook</name>
     <message>
-      <location filename="../../src/util/qtexcepthook.py" line="137"/>
+      <location filename="../../src/util/qtexcepthook.py" line="139"/>
       <source>Bug Detected</source>
       <translation>Bug Detected</translation>
     </message>
     <message>
-      <location filename="../../src/util/qtexcepthook.py" line="138"/>
+      <location filename="../../src/util/qtexcepthook.py" line="140"/>
       <source>&lt;big&gt;&lt;b&gt;A programming error has been detected during the execution of this program.&lt;/b&gt;&lt;/big&gt;</source>
       <translation>&lt;big&gt;&lt;b&gt;A programming error has been detected during the execution of this program.&lt;/b&gt;&lt;/big&gt;</translation>
     </message>
     <message>
-      <location filename="../../src/util/qtexcepthook.py" line="141"/>
+      <location filename="../../src/util/qtexcepthook.py" line="143"/>
       <source>It probably isn't fatal, but should be reported to the developers nonetheless.</source>
       <translation>It probably isn't fatal, but should be reported to the developers nonetheless.</translation>
     </message>
     <message>
-      <location filename="../../src/util/qtexcepthook.py" line="145"/>
+      <location filename="../../src/util/qtexcepthook.py" line="147"/>
       <source>Report Bug...</source>
       <translation>Report Bug...</translation>
     </message>
     <message>
-      <location filename="../../src/util/qtexcepthook.py" line="149"/>
+      <location filename="../../src/util/qtexcepthook.py" line="151"/>
       <source>Copy Traceback...</source>
       <translation>Copy Traceback...</translation>
     </message>
     <message>
-      <location filename="../../src/util/qtexcepthook.py" line="154"/>
+      <location filename="../../src/util/qtexcepthook.py" line="156"/>
       <source>
 
 Please remember to include the traceback from the Details expander.</source>
@@ -4384,32 +4384,32 @@ Please remember to include the traceback from the Details expander.</source>
 Please remember to include the traceback from the Details expander.</translation>
     </message>
     <message>
-      <location filename="../../src/util/qtexcepthook.py" line="173"/>
+      <location filename="../../src/util/qtexcepthook.py" line="175"/>
       <source>Traceback Copied</source>
       <translation>Traceback Copied</translation>
     </message>
     <message>
-      <location filename="../../src/util/qtexcepthook.py" line="174"/>
+      <location filename="../../src/util/qtexcepthook.py" line="176"/>
       <source>The traceback has now been copied to the clipboard.</source>
       <translation>The traceback has now been copied to the clipboard.</translation>
     </message>
     <message>
-      <location filename="../../src/util/qtexcepthook.py" line="239"/>
+      <location filename="../../src/util/qtexcepthook.py" line="244"/>
       <source>SMTP Failure</source>
       <translation>SMTP Failure</translation>
     </message>
     <message>
-      <location filename="../../src/util/qtexcepthook.py" line="240"/>
+      <location filename="../../src/util/qtexcepthook.py" line="245"/>
       <source>An error was encountered while attempting to send your bug report. Please submit it manually.</source>
       <translation>An error was encountered while attempting to send your bug report. Please submit it manually.</translation>
     </message>
     <message>
-      <location filename="../../src/util/qtexcepthook.py" line="244"/>
+      <location filename="../../src/util/qtexcepthook.py" line="249"/>
       <source>Bug Reported</source>
       <translation>Bug Reported</translation>
     </message>
     <message>
-      <location filename="../../src/util/qtexcepthook.py" line="245"/>
+      <location filename="../../src/util/qtexcepthook.py" line="250"/>
       <source>Your bug report was successfully sent.</source>
       <translation>Your bug report was successfully sent.</translation>
     </message>

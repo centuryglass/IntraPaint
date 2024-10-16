@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 # Source: http://blog.ssokolow.com/archives/2019/06/01/gui-error-handler-for-pyqt-5-x/
-# I removed a @pyqtSlot annotation from _cb_copy_to_clipboard, but it's otherwise unchanged.
-"""Qt5 Exception Handler for Python 3.5+
+# I removed a @pyqtSlot annotation from _cb_copy_to_clipboard, blocked activation outside the main thread, and
+# ported to PySide6, but it's otherwise unchanged.
+"""Qt Exception Handler for Python 3.5+
 
 Additions copyright 2019, 2020 Stephan Sokolow
 
@@ -50,6 +51,7 @@ __license__ = 'Public Domain'
 import getpass
 import socket
 import sys
+import threading
 import traceback
 from gettext import gettext as _
 from smtplib import SMTP, SMTPException
@@ -181,6 +183,9 @@ class QtExceptHook(object):
 
     def _excepthook(self, exc_type, exc_value, exc_traceback):
         """Replacement system exception handler callback"""
+        if threading.current_thread() is not threading.main_thread():
+            return  # Qt UI actions outside the main thread cause segfaults, let threading code handle it.
+
         # Construct the text of the bug report
         t_exception = traceback.TracebackException(
             exc_type, exc_value, exc_traceback, capture_locals=True)
