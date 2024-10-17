@@ -144,8 +144,8 @@ All images below were created using IntraPaint:
 
 ### Pre-packaged builds:
 Pre-compiled versions for x86_64 Linux and Windows are available on the [releases page](https://github.com/centuryglass/IntraPaint/releases).
-- Windows: [IntraPaint.exe](https://github.com/centuryglass/IntraPaint/releases/download/v0.2.0-alpha/IntraPaint.exe)
-- Linux: [IntraPaint-linux](https://github.com/centuryglass/IntraPaint/releases/download/v0.2.0-alpha/IntraPaint-linux)
+- Windows: [IntraPaint.exe](https://github.com/centuryglass/IntraPaint/releases/download/v0.2.0/IntraPaint.exe)
+- Linux: [IntraPaint-linux](https://github.com/centuryglass/IntraPaint/releases/download/v0.2.0/IntraPaint-linux)
 
 No installation is required to use non-AI features. Just run the executable directly.
 
