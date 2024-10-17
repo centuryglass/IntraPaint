@@ -165,7 +165,7 @@
         "subcategory": "Paint Tool",
         "description": "Currently selected MyPaint brush file.",
         "type": "string",
-        "default": "./resources/brushes/experimental/1pixel.myb",
+        "default": "",
         "saved": true,
         "translate": false
     },
@@ -915,7 +915,7 @@
         "subcategory": "Image generation",
         "description": "If true, inpaint the masked area at higher resolution by ignoring the unmasked area. This can increase image quality by sacrificing awareness of additional image content.",
         "type": "bool",
-        "default": false,
+        "default": true,
         "saved": true
     },
     "inpaint_full_res_padding": {

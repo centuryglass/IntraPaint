@@ -8,6 +8,7 @@ from PySide6.QtWidgets import QWidget, QApplication
 from src.config.config import Config
 from src.util.shared_constants import PROJECT_DIR, DATA_DIR
 from src.util.singleton import Singleton
+from src.util.visual.display_size import get_screen_bounds
 
 CONFIG_DEFINITIONS = f'{PROJECT_DIR}/resources/config/cache_value_definitions.json'
 DEFAULT_FILE_PATH = f'{DATA_DIR}/.cache.json'
@@ -55,7 +56,8 @@ class Cache(Config, metaclass=Singleton):
         """Save a widget's geometry to the cache.  If waiting to load bounds for the same widget the new bounds will
            not be saved, since they are about to be replaced anyway."""
         if widget not in self._last_bounds:  # Don't update if waiting to apply previous bounds
-            cache_str = f'{widget.x()},{widget.y()},{widget.width()},{widget.height()}'
+            bounds = widget.geometry()
+            cache_str = f'{bounds.x()},{bounds.y()},{bounds.width()},{bounds.height()}'
             self.set(key, cache_str)
 
     def load_bounds(self, key: str, widget: QWidget) -> bool:
@@ -64,6 +66,11 @@ class Cache(Config, metaclass=Singleton):
            initial placement. """
         try:
             bounds = QRect(*(int(param) for param in self.get(key).split(',')))
+            screen_bounds = get_screen_bounds(default_to_primary=False, alt_test_bounds = bounds)
+            if not screen_bounds.isNull():
+                bounds = bounds.intersected(screen_bounds)
+            if bounds == screen_bounds:
+                widget.showMaximized()
             self._final_bounds[widget] = bounds
             self._last_bounds[widget] = QRect(widget.geometry())
             if not self._geometry_timer.isActive():

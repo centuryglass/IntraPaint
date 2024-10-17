@@ -259,7 +259,6 @@ class AppController(MenuBuilder):
                 width = size.width()
                 height = size.height()
                 self._window.setGeometry(x, y, width, height)
-            self._window.setMaximumSize(get_screen_size(self._window))
         if args.init_image is not None:
             self.load_image(file_path=args.init_image)
         if not self._image_stack.has_image:

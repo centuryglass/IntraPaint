@@ -507,8 +507,14 @@ class MainWindow(QMainWindow):
     def _size_and_bounds_updates(self) -> None:
         """Keep the screen bounds up to date and cached"""
         screen_size = get_screen_size(self, False)
-        if not screen_size.isNull() and screen_size != self.maximumSize():
-            self.setMaximumSize(screen_size)
+        
+        
+        if not screen_size.isNull():
+            window_size = self.frameGeometry().size()
+            if window_size.width() > screen_size.width() or window_size.height() > screen_size.height():
+                window_size.setWidth(min(window_size.width(), screen_size.width()))
+                window_size.setHeight(min(window_size.height(), screen_size.height()))
+                self.resize(window_size)
         # Cache window placement:
         if self.isVisible():
             Cache().save_bounds(Cache.SAVED_MAIN_WINDOW_POS, self)

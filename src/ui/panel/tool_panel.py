@@ -91,8 +91,7 @@ class ToolPanel(QWidget):
             del self._tool_widgets[tool_name]
         for button in buttons:
             button.tool_selected.disconnect(self.tool_selected)
-            button.setVisible(False)
-            button.setEnabled(False)
+            button.hide()
             parent = button.parentWidget()
             if parent is not None:
                 layout = parent.layout()
@@ -133,7 +132,7 @@ class ToolPanel(QWidget):
         # Replace layout if orientation changed:
         layout_class = QHBoxLayout if self._orientation == Qt.Orientation.Horizontal else QVBoxLayout
         if not isinstance(self._layout, layout_class):
-            clear_layout(self._layout, unparent=False)
+            clear_layout(self._layout, unparent=True, hide=True)
             temp_widget = QWidget(self)
             temp_widget.setLayout(self._layout)
             self._layout = layout_class(self)
@@ -145,6 +144,8 @@ class ToolPanel(QWidget):
             self._layout.addWidget(self._tool_scroll_area, stretch=tool_panel_stretch)
             self._layout.addWidget(self._divider)
             self._layout.addWidget(self._utility_tab_panel, stretch=layer_panel_stretch)
+            for widget in (self._tool_scroll_area, self._divider, self._utility_tab_panel):
+                widget.show()
             if self._active_tool_panel is not None and hasattr(self._active_tool_panel, 'set_orientation'):
                 self._active_tool_panel.set_orientation(self._orientation)
         self._build_tool_button_layout()
@@ -221,6 +222,7 @@ class ToolPanel(QWidget):
                     break
                 button = button_list[button_idx]
                 self._tool_button_layout.addWidget(button, row, column)
+                button.show()
                 button_idx += 1
 
     def resizeEvent(self, unused_event: Optional[QResizeEvent]) -> None:

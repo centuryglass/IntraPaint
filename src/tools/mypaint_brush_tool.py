@@ -50,7 +50,9 @@ class MyPaintBrushTool(BrushTool):
 
         # Load brush and size from cache
         cache = Cache()
-        self.brush_path = cache.get(Cache.MYPAINT_BRUSH)
+        brush_path = cache.get(Cache.MYPAINT_BRUSH)
+        if os.path.isfile(brush_path):
+            self.brush_path = cache.get(Cache.MYPAINT_BRUSH)
         self.brush_size = cache.get(self._size_key)
         self.brush_color = cache.get_color(Cache.LAST_BRUSH_COLOR, Qt.GlobalColor.black)
 

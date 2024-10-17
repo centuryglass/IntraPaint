@@ -122,7 +122,7 @@
         "subcategory": "Navigation",
         "description": "Move the image generation area left, move active layer left, or view previous generated image option",
         "type": "string",
-        "default": "Left,H",
+        "default": "Left",
         "saved": true
     },
     "move_right": {
@@ -131,7 +131,7 @@
         "subcategory": "Navigation",
         "description": "Move the image generation area right, move active layer right, or view next generated image option",
         "type": "string",
-        "default": "Right,L",
+        "default": "Right",
         "saved": true
     },
     "move_up": {
@@ -140,7 +140,7 @@
         "subcategory": "Navigation",
         "description": "Move the image generation area up, move active layer up, or zoom in on first generated image option",
         "type": "string",
-        "default": "Up,K",
+        "default": "Up",
         "saved": true
     },
     "move_down": {
@@ -149,7 +149,7 @@
         "subcategory": "Navigation",
         "description": "Move the image generation area down, move active layer down, or zoom to show all generated image options",
         "type": "string",
-        "default": "Down,J",
+        "default": "Down",
         "saved": true
     },
     "select_tool_tab": {

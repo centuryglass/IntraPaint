@@ -19,6 +19,7 @@ class ToolButton(QToolButton):
 
     def __init__(self, connected_tool: BaseTool) -> None:
         super().__init__()
+        self.setAutoRaise(True)
         self._tool = connected_tool
         self._icon = connected_tool.get_icon()
         self.setSizePolicy(QSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed))
