@@ -161,5 +161,4 @@ def open_image_file(parent: QWidget, mode: str = LOAD_IMAGE_MODE,
 
 def open_image_layers(parent: QWidget) -> tuple[list[str], str] | tuple[None, None]:
     """Opens multiple image files to import as layers."""
-    options = str(QFileDialog.Option.DontUseNativeDialog) if is_pyinstaller_bundle() else None
-    return QFileDialog.getOpenFileNames(parent, TITLE_LOAD_LAYER, options, filter=LAYER_LOAD_FILTER)
+    return QFileDialog.getOpenFileNames(parent, TITLE_LOAD_LAYER, filter=LAYER_LOAD_FILTER)

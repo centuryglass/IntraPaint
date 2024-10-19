@@ -271,9 +271,9 @@ class _IconButton(QWidget):
 
     def is_selected(self) -> bool:
         """Checks whether this brush is the selected brush."""
-        active_brush = Cache().get(self._brush_config_key)
-        if active_brush is not None and not os.path.isfile(active_brush):
-            active_brush = f'{PROJECT_DIR}/{active_brush}'
+        active_brush: Optional[str] = f'{PROJECT_DIR}/{Cache().get(self._brush_config_key)}'
+        if not os.path.isfile(active_brush):
+            active_brush = None
         return active_brush is not None and os.path.abspath(active_brush) == os.path.abspath(self._brush_path)
 
     def resizeEvent(self, unused_event: Optional[QResizeEvent]) -> None:
