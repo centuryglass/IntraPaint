@@ -82,10 +82,10 @@ BINARY_FORMATS = {'XBM'}
 
 def _write_data_to_exif_description(exif: Optional[Image.Exif], data: Optional[str]) -> Optional[Image.Exif]:
     """Create exif data storing a parameter string in the image description, or add the string to existing exif."""
-    if data is None:
-        return exif
     if exif is None:
         exif = Image.Exif()
+    if data is None:
+        return exif
     exif_tags = exif.get_ifd(IFD.Exif)
     exif[ExifTags.Base.ImageDescription.value] = data
     exif_tags[ExifTags.Base.ImageDescription.value] = data
@@ -143,19 +143,19 @@ def save_image_with_metadata(image: Image.Image | QImage, file_path: str, metada
     file_format = file_path[delimiter_index + 1:].upper()
     if file_format in RENAMED_FORMATS:
         file_format = RENAMED_FORMATS[file_format]
-
-    parameter_text = None
+    if file_format not in IMAGE_FORMATS_SUPPORTING_METADATA:
+        raise ValueError(f'Format {file_format} cannot be used to store metadata.')
+    parameter_text = ''
     if metadata is not None:
         if METADATA_PARAMETER_KEY in metadata:  # png
             parameter_text = metadata[METADATA_PARAMETER_KEY]
         elif METADATA_COMMENT_KEY in metadata:  # gif, jpeg2000
             parameter_text = metadata[METADATA_COMMENT_KEY]
-    if parameter_text is not None:
-        if not isinstance(parameter_text, str):
-            # noinspection PyTypeChecker
-            parameter_text = str(parameter_text, encoding='utf-8')
-    if file_format not in IMAGE_FORMATS_SUPPORTING_METADATA:
-        raise ValueError(f'Format {file_format} cannot be used to store metadata.')
+    if not isinstance(parameter_text, str):
+        # noinspection PyTypeChecker
+        parameter_text = str(parameter_text, encoding='utf-8') if parameter_text is not None else ''
+    if exif is None:
+        exif = Image.Exif()
     if isinstance(image, QImage):
         image = qimage_to_pil_image(image)
     match file_format:
@@ -171,18 +171,16 @@ def save_image_with_metadata(image: Image.Image | QImage, file_path: str, metada
                         # TODO: Look into what data is actually lost here, fix it or confirm that it is definitely
                         #       inconsequential.
                         logger.error(f'failed to preserve "{key}" in metadata: {png_err}')
-                assert exif is not None
                 image.save(file_path, 'PNG', pnginfo=info, exif=exif)
             else:
-                image.save(file_path, 'PNG')
+                image.save(file_path, 'PNG', exif=exif)
         case 'GIF':
             image.save(file_path, file_format, comment=parameter_text)
         case  'JP2' | 'JPX' | 'J2C' | 'JPC':
             image.save(file_path, comment=parameter_text, exif=exif)
         case 'JPG' | 'JPEG' | 'TIFF' | 'WEBP':
-            assert exif is not None
-            assert parameter_text is not None
-            _write_data_to_exif_description(exif, parameter_text)
+            if parameter_text != '':
+                _write_data_to_exif_description(exif, parameter_text)
             _save_pil(image, file_path, file_format, exif)
         case _:
             raise ValueError(f'Unhandled format {file_format}')

@@ -1,5 +1,5 @@
 {
-    "edit_size": "512x512",
+    "edit_size": "16x12",
     "generation_size": "512x512",
     "tool_tab_bar": "RIGHT",
     "generation_tab_bar": "RIGHT",
@@ -21,7 +21,7 @@
     "sample_merged": false,
     "color_select_mode": false,
     "paint_selection_only": false,
-    "mypaint_brush": "./resources/brushes/experimental/1pixel.myb",
+    "mypaint_brush": "",
     "paint_tool_brush_size": {
         "min": 1,
         "max": 300,
@@ -174,7 +174,7 @@
         "min": 0.0,
         "max": 20.0,
         "step": 0.1,
-        "value": 9.0
+        "value": 1.5
     },
     "batch_size": {
         "min": 1,
@@ -201,7 +201,7 @@
         "step": 1,
         "value": -1
     },
-    "inpaint_full_res": false,
+    "inpaint_full_res": true,
     "inpaint_full_res_padding": {
         "min": 0,
         "max": 1024,
@@ -220,8 +220,8 @@
         "step": 1,
         "value": 0
     },
-    "upscale_mode": "Lanczos",
-    "downscale_mode": "Lanczos",
+    "sd_server_url": "http://localhost:7860",
+    "glid_server_url": "http://localhost:5555",
     "controlnet_upscaling": false,
     "controlnet_downsample_rate": {
         "min": 1.0,

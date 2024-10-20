@@ -507,8 +507,7 @@ class MainWindow(QMainWindow):
     def _size_and_bounds_updates(self) -> None:
         """Keep the screen bounds up to date and cached"""
         screen_size = get_screen_size(self, False)
-        
-        
+
         if not screen_size.isNull():
             window_size = self.frameGeometry().size()
             if window_size.width() > screen_size.width() or window_size.height() > screen_size.height():

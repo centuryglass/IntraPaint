@@ -120,10 +120,10 @@ class ToolPanel(QWidget):
 
         # Save widget states in case they need to move:
 
-        def _get_stretch(widget, default):
-            idx = self._layout.indexOf(widget)
+        def _get_stretch(layout_item: QWidget | QLayout, default_stretch: int) -> int:
+            idx = self._layout.indexOf(layout_item)
             if idx < 0:
-                return default
+                return default_stretch
             return self._layout.stretch(idx)
         tool_list_stretch = _get_stretch(self._tool_button_layout, TOOL_LIST_STRETCH)
         tool_panel_stretch = _get_stretch(self._tool_scroll_area, TOOL_PANEL_STRETCH)

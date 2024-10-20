@@ -167,7 +167,6 @@ class MenuBuilder:
         if len([act for act in menu.actions() if act.isEnabled()]) == 0:
             _menu_set_visible(menu, False)
 
-
     # noinspection PyUnresolvedReferences
     def build_menus(self) -> None:
         """Add all @menu_action methods from this class to the window as menu items."""

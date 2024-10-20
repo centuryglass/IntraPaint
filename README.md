@@ -27,14 +27,14 @@ support is possible with manual setup and compilation.
 ## Getting Started with IntraPaint:
 
 
-|        ![example-1.png](./examples/main-example-1.png)        |      ![example-2.png](./examples/main-example-2.png)       | 
-|:--------------------------------------------------------:|:-----------------------------------------------------:| 
-|       *1. Draw and paint with conventional tools*        | *2. Select areas for AI editing and provide a prompt* |
+| ![example-1.png](./examples/main-example-1.png) |    ![example-2.png](./examples/main-example-2.png)    | 
+|:-----------------------------------------------:|:-----------------------------------------------------:| 
+|   *1. Draw and paint with conventional tools*   | *2. Select areas for AI editing and provide a prompt* |
 
 
 | ![example-3.png](./examples/main-example-3.png) | ![example-4.png](./examples/main-example-4.png) | 
-|:------------------------------------------:|:------------------------------------------:| 
-|     *3. Choose from generated options*     |     *4. Refine and repeat as needed.*      |
+|:-----------------------------------------------:|:-----------------------------------------------:| 
+|       *3. Choose from generated options*        |        *4. Refine and repeat as needed.*        |
 
 
 ## Key Features:

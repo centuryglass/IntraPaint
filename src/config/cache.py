@@ -14,7 +14,6 @@ CONFIG_DEFINITIONS = f'{PROJECT_DIR}/resources/config/cache_value_definitions.js
 DEFAULT_FILE_PATH = f'{DATA_DIR}/.cache.json'
 GEOMETRY_CHECK_INTERVAL = 100
 
-
 # The QCoreApplication.translate context for strings in this file
 TR_ID = 'config.cache'
 
@@ -66,7 +65,7 @@ class Cache(Config, metaclass=Singleton):
            initial placement. """
         try:
             bounds = QRect(*(int(param) for param in self.get(key).split(',')))
-            screen_bounds = get_screen_bounds(default_to_primary=False, alt_test_bounds = bounds)
+            screen_bounds = get_screen_bounds(default_to_primary=False, alt_test_bounds=bounds)
             if not screen_bounds.isNull():
                 bounds = bounds.intersected(screen_bounds)
             if bounds == screen_bounds:

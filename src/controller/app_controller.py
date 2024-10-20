@@ -76,7 +76,7 @@ from src.image.layers.layer_group import LayerGroup
 from src.image.layers.text_layer import TextLayer
 from src.image.layers.transform_group import TransformGroup
 from src.image.layers.transform_layer import TransformLayer
-from src.image.open_raster import save_ora_image, read_ora_image
+from src.image.open_raster import save_ora_image, read_ora_image, ORA_FILE_EXTENSION
 from src.tools.base_tool import BaseTool
 from src.tools.generation_area_tool import GenerationAreaTool
 from src.ui.input_fields.pressure_curve_input import PressureCurveInput
@@ -109,7 +109,7 @@ from src.util.visual.display_size import get_screen_size
 from src.util.visual.image_format_utils import save_image_with_metadata, save_image, load_image, \
     IMAGE_FORMATS_SUPPORTING_METADATA, IMAGE_FORMATS_SUPPORTING_ALPHA, IMAGE_FORMATS_SUPPORTING_PARTIAL_ALPHA, \
     METADATA_PARAMETER_KEY, IMAGE_WRITE_FORMATS, IMAGE_READ_FORMATS, IMAGE_FORMATS_WITH_FIXED_SIZE, \
-    GREYSCALE_IMAGE_FORMATS, METADATA_COMMENT_KEY
+    GREYSCALE_IMAGE_FORMATS, METADATA_COMMENT_KEY, PIL_WRITE_FORMATS, QIMAGE_WRITE_FORMATS
 from src.util.visual.image_utils import image_is_fully_opaque, image_has_partial_alpha, create_transparent_image
 
 # Optional spacenav support and extended theming:
@@ -165,6 +165,14 @@ NEW_IMAGE_CONFIRMATION_TITLE = _tr('Create new image?')
 NEW_IMAGE_CONFIRMATION_MESSAGE = _tr('This will discard all unsaved changes.')
 SAVE_ERROR_TITLE = _tr('Save failed')
 LOAD_ERROR_TITLE = _tr('Open failed')
+SAVE_ERROR_MESSAGE_UNKNOWN_ISSUE = _tr('Saving as "{file_path}" failed due to an unknown error, please open a new issue'
+                                       ' on the IntraPaint GitHub page, and let me know what file format you tried '
+                                       'and any other details that might be relevant. Meanwhile, try saving in a'
+                                       ' different format or to a different disk.')
+SAVE_ERROR_MESSAGE_INVALID_EXTENSION = _tr('Saving files with the  "{extension}" extension is not supported, try again'
+                                           ' with a supported image file format.')
+SAVE_ERROR_MESSAGE_NO_EXTENSION = _tr('Tried to save with no file extension as "{file_path}", add a valid image file'
+                                      ' extension and try again.')
 RELOAD_ERROR_TITLE = _tr('Reload failed')
 RELOAD_ERROR_MESSAGE_INVALID_FILE = _tr('Image path "{file_path}" is not a valid image file.')
 RELOAD_ERROR_MESSAGE_NO_IMAGE = _tr('Enter an image path or click "Open Image" first.')
@@ -774,6 +782,7 @@ class AppController(MenuBuilder):
         """Open a save dialog, and save the edited image to disk, preserving any metadata."""
         cache = Cache()
         config = AppConfig()
+        error_handled = False
         try:
             if not isinstance(file_path, str):
                 self._window.setUpdatesEnabled(False)
@@ -788,8 +797,11 @@ class AppController(MenuBuilder):
             assert isinstance(file_path, str)
             delimiter_index = file_path.rfind('.')
             if delimiter_index < 0:
-                raise ValueError(f'Invalid path {file_path} missing extension')
+                raise ValueError(SAVE_ERROR_MESSAGE_NO_EXTENSION.format(file_path=file_path))
             file_format = file_path[delimiter_index + 1:].upper()
+            if (file_format not in QIMAGE_WRITE_FORMATS and file_format not in PIL_WRITE_FORMATS
+                    and file_format != 'ORA'):
+                raise ValueError(SAVE_ERROR_MESSAGE_INVALID_EXTENSION.format(extension=file_format))
 
             # Check if metadata is out of date, ask if it should update:
             if file_format in IMAGE_FORMATS_SUPPORTING_METADATA and self._generator is not None \
@@ -811,7 +823,7 @@ class AppController(MenuBuilder):
                 if update_metadata:
                     self.update_metadata(False)
 
-            if file_path.lower().endswith('.ora'):
+            if file_path.lower().endswith(ORA_FILE_EXTENSION):
 
                 class _Encoder(json.JSONEncoder):
 
@@ -902,13 +914,16 @@ class AppController(MenuBuilder):
                     if loss_condition:
                         show_warning_dialog(self._window, title, message, warn_on_save_config_key)
             if not os.path.isfile(file_path):
-                raise RuntimeError(f'Unknown error: saving {file_path} failed')
+                raise RuntimeError(SAVE_ERROR_MESSAGE_UNKNOWN_ISSUE.format(file_path=file_path))
             cache.set(Cache.LAST_FILE_PATH, file_path)
         except (IOError, TypeError, ValueError, RuntimeError) as save_err:
+            error_handled = True
             logger.error(f'save failed: {save_err}')
             show_error_dialog(self._window, SAVE_ERROR_TITLE, str(save_err))
-            raise save_err
         finally:
+            if isinstance(file_path, str) and not os.path.isfile(file_path) and not error_handled:
+                show_error_dialog(self._window, SAVE_ERROR_TITLE,
+                                  SAVE_ERROR_MESSAGE_UNKNOWN_ISSUE.format(file_path=file_path))
             self._window.setUpdatesEnabled(True)
             self._window.update()
             self._window.repaint()

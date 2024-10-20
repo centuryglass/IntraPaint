@@ -4,19 +4,19 @@
   <context>
     <name>application_config</name>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="210"/>
+      <location filename="../../src/controller/app_controller.py" line="218"/>
       <source>Stable-Diffusion</source>
       <translation>Stable-Diffusion</translation>
     </message>
     <message>
       <location filename="../../src/controller/image_generation/glid3_webservice_generator.py" line="35"/>
       <location filename="../../src/controller/image_generation/glid3_xl_generator.py" line="50"/>
-      <location filename="../../src/controller/app_controller.py" line="211"/>
+      <location filename="../../src/controller/app_controller.py" line="219"/>
       <source>GLID-3-XL</source>
       <translation>GLID-3-XL</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="212"/>
+      <location filename="../../src/controller/app_controller.py" line="220"/>
       <source>Developer</source>
       <translation>Developer</translation>
     </message>
@@ -732,7 +732,7 @@
   <context>
     <name>config.cache</name>
     <message>
-      <location filename="../../src/config/cache.py" line="26"/>
+      <location filename="../../src/config/cache.py" line="27"/>
       <source>None</source>
       <translation>None</translation>
     </message>
@@ -1922,12 +1922,12 @@
       <translation>Image generation</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="1000"/>
+      <location filename="../config/cache_value_definitions.json" line="1020"/>
       <source>ControlNet tiled upscaling</source>
       <translation>ControlNet tiled upscaling</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="1003"/>
+      <location filename="../config/cache_value_definitions.json" line="1023"/>
       <source>Whether to use the ControlNet tile model to improve image upscaling. When enabled and supported, all other image generation options will influence upscaling results. To use this, the ControlNet extension needs to be installed in the stable-diffusion-webui, and the controlnet tile model needs to be downloaded to the correct folder.</source>
       <translation>Whether to use the ControlNet tile model to improve image upscaling. When enabled and supported, all other image generation options will influence upscaling results. To use this, the ControlNet extension needs to be installed in the stable-diffusion-webui, and the controlnet tile model needs to be downloaded to the correct folder.</translation>
     </message>
@@ -1937,12 +1937,12 @@
       <translation>ControlNet</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="1009"/>
+      <location filename="../config/cache_value_definitions.json" line="1029"/>
       <source>Tile downsample rate:</source>
       <translation>Tile downsample rate:</translation>
     </message>
     <message>
-      <location filename="../config/cache_value_definitions.json" line="1012"/>
+      <location filename="../config/cache_value_definitions.json" line="1032"/>
       <source>Adjusts how strongly the ControlNet tile model preserves the original image data, higher values result in fewer changes.</source>
       <translation>Adjusts how strongly the ControlNet tile model preserves the original image data, higher values result in fewer changes.</translation>
     </message>
@@ -3692,7 +3692,7 @@
       <translation>Create new image?</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="172"/>
+      <location filename="../../src/controller/app_controller.py" line="180"/>
       <location filename="../../src/controller/app_controller.py" line="165"/>
       <source>This will discard all unsaved changes.</source>
       <translation>This will discard all unsaved changes.</translation>
@@ -3709,121 +3709,136 @@
     </message>
     <message>
       <location filename="../../src/controller/app_controller.py" line="168"/>
+      <source>Saving as "{file_path}" failed due to an unknown error, please open a new issue on the IntraPaint GitHub page, and let me know what file format you tried and any other details that might be relevant. Meanwhile, try saving in a different format or to a different disk.</source>
+      <translation>Saving as "{file_path}" failed due to an unknown error, please open a new issue on the IntraPaint GitHub page, and let me know what file format you tried and any other details that might be relevant. Meanwhile, try saving in a different format or to a different disk.</translation>
+    </message>
+    <message>
+      <location filename="../../src/controller/app_controller.py" line="172"/>
+      <source>Saving files with the  "{extension}" extension is not supported, try again with a supported image file format.</source>
+      <translation>Saving files with the  "{extension}" extension is not supported, try again with a supported image file format.</translation>
+    </message>
+    <message>
+      <location filename="../../src/controller/app_controller.py" line="174"/>
+      <source>Tried to save with no file extension as "{file_path}", add a valid image file extension and try again.</source>
+      <translation>Tried to save with no file extension as "{file_path}", add a valid image file extension and try again.</translation>
+    </message>
+    <message>
+      <location filename="../../src/controller/app_controller.py" line="176"/>
       <source>Reload failed</source>
       <translation>Reload failed</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="169"/>
+      <location filename="../../src/controller/app_controller.py" line="177"/>
       <source>Image path "{file_path}" is not a valid image file.</source>
       <translation>Image path "{file_path}" is not a valid image file.</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="170"/>
+      <location filename="../../src/controller/app_controller.py" line="178"/>
       <source>Enter an image path or click "Open Image" first.</source>
       <translation>Enter an image path or click "Open Image" first.</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="171"/>
+      <location filename="../../src/controller/app_controller.py" line="179"/>
       <source>Reload image?</source>
       <translation>Reload image?</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="173"/>
+      <location filename="../../src/controller/app_controller.py" line="181"/>
       <source>Metadata updated</source>
       <translation>Metadata updated</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="174"/>
+      <location filename="../../src/controller/app_controller.py" line="182"/>
       <source>On save, current image generation parameters will be stored within the image</source>
       <translation>On save, current image generation parameters will be stored within the image</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="175"/>
+      <location filename="../../src/controller/app_controller.py" line="183"/>
       <source>Opening layers failed</source>
       <translation>Opening layers failed</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="176"/>
+      <location filename="../../src/controller/app_controller.py" line="184"/>
       <source>Could not open the following images: </source>
       <translation>Could not open the following images: </translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="178"/>
+      <location filename="../../src/controller/app_controller.py" line="186"/>
       <source>Save image generation metadata?</source>
       <translation>Save image generation metadata?</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="179"/>
+      <location filename="../../src/controller/app_controller.py" line="187"/>
       <source>No image metadata is cached, would you like to save image generation parameters to this image?</source>
       <translation>No image metadata is cached, would you like to save image generation parameters to this image?</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="181"/>
+      <location filename="../../src/controller/app_controller.py" line="189"/>
       <source>Update image generation metadata?</source>
       <translation>Update image generation metadata?</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="182"/>
+      <location filename="../../src/controller/app_controller.py" line="190"/>
       <source>Image generation parameters have changed, would you like this image to be saved with the most recent values?</source>
       <translation>Image generation parameters have changed, would you like this image to be saved with the most recent values?</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="186"/>
+      <location filename="../../src/controller/app_controller.py" line="194"/>
       <source>Image saved without layer data</source>
       <translation>Image saved without layer data</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="187"/>
+      <location filename="../../src/controller/app_controller.py" line="195"/>
       <source>To save layer data, images must be saved in .ora format.</source>
       <translation>To save layer data, images must be saved in .ora format.</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="189"/>
+      <location filename="../../src/controller/app_controller.py" line="197"/>
       <source>Image saved without full transparency</source>
       <translation>Image saved without full transparency</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="190"/>
+      <location filename="../../src/controller/app_controller.py" line="198"/>
       <source>To preserve transparency, save using one of the following file formats: {alpha_formats}</source>
       <translation>To preserve transparency, save using one of the following file formats: {alpha_formats}</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="193"/>
+      <location filename="../../src/controller/app_controller.py" line="201"/>
       <source>Image saved without image generation metadata</source>
       <translation>Image saved without image generation metadata</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="194"/>
+      <location filename="../../src/controller/app_controller.py" line="202"/>
       <source>To preserve image generation metadata, save using one of the following file formats: {metadata_formats}</source>
       <translation>To preserve image generation metadata, save using one of the following file formats: {metadata_formats}</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="197"/>
+      <location filename="../../src/controller/app_controller.py" line="205"/>
       <source>Image saved in a write-only format</source>
       <translation>Image saved in a write-only format</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="198"/>
+      <location filename="../../src/controller/app_controller.py" line="206"/>
       <source>IntraPaint can write images in the {file_format} format, but cannot load them. Use another file format if you want to be able to load this image in IntraPaint again.</source>
       <translation>IntraPaint can write images in the {file_format} format, but cannot load them. Use another file format if you want to be able to load this image in IntraPaint again.</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="201"/>
+      <location filename="../../src/controller/app_controller.py" line="209"/>
       <source>Image saved in a format that changes size</source>
       <translation>Image saved in a format that changes size</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="202"/>
+      <location filename="../../src/controller/app_controller.py" line="210"/>
       <source>The image is {width_px}x{height_px}, but the {file_format} format saves all images at {saved_width_px}x{saved_height_px} resolution. Use another file format if you want to preserve the original image size.</source>
       <translation>The image is {width_px}x{height_px}, but the {file_format} format saves all images at {saved_width_px}x{saved_height_px} resolution. Use another file format if you want to preserve the original image size.</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="206"/>
+      <location filename="../../src/controller/app_controller.py" line="214"/>
       <source>Image saved without color</source>
       <translation>Image saved without color</translation>
     </message>
     <message>
-      <location filename="../../src/controller/app_controller.py" line="207"/>
+      <location filename="../../src/controller/app_controller.py" line="215"/>
       <source>The {file_format} format saves the image without color. Use another format if you want to preserve image colors.</source>
       <translation>The {file_format} format saves the image without color. Use another format if you want to preserve image colors.</translation>
     </message>
@@ -4019,22 +4034,22 @@
   <context>
     <name>controller.image_generation.image_generator</name>
     <message>
-      <location filename="../../src/controller/image_generation/image_generator.py" line="32"/>
+      <location filename="../../src/controller/image_generation/image_generator.py" line="33"/>
       <source>Inpainting failure</source>
       <translation>Inpainting failure</translation>
     </message>
     <message>
-      <location filename="../../src/controller/image_generation/image_generator.py" line="33"/>
+      <location filename="../../src/controller/image_generation/image_generator.py" line="34"/>
       <source>Save failed</source>
       <translation>Save failed</translation>
     </message>
     <message>
-      <location filename="../../src/controller/image_generation/image_generator.py" line="34"/>
+      <location filename="../../src/controller/image_generation/image_generator.py" line="35"/>
       <source>Failed</source>
       <translation>Failed</translation>
     </message>
     <message>
-      <location filename="../../src/controller/image_generation/image_generator.py" line="35"/>
+      <location filename="../../src/controller/image_generation/image_generator.py" line="36"/>
       <source>Existing image generation operation not yet finished, wait a little longer.</source>
       <translation>Existing image generation operation not yet finished, wait a little longer.</translation>
     </message>

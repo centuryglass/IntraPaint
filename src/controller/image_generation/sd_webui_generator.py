@@ -508,9 +508,9 @@ class SDWebUIGenerator(ImageGenerator):
         class _ProgressTask(AsyncTask):
             status_signal = Signal(dict)
 
-            def __init__(self, id: int) -> None:
+            def __init__(self, task_id: int) -> None:
                 super().__init__(self._check_progress)
-                self._id = id
+                self._id = task_id
                 self.should_stop = False
 
             def signals(self) -> List[Signal]:

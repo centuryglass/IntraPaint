@@ -68,9 +68,9 @@ class MyPaintBrushTool(BrushTool):
             self.brush_color = color
         cache.connect(self, Cache.LAST_BRUSH_COLOR, set_brush_color)
 
-        def set_active_brush(brush_path: str) -> None:
+        def set_active_brush(new_brush_path: str) -> None:
             """Update the active MyPaint brush when it changes in cache."""
-            self.brush_path = brush_path
+            self.brush_path = new_brush_path
         cache.connect(self, Cache.MYPAINT_BRUSH, set_active_brush)
         self.update_brush_cursor()
 
