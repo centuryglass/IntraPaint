@@ -603,7 +603,10 @@ class SDWebUIGenerator(ImageGenerator):
                 image_ready.emit(images[-1])
             except ReadTimeout:
                 error_signal.emit(RuntimeError(ERROR_MESSAGE_TIMEOUT))
-            except IOError as err:
+            except (IOError, RuntimeError) as err:
+                error_signal.emit(err)
+            except Exception as err:
+                print(f'unexpected error: {err}')
                 error_signal.emit(err)
 
         task = _UpscaleTask(_upscale, True)

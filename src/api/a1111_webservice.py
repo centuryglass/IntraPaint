@@ -287,8 +287,8 @@ class A1111Webservice(WebService):
             }
             upscaler = cache.get(Cache.UPSCALE_METHOD)
             if upscaler != 'None':
-                scripts = cache.get(Cache.SCRIPTS_IMG2IMG)
-                if UPSCALE_SCRIPT in scripts:
+                script_list = cache.get(Cache.SCRIPTS_IMG2IMG)
+                if UPSCALE_SCRIPT in script_list:
                     overrides['script_name'] = UPSCALE_SCRIPT
                     overrides['script_args'] = [
                         None,  # not used
