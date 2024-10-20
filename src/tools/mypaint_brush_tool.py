@@ -103,11 +103,11 @@ class MyPaintBrushTool(BrushTool):
         assert isinstance(brush, MyPaintLayerBrush)
         try:
             if not os.path.isfile(new_path):
-                resource_path = f'{PROJECT_DIR}/new_path'
+                resource_path = f'{PROJECT_DIR}/{new_path}'
                 if os.path.isfile(resource_path):
                     new_path = resource_path
                 else:
-                    raise RuntimeError('Brush file does not exist')
+                    raise RuntimeError(f'Brush file {new_path} does not exist, not even at {resource_path}')
             brush.brush_path = new_path
         except (OSError, RuntimeError) as err:
             logger.error(f'loading brush {new_path} failed', err)
