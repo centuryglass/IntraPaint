@@ -56,6 +56,7 @@
     "draw_tool_pressure_opacity": false,
     "draw_tool_pressure_hardness": false,
     "draw_tool_brush_pattern": "Solid",
+    "draw_tool_antialias": false,
     "eraser_tool_size": {
         "min": 1,
         "max": 300,
@@ -77,6 +78,7 @@
     "eraser_tool_pressure_size": true,
     "eraser_tool_pressure_opacity": false,
     "eraser_tool_pressure_hardness": false,
+    "eraser_tool_antialias": false,
     "filter_tool_selected_filter": "RGBA Color Balance",
     "filter_tool_cached_parameters": "{\"Blur\": [\"Box\", 3.0], \"Brightness/Contrast\": [1.0, 1.0], \"Posterize\": [3], \"RGBA Color Balance\": [1.0, 1.0, 1.0, 1.0], \"Sharpen\": [2.0]}",
     "filter_tool_brush_size": {
@@ -100,6 +102,7 @@
     "filter_tool_pressure_size": true,
     "filter_tool_pressure_opacity": false,
     "filter_tool_pressure_hardness": false,
+    "filter_tool_antialias": false,
     "smudge_tool_brush_size": {
         "min": 1,
         "max": 300,
@@ -121,6 +124,7 @@
     "smudge_tool_pressure_size": true,
     "smudge_tool_pressure_opacity": false,
     "smudge_tool_pressure_hardness": false,
+    "smudge_tool_antialias": false,
     "clone_stamp_tool_brush_size": {
         "min": 1,
         "max": 300,
@@ -142,6 +146,7 @@
     "clone_stamp_tool_pressure_size": true,
     "clone_stamp_tool_pressure_opacity": false,
     "clone_stamp_tool_pressure_hardness": false,
+    "clone_stamp_tool_antialias": false,
     "shape_tool_mode": "",
     "shape_tool_vertex_count": {
         "min": 3,
@@ -167,6 +172,7 @@
     },
     "shape_tool_fill_pattern": "",
     "shape_tool_fill_color": "#FFFFFFFF",
+    "shape_tool_antialias": false,
     "saved_main_window_pos": "1,28,800,600",
     "saved_layer_window_pos": "",
     "saved_navigation_window_pos": "",

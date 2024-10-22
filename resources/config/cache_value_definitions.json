@@ -281,7 +281,7 @@
         "subcategory": "Draw Tool",
         "description": "Smooth out jagged edges.",
         "type": "bool",
-        "dafault": true,
+        "default": true,
         "saved": true
     },
     "eraser_tool_size": {
@@ -359,7 +359,7 @@
         "subcategory": "Eraser Tool",
         "description": "Smooth out jagged edges.",
         "type": "bool",
-        "dafault": true,
+        "default": true,
         "saved": true
     },
     "filter_tool_selected_filter": {
@@ -455,7 +455,7 @@
         "subcategory": "Filter Tool",
         "description": "Smooth out jagged edges.",
         "type": "bool",
-        "dafault": true,
+        "default": true,
         "saved": true
     },
     "smudge_tool_brush_size": {
@@ -533,7 +533,7 @@
         "subcategory": "Smudge Tool",
         "description": "Smooth out jagged edges.",
         "type": "bool",
-        "dafault": true,
+        "default": true,
         "saved": true
     },
     "clone_stamp_tool_brush_size": {
@@ -611,7 +611,7 @@
         "subcategory": "Clone Stamp Tool",
         "description": "Smooth out jagged edges.",
         "type": "bool",
-        "dafault": true,
+        "default": true,
         "saved": true
     },
     "shape_tool_mode": {
@@ -725,7 +725,7 @@
         "subcategory": "Shape Tool",
         "description": "Smooth out jagged edges.",
         "type": "bool",
-        "dafault": true,
+        "default": true,
         "saved": true
     },
     "saved_main_window_pos": {

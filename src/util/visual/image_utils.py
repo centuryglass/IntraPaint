@@ -302,7 +302,7 @@ def color_fill(image: QImage, color: QColor, threshold: float) -> QImage:
     un_multiplied_image = image.convertToFormat(QImage.Format.Format_ARGB32)
     np_image = image_data_as_numpy_8bit(un_multiplied_image)
     color = [ color.blue(), color.green(), color.red(), color.alpha()]
-    np_color = np.array(color, dtype=np_image.dtype).reshape(1, 1, 4)
+    np_color = np.array(color, dtype=np_image.dtype)
 
     # Create a 4-channel difference image for comparison
     diff_image = np.zeros_like(np_image)
