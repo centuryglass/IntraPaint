@@ -77,7 +77,8 @@ class FilterTool(QtPaintBrushTool):
                          pressure_size_key=Cache.FILTER_TOOL_PRESSURE_SIZE, opacity_key=Cache.FILTER_TOOL_OPACITY,
                          pressure_opacity_key=Cache.FILTER_TOOL_PRESSURE_OPACITY,
                          hardness_key=Cache.FILTER_TOOL_HARDNESS,
-                         pressure_hardness_key=Cache.FILTER_TOOL_PRESSURE_HARDNESS, brush=brush)
+                         pressure_hardness_key=Cache.FILTER_TOOL_PRESSURE_HARDNESS,
+                         antialias_key=Cache.FILTER_TOOL_ANTIALIAS, brush=brush)
         cache.connect(self, Cache.FILTER_TOOL_SELECTED_FILTER, self._filter_update_slot)
         cache.connect(self, Cache.FILTER_TOOL_CACHED_PARAMETERS, self._filter_param_update_slot)
         self.set_scaling_icon_cursor(QIcon(CURSOR_PATH_FILTER_TOOL))

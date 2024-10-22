@@ -56,7 +56,8 @@ class CloneStampTool(QtPaintBrushTool):
                          opacity_key=Cache.CLONE_STAMP_TOOL_OPACITY,
                          pressure_opacity_key=Cache.CLONE_STAMP_TOOL_PRESSURE_OPACITY,
                          hardness_key=Cache.CLONE_STAMP_TOOL_HARDNESS,
-                         pressure_hardness_key=Cache.CLONE_STAMP_TOOL_PRESSURE_HARDNESS, brush=CloneStampBrush())
+                         pressure_hardness_key=Cache.CLONE_STAMP_TOOL_PRESSURE_HARDNESS,
+                         antialias_key=Cache.CLONE_STAMP_TOOL_ANTIALIAS, brush=CloneStampBrush())
         self._control_panel: Optional[CloneStampToolPanel] = None
         self._offset_marker.setVisible(False)
         self.set_scaling_icon_cursor(QIcon(CURSOR_PATH_CLONE_STAMP_TOOL))

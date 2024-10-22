@@ -45,6 +45,7 @@ class QtPaintBrush(LayerBrush):
         self._pressure_size = True
         self._pressure_opacity = False
         self._pressure_hardness = False
+        self._antialiasing = False
 
     @property
     def opacity(self) -> float:
@@ -90,6 +91,15 @@ class QtPaintBrush(LayerBrush):
     @pressure_hardness.setter
     def pressure_hardness(self, pressure_sets_hardness: bool) -> None:
         self._pressure_hardness = pressure_sets_hardness
+
+    @property
+    def antialiasing(self) -> bool:
+        """Access whether antialiasing is applied to brush strokes."""
+        return self._antialiasing
+
+    @antialiasing.setter
+    def antialiasing(self, antialias: bool) -> None:
+        self._antialiasing = antialias
 
     def set_pattern_brush(self, brush: Optional[QBrush]) -> None:
         """Sets a QBrush that defines the shape (but not color) of brush strokes."""
@@ -233,6 +243,7 @@ class QtPaintBrush(LayerBrush):
         # Make sure the paint buffer is clear, draw the most recent segment in the brush stroke:
         np_paint_buf[:, :, :] = 0
 
+        new_input_painter.setRenderHint(QPainter.RenderHint.Antialiasing, self._antialiasing)
         self._input_event_paint_segment(new_input_painter, input_event)
 
         # find changed pixels.  If a mask is set, remove all changes not covered by the mask.

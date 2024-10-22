@@ -41,7 +41,8 @@ class DrawTool(QtPaintBrushTool):
                          pressure_size_key=Cache.DRAW_TOOL_PRESSURE_SIZE, opacity_key=Cache.DRAW_TOOL_OPACITY,
                          pressure_opacity_key=Cache.DRAW_TOOL_PRESSURE_OPACITY,
                          hardness_key=Cache.DRAW_TOOL_HARDNESS, pressure_hardness_key=Cache.DRAW_TOOL_PRESSURE_HARDNESS,
-                         color_key=Cache.LAST_BRUSH_COLOR, pattern_key=Cache.DRAW_TOOL_BRUSH_PATTERN)
+                         color_key=Cache.LAST_BRUSH_COLOR, pattern_key=Cache.DRAW_TOOL_BRUSH_PATTERN,
+                         antialias_key=Cache.DRAW_TOOL_ANTIALIAS)
         self._control_panel: Optional[DrawToolPanel] = None
         self.set_scaling_icon_cursor(QIcon(CURSOR_PATH_DRAW_TOOL))
 

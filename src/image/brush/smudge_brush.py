@@ -33,6 +33,7 @@ class SmudgeBrush(LayerBrush):
         self._pressure_size = True
         self._pressure_opacity = False
         self._pressure_hardness = False
+        self._antialiasing = True
 
     @property
     def opacity(self) -> float:
@@ -79,6 +80,15 @@ class SmudgeBrush(LayerBrush):
     def pressure_hardness(self, pressure_sets_hardness: bool) -> None:
         self._pressure_hardness = pressure_sets_hardness
 
+    @property
+    def antialiasing(self) -> bool:
+        """Access whether antialiasing is applied to brush strokes."""
+        return self._antialiasing
+
+    @antialiasing.setter
+    def antialiasing(self, antialias: bool) -> None:
+        self._antialiasing = antialias
+
     def start_stroke(self) -> None:
         """Clear tracked stroke data before starting a new stroke."""
         self._last_point = None
@@ -94,7 +104,7 @@ class SmudgeBrush(LayerBrush):
         self._draw_buffered_events()
 
     @staticmethod
-    def _sample_smudge_point(smudge_point: '_SmudgePoint', layer_image: QImage) -> QImage:
+    def _sample_smudge_point(smudge_point: '_SmudgePoint', layer_image: QImage, antialiasing=False) -> QImage:
         """Sample a point from the image, to be drawn over the next smudge point.
 
         Parameters:
@@ -114,7 +124,7 @@ class SmudgeBrush(LayerBrush):
 
         # Draw the brush mask: A black circle with diameter equal to the brush size, highest opacity set to the
         # smudge point opacity, and edges faded out based on hardness:
-        smudge_mask = smudge_point.draw_mask()
+        smudge_mask = smudge_point.draw_mask(antialiasing)
 
         # Convert to numpy array. If the brush doesn't fully intersect with the image, clear the parts of the brush
         # mask that do not intersect and restrict the array to the parts that do intersect.
@@ -163,7 +173,7 @@ class SmudgeBrush(LayerBrush):
                         point_img_painter.end()
                     img_painter.drawImage(paint_bounds, self._last_point_img)
                 # Save the image from the current smudge point to draw on the next one:
-                self._last_point_img = self._sample_smudge_point(smudge_point, layer_image)
+                self._last_point_img = self._sample_smudge_point(smudge_point, layer_image, self.antialiasing)
             img_painter.end()
             self._input_buffer.clear()
 
@@ -217,10 +227,11 @@ class _SmudgePoint:
         self.opacity = opacity
         self.hardness = hardness
 
-    def draw_mask(self) -> QImage:
+    def draw_mask(self, antialiasing: bool = False) -> QImage:
         """Creates a mask image for this input point."""
         image = create_transparent_image(self.rect.size())
         painter = QPainter(image)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing, antialiasing)
         image_center = QPointF(self.rect.width() / 2, self.rect.height() / 2)
         QtPaintBrush.paint_segment(painter, self.rect.width(), self.opacity, self.hardness,
                                    QColor(Qt.GlobalColor.black), image_center, None)

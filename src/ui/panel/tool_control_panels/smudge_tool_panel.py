@@ -27,4 +27,5 @@ class SmudgeToolPanel(BrushToolPanel):
                          pressure_opacity_key=Cache.SMUDGE_TOOL_PRESSURE_OPACITY,
                          hardness_key=Cache.SMUDGE_TOOL_HARDNESS,
                          pressure_hardness_key=Cache.SMUDGE_TOOL_PRESSURE_HARDNESS,
+                         antialias_key=Cache.SMUDGE_TOOL_ANTIALIAS,
                          selection_only_label=SELECTION_ONLY_LABEL)

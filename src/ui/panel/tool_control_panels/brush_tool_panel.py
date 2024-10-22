@@ -26,6 +26,7 @@ class BrushToolPanel(QWidget):
                  pressure_hardness_key: Optional[str] = None,
                  color_key: Optional[str] = None,
                  pattern_key: Optional[str] = None,
+                 antialias_key: Optional[str] = None,
                  selection_only_label: Optional[str] = None,
                  added_rows: Optional[List[QWidget | QLayout]] = None) -> None:
         super().__init__()
@@ -103,6 +104,10 @@ class BrushToolPanel(QWidget):
 
         checkbox_row = QHBoxLayout()
         checkbox_row.setAlignment(Qt.AlignmentFlag.AlignLeft)
+        if antialias_key is not None:
+            antialias_checkbox = cache.get_control_widget(antialias_key)
+            antialias_checkbox.setText(cache.get_label(antialias_key))
+            checkbox_row.addWidget(antialias_checkbox)
         selection_only_checkbox = cache.get_control_widget(Cache.PAINT_SELECTION_ONLY)
         if selection_only_label is not None:
             selection_only_checkbox.setText(selection_only_label)

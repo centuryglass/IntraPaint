@@ -102,6 +102,7 @@ class Cache(Config, metaclass=Singleton):
     BATCH_SIZE: str
     CANVAS_RESIZE_CROP_LAYERS: str
     CANVAS_RESIZE_LAYER_MODE: str
+    CLONE_STAMP_TOOL_ANTIALIAS: str
     CLONE_STAMP_TOOL_BRUSH_SIZE: str
     CLONE_STAMP_TOOL_HARDNESS: str
     CLONE_STAMP_TOOL_OPACITY: str
@@ -121,6 +122,7 @@ class Cache(Config, metaclass=Singleton):
     CONTROLNET_VERSION: str
     CUTN: str
     DENOISING_STRENGTH: str
+    DRAW_TOOL_ANTIALIAS: str
     DRAW_TOOL_BRUSH_PATTERN: str
     DRAW_TOOL_BRUSH_SIZE: str
     DRAW_TOOL_HARDNESS: str
@@ -130,6 +132,7 @@ class Cache(Config, metaclass=Singleton):
     DRAW_TOOL_PRESSURE_SIZE: str
     EDIT_MODE: str
     EDIT_SIZE: str
+    ERASER_TOOL_ANTIALIAS: str
     ERASER_TOOL_HARDNESS: str
     ERASER_TOOL_OPACITY: str
     ERASER_TOOL_PRESSURE_HARDNESS: str
@@ -139,6 +142,7 @@ class Cache(Config, metaclass=Singleton):
     EXPECT_TABLET_INPUT: str
     FILL_THRESHOLD: str
     FILL_TOOL_BRUSH_PATTERN: str
+    FILTER_TOOL_ANTIALIAS: str
     FILTER_TOOL_BRUSH_SIZE: str
     FILTER_TOOL_CACHED_PARAMETERS: str
     FILTER_TOOL_HARDNESS: str
@@ -180,6 +184,7 @@ class Cache(Config, metaclass=Singleton):
     SD_SERVER_URL: str
     SEED: str
     SELECTION_BRUSH_SIZE: str
+    SHAPE_TOOL_ANTIALIAS: str
     SHAPE_TOOL_DASH_PATTERN: str
     SHAPE_TOOL_FILL_COLOR: str
     SHAPE_TOOL_FILL_PATTERN: str
@@ -191,6 +196,7 @@ class Cache(Config, metaclass=Singleton):
     SHAPE_TOOL_STAR_INNER_POINT_FRACTION: str
     SHAPE_TOOL_VERTEX_COUNT: str
     SKIP_STEPS: str
+    SMUDGE_TOOL_ANTIALIAS: str
     SMUDGE_TOOL_BRUSH_SIZE: str
     SMUDGE_TOOL_HARDNESS: str
     SMUDGE_TOOL_OPACITY: str

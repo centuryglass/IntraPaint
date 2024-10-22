@@ -97,8 +97,9 @@ A basic brush tool with easily adjustable properties.
 4. **Brush color button**:  Opens a color dialog to change brush color.
 5. **Brush pattern dropdown**: Choose between a few basic brush fill patterns.
 6. **Tablet pen pressure controls**:  These controls are only visible after IntraPaint first detects a connected drawing tablet.  Pen pressure can be connected to any combination of size, opacity, and hardness, to scale those values down as pressure decreases.
-7. **"Draw in selection only" checkbox**:  When checked, the brush will only make changes within [selected](#selection-tools) content.
-8. Examples of available brush settings.
+7. **Antialiasing checkbox**:  When checked, extra smoothing will be applied to jagged pixel edges when drawing. This is most useful when hardness is near 1.0.
+8. **"Draw in selection only" checkbox**:  When checked, the brush will only make changes within [selected](#selection-tools) content.
+9. Examples of available brush settings.
 
 ---
 ### ![Eraser tool icon](./tool_icons/eraser_icon.png) Eraser tool (E)
@@ -121,8 +122,9 @@ Erase image content.
 2. **Eraser opacity slider**: Sets the exact eraser opacity. At 1.0 the eraser completely clears image content.
 3. **Eraser hardness slider**: Sets the brush edge hardness. At 1.0 eraser edges are completely solid, at 0.0 eraser edges fade evenly from the center.
 4. **Tablet pen pressure controls**:  These controls are only visible after IntraPaint first detects a connected drawing tablet.  Pen pressure can be connected to any combination of size, opacity, and hardness, to scale those values down as pressure decreases.
-5. **"Erase in selection only" checkbox**:  When checked, the eraser will only make changes within [selected](#selection-tools) content. 
-6. Examples of available brush settings.
+5. **Antialiasing checkbox**:  When checked, extra smoothing will be applied to jagged pixel edges when erasing. This is most useful when hardness is near 1.0.
+6. **"Erase in selection only" checkbox**:  When checked, the eraser will only make changes within [selected](#selection-tools) content. 
+7. Examples of available brush settings.
 
 ---
 ### ![Fill tool icon](./tool_icons/fill_icon.png) Fill tool (F)
@@ -172,8 +174,9 @@ This tool uses the same filters that are found in the Filters menu.  See [Filter
 4. **Brush opacity slider**: Sets the exact brush opacity, between 0.0 (fully transparent) and 1.0 (fully opaque).
 5. **Brush hardness slider**: Sets the brush edge hardness. At 1.0 brush edges are completely solid, at 0.0 brush edges fade evenly from the center.
 6. **Tablet pen pressure controls**:  These controls are only visible after IntraPaint first detects a connected drawing tablet.  Pen pressure can be connected to any combination of size, opacity, and hardness, to scale those values down as pressure decreases.
-7. **"Filter selection only" checkbox**:  When checked, the brush will only make changes within [selected](#selection-tools) content.
-8. Examples of available filters.
+7. **Antialiasing checkbox**:  When checked, extra smoothing will be applied to jagged pixel edges when drawing. This is most useful when hardness is near 1.0.
+8. **"Filter selection only" checkbox**:  When checked, the brush will only make changes within [selected](#selection-tools) content.
+9. Examples of available filters.
 
 ---
 ### ![Smudge tool icon](./tool_icons/smudge_icon.png) Smudge tool (M)
@@ -197,8 +200,9 @@ Smudge image content to adjust the placement of image elements and smooth away u
 2. **Opacity slider**: Sets the smudging strength, between 0.0 (image content doesn't move at all) and 1.0 (image content continues moving no matter how far you drag).
 3. **Hardness slider**: Sets the brush edge hardness. At 1.0 brush edges are completely solid, at 0.0 brush edges fade evenly from the center.
 4. **Tablet pen pressure controls**:  These controls are only visible after IntraPaint first detects a connected drawing tablet.  Pen pressure can be connected to any combination of size, opacity, and hardness, to scale those values down as pressure decreases.
-5. **"Edit selection only" checkbox**:  When checked, the smudge tool will only make changes within [selected](#selection-tools) content.
-6. Examples showing how opacity and hardness impact smudging.
+5. **Antialiasing checkbox**:  When checked, extra smoothing will be applied to jagged pixel edges when smudging. This is most useful when hardness is near 1.0.
+6. **"Edit selection only" checkbox**:  When checked, the smudge tool will only make changes within [selected](#selection-tools) content.
+7. Examples showing how opacity and hardness impact smudging.
 
 ---
 ### ![Clone stamp tool icon](./tool_icons/stamp_icon.png) Clone stamp tool (N)
@@ -222,9 +226,10 @@ Copy image content from one area to another using a brush.
 3. **Brush opacity slider**: Sets the exact brush opacity, between 0.0 (fully transparent) and 1.0 (fully opaque).
 4. **Brush hardness slider**: Sets the brush edge hardness. At 1.0 brush edges are completely solid, at 0.0 brush edges fade evenly from the center.
 5. **Tablet pen pressure controls**:  These controls are only visible after IntraPaint first detects a connected drawing tablet.  Pen pressure can be connected to any combination of size, opacity, and hardness, to scale those values down as pressure decreases.
-6. **"Update selection only" checkbox**:  When checked, the clone stamp tool will only make changes within [selected](#selection-tools) content.
-7. **Sampling source point marker**:  Shows the area where image content will be copied from.
-8. This example shows how image content gets copied from the sample area to the cursor as individual brush strokes.
+6. **Antialiasing checkbox**:  When checked, extra smoothing will be applied to jagged pixel edges when drawing. This is most useful when hardness is near 1.0.
+7. **"Update selection only" checkbox**:  When checked, the clone stamp tool will only make changes within [selected](#selection-tools) content.
+8. **Sampling source point marker**:  Shows the area where image content will be copied from.
+9. This example shows how image content gets copied from the sample area to the cursor as individual brush strokes.
 
 ---
 ### ![Color Picker tool icon](./tool_icons/eyedropper_icon.png) Color Picker tool (C)
@@ -311,6 +316,8 @@ Draws geometric shapes within the image.
 8. **Line width slider**: Controls the outline width when drawing new shapes. Set to zero to disable outline drawing.
 9. **Line join style dropdown**: Controls how shape outline connections are drawn.
 10. **Custom dash pattern**: Only visible when the line style dropdown is set to "Custom pattern".  Patterns use the format "dash_length space_length ", repeated as many times as desired, where dash_length and space_length are both round numbers.
+11. **Antialiasing checkbox**:  When checked, extra smoothing will be applied to smooth jagged pixels along shape edges.
+12. Examples of different shape options, fill patterns, and line styles.
 
 ---
 ### ![Transform Layer tool icon](./tool_icons/layer_transform_icon.png) Transform layer tool (T)

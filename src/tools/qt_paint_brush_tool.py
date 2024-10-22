@@ -28,7 +28,7 @@ class QtPaintBrushTool(BrushTool):
                  opacity_key: Optional[str] = None, pressure_opacity_key: Optional[str] = None,
                  hardness_key: Optional[str] = None, pressure_hardness_key: Optional[str] = None,
                  color_key: Optional[str] = None, pattern_key: Optional[str] = None,
-                 brush: Optional[QtPaintBrush] = None) -> None:
+                 antialias_key: Optional[str] = None, brush: Optional[QtPaintBrush] = None) -> None:
         if brush is None:
             brush = QtPaintBrush()
         else:
@@ -139,6 +139,13 @@ class QtPaintBrushTool(BrushTool):
                     cache.set(pattern_key, BRUSH_PATTERN_SOLID)
             cache.connect(self, pattern_key, _update_pattern)
             _update_pattern(cache.get(pattern_key))
+
+        if antialias_key is not None:
+            def _update_antialias(antialias: bool) -> None:
+                brush.antialiasing = antialias
+            cache.connect(self, antialias_key, _update_antialias)
+            _update_antialias(cache.get(antialias_key))
+
         self.update_brush_cursor()
 
         if cache.get(Cache.EXPECT_TABLET_INPUT):

@@ -105,6 +105,11 @@ class SmudgeTool(BrushTool):  # type: ignore
         cache.connect(self, Cache.SMUDGE_TOOL_PRESSURE_HARDNESS, _pressure_hardness_update)
         brush.pressure_hardness = cache.get(Cache.SMUDGE_TOOL_PRESSURE_HARDNESS)
 
+        def _antialias_update(antialias: bool) -> None:
+            brush.antialiasing = antialias
+        cache.connect(self, Cache.SMUDGE_TOOL_ANTIALIAS, _antialias_update)
+        _antialias_update(cache.get(Cache.SMUDGE_TOOL_ANTIALIAS))
+
         if cache.get(Cache.EXPECT_TABLET_INPUT):
             control_panel = self.get_control_panel()
             assert isinstance(control_panel, BrushToolPanel)

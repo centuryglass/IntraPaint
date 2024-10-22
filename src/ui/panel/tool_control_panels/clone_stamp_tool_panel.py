@@ -34,6 +34,7 @@ class CloneStampToolPanel(BrushToolPanel):
                          pressure_opacity_key=Cache.CLONE_STAMP_TOOL_PRESSURE_OPACITY,
                          hardness_key=Cache.CLONE_STAMP_TOOL_HARDNESS,
                          pressure_hardness_key=Cache.CLONE_STAMP_TOOL_PRESSURE_HARDNESS,
+                         antialias_key=Cache.CLONE_STAMP_TOOL_ANTIALIAS,
                          selection_only_label=LABEL_TEXT_SELECTION_ONLY,
                          added_rows=[self._offset_row, Divider(Qt.Orientation.Horizontal)])
         self._offset = QPoint()

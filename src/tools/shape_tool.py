@@ -174,6 +174,7 @@ class ShapeTool(BaseTool):
         if not intersect_bounds.isEmpty():
             with self._layer.borrow_image(intersect_bounds) as layer_image:
                 painter = QPainter(layer_image)
+                painter.setRenderHint(QPainter.RenderHint.Antialiasing, Cache().get(Cache.SHAPE_TOOL_ANTIALIAS))
                 painter.setTransform(self._layer.transform.inverted()[0])
                 painter.fillPath(path, self._brush)
                 if self._pen.width() > 0:

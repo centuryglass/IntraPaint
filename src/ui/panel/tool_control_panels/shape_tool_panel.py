@@ -123,6 +123,9 @@ class ShapeToolPanel(QWidget):
         self._pen_join_style_label.setBuddy(self._pen_join_style_dropdown)
         self._pen_join_style_label.setToolTip(self._pen_join_style_dropdown.toolTip())
 
+        self._antialiasing_checkbox = cache.get_control_widget(Cache.SHAPE_TOOL_ANTIALIAS)
+        self._antialiasing_checkbox.setText(cache.get_label(Cache.SMUDGE_TOOL_ANTIALIAS))
+
         def _update_line_previews(color_str) -> None:
             if QColor.isValidColor(color_str):
                 color = QColor(color_str)
@@ -164,6 +167,7 @@ class ShapeToolPanel(QWidget):
                 (self._line_color_button, 5, 5, 1, 4),
                 (self._fill_pattern_label, 6, 0, 1, 1),
                 (self._fill_style_dropdown, 6, 1, 1, 3),
+                (self._antialiasing_checkbox, 7, 0, 1, 4),
                 (self._pen_style_label, 6, 5, 1, 1),
                 (self._pen_style_dropdown, 6, 6, 1, 3),
                 (self._pen_join_style_label, 7, 5, 1, 1),
@@ -191,8 +195,9 @@ class ShapeToolPanel(QWidget):
                 (self._line_width_slider, 7, 0, 1, 4),
                 (self._pen_join_style_label, 8, 0, 1, 1),
                 (self._pen_join_style_dropdown, 8, 1, 1, 3),
-                (self._dash_label, 9, 0, 1, 1),
-                (self._dash_textbox, 9, 1, 1, 3)
+                (self._antialiasing_checkbox, 9, 0, 1, 4),
+                (self._dash_label, 10, 0, 1, 1),
+                (self._dash_textbox, 10, 1, 1, 3)
             )
             self._layout.setColumnStretch(1, 1)
             self._layout.setColumnStretch(3, 1)

@@ -32,4 +32,5 @@ class DrawToolPanel(BrushToolPanel):
                          pressure_hardness_key=Cache.DRAW_TOOL_PRESSURE_HARDNESS,
                          color_key=Cache.LAST_BRUSH_COLOR,
                          pattern_key=Cache.DRAW_TOOL_BRUSH_PATTERN,
+                         antialias_key=Cache.DRAW_TOOL_ANTIALIAS,
                          selection_only_label=SELECTION_ONLY_LABEL)

@@ -38,6 +38,7 @@ class FilterToolPanel(BrushToolPanel):
                          opacity_key=Cache.FILTER_TOOL_OPACITY, pressure_opacity_key=Cache.FILTER_TOOL_PRESSURE_OPACITY,
                          hardness_key=Cache.FILTER_TOOL_HARDNESS,
                          pressure_hardness_key=Cache.FILTER_TOOL_PRESSURE_HARDNESS,
+                         antialias_key=Cache.FILTER_TOOL_ANTIALIAS,
                          selection_only_label=LABEL_TEXT_FILTER_SELECTED_ONLY,
                          added_rows=[self._filter_option_panel, Divider(Qt.Orientation.Horizontal)])
         self._filter_layout = QVBoxLayout(self._filter_option_panel)

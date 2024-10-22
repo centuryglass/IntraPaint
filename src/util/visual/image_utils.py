@@ -218,59 +218,102 @@ def get_transparency_tile_pixmap(size: Optional[QSize] = None) -> QPixmap:
 def flood_fill(image: QImage, pos: QPoint, color: QColor, threshold: float, in_place: bool = False) -> Optional[QImage]:
     """Returns a mask image marking all areas of similar color directly connected to a point in an image.
 
-    Parameters
-    ----------
-        image: QImage
-            Source image, in format Format_ARGB32_Premultiplied.
-        pos: QPoint
-            Seed point for the fill operation.
-        color: QColor
-            Color used to draw filled pixels in the final mask image.
-        threshold: float
-            Maximum color difference to ignore when determining which pixels to fill.
-        in_place: bool, default=False
-            If True, modify the image in-place and do not return a mask.
-    Returns
-    -------
-        mask: Optional[QImage]
-            Mask image marking the area to be filled, returned only if in_place=False. The mask image will be the same
-            size as the source image. filled pixels will be set to the color parameter, while unfilled pixels will be
-            fully transparent.
-    """
+     Parameters
+     ----------
+         image: QImage
+             Source image, in format Format_ARGB32_Premultiplied.
+         pos: QPoint
+             Seed point for the fill operation.
+         color: QColor
+             Color used to draw filled pixels in the final mask image.
+         threshold: float
+             Maximum color difference to ignore when determining which pixels to fill.
+         in_place: bool, default=False
+             If True, modify the image in-place and do not return a mask.
+     Returns
+     -------
+         mask: Optional[QImage]
+             Mask image marking the area to be filled, returned only if in_place=False. The mask image will be the same
+             size as the source image. filled pixels will be set to the color parameter, while unfilled pixels will be
+             fully transparent.
+     """
     un_multiplied_image = image.convertToFormat(QImage.Format.Format_ARGB32)
     np_image = image_data_as_numpy_8bit(un_multiplied_image)
-    np_color = np.array(np_image[pos.y(), pos.x(), :], dtype=np_image.dtype).reshape(1, 1, 4)
-    diff = np.linalg.norm(np_image - np_color, axis=-1)
-    diff = np.clip(diff, 0, 255).astype(np.uint8)
-    within_threshold = np.zeros((image.height() + 2, image.width() + 2), np.uint8)
-    seed_point = (pos.x(), pos.y())
-    cv2.floodFill(diff, within_threshold, seed_point, 255, loDiff=threshold, upDiff=threshold,
-                  flags=cv2.FLOODFILL_MASK_ONLY)
-    within_threshold = within_threshold[1:-1, 1:-1]
-    # Convert color to premultiplied ARGB to match the image color format:
-    paint_color = [int(color.blue() * color.alphaF()), int(color.green() * color.alphaF()),
-                   int(color.red() * color.alphaF()), color.alpha()]
-    np_paint_color = np.array(paint_color, dtype=np_image.dtype).reshape(1, 1, 4)
-    if in_place:
-        np_image = image_data_as_numpy_8bit(image)
-        np_image[within_threshold == 1, :] = np_paint_color
+    seed_color = np.array(np_image[pos.y(), pos.x(), :], dtype=np_image.dtype)
+
+    h, w = np_image.shape[:2]
+    mask = np.zeros((h + 2, w + 2), dtype=np.uint8)
+
+    # Create a 4-channel difference image for comparison
+    diff_image = np.zeros_like(np_image)
+    for i in range(4):  # Include alpha channel
+        diff_image[:, :, i] = np.abs(np_image[:, :, i] - seed_color[i])
+
+    # Maximum difference across all channels
+    max_diff = np.max(diff_image, axis=2)
+
+    # Create initial mask of pixels within threshold
+    within_threshold = max_diff <= threshold
+
+    # Perform flood fill to find connected components
+    seed_mask = mask.copy()
+    flags = 4  # 4-connected
+    cv2.floodFill(
+        within_threshold.astype(np.uint8),
+        seed_mask,
+        (pos.x(), pos.y()),
+        1,
+        loDiff=0,
+        upDiff=0,
+        flags=flags
+    )
+
+    # Extract the filled region (removing the border)
+    filled_mask = seed_mask[1:-1, 1:-1] == 1
+
+    if not in_place:
+        # Create new mask image
+        result = QImage(w, h, QImage.Format.Format_ARGB32)
+        result.fill(Qt.GlobalColor.transparent)
+        mask_data = image_data_as_numpy_8bit(result)
+
+        # Set color for filled pixels
+        mask_data[filled_mask] = [
+            color.blue(),  # Note: QImage stores in BGRA format
+            color.green(),
+            color.red(),
+            color.alpha()
+        ]
+
+        return result
+    else:
+        # Modify original image directly
+        np_image[filled_mask] = [
+            color.blue(),
+            color.green(),
+            color.red(),
+            color.alpha()
+        ]
         return None
-    mask_image = create_transparent_image(image.size())
-    np_mask_image = image_data_as_numpy_8bit(mask_image)
-    np_mask_image[within_threshold == 1, :] = np_paint_color
-    return mask_image
 
 
 def color_fill(image: QImage, color: QColor, threshold: float) -> QImage:
     """Return an image mask marking all pixels where the color value matches a given color within a threshold range."""
     un_multiplied_image = image.convertToFormat(QImage.Format.Format_ARGB32)
     np_image = image_data_as_numpy_8bit(un_multiplied_image)
-    # Convert color to premultiplied ARGB to match the image color format:
-    color = [int(color.blue() * color.alphaF()), int(color.green() * color.alphaF()), int(color.red() * color.alphaF()),
-             color.alpha()]
+    color = [ color.blue(), color.green(), color.red(), color.alpha()]
     np_color = np.array(color, dtype=np_image.dtype).reshape(1, 1, 4)
-    diff = np.linalg.norm(np_image - np_color, axis=-1)
-    within_threshold = diff <= threshold
+
+    # Create a 4-channel difference image for comparison
+    diff_image = np.zeros_like(np_image)
+    for i in range(4):  # Include alpha channel
+        diff_image[:, :, i] = np.abs(np_image[:, :, i] - np_color[i])
+
+    # Maximum difference across all channels
+    max_diff = np.max(diff_image, axis=2)
+
+    # Create and return mask of pixels within threshold
+    within_threshold = max_diff <= threshold
     mask_image = create_transparent_image(image.size())
     np_mask_image = image_data_as_numpy_8bit(mask_image)
     np_mask_image[within_threshold, 3] = 255

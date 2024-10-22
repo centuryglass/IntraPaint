@@ -275,6 +275,15 @@
         "default": "",
         "saved": true
     },
+    "draw_tool_antialias": {
+        "label": "Antialiasing",
+        "category": "Cache",
+        "subcategory": "Draw Tool",
+        "description": "Smooth out jagged edges.",
+        "type": "bool",
+        "dafault": true,
+        "saved": true
+    },
     "eraser_tool_size": {
         "label": "Eraser size:",
         "category": "Cache",
@@ -342,6 +351,15 @@
         "description": "Drawing tablet pen pressure affects draw tool brush hardness.",
         "type": "bool",
         "default": false,
+        "saved": true
+    },
+    "eraser_tool_antialias": {
+        "label": "Antialiasing",
+        "category": "Cache",
+        "subcategory": "Eraser Tool",
+        "description": "Smooth out jagged edges.",
+        "type": "bool",
+        "dafault": true,
         "saved": true
     },
     "filter_tool_selected_filter": {
@@ -425,10 +443,19 @@
     "filter_tool_pressure_hardness": {
         "label": "Pen pressure=hardness:",
         "category": "Cache",
-        "subcategory": "Smudge Tool",
+        "subcategory": "Filter Tool",
         "description": "Drawing tablet pen pressure affects filter tool brush hardness.",
         "type": "bool",
         "default": false,
+        "saved": true
+    },
+    "filter_tool_antialias": {
+        "label": "Antialiasing",
+        "category": "Cache",
+        "subcategory": "Filter Tool",
+        "description": "Smooth out jagged edges.",
+        "type": "bool",
+        "dafault": true,
         "saved": true
     },
     "smudge_tool_brush_size": {
@@ -500,6 +527,15 @@
         "default": false,
         "saved": true
     },
+    "smudge_tool_antialias": {
+        "label": "Antialiasing",
+        "category": "Cache",
+        "subcategory": "Smudge Tool",
+        "description": "Smooth out jagged edges.",
+        "type": "bool",
+        "dafault": true,
+        "saved": true
+    },
     "clone_stamp_tool_brush_size": {
         "label": "Size:",
         "category": "Cache",
@@ -567,6 +603,15 @@
         "description": "Drawing tablet pen pressure affects clone stamp tool brush hardness.",
         "type": "bool",
         "default": false,
+        "saved": true
+    },
+    "clone_stamp_tool_antialias": {
+        "label": "Antialiasing",
+        "category": "Cache",
+        "subcategory": "Clone Stamp Tool",
+        "description": "Smooth out jagged edges.",
+        "type": "bool",
+        "dafault": true,
         "saved": true
     },
     "shape_tool_mode": {
@@ -672,6 +717,15 @@
         "description": "Shape fill color.",
         "type": "string",
         "default": "#FFFFFFFF",
+        "saved": true
+    },
+    "shape_tool_antialias": {
+        "label": "Antialiasing",
+        "category": "Cache",
+        "subcategory": "Shape Tool",
+        "description": "Smooth out jagged edges.",
+        "type": "bool",
+        "dafault": true,
         "saved": true
     },
     "saved_main_window_pos": {
