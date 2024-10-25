@@ -3,9 +3,13 @@ Basic interface for classes used to access HTTP web services.
 
 Provides basic session management, auth access, and functions for making GET and POST requests.
 """
-from typing import Optional
+from typing import Optional, Dict, Tuple
 import secrets
 import requests
+
+
+JSON_DATA_TYPE = 'application/json'
+MULTIPART_FORM_DATA_TYPE = 'multipart/form-data'
 
 
 class WebService:
@@ -67,8 +71,8 @@ class WebService:
         Response
             The response returned by the webservice.
         """
-        return self._send(endpoint, 'GET', None, None, timeout, url_params, headers, fail_on_auth_error,
-                          throw_on_failure)
+        return self._send(endpoint, 'GET', None, None, timeout, url_params, headers, None,
+                          fail_on_auth_error, throw_on_failure)
 
     def post(self,
              endpoint: str,
@@ -77,6 +81,7 @@ class WebService:
              timeout: Optional[int] = None,
              url_params: Optional[dict[str, str]] = None,
              headers: Optional[dict[str, str]] = None,
+             files: Optional[Dict[str, Tuple[str, bytes, str]]] = None,
              fail_on_auth_error: bool = False,
              throw_on_failure: bool = True) -> requests.Response:
         """Sends an HTTP POST request to the webservice
@@ -92,10 +97,13 @@ class WebService:
             Request content format to use.
         timeout : int, optional
             Request timeout period in seconds.
-        url_params : dict, optional
+        url_params : Dict[str, str], optional
             Any URL parameters to send with the request.
-        headers : dict, optional
+        headers : Dict[str, str], optional
             Any headers that should be explicitly set on the request.
+        files: Dict[str, Tuple[str, bytes, str]], optional
+            Files that should be sent with form data, to be used with body type 'multipart/form-data'. Tuple format is
+            (filename, file_bytes, file_type_str).
         fail_on_auth_error : bool, default=false
             Whether 401: unauthorized responses should raise a RuntimeError
         throw_on_failure : bool, default=true
@@ -106,17 +114,18 @@ class WebService:
         Response
             The response returned by the webservice.
         """
-        return self._send(endpoint, 'POST', body, body_format, timeout, url_params, headers, fail_on_auth_error,
-                          throw_on_failure)
+        return self._send(endpoint, 'POST', body, body_format, timeout, url_params, headers, files,
+                          fail_on_auth_error, throw_on_failure)
 
     def _send(self,
               endpoint: str,
               method: str,
               body,
-              body_format: Optional[str] = 'application/json',
+              body_format: Optional[str] = JSON_DATA_TYPE,
               timeout: Optional[int] = None,
-              url_params: Optional[dict[str, str]] = None,
-              headers: Optional[dict[str, str]] = None,
+              url_params: Optional[Dict[str, str]] = None,
+              headers: Optional[Dict[str, str]] = None,
+              files: Optional[Dict[str, Tuple[str, bytes, str]]] = None,
               fail_on_auth_error: bool = False,
               throw_on_failure: bool = True) -> requests.Response:
         address = self._build_address(endpoint, url_params)
@@ -125,8 +134,10 @@ class WebService:
         if method == 'GET':
             res = self._session.get(address, timeout=timeout, headers=headers)
         elif method == 'POST':
-            if body_format == 'application/json':
+            if body_format == JSON_DATA_TYPE:
                 res = self._session.post(address, timeout=timeout, headers=headers, json=body)
+            elif body_format == MULTIPART_FORM_DATA_TYPE and files is not None:
+                res = self._session.post(address, timeout=timeout, headers=headers, files=files, data=body)
             else:
                 res = self._session.post(address, timeout=timeout, headers=headers, data=body)
         else:
@@ -143,6 +154,7 @@ class WebService:
                                   timeout,
                                   url_params,
                                   headers,
+                                  files,
                                   fail_on_auth_error,
                                   throw_on_failure)
         elif res.status_code != 200 and throw_on_failure:
