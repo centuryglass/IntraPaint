@@ -46,13 +46,13 @@ Krita extension's implementation: (https://github.com/Acly/krita-ai-diffusion/bl
 - Is CLIP interrogate supported?
 
 ### Steps to implement (bare minimum):
-1. ~~Update my ComfyUI installation and the Krita ComfyUI plugin, make sure all of it still works on my system.~~
-2. ~~Install websockets_client, add to requirements.txt~~ No longer needed, there's a perfectly good REST api now.
-3. ~~Create src/api/comfyui_webservice.py, implement basic connection and authentication.~~ Not really much to do regarding auth.
+1. Update my ComfyUI installation and the Krita ComfyUI plugin, make sure all of it still works on my system.
+2. Install websockets_client, add to requirements.txt
+3. Create src/api/comfyui_webservice.py, implement basic connection and authentication.
 4. Implement bare minimum set of necessary workflows: txt2img, img2img, inpainting, with progress checking
 5. Create src/ui/panel/generators/sd_comfyui_panel.py, or refactor sd_webui_panel.py to ensure it works with both SD providers.
 6. Create src/controller/image_generation/sd_comfyui_generator.py, implement the usual methods for connection, setup, inpainting, etc.
-7. Test to confirm all the basic tasks work.
+7. Test to confirm all of the basic tasks work.
 8. Update documentation to describe configuration, including rich text fields used in GeneratorSetupWindow
 
 ### Follow-up: ControlNet

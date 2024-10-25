@@ -14,7 +14,7 @@ class ActiveTextFieldTracker(QObject):
 
     status_changed = Signal()
 
-    def __init__(self) -> None:
+    def __init__(self):
         super().__init__()
         self._active_widget: Optional[TextInput] = None
         app = QApplication.instance()

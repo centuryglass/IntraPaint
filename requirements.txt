@@ -4,3 +4,4 @@ pillow~=10.3.0
 requests~=2.32.01
 PySide6~=6.7.2
 platformdirs~=4.2.2
+strenum~=0.4.15; python_version < '3.11'

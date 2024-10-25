@@ -7,7 +7,11 @@ import sys
 from enum import Enum
 from typing import Optional, Dict, List, Set
 
-from enum import StrEnum
+try:
+    from enum import StrEnum
+except ImportError:  # Use third-party StrEnum if python version < 3.11
+    # noinspection PyUnresolvedReferences
+    from strenum import StrEnum  # type: ignore
 
 from PySide6.QtCore import Qt, QRect, QSize, Signal
 from PySide6.QtGui import QIcon, QMouseEvent, QResizeEvent, QKeySequence, QCloseEvent, QImage, QAction, QMoveEvent

@@ -6,7 +6,11 @@ from typing import Optional, Callable, TypeAlias
 import cv2
 import numpy as np
 
-from enum import StrEnum
+try:
+    from enum import StrEnum
+except ImportError:  # Use third-party StrEnum if python version < 3.11
+    # noinspection PyPackageRequirements
+    from strenum import StrEnum  # type: ignore
 
 from PySide6.QtCore import QPoint, QRect
 from PySide6.QtGui import QPainter, QImage, QTransform
