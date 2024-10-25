@@ -40,6 +40,13 @@ class LabeledSpinbox(QWidget):
         self._label = QLabel(self)
         self._label.setText(label_text)
         self.spinbox = QDoubleSpinBox(self) if isinstance(default_value, float) else BigIntSpinbox(self)
+        if isinstance(self.spinbox, QDoubleSpinBox):
+            assert isinstance(min_value, float)
+            assert isinstance(max_value, float)
+        else:
+            assert isinstance(self.spinbox, BigIntSpinbox)
+            assert isinstance(min_value, int)
+            assert isinstance(max_value, int)
         self.spinbox.setRange(min_value, max_value)
         self.spinbox.setValue(default_value)
         self._layout.addWidget(self._label, 1)
