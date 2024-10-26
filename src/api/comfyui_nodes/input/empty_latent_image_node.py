@@ -18,6 +18,9 @@ class EmptyLatentInputs(TypedDict):
 class EmptyLatentNode(ComfyNode):
     """Creates an empty latent image or image batch."""
 
+    # Output indexes:
+    IDX_LATENT = 0
+
     def __init__(self, batch_size: int, image_size: QSize) -> None:
         data: EmptyLatentInputs = {
             'batch_size': batch_size,

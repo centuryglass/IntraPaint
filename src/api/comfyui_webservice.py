@@ -4,6 +4,7 @@ Accesses ComfyUI through its REST API, providing access to image generation and 
 import datetime
 import json
 import logging
+import re
 from enum import StrEnum, Enum
 from io import BytesIO
 from typing import List, cast, Optional, TypedDict, NotRequired
@@ -15,7 +16,7 @@ from PySide6.QtGui import QImage, QPainter, QPainterPath
 
 import src.api.comfyui_types as comfy_type
 from src.api.comfyui_nodes.ksampler_node import SAMPLER_OPTIONS
-from src.api.comfyui_workflows.diffusion_workflow_builder import DiffusionWorkflowBuilder
+from src.api.comfyui_workflows.diffusion_workflow_builder import DiffusionWorkflowBuilder, ExtensionModelType
 from src.api.webservice import WebService, MULTIPART_FORM_DATA_TYPE
 from src.config.application_config import AppConfig
 from src.config.cache import Cache
@@ -35,6 +36,7 @@ DEFAULT_TIMEOUT = 30
 SETTINGS_UPDATE_TIMEOUT = 90
 TYPE_PNG_IMAGE = 'image/png'
 INTRAPAINT_UPLOAD_SUBFOLDER = 'IntraPaint'
+LORA_EXTENSION = '.safetensors'
 
 
 class ComfyEndpoints:
@@ -66,17 +68,19 @@ class ComfyModelType(StrEnum):
     LORA = 'loras'
     VAE = 'vae'
     CLIP = 'clip'
+    EMBEDDING = 'embeddings'
+    CONTROLNET = 'controlnet'
+    CUSTOM_NODES = 'custom_nodes'
+    HYPERNETWORKS = 'hypernetworks'
+    # Everything below this point is only included for completeness, and is unlikely to ever see support in IntraPaint
+    # unless someone requests it.
     DIFFUSION_MODEL = 'diffusion_models'
     CLIP_VISION = 'clip_vision'
     STYLE_MODEL = 'style_models'
-    EMBEDDING = 'embeddings'
     DIFFUSER = 'diffusers'
     VAE_APPROX = 'vae_approx'
-    CONTROLNET = 'controlnet'
     GLIGEN = 'gligen'
     UPSCALING = 'upscale_models'
-    CUSTOM_NODES = 'custom_nodes'
-    HYPERNETWORKS = 'hypernetworks'
     PHOTOMAKER = 'photomaker'
     CLASSIFIERS = 'classifiers'
     ANIMATE_DIFF = 'AnimateDiffEvolved_Models'
@@ -142,6 +146,10 @@ class ComfyUiWebservice(WebService):
     def get_lora_models(self) -> List[str]:
         """Returns the list of available LORA models."""
         return self.get_models(ComfyModelType.LORA)
+
+    def get_hypernetwork_models(self) -> List[str]:
+        """Returns the list of available Hypernetwork models."""
+        return self.get_models(ComfyModelType.HYPERNETWORKS)
 
     def upload_image(self, image: QImage, name: Optional[str] = None, subfolder: Optional[str] = None,
                      temp=True, overwrite=True) -> comfy_type.ImageFileReference:
@@ -240,6 +248,50 @@ class ComfyUiWebservice(WebService):
         workflow_builder.image_size = cache.get(Cache.GENERATION_SIZE)
         workflow_builder.sampler = cache.get(Cache.SAMPLING_METHOD)
         workflow_builder.seed = cache.get(Cache.SEED)
+
+        # Find and add LORA and Hypernetwork models:
+        available_loras = cache.get(Cache.LORA_MODELS)
+        available_hypernetworks = cache.get(Cache.HYPERNETWORK_MODELS)
+        lora_name_map = {}
+        hypernet_name_map = {}
+        for model_list, model_dict in ((available_loras, lora_name_map),
+                                       (available_hypernetworks, hypernet_name_map)):
+            for model_option in model_list:
+                if '.' in model_option:
+                    model_dict[model_option[:model_option.index('.')]] = model_option
+                else:
+                    model_dict[model_option] = [model_option]
+
+        extension_model_pattern = r'<(lora|lyco|hypernet):([^:><]+):([^:>]+)(?::([^>]+))?>'
+        for prompt, strength_multiplier in ((workflow_builder.prompt, 1.0),
+                                            (workflow_builder.negative_prompt, -1.0)):
+            extension_model_matches = list(re.finditer(extension_model_pattern, prompt))
+
+            for match in extension_model_matches:
+                model_type_name = match.group(1)
+                model_type = ExtensionModelType.HYPERNETWORK if model_type_name == 'hypernet' \
+                    else ExtensionModelType.LORA
+                model_name = match.group(2)
+                model_option_dict = hypernet_name_map if model_type == ExtensionModelType.HYPERNETWORK \
+                    else lora_name_map
+                if model_name not in model_option_dict:
+                    logger.error(f'Extension model {model_name} specified, but not found')
+                    continue
+                model_name = model_option_dict[model_name]
+                model_strength_str = match.group(3)
+                clip_strength_str = match.group(4) if match.group(4) is not None else model_strength_str
+                try:
+                    model_strength = float(model_strength_str) * strength_multiplier
+                    clip_strength = float(clip_strength_str) * strength_multiplier
+                    workflow_builder.add_extension_model(model_name, model_strength, clip_strength, model_type)
+                except ValueError:
+                    logger.error(f'Invalid strength value "{model_strength_str}" for lora "{model_name}"')
+
+            # remove the lora/hypernetwork syntax from the prompt now that the models are selected:
+            if strength_multiplier > 0:
+                workflow_builder.prompt = re.sub(extension_model_pattern, '', prompt)
+            else:
+                workflow_builder.negative_prompt = re.sub(extension_model_pattern, '', prompt)
 
         edit_mode = cache.get(Cache.EDIT_MODE)
         if edit_mode != EDIT_MODE_TXT2IMG:
@@ -392,7 +444,10 @@ class ComfyUiWebservice(WebService):
         Cache().set(Cache.COMFYUI_SD_MODEL, 'pirsusArtstation_v10.safetensors')
         Cache().set(Cache.GUIDANCE_SCALE, 8.0)
         Cache().set(Cache.DENOISING_STRENGTH, 0.8)
-        Cache().set(Cache.GENERATION_SIZE, QSize(1024, 1024))
+        Cache().set(Cache.SEED, 1)
+        Cache().set(Cache.GENERATION_SIZE, QSize(640, 640))
+        Cache().set(Cache.LORA_MODELS, self.get_lora_models())
+        Cache().set(Cache.HYPERNETWORK_MODELS, self.get_hypernetwork_models())
 
         # Create and print queued task:
         image = QImage('./examples/model_example_photon.png')

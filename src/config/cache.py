@@ -157,6 +157,7 @@ class Cache(Config, metaclass=Singleton):
     GENERATION_TAB_BAR: str
     GLID_SERVER_URL: str
     GUIDANCE_SCALE: str
+    HYPERNETWORK_MODELS: str
     IMAGE_LAYER_SCALING_BEHAVIOR: str
     INPAINT_FULL_RES: str
     INPAINT_FULL_RES_PADDING: str

@@ -19,6 +19,9 @@ class VAEEncodeNode(ComfyNode):
     PIXELS = 'pixels'
     VAE = 'vae'
 
+    # Output indexes:
+    IDX_LATENT = 0
+
     def __init__(self) -> None:
         connection_params = {
             VAEEncodeNode.PIXELS,

@@ -15,6 +15,9 @@ class LoadImageInputs(TypedDict):
 class LoadImageNode(ComfyNode):
     """A ComfyUI node used to load image data."""
 
+    # Output indexes:
+    IDX_IMAGE = 0
+
     def __init__(self, image_name: str) -> None:
         data: LoadImageInputs = {
             'image': image_name,

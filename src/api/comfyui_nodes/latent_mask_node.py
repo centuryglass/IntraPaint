@@ -19,6 +19,9 @@ class LatentMaskNode(ComfyNode):
     SAMPLES = 'samples'
     MASK = 'mask'
 
+    # Output indexes:
+    IDX_LATENT = 0
+
     def __init__(self) -> None:
         connection_params = {LatentMaskNode.SAMPLES, LatentMaskNode.MASK}
         super().__init__(NODE_NAME, {}, connection_params, 1)

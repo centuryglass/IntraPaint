@@ -18,6 +18,9 @@ class ClipTextEncodeNode(ComfyNode):
     # Connection keys:
     CLIP = 'clip'
 
+    # Output indexes:
+    IDX_CONDITIONING = 0
+
     def __init__(self, text: str) -> None:
         data: ClipTextInputs = {
             'text': text

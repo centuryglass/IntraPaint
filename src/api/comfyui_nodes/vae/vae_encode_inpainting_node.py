@@ -22,6 +22,9 @@ class VAEEncodeInpaintingNode(ComfyNode):
     VAE = 'vae'
     MASK = 'mask'
 
+    # Output indexes:
+    IDX_LATENT = 0
+
     def __init__(self, grow_mask_by: int) -> None:
         connection_params = {
             VAEEncodeInpaintingNode.PIXELS,

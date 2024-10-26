@@ -998,7 +998,16 @@
     "lora_models": {
         "label": "LoRA models:",
         "category": "Cache",
-        "description": "LoRA model definitions loaded from the webui",
+        "description": "LoRA extension model options loaded from the image generator.",
+        "type": "list",
+        "default": [],
+        "saved": false,
+        "translate": false
+    },
+    "hypernetwork_models": {
+        "label": "Hypernetwork models:",
+        "category": "Cache",
+        "description": "Hypernetwork extension model options loaded from the image generator.",
         "type": "list",
         "default": [],
         "saved": false,

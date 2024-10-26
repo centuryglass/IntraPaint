@@ -1,6 +1,7 @@
 """Unified class for building text to image, image to image, and inpainting ComfyUI workflows."""
 import random
-from typing import Optional, cast
+from enum import Enum
+from typing import Optional, cast, List, Tuple
 
 from PySide6.QtCore import QSize
 
@@ -16,6 +17,8 @@ from src.api.comfyui_nodes.input.simple_checkpoint_loader_node import SimpleChec
 from src.api.comfyui_nodes.ksampler_node import SAMPLER_OPTIONS, SamplerName, SCHEDULER_OPTIONS, SchedulerName, \
     KSamplerNode
 from src.api.comfyui_nodes.latent_mask_node import LatentMaskNode
+from src.api.comfyui_nodes.model_extensions.hypernet_loader_node import HypernetLoaderNode
+from src.api.comfyui_nodes.model_extensions.lora_loader_node import LoraLoaderNode
 from src.api.comfyui_nodes.repeat_latent_node import RepeatLatentNode
 from src.api.comfyui_nodes.save_image_node import SaveImageNode
 from src.api.comfyui_nodes.vae.vae_decode_node import VAEDecodeNode
@@ -30,6 +33,12 @@ DEFAULT_SAMPLER = SAMPLER_OPTIONS[0]
 DEFAULT_SCHEDULER = SCHEDULER_OPTIONS[0]
 MAX_SEED = 0xffffffffffffffff
 MAX_BATCH_SIZE = 64
+
+
+class ExtensionModelType(Enum):
+    """Distinguishes between the two types of accepted extension model."""
+    LORA = 0
+    HYPERNETWORK = 1
 
 
 class DiffusionWorkflowBuilder:
@@ -53,6 +62,9 @@ class DiffusionWorkflowBuilder:
         self._model_config: Optional[str] = None
         self._source_image: Optional[str] = None
         self._source_mask: Optional[str] = None
+
+        # model_name, model_strength, clip_strength, model_type
+        self._extension_models: List[Tuple[str, float, float, ExtensionModelType]] = []
 
         # TODO: not yet supported:
         # self._is_inpainting_model = False
@@ -219,6 +231,11 @@ class DiffusionWorkflowBuilder:
     def filename_prefix(self, prefix: str) -> None:
         self._filename_prefix = prefix
 
+    def add_extension_model(self, model_name: str, model_strength: float, clip_strength: float,
+                            model_type: ExtensionModelType) -> None:
+        """Adds a LORA or Hypernetwork model to the workflow. Models are applied in the order that they're added."""
+        self._extension_models.append((model_name, model_strength, clip_strength, model_type))
+
     def build_workflow(self) -> ComfyNodeGraph:
         """Use the provided parameters to build a complete workflow graph."""
         workflow = ComfyNodeGraph()
@@ -226,55 +243,93 @@ class DiffusionWorkflowBuilder:
         # Load model(s):
         if self.model_config_path is None:
             model_loading_node: ComfyNode = SimpleCheckpointLoaderNode(self.sd_model)
-            model_index = SimpleCheckpointLoaderNode.IDX_MODEL
-            vae_index = SimpleCheckpointLoaderNode.IDX_VAE
-            clip_index = SimpleCheckpointLoaderNode.IDX_CLIP
+            model_out_index = SimpleCheckpointLoaderNode.IDX_MODEL
+            vae_out_index = SimpleCheckpointLoaderNode.IDX_VAE
+            clip_out_index = SimpleCheckpointLoaderNode.IDX_CLIP
         else:
             model_loading_node = CheckpointLoaderNode(self.sd_model, self.model_config_path)
-            model_index = CheckpointLoaderNode.IDX_MODEL
-            vae_index = CheckpointLoaderNode.IDX_VAE
-            clip_index = CheckpointLoaderNode.IDX_CLIP
+            model_out_index = CheckpointLoaderNode.IDX_MODEL
+            vae_out_index = CheckpointLoaderNode.IDX_VAE
+            clip_out_index = CheckpointLoaderNode.IDX_CLIP
+        sd_model_node = model_loading_node
+        vae_model_node = model_loading_node
+        clip_model_node = model_loading_node
+
+        for model_name, model_strength, clip_strength, extension_model_type in self._extension_models:
+            if extension_model_type == ExtensionModelType.LORA:
+                lora_node = LoraLoaderNode(model_name, model_strength, clip_strength)
+                workflow.connect_nodes(lora_node, LoraLoaderNode.CLIP,
+                                       clip_model_node, clip_out_index)
+                workflow.connect_nodes(lora_node, LoraLoaderNode.MODEL,
+                                       sd_model_node, model_out_index)
+                clip_model_node = lora_node
+                clip_out_index = LoraLoaderNode.IDX_CLIP
+                sd_model_node = lora_node
+                model_out_index = LoraLoaderNode.IDX_MODEL
+            else:  # hypernetwork
+                hypernet_node = HypernetLoaderNode(model_name, model_strength)
+                workflow.connect_nodes(hypernet_node, HypernetLoaderNode.MODEL,
+                                       sd_model_node, model_out_index)
+                sd_model_node = hypernet_node
+                model_out_index = HypernetLoaderNode.IDX_MODEL
 
         # Load image source:
         if self.source_image is None:
-            image_source_node: ComfyNode = EmptyLatentNode(self.batch_size, self.image_size)
+            latent_source_node: ComfyNode = EmptyLatentNode(self.batch_size, self.image_size)
+            latent_out_index = EmptyLatentNode.IDX_LATENT
         else:
             image_loading_node = LoadImageNode(self.source_image)
             latent_image_node = VAEEncodeNode()
-            workflow.connect_nodes(latent_image_node, VAEEncodeNode.PIXELS, image_loading_node, 0)
-            workflow.connect_nodes(latent_image_node, VAEEncodeNode.VAE, model_loading_node, vae_index)
+            workflow.connect_nodes(latent_image_node, VAEEncodeNode.PIXELS,
+                                   image_loading_node, LoadImageNode.IDX_IMAGE)
+            workflow.connect_nodes(latent_image_node, VAEEncodeNode.VAE,
+                                   vae_model_node, vae_out_index)
+            latent_out_index = VAEEncodeNode.IDX_LATENT
 
-            image_source_node = RepeatLatentNode(self.batch_size)
+            latent_source_node = RepeatLatentNode(self.batch_size)
             if self.source_mask is not None:
                 mask_load_node = LoadImageMaskNode(self.source_mask)
                 mask_apply_node = LatentMaskNode()
-                workflow.connect_nodes(mask_apply_node, LatentMaskNode.SAMPLES, latent_image_node, 0)
-                workflow.connect_nodes(mask_apply_node, LatentMaskNode.MASK, mask_load_node, 0)
-                workflow.connect_nodes(image_source_node, RepeatLatentNode.SAMPLES, mask_apply_node, 0)
+                workflow.connect_nodes(mask_apply_node, LatentMaskNode.SAMPLES,
+                                       latent_image_node, latent_out_index)
+                workflow.connect_nodes(mask_apply_node, LatentMaskNode.MASK,
+                                       mask_load_node, LoadImageMaskNode.IDX_MASK)
+                workflow.connect_nodes(latent_source_node, RepeatLatentNode.SAMPLES,
+                                       mask_apply_node, LatentMaskNode.IDX_LATENT)
             else:
-                workflow.connect_nodes(image_source_node, RepeatLatentNode.SAMPLES, latent_image_node, 0)
+                workflow.connect_nodes(latent_source_node, RepeatLatentNode.SAMPLES,
+                                       latent_image_node, latent_out_index)
+            latent_out_index = RepeatLatentNode.IDX_LATENT
 
         # Load prompt conditioning:
         prompt_node = ClipTextEncodeNode(self.prompt)
         negative_node = ClipTextEncodeNode(self.negative_prompt)
-        workflow.connect_nodes(prompt_node, ClipTextEncodeNode.CLIP, model_loading_node, clip_index)
-        workflow.connect_nodes(negative_node, ClipTextEncodeNode.CLIP, model_loading_node, clip_index)
+        for text_encoding_node in (prompt_node, negative_node):
+            workflow.connect_nodes(text_encoding_node, ClipTextEncodeNode.CLIP,
+                                   clip_model_node, clip_out_index)
 
         # Core diffusion process in KSamplerNode:
         sampling_node = KSamplerNode(self.cfg_scale, self.steps, self.sampler, self.denoising_strength, self.scheduler,
                                      self.seed)
-        workflow.connect_nodes(sampling_node, KSamplerNode.MODEL, model_loading_node, model_index)
-        workflow.connect_nodes(sampling_node, KSamplerNode.POSITIVE, prompt_node, 0)
-        workflow.connect_nodes(sampling_node, KSamplerNode.NEGATIVE, negative_node, 0)
-        workflow.connect_nodes(sampling_node, KSamplerNode.LATENT_IMAGE, image_source_node, 0)
+        workflow.connect_nodes(sampling_node, KSamplerNode.MODEL,
+                               sd_model_node, model_out_index)
+        workflow.connect_nodes(sampling_node, KSamplerNode.POSITIVE,
+                               prompt_node, ClipTextEncodeNode.IDX_CONDITIONING)
+        workflow.connect_nodes(sampling_node, KSamplerNode.NEGATIVE,
+                               negative_node, ClipTextEncodeNode.IDX_CONDITIONING)
+        workflow.connect_nodes(sampling_node, KSamplerNode.LATENT_IMAGE,
+                               latent_source_node, latent_out_index)
 
         # Decode and save images:
         latent_decode_node = VAEDecodeNode()
-        workflow.connect_nodes(latent_decode_node, VAEDecodeNode.VAE, model_loading_node, vae_index)
-        workflow.connect_nodes(latent_decode_node, VAEDecodeNode.SAMPLES, sampling_node, 0)
+        workflow.connect_nodes(latent_decode_node, VAEDecodeNode.VAE,
+                               vae_model_node, vae_out_index)
+        workflow.connect_nodes(latent_decode_node, VAEDecodeNode.SAMPLES,
+                               sampling_node, KSamplerNode.IDX_LATENT)
 
         save_image_node = SaveImageNode(self.filename_prefix)
-        workflow.connect_nodes(save_image_node, SaveImageNode.IMAGES, latent_decode_node, 0)
+        workflow.connect_nodes(save_image_node, SaveImageNode.IMAGES,
+                               latent_decode_node, VAEDecodeNode.IDX_IMAGE)
         return workflow
 
 

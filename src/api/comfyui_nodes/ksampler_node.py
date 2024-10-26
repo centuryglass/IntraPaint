@@ -1,4 +1,4 @@
-"""A ComfyUI node used to set the diffusion sampling process."""
+"""A ComfyUI node used to control the diffusion sampling process."""
 from typing import TypedDict, NotRequired, TypeAlias, Literal, List, cast, Dict, Any
 
 from src.api.comfyui_nodes.comfy_node import NodeConnection, ComfyNode
@@ -25,7 +25,7 @@ SchedulerName: TypeAlias = Literal['normal', 'karras', 'exponential', 'sgm_unifo
 
 
 class KSamplerInputs(TypedDict):
-    """Diffusion sampler node parameters."""
+    """A ComfyUI node used to control the diffusion sampling process."""
     cfg: float  # Cache.GUIDANCE_SCALE
     denoise: float  # Cache.DENOISING_STRENGTH, 1.0 for txt2img
     latent_image: NotRequired[NodeConnection]  # Image source node, e.g. EmptyLatentImage
@@ -46,6 +46,9 @@ class KSamplerNode(ComfyNode):
     MODEL = 'model'
     NEGATIVE = 'negative'
     POSITIVE = 'positive'
+
+    # Output indexes:
+    IDX_LATENT = 0
 
     def __init__(self, cfg: float, steps: int, sampler: SamplerName, denoise: float = 1.0,
                  scheduler: SchedulerName = 'normal', seed: int = -1) -> None:

@@ -18,6 +18,9 @@ class RepeatLatentNode(ComfyNode):
     # Connection keys:
     SAMPLES = 'samples'
 
+    # Output indexes:
+    IDX_LATENT = 0
+
     def __init__(self, batch_size: int) -> None:
         connection_params = {RepeatLatentNode.SAMPLES}
         data: RepeatLatentInputs = {

@@ -23,6 +23,9 @@ class VAEDecodeTiledNode(ComfyNode):
     SAMPLES = 'samples'
     VAE = 'vae'
 
+    # Output indexes:
+    IDX_IMAGE = 0
+
     def __init__(self, tile_size: int) -> None:
         if tile_size < TILE_MIN:
             raise ValueError(f'Tile size {tile_size} is below minimum {TILE_MIN}')

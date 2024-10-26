@@ -19,6 +19,9 @@ class VAEDecodeNode(ComfyNode):
     SAMPLES = 'samples'
     VAE = 'vae'
 
+    # Output indexes:
+    IDX_IMAGE = 0
+
     def __init__(self) -> None:
         connection_params = {
             VAEDecodeNode.SAMPLES,

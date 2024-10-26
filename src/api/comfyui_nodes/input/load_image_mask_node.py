@@ -16,6 +16,9 @@ class LoadImageMaskInputs(TypedDict):
 class LoadImageMaskNode(ComfyNode):
     """A ComfyUI node used to load image data."""
 
+    # Output indexes:
+    IDX_MASK = 0
+
     def __init__(self, image_name: str) -> None:
         data: LoadImageMaskInputs = {
             'image': image_name,
