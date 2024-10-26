@@ -110,6 +110,8 @@ class Cache(Config, metaclass=Singleton):
     CLONE_STAMP_TOOL_PRESSURE_OPACITY: str
     CLONE_STAMP_TOOL_PRESSURE_SIZE: str
     COLOR_SELECT_MODE: str
+    COMFYUI_MODEL_CONFIG: str
+    COMFYUI_SD_MODEL: str
     CONTROLNET_ARGS_0: str
     CONTROLNET_ARGS_1: str
     CONTROLNET_ARGS_2: str

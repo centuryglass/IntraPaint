@@ -215,15 +215,14 @@ class DiffusionWorkflowBuilder:
         # Load model(s):
         if self.model_config_path is None:
             model_loading_node: ComfyNode = SimpleCheckpointLoaderNode(self.sd_model)
-            model_source, model_index = model_loading_node, 0
-            vae_source, vae_index = model_loading_node, 0
-            clip_source: Optional[ComfyNode] = None
-            clip_index = 0
+            model_index = SimpleCheckpointLoaderNode.IDX_MODEL
+            vae_index = SimpleCheckpointLoaderNode.IDX_VAE
+            clip_index = SimpleCheckpointLoaderNode.IDX_CLIP
         else:
             model_loading_node = CheckpointLoaderNode(self.sd_model, self.model_config_path)
-            model_source, model_index = model_loading_node, CheckpointLoaderNode.IDX_MODEL
-            vae_source, vae_index = model_loading_node, CheckpointLoaderNode.IDX_VAE
-            clip_source, clip_index = model_loading_node, CheckpointLoaderNode.IDX_CLIP
+            model_index = CheckpointLoaderNode.IDX_MODEL
+            vae_index = CheckpointLoaderNode.IDX_VAE
+            clip_index = CheckpointLoaderNode.IDX_CLIP
 
         # Load image source:
         if self.source_image is None:
@@ -232,7 +231,7 @@ class DiffusionWorkflowBuilder:
             image_loading_node = LoadImageNode(self.source_image)
             latent_image_node = VAEEncodeNode()
             workflow.connect_nodes(latent_image_node, VAEEncodeNode.PIXELS, image_loading_node, 0)
-            workflow.connect_nodes(latent_image_node, VAEEncodeNode.VAE, vae_source, vae_index)
+            workflow.connect_nodes(latent_image_node, VAEEncodeNode.VAE, model_loading_node, vae_index)
 
             image_source_node = RepeatLatentNode(self.batch_size)
             if self.source_mask is not None:
@@ -247,21 +246,20 @@ class DiffusionWorkflowBuilder:
         # Load prompt conditioning:
         prompt_node = ClipTextEncodeNode(self.prompt)
         negative_node = ClipTextEncodeNode(self.negative_prompt)
-        if clip_source is not None:
-            workflow.connect_nodes(prompt_node, ClipTextEncodeNode.CLIP, clip_source, clip_index)
-            workflow.connect_nodes(negative_node, ClipTextEncodeNode.CLIP, clip_source, clip_index)
+        workflow.connect_nodes(prompt_node, ClipTextEncodeNode.CLIP, model_loading_node, clip_index)
+        workflow.connect_nodes(negative_node, ClipTextEncodeNode.CLIP, model_loading_node, clip_index)
 
         # Core diffusion process in KSamplerNode:
         sampling_node = KSamplerNode(self.cfg_scale, self.steps, self.sampler, self.denoising_strength, self.scheduler,
                                      self.seed)
-        workflow.connect_nodes(sampling_node, KSamplerNode.MODEL, model_source, model_index)
+        workflow.connect_nodes(sampling_node, KSamplerNode.MODEL, model_loading_node, model_index)
         workflow.connect_nodes(sampling_node, KSamplerNode.POSITIVE, prompt_node, 0)
         workflow.connect_nodes(sampling_node, KSamplerNode.NEGATIVE, negative_node, 0)
         workflow.connect_nodes(sampling_node, KSamplerNode.LATENT_IMAGE, image_source_node, 0)
 
         # Decode and save images:
         latent_decode_node = VAEDecodeNode()
-        workflow.connect_nodes(latent_decode_node, VAEDecodeNode.VAE, vae_source, vae_index)
+        workflow.connect_nodes(latent_decode_node, VAEDecodeNode.VAE, model_loading_node, vae_index)
         workflow.connect_nodes(latent_decode_node, VAEDecodeNode.SAMPLES, sampling_node, 0)
 
         save_image_node = SaveImageNode(self.filename_prefix)

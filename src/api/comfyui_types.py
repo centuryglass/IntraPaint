@@ -1,5 +1,5 @@
 """Typedefs for ComfyUI API data."""
-from typing import TypeAlias, Literal, TypedDict, Optional, List, Tuple, NotRequired, Dict
+from typing import TypeAlias, Literal, TypedDict, Optional, List, Tuple, NotRequired, Dict, Any, NamedTuple
 
 # Misc. types used within multiple request/response objects:
 FileType: TypeAlias = Literal['input', 'temp', 'output']
@@ -103,8 +103,8 @@ class ImageUploadResponse(TypedDict):
     type: FileType
 
 
-class MaskRefObject(TypedDict):
-    """Reference object used to specify which image is affected by a mask:"""
+class ImageFileReference(TypedDict):
+    """References an uploaded or generated image file."""
     filename: str
     subfolder: str
     type: NotRequired[FileType]  # used when output_dir from filename is None, default = 'output'
@@ -112,7 +112,7 @@ class MaskRefObject(TypedDict):
 
 class MaskUploadParams(ImageUploadParams):
     """Mask upload body key constants."""
-    original_ref: str  # when parsed as JSON, should be ComfyMaskRefObject
+    original_ref: str  # when parsed as JSON, should be ImageFileReference
 
 
 class ViewUrlParams(TypedDict):
@@ -168,3 +168,84 @@ class NodeInfoResponse(TypedDict):
     output_node: bool
     deprecated: NotRequired[bool]
     experimental: NotRequired[bool]
+
+
+# QUEUED PROMPT/TASK DATA:
+
+# Entry structure: (task_number, UUID, workflow, optional_extra_data)
+QueueEntry: TypeAlias = Tuple[int, str, Dict[str, Dict[str, Any]]] \
+                        | Tuple[int, str, Dict[str, Dict[str, Any]], Dict[str, Any]]
+
+ACTIVE_QUEUE_KEY = 'queue_running'
+PENDING_QUEUE_KEY = 'queue_pending'
+
+
+class QueueInfoResponse(TypedDict):
+    """Response structure used when getting queued task info."""
+    queue_running: List[QueueEntry]
+    queue_pending: List[QueueEntry]
+
+
+class QueueAdditionRequest(TypedDict):
+    """Body structure to use when adding to the ComfyUI queue."""
+    prompt: Dict[str, Any]
+    number: NotRequired[int]  # Sets priority
+    front: NotRequired[bool]  # Pushes this job ahead of others
+    client_id: NotRequired[str]  # Optional extra identifier
+    extra_data: NotRequired[Dict[str, Any]]  # Associate some extra
+
+
+class ErrorEntry(TypedDict):
+    """A single queue error."""
+    type: str
+    message: str
+    details: str
+    extra_info: Dict[str, str]
+
+
+class NodeErrorEntry(TypedDict):
+    """Defines error data for a single node."""
+    errors: List[ErrorEntry]
+    dependent_outputs: List[str]  # connected node ids
+    class_type: str
+
+
+class QueueAdditionResponse(TypedDict):
+    """Response structure used when a new job is queued."""
+    prompt_id: NotRequired[str]  # UUID, omitted on error
+    number: NotRequired[int]  # Queue number/priority, omitted on error
+    error: NotRequired[str | ErrorEntry]
+    node_errors: List[NodeErrorEntry]
+
+
+class PromptStatusMessageData(TypedDict):
+    """Extra data bundled with queued task messages."""
+    prompt_id: str  # UUID
+    timestamp: int
+    nodes: NotRequired[List[str]]
+
+
+PromptStatusMessage: TypeAlias = Tuple[str, PromptStatusMessageData]
+
+
+class PromptExecStatus(TypedDict):
+    """Status data associated with a task in the history, directly from ComfyUI/execution.py."""
+    status_str: Literal['success', 'error']
+    completed: bool
+    messages: List[PromptStatusMessage]
+
+
+class PromptExecOutputs(TypedDict):
+    """Returns generated file info for a completed task."""
+    images: List[ImageFileReference]
+    # TODO: track down format for other possible output types
+
+
+class PromptHistory(TypedDict):
+    """Prompt execution data from the /history endpoint."""
+    prompt: QueueEntry
+    outputs: Dict[str, Dict[str, PromptExecOutputs]]  # keys are output node ids
+    status: PromptExecStatus
+
+
+QueueHistoryResponse: TypeAlias = Dict[str, PromptHistory]  # key is prompt_id

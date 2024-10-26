@@ -1172,5 +1172,25 @@
         "default": false,
         "saved": true,
         "translate": false
+    },
+    "comfyui_sd_model": {
+        "label": "Stable-Diffusion model:",
+        "category": "Cache",
+        "subcategory": "ComfyUI",
+        "description": "Stable-Diffusion model to use for image generation.",
+        "type": "string",
+        "default": "",
+        "options" : [],
+        "saved": true
+    },
+    "comfyui_model_config": {
+        "label": "Model config:",
+        "category": "Cache",
+        "subcategory": "ComfyUI",
+        "description": "Configuration file used when loading image generation models.",
+        "type": "string",
+        "default": "auto",
+        "options" : ["auto"],
+        "saved": true
     }
 }
