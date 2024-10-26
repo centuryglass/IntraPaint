@@ -1,24 +1,27 @@
 """
 Accesses ComfyUI through its REST API, providing access to image generation and editing through stable-diffusion.
 """
+import datetime
 import json
 import logging
 from enum import StrEnum, Enum
 from io import BytesIO
-from typing import List, cast, Optional, Tuple, TypedDict, NotRequired
+from typing import List, cast, Optional, TypedDict, NotRequired
 
 import requests  # type: ignore
 from PIL import Image  # type: ignore
-from PySide6.QtCore import QBuffer, QSize
-from PySide6.QtGui import QImage
+from PySide6.QtCore import QBuffer, QSize, Qt, QPoint
+from PySide6.QtGui import QImage, QPainter, QPainterPath
 
 import src.api.comfyui_types as comfy_type
-from src.api.comfyui_nodes.comfy_node_graph import ComfyNodeGraph
 from src.api.comfyui_nodes.ksampler_node import SAMPLER_OPTIONS
 from src.api.comfyui_workflows.diffusion_workflow_builder import DiffusionWorkflowBuilder
 from src.api.webservice import WebService, MULTIPART_FORM_DATA_TYPE
+from src.config.application_config import AppConfig
 from src.config.cache import Cache
+from src.image.filter.blur import BlurFilter, MODE_GAUSSIAN
 from src.util.shared_constants import EDIT_MODE_TXT2IMG
+from src.util.visual.image_utils import create_transparent_image
 
 logger = logging.getLogger(__name__)
 
@@ -140,8 +143,8 @@ class ComfyUiWebservice(WebService):
         """Returns the list of available LORA models."""
         return self.get_models(ComfyModelType.LORA)
 
-    def upload_image(self, image: QImage, name: str, temp=True, subfolder: Optional[str] = None,
-                     overwrite=True) -> comfy_type.ImageUploadResponse:
+    def upload_image(self, image: QImage, name: Optional[str] = None, subfolder: Optional[str] = None,
+                     temp=True, overwrite=True) -> comfy_type.ImageFileReference:
         """Uploads an image for img2img, inpainting, ControlNet, etc."""
         body: comfy_type.ImageUploadParams = {
             'type': 'temp' if temp else 'input',
@@ -155,34 +158,57 @@ class ComfyUiWebservice(WebService):
         buf.open(QBuffer.OpenModeFlag.WriteOnly)
         image.save(buf, 'PNG')
         buf.close()
-        if not name.endswith('.png'):
+        if name is None:
+            name = f'src_image.png'
+        elif not name.endswith('.png'):
             name = f'{name}.png'
         files = {comfy_type.IMAGE_UPLOAD_FILE_NAME: (name, buf.data().data(), TYPE_PNG_IMAGE)}
-        return cast(comfy_type.ImageUploadResponse, self.post(ComfyEndpoints.IMG_UPLOAD,
-                                                              body=body,
-                                                              body_format=MULTIPART_FORM_DATA_TYPE,
-                                                              files=files).json())
+        res = cast(comfy_type.ImageUploadResponse, self.post(ComfyEndpoints.IMG_UPLOAD,
+                                                             body=body,
+                                                             body_format=MULTIPART_FORM_DATA_TYPE,
+                                                             files=files).json())
+        file_ref: comfy_type.ImageFileReference = {
+            'filename': res['name'],
+            'subfolder': '' if 'subfolder' not in res else res['subfolder'],
+            'type': res['type']
+        }
+        return file_ref
 
-    def upload_mask(self, mask: QImage, ref_image: comfy_type.ImageFileReference) -> comfy_type.ImageUploadResponse:
+    def upload_mask(self, mask: QImage, ref_image: comfy_type.ImageFileReference, subfolder: Optional[str] = None,
+                    overwrite=True) -> comfy_type.ImageFileReference:
         """Upload an inpainting mask for a particular image.
 
         The ref_image parameter should contain data returned by a previous upload_image request. Mask size must match
         original image size.
-        """
 
+        IMPORTANT: ComfyUI's use of masks is inverted from IntraPaint's usual expectations. Transparency marks the
+                   areas where changes are allowed, instead of the areas where changes should be blocked. Make sure
+                   to invert mask images before using them here.
+        """
         buf = QBuffer()
         buf.open(QBuffer.OpenModeFlag.WriteOnly)
         mask.save(buf, 'PNG')
         buf.close()
         body: comfy_type.MaskUploadParams = {
-            'original_ref': json.dumps(ref_image)
+            'original_ref': json.dumps(ref_image),
+            'subfolder': INTRAPAINT_UPLOAD_SUBFOLDER
         }
+        if subfolder is not None and subfolder != '':
+            body['subfolder'] = subfolder
+        if overwrite:
+            body['overwrite'] = '1'
         mask_name = f'mask_{ref_image["filename"]}'
         files = {comfy_type.IMAGE_UPLOAD_FILE_NAME: (mask_name, buf.data().data(), TYPE_PNG_IMAGE)}
-        return cast(comfy_type.ImageUploadResponse, self.post(ComfyEndpoints.MASK_UPLOAD,
-                                                              body=body,
-                                                              body_format=MULTIPART_FORM_DATA_TYPE,
-                                                              files=files).json())
+        res = cast(comfy_type.ImageUploadResponse, self.post(ComfyEndpoints.MASK_UPLOAD,
+                                                             body=body,
+                                                             body_format=MULTIPART_FORM_DATA_TYPE,
+                                                             files=files).json())
+        file_ref: comfy_type.ImageFileReference = {
+            'filename': res['name'],
+            'subfolder': '' if 'subfolder' not in res else res['subfolder'],
+            'type': res['type']
+        }
+        return file_ref
 
     def download_images(self, image_refs: List[comfy_type.ImageFileReference]) -> List[QImage]:
         """Download a list of images from ComfyUI as ARGB QImages."""
@@ -277,10 +303,81 @@ class ComfyUiWebservice(WebService):
         return {'status': AsyncTaskStatus.NOT_FOUND}
 
     def txt2img(self) -> comfy_type.QueueAdditionResponse:
-        """Queues an async text-to-image job with the ComfyUI server."""
+        """Queues an async text-to-image job with the ComfyUI server.
+
+        Most parameters are read directly from the cache, where they should have been written from UI inputs. Calling
+        this method will update the LAST_SEED value in the cache.
+
+        Returns
+        -------
+        comfy_type.QueueAdditionResponse
+            Information needed to track the async task and download the resulting images once it finishes.
+        """
         workflow = self._build_diffusion_body()
         if workflow.denoising_strength != 1.0:
             workflow.denoising_strength = 1.0
+        prompt = workflow.build_workflow().get_workflow_dict()
+        body: comfy_type.QueueAdditionRequest = {'prompt': prompt}
+        return cast(comfy_type.QueueAdditionResponse, self.post(ComfyEndpoints.PROMPT, body=body).json())
+
+    def img2img(self, image: QImage) -> comfy_type.QueueAdditionResponse:
+        """Queues an async image-to-image job with the ComfyUI server.
+
+        Most parameters are read directly from the cache, where they should have been written from UI inputs. Calling
+        this method will update theLAST_SEED value in the cache.
+
+        Parameters:
+        -----------
+        image: QImage
+            The image to inpaint. It must be pre-cropped to the generation area or padded inpainting area, and
+            pre-scaled to the generation size if necessary.
+        mask: QImage
+            The inpainting mask. This must have the same resolution as the image parameter. Note that ComfyUI uses
+            the mask to select preserved pixels instead of changed pixels, so any mask taken directly from the
+            selection layer must be inverted before its used with this method.
+        Returns
+        -------
+        comfy_type.QueueAdditionResponse
+            Information needed to track the async task and download the resulting images once it finishes.
+        """
+        image_reference = self.upload_image(image, temp=False)
+        workflow_builder = self._build_diffusion_body()
+        workflow_builder.source_image = image_reference
+        Cache().set(Cache.LAST_SEED, workflow_builder.seed)
+
+        prompt = workflow_builder.build_workflow().get_workflow_dict()
+        body: comfy_type.QueueAdditionRequest = {'prompt': prompt}
+        return cast(comfy_type.QueueAdditionResponse, self.post(ComfyEndpoints.PROMPT, body=body).json())
+
+    def inpaint(self, image: QImage, mask: QImage) -> comfy_type.QueueAdditionResponse:
+        """Queues an async inpainting job with the ComfyUI server.
+
+        Most parameters are read directly from the cache, where they should have been written from UI inputs. Calling
+        this method will update theLAST_SEED value in the cache.
+
+        Parameters:
+        -----------
+        image: QImage
+            The image to inpaint. It must be pre-cropped to the generation area or padded inpainting area, and
+            pre-scaled to the generation size if necessary.
+        mask: QImage
+            The inpainting mask. This must have the same resolution as the image parameter. Note that ComfyUI uses
+            the mask to select preserved pixels instead of changed pixels, so any mask taken directly from the
+            selection layer must be inverted before its used with this method.
+
+            Also note that ComfyUI doesn't do any mask blurring, so AppConfig.MASK_BLUR should be handled by the caller
+            beforehand.
+        Returns
+        -------
+        comfy_type.QueueAdditionResponse
+            Information needed to track the async task and download the resulting images once it finishes.
+        """
+        image_reference = self.upload_image(image, overwrite=True)
+        mask_reference = self.upload_mask(mask, image_reference)
+        workflow = self._build_diffusion_body()
+        workflow.source_image = image_reference
+        workflow.source_mask = mask_reference
+
         prompt = workflow.build_workflow().get_workflow_dict()
         body: comfy_type.QueueAdditionRequest = {'prompt': prompt}
         return cast(comfy_type.QueueAdditionResponse, self.post(ComfyEndpoints.PROMPT, body=body).json())
@@ -293,10 +390,23 @@ class ComfyUiWebservice(WebService):
         Cache().update_options(Cache.SAMPLING_METHOD, SAMPLER_OPTIONS)
         Cache().set(Cache.SAMPLING_METHOD, 'euler_ancestral')
         Cache().set(Cache.COMFYUI_SD_MODEL, 'pirsusArtstation_v10.safetensors')
+        Cache().set(Cache.GUIDANCE_SCALE, 8.0)
+        Cache().set(Cache.DENOISING_STRENGTH, 0.8)
         Cache().set(Cache.GENERATION_SIZE, QSize(1024, 1024))
 
         # Create and print queued task:
-        queue_item = self.txt2img()
+        image = QImage('./examples/model_example_photon.png')
+        mask = create_transparent_image(image.size())
+        painter = QPainter(mask)
+        painter.setPen(Qt.GlobalColor.black)
+        path = QPainterPath()
+        path.addEllipse(QPoint(300, 300), 200, 100)
+        painter.fillPath(path, Qt.GlobalColor.black)
+        painter.end()
+        mask.invertPixels(QImage.InvertMode.InvertRgba)
+        mask = BlurFilter.blur(mask, MODE_GAUSSIAN, AppConfig().get(AppConfig.MASK_BLUR))
+
+        queue_item = self.inpaint(image, mask)
         print(f'Added to queue as {queue_item["prompt_id"]}, number {queue_item["number"]}')
 
         # Continually check status until it's done. Real implementation will need to use a delay and operate outside

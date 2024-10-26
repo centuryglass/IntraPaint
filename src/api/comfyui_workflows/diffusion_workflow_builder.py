@@ -4,6 +4,7 @@ from typing import Optional, cast
 
 from PySide6.QtCore import QSize
 
+import src.api.comfyui_types as comfy_type
 from src.api.comfyui_nodes.comfy_node import ComfyNode
 from src.api.comfyui_nodes.comfy_node_graph import ComfyNodeGraph
 from src.api.comfyui_nodes.input.checkpoint_loader_node import CheckpointLoaderNode
@@ -176,7 +177,12 @@ class DiffusionWorkflowBuilder:
         return self._source_image
 
     @source_image.setter
-    def source_image(self, source_image: Optional[str]) -> None:
+    def source_image(self, source_image: Optional[str | comfy_type.ImageFileReference]) -> None:
+        if isinstance(source_image, dict):
+            if 'subfolder' in source_image and source_image['subfolder'] != '':
+                source_image = f'{source_image["subfolder"]}/{source_image["filename"]}'
+            else:
+                source_image = source_image['filename']
         self._source_image = source_image
 
     @property
@@ -187,7 +193,12 @@ class DiffusionWorkflowBuilder:
         return self._source_mask
 
     @source_mask.setter
-    def source_mask(self, source_mask: Optional[str]) -> None:
+    def source_mask(self, source_mask: Optional[str | comfy_type.ImageFileReference]) -> None:
+        if isinstance(source_mask, dict):
+            if 'subfolder' in source_mask and source_mask['subfolder'] != '':
+                source_mask = f'{source_mask["subfolder"]}/{source_mask["filename"]}'
+            else:
+                source_mask = source_mask['filename']
         self._source_mask = source_mask
 
     @property
