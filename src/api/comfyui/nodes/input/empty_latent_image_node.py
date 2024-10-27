@@ -3,7 +3,7 @@ from typing import TypedDict, cast, Dict, Any
 
 from PySide6.QtCore import QSize
 
-from src.api.comfyui_nodes.comfy_node import ComfyNode
+from src.api.comfyui.nodes.comfy_node import ComfyNode
 
 NODE_NAME = 'EmptyLatentImage'
 

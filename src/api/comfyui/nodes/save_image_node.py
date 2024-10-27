@@ -1,7 +1,7 @@
 """A ComfyUI node used to save image data."""
 from typing import TypedDict, NotRequired, cast, Dict, Any
 
-from src.api.comfyui_nodes.comfy_node import NodeConnection, ComfyNode
+from src.api.comfyui.nodes.comfy_node import NodeConnection, ComfyNode
 
 NODE_NAME = 'SaveImage'
 

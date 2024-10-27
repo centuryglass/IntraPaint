@@ -1,7 +1,7 @@
 """Manages a set of connected ComfyUI nodes."""
 from typing import Dict, Any
 
-from src.api.comfyui_nodes.comfy_node import ComfyNode
+from src.api.comfyui.nodes.comfy_node import ComfyNode
 
 
 class ComfyNodeGraph:

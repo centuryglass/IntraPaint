@@ -1,7 +1,7 @@
 """A ComfyUI node used to load image mask data."""
 from typing import TypedDict, Literal, cast, Dict, Any
 
-from src.api.comfyui_nodes.comfy_node import ComfyNode
+from src.api.comfyui.nodes.comfy_node import ComfyNode
 
 NODE_NAME = 'LoadImageMask'
 

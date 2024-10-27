@@ -1,7 +1,7 @@
 """A ComfyUI node used to control the diffusion sampling process."""
 from typing import TypedDict, NotRequired, TypeAlias, Literal, List, cast, Dict, Any
 
-from src.api.comfyui_nodes.comfy_node import NodeConnection, ComfyNode
+from src.api.comfyui.nodes.comfy_node import NodeConnection, ComfyNode
 
 KSAMPLER_NAME = 'KSampler'
 

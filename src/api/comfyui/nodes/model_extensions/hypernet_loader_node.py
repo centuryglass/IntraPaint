@@ -1,7 +1,7 @@
 """A ComfyUI node used to load a hypernetwork model extension."""
 from typing import TypedDict, NotRequired
 
-from src.api.comfyui_nodes.comfy_node import NodeConnection, ComfyNode
+from src.api.comfyui.nodes.comfy_node import NodeConnection, ComfyNode
 
 NODE_NAME = 'HypernetworkLoader'
 

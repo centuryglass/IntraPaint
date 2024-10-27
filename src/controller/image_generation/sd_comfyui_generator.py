@@ -10,7 +10,7 @@ from PySide6.QtWidgets import QInputDialog, QApplication
 from requests import ReadTimeout
 
 from src.api.a1111_webservice import AuthError
-from src.api.comfyui_nodes.ksampler_node import SAMPLER_OPTIONS, SCHEDULER_OPTIONS
+from src.api.comfyui.nodes import SAMPLER_OPTIONS, SCHEDULER_OPTIONS
 from src.api.comfyui_webservice import ComfyUiWebservice, ComfyModelType, AsyncTaskProgress, AsyncTaskStatus
 from src.config.application_config import AppConfig
 from src.config.cache import Cache

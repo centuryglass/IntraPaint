@@ -5,24 +5,24 @@ from typing import Optional, cast, List, Tuple
 
 from PySide6.QtCore import QSize
 
-import src.api.comfyui_types as comfy_type
-from src.api.comfyui_nodes.comfy_node import ComfyNode
-from src.api.comfyui_nodes.comfy_node_graph import ComfyNodeGraph
-from src.api.comfyui_nodes.input.checkpoint_loader_node import CheckpointLoaderNode
-from src.api.comfyui_nodes.input.clip_text_encode_node import ClipTextEncodeNode
-from src.api.comfyui_nodes.input.empty_latent_image_node import EmptyLatentNode
-from src.api.comfyui_nodes.input.load_image_mask_node import LoadImageMaskNode
-from src.api.comfyui_nodes.input.load_image_node import LoadImageNode
-from src.api.comfyui_nodes.input.simple_checkpoint_loader_node import SimpleCheckpointLoaderNode
-from src.api.comfyui_nodes.ksampler_node import SAMPLER_OPTIONS, SamplerName, SCHEDULER_OPTIONS, SchedulerName, \
+import src.api.comfyui.comfyui_types as comfy_type
+from src.api.comfyui.nodes.comfy_node import ComfyNode
+from src.api.comfyui.nodes import ComfyNodeGraph
+from src.api.comfyui.nodes import CheckpointLoaderNode
+from src.api.comfyui.nodes import ClipTextEncodeNode
+from src.api.comfyui.nodes.input.empty_latent_image_node import EmptyLatentNode
+from src.api.comfyui.nodes.input.load_image_mask_node import LoadImageMaskNode
+from src.api.comfyui.nodes.input.load_image_node import LoadImageNode
+from src.api.comfyui.nodes.input.simple_checkpoint_loader_node import SimpleCheckpointLoaderNode
+from src.api.comfyui.nodes import SAMPLER_OPTIONS, SamplerName, SCHEDULER_OPTIONS, SchedulerName, \
     KSamplerNode
-from src.api.comfyui_nodes.latent_mask_node import LatentMaskNode
-from src.api.comfyui_nodes.model_extensions.hypernet_loader_node import HypernetLoaderNode
-from src.api.comfyui_nodes.model_extensions.lora_loader_node import LoraLoaderNode
-from src.api.comfyui_nodes.repeat_latent_node import RepeatLatentNode
-from src.api.comfyui_nodes.save_image_node import SaveImageNode
-from src.api.comfyui_nodes.vae.vae_decode_node import VAEDecodeNode
-from src.api.comfyui_nodes.vae.vae_encode_node import VAEEncodeNode
+from src.api.comfyui.nodes.latent_mask_node import LatentMaskNode
+from src.api.comfyui.nodes.model_extensions import HypernetLoaderNode
+from src.api.comfyui.nodes.model_extensions import LoraLoaderNode
+from src.api.comfyui.nodes.repeat_latent_node import RepeatLatentNode
+from src.api.comfyui.nodes.save_image_node import SaveImageNode
+from src.api.comfyui.nodes import VAEDecodeNode
+from src.api.comfyui.nodes import VAEEncodeNode
 
 random.seed()
 

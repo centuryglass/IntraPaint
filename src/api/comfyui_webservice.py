@@ -16,9 +16,9 @@ import websocket
 from PySide6.QtCore import QBuffer
 from PySide6.QtGui import QImage
 
-import src.api.comfyui_types as comfy_type
-from src.api.comfyui_nodes.ksampler_node import SAMPLER_OPTIONS, SCHEDULER_OPTIONS
-from src.api.comfyui_workflows.diffusion_workflow_builder import DiffusionWorkflowBuilder, ExtensionModelType
+import src.api.comfyui.comfyui_types as comfy_type
+from src.api.comfyui.nodes import SAMPLER_OPTIONS, SCHEDULER_OPTIONS
+from src.api.comfyui.diffusion_workflow_builder import DiffusionWorkflowBuilder, ExtensionModelType
 from src.api.webservice import WebService, MULTIPART_FORM_DATA_TYPE
 from src.config.cache import Cache
 from src.util.shared_constants import EDIT_MODE_TXT2IMG

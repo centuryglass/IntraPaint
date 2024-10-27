@@ -1,7 +1,7 @@
 """A ComfyUI node used to load a basic Stable-Diffusion model."""
 from typing import TypedDict, cast, Dict, Any
 
-from src.api.comfyui_nodes.comfy_node import ComfyNode
+from src.api.comfyui.nodes.comfy_node import ComfyNode
 
 NODE_NAME = 'CheckpointLoaderSimple'
 

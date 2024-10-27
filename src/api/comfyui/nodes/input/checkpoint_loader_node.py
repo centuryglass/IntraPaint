@@ -4,7 +4,7 @@ Outputs are [model, vae, clip]
 """
 from typing import TypedDict, cast, Any, Dict
 
-from src.api.comfyui_nodes.comfy_node import ComfyNode
+from src.api.comfyui.nodes.comfy_node import ComfyNode
 
 NODE_NAME = 'CheckpointLoader'
 
