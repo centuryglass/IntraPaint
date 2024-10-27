@@ -181,6 +181,7 @@ class DiffusionWorkflowBuilder:
     def steps(self, steps: int) -> None:
         if steps < 1:
             raise ValueError('Step count must be 1 or greater.')
+        self._steps = steps
 
     @property
     def source_image(self) -> Optional[str]:

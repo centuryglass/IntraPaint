@@ -58,7 +58,8 @@ from src.controller.image_generation.glid3_webservice_generator import Glid3Webs
 from src.controller.image_generation.glid3_xl_generator import Glid3XLGenerator
 from src.controller.image_generation.image_generator import ImageGenerator
 from src.controller.image_generation.null_generator import NullGenerator
-from src.controller.image_generation.sd_webui_generator import SDWebUIGenerator, DEFAULT_SD_URL
+from src.controller.image_generation.sd_comfyui_generator import SDComfyUIGenerator, DEFAULT_COMFYUI_URL
+from src.controller.image_generation.sd_webui_generator import SDWebUIGenerator, DEFAULT_WEBUI_URL
 from src.controller.image_generation.test_generator import TestGenerator
 from src.controller.tool_controller import ToolController
 from src.hotkey_filter import HotkeyFilter
@@ -132,9 +133,10 @@ TOOL_PANEL_LAYER_TAB = _tr('Layers')
 TOOL_PANEL_COLOR_TAB = _tr('Color')
 TOOL_PANEL_NAV_TAB = _tr('Navigation')
 
-GENERATION_MODE_SD_WEBUI = 'stable'
-GENERATION_MODE_LOCAL_GLID = 'local'
-GENERATION_MODE_WEB_GLID = 'web'
+GENERATION_MODE_SD_WEBUI = 'stable-diffusion-webui'
+GENERATION_MODE_COMFYUI = 'comfyui'
+GENERATION_MODE_LOCAL_GLID = 'glid-local'
+GENERATION_MODE_WEB_GLID = 'glid-api'
 GENERATION_MODE_NONE = 'none'
 GENERATION_MODE_TEST = 'mock'
 GENERATION_MODE_AUTO = 'auto'
@@ -451,7 +453,8 @@ class AppController(MenuBuilder):
 
         # Prepare image generator options, and select one based on availability and command line arguments.
         self._null_generator = NullGenerator(self._window, self._image_stack)
-        self._sd_generator = SDWebUIGenerator(self._window, self._image_stack, args)
+        self._sd_webui_generator = SDWebUIGenerator(self._window, self._image_stack, args)
+        self._sd_comfyui_generator = SDComfyUIGenerator(self._window, self._image_stack, args)
         if not is_pyinstaller_bundle():
             self._glid_generator = Glid3XLGenerator(self._window, self._image_stack, args)
         self._glid_web_generator = Glid3WebserviceGenerator(self._window, self._image_stack, args)
@@ -462,7 +465,9 @@ class AppController(MenuBuilder):
             case _ if mode == GENERATION_MODE_NONE:
                 self.load_image_generator(self._null_generator)
             case _ if mode == GENERATION_MODE_SD_WEBUI:
-                self.load_image_generator(self._sd_generator)
+                self.load_image_generator(self._sd_webui_generator)
+            case _ if mode == GENERATION_MODE_COMFYUI:
+                self.load_image_generator(self._sd_comfyui_generator)
             case _ if mode == GENERATION_MODE_WEB_GLID and not is_pyinstaller_bundle():
                 self.load_image_generator(self._glid_web_generator)
             case _ if mode == GENERATION_MODE_LOCAL_GLID and not is_pyinstaller_bundle():
@@ -473,13 +478,17 @@ class AppController(MenuBuilder):
                 if mode != GENERATION_MODE_AUTO:
                     logger.error(f'Unexpected mode {mode}, defaulting to mode=auto')
                 server_url = args.server_url
-                if server_url == DEFAULT_SD_URL:
-                    self.load_image_generator(self._sd_generator)
-                elif server_url == DEFAULT_GLID_URL and not is_pyinstaller_bundle():
+                if server_url == DEFAULT_WEBUI_URL:
+                    self.load_image_generator(self._sd_webui_generator)
+                elif server_url == DEFAULT_COMFYUI_URL:
+                    self.load_image_generator(self._sd_comfyui_generator)
+                elif server_url == DEFAULT_GLID_URL:
                     self.load_image_generator(self._glid_web_generator)
-                if self._sd_generator.is_available():
-                    self.load_image_generator(self._sd_generator)
-                elif not is_pyinstaller_bundle() and self._glid_web_generator.is_available():
+                if self._sd_webui_generator.is_available():
+                    self.load_image_generator(self._sd_webui_generator)
+                elif self._sd_comfyui_generator.is_available():
+                    self.load_image_generator(self._sd_comfyui_generator)
+                elif self._glid_web_generator.is_available():
                     self.load_image_generator(self._glid_generator)
                 elif args.dev:
                     self.load_image_generator(self._test_generator)
@@ -1260,7 +1269,7 @@ class AppController(MenuBuilder):
         assert self._generator is not None
         if self._generator_window is None:
             self._generator_window = GeneratorSetupWindow()
-            self._generator_window.add_generator(self._sd_generator)
+            self._generator_window.add_generator(self._sd_webui_generator)
             if not is_pyinstaller_bundle():
                 self._generator_window.add_generator(self._glid_generator)
             self._generator_window.add_generator(self._glid_web_generator)

@@ -15,7 +15,7 @@ from PySide6.QtCore import QBuffer, QSize, Qt, QPoint
 from PySide6.QtGui import QImage, QPainter, QPainterPath
 
 import src.api.comfyui_types as comfy_type
-from src.api.comfyui_nodes.ksampler_node import SAMPLER_OPTIONS
+from src.api.comfyui_nodes.ksampler_node import SAMPLER_OPTIONS, SCHEDULER_OPTIONS
 from src.api.comfyui_workflows.diffusion_workflow_builder import DiffusionWorkflowBuilder, ExtensionModelType
 from src.api.webservice import WebService, MULTIPART_FORM_DATA_TYPE
 from src.config.application_config import AppConfig
@@ -33,7 +33,7 @@ class AuthError(Exception):
 
 UPSCALE_SCRIPT = 'ultimate sd upscale'
 DEFAULT_TIMEOUT = 30
-SETTINGS_UPDATE_TIMEOUT = 90
+EXTENDED_TIMEOUT = 90
 TYPE_PNG_IMAGE = 'image/png'
 INTRAPAINT_UPLOAD_SUBFOLDER = 'IntraPaint'
 LORA_EXTENSION = '.safetensors'
@@ -72,6 +72,7 @@ class ComfyModelType(StrEnum):
     CONTROLNET = 'controlnet'
     CUSTOM_NODES = 'custom_nodes'
     HYPERNETWORKS = 'hypernetworks'
+    UPSCALING = 'upscale_models'
     # Everything below this point is only included for completeness, and is unlikely to ever see support in IntraPaint
     # unless someone requests it.
     DIFFUSION_MODEL = 'diffusion_models'
@@ -80,7 +81,6 @@ class ComfyModelType(StrEnum):
     DIFFUSER = 'diffusers'
     VAE_APPROX = 'vae_approx'
     GLIGEN = 'gligen'
-    UPSCALING = 'upscale_models'
     PHOTOMAKER = 'photomaker'
     CLASSIFIERS = 'classifiers'
     ANIMATE_DIFF = 'AnimateDiffEvolved_Models'
@@ -104,6 +104,7 @@ class AsyncTaskProgress(TypedDict):
     index: NotRequired[int]  # Only used if statis is PENDING
     outputs: NotRequired[comfy_type.PromptExecOutputs]  # Only used if status is FINISHED
 
+
 class ComfyUiWebservice(WebService):
     """
     ComfyUiWebservice provides access to Stable-Diffusion through the ComfyUI REST API.
@@ -112,24 +113,25 @@ class ComfyUiWebservice(WebService):
     # General utility:
     def get_embeddings(self) -> List[str]:
         """Returns the list of available embedding files."""
-        return self.get(ComfyEndpoints.EMBEDDINGS).json()
+        return self.get(ComfyEndpoints.EMBEDDINGS, timeout=DEFAULT_TIMEOUT).json()
 
     def get_model_types(self) -> List[str]:
         """Returns the list of available model types."""
-        return cast(List[str], self.get(ComfyEndpoints.MODELS).json())
+        return cast(List[str], self.get(ComfyEndpoints.MODELS, timeout=DEFAULT_TIMEOUT).json())
 
     def get_extensions(self) -> List[str]:
         """Returns the list of installed extension files."""
-        return cast(List[str], self.get(ComfyEndpoints.EXTENSIONS).json())
+        return cast(List[str], self.get(ComfyEndpoints.EXTENSIONS, timeout=DEFAULT_TIMEOUT).json())
 
     def get_system_stats(self) -> comfy_type.SystemStatResponse:
         """Returns information about the system and device running Stable-Diffusion."""
-        return cast(comfy_type.SystemStatResponse, self.get(ComfyEndpoints.SYSTEM_STATS).json())
+        return cast(comfy_type.SystemStatResponse,
+                    self.get(ComfyEndpoints.SYSTEM_STATS, timeout=DEFAULT_TIMEOUT).json())
 
     def get_models(self, model_type: ComfyModelType) -> List[str]:
         """Returns the list of available models, given a particular model type."""
         endpoint = f'{ComfyEndpoints.MODELS}/{model_type.value}'
-        return cast(List[str], self.get(endpoint).json())
+        return cast(List[str], self.get(endpoint, timeout=DEFAULT_TIMEOUT).json())
 
     def get_sd_checkpoints(self) -> List[str]:
         """Returns the list of available Stable-Diffusion models."""
@@ -152,7 +154,7 @@ class ComfyUiWebservice(WebService):
         return self.get_models(ComfyModelType.HYPERNETWORKS)
 
     def upload_image(self, image: QImage, name: Optional[str] = None, subfolder: Optional[str] = None,
-                     temp=True, overwrite=True) -> comfy_type.ImageFileReference:
+                     temp=False, overwrite=True) -> comfy_type.ImageFileReference:
         """Uploads an image for img2img, inpainting, ControlNet, etc."""
         body: comfy_type.ImageUploadParams = {
             'type': 'temp' if temp else 'input',
@@ -174,7 +176,8 @@ class ComfyUiWebservice(WebService):
         res = cast(comfy_type.ImageUploadResponse, self.post(ComfyEndpoints.IMG_UPLOAD,
                                                              body=body,
                                                              body_format=MULTIPART_FORM_DATA_TYPE,
-                                                             files=files).json())
+                                                             files=files,
+                                                             timeout=EXTENDED_TIMEOUT).json())
         file_ref: comfy_type.ImageFileReference = {
             'filename': res['name'],
             'subfolder': '' if 'subfolder' not in res else res['subfolder'],
@@ -210,7 +213,8 @@ class ComfyUiWebservice(WebService):
         res = cast(comfy_type.ImageUploadResponse, self.post(ComfyEndpoints.MASK_UPLOAD,
                                                              body=body,
                                                              body_format=MULTIPART_FORM_DATA_TYPE,
-                                                             files=files).json())
+                                                             files=files,
+                                                             timeout=EXTENDED_TIMEOUT).json())
         file_ref: comfy_type.ImageFileReference = {
             'filename': res['name'],
             'subfolder': '' if 'subfolder' not in res else res['subfolder'],
@@ -223,7 +227,7 @@ class ComfyUiWebservice(WebService):
         images: List[QImage] = []
         for image_ref in image_refs:
             try:
-                image_res = self.get(ComfyEndpoints.VIEW_IMAGE, url_params=image_ref)
+                image_res = self.get(ComfyEndpoints.VIEW_IMAGE, url_params=image_ref, timeout=EXTENDED_TIMEOUT)
                 buffer = BytesIO(image_res.content)
                 byte_data = buffer.getvalue()
                 qimage = QImage.fromData(byte_data)
@@ -235,10 +239,10 @@ class ComfyUiWebservice(WebService):
                 logger.error(f'Skipping image {image_ref}: {err}')
         return images
 
-    def _build_diffusion_body(self) -> DiffusionWorkflowBuilder:
+    def _build_diffusion_body(self, seed: Optional[int] = None) -> DiffusionWorkflowBuilder:
         """Apply cached parameters to begin building a ComfyUI workflow."""
         cache = Cache()
-        model_name = cache.get(Cache.COMFYUI_SD_MODEL)
+        model_name = cache.get(Cache.SD_MODEL)
         workflow_builder = DiffusionWorkflowBuilder(model_name)
         workflow_builder.batch_size = cache.get(Cache.BATCH_SIZE)
         workflow_builder.prompt = cache.get(Cache.PROMPT)
@@ -246,8 +250,19 @@ class ComfyUiWebservice(WebService):
         workflow_builder.steps = cache.get(Cache.SAMPLING_STEPS)
         workflow_builder.cfg_scale = cache.get(Cache.GUIDANCE_SCALE)
         workflow_builder.image_size = cache.get(Cache.GENERATION_SIZE)
-        workflow_builder.sampler = cache.get(Cache.SAMPLING_METHOD)
-        workflow_builder.seed = cache.get(Cache.SEED)
+
+        sampler = cache.get(Cache.SAMPLING_METHOD)
+        if sampler in SAMPLER_OPTIONS:
+            workflow_builder.sampler = sampler
+
+        scheduler = cache.get(Cache.SCHEDULER)
+        if scheduler in SCHEDULER_OPTIONS:
+            workflow_builder.scheduler = scheduler
+
+        if seed is None:
+            workflow_builder.seed = int(cache.get(Cache.SEED))
+        else:
+            workflow_builder.seed = seed
 
         # Find and add LORA and Hypernetwork models:
         available_loras = cache.get(Cache.LORA_MODELS)
@@ -258,9 +273,8 @@ class ComfyUiWebservice(WebService):
                                        (available_hypernetworks, hypernet_name_map)):
             for model_option in model_list:
                 if '.' in model_option:
-                    model_dict[model_option[:model_option.index('.')]] = model_option
-                else:
-                    model_dict[model_option] = [model_option]
+                    model_dict[model_option[:model_option.rindex('.')]] = model_option
+                model_dict[model_option] = model_option
 
         extension_model_pattern = r'<(lora|lyco|hypernet):([^:><]+):([^:>]+)(?::([^>]+))?>'
         for prompt, strength_multiplier in ((workflow_builder.prompt, 1.0),
@@ -302,8 +316,8 @@ class ComfyUiWebservice(WebService):
         if cached_config in config_names:
             workflow_builder.model_config_path = cached_config
         else:  # Only use if one exists matching the model name
-            ext_idx = model_name.index('.')
-            if ext_idx != -1:
+            if '.' in model_name:
+                ext_idx = model_name.rindex('.')
                 model_name = model_name[:ext_idx]
             for config_file in config_names:
                 config_ext_idx = config_file.index('.')
@@ -314,7 +328,7 @@ class ComfyUiWebservice(WebService):
 
     def get_queue_info(self) -> comfy_type.QueueInfoResponse:
         """Get info on the set of queued jobs."""
-        res_body = self.get(ComfyEndpoints.QUEUE).json()
+        res_body = self.get(ComfyEndpoints.QUEUE, timeout=DEFAULT_TIMEOUT).json()
         for queue_key in [comfy_type.ACTIVE_QUEUE_KEY, comfy_type.PENDING_QUEUE_KEY]:
             assert queue_key in res_body
             queue_list = res_body[queue_key]
@@ -325,7 +339,7 @@ class ComfyUiWebservice(WebService):
     def check_queue_entry(self, entry_uuid: str, task_number: int) -> AsyncTaskProgress:
         """Returns the status of a queued task, along with associated data when relevant."""
         endpoint = f'{ComfyEndpoints.HISTORY}/{entry_uuid}'
-        history_response = cast (comfy_type.QueueHistoryResponse, self.get(endpoint).json())
+        history_response = cast(comfy_type.QueueHistoryResponse, self.get(endpoint, timeout=DEFAULT_TIMEOUT).json())
         if entry_uuid in history_response:
             entry_history = history_response[entry_uuid]
             if entry_history['status']['status_str'] == 'error':
@@ -354,25 +368,32 @@ class ComfyUiWebservice(WebService):
             return {'status': AsyncTaskStatus.PENDING, 'index': queue_index}
         return {'status': AsyncTaskStatus.NOT_FOUND}
 
-    def txt2img(self) -> comfy_type.QueueAdditionResponse:
+    def txt2img(self, seed: Optional[int] = None) -> comfy_type.QueueAdditionResponse:
         """Queues an async text-to-image job with the ComfyUI server.
 
         Most parameters are read directly from the cache, where they should have been written from UI inputs. Calling
         this method will update the LAST_SEED value in the cache.
 
+        Parameters:
+        -----------
+        seed: Optional[int], default = None
+            Seed to use for image generation. If None, the value in the cache is used.
         Returns
         -------
         comfy_type.QueueAdditionResponse
             Information needed to track the async task and download the resulting images once it finishes.
         """
-        workflow = self._build_diffusion_body()
-        if workflow.denoising_strength != 1.0:
-            workflow.denoising_strength = 1.0
-        prompt = workflow.build_workflow().get_workflow_dict()
+        workflow_builder = self._build_diffusion_body(seed)
+        if workflow_builder.denoising_strength != 1.0:
+            workflow_builder.denoising_strength = 1.0
+        prompt = workflow_builder.build_workflow().get_workflow_dict()
         body: comfy_type.QueueAdditionRequest = {'prompt': prompt}
-        return cast(comfy_type.QueueAdditionResponse, self.post(ComfyEndpoints.PROMPT, body=body).json())
+        res = cast(comfy_type.QueueAdditionResponse, self.post(ComfyEndpoints.PROMPT, body=body,
+                                                               timeout=DEFAULT_TIMEOUT).json())
+        res['seed'] = workflow_builder.seed
+        return res
 
-    def img2img(self, image: QImage) -> comfy_type.QueueAdditionResponse:
+    def img2img(self, image: QImage, seed: Optional[int] = None) -> comfy_type.QueueAdditionResponse:
         """Queues an async image-to-image job with the ComfyUI server.
 
         Most parameters are read directly from the cache, where they should have been written from UI inputs. Calling
@@ -387,21 +408,24 @@ class ComfyUiWebservice(WebService):
             The inpainting mask. This must have the same resolution as the image parameter. Note that ComfyUI uses
             the mask to select preserved pixels instead of changed pixels, so any mask taken directly from the
             selection layer must be inverted before its used with this method.
+        seed: Optional[int], default = None
+            Seed to use for image generation. If None, the value in the cache is used.
         Returns
         -------
         comfy_type.QueueAdditionResponse
             Information needed to track the async task and download the resulting images once it finishes.
         """
-        image_reference = self.upload_image(image, temp=False)
+        image_reference = self.upload_image(image)
         workflow_builder = self._build_diffusion_body()
         workflow_builder.source_image = image_reference
-        Cache().set(Cache.LAST_SEED, workflow_builder.seed)
-
         prompt = workflow_builder.build_workflow().get_workflow_dict()
         body: comfy_type.QueueAdditionRequest = {'prompt': prompt}
-        return cast(comfy_type.QueueAdditionResponse, self.post(ComfyEndpoints.PROMPT, body=body).json())
+        res = cast(comfy_type.QueueAdditionResponse, self.post(ComfyEndpoints.PROMPT, body=body,
+                                                               timeout=DEFAULT_TIMEOUT).json())
+        res['seed'] = workflow_builder.seed
+        return res
 
-    def inpaint(self, image: QImage, mask: QImage) -> comfy_type.QueueAdditionResponse:
+    def inpaint(self, image: QImage, mask: QImage, seed: Optional[int] = None) -> comfy_type.QueueAdditionResponse:
         """Queues an async inpainting job with the ComfyUI server.
 
         Most parameters are read directly from the cache, where they should have been written from UI inputs. Calling
@@ -419,67 +443,30 @@ class ComfyUiWebservice(WebService):
 
             Also note that ComfyUI doesn't do any mask blurring, so AppConfig.MASK_BLUR should be handled by the caller
             beforehand.
+        seed: Optional[int], default = None
+            Seed to use for image generation. If None, the value in the cache is used.
         Returns
         -------
         comfy_type.QueueAdditionResponse
             Information needed to track the async task and download the resulting images once it finishes.
         """
-        image_reference = self.upload_image(image, overwrite=True)
+        image_reference = self.upload_image(image)
         mask_reference = self.upload_mask(mask, image_reference)
-        workflow = self._build_diffusion_body()
-        workflow.source_image = image_reference
-        workflow.source_mask = mask_reference
-
-        prompt = workflow.build_workflow().get_workflow_dict()
+        workflow_builder = self._build_diffusion_body()
+        workflow_builder.source_image = image_reference
+        workflow_builder.source_mask = mask_reference
+        prompt = workflow_builder.build_workflow().get_workflow_dict()
         body: comfy_type.QueueAdditionRequest = {'prompt': prompt}
-        return cast(comfy_type.QueueAdditionResponse, self.post(ComfyEndpoints.PROMPT, body=body).json())
+        res = cast(comfy_type.QueueAdditionResponse, self.post(ComfyEndpoints.PROMPT, body=body,
+                                                               timeout=DEFAULT_TIMEOUT).json())
+        res['seed'] = workflow_builder.seed
+        return res
 
-    def test_latest(self, prompt: str, num: int):
-        """Temporary test method. TODO: remove after UI implementation."""
-        # Manually set a bunch of stuff the UI or generator will need to handle later:
-        Cache().set(Cache.PROMPT, prompt)
-        Cache().set(Cache.BATCH_SIZE, num)
-        Cache().update_options(Cache.SAMPLING_METHOD, SAMPLER_OPTIONS)
-        Cache().set(Cache.SAMPLING_METHOD, 'euler_ancestral')
-        Cache().set(Cache.COMFYUI_SD_MODEL, 'pirsusArtstation_v10.safetensors')
-        Cache().set(Cache.GUIDANCE_SCALE, 8.0)
-        Cache().set(Cache.DENOISING_STRENGTH, 0.8)
-        Cache().set(Cache.SEED, 1)
-        Cache().set(Cache.GENERATION_SIZE, QSize(640, 640))
-        Cache().set(Cache.LORA_MODELS, self.get_lora_models())
-        Cache().set(Cache.HYPERNETWORK_MODELS, self.get_hypernetwork_models())
-
-        # Create and print queued task:
-        image = QImage('./examples/model_example_photon.png')
-        mask = create_transparent_image(image.size())
-        painter = QPainter(mask)
-        painter.setPen(Qt.GlobalColor.black)
-        path = QPainterPath()
-        path.addEllipse(QPoint(300, 300), 200, 100)
-        painter.fillPath(path, Qt.GlobalColor.black)
-        painter.end()
-        mask.invertPixels(QImage.InvertMode.InvertRgba)
-        mask = BlurFilter.blur(mask, MODE_GAUSSIAN, AppConfig().get(AppConfig.MASK_BLUR))
-
-        queue_item = self.inpaint(image, mask)
-        print(f'Added to queue as {queue_item["prompt_id"]}, number {queue_item["number"]}')
-
-        # Continually check status until it's done. Real implementation will need to use a delay and operate outside
-        # the UI thread, of course.
-        is_finished = False
-        status = None
-        last_status = None
-        while not is_finished:
-            status = self.check_queue_entry(queue_item['prompt_id'], queue_item['number'])
-            if status['status'] != last_status:
-                print(f'Status: {status}')
-                last_status = status['status']
-            is_finished = status['status'] == AsyncTaskStatus.FINISHED
-
-        # Download images using the output data from the last status response, save to cwd for inspection:
-        if status is not None and 'outputs' in status and 'images' in status['outputs']:
-            images = status['outputs']['images']
-            print(f'response: {len(images)} image references.')
-            qimages = self.download_images(images)
-            for i, image in enumerate(qimages):
-                image.save(f'test_{prompt}_{i}.png')
+    def interrupt(self, task_id: Optional[str] = None) -> None:
+        """Stops the active workflow, and removes a task from the queue if task_id is not None."""
+        if task_id is not None:
+            queue_removal_body: comfy_type.QueueDeletionRequest = {
+                'delete': [task_id]
+            }
+            self.post(ComfyEndpoints.QUEUE, body=queue_removal_body)
+        self.post(ComfyEndpoints.INTERRUPT, body=None, timeout=DEFAULT_TIMEOUT)

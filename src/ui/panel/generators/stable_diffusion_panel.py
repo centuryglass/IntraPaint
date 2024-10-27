@@ -1,9 +1,9 @@
 """A control panel for the Stable-Diffusion WebUI image generator."""
-from typing import Tuple, List
+from typing import Tuple, List, Optional
 
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import QSizePolicy, QLabel, QPushButton, \
-    QApplication, QWidget, QVBoxLayout, QHBoxLayout
+    QApplication, QWidget, QVBoxLayout, QHBoxLayout, QTabWidget, QComboBox
 
 from src.config.cache import Cache
 from src.ui.input_fields.slider_spinbox import IntSliderSpinbox
@@ -28,14 +28,32 @@ def _tr(*args):
 BUTTON_TEXT_INTERROGATE = _tr('Interrogate')
 BUTTON_TOOLTIP_INTERROGATE = _tr('Attempt to generate a prompt that describes the current image generation area')
 
+TAB_NAME_MAIN = _tr('Main')
+TAB_NAME_EXTRA = _tr('Extras')
 
-class SDWebUIPanel(GeneratorPanel):
+
+class ExtrasTab(QWidget):
+    """Interface for extras tab content that can be added to the panel."""
+
+    def orientation(self) -> Qt.Orientation:
+        """Returns the tab's orientation."""
+        raise NotImplementedError()
+
+    def set_orientation(self, orientation: Qt.Orientation) -> None:
+        """Updates the tab's orientation."""
+        raise NotImplementedError()
+
+
+class StableDiffusionPanel(GeneratorPanel):
     """A control panel for the Stable-Diffusion WebUI image generator."""
 
     interrogate_signal = Signal()
     generate_signal = Signal()
+    model_change_signal = Signal(str)
 
-    def __init__(self) -> None:
+    def __init__(self,
+                 show_interrogate_button: bool,
+                 show_masked_content_dropdown: bool) -> None:
         super().__init__()
         self.setSizePolicy(QSizePolicy.Policy.MinimumExpanding, QSizePolicy.Policy.MinimumExpanding)
         cache = Cache()
@@ -46,6 +64,15 @@ class SDWebUIPanel(GeneratorPanel):
         self._layout.setContentsMargins(2, 2, 2, 2)
         self._layout.setAlignment(Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignTop)
         self._orientation = Qt.Orientation.Horizontal
+
+        self._tab_widget = QTabWidget(self)
+        self._tab_widget.setTabBarAutoHide(True)
+        self._main_tab = QWidget(self)
+        self._extras_tab: Optional[ExtrasTab] = None
+
+        self._tab_widget.addTab(self._main_tab, TAB_NAME_MAIN)
+
+        self._main_layout = QVBoxLayout(self._main_tab)
 
         def _get_control_with_label(config_key: str, **kwargs) -> Tuple[QLabel, DynamicFieldWidget]:
             label = QLabel(cache.get_label(config_key), parent=self)
@@ -76,8 +103,13 @@ class SDWebUIPanel(GeneratorPanel):
         IntSliderSpinbox.align_slider_spinboxes([self._step_count_slider, self._guidance_scale_slider,
                                                  self._denoising_strength_slider])
         self._edit_mode_label, self._edit_mode_combobox = _get_control_with_label(Cache.EDIT_MODE)
+        self._model_label, self._model_combobox = _get_control_with_label(Cache.SD_MODEL)
         self._sampler_label, self._sampler_combobox = _get_control_with_label(Cache.SAMPLING_METHOD)
-        self._masked_content_label, self._masked_content_combobox = _get_control_with_label(Cache.MASKED_CONTENT)
+
+        self._masked_content_label: Optional[QLabel] = None
+        self._masked_content_combobox: Optional[QComboBox] = None
+        if show_masked_content_dropdown:
+            self._masked_content_label, self._masked_content_combobox = _get_control_with_label(Cache.MASKED_CONTENT)
         self._full_res_label, self._full_res_checkbox = _get_control_with_label(Cache.INPAINT_FULL_RES)
         self._full_res_checkbox.setText('')
         self._full_res_label.setSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Minimum)
@@ -87,10 +119,12 @@ class SDWebUIPanel(GeneratorPanel):
         self._last_seed_textbox = Cache().get_control_widget(Cache.LAST_SEED)
         self._last_seed_textbox.setReadOnly(True)
 
-        self._interrogate_button = QPushButton()
-        self._interrogate_button.setText(BUTTON_TEXT_INTERROGATE)
-        self._interrogate_button.setToolTip(BUTTON_TOOLTIP_INTERROGATE)
-        self._interrogate_button.clicked.connect(self.interrogate_signal)
+        self._interrogate_button: Optional[QPushButton] = None
+        if show_interrogate_button:
+            self._interrogate_button = QPushButton()
+            self._interrogate_button.setText(BUTTON_TEXT_INTERROGATE)
+            self._interrogate_button.setToolTip(BUTTON_TOOLTIP_INTERROGATE)
+            self._interrogate_button.clicked.connect(self.interrogate_signal)
         self._generate_button = QPushButton()
         self._generate_button.setText(BUTTON_TEXT_GENERATE)
         self._generate_button.setToolTip(BUTTON_TOOLTIP_GENERATE)
@@ -108,8 +142,9 @@ class SDWebUIPanel(GeneratorPanel):
             self._full_res_checkbox.setVisible(edit_mode == EDIT_MODE_INPAINT)
             self._padding_label.setVisible(edit_mode == EDIT_MODE_INPAINT and self._full_res_checkbox.isChecked())
             self._padding_slider.setVisible(edit_mode == EDIT_MODE_INPAINT and self._full_res_checkbox.isChecked())
-            self._masked_content_label.setVisible(edit_mode == EDIT_MODE_INPAINT)
-            self._masked_content_combobox.setVisible(edit_mode == EDIT_MODE_INPAINT)
+            if self._masked_content_label is not None and self._masked_content_combobox is not None:
+                self._masked_content_label.setVisible(edit_mode == EDIT_MODE_INPAINT)
+                self._masked_content_combobox.setVisible(edit_mode == EDIT_MODE_INPAINT)
 
         _edit_mode_control_update(cache.get(Cache.EDIT_MODE))
         cache.connect(self, Cache.EDIT_MODE, _edit_mode_control_update)
@@ -122,6 +157,7 @@ class SDWebUIPanel(GeneratorPanel):
 
         cache.connect(self, Cache.INPAINT_FULL_RES, padding_layout_update)
         padding_layout_update(cache.get(Cache.INPAINT_FULL_RES))
+
         self._build_layout()
 
     def get_tab_bar_widgets(self) -> List[QWidget]:
@@ -130,16 +166,23 @@ class SDWebUIPanel(GeneratorPanel):
 
     def _build_layout(self) -> None:
         clear_layout(self._layout)
+        clear_layout(self._main_layout)
 
         all_inner_layouts = []
         aligned_sliders = [self._step_count_slider, self._guidance_scale_slider, self._denoising_strength_slider]
 
+        self._layout.addWidget(self._tab_widget, stretch=255)
+        button_layout = QHBoxLayout()
+        button_layout.setSpacing(2)
+        button_layout.setContentsMargins(1, 1, 1, 1)
+        self._layout.addLayout(button_layout)
+        if self._interrogate_button is not None:
+            button_layout.addWidget(self._interrogate_button)
+        button_layout.addWidget(self._generate_button)
+
         if self._orientation == Qt.Orientation.Horizontal:
             primary_layout = QHBoxLayout()
-            button_layout = QHBoxLayout()
-            self._layout.addLayout(primary_layout)
-            self._layout.addWidget(Divider(Qt.Orientation.Horizontal))
-            self._layout.addLayout(button_layout)
+            self._main_layout.addLayout(primary_layout)
             left_panel_layout = QVBoxLayout()
             right_panel_layout = QVBoxLayout()
             primary_layout.addLayout(left_panel_layout, stretch=30)
@@ -153,7 +196,7 @@ class SDWebUIPanel(GeneratorPanel):
             center_labels: List[QWidget] = []
             right_labels: List[QWidget] = []
             right_inputs: List[QWidget] = []
-            all_inner_layouts += [primary_layout, button_layout, left_panel_layout, right_panel_layout]
+            all_inner_layouts += [primary_layout, left_panel_layout, right_panel_layout]
 
             for label, textbox in ((self._prompt_label, self._prompt_textbox),
                                    (self._negative_label, self._negative_textbox)):
@@ -197,12 +240,15 @@ class SDWebUIPanel(GeneratorPanel):
                 center_labels.append(label)
 
             for label, input_widget in ((self._edit_mode_label, self._edit_mode_combobox),
+                                        (self._model_label, self._model_combobox),
                                         (self._sampler_label, self._sampler_combobox),
                                         (self._masked_content_label, self._masked_content_combobox),
                                         (self._full_res_label, self._full_res_checkbox),
                                         (self._padding_label, self._padding_slider),
                                         (self._seed_label, self._seed_textbox),
                                         (self._last_seed_label, self._last_seed_textbox)):
+                if label is None or input_widget is None:
+                    continue
                 input_row = QHBoxLayout()
                 input_row.setAlignment(Qt.AlignmentFlag.AlignLeft)
                 input_row.addWidget(label, stretch=1)
@@ -214,14 +260,15 @@ class SDWebUIPanel(GeneratorPanel):
                 else:
                     right_labels.append(label)
                     right_inputs.append(input_widget)
+            right_panel_layout.addWidget(Divider(Qt.Orientation.Horizontal))
+            if self._interrogate_button is not None:
+                right_panel_layout.addWidget(self._interrogate_button)
+            right_panel_layout.addWidget(self._generate_button)
 
             for i in (0, 1, 4, 5):
                 right_panel_layout.setStretch(i, 1)
             right_panel_layout.insertSpacing(right_panel_layout.count() - 4, 20)
             right_panel_layout.insertSpacing(right_panel_layout.count() - 2, 20)
-
-            button_layout.addWidget(self._interrogate_button)
-            button_layout.addWidget(self._generate_button)
 
             for alignment_group in (left_labels, center_labels, right_labels, right_inputs):
                 synchronize_widths(alignment_group)
@@ -234,6 +281,7 @@ class SDWebUIPanel(GeneratorPanel):
             labels = []
             inputs = []
             for label, input_widget in ((self._edit_mode_label, self._edit_mode_combobox),
+                                        (self._model_label, self._model_combobox),
                                         (self._sampler_label, self._sampler_combobox),
                                         (self._masked_content_label, self._masked_content_combobox),
                                         (self._prompt_label, self._prompt_textbox),
@@ -247,8 +295,12 @@ class SDWebUIPanel(GeneratorPanel):
                                         (self._full_res_label, self._full_res_checkbox),
                                         (self._padding_label, self._padding_slider),
                                         (self._seed_label, self._seed_textbox),
-                                        (self._last_seed_label, self._last_seed_textbox),
-                                        (self._interrogate_button, self._generate_button)):
+                                        (self._last_seed_label, self._last_seed_textbox)):
+                if input_widget is None:
+                    continue
+                if label is None:
+                    self._main_layout.addWidget(input_widget, stretch=1)
+                    continue
                 row_layout = QHBoxLayout()
                 row_layout.setAlignment(Qt.AlignmentFlag.AlignLeft)
                 row_layout.addWidget(label, stretch=1)
@@ -256,10 +308,19 @@ class SDWebUIPanel(GeneratorPanel):
                 labels.append(label)
                 inputs.append(input_widget)
                 all_inner_layouts.append(row_layout)
-                self._layout.addLayout(row_layout, stretch=1)
+                self._main_layout.addLayout(row_layout, stretch=1)
             aligned_sliders += [self._batch_size_spinbox, self._batch_count_spinbox]
-            self._layout.insertStretch(self._layout.count() - 3, 3)
-            self._layout.insertWidget(self._layout.count() - 1, Divider(Qt.Orientation.Horizontal))
+            self._main_layout.addStretch(3)
+            self._main_layout.addWidget(Divider(Qt.Orientation.Horizontal))
+            if self._interrogate_button is not None:
+                last_row = QHBoxLayout()
+                last_row.setAlignment(Qt.AlignmentFlag.AlignLeft)
+                last_row.addWidget(self._interrogate_button, stretch=1)
+                last_row.addWidget(self._generate_button, stretch=1)
+                all_inner_layouts.append(last_row)
+                self._main_layout.addLayout(last_row, stretch=1)
+            else:
+                self._main_layout.addWidget(self._generate_button)
             synchronize_widths(labels)
             synchronize_widths(inputs)
         for layout in all_inner_layouts:
@@ -272,6 +333,8 @@ class SDWebUIPanel(GeneratorPanel):
         if new_orientation == self._orientation:
             return
         self._orientation = new_orientation
+        if self._extras_tab is not None:
+            self._extras_tab.set_orientation(new_orientation)
         self._build_layout()
 
     @property
@@ -282,3 +345,11 @@ class SDWebUIPanel(GeneratorPanel):
     @orientation.setter
     def orientation(self, new_orientation: Qt.Orientation) -> None:
         self.set_orientation(new_orientation)
+
+    def add_extras_tab(self, extras_tab: ExtrasTab) -> None:
+        """Adds a second tab to the panel with extra controls."""
+        if self._extras_tab is not None:
+            raise RuntimeError('Tried to add extras_tab twice')
+        self._extras_tab = extras_tab
+        self._tab_widget.addTab(self._extras_tab, TAB_NAME_EXTRA)
+        self._extras_tab.set_orientation(self.orientation)

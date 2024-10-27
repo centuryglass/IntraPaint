@@ -111,7 +111,6 @@ class Cache(Config, metaclass=Singleton):
     CLONE_STAMP_TOOL_PRESSURE_SIZE: str
     COLOR_SELECT_MODE: str
     COMFYUI_MODEL_CONFIG: str
-    COMFYUI_SD_MODEL: str
     CONTROLNET_ARGS_0: str
     CONTROLNET_ARGS_1: str
     CONTROLNET_ARGS_2: str
@@ -182,8 +181,10 @@ class Cache(Config, metaclass=Singleton):
     SAVED_LAYER_WINDOW_POS: str
     SAVED_MAIN_WINDOW_POS: str
     SAVED_NAVIGATION_WINDOW_POS: str
+    SCHEDULER: str
     SCRIPTS_IMG2IMG: str
     SCRIPTS_TXT2IMG: str
+    SD_MODEL: str
     SD_SERVER_URL: str
     SEED: str
     SELECTION_BRUSH_SIZE: str

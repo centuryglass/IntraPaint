@@ -68,6 +68,36 @@ ERROR_MESSAGE_LAYER_NONE = _tr('The selected layer is not an image layer, select
 ERROR_MESSAGE_EMPTY_MASK = _tr('Changes are restricted to selected content only, but nothing is selected in this layer.'
                                ' Select layer content or enable changes in unselected areas.')
 
+# Network/Connection keys:
+AUTH_ERROR_MESSAGE = _tr('Not authenticated')
+URL_REQUEST_TITLE = _tr('Image generator connection')
+URL_REQUEST_MESSAGE = _tr('Enter server URL:')
+ERROR_MESSAGE_TIMEOUT = _tr('Request timed out')
+URL_REQUEST_RETRY_MESSAGE = _tr('Server connection failed, enter a new URL or click "OK" to retry')
+ERROR_MESSAGE_EXISTING_OPERATION = _tr('The AI image generator is busy creating other images, try again later.')
+AUTH_ERROR = _tr('Login cancelled.')
+
+# "Interrogate" feature:
+INTERROGATE_ERROR_TITLE = _tr('Interrogate failure')
+INTERROGATE_ERROR_MESSAGE_NO_IMAGE = _tr('Open or create an image first.')
+INTERROGATE_LOADING_TEXT = _tr('Running CLIP interrogate')
+
+# Image generation:
+GENERATE_ERROR_TITLE = _tr('Image generation failed')
+GENERATE_ERROR_MESSAGE_EMPTY_MASK = _tr('Nothing was selected in the image generation area. Either use the selection'
+                                        ' tool to mark part of the image generation area for inpainting, move the image'
+                                        ' generation area to cover selected content, or switch to another image'
+                                        ' generation mode.')
+
+# Upscaling:
+UPSCALE_ERROR_TITLE = _tr('Upscale failure')
+UPSCALED_LAYER_NAME = _tr('Upscaled image content')
+
+# ControlNet:
+CONTROLNET_TAB = _tr('ControlNet')
+CONTROLNET_UNIT_TAB = _tr('ControlNet Unit {unit_number}')
+
+
 # Argument used to disable or alter certain UI elements for better use in timelapse footage:
 TIMELAPSE_MODE_FLAG = '--timelapse_mode'
 

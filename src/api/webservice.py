@@ -3,7 +3,7 @@ Basic interface for classes used to access HTTP web services.
 
 Provides basic session management, auth access, and functions for making GET and POST requests.
 """
-from typing import Optional, Dict, Tuple
+from typing import Optional, Dict, Tuple, Any
 import secrets
 import requests
 
@@ -76,7 +76,7 @@ class WebService:
 
     def post(self,
              endpoint: str,
-             body,
+             body: Any,
              body_format: str = 'application/json',
              timeout: Optional[int] = None,
              url_params: Optional[dict[str, str]] = None,
@@ -114,6 +114,8 @@ class WebService:
         Response
             The response returned by the webservice.
         """
+        if body is None:
+            body_format = None
         return self._send(endpoint, 'POST', body, body_format, timeout, url_params, headers, files,
                           fail_on_auth_error, throw_on_failure)
 

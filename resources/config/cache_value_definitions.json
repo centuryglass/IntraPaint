@@ -851,7 +851,7 @@
         "description": "Number of diffusion operations to perform when generating image data. Higher values take longer, but often produce more detailed and accurate results. Different stable-diffusion models and samplers have different requirements, but in most cates setting this higher than 30 has only minimal benefits",
         "type": "int",
         "default": 30,
-        "saved": false,
+        "saved": true,
         "range_options": {
             "min": 1,
             "max": 150,
@@ -880,6 +880,16 @@
         "type": "string",
         "default": "Euler a",
         "options": [],
+        "saved": true
+    },
+    "scheduler": {
+        "label": "Scheduler:",
+        "category": "Cache",
+        "subcategory": "Image generation",
+        "description": "Algorithm used to divide  the image generation process into steps.",
+        "type": "string",
+        "default": "default",
+        "options": ["default"],
         "saved": true
     },
     "upscale_method": {
@@ -1079,6 +1089,16 @@
         "saved": true,
         "translate": false
     },
+    "sd_model": {
+        "label": "Stable-Diffusion model:",
+        "category": "Cache",
+        "subcategory": "Image generation",
+        "description": "Stable-Diffusion model to use for image generation.",
+        "type": "string",
+        "default": "",
+        "options" : [],
+        "saved": true
+    },
     "controlnet_upscaling": {
         "label": "ControlNet tiled upscaling",
         "category": "Cache",
@@ -1181,16 +1201,6 @@
         "default": false,
         "saved": true,
         "translate": false
-    },
-    "comfyui_sd_model": {
-        "label": "Stable-Diffusion model:",
-        "category": "Cache",
-        "subcategory": "ComfyUI",
-        "description": "Stable-Diffusion model to use for image generation.",
-        "type": "string",
-        "default": "",
-        "options" : [],
-        "saved": true
     },
     "comfyui_model_config": {
         "label": "Model config:",

@@ -208,6 +208,12 @@ class Config:
         with self._lock:
             return self._entries[key].get_value(inner_key)
 
+    def get_data_type(self, key: str) -> str:
+        """Gets the data type associated with a config key, raising KeyError if the key isn't found."""
+        if key not in self._entries:
+            raise KeyError(UNKNOWN_KEY_ERROR.format(key=key))
+        return self._entries[key].type_name
+
     def get_category(self, key: str) -> str:
         """Returns a config value's category, raising KeyError if the value does not exist."""
         if key not in self._entries:
@@ -451,6 +457,23 @@ class Config:
         self._entries[key].set_valid_options(options_list)
         if last_value not in options_list:
             self.set(key, options_list[0])
+
+    def restore_default_options(self, key: str) -> None:
+        """
+        Restores the default options list for a given key.
+
+        Raises
+        ------
+        RuntimeError
+            If the value associated with the key does not have a predefined list of options.
+        """
+        if key not in self._entries:
+            raise KeyError(UNKNOWN_KEY_ERROR.format(key=key))
+        last_value = self.get(key)
+        self._entries[key].restore_default_options()
+        default_option_list = self._entries[key].options
+        if last_value not in default_option_list and len(default_option_list) > 0:
+            self.set(key, default_option_list[0])
 
     def add_option(self, key: str, option: ParamType) -> None:
         """

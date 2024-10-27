@@ -216,6 +216,13 @@ class QueueAdditionResponse(TypedDict):
     number: NotRequired[int]  # Queue number/priority, omitted on error
     error: NotRequired[str | ErrorEntry]
     node_errors: List[NodeErrorEntry]
+    seed: NotRequired[int]  # Not added by the API, used for tracking last seed values and handling sequential batches.
+
+
+class QueueDeletionRequest(TypedDict):
+    """Request structure used to delete queue items."""
+    clear: NotRequired[bool]  # If true, the whole queue is wiped.
+    delete: NotRequired[List[str]]  # Set specific queued items to delete.
 
 
 class PromptStatusMessageData(TypedDict):

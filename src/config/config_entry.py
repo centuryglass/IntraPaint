@@ -93,7 +93,9 @@ class ConfigEntry(Parameter):
         self._category = category
         self._subcategory = subcategory
         self.save_json = save_json
+        self._default_options: Optional[list[Any]] = None
         if options is not None:
+            self._default_options = [*options]
             self.set_valid_options(options)
 
     def set_value(self,
@@ -143,6 +145,13 @@ class ConfigEntry(Parameter):
         if isinstance(self._value, dict):
             return self._value.copy()
         return self._value
+
+    def restore_default_options(self) -> None:
+        """Reset the option list to its default state, or raise RuntimeError if this isn't an entry that has a default
+           options list."""
+        if self._default_options is None:
+            raise RuntimeError(f'Config option "{self._key}" has no default options.')
+        self.set_valid_options(self._default_options)
 
     @property
     def category(self) -> str:

@@ -25,7 +25,7 @@ from src.ui.modal.modal_utils import show_error_dialog
 from src.ui.modal.settings_modal import SettingsModal
 from src.ui.panel.controlnet_panel import TabbedControlnetPanel, CONTROLNET_TITLE
 from src.ui.panel.generators.generator_panel import GeneratorPanel
-from src.ui.panel.generators.sd_webui_panel import SDWebUIPanel
+from src.ui.panel.generators.stable_diffusion_panel import StableDiffusionPanel
 from src.ui.window.extra_network_window import ExtraNetworkWindow
 from src.ui.window.main_window import MainWindow
 from src.ui.window.prompt_style_window import PromptStyleWindow
@@ -35,7 +35,9 @@ from src.util.async_task import AsyncTask
 from src.util.menu_builder import menu_action
 from src.util.parameter import ParamType
 from src.util.shared_constants import EDIT_MODE_TXT2IMG, EDIT_MODE_INPAINT, EDIT_MODE_IMG2IMG, PROJECT_DIR, \
-    PIL_SCALING_MODES
+    PIL_SCALING_MODES, AUTH_ERROR, AUTH_ERROR_MESSAGE, URL_REQUEST_MESSAGE, URL_REQUEST_RETRY_MESSAGE, \
+    URL_REQUEST_TITLE, INTERROGATE_ERROR_TITLE, INTERROGATE_ERROR_MESSAGE_NO_IMAGE, ERROR_MESSAGE_TIMEOUT, \
+    UPSCALE_ERROR_TITLE, UPSCALED_LAYER_NAME, GENERATE_ERROR_MESSAGE_EMPTY_MASK, ERROR_MESSAGE_EXISTING_OPERATION
 
 logger = logging.getLogger(__name__)
 
@@ -49,8 +51,7 @@ def _tr(*args):
 
 
 SD_WEBUI_GENERATOR_NAME = _tr('Stable-Diffusion WebUI API')
-SD_WEBUI_GENERATOR_DESCRIPTION = _tr("""
-<h2>Stable-Diffusion: via WebUI API</h2>
+SD_BASE_DESCRIPTION = _tr("""
 <p>
     Released in August 2022, Stable-Diffusion remains the most versatile and useful free image generation model.
 </p>
@@ -74,21 +75,27 @@ SD_WEBUI_GENERATOR_DESCRIPTION = _tr("""
         existing image lines, and pose analysis.
     </li>
 </ul>
-<h3>Stable-Diffusion WebUI:</h3>
+""")
+SD_WEBUI_GENERATOR_DESCRIPTION_HEADER = _tr('<h2>Stable-Diffusion: via WebUI API</h2>')
+SD_WEBUI_GENERATOR_DESCRIPTION_WEBUI = _tr("""
 <p>
     The Stable-Diffusion WebUI is one of the first interfaces created for using Stable-Diffusion. This IntraPaint
     generator offloads image generation to that system through a network connection.  The WebUI instance can be run on
     the same computer as IntraPaint, or remotely on a separate server.
-</p>""")
+</p>
+""")
+
+SD_WEBUI_GENERATOR_DESCRIPTION = (f'{SD_WEBUI_GENERATOR_DESCRIPTION_HEADER}\n{SD_BASE_DESCRIPTION}'
+                                  f'\n{SD_WEBUI_GENERATOR_DESCRIPTION_WEBUI}')
 
 # noinspection SpellCheckingInspection
 SD_WEBUI_GENERATOR_SETUP = _tr("""
 <h2>Installing Stable-Diffusion</h2>
 <p>
-    To use Stable-Diffusion with IntraPaint, you will need to install the Stable-Diffusion WebUI. You can choose either
-    the <a href="https://github.com/lllyasviel/stable-diffusion-webui-forge">Forge WebUI</a> or the original
-    <a href="https://github.com/AUTOMATIC1111/stable-diffusion-webui"> Stable-Diffusion WebUI</a>, but the Forge
-    WebUI is the recommended version. The easiest way to install either of these options is through <a href=
+    To use this Stable-Diffusion image generator with IntraPaint, you will need to install the Stable-Diffusion WebUI.
+    You can choose either the <a href="https://github.com/lllyasviel/stable-diffusion-webui-forge">Forge WebUI</a>
+    or the original <a href="https://github.com/AUTOMATIC1111/stable-diffusion-webui"> Stable-Diffusion WebUI</a>, but
+    the Forge WebUI is the recommended version. The easiest way to install either of these options is through <a href=
     "https://github.com/LykosAI/StabilityMatrix">Stability Matrix</a>.
 </p>
 <ol>
@@ -133,34 +140,15 @@ SD_WEBUI_GENERATOR_SETUP = _tr("""
 """)
 SD_PREVIEW_IMAGE = f'{PROJECT_DIR}/resources/generator_preview/stable-diffusion.png'
 ICON_PATH_CONTROLNET_TAB = f'{PROJECT_DIR}/resources/icons/tabs/hex.svg'
-DEFAULT_SD_URL = 'http://localhost:7860'
+DEFAULT_WEBUI_URL = 'http://localhost:7860'
 STABLE_DIFFUSION_CONFIG_CATEGORY = QApplication.translate('config.application_config', 'Stable-Diffusion')
 AUTH_ERROR_DETAIL_KEY = 'detail'
-AUTH_ERROR_MESSAGE = _tr('Not authenticated')
-INTERROGATE_ERROR_MESSAGE_NO_IMAGE = _tr('Open or create an image first.')
-ERROR_MESSAGE_EXISTING_OPERATION = _tr('Stable-Diffusion is busy generating other images, try again later.')
-ERROR_MESSAGE_TIMEOUT = _tr('Request timed out')
-INTERROGATE_ERROR_TITLE = _tr('Interrogate failure')
-INTERROGATE_LOADING_TEXT = _tr('Running CLIP interrogate')
-URL_REQUEST_TITLE = _tr('Inpainting UI')
-URL_REQUEST_MESSAGE = _tr('Enter server URL:')
-URL_REQUEST_RETRY_MESSAGE = _tr('Server connection failed, enter a new URL or click "OK" to retry')
 CONTROLNET_MODEL_LIST_KEY = 'model_list'
-UPSCALE_ERROR_TITLE = _tr('Upscale failure')
 PROGRESS_KEY_CURRENT_IMAGE = 'current_image'
 PROGRESS_KEY_FRACTION = 'progress'
 PROGRESS_KEY_ETA_RELATIVE = 'eta_relative'
 STYLE_ERROR_TITLE = _tr('Updating prompt styles failed')
-UPSCALED_LAYER_NAME = _tr('Upscaled image content')
 
-GENERATE_ERROR_TITLE = _tr('Image generation failed')
-GENERATE_ERROR_MESSAGE_EMPTY_MASK = _tr('Nothing was selected in the image generation area. Either use the selection'
-                                        ' tool to mark part of the image generation area for inpainting, move the image'
-                                        ' generation area to cover selected content, or switch to another image'
-                                        ' generation mode.')
-CONTROLNET_TAB = _tr('ControlNet')
-CONTROLNET_UNIT_TAB = _tr('ControlNet Unit {unit_number}')
-AUTH_ERROR = _tr('Login cancelled.')
 
 MAX_ERROR_COUNT = 10
 MIN_RETRY_US = 300000
@@ -200,7 +188,7 @@ class SDWebUIGenerator(ImageGenerator):
         self._lora_images: Optional[Dict[str, Optional[QImage]]] = None
         self._menu_actions: Dict[str, List[QAction]] = {}
         self._connected = False
-        self._control_panel: Optional[SDWebUIPanel] = None
+        self._control_panel: Optional[StableDiffusionPanel] = None
         self._preview = QImage(SD_PREVIEW_IMAGE)
         self._controlnet_tab: Optional[Tab] = None
         self._controlnet_panel: Optional[TabbedControlnetPanel] = None
@@ -311,6 +299,23 @@ class SDWebUIGenerator(ImageGenerator):
                 except (KeyError, RuntimeError) as err:
                     logger.error(f'error loading {config_key} from {self._server_url}: {err}')
 
+            webui_config = A1111Config()
+            try:
+                webui_config.load_all(self._webservice)
+                model_list = webui_config.get_options(A1111Config.SD_MODEL_CHECKPOINT)
+                model_list.sort()
+                cache.update_options(Cache.SD_MODEL, model_list)
+                cache.set(Cache.SD_MODEL, webui_config.get(A1111Config.SD_MODEL_CHECKPOINT))
+            except (KeyError, RuntimeError) as err:
+                logger.error(f'error loading model list from {self._server_url}: {err}')
+
+            def _update_model(model_name: str) -> None:
+                if not self._connected:
+                    return
+                remote_setting_change = {A1111Config.SD_MODEL_CHECKPOINT: model_name}
+                self.update_settings(remote_setting_change)
+            cache.connect(self, Cache.SD_MODEL, _update_model)
+
             try:
                 scripts = self._webservice.get_scripts()
                 if 'txt2img' in scripts:
@@ -347,13 +352,14 @@ class SDWebUIGenerator(ImageGenerator):
 
             assert self._window is not None
             self._window.cancel_generation.connect(self.cancel_generation)
-
+            self._connected = True
             return True
         except AuthError:
             return False
 
     def disconnect_or_disable(self) -> None:
         """Closes any connections, unloads models, or otherwise turns off this generator."""
+        self._connected = False
         if self._webservice is not None:
             self._webservice.disconnect()
             self._webservice = None
@@ -493,7 +499,7 @@ class SDWebUIGenerator(ImageGenerator):
     def get_control_panel(self) -> Optional[GeneratorPanel]:
         """Returns a widget with inputs for controlling this generator."""
         if self._control_panel is None:
-            self._control_panel = SDWebUIPanel()
+            self._control_panel = StableDiffusionPanel(True, True)
             self._control_panel.hide()
             self._control_panel.generate_signal.connect(self.start_and_manage_image_generation)
             self._control_panel.interrogate_signal.connect(self.interrogate)
@@ -789,4 +795,4 @@ class SDWebUIGenerator(ImageGenerator):
             cache.set(Cache.PROMPT, f'{prompt} {lora_key}')
         cache.set(Cache.GUIDANCE_SCALE, 1.5)
         cache.set(Cache.SAMPLING_STEPS, 8)
-        cache.set(Cache.SAMPLING_METHOD, 'LCM')
+        cache.set(Cache.SAMPLING_METHOD, LCM_SAMPLER)
