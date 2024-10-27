@@ -1,28 +1,27 @@
 """
 Accesses ComfyUI through its REST API, providing access to image generation and editing through stable-diffusion.
 """
-import datetime
 import json
 import logging
 import re
+import uuid
+from contextlib import contextmanager
 from enum import StrEnum, Enum
 from io import BytesIO
-from typing import List, cast, Optional, TypedDict, NotRequired
+from typing import List, cast, Optional, TypedDict, NotRequired, Any, Generator, Dict
 
 import requests  # type: ignore
 from PIL import Image  # type: ignore
-from PySide6.QtCore import QBuffer, QSize, Qt, QPoint
-from PySide6.QtGui import QImage, QPainter, QPainterPath
+import websocket
+from PySide6.QtCore import QBuffer
+from PySide6.QtGui import QImage
 
 import src.api.comfyui_types as comfy_type
 from src.api.comfyui_nodes.ksampler_node import SAMPLER_OPTIONS, SCHEDULER_OPTIONS
 from src.api.comfyui_workflows.diffusion_workflow_builder import DiffusionWorkflowBuilder, ExtensionModelType
 from src.api.webservice import WebService, MULTIPART_FORM_DATA_TYPE
-from src.config.application_config import AppConfig
 from src.config.cache import Cache
-from src.image.filter.blur import BlurFilter, MODE_GAUSSIAN
 from src.util.shared_constants import EDIT_MODE_TXT2IMG
-from src.util.visual.image_utils import create_transparent_image
 
 logger = logging.getLogger(__name__)
 
@@ -109,6 +108,10 @@ class ComfyUiWebservice(WebService):
     """
     ComfyUiWebservice provides access to Stable-Diffusion through the ComfyUI REST API.
     """
+
+    def __init__(self, url: str) -> None:
+        super().__init__(url)
+        self._client_id = str(uuid.uuid4())
 
     # General utility:
     def get_embeddings(self) -> List[str]:
@@ -387,7 +390,7 @@ class ComfyUiWebservice(WebService):
         if workflow_builder.denoising_strength != 1.0:
             workflow_builder.denoising_strength = 1.0
         prompt = workflow_builder.build_workflow().get_workflow_dict()
-        body: comfy_type.QueueAdditionRequest = {'prompt': prompt}
+        body: comfy_type.QueueAdditionRequest = {'prompt': prompt, 'client_id': self._client_id}
         res = cast(comfy_type.QueueAdditionResponse, self.post(ComfyEndpoints.PROMPT, body=body,
                                                                timeout=DEFAULT_TIMEOUT).json())
         res['seed'] = workflow_builder.seed
@@ -419,7 +422,7 @@ class ComfyUiWebservice(WebService):
         workflow_builder = self._build_diffusion_body()
         workflow_builder.source_image = image_reference
         prompt = workflow_builder.build_workflow().get_workflow_dict()
-        body: comfy_type.QueueAdditionRequest = {'prompt': prompt}
+        body: comfy_type.QueueAdditionRequest = {'prompt': prompt, 'client_id': self._client_id}
         res = cast(comfy_type.QueueAdditionResponse, self.post(ComfyEndpoints.PROMPT, body=body,
                                                                timeout=DEFAULT_TIMEOUT).json())
         res['seed'] = workflow_builder.seed
@@ -456,7 +459,7 @@ class ComfyUiWebservice(WebService):
         workflow_builder.source_image = image_reference
         workflow_builder.source_mask = mask_reference
         prompt = workflow_builder.build_workflow().get_workflow_dict()
-        body: comfy_type.QueueAdditionRequest = {'prompt': prompt}
+        body: comfy_type.QueueAdditionRequest = {'prompt': prompt, 'client_id': self._client_id}
         res = cast(comfy_type.QueueAdditionResponse, self.post(ComfyEndpoints.PROMPT, body=body,
                                                                timeout=DEFAULT_TIMEOUT).json())
         res['seed'] = workflow_builder.seed
@@ -470,3 +473,32 @@ class ComfyUiWebservice(WebService):
             }
             self.post(ComfyEndpoints.QUEUE, body=queue_removal_body)
         self.post(ComfyEndpoints.INTERRUPT, body=None, timeout=DEFAULT_TIMEOUT)
+
+    @contextmanager
+    def open_websocket(self) -> Generator[websocket.WebSocket, None, None]:
+        """Yields an open ComfyUI websocket that automatically closes when the context exits."""
+        ws = websocket.WebSocket()
+        base_url = self.server_url  # http://localhost:8188
+        assert '://' in base_url
+        ws_url = f'ws://{base_url[base_url.index("://") + 3:]}/ws?clientId={self._client_id}'  # _client_id is a uuid
+        ws.connect(ws_url)
+        try:
+            yield ws
+        finally:
+            ws.close()
+
+    @staticmethod
+    def parse_percentage_from_websocket_message(websocket_text: str) -> Optional[float]:
+        """Attempts to parse a percentage from a ComfyUI websocket message."""
+        status: Optional[Dict[str, Any]] = None
+        if isinstance(websocket_text, str):
+            try:
+                status = json.loads(websocket_text)
+            except json.decoder.JSONDecodeError:
+                return None
+        if status is not None and 'type' in status and 'data' in status:
+            if status['type'] == 'progress':
+                data = status['data']
+                if 'value' in data and 'max' in data:
+                    return round(data['value'] / data['max'] * 100, ndigits=4)
+        return None

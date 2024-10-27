@@ -83,6 +83,7 @@ SD_COMFYUI_GENERATOR_SETUP = _tr("""
 """)
 
 TASK_STATUS_QUEUED = _tr('Waiting, position {queue_number} in queue.')
+TASK_STATUS_QUEUED = _tr('Waiting, position {queue_number} in queue.')
 TASK_STATUS_GENERATING = _tr('Generating...')
 TASK_STATUS_BATCH_NUMBER = _tr('Batch {batch_num} of {num_batches}:')
 
@@ -381,31 +382,43 @@ class SDComfyUIGenerator(ImageGenerator):
         error_count = 0
         status: Optional[AsyncTaskProgress] = None
         batch_num = batch_num + 1
-        while status is None or status['status'] in (AsyncTaskStatus.PENDING, AsyncTaskStatus.ACTIVE):
-            sleep_time = min(MIN_RETRY_US * pow(2, error_count), MAX_RETRY_US)
-            thread = QThread.currentThread()
-            assert thread is not None
-            thread.usleep(sleep_time)
-            try:
-                assert webservice is not None
-                status = webservice.check_queue_entry(task_id, task_number)
-
-                if status['status'] == AsyncTaskStatus.PENDING and 'index' in status:
-                    status_text = TASK_STATUS_QUEUED.format(queue_index=status['index'])
-                else:
-                    status_text = TASK_STATUS_GENERATING
+        last_percentage = 0.0
+        with webservice.open_websocket() as websocket:
+            while status is None or status['status'] in (AsyncTaskStatus.PENDING, AsyncTaskStatus.ACTIVE):
+                ws_message = websocket.recv()
+                percentage = ComfyUiWebservice.parse_percentage_from_websocket_message(ws_message)
                 if num_batches > 1:
-                    status_text = (f'{TASK_STATUS_BATCH_NUMBER.format(batch_num=batch_num, num_batches=num_batches)}'
-                                   f' {status_text}')
-                external_status_signal.emit({'progress': status_text})
-            except ReadTimeout:
-                error_count += 1
-            except RuntimeError as err:
-                error_count += 1
-                logger.error(f'Error {error_count}: {err}')
-                if error_count > MAX_ERROR_COUNT:
-                    logger.error('Image generation failed, reached max retries.')
-                    break
+                    if percentage is None:
+                        percentage = 0.0
+                    single_batch_percentage = round(100 / num_batches, ndigits=4)
+                    percentage = round(single_batch_percentage * ((batch_num - 1) + (percentage / 100)), ndigits=4)
+                if percentage is not None:
+                    last_percentage = max(percentage, last_percentage)
+
+                sleep_time = min(MIN_RETRY_US * pow(2, error_count), MAX_RETRY_US)
+                thread = QThread.currentThread()
+                assert thread is not None
+                thread.usleep(sleep_time)
+                try:
+                    assert webservice is not None
+                    status = webservice.check_queue_entry(task_id, task_number)
+                    if status['status'] == AsyncTaskStatus.PENDING and 'index' in status:
+                        status_text = TASK_STATUS_QUEUED.format(queue_index=status['index'])
+                    else:
+                        status_text = TASK_STATUS_GENERATING
+                    if num_batches > 1:
+                        status_text = (f'{TASK_STATUS_BATCH_NUMBER.format(batch_num=batch_num, num_batches=num_batches)}'
+                                       f' {status_text}')
+                    status_text = f'{status_text}\n{last_percentage}%'
+                    external_status_signal.emit({'progress': status_text})
+                except ReadTimeout:
+                    error_count += 1
+                except RuntimeError as err:
+                    error_count += 1
+                    logger.error(f'Error {error_count}: {err}')
+                    if error_count > MAX_ERROR_COUNT:
+                        logger.error('Image generation failed, reached max retries.')
+                        break
         assert status is not None
         return status
 

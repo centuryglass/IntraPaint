@@ -31,6 +31,11 @@ class WebService:
         self._auth = None
         self._session_hash = secrets.token_hex(5)
 
+    @property
+    def server_url(self) -> str:
+        """Returns the server URL."""
+        return self._server_url
+
     def set_auth(self, auth):
         """Set session authentication.
 
