@@ -2,7 +2,7 @@
 
 Outputs are [model, vae, clip]
 """
-from typing import TypedDict, cast, Any, Dict
+from typing import TypedDict, cast, Any
 
 from src.api.comfyui.nodes.comfy_node import ComfyNode
 
@@ -28,4 +28,4 @@ Outputs are [model, vae, clip]
 
     def __init__(self, model_name: str, config_name: str) -> None:
         data: CheckpointInputs = {'ckpt_name': model_name, 'config_name': config_name}
-        super().__init__(NODE_NAME, cast(Dict[str, Any], data), set(), 3)
+        super().__init__(NODE_NAME, cast(dict[str, Any], data), set(), 3)

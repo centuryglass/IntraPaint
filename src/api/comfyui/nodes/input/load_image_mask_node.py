@@ -1,5 +1,5 @@
 """A ComfyUI node used to load image mask data."""
-from typing import TypedDict, Literal, cast, Dict, Any
+from typing import TypedDict, Literal, cast, Any
 
 from src.api.comfyui.nodes.comfy_node import ComfyNode
 
@@ -25,4 +25,4 @@ class LoadImageMaskNode(ComfyNode):
             'channel': 'alpha',
             'upload': 'image'
         }
-        super().__init__(NODE_NAME, cast(Dict[str, Any], data), set(), 1)
+        super().__init__(NODE_NAME, cast(dict[str, Any], data), set(), 1)

@@ -1,22 +1,22 @@
 """Abstract interface for all ComfyUI workflow nodes."""
 from copy import deepcopy
-from typing import TypeAlias, Dict, Any, Set, TypedDict, Tuple
+from typing import TypeAlias, Any, TypedDict
 
 NodeId: TypeAlias = str  # Should be an integer string
 SlotIndex: TypeAlias = int  # connection index within the connected node, not the current one.
-NodeConnection: TypeAlias = Tuple[NodeId, SlotIndex]
+NodeConnection: TypeAlias = tuple[NodeId, SlotIndex]
 
 
 class NodeDict(TypedDict):
     """Generic node data format."""
     class_type: str
-    inputs: Dict[str, Any]
+    inputs: dict[str, Any]
 
 
 class ComfyNode:
     """Abstract Node class."""
 
-    def __init__(self, class_type: str, input_data: Dict[str, Any], node_input_keys: Set[str],
+    def __init__(self, class_type: str, input_data: dict[str, Any], node_input_keys: set[str],
                  output_count: int) -> None:
         self._class_type = class_type
         self._inputs = input_data

@@ -1,5 +1,5 @@
 """A ComfyUI node used to copy latent image data for batch operations."""
-from typing import TypedDict, NotRequired, cast, Dict, Any
+from typing import TypedDict, NotRequired, cast, Any
 
 from src.api.comfyui.nodes.comfy_node import NodeConnection, ComfyNode
 
@@ -26,4 +26,4 @@ class RepeatLatentNode(ComfyNode):
         data: RepeatLatentInputs = {
             'amount': batch_size
         }
-        super().__init__(NODE_NAME, cast(Dict[str, Any], data), connection_params, 1)
+        super().__init__(NODE_NAME, cast(dict[str, Any], data), connection_params, 1)

@@ -1,5 +1,5 @@
 """A ComfyUI node used to initialize a batch of latent images."""
-from typing import TypedDict, cast, Dict, Any
+from typing import TypedDict, cast, Any
 
 from PySide6.QtCore import QSize
 
@@ -27,4 +27,4 @@ class EmptyLatentNode(ComfyNode):
             'height': image_size.height(),
             'width': image_size.width()
         }
-        super().__init__(NODE_NAME, cast(Dict[str, Any], data), set(), 1)
+        super().__init__(NODE_NAME, cast(dict[str, Any], data), set(), 1)

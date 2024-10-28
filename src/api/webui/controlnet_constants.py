@@ -1,10 +1,13 @@
 """WebUI API types and constants associated with ControlNet."""
-from typing import TypedDict, List, Optional, Literal, Dict, TypeAlias, NotRequired
+from typing import TypedDict, Optional, Literal, Dict, TypeAlias, NotRequired
+
+CONTROLNET_SCRIPT_KEY = 'controlNet'
+RESOLUTION_PARAMETER_NAME = 'Resolution'
 
 
 class ControlNetModelRes(TypedDict):
     """Response format when loading ControlNet model options."""
-    model_list: List[str]
+    model_list: list[str]
 
 
 class ControlNetSliderDef(TypedDict):
@@ -19,21 +22,16 @@ class ControlNetSliderDef(TypedDict):
 class ModuleDetail(TypedDict):
     """Defines a ControlNet preprocessor's parameters as returned by the module list endpoint."""
     model_free: bool  # Whether the module can be used without a model.
-    sliders: List[ControlNetSliderDef]
+    sliders: list[ControlNetSliderDef]
 
 
 class ControlNetModuleRes(TypedDict):
     """Response format when loading ControlNet preprocessor options."""
-    module_list: List[str]
+    module_list: list[str]
     module_details: NotRequired[Dict[str, ModuleDetail]]  # NOTE: not included in Forge.
 
 
-class ControlNetModuleResFull(TypedDict):
-    """Extended response."""
-    module_list: List[str]
-
-
-class ControlNetScriptValue(TypedDict):
+class ControlNetUnitDict(TypedDict):
     """Data format used with the ControlNet script's values within the alwayson_scripts section in WebUI generation
        requests. In the script values section, The ControlNet value parameter is a list holding up to three of these
        objects.  Optional parameters that only affect the UI are omitted."""
@@ -46,25 +44,25 @@ class ControlNetScriptValue(TypedDict):
     resize_mode: Literal['Just Resize', 'Crop and Resize', 'Resize and Fill']
     guidance_start: float
     guidance_end: float
-    control_mode: Literal['Balanced', 'My prompt is more important', 'ControlNet is more important']
+    control_mode: NotRequired[Literal['Balanced', 'My prompt is more important', 'ControlNet is more important']]
 
     # preprocessor-specific values:
-    processor_res: int  # Some use this, some don't. Set to -1 if its not used.
-    # Effects of of threshold values (if any) vary based on preprocessor.
+    processor_res: NotRequired[int]  # Some use this, some don't. Set to -1 or omit if it's not used.
+    # Effects of threshold values (if any) vary based on preprocessor.
     threshold_a: float
     threshold_b: float
 
 
 class ControlTypeDef(TypedDict):
     """Defines one of the ControlNet Type options returned by the /controlnet/control_types endpoint."""
-    module_list: List[str]
-    model_list: List[str]
+    module_list: list[str]
+    model_list: list[str]
     default_option: str
     default_model: str
 
 
 # Response format for the /controlnet/control_types endpoint, containing one entry per available control type.
-ControlTypeRes: TypeAlias = Dict[str, ControlTypeDef]
+ControlTypeRes: TypeAlias = dict[str, ControlTypeDef]
 
 
 # FORGE CONTROLNET CONSTANTS:
@@ -80,7 +78,7 @@ class StaticControlTypeDef(ControlTypeDef):
     model_pattern: NotRequired[str]
 
 
-CONTROL_TYPE_DEFS: Dict[str, StaticControlTypeDef] = {
+CONTROL_TYPE_DEFS: dict[str, StaticControlTypeDef] = {
     'All': {
         'module_list': ['none'],
         'model_list': ['None'],
@@ -243,7 +241,7 @@ CONTROL_TYPE_DEFS: Dict[str, StaticControlTypeDef] = {
 
 
 # Defines preprocessor module uses of the 'threshold_a' parameter:
-THRESHOLD_A_PARAMETER_NAMES: Dict[str, ControlNetSliderDef] = {
+THRESHOLD_A_PARAMETER_NAMES: dict[str, ControlNetSliderDef] = {
     'reference_only': {
         'name': 'Style Fidelity',
         'min': 0.0,
@@ -415,7 +413,7 @@ THRESHOLD_A_PARAMETER_NAMES: Dict[str, ControlNetSliderDef] = {
 }
 
 # Defines preprocessor module uses of the 'threshold_a' parameter:
-THRESHOLD_B_PARAMETER_NAMES: Dict[str, ControlNetSliderDef] = {
+THRESHOLD_B_PARAMETER_NAMES: dict[str, ControlNetSliderDef] = {
     'canny': {
         'name': 'High Threshold',
         'min': 0,
@@ -473,7 +471,7 @@ PREPROCESSOR_RES_DEFAULT = 512
 PREPROCESSOR_RES_STEP = 8
 
 # Defines the set of preprocessors that have alternate default resolutions.
-PREPROCESSOR_RES_DEFAULTS: Dict[str, int] = {
+PREPROCESSOR_RES_DEFAULTS: dict[str, int] = {
     'depth_marigold': 768
 }
 
@@ -489,7 +487,7 @@ PREPROCESSOR_NO_RESOLUTION: set[str] = {
 }
 
 
-## Defines preprocessors that don't need a corresponding model.
+# Defines preprocessors that don't need a corresponding model.
 PREPROCESSOR_MODEL_FREE: set[str] = {
     'revision_clipvision',
     'revision_ignore_prompt',

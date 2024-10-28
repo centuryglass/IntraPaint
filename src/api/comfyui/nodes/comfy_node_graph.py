@@ -1,5 +1,5 @@
 """Manages a set of connected ComfyUI nodes."""
-from typing import Dict, Any
+from typing import Any
 
 from src.api.comfyui.nodes.comfy_node import ComfyNode
 
@@ -7,8 +7,8 @@ from src.api.comfyui.nodes.comfy_node import ComfyNode
 class ComfyNodeGraph:
     """Manages a set of connected ComfyUI nodes."""
 
-    def __init__(self):
-        self._node_key_dict: Dict[ComfyNode, str] = {}
+    def __init__(self) -> None:
+        self._node_key_dict: dict[ComfyNode, str] = {}
         self._next_key_number = 3
 
     def add_node(self, node: ComfyNode) -> None:
@@ -33,7 +33,7 @@ class ComfyNodeGraph:
         output_key = self._node_key_dict[output_node]
         input_node.add_input(output_key, out_slot_idx, input_key)
 
-    def get_workflow_dict(self) -> Dict[str, Any]:
+    def get_workflow_dict(self) -> dict[str, Any]:
         """Gets the dict defining the entire workflow."""
         workflow = {}
         nodes = list(self._node_key_dict.keys())

@@ -1,5 +1,5 @@
 """A ComfyUI node used to encode text using CLIP."""
-from typing import TypedDict, NotRequired, cast, Dict, Any
+from typing import TypedDict, NotRequired, cast, Any
 
 from src.api.comfyui.nodes.comfy_node import NodeConnection, ComfyNode
 
@@ -25,4 +25,4 @@ class ClipTextEncodeNode(ComfyNode):
         data: ClipTextInputs = {
             'text': text
         }
-        super().__init__(NODE_NAME, cast(Dict[str, Any], data), {ClipTextEncodeNode.CLIP}, 1)
+        super().__init__(NODE_NAME, cast(dict[str, Any], data), {ClipTextEncodeNode.CLIP}, 1)

@@ -1,14 +1,22 @@
 """Typedefs for WebUI API data."""
+import logging
+import os.path
+from copy import deepcopy
 from dataclasses import dataclass, asdict
-from typing import List, Dict, Any, Optional, cast
+from typing import Any, Optional, cast
 
 from PySide6.QtCore import QSize
 from PySide6.QtGui import QImage
 
+from src.api.webui.controlnet_constants import ControlNetUnitDict, CONTROLNET_SCRIPT_KEY
+from src.api.webui.script_info_types import ScriptRequestData
 from src.config.application_config import AppConfig
 from src.config.cache import Cache
-from src.util.shared_constants import EDIT_MODE_TXT2IMG, EDIT_MODE_INPAINT, EDIT_MODE_IMG2IMG
+from src.util.shared_constants import EDIT_MODE_INPAINT, EDIT_MODE_IMG2IMG, \
+    CONTROLNET_REUSE_IMAGE_CODE
 from src.util.visual.image_utils import image_to_base64
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -19,13 +27,13 @@ class DiffusionRequestBody:
     batch_size: int = 1
     n_iter: int = 1  # number of batches
     steps: int = 30
-    cfg_scale: float = 7.0 # guidance scale
+    cfg_scale: float = 7.0  # guidance scale
     width: int = 512
     height: int = 512
     denoising_strength: Optional[float] = None
 
     # Img2img and inpainting only:
-    init_images: Optional[List[str]] = None  # base64 image data
+    init_images: Optional[list[str]] = None  # base64 image data
 
     # Resize mode options (selected by index):
     # 0: Just resize (the default)
@@ -55,14 +63,12 @@ class DiffusionRequestBody:
     mask_round: Optional[bool] = None
     initial_noise_multiplier: Optional[float] = None  # Adjust extra noise added to masked areas
 
-    # TODO: what do these inpainting/img2img options do?
-
     # Img2img/inpaint exlcusive options end here.
 
     # Prompt:
     prompt: str = ''
     negative_prompt: str = ''
-    styles: Optional[List[str]] = None
+    styles: Optional[list[str]] = None
 
     # RNG:
     seed: int = -1
@@ -83,14 +89,14 @@ class DiffusionRequestBody:
 
     # settings and misc. server behavior
     infotext: Optional[str] = None  # metadata string: if provided, it overwrites other parameters
-    override_settings: Optional[Dict[str, Any]] = None
+    override_settings: Optional[dict[str, Any]] = None
     override_settings_restore_afterwards: Optional[bool] = None
     do_not_save_samples: Optional[bool] = None
     do_not_save_grid: Optional[bool] = None
     disable_extra_networks: Optional[bool] = None  # Turn off LoRAs, etc.
     send_images: bool = True
     save_images: bool = False
-    comments: Optional[Dict[str, Any]] = None  # Add arbitrary extra info to image metadata.
+    comments: Optional[dict[str, Any]] = None  # Add arbitrary extra info to image metadata.
     force_task_id: Optional[str] = None  # Assign this ID to the job instead of using a random one.
 
     # High-res fix:
@@ -108,8 +114,8 @@ class DiffusionRequestBody:
 
     # custom scripts:
     script_name: Optional[str] = None
-    script_args: Optional[List[Any]] = None
-    alwayson_scripts: Optional[Dict[str, Any]] = None
+    script_args: Optional[list[Any]] = None
+    alwayson_scripts: Optional[dict[str, ScriptRequestData]] = None
 
     # Karras(?) sampler parameters (probably don't need to use these)
     eta: Optional[float] = None
@@ -122,7 +128,7 @@ class DiffusionRequestBody:
     # Probably deprecated, present for compatibility reasons:
     sampler_index: Optional[str] = None
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert the request body to a dict, removing unused optional parameters."""
         data = asdict(self)
         empty_keys = [key for key in data if data[key] is None]
@@ -130,8 +136,8 @@ class DiffusionRequestBody:
             del data[key]
         return data
 
-    def load_from_config(self) -> None:
-        """Load as many parameters as possible from config and cache."""
+    def load_data(self, image: Optional[QImage] = None, mask: Optional[QImage] = None) -> None:
+        """Load as many parameters as possible from config, cache, and optional image parameters."""
         config = AppConfig()
         cache = Cache()
 
@@ -151,24 +157,52 @@ class DiffusionRequestBody:
 
         self.restore_faces = config.get(AppConfig.RESTORE_FACES)
         self.tiling = config.get(AppConfig.TILING)
+        if self.alwayson_scripts is None:
+            self.alwayson_scripts = {}
 
         edit_mode = cache.get(Cache.EDIT_MODE)
         if edit_mode in (EDIT_MODE_IMG2IMG, EDIT_MODE_INPAINT):
+            if image is not None:
+                self.add_init_image(image)
             self.include_init_images = False
             self.denoising_strength = cache.get(Cache.DENOISING_STRENGTH)
 
             if edit_mode == EDIT_MODE_INPAINT:
+                if mask is not None:
+                    self.mask = image_to_base64(mask, include_prefix=True)
                 self.inpainting_mask_invert = 0
                 self.inpaint_full_res = cache.get(Cache.INPAINT_FULL_RES)
                 self.inpaint_full_res_padding = cache.get(Cache.INPAINT_FULL_RES_PADDING)
-                self.mask_blur = AppConfig.get(AppConfig.MASK_BLUR)
+                self.mask_blur = config.get(AppConfig.MASK_BLUR)
 
-    def add_images(self, image: Optional[QImage] = None, mask: Optional[QImage] = None) -> None:
-        """Add base64 image and/or mask data to the request."""
-        if image is not None:
-            if self.init_images is None:
-                self.init_images = []
-            image_str = image_to_base64(image, include_prefix=True)
-            self.init_images.append(image_str)
-        if mask is not None:
-            self.mask = image_to_base64(mask, include_prefix=True)
+        # Add ControlNet parameters:
+        if CONTROLNET_SCRIPT_KEY in self.alwayson_scripts:
+            self.alwayson_scripts[CONTROLNET_SCRIPT_KEY] = {'args': []}  # Make sure to clear any old ControlNet defs
+        for controlnet_key in (Cache.CONTROLNET_ARGS_0, Cache.CONTROLNET_ARGS_1, Cache.CONTROLNET_ARGS_2):
+            control_unit = cast(ControlNetUnitDict, deepcopy(cache.get(controlnet_key)))
+            if 'enabled' not in control_unit or not control_unit['enabled']:
+                continue
+            if 'image' in control_unit:
+                control_image = control_unit['image']
+                if control_image == CONTROLNET_REUSE_IMAGE_CODE and image is not None:
+                    if edit_mode in (EDIT_MODE_IMG2IMG, EDIT_MODE_INPAINT) and self.init_images is not None \
+                            and len(self.init_images) > 0:
+                        control_unit['image'] = self.init_images[-1]
+                    else:
+                        control_unit['image'] = image_to_base64(image, include_prefix=True)
+                elif isinstance(control_image, str) and os.path.exists(control_image):
+                    try:
+                        control_unit['image'] = image_to_base64(control_unit['image'], include_prefix=True)
+                    except (IOError, KeyError) as err:
+                        logger.error(f"Error loading controlnet image {control_image}: {err}")
+                        control_unit['image'] = None
+            if CONTROLNET_SCRIPT_KEY not in self.alwayson_scripts:
+                self.alwayson_scripts[CONTROLNET_SCRIPT_KEY] = {'args': []}
+            self.alwayson_scripts[CONTROLNET_SCRIPT_KEY]['args'].append(control_unit)
+
+    def add_init_image(self, image: QImage) -> None:
+        """Adds a base64 init image."""
+        if self.init_images is None:
+            self.init_images = []
+        image_str = image_to_base64(image, include_prefix=True)
+        self.init_images.append(image_str)

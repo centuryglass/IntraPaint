@@ -1,5 +1,5 @@
 """A ComfyUI node used to encode latent image data for inpainting models."""
-from typing import TypedDict, NotRequired, cast, Dict, Any
+from typing import TypedDict, NotRequired, cast, Any
 
 from src.api.comfyui.nodes.comfy_node import NodeConnection, ComfyNode
 
@@ -34,4 +34,4 @@ class VAEEncodeInpaintingNode(ComfyNode):
         data: VAEEncodeInpaintingInputs = {
             'grow_mask_by': grow_mask_by
         }
-        super().__init__(NODE_NAME, cast(Dict[str, Any], data), connection_params, 1)
+        super().__init__(NODE_NAME, cast(dict[str, Any], data), connection_params, 1)

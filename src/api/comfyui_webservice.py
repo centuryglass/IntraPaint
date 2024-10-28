@@ -8,7 +8,7 @@ import uuid
 from contextlib import contextmanager
 from enum import StrEnum, Enum
 from io import BytesIO
-from typing import List, cast, Optional, TypedDict, NotRequired, Any, Generator, Dict
+from typing import cast, Optional, TypedDict, NotRequired, Any, Generator
 
 import requests  # type: ignore
 from PIL import Image  # type: ignore
@@ -17,8 +17,9 @@ from PySide6.QtCore import QBuffer
 from PySide6.QtGui import QImage
 
 import src.api.comfyui.comfyui_types as comfy_type
-from src.api.comfyui.nodes import SAMPLER_OPTIONS, SCHEDULER_OPTIONS
 from src.api.comfyui.diffusion_workflow_builder import DiffusionWorkflowBuilder, ExtensionModelType
+from src.api.comfyui.nodes.ksampler_node import SAMPLER_OPTIONS, SCHEDULER_OPTIONS
+from src.api.controlnet_preprocessor import ControlNetPreprocessor
 from src.api.webservice import WebService, MULTIPART_FORM_DATA_TYPE
 from src.config.cache import Cache
 from src.util.shared_constants import EDIT_MODE_TXT2IMG
@@ -114,47 +115,62 @@ class ComfyUiWebservice(WebService):
         self._client_id = str(uuid.uuid4())
 
     # General utility:
-    def get_embeddings(self) -> List[str]:
+    def get_embeddings(self) -> list[str]:
         """Returns the list of available embedding files."""
         return self.get(ComfyEndpoints.EMBEDDINGS, timeout=DEFAULT_TIMEOUT).json()
 
-    def get_model_types(self) -> List[str]:
+    def get_model_types(self) -> list[str]:
         """Returns the list of available model types."""
-        return cast(List[str], self.get(ComfyEndpoints.MODELS, timeout=DEFAULT_TIMEOUT).json())
+        return cast(list[str], self.get(ComfyEndpoints.MODELS, timeout=DEFAULT_TIMEOUT).json())
 
-    def get_extensions(self) -> List[str]:
+    def get_extensions(self) -> list[str]:
         """Returns the list of installed extension files."""
-        return cast(List[str], self.get(ComfyEndpoints.EXTENSIONS, timeout=DEFAULT_TIMEOUT).json())
+        return cast(list[str], self.get(ComfyEndpoints.EXTENSIONS, timeout=DEFAULT_TIMEOUT).json())
 
     def get_system_stats(self) -> comfy_type.SystemStatResponse:
         """Returns information about the system and device running Stable-Diffusion."""
         return cast(comfy_type.SystemStatResponse,
                     self.get(ComfyEndpoints.SYSTEM_STATS, timeout=DEFAULT_TIMEOUT).json())
 
-    def get_models(self, model_type: ComfyModelType) -> List[str]:
+    def get_models(self, model_type: ComfyModelType) -> list[str]:
         """Returns the list of available models, given a particular model type."""
         endpoint = f'{ComfyEndpoints.MODELS}/{model_type.value}'
-        return cast(List[str], self.get(endpoint, timeout=DEFAULT_TIMEOUT).json())
+        return cast(list[str], self.get(endpoint, timeout=DEFAULT_TIMEOUT).json())
 
-    def get_sd_checkpoints(self) -> List[str]:
+    def get_sd_checkpoints(self) -> list[str]:
         """Returns the list of available Stable-Diffusion models."""
         return self.get_models(ComfyModelType.CHECKPOINT)
 
-    def get_vae_models(self) -> List[str]:
+    def get_vae_models(self) -> list[str]:
         """Returns the list of available Stable-Diffusion VAE models."""
         return self.get_models(ComfyModelType.VAE)
 
-    def get_controlnets(self) -> List[str]:
+    def get_controlnets(self) -> list[str]:
         """Returns the list of available ControlNet models."""
         return self.get_models(ComfyModelType.CONTROLNET)
 
-    def get_lora_models(self) -> List[str]:
+    def get_lora_models(self) -> list[str]:
         """Returns the list of available LORA models."""
         return self.get_models(ComfyModelType.LORA)
 
-    def get_hypernetwork_models(self) -> List[str]:
+    def get_hypernetwork_models(self) -> list[str]:
         """Returns the list of available Hypernetwork models."""
         return self.get_models(ComfyModelType.HYPERNETWORKS)
+
+    def get_controlnet_preprocessors(self) -> list[ControlNetPreprocessor]:
+        """Scans all nodes for valid preprocessor nodes, and returns the list of parameterized options."""
+        preprocessors: list[ControlNetPreprocessor] = []
+        node_data = self.get(ComfyEndpoints.OBJECT_INFO, timeout=DEFAULT_TIMEOUT).json()
+        for node in node_data:
+            node = cast(comfy_type.NodeInfoResponse, node)
+            if node['category'] != comfy_type.CONTROLNET_PREPROCESSOR_CATEGORY:
+                continue
+            try:
+                preprocessor = ControlNetPreprocessor.from_comfyui_node_def(node)
+                preprocessors.append(preprocessor)
+            except ValueError:
+                logger.info(f'Skipping incompatible preprocessor node "{node["name"]}"')
+        return preprocessors
 
     def upload_image(self, image: QImage, name: Optional[str] = None, subfolder: Optional[str] = None,
                      temp=False, overwrite=True) -> comfy_type.ImageFileReference:
@@ -225,12 +241,13 @@ class ComfyUiWebservice(WebService):
         }
         return file_ref
 
-    def download_images(self, image_refs: List[comfy_type.ImageFileReference]) -> List[QImage]:
+    def download_images(self, image_refs: list[comfy_type.ImageFileReference]) -> list[QImage]:
         """Download a list of images from ComfyUI as ARGB QImages."""
-        images: List[QImage] = []
+        images: list[QImage] = []
         for image_ref in image_refs:
             try:
-                image_res = self.get(ComfyEndpoints.VIEW_IMAGE, url_params=image_ref, timeout=EXTENDED_TIMEOUT)
+                image_res = self.get(ComfyEndpoints.VIEW_IMAGE, url_params=cast(dict[str, str], image_ref),
+                                     timeout=EXTENDED_TIMEOUT)
                 buffer = BytesIO(image_res.content)
                 byte_data = buffer.getvalue()
                 qimage = QImage.fromData(byte_data)
@@ -270,8 +287,8 @@ class ComfyUiWebservice(WebService):
         # Find and add LORA and Hypernetwork models:
         available_loras = cache.get(Cache.LORA_MODELS)
         available_hypernetworks = cache.get(Cache.HYPERNETWORK_MODELS)
-        lora_name_map = {}
-        hypernet_name_map = {}
+        lora_name_map: dict[str, str] = {}
+        hypernet_name_map: dict[str, str] = {}
         for model_list, model_dict in ((available_loras, lora_name_map),
                                        (available_hypernetworks, hypernet_name_map)):
             for model_option in model_list:
@@ -354,7 +371,8 @@ class ComfyUiWebservice(WebService):
                 }
                 for output_data in entry_history['outputs'].values():
                     if 'images' in output_data:
-                        progress['outputs']['images'] += output_data['images']
+                        for reference in output_data['images']:
+                            progress['outputs']['images'].append(cast(comfy_type.ImageFileReference, reference))
                 return progress
         queue_info = self.get_queue_info()
         for running_task in queue_info['queue_running']:
@@ -419,8 +437,9 @@ class ComfyUiWebservice(WebService):
             Information needed to track the async task and download the resulting images once it finishes.
         """
         image_reference = self.upload_image(image)
-        workflow_builder = self._build_diffusion_body()
-        workflow_builder.source_image = image_reference
+        assert image_reference is not None
+        workflow_builder = self._build_diffusion_body(seed)
+        workflow_builder.set_source_image_from_reference(image_reference)
         prompt = workflow_builder.build_workflow().get_workflow_dict()
         body: comfy_type.QueueAdditionRequest = {'prompt': prompt, 'client_id': self._client_id}
         res = cast(comfy_type.QueueAdditionResponse, self.post(ComfyEndpoints.PROMPT, body=body,
@@ -455,9 +474,9 @@ class ComfyUiWebservice(WebService):
         """
         image_reference = self.upload_image(image)
         mask_reference = self.upload_mask(mask, image_reference)
-        workflow_builder = self._build_diffusion_body()
-        workflow_builder.source_image = image_reference
-        workflow_builder.source_mask = mask_reference
+        workflow_builder = self._build_diffusion_body(seed)
+        workflow_builder.set_source_image_from_reference(image_reference)
+        workflow_builder.set_mask_from_reference(mask_reference)
         prompt = workflow_builder.build_workflow().get_workflow_dict()
         body: comfy_type.QueueAdditionRequest = {'prompt': prompt, 'client_id': self._client_id}
         res = cast(comfy_type.QueueAdditionResponse, self.post(ComfyEndpoints.PROMPT, body=body,
@@ -480,7 +499,7 @@ class ComfyUiWebservice(WebService):
         ws = websocket.WebSocket()
         base_url = self.server_url  # http://localhost:8188
         assert '://' in base_url
-        ws_url = f'ws://{base_url[base_url.index("://") + 3:]}/ws?clientId={self._client_id}'  # _client_id is a uuid
+        ws_url = f'ws://{base_url[base_url.index("://") + 3:]}/ws?clientId={self._client_id}'  # _client_id is uuid
         ws.connect(ws_url)
         try:
             yield ws
@@ -490,7 +509,7 @@ class ComfyUiWebservice(WebService):
     @staticmethod
     def parse_percentage_from_websocket_message(websocket_text: str) -> Optional[float]:
         """Attempts to parse a percentage from a ComfyUI websocket message."""
-        status: Optional[Dict[str, Any]] = None
+        status: Optional[dict[str, Any]] = None
         if isinstance(websocket_text, str):
             try:
                 status = json.loads(websocket_text)

@@ -4,7 +4,7 @@ import json
 import logging
 import os
 from argparse import Namespace
-from typing import Optional, Dict, List, cast, Any, Callable, Tuple
+from typing import Optional, cast, Any, Callable
 
 import requests
 from PySide6.QtCore import Signal, QSize, QThread
@@ -185,8 +185,8 @@ class SDWebUIGenerator(ImageGenerator):
         super().__init__(window, image_stack)
         self._server_url = args.server_url if args.server_url != '' else Cache().get(Cache.SD_SERVER_URL)
         self._webservice: Optional[A1111Webservice] = A1111Webservice(self._server_url)
-        self._lora_images: Optional[Dict[str, Optional[QImage]]] = None
-        self._menu_actions: Dict[str, List[QAction]] = {}
+        self._lora_images: Optional[dict[str, Optional[QImage]]] = None
+        self._menu_actions: dict[str, list[QAction]] = {}
         self._connected = False
         self._control_panel: Optional[StableDiffusionPanel] = None
         self._preview = QImage(SD_PREVIEW_IMAGE)
@@ -210,7 +210,7 @@ class SDWebUIGenerator(ImageGenerator):
         """Returns an extended description of this generator."""
         return SD_WEBUI_GENERATOR_DESCRIPTION
 
-    def get_extra_tabs(self) -> List[Tab]:
+    def get_extra_tabs(self) -> list[Tab]:
         """Returns any extra tabs that the generator will add to the main window."""
         if self._controlnet_tab is not None:
             return [self._controlnet_tab]
@@ -279,7 +279,7 @@ class SDWebUIGenerator(ImageGenerator):
                 logger.error(f'Loading controlnet config failed: {err}')
                 cache.set(Cache.CONTROLNET_VERSION, -1.0)
 
-            option_loading_params: Tuple[Tuple[str, Callable[[], List[str]]], ...] = (
+            option_loading_params: tuple[tuple[str, Callable[[], list[str]]], ...] = (
                 (Cache.SAMPLING_METHOD, self._webservice.get_samplers),
                 (Cache.UPSCALE_METHOD, self._webservice.get_upscalers)
             )
@@ -290,7 +290,7 @@ class SDWebUIGenerator(ImageGenerator):
             # load various option lists:
             for config_key, option_loading_fn in option_loading_params:
                 try:
-                    options = cast(List[ParamType], option_loading_fn())
+                    options = cast(list[ParamType], option_loading_fn())
                     if options is not None and len(options) > 0:
                         if config_key in cache.get_keys():
                             cache.update_options(config_key, options)
@@ -302,9 +302,9 @@ class SDWebUIGenerator(ImageGenerator):
             webui_config = A1111Config()
             try:
                 webui_config.load_all(self._webservice)
-                model_list = webui_config.get_options(A1111Config.SD_MODEL_CHECKPOINT)
-                model_list.sort()
-                cache.update_options(Cache.SD_MODEL, model_list)
+                model_option_list = cast(list[str], webui_config.get_options(A1111Config.SD_MODEL_CHECKPOINT))
+                model_option_list.sort()
+                cache.update_options(Cache.SD_MODEL, model_option_list)
                 cache.set(Cache.SD_MODEL, webui_config.get(A1111Config.SD_MODEL_CHECKPOINT))
             except (KeyError, RuntimeError) as err:
                 logger.error(f'error loading model list from {self._server_url}: {err}')
@@ -457,7 +457,7 @@ class SDWebUIGenerator(ImageGenerator):
             prompt_ready = Signal(str)
             error_signal = Signal(Exception)
 
-            def signals(self) -> List[Signal]:
+            def signals(self) -> list[Signal]:
                 return [self.prompt_ready, self.error_signal]
 
         def _interrogate(prompt_ready: Signal, error_signal: Signal) -> None:
@@ -519,7 +519,7 @@ class SDWebUIGenerator(ImageGenerator):
                 self._id = task_id
                 self.should_stop = False
 
-            def signals(self) -> List[Signal]:
+            def signals(self) -> list[Signal]:
                 return [external_status_signal if external_status_signal is not None else self.status_signal]
 
             def _check_progress(self, status_signal) -> None:
@@ -596,7 +596,7 @@ class SDWebUIGenerator(ImageGenerator):
             image_ready = Signal(QImage)
             error_signal = Signal(Exception)
 
-            def signals(self) -> List[Signal]:
+            def signals(self) -> list[Signal]:
                 return [self.image_ready, self.error_signal]
 
         def _upscale(image_ready: Signal, error_signal: Signal) -> None:
@@ -694,10 +694,7 @@ class SDWebUIGenerator(ImageGenerator):
                 raise RuntimeError(ERROR_MESSAGE_EXISTING_OPERATION)
             self._async_progress_check(status_signal)
             if edit_mode == EDIT_MODE_TXT2IMG:
-                gen_size = Cache().get(Cache.GENERATION_SIZE)
-                width = gen_size.width()
-                height = gen_size.height()
-                image_data, info = self._webservice.txt2img(width, height, image=source_image)
+                image_data, info = self._webservice.txt2img(control_image=source_image)
             else:
                 assert source_image is not None
                 image_data, info = self._webservice.img2img(source_image, mask=mask_image)
@@ -716,16 +713,6 @@ class SDWebUIGenerator(ImageGenerator):
         except Exception as unexpected_err:
             logger.error('Unexpected error:', unexpected_err)
             raise RuntimeError(f'unexpected error: {unexpected_err}') from unexpected_err
-
-    def _update_styles(self, style_list: List[Dict[str, str]]) -> None:
-        try:
-            assert self._webservice is not None
-            self._webservice.set_styles(style_list)
-        except RuntimeError as err:
-            show_error_dialog(None, STYLE_ERROR_TITLE, err)
-            return
-        style_strings = [json.dumps(style) for style in style_list]
-        Cache().update_options(Cache.STYLES, cast(List[ParamType], style_strings))
 
     @menu_action(MENU_STABLE_DIFFUSION, 'prompt_style_shortcut', 200, [APP_STATE_EDITING],
                  condition_check=_check_prompt_styles_available)
@@ -749,7 +736,7 @@ class SDWebUIGenerator(ImageGenerator):
             class _LoadingTask(AsyncTask):
                 status = Signal(str)
 
-                def signals(self) -> List[Signal]:
+                def signals(self) -> list[Signal]:
                     return [self.status]
 
             def _load_and_open(status_signal: Signal) -> None:

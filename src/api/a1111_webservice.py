@@ -5,8 +5,7 @@ through stable-diffusion.
 import io
 import json
 import logging
-import os
-from typing import Optional, List, Dict, Any
+from typing import Optional, Any, cast
 
 import requests  # type: ignore
 from PIL import Image  # type: ignore
@@ -14,11 +13,14 @@ from PySide6.QtCore import QByteArray
 from PySide6.QtGui import QImage
 from requests import Response
 
+from src.api.controlnet_preprocessor import ControlNetPreprocessor
 from src.api.webservice import WebService
+from src.api.webui.controlnet_constants import CONTROLNET_SCRIPT_KEY, ControlNetModuleRes
+from src.api.webui.diffusion_request_body import DiffusionRequestBody
+from src.api.webui.script_info_types import ScriptRequestData
 from src.config.application_config import AppConfig
 from src.config.cache import Cache
 from src.ui.modal.login_modal import LoginModal
-from src.util.shared_constants import CONTROLNET_REUSE_IMAGE_CODE
 from src.util.visual.image_utils import image_to_base64, qimage_from_base64
 
 logger = logging.getLogger(__name__)
@@ -74,31 +76,6 @@ class A1111Webservice(WebService):
     class ForgeEndpoints:
         """REST API endpoint constants (Forge WebUI alternates)"""
         SD_MODULES = '/sdapi/v1/sd-modules'
-
-    class ImgParams:
-        """Image generation body key constants."""
-        INIT_IMAGES = 'init_images'
-        DENOISING = 'denoising_strength'
-        WIDTH = 'width'
-        HEIGHT = 'height'
-        MASK = 'mask'
-        MASK_BLUR = 'mask_blur'
-        MASK_INVERT = 'inpainting_mask_invert'
-        INPAINT_FILL = 'inpainting_fill'
-        INPAINT_FULL_RES = 'inpaint_full_res'
-        INPAINT_FULL_RES_PADDING = 'inpaint_full_res_padding'
-        PROMPT = 'prompt'
-        NEGATIVE = 'negative_prompt'
-        SEED = 'seed'
-        BATCH_SIZE = 'batch_size'
-        BATCH_COUNT = 'n_iter'
-        STEPS = 'steps'
-        CFG_SCALE = 'cfg_scale'
-        RESTORE_FACES = 'restore_faces'
-        TILING = 'tiling'
-        OVERRIDE_SETTINGS = 'override_settings'
-        SAMPLER_IDX = 'sampler_index'
-        ALWAYS_ON_SCRIPTS = 'alwayson_scripts'
 
     # General utility:
     def login_check(self):
@@ -164,31 +141,34 @@ class A1111Webservice(WebService):
         """
         return self.get(A1111Webservice.Endpoints.PROGRESS).json()
 
+    def get_controlnet_preprocessors(self) -> list[ControlNetPreprocessor]:
+        """Queries the API for ControlNet preprocessor modules, and parameterizes and returns all options."""
+        preprocessors: list[ControlNetPreprocessor] = []
+        modules = cast(ControlNetModuleRes, self.get_controlnet_modules())
+        module_names = modules['module_list']
+        module_details = None if 'module_details' not in modules else modules['module_details']
+        for module_name in module_names:
+            if module_details is None or module_name not in module_details:
+                preprocessors.append(ControlNetPreprocessor.from_webui_predefined(module_name))
+            else:
+                preprocessors.append(ControlNetPreprocessor.from_webui_module_details(module_name,
+                                                                                      module_details[module_name]))
+        return preprocessors
+
     # Image manipulation:
-    def img2img(self,
-                image: QImage,
-                mask: Optional[QImage] = None,
-                width: Optional[int] = None,
-                height: Optional[int] = None,
-                overrides: Optional[dict] = None,
-                scripts: Optional[Dict[str, Any]] = None) -> Response | tuple[List[QImage], Dict[str, Any] | None]:
+    def img2img(self, image: QImage, mask: Optional[QImage] = None,
+                request_body: Optional[DiffusionRequestBody] = None) -> Response | tuple[list[QImage], dict[str, Any] | None]:
         """Starts a request to alter an image section using selected parameters.
 
         Parameters
         ----------
-        image : QImage
-            Source image, usually contents of the ImageStack image generation area.
-        mask : QImage, optional
-            A 1-bit image mask that's the same size as the image parameter, used to mark which areas should be altered.
-            If not provided, the entire image will be altered.
-        width : int, optional
-            Generated image width requested, in pixels. If not provided, width of the image parameter is used.
-        height : int, optional
-            Generated image height requested, in pixels. If not provided, height of the image parameter is used.
-        overrides : dict, optional
-            A dict of request body parameters that should override parameters derived from the config.
-        scripts : list, optional
-            Array of parameters to add to the request that will trigger stable-diffusion-webui scripts or extensions.
+        image: QImage
+            Source image to transform. If request_body is not None, and it already has an image, this parameter is
+            ignored.
+        mask: Optional[QImage] = None
+            Optional inpainting mask.  This will also be ignored if request_body is not None, and it already has a mask.
+        request_body : Optional[DiffusionRequestBody] = None
+            Optional initial request body to use. If None, a new one will be constructed from cache/config parameters.
         Returns
         -------
         list of QImages
@@ -196,43 +176,29 @@ class A1111Webservice(WebService):
         dict or None
             Any additional information sent back with the generated images.
         """
-        config = AppConfig()
-        cache = Cache()
-        body = self._get_base_diffusion_body(image, scripts)
-        body[A1111Webservice.ImgParams.INIT_IMAGES] = [image_to_base64(image, include_prefix=True)]
-        body[A1111Webservice.ImgParams.DENOISING] = cache.get(Cache.DENOISING_STRENGTH)
-        body[A1111Webservice.ImgParams.WIDTH] = image.width() if width is None else width
-        body[A1111Webservice.ImgParams.HEIGHT] = image.height() if height is None else height
-        if mask is not None:
-            body[A1111Webservice.ImgParams.MASK] = image_to_base64(mask, include_prefix=True)
-            body[A1111Webservice.ImgParams.MASK_BLUR] = config.get(AppConfig.MASK_BLUR)
-            body[A1111Webservice.ImgParams.INPAINT_FILL] = cache.get_option_index(Cache.MASKED_CONTENT)
-            body[A1111Webservice.ImgParams.MASK_INVERT] = 0  # Don't invert
-            body[A1111Webservice.ImgParams.INPAINT_FULL_RES] = cache.get(Cache.INPAINT_FULL_RES)
-            body[A1111Webservice.ImgParams.INPAINT_FULL_RES_PADDING] = cache.get(Cache.INPAINT_FULL_RES_PADDING)
-        if overrides is not None:
-            for key in overrides:
-                body[key] = overrides[key]
-        res = self.post(A1111Webservice.Endpoints.IMG2IMG, body)
+        if request_body is None:
+            request_body = DiffusionRequestBody()
+            request_body.load_data(image, mask)
+        else:
+            if request_body.init_images is None:
+                request_body.init_images = [image_to_base64(image, True)]
+            elif len(request_body.init_images) == 0:
+                request_body.init_images.append(image_to_base64(image, True))
+            if request_body.mask is None and mask is not None:
+                request_body.mask = image_to_base64(mask, True)
+        res = self.post(A1111Webservice.Endpoints.IMG2IMG, request_body.to_dict())
         return self._handle_image_response(res)
 
-    def txt2img(self,
-                width: Optional[int] = None,
-                height: Optional[int] = None,
-                scripts: Optional[Dict[str, Any]] = None,
-                image: Optional[QImage] = None) -> Response | tuple[List[QImage], Dict[str, Any] | None]:
-        """Starts a request to generate new images using selected parameters.
+    def txt2img(self, request_body: Optional[DiffusionRequestBody] = None,
+                control_image: Optional[QImage] = None) -> Response | tuple[list[QImage], dict[str, Any] | None]:
+        """Starts a request to generate new images using selected parameter.
 
         Parameters
         ----------
-        width : int, optional
-            Generated image width requested, in pixels.
-        height : int, optional
-            Generated image height requested, in pixels.
-        scripts : list, optional
-            Array of parameters to add to the request that will trigger stable-diffusion-webui scripts or extensions.
-        image: QImage, optional
-            If scripts use an image to augment image generation, it should be provided through this parameter.
+        request_body : Optional[DiffusionRequestBody] = None
+            Optional initial request body to use. If None, a new one will be constructed from cache/config parameters.
+        control_image: Optional[QImage]
+            Optional image to use for ControlNet. If request_body is already defined, this will instead be ignored.
         Returns
         -------
         list of QImages
@@ -240,16 +206,16 @@ class A1111Webservice(WebService):
         dict or None
             Any additional information sent back with the generated images.
         """
-        body = self._get_base_diffusion_body(image, scripts)
-        body[A1111Webservice.ImgParams.WIDTH] = width
-        body[A1111Webservice.ImgParams.HEIGHT] = height
-        res = self.post(A1111Webservice.Endpoints.TXT2IMG, body)
+        if request_body is None:
+            request_body = DiffusionRequestBody()
+            request_body.load_data(image=control_image)
+        res = self.post(A1111Webservice.Endpoints.TXT2IMG, request_body.to_dict())
         return self._handle_image_response(res)
 
     def upscale(self,
                 image: QImage,
                 width: int,
-                height: int) -> Response | tuple[List[QImage], Dict[str, Any] | None]:
+                height: int) -> Response | tuple[list[QImage], dict[str, Any] | None]:
         """Starts a request to upscale an image.
 
         Parameters
@@ -270,47 +236,51 @@ class A1111Webservice(WebService):
         config = AppConfig()
         cache = Cache()
         if cache.get(Cache.CONTROLNET_UPSCALING):
-            scripts = {
-                'controlNet': {
-                    'args': [{
-                        'module': 'tile_resample',
-                        'model': config.get(AppConfig.CONTROLNET_TILE_MODEL),
-                        'threshold_a': cache.get(Cache.CONTROLNET_DOWNSAMPLE_RATE)
-                    }]
+            request_body = DiffusionRequestBody()
+            request_body.load_data()
+            if request_body.alwayson_scripts is None:
+                request_body.alwayson_scripts = {}
+            controlnet_script_data: ScriptRequestData = {'args': [
+                {
+                    'module': 'tile_resample',
+                    'model': config.get(AppConfig.CONTROLNET_TILE_MODEL),
+                    'threshold_a': cache.get(Cache.CONTROLNET_DOWNSAMPLE_RATE)
                 }
-            }
-            overrides: Dict[str, Any] = {
-                'width': width,
-                'height': height,
-                'batch_size': 1,
-                'n_iter': 1
-            }
-            upscaler = cache.get(Cache.UPSCALE_METHOD)
-            if upscaler != 'None':
-                script_list = cache.get(Cache.SCRIPTS_IMG2IMG)
-                if UPSCALE_SCRIPT in script_list:
-                    overrides['script_name'] = UPSCALE_SCRIPT
-                    overrides['script_args'] = [
-                        None,  # not used
-                        cache.get(Cache.GENERATION_SIZE).width(),  # tile width
-                        cache.get(Cache.GENERATION_SIZE).height(),  # tile height
-                        8,  # mask_blur
-                        32,  # padding
-                        64,  # seams_fix_width
-                        0.35,  # seams_fix_denoise
-                        32,  # seams_fix_padding
-                        cache.get_options(Cache.UPSCALE_METHOD).index(upscaler),  # upscaler_index
-                        False,  # save_upscaled_image a.k.a Upscaled
-                        0,  # redraw_mode (linear)
-                        False,  # save_seams_fix_image a.k.a Seams fix
-                        8,  # seams_fix_mask_blur
-                        0,  # seams_fix_type (none)
-                        1,  # target_size_type (use below)
-                        width,  # custom_width
-                        height,  # custom_height
-                        None  # custom_scale (ignored)
+            ]}
+            request_body.alwayson_scripts[CONTROLNET_SCRIPT_KEY] = controlnet_script_data
+            request_body.width = width
+            request_body.height = height
+            request_body.batch_size = 1
+            request_body.n_iter = 1
+            request_body.add_init_image(image)
+            script_list = cache.get(Cache.SCRIPTS_IMG2IMG)
+            if UPSCALE_SCRIPT in script_list:
+                upscaler = cache.get(Cache.UPSCALE_METHOD)
+                upscale_options = cache.get_options(Cache.UPSCALE_METHOD)
+                if upscaler not in upscale_options:
+                    upscaler = upscale_options[0]
+                request_body.script_name = UPSCALE_SCRIPT
+                request_body.script_args = [
+                    None,  # not used
+                    cache.get(Cache.GENERATION_SIZE).width(),  # tile width
+                    cache.get(Cache.GENERATION_SIZE).height(),  # tile height
+                    8,  # mask_blur
+                    32,  # padding
+                    64,  # seams_fix_width
+                    0.35,  # seams_fix_denoise
+                    32,  # seams_fix_padding
+                    upscale_options.index(upscaler),  # upscaler_index
+                    False,  # save_upscaled_image a.k.a Upscaled
+                    0,  # redraw_mode (linear)
+                    False,  # save_seams_fix_image a.k.a Seams fix
+                    8,  # seams_fix_mask_blur
+                    0,  # seams_fix_type (none)
+                    1,  # target_size_type (use below)
+                    width,  # custom_width
+                    height,  # custom_height
+                    None  # custom_scale (ignored)
                     ]
-            return self.img2img(image, width=width, height=height, overrides=overrides, scripts=scripts)
+            return self.img2img(image, None, request_body)
         # otherwise, normal upscaling without controlNet:
         body = {
             'resize_mode': 1,
@@ -349,52 +319,7 @@ class A1111Webservice(WebService):
         res = self.post(A1111Webservice.Endpoints.INTERRUPT, body={})
         return res.json()
 
-    @staticmethod
-    def _get_base_diffusion_body(image: Optional[QImage] = None,
-                                 scripts: Optional[dict] = None) -> dict:
-        config = AppConfig()
-        cache = Cache()
-        body = {
-            A1111Webservice.ImgParams.PROMPT: cache.get(Cache.PROMPT),
-            A1111Webservice.ImgParams.SEED: cache.get(Cache.SEED),
-            A1111Webservice.ImgParams.BATCH_SIZE: cache.get(Cache.BATCH_SIZE),
-            A1111Webservice.ImgParams.BATCH_COUNT: cache.get(Cache.BATCH_COUNT),
-            A1111Webservice.ImgParams.STEPS: cache.get(Cache.SAMPLING_STEPS),
-            A1111Webservice.ImgParams.CFG_SCALE: cache.get(Cache.GUIDANCE_SCALE),
-            A1111Webservice.ImgParams.RESTORE_FACES: config.get(AppConfig.RESTORE_FACES),
-            A1111Webservice.ImgParams.TILING: config.get(AppConfig.TILING),
-            A1111Webservice.ImgParams.NEGATIVE: cache.get(Cache.NEGATIVE_PROMPT),
-            A1111Webservice.ImgParams.OVERRIDE_SETTINGS: {},
-            A1111Webservice.ImgParams.SAMPLER_IDX: cache.get(Cache.SAMPLING_METHOD),
-            A1111Webservice.ImgParams.ALWAYS_ON_SCRIPTS: {}
-        }
-        for controlnet_key in (Cache.CONTROLNET_ARGS_0, Cache.CONTROLNET_ARGS_1, Cache.CONTROLNET_ARGS_2):
-            controlnet = dict(cache.get(controlnet_key))
-            if len(controlnet) > 0 and 'model' in controlnet:
-                if 'image' in controlnet:
-                    if controlnet['image'] == CONTROLNET_REUSE_IMAGE_CODE and image is not None:
-                        controlnet['image'] = image_to_base64(image, include_prefix=True)
-                    elif os.path.exists(controlnet['image']):
-                        try:
-                            controlnet['image'] = image_to_base64(controlnet['image'], include_prefix=True)
-                        except (IOError, KeyError) as err:
-                            logger.error(f"Error loading controlnet image {controlnet['image']}: {err}")
-                            del controlnet['image']
-                    else:
-                        del controlnet['image']
-                    empty_keys = [k for k, value in controlnet.items() if value is None]
-                    for empty_key in empty_keys:
-                        del controlnet[empty_key]
-                if scripts is None:
-                    scripts = {}
-                if 'controlNet' not in scripts:
-                    scripts['controlNet'] = {'args': []}
-                scripts['controlNet']['args'].append(controlnet)
-        if scripts is not None:
-            body['alwayson_scripts'] = scripts
-        return body
-
-    def _handle_image_response(self, res: Response) -> Response | tuple[List[QImage], Dict[str, Any] | None]:
+    def _handle_image_response(self, res: Response) -> Response | tuple[list[QImage], dict[str, Any] | None]:
         if res.status_code != 200:
             return res
         res_body = res.json()
@@ -440,7 +365,7 @@ class A1111Webservice(WebService):
         res_body = self.get(A1111Webservice.Endpoints.STYLES).json()
         return [json.dumps(s) for s in res_body]
 
-    def set_styles(self, style_list: List[Dict[str, str]]) -> None:
+    def set_styles(self, style_list: list[dict[str, str]]) -> None:
         """Updates the set of available styles. NOTE: this currently does not work, the endpoint has no POST support.
         I'm going to submit a PR to fix it at some point."""
         self.post(A1111Webservice.Endpoints.STYLES, json.dumps(style_list))

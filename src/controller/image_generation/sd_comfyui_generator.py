@@ -1,7 +1,7 @@
 """Generates images through the Stable-Diffusion ComfyUI"""
 import logging
 from argparse import Namespace
-from typing import Optional, Dict, List, cast, Any
+from typing import Optional, cast, Any
 
 import requests
 from PySide6.QtCore import Signal, QSize, QThread
@@ -10,7 +10,7 @@ from PySide6.QtWidgets import QInputDialog, QApplication
 from requests import ReadTimeout
 
 from src.api.a1111_webservice import AuthError
-from src.api.comfyui.nodes import SAMPLER_OPTIONS, SCHEDULER_OPTIONS
+from src.api.comfyui.nodes.ksampler_node import SAMPLER_OPTIONS, SCHEDULER_OPTIONS
 from src.api.comfyui_webservice import ComfyUiWebservice, ComfyModelType, AsyncTaskProgress, AsyncTaskStatus
 from src.config.application_config import AppConfig
 from src.config.cache import Cache
@@ -83,7 +83,6 @@ SD_COMFYUI_GENERATOR_SETUP = _tr("""
 """)
 
 TASK_STATUS_QUEUED = _tr('Waiting, position {queue_number} in queue.')
-TASK_STATUS_QUEUED = _tr('Waiting, position {queue_number} in queue.')
 TASK_STATUS_GENERATING = _tr('Generating...')
 TASK_STATUS_BATCH_NUMBER = _tr('Batch {batch_num} of {num_batches}:')
 
@@ -124,7 +123,7 @@ class SDComfyUIGenerator(ImageGenerator):
         super().__init__(window, image_stack)
         self._server_url = args.server_url if args.server_url != '' else Cache().get(Cache.SD_SERVER_URL)
         self._webservice: Optional[ComfyUiWebservice] = ComfyUiWebservice(self._server_url)
-        self._menu_actions: Dict[str, List[QAction]] = {}
+        self._menu_actions: dict[str, list[QAction]] = {}
         self._connected = False
         self._control_panel: Optional[StableDiffusionPanel] = None
         self._preview = QImage(SD_PREVIEW_IMAGE)
@@ -223,7 +222,7 @@ class SDComfyUIGenerator(ImageGenerator):
                         cache.restore_default_options(cache_key)
                         # Combine default options with dynamic options. This is so we can support having default
                         # options like "any"/"none"/"auto" when appropriate.
-                        option_list = cache.get_options(cache_key)
+                        option_list = cast(list[str], cache.get_options(cache_key))
                         for option in model_list:
                             if option not in option_list:
                                 option_list.append(option)
@@ -318,7 +317,8 @@ class SDComfyUIGenerator(ImageGenerator):
         # assert self._webservice is not None
         # web_config = A1111Config()
         # web_categories = web_config.get_categories()
-        web_keys = []  # web_keys = [key for cat in web_categories for key in web_config.get_category_keys(cat)]
+        # web_keys = [key for cat in web_categories for key in web_config.get_category_keys(cat)]
+        web_keys: list[str] = []
 
         # TODO: sort stable-diffusion config between ComfyUI and WebUI compatible options.
         app_keys = AppConfig().get_category_keys(STABLE_DIFFUSION_CONFIG_CATEGORY)
@@ -410,6 +410,7 @@ class SDComfyUIGenerator(ImageGenerator):
                         status_text = (f'{TASK_STATUS_BATCH_NUMBER.format(batch_num=batch_num, num_batches=num_batches)}'
                                        f' {status_text}')
                     status_text = f'{status_text}\n{last_percentage}%'
+                    assert external_status_signal is not None
                     external_status_signal.emit({'progress': status_text})
                 except ReadTimeout:
                     error_count += 1
@@ -536,7 +537,7 @@ class SDComfyUIGenerator(ImageGenerator):
         cache = Cache()
         loras = cache.get(Cache.LORA_MODELS)
 
-        def _structure_lora_data(file) -> Dict[str, str]:
+        def _structure_lora_data(file) -> dict[str, str]:
             if '.' in file:
                 name = file[:file.rindex('.')]
             else:

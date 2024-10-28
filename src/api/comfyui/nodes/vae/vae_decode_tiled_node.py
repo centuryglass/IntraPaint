@@ -1,5 +1,5 @@
 """A ComfyUI node used to decode latent image data in tiled blocks."""
-from typing import TypedDict, NotRequired, cast, Dict, Any
+from typing import TypedDict, NotRequired, cast, Any
 
 from src.api.comfyui.nodes.comfy_node import NodeConnection, ComfyNode
 
@@ -38,4 +38,4 @@ class VAEDecodeTiledNode(ComfyNode):
             VAEDecodeTiledNode.VAE
         }
         data: VAEDecodeTiledInputs = {'tile_size': tile_size}
-        super().__init__(NODE_NAME, cast(Dict[str, Any], data), connection_params, 1)
+        super().__init__(NODE_NAME, cast(dict[str, Any], data), connection_params, 1)

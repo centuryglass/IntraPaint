@@ -1,5 +1,5 @@
 """Typedefs for ComfyUI API data."""
-from typing import TypeAlias, Literal, TypedDict, Optional, List, Tuple, NotRequired, Dict, Any, NamedTuple
+from typing import TypeAlias, Literal, TypedDict, Optional, NotRequired, Any
 
 # Misc. types used within multiple request/response objects:
 FileType: TypeAlias = Literal['input', 'temp', 'output']
@@ -32,6 +32,10 @@ NodeReturnType: TypeAlias = Literal[
                             ] | ComplexTypes
 
 DisplayType: TypeAlias = Literal['color', 'number', 'slider']
+
+CONTROLNET_PREPROCESSOR_CATEGORY = 'ControlNet Preprocessors'
+CONTROLNET_PREPROCESSOR_OUTPUT_NAME = ['IMAGE']
+CONTROLNET_PREPROCESSOR_REQUIRED_INPUT = 'image'
 
 
 class ParamDef(TypedDict):
@@ -69,19 +73,19 @@ class BoolParamDef(ParamDef):
     default: bool
 
 
-IntParam: TypeAlias = Tuple[Literal['INT'], IntParamDef]
-BoolParam: TypeAlias = Tuple[Literal['BOOLEAN'], BoolParamDef]
-FloatParam: TypeAlias = Tuple[Literal['FLOAT'], FloatParamDef]
-StrOptionParam: TypeAlias = Tuple[List[str]] | Tuple[List[str], ParamDef]
-CustomTypedParam: TypeAlias = Tuple[ComplexInputType] | Tuple[ComplexInputType, ParamDef]
+IntParam: TypeAlias = tuple[Literal['INT'], IntParamDef]
+BoolParam: TypeAlias = tuple[Literal['BOOLEAN'], BoolParamDef]
+FloatParam: TypeAlias = tuple[Literal['FLOAT'], FloatParamDef]
+StrOptionParam: TypeAlias = tuple[list[str]] | tuple[list[str], ParamDef]
+CustomTypedParam: TypeAlias = tuple[ComplexInputType] | tuple[ComplexInputType, ParamDef]
 InputParam: TypeAlias = IntParam | FloatParam | BoolParam | StrOptionParam \
                         | CustomTypedParam
 
 
 class InputTypeDef(TypedDict):
     """Defines inputs for a ComfyUI node."""
-    required: Dict[str, InputParam]
-    optional: NotRequired[Dict[str, InputParam]]
+    required: dict[str, InputParam]
+    optional: NotRequired[dict[str, InputParam]]
 
 
 # API request/parameter/response types, by endpoint:
@@ -133,7 +137,7 @@ class SystemObject(TypedDict):
     python_version: str
     pytorch_version: str
     embedded_python: bool
-    argv: List[str]
+    argv: list[str]
 
 
 class DeviceObject(TypedDict):
@@ -150,16 +154,16 @@ class DeviceObject(TypedDict):
 class SystemStatResponse(TypedDict):
     """Response body format for the SYSTEM_STATS endpoint."""
     system: SystemObject
-    devices: List[DeviceObject]
+    devices: list[DeviceObject]
 
 
 class NodeInfoResponse(TypedDict):
     """Response defining a ComfyUI node."""
     input: InputTypeDef
-    input_order: Dict[Literal['required', 'optional'], List[str]]
-    output: Tuple[NodeReturnType]
-    output_is_list: List[bool]  # length should match output
-    output_name: List[str]  # Length should match output
+    input_order: dict[Literal['required', 'optional'], list[str]]
+    output: tuple[NodeReturnType]
+    output_is_list: list[bool]  # length should match output
+    output_name: list[str]  # Length should match output
     name: str
     display_name: str
     description: str
@@ -173,8 +177,8 @@ class NodeInfoResponse(TypedDict):
 # QUEUED PROMPT/TASK DATA:
 
 # Entry structure: (task_number, UUID, workflow, optional_extra_data)
-QueueEntry: TypeAlias = Tuple[int, str, Dict[str, Dict[str, Any]]] \
-                        | Tuple[int, str, Dict[str, Dict[str, Any]], Dict[str, Any]]
+QueueEntry: TypeAlias = tuple[int, str, dict[str, dict[str, Any]]] \
+                        | tuple[int, str, dict[str, dict[str, Any]], dict[str, Any]]
 
 ACTIVE_QUEUE_KEY = 'queue_running'
 PENDING_QUEUE_KEY = 'queue_pending'
@@ -182,17 +186,17 @@ PENDING_QUEUE_KEY = 'queue_pending'
 
 class QueueInfoResponse(TypedDict):
     """Response structure used when getting queued task info."""
-    queue_running: List[QueueEntry]
-    queue_pending: List[QueueEntry]
+    queue_running: list[QueueEntry]
+    queue_pending: list[QueueEntry]
 
 
 class QueueAdditionRequest(TypedDict):
     """Body structure to use when adding to the ComfyUI queue."""
-    prompt: Dict[str, Any]
+    prompt: dict[str, Any]
     number: NotRequired[int]  # Sets priority
     front: NotRequired[bool]  # Pushes this job ahead of others
     client_id: NotRequired[str]  # Optional extra identifier
-    extra_data: NotRequired[Dict[str, Any]]  # Associate some extra
+    extra_data: NotRequired[dict[str, Any]]  # Associate some extra
 
 
 class ErrorEntry(TypedDict):
@@ -200,13 +204,13 @@ class ErrorEntry(TypedDict):
     type: str
     message: str
     details: str
-    extra_info: Dict[str, str]
+    extra_info: dict[str, str]
 
 
 class NodeErrorEntry(TypedDict):
     """Defines error data for a single node."""
-    errors: List[ErrorEntry]
-    dependent_outputs: List[str]  # connected node ids
+    errors: list[ErrorEntry]
+    dependent_outputs: list[str]  # connected node ids
     class_type: str
 
 
@@ -215,44 +219,44 @@ class QueueAdditionResponse(TypedDict):
     prompt_id: NotRequired[str]  # UUID, omitted on error
     number: NotRequired[int]  # Queue number/priority, omitted on error
     error: NotRequired[str | ErrorEntry]
-    node_errors: List[NodeErrorEntry]
+    node_errors: list[NodeErrorEntry]
     seed: NotRequired[int]  # Not added by the API, used for tracking last seed values and handling sequential batches.
 
 
 class QueueDeletionRequest(TypedDict):
     """Request structure used to delete queue items."""
     clear: NotRequired[bool]  # If true, the whole queue is wiped.
-    delete: NotRequired[List[str]]  # Set specific queued items to delete.
+    delete: NotRequired[list[str]]  # Set specific queued items to delete.
 
 
 class PromptStatusMessageData(TypedDict):
     """Extra data bundled with queued task messages."""
     prompt_id: str  # UUID
     timestamp: int
-    nodes: NotRequired[List[str]]
+    nodes: NotRequired[list[str]]
 
 
-PromptStatusMessage: TypeAlias = Tuple[str, PromptStatusMessageData]
+PromptStatusMessage: TypeAlias = tuple[str, PromptStatusMessageData]
 
 
 class PromptExecStatus(TypedDict):
     """Status data associated with a task in the history, directly from ComfyUI/execution.py."""
     status_str: Literal['success', 'error']
     completed: bool
-    messages: List[PromptStatusMessage]
+    messages: list[PromptStatusMessage]
 
 
 class PromptExecOutputs(TypedDict):
     """Returns generated file info for a completed task."""
-    images: List[ImageFileReference]
+    images: list[ImageFileReference]
     # TODO: track down format for other possible output types
 
 
 class PromptHistory(TypedDict):
     """Prompt execution data from the /history endpoint."""
     prompt: QueueEntry
-    outputs: Dict[str, Dict[str, PromptExecOutputs]]  # keys are output node ids
+    outputs: dict[str, dict[str, PromptExecOutputs]]  # keys are output node ids
     status: PromptExecStatus
 
 
-QueueHistoryResponse: TypeAlias = Dict[str, PromptHistory]  # key is prompt_id
+QueueHistoryResponse: TypeAlias = dict[str, PromptHistory]  # key is prompt_id

@@ -1,28 +1,28 @@
 """Unified class for building text to image, image to image, and inpainting ComfyUI workflows."""
 import random
 from enum import Enum
-from typing import Optional, cast, List, Tuple
+from typing import Optional, cast
 
 from PySide6.QtCore import QSize
 
 import src.api.comfyui.comfyui_types as comfy_type
 from src.api.comfyui.nodes.comfy_node import ComfyNode
-from src.api.comfyui.nodes import ComfyNodeGraph
-from src.api.comfyui.nodes import CheckpointLoaderNode
-from src.api.comfyui.nodes import ClipTextEncodeNode
+from src.api.comfyui.nodes.comfy_node_graph import ComfyNodeGraph
+from src.api.comfyui.nodes.input.checkpoint_loader_node import CheckpointLoaderNode
+from src.api.comfyui.nodes.input.clip_text_encode_node import ClipTextEncodeNode
 from src.api.comfyui.nodes.input.empty_latent_image_node import EmptyLatentNode
 from src.api.comfyui.nodes.input.load_image_mask_node import LoadImageMaskNode
 from src.api.comfyui.nodes.input.load_image_node import LoadImageNode
 from src.api.comfyui.nodes.input.simple_checkpoint_loader_node import SimpleCheckpointLoaderNode
-from src.api.comfyui.nodes import SAMPLER_OPTIONS, SamplerName, SCHEDULER_OPTIONS, SchedulerName, \
+from src.api.comfyui.nodes.ksampler_node import SAMPLER_OPTIONS, SCHEDULER_OPTIONS, SamplerName, SchedulerName, \
     KSamplerNode
 from src.api.comfyui.nodes.latent_mask_node import LatentMaskNode
-from src.api.comfyui.nodes.model_extensions import HypernetLoaderNode
-from src.api.comfyui.nodes.model_extensions import LoraLoaderNode
+from src.api.comfyui.nodes.model_extensions.hypernet_loader_node import HypernetLoaderNode
+from src.api.comfyui.nodes.model_extensions.lora_loader_node import LoraLoaderNode
 from src.api.comfyui.nodes.repeat_latent_node import RepeatLatentNode
 from src.api.comfyui.nodes.save_image_node import SaveImageNode
-from src.api.comfyui.nodes import VAEDecodeNode
-from src.api.comfyui.nodes import VAEEncodeNode
+from src.api.comfyui.nodes.vae.vae_decode_node import VAEDecodeNode
+from src.api.comfyui.nodes.vae.vae_encode_node import VAEEncodeNode
 
 random.seed()
 
@@ -61,10 +61,10 @@ class DiffusionWorkflowBuilder:
         # Optional params that can be set to alter diffusion behavior:
         self._model_config: Optional[str] = None
         self._source_image: Optional[str] = None
-        self._source_mask: Optional[str] = None
+        self._mask: Optional[str] = None
 
         # model_name, model_strength, clip_strength, model_type
-        self._extension_models: List[Tuple[str, float, float, ExtensionModelType]] = []
+        self._extension_models: list[tuple[str, float, float, ExtensionModelType]] = []
 
         # TODO: not yet supported:
         # self._is_inpainting_model = False
@@ -190,29 +190,33 @@ class DiffusionWorkflowBuilder:
         return self._source_image
 
     @source_image.setter
-    def source_image(self, source_image: Optional[str | comfy_type.ImageFileReference]) -> None:
-        if isinstance(source_image, dict):
-            if 'subfolder' in source_image and source_image['subfolder'] != '':
-                source_image = f'{source_image["subfolder"]}/{source_image["filename"]}'
-            else:
-                source_image = source_image['filename']
+    def source_image(self, source_image: Optional[str]) -> None:
         self._source_image = source_image
 
+    @staticmethod
+    def _image_ref_to_str(source_image: comfy_type.ImageFileReference) -> str:
+        if 'subfolder' in source_image and source_image['subfolder'] != '':
+            return f'{source_image["subfolder"]}/{source_image["filename"]}'
+        return source_image['filename']
+
+    def set_source_image_from_reference(self, source_image: comfy_type.ImageFileReference) -> None:
+        """Converts a ComfyUI API image reference to an appropriate string format and assigns it to source_image."""
+        self.source_image = self._image_ref_to_str(source_image)
+
     @property
-    def source_mask(self) -> Optional[str]:
+    def mask(self) -> Optional[str]:
         """Accesses the inpainting mask to apply to the source image.  If None, no mask is used. Otherwise, this needs
            to be a mask that was already uploaded to ComfyUI, and source_image should be set to the matching image
            specified when the mask was uploaded."""
-        return self._source_mask
+        return self._mask
 
-    @source_mask.setter
-    def source_mask(self, source_mask: Optional[str | comfy_type.ImageFileReference]) -> None:
-        if isinstance(source_mask, dict):
-            if 'subfolder' in source_mask and source_mask['subfolder'] != '':
-                source_mask = f'{source_mask["subfolder"]}/{source_mask["filename"]}'
-            else:
-                source_mask = source_mask['filename']
-        self._source_mask = source_mask
+    @mask.setter
+    def mask(self, mask: Optional[str]) -> None:
+        self._mask = mask
+
+    def set_mask_from_reference(self, mask_reference: comfy_type.ImageFileReference) -> None:
+        """Converts a ComfyUI API image reference to an appropriate string format and assigns it to the mask."""
+        self.mask = self._image_ref_to_str(mask_reference)
 
     @property
     def image_size(self) -> QSize:
@@ -288,8 +292,8 @@ class DiffusionWorkflowBuilder:
             latent_out_index = VAEEncodeNode.IDX_LATENT
 
             latent_source_node = RepeatLatentNode(self.batch_size)
-            if self.source_mask is not None:
-                mask_load_node = LoadImageMaskNode(self.source_mask)
+            if self.mask is not None:
+                mask_load_node = LoadImageMaskNode(self.mask)
                 mask_apply_node = LatentMaskNode()
                 workflow.connect_nodes(mask_apply_node, LatentMaskNode.SAMPLES,
                                        latent_image_node, latent_out_index)

@@ -1,5 +1,5 @@
 """A ComfyUI node used to load a hypernetwork model extension."""
-from typing import TypedDict, NotRequired
+from typing import TypedDict, NotRequired, cast, Any
 
 from src.api.comfyui.nodes.comfy_node import NodeConnection, ComfyNode
 
@@ -30,4 +30,4 @@ class HypernetLoaderNode(ComfyNode):
             'hypernetwork_name': hypernetwork_name,
             'strength': strength
         }
-        super().__init__(NODE_NAME, data, connection_params, 1)
+        super().__init__(NODE_NAME, cast(dict[str, Any], data), connection_params, 1)

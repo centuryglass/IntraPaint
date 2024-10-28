@@ -1,5 +1,5 @@
 """A ComfyUI node used to control the diffusion sampling process."""
-from typing import TypedDict, NotRequired, TypeAlias, Literal, List, cast, Dict, Any
+from typing import TypedDict, NotRequired, TypeAlias, Literal, cast, Any
 
 from src.api.comfyui.nodes.comfy_node import NodeConnection, ComfyNode
 
@@ -8,7 +8,7 @@ KSAMPLER_NAME = 'KSampler'
 # Sampler options:  TODO: figure out if these are shared via the API anywhere. The list here is copied from
 #                         https://github.com/comfyanonymous/ComfyUI/blob/master/comfy/samplers.py#L575, and line 736,
 #                         but it would be better to load it dynamically.
-SAMPLER_OPTIONS: List[str] = ['euler', 'euler_cfg_pp', 'euler_ancestral', 'euler_ancestral_cfg_pp', 'heun', 'heunpp2',
+SAMPLER_OPTIONS: list[str] = ['euler', 'euler_cfg_pp', 'euler_ancestral', 'euler_ancestral_cfg_pp', 'heun', 'heunpp2',
                               'dpm_2', 'dpm_2_ancestral', 'lms', 'dpm_fast', 'dpm_adaptive', 'dpmpp_2s_ancestral',
                               'dpmpp_2s_ancestral_cfg_pp', 'dpmpp_sde', 'dpmpp_sde_gpu', 'dpmpp_2m', 'dpmpp_2m_cfg_pp',
                               'dpmpp_2m_sde', 'dpmpp_2m_sde_gpu', 'dpmpp_3m_sde', 'dpmpp_3m_sde_gpu', 'ddpm', 'lcm',
@@ -20,7 +20,7 @@ SamplerName: TypeAlias = Literal[
     'dpmpp_2m_sde', 'dpmpp_2m_sde_gpu', 'dpmpp_3m_sde', 'dpmpp_3m_sde_gpu', 'ddpm', 'lcm',
     'ipndm', 'ipndm_v', 'deis', 'ddim', 'uni_pc', 'uni_pc_bh2']
 
-SCHEDULER_OPTIONS: List[str] = ['normal', 'karras', 'exponential', 'sgm_uniform', 'simple', 'ddim_uniform', 'beta']
+SCHEDULER_OPTIONS: list[str] = ['normal', 'karras', 'exponential', 'sgm_uniform', 'simple', 'ddim_uniform', 'beta']
 SchedulerName: TypeAlias = Literal['normal', 'karras', 'exponential', 'sgm_uniform', 'simple', 'ddim_uniform', 'beta']
 
 
@@ -66,4 +66,4 @@ class KSamplerNode(ComfyNode):
             KSamplerNode.NEGATIVE,
             KSamplerNode.POSITIVE
         }
-        super().__init__(KSAMPLER_NAME, cast(Dict[str, Any], data), connection_params, 1)
+        super().__init__(KSAMPLER_NAME, cast(dict[str, Any], data), connection_params, 1)

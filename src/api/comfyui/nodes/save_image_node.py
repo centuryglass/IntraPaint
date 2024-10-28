@@ -1,5 +1,5 @@
 """A ComfyUI node used to save image data."""
-from typing import TypedDict, NotRequired, cast, Dict, Any
+from typing import TypedDict, NotRequired, cast, Any
 
 from src.api.comfyui.nodes.comfy_node import NodeConnection, ComfyNode
 
@@ -22,4 +22,4 @@ class SaveImageNode(ComfyNode):
         data: SaveImageInputs = {
             'filename_prefix': filename_prefix
         }
-        super().__init__(NODE_NAME, cast(Dict[str, Any], data), {SaveImageNode.IMAGES}, 0)
+        super().__init__(NODE_NAME, cast(dict[str, Any], data), {SaveImageNode.IMAGES}, 0)

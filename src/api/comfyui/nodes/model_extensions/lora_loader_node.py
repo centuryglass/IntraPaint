@@ -1,6 +1,6 @@
 """A ComfyUI node used to load a LORA extension model.
 """
-from typing import TypedDict, NotRequired
+from typing import TypedDict, NotRequired, cast, Any
 
 from src.api.comfyui.nodes.comfy_node import NodeConnection, ComfyNode
 
@@ -37,4 +37,4 @@ class LoraLoaderNode(ComfyNode):
             'strength_model': strength_model,
             'strength_clip': strength_clip
         }
-        super().__init__(NODE_NAME, data, connection_params, 2)
+        super().__init__(NODE_NAME, cast(dict[str, Any], data), connection_params, 2)

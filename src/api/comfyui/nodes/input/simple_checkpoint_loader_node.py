@@ -1,5 +1,5 @@
 """A ComfyUI node used to load a basic Stable-Diffusion model."""
-from typing import TypedDict, cast, Dict, Any
+from typing import TypedDict, cast, Any
 
 from src.api.comfyui.nodes.comfy_node import ComfyNode
 
@@ -21,4 +21,4 @@ class SimpleCheckpointLoaderNode(ComfyNode):
 
     def __init__(self, model_name: str) -> None:
         data: SimpleCheckpointInputs = {'ckpt_name': model_name}
-        super().__init__(NODE_NAME, cast(Dict[str, Any], data), set(), 3)
+        super().__init__(NODE_NAME, cast(dict[str, Any], data), set(), 3)
