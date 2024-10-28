@@ -4,7 +4,7 @@ import logging
 import os
 import re
 from contextlib import contextmanager
-from typing import Optional, Tuple, cast, List, Callable, TypeAlias, Generator
+from typing import Optional, cast, Callable, TypeAlias, Generator
 
 import numpy as np
 from PIL import Image
@@ -18,12 +18,12 @@ from src.image.composite_mode import CompositeMode
 from src.image.layers.image_layer import ImageLayer
 from src.image.layers.layer import Layer, LayerParent
 from src.image.layers.layer_group import LayerGroup
+from src.image.layers.layer_resize_mode import LayerResizeMode
 from src.image.layers.selection_layer import SelectionLayer
 from src.image.layers.text_layer import TextLayer
 from src.image.layers.transform_layer import TransformLayer
 from src.image.text_rect import TextRect
 from src.ui.modal.modal_utils import show_error_dialog, show_warning_dialog
-from src.image.layers.layer_resize_mode import LayerResizeMode
 from src.undo_stack import UndoStack, _UndoAction, _UndoGroup
 from src.util.application_state import AppStateTracker, APP_STATE_NO_IMAGE, APP_STATE_EDITING
 from src.util.cached_data import CachedData
@@ -113,7 +113,7 @@ class ImageStack(QObject):
         self._content_change_signal_enabled = True
         self.generation_area = self._generation_area
         self._last_change_timestamp = 0.0
-        self._connected_layers: List[Layer] = []  # Track which layers have signals connected
+        self._connected_layers: list[Layer] = []  # Track which layers have signals connected
 
         def _update_gen_area_size(size: QSize) -> None:
             if size != self._generation_area.size():
@@ -234,7 +234,7 @@ class ImageStack(QObject):
         return self._layer_stack
 
     @property
-    def top_level_layers(self) -> List[Layer]:
+    def top_level_layers(self) -> list[Layer]:
         """Returns the list of all child layers at the top level."""
         return self._layer_stack.child_layers
 
@@ -1257,7 +1257,7 @@ class ImageStack(QObject):
         old_layers = self.layers
         old_layers.remove(self._layer_stack)
         active_id = self.active_layer_id
-        new_layers: List[Layer] = []
+        new_layers: list[Layer] = []
         while layer_stack.count > 0:
             new_layers.append(layer_stack.get_layer_by_index(0))
             layer_stack.remove_layer(new_layers[-1])
@@ -1387,7 +1387,7 @@ class ImageStack(QObject):
                 max_missing_layer = max(max_missing_layer, int(match.group(1)) + 1)
         return f'layer {max_missing_layer}'
 
-    def _get_new_layer_placement(self, layer_parent: Optional[LayerGroup] = None) -> Tuple[LayerGroup, int]:
+    def _get_new_layer_placement(self, layer_parent: Optional[LayerGroup] = None) -> tuple[LayerGroup, int]:
         """Default layer placement:
         1. If no parent is provided, use the active layer if it is a layer group, otherwise use the active layer's
            parent
@@ -1571,11 +1571,11 @@ class ImageStack(QObject):
             self._last_change_timestamp = datetime.datetime.now().timestamp()
             self._trigger_content_render()
 
-    def all_layers(self) -> List[Layer]:
+    def all_layers(self) -> list[Layer]:
         """Returns every layer within the stack."""
         return [self._layer_stack, *self._layer_stack.recursive_child_layers]
 
-    def _next_insert_index(self, layer: Layer) -> Tuple[LayerGroup, int]:
+    def _next_insert_index(self, layer: Layer) -> tuple[LayerGroup, int]:
         assert layer is not None and layer.layer_parent is not None and self._layer_stack.contains_recursive(layer)
         parent = cast(LayerGroup, layer.layer_parent)
         current_index = parent.get_layer_index(layer)
@@ -1622,7 +1622,7 @@ class ImageStack(QObject):
             prev_layer = prev_layer.get_layer_by_index(prev_layer.count - 1)
         return prev_layer
 
-    def _prev_insert_index(self, layer: Layer) -> Tuple[LayerGroup, int]:
+    def _prev_insert_index(self, layer: Layer) -> tuple[LayerGroup, int]:
         assert layer is not None and layer.layer_parent is not None and self._layer_stack.contains_recursive(layer)
         parent = cast(LayerGroup, layer.layer_parent)
         current_index = parent.get_layer_index(layer)

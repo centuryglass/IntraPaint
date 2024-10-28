@@ -1,6 +1,6 @@
 """A QWidget with extra support for rearranging contents based on bounds."""
-from typing import Optional, Dict, Callable, List
 import logging
+from typing import Optional, Callable
 
 from PySide6.QtCore import QSize
 from PySide6.QtGui import QResizeEvent, QShowEvent
@@ -17,8 +17,8 @@ class ReactiveLayoutWidget(QWidget):
     def __init__(self, parent: Optional[QWidget] = None) -> None:
         super().__init__(parent)
         self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
-        self._visibility_limits: Dict[QWidget, QSize] = {}
-        self._layout_modes: List[_LayoutMode] = []
+        self._visibility_limits: dict[QWidget, QSize] = {}
+        self._layout_modes: list[_LayoutMode] = []
         self._default_mode: Optional[_LayoutMode] = None
         self._active_mode: Optional[str] = None
 

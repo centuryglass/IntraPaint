@@ -1,13 +1,13 @@
 """Manages an edited image layer."""
 from collections.abc import Generator
 from contextlib import contextmanager
-from typing import Optional, Any, Tuple
+from typing import Optional, Any
 
 import numpy as np
 from PIL import Image
-from PySide6.QtWidgets import QApplication
 from PySide6.QtCore import QRect, QSize, QPoint, Signal, QObject
 from PySide6.QtGui import QImage, QPainter, QPixmap, QTransform
+from PySide6.QtWidgets import QApplication
 
 from src.image.composite_mode import CompositeMode
 from src.image.layers.transform_layer import TransformLayer
@@ -114,7 +114,7 @@ class ImageLayer(TransformLayer):
         layer.set_transform(self.transform)
         return layer
 
-    def _image_prop_setter(self, new_image: QImage | Tuple[QImage, QPoint]) -> None:
+    def _image_prop_setter(self, new_image: QImage | tuple[QImage, QPoint]) -> None:
         """Replaces the layer's QImage content.  Unlike other setters, subsequent changes won't be combined in the
            undo history."""
         assert not self.locked and not self.parent_locked, 'Tried to change image in a locked layer'

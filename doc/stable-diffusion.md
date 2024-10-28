@@ -155,7 +155,7 @@ The sampling method controls how the image diffusion process is divided into sma
 - UniPC (Unified Predictor-Corrector): A more efficient sampling method that can produce decent images in 5-10 steps.
 - Ancestral (A) samplers: Any sampler ending in "A" adds extra randomness to the process.
 - Karras samplers: Use gradually decreasing amounts of randomness, potentially improving image quality.
-- LCM: Very fast image generation (5-10 steps), but requires either an LCM LORA or an LCM model.
+- LCM: Very fast image generation (5-10 steps), but requires either an LCM LoRA or an LCM model.
 - DPM (Diffusion probabilistic model solver): Solver variants released in 2022.
 - Heun: A slower but more precise variant of Euler.
 - LMS (Linear Multi-Step), PLMS (Pseudo Linear Multi-Step), and DDIM (Denoising Diffusion Implicit Model): Older methods, not commonly used.

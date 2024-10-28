@@ -1,6 +1,6 @@
 """Use brush strokes to apply image filters."""
 import json
-from typing import Optional, List
+from typing import Optional
 
 from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import QApplication, QWidget
@@ -44,7 +44,7 @@ class FilterTool(QtPaintBrushTool):
     def __init__(self, image_stack: ImageStack, image_viewer: ImageViewer) -> None:
         cache = Cache()
         self._control_panel: Optional[FilterToolPanel] = None
-        self._filters: List[ImageFilter] = [
+        self._filters: list[ImageFilter] = [
             BlurFilter(image_stack),
             BrightnessContrastFilter(image_stack),
             PosterizeFilter(image_stack),

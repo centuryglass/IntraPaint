@@ -1,5 +1,5 @@
 """Represents a layer in the image holding text data."""
-from typing import Any, List, Optional
+from typing import Any, Optional
 
 from PySide6.QtCore import Signal, QPoint, QPointF
 from PySide6.QtGui import QImage, QTransform
@@ -56,7 +56,7 @@ class TextLayer(TransformLayer):
         self.set_size(self._text_rect.size)
 
     @staticmethod
-    def confirm_or_cancel_render_to_image(layer_names: List[str], action_name: str) -> bool:
+    def confirm_or_cancel_render_to_image(layer_names: list[str], action_name: str) -> bool:
         """Request confirmation before converting text layers to image, returning the user's choice."""
         assert len(layer_names) > 0
         if len(layer_names) == 1:

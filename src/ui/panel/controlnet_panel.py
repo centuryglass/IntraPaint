@@ -2,7 +2,7 @@
 Panel providing controls for the stable-diffusion ControlNet extension. Only supported by stable_diffusion_controller.
 """
 import logging
-from typing import Optional, List, Tuple
+from typing import Optional
 
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QCheckBox, QPushButton, QLineEdit, QComboBox, QApplication, QTabWidget, QGridLayout, \
@@ -153,8 +153,8 @@ class ControlnetPanel(BorderedWidget):
         self._orientation = Qt.Orientation.Horizontal
         self._layout = QGridLayout(self)
         self._layout.setAlignment(Qt.AlignmentFlag.AlignTop)
-        self._dynamic_sliders: List[FloatSliderSpinbox | IntSliderSpinbox] = []
-        self._dynamic_slider_labels: List[QLabel] = []
+        self._dynamic_sliders: list[FloatSliderSpinbox | IntSliderSpinbox] = []
+        self._dynamic_slider_labels: list[QLabel] = []
 
         # Labels:
         self._control_image_label = QLabel(CONTROL_IMAGE_LABEL)
@@ -303,7 +303,7 @@ class ControlnetPanel(BorderedWidget):
                 self._layout.setColumnStretch(column, 1)
             for column in (1, 3):
                 self._layout.setColumnStretch(column, 3)
-            layout_items: List[Tuple[Optional[QWidget], int, int, int, int]] = [
+            layout_items: list[tuple[Optional[QWidget], int, int, int, int]] = [
                 (self._enabled_checkbox, 0, 0, 1, 1),
                 (self._vram_checkbox, 0, 1, 1, 1),
                 (self._px_perfect_checkbox, 1, 0, 1, 1),

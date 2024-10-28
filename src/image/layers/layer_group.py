@@ -1,6 +1,6 @@
 """Represents a group of linked image layers that can be manipulated as one in limited ways."""
 from contextlib import contextmanager, ExitStack
-from typing import List, Optional, Dict, Any, TypeAlias, Callable, Generator, Set
+from typing import Optional, Any, TypeAlias, Callable, Generator
 
 from PySide6.QtCore import QRect, Signal, QPoint, QSize, QTimer
 from PySide6.QtGui import QPainter, QImage, QTransform
@@ -35,7 +35,7 @@ class LayerGroup(Layer, LayerParent):
         """Initialize with no layer data."""
         super().__init__(name)
         self._image_cache = CachedData(None)
-        self._layers: List[Layer] = []
+        self._layers: list[Layer] = []
         self._bounds = QRect()
         self._isolate = False
         self._render_timer = QTimer()
@@ -125,12 +125,12 @@ class LayerGroup(Layer, LayerParent):
         return len(self._layers) > 0
 
     @property
-    def child_layers(self) -> List[Layer]:
+    def child_layers(self) -> list[Layer]:
         """Returns all child layers."""
         return [*self._layers]
 
     @property
-    def recursive_child_layers(self) -> List[Layer]:
+    def recursive_child_layers(self) -> list[Layer]:
         """Returns all child layers or children of child layers, recursively."""
         flattened_stack = []
 
@@ -496,22 +496,22 @@ class LayerGroup(Layer, LayerParent):
         """Blocks signals from this layer and all child layers, sending the delayed signals together when the context
            exits."""
         # Cache all signal-relevant non-image data from this layer and all children, recursive.
-        content_change_timestamps: Dict[Layer, float] = {}
-        layer_names: Dict[Layer, str] = {}
-        visibility_states: Dict[Layer, bool] = {}
-        opacity_states: Dict[Layer, float] = {}
-        layer_sizes: Dict[Layer, QSize] = {}
-        layer_modes: Dict[Layer, CompositeMode] = {}
-        layer_z_values: Dict[Layer, int] = {}
-        lock_states: Dict[Layer, bool] = {}
-        parent_states: Dict[Layer, Optional[LayerGroup]] = {}
-        layer_transforms: Dict[TransformLayer, QTransform] = {}
-        alpha_lock_states: Dict[ImageLayer, bool] = {}
-        isolate_states: Dict[LayerGroup, bool] = {}
-        layer_bounds: Dict[LayerGroup, QRect] = {}
-        layer_text_data: Dict[TextLayer, str] = {}
+        content_change_timestamps: dict[Layer, float] = {}
+        layer_names: dict[Layer, str] = {}
+        visibility_states: dict[Layer, bool] = {}
+        opacity_states: dict[Layer, float] = {}
+        layer_sizes: dict[Layer, QSize] = {}
+        layer_modes: dict[Layer, CompositeMode] = {}
+        layer_z_values: dict[Layer, int] = {}
+        lock_states: dict[Layer, bool] = {}
+        parent_states: dict[Layer, Optional[LayerGroup]] = {}
+        layer_transforms: dict[TransformLayer, QTransform] = {}
+        alpha_lock_states: dict[ImageLayer, bool] = {}
+        isolate_states: dict[LayerGroup, bool] = {}
+        layer_bounds: dict[LayerGroup, QRect] = {}
+        layer_text_data: dict[TextLayer, str] = {}
 
-        all_layers: Set[Layer] = {self, *self.recursive_child_layers}
+        all_layers: set[Layer] = {self, *self.recursive_child_layers}
         for layer in all_layers:
             content_change_timestamps[layer] = layer.content_change_timestamp
             layer_names[layer] = layer.name
@@ -540,7 +540,7 @@ class LayerGroup(Layer, LayerParent):
                     stack.enter_context(signals_blocked(layer))
                 yield
         finally:
-            updated_layer_list: Set[Layer] = {self, *self.recursive_child_layers}
+            updated_layer_list: set[Layer] = {self, *self.recursive_child_layers}
             for layer in all_layers:
                 old_parent = parent_states[layer]
                 new_parent = layer.layer_parent
@@ -624,8 +624,8 @@ class LayerGroupState:
         self.opacity = layer.opacity
         self.mode = layer.composition_mode
         self.isolate = layer.isolate
-        self.child_states: Dict[int, ImageLayerState | LayerGroupState] = {}
-        self.child_layers: List[Layer] = []
+        self.child_states: dict[int, ImageLayerState | LayerGroupState] = {}
+        self.child_layers: list[Layer] = []
         for i in range(layer.count):
             child = layer.get_layer_by_index(i)
             self.child_layers.append(child)

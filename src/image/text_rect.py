@@ -1,14 +1,14 @@
 """Represents exact instructions for rendering text data into an image."""
 import json
-from typing import Optional, Dict, Any
+from typing import Optional, Any, Self
 
 from PySide6.QtCore import QRect, QSize, QPoint
 from PySide6.QtGui import QColor, Qt, QFont, QPainter, QImage
 from PySide6.QtWidgets import QApplication
 
 from src.config.cache import Cache
-from src.util.visual.text_drawing_utils import find_text_size, max_font_size
 from src.util.visual.image_utils import create_transparent_image
+from src.util.visual.text_drawing_utils import find_text_size, max_font_size
 
 
 class TextRectKeys:
@@ -34,7 +34,7 @@ DEFAULT_SIZE = QSize(100, 100)
 class TextRect:
     """Data class specifying a block of text, along with exactly where and how it should be rendered."""
 
-    def __init__(self, source: Optional['TextRect' | Dict[str, Any]] = None) -> None:
+    def __init__(self, source: Optional[Self | dict[str, Any]] = None) -> None:
         if isinstance(source, TextRect):
             self._text = source.text
             self._font = source.font
@@ -44,7 +44,7 @@ class TextRect:
             self._text_alignment = Qt.AlignmentFlag(source.text_alignment)
             self._fill_background: bool = source.fill_background
             self._scale_mode: str = source._scale_mode
-        elif isinstance(source, Dict):
+        elif isinstance(source, dict):
             for key in TextRectKeys.ALL:
                 assert key in source, f'Missing expected key {key}'
             self._text = source[TextRectKeys.TEXT]
@@ -84,7 +84,7 @@ class TextRect:
 
     def serialize(self, exclude_text=False) -> str:
         """Serialize this object as a JSON string."""
-        data_dict: Dict[str, Any] = {
+        data_dict: dict[str, Any] = {
             TextRectKeys.TEXT: self._text if not exclude_text else '',
             TextRectKeys.FONT: self._font.toString(),
             TextRectKeys.TEXT_COLOR: self._text_color.name(QColor.NameFormat.HexArgb),

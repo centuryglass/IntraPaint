@@ -1,5 +1,5 @@
 """Widget holding multiple color options, largely ported from the internal QWellArray class within QColorDialog."""
-from typing import Optional, List, Tuple, Set
+from typing import Optional
 
 from PySide6.QtCore import Qt, Signal, QRect, QSize, QPoint, QMimeData, QTimer
 from PySide6.QtGui import QColor, QPaintEvent, QPainter, QMouseEvent, QFocusEvent, QKeyEvent, QPixmap, QDrag, \
@@ -87,7 +87,7 @@ class _PaletteGrid(QWidget):
             raise IndexError(f'{row},{col} out of bounds')
         return col + row * self._num_cols
 
-    def color_position(self, idx: int) -> Tuple[int, int]:
+    def color_position(self, idx: int) -> tuple[int, int]:
         """Returns the row and column of a given color index"""
         assert 0 <= idx < self._num_cols * self._num_rows
         row = idx // self._num_cols
@@ -247,7 +247,7 @@ class PaletteWidget(_PaletteGrid):
     color_changed = Signal(int, QColor)
     color_selected = Signal(QColor)
 
-    def __init__(self, rows: int, columns: int, colors: List[QColor]) -> None:
+    def __init__(self, rows: int, columns: int, colors: list[QColor]) -> None:
         super().__init__(rows, columns)
         self._colors = colors
         assert len(colors) == rows * columns, f'Expected {rows * columns} colors, got {len(colors)}'
@@ -425,7 +425,7 @@ class PaletteWidget(_PaletteGrid):
         self._ignoring_inputs = True
         self._old_current = QPoint(self.selected_row(), self.selected_column())
 
-    def _find_color_in_grid(self, color: QColor) -> Tuple[int, int]:
+    def _find_color_in_grid(self, color: QColor) -> tuple[int, int]:
         rgb_color = color.toRgb()
         for i, grid_color in enumerate(self._colors):
             if grid_color != rgb_color:
@@ -444,7 +444,7 @@ class PaletteWidget(_PaletteGrid):
         self._ignoring_inputs = False
 
 
-def standard_colors() -> List[QColor]:
+def standard_colors() -> list[QColor]:
     """Returns the set of default color options."""
     colors = []
     for g in range(4):
@@ -454,7 +454,7 @@ def standard_colors() -> List[QColor]:
     return colors
 
 
-def config_colors(num_colors: int) -> List[QColor]:
+def config_colors(num_colors: int) -> list[QColor]:
     """Returns the set of configurable color options."""
     color_list = [QColor(color_str) for color_str in AppConfig().get(AppConfig.SAVED_COLORS)][:num_colors]
     while len(color_list) < num_colors:
@@ -504,7 +504,7 @@ class CustomColorPaletteWidget(PaletteWidget):
     def add_color(self, color: QColor) -> None:
         """Adds a new custom color.  This will replace the first duplicate color encountered, or the color after the
         previous changed index if no duplicates are found."""
-        colors_traversed: Set[str] = set()
+        colors_traversed: set[str] = set()
         next_idx = self._last_added_idx + 1
         for i in range(self.color_count()):
             prev_color = self.get_color(i).name(QColor.NameFormat.HexArgb)

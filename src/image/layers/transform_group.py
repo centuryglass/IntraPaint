@@ -1,6 +1,4 @@
 """A temporary layer class used to coordinate transformations applied to multiple layers."""
-from typing import List
-
 from PySide6.QtCore import QRect, Signal
 from PySide6.QtGui import QTransform
 
@@ -27,8 +25,8 @@ class TransformGroup(TransformLayer):
         self._bounds = QRect()
         super().__init__(f'TransformGroup-{layer_group.name}')
         self._primary_group = layer_group
-        self._groups: List[LayerGroup] = []
-        self._transform_layers: List[TransformLayer] = []
+        self._groups: list[LayerGroup] = []
+        self._transform_layers: list[TransformLayer] = []
         self._layer_added_slot(layer_group)
         layer_group.lock_changed.connect(lambda _, locked: self.set_locked(locked))
 

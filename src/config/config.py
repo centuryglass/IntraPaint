@@ -13,7 +13,7 @@ import logging
 import os.path
 from inspect import signature
 from threading import Lock
-from typing import Optional, Any, Callable, List, Dict
+from typing import Optional, Any, Callable
 
 from PySide6.QtCore import QSize, QTimer, Qt
 from PySide6.QtGui import QKeySequence, QColor
@@ -21,7 +21,8 @@ from PySide6.QtWidgets import QApplication
 
 from src.config.config_entry import ConfigEntry, DefinitionKey, DefinitionType
 from src.ui.input_fields.check_box import CheckBox
-from src.util.parameter import ParamType, DynamicFieldWidget
+from src.util.parameter import ParamType, DynamicFieldWidget, ParamTypeList
+
 logger = logging.getLogger(__name__)
 
 # The `QCoreApplication.translate` context for strings in this file
@@ -411,10 +412,6 @@ class Config:
         for connection_list in self._connected.values():
             connection_list.pop(connected_object, None)
 
-    def list(self) -> List[str]:
-        """Returns all keys tracked by this Config object."""
-        return list(self._entries.keys())
-
     def get_option_index(self, key: str) -> int:
         """Returns the index of the selected option for a given key.
 
@@ -428,7 +425,7 @@ class Config:
         with self._lock:
             return self._entries[key].option_index
 
-    def get_options(self, key: str) -> List[ParamType]:
+    def get_options(self, key: str) -> ParamTypeList:
         """Returns all valid options accepted for a given key.
 
         Raises
@@ -442,7 +439,7 @@ class Config:
         assert options is not None
         return options.copy()
 
-    def update_options(self, key: str, options_list: List[ParamType]) -> None:
+    def update_options(self, key: str, options_list: ParamTypeList) -> None:
         """
         Replaces the list of accepted options for a given key.
 
@@ -472,7 +469,7 @@ class Config:
         last_value = self.get(key)
         self._entries[key].restore_default_options()
         default_option_list = self._entries[key].options
-        if last_value not in default_option_list and len(default_option_list) > 0:
+        if default_option_list is not None and last_value not in default_option_list and len(default_option_list) > 0:
             self.set(key, default_option_list[0])
 
     def add_option(self, key: str, option: ParamType) -> None:
@@ -488,7 +485,7 @@ class Config:
             raise KeyError(UNKNOWN_KEY_ERROR.format(key=key))
         self._entries[key].add_option(option)
 
-    def get_categories(self) -> List[str]:
+    def get_categories(self) -> list[str]:
         """Returns all unique category strings."""
         categories = []
         for value in self._entries.values():
@@ -496,7 +493,7 @@ class Config:
                 categories.append(value.category)
         return categories
 
-    def get_subcategories(self, category: str) -> List[str]:
+    def get_subcategories(self, category: str) -> list[str]:
         """Returns all unique subcategories within a category."""
         subcategories = []
         for value in self._entries.values():
@@ -506,7 +503,7 @@ class Config:
                 subcategories.append(value.subcategory)
         return subcategories
 
-    def get_category_keys(self, category: str, subcategory: Optional[str] = None) -> List[str]:
+    def get_category_keys(self, category: str, subcategory: Optional[str] = None) -> list[str]:
         """Returns all keys with the given category."""
         keys = []
         for key, value in self._entries.items():
@@ -514,7 +511,7 @@ class Config:
                 keys.append(key)
         return keys
 
-    def get_keys(self) -> List[str]:
+    def get_keys(self) -> list[str]:
         """Returns all keys defined for a config class."""
         return list(self._entries.keys())
 
@@ -525,8 +522,8 @@ class Config:
                    category: str,
                    subcategory: Optional[str],
                    tooltip: str,
-                   options: Optional[List[ParamType]] = None,
-                   range_options: Optional[Dict[str, int | float]] = None,
+                   options: Optional[list[ParamType]] = None,
+                   range_options: Optional[dict[str, int | float]] = None,
                    save_json: bool = True) -> None:
         if key in self._entries:
             raise KeyError(DUPLICATE_KEY_ERROR.format(key=key))
@@ -538,7 +535,7 @@ class Config:
     def _write_to_json(self) -> None:
         if self._json_path is None:
             return
-        converted_dict: Dict[str, Any] = {}
+        converted_dict: dict[str, Any] = {}
         with self._lock:
             for entry in self._entries.values():
                 entry.save_to_json_dict(converted_dict)

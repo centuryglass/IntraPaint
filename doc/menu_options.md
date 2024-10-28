@@ -73,7 +73,7 @@ This guide explains all of IntraPaint's menu options. All menu option shortcuts 
    - [Posterize](#posterize-ctrl5)
 7. [Stable-Diffusion menu](#stable-diffusion-menu)
    - [View saved prompt styles](#view-saved-prompt-styles-ctrlalt1)
-   - [View LORA models](#view-lora-models-ctrlalt2)
+   - [View LoRA models](#view-lora-models-ctrlalt2)
    - [LCM mode](#lcm-mode-f10)
 ---
 
@@ -515,26 +515,26 @@ I'd like to provide support for adding and editing styles directly within IntraP
 6. **"Replace prompt" button**:  If clicked, the selected preset's prompt and negative prompt completely replace the contents of the prompt and negative prompt sections in the [image generation panel](./stable-diffusion.md#image-generation-panel).
 7. **Close button**:  Closes the window.
 
-### View LORA models (Ctrl+Alt+2)
+### View LoRA models (Ctrl+Alt+2)
 
-This option opens a window where you can view and select between LORA models. LORA models provide extensions to Stable-Diffusion models, usually to introduce new concepts or styles not found in the original training data.  LORA model files need to be copied to the **models/Lora** directory within the Stable-Diffusion WebUI before IntraPaint can use them.  This menu option will only appear if IntraPaint detects at least one available LORA model.
-
-
-LORA models are activated by adding text to the prompt in the **\<lora:LORA_NAME:LORA_STRENGTH>** format. LORA_NAME needs to be replaced by the name of the LORA model's file without the extension, and LORA_STRENGTH should be replaced with a multiplier controlling how strongly the LORA will be applied, usually defaulting to 1.0.
+This option opens a window where you can view and select between LoRA models. LoRA models provide extensions to Stable-Diffusion models, usually to introduce new concepts or styles not found in the original training data.  LoRA model files need to be copied to the **models/Lora** directory within the Stable-Diffusion WebUI before IntraPaint can use them.  This menu option will only appear if IntraPaint detects at least one available LoRA model.
 
 
-<img src="./labeled_screenshots/lora_window.png" alt="Screenshot of the LORA window, with specific elements numbered."/>
+LoRA models are activated by adding text to the prompt in the **\<lora:LORA_NAME:LORA_STRENGTH>** format. LORA_NAME needs to be replaced by the name of the LoRA model's file without the extension, and LORA_STRENGTH should be replaced with a multiplier controlling how strongly the LoRA will be applied, usually defaulting to 1.0.
 
-1. **LORA model option, not selected**:  Click any option in the list to select it.
-2. **Selected LORA model option**:  Once selected, the "add to prompt"/"remove from prompt" button will use that LORA.
-3. **LORA model option, no preview**:  The LORA preview images can be set within the Stable-Diffusion WebUI's LORA interface, and IntraPaint will load them when the LORA selection window is opened.  Any LORA without a preview will use this placeholder image.
-4. **"Add to prompt"/"Remove from prompt" button:**:  If the LORA is not already enabled, clicking this button will add it to the prompt field in the [image generation panel](./stable-diffusion.md#image-generation-panel).  If the selected LORA has already been added to the prompt, clicking this button will remove it.
-5. **Close button**:  Close the LORA window.
+
+<img src="./labeled_screenshots/lora_window.png" alt="Screenshot of the LoRA window, with specific elements numbered."/>
+
+1. **LoRA model option, not selected**:  Click any option in the list to select it.
+2. **Selected LoRA model option**:  Once selected, the "add to prompt"/"remove from prompt" button will use that LoRA.
+3. **LoRA model option, no preview**:  The LoRA preview images can be set within the Stable-Diffusion WebUI's LoRA interface, and IntraPaint will load them when the LoRA selection window is opened.  Any LoRA without a preview will use this placeholder image.
+4. **"Add to prompt"/"Remove from prompt" button:**:  If the LORA is not already enabled, clicking this button will add it to the prompt field in the [image generation panel](./stable-diffusion.md#image-generation-panel).  If the selected LoRA has already been added to the prompt, clicking this button will remove it.
+5. **Close button**:  Close the LoRA window.
 
 ### LCM Mode [F10]
-This option is only visible when using Stable-Diffusion, when the LCM LORA model and support for the LCM sampler are detected.  LCM mode dramatically decreases image generation time, and gives more predictable but less creative results. Selecting this option adjusts image generation parameters to match the settings needed by LCM models:
+This option is only visible when using Stable-Diffusion, when the LCM LoRA model and support for the LCM sampler are detected.  LCM mode dramatically decreases image generation time, and gives more predictable but less creative results. Selecting this option adjusts image generation parameters to match the settings needed by LCM models:
 
 - The image sampling mode is set to LCM
-- The activation text for the LCM LORA is inserted into the prompt, if not already there.
+- The activation text for the LCM LoRA is inserted into the prompt, if not already there.
 - The prompt guidance scale is set to 1.5 (1.5 - 2.0 is the recommended range for LCM).
 - The number of image generation steps is set to 8 (5 - 10 is the recommended range for LCM).

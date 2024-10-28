@@ -1,7 +1,7 @@
 """Generic interface for image filtering functions. Handles the process of opening modal windows to apply the filter
 and provides the information needed to add the function as a menu action."""
 import math
-from typing import Callable, List, Optional, Dict, Any
+from typing import Callable, Optional, Any
 
 from PySide6.QtCore import QPoint, QRect, QSize
 from PySide6.QtGui import QImage, QPainter, QTransform, QIcon
@@ -71,7 +71,7 @@ class ImageFilter:
         into account (False)."""
         return True
 
-    def radius(self, parameter_values: List[Any]) -> float:
+    def radius(self, parameter_values: list[Any]) -> float:
         """Given a set of valid parameters, estimate how far each pixel's influence extends in the final image."""
         return 0.0
 
@@ -118,11 +118,11 @@ class ImageFilter:
         """Returns the filter's image variable filtering function."""
         raise NotImplementedError()
 
-    def get_parameters(self) -> List[Parameter]:
+    def get_parameters(self) -> list[Parameter]:
         """Returns definitions for the non-image parameters passed to the filtering function."""
         return []
 
-    def validate_parameter_values(self, parameter_values: List[Any]) -> None:
+    def validate_parameter_values(self, parameter_values: list[Any]) -> None:
         """Raise an exception if a set of parameter values is not valid for this filter."""
         parameters = self.get_parameters()
         if len(parameter_values) != len(parameters):
@@ -130,7 +130,7 @@ class ImageFilter:
         for i, parameter in enumerate(parameters):
             parameter.validate(parameter_values[i])
 
-    def _filter_layer_image(self, filter_param_values: List[Any], layer_id: int, layer_image: QImage) -> bool:
+    def _filter_layer_image(self, filter_param_values: list[Any], layer_id: int, layer_image: QImage) -> bool:
         """Apply any required filtering in-place to a layer image, returning whether changes were made."""
         layer = self._image_stack.get_layer_by_id(layer_id)
         assert layer is not None
@@ -181,7 +181,7 @@ class ImageFilter:
             painter.end()
         return True
 
-    def get_preview_image(self, filter_param_values: List[Any]) -> QImage:
+    def get_preview_image(self, filter_param_values: list[Any]) -> QImage:
         """
         Generate a preview of how the filter will be applied with given parameter values.
         Parameters
@@ -231,7 +231,7 @@ class ImageFilter:
         self._image_stack.render(base_image=preview_image, transform=preview_transform, image_adjuster=apply_filter)
         return preview_image
 
-    def apply_filter(self, filter_param_values: List[Any]) -> None:
+    def apply_filter(self, filter_param_values: list[Any]) -> None:
         """
         Applies the filter to the image stack, running filter operations in another thread to prevent hanging.
 
@@ -240,9 +240,9 @@ class ImageFilter:
             filter_param_values: list
                 Parameter values to use, fitting the definitions the filter provides through get_parameters.
         """
-        updated_layer_images: Dict[int, QImage] = {}
+        updated_layer_images: dict[int, QImage] = {}
 
-        changed_text_layers: List[TextLayer] = []
+        changed_text_layers: list[TextLayer] = []
         changed_parent_group: Optional[LayerGroup] = None
         if self._filter_active_layer_only:
             active_layer = self._image_stack.active_layer
@@ -265,7 +265,7 @@ class ImageFilter:
             self._image_stack.replace_text_layer_with_image(text_layer)
 
         def _filter_images() -> None:
-            layer_images: Dict[int, QImage] = {}
+            layer_images: dict[int, QImage] = {}
             if self._filter_selection_only:
                 selection_bounds = self._image_stack.selection_layer.get_content_bounds()
                 selection_pos = self._image_stack.selection_layer.position
@@ -289,7 +289,7 @@ class ImageFilter:
             task.finish_signal.disconnect(_finish)
             if len(updated_layer_images) == 0:
                 return
-            source_images: Dict[int, QImage] = {}
+            source_images: dict[int, QImage] = {}
             for layer_id in updated_layer_images:
                 layer = self._image_stack.get_layer_by_id(layer_id)
                 assert layer is not None

@@ -1,6 +1,6 @@
 """Interface for providing image generation capabilities."""
 import logging
-from typing import List, Dict, Optional, Any
+from typing import Optional, Any
 
 from PIL import Image, ImageFilter
 from PySide6.QtCore import QPoint, QRect, QSize, Signal, QTimer, QObject
@@ -47,7 +47,7 @@ class ImageGenerator(MenuBuilder):
         super().__init__()
         self._window = window
         self._image_stack = image_stack
-        self._generated_images: List[QImage] = []
+        self._generated_images: list[QImage] = []
         self._generating = False
 
         class _SignalObject(QObject):
@@ -84,7 +84,7 @@ class ImageGenerator(MenuBuilder):
            connect to required external services, returning whether the process completed correctly."""
         raise NotImplementedError()
 
-    def get_extra_tabs(self) -> List[Tab]:
+    def get_extra_tabs(self) -> list[Tab]:
         """Returns any extra tabs that the generator will add to the main window."""
         return []
 
@@ -174,7 +174,7 @@ class ImageGenerator(MenuBuilder):
             status_signal = Signal(dict)
             error_signal = Signal(Exception)
 
-            def signals(self) -> List[Signal]:
+            def signals(self) -> list[Signal]:
                 return [self.status_signal, self.error_signal]
 
         def _do_inpaint(status_signal: Signal, error_signal: Signal,
@@ -262,7 +262,7 @@ class ImageGenerator(MenuBuilder):
         # Load in main thread:
         QTimer.singleShot(0, self._window, lambda: self._load_generated_image_for_selection(index))
 
-    def _apply_status_update(self, status_dict: Dict[str, str]) -> None:
+    def _apply_status_update(self, status_dict: dict[str, str]) -> None:
         """Show status updates in the UI."""
         assert self._window is not None
         if 'seed' in status_dict:

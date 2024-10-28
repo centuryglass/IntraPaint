@@ -888,10 +888,10 @@
         "saved": true
     },
     "lora_shortcut": {
-        "label": "View LORA models",
+        "label": "View LoRA models",
         "category": "Menu Shortcuts",
         "subcategory": "Stable-Diffusion Menu",
-        "description": "Access available LORA models.",
+        "description": "Access available LoRA models.",
         "type": "string",
         "default": "Ctrl+Alt+2",
         "saved": true
@@ -900,7 +900,7 @@
         "label": "LCM mode",
         "category": "Menu Shortcuts",
         "subcategory": "Stable-Diffusion Menu",
-        "description": "Apply appropriate settings for the LCM LORA.",
+        "description": "Apply appropriate settings for the LCM LoRA.",
         "type": "string",
         "default": "F10",
         "saved": true

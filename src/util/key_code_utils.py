@@ -1,11 +1,10 @@
 """Utilities for managing Qt keycodes and strings, and displaying input hints."""
-from typing import Tuple, List, Optional
+from typing import Optional
 
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QKeySequence
 
 from src.util.visual.text_drawing_utils import get_key_display_string
-
 
 KEY_REQUIRES_SHIFT = '~!@#$%^&*()_+{}|:<>?"'
 
@@ -25,7 +24,7 @@ def get_key_string(key: Qt.Key) -> str:
     return QKeySequence(key).toString()
 
 
-def get_key_with_modifiers(key_string: str) -> Tuple[Optional[Qt.Key], Qt.KeyboardModifier]:
+def get_key_with_modifiers(key_string: str) -> tuple[Optional[Qt.Key], Qt.KeyboardModifier]:
     """Converts a key string to a key code and a set of key modifiers."""
     assert ',' not in key_string, f'Expected single key with possible modifiers, got key list {key_string}'
     modifiers = Qt.KeyboardModifier.NoModifier
@@ -42,7 +41,7 @@ def get_key_with_modifiers(key_string: str) -> Tuple[Optional[Qt.Key], Qt.Keyboa
     return key, modifiers
 
 
-def get_modifiers(modifier_str: str | List[str]) -> Qt.KeyboardModifier:
+def get_modifiers(modifier_str: str | list[str]) -> Qt.KeyboardModifier:
     """Return the modifiers represented by a string."""
     modifiers = Qt.KeyboardModifier.NoModifier
     if not isinstance(modifier_str, list):

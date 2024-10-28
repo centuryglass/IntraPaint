@@ -1,4 +1,4 @@
-"""A ComfyUI node used to load a LORA extension model.
+"""A ComfyUI node used to load a LoRA extension model.
 """
 from typing import TypedDict, NotRequired, cast, Any
 
@@ -8,7 +8,7 @@ NODE_NAME = 'LoraLoader'
 
 
 class LoraLoaderInputs(TypedDict):
-    """Inputs for LORA model loading."""
+    """Inputs for LoRA model loading."""
     lora_name: str
     strength_model: float
     strength_clip: float
@@ -17,7 +17,7 @@ class LoraLoaderInputs(TypedDict):
 
 
 class LoraLoaderNode(ComfyNode):
-    """A ComfyUI node used to load a LORA extension model."""
+    """A ComfyUI node used to load a LoRA extension model."""
 
     # Connection keys:
     MODEL = 'model'

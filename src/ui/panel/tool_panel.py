@@ -1,6 +1,6 @@
 """Provides buttons to select between tools, renders the active tool's control panel, and renders an extra tabbed
    area with layer, navigation, and color picking interfaces."""
-from typing import Optional, Dict, List
+from typing import Optional
 
 from PySide6.QtCore import Qt, Signal, QSize, QMargins, QObject
 from PySide6.QtGui import QResizeEvent, QIcon
@@ -35,7 +35,7 @@ class ToolPanel(QWidget):
         self._divider = DraggableDivider()
 
         self._utility_tab_panel = QTabWidget()
-        self._utility_tab_panels: List[QWidget] = []
+        self._utility_tab_panels: list[QWidget] = []
 
         # Setup tool list:
         self._tool_button_layout = QGridLayout()
@@ -44,7 +44,7 @@ class ToolPanel(QWidget):
         self._row_count = 0
         self._column_count = 0
 
-        self._tool_widgets: Dict[str, 'ToolButton'] = {}
+        self._tool_widgets: dict[str, 'ToolButton'] = {}
         self._active_tool_panel: Optional[QWidget] = None
 
         self._tool_control_box = ReactiveLayoutWidget()

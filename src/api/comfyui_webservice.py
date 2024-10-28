@@ -62,7 +62,7 @@ class ComfyEndpoints:
 
 class ComfyModelType(StrEnum):
     """Model type names, as returned by get_models.  Hardcoded here because it's very unlikely the core items on this
-       list will change, and we're going to need to reference them to do things like load LORA options."""
+       list will change, and we're going to need to reference them to do things like load LoRA options."""
     CHECKPOINT = 'checkpoints'
     CONFIG = 'configs'
     LORA = 'loras'
@@ -150,7 +150,7 @@ class ComfyUiWebservice(WebService):
         return self.get_models(ComfyModelType.CONTROLNET)
 
     def get_lora_models(self) -> list[str]:
-        """Returns the list of available LORA models."""
+        """Returns the list of available LoRA models."""
         return self.get_models(ComfyModelType.LORA)
 
     def get_hypernetwork_models(self) -> list[str]:
@@ -284,7 +284,7 @@ class ComfyUiWebservice(WebService):
         else:
             workflow_builder.seed = seed
 
-        # Find and add LORA and Hypernetwork models:
+        # Find and add LoRA and Hypernetwork models:
         available_loras = cache.get(Cache.LORA_MODELS)
         available_hypernetworks = cache.get(Cache.HYPERNETWORK_MODELS)
         lora_name_map: dict[str, str] = {}

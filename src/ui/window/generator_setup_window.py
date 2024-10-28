@@ -1,5 +1,5 @@
 """Preview, configure, and activate different image generators."""
-from typing import List, Optional
+from typing import Optional
 
 from PySide6.QtCore import Signal, Qt
 from PySide6.QtGui import QMouseEvent, QImage, QFont, QResizeEvent, QIcon
@@ -92,8 +92,8 @@ class GeneratorSetupWindow(QWidget):
         self._detail_panel_layout.addWidget(self._activate_button)
         self._activate_button.clicked.connect(lambda _unused_param: self.activate_signal.emit(self._selected_generator))
 
-        self._generators: List[ImageGenerator] = []
-        self._generator_list_widgets: List[_GeneratorWidget] = []
+        self._generators: list[ImageGenerator] = []
+        self._generator_list_widgets: list[_GeneratorWidget] = []
         self._selected_generator: Optional[ImageGenerator] = None
 
     def resizeEvent(self, event: Optional[QResizeEvent]) -> None:

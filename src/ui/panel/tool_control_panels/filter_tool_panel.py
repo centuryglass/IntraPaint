@@ -1,6 +1,6 @@
 """Control panel widget for the filter tool."""
 import json
-from typing import List, Optional, Callable, Any, Tuple
+from typing import Optional, Callable, Any
 
 from PySide6.QtCore import QSize, Qt
 from PySide6.QtWidgets import QWidget, QApplication, QVBoxLayout, QLabel, QHBoxLayout
@@ -31,7 +31,7 @@ LABEL_TEXT_FILTER_SELECTED_ONLY = _tr('Filter selection only')
 class FilterToolPanel(BrushToolPanel):
     """Control panel widget for the filter tool."""
 
-    def __init__(self, filter_list: List[ImageFilter]) -> None:
+    def __init__(self, filter_list: list[ImageFilter]) -> None:
         self._filters = filter_list
         self._filter_option_panel = QWidget()
         super().__init__(size_key=Cache.FILTER_TOOL_BRUSH_SIZE, pressure_size_key=Cache.FILTER_TOOL_PRESSURE_SIZE,
@@ -60,7 +60,7 @@ class FilterToolPanel(BrushToolPanel):
         self._filter_layout.addWidget(self._filter_row)
         self._current_filter: Optional[ImageFilter] = None
         self._filter_params = json.loads(Cache().get(Cache.FILTER_TOOL_CACHED_PARAMETERS))
-        self._filter_widget_connections: List[Tuple[DynamicFieldWidget, Callable[[Any], None]]] = []
+        self._filter_widget_connections: list[tuple[DynamicFieldWidget, Callable[[Any], None]]] = []
         self._update_filter_option_slot(self._filter_dropdown.currentText())
         Cache().connect(self, Cache.FILTER_TOOL_CACHED_PARAMETERS, self._update_filter_param_slot)
 

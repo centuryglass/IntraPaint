@@ -1,7 +1,7 @@
 """View, apply, and update saved stable-diffusion WebUI prompt info."""
 import json
 import logging
-from typing import Dict, Optional, TypeAlias, List
+from typing import Optional, TypeAlias
 
 from PySide6.QtCore import Signal
 from PySide6.QtGui import QIcon
@@ -99,7 +99,7 @@ class PromptStyleWindow(QDialog):
         self._replace_button.setEnabled(False)
         button_layout.addWidget(self._replace_button, stretch=1)
 
-        text_fields: List[TextField] = [self._name_box, self._prompt_box, self._negative_box]
+        text_fields: list[TextField] = [self._name_box, self._prompt_box, self._negative_box]
         for text_field in text_fields:
             text_field.valueChanged.connect(self._update_cached_styles)
 
@@ -117,7 +117,7 @@ class PromptStyleWindow(QDialog):
         close_button.clicked.connect(self.close)
         button_layout.addWidget(close_button, stretch=1)
 
-    def _get_selected_style(self) -> Optional[Dict[str, str]]:
+    def _get_selected_style(self) -> Optional[dict[str, str]]:
         index = self._style_list.currentRow()
         if index is None:
             return None
@@ -145,7 +145,7 @@ class PromptStyleWindow(QDialog):
         selected = self._get_selected_style()
         self._append_button.setEnabled(selected is not None)
         self._replace_button.setEnabled(selected is not None)
-        text_fields: List[TextField] = [self._name_box, self._prompt_box, self._negative_box]
+        text_fields: list[TextField] = [self._name_box, self._prompt_box, self._negative_box]
         field_keys = (NAME_KEY, PROMPT_KEY, NEGATIVE_KEY)
         if selected is None:
             for box in text_fields:
@@ -166,7 +166,7 @@ class PromptStyleWindow(QDialog):
         if selected is None:
             return
 
-        text_fields: List[TextField] = [self._name_box, self._prompt_box, self._negative_box]
+        text_fields: list[TextField] = [self._name_box, self._prompt_box, self._negative_box]
         field_keys = (NAME_KEY, PROMPT_KEY, NEGATIVE_KEY)
         for box, key in zip(text_fields, field_keys):
             field_value = box.value()

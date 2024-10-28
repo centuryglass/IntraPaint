@@ -2,7 +2,7 @@
 import inspect
 from functools import wraps
 from inspect import signature
-from typing import Callable, Any, Optional, TypeVar, Dict, List, Tuple
+from typing import Callable, Any, Optional, TypeVar
 
 from PySide6.QtGui import QAction
 from PySide6.QtWidgets import QMainWindow, QMenu, QMenuBar
@@ -18,7 +18,7 @@ MENU_DATA_ATTR = '_menu_data'
 
 
 def menu_action(menu_name: str, config_key: str, priority: int = INT_MAX,
-                valid_app_states: Optional[List[str]] = None,
+                valid_app_states: Optional[list[str]] = None,
                 condition_check: Optional[Callable[[Any], bool]] = None) -> Callable[[GenericFn], GenericFn]:
     """Decorator used to associate a class method with a menu item and optionally disable it when busy.
 
@@ -60,7 +60,7 @@ class MenuBuilder:
     """Provides the build_menus method to initialize menus from annotated methods."""
 
     def __init__(self) -> None:
-        self._menus: Dict[str, QMenu] = {}
+        self._menus: dict[str, QMenu] = {}
         self._menu_window: Optional[QMainWindow] = None
 
     @property
@@ -140,11 +140,11 @@ class MenuBuilder:
             action.setEnabled(enabled)
 
     @property
-    def menu_names(self) -> List[str]:
+    def menu_names(self) -> list[str]:
         """Access the list of created menu names."""
         return list(self._menus.keys())
 
-    def menu_actions(self, menu_name: str) -> List[QAction]:
+    def menu_actions(self, menu_name: str) -> list[QAction]:
         """Access all actions within a particular menu."""
         menu = self._find_or_add_menu(menu_name, False)
         if menu is None:
@@ -171,7 +171,7 @@ class MenuBuilder:
     def build_menus(self) -> None:
         """Add all @menu_action methods from this class to the window as menu items."""
         assert self._menu_window is not None, 'Assign a window before building menus'
-        action_definitions: List[Tuple['MenuData', Callable[..., None]]] = self._get_action_definitions()
+        action_definitions: list[tuple['MenuData', Callable[..., None]]] = self._get_action_definitions()
         menu_bar = self._menu_window.menuBar()
         assert menu_bar is not None
         for menu_data, menu_action_method in action_definitions:
@@ -194,7 +194,7 @@ class MenuBuilder:
 
     def clear_menus(self) -> None:
         """Remove all @menu_action methods that this class added to the menu"""
-        action_definitions: List[Tuple['MenuData', Callable[..., None]]] = self._get_action_definitions()
+        action_definitions: list[tuple['MenuData', Callable[..., None]]] = self._get_action_definitions()
         for menu_data, menu_action_method in action_definitions:
             action_name = KeyConfig().get_label(menu_data.config_key)
             self.remove_menu_action(menu_data.menu_name, action_name)
@@ -258,8 +258,8 @@ class MenuBuilder:
                 return action
         return None
 
-    def _get_action_definitions(self) -> List[Tuple['MenuData', Callable[..., None]]]:
-        action_definitions: List[Tuple['MenuData', Callable[..., None]]] = []
+    def _get_action_definitions(self) -> list[tuple['MenuData', Callable[..., None]]]:
+        action_definitions: list[tuple['MenuData', Callable[..., None]]] = []
         for attr_name in dir(self):
             if not hasattr(self, attr_name):
                 continue
@@ -296,7 +296,7 @@ class MenuData:
                  menu_name: str,
                  config_key: str,
                  priority: int,
-                 valid_app_states: Optional[List[str]],
+                 valid_app_states: Optional[list[str]],
                  condition_check: Optional[Callable[[Any], bool]]):
         self.menu_name = menu_name
         self.config_key = config_key

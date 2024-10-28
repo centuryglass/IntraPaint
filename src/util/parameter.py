@@ -1,5 +1,5 @@
 """Represents a value with a fixed type, descriptive metadata, and optional limitations and defaults."""
-from typing import Any, Optional, TypeAlias, List, cast
+from typing import Optional, TypeAlias, cast, Any
 
 from PySide6.QtCore import QSize
 
@@ -44,7 +44,9 @@ def get_parameter_type(value: Any) -> str:
     raise TypeError(f'Unsupported type encountered: {type(value)}')
 
 
-ParamType: TypeAlias = int | float | str | bool | QSize | list | dict
+ParamType: TypeAlias = int | float | str | bool | QSize | list[Any] | dict[str, Any]
+ParamTypeList: TypeAlias = (list[int] | list[float] | list[str] | list[bool] | list[QSize] | list[list[Any]]
+                            | list[dict[str, Any]])
 
 DynamicFieldWidget: TypeAlias = (BigIntSpinbox | CheckBox | ComboBox | DualToggle | LineEdit | PlainTextEdit |
                                  SizeField | IntSliderSpinbox | FloatSliderSpinbox | PressureCurveInput)
@@ -67,7 +69,7 @@ class Parameter:
             raise ValueError(f'Invalid parameter type for {name}: {value_type}')
         self._type = value_type
         self._default_value = default_value
-        self._options: Optional[List[ParamType]] = None
+        self._options: Optional[list[ParamType]] = None
         if default_value is not None:
             default_type = get_parameter_type(default_value)
             if default_type != value_type:
@@ -87,7 +89,7 @@ class Parameter:
             if single_step is not None:
                 self.single_step = single_step
 
-    def set_valid_options(self, valid_options: List[ParamType]) -> None:
+    def set_valid_options(self, valid_options: ParamTypeList) -> None:
         """Set a restricted list of valid options to accept."""
         for option in valid_options:
             option_type = get_parameter_type(option)
@@ -104,7 +106,7 @@ class Parameter:
         self._options = [*valid_options]
 
     @property
-    def options(self) -> Optional[List[ParamType]]:
+    def options(self) -> Optional[ParamTypeList]:
         """Accesses the list of accepted options, if any."""
         if self._options is None:
             return None

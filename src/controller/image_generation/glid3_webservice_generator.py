@@ -1,6 +1,6 @@
 """Generate images using GLID-3-XL running on a web server."""
 from argparse import Namespace
-from typing import Optional, Dict, Any
+from typing import Optional, Any
 
 import requests
 from PySide6.QtCore import Signal, QThread, QSize
@@ -312,7 +312,7 @@ class Glid3WebserviceGenerator(ImageGenerator):
 
         # POST to server_url, check response
         # If invalid or error response, throw Exception
-        samples: Dict[str, Any] = {}
+        samples: dict[str, Any] = {}
         in_progress = True
         error_count = 0
         max_errors = 10

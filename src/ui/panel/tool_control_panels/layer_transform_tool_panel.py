@@ -1,5 +1,5 @@
 """Control panel for the layer transformation tool."""
-from typing import Optional, Tuple, Dict, List
+from typing import Optional
 
 from PySide6.QtCore import QRect, QPoint, QSize, QRectF, Signal
 from PySide6.QtGui import QPaintEvent, QTransform, QColor, Qt, QPolygonF, QPainter, QPen, QKeySequence
@@ -114,8 +114,8 @@ class LayerTransformToolPanel(ReactiveLayoutWidget):
 
         HotkeyFilter.instance().modifiers_changed.connect(_set_checkbox_when_modifier_held)
 
-        self._down_keys: Dict[QWidget, Tuple[QKeySequence, str]] = {}
-        self._up_keys: Dict[QWidget, Tuple[QKeySequence, str]] = {}
+        self._down_keys: dict[QWidget, tuple[QKeySequence, str]] = {}
+        self._up_keys: dict[QWidget, tuple[QKeySequence, str]] = {}
 
         self._reset_button = QPushButton()
         self._reset_button.setText(RESET_BUTTON_TEXT)
@@ -158,7 +158,7 @@ class LayerTransformToolPanel(ReactiveLayoutWidget):
             for col_num in range(grid.columnCount()):
                 grid.setColumnStretch(col_num, 0)
 
-        def _get_grid_item(row: int, column: int) -> Tuple[QWidget | None, int, int]:
+        def _get_grid_item(row: int, column: int) -> tuple[QWidget | None, int, int]:
             item = grid.itemAtPosition(row, column)
             if item is None:
                 return None, 0, 0
@@ -189,7 +189,7 @@ class LayerTransformToolPanel(ReactiveLayoutWidget):
                 grid.setRowStretch(row, stretch)
             for column, stretch in column_widths.items():
                 grid.setColumnStretch(column, stretch)
-            spinbox_map: Dict[int, List[IntSliderSpinbox | FloatSliderSpinbox]] = {}
+            spinbox_map: dict[int, list[IntSliderSpinbox | FloatSliderSpinbox]] = {}
             for control_widget in controls:
                 control_idx = grid.indexOf(control_widget)
                 if control_idx < 0:
@@ -217,7 +217,7 @@ class LayerTransformToolPanel(ReactiveLayoutWidget):
         extra_tall_layout_size = QSize(tall_layout_size.width(), tall_layout_size.height() + preview_size.height())
 
         # Wide layout: 3x3 control grid
-        wide_layout: Tuple[Tuple[QWidget, int, int], ...] = (
+        wide_layout: tuple[tuple[QWidget, int, int], ...] = (
             (self._x_pos_box, 1, 0),
             (self._y_pos_box, 1, 1),
             (self._rotate_box, 1, 2),
@@ -257,7 +257,7 @@ class LayerTransformToolPanel(ReactiveLayoutWidget):
                              extra_wide_layout_size, extra_wide_layout_max)
 
         # Tall layout: one column
-        tall_layout: Tuple[Tuple[QWidget, int, int, int], ...] = (
+        tall_layout: tuple[tuple[QWidget, int, int, int], ...] = (
             (self._x_pos_box, 0, 0, 2),
             (self._y_pos_box, 1, 0, 2),
             (self._width_box, 2, 0, 2),
@@ -295,7 +295,7 @@ class LayerTransformToolPanel(ReactiveLayoutWidget):
                              QSize(wide_layout_size.width() - 1, INT_MAX))
 
         # Reduced layout: leave out width, height, control hints
-        self._reduced_layout: Tuple[Tuple[QWidget, int, int, int], ...] = (
+        self._reduced_layout: tuple[tuple[QWidget, int, int, int], ...] = (
             (self._x_pos_box, 0, 0, 2),
             (self._y_pos_box, 1, 0, 2),
             (self._width_box, 2, 0, 2),

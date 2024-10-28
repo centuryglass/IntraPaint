@@ -8,7 +8,7 @@ Tabs have the following properties:
   associated widgets.
 """
 import datetime
-from typing import Optional, List
+from typing import Optional
 
 from PySide6.QtCore import Signal, Qt, QMimeData, QRect, QPoint, QSize
 from PySide6.QtGui import QPalette, QMouseEvent, QDrag, QResizeEvent
@@ -40,7 +40,7 @@ class Tab(Label):
         palette.setColor(QPalette.ColorRole.Mid, palette.color(self.foregroundRole()))
         self.setPalette(palette)
         self._content_widget: Optional[QWidget] = widget
-        self._tab_bar_widgets: List[QWidget] = []
+        self._tab_bar_widgets: list[QWidget] = []
         self._container: Optional[QWidget] = None
         self._clicking = False
         self._dragging = False
@@ -90,7 +90,7 @@ class Tab(Label):
         self.tab_content_replaced.emit(self, widget)
 
     @property
-    def tab_bar_widgets(self) -> List[QWidget]:
+    def tab_bar_widgets(self) -> list[QWidget]:
         """Returns the list of widgets this tab provides that should be displayed on the tab bar when the content
            widget is hidden."""
         return list(self._tab_bar_widgets)

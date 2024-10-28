@@ -1,6 +1,6 @@
 """Provides controls for transforming a graphics item."""
 import math
-from typing import Optional, Dict, Tuple, Any, Generator, Iterable
+from typing import Optional, Any, Generator, Iterable
 
 from PySide6.QtCore import Qt, QRectF, QPointF, Signal, QSizeF
 from PySide6.QtGui import QPainter, QPen, QTransform, QPainterPath, QImage
@@ -9,6 +9,8 @@ from PySide6.QtWidgets import QWidget, QGraphicsItem, QStyleOptionGraphicsItem, 
     QGraphicsObject
 
 from src.ui.graphics_items.transform_handle import TransformHandle, TRANSFORM_MODE_SCALE, TRANSFORM_MODE_ROTATE
+from src.util.math_utils import clamp, avoiding_zero
+from src.util.shared_constants import MIN_NONZERO
 from src.util.signals_blocked import signals_blocked
 from src.util.visual.geometry_utils import extract_transform_parameters, combine_transform_parameters
 from src.util.visual.graphics_scene_utils import (get_view_bounds_of_scene_item_rect,
@@ -16,8 +18,6 @@ from src.util.visual.graphics_scene_utils import (get_view_bounds_of_scene_item_
                                                   get_scene_item_bounds_of_view_rect, get_view,
                                                   get_scene_bounds_of_scene_item_rect)
 from src.util.visual.image_utils import create_transparent_image
-from src.util.math_utils import clamp, avoiding_zero
-from src.util.shared_constants import MIN_NONZERO
 
 MIN_SCENE_DIM = 5
 
@@ -63,7 +63,7 @@ class TransformOutline(QGraphicsObject):
 
         self.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsSelectable, True)
         self._allow_rotate = allow_rotate
-        self._handles: Dict[str, _Handle] = {}
+        self._handles: dict[str, _Handle] = {}
         self._relative_origin = QPointF(0.5, 0.5)
         self._rect = QRectF(initial_bounds.normalized())
         self._origin = self._rect.center()
@@ -233,12 +233,12 @@ class TransformOutline(QGraphicsObject):
         self.setTransform(matrix)
 
     @property
-    def transform_scale(self) -> Tuple[float, float]:
+    def transform_scale(self) -> tuple[float, float]:
         """Get the width and height scale factors."""
         return self._x_scale, self._y_scale
 
     @transform_scale.setter
-    def transform_scale(self, scale_factors: Tuple[float, float]) -> None:
+    def transform_scale(self, scale_factors: tuple[float, float]) -> None:
         x_scale, y_scale = scale_factors
         if self._preserve_aspect_ratio:
             prev_x, prev_y = self.transform_scale
@@ -303,7 +303,7 @@ class TransformOutline(QGraphicsObject):
                 add_children.append(child)
 
         # Temporarily hide everything else in the scene:
-        opacity_map: Dict[QGraphicsItem, float] = {}
+        opacity_map: dict[QGraphicsItem, float] = {}
         for item in scene.items():
             if item not in children:
                 opacity_map[item] = item.opacity()
@@ -539,7 +539,7 @@ class _Handle(TransformHandle):
         super().__init__(parent, handle_id, base_angle, handle_id != ORIGIN_HANDLE_ID)
         self.dragged.connect(parent.move_transformation_handle)
 
-    def _get_parent_transform_params(self) -> Tuple[float, float, float]:
+    def _get_parent_transform_params(self) -> tuple[float, float, float]:
         parent = self.parentItem()
         assert isinstance(parent, TransformOutline)
         x_scale, y_scale = parent.transform_scale

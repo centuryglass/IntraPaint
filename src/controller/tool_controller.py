@@ -1,6 +1,6 @@
 """Manages available tools and handles tool input events."""
 import logging
-from typing import Optional, cast, Dict, List
+from typing import Optional, cast
 
 from PySide6.QtCore import Qt, QObject, QEvent, QRect, QPoint, Signal
 from PySide6.QtGui import QMouseEvent, QTabletEvent, QWheelEvent
@@ -61,9 +61,9 @@ class ToolController(QObject):
         self._image_viewer = image_viewer
         self._active_tool: Optional[BaseTool] = None
         self._active_delegate: Optional[BaseTool] = None
-        self._tool_modifier_delegates: Dict[BaseTool, Dict[Qt.KeyboardModifier, BaseTool]] = {}
+        self._tool_modifier_delegates: dict[BaseTool, dict[Qt.KeyboardModifier, BaseTool]] = {}
         self._mouse_in_bounds = False
-        self._all_tools: List[BaseTool] = []
+        self._all_tools: list[BaseTool] = []
         image_viewer.setMouseTracking(True)
         image_viewer.installEventFilter(self)
         HotkeyFilter.instance().modifiers_changed.connect(self._handle_modifier_delegation)
@@ -111,7 +111,7 @@ class ToolController(QObject):
         self.active_tool = draw_tool
 
     @property
-    def tools(self) -> List[BaseTool]:
+    def tools(self) -> list[BaseTool]:
         """Return a list of available tools."""
         return [*self._all_tools]
 

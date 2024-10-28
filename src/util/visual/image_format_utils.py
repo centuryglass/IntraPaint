@@ -1,5 +1,5 @@
 """Utility functions for saving and loading images across as many file formats as possible."""
-from typing import Optional, Dict, Any, Tuple
+from typing import Optional, Any
 
 from PIL import Image, ExifTags, PngImagePlugin, TiffImagePlugin, TiffTags
 from PIL.ExifTags import IFD
@@ -123,7 +123,7 @@ def _save_pil(image: Image.Image, file_path: str, file_format: Optional[str] = N
             image.save(file_path, file_format)
 
 
-def save_image_with_metadata(image: Image.Image | QImage, file_path: str, metadata: Optional[Dict[str, Any]] = None,
+def save_image_with_metadata(image: Image.Image | QImage, file_path: str, metadata: Optional[dict[str, Any]] = None,
                              exif: Optional[Image.Exif] = None) -> None:
     """
     Save an image to disk, using one of the formats that supports preserving metadata
@@ -213,7 +213,7 @@ def save_image(image: Image.Image | QImage, file_path: str, exif: Optional[Image
             raise ValueError(f'Unsupported image format {file_format}')
 
 
-def load_image(file_path: str) -> Tuple[QImage, Optional[Dict[str, Any]], Optional[Image.Exif]]:
+def load_image(file_path: str) -> tuple[QImage, Optional[dict[str, Any]], Optional[Image.Exif]]:
     """Load an image, returning it with associated metadata if possible"""
     delimiter_index = file_path.rfind('.')
     if delimiter_index < 0:

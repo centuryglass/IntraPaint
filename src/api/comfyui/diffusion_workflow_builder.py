@@ -238,7 +238,7 @@ class DiffusionWorkflowBuilder:
 
     def add_extension_model(self, model_name: str, model_strength: float, clip_strength: float,
                             model_type: ExtensionModelType) -> None:
-        """Adds a LORA or Hypernetwork model to the workflow. Models are applied in the order that they're added."""
+        """Adds a LoRA or Hypernetwork model to the workflow. Models are applied in the order that they're added."""
         self._extension_models.append((model_name, model_strength, clip_strength, model_type))
 
     def build_workflow(self) -> ComfyNodeGraph:

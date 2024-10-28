@@ -1,6 +1,6 @@
 """Displays polygon outlines as animated dashes with subtle color changes."""
 import sys
-from typing import Optional, List
+from typing import Optional
 
 from PySide6.QtCore import Qt, Property, QPropertyAnimation, QObject, QPointF
 from PySide6.QtGui import QPen, QColor, QShowEvent, QHideEvent, QPolygonF, QTransform
@@ -18,10 +18,10 @@ class PolygonOutline(QGraphicsItemGroup):
 
     def __init__(self,
                  view: QGraphicsView,
-                 polygons: Optional[List[QPolygonF]] = None,
+                 polygons: Optional[list[QPolygonF]] = None,
                  parent: Optional[QGraphicsItem] = None):
         super().__init__(parent)
-        self._polygons: List[QGraphicsPolygonItem] = []
+        self._polygons: list[QGraphicsPolygonItem] = []
         self._offset = QPointF()
         self._view = view
         self._animated = True
@@ -92,7 +92,7 @@ class PolygonOutline(QGraphicsItemGroup):
         for poly in self._polygons:
             poly.setTransform(transform)
 
-    def load_polygons(self, polygons: List[QPolygonF]):
+    def load_polygons(self, polygons: list[QPolygonF]):
         """Replace the current outline polygons with new ones."""
         scene = self._view.scene()
         assert scene is not None

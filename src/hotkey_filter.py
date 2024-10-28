@@ -1,7 +1,7 @@
 """Passes ImageViewer input events to an active editing tool."""
 import logging
 from dataclasses import dataclass
-from typing import Optional, Dict, Callable, List, cast, Tuple, TypeAlias
+from typing import Optional, Callable, cast, TypeAlias
 
 from PySide6.QtCore import Qt, QObject, QEvent, Signal, QTimer
 from PySide6.QtGui import QKeyEvent, QKeySequence
@@ -57,13 +57,13 @@ class HotkeyFilter(QObject):
         if HotkeyFilter.shared_instance is not None:
             raise RuntimeError("HotkeyFilter shouldn't be initialized directly; use HotkeyFilter.instance()")
         HotkeyFilter.shared_instance = self
-        self._bindings: Dict[Qt.Key | int, List[HotkeyFilter.KeyBinding]] = {}
+        self._bindings: dict[Qt.Key | int, list[HotkeyFilter.KeyBinding]] = {}
         app = QApplication.instance()
         assert app is not None, 'No QApplication initialized'
         app.installEventFilter(self)
         self._default_focus: Optional[QWidget] = None
         self._last_modifier_state = QApplication.keyboardModifiers()
-        self._config_bindings: Dict[str, Qt.Key | int] = {}
+        self._config_bindings: dict[str, Qt.Key | int] = {}
         self._hotkey_timer = QTimer(self)
         self._hotkey_timer.setInterval(MODIFIER_TIMER_INTERVAL_MS)
         self._hotkey_timer.timeout.connect(self._check_modifiers)
@@ -80,7 +80,7 @@ class HotkeyFilter(QObject):
 
     def register_keybinding(self, str_id: str, action: KeybindingAction, keys: QKeySequence,
                             modifiers: Qt.KeyboardModifier = Qt.KeyboardModifier.NoModifier
-                            ) -> List[Tuple[Qt.Key, 'HotkeyFilter.KeyBinding']]:
+                            ) -> list[tuple[Qt.Key, 'HotkeyFilter.KeyBinding']]:
         """Register a keystroke that should invoke an action.
 
         If keybindings share a key, newer ones will be checked before older ones. This makes it easier to add
@@ -98,7 +98,7 @@ class HotkeyFilter(QObject):
         modifiers: Qt.KeyboardModifiers, optional
             Exact keyboard modifiers required to invoke the action, defaults to Qt.NoModifier.
         """
-        new_bindings: List[Tuple[Qt.Key, 'HotkeyFilter.KeyBinding']] = []
+        new_bindings: list[tuple[Qt.Key, 'HotkeyFilter.KeyBinding']] = []
         # noinspection PyUnresolvedReferences
         for key in (keys[i] for i in range(keys.count())):
             key = key.key()
@@ -122,7 +122,7 @@ class HotkeyFilter(QObject):
 
     def remove_keybinding(self, str_id: str) -> None:
         """Finds and removes all keybindings with the given ID string."""
-        to_remove: List[Tuple[Qt.Key | int, int]] = []
+        to_remove: list[tuple[Qt.Key | int, int]] = []
         for key, key_list in self._bindings.items():
             for i, binding in enumerate(key_list):
                 if binding.str_id == str_id:

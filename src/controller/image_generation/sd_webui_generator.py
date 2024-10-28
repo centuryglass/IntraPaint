@@ -64,7 +64,7 @@ SD_BASE_DESCRIPTION = _tr("""
         The magnitude of changes made to existing images can be precisely controlled by varying denoising strength.
     </li>
     <li>
-        Supports LORAs, miniature extension models adding support for new styles and subjects.
+        Supports LoRAs, miniature extension models adding support for new styles and subjects.
     </li>
     <li>
         Supports positive and negative prompting, where (parentheses) draw additional attention to prompt sections,

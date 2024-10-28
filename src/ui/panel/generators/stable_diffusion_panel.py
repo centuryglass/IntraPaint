@@ -1,5 +1,5 @@
 """A control panel for the Stable-Diffusion WebUI image generator."""
-from typing import Tuple, List, Optional
+from typing import Optional
 
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import QSizePolicy, QLabel, QPushButton, \
@@ -74,7 +74,7 @@ class StableDiffusionPanel(GeneratorPanel):
 
         self._main_layout = QVBoxLayout(self._main_tab)
 
-        def _get_control_with_label(config_key: str, **kwargs) -> Tuple[QLabel, DynamicFieldWidget]:
+        def _get_control_with_label(config_key: str, **kwargs) -> tuple[QLabel, DynamicFieldWidget]:
             label = QLabel(cache.get_label(config_key), parent=self)
             label.setWordWrap(True)
             control = cache.get_control_widget(config_key, **kwargs)
@@ -160,7 +160,7 @@ class StableDiffusionPanel(GeneratorPanel):
 
         self._build_layout()
 
-    def get_tab_bar_widgets(self) -> List[QWidget]:
+    def get_tab_bar_widgets(self) -> list[QWidget]:
         """Returns the toolbar generate button as the only toolbar widget."""
         return [self._toolbar_generate_button]
 
@@ -192,14 +192,18 @@ class StableDiffusionPanel(GeneratorPanel):
             self._gen_size_input.orientation = Qt.Orientation.Horizontal
 
             # Alignment lists:
-            left_labels: List[QWidget] = []
-            center_labels: List[QWidget] = []
-            right_labels: List[QWidget] = []
-            right_inputs: List[QWidget] = []
+            left_labels: list[QWidget] = []
+            center_labels: list[QWidget] = []
+            right_labels: list[QWidget] = []
+            right_inputs: list[QWidget] = []
             all_inner_layouts += [primary_layout, left_panel_layout, right_panel_layout]
+
+            label: Optional[QLabel]
+            input_widget: Optional[QWidget]
 
             for label, textbox in ((self._prompt_label, self._prompt_textbox),
                                    (self._negative_label, self._negative_textbox)):
+                assert label is not None
                 text_row = QHBoxLayout()
                 text_row.setAlignment(Qt.AlignmentFlag.AlignLeft)
                 text_row.addWidget(label)
@@ -220,6 +224,7 @@ class StableDiffusionPanel(GeneratorPanel):
             for label, slider in ((self._step_count_label, self._step_count_slider),
                                   (self._guidance_scale_label, self._guidance_scale_slider),
                                   (self._denoising_strength_label, self._denoising_strength_slider)):
+                assert label is not None
                 slider_row = QHBoxLayout()
                 slider_row.setAlignment(Qt.AlignmentFlag.AlignLeft)
                 slider_row.addWidget(label)
@@ -231,6 +236,8 @@ class StableDiffusionPanel(GeneratorPanel):
             for label, input_widget in ((self._gen_size_label, self._gen_size_input),
                                         (self._batch_size_label, self._batch_size_spinbox),
                                         (self._batch_count_label, self._batch_count_spinbox)):
+                assert label is not None
+                assert input_widget is not None
                 input_row = QHBoxLayout()
                 input_row.setAlignment(Qt.AlignmentFlag.AlignLeft)
                 input_row.addWidget(label)

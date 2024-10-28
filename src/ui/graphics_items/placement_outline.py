@@ -1,5 +1,5 @@
 """Adjusts a rectangle's size and scale after transformations are applied."""
-from typing import Optional, Dict, Iterable
+from typing import Optional, Iterable
 
 from PySide6.QtCore import Qt, QRectF, QPointF, Signal, QSizeF
 from PySide6.QtGui import QPainter, QPen, QTransform, QPainterPath
@@ -8,12 +8,12 @@ from PySide6.QtWidgets import QWidget, QGraphicsItem, QStyleOptionGraphicsItem, 
     QGraphicsObject
 
 from src.ui.graphics_items.transform_handle import TransformHandle
+from src.util.math_utils import clamp, avoiding_zero
+from src.util.shared_constants import MIN_NONZERO, FLOAT_MIN, FLOAT_MAX
 from src.util.visual.geometry_utils import combine_transform_parameters, closest_size_keeping_aspect_ratio
 from src.util.visual.graphics_scene_utils import (get_view_bounds_of_scene_item_rect,
                                                   map_scene_item_point_to_view_point,
                                                   get_scene_item_bounds_of_view_rect, get_view)
-from src.util.math_utils import clamp, avoiding_zero
-from src.util.shared_constants import MIN_NONZERO, FLOAT_MIN, FLOAT_MAX
 
 MIN_SCENE_DIM = 5
 
@@ -35,7 +35,7 @@ class PlacementOutline(QGraphicsObject):
         super().__init__()
 
         self.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsSelectable, True)
-        self._handles: Dict[str, _Handle] = {}
+        self._handles: dict[str, _Handle] = {}
         self._size = QSizeF(avoiding_zero(size.width()), avoiding_zero(size.height()))
         self._aspect_ratio = 1.0
         self._preserve_aspect_ratio = False

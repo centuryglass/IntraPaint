@@ -3,7 +3,7 @@ Popup modal providing a dynamic settings interface, to be populated by the contr
 stable_diffusion_controller.
 """
 import logging
-from typing import Any, Dict, List, Optional, Set
+from typing import Any, Optional
 
 from PySide6.QtCore import Signal, QSize, Qt
 from PySide6.QtGui import QIcon, QFont
@@ -54,12 +54,12 @@ class SettingsModal(QDialog):
         self.setWindowIcon(QIcon(APP_ICON_PATH))
         self.setWindowTitle(WINDOW_TITLE)
 
-        self._tabs: Dict[str, QWidget] = {}
-        self._tab_layouts: Dict[str, QFormLayout] = {}
-        self._inputs: Dict[str, DynamicFieldWidget] = {}
-        self._changes: Dict[str, Any] = {}
+        self._tabs: dict[str, QWidget] = {}
+        self._tab_layouts: dict[str, QFormLayout] = {}
+        self._inputs: dict[str, DynamicFieldWidget] = {}
+        self._changes: dict[str, Any] = {}
 
-        self._config_paths: Set[str] = set()
+        self._config_paths: set[str] = set()
         self._config_path_widget = QPlainTextEdit(parent=self)
         self._config_path_widget.setReadOnly(True)
         self._config_path_widget.setHidden(True)
@@ -93,7 +93,7 @@ class SettingsModal(QDialog):
 
         layout.addWidget(bottom_panel, stretch=1)
 
-    def load_from_config(self, config: Config, categories: Optional[List[str]] = None) -> None:
+    def load_from_config(self, config: Config, categories: Optional[list[str]] = None) -> None:
         """Load settings from a Config object, or from a subset of Config object categories."""
         if categories is None:
             categories = config.get_categories()

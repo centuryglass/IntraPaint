@@ -1,5 +1,5 @@
 """Draws various geometric shapes."""
-from typing import Optional, List
+from typing import Optional
 
 from PySide6.QtCore import Qt, QPoint
 from PySide6.QtGui import QIcon, QMouseEvent, QPainter, QColor, QBrush, QPainterPath, QPen, QCursor, QPainterPathStroker
@@ -297,5 +297,5 @@ class ShapeTool(BaseTool):
             self._dragging = False
 
 
-def _parse_dash_pattern(pattern_str) -> List[float]:
+def _parse_dash_pattern(pattern_str) -> list[float]:
     return [float(num) for num in pattern_str.split(' ') if num.isnumeric()]

@@ -3,7 +3,7 @@ import logging
 from contextlib import contextmanager
 import datetime
 from threading import Lock
-from typing import Callable, Optional, Dict, Any, List, Generator
+from typing import Callable, Optional, Any, Generator
 
 from PySide6.QtCore import QObject, Signal
 
@@ -18,7 +18,7 @@ class _UndoAction:
     def __init__(self, undo_action: Callable[[], None],
                  redo_action: Callable[[], None],
                  action_type: str,
-                 action_data: Optional[Dict[str, Any]]) -> None:
+                 action_data: Optional[dict[str, Any]]) -> None:
         self.undo = undo_action
         self.redo = redo_action
         self.type = action_type
@@ -30,8 +30,8 @@ class _UndoGroup:
     def __init__(self, action_type: str) -> None:
         self.type = action_type
         self.timestamp = datetime.datetime.now().timestamp()
-        self._undo_actions: List[Callable[[], None]] = []
-        self._redo_actions: List[Callable[[], None]] = []
+        self._undo_actions: list[Callable[[], None]] = []
+        self._redo_actions: list[Callable[[], None]] = []
 
     def add_to_group(self, undo_action: Callable[[], None], redo_action: Callable[[], None], action_type: str):
         """Add a new action to the set of grouped actions."""
@@ -60,8 +60,8 @@ class UndoStack(metaclass=Singleton):
     """Manages the application's shared undo history."""
 
     def __init__(self) -> None:
-        self._undo_stack: List[_UndoAction | _UndoGroup] = []
-        self._redo_stack: List[_UndoAction | _UndoGroup] = []
+        self._undo_stack: list[_UndoAction | _UndoGroup] = []
+        self._redo_stack: list[_UndoAction | _UndoGroup] = []
         self._access_lock = Lock()
         self._open_group: Optional[_UndoGroup] = None
         self._in_progress_change = 'none'
@@ -96,7 +96,7 @@ class UndoStack(metaclass=Singleton):
         return len(self._redo_stack)
 
     def commit_action(self, action: Callable[[], None], undo_action: Callable[[], None], action_type: str,
-                      action_data: Optional[Dict[str, Any]] = None, skip_initial_call=False) -> bool:
+                      action_data: Optional[dict[str, Any]] = None, skip_initial_call=False) -> bool:
         """Performs an action, then commits it to the undo stack.
 
         The undo stack is lock-protected.  Make sure that the function parameters provided don't also call
@@ -117,7 +117,7 @@ class UndoStack(metaclass=Singleton):
                 undo_action()
         action_type: str
             An arbitrary label used to identify the action, to be used when attempting to merge actions in the stack.
-        action_data: Dict
+        action_data: dict
             Arbitrary data to use for merging actions.
         skip_initial_call: bool, default=False
             If true, skip the initial action() call.
@@ -224,7 +224,7 @@ class UndoStack(metaclass=Singleton):
             if redo_count != 0:
                 self.redo_count_changed.emit(0)
 
-    def _add_to_stack(self, stack_item: _UndoAction | _UndoGroup, stack: List[_UndoAction | _UndoGroup]) -> None:
+    def _add_to_stack(self, stack_item: _UndoAction | _UndoGroup, stack: list[_UndoAction | _UndoGroup]) -> None:
         if stack == self._undo_stack:
             stack_signal = self.undo_count_changed
         else:

@@ -42,7 +42,7 @@ Krita extension's implementation: (https://github.com/Acly/krita-ai-diffusion/bl
 - How do I change the active workflow, or read the current workflow?
 - Can I install new nodes through the API?
 - Can I switch models through the API?
-- How can I access the lists of LORAs/ControlNet models/etc.?
+- How can I access the lists of LoRAs/ControlNet models/etc.?
 - Is CLIP interrogate supported?
 
 ### Steps to implement (bare minimum):

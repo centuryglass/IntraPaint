@@ -1,6 +1,6 @@
 """Coordinate the current application state, mostly for enabling/disabling components that should only be active
    in particular states."""
-from typing import List, Dict, Any
+from typing import Any
 
 from PySide6.QtCore import QObject, Signal
 from PySide6.QtGui import QAction
@@ -39,7 +39,7 @@ class AppStateTracker(metaclass=Singleton):
         self._signal_object = _InnerQObject()
         self._state_changed = self._signal_object.state_changed
         self._app_state = APP_STATE_INIT
-        self._connections: Dict[QWidget | QAction, Any] = {}
+        self._connections: dict[QWidget | QAction, Any] = {}
 
     @staticmethod
     def set_app_state(new_state: str) -> None:
@@ -54,7 +54,7 @@ class AppStateTracker(metaclass=Singleton):
         return AppStateTracker()._app_state
 
     @staticmethod
-    def set_enabled_states(widget: QWidget | QAction, valid_states: List[str]) -> None:
+    def set_enabled_states(widget: QWidget | QAction, valid_states: list[str]) -> None:
         """Configures a widget or action to automatically enable or disable itself based on application state."""
         assert isinstance(valid_states, list), f'Invalid state list {valid_states}'
         state_tracker = AppStateTracker()

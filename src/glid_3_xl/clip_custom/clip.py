@@ -2,7 +2,7 @@ import hashlib
 import os
 import urllib
 import warnings
-from typing import Any, Union, List
+from typing import Any, Union, list
 from pkg_resources import packaging
 
 import torch
@@ -85,7 +85,7 @@ def _transform(n_px):
     ])
 
 
-def available_models() -> List[str]:
+def available_models() -> list[str]:
     """Returns the names of available CLIP models"""
     return list(_MODELS.keys())
 
@@ -192,7 +192,7 @@ def load(name: str, device: Union[str, torch.device] = "cuda" if torch.cuda.is_a
     return model, _transform(model.input_resolution.item())
 
 
-def tokenize(texts: Union[str, List[str]], context_length: int = 77, truncate: bool = False) -> torch.LongTensor:
+def tokenize(texts: Union[str, list[str]], context_length: int = 77, truncate: bool = False) -> torch.LongTensor:
     """
     Returns the tokenized representation of given input string(s)
 

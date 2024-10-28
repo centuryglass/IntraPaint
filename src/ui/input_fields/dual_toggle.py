@@ -1,7 +1,7 @@
 """
 A fancier Qt toggle button implementation that allows selecting between two options.
 """
-from typing import Optional, cast, List
+from typing import Optional, cast
 from PySide6.QtGui import QPixmap, QMouseEvent, QColor
 from PySide6.QtWidgets import QWidget, QFrame, QSizePolicy, QApplication
 from PySide6.QtCore import Qt, QSize, Signal, QEvent
@@ -55,7 +55,7 @@ class DualToggle(QWidget):
         self.set_orientation(orientation)
 
     @property
-    def options(self) -> List[str]:
+    def options(self) -> list[str]:
         """Return accepted options."""
         return [self.option1, self.option2]
 

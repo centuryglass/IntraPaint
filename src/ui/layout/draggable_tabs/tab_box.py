@@ -5,7 +5,7 @@ The sole responsibility of the TabBox is to create, display and provide access t
 content widget if the TabBar is in the open state.
 """
 
-from typing import Optional, List, Set
+from typing import Optional
 
 from PySide6.QtCore import Signal, Qt, QSize
 from PySide6.QtGui import QAction
@@ -114,7 +114,7 @@ class TabBox(BorderedWidget):
         return widget.parent() == self._tab_bar
 
     @property
-    def tabs(self) -> List[Tab]:
+    def tabs(self) -> list[Tab]:
         """Returns all tabs in this tab box."""
         return self._tab_bar.tabs
 
@@ -177,7 +177,7 @@ class TabBox(BorderedWidget):
         total_stretch = 0
         own_idx = -1
         stretch_values = []
-        skipped_indexes: Set[int] = set()
+        skipped_indexes: set[int] = set()
         for i in range(parent_layout.count()):
             stretch = parent_layout.stretch(i)
             total_stretch += stretch

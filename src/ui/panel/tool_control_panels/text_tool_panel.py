@@ -1,11 +1,11 @@
 """Provides a control panel class for the text tool."""
 import os.path
-from typing import Optional, Callable, Tuple
+from typing import Optional, Callable
 
 from PySide6.QtCore import Signal, QSize, QPoint, QRect
 from PySide6.QtGui import QFont, QFontDatabase, Qt, QImage, QColor, QPainter, QResizeEvent, QIcon
-from PySide6.QtWidgets import QApplication, QWidget, QListWidget, QGridLayout, QLabel, QSizePolicy, QComboBox, \
-    QVBoxLayout, QScrollArea, QHBoxLayout
+from PySide6.QtWidgets import QApplication, QWidget, QGridLayout, QLabel, QSizePolicy, QComboBox, \
+    QVBoxLayout, QScrollArea, QHBoxLayout, QListWidget
 
 from src.config.application_config import AppConfig
 from src.config.cache import Cache
@@ -170,7 +170,7 @@ class TextToolPanel(QWidget):
                                            False)
 
         def _make_resize_label(text: str, tooltip: str, icon_path: str,
-                               change_fn: Callable[[bool], None]) -> Tuple[CheckBox, QWidget]:
+                               change_fn: Callable[[bool], None]) -> tuple[CheckBox, QWidget]:
             checkbox = CheckBox(parent=self)
             checkbox.setIcon(QIcon(icon_path))
             label = QLabel(text, self)

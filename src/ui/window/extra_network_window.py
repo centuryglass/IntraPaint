@@ -1,6 +1,6 @@
 """View available extra networks/models."""
 import re
-from typing import Dict, Optional, List, cast
+from typing import Optional, cast
 
 from PySide6.QtCore import Qt, QSize, QPoint, Signal
 from PySide6.QtGui import QImage, QPainter, QMouseEvent, QIcon
@@ -22,12 +22,12 @@ def _tr(*args):
     return QApplication.translate(TR_ID, *args)
 
 
-PAGE_TITLE = _tr('LORA Models')
+PAGE_TITLE = _tr('LoRA Models')
 
 ADD_BUTTON_LABEL = _tr('Add to prompt')
 REMOVE_BUTTON_LABEL = _tr('Remove from prompt')
 CLOSE_BUTTON_LABEL = _tr('Close')
-PLACEHOLDER_TEXT = _tr('LORA')
+PLACEHOLDER_TEXT = _tr('LoRA')
 
 LORA_KEY_NAME = 'name'
 LORA_KEY_ALIAS = 'alias'
@@ -40,14 +40,14 @@ PREVIEW_SIZE = 150
 class ExtraNetworkWindow(QDialog):
     """View available extra networks/models."""
 
-    def __init__(self, loras: List[Dict[str, str]], images: Dict[str, Optional[QImage]]) -> None:
+    def __init__(self, loras: list[dict[str, str]], images: dict[str, Optional[QImage]]) -> None:
         super().__init__()
 
         self.setWindowIcon(QIcon(APP_ICON_PATH))
         self.setWindowTitle(PAGE_TITLE)
         self._layout = QVBoxLayout(self)
-        self._loras: List[Dict[str, str]] = []
-        self._list_items: List[_LoraItem] = []
+        self._loras: list[dict[str, str]] = []
+        self._list_items: list[_LoraItem] = []
         self._image_placeholder: Optional[QImage] = None
 
         for lora in loras:
@@ -111,7 +111,7 @@ class ExtraNetworkWindow(QDialog):
         return self._image_placeholder
 
     def _add_remove_prompt(self) -> None:
-        selected_lora: Optional[Dict[str, str]] = None
+        selected_lora: Optional[dict[str, str]] = None
         for lora_item in self._list_items:
             if lora_item.is_selected:
                 selected_lora = lora_item.lora
@@ -129,7 +129,7 @@ class ExtraNetworkWindow(QDialog):
         Cache().set(Cache.PROMPT, prompt)
 
 
-def _prompt_lora_match(lora: Dict[str, str]) -> Optional[re.Match[str]]:
+def _prompt_lora_match(lora: dict[str, str]) -> Optional[re.Match[str]]:
     prompt = Cache().get(Cache.PROMPT)
     pattern = re.compile('<lora:' + lora[LORA_KEY_NAME] + r':[\d.]+>')
     return re.search(pattern, prompt)
@@ -140,7 +140,7 @@ class _LoraItem(BorderedWidget):
 
     selected = Signal(BorderedWidget)
 
-    def __init__(self, lora: Dict[str, str], thumbnail: QImage) -> None:
+    def __init__(self, lora: dict[str, str], thumbnail: QImage) -> None:
         super().__init__()
         self._lora = lora
         self._default_color = self.frame_color
@@ -157,7 +157,7 @@ class _LoraItem(BorderedWidget):
         self._layout.addWidget(label, stretch=2)
 
     @property
-    def lora(self) -> Dict[str, str]:
+    def lora(self) -> dict[str, str]:
         """Returns the Lora model data associated with this item."""
         return self._lora
 

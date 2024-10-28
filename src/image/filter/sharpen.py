@@ -1,5 +1,5 @@
 """Define image sharpening functions."""
-from typing import List, Callable, Any
+from typing import Callable, Any
 
 from PIL import ImageEnhance
 from PySide6.QtWidgets import QApplication
@@ -57,7 +57,7 @@ class SharpenFilter(ImageFilter):
         into account (False)."""
         return False
 
-    def radius(self, parameter_values: List[Any]) -> float:
+    def radius(self, parameter_values: list[Any]) -> float:
         """Given a set of valid parameters, estimate how far each pixel's influence extends in the final image."""
         # This might be larger than necessary, but it's probably not worth finding the exact value to cut a few extra
         # pixel lines out of the change bounds.
@@ -70,7 +70,7 @@ class SharpenFilter(ImageFilter):
         enhancer = ImageEnhance.Sharpness(pil_image)
         return pil_image_to_qimage(enhancer.enhance(factor))
 
-    def get_parameters(self) -> List[Parameter]:
+    def get_parameters(self) -> list[Parameter]:
         """Return parameter definitions for the sharpen filter."""
         return [
             Parameter(FACTOR_LABEL, TYPE_FLOAT, 2.0, FACTOR_DESCRIPTION)

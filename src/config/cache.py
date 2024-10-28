@@ -1,6 +1,5 @@
 """Use the Config module's data sharing capabilities to cache temporary values."""
 from argparse import Namespace
-from typing import Dict
 
 from PySide6.QtCore import QRect, QTimer
 from PySide6.QtWidgets import QWidget, QApplication
@@ -35,8 +34,8 @@ class Cache(Config, metaclass=Singleton):
         self._geometry_timer = QTimer()
         self._geometry_timer.setInterval(GEOMETRY_CHECK_INTERVAL)
         self._geometry_timer.timeout.connect(self._check_bounds)
-        self._final_bounds: Dict[QWidget, QRect] = {}
-        self._last_bounds: Dict[QWidget, QRect] = {}
+        self._final_bounds: dict[QWidget, QRect] = {}
+        self._last_bounds: dict[QWidget, QRect] = {}
 
     def apply_args(self, args: Namespace) -> None:
         """Loads expected parameters from command line arguments"""

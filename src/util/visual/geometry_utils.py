@@ -1,6 +1,6 @@
 """Provides a utility function for handling image or widget placement."""
 import math
-from typing import Tuple, Optional, List
+from typing import Optional
 
 from PySide6.QtCore import QRect, QSize, QRectF, QSizeF, QPoint, QPointF, QLineF, Qt, QMargins
 from PySide6.QtGui import QTransform, QPolygonF, QPainter, QColor
@@ -145,7 +145,7 @@ def translation_point(transformation: QTransform) -> QPointF:
     return QPointF(transformation.m31(), transformation.m32())
 
 
-def transform_scale(transformation: QTransform) -> Tuple[float, float]:
+def transform_scale(transformation: QTransform) -> tuple[float, float]:
     """Returns the scaling component of a transformation."""
     width_init = 1.0
     height_init = 1.0
@@ -164,7 +164,7 @@ def transform_scale(transformation: QTransform) -> Tuple[float, float]:
 
 
 def extract_transform_parameters(transform: QTransform,
-                                 origin: Optional[QPointF] = None) -> Tuple[float, float, float, float, float]:
+                                 origin: Optional[QPointF] = None) -> tuple[float, float, float, float, float]:
     """Break a matrix down into a scale, rotation, and translation at an arbitrary origin, returning
      x_offset, y_offset, x_scale, y_scale, rotation_degrees"""
     # Not all transformations can be decomposed this way, throw an error if this one can't be:
@@ -331,7 +331,7 @@ def closest_point_keeping_angle(start_point: QPointF, end_point: QPointF, angle_
 
 
 def closest_point_at_angle_option(start_point: QPointF, end_point: QPointF,
-                                  angles: List[float]) -> Tuple[QPointF, float]:
+                                  angles: list[float]) -> tuple[QPointF, float]:
     """Given a start point, an end point, and a list of possible angles, return the closest point to the end point that
        fixes the angle at a value in the list, and the angle selected."""
     closest_point: Optional[QPointF] = None

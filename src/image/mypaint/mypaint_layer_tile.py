@@ -1,6 +1,6 @@
 """Connects a libmypaint image tile to a region in an ImageLayer."""
 from ctypes import sizeof, memset
-from typing import Optional, Tuple
+from typing import Optional
 
 import numpy as np
 from PySide6.QtCore import QRect, QSize
@@ -55,7 +55,7 @@ class MyPaintLayerTile:
         else:
             self.load_pixels_from_layer()
 
-    def _image_and_pixel_intersect_arrays(self, np_image: NpAnyArray) -> Tuple[NpAnyArray, NpAnyArray]:
+    def _image_and_pixel_intersect_arrays(self, np_image: NpAnyArray) -> tuple[NpAnyArray, NpAnyArray]:
         """Given an image array cropped to bounds, return a converted image array and an array into the pixel buffer,
         cropped so that both are equal size."""
         np_pixels = pixel_data_as_numpy_16bit(self._pixels)

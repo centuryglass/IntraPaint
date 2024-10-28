@@ -5,7 +5,7 @@ import logging
 import os
 import tempfile
 import uuid
-from typing import Optional, Any, Tuple, TypeAlias, Callable
+from typing import Optional, Any, TypeAlias, Callable
 
 # noinspection PyPackageRequirements
 import cv2
@@ -364,7 +364,7 @@ def numpy_bounds_index(np_image: NpAnyArray, bounds: QRect) -> NpAnyArray:
 
 
 def numpy_intersect(arr1: NpAnyArray, arr2: NpAnyArray,
-                    x: int = 0, y: int = 0) -> Tuple[NpAnyArray, NpAnyArray] | Tuple[None, None]:
+                    x: int = 0, y: int = 0) -> tuple[NpAnyArray, NpAnyArray] | tuple[None, None]:
     """Takes two offset numpy arrays and returns only their intersecting regions."""
     w1 = arr1.shape[1]
     w2 = arr2.shape[1]

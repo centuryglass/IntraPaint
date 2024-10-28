@@ -3,7 +3,7 @@ import logging
 import math
 from ctypes import sizeof, pointer, byref, c_float, c_double, c_int, c_void_p
 from time import time
-from typing import Any, Optional, Set
+from typing import Any, Optional
 
 from PySide6.QtCore import QObject, QSize, QRect, QTimer
 from PySide6.QtGui import QColor, QImage
@@ -36,7 +36,7 @@ class MyPaintLayerSurface(QObject):
         self._tile_buffer: Any = None
         self._mask_image: Optional[QImage] = None
 
-        self._pending_changed_tiles: Set[MyPaintLayerTile] = set()
+        self._pending_changed_tiles: set[MyPaintLayerTile] = set()
         self._pending_tile_timer = QTimer()
         self._pending_tile_timer.timeout.connect(self.apply_pending_tile_updates)
         self._pending_tile_timer.setSingleShot(True)

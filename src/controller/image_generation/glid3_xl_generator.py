@@ -3,7 +3,7 @@ import logging
 import os
 import sys
 from argparse import Namespace
-from typing import Optional, Any, Dict
+from typing import Optional, Any
 
 from PySide6.QtCore import Signal, QSize
 from PySide6.QtGui import QImage
@@ -190,7 +190,7 @@ class Glid3XLGenerator(ImageGenerator):
         if args.clip_model is not None:
             self._clip_model_name = args.clip_model
 
-        self._model_params: Optional[Dict[str, Any]] = None
+        self._model_params: Optional[dict[str, Any]] = None
         self._model: Optional[Any] = None
         self._diffusion: Optional[Any] = None
         self._ldm: Optional[Any] = None

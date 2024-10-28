@@ -43,7 +43,7 @@ import os
 import re
 import sys
 from argparse import Namespace
-from typing import Optional, Any, List, Tuple, Callable, Set
+from typing import Optional, Any, Callable
 
 from PIL import Image, UnidentifiedImageError, ExifTags
 from PIL.ExifTags import IFD
@@ -222,7 +222,7 @@ IGNORED_APPCONFIG_CATEGORIES = (QApplication.translate('application_config', 'St
 DEV_APPCONFIG_CATEGORY = QApplication.translate('application_config', 'Developer')
 
 
-def _get_config_categories() -> List[str]:
+def _get_config_categories() -> list[str]:
     categories = AppConfig().get_categories()
     for ignored in IGNORED_APPCONFIG_CATEGORIES:
         if ignored in categories:
@@ -297,7 +297,7 @@ class AppController(MenuBuilder):
 
         # Since image filter menus follow a very simple pattern, add them here instead of using @menu_action.
         # At the same time, make sure the filter tool's list of available options contains all filters.
-        filter_class_names: List[str] = []
+        filter_class_names: list[str] = []
         for filter_class in (RGBColorBalanceFilter,
                              BrightnessContrastFilter,
                              BlurFilter,
@@ -651,13 +651,13 @@ class AppController(MenuBuilder):
             return app_state in data.valid_app_states
 
         selection_is_empty = self._image_stack.selection_layer.empty
-        selection_methods: Set[Callable[..., None]] = {
+        selection_methods: set[Callable[..., None]] = {
             self.grow_selection,
             self.shrink_selection,
             self.crop_image_to_selection,
             self.crop_layer_to_selection
         }
-        unlocked_layer_methods: Set[Callable[..., None]] = {
+        unlocked_layer_methods: set[Callable[..., None]] = {
             self.layer_mirror_horizontal,
             self.layer_mirror_vertical,
             self.layer_rotate_cw,
@@ -670,17 +670,17 @@ class AppController(MenuBuilder):
             self.crop_layer_to_selection
 
         }
-        not_bottom_layer_methods: Set[Callable[..., None]] = {
+        not_bottom_layer_methods: set[Callable[..., None]] = {
             self.select_next_layer,
             self.move_layer_down,
             self.merge_layer_down
         }
-        not_top_layer_methods: Set[Callable[..., None]] = {
+        not_top_layer_methods: set[Callable[..., None]] = {
             self.select_previous_layer,
             self.move_layer_up,
             self.move_layer_to_top
         }
-        not_layer_stack_methods: Set[Callable[..., None]] = {
+        not_layer_stack_methods: set[Callable[..., None]] = {
             self.select_previous_layer,
             self.move_layer_up,
             self.move_layer_down,
@@ -689,13 +689,13 @@ class AppController(MenuBuilder):
             self.copy_layer,
             self.delete_layer
         }
-        not_flat_methods: Set[Callable[..., None]] = {self.flatten_layer}
-        not_layer_group_methods: Set[Callable[..., None]] = {
+        not_flat_methods: set[Callable[..., None]] = {self.flatten_layer}
+        not_layer_group_methods: set[Callable[..., None]] = {
             self.merge_layer_down,
             self.layer_to_image_size
         }
 
-        not_text_layer_methods: Set[Callable[..., None]] = {self.crop_layer_to_content}
+        not_text_layer_methods: set[Callable[..., None]] = {self.crop_layer_to_content}
 
         managed_menu_methods = selection_methods | unlocked_layer_methods | not_bottom_layer_methods \
                                | not_top_layer_methods | not_layer_stack_methods | not_layer_group_methods
@@ -884,7 +884,7 @@ class AppController(MenuBuilder):
                 color_loss_message = NO_COLOR_SAVE_MESSAGE
                 write_only_message = WRITE_ONLY_SAVE_MESSAGE
 
-                def _extension_str(extensions: Tuple[str, ...]) -> str:
+                def _extension_str(extensions: tuple[str, ...]) -> str:
                     return ', '.join((f'.{ext.lower()}' for ext in extensions))
 
                 format_str = f'.{file_format.lower()}'
@@ -939,7 +939,7 @@ class AppController(MenuBuilder):
 
     @menu_action(MENU_FILE, 'load_shortcut', 3,
                  valid_app_states=[APP_STATE_EDITING, APP_STATE_NO_IMAGE])
-    def load_image(self, file_path: Optional[str | List[str]] = None) -> None:
+    def load_image(self, file_path: Optional[str | list[str]] = None) -> None:
         """Open a loading dialog, then load the selected image for editing."""
         cache = Cache()
         if file_path is None:
@@ -1042,8 +1042,8 @@ class AppController(MenuBuilder):
         layer_paths, layers_selected = open_image_layers(self._window)
         if not layers_selected or not layer_paths or len(layer_paths) == 0:
             return
-        layers: List[Tuple[QImage, str]] = []
-        errors: List[str] = []
+        layers: list[tuple[QImage, str]] = []
+        errors: list[str] = []
         for layer_path in layer_paths:
             try:
                 image, _, _ = load_image(layer_path)

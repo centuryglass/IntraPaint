@@ -119,15 +119,15 @@ class A1111Webservice(WebService):
         return self.post(A1111Webservice.Endpoints.REFRESH_VAE, body={})
 
     def refresh_loras(self) -> requests.Response:
-        """Requests an updated list of available stable-diffusion LORA models.
+        """Requests an updated list of available stable-diffusion LoRA models.
 
-        LORA models augment existing stable-diffusion models, usually to provide support for new concepts, characters,
+        LoRA models augment existing stable-diffusion models, usually to provide support for new concepts, characters,
         or art styles.
 
         Returns
         -------
         response
-            HTTP response with the list of updated stable-diffusion LORA models.
+            HTTP response with the list of updated stable-diffusion LoRA models.
         """
         return self.post(A1111Webservice.Endpoints.REFRESH_LORA, body={})
 
@@ -454,7 +454,7 @@ class A1111Webservice(WebService):
         return self.get(A1111Webservice.Endpoints.CONTROLNET_SETTINGS, timeout=DEFAULT_TIMEOUT).json()
 
     def get_loras(self) -> list:
-        """Returns the list of available stable-diffusion LORA models cached by the webui.
+        """Returns the list of available stable-diffusion LoRA models cached by the webui.
 
         If available models may have changed, instead consider using the slower refresh_loras method.
         """

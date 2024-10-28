@@ -11,7 +11,7 @@ import os.path
 import shutil
 import tempfile
 import zipfile
-from typing import Optional, Dict, Any, cast, Tuple
+from typing import Optional, Any, cast
 from xml.etree.ElementTree import ElementTree, Element
 
 from PySide6.QtCore import QSize
@@ -112,16 +112,16 @@ def save_ora_image(image_stack: ImageStack, file_path: str,  metadata: str) -> N
     os.mkdir(thumbnail_dir_path)
 
     # Save layers and build xml data file:
-    extended_data: Dict[str, Dict[str, str]] = {}
+    extended_data: dict[str, dict[str, str]] = {}
 
     def _get_transform_str(transform: QTransform) -> str:
         return (f'{transform.m11()},{transform.m12()},{transform.m13()},'
                 f'{transform.m21()},{transform.m22()},{transform.m23()},'
                 f'{transform.m31()},{transform.m32()},{transform.m33()}')
 
-    def encode_image_layer(layer: ImageLayer | TextLayer) -> Dict[str, Any]:
+    def encode_image_layer(layer: ImageLayer | TextLayer) -> dict[str, Any]:
         """Encode an ImageLayer as image data."""
-        layer_data: Dict[str, Any] = {
+        layer_data: dict[str, Any] = {
             DICT_ELEMENT_NAME: LAYER_ELEMENT,
             IMAGE_TAG_NAME: layer.name
         }
@@ -158,9 +158,9 @@ def save_ora_image(image_stack: ImageStack, file_path: str,  metadata: str) -> N
             extended_data[image_path] = extended_layer_data
         return layer_data
 
-    def encode_layer_group(layer: LayerGroup) -> Dict[str, Any]:
+    def encode_layer_group(layer: LayerGroup) -> dict[str, Any]:
         """Encode a LayerGroup as stack data."""
-        stack_data: Dict[str, Any] = {
+        stack_data: dict[str, Any] = {
             DICT_ELEMENT_NAME: STACK_ELEMENT,
             ATTR_TAG_NAME: layer.name
         }
@@ -200,7 +200,7 @@ def save_ora_image(image_stack: ImageStack, file_path: str,  metadata: str) -> N
 
     # Convert to XML, write XML file structure:
 
-    def _create_element(data_dict: Dict[str, Any]) -> Element:
+    def _create_element(data_dict: dict[str, Any]) -> Element:
         new_element = Element(data_dict[DICT_ELEMENT_NAME])
         for key, value in data_dict.items():
             if key == DICT_ELEMENT_NAME:
@@ -279,7 +279,7 @@ def read_ora_image(image_stack: ImageStack, file_path: str) -> Optional[str]:
 
     extended_xml_path = os.path.join(tmpdir, EXTENDED_DATA_XML_FILE_NAME)
     metadata = None
-    extended_data: Dict[str, Dict[str, Any]] = {}
+    extended_data: dict[str, dict[str, Any]] = {}
     if os.path.isfile(extended_xml_path):
         extended_xml_root = ElementTree().parse(extended_xml_path)
         metadata = extended_xml_root.get(METADATA_TAG)
@@ -324,7 +324,7 @@ def read_ora_image(image_stack: ImageStack, file_path: str) -> Optional[str]:
                 logger.error(f'Unrecognised layer composite mode {composite_op} ignored')
         return element.get(ATTR_TAG_SELECTED) == BOOLEAN_TRUE_STR
 
-    def parse_image_element(element: Element) -> Tuple[ImageLayer, bool]:
+    def parse_image_element(element: Element) -> tuple[ImageLayer, bool]:
         """Load an image layer from its saved XML definition, return whether this layer is selected."""
         assert element.tag == LAYER_ELEMENT
         base_image_path = element.get(LAYER_TAG_SRC)
@@ -354,7 +354,7 @@ def read_ora_image(image_stack: ImageStack, file_path: str) -> Optional[str]:
             layer.set_transform(layer_transform)
         return layer, is_active
 
-    def parse_stack_element(element: Element) -> Tuple[LayerGroup, Optional[Layer]]:
+    def parse_stack_element(element: Element) -> tuple[LayerGroup, Optional[Layer]]:
         """Load a layer group from its saved XML definition, return the selected layer (if found)"""
         assert element.tag == STACK_ELEMENT
         layer = LayerGroup('')

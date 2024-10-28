@@ -1,5 +1,5 @@
 """QLayout utility functions"""
-from typing import Optional, List
+from typing import Optional
 
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QLayout, QLayoutItem, QSpacerItem, QWidget, QGridLayout, QHBoxLayout
@@ -38,7 +38,7 @@ def clear_layout(layout: QLayout, recursive=True, unparent=True, hide=False, cle
             layout.setColumnStretch(column, 0)
 
 
-def synchronize_widths(widgets: List[Optional[QWidget]]) -> None:
+def synchronize_widths(widgets: list[Optional[QWidget]]) -> None:
     """Synchronizes the widths of several widgets."""
     min_width = 0
     for widget in widgets:
@@ -51,13 +51,13 @@ def synchronize_widths(widgets: List[Optional[QWidget]]) -> None:
         widget.setMinimumWidth(min_width)
 
 
-def synchronize_row_widths(rows: List[List[Optional[QWidget]]]) -> None:
+def synchronize_row_widths(rows: list[list[Optional[QWidget]]]) -> None:
     """Synchronizes the widths of column widgets within several equal_sized rows."""
     if len(rows) < 2:
         return
     column_count = len(rows[0])
     assert all(len(row) == column_count for row in rows)
-    columns: List[List[Optional[QWidget]]] = []
+    columns: list[list[Optional[QWidget]]] = []
     for i in range(column_count):
         columns.append([])
     for row in rows:

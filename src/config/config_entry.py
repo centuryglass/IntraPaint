@@ -1,11 +1,11 @@
 """Represents configurable typed values loaded from JSON definitions."""
 import logging
-from typing import Any, Optional, Dict
+from typing import Any, Optional
 
 from PySide6.QtCore import QSize
 from PySide6.QtWidgets import QApplication
 
-from src.util.parameter import Parameter, get_parameter_type, TYPE_DICT, TYPE_INT, TYPE_FLOAT, TYPE_QSIZE
+from src.util.parameter import Parameter, get_parameter_type, TYPE_DICT, TYPE_INT, TYPE_FLOAT, TYPE_QSIZE, ParamTypeList
 
 logger = logging.getLogger(__name__)
 
@@ -71,7 +71,7 @@ class ConfigEntry(Parameter):
                  category: str,
                  subcategory: Optional[str],
                  tooltip: str,
-                 options: Optional[list[Any]] = None,
+                 options: Optional[ParamTypeList] = None,
                  range_options: Optional[dict[str, int | float]] = None,
                  save_json: bool = True) -> None:
         minimum = None
@@ -93,7 +93,7 @@ class ConfigEntry(Parameter):
         self._category = category
         self._subcategory = subcategory
         self.save_json = save_json
-        self._default_options: Optional[list[Any]] = None
+        self._default_options: Optional[ParamTypeList] = None
         if options is not None:
             self._default_options = [*options]
             self.set_valid_options(options)
@@ -179,7 +179,7 @@ class ConfigEntry(Parameter):
             options.append(option)
         self.set_valid_options(options)
 
-    def save_to_json_dict(self, json_dict: Dict[str, Any]) -> None:
+    def save_to_json_dict(self, json_dict: dict[str, Any]) -> None:
         """Adds the value to a dict in a format that can be written to a JSON file."""
         if self.save_json is True:
             if isinstance(self._value, QSize):
@@ -203,7 +203,7 @@ class ConfigEntry(Parameter):
             else:
                 json_dict[self._key] = self._value
 
-    def load_from_json_dict(self, json_dict: Dict[str, Any]) -> None:
+    def load_from_json_dict(self, json_dict: dict[str, Any]) -> None:
         """Reads the value from a dict that was loaded from a JSON file."""
         if self._key not in json_dict:
             return
