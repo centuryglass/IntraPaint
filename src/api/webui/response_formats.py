@@ -1,7 +1,29 @@
 """WebUI API response data formats."""
 from typing import TypedDict, Any, TypeAlias, Optional
 
-from src.api.webui.request_formats import Txt2ImgDiffusionBody, Img2ImgDiffusionBody
+from src.api.webui.request_formats import Txt2ImgRequestBody, Img2ImgRequestBody
+
+
+class ProgressStateDict(TypedDict):
+    """Defines the "state" section within /sdapi/v1/progress responses."""
+    skipped: bool
+    interrupted: bool
+    stopping_generation: bool
+    job: str
+    job_count: int
+    job_timestamp: str
+    job_no: int
+    sampling_step: int
+    sampling_steps: int
+
+
+class ProgressResponseBody(TypedDict):
+    """WebUI API response format for the /sdapi/v1/progress endpoint."""
+    progress: float  # Fraction completed
+    eta_relative: float  # Expected time remaining in seconds
+    state: ProgressStateDict
+    current_image: Optional[str]
+    textinfo: Optional[str]
 
 
 # LoRA model data:
@@ -121,14 +143,14 @@ class GenerationInfoData(TypedDict):
 class Txt2ImgResponse(TypedDict):
     """WebUI API response for a successful /sdapi/v1/txt2img request."""
     images: list[str]  # base64 image list
-    parameters: Txt2ImgDiffusionBody  # Sends back the unchanged request parameters
+    parameters: Txt2ImgRequestBody  # Sends back the unchanged request parameters
     info: str  # Serialized JSON, parses as GenerationInfoData
 
 
 class Img2ImgResponse(TypedDict):
     """WebUI API response for a successful /sdapi/v1/img2img request."""
     images: list[str]  # base64 image list
-    parameters: Img2ImgDiffusionBody  # Sends back the unchanged request parameters
+    parameters: Img2ImgRequestBody  # Sends back the unchanged request parameters
     info: str  # Serialized JSON, parses as GenerationInfoData
 
 
@@ -139,3 +161,8 @@ class PromptStyleData(TypedDict):
     prompt: str
     negative_prompt: str
 
+
+class InterrogateResponse(TypedDict):
+    """Response format for /sdapi/v1/interrogate API requests. The documentation lists the expected response as a plain
+       string, so probably best to make sure responses actually fit this pattern before assuming that they do."""
+    caption: str

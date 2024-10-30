@@ -1,5 +1,6 @@
 """Unified class for building text to image, image to image, and inpainting ComfyUI workflows."""
 import random
+from dataclasses import dataclass
 from enum import Enum
 from typing import Optional, cast
 
@@ -8,6 +9,9 @@ from PySide6.QtCore import QSize
 import src.api.comfyui.comfyui_types as comfy_type
 from src.api.comfyui.nodes.comfy_node import ComfyNode
 from src.api.comfyui.nodes.comfy_node_graph import ComfyNodeGraph
+from src.api.comfyui.nodes.controlnet.apply_controlnet_node import ApplyControlNetNode
+from src.api.comfyui.nodes.controlnet.dynamic_preprocessor_node import DynamicPreprocessorNode
+from src.api.comfyui.nodes.controlnet.load_controlnet_node import LoadControlNetNode
 from src.api.comfyui.nodes.input.checkpoint_loader_node import CheckpointLoaderNode
 from src.api.comfyui.nodes.input.clip_text_encode_node import ClipTextEncodeNode
 from src.api.comfyui.nodes.input.empty_latent_image_node import EmptyLatentNode
@@ -23,6 +27,8 @@ from src.api.comfyui.nodes.repeat_latent_node import RepeatLatentNode
 from src.api.comfyui.nodes.save_image_node import SaveImageNode
 from src.api.comfyui.nodes.vae.vae_decode_node import VAEDecodeNode
 from src.api.comfyui.nodes.vae.vae_encode_node import VAEEncodeNode
+from src.api.controlnet_constants import CONTROLNET_MODEL_NONE
+from src.api.controlnet_preprocessor import ControlNetPreprocessor
 
 random.seed()
 
@@ -39,6 +45,17 @@ class ExtensionModelType(Enum):
     """Distinguishes between the two types of accepted extension model."""
     LORA = 0
     HYPERNETWORK = 1
+
+
+@dataclass
+class _ControlInfo:
+    model_node: Optional[LoadControlNetNode]
+    preprocessor_parameters: ControlNetPreprocessor
+    preprocessor_node: Optional[DynamicPreprocessorNode]
+    control_image: str
+    strength: float
+    start_step: float
+    end_step: float
 
 
 class DiffusionWorkflowBuilder:
@@ -66,12 +83,10 @@ class DiffusionWorkflowBuilder:
         # model_name, model_strength, clip_strength, model_type
         self._extension_models: list[tuple[str, float, float, ExtensionModelType]] = []
 
+        self._controlnet_units: list[_ControlInfo] = []
+
         # TODO: not yet supported:
         # self._is_inpainting_model = False
-        # self._controlnet_preprocessors: List[ComfyNode] = []
-        # self._controlnet_models: List[ComfyNode] = []
-        # self._embeddings: List[str] = []
-        # self._hypernetworks: List[str] = []
 
     @property
     def batch_size(self) -> int:
@@ -241,6 +256,30 @@ class DiffusionWorkflowBuilder:
         """Adds a LoRA or Hypernetwork model to the workflow. Models are applied in the order that they're added."""
         self._extension_models.append((model_name, model_strength, clip_strength, model_type))
 
+    def add_controlnet_unit(self, model_name: str, preprocessor: ControlNetPreprocessor,
+                            control_image_ref: comfy_type.ImageFileReference,
+                            strength: float, start_step: float, end_step: float) -> None:
+        """Adds a new ControlNet unit to the workflow."""
+        control_image_str = self._image_ref_to_str(control_image_ref)
+
+        model_node: Optional[LoadControlNetNode] = None
+        preprocessor_node: Optional[DynamicPreprocessorNode] = None
+
+        # Check for and reuse identical preprocessor nodes or control models:
+        for control_unit_data in self._controlnet_units:
+            if control_unit_data.preprocessor_parameters == preprocessor \
+                    and control_unit_data.control_image == control_image_str:
+                preprocessor_node = control_unit_data.preprocessor_node
+            if control_unit_data.model_node is not None and control_unit_data.model_node.model_name == model_name:
+                model_node = control_unit_data.model_node
+        if model_node is None and model_name != CONTROLNET_MODEL_NONE:
+            model_node = LoadControlNetNode(model_name)
+        if preprocessor_node is None:
+            preprocessor_node = preprocessor.create_comfyui_node()
+        new_control_unit = _ControlInfo(model_node, preprocessor, preprocessor_node, control_image_str, strength,
+                                        start_step, end_step)
+        self._controlnet_units.append(new_control_unit)
+
     def build_workflow(self) -> ComfyNodeGraph:
         """Use the provided parameters to build a complete workflow graph."""
         workflow = ComfyNodeGraph()
@@ -279,7 +318,9 @@ class DiffusionWorkflowBuilder:
                 model_out_index = HypernetLoaderNode.IDX_MODEL
 
         # Load image source:
+        mask_load_node: Optional[LoadImageMaskNode] = None
         if self.source_image is None:
+            image_loading_node: Optional[LoadImageNode] = None
             latent_source_node: ComfyNode = EmptyLatentNode(self.batch_size, self.image_size)
             latent_out_index = EmptyLatentNode.IDX_LATENT
         else:
@@ -308,10 +349,55 @@ class DiffusionWorkflowBuilder:
 
         # Load prompt conditioning:
         prompt_node = ClipTextEncodeNode(self.prompt)
-        negative_node = ClipTextEncodeNode(self.negative_prompt)
-        for text_encoding_node in (prompt_node, negative_node):
+        negative_prompt_node = ClipTextEncodeNode(self.negative_prompt)
+        for text_encoding_node in (prompt_node, negative_prompt_node):
             workflow.connect_nodes(text_encoding_node, ClipTextEncodeNode.CLIP,
                                    clip_model_node, clip_out_index)
+        positive_node: ComfyNode = prompt_node
+        positive_out_idx = ClipTextEncodeNode.IDX_CONDITIONING
+        negative_node: ComfyNode = negative_prompt_node
+        negative_out_idx = ClipTextEncodeNode.IDX_CONDITIONING
+
+        # Load ControlNet Units:
+        loaded_images: dict[str, LoadImageNode] = {}
+        if image_loading_node is not None:
+            assert self.source_image is not None
+            loaded_images[self.source_image] = image_loading_node
+        for controlnet_unit in self._controlnet_units:
+            control_img_str = controlnet_unit.control_image
+            if control_img_str in loaded_images:
+                control_image_node = loaded_images[control_img_str]
+            else:
+                control_image_node = LoadImageNode(control_img_str)
+                loaded_images[control_img_str] = control_image_node
+            if controlnet_unit.preprocessor_node is not None:
+                if controlnet_unit.preprocessor_node.has_image_input:
+                    workflow.connect_nodes(controlnet_unit.preprocessor_node, DynamicPreprocessorNode.IMAGE,
+                                           control_image_node, LoadImageNode.IDX_IMAGE)
+                if controlnet_unit.preprocessor_node.has_mask_input and mask_load_node is not None:
+                    workflow.connect_nodes(controlnet_unit.preprocessor_node, DynamicPreprocessorNode.MASK,
+                                           mask_load_node, LoadImageMaskNode.IDX_MASK)
+            control_apply_node = ApplyControlNetNode(controlnet_unit.strength, controlnet_unit.start_step,
+                                                     controlnet_unit.end_step)
+            workflow.connect_nodes(control_apply_node, ApplyControlNetNode.POSITIVE,
+                                   positive_node, positive_out_idx)
+            workflow.connect_nodes(control_apply_node, ApplyControlNetNode.NEGATIVE,
+                                   negative_node, negative_out_idx)
+            if controlnet_unit.model_node is not None:
+                workflow.connect_nodes(control_apply_node, ApplyControlNetNode.CONTROLNET,
+                                       controlnet_unit.model_node, LoadControlNetNode.IDX_CONTROLNET)
+            if controlnet_unit.preprocessor_node is not None:
+                workflow.connect_nodes(control_apply_node, ApplyControlNetNode.IMAGE,
+                                       controlnet_unit.preprocessor_node, DynamicPreprocessorNode.IDX_IMAGE)
+            elif control_image_node is not None:
+                workflow.connect_nodes(control_apply_node, ApplyControlNetNode.IMAGE,
+                                       control_image_node, LoadImageNode.IDX_IMAGE)
+            workflow.connect_nodes(control_apply_node, ApplyControlNetNode.VAE,
+                                   vae_model_node, vae_out_index)
+            positive_node = control_apply_node
+            positive_out_idx = ApplyControlNetNode.IDX_POSITIVE
+            negative_node = control_apply_node
+            negative_out_idx = ApplyControlNetNode.IDX_NEGATIVE
 
         # Core diffusion process in KSamplerNode:
         sampling_node = KSamplerNode(self.cfg_scale, self.steps, self.sampler, self.denoising_strength, self.scheduler,
@@ -319,9 +405,9 @@ class DiffusionWorkflowBuilder:
         workflow.connect_nodes(sampling_node, KSamplerNode.MODEL,
                                sd_model_node, model_out_index)
         workflow.connect_nodes(sampling_node, KSamplerNode.POSITIVE,
-                               prompt_node, ClipTextEncodeNode.IDX_CONDITIONING)
+                               positive_node, positive_out_idx)
         workflow.connect_nodes(sampling_node, KSamplerNode.NEGATIVE,
-                               negative_node, ClipTextEncodeNode.IDX_CONDITIONING)
+                               negative_node, negative_out_idx)
         workflow.connect_nodes(sampling_node, KSamplerNode.LATENT_IMAGE,
                                latent_source_node, latent_out_index)
 
@@ -336,8 +422,3 @@ class DiffusionWorkflowBuilder:
         workflow.connect_nodes(save_image_node, SaveImageNode.IMAGES,
                                latent_decode_node, VAEDecodeNode.IDX_IMAGE)
         return workflow
-
-
-
-
-

@@ -1069,13 +1069,23 @@
             "step": 1
         }
     },
-    "sd_server_url": {
-        "label": "Stable-Diffusion server URL:",
+    "sd_webui_server_url": {
+        "label": "Stable-Diffusion WebUI server URL:",
         "category": "Cache",
         "subcategory": "Image generation",
-        "description": "Cached URL for the Stable-Diffusion image generation server.",
+        "description": "Cached URL for the Stable-Diffusion WebUI image generation server.",
         "type": "string",
         "default": "http://localhost:7860",
+        "saved": true,
+        "translate": false
+    },
+    "sd_comfyui_server_url": {
+        "label": "Stable-Diffusion ComfyUI server URL:",
+        "category": "Cache",
+        "subcategory": "Image generation",
+        "description": "Cached URL for the Stable-Diffusion ComfyUI image generation server.",
+        "type": "string",
+        "default": "http://localhost:8188",
         "saved": true,
         "translate": false
     },
@@ -1098,6 +1108,15 @@
         "default": "",
         "options" : [],
         "saved": true
+    },
+    "controlnet_upscaling_available": {
+        "label": "ControlNet upscaling available",
+        "category": "Cache",
+        "subcategory": "ControlNet",
+        "description": "Whether the active image generator was able to find the necessary components for ControlNet tiled upscaling",
+        "type": "bool",
+        "default": false,
+        "translate": false
     },
     "controlnet_upscaling": {
         "label": "ControlNet tiled upscaling",
@@ -1122,74 +1141,64 @@
         "default": 1.0,
         "saved": true
     },
-    "controlnet_args_0": {
-        "label": "ControlNet Settings (first layer)",
+    "controlnet_args_0_webui": {
+        "label": "ControlNet Settings (first layer, WebUI API)",
         "category": "Cache",
         "subcategory": "ControlNet",
-        "description": "First layer ControlNet extension settings.",
+        "description": "WebUI API first layer ControlNet extension settings.",
         "type": "dict",
         "default": {},
         "saved": true,
         "translate": false
     },
-    "controlnet_args_1": {
-        "label": "ControlNet Settings (second layer)",
+    "controlnet_args_1_webui": {
+        "label": "ControlNet Settings (second layer, WebUI API)",
         "category": "Cache",
         "subcategory": "ControlNet",
-        "description": "Second layer ControlNet extension settings.",
+        "description": "WebUI API second layer ControlNet extension settings.",
         "type": "dict",
         "default": {},
         "saved": true,
         "translate": false
     },
-    "controlnet_args_2": {
-        "label": "ControlNet Settings (third layer)",
+    "controlnet_args_2_webui": {
+        "label": "ControlNet Settings (third layer, ComfyUI API)",
         "category": "Cache",
         "subcategory": "ControlNet",
-        "description": "Second layer ControlNet extension settings.",
+        "description": "ComfyUI API third layer ControlNet extension settings.",
         "type": "dict",
         "default": {},
         "saved": true,
         "translate": false
     },
-    "controlnet_version": {
-        "label": "ControlNet version:",
+    "controlnet_args_0_comfyui": {
+        "label": "ControlNet Settings (first layer, ComfyUI API)",
         "category": "Cache",
         "subcategory": "ControlNet",
-        "description": "ControlNet extension version loaded from the webui",
-        "type": "float",
-        "default": -1.0,
-        "saved": false,
-        "translate": false
-    },
-    "controlnet_control_types": {
-        "label": "ControlNet control types:",
-        "category": "Cache",
-        "subcategory": "ControlNet",
-        "description": "ControlNet control type definitions loaded from the webui",
+        "description": "ComfyUI API first layer ControlNet extension settings.",
         "type": "dict",
         "default": {},
-        "saved": false,
+        "saved": true,
         "translate": false
     },
-    "controlnet_modules": {
-        "label": "ControlNet modules:",
+    "controlnet_args_1_comfyui": {
+        "label": "ControlNet Settings (second layer, ComfyUI API)",
         "category": "Cache",
         "subcategory": "ControlNet",
-        "description": "ControlNet module definitions loaded from the webui",
+        "description": "ComfyUI API second layer ControlNet extension settings.",
         "type": "dict",
         "default": {},
-        "saved": false,
+        "saved": true,
         "translate": false
     },
-    "controlnet_models": {
-        "label": "ControlNet models:",
+    "controlnet_args_2_comfyui": {
+        "label": "ControlNet Settings (third layer, WebUI API)",
         "category": "Cache",
         "subcategory": "ControlNet",
-        "description": "ControlNet model definitions loaded from the webui",
+        "description": "ComfyUI API third layer ControlNet extension settings.",
         "type": "dict",
         "default": {},
-        "saved": false,
+        "saved": true,
         "translate": false
     },
     "expect_tablet_input": {

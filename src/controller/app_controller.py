@@ -1270,6 +1270,7 @@ class AppController(MenuBuilder):
         if self._generator_window is None:
             self._generator_window = GeneratorSetupWindow()
             self._generator_window.add_generator(self._sd_webui_generator)
+            self._generator_window.add_generator(self._sd_comfyui_generator)
             if not is_pyinstaller_bundle():
                 self._generator_window.add_generator(self._glid_generator)
             self._generator_window.add_generator(self._glid_web_generator)

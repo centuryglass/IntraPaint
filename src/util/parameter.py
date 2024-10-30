@@ -1,4 +1,5 @@
 """Represents a value with a fixed type, descriptive metadata, and optional limitations and defaults."""
+from copy import copy, deepcopy
 from typing import Optional, TypeAlias, cast, Any
 
 from PySide6.QtCore import QSize
@@ -88,6 +89,14 @@ class Parameter:
                 self.maximum = maximum
             if single_step is not None:
                 self.single_step = single_step
+
+    def __deepcopy__(self, memo: dict[int, Any]) -> 'Parameter':
+        copy_param = Parameter(self._name, self._type, copy(self._default_value), copy(self._description),
+                               copy(self._minimum), copy(self._maximum), copy(self.single_step))
+        if self._options is not None:
+            copy_param.set_valid_options(deepcopy(self._options, memo))
+        memo[id(self)] = copy_param
+        return copy_param
 
     def set_valid_options(self, valid_options: ParamTypeList) -> None:
         """Set a restricted list of valid options to accept."""
@@ -193,7 +202,7 @@ class Parameter:
             return False
         if self._options is not None and len(self._options) > 0 and test_value not in self._options:
             if raise_on_failure:
-                raise ValueError(f'{self.name} parameter: {test_value} not found in {len(self._options)} available'
+                raise ValueError(f'{self.name} parameter: "{test_value}" not found in {len(self._options)} available'
                                  f' options {self._options}')
             return False
         return True

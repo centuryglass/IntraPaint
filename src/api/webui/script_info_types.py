@@ -7,7 +7,7 @@ class ScriptRequestData(TypedDict):
     args: list[Any]
 
 
-class ScriptRes(TypedDict):
+class ScriptResponseData(TypedDict):
     """Response containing available image generation scripts."""
     txt2img: list[str]
     img2img: list[str]

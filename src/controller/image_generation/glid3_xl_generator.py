@@ -308,7 +308,7 @@ class Glid3XLGenerator(ImageGenerator):
 
     def generate(self,
                  status_signal: Signal,
-                 source_image: Optional[QImage] = None,
+                 source_image: QImage,
                  mask_image: Optional[QImage] = None) -> None:
         """Generates new images. Image size, image count, prompts, etc. are loaded from AppConfig as needed.
 
@@ -316,7 +316,7 @@ class Glid3XLGenerator(ImageGenerator):
         ----------
         status_signal : Signal[str]
             Signal to emit when status updates are available.
-        source_image : QImage, optional
+        source_image : QImage
             Image used as a basis for the edited image.
         mask_image : QImage, optional
             Mask marking edited image region.

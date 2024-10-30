@@ -109,7 +109,7 @@ class ImageScaleModal(QDialog):
             lambda px: set_px_on_scale_change(px, default_height, self._height_box))
 
         # Add controlnet upscale option:
-        if Cache().get(Cache.CONTROLNET_VERSION) > 0:
+        if Cache().get(Cache.CONTROLNET_UPSCALING_AVAILABLE):
             self._controlnet_checkbox = cache.get_control_widget(Cache.CONTROLNET_UPSCALING)
             assert isinstance(self._controlnet_checkbox, CheckBox)
             self._controlnet_checkbox.setText('')

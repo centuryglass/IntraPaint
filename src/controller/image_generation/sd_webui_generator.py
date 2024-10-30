@@ -1,10 +1,9 @@
 """Generates images through the Stable-Diffusion WebUI (A1111 or Forge)"""
-import datetime
 import json
 import logging
 import os
 from argparse import Namespace
-from typing import Optional, cast, Any, Callable
+from typing import Optional, cast, Any
 
 import requests
 from PySide6.QtCore import Signal, QSize, QThread
@@ -23,7 +22,7 @@ from src.image.layers.image_stack_utils import scale_all_layers
 from src.ui.layout.draggable_tabs.tab import Tab
 from src.ui.modal.modal_utils import show_error_dialog
 from src.ui.modal.settings_modal import SettingsModal
-from src.ui.panel.controlnet_panel import TabbedControlnetPanel, CONTROLNET_TITLE
+from src.ui.panel.controlnet_panel import TabbedControlNetPanel, CONTROLNET_TITLE
 from src.ui.panel.generators.generator_panel import GeneratorPanel
 from src.ui.panel.generators.stable_diffusion_panel import StableDiffusionPanel
 from src.ui.window.extra_network_window import ExtraNetworkWindow
@@ -33,7 +32,6 @@ from src.undo_stack import UndoStack
 from src.util.application_state import AppStateTracker, APP_STATE_LOADING, APP_STATE_EDITING, APP_STATE_NO_IMAGE
 from src.util.async_task import AsyncTask
 from src.util.menu_builder import menu_action
-from src.util.parameter import ParamType
 from src.util.shared_constants import EDIT_MODE_TXT2IMG, EDIT_MODE_INPAINT, EDIT_MODE_IMG2IMG, PROJECT_DIR, \
     PIL_SCALING_MODES, AUTH_ERROR, AUTH_ERROR_MESSAGE, URL_REQUEST_MESSAGE, URL_REQUEST_RETRY_MESSAGE, \
     URL_REQUEST_TITLE, INTERROGATE_ERROR_TITLE, INTERROGATE_ERROR_MESSAGE_NO_IMAGE, ERROR_MESSAGE_TIMEOUT, \
@@ -143,10 +141,6 @@ ICON_PATH_CONTROLNET_TAB = f'{PROJECT_DIR}/resources/icons/tabs/hex.svg'
 DEFAULT_WEBUI_URL = 'http://localhost:7860'
 STABLE_DIFFUSION_CONFIG_CATEGORY = QApplication.translate('config.application_config', 'Stable-Diffusion')
 AUTH_ERROR_DETAIL_KEY = 'detail'
-CONTROLNET_MODEL_LIST_KEY = 'model_list'
-PROGRESS_KEY_CURRENT_IMAGE = 'current_image'
-PROGRESS_KEY_FRACTION = 'progress'
-PROGRESS_KEY_ETA_RELATIVE = 'eta_relative'
 STYLE_ERROR_TITLE = _tr('Updating prompt styles failed')
 
 
@@ -183,7 +177,7 @@ class SDWebUIGenerator(ImageGenerator):
 
     def __init__(self, window: MainWindow, image_stack: ImageStack, args: Namespace) -> None:
         super().__init__(window, image_stack)
-        self._server_url = args.server_url if args.server_url != '' else Cache().get(Cache.SD_SERVER_URL)
+        self._server_url = args.server_url if args.server_url != '' else Cache().get(Cache.SD_WEBUI_SERVER_URL)
         self._webservice: Optional[A1111Webservice] = A1111Webservice(self._server_url)
         self._lora_images: Optional[dict[str, Optional[QImage]]] = None
         self._menu_actions: dict[str, list[QAction]] = {}
@@ -191,7 +185,7 @@ class SDWebUIGenerator(ImageGenerator):
         self._control_panel: Optional[StableDiffusionPanel] = None
         self._preview = QImage(SD_PREVIEW_IMAGE)
         self._controlnet_tab: Optional[Tab] = None
-        self._controlnet_panel: Optional[TabbedControlnetPanel] = None
+        self._controlnet_panel: Optional[TabbedControlNetPanel] = None
         self._active_task_id = 0
 
     def get_display_name(self) -> str:
@@ -261,60 +255,66 @@ class SDWebUIGenerator(ImageGenerator):
                 if not url_entered:
                     return False
                 if self.connect_to_url(new_url):
-                    Cache().set(Cache.SD_SERVER_URL, new_url)
+                    Cache().set(Cache.SD_WEBUI_SERVER_URL, new_url)
                     return True
                 return False
 
             # If a login is required and none is defined in the environment, the webservice will automatically request
             # one during the following setup process:
             cache = Cache()
+
             try:
-                model_list = self._webservice.get_controlnet_models()
-                if model_list is not None and CONTROLNET_MODEL_LIST_KEY in model_list and len(
-                        model_list[CONTROLNET_MODEL_LIST_KEY]) > 0:
-                    cache.set(Cache.CONTROLNET_VERSION, 1.0)
-                else:
-                    cache.set(Cache.CONTROLNET_VERSION, -1.0)
-            except RuntimeError as err:
-                logger.error(f'Loading controlnet config failed: {err}')
-                cache.set(Cache.CONTROLNET_VERSION, -1.0)
+                sampler_info = self._webservice.get_samplers()
+                sampler_names = [sampler['name'] for sampler in sampler_info]
+            except (KeyError, RuntimeError) as err:
+                logger.error(f'error loading semplers from {self._server_url}: {err}')
+                sampler_names = []
 
-            option_loading_params: tuple[tuple[str, Callable[[], list[str]]], ...] = (
-                (Cache.SAMPLING_METHOD, self._webservice.get_samplers),
-                (Cache.UPSCALE_METHOD, self._webservice.get_upscalers)
-            )
+            try:
+                upscaler_info = self._webservice.get_upscalers()
+                upscaler_names = [upscaler['name'] for upscaler in upscaler_info]
+            except (KeyError, RuntimeError) as err:
+                logger.error(f'error loading upscalers from {self._server_url}: {err}')
+                upscaler_names = []
 
-            # Enable inpainting cropping and padding:
-            cache.set(Cache.INPAINT_OPTIONS_AVAILABLE, True)
-
-            # load various option lists:
-            for config_key, option_loading_fn in option_loading_params:
-                try:
-                    options = cast(list[ParamType], option_loading_fn())
-                    if options is not None and len(options) > 0:
-                        if config_key in cache.get_keys():
-                            cache.update_options(config_key, options)
-                        else:
-                            AppConfig().update_options(config_key, options)
-                except (KeyError, RuntimeError) as err:
-                    logger.error(f'error loading {config_key} from {self._server_url}: {err}')
+            for config_key, option_list in ((Cache.SAMPLING_METHOD, sampler_names),
+                                            (Cache.UPSCALE_METHOD, upscaler_names)):
+                if len(option_list) > 0:
+                    cache.update_options(config_key, option_list)
 
             webui_config = A1111Config()
             try:
-                webui_config.load_all(self._webservice)
+                model_options = self._webservice.get_models()
+                model_names = [model['model_name'] for model in model_options]
+                model_names.sort()
                 model_option_list = cast(list[str], webui_config.get_options(A1111Config.SD_MODEL_CHECKPOINT))
                 model_option_list.sort()
-                cache.update_options(Cache.SD_MODEL, model_option_list)
-                cache.set(Cache.SD_MODEL, webui_config.get(A1111Config.SD_MODEL_CHECKPOINT))
+                cache.update_options(Cache.SD_MODEL, model_names)
+                webui_config.load_all(self._webservice)
+                current_model_title = webui_config.get(A1111Config.SD_MODEL_CHECKPOINT)
+                for model in model_options:
+                    if model['title'] == current_model_title:
+                        cache.set(Cache.SD_MODEL, model['model_name'])
+                        break
+
+                try:
+                    cache.disconnect(self, Cache.SD_MODEL)
+                except KeyError:
+                    pass  # No previous connection to remove, which isn't a problem here.
+
+                def _update_model(model_name: str) -> None:
+                    if not self._connected:
+                        return
+                    for model in model_options:
+                        if model['model_name'] == model_name:
+                            remote_setting_change = {A1111Config.SD_MODEL_CHECKPOINT: model['title']}
+                            self.update_settings(remote_setting_change)
+                            return
+                    raise RuntimeError(f'Selected model "{model_name}" not found in available options.')
+                cache.connect(self, Cache.SD_MODEL, _update_model)
+
             except (KeyError, RuntimeError) as err:
                 logger.error(f'error loading model list from {self._server_url}: {err}')
-
-            def _update_model(model_name: str) -> None:
-                if not self._connected:
-                    return
-                remote_setting_change = {A1111Config.SD_MODEL_CHECKPOINT: model_name}
-                self.update_settings(remote_setting_change)
-            cache.connect(self, Cache.SD_MODEL, _update_model)
 
             try:
                 scripts = self._webservice.get_scripts()
@@ -327,9 +327,6 @@ class SDWebUIGenerator(ImageGenerator):
 
             data_params = (
                 (Cache.STYLES, self._webservice.get_styles),
-                (Cache.CONTROLNET_CONTROL_TYPES, self._webservice.get_controlnet_control_types),
-                (Cache.CONTROLNET_MODULES, self._webservice.get_controlnet_modules),
-                (Cache.CONTROLNET_MODELS, self._webservice.get_controlnet_models),
                 (Cache.LORA_MODELS, self._webservice.get_loras)
             )
 
@@ -340,15 +337,27 @@ class SDWebUIGenerator(ImageGenerator):
                         cache.set(config_key, value)
                 except (KeyError, RuntimeError) as err:
                     logger.error(f'error loading {config_key} from {self._server_url}: {err}')
-            # Build ControlNet tab:
-            if cache.get(cache.CONTROLNET_VERSION) > 0 and self._controlnet_tab is None:
-                controlnet_panel = TabbedControlnetPanel(Cache().get(Cache.CONTROLNET_CONTROL_TYPES),
-                                                         Cache().get(Cache.CONTROLNET_MODULES),
-                                                         Cache().get(Cache.CONTROLNET_MODELS))
-                self._controlnet_tab = Tab(CONTROLNET_TITLE, controlnet_panel, KeyConfig.SELECT_CONTROLNET_TAB,
-                                           parent=self.menu_window)
-                self._controlnet_tab.hide()
-                self._controlnet_tab.setIcon(QIcon(ICON_PATH_CONTROLNET_TAB))
+
+            # Build ControlNet tab, if available through the API:
+            if self._controlnet_tab is None:
+                try:
+                    model_list = self._webservice.get_controlnet_models()['model_list']
+                    preprocessors = self._webservice.get_controlnet_preprocessors()
+                    control_types = self._webservice.get_controlnet_type_categories()
+                    control_keys = [Cache.CONTROLNET_ARGS_0_WEBUI, Cache.CONTROLNET_ARGS_1_WEBUI,
+                                    Cache.CONTROLNET_ARGS_2_WEBUI]
+                    if len(preprocessors) > 0 and len(control_types) > 0:
+                        controlnet_panel = TabbedControlNetPanel(preprocessors,
+                                                                 model_list,
+                                                                 control_types,
+                                                                 control_keys,
+                                                                 True)
+                        self._controlnet_tab = Tab(CONTROLNET_TITLE, controlnet_panel, KeyConfig.SELECT_CONTROLNET_TAB,
+                                                   parent=self.menu_window)
+                        self._controlnet_tab.hide()
+                        self._controlnet_tab.setIcon(QIcon(ICON_PATH_CONTROLNET_TAB))
+                except (KeyError, RuntimeError) as err:
+                    logger.error(f'Loading ControlNet failed: {err}')
 
             assert self._window is not None
             self._window.cancel_generation.connect(self.cancel_generation)
@@ -370,10 +379,6 @@ class SDWebUIGenerator(ImageGenerator):
             self._lora_images.clear()
             self._lora_images = None
         cache = Cache()
-        cache.set(Cache.CONTROLNET_VERSION, -1.0)
-        cache.set(Cache.CONTROLNET_CONTROL_TYPES, {})
-        cache.set(Cache.CONTROLNET_MODULES, {})
-        cache.set(Cache.CONTROLNET_MODELS, {})
         cache.set(Cache.LORA_MODELS, [])
         if self._controlnet_tab is not None:
             self._controlnet_tab.setParent(None)
@@ -523,7 +528,6 @@ class SDWebUIGenerator(ImageGenerator):
                 return [external_status_signal if external_status_signal is not None else self.status_signal]
 
             def _check_progress(self, status_signal) -> None:
-                init_timestamp: Optional[float] = None
                 error_count = 0
                 max_progress = 0
                 while not self.should_stop:
@@ -534,7 +538,7 @@ class SDWebUIGenerator(ImageGenerator):
                     try:
                         assert webservice is not None
                         status = webservice.progress_check()
-                        progress_percent = int(status[PROGRESS_KEY_FRACTION] * 100)
+                        progress_percent = int(status['progress'] * 100)
                         if (progress_percent < max_progress or progress_percent >= 100
                                 or generator._active_task_id != self._id):
                             break
@@ -542,20 +546,15 @@ class SDWebUIGenerator(ImageGenerator):
                             continue
                         status_text = f'{progress_percent}%'
                         max_progress = progress_percent
-                        if PROGRESS_KEY_ETA_RELATIVE in status and status[PROGRESS_KEY_ETA_RELATIVE] != 0:
-                            timestamp = datetime.datetime.now().timestamp()
-                            if init_timestamp is None:
-                                init_timestamp = timestamp
+                        if 'eta_relative' in status and status['eta_relative'] != 0 \
+                                and 0 < progress_percent < 100:
+                            eta_sec = status['eta_relative']
+                            minutes = eta_sec // 60
+                            seconds = round(eta_sec % 60)
+                            if minutes > 0:
+                                status_text = f'{status_text} ETA: {minutes}:{seconds}'
                             else:
-                                seconds_passed = timestamp - init_timestamp
-                                fraction_complete = status[PROGRESS_KEY_FRACTION]
-                                eta_sec = int(seconds_passed / fraction_complete)
-                                minutes = eta_sec // 60
-                                seconds = eta_sec % 60
-                                if minutes > 0:
-                                    status_text = f'{status_text} ETA: {minutes}:{seconds}'
-                                else:
-                                    status_text = f'{status_text} ETA: {seconds}s'
+                                status_text = f'{status_text} ETA: {seconds}s'
                         status_signal.emit({'progress': status_text})
                     except ReadTimeout:
                         error_count += 1
@@ -602,8 +601,10 @@ class SDWebUIGenerator(ImageGenerator):
         def _upscale(image_ready: Signal, error_signal: Signal) -> None:
             try:
                 assert self._webservice is not None
-                images, info = self._webservice.upscale(self._image_stack.qimage(), new_size.width(),
-                                                        new_size.height())
+                image_response = self._webservice.upscale(self._image_stack.qimage(), new_size.width(),
+                                                          new_size.height())
+                images = image_response['images']
+                info = image_response['info']
                 if info is not None:
                     logger.debug(f'Upscaling result info: {info}')
                 image_ready.emit(images[-1])
@@ -672,10 +673,11 @@ class SDWebUIGenerator(ImageGenerator):
         ----------
         status_signal : Signal[str]
             Signal to emit when status updates are available.
-        source_image : QImage, optional
-            Image used as a basis for the edited image.
+        source_image : QImage
+            Image to potentially use as a basis for the created or edited image.  This will be ignored if the editing
+            mode is text-to-image and there are no ControlNet units using the image generation area.
         mask_image : QImage, optional
-            Mask marking edited image region.
+            Mask marking the edited image region.
         """
         assert self._webservice is not None
         edit_mode = Cache().get(Cache.EDIT_MODE)
@@ -690,18 +692,20 @@ class SDWebUIGenerator(ImageGenerator):
         assert self._webservice is not None
         try:
             init_data = self._webservice.progress_check()
-            if init_data[PROGRESS_KEY_CURRENT_IMAGE] is not None:
+            if init_data['current_image'] is not None:
                 raise RuntimeError(ERROR_MESSAGE_EXISTING_OPERATION)
             self._async_progress_check(status_signal)
             if edit_mode == EDIT_MODE_TXT2IMG:
-                image_data, info = self._webservice.txt2img(control_image=source_image)
+                image_response = self._webservice.txt2img(control_image=source_image)
             else:
                 assert source_image is not None
-                image_data, info = self._webservice.img2img(source_image, mask=mask_image)
+                image_response = self._webservice.img2img(source_image, mask=mask_image)
+            image_data = image_response['images']
+            info = image_response['info']
             for i, response_image in enumerate(image_data):
                 self._cache_generated_image(response_image, i)
             if info is not None:
-                logger.info(f'Image generation result info: {info}')
+                logger.info(f'Image generation result info: {json.dumps(info, indent=2)}')
                 if isinstance(info, dict) and 'seed' in info:
                     status = {'seed': str(info['seed'])}
                     status_signal.emit(status)

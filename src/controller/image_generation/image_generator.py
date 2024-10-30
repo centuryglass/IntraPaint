@@ -120,7 +120,7 @@ class ImageGenerator(MenuBuilder):
 
     def generate(self,
                  status_signal: Signal,
-                 source_image: Optional[QImage] = None,
+                 source_image: QImage,
                  mask_image: Optional[QImage] = None) -> None:
         """Generates new images. Image size, image count, prompts, etc. should be loaded from AppConfig as needed.
         Implementations should call self._cache_generated_image to pass back each generated image.
@@ -129,10 +129,11 @@ class ImageGenerator(MenuBuilder):
         ----------
         status_signal : Signal[dict]
             Signal to emit when status updates are available. Expected keys are 'seed' and 'progress'.
-        source_image : QImage, optional
-            Image used as a basis for the edited image.
+        source_image : QImage
+            Image to potentially use as a basis for the created or edited image.  This will be ignored if the editing
+            mode is text-to-image and there are no ControlNet units using the image generation area.
         mask_image : QImage, optional
-            Mask marking edited image region.
+            Mask marking the edited image region.
         """
         raise NotImplementedError()
 

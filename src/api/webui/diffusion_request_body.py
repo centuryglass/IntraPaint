@@ -1,19 +1,19 @@
 """Typedefs for WebUI API data."""
+import json
 import logging
 import os.path
-from copy import deepcopy
 from dataclasses import dataclass, asdict
 from typing import Any, Optional, cast
 
 from PySide6.QtCore import QSize
 from PySide6.QtGui import QImage
 
-from src.api.webui.controlnet_constants import ControlNetUnitDict, CONTROLNET_SCRIPT_KEY
+from src.api.controlnet_constants import CONTROLNET_REUSE_IMAGE_CODE
+from src.api.webui.controlnet_webui import init_controlnet_unit, CONTROLNET_SCRIPT_KEY
 from src.api.webui.script_info_types import ScriptRequestData
 from src.config.application_config import AppConfig
 from src.config.cache import Cache
-from src.util.shared_constants import EDIT_MODE_INPAINT, EDIT_MODE_IMG2IMG, \
-    CONTROLNET_REUSE_IMAGE_CODE
+from src.util.shared_constants import EDIT_MODE_INPAINT, EDIT_MODE_IMG2IMG
 from src.util.visual.image_utils import image_to_base64
 
 logger = logging.getLogger(__name__)
@@ -174,28 +174,31 @@ class DiffusionRequestBody:
                 self.inpaint_full_res = cache.get(Cache.INPAINT_FULL_RES)
                 self.inpaint_full_res_padding = cache.get(Cache.INPAINT_FULL_RES_PADDING)
                 self.mask_blur = config.get(AppConfig.MASK_BLUR)
+                self.inpainting_fill = cache.get_option_index(Cache.MASKED_CONTENT)
 
         # Add ControlNet parameters:
         if CONTROLNET_SCRIPT_KEY in self.alwayson_scripts:
             self.alwayson_scripts[CONTROLNET_SCRIPT_KEY] = {'args': []}  # Make sure to clear any old ControlNet defs
-        for controlnet_key in (Cache.CONTROLNET_ARGS_0, Cache.CONTROLNET_ARGS_1, Cache.CONTROLNET_ARGS_2):
-            control_unit = cast(ControlNetUnitDict, deepcopy(cache.get(controlnet_key)))
-            if 'enabled' not in control_unit or not control_unit['enabled']:
+        for controlnet_key in (Cache.CONTROLNET_ARGS_0_WEBUI, Cache.CONTROLNET_ARGS_1_WEBUI,
+                               Cache.CONTROLNET_ARGS_2_WEBUI):
+            control_unit = init_controlnet_unit(cache.get(controlnet_key))
+            if not control_unit['enabled']:
                 continue
-            if 'image' in control_unit:
-                control_image = control_unit['image']
-                if control_image == CONTROLNET_REUSE_IMAGE_CODE and image is not None:
-                    if edit_mode in (EDIT_MODE_IMG2IMG, EDIT_MODE_INPAINT) and self.init_images is not None \
-                            and len(self.init_images) > 0:
-                        control_unit['image'] = self.init_images[-1]
-                    else:
-                        control_unit['image'] = image_to_base64(image, include_prefix=True)
-                elif isinstance(control_image, str) and os.path.exists(control_image):
-                    try:
-                        control_unit['image'] = image_to_base64(control_unit['image'], include_prefix=True)
-                    except (IOError, KeyError) as err:
-                        logger.error(f"Error loading controlnet image {control_image}: {err}")
-                        control_unit['image'] = None
+            print(f'CONTROL_LOADED FROM {controlnet_key}:')
+            print(json.dumps(control_unit, indent=2))
+            control_image = control_unit['image']
+            if control_image == CONTROLNET_REUSE_IMAGE_CODE and image is not None:
+                if edit_mode in (EDIT_MODE_IMG2IMG, EDIT_MODE_INPAINT) and self.init_images is not None \
+                        and len(self.init_images) > 0:
+                    control_unit['image'] = self.init_images[-1]
+                else:
+                    control_unit['image'] = image_to_base64(image, include_prefix=True)
+            elif isinstance(control_image, str) and os.path.exists(control_image):
+                try:
+                    control_unit['image'] = image_to_base64(control_unit['image'], include_prefix=True)
+                except (IOError, KeyError) as err:
+                    logger.error(f"Error loading controlnet image {control_image}: {err}")
+                    control_unit['image'] = None
             if CONTROLNET_SCRIPT_KEY not in self.alwayson_scripts:
                 self.alwayson_scripts[CONTROLNET_SCRIPT_KEY] = {'args': []}
             self.alwayson_scripts[CONTROLNET_SCRIPT_KEY]['args'].append(control_unit)

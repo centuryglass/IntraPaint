@@ -5,13 +5,13 @@ from typing import TypedDict, NotRequired, Any
 from src.api.webui.script_info_types import ScriptRequestData
 
 
-class InterrogateBody(TypedDict):
+class InterrogateRequestBody(TypedDict):
     """Request format for the /sdapi/v1/interrogate endpoint."""
     image: str  # base64-encoded
     model: str  # usually "clip", there's some alternative options you can set up in the WebUI I think
 
 
-class UpscalingBody(TypedDict):
+class UpscalingRequestBody(TypedDict):
     """Request format for upscaling using standalone (non-latent) upscalers through the /sdapi/v1/extra-single-image
        endpoint."""
     image: str  # base64 encoded
@@ -47,7 +47,7 @@ class UpscalingBody(TypedDict):
     codeformer_weight: NotRequired[float]  # range 0.0-1.0, default=0.0.  Higher weight = less effect, for some reason.
 
 
-class Txt2ImgDiffusionBody(TypedDict):
+class Txt2ImgRequestBody(TypedDict):
     """Request format for text-to-image diffusion requests through the /sdapi/v1/txt2img.
 
     SEE ALSO: src/api/webui/diffusion_request_body.py
@@ -125,7 +125,7 @@ class Txt2ImgDiffusionBody(TypedDict):
     sampler_index: NotRequired[str]
 
 
-class Img2ImgDiffusionBody(Txt2ImgDiffusionBody):
+class Img2ImgRequestBody(Txt2ImgRequestBody):
     """Request format for image-to-image and inpainting diffusion requests through the /sdapi/v1/img2img.
 
     SEE ALSO: src/api/webui/diffusion_request_body.py

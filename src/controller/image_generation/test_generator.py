@@ -71,7 +71,7 @@ class TestGenerator(ImageGenerator):
 
     def generate(self,
                  status_signal: Signal,
-                 source_image: Optional[QImage] = None,
+                 source_image: QImage,
                  mask_image: Optional[QImage] = None) -> None:
         """Generates new images. Image size, image count, prompts, etc. should be loaded from AppConfig as needed.
         Implementations should call self._cache_generated_image to pass back each generated image.
@@ -81,7 +81,8 @@ class TestGenerator(ImageGenerator):
         status_signal : Signal[dict]
             Signal to emit when status updates are available. Expected keys are 'seed' and 'progress'.
         source_image : QImage, optional
-            Image used as a basis for the edited image.
+            Image used as a basis for the edited image. TestGenerator will just run this through the available
+            src.image.filter classes to generate new images.
         mask_image : QImage, optional
             Mask marking edited image region.
         """

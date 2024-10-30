@@ -220,6 +220,12 @@ class QueueAdditionResponse(TypedDict):
     number: NotRequired[int]  # Queue number/priority, omitted on error
     error: NotRequired[str | ErrorEntry]
     node_errors: list[NodeErrorEntry]
+
+    # IntraPaint extensions:
+    # These properties won't ever be set by ComfyUI, they're additions that IntraPaint uses to simplify passing data
+    # back from ComfyUIWebservice.
+    uploaded_images: NotRequired[dict[str, ImageFileReference]]  # Uploaded image references, to reuse across batches.
+    uploaded_mask: NotRequired[ImageFileReference]  # Uploaded mask reference, to reuse across batches.
     seed: NotRequired[int]  # Not added by the API, used for tracking last seed values and handling sequential batches.
 
 

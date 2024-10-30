@@ -37,9 +37,6 @@ EDIT_MODE_INPAINT = _tr('Inpaint')
 EDIT_MODE_TXT2IMG = _tr('Text to Image')
 EDIT_MODE_IMG2IMG = _tr('Image to Image')
 
-# When used as the controlnet image path, this signifies that the image should be taken from the image generation area:
-CONTROLNET_REUSE_IMAGE_CODE = 'SELECTION'
-
 # Display text:
 BUTTON_TEXT_GENERATE = _tr('Generate')
 BUTTON_TOOLTIP_GENERATE = _tr('Start AI image generation or modification')
@@ -94,8 +91,6 @@ UPSCALE_ERROR_TITLE = _tr('Upscale failure')
 UPSCALED_LAYER_NAME = _tr('Upscaled image content')
 
 # ControlNet:
-CONTROLNET_TAB = _tr('ControlNet')
-CONTROLNET_UNIT_TAB = _tr('ControlNet Unit {unit_number}')
 
 
 # Argument used to disable or alter certain UI elements for better use in timelapse footage:

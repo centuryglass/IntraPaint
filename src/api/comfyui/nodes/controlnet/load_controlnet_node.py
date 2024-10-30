@@ -21,4 +21,10 @@ class LoadControlNetNode(ComfyNode):
         data: LoadControlNetInputs = {
             'control_net_name': model_name
         }
+        self._model_name = model_name
         super().__init__(NODE_NAME, cast(dict[str, Any], data), set(), 1)
+
+    @property
+    def model_name(self) -> str:
+        """Returns the ControlNet model name."""
+        return self._model_name

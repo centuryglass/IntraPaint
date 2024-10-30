@@ -5,23 +5,25 @@ from typing import Optional, cast, Any
 
 import requests
 from PySide6.QtCore import Signal, QSize, QThread
-from PySide6.QtGui import QImage, QAction
+from PySide6.QtGui import QImage, QAction, QIcon
 from PySide6.QtWidgets import QInputDialog, QApplication
 from requests import ReadTimeout
 
 from src.api.a1111_webservice import AuthError
+from src.api.comfyui.comfyui_types import ImageFileReference
 from src.api.comfyui.nodes.ksampler_node import SAMPLER_OPTIONS, SCHEDULER_OPTIONS
 from src.api.comfyui_webservice import ComfyUiWebservice, ComfyModelType, AsyncTaskProgress, AsyncTaskStatus
 from src.config.application_config import AppConfig
 from src.config.cache import Cache
+from src.config.key_config import KeyConfig
 from src.controller.image_generation.image_generator import ImageGenerator
 from src.controller.image_generation.sd_webui_generator import SD_BASE_DESCRIPTION, SD_PREVIEW_IMAGE, \
-    STABLE_DIFFUSION_CONFIG_CATEGORY
+    STABLE_DIFFUSION_CONFIG_CATEGORY, ICON_PATH_CONTROLNET_TAB
 from src.image.filter.blur import BlurFilter, MODE_GAUSSIAN
 from src.image.layers.image_stack import ImageStack
 from src.ui.layout.draggable_tabs.tab import Tab
 from src.ui.modal.settings_modal import SettingsModal
-from src.ui.panel.controlnet_panel import TabbedControlnetPanel
+from src.ui.panel.controlnet_panel import TabbedControlNetPanel, CONTROLNET_TITLE
 from src.ui.panel.generators.generator_panel import GeneratorPanel
 from src.ui.panel.generators.stable_diffusion_panel import StableDiffusionPanel
 from src.ui.window.extra_network_window import ExtraNetworkWindow, LORA_KEY_NAME, LORA_KEY_ALIAS, LORA_KEY_PATH
@@ -121,14 +123,14 @@ class SDComfyUIGenerator(ImageGenerator):
 
     def __init__(self, window: MainWindow, image_stack: ImageStack, args: Namespace) -> None:
         super().__init__(window, image_stack)
-        self._server_url = args.server_url if args.server_url != '' else Cache().get(Cache.SD_SERVER_URL)
+        self._server_url = args.server_url if args.server_url != '' else Cache().get(Cache.SD_COMFYUI_SERVER_URL)
         self._webservice: Optional[ComfyUiWebservice] = ComfyUiWebservice(self._server_url)
         self._menu_actions: dict[str, list[QAction]] = {}
         self._connected = False
         self._control_panel: Optional[StableDiffusionPanel] = None
         self._preview = QImage(SD_PREVIEW_IMAGE)
         self._controlnet_tab: Optional[Tab] = None
-        self._controlnet_panel: Optional[TabbedControlnetPanel] = None
+        self._controlnet_panel: Optional[TabbedControlNetPanel] = None
         self._active_task_id = ''
         self._active_task_number = 0
 
@@ -148,11 +150,11 @@ class SDComfyUIGenerator(ImageGenerator):
         """Returns an extended description of this generator."""
         return SD_COMFYUI_GENERATOR_DESCRIPTION
 
-    # def get_extra_tabs(self) -> List[Tab]:
-    #     """Returns any extra tabs that the generator will add to the main window."""
-    #     if self._controlnet_tab is not None:
-    #         return [self._controlnet_tab]
-    #     return []
+    def get_extra_tabs(self) -> list[Tab]:
+        """Returns any extra tabs that the generator will add to the main window."""
+        if self._controlnet_tab is not None:
+            return [self._controlnet_tab]
+        return []
 
     def is_available(self) -> bool:
         """Returns whether the generator is supported on the current system."""
@@ -194,23 +196,16 @@ class SDComfyUIGenerator(ImageGenerator):
                 if not url_entered:
                     return False
                 if self.connect_to_url(new_url):
-                    Cache().set(Cache.SD_SERVER_URL, new_url)
+                    Cache().set(Cache.SD_COMFYUI_SERVER_URL, new_url)
                     return True
                 return False
 
             cache = Cache()
-
-            # TODO: Load ControlNet preprocessors here.
-
-            # TODO: Add upscalers to this loop once supported.
-            # TODO: Current ControlNet cache type is dict, api returns list. Correct this issue one way or another.
             for model_type, cache_key in ((ComfyModelType.CHECKPOINT, Cache.SD_MODEL),
                                           (ComfyModelType.CONFIG, Cache.COMFYUI_MODEL_CONFIG),
                                           (ComfyModelType.LORA, Cache.LORA_MODELS),
                                           (ComfyModelType.HYPERNETWORKS, Cache.HYPERNETWORK_MODELS),
-                                          # (ComfyModelType.UPSCALING, Cache.UPSCALE_METHOD),
-                                          # (ComfyModelType.CONTROLNET, Cache.CONTROLNET_MODELS)
-                                          ):
+                                          (ComfyModelType.UPSCALING, Cache.UPSCALE_METHOD)):
                 cache_data_type = cache.get_data_type(cache_key)
                 try:
                     model_list = self._webservice.get_models(model_type)
@@ -241,16 +236,31 @@ class SDComfyUIGenerator(ImageGenerator):
             # Enable inpainting cropping and padding:
             cache.set(Cache.INPAINT_OPTIONS_AVAILABLE, True)
 
-            # TODO: Build ControlNet tab if ControlNet model list is non-empty:
-
-            # if len(cache.get(Cache.CONTROLNET_MODELS)) > 0:
-            #     controlnet_panel = TabbedControlnetPanel(Cache().get(Cache.CONTROLNET_CONTROL_TYPES),
-            #                                              Cache().get(Cache.CONTROLNET_MODULES),
-            #                                              Cache().get(Cache.CONTROLNET_MODELS))
-            #     self._controlnet_tab = Tab(CONTROLNET_TITLE, controlnet_panel, KeyConfig.SELECT_CONTROLNET_TAB,
-            #                                parent=self.menu_window)
-            #     self._controlnet_tab.hide()
-            #     self._controlnet_tab.setIcon(QIcon(ICON_PATH_CONTROLNET_TAB))
+            # Build ControlNet tab if ControlNet model list is non-empty:
+            if self._controlnet_tab is None:
+                try:
+                    model_list = self._webservice.get_controlnets()
+                    preprocessors = self._webservice.get_controlnet_preprocessors()
+                    control_types = self._webservice.get_controlnet_type_categories()
+                    control_keys = [Cache.CONTROLNET_ARGS_0_COMFYUI, Cache.CONTROLNET_ARGS_1_COMFYUI,
+                                    Cache.CONTROLNET_ARGS_2_COMFYUI]
+                    if len(preprocessors) > 0 and len(control_types) > 0:
+                        controlnet_panel = TabbedControlNetPanel(preprocessors,
+                                                                 model_list,
+                                                                 control_types,
+                                                                 control_keys,
+                                                                 True)
+                        self._controlnet_tab = Tab(CONTROLNET_TITLE, controlnet_panel, KeyConfig.SELECT_CONTROLNET_TAB,
+                                                   parent=self.menu_window)
+                        self._controlnet_tab.hide()
+                        self._controlnet_tab.setIcon(QIcon(ICON_PATH_CONTROLNET_TAB))
+                    else:
+                        logger.error(f'Missing data required to initialize ControlNet: found {len(model_list)} models,'
+                                     f' {len(preprocessors)} preprocessors, and {len(control_types)} control types.'
+                                     f' To use ControlNet, at least one preprocessor and one control type must be'
+                                     f' available.')
+                except (KeyError, RuntimeError) as err:
+                    logger.error(f'Loading ControlNet failed: {err}')
 
             assert self._window is not None
             self._window.cancel_generation.connect(self.cancel_generation)
@@ -268,10 +278,8 @@ class SDComfyUIGenerator(ImageGenerator):
         # Turn off inpainting cropping and padding again:
         cache.set(Cache.INPAINT_OPTIONS_AVAILABLE, False)
         # Clear cached webservice data:
-        for cache_key in (Cache.SD_MODEL, Cache.COMFYUI_MODEL_CONFIG, Cache.CONTROLNET_MODELS,
-                          Cache.CONTROLNET_MODULES, Cache.CONTROLNET_VERSION, Cache.CONTROLNET_CONTROL_TYPES,
-                          Cache.LORA_MODELS, Cache.HYPERNETWORK_MODELS, Cache.SAMPLING_METHOD, Cache.SCHEDULER,
-                          Cache.UPSCALE_METHOD):
+        for cache_key in (Cache.SD_MODEL, Cache.COMFYUI_MODEL_CONFIG, Cache.LORA_MODELS, Cache.HYPERNETWORK_MODELS,
+                          Cache.SAMPLING_METHOD, Cache.SCHEDULER, Cache.UPSCALE_METHOD):
             cache_data_type = cache.get_data_type(cache_key)
             if cache_data_type == TYPE_FLOAT:
                 cache.set(cache_key, -1.0)
@@ -403,7 +411,7 @@ class SDComfyUIGenerator(ImageGenerator):
                     assert webservice is not None
                     status = webservice.check_queue_entry(task_id, task_number)
                     if status['status'] == AsyncTaskStatus.PENDING and 'index' in status:
-                        status_text = TASK_STATUS_QUEUED.format(queue_index=status['index'])
+                        status_text = TASK_STATUS_QUEUED.format(queue_number=status['index'])
                     else:
                         status_text = TASK_STATUS_GENERATING
                     if num_batches > 1:
@@ -438,7 +446,7 @@ class SDComfyUIGenerator(ImageGenerator):
 
     def generate(self,
                  status_signal: Signal,
-                 source_image: Optional[QImage] = None,
+                 source_image: QImage,
                  mask_image: Optional[QImage] = None) -> None:
         """Generates new images. Image size, image count, prompts, etc. are loaded from AppConfig as needed.
 
@@ -446,10 +454,11 @@ class SDComfyUIGenerator(ImageGenerator):
         ----------
         status_signal : Signal[str]
             Signal to emit when status updates are available.
-        source_image : QImage, optional
-            Image used as a basis for the edited image.
+        source_image : QImage
+            Image to potentially use as a basis for the created or edited image.  This will be ignored if the editing
+            mode is text-to-image and there are no ControlNet units using the image generation area.
         mask_image : QImage, optional
-            Mask marking edited image region.
+            Mask marking the edited image region.
         """
         assert self._webservice is not None
         cache = Cache()
@@ -485,22 +494,26 @@ class SDComfyUIGenerator(ImageGenerator):
         num_batches = Cache().get(Cache.BATCH_COUNT)
         seed: Optional[int] = None
         first_image_idx = 0
+        uploaded_image_references: dict[str, ImageFileReference] = {}
+        mask_reference: Optional[ImageFileReference] = None
         for batch_num in range(num_batches):
             try:
                 sequence_seed = None if seed is None else seed + batch_num
                 if edit_mode == EDIT_MODE_INPAINT:
-                    assert source_image is not None
                     assert mask_image is not None
-                    queue_info = self._webservice.inpaint(source_image, mask_image, sequence_seed)
+                    queue_info = self._webservice.inpaint(source_image,
+                                                          mask_image if mask_reference is None else mask_reference,
+                                                          uploaded_image_references, sequence_seed)
                 elif edit_mode == EDIT_MODE_IMG2IMG:
                     assert source_image is not None
-                    queue_info = self._webservice.img2img(source_image, sequence_seed)
+                    queue_info = self._webservice.img2img(source_image, uploaded_image_references, sequence_seed)
                 else:
                     assert edit_mode == EDIT_MODE_TXT2IMG
-                    queue_info = self._webservice.txt2img(sequence_seed)
+                    queue_info = self._webservice.txt2img(source_image, uploaded_image_references, sequence_seed)
                 if seed is None and 'seed' in queue_info and isinstance(queue_info['seed'], int):
                     seed = queue_info['seed']
-
+                if 'uploaded_mask' in queue_info:
+                    mask_reference = queue_info['uploaded_mask']
                 if 'error' in queue_info:
                     raise RuntimeError(str(queue_info['error']))
                 assert 'number' in queue_info
@@ -553,7 +566,8 @@ class SDComfyUIGenerator(ImageGenerator):
         lora_window = ExtraNetworkWindow(loras, {})
         lora_window.exec()
 
-    @menu_action(MENU_STABLE_DIFFUSION, 'lcm_mode_shortcut', 210, condition_check=_check_lcm_mode_available)
+    @menu_action(MENU_STABLE_DIFFUSION, 'lcm_mode_shortcut', 210,
+                 condition_check=_check_lcm_mode_available)
     def set_lcm_mode(self) -> None:
         """Apply all settings required for using an LCM LoRA module."""
         cache = Cache()

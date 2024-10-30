@@ -1,5 +1,93 @@
 # Development tasks
 
+# v.1.1.0 Plans: ComfyUI support and API expansions
+## Goals:
+- Provide support for the ComfyUI API as an alternate image generator choice, keeping feature-parity with WebUI implementations across all features:
+  * text-to-image, image-to-image, and inpainting through the Image Generation panel.
+  * LoRA model loading from prompts
+  * ControlNet support through the ControlNetPanel.
+  * Basic AI upscaling, latent upscaling, through the ImageScaleModal.
+  * CLIP interrogate support (if possible)
+- Clean up WebUI API code, making it easier to handle required compatibility conversions, and to make it easier to support more API features in the future, especially custom scripts.
+- Add "extras" tab to the Image Generation panel, with at least a few API-specific options present
+- Reorganize stable-diffusion settings, dividing by generator when necessary, and condensing all of them into a single page. 
+
+## Remaining tasks:
+ComfyUI support:
+- "inpaint full res" and "inpaint full res padding" support need to be implemented locally.  Since I already calculate padding bounds in the SelectionLayer, it should just be a matter of cropping and scaling images before inpainting in sd_comfyui_generator.
+- Because the WebUI data structure is being reused, a lot of the extended ComfyUI parameter support is broken.  Implement a ControlnetUnit class to standardize access to preprocessor+model definitions, with helper functions to convert between both API formats.
+- ControlNet type constants are incomplete: regular expressions need updates to properly sort the whole list of ComfyUI options.
+- Implement a basic upscaling workflow, add in generator and webservice classes, test with ImageScaleModal.
+- As above, but a full latent upscaling workflow, using the ComfyUI version of the ultimate upscaler script.
+- CLIP skip still needs to be implemented.
+- Add the image generation Extras tab, with (at least) the following controls:
+  * Model config file selection
+  * a "Free memory" button
+
+WebUI parity:
+- Nore testing: make sure all API features still work as expected, especially upscaling.
+- Come up with a standardized system for widgets that send config changes like the model selection dropdown does
+- Add the image generation Extras tab, with the following controls:
+  * CLIP-skip
+  * "Variation seed" and similar
+  * Tiling checkbox
+  * Face restore checkbox
+
+Documentation:
+- Document the ComfyUI installation process within the generator selection window.
+- Make sure documentation has a proper local setup section, (include python3.11 requirement)
+- Add expanded stable-diffusion installation section, fully covering all options, including ComfyUI
+- Document the differences between Automatic1111, Forge, and ComfyUI, as they apply to IntraPaint.
+- Update labeled screenshots for the generator panel, controlnet panel, and stable-diffusion settings
+- Create CHANGELOG.md in docs folder
+
+Misc. cleanup:
+- Add a warning message to console output at the start when running under Python<3.11
+
+Low priority, possibly post-release:
+- Expand WebUI latent upscaling support, and add support for the various "highres. fix" options.
+- Using a custom node, implement the ComfyUI "interrogate" workflow.
+- Add queue support for the WebUI generator/API to keep it in parity with ComfyUI
+- ComfyUI inpainting model support: This requires some significant (but not unmanageable) workflow changes.
+- ComfyUI tiled VAE support:  The ComfyNode classes are implemented, I just need to add UI controls to activate them and set the tile size, probably in image generation extras.
+- Figure out IpAdapter in ComfyUI:  I suspect that also requires a new workflow.
+
+## What's already done:
+ComfyUI support:
+- Created the api.comfyui.nodes package, diffusion_workflow_builder.py for dynamically constructing the ComfyUI workflow.
+- Created comfyui_webservice.py to handle API access including applying cached parameters, fully implemented and mostly tested.
+- Created sd_comfyui_generator.py to use the API for image generation tasks.
+- Added the websockets-client library to handle ComfyUI progress monitoring.
+- Text-to-image, image-to-image, inpainting, and ControlNet all tested and confirmed working, with only minor bugs left to resolve.
+
+UI Changes (Image Generation tab):
+- Minor adjustments made to allow this to work with both WebUI and ComfyUI generators:
+  * "interrogate" button removed in ComfyUI for now
+- Added model selection dropdown
+- Tab now supports an inner "Extras" tab that can be used for generator-specific options
+
+ControlNet:
+- Added ControlNetPreprocessor class for tracking a preprocessor option's name and valid parameters in a standardized way
+- Added ControlNetCategoryBuilder class for tracking valid preprocessor/model pairings in a standardized way.
+- Added hard-coded preprocessor parameters to use with the Forge WebUI, which doesn't send preprocessor parameters.
+- Added hard-coded preprocessor/model category pairings with regex support to allow ControlNetCategoryBuilder to work in Forge and ComfyUI instead of just A1111.
+- Removed most of the Cache entries for ControlNet data, since a lot of that is API specific, and can all be managed by the ImageGenerator anyway.
+- Adjusted ControlNetPanel to use new standardized data types, simplifying a lot of code and enabling ComfyUI support.
+
+WebUI compatibility and cleanup:
+- Added and applied TypedDict classes defining all API request and response formats, so that code accessing API dicts will be properly validated.
+- Added diffusion_request_body.py to automatically assemble cached parameters into a valid request body, with support for parameters IntraPaint currently ignores.
+- A1111Webservice methods added to provide ControlNet preprocessors, types using new standardized formats.
+- ControlNet preprocessor resolution, balance mode, and resize mode are now shown properly in the ControlNet panel
+
+Misc. cleanup:
+- Updated minimum required Python version to 3.11, removed some workarounds that were previously present to allow use with earlier versions.
+- Removed Set, Dict, List, Tuple imports from typing that are no longer required.
+- Adjust various dropdown list sizing properties so that the UI doesn't get distorted if the API sends an extremely long option.
+
+
+---
+
 ## Possible lurking bugs
 Things I never fixed but can no longer reproduce, or that come from external issues:
 - Nested layer selection state shown in the layer panel isn't updating properly (recursive active layer update logic in LayerPanel looks fine)
@@ -49,11 +137,12 @@ Krita extension's implementation: (https://github.com/Acly/krita-ai-diffusion/bl
 1. ~~Update my ComfyUI installation and the Krita ComfyUI plugin, make sure all of it still works on my system.~~
 2. ~~Install websockets_client, add to requirements.txt~~ No longer needed, there's a perfectly good REST api now.
 3. ~~Create src/api/comfyui_webservice.py, implement basic connection and authentication.~~ Not really much to do regarding auth.
-4. Implement bare minimum set of necessary workflows: txt2img, img2img, inpainting, with progress checking
-5. Create src/ui/panel/generators/sd_comfyui_panel.py, or refactor sd_webui_panel.py to ensure it works with both SD providers.
-6. Create src/controller/image_generation/sd_comfyui_generator.py, implement the usual methods for connection, setup, inpainting, etc.
-7. Test to confirm all the basic tasks work.
-8. Update documentation to describe configuration, including rich text fields used in GeneratorSetupWindow
+4. ~~Implement bare minimum set of necessary workflows: txt2img, img2img, inpainting, with progress checking~~
+5. ~~Create src/ui/panel/generators/sd_comfyui_panel.py, or refactor sd_webui_panel.py to ensure it works with both SD providers.~~
+6. ~~Create src/controller/image_generation/sd_comfyui_generator.py, implement the usual methods for connection, setup, inpainting, etc.~~
+7. Implement local handling for "inpaint full res" in ComfyUI generator
+8. Test to confirm all the basic tasks work.
+9. Update documentation to describe configuration, including rich text fields used in GeneratorSetupWindow
 
 ### Follow-up: ControlNet
 1. Add methods to ComfyUiWebservice to load preprocessors and models,
@@ -71,7 +160,7 @@ Krita extension's implementation: (https://github.com/Acly/krita-ai-diffusion/bl
 
 ### Follow-up: interrogate
 1. Assuming this feature is available through the ComfyUI API, implement it in ComfyUiWebservice
-2. Implement SdComfyUiGenerator.interrogate, connect it to the prompt state the same way SdWebUiGenerator does.
+2. Implement SdComfyUiGenerator interrogate, connect it to the prompt state the same way SdWebUiGenerator does.
 
 ### Follow-up: settings
 1. See which existing AppConfig settings in the Stable-Diffusion category can be used, and apply them in ComfyUIWebservice wherever possible.

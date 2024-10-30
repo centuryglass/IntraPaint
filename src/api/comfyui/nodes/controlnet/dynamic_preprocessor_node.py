@@ -13,9 +13,28 @@ class DynamicPreprocessorNode(ComfyNode):
 
     # Connection keys:
     IMAGE = 'image'
+    MASK = 'mask'
 
     # Output indexes:
     IDX_IMAGE = 0
 
-    def __init__(self, node_name: str, node_inputs: dict[str, Any]) -> None:
-        super().__init__(node_name, node_inputs, {DynamicPreprocessorNode.IMAGE}, 1)
+    def __init__(self, node_name: str, node_inputs: dict[str, Any], has_image_input: bool = True,
+                 has_mask_input: bool = False) -> None:
+        inputs: set[str] = set()
+        if has_image_input:
+            inputs.add(DynamicPreprocessorNode.IMAGE)
+        if has_mask_input:
+            inputs.add(DynamicPreprocessorNode.MASK)
+        self._has_image_input = has_image_input
+        self._has_mask_input = has_mask_input
+        super().__init__(node_name, node_inputs, inputs, 1)
+
+    @property
+    def has_image_input(self) -> bool:
+        """Returns whether this node requires an image input."""
+        return self._has_image_input
+
+    @property
+    def has_mask_input(self) -> bool:
+        """Returns whether this node requires a mask input."""
+        return self._has_mask_input

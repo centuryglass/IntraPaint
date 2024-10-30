@@ -106,6 +106,11 @@ class StableDiffusionPanel(GeneratorPanel):
         self._model_label, self._model_combobox = _get_control_with_label(Cache.SD_MODEL)
         self._sampler_label, self._sampler_combobox = _get_control_with_label(Cache.SAMPLING_METHOD)
 
+        # Avoid letting excessively long model/sampler names distort the UI layout:
+        for large_combobox in (self._model_combobox, self._sampler_combobox):
+            assert isinstance(large_combobox, QComboBox)
+            large_combobox.setSizeAdjustPolicy(QComboBox.SizeAdjustPolicy.AdjustToMinimumContentsLengthWithIcon)
+
         self._masked_content_label: Optional[QLabel] = None
         self._masked_content_combobox: Optional[QComboBox] = None
         if show_masked_content_dropdown:

@@ -11,6 +11,7 @@ Main features
 import json
 import logging
 import os.path
+import threading
 from inspect import signature
 from threading import Lock
 from typing import Optional, Any, Callable
@@ -336,13 +337,16 @@ class Config:
         if save_change:
             with self._lock:
                 if not self._save_timer.isActive():
-                    def write_change() -> None:
-                        """Copy changes to the file and disconnect the timer."""
-                        self._write_to_json()
-                        self._save_timer.timeout.disconnect(write_change)
+                    if threading.current_thread() is not threading.main_thread():
+                        self._write_to_json()  # Timers can't be started from other threads.
+                    else:
+                        def write_change() -> None:
+                            """Copy changes to the file and disconnect the timer."""
+                            self._write_to_json()
+                            self._save_timer.timeout.disconnect(write_change)
 
-                    self._save_timer.timeout.connect(write_change)
-                    self._save_timer.start(10)
+                        self._save_timer.timeout.connect(write_change)
+                        self._save_timer.start(10)
         # Pass change to connected callback functions:
         callbacks = [*self._connected[key].items()]  # <- So callbacks can disconnect or replace themselves
         for source, callback in callbacks:
