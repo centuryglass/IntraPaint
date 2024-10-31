@@ -14,7 +14,6 @@
 
 ## Remaining tasks:
 ComfyUI support:
-- "inpaint full res" and "inpaint full res padding" support need to be implemented locally.  Since I already calculate padding bounds in the SelectionLayer, it should just be a matter of cropping and scaling images before inpainting in sd_comfyui_generator.
 - Because the WebUI data structure is being reused, a lot of the extended ComfyUI parameter support is broken.  Implement a ControlnetUnit class to standardize access to preprocessor+model definitions, with helper functions to convert between both API formats.
 - ControlNet type constants are incomplete: regular expressions need updates to properly sort the whole list of ComfyUI options.
 - Implement a basic upscaling workflow, add in generator and webservice classes, test with ImageScaleModal.
@@ -59,6 +58,7 @@ ComfyUI support:
 - Created sd_comfyui_generator.py to use the API for image generation tasks.
 - Added the websockets-client library to handle ComfyUI progress monitoring.
 - Text-to-image, image-to-image, inpainting, and ControlNet all tested and confirmed working, with only minor bugs left to resolve.
+- "inpaint full res" implemented by pre-cropping and scaling image content in SDComfyUIGenerator.
 
 UI Changes (Image Generation tab):
 - Minor adjustments made to allow this to work with both WebUI and ComfyUI generators:

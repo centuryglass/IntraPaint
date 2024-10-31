@@ -4,8 +4,8 @@ from argparse import Namespace
 from typing import Optional, cast, Any
 
 import requests
-from PySide6.QtCore import Signal, QSize, QThread
-from PySide6.QtGui import QImage, QAction, QIcon
+from PySide6.QtCore import Signal, QSize, QThread, QRect, QPoint
+from PySide6.QtGui import QImage, QAction, QIcon, QPainter
 from PySide6.QtWidgets import QInputDialog, QApplication
 from requests import ReadTimeout
 
@@ -123,6 +123,7 @@ class SDComfyUIGenerator(ImageGenerator):
 
     def __init__(self, window: MainWindow, image_stack: ImageStack, args: Namespace) -> None:
         super().__init__(window, image_stack)
+        self._image_stack = image_stack
         self._server_url = args.server_url if args.server_url != '' else Cache().get(Cache.SD_COMFYUI_SERVER_URL)
         self._webservice: Optional[ComfyUiWebservice] = ComfyUiWebservice(self._server_url)
         self._menu_actions: dict[str, list[QAction]] = {}
@@ -471,9 +472,20 @@ class SDComfyUIGenerator(ImageGenerator):
         elif self._image_stack.selection_layer.generation_area_is_empty():
             raise RuntimeError(GENERATE_ERROR_MESSAGE_EMPTY_MASK)
 
-        # TODO: if inpainting and "inpaint full res" is set:
-        #   - Find adjusted generation area, crop mask and image to match
-        #   - Add a way to make the generated image selector recognize it needs to insert into the cropped area.
+        original_source_image: Optional[QImage] = None
+        gen_area = self._image_stack.generation_area
+        inpaint_inner_bounds = QRect(QPoint(), gen_area.size())
+
+        if edit_mode == EDIT_MODE_INPAINT and cache.get(Cache.INPAINT_FULL_RES):
+            selection_layer = self._image_stack.selection_layer
+            selection_gen_area = selection_layer.get_selection_gen_area()
+            assert selection_gen_area is not None
+            if inpaint_inner_bounds.size() != selection_gen_area.size():
+                inpaint_inner_bounds = selection_gen_area.translated(-selection_layer.position - gen_area.topLeft())
+                original_source_image = source_image
+                source_image = original_source_image.copy(inpaint_inner_bounds)
+                assert mask_image is not None
+                mask_image = mask_image.copy(inpaint_inner_bounds)
 
         # Pre-process image and mask as necessary:
         if source_image is not None:
@@ -530,7 +542,16 @@ class SDComfyUIGenerator(ImageGenerator):
                 # TODO: if using "inpaint full res", this would be a good place to pad images to make them match the
                 #       gen. area size again.
                 for i, response_image in enumerate(image_data):
-                    self._cache_generated_image(response_image, i + first_image_idx)
+                    if inpaint_inner_bounds.size() != gen_area.size() and original_source_image is not None:
+                        inner_content_image = response_image
+                        if inner_content_image.size() != inpaint_inner_bounds.size():
+                            inner_content_image = pil_image_scaling(inner_content_image, inpaint_inner_bounds.size())
+                        final_image = original_source_image.copy()
+                        painter = QPainter(final_image)
+                        painter.drawImage(inpaint_inner_bounds, inner_content_image)
+                        self._cache_generated_image(final_image, i + first_image_idx)
+                    else:
+                        self._cache_generated_image(response_image, i + first_image_idx)
                 first_image_idx = first_image_idx + len(image_data)
             except ReadTimeout:
                 raise RuntimeError(ERROR_MESSAGE_TIMEOUT)
