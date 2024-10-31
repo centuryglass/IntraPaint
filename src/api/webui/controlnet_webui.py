@@ -3,7 +3,7 @@ from typing import TypedDict, NotRequired, Dict, Optional, Literal, Any
 
 from src.api.controlnet_constants import PREPROCESSOR_NONE, CONTROLNET_MODEL_NONE, CONTROLNET_REUSE_IMAGE_CODE, \
     TOOLTIP_CONTROLNET_WEIGHT, TOOLTIP_START_STEP, TOOLTIP_END_STEP, TOOLTIP_CONTROL_MODE, \
-    TOOLTIP_RESIZE_MODE, _tr
+    TOOLTIP_RESIZE_MODE, _tr, ControlTypeDef
 from src.util.math_utils import clamp
 from src.util.parameter import Parameter, TYPE_FLOAT, TYPE_STR
 
@@ -165,25 +165,9 @@ def init_controlnet_unit(unit_dict: Optional[dict[str, Any]] = None) -> ControlN
     return control_unit
 
 
-class ControlTypeDef(TypedDict):
-    """Defines one of the ControlNet Type options returned by the /controlnet/control_types endpoint."""
-    module_list: list[str]
-    model_list: list[str]
-    default_option: str
-    default_model: str
-
-
 class ControlTypeResponse(TypedDict):
     """Response format for the /controlnet/control_types endpoint, containing one entry per available control type."""
     control_types: dict[str, ControlTypeDef]
-
-
-class StaticControlTypeDef(ControlTypeDef):
-    """Extended from the API definitions to include regex, hopefully catching any renamed or augmented models or
-       preprocessors that should be in the list.  Also has the benefit of letting me avoid manually listing all the
-       options that match the pattern."""
-    preprocessor_pattern: NotRequired[str]
-    model_pattern: NotRequired[str]
 
 
 # PREPROCESSOR PARAMETER PRESETS:

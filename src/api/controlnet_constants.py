@@ -1,9 +1,9 @@
 """Types and constants associated with ControlNet.  All values are either not specific to a single API, or are reused
    because they don't have a useful equivalent in both APIs."""
+from typing import TypedDict
 
 from PySide6.QtWidgets import QApplication
 
-from src.api.webui.controlnet_webui import StaticControlTypeDef
 
 PREPROCESSOR_NONE = 'none'
 CONTROLNET_MODEL_NONE = 'None'
@@ -36,6 +36,23 @@ TOOLTIP_CONTROL_MODE = _tr('Secondary control to set how ControlNet and prompt i
 # The Automatic1111 WebUI provides a useful endpoint for sorting preprocessors and ControlNet models into useful
 # categories.  ComfyUI only provides some basic preprocessor categories, and the Forge WebUI doesn't even have that.
 # To keep feature parity, these definitions will be used to categorize available preprocessors and models.
+
+class ControlTypeDef(TypedDict):
+    """Defines one of the ControlNet Type options returned by the /controlnet/control_types endpoint.
+
+    TODO: I moved this here to resolve some circular import issues, but that's not an ideal fix. The best solution would
+          be to completely decouple STATIC_CONTROL_TYPE_DEFS from the WebUI definitions and just handle the difference
+          in ControlNetCategoryBuilder.
+    """
+    module_list: list[str]
+    model_list: list[str]
+    default_option: str
+    default_model: str
+class StaticControlTypeDef(ControlTypeDef):
+    """Extended from the WebUI API definitions to include regex, hopefully catching any renamed or augmented models or
+       preprocessors that should be in the list.  Also has the benefit of letting me avoid manually listing all the
+       options that match the pattern."""
+
 STATIC_CONTROL_TYPE_DEFS: dict[str, StaticControlTypeDef] = {
     'All': {
         'module_list': [PREPROCESSOR_NONE],

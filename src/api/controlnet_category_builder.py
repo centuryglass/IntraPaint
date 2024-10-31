@@ -4,9 +4,8 @@ from copy import deepcopy
 from typing import Optional, cast
 
 from src.api.controlnet_constants import STATIC_CONTROL_TYPE_DEFS, \
-    PREPROCESSOR_NONE, CONTROLNET_MODEL_NONE
-from src.api.webui.controlnet_webui import ControlTypeDef, ControlTypeResponse, StaticControlTypeDef, \
-    PREPROCESSOR_MODEL_FREE
+    PREPROCESSOR_NONE, CONTROLNET_MODEL_NONE, StaticControlTypeDef
+from src.api.webui.controlnet_webui import ControlTypeDef, ControlTypeResponse, PREPROCESSOR_MODEL_FREE
 
 
 class ControlNetCategoryBuilder:
