@@ -27,8 +27,8 @@ from src.api.comfyui.nodes.repeat_latent_node import RepeatLatentNode
 from src.api.comfyui.nodes.save_image_node import SaveImageNode
 from src.api.comfyui.nodes.vae.vae_decode_node import VAEDecodeNode
 from src.api.comfyui.nodes.vae.vae_encode_node import VAEEncodeNode
-from src.api.controlnet_constants import CONTROLNET_MODEL_NONE
-from src.api.controlnet_preprocessor import ControlNetPreprocessor
+from src.api.controlnet.controlnet_constants import CONTROLNET_MODEL_NONE
+from src.api.controlnet.controlnet_preprocessor import ControlNetPreprocessor
 
 random.seed()
 

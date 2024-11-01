@@ -165,7 +165,7 @@ class SDComfyUIGenerator(ImageGenerator):
             # Use the system status endpoint to check for ComfyUI:
             system_status = self._webservice.get_system_stats()
             return 'system' in system_status and 'comfyui_version' in system_status['system']
-        except (requests.exceptions.RequestException, requests.exceptions.ConnectionError) as req_err:
+        except RuntimeError as req_err:
             logger.error(f'Login check connection failed: {req_err}')
         except AuthError:
             self.status_signal.emit(AUTH_ERROR)

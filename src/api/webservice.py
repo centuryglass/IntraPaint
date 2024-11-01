@@ -138,17 +138,20 @@ class WebService:
         address = self._build_address(endpoint, url_params)
         if headers is None:
             headers = {}
-        if method == 'GET':
-            res = self._session.get(address, timeout=timeout, headers=headers)
-        elif method == 'POST':
-            if body_format == JSON_DATA_TYPE:
-                res = self._session.post(address, timeout=timeout, headers=headers, json=body)
-            elif body_format == MULTIPART_FORM_DATA_TYPE and files is not None:
-                res = self._session.post(address, timeout=timeout, headers=headers, files=files, data=body)
+        try:
+            if method == 'GET':
+                res = self._session.get(address, timeout=timeout, headers=headers)
+            elif method == 'POST':
+                if body_format == JSON_DATA_TYPE:
+                    res = self._session.post(address, timeout=timeout, headers=headers, json=body)
+                elif body_format == MULTIPART_FORM_DATA_TYPE and files is not None:
+                    res = self._session.post(address, timeout=timeout, headers=headers, files=files, data=body)
+                else:
+                    res = self._session.post(address, timeout=timeout, headers=headers, data=body)
             else:
-                res = self._session.post(address, timeout=timeout, headers=headers, data=body)
-        else:
-            raise ValueError(f'HTTP method {method} not supported')
+                raise ValueError(f'HTTP method {method} not supported')
+        except (requests.exceptions.RequestException, requests.exceptions.ConnectionError) as err:
+            raise RuntimeError(f'Error connecting to {endpoint}: {err}') from err
         if res.status_code == 401:
             if fail_on_auth_error and throw_on_failure:
                 raise RuntimeError(f'HTTP method {method} failed with status 401: unauthorized')

@@ -1,9 +1,11 @@
 """Data format definitions for the WebUI API's ControlNet endpoints."""
 from typing import TypedDict, NotRequired, Dict, Optional, Literal, Any
 
-from src.api.controlnet_constants import PREPROCESSOR_NONE, CONTROLNET_MODEL_NONE, CONTROLNET_REUSE_IMAGE_CODE, \
+from PySide6.QtWidgets import QApplication
+
+from src.api.controlnet.controlnet_constants import PREPROCESSOR_NONE, CONTROLNET_MODEL_NONE, CONTROLNET_REUSE_IMAGE_CODE, \
     TOOLTIP_CONTROLNET_WEIGHT, TOOLTIP_START_STEP, TOOLTIP_END_STEP, TOOLTIP_CONTROL_MODE, \
-    TOOLTIP_RESIZE_MODE, _tr, ControlTypeDef
+    TOOLTIP_RESIZE_MODE, ControlTypeDef
 from src.util.math_utils import clamp
 from src.util.parameter import Parameter, TYPE_FLOAT, TYPE_STR
 
@@ -112,6 +114,15 @@ def get_common_controlnet_unit_parameters(preprocessor_name: str, include_webui_
         resize_mode_param.set_valid_options(RESIZE_MODE_OPTIONS)
         default_params.append(resize_mode_param)
     return default_params
+
+
+# The `QCoreApplication.translate` context for strings in this file
+TR_ID = 'api.webui.controlnet_webui'
+
+
+def _tr(*args):
+    """Helper to make `QCoreApplication.translate` more concise."""
+    return QApplication.translate(TR_ID, *args)
 
 
 PREPROCESSOR_PRESET_LABELS = {
@@ -439,7 +450,9 @@ PREPROCESSOR_NO_RESOLUTION: set[str] = {
     'ip-adapter_pulid',
     'inpaint_only+lama',
     'inpaint_global_harmonious',
-    'facexlib'
+    'facexlib',
+    'None',
+    'none'
 }
 
 # Defines the set of preprocessors that don't have the control_mode option.
@@ -453,6 +466,8 @@ PREPROCESSOR_NO_CONTROL_MODE: set[str] = {
     'ip-adapter_face_id',
     'ip-adapter_clip_sdxl_plus_vith',
     'ip-adapter_clip_g',
+    'None',
+    'none'
 
 }
 

@@ -22,7 +22,9 @@ from PySide6.QtWidgets import QApplication
 
 from src.config.config_entry import ConfigEntry, DefinitionKey, DefinitionType
 from src.ui.input_fields.check_box import CheckBox
+from src.ui.input_fields.combo_box import ComboBox
 from src.util.parameter import ParamType, DynamicFieldWidget, ParamTypeList
+from src.util.signals_blocked import signals_blocked
 
 logger = logging.getLogger(__name__)
 
@@ -258,11 +260,22 @@ class Config:
             if isinstance(control_widget, CheckBox):
                 control_widget.setText(entry.name)
             if connect_to_config:
-                def _update_config(new_value: Any, config_key=key) -> None:
+                config_key = key
+
+                def _update_config(new_value: Any) -> None:
                     self.set(config_key, new_value)
 
                 def _update_control(new_value: Any) -> None:
                     if control_widget.value() != new_value:
+                        if isinstance(control_widget, ComboBox):
+                            current_options = self.get_options(config_key)
+                            widget_options = [control_widget.itemText(i) for i in range(control_widget.count())]
+                            if widget_options != current_options:
+                                with signals_blocked(control_widget):
+                                    while control_widget.count() > 0:
+                                        control_widget.removeItem(0)
+                                    for new_option in current_options:
+                                        control_widget.addItem(str(new_option), userData=new_option)
                         control_widget.setValue(new_value)
 
                 assert hasattr(control_widget, 'valueChanged')
@@ -351,19 +364,19 @@ class Config:
         callbacks = [*self._connected[key].items()]  # <- So callbacks can disconnect or replace themselves
         for source, callback in callbacks:
             num_args = len(signature(callback).parameters)
-            if num_args == 0 and inner_key is None:
-                callback()
-            elif num_args == 1 and inner_key is None:
-                try:
+            try:
+                if num_args == 0 and inner_key is None:
+                    callback()
+                elif num_args == 1 and inner_key is None:
                     callback(new_value)
-                except RuntimeError as err:
-                    if 'already deleted' in str(err):
-                        logger.warning(f'Disconnecting from {key}, got error={err}')
-                        self.disconnect(source, key)
-                    else:
-                        raise err
-            elif num_args == 2:
-                callback(new_value, inner_key)
+                elif num_args == 2:
+                    callback(new_value, inner_key)
+            except RuntimeError as err:
+                if 'already deleted' in str(err):
+                    logger.warning(f'Disconnecting from {key}, got error={err}')
+                    self.disconnect(source, key)
+                else:
+                    raise err
             if self.get(key, inner_key) != value:
                 break
 
@@ -381,7 +394,7 @@ class Config:
             An object to associate with this connection. Only one connection can be made for a connected_object.
         key: str
             A key tracked by this config file.
-        on_change_fn: function(new_value) or function(new_value, previous_value)
+        on_change_fn: function(new_value), function(new_value, inner_key)
             The function to run when the value changes.
         inner_key: str, optional
             If not None, assume the value at `key` is a dict and ensure on_change_fn only runs when `inner_key`

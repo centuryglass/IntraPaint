@@ -108,8 +108,8 @@ class StableDiffusionPanel(GeneratorPanel):
 
         # Avoid letting excessively long model/sampler names distort the UI layout:
         for large_combobox in (self._model_combobox, self._sampler_combobox):
-            assert isinstance(large_combobox, QComboBox)
-            large_combobox.setSizeAdjustPolicy(QComboBox.SizeAdjustPolicy.AdjustToMinimumContentsLengthWithIcon)
+            if isinstance(large_combobox, QComboBox):
+                large_combobox.setSizeAdjustPolicy(QComboBox.SizeAdjustPolicy.AdjustToMinimumContentsLengthWithIcon)
 
         self._masked_content_label: Optional[QLabel] = None
         self._masked_content_combobox: Optional[QComboBox] = None

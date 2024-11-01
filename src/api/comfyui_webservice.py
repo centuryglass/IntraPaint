@@ -20,10 +20,10 @@ from PySide6.QtGui import QImage
 import src.api.comfyui.comfyui_types as comfy_type
 from src.api.comfyui.diffusion_workflow_builder import DiffusionWorkflowBuilder, ExtensionModelType
 from src.api.comfyui.nodes.ksampler_node import SAMPLER_OPTIONS, SCHEDULER_OPTIONS
-from src.api.controlnet_category_builder import ControlNetCategoryBuilder
-from src.api.controlnet_preprocessor import ControlNetPreprocessor
+from src.api.controlnet.controlnet_category_builder import ControlNetCategoryBuilder
+from src.api.controlnet.controlnet_preprocessor import ControlNetPreprocessor
 from src.api.webservice import WebService, MULTIPART_FORM_DATA_TYPE
-from src.api.controlnet_constants import CONTROLNET_REUSE_IMAGE_CODE
+from src.api.controlnet.controlnet_constants import CONTROLNET_REUSE_IMAGE_CODE
 from src.api.webui.controlnet_webui import init_controlnet_unit, ControlTypeDef
 from src.config.cache import Cache
 from src.util.shared_constants import EDIT_MODE_TXT2IMG

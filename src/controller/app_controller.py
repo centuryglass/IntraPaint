@@ -526,7 +526,7 @@ class AppController(MenuBuilder):
 
     def load_image_generator(self, generator: ImageGenerator) -> None:
         """Load an image generator, updating controls and settings."""
-        if not generator.configure_or_connect():
+        if not generator.is_available():
             show_error_dialog(self._window, GENERATOR_LOAD_ERROR_TITLE,
                               GENERATOR_LOAD_ERROR_MESSAGE.format(generator_name=generator.get_display_name()))
             return
@@ -542,6 +542,12 @@ class AppController(MenuBuilder):
             self._generator.disconnect_or_disable()
 
         # load new generator:
+        if not generator.configure_or_connect():
+            show_error_dialog(self._window, GENERATOR_LOAD_ERROR_TITLE,
+                              GENERATOR_LOAD_ERROR_MESSAGE.format(generator_name=generator.get_display_name()))
+            assert generator != self._null_generator
+            self.load_image_generator(self._null_generator)
+            return
         self._generator = generator
         self._generator.menu_window = self._window
         self._generator.init_settings(self._settings_modal)

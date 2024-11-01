@@ -144,6 +144,14 @@ AUTH_ERROR_DETAIL_KEY = 'detail'
 STYLE_ERROR_TITLE = _tr('Updating prompt styles failed')
 
 
+ERROR_TITLE_SETTINGS_LOAD_FAILED = _tr('Failed to load Stable-Diffusion settings')
+ERROR_TITLE_SETTINGS_SAVE_FAILED = _tr('Failed to save Stable-Diffusion settings')
+ERROR_MESSAGE_SETTINGS_LOAD_FAILED = _tr('The connection to the Stable-Diffusion-WebUI image generator was lost. '
+                                         'Connected generator settings will not be available.')
+ERROR_MESSAGE_SETTINGS_SAVE_FAILED = _tr('The connection to the Stable-Diffusion-WebUI image generator was lost. '
+                                         'Any changes to connected generator settings were not saved.')
+
+
 MAX_ERROR_COUNT = 10
 MIN_RETRY_US = 300000
 MAX_RETRY_US = 60000000
@@ -223,7 +231,7 @@ class SDWebUIGenerator(ImageGenerator):
             if health_check_res.ok or (health_check_res.status_code == 401
                                        and health_check_res.json()[AUTH_ERROR_DETAIL_KEY] == AUTH_ERROR_MESSAGE):
                 return True
-        except (requests.exceptions.RequestException, requests.exceptions.ConnectionError) as req_err:
+        except RuntimeError as req_err:
             logger.error(f'Login check connection failed: {req_err}')
         except AuthError:
             self.status_signal.emit(AUTH_ERROR)
@@ -393,15 +401,24 @@ class SDWebUIGenerator(ImageGenerator):
         """Updates a settings modal to add settings relevant to this generator."""
         assert self._webservice is not None
         web_config = A1111Config()
-        web_config.load_all(self._webservice)
-        settings_modal.load_from_config(web_config)
+        try:
+            web_config.load_all(self._webservice)
+            settings_modal.load_from_config(web_config)
+        except (KeyError, RuntimeError) as err:
+            logger.error(f'Failed to init WebUI API settings: {err}')
+            show_error_dialog(None, ERROR_TITLE_SETTINGS_LOAD_FAILED, ERROR_MESSAGE_SETTINGS_LOAD_FAILED)
         app_config = AppConfig()
         settings_modal.load_from_config(app_config, [STABLE_DIFFUSION_CONFIG_CATEGORY])
 
     def refresh_settings(self, settings_modal: SettingsModal) -> None:
         """Reloads current values for this generator's settings, and updates them in the settings modal."""
         assert self._webservice is not None
-        settings = self._webservice.get_config()
+        try:
+            settings = self._webservice.get_config()
+        except (KeyError, RuntimeError) as err:
+            logger.error(f'Failed to init WebUI API settings: {err}')
+            show_error_dialog(None, ERROR_TITLE_SETTINGS_LOAD_FAILED, ERROR_MESSAGE_SETTINGS_LOAD_FAILED)
+            settings = {}
         app_config = AppConfig()
         for key in app_config.get_category_keys(STABLE_DIFFUSION_CONFIG_CATEGORY):
             settings[key] = app_config.get(key)
@@ -422,20 +439,32 @@ class SDWebUIGenerator(ImageGenerator):
             elif key in app_keys and not isinstance(value, (list, dict)):
                 AppConfig().set(key, value)
         if len(web_changes) > 0:
-            def _update_config() -> None:
+
+            class _SettingsUpdateTask(AsyncTask):
+                error_signal = Signal(Exception)
+
+                def signals(self) -> list[Signal]:
+                    return [self.error_signal]
+
+            def _update_config(error_signal: Signal) -> None:
                 assert self._webservice is not None
                 try:
                     self._webservice.set_config(changed_settings)
-                except ReadTimeout:
-                    logger.error('Settings update timed out')
+                except (KeyError, RuntimeError) as err:
+                    error_signal.emit(err)
 
-            update_task = AsyncTask(_update_config, True)
+            update_task = _SettingsUpdateTask(_update_config, True)
 
-            def _update_setting():
+            def _update_setting() -> None:
                 AppStateTracker.set_app_state(APP_STATE_EDITING if self._image_stack.has_image else APP_STATE_NO_IMAGE)
                 update_task.finish_signal.disconnect(_update_setting)
 
+            def _handle_error(err: Exception) -> None:
+                logger.error(f'Error updating settings: {err}')
+                show_error_dialog(None, ERROR_TITLE_SETTINGS_SAVE_FAILED, ERROR_MESSAGE_SETTINGS_SAVE_FAILED)
+
             update_task.finish_signal.connect(_update_setting)
+            update_task.error_signal.connect(_handle_error)
             update_task.start()
 
     def unload_settings(self, settings_modal: SettingsModal) -> None:

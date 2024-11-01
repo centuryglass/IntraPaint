@@ -5,7 +5,7 @@ from typing import TypedDict
 from PySide6.QtWidgets import QApplication
 
 
-PREPROCESSOR_NONE = 'none'
+PREPROCESSOR_NONE = 'None'  # NOTE: Some versions of the API instead use "none", so check for both.
 CONTROLNET_MODEL_NONE = 'None'
 
 # When used as the controlnet image path, this signifies that the image should be taken from the image generation area.

@@ -9,11 +9,12 @@ from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QCheckBox, QPushButton, QLineEdit, QComboBox, QApplication, QTabWidget, QGridLayout, \
     QLabel, QWidget
 
-from src.api.controlnet_constants import PREPROCESSOR_NONE, \
-    CONTROLNET_REUSE_IMAGE_CODE
+from src.api.controlnet.controlnet_constants import PREPROCESSOR_NONE, \
+    CONTROLNET_REUSE_IMAGE_CODE, CONTROLNET_MODEL_NONE
+from src.api.controlnet.controlnet_model import ControlNetModel
 from src.api.webui.controlnet_webui import get_common_controlnet_unit_parameters, PREPROCESSOR_PRESET_LABELS, \
     init_controlnet_unit, ControlTypeDef
-from src.api.controlnet_preprocessor import ControlNetPreprocessor
+from src.api.controlnet.controlnet_preprocessor import ControlNetPreprocessor
 from src.config.cache import Cache
 from src.ui.input_fields.check_box import CheckBox
 from src.ui.layout.bordered_widget import BorderedWidget
@@ -211,7 +212,7 @@ class ControlNetPanel(BorderedWidget):
         self._module_combobox = QComboBox(self)
         self._model_combobox = QComboBox(self)
         self._module_combobox.currentTextChanged.connect(self._handle_module_change)
-        self._model_combobox.currentTextChanged.connect(self._handle_model_change)
+        self._model_combobox.currentIndexChanged.connect(self._handle_model_change)
 
         # Avoid letting excessively long type/preprocessor/model names distort the UI layout:
         for large_combobox in (self._model_combobox, self._module_combobox, self._control_type_combobox):
@@ -220,12 +221,12 @@ class ControlNetPanel(BorderedWidget):
 
         self._load_control_type(DEFAULT_CONTROL_TYPE)
         # Restore previous state on start:
-        module = self._module_combobox.findText(initial_control_state['module'])
-        if module is not None:
-            self._module_combobox.setCurrentIndex(module)
-        model = self._model_combobox.findText(initial_control_state['model'])
-        if model is not None:
-            self._model_combobox.setCurrentIndex(model)
+        module_idx = self._module_combobox.findText(initial_control_state['module'])
+        if module_idx >= 0:
+            self._module_combobox.setCurrentIndex(module_idx)
+        model_idx = self._model_combobox.findText(initial_control_state['model'])
+        if model_idx >= 0:
+            self._model_combobox.setCurrentIndex(model_idx)
 
         def set_enabled(checked: bool):
             """Update config and active widgets when controlnet is enabled or disabled."""
@@ -347,22 +348,28 @@ class ControlNetPanel(BorderedWidget):
         """Update module/model options for the selected control type."""
         assert control_type_name in self._control_types
         control_type = self._control_types[control_type_name]
-        self._model_combobox.currentTextChanged.disconnect(self._handle_model_change)
-        while self._model_combobox.count() > 0:
-            self._model_combobox.removeItem(0)
-        default_model = control_type['default_model']
-        for control_model in control_type['model_list']:
-            self._model_combobox.addItem(control_model)
-        self._model_combobox.currentTextChanged.connect(self._handle_model_change)
-        self._model_combobox.setCurrentIndex(self._model_combobox.findText(default_model))
+        with signals_blocked(self._model_combobox):
+            while self._model_combobox.count() > 0:
+                self._model_combobox.removeItem(0)
+            models = [ControlNetModel(model_name) for model_name in control_type['model_list']]
+            models.sort(key=lambda model: model.display_name.lower())
+            for control_model in models:
+                self._model_combobox.addItem(control_model.display_name, userData=control_model.full_model_name)
+            default_model = control_type['default_model']
+            if default_model not in control_type['model_list']:
+                default_model = CONTROLNET_MODEL_NONE
+        self._model_combobox.setCurrentIndex(self._model_combobox.findData(default_model))
 
-        self._module_combobox.currentTextChanged.disconnect(self._handle_module_change)
-        default_module = control_type['default_option']
-        while self._module_combobox.count() > 0:
-            self._module_combobox.removeItem(0)
-        for preprocessor in control_type['module_list']:
-            self._module_combobox.addItem(preprocessor)
-        self._module_combobox.currentTextChanged.connect(self._handle_module_change)
+        with signals_blocked(self._module_combobox):
+            while self._module_combobox.count() > 0:
+                self._module_combobox.removeItem(0)
+            modules = [*control_type['module_list']]
+            modules.sort(key=lambda module: module.lower())
+            for preprocessor in modules:
+                self._module_combobox.addItem(preprocessor)
+            default_module = control_type['default_option']
+            if default_module not in modules:
+                default_module = PREPROCESSOR_NONE
         self._module_combobox.setCurrentIndex(self._module_combobox.findText(default_module))
 
     def _handle_module_change(self, selected_module: str) -> None:
@@ -378,16 +385,19 @@ class ControlNetPanel(BorderedWidget):
         self._dynamic_control_labels = []
         self._dynamic_controls = []
         preprocessor: Optional[ControlNetPreprocessor] = None
-        for saved_preprocessor in self._preprocessors:
-            if saved_preprocessor.name == selected_module:
-                preprocessor = saved_preprocessor
-        if preprocessor is None:
-            raise ValueError(f'Could not find "{selected_module}" preprocessor. This indicates a bug in either control'
-                             ' type option setup or preprocessor parameterization.')
+        if selected_module.lower() == PREPROCESSOR_NONE.lower():
+            preprocessor = ControlNetPreprocessor(PREPROCESSOR_NONE, PREPROCESSOR_NONE, [])
+        else:
+            for saved_preprocessor in self._preprocessors:
+                if saved_preprocessor.name == selected_module:
+                    preprocessor = saved_preprocessor
+            if preprocessor is None:
+                raise ValueError(f'Could not find "{selected_module}" preprocessor. This indicates a bug in either'
+                                 ' control type option setup or preprocessor parameterization.')
         saved_control_unit = init_controlnet_unit(cache.get(self._cache_key))
         preprocessor.update_webui_data(saved_control_unit)
         cache.set(self._cache_key, saved_control_unit)
-        if selected_module != PREPROCESSOR_NONE:
+        if selected_module.lower() != PREPROCESSOR_NONE.lower():
             parameters = get_common_controlnet_unit_parameters(preprocessor.name, self._show_webui_options)
             for preprocessor_parameter in preprocessor.parameters:
                 parameters.append(deepcopy(preprocessor_parameter))
@@ -410,8 +420,9 @@ class ControlNetPanel(BorderedWidget):
                 self._dynamic_control_labels.append(label)
         self._build_layout()
 
-    def _handle_model_change(self, selected_model: str) -> None:
+    def _handle_model_change(self, model_idx: int) -> None:
         """Update config when the selected model changes."""
+        selected_model = self._model_combobox.itemData(model_idx)
         Cache().set(self._cache_key, selected_model, inner_key=CONTROL_MODEL_KEY)
 
 

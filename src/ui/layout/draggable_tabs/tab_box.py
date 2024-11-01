@@ -233,6 +233,8 @@ class TabBox(BorderedWidget):
 
     def _update_tab_content_slot(self, new_tab_content: QWidget) -> None:
         assert self._active_tab is not None and new_tab_content == self._active_tab.content_widget
+        if hasattr(new_tab_content, 'set_orientation'):
+            new_tab_content.set_orientation(self._orientation)
         self.set_active_tab(self._active_tab)
 
     def _box_opened_slot(self, is_open: bool) -> None:

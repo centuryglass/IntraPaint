@@ -12,8 +12,8 @@ from PySide6.QtCore import QByteArray
 from PySide6.QtGui import QImage
 from requests import Response
 
-from src.api.controlnet_category_builder import ControlNetCategoryBuilder
-from src.api.controlnet_preprocessor import ControlNetPreprocessor
+from src.api.controlnet.controlnet_category_builder import ControlNetCategoryBuilder
+from src.api.controlnet.controlnet_preprocessor import ControlNetPreprocessor
 from src.api.webservice import WebService
 from src.api.webui.controlnet_webui import ControlNetModelResponse, ControlNetModuleResponse, ControlTypeDef, \
     ControlTypeResponse, CONTROLNET_SCRIPT_KEY

@@ -3,7 +3,7 @@ import re
 from copy import deepcopy
 from typing import Optional, cast
 
-from src.api.controlnet_constants import STATIC_CONTROL_TYPE_DEFS, \
+from src.api.controlnet.controlnet_constants import STATIC_CONTROL_TYPE_DEFS, \
     PREPROCESSOR_NONE, CONTROLNET_MODEL_NONE, StaticControlTypeDef
 from src.api.webui.controlnet_webui import ControlTypeDef, ControlTypeResponse, PREPROCESSOR_MODEL_FREE
 
@@ -17,7 +17,7 @@ class ControlNetCategoryBuilder:
         self._preprocessors: list[str] = preprocessor_names
         self._models: list[str] = model_names
         self._control_types: dict[str, ControlTypeDef] = {}
-        if PREPROCESSOR_NONE not in self._preprocessors:
+        if PREPROCESSOR_NONE not in self._preprocessors and PREPROCESSOR_NONE.lower() not in self._preprocessors:
             self._preprocessors.append(PREPROCESSOR_NONE)
         if CONTROLNET_MODEL_NONE not in self._models:
             self._models.append(CONTROLNET_MODEL_NONE)
