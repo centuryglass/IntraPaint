@@ -3,36 +3,32 @@ import logging
 from argparse import Namespace
 from typing import Optional, cast, Any
 
-import requests
 from PySide6.QtCore import Signal, QSize, QThread, QRect, QPoint
-from PySide6.QtGui import QImage, QAction, QIcon, QPainter
-from PySide6.QtWidgets import QInputDialog, QApplication
+from PySide6.QtGui import QImage, QPainter
+from PySide6.QtWidgets import QApplication
 from requests import ReadTimeout
 
 from src.api.a1111_webservice import AuthError
 from src.api.comfyui.comfyui_types import ImageFileReference
-from src.api.comfyui.nodes.ksampler_node import SAMPLER_OPTIONS, SCHEDULER_OPTIONS
 from src.api.comfyui_webservice import ComfyUiWebservice, ComfyModelType, AsyncTaskProgress, AsyncTaskStatus
+from src.api.controlnet.controlnet_constants import ControlTypeDef
+from src.api.controlnet.controlnet_preprocessor import ControlNetPreprocessor
+from src.api.webservice import WebService
 from src.config.application_config import AppConfig
 from src.config.cache import Cache
-from src.config.key_config import KeyConfig
-from src.controller.image_generation.image_generator import ImageGenerator
-from src.controller.image_generation.sd_webui_generator import SD_BASE_DESCRIPTION, SD_PREVIEW_IMAGE, \
-    STABLE_DIFFUSION_CONFIG_CATEGORY, ICON_PATH_CONTROLNET_TAB
+from src.controller.image_generation.sd_generator import SDGenerator, SD_BASE_DESCRIPTION, \
+    STABLE_DIFFUSION_CONFIG_CATEGORY
 from src.image.filter.blur import BlurFilter, MODE_GAUSSIAN
 from src.image.layers.image_stack import ImageStack
-from src.ui.layout.draggable_tabs.tab import Tab
 from src.ui.modal.settings_modal import SettingsModal
-from src.ui.panel.controlnet_panel import TabbedControlNetPanel, CONTROLNET_TITLE
 from src.ui.panel.generators.generator_panel import GeneratorPanel
 from src.ui.panel.generators.stable_diffusion_panel import StableDiffusionPanel
-from src.ui.window.extra_network_window import ExtraNetworkWindow, LORA_KEY_NAME, LORA_KEY_ALIAS, LORA_KEY_PATH
+from src.ui.window.extra_network_window import LORA_KEY_NAME, LORA_KEY_ALIAS, LORA_KEY_PATH
 from src.ui.window.main_window import MainWindow
-from src.util.application_state import AppStateTracker, APP_STATE_LOADING, APP_STATE_EDITING
+from src.util.application_state import AppStateTracker, APP_STATE_LOADING
 from src.util.menu_builder import menu_action
-from src.util.parameter import TYPE_LIST, TYPE_STR, TYPE_FLOAT, TYPE_DICT
+from src.util.parameter import TYPE_LIST, TYPE_STR
 from src.util.shared_constants import EDIT_MODE_TXT2IMG, EDIT_MODE_INPAINT, EDIT_MODE_IMG2IMG, AUTH_ERROR, \
-    URL_REQUEST_MESSAGE, URL_REQUEST_RETRY_MESSAGE, URL_REQUEST_TITLE, \
     GENERATE_ERROR_MESSAGE_EMPTY_MASK, GENERATE_ERROR_TITLE, ERROR_MESSAGE_TIMEOUT
 from src.util.visual.pil_image_utils import pil_image_scaling
 
@@ -118,30 +114,19 @@ def _check_lora_available(_) -> bool:
     return len(cache.get(Cache.LORA_MODELS)) > 0
 
 
-class SDComfyUIGenerator(ImageGenerator):
+class SDComfyUIGenerator(SDGenerator):
     """Interface for providing image generation capabilities."""
 
     def __init__(self, window: MainWindow, image_stack: ImageStack, args: Namespace) -> None:
-        super().__init__(window, image_stack)
+        super().__init__(window, image_stack, args, Cache.SD_COMFYUI_SERVER_URL)
         self._image_stack = image_stack
-        self._server_url = args.server_url if args.server_url != '' else Cache().get(Cache.SD_COMFYUI_SERVER_URL)
-        self._webservice: Optional[ComfyUiWebservice] = ComfyUiWebservice(self._server_url)
-        self._menu_actions: dict[str, list[QAction]] = {}
-        self._connected = False
-        self._control_panel: Optional[StableDiffusionPanel] = None
-        self._preview = QImage(SD_PREVIEW_IMAGE)
-        self._controlnet_tab: Optional[Tab] = None
-        self._controlnet_panel: Optional[TabbedControlNetPanel] = None
+        self._webservice: Optional[ComfyUiWebservice] = ComfyUiWebservice(self.server_url)
         self._active_task_id = ''
         self._active_task_number = 0
 
     def get_display_name(self) -> str:
         """Returns a display name identifying the generator."""
         return SD_COMFYUI_GENERATOR_NAME
-
-    def get_preview_image(self) -> QImage:
-        """Returns a preview image for this generator."""
-        return self._preview
 
     def get_setup_text(self) -> str:
         """Returns a rich text description of how to set up this generator."""
@@ -151,11 +136,198 @@ class SDComfyUIGenerator(ImageGenerator):
         """Returns an extended description of this generator."""
         return SD_COMFYUI_GENERATOR_DESCRIPTION
 
-    def get_extra_tabs(self) -> list[Tab]:
-        """Returns any extra tabs that the generator will add to the main window."""
-        if self._controlnet_tab is not None:
-            return [self._controlnet_tab]
-        return []
+    def get_webservice(self) -> Optional[WebService]:
+        """Return the webservice object this module uses to connect to Stable-Diffusion, if initialized."""
+        return self._webservice
+
+    def remove_webservice(self) -> None:
+        """Destroy and remove any active webservice object."""
+        self._webservice = None
+
+    def create_or_get_webservice(self, url: str) -> WebService:
+        """Return the webservice object this module uses to connect to Stable-Diffusion.  If the webservice already
+           exists but the url doesn't match, a new webservice should replace the existing one, using the new url."""
+        if self._webservice is not None:
+            if self._webservice.server_url == url:
+                return self._webservice
+            self._webservice.disconnect()
+            self._webservice = None
+        self._webservice = ComfyUiWebservice(url)
+        return self._webservice
+
+    def interrogate(self) -> None:
+        """Update the prompt to match image content using an AI image description model."""
+        raise RuntimeError('ComfyUI lacks interrogate support')
+
+    def get_controlnet_preprocessors(self) -> list[ControlNetPreprocessor]:
+        """Return the list of available Controlnet preprocessors."""
+        assert self._webservice is not None
+        try:
+            return self._webservice.get_controlnet_preprocessors()
+        except (RuntimeError, KeyError) as err:
+            logger.error(f'Loading ControlNet preprocessors failed: {err}')
+            return []
+
+    def get_controlnet_models(self) -> list[str]:
+        """Return the list of available ControlNet models."""
+        assert self._webservice is not None
+        try:
+            return self._webservice.get_controlnets()
+        except (RuntimeError, KeyError) as err:
+            logger.error(f'Loading ControlNet models failed: {err}')
+            return []
+
+    def get_controlnet_types(self) -> dict[str, ControlTypeDef]:
+        """Return available ControlNet categories."""
+        assert self._webservice is not None
+        try:
+            return self._webservice.get_controlnet_type_categories()
+        except (RuntimeError, KeyError) as err:
+            logger.error(f'Loading ControlNet types failed: {err}')
+            return {}
+
+    def get_controlnet_unit_cache_keys(self) -> list[str]:
+        """Return keys used to cache serialized ControlNet units as strings."""
+        return [Cache.CONTROLNET_ARGS_0_COMFYUI, Cache.CONTROLNET_ARGS_1_COMFYUI, Cache.CONTROLNET_ARGS_2_COMFYUI]
+
+    def get_diffusion_model_names(self) -> list[str]:
+        """Return the list of available image generation models."""
+        assert self._webservice is not None
+        try:
+            return self._webservice.get_sd_checkpoints()
+        except (RuntimeError, KeyError) as err:
+            logger.error(f'Loading stable-diffusion model list failed: {err}')
+            return []
+
+    def get_lora_model_info(self) -> list[dict[str, str]]:
+        """Return available LoRA model extensions."""
+        assert self._webservice is not None
+        try:
+            lora_names = self._webservice.get_lora_models()
+            lora_info: list[dict[str, str]] = []
+            for lora_file in lora_names:
+                if '.' in lora_file:
+                    name = lora_file[:lora_file.rindex('.')]
+                else:
+                    name = lora_file
+                lora_info.append({
+                    LORA_KEY_NAME: name,
+                    LORA_KEY_ALIAS: name,
+                    LORA_KEY_PATH: lora_file
+                })
+            return lora_info
+        except (RuntimeError, KeyError) as err:
+            logger.error(f'Loading stable-diffusion LoRA model list failed: {err}')
+            return []
+
+    def get_diffusion_sampler_names(self) -> list[str]:
+        """Return the list of available samplers."""
+        assert self._webservice is not None
+        try:
+            return self._webservice.get_sampler_names()
+        except (RuntimeError, KeyError) as err:
+            logger.error(f'Loading stable-diffusion sampler option list failed: {err}')
+            return []
+
+    def get_upscale_method_names(self) -> list[str]:
+        """Return the list of available upscale methods."""
+        assert self._webservice is not None
+        try:
+            return self._webservice.get_lora_models()
+        except (RuntimeError, KeyError) as err:
+            logger.error(f'Loading stable-diffusion LoRA model list failed: {err}')
+            return []
+
+    def cache_generator_specific_data(self) -> None:
+        """When activating the generator, after the webservice is connected, this method should be implemented to
+           load and cache any generator-specific API data."""
+        cache = Cache()
+        assert self._webservice is not None
+        for model_type, cache_key in ((ComfyModelType.CONFIG, Cache.COMFYUI_MODEL_CONFIG),
+                                      (ComfyModelType.LORA, Cache.LORA_MODELS),
+                                      (ComfyModelType.HYPERNETWORKS, Cache.HYPERNETWORK_MODELS)):
+            cache_data_type = cache.get_data_type(cache_key)
+            try:
+                model_list = self._webservice.get_models(model_type)
+                model_list.sort()
+                if cache_data_type == TYPE_LIST:
+                    cache.set(cache_key, model_list)
+                else:
+                    assert cache_data_type == TYPE_STR
+                    cache.restore_default_options(cache_key)
+                    # Combine default options with dynamic options. This is so we can support having default
+                    # options like "any"/"none"/"auto" when appropriate.
+                    option_list = cast(list[str], cache.get_options(cache_key))
+                    for option in model_list:
+                        if option not in option_list:
+                            option_list.append(option)
+                    cache.update_options(cache_key, option_list)
+            except (RuntimeError, KeyError) as err:
+                logger.error(f'Loading {model_type} model options failed: {err}')
+                if cache_data_type == TYPE_LIST:
+                    cache.set(cache_key, [])
+                else:
+                    assert cache_data_type == TYPE_STR
+                    cache.restore_default_options(cache_key)
+        try:
+            cache.update_options(Cache.SCHEDULER, self._webservice.get_scheduler_names())
+        except (RuntimeError, KeyError) as err:
+            logger.error(f'Loading scheduler options failed: {err}')
+            cache.restore_default_options(Cache.SCHEDULER)
+
+    def clear_cached_generator_data(self) -> None:
+        """Clear any cached data specific to this image generator."""
+        Cache().restore_default_options(Cache.COMFYUI_MODEL_CONFIG)
+
+    def cancel_generation(self) -> None:
+        """Cancels image generation, if in-progress"""
+        assert self._webservice is not None
+        if AppStateTracker.app_state() == APP_STATE_LOADING:
+            self._webservice.interrupt(self._active_task_id)
+
+    def load_lora_thumbnail(self, lora_info: Optional[dict[str, str]]) -> Optional[QImage]:
+        """Attempt to load a LoRA model thumbnail image from the API."""
+        return None  # ComfyUI doesn't provide LoRA thumbnails.
+
+    def load_preprocessor_preview(self, preprocessor: ControlNetPreprocessor,
+                                     image: QImage, mask: Optional[QImage],
+                                     status_signal: Signal,
+                                     image_signal: Signal) -> None:
+        """Requests a ControlNet preprocessor preview image."""
+        assert self._webservice is not None
+        queue_info = self._webservice.controlnet_preprocessor_preview(image, mask, preprocessor)
+        self._active_task_number = queue_info['number']
+        self._active_task_id = queue_info['prompt_id']
+        final_status = self._repeated_progress_check(self._active_task_id, self._active_task_number, 0, 1,
+                                                     status_signal)
+
+        if 'outputs' not in final_status:
+            preview_image = image
+        else:
+            assert self._webservice is not None
+            image_data = self._webservice.download_images(final_status['outputs']['images'])
+            if len(image_data) != 1:
+                logger.warning(f'Expected one preprocessor preview image, got {len(image_data)}')
+            preview_image = image_data[0]
+        image_signal.emit(preview_image)
+
+    def get_gen_area_image(self, init_image: Optional[QImage] = None) -> QImage:
+        """Gets the contents of the image generation area, handling any necessary preprocessing."""
+        image = init_image if init_image is not None else self._image_stack.qimage_generation_area_content()
+        return self._scale_and_crop_gen_qimage(image)
+
+    def get_gen_area_mask(self, init_mask: Optional[QImage] = None) -> QImage:
+        """Gets the inpainting mask for the image generation area, handling any necessary preprocessing."""
+        selection_layer = self._image_stack.selection_layer
+        mask = init_mask if init_mask is not None else selection_layer.mask_image
+        mask = self._scale_and_crop_gen_qimage(mask)
+        # ComfyUI doesn't blur masks unless you add another node to do it, so me might as well just do it here:
+        blur_radius = AppConfig().get(AppConfig.MASK_BLUR)
+        if blur_radius > 0:
+            mask = BlurFilter.blur(mask, MODE_GAUSSIAN, blur_radius)
+        # ComfyUI expects inverted masks:
+        mask.invertPixels(QImage.InvertMode.InvertRgba)
+        return mask
 
     def is_available(self) -> bool:
         """Returns whether the generator is supported on the current system."""
@@ -170,135 +342,6 @@ class SDComfyUIGenerator(ImageGenerator):
         except AuthError:
             self.status_signal.emit(AUTH_ERROR)
         return False
-
-    def connect_to_url(self, url: str) -> bool:
-        """Attempt to connect to a specific URL, returning whether the connection succeeded."""
-        assert self._webservice is not None
-        if url == self._server_url:
-            if self._connected:
-                return True
-            return self.configure_or_connect()
-        self._server_url = url
-        self._webservice.disconnect()
-        self._webservice = ComfyUiWebservice(url)
-        return self.configure_or_connect()
-
-    def configure_or_connect(self) -> bool:
-        """Handles any required steps necessary to configure the generator, install required components, and/or
-           connect to required external services, returning whether the process completed correctly."""
-        # Check for a valid connection, requesting a URL if needed:
-        try:
-            if self._webservice is None:
-                self._webservice = ComfyUiWebservice(self._server_url)
-            while self._server_url == '' or not self.is_available():
-                prompt_text = URL_REQUEST_MESSAGE if self._server_url == '' else URL_REQUEST_RETRY_MESSAGE
-                new_url, url_entered = QInputDialog.getText(self.menu_window, URL_REQUEST_TITLE, prompt_text,
-                                                            text=self._server_url)
-                if not url_entered:
-                    return False
-                if self.connect_to_url(new_url):
-                    Cache().set(Cache.SD_COMFYUI_SERVER_URL, new_url)
-                    return True
-                return False
-
-            cache = Cache()
-            for model_type, cache_key in ((ComfyModelType.CHECKPOINT, Cache.SD_MODEL),
-                                          (ComfyModelType.CONFIG, Cache.COMFYUI_MODEL_CONFIG),
-                                          (ComfyModelType.LORA, Cache.LORA_MODELS),
-                                          (ComfyModelType.HYPERNETWORKS, Cache.HYPERNETWORK_MODELS),
-                                          (ComfyModelType.UPSCALING, Cache.UPSCALE_METHOD)):
-                cache_data_type = cache.get_data_type(cache_key)
-                try:
-                    model_list = self._webservice.get_models(model_type)
-                    model_list.sort()
-                    if cache_data_type == TYPE_LIST:
-                        cache.set(cache_key, model_list)
-                    else:
-                        assert cache_data_type == TYPE_STR
-                        cache.restore_default_options(cache_key)
-                        # Combine default options with dynamic options. This is so we can support having default
-                        # options like "any"/"none"/"auto" when appropriate.
-                        option_list = cast(list[str], cache.get_options(cache_key))
-                        for option in model_list:
-                            if option not in option_list:
-                                option_list.append(option)
-                        cache.update_options(cache_key, option_list)
-                except (RuntimeError, KeyError) as err:
-                    logger.error(f'Loading {model_type} model options failed: {err}')
-                    if cache_data_type == TYPE_LIST:
-                        cache.set(cache_key, [])
-                    else:
-                        assert cache_data_type == TYPE_STR
-                        cache.restore_default_options(cache_key)
-
-            cache.update_options(Cache.SAMPLING_METHOD, SAMPLER_OPTIONS)
-            cache.update_options(Cache.SCHEDULER, SCHEDULER_OPTIONS)
-
-            # Enable inpainting cropping and padding:
-            cache.set(Cache.INPAINT_OPTIONS_AVAILABLE, True)
-
-            # Build ControlNet tab if ControlNet model list is non-empty:
-            if self._controlnet_tab is None:
-                try:
-                    model_list = self._webservice.get_controlnets()
-                    preprocessors = self._webservice.get_controlnet_preprocessors()
-                    control_types = self._webservice.get_controlnet_type_categories()
-                    control_keys = [Cache.CONTROLNET_ARGS_0_COMFYUI, Cache.CONTROLNET_ARGS_1_COMFYUI,
-                                    Cache.CONTROLNET_ARGS_2_COMFYUI]
-                    if len(preprocessors) > 0 and len(control_types) > 0:
-                        controlnet_panel = TabbedControlNetPanel(preprocessors,
-                                                                 model_list,
-                                                                 control_types,
-                                                                 control_keys,
-                                                                 True)
-                        self._controlnet_tab = Tab(CONTROLNET_TITLE, controlnet_panel, KeyConfig.SELECT_CONTROLNET_TAB,
-                                                   parent=self.menu_window)
-                        self._controlnet_tab.hide()
-                        self._controlnet_tab.setIcon(QIcon(ICON_PATH_CONTROLNET_TAB))
-                    else:
-                        logger.error(f'Missing data required to initialize ControlNet: found {len(model_list)} models,'
-                                     f' {len(preprocessors)} preprocessors, and {len(control_types)} control types.'
-                                     f' To use ControlNet, at least one preprocessor and one control type must be'
-                                     f' available.')
-                except (KeyError, RuntimeError) as err:
-                    logger.error(f'Loading ControlNet failed: {err}')
-
-            assert self._window is not None
-            self._window.cancel_generation.connect(self.cancel_generation)
-
-            return True
-        except AuthError:
-            return False
-
-    def disconnect_or_disable(self) -> None:
-        """Closes any connections, unloads models, or otherwise turns off this generator."""
-        if self._webservice is not None:
-            self._webservice.disconnect()
-            self._webservice = None
-        cache = Cache()
-        # Turn off inpainting cropping and padding again:
-        cache.set(Cache.INPAINT_OPTIONS_AVAILABLE, False)
-        # Clear cached webservice data:
-        for cache_key in (Cache.SD_MODEL, Cache.COMFYUI_MODEL_CONFIG, Cache.LORA_MODELS, Cache.HYPERNETWORK_MODELS,
-                          Cache.SAMPLING_METHOD, Cache.SCHEDULER, Cache.UPSCALE_METHOD):
-            cache_data_type = cache.get_data_type(cache_key)
-            if cache_data_type == TYPE_FLOAT:
-                cache.set(cache_key, -1.0)
-            elif cache_data_type == TYPE_STR:
-                cache.restore_default_options(cache_key)
-            elif cache_data_type == TYPE_LIST:
-                cache.set(cache_key, [])
-            else:
-                assert cache_data_type == TYPE_DICT
-                cache.set(cache_key, {})
-        if self._controlnet_tab is not None:
-            self._controlnet_tab.setParent(None)
-            self._controlnet_tab.deleteLater()
-            self._controlnet_tab = None
-            self._controlnet_panel = None
-        assert self._window is not None
-        self._window.cancel_generation.disconnect(self.cancel_generation)
-        self.clear_menus()
 
     def init_settings(self, settings_modal: SettingsModal) -> None:
         """Updates a settings modal to add settings relevant to this generator."""
@@ -364,14 +407,14 @@ class SDComfyUIGenerator(ImageGenerator):
         # for category in a1111_config.get_categories():
         #     settings_modal.remove_category(a1111_config, category)
 
-    def interrogate(self) -> None:
-        """ Use CLIP interrogation to automatically generate image prompts.
-
-        TODO: ComfyUI doesn't support this by default, I'll probably need to track down a custom node that does it.
-              Of course, I'll also need to scan installed nodes to make sure that one is actually there, and I'll need
-              to add and remove the "Interrogate" button based on that node's availability.
-        """
-        print('CLIP interrogate not yet available for ComfyUI!')
+    # def interrogate(self) -> None:
+    #     """ Use CLIP interrogation to automatically generate image prompts.
+    #
+    #     TODO: ComfyUI doesn't support this by default, I'll probably need to track down a custom node that does it.
+    #           Of course, I'll also need to scan installed nodes to make sure that one is actually there, and I'll need
+    #           to add and remove the "Interrogate" button based on that node's availability.
+    #     """
+    #     print('CLIP interrogate not yet available for ComfyUI!')
 
     def get_control_panel(self) -> Optional[GeneratorPanel]:
         """Returns a widget with inputs for controlling this generator."""
@@ -379,7 +422,7 @@ class SDComfyUIGenerator(ImageGenerator):
             self._control_panel = StableDiffusionPanel(False, False)
             self._control_panel.hide()
             self._control_panel.generate_signal.connect(self.start_and_manage_image_generation)
-            self._control_panel.interrogate_signal.connect(self.interrogate)
+            # self._control_panel.interrogate_signal.connect(self.interrogate)
         return self._control_panel
 
     def _repeated_progress_check(self, task_id: str, task_number: int, batch_num: int, num_batches: int,
@@ -419,8 +462,8 @@ class SDComfyUIGenerator(ImageGenerator):
                         status_text = (f'{TASK_STATUS_BATCH_NUMBER.format(batch_num=batch_num, num_batches=num_batches)}'
                                        f' {status_text}')
                     status_text = f'{status_text}\n{last_percentage}%'
-                    assert external_status_signal is not None
-                    external_status_signal.emit({'progress': status_text})
+                    if external_status_signal is not None:
+                        external_status_signal.emit({'progress': status_text})
                 except ReadTimeout:
                     error_count += 1
                 except RuntimeError as err:
@@ -439,11 +482,44 @@ class SDComfyUIGenerator(ImageGenerator):
         # TODO: Build and apply ControlNet tiled upscaling workflow, integrating ultimate upscale script
         return False
 
-    def cancel_generation(self) -> None:
-        """Cancels image generation, if in-progress"""
-        assert self._webservice is not None
-        if AppStateTracker.app_state() == APP_STATE_LOADING:
-            self._webservice.interrupt(self._active_task_id)
+    def _inpaint_gen_area_crop_bounds(self) -> QRect:
+        cache = Cache()
+        edit_mode = cache.get(Cache.EDIT_MODE)
+        gen_area = self._image_stack.generation_area
+        if edit_mode != EDIT_MODE_INPAINT or not cache.get(Cache.INPAINT_FULL_RES):
+            return QRect(QPoint(), gen_area.size())
+
+        selection_layer = self._image_stack.selection_layer
+        selection_gen_area = selection_layer.get_selection_gen_area()
+        if selection_gen_area is None or selection_gen_area.size() == gen_area.size():
+            return QRect(QPoint(), gen_area.size())
+        return selection_gen_area.translated(-selection_layer.position - gen_area.topLeft())
+
+    def _scale_and_crop_gen_qimage(self, image: QImage) -> QImage:
+        crop_bounds = self._inpaint_gen_area_crop_bounds()
+        if crop_bounds.size() != image.size():
+            image = image.copy(crop_bounds)
+        gen_size = Cache().get(Cache.GENERATION_SIZE)
+        if image.size() != gen_size:
+            return pil_image_scaling(image, gen_size)
+        return image
+
+    def _restore_cropped_inpainting_images(self, initial_image: QImage, crop_bounds: QRect,
+                                           cropped_images: list[QImage]) -> list[QImage]:
+        assert QRect(QPoint(), initial_image.size()).contains(crop_bounds)
+        gen_area = self._image_stack.generation_area
+        if gen_area.size() == crop_bounds.size():
+            return cropped_images
+        restored_images: list[QImage] = []
+        for cropped_image in cropped_images:
+            if cropped_image.size() != crop_bounds.size():
+                cropped_image = pil_image_scaling(cropped_image, crop_bounds.size())
+            final_image = initial_image.copy()
+            painter = QPainter(final_image)
+            painter.drawImage(crop_bounds, cropped_image)
+            painter.end()
+            restored_images.append(final_image)
+        return restored_images
 
     def generate(self,
                  status_signal: Signal,
@@ -463,7 +539,6 @@ class SDComfyUIGenerator(ImageGenerator):
         """
         assert self._webservice is not None
         cache = Cache()
-        config = AppConfig()
         edit_mode = cache.get(Cache.EDIT_MODE)
         if edit_mode == EDIT_MODE_INPAINT and self._image_stack.selection_layer.generation_area_fully_selected():
             edit_mode = EDIT_MODE_IMG2IMG
@@ -477,31 +552,12 @@ class SDComfyUIGenerator(ImageGenerator):
         inpaint_inner_bounds = QRect(QPoint(), gen_area.size())
 
         if edit_mode == EDIT_MODE_INPAINT and cache.get(Cache.INPAINT_FULL_RES):
-            selection_layer = self._image_stack.selection_layer
-            selection_gen_area = selection_layer.get_selection_gen_area()
-            assert selection_gen_area is not None
-            if inpaint_inner_bounds.size() != selection_gen_area.size():
-                inpaint_inner_bounds = selection_gen_area.translated(-selection_layer.position - gen_area.topLeft())
-                original_source_image = source_image
-                source_image = original_source_image.copy(inpaint_inner_bounds)
-                assert mask_image is not None
-                mask_image = mask_image.copy(inpaint_inner_bounds)
+            inpaint_inner_bounds = self._inpaint_gen_area_crop_bounds()
 
         # Pre-process image and mask as necessary:
-        if source_image is not None:
-            expected_size = cast(QSize, cache.get(Cache.GENERATION_SIZE))
-            if expected_size != source_image.size():
-                source_image = pil_image_scaling(source_image, expected_size)
+        source_image = self.get_gen_area_image(source_image)
         if mask_image is not None:
-            assert source_image is not None
-            if mask_image.size() != source_image.size():
-                mask_image = pil_image_scaling(mask_image, source_image.size())
-            # ComfyUI doesn't blur masks unless you add another node to do it, so me might as well just do it here:
-            blur_radius = config.get(AppConfig.MASK_BLUR)
-            if blur_radius > 0:
-                mask_image = BlurFilter.blur(mask_image, MODE_GAUSSIAN, blur_radius)
-            # ComfyUI expects inverted masks:
-            mask_image.invertPixels(QImage.InvertMode.InvertRgba)
+            mask_image = self.get_gen_area_mask(mask_image)
 
         num_batches = Cache().get(Cache.BATCH_COUNT)
         seed: Optional[int] = None
@@ -539,19 +595,12 @@ class SDComfyUIGenerator(ImageGenerator):
                 if 'outputs' not in final_status:
                     raise RuntimeError(GENERATE_ERROR_TITLE)
                 image_data = self._webservice.download_images(final_status['outputs']['images'])
-                # TODO: if using "inpaint full res", this would be a good place to pad images to make them match the
-                #       gen. area size again.
+                # If using "inpaint full res", scale and pad images to make them match the gen. area size again.
+                if inpaint_inner_bounds.size() != gen_area.size() and original_source_image is not None:
+                    image_data = self._restore_cropped_inpainting_images(original_source_image, inpaint_inner_bounds,
+                                                                         image_data)
                 for i, response_image in enumerate(image_data):
-                    if inpaint_inner_bounds.size() != gen_area.size() and original_source_image is not None:
-                        inner_content_image = response_image
-                        if inner_content_image.size() != inpaint_inner_bounds.size():
-                            inner_content_image = pil_image_scaling(inner_content_image, inpaint_inner_bounds.size())
-                        final_image = original_source_image.copy()
-                        painter = QPainter(final_image)
-                        painter.drawImage(inpaint_inner_bounds, inner_content_image)
-                        self._cache_generated_image(final_image, i + first_image_idx)
-                    else:
-                        self._cache_generated_image(response_image, i + first_image_idx)
+                    self._cache_generated_image(response_image, i + first_image_idx)
                 first_image_idx = first_image_idx + len(image_data)
             except ReadTimeout:
                 raise RuntimeError(ERROR_MESSAGE_TIMEOUT)
@@ -563,29 +612,6 @@ class SDComfyUIGenerator(ImageGenerator):
                 raise RuntimeError(f'unexpected error: {unexpected_err}') from unexpected_err
         if seed is not None:
             status_signal.emit({'seed': str(seed)})
-
-    @menu_action(MENU_STABLE_DIFFUSION, 'lora_shortcut', 201, [APP_STATE_EDITING],
-                 condition_check=_check_lora_available)
-    def show_lora_window(self) -> None:
-        """Show the Lora model selection window."""
-        cache = Cache()
-        loras = cache.get(Cache.LORA_MODELS)
-
-        def _structure_lora_data(file) -> dict[str, str]:
-            if '.' in file:
-                name = file[:file.rindex('.')]
-            else:
-                name = file
-            return {
-                LORA_KEY_NAME: name,
-                LORA_KEY_ALIAS: name,
-                LORA_KEY_PATH: file
-            }
-        lora_dict = {}
-        for lora in loras:
-            lora_dict[lora] = _structure_lora_data(lora)
-        lora_window = ExtraNetworkWindow(loras, {})
-        lora_window.exec()
 
     @menu_action(MENU_STABLE_DIFFUSION, 'lcm_mode_shortcut', 210,
                  condition_check=_check_lcm_mode_available)

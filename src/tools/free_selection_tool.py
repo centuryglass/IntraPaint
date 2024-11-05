@@ -45,7 +45,7 @@ class FreeSelectionTool(BaseTool):
         assert scene is not None
         self._scene = scene
         self._image_stack = image_stack
-        self._control_panel = FreeSelectionPanel(image_stack.selection_layer)
+        self._control_panel = FreeSelectionPanel(image_stack.selection_layer, self)
         self._path_item = PathCreationItem(self._scene)
         self._preview_line = TempDashedLineItem(scene)
         self._clearing = False

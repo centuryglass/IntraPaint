@@ -5,7 +5,7 @@ from typing import Optional, cast
 
 from src.api.controlnet.controlnet_constants import STATIC_CONTROL_TYPE_DEFS, \
     PREPROCESSOR_NONE, CONTROLNET_MODEL_NONE, StaticControlTypeDef
-from src.api.webui.controlnet_webui import ControlTypeDef, ControlTypeResponse, PREPROCESSOR_MODEL_FREE
+from src.api.webui.controlnet_webui_constants import ControlTypeDef, ControlTypeResponse, PREPROCESSOR_MODEL_FREE
 
 
 class ControlNetCategoryBuilder:
@@ -19,7 +19,7 @@ class ControlNetCategoryBuilder:
         self._control_types: dict[str, ControlTypeDef] = {}
         if PREPROCESSOR_NONE not in self._preprocessors and PREPROCESSOR_NONE.lower() not in self._preprocessors:
             self._preprocessors.append(PREPROCESSOR_NONE)
-        if CONTROLNET_MODEL_NONE not in self._models:
+        if CONTROLNET_MODEL_NONE not in self._models and CONTROLNET_MODEL_NONE.lower() not in self._models:
             self._models.append(CONTROLNET_MODEL_NONE)
 
         # Apply definitions if available:
@@ -37,16 +37,16 @@ class ControlNetCategoryBuilder:
                         'default_model': CONTROLNET_MODEL_NONE
                     }
                 saved_type_def = self._control_types[type_name]
-                for module in type_def['module_list']:
-                    if module in self._preprocessors and module not in saved_type_def['module_list']:
-                        saved_type_def['module_list'].append(module)
+                for preprocessor in type_def['module_list']:
+                    if preprocessor in self._preprocessors and preprocessor not in saved_type_def['module_list']:
+                        saved_type_def['module_list'].append(preprocessor)
                 for model in type_def['model_list']:
                     if model in self._models and model not in saved_type_def['model_list']:
                         saved_type_def['model_list'].append(model)
-                if saved_type_def['default_option'] == PREPROCESSOR_NONE \
-                        and type_def['default_option'] != PREPROCESSOR_NONE \
-                        and type_def['default_option'] in self._preprocessors:
-                    saved_type_def['default_option'] = type_def['default_option']
+                if saved_type_def['default_option'] == PREPROCESSOR_NONE:
+                    if type_def['default_option'] != PREPROCESSOR_NONE \
+                            and type_def['default_option'] in self._preprocessors:
+                        saved_type_def['default_option'] = type_def['default_option']
                 if saved_type_def['default_model'] == CONTROLNET_MODEL_NONE \
                         and type_def['default_model'] != CONTROLNET_MODEL_NONE \
                         and type_def['default_model'] in self._models:
@@ -63,14 +63,14 @@ class ControlNetCategoryBuilder:
                             category = preprocessor_comfyui_categories[preprocessor]
                         else:
                             category = ''
-                        if preprocessor_pattern.match(preprocessor) is not None \
-                                or preprocessor_pattern.match(category) is not None:
+                        if preprocessor_pattern.search(preprocessor) is not None \
+                                or preprocessor_pattern.search(category) is not None:
                             saved_type_def['module_list'].append(preprocessor)
                 if 'model_pattern' in static_type_def:
                     model_pattern = re.compile(static_type_def['model_pattern'])
                     for model in self._models:
                         if model not in saved_type_def['model_list'] and \
-                                model_pattern.match(model) is not None:
+                                model_pattern.search(model) is not None:
                             saved_type_def['model_list'].append(model)
 
     def get_control_types(self) -> dict[str, ControlTypeDef]:
@@ -82,8 +82,3 @@ class ControlNetCategoryBuilder:
                                                      or name in PREPROCESSOR_MODEL_FREE):
                 non_empty_types[name] = deepcopy(type_def)
         return non_empty_types
-
-
-
-
-

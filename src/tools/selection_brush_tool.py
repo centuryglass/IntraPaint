@@ -41,7 +41,7 @@ class SelectionBrushTool(BrushTool):
         super().__init__(KeyConfig.SELECTION_BRUSH_TOOL_KEY, LABEL_TEXT_SELECTION_TOOL, TOOLTIP_SELECTION_TOOL,
                          QIcon(ICON_PATH_SELECTION_TOOL), image_stack, image_viewer, brush, False, False)
         self._last_click = None
-        self._control_panel = BrushSelectionPanel(image_stack.selection_layer)
+        self._control_panel = BrushSelectionPanel(image_stack.selection_layer, self)
         self._control_panel.tool_mode_changed.connect(self._tool_toggle_slot)
         self._active = False
         self._drawing = False

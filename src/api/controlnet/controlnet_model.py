@@ -1,5 +1,6 @@
 """Provides a common data representation for ControlNet models."""
 import re
+from typing import Any
 
 # Misc. regular expressions to use for attempting to extract relevant segments from a full ControlNet model name
 # and construct a display name. We can't assume that any of these are present, but when they are they should be safe
@@ -56,6 +57,11 @@ class ControlNetModel:
         if len(extra_info) > 0:
             display_name += f' ({", ".join(extra_info)})'
         self._display_name = display_name
+
+    def __eq__(self, other: Any) -> bool:
+        if not isinstance(other, ControlNetModel):
+            return False
+        return self.full_model_name == other.full_model_name
 
     @property
     def full_model_name(self) -> str:

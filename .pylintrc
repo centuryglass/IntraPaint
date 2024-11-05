@@ -73,7 +73,7 @@ ignore-patterns=^\.#
 # (useful for modules/projects where namespaces are manipulated during runtime
 # and thus existing member attributes cannot be deduced by static analysis). It
 # supports qualified module names, as well as Unix pattern matching.
-ignored-modules=
+ignored-modules=cv2
 
 # Python code to execute, usually for sys.path manipulation such as
 # pygtk.require().
@@ -98,7 +98,7 @@ persistent=yes
 
 # Minimum Python version to use for version dependent checks. Will default to
 # the version used to run pylint.
-py-version=3.10
+py-version=3.12
 
 # Discover python modules and packages in the file system subtree.
 recursive=yes
@@ -201,6 +201,8 @@ good-names=i,
            k,
            ex,
            Run,
+           boundingRect,
+           setEnabled,
            IntraPaint,
            IntraPaint_server,
            installEventFilter,
@@ -487,7 +489,9 @@ disable= too-few-public-methods,
         too-many-statements,
         no-name-in-module,
         logging-fstring-interpolation,
-        abstract-method
+        abstract-method,
+        too-many-return-statements
+        too-many-boolean-expressions
 #       duplicate_code
 
 # Enable the message, report, category or checker with the given id(s). You can
@@ -672,7 +676,7 @@ signature-mutators=
 additional-builtins=
 
 # Tells whether unused global variables should be treated as a violation.
-allow-global-unused-variables=no
+#allow-global-unused-variables=no
 
 # List of names allowed to shadow builtins
 allowed-redefined-builtins=

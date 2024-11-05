@@ -3,23 +3,27 @@ Panel providing controls for the stable-diffusion ControlNet extension. Only sup
 """
 import logging
 from copy import deepcopy
+from json import JSONDecodeError
 from typing import Optional
 
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, QTimer, Signal, QSize
+from PySide6.QtGui import QImage
 from PySide6.QtWidgets import QCheckBox, QPushButton, QLineEdit, QComboBox, QApplication, QTabWidget, QGridLayout, \
     QLabel, QWidget
 
+import src.api.webui.controlnet_webui_constants as webui_constants
 from src.api.controlnet.controlnet_constants import PREPROCESSOR_NONE, \
     CONTROLNET_REUSE_IMAGE_CODE, CONTROLNET_MODEL_NONE
 from src.api.controlnet.controlnet_model import ControlNetModel
-from src.api.webui.controlnet_webui import get_common_controlnet_unit_parameters, PREPROCESSOR_PRESET_LABELS, \
-    init_controlnet_unit, ControlTypeDef
 from src.api.controlnet.controlnet_preprocessor import ControlNetPreprocessor
+from src.api.controlnet.controlnet_unit import ControlNetUnit, KeyType
 from src.config.cache import Cache
 from src.ui.input_fields.check_box import CheckBox
+from src.ui.input_fields.slider_spinbox import IntSliderSpinbox
 from src.ui.layout.bordered_widget import BorderedWidget
 from src.ui.layout.divider import Divider
 from src.ui.modal.modal_utils import open_image_file
+from src.ui.widget.image_widget import ImageWidget
 from src.util.layout import clear_layout
 from src.util.parameter import DynamicFieldWidget
 from src.util.signals_blocked import signals_blocked
@@ -43,6 +47,7 @@ LOW_VRAM_LABEL = _tr('Low VRAM')
 PX_PERFECT_CHECKBOX_LABEL = _tr('Pixel Perfect')
 CONTROL_IMAGE_LABEL = _tr('Control Image:')
 CONTROL_IMAGE_BUTTON_LABEL = _tr('Set Control Image')
+PREPROCESSOR_PREVIEW_BUTTON_LABEL = _tr('Preview Preprocessor')
 GENERATION_AREA_AS_CONTROL = _tr('Generation Area as Control')
 CONTROL_TYPE_BOX_TITLE = _tr('Control Type:')
 MODULE_BOX_TITLE = _tr('Preprocessor:')
@@ -60,14 +65,19 @@ CONTROL_MODULE_KEY = 'module'
 CONTROL_MODEL_KEY = 'model'
 DEFAULT_CONTROL_TYPE = 'All'
 
+CACHE_SAVE_TIMER_INTERVAL = 100
+PREVIEW_IMAGE_SIZE = 300
+
 
 class TabbedControlNetPanel(QTabWidget):
     """Tabbed ControlNet panel with three ControlNet units."""
 
+    request_preview = Signal(ControlNetPreprocessor, str)
+
     def __init__(self,
                  preprocessors: list[ControlNetPreprocessor],
                  model_list: list[str],
-                 control_types: dict[str, ControlTypeDef],
+                 control_types: dict[str, webui_constants.ControlTypeDef],
                  control_unit_cache_keys: list[str],
                  show_webui_options: bool):
         """Initializes the panel based on data from a stable-diffusio API.
@@ -91,6 +101,12 @@ class TabbedControlNetPanel(QTabWidget):
             panel = ControlNetPanel(key, deepcopy(preprocessors), model_list, control_types, show_webui_options)
             self.addTab(panel, CONTROLNET_UNIT_TITLE.format(unit_number=str(i + 1)))
             self._panels.append(panel)
+            panel.request_preview.connect(self.request_preview)
+
+    def set_preview(self, preview_image: QImage) -> None:
+        """Shows a preprocessor preview image in the active tab."""
+        active_panel = self._panels[self.currentIndex()]
+        active_panel.set_preprocessor_preview(preview_image)
 
     def set_orientation(self, orientation: Qt.Orientation) -> None:
         """Sets the active panel orientation"""
@@ -101,11 +117,13 @@ class TabbedControlNetPanel(QTabWidget):
 class ControlNetPanel(BorderedWidget):
     """ControlnetPanel provides controls for the stable-diffusion ControlNet extension."""
 
+    request_preview = Signal(ControlNetPreprocessor, str)
+
     def __init__(self,
                  cache_key: str,
                  preprocessors: list[ControlNetPreprocessor],
                  model_list: list[str],
-                 control_types: dict[str, ControlTypeDef],
+                 control_types: dict[str, webui_constants.ControlTypeDef],
                  show_webui_options: bool) -> None:
         """Initializes the panel based on data from the stable-diffusion-webui.
 
@@ -121,9 +139,10 @@ class ControlNetPanel(BorderedWidget):
             Whether the "Low VRAM" and "Pixel Perfect" checkboxes (only relevant in the WebUI API) should be shown.
         """
         super().__init__()
-        cache = Cache()
-        initial_control_state = init_controlnet_unit(cache.get(cache_key))
-        self._saved_state = initial_control_state
+        try:
+            self._control_unit = ControlNetUnit.deserialize(Cache().get(cache_key))
+        except (TypeError, KeyError, JSONDecodeError):
+            self._control_unit = ControlNetUnit(KeyType.WEBUI if show_webui_options else KeyType.COMFYUI)
         self._cache_key = cache_key
         self._control_types = control_types
         self._preprocessors = preprocessors
@@ -135,6 +154,12 @@ class ControlNetPanel(BorderedWidget):
         self._dynamic_control_labels: list[QLabel] = []
         self._show_webui_options = show_webui_options
 
+        # Save timer:
+        self._cache_timer = QTimer()
+        self._cache_timer.setSingleShot(True)
+        self._cache_timer.setInterval(CACHE_SAVE_TIMER_INTERVAL)
+        self._cache_timer.timeout.connect(self._save_data_to_cache)
+
         # Labels:
         self._control_image_label = QLabel(CONTROL_IMAGE_LABEL)
         self._module_label = QLabel(MODULE_BOX_TITLE)
@@ -144,24 +169,54 @@ class ControlNetPanel(BorderedWidget):
         # Main checkboxes:
         self._enabled_checkbox = CheckBox()
         self._enabled_checkbox.setText(ENABLE_CONTROLNET_CHECKBOX_LABEL)
-        self._vram_checkbox: Optional[_ControlnetCheckbox] = None
-        self._px_perfect_checkbox: Optional[_ControlnetCheckbox] = None
+        self._vram_checkbox: Optional[CheckBox] = None
+        self._px_perfect_checkbox: Optional[CheckBox] = None
+        self._resolution_label: Optional[QLabel] = None
+        self._resolution_slider: Optional[IntSliderSpinbox] = None
         if show_webui_options:
-            self._vram_checkbox = _ControlnetCheckbox(cache_key, CONTROL_CONFIG_LOW_VRAM_KEY, LOW_VRAM_LABEL)
+            self._vram_checkbox = CheckBox()
+            self._vram_checkbox.setText(LOW_VRAM_LABEL)
+            self._vram_checkbox.setChecked(self._control_unit.low_vram)
 
-            self._px_perfect_checkbox = _ControlnetCheckbox(cache_key, CONTROL_CONFIG_PX_PERFECT_KEY,
-                                                            PX_PERFECT_CHECKBOX_LABEL)
+            def _update_low_vram(checked: bool) -> None:
+                self._control_unit.low_vram = checked
+                self._schedule_cache_update()
+            self._vram_checkbox.valueChanged.connect(_update_low_vram)
+
+            self._px_perfect_checkbox = CheckBox()
+            self._px_perfect_checkbox.setText(PX_PERFECT_CHECKBOX_LABEL)
+            self._px_perfect_checkbox.setChecked(self._control_unit.pixel_perfect)
+
+            def _update_px_perfect(checked: bool) -> None:
+                self._control_unit.pixel_perfect = checked
+                if self._resolution_label is not None:
+                    self._resolution_label.setHidden(checked)
+                if self._resolution_slider is not None:
+                    self._resolution_slider.setHidden(checked)
+                self._schedule_cache_update()
+            self._px_perfect_checkbox.valueChanged.connect(_update_px_perfect)
 
         # Control image inputs:
-        use_generation_area = initial_control_state['image'] == CONTROLNET_REUSE_IMAGE_CODE
+        use_generation_area = self._control_unit.image_string == CONTROLNET_REUSE_IMAGE_CODE
 
         self._load_image_button = QPushButton()
         self._load_image_button.setText(CONTROL_IMAGE_BUTTON_LABEL)
-        self._image_path_edit = QLineEdit('' if use_generation_area else initial_control_state['image'])
+        self._image_path_edit = QLineEdit('' if use_generation_area else self._control_unit.image_string)
         self._image_path_edit.setEnabled(not use_generation_area)
         self._reuse_image_checkbox = QCheckBox()
         self._reuse_image_checkbox.setText(GENERATION_AREA_AS_CONTROL)
         self._reuse_image_checkbox.setChecked(use_generation_area)
+
+        # Preprocessor preview_button:
+        self._preview_button = QPushButton()
+        self._preview_button.setText(PREPROCESSOR_PREVIEW_BUTTON_LABEL)
+        self._preview_image_widget = ImageWidget(QImage())
+        self._preview_image_widget.setMaximumSize(QSize(PREVIEW_IMAGE_SIZE, PREVIEW_IMAGE_SIZE))
+
+        def _request_preview() -> None:
+            self.request_preview.emit(self._control_unit.preprocessor, self._control_unit.image_string)
+        self._preview_button.clicked.connect(_request_preview)
+        self._preview_button.setEnabled(self._control_unit.preprocessor.name != PREPROCESSOR_NONE)
 
         def open_control_image_file() -> None:
             """Select an image to use as the control image."""
@@ -174,9 +229,10 @@ class ControlNetPanel(BorderedWidget):
                     image_path = image_path[0]
                 if isinstance(image_path, str):
                     self._image_path_edit.setText(image_path)
-                    self._saved_state['image'] = image_path
+                    self._control_unit.image_string = image_path
                 self._image_path_edit.setEnabled(True)
                 self._control_image_label.setEnabled(True)
+                self._schedule_cache_update()
 
         self._load_image_button.clicked.connect(open_control_image_file)
 
@@ -187,8 +243,8 @@ class ControlNetPanel(BorderedWidget):
                 control_img_widget.setEnabled(not checked)
             if checked:
                 self._image_path_edit.setText('')
-            self._saved_state['image'] = CONTROLNET_REUSE_IMAGE_CODE
-            cache.set(cache_key, value, inner_key=CONTROL_CONFIG_IMAGE_KEY)
+            self._control_unit.image_string = value
+            self._schedule_cache_update()
 
         self._reuse_image_checkbox.stateChanged.connect(reuse_image_update)
 
@@ -196,8 +252,9 @@ class ControlNetPanel(BorderedWidget):
             """Update config when the selected control image changes."""
             if self._reuse_image_checkbox.isChecked():
                 return
-            self._saved_state['image'] = text
-            cache.set(cache_key, text, inner_key=CONTROL_CONFIG_IMAGE_KEY)
+
+            self._control_unit.image_string = text
+            self._schedule_cache_update()
 
         self._image_path_edit.textChanged.connect(image_path_update)
 
@@ -209,22 +266,22 @@ class ControlNetPanel(BorderedWidget):
         self._control_type_combobox.setCurrentIndex(self._control_type_combobox.findText(DEFAULT_CONTROL_TYPE))
         self._control_type_combobox.currentTextChanged.connect(self._load_control_type)
 
-        self._module_combobox = QComboBox(self)
+        self._preprocessor_combobox = QComboBox(self)
         self._model_combobox = QComboBox(self)
-        self._module_combobox.currentTextChanged.connect(self._handle_module_change)
+        self._preprocessor_combobox.currentTextChanged.connect(self._handle_preprocessor_change)
         self._model_combobox.currentIndexChanged.connect(self._handle_model_change)
 
         # Avoid letting excessively long type/preprocessor/model names distort the UI layout:
-        for large_combobox in (self._model_combobox, self._module_combobox, self._control_type_combobox):
+        for large_combobox in (self._model_combobox, self._preprocessor_combobox, self._control_type_combobox):
             assert isinstance(large_combobox, QComboBox)
             large_combobox.setSizeAdjustPolicy(QComboBox.SizeAdjustPolicy.AdjustToMinimumContentsLengthWithIcon)
 
         self._load_control_type(DEFAULT_CONTROL_TYPE)
         # Restore previous state on start:
-        module_idx = self._module_combobox.findText(initial_control_state['module'])
+        module_idx = self._preprocessor_combobox.findText(self._control_unit.preprocessor.name)
         if module_idx >= 0:
-            self._module_combobox.setCurrentIndex(module_idx)
-        model_idx = self._model_combobox.findText(initial_control_state['model'])
+            self._preprocessor_combobox.setCurrentIndex(module_idx)
+        model_idx = self._model_combobox.findText(self._control_unit.model.display_name)
         if model_idx >= 0:
             self._model_combobox.setCurrentIndex(model_idx)
 
@@ -240,7 +297,7 @@ class ControlNetPanel(BorderedWidget):
                                        self._px_perfect_checkbox,
                                        self._reuse_image_checkbox,
                                        self._control_type_combobox,
-                                       self._module_combobox,
+                                       self._preprocessor_combobox,
                                        self._model_combobox
                                    ] + self._dynamic_control_labels + self._dynamic_controls
             control_image_widgets = [
@@ -252,12 +309,22 @@ class ControlNetPanel(BorderedWidget):
                     widget.setEnabled(checked)
             for widget in control_image_widgets:
                 widget.setEnabled(checked and not self._reuse_image_checkbox.isChecked())
-            self._saved_state['enabled'] = checked
-            cache.set(cache_key, checked, inner_key='enabled')
+            self._control_unit.enabled = checked
+            self._schedule_cache_update()
 
-        set_enabled(initial_control_state['enabled'])
+        set_enabled(self._control_unit.enabled)
         self._enabled_checkbox.valueChanged.connect(set_enabled)
         self._build_layout()
+
+    def set_preprocessor_preview(self, preview_image: Optional[QImage], skip_layout_update=False) -> None:
+        """Shows the preprocessor preview image, or hides it if preview_image is None."""
+        if preview_image is None:
+            preview_image = QImage()
+        if self._preview_image_widget.image == preview_image:
+            return
+        self._preview_image_widget.image = preview_image
+        if not skip_layout_update:
+            self._build_layout()
 
     def set_orientation(self, orientation: Qt.Orientation) -> None:
         """Sets the active panel orientation"""
@@ -282,28 +349,29 @@ class ControlNetPanel(BorderedWidget):
                 self._layout.setColumnStretch(column, 3)
             layout_items: list[tuple[Optional[QWidget], int, int, int, int]] = [
                 (self._enabled_checkbox, 0, 0, 1, 1),
-                (self._vram_checkbox, 0, 1, 1, 1),
-                (self._px_perfect_checkbox, 1, 0, 1, 1),
-                (self._reuse_image_checkbox, 1, 1, 1, 1),
-                (self._control_image_label, 2, 0, 1, 1),
-                (self._image_path_edit, 2, 1, 1, 3),
-                (self._load_image_button, 3, 1, 1, 1),
-                (Divider(Qt.Orientation.Horizontal), 4, 0, 1, 4)
+                (self._reuse_image_checkbox, 0, 1, 1, 1),
+                (self._px_perfect_checkbox, 0, 2, 1, 1),
+                (self._vram_checkbox, 0, 3, 1, 1),
+                (self._control_image_label, 1, 0, 1, 1),
+                (self._image_path_edit, 1, 1, 1, 3),
+                (self._load_image_button, 2, 1, 1, 1),
+                (self._preview_button, 2, 2, 1, 1),
+                (Divider(Qt.Orientation.Horizontal), 3, 0, 1, 4)
             ]
 
             if self._control_type_combobox is not None:
                 layout_items += [
-                    (self._control_type_label, 5, 0, 1, 1),
-                    (self._control_type_combobox, 5, 1, 1, 1)
+                    (self._control_type_label, 4, 0, 1, 1),
+                    (self._control_type_combobox, 4, 1, 1, 1)
                 ]
             layout_items += [
-                (self._module_label, 6, 0, 1, 1),
-                (self._module_combobox, 6, 1, 1, 1),
-                (self._model_label, 6, 2, 1, 1),
-                (self._model_combobox, 6, 3, 1, 1),
-                (Divider(Qt.Orientation.Horizontal), 7, 0, 1, 4)
+                (self._module_label, 5, 0, 1, 1),
+                (self._preprocessor_combobox, 5, 1, 1, 1),
+                (self._model_label, 5, 2, 1, 1),
+                (self._model_combobox, 5, 3, 1, 1),
+                (Divider(Qt.Orientation.Horizontal), 6, 0, 1, 4)
             ]
-            row = 8
+            row = 7
             col = 0
             for label, slider in zip(self._dynamic_control_labels, self._dynamic_controls):
                 layout_items.append((label, row, col, 1, 1))
@@ -313,6 +381,10 @@ class ControlNetPanel(BorderedWidget):
                     col = 0
                 else:
                     col = 2
+            if self._preview_image_widget.image is not None and not self._preview_image_widget.image.isNull():
+                layout_items.append((Divider(Qt.Orientation.Vertical), 0, 4, row + 1, 1))
+                layout_items.append((self._preview_image_widget, 0, 5, row + 1, 2))
+
         # Build vertical layout:
         else:
             layout_items = [
@@ -331,115 +403,137 @@ class ControlNetPanel(BorderedWidget):
                 ]
             layout_items += [
                 (self._module_label, 5, 0, 1, 1),
-                (self._module_combobox, 5, 1, 1, 1),
+                (self._preprocessor_combobox, 5, 1, 1, 1),
                 (self._model_label, 6, 0, 1, 1),
-                (self._model_combobox, 6, 1, 1, 1)
+                (self._model_combobox, 6, 1, 1, 1),
+                (self._preview_button, 7, 1, 1, 1)
             ]
-            row = 7
+            row = 8
             for label, slider in zip(self._dynamic_control_labels, self._dynamic_controls):
                 layout_items.append((label, row, 0, 1, 1))
                 layout_items.append((slider, row, 1, 1, 1))
                 row += 1
+            if self._preview_image_widget.image is not None and not self._preview_image_widget.image.isNull():
+                layout_items.append((Divider(Qt.Orientation.Horizontal), row, 0, 2, 1))
+                layout_items.append((self._preview_image_widget, row + 2, 0, 4, 4))
         for widget, row, column, row_span, column_span in layout_items:
             if widget is not None:
                 self._layout.addWidget(widget, row, column, row_span, column_span)
 
+        self._preview_image_widget.setHidden(self._preview_image_widget.image is None
+                                             or self._preview_image_widget.image.isNull())
+
+    def _schedule_cache_update(self) -> None:
+        if not self._cache_timer.isActive():
+            self._cache_timer.start()
+
+    def _save_data_to_cache(self) -> None:
+        if self._cache_timer.isActive():
+            self._cache_timer.stop()
+        Cache().set(self._cache_key, self._control_unit.serialize())
+
     def _load_control_type(self, control_type_name: str) -> None:
-        """Update module/model options for the selected control type."""
+        """Update preprocessor/model options for the selected control type."""
         assert control_type_name in self._control_types
         control_type = self._control_types[control_type_name]
         with signals_blocked(self._model_combobox):
             while self._model_combobox.count() > 0:
                 self._model_combobox.removeItem(0)
             models = [ControlNetModel(model_name) for model_name in control_type['model_list']]
-            models.sort(key=lambda model: model.display_name.lower())
+            # Sort alphabetically, except that "None" option should be last:
+            models.sort(key=lambda model: model.display_name.lower() if model.display_name != CONTROLNET_MODEL_NONE
+                        else '~')
             for control_model in models:
                 self._model_combobox.addItem(control_model.display_name, userData=control_model.full_model_name)
-            default_model = control_type['default_model']
-            if default_model not in control_type['model_list']:
-                default_model = CONTROLNET_MODEL_NONE
-        self._model_combobox.setCurrentIndex(self._model_combobox.findData(default_model))
+            selected_model = self._control_unit.model
+            if selected_model not in models or selected_model.full_model_name == CONTROLNET_MODEL_NONE:
+                selected_model = ControlNetModel(control_type['default_model'])
+                if selected_model not in control_type['model_list']:
+                    selected_model = ControlNetModel(CONTROLNET_MODEL_NONE)
+            model_index = self._model_combobox.findData(selected_model.full_model_name)
+            if model_index < 0:
+                raise RuntimeError(f'Failed to find model "{selected_model}" in control type'
+                                   f' {control_type_name}, options={[self._model_combobox.itemText(i) for 
+                                                                     i in range(len(models))]}')
+            self._model_combobox.setCurrentIndex(model_index)
+            if selected_model != self._control_unit.model:
+                self._handle_model_change(model_index)
 
-        with signals_blocked(self._module_combobox):
-            while self._module_combobox.count() > 0:
-                self._module_combobox.removeItem(0)
-            modules = [*control_type['module_list']]
-            modules.sort(key=lambda module: module.lower())
-            for preprocessor in modules:
-                self._module_combobox.addItem(preprocessor)
-            default_module = control_type['default_option']
-            if default_module not in modules:
-                default_module = PREPROCESSOR_NONE
-        self._module_combobox.setCurrentIndex(self._module_combobox.findText(default_module))
+        with signals_blocked(self._preprocessor_combobox):
+            while self._preprocessor_combobox.count() > 0:
+                self._preprocessor_combobox.removeItem(0)
+            preprocessors = [*control_type['module_list']]
+            # Sort alphabetically, except that "None" preprocessor should be last:
+            preprocessors.sort(key=lambda module: module.lower() if module != PREPROCESSOR_NONE else '~')
+            for preprocessor in preprocessors:
+                self._preprocessor_combobox.addItem(preprocessor)
+            selected_preprocessor = self._control_unit.preprocessor.name
+            if selected_preprocessor not in preprocessors or selected_preprocessor.lower() == PREPROCESSOR_NONE.lower():
+                selected_preprocessor = control_type['default_option']
+                if selected_preprocessor not in preprocessors:
+                    selected_preprocessor = PREPROCESSOR_NONE
+            preprocessor_index = self._preprocessor_combobox.findText(selected_preprocessor)
+            if preprocessor_index < 0:
+                raise RuntimeError(f'Failed to find preprocessor "{selected_preprocessor}" in control type'
+                                   f' {control_type_name}, options={[self._preprocessor_combobox.itemText(i) for
+                                                                     i in range(len(preprocessors))]}')
 
-    def _handle_module_change(self, selected_module: str) -> None:
-        """When the selected module changes, update config and module option controls."""
-        cache = Cache()
-        cache.set(self._cache_key, selected_module, inner_key=CONTROL_MODULE_KEY)
+            self._preprocessor_combobox.setCurrentIndex(preprocessor_index)
+            if selected_preprocessor != self._control_unit.preprocessor.name:
+                self._handle_preprocessor_change(selected_preprocessor)
+
+    def _handle_preprocessor_change(self, selected_preprocessor: str) -> None:
+        """When the selected preprocessor module changes, update config and module option controls."""
+        self._resolution_label = None
+        self._resolution_slider = None
+        self.set_preprocessor_preview(None)
         for label, parameter_widget in zip(self._dynamic_control_labels, self._dynamic_controls):
             self._layout.removeWidget(label)
             self._layout.removeWidget(parameter_widget)
-            cache.disconnect(parameter_widget, self._cache_key)
             label.setParent(None)
             parameter_widget.setParent(None)
         self._dynamic_control_labels = []
         self._dynamic_controls = []
         preprocessor: Optional[ControlNetPreprocessor] = None
-        if selected_module.lower() == PREPROCESSOR_NONE.lower():
+        if selected_preprocessor.lower() == PREPROCESSOR_NONE.lower():
             preprocessor = ControlNetPreprocessor(PREPROCESSOR_NONE, PREPROCESSOR_NONE, [])
         else:
             for saved_preprocessor in self._preprocessors:
-                if saved_preprocessor.name == selected_module:
+                if saved_preprocessor.name == selected_preprocessor:
                     preprocessor = saved_preprocessor
             if preprocessor is None:
-                raise ValueError(f'Could not find "{selected_module}" preprocessor. This indicates a bug in either'
+                raise ValueError(f'Could not find "{selected_preprocessor}" preprocessor. This indicates a bug in either'
                                  ' control type option setup or preprocessor parameterization.')
-        saved_control_unit = init_controlnet_unit(cache.get(self._cache_key))
-        preprocessor.update_webui_data(saved_control_unit)
-        cache.set(self._cache_key, saved_control_unit)
-        if selected_module.lower() != PREPROCESSOR_NONE.lower():
-            parameters = get_common_controlnet_unit_parameters(preprocessor.name, self._show_webui_options)
-            for preprocessor_parameter in preprocessor.parameters:
-                parameters.append(deepcopy(preprocessor_parameter))
-            for parameter in parameters:
-                parameter_widget = parameter.get_input_widget()
-                label = QLabel(parameter.name if parameter.name not in PREPROCESSOR_PRESET_LABELS
-                               else PREPROCESSOR_PRESET_LABELS[parameter.name])
-
-                if parameter.name in PREPROCESSOR_PRESET_LABELS:
-                    parameter_key = parameter.name
+        self._control_unit.preprocessor = preprocessor
+        self._schedule_cache_update()
+        if selected_preprocessor.lower() != PREPROCESSOR_NONE.lower():
+            for parameter in preprocessor.parameters:
+                parameter_widget, label = parameter.get_input_widget(True)
+                parameter_widget.valueChanged.connect(lambda _: self._schedule_cache_update())
+                if self._px_perfect_checkbox is not None \
+                        and parameter.key == webui_constants.PREPROCESSOR_RES_PARAM_KEY:
+                    assert isinstance(parameter_widget, IntSliderSpinbox)
+                    self._resolution_label = label
+                    self._resolution_slider = parameter_widget
+                    label.setHidden(self._control_unit.pixel_perfect)
+                    parameter_widget.setHidden(self._control_unit.pixel_perfect)
                 else:
-                    parameter_key = preprocessor.get_parameter_webui_key(parameter)
-
-                def _update_value(new_value, inner_key=parameter_key):
-                    cache.set(self._cache_key, new_value, inner_key=inner_key)
-
-                parameter_widget.valueChanged.connect(_update_value)
-                _update_value(parameter_widget.value())
-                self._dynamic_controls.append(parameter_widget)
-                self._dynamic_control_labels.append(label)
+                    self._dynamic_controls.append(parameter_widget)
+                    self._dynamic_control_labels.append(label)
+            # Resolution slider goes last so that the UI doesn't have any weird gaps if the "pixel perfect" checkbox
+            # is hiding it:
+            if self._resolution_slider is not None and self._resolution_label is not None:
+                self._dynamic_controls.append(self._resolution_slider)
+                self._dynamic_control_labels.append(self._resolution_label)
+        self._preview_button.setEnabled(self._control_unit.preprocessor.name != PREPROCESSOR_NONE)
         self._build_layout()
 
     def _handle_model_change(self, model_idx: int) -> None:
         """Update config when the selected model changes."""
         selected_model = self._model_combobox.itemData(model_idx)
-        Cache().set(self._cache_key, selected_model, inner_key=CONTROL_MODEL_KEY)
+        assert isinstance(selected_model, str), (f'Expected full_name at {model_idx}/{self._model_combobox.count()},'
+                                                 f' got {selected_model}({type(selected_model)},'
+                                                 f' text = {self._model_combobox.itemText(model_idx)})')
+        self._control_unit.model = ControlNetModel(selected_model)
+        self._schedule_cache_update()
 
-
-class _ControlnetCheckbox(CheckBox):
-    """Connects to a boolean parameter in a controlnet JSON body."""
-
-    def __init__(self, cache_key: str, inner_key: str, label_text: Optional[str] = None) -> None:
-        super().__init__(None)
-        self._key = cache_key
-        self._inner_key = inner_key
-        cache = Cache()
-        value = cache.get(cache_key, inner_key=inner_key)
-        self.setValue(bool(value))
-        self.valueChanged.connect(self._update_config)
-        if label_text is not None:
-            self.setText(label_text)
-        cache.connect(self, cache_key, self.setValue, inner_key=inner_key)
-
-    def _update_config(self, new_value: bool) -> None:
-        Cache().set(self._key, new_value, inner_key=self._inner_key)

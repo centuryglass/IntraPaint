@@ -14,7 +14,6 @@
 
 ## Remaining tasks:
 ComfyUI support:
-- Because the WebUI data structure is being reused, a lot of the extended ComfyUI parameter support is broken.  Implement a ControlnetUnit class to standardize access to preprocessor+model definitions, with helper functions to convert between both API formats.
 - ControlNet type constants are incomplete: regular expressions need updates to properly sort the whole list of ComfyUI options.
 - Implement a basic upscaling workflow, add in generator and webservice classes, test with ImageScaleModal.
 - As above, but a full latent upscaling workflow, using the ComfyUI version of the ultimate upscaler script.

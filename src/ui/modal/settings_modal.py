@@ -35,7 +35,8 @@ def _tr(*args):
 
 WINDOW_TITLE = _tr('Settings')
 CONFIG_PATH_LABEL = _tr('Settings file locations:')
-CONFIG_PATH_TOOLTIP = _tr('IntraPaint saves its settings to these files. This section is only for reference, their locations cannot be changed here.')
+CONFIG_PATH_TOOLTIP = _tr('IntraPaint saves its settings to these files. This section is only for reference, their'
+                          ' locations cannot be changed here.')
 CANCEL_BUTTON_LABEL = _tr('Cancel')
 SAVE_BUTTON_LABEL = _tr('Save')
 FILE_CATEGORY = QApplication.translate('config.application_config', 'Files')
@@ -139,7 +140,7 @@ class SettingsModal(QDialog):
                 self._add_subcategory_header(FILE_CATEGORY, CONFIG_PATH_LABEL)
                 file_tab_layout.addRow(self._config_path_widget)
                 self._config_path_widget.setHidden(False)
-            self._config_path_widget.setPlainText("\n".join(list(self._config_paths)))
+            self._config_path_widget.setPlainText('\n'.join(list(self._config_paths)))
 
     def add_custom_control(self, control_widget: DynamicFieldWidget, config: Config, key: str) -> None:
         """Adds a non-standard control to the grid."""

@@ -173,7 +173,7 @@
     "shape_tool_fill_pattern": "",
     "shape_tool_fill_color": "#FFFFFFFF",
     "shape_tool_antialias": true,
-    "saved_main_window_pos": "1,28,800,600",
+    "saved_main_window_pos": "",
     "saved_layer_window_pos": "",
     "saved_navigation_window_pos": "",
     "guidance_scale": {
@@ -233,7 +233,8 @@
         "step": 1,
         "value": 0
     },
-    "sd_server_url": "http://localhost:7860",
+    "sd_webui_server_url": "http://localhost:7860",
+    "sd_comfyui_server_url": "http://localhost:8188",
     "glid_server_url": "http://localhost:5555",
     "sd_model": "",
     "controlnet_upscaling": false,
@@ -243,9 +244,12 @@
         "step": 0.1,
         "value": 1.0
     },
-    "controlnet_args_0": {},
-    "controlnet_args_1": {},
-    "controlnet_args_2": {},
+    "controlnet_args_0_webui": "",
+    "controlnet_args_1_webui": "",
+    "controlnet_args_2_webui": "",
+    "controlnet_args_0_comfyui": "",
+    "controlnet_args_1_comfyui": "",
+    "controlnet_args_2_comfyui": "",
     "expect_tablet_input": false,
     "comfyui_model_config": "auto"
 }

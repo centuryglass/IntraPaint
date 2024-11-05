@@ -97,7 +97,10 @@ def get_rect_transformation(source: QRect | QRectF | QSize, destination: QRect |
 def map_rect_precise(rect: QRect | QRectF, transform: QTransform) -> QRectF:
     """Returns the bounds of a rectangle after applying a transformation, converted to floating point to prevent
      rounding errors."""
-    return transform.map(QPolygonF(QRectF(rect))).boundingRect()
+    polygon = QPolygonF(QRectF(rect))
+    transformed_poly = transform.map(polygon)
+    assert isinstance(transformed_poly, QPolygonF)
+    return transformed_poly.boundingRect()
 
 
 def translate_to_point(transform: QTransform,
@@ -346,4 +349,3 @@ def closest_point_at_angle_option(start_point: QPointF, end_point: QPointF,
             closest_angle = angle
     assert closest_point is not None
     return closest_point, closest_angle
-

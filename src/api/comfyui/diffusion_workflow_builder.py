@@ -2,7 +2,7 @@
 import random
 from dataclasses import dataclass
 from enum import Enum
-from typing import Optional, cast
+from typing import Optional
 
 from PySide6.QtCore import QSize
 
@@ -18,8 +18,7 @@ from src.api.comfyui.nodes.input.empty_latent_image_node import EmptyLatentNode
 from src.api.comfyui.nodes.input.load_image_mask_node import LoadImageMaskNode
 from src.api.comfyui.nodes.input.load_image_node import LoadImageNode
 from src.api.comfyui.nodes.input.simple_checkpoint_loader_node import SimpleCheckpointLoaderNode
-from src.api.comfyui.nodes.ksampler_node import SAMPLER_OPTIONS, SCHEDULER_OPTIONS, SamplerName, SchedulerName, \
-    KSamplerNode
+from src.api.comfyui.nodes.ksampler_node import KSamplerNode
 from src.api.comfyui.nodes.latent_mask_node import LatentMaskNode
 from src.api.comfyui.nodes.model_extensions.hypernet_loader_node import HypernetLoaderNode
 from src.api.comfyui.nodes.model_extensions.lora_loader_node import LoraLoaderNode
@@ -35,8 +34,8 @@ random.seed()
 DEFAULT_STEP_COUNT = 30
 DEFAULT_CFG = 8.0
 DEFAULT_SIZE = 512
-DEFAULT_SAMPLER = SAMPLER_OPTIONS[0]
-DEFAULT_SCHEDULER = SCHEDULER_OPTIONS[0]
+DEFAULT_SAMPLER = 'euler'
+DEFAULT_SCHEDULER = 'normal'
 MAX_SEED = 0xffffffffffffffff
 MAX_BATCH_SIZE = 64
 
@@ -70,8 +69,8 @@ class DiffusionWorkflowBuilder:
         self._size = QSize(DEFAULT_SIZE, DEFAULT_SIZE)
         self._sd_model = sd_model
         self._denoising = 1.0
-        self._sampler: SamplerName = cast(SamplerName, DEFAULT_SAMPLER)
-        self._scheduler: SchedulerName = cast(SchedulerName, DEFAULT_SCHEDULER)
+        self._sampler: str = DEFAULT_SAMPLER
+        self._scheduler: str = DEFAULT_SCHEDULER
         self._seed = random.randrange(0, MAX_SEED)
         self._filename_prefix = ''
 
@@ -158,21 +157,21 @@ class DiffusionWorkflowBuilder:
         self._negative = prompt
 
     @property
-    def sampler(self) -> SamplerName:
+    def sampler(self) -> str:
         """Accesses the sampling algorithm used for the diffusion process."""
         return self._sampler
 
     @sampler.setter
-    def sampler(self, sampler: SamplerName) -> None:
+    def sampler(self, sampler: str) -> None:
         self._sampler = sampler
 
     @property
-    def scheduler(self) -> SchedulerName:
+    def scheduler(self) -> str:
         """Accesses the scheduler used to control the magnitude of individual diffusion steps."""
         return self._scheduler
 
     @scheduler.setter
-    def scheduler(self, scheduler: SchedulerName) -> None:
+    def scheduler(self, scheduler: str) -> None:
         self._scheduler = scheduler
 
     @property
@@ -275,7 +274,11 @@ class DiffusionWorkflowBuilder:
         if model_node is None and model_name != CONTROLNET_MODEL_NONE:
             model_node = LoadControlNetNode(model_name)
         if preprocessor_node is None:
-            preprocessor_node = preprocessor.create_comfyui_node()
+            control_inputs = {}
+            for parameter in preprocessor.parameters:
+                control_inputs[parameter.key] = parameter.value
+            preprocessor_node = DynamicPreprocessorNode(preprocessor.name, control_inputs, preprocessor.has_image_input,
+                                                        preprocessor.has_mask_input)
         new_control_unit = _ControlInfo(model_node, preprocessor, preprocessor_node, control_image_str, strength,
                                         start_step, end_step)
         self._controlnet_units.append(new_control_unit)

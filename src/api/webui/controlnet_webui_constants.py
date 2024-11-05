@@ -1,24 +1,20 @@
 """Data format definitions for the WebUI API's ControlNet endpoints."""
-from typing import TypedDict, NotRequired, Dict, Optional, Literal, Any
+from typing import TypedDict, NotRequired, Dict, Optional, Literal
 
 from PySide6.QtWidgets import QApplication
 
-from src.api.controlnet.controlnet_constants import PREPROCESSOR_NONE, CONTROLNET_MODEL_NONE, CONTROLNET_REUSE_IMAGE_CODE, \
-    TOOLTIP_CONTROLNET_WEIGHT, TOOLTIP_START_STEP, TOOLTIP_END_STEP, TOOLTIP_CONTROL_MODE, \
-    TOOLTIP_RESIZE_MODE, ControlTypeDef
-from src.util.math_utils import clamp
-from src.util.parameter import Parameter, TYPE_FLOAT, TYPE_STR
+from src.api.controlnet.controlnet_constants import ControlTypeDef
+
+# The `QCoreApplication.translate` context for strings in this file
+TR_ID = 'api.webui.controlnet_webui'
+
+
+def _tr(*args):
+    """Helper to make `QCoreApplication.translate` more concise."""
+    return QApplication.translate(TR_ID, *args)
 
 
 CONTROLNET_SCRIPT_KEY = 'controlNet'
-
-# Settings for the "Resolution" option shared by most preprocessors:
-PREPROCESSOR_RES_PARAM_NAME = 'Resolution'
-PREPROCESSOR_RES_PARAM_KEY = 'processor_res'
-PREPROCESSOR_RES_MIN = 128
-PREPROCESSOR_RES_MAX = 2048
-PREPROCESSOR_RES_DEFAULT = 512
-PREPROCESSOR_RES_STEP = 8
 
 
 class ControlNetModelResponse(TypedDict):
@@ -36,8 +32,8 @@ class ControlNetSliderDef(TypedDict):
 
 
 class ModuleDetail(TypedDict):
-    """Defines a ControlNet preprocessor's parameters as returned by the module list endpoint."""
-    model_free: bool  # Whether the module can be used without a model.
+    """Defines a ControlNet preprocessor's parameters as returned by the preprocessor module list endpoint."""
+    model_free: bool  # Whether the preprocessor module can be used without a model.
     sliders: list[ControlNetSliderDef]
 
 
@@ -45,10 +41,6 @@ class ControlNetModuleResponse(TypedDict):
     """Response format when loading ControlNet preprocessor options."""
     module_list: list[str]
     module_details: NotRequired[Dict[str, ModuleDetail]]  # NOTE: not included in Forge.
-
-
-CONTROL_MODE_OPTIONS = ['Balanced', 'My prompt is more important', 'ControlNet is more important']
-RESIZE_MODE_OPTIONS = ['Just Resize', 'Crop and Resize', 'Resize and Fill']
 
 
 class ControlNetUnitDict(TypedDict):
@@ -75,105 +67,34 @@ class ControlNetUnitDict(TypedDict):
     threshold_b: NotRequired[float]
 
 
-def default_controlnet_unit() -> ControlNetUnitDict:
-    """Creates a ControlNetUnitDict with default parameters."""
-    return {
-        'use_preview_as_input': False,
-        'enabled': False,
-        'pixel_perfect': True,
-        'low_vram': False,
-        'module': PREPROCESSOR_NONE,
-        'model': CONTROLNET_MODEL_NONE,
-        'weight': 1.0,
-        'image': CONTROLNET_REUSE_IMAGE_CODE,
-        'control_mode': CONTROL_MODE_OPTIONS[0],  # type: ignore
-        'resize_mode': RESIZE_MODE_OPTIONS[1],  # type: ignore
-        'guidance_start': 0.0,
-        'guidance_end': 1.0
-    }
+# Constants defining the "Control mode" option shared by most preprocessors:
+CONTROL_MODE_PARAM_KEY = 'control_mode'
+CONTROL_MODE_LABEL = _tr('Control mode')
+CONTROL_MODE_OPTIONS = ['Balanced', 'My prompt is more important', 'ControlNet is more important']
+CONTROL_MODE_DEFAULT = CONTROL_MODE_OPTIONS[0]
 
+# Constants defining the "Resolution" option shared by most preprocessors:
+PREPROCESSOR_RES_PARAM_NAME = 'Resolution'  # For identifying it in an API "sliders" list
+PREPROCESSOR_RES_PARAM_KEY = 'processor_res'
+PREPROCESSOR_RES_LABEL = _tr('Resolution')
+PREPROCESSOR_RES_MIN = 128
+PREPROCESSOR_RES_MAX = 2048
+PREPROCESSOR_RES_DEFAULT = 512
+PREPROCESSOR_RES_STEP = 8
 
-def get_common_controlnet_unit_parameters(preprocessor_name: str, include_webui_options: bool) -> list[Parameter]:
-    """Returns new Parameter object defining keys, bounds, and default values for the weight, guidance_start, and
-       guidance_end ControlNet unit parameters."""
-    default_params = [
-        Parameter('weight', TYPE_FLOAT, 1.0, TOOLTIP_CONTROLNET_WEIGHT, 0.0, 1.0,
-                  0.01),
-        Parameter('guidance_start', TYPE_FLOAT, 0.0, TOOLTIP_START_STEP, 0.0, 1.0,
-                  0.01),
-        Parameter('guidance_end', TYPE_FLOAT, 1.0, TOOLTIP_END_STEP, 0.0, 1.0,
-                  0.01)
-    ]
-    if include_webui_options:
-        if preprocessor_name not in PREPROCESSOR_NO_CONTROL_MODE:
-            control_mode_param = Parameter('control_mode', TYPE_STR, CONTROL_MODE_OPTIONS[0],
-                                           TOOLTIP_CONTROL_MODE)
-            control_mode_param.set_valid_options(CONTROL_MODE_OPTIONS)
-            default_params.append(control_mode_param)
-        resize_mode_param = Parameter('resize_mode', TYPE_STR, RESIZE_MODE_OPTIONS[1], TOOLTIP_RESIZE_MODE)
-        resize_mode_param.set_valid_options(RESIZE_MODE_OPTIONS)
-        default_params.append(resize_mode_param)
-    return default_params
+# Constants defining the "Resize mode" option shared by all preprocessors that also accept a resolution:
+RESIZE_MODE_PARAM_KEY = 'resize_mode'
+RESIZE_MODE_LABEL = _tr('Resize mode')
+RESIZE_MODE_OPTIONS = ['Just Resize', 'Crop and Resize', 'Resize and Fill']
+RESIZE_MODE_DEFAULT = RESIZE_MODE_OPTIONS[1]
 
+CONTROL_WEIGHT_KEY = 'weight'
+START_STEP_KEY = 'guidance_start'
+END_STEP_KEY = 'guidance_start'
 
-# The `QCoreApplication.translate` context for strings in this file
-TR_ID = 'api.webui.controlnet_webui'
-
-
-def _tr(*args):
-    """Helper to make `QCoreApplication.translate` more concise."""
-    return QApplication.translate(TR_ID, *args)
-
-
-PREPROCESSOR_PRESET_LABELS = {
-    'weight':  _tr('Control Weight'),
-    'guidance_start': _tr('Starting Control Step'),
-    'guidance_end': _tr('Ending Control Step'),
-    'control_mode': _tr('Control Mode'),
-    'resize_mode': _tr('Resize Mode'),
-    'processor_res': _tr('Resolution')
-}
-
-
-def init_controlnet_unit(unit_dict: Optional[dict[str, Any]] = None) -> ControlNetUnitDict:
-    """Initialize a ControlNet unit definition from dictionary data that may or may not be present or formatted
-       correctly."""
-    control_unit = default_controlnet_unit()
-    if not isinstance(unit_dict, dict):
-        return control_unit
-    # I'm invoking all keys explicitly instead of iterating over key/type pairs because the typing module doesn't
-    # check things properly when I parameterize TypedDict keys.
-    if 'use_preview_as_input' in unit_dict and isinstance(unit_dict['use_preview_as_input'], bool):
-        control_unit['use_preview_as_input'] = unit_dict['use_preview_as_input']
-    if 'enabled' in unit_dict and isinstance(unit_dict['enabled'], bool):
-        control_unit['enabled'] = bool(unit_dict['enabled'])
-    if 'pixel_perfect' in unit_dict and isinstance(unit_dict['pixel_perfect'], bool):
-        control_unit['pixel_perfect'] = unit_dict['pixel_perfect']
-    if 'low_vram' in unit_dict and isinstance(unit_dict['low_vram'], bool):
-        control_unit['low_vram'] = unit_dict['low_vram']
-    if 'module' in unit_dict and isinstance(unit_dict['module'], str):
-        control_unit['module'] = unit_dict['module']
-    if 'model' in unit_dict and isinstance(unit_dict['model'], str):
-        control_unit['model'] = unit_dict['model']
-    if 'weight' in unit_dict and isinstance(unit_dict['weight'], (int, float)):
-        control_unit['weight'] = float(unit_dict['weight'])
-    if 'image' in unit_dict and isinstance(unit_dict['image'], str):
-        control_unit['image'] = unit_dict['image']
-    if 'resize_mode' in unit_dict and unit_dict['resize_mode'] in RESIZE_MODE_OPTIONS:
-        control_unit['resize_mode'] = unit_dict['resize_mode']  # type: ignore
-    if 'guidance_start' in unit_dict and isinstance(unit_dict['guidance_start'], float):
-        control_unit['guidance_start'] = float(clamp(unit_dict['guidance_start'], 0.0, 1.0))
-    if 'guidance_end' in unit_dict and isinstance(unit_dict['guidance_end'], float):
-        control_unit['guidance_end'] = float(clamp(unit_dict['guidance_end'], 0.0, 1.0))
-    if 'control_mode' in unit_dict and unit_dict['control_mode'] in CONTROL_MODE_OPTIONS:
-        control_unit['control_mode'] = unit_dict['control_mode']  # type: ignore
-    if 'processor_res' in unit_dict and isinstance(unit_dict['processor_res'], (int, float)):
-        control_unit['processor_res'] = round(unit_dict['processor_res'])
-    if 'threshold_a' in unit_dict and isinstance(unit_dict['threshold_a'], (int, float)):
-        control_unit['threshold_a'] = float(unit_dict['threshold_a'])
-    if 'threshold_b' in unit_dict and isinstance(unit_dict['threshold_b'], (int, float)):
-        control_unit['threshold_b'] = float(unit_dict['threshold_b'])
-    return control_unit
+# Generic keys used for setting preprocessor-specific values.
+FIRST_GENERIC_PARAMETER_KEY = 'threshold_a'
+SECOND_GENERIC_PARAMETER_KEY = 'threshold_b'
 
 
 class ControlTypeResponse(TypedDict):
@@ -214,6 +135,50 @@ class ControlTypeResponse(TypedDict):
 #
 #  When parameterizing values, make sure "threshold_a" always comes before "threshold_b", because the order is used to
 #  determine which is which.
+
+# Defines the set of preprocessors that have alternate default resolutions.
+PREPROCESSOR_RES_DEFAULTS: dict[str, int] = {
+    'depth_marigold': 768
+}
+
+# Defines the set of preprocessors that explicitly exclude resolution.
+PREPROCESSOR_NO_RESOLUTION: set[str] = {
+    'inpaint_only',
+    'invert (from white bg & black line)',
+    'shuffle',
+    'ip-adapter_pulid',
+    'inpaint_only+lama',
+    'inpaint_global_harmonious',
+    'facexlib',
+    'None',
+    'none'
+}
+
+# Defines the set of preprocessors that don't have the control_mode option.
+PREPROCESSOR_NO_CONTROL_MODE: set[str] = {
+    'ip-adapter-auto',
+    'revision_clipvision',
+    'ip-adapter_clip_h',
+    't2ia_style_clipvision',
+    'revision_ignore_prompt',
+    'ip-adapter_face_id_plus',
+    'ip-adapter_face_id',
+    'ip-adapter_clip_sdxl_plus_vith',
+    'ip-adapter_clip_g',
+    'None',
+    'none'
+
+}
+
+# Defines preprocessors that don't need a corresponding model.
+PREPROCESSOR_MODEL_FREE: set[str] = {
+    'revision_clipvision',
+    'revision_ignore_prompt',
+    'reference_only',
+    'reference_adain+attn',
+    'reference_adain'
+}
+
 THRESHOLD_A_PARAMETER_NAMES: dict[str, ControlNetSliderDef] = {
     'reference_only': {
         'name': 'Style Fidelity',
@@ -435,47 +400,4 @@ THRESHOLD_B_PARAMETER_NAMES: dict[str, ControlNetSliderDef] = {
         'default': 0.0,
         'step': 0.1
     }
-}
-
-# Defines the set of preprocessors that have alternate default resolutions.
-PREPROCESSOR_RES_DEFAULTS: dict[str, int] = {
-    'depth_marigold': 768
-}
-
-# Defines the set of preprocessors that explicitly exclude resolution.
-PREPROCESSOR_NO_RESOLUTION: set[str] = {
-    'inpaint_only',
-    'invert (from white bg & black line)',
-    'shuffle',
-    'ip-adapter_pulid',
-    'inpaint_only+lama',
-    'inpaint_global_harmonious',
-    'facexlib',
-    'None',
-    'none'
-}
-
-# Defines the set of preprocessors that don't have the control_mode option.
-PREPROCESSOR_NO_CONTROL_MODE: set[str] = {
-    'ip-adapter-auto',
-    'revision_clipvision',
-    'ip-adapter_clip_h',
-    't2ia_style_clipvision',
-    'revision_ignore_prompt',
-    'ip-adapter_face_id_plus',
-    'ip-adapter_face_id',
-    'ip-adapter_clip_sdxl_plus_vith',
-    'ip-adapter_clip_g',
-    'None',
-    'none'
-
-}
-
-# Defines preprocessors that don't need a corresponding model.
-PREPROCESSOR_MODEL_FREE: set[str] = {
-    'revision_clipvision',
-    'revision_ignore_prompt',
-    'reference_only',
-    'reference_adain+attn',
-    'reference_adain'
 }

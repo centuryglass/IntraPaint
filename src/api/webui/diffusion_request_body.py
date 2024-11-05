@@ -1,5 +1,4 @@
 """Typedefs for WebUI API data."""
-import json
 import logging
 import os.path
 from dataclasses import dataclass, asdict
@@ -9,7 +8,8 @@ from PySide6.QtCore import QSize
 from PySide6.QtGui import QImage
 
 from src.api.controlnet.controlnet_constants import CONTROLNET_REUSE_IMAGE_CODE
-from src.api.webui.controlnet_webui import init_controlnet_unit, CONTROLNET_SCRIPT_KEY
+from src.api.webui.controlnet_webui_constants import CONTROLNET_SCRIPT_KEY
+from src.api.webui.controlnet_webui_utils import load_cached_controlnet_units
 from src.api.webui.script_info_types import ScriptRequestData
 from src.config.application_config import AppConfig
 from src.config.cache import Cache
@@ -179,27 +179,26 @@ class DiffusionRequestBody:
         # Add ControlNet parameters:
         if CONTROLNET_SCRIPT_KEY in self.alwayson_scripts:
             self.alwayson_scripts[CONTROLNET_SCRIPT_KEY] = {'args': []}  # Make sure to clear any old ControlNet defs
-        for controlnet_key in (Cache.CONTROLNET_ARGS_0_WEBUI, Cache.CONTROLNET_ARGS_1_WEBUI,
-                               Cache.CONTROLNET_ARGS_2_WEBUI):
-            control_unit = init_controlnet_unit(cache.get(controlnet_key))
-            if not control_unit['enabled']:
+        controlnet_unit_dicts = load_cached_controlnet_units()
+        for control_unit_dict in controlnet_unit_dicts:
+            if not control_unit_dict['enabled']:
                 continue
-            control_image = control_unit['image']
+            control_image = control_unit_dict['image']
             if control_image == CONTROLNET_REUSE_IMAGE_CODE and image is not None:
                 if edit_mode in (EDIT_MODE_IMG2IMG, EDIT_MODE_INPAINT) and self.init_images is not None \
                         and len(self.init_images) > 0:
-                    control_unit['image'] = self.init_images[-1]
+                    control_unit_dict['image'] = self.init_images[-1]
                 else:
-                    control_unit['image'] = image_to_base64(image, include_prefix=True)
+                    control_unit_dict['image'] = image_to_base64(image, include_prefix=True)
             elif isinstance(control_image, str) and os.path.exists(control_image):
                 try:
-                    control_unit['image'] = image_to_base64(control_unit['image'], include_prefix=True)
+                    control_unit_dict['image'] = image_to_base64(control_unit_dict['image'], include_prefix=True)
                 except (IOError, KeyError) as err:
-                    logger.error(f"Error loading controlnet image {control_image}: {err}")
-                    control_unit['image'] = None
+                    logger.error(f'Error loading controlnet image {control_image}: {err}')
+                    control_unit_dict['image'] = None
             if CONTROLNET_SCRIPT_KEY not in self.alwayson_scripts:
                 self.alwayson_scripts[CONTROLNET_SCRIPT_KEY] = {'args': []}
-            self.alwayson_scripts[CONTROLNET_SCRIPT_KEY]['args'].append(control_unit)
+            self.alwayson_scripts[CONTROLNET_SCRIPT_KEY]['args'].append(control_unit_dict)
 
     def add_init_image(self, image: QImage) -> None:
         """Adds a base64 init image."""

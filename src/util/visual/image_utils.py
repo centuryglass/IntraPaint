@@ -70,7 +70,7 @@ def qimage_from_base64(image_str: str) -> QImage:
     if image_str.startswith(BASE_64_PREFIX):
         image_str = image_str[len(BASE_64_PREFIX):]
     image_data = QByteArray.fromBase64(image_str.encode())
-    image = QImage.fromData(image_data, 'PNG')
+    image = QImage.fromData(image_data, 'PNG')  # type: ignore
     if image.isNull():
         raise ValueError('Invalid base64 image string')
     if image.hasAlphaChannel():
@@ -94,7 +94,7 @@ def image_to_base64(image: QImage | Image.Image | str, include_prefix=False) -> 
     elif isinstance(image, QImage):
         image_bytes = QByteArray()
         buffer = QBuffer(image_bytes)
-        image.save(buffer, 'PNG')
+        image.save(buffer, 'PNG')  # type: ignore
         image_str = base64.b64encode(image_bytes.data()).decode('utf-8')
     else:
         assert isinstance(image, Image.Image)

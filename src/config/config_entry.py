@@ -3,7 +3,7 @@ import logging
 from typing import Any, Optional
 
 from PySide6.QtCore import QSize
-from PySide6.QtWidgets import QApplication, QComboBox
+from PySide6.QtWidgets import QApplication
 
 from src.util.parameter import Parameter, get_parameter_type, TYPE_DICT, TYPE_INT, TYPE_FLOAT, TYPE_QSIZE, ParamTypeList
 
@@ -219,16 +219,22 @@ class ConfigEntry(Parameter):
 
         json_value = json_dict[self._key]
         if isinstance(json_value, dict) and self.type_name != TYPE_DICT:
-            if RangeKey.MIN in json_value and json_value[RangeKey.MIN] is not None:
-                self.minimum = _apply_type(json_value[RangeKey.MIN], self.type_name)
-            if RangeKey.MAX in json_value and json_value[RangeKey.MAX] is not None:
-                self.maximum = _apply_type(json_value[RangeKey.MAX], self.type_name)
-            if RangeKey.STEP in json_value and json_value[RangeKey.STEP] is not None:
-                step_type = TYPE_FLOAT if self.type_name == TYPE_FLOAT else TYPE_INT
-                self.single_step = _apply_type(json_value[RangeKey.STEP], step_type)
-            if VALUE_KEY not in json_value:
-                raise RuntimeError(MISSING_VALUE_ERROR.format(key=self._key))
-            json_value = json_value[VALUE_KEY]
+            if self.type_name in (TYPE_INT, TYPE_FLOAT, TYPE_QSIZE):
+                if RangeKey.MIN in json_value and json_value[RangeKey.MIN] is not None:
+                    self.minimum = _apply_type(json_value[RangeKey.MIN], self.type_name)
+                if RangeKey.MAX in json_value and json_value[RangeKey.MAX] is not None:
+                    self.maximum = _apply_type(json_value[RangeKey.MAX], self.type_name)
+                if RangeKey.STEP in json_value and json_value[RangeKey.STEP] is not None:
+                    step_type = TYPE_FLOAT if self.type_name == TYPE_FLOAT else TYPE_INT
+                    self.single_step = _apply_type(json_value[RangeKey.STEP], step_type)
+                if VALUE_KEY not in json_value:
+                    logger.error(MISSING_VALUE_ERROR.format(key=self._key))
+                    json_value = self.default_value
+                else:
+                    json_value = json_value[VALUE_KEY]
+            else:
+                logger.error(f'"{self.name}" expected type {self.type_name}, got dict. Replacing with default value.')
+                json_value = self.default_value
 
         if self.type_name == TYPE_QSIZE:
             json_value = _apply_type(json_value, TYPE_QSIZE)

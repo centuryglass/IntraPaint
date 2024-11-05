@@ -9,7 +9,7 @@ from typing import Optional, cast, Callable, TypeAlias, Generator
 import numpy as np
 from PIL import Image
 from PySide6.QtCore import QObject, QSize, QPoint, QRect, Signal, QTimer, QRectF
-from PySide6.QtGui import QPainter, QPixmap, QImage, QTransform
+from PySide6.QtGui import QPainter, QPixmap, QImage, QTransform, QPolygonF
 from PySide6.QtWidgets import QApplication
 
 from src.config.application_config import AppConfig
@@ -68,7 +68,8 @@ ERROR_MESSAGE_LOCKED_LAYER = _tr('Unlock the layer before attempting any changes
 
 ERROR_TITLE_MERGE_FAILED = _tr('Merging layers failed')
 ERROR_MESSAGE_HIDDEN_LAYER_MERGE = _tr('Only visible layers can be merged.')
-ERROR_MESSAGE_GROUP_MERGE_BLOCKED = _tr('The layer below is a layer group, flatten the group into a single image layer first.')
+ERROR_MESSAGE_GROUP_MERGE_BLOCKED = _tr('The layer below is a layer group, flatten the group into a single image layer'
+                                        ' first.')
 
 ERROR_TITLE_LOCKED_GROUP = _tr('Layer "{layer_name}" is in a locked group')
 ERROR_MESSAGE_LOCKED_GROUP = _tr('Unlock the layer group before trying to change layers within the group.')
@@ -458,6 +459,7 @@ class ImageStack(QObject):
                             _, _, _, _, angle = extract_transform_parameters(layer.transform)
                             if (angle % 90.0) != 0:
                                 layer_transform_poly = layer.transform.map(QRectF(layer.bounds))
+                                assert isinstance(layer_transform_poly, QPolygonF)
                                 if not bounds.contains(layer_transform_poly.boundingRect().toAlignedRect()):
                                     layer.apply_transform()
                         new_bounds = layer.transformed_bounds

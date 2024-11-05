@@ -3,29 +3,28 @@ import json
 import logging
 import os
 from argparse import Namespace
-from typing import Optional, cast, Any
+from typing import Optional, Any, cast
 
-import requests
 from PySide6.QtCore import Signal, QSize, QThread
-from PySide6.QtGui import QImage, QAction, QIcon
-from PySide6.QtWidgets import QInputDialog, QApplication
+from PySide6.QtGui import QImage
+from PySide6.QtWidgets import QApplication
 from requests import ReadTimeout
 
 from src.api.a1111_webservice import A1111Webservice, AuthError
+from src.api.controlnet.controlnet_constants import ControlTypeDef
+from src.api.controlnet.controlnet_preprocessor import ControlNetPreprocessor
+from src.api.webservice import WebService
 from src.config.a1111_config import A1111Config
 from src.config.application_config import AppConfig
 from src.config.cache import Cache
-from src.config.key_config import KeyConfig
-from src.controller.image_generation.image_generator import ImageGenerator
+from src.controller.image_generation.sd_generator import SD_BASE_DESCRIPTION, STABLE_DIFFUSION_CONFIG_CATEGORY, \
+    SDGenerator
 from src.image.layers.image_stack import ImageStack
 from src.image.layers.image_stack_utils import scale_all_layers
-from src.ui.layout.draggable_tabs.tab import Tab
 from src.ui.modal.modal_utils import show_error_dialog
 from src.ui.modal.settings_modal import SettingsModal
-from src.ui.panel.controlnet_panel import TabbedControlNetPanel, CONTROLNET_TITLE
 from src.ui.panel.generators.generator_panel import GeneratorPanel
 from src.ui.panel.generators.stable_diffusion_panel import StableDiffusionPanel
-from src.ui.window.extra_network_window import ExtraNetworkWindow
 from src.ui.window.main_window import MainWindow
 from src.ui.window.prompt_style_window import PromptStyleWindow
 from src.undo_stack import UndoStack
@@ -33,8 +32,8 @@ from src.util.application_state import AppStateTracker, APP_STATE_LOADING, APP_S
 from src.util.async_task import AsyncTask
 from src.util.menu_builder import menu_action
 from src.util.shared_constants import EDIT_MODE_TXT2IMG, EDIT_MODE_INPAINT, EDIT_MODE_IMG2IMG, PROJECT_DIR, \
-    PIL_SCALING_MODES, AUTH_ERROR, AUTH_ERROR_MESSAGE, URL_REQUEST_MESSAGE, URL_REQUEST_RETRY_MESSAGE, \
-    URL_REQUEST_TITLE, INTERROGATE_ERROR_TITLE, INTERROGATE_ERROR_MESSAGE_NO_IMAGE, ERROR_MESSAGE_TIMEOUT, \
+    PIL_SCALING_MODES, AUTH_ERROR, AUTH_ERROR_MESSAGE, INTERROGATE_ERROR_TITLE, INTERROGATE_ERROR_MESSAGE_NO_IMAGE, \
+    ERROR_MESSAGE_TIMEOUT, \
     UPSCALE_ERROR_TITLE, UPSCALED_LAYER_NAME, GENERATE_ERROR_MESSAGE_EMPTY_MASK, ERROR_MESSAGE_EXISTING_OPERATION
 
 logger = logging.getLogger(__name__)
@@ -49,31 +48,6 @@ def _tr(*args):
 
 
 SD_WEBUI_GENERATOR_NAME = _tr('Stable-Diffusion WebUI API')
-SD_BASE_DESCRIPTION = _tr("""
-<p>
-    Released in August 2022, Stable-Diffusion remains the most versatile and useful free image generation model.
-</p>
-<h2>Generator capabilities and limits:</h2>
-<ul>
-    <li>Requires only 4GB of VRAM, or 8GB if using an SDXL model.</li>
-    <li>Tuned for an ideal resolution of 512x512 (1024x1024 for SDXL).</li>
-    <li>A huge variety of fine-tuned variant models are available.</li>
-    <li>
-        The magnitude of changes made to existing images can be precisely controlled by varying denoising strength.
-    </li>
-    <li>
-        Supports LoRAs, miniature extension models adding support for new styles and subjects.
-    </li>
-    <li>
-        Supports positive and negative prompting, where (parentheses) draw additional attention to prompt sections,
-        and [square brackets] reduce attention.
-    </li>
-    <li>
-        Supports ControlNet modules, allowing image generation to be guided by arbitrary constraints like depth maps,
-        existing image lines, and pose analysis.
-    </li>
-</ul>
-""")
 SD_WEBUI_GENERATOR_DESCRIPTION_HEADER = _tr('<h2>Stable-Diffusion: via WebUI API</h2>')
 SD_WEBUI_GENERATOR_DESCRIPTION_WEBUI = _tr("""
 <p>
@@ -139,7 +113,6 @@ SD_WEBUI_GENERATOR_SETUP = _tr("""
 SD_PREVIEW_IMAGE = f'{PROJECT_DIR}/resources/generator_preview/stable-diffusion.png'
 ICON_PATH_CONTROLNET_TAB = f'{PROJECT_DIR}/resources/icons/tabs/hex.svg'
 DEFAULT_WEBUI_URL = 'http://localhost:7860'
-STABLE_DIFFUSION_CONFIG_CATEGORY = QApplication.translate('config.application_config', 'Stable-Diffusion')
 AUTH_ERROR_DETAIL_KEY = 'detail'
 STYLE_ERROR_TITLE = _tr('Updating prompt styles failed')
 
@@ -180,29 +153,17 @@ def _check_lora_available(_) -> bool:
     return len(cache.get(Cache.LORA_MODELS)) > 0
 
 
-class SDWebUIGenerator(ImageGenerator):
+class SDWebUIGenerator(SDGenerator):
     """Interface for providing image generation capabilities."""
 
     def __init__(self, window: MainWindow, image_stack: ImageStack, args: Namespace) -> None:
-        super().__init__(window, image_stack)
-        self._server_url = args.server_url if args.server_url != '' else Cache().get(Cache.SD_WEBUI_SERVER_URL)
-        self._webservice: Optional[A1111Webservice] = A1111Webservice(self._server_url)
-        self._lora_images: Optional[dict[str, Optional[QImage]]] = None
-        self._menu_actions: dict[str, list[QAction]] = {}
-        self._connected = False
-        self._control_panel: Optional[StableDiffusionPanel] = None
-        self._preview = QImage(SD_PREVIEW_IMAGE)
-        self._controlnet_tab: Optional[Tab] = None
-        self._controlnet_panel: Optional[TabbedControlNetPanel] = None
+        super().__init__(window, image_stack, args, Cache.SD_WEBUI_SERVER_URL, True)
+        self._webservice: Optional[A1111Webservice] = A1111Webservice(self.server_url)
         self._active_task_id = 0
 
     def get_display_name(self) -> str:
         """Returns a display name identifying the generator."""
         return SD_WEBUI_GENERATOR_NAME
-
-    def get_preview_image(self) -> QImage:
-        """Returns a preview image for this generator."""
-        return self._preview
 
     def get_setup_text(self) -> str:
         """Returns a rich text description of how to set up this generator."""
@@ -212,11 +173,167 @@ class SDWebUIGenerator(ImageGenerator):
         """Returns an extended description of this generator."""
         return SD_WEBUI_GENERATOR_DESCRIPTION
 
-    def get_extra_tabs(self) -> list[Tab]:
-        """Returns any extra tabs that the generator will add to the main window."""
-        if self._controlnet_tab is not None:
-            return [self._controlnet_tab]
-        return []
+    def get_webservice(self) -> Optional[WebService]:
+        """Return the webservice object this module uses to connect to Stable-Diffusion, if initialized."""
+        return self._webservice
+
+    def remove_webservice(self) -> None:
+        """Destroy and remove any active webservice object."""
+        self._webservice = None
+
+    def create_or_get_webservice(self, url: str) -> WebService:
+        """Return the webservice object this module uses to connect to Stable-Diffusion.  If the webservice already
+           exists but the url doesn't match, a new webservice should replace the existing one, using the new url."""
+        if self._webservice is not None:
+            if self._webservice.server_url == url:
+                return self._webservice
+            self._webservice.disconnect()
+            self._webservice = None
+        self._webservice = A1111Webservice(url)
+        return self._webservice
+
+    def get_controlnet_preprocessors(self) -> list[ControlNetPreprocessor]:
+        """Return the list of available Controlnet preprocessors."""
+        assert self._webservice is not None
+        try:
+            return self._webservice.get_controlnet_preprocessors()
+        except (RuntimeError, KeyError) as err:
+            logger.error(f'Loading ControlNet preprocessors failed: {err}')
+            return []
+
+    def get_controlnet_models(self) -> list[str]:
+        """Return the list of available ControlNet models."""
+        assert self._webservice is not None
+        try:
+            return self._webservice.get_controlnet_models()['model_list']
+        except (RuntimeError, KeyError) as err:
+            logger.error(f'Loading ControlNet models failed: {err}')
+            return []
+
+    def get_controlnet_types(self) -> dict[str, ControlTypeDef]:
+        """Return available ControlNet categories."""
+        assert self._webservice is not None
+        try:
+            return self._webservice.get_controlnet_type_categories()
+        except (RuntimeError, KeyError) as err:
+            logger.error(f'Loading ControlNet types failed: {err}')
+            return {}
+
+    def get_controlnet_unit_cache_keys(self) -> list[str]:
+        """Return keys used to cache serialized ControlNet units as strings."""
+        return [Cache.CONTROLNET_ARGS_0_WEBUI, Cache.CONTROLNET_ARGS_1_WEBUI, Cache.CONTROLNET_ARGS_2_WEBUI]
+
+    def get_diffusion_model_names(self) -> list[str]:
+        """Return the list of available image generation models."""
+        assert self._webservice is not None
+        try:
+            models = self._webservice.get_models()
+            return [model['model_name'] for model in models]
+        except (RuntimeError, KeyError) as err:
+            logger.error(f'Loading stable-diffusion model list failed: {err}')
+            return []
+
+    def get_lora_model_info(self) -> list[dict[str, str]]:
+        """Return available LoRA model extensions."""
+        assert self._webservice is not None
+        try:
+            return cast(list[dict[str, str]], self._webservice.get_loras())
+        except (RuntimeError, KeyError) as err:
+            logger.error(f'Loading stable-diffusion LoRA model list failed: {err}')
+            return []
+
+    def get_diffusion_sampler_names(self) -> list[str]:
+        """Return the list of available samplers."""
+        assert self._webservice is not None
+        try:
+            sampler_info = self._webservice.get_samplers()
+            return [sampler['name'] for sampler in sampler_info]
+        except (RuntimeError, KeyError) as err:
+            logger.error(f'Loading stable-diffusion sampler option list failed: {err}')
+            return []
+
+    def get_upscale_method_names(self) -> list[str]:
+        """Return the list of available upscale methods."""
+        assert self._webservice is not None
+        try:
+            upscaler_info = self._webservice.get_upscalers()
+            return [upscaler['name'] for upscaler in upscaler_info]
+        except (RuntimeError, KeyError) as err:
+            logger.error(f'Loading stable-diffusion LoRA model list failed: {err}')
+            return []
+
+    def cache_generator_specific_data(self) -> None:
+        """When activating the generator, after the webservice is connected, this method should be implemented to
+           load and cache any generator-specific API data."""
+        assert self._webservice is not None
+        cache = Cache()
+        try:
+            webui_config = A1111Config()
+            webui_config.load_all(self._webservice)
+            current_model_title = webui_config.get(A1111Config.SD_MODEL_CHECKPOINT)
+            model_options = self._webservice.get_models()
+            for model in model_options:
+                if model['title'] == current_model_title:
+                    cache.set(Cache.SD_MODEL, model['model_name'])
+                    break
+                try:
+                    cache.disconnect(self, Cache.SD_MODEL)
+                except KeyError:
+                    pass  # No previous connection to remove, which isn't a problem here.
+
+            def _update_model(model_name: str) -> None:
+                if not self._connected:
+                    return
+                for model_option in model_options:
+                    if model_option['model_name'] == model_name:
+                        remote_setting_change = {A1111Config.SD_MODEL_CHECKPOINT: model_option['title']}
+                        self.update_settings(remote_setting_change)
+                        return
+                raise RuntimeError(f'Selected model "{model_name}" not found in available options.')
+            cache.connect(self, Cache.SD_MODEL, _update_model)
+        except (RuntimeError, KeyError) as err:
+            logger.error(f'Loading WebUI model connection failed: {err}')
+        try:
+            scripts = self._webservice.get_scripts()
+            if 'txt2img' in scripts:
+                cache.set(Cache.SCRIPTS_TXT2IMG, scripts['txt2img'])
+            if 'img2img' in scripts:
+                cache.set(Cache.SCRIPTS_IMG2IMG, scripts['img2img'])
+        except (KeyError, RuntimeError) as err:
+            logger.error(f'error loading scripts from {self._server_url}: {err}')
+        try:
+            styles = self._webservice.get_styles()
+            cache.set(Cache.STYLES, styles)
+        except (KeyError, RuntimeError) as err:
+            logger.error(f'error loading prompt styles from {self._server_url}: {err}')
+
+    def clear_cached_generator_data(self) -> None:
+        """Clear any cached data specific to this image generator."""
+        cache = Cache()
+        for list_key in (Cache.SCRIPTS_TXT2IMG, Cache.SCRIPTS_IMG2IMG, Cache.STYLES):
+            cache.set(list_key, [])
+
+    def load_lora_thumbnail(self, lora_info: Optional[dict[str, str]]) -> Optional[QImage]:
+        """Attempt to load a LoRA model thumbnail image from the API."""
+        if lora_info is None:
+            return None
+        try:
+            assert self._webservice is not None
+            path = lora_info['path']
+            path = path[:path.rindex('.')] + '.png'
+            return self._webservice.get_thumbnail(path)
+        except (KeyError, RuntimeError) as err:
+            logger.error(f'error loading LoRA thumbnail from {self._server_url}: {err}')
+            return None
+
+    def load_preprocessor_preview(self, preprocessor: ControlNetPreprocessor,
+                                     image: QImage, mask: Optional[QImage],
+                                     status_signal: Signal,
+                                     image_signal: Signal) -> None:
+        """Requests a ControlNet preprocessor preview image."""
+        assert self._webservice is not None
+        preview_image = self._webservice.controlnet_preprocessor_preview(image, mask, preprocessor)
+        image_signal.emit(preview_image)
 
     def is_available(self) -> bool:
         """Returns whether the generator is supported on the current system."""
@@ -236,166 +353,6 @@ class SDWebUIGenerator(ImageGenerator):
         except AuthError:
             self.status_signal.emit(AUTH_ERROR)
         return False
-
-    def connect_to_url(self, url: str) -> bool:
-        """Attempt to connect to a specific URL, returning whether the connection succeeded."""
-        assert self._webservice is not None
-        if url == self._server_url:
-            if self._connected:
-                return True
-            return self.configure_or_connect()
-        self._server_url = url
-        self._webservice.disconnect()
-        self._webservice = A1111Webservice(url)
-        return self.configure_or_connect()
-
-    def configure_or_connect(self) -> bool:
-        """Handles any required steps necessary to configure the generator, install required components, and/or
-           connect to required external services, returning whether the process completed correctly."""
-        # Check for a valid connection, requesting a URL if needed:
-        try:
-            if self._webservice is None:
-                self._webservice = A1111Webservice(self._server_url)
-            while self._server_url == '' or not self.is_available():
-                prompt_text = URL_REQUEST_MESSAGE if self._server_url == '' else URL_REQUEST_RETRY_MESSAGE
-                new_url, url_entered = QInputDialog.getText(self.menu_window, URL_REQUEST_TITLE, prompt_text,
-                                                            text=self._server_url)
-                if not url_entered:
-                    return False
-                if self.connect_to_url(new_url):
-                    Cache().set(Cache.SD_WEBUI_SERVER_URL, new_url)
-                    return True
-                return False
-
-            # If a login is required and none is defined in the environment, the webservice will automatically request
-            # one during the following setup process:
-            cache = Cache()
-
-            try:
-                sampler_info = self._webservice.get_samplers()
-                sampler_names = [sampler['name'] for sampler in sampler_info]
-            except (KeyError, RuntimeError) as err:
-                logger.error(f'error loading semplers from {self._server_url}: {err}')
-                sampler_names = []
-
-            try:
-                upscaler_info = self._webservice.get_upscalers()
-                upscaler_names = [upscaler['name'] for upscaler in upscaler_info]
-            except (KeyError, RuntimeError) as err:
-                logger.error(f'error loading upscalers from {self._server_url}: {err}')
-                upscaler_names = []
-
-            for config_key, option_list in ((Cache.SAMPLING_METHOD, sampler_names),
-                                            (Cache.UPSCALE_METHOD, upscaler_names)):
-                if len(option_list) > 0:
-                    cache.update_options(config_key, option_list)
-
-            webui_config = A1111Config()
-            try:
-                model_options = self._webservice.get_models()
-                model_names = [model['model_name'] for model in model_options]
-                model_names.sort()
-                model_option_list = cast(list[str], webui_config.get_options(A1111Config.SD_MODEL_CHECKPOINT))
-                model_option_list.sort()
-                cache.update_options(Cache.SD_MODEL, model_names)
-                webui_config.load_all(self._webservice)
-                current_model_title = webui_config.get(A1111Config.SD_MODEL_CHECKPOINT)
-                for model in model_options:
-                    if model['title'] == current_model_title:
-                        cache.set(Cache.SD_MODEL, model['model_name'])
-                        break
-
-                try:
-                    cache.disconnect(self, Cache.SD_MODEL)
-                except KeyError:
-                    pass  # No previous connection to remove, which isn't a problem here.
-
-                def _update_model(model_name: str) -> None:
-                    if not self._connected:
-                        return
-                    for model in model_options:
-                        if model['model_name'] == model_name:
-                            remote_setting_change = {A1111Config.SD_MODEL_CHECKPOINT: model['title']}
-                            self.update_settings(remote_setting_change)
-                            return
-                    raise RuntimeError(f'Selected model "{model_name}" not found in available options.')
-                cache.connect(self, Cache.SD_MODEL, _update_model)
-
-            except (KeyError, RuntimeError) as err:
-                logger.error(f'error loading model list from {self._server_url}: {err}')
-
-            try:
-                scripts = self._webservice.get_scripts()
-                if 'txt2img' in scripts:
-                    cache.set(Cache.SCRIPTS_TXT2IMG, scripts['txt2img'])
-                if 'img2img' in scripts:
-                    cache.set(Cache.SCRIPTS_IMG2IMG, scripts['img2img'])
-            except (KeyError, RuntimeError) as err:
-                logger.error(f'error loading scripts from {self._server_url}: {err}')
-
-            data_params = (
-                (Cache.STYLES, self._webservice.get_styles),
-                (Cache.LORA_MODELS, self._webservice.get_loras)
-            )
-
-            for config_key, data_loading_fn in data_params:
-                try:
-                    value = data_loading_fn()
-                    if value is not None and len(value) > 0:
-                        cache.set(config_key, value)
-                except (KeyError, RuntimeError) as err:
-                    logger.error(f'error loading {config_key} from {self._server_url}: {err}')
-
-            # Build ControlNet tab, if available through the API:
-            if self._controlnet_tab is None:
-                try:
-                    model_list = self._webservice.get_controlnet_models()['model_list']
-                    preprocessors = self._webservice.get_controlnet_preprocessors()
-                    control_types = self._webservice.get_controlnet_type_categories()
-                    control_keys = [Cache.CONTROLNET_ARGS_0_WEBUI, Cache.CONTROLNET_ARGS_1_WEBUI,
-                                    Cache.CONTROLNET_ARGS_2_WEBUI]
-                    if len(preprocessors) > 0 and len(control_types) > 0:
-                        controlnet_panel = TabbedControlNetPanel(preprocessors,
-                                                                 model_list,
-                                                                 control_types,
-                                                                 control_keys,
-                                                                 True)
-                        self._controlnet_tab = Tab(CONTROLNET_TITLE, controlnet_panel, KeyConfig.SELECT_CONTROLNET_TAB,
-                                                   parent=self.menu_window)
-                        self._controlnet_tab.hide()
-                        self._controlnet_tab.setIcon(QIcon(ICON_PATH_CONTROLNET_TAB))
-                except (KeyError, RuntimeError) as err:
-                    logger.error(f'Loading ControlNet failed: {err}')
-
-            assert self._window is not None
-            self._window.cancel_generation.connect(self.cancel_generation)
-            self._connected = True
-            return True
-        except AuthError:
-            return False
-
-    def disconnect_or_disable(self) -> None:
-        """Closes any connections, unloads models, or otherwise turns off this generator."""
-        self._connected = False
-        if self._webservice is not None:
-            self._webservice.disconnect()
-            self._webservice = None
-        # Turn off inpainting cropping and padding again:
-        Cache().set(Cache.INPAINT_OPTIONS_AVAILABLE, False)
-        # Clear cached webservice data:
-        if self._lora_images is not None:
-            self._lora_images.clear()
-            self._lora_images = None
-        cache = Cache()
-        cache.set(Cache.LORA_MODELS, [])
-        if self._controlnet_tab is not None:
-            self._controlnet_tab.setParent(None)
-            self._controlnet_tab.deleteLater()
-            self._controlnet_tab = None
-            self._controlnet_panel = None
-        assert self._window is not None
-        self._window.cancel_generation.disconnect(self.cancel_generation)
-        self.clear_menus()
 
     def init_settings(self, settings_modal: SettingsModal) -> None:
         """Updates a settings modal to add settings relevant to this generator."""
@@ -642,7 +599,7 @@ class SDWebUIGenerator(ImageGenerator):
             except (IOError, RuntimeError) as err:
                 error_signal.emit(err)
             except Exception as err:
-                print(f'unexpected error: {err}')
+                logger.error(f'unexpected error during upscale attempt: {err}')
                 error_signal.emit(err)
 
         task = _UpscaleTask(_upscale, True)
@@ -755,50 +712,6 @@ class SDWebUIGenerator(ImageGenerator):
         # TODO: update after the prompt style endpoint gets POST support
         # style_window.should_save_changes.connect(self._update_styles)
         style_window.exec()
-
-    @menu_action(MENU_STABLE_DIFFUSION, 'lora_shortcut', 201, [APP_STATE_EDITING],
-                 condition_check=_check_lora_available)
-    def show_lora_window(self) -> None:
-        """Show the Lora model selection window."""
-        cache = Cache()
-        loras = cache.get(Cache.LORA_MODELS).copy()
-        if self._lora_images is None:
-            self._lora_images = {}
-            AppStateTracker.set_app_state(APP_STATE_LOADING)
-
-            class _LoadingTask(AsyncTask):
-                status = Signal(str)
-
-                def signals(self) -> list[Signal]:
-                    return [self.status]
-
-            def _load_and_open(status_signal: Signal) -> None:
-                for i, lora in enumerate(loras):
-                    status_signal.emit(f'Loading thumbnail {i + 1}/{len(loras)}')
-                    path = lora['path']
-                    path = path[:path.rindex('.')] + '.png'
-                    assert self._lora_images is not None
-                    assert self._webservice is not None
-                    self._lora_images[lora['name']] = self._webservice.get_thumbnail(path)
-
-            task = _LoadingTask(_load_and_open)
-
-            def _resume_and_show() -> None:
-                AppStateTracker.set_app_state(APP_STATE_EDITING)
-                assert self._lora_images is not None
-                assert self._window is not None
-                task.status.disconnect(self._window.set_loading_message)
-                task.finish_signal.disconnect(_resume_and_show)
-                delayed_lora_window = ExtraNetworkWindow(loras, self._lora_images)
-                delayed_lora_window.exec()
-
-            assert self._window is not None
-            task.status.connect(self._window.set_loading_message)
-            task.finish_signal.connect(_resume_and_show)
-            task.start()
-        else:
-            lora_window = ExtraNetworkWindow(loras, self._lora_images)
-            lora_window.exec()
 
     @menu_action(MENU_STABLE_DIFFUSION, 'lcm_mode_shortcut', 210, condition_check=_check_lcm_mode_available)
     def set_lcm_mode(self) -> None:

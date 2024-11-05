@@ -29,4 +29,3 @@ class ScriptInfo(TypedDict):
     is_alwayson: bool
     is_img2img: bool
     args: list[ScriptParamDef]
-

@@ -1,6 +1,6 @@
 """Types and constants associated with ControlNet.  All values are either not specific to a single API, or are reused
    because they don't have a useful equivalent in both APIs."""
-from typing import TypedDict
+from typing import TypedDict, NotRequired
 
 from PySide6.QtWidgets import QApplication
 
@@ -32,10 +32,12 @@ TOOLTIP_END_STEP = _tr('The step in the image generation process where the Contr
 TOOLTIP_RESIZE_MODE = _tr('Controls how preprocessor images are adjusted to fit the preprocessor resolution.')
 TOOLTIP_CONTROL_MODE = _tr('Secondary control to set how ControlNet and prompt influence are weighted.')
 
+
 # FORGE/COMFYUI CONTROLNET CONSTANTS:
 # The Automatic1111 WebUI provides a useful endpoint for sorting preprocessors and ControlNet models into useful
 # categories.  ComfyUI only provides some basic preprocessor categories, and the Forge WebUI doesn't even have that.
 # To keep feature parity, these definitions will be used to categorize available preprocessors and models.
+
 
 class ControlTypeDef(TypedDict):
     """Defines one of the ControlNet Type options returned by the /controlnet/control_types endpoint.
@@ -48,10 +50,15 @@ class ControlTypeDef(TypedDict):
     model_list: list[str]
     default_option: str
     default_model: str
+
+
 class StaticControlTypeDef(ControlTypeDef):
     """Extended from the WebUI API definitions to include regex, hopefully catching any renamed or augmented models or
        preprocessors that should be in the list.  Also has the benefit of letting me avoid manually listing all the
        options that match the pattern."""
+    preprocessor_pattern: NotRequired[str]
+    model_pattern: NotRequired[str]
+
 
 STATIC_CONTROL_TYPE_DEFS: dict[str, StaticControlTypeDef] = {
     'All': {
@@ -67,7 +74,7 @@ STATIC_CONTROL_TYPE_DEFS: dict[str, StaticControlTypeDef] = {
         'model_list': [CONTROLNET_MODEL_NONE],
         'default_option': 'canny',
         'default_model': 'control_v11p_sd15_canny [d14c016b]',
-        'preprocessor_pattern': r'(?i).canny',
+        'preprocessor_pattern': r'(?i)canny',
         'model_pattern': r'(?i)canny',
     },
     'Depth': {
@@ -216,7 +223,3 @@ STATIC_CONTROL_TYPE_DEFS: dict[str, StaticControlTypeDef] = {
         'model_pattern': r'(?i).*tile.*',
     },
 }
-
-#
-
-# Defines preprocessor module uses of the 'threshold_a' parameter:

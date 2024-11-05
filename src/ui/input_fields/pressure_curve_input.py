@@ -186,9 +186,3 @@ class PressureCurveInput(QFrame):
             self._drag_point = None
             self.valueChanged.emit(self.value())
             self.update()
-
-
-
-
-
-

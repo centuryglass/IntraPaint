@@ -464,8 +464,9 @@ class Layer(QObject):
 
             # Any part of source_bounds that doesn't intersect with the layer can also be excluded:
             source_bounds = source_bounds.intersected(self.bounds)
-
-            clip_path.addPolygon(inverse.map(QPolygonF(QRectF(final_bounds))))
+            source_bounds_in_image = inverse.map(QPolygonF(QRectF(final_bounds)))
+            assert isinstance(source_bounds_in_image, QPolygonF)
+            clip_path.addPolygon(source_bounds_in_image)
         else:  # transform is None
             source_bounds = self.bounds.intersected(final_bounds)
             clip_path.addRect(final_bounds)

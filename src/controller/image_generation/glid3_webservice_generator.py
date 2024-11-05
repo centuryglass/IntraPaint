@@ -11,14 +11,13 @@ from src.config.application_config import AppConfig
 from src.config.cache import Cache
 from src.controller.image_generation.glid3_xl_generator import GLID_PREVIEW_IMAGE, GLID_GENERATOR_DESCRIPTION
 from src.controller.image_generation.image_generator import ImageGenerator
-from src.controller.image_generation.sd_webui_generator import URL_REQUEST_MESSAGE, URL_REQUEST_RETRY_MESSAGE, \
-    URL_REQUEST_TITLE
 from src.image.layers.image_stack import ImageStack
 from src.ui.modal.settings_modal import SettingsModal
 from src.ui.panel.generators.generator_panel import GeneratorPanel
 from src.ui.panel.generators.glid_panel import GlidPanel
 from src.ui.window.main_window import MainWindow
-from src.util.shared_constants import EDIT_MODE_INPAINT
+from src.util.shared_constants import EDIT_MODE_INPAINT, URL_REQUEST_MESSAGE, URL_REQUEST_RETRY_MESSAGE, \
+    URL_REQUEST_TITLE
 from src.util.visual.image_utils import image_to_base64, qimage_from_base64
 from src.util.visual.text_drawing_utils import rich_text_code_block
 

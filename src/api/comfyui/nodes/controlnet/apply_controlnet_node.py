@@ -5,6 +5,10 @@ from src.api.comfyui.nodes.comfy_node import NodeConnection, ComfyNode
 
 NODE_NAME = 'ControlNetApplyAdvanced'
 
+CONTROLNET_COMFTUI_CONTROL_WEIGHT_KEY = 'strength'
+CONTROLNET_COMFYUI_START_STEP_KEY = 'start_percent'
+CONTROLNET_COMFYUI_END_STEP_KEY = 'end_percent'
+
 
 class ApplyControlNetInputs(TypedDict):
     """ControlNet loader input parameters."""

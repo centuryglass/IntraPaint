@@ -1,5 +1,6 @@
 """Defines the @menu_action decorator and the MenuBuilder class for more convenient Qt6 menu initialization."""
 import inspect
+import logging
 from functools import wraps
 from inspect import signature
 from typing import Callable, Any, Optional, TypeVar
@@ -15,6 +16,8 @@ GenericFn = TypeVar('GenericFn', bound=Callable[..., Any])
 
 IS_MENU_ACTION_ATTR = '_is_menu_action'
 MENU_DATA_ATTR = '_menu_data'
+
+logger = logging.getLogger(__name__)
 
 
 def menu_action(menu_name: str, config_key: str, priority: int = INT_MAX,
@@ -112,8 +115,8 @@ class MenuBuilder:
                     keybinding = config.get(config_key)
             if title is None or title == '':
                 raise RuntimeError('Missing menu action title')
-        except RuntimeError:
-            print(f'Warning: could not load menu option {config_key}, skipping...')
+        except RuntimeError as err:
+            logger.error(f'Failed to load menu option {config_key}: {err}')
             return None
         _menu_set_visible(menu, True)
         existing_action = self._find_action(menu, title)

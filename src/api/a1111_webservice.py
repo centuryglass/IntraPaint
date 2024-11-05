@@ -4,6 +4,7 @@ through stable-diffusion.
 """
 import json
 import logging
+from copy import deepcopy
 from typing import Optional, Any, cast, TypedDict
 
 import requests  # type: ignore
@@ -15,8 +16,9 @@ from requests import Response
 from src.api.controlnet.controlnet_category_builder import ControlNetCategoryBuilder
 from src.api.controlnet.controlnet_preprocessor import ControlNetPreprocessor
 from src.api.webservice import WebService
-from src.api.webui.controlnet_webui import ControlNetModelResponse, ControlNetModuleResponse, ControlTypeDef, \
-    ControlTypeResponse, CONTROLNET_SCRIPT_KEY
+from src.api.webui.controlnet_webui_constants import (ControlNetModelResponse, ControlNetModuleResponse,
+                                                      ControlTypeDef, ControlTypeResponse, CONTROLNET_SCRIPT_KEY)
+from src.api.webui.controlnet_webui_utils import get_all_preprocessors
 from src.api.webui.diffusion_request_body import DiffusionRequestBody
 from src.api.webui.request_formats import UpscalingRequestBody
 from src.api.webui.response_formats import GenerationInfoData, ProgressResponseBody, Img2ImgResponse, \
@@ -78,6 +80,7 @@ class A1111Webservice(WebService):
         CONTROLNET_MODULES = '/controlnet/module_list'
         CONTROLNET_CONTROL_TYPES = '/controlnet/control_types'
         CONTROLNET_SETTINGS = '/controlnet/settings'
+        CONTROLNET_PREVIEW = '/controlnet/detect'
         LOGIN = '/login'
         EXTRA_NW_DATA = '/sd_extra_networks/metadata'
         EXTRA_NW_THUMB = '/sd_extra_networks/thumb'
@@ -86,6 +89,10 @@ class A1111Webservice(WebService):
     class ForgeEndpoints:
         """REST API endpoint constants (Forge WebUI alternates)"""
         SD_MODULES = '/sdapi/v1/sd-modules'
+
+    def __init__(self, url: str) -> None:
+        super().__init__(url)
+        self._preprocessor_cache: Optional[list[ControlNetPreprocessor]] = None
 
     # General utility:
     def login_check(self):
@@ -198,6 +205,24 @@ class A1111Webservice(WebService):
         res = self.post(A1111Webservice.Endpoints.TXT2IMG, request_body.to_dict())
         return self._handle_image_response(res)
 
+    def controlnet_preprocessor_preview(self, image: QImage, mask: Optional[QImage],
+                                        preprocessor: ControlNetPreprocessor) -> QImage:
+        """Gets a preview image for a ControlNet preprocessor.
+
+        TODO:
+        """
+        input_images: list[str] = [image_to_base64(image, True)]
+        if mask is not None:
+            input_images.append(image_to_base64(mask, True))
+        body: dict[str, int | float | str | list[str]] = {
+            'controlnet_module': preprocessor.name,
+            'controlnet_input_images': input_images
+        }
+        for param in preprocessor.parameters:
+            body[param.key] = param.value
+        res = self.post(A1111Webservice.Endpoints.CONTROLNET_PREVIEW, body)
+        return self._handle_image_response(res)['images'][0]
+
     def upscale(self,
                 image: QImage,
                 width: int,
@@ -240,7 +265,8 @@ class A1111Webservice(WebService):
             script_list = cache.get(Cache.SCRIPTS_IMG2IMG)
             if UPSCALE_SCRIPT in script_list:
                 upscaler = cache.get(Cache.UPSCALE_METHOD)
-                upscale_options = cache.get_options(Cache.UPSCALE_METHOD)
+
+                upscale_options = [upscaler['name'] for upscaler in self.get_upscalers()]
                 if upscaler not in upscale_options:
                     upscaler = upscale_options[0]
                 request_body.script_name = UPSCALE_SCRIPT
@@ -296,9 +322,8 @@ class A1111Webservice(WebService):
         if isinstance(res, dict):
             res = cast(InterrogateResponse, res)
             return res['caption']
-        else:
-            assert isinstance(res, str)
-            return res
+        assert isinstance(res, str)
+        return res
 
     def interrupt(self) -> dict:
         """
@@ -431,19 +456,14 @@ class A1111Webservice(WebService):
         """Returns the current settings applied to the stable-diffusion ControlNet extension."""
         return self.get(A1111Webservice.Endpoints.CONTROLNET_SETTINGS, timeout=DEFAULT_TIMEOUT).json()
 
-    def get_controlnet_preprocessors(self) -> list[ControlNetPreprocessor]:
+    def get_controlnet_preprocessors(self, update_cache=False) -> list[ControlNetPreprocessor]:
         """Queries the API for ControlNet preprocessor modules, and parameterizes and returns all options."""
-        preprocessors: list[ControlNetPreprocessor] = []
-        modules = cast(ControlNetModuleResponse, self.get_controlnet_modules())
-        module_names = modules['module_list']
-        module_details = None if 'module_details' not in modules else modules['module_details']
-        for module_name in module_names:
-            if module_details is None or module_name not in module_details:
-                preprocessors.append(ControlNetPreprocessor.from_webui_predefined(module_name))
-            else:
-                preprocessors.append(ControlNetPreprocessor.from_webui_module_details(module_name,
-                                                                                      module_details[module_name]))
-        return preprocessors
+        if update_cache or self._preprocessor_cache is None:
+            modules = cast(ControlNetModuleResponse, self.get_controlnet_modules())
+            module_names = modules['module_list']
+            module_details = None if 'module_details' not in modules else modules['module_details']
+            self._preprocessor_cache = get_all_preprocessors(module_names, module_details)
+        return deepcopy(self._preprocessor_cache)
 
     def get_controlnet_type_categories(self) -> dict[str, ControlTypeDef]:
         """Gets the set of valid ControlNet proeprocessor/model categories, taking into account available options and
@@ -451,7 +471,7 @@ class A1111Webservice(WebService):
         modules = cast(ControlNetModuleResponse, self.get_controlnet_modules())
         models = self.get_controlnet_models()
         try:
-            control_type_defs: Optional[ControlTypeResponse] = self.get_controlnet_control_types()
+            control_type_defs: Optional[dict[str, str]] = cast(dict[str, str], self.get_controlnet_control_types())
         except (KeyError, RuntimeError):
             control_type_defs = None
         preprocessor_names = modules['module_list']

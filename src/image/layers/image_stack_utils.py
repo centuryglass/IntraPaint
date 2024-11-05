@@ -214,6 +214,7 @@ def image_stack_outline_path(image_stack: ImageStack) -> QPainterPath:
         layer_bounds = QRectF(layer.bounds)
         if isinstance(layer, TransformLayer):
             transformed_bounds_polygon = layer.transform.map(layer_bounds)
+            assert isinstance(transformed_bounds_polygon, QPolygonF)
             polygon = polygon.united(transformed_bounds_polygon)
         else:
             polygon = polygon.united(layer_bounds)

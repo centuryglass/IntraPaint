@@ -446,6 +446,7 @@ class _TransformPreview(QWidget):
         painter.drawTiledPixmap(QRect(QPoint(), self.size()), self._background)
         image_bounds = QRect(QPoint(), self._image_size)
         final_image_poly = self._layer_transform.map(QPolygonF(self._layer_bounds))
+        assert isinstance(final_image_poly, QPolygonF)
         full_bounds = image_bounds.united(final_image_poly.boundingRect().toRect())
         scaled_full_bounds = get_scaled_placement(self.size(), full_bounds.size(), 4)
         initial_transform = get_rect_transformation(full_bounds, scaled_full_bounds)

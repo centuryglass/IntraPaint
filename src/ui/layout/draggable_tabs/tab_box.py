@@ -38,13 +38,14 @@ class TabBox(BorderedWidget):
         self._layout.setSpacing(0)
         self._layout.setContentsMargins(1, 1, 1, 1)
         self._last_stretch = INITIAL_STRETCH
-        self.setSizePolicy(QSizePolicy.Policy.MinimumExpanding, QSizePolicy.Policy.MinimumExpanding)
         if orientation == Qt.Orientation.Horizontal:
+            self.setSizePolicy(QSizePolicy.Policy.MinimumExpanding, QSizePolicy.Policy.Maximum)
             if at_parent_start:
                 self._layout.setAlignment(Qt.AlignmentFlag.AlignBottom | Qt.AlignmentFlag.AlignVCenter)
             else:
                 self._layout.setAlignment(Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignVCenter)
         else:
+            self.setSizePolicy(QSizePolicy.Policy.Maximum, QSizePolicy.Policy.MinimumExpanding)
             if at_parent_start:
                 self._layout.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignHCenter)
             else:
@@ -248,3 +249,9 @@ class TabBox(BorderedWidget):
             if is_open:
                 tab_widget.show()
             self._layout.setStretch(content_index, 1 if is_open else 0)
+        if self._orientation == Qt.Orientation.Horizontal:
+            self.setSizePolicy(QSizePolicy.Policy.MinimumExpanding,
+                               QSizePolicy.Policy.MinimumExpanding if is_open else QSizePolicy.Policy.Fixed)
+        else:
+            self.setSizePolicy(QSizePolicy.Policy.MinimumExpanding if is_open else QSizePolicy.Policy.Fixed,
+                               QSizePolicy.Policy.MinimumExpanding)

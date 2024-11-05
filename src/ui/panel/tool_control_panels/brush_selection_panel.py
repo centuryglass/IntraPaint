@@ -8,6 +8,7 @@ from src.config.cache import Cache
 from src.config.key_config import KeyConfig
 from src.hotkey_filter import HotkeyFilter
 from src.image.layers.selection_layer import SelectionLayer
+from src.tools.base_tool import BaseTool
 from src.ui.input_fields.dual_toggle import DualToggle
 from src.ui.input_fields.slider_spinbox import IntSliderSpinbox
 from src.ui.layout.divider import Divider
@@ -37,8 +38,8 @@ class BrushSelectionPanel(SelectionPanel):
 
     tool_mode_changed = Signal(str)
 
-    def __init__(self, selection_layer: SelectionLayer) -> None:
-        super().__init__(selection_layer)
+    def __init__(self, selection_layer: SelectionLayer, selection_tool: BaseTool) -> None:
+        super().__init__(selection_layer, selection_tool)
 
         # Brush size:
         size_row = QHBoxLayout()
@@ -69,7 +70,7 @@ class BrushSelectionPanel(SelectionPanel):
         self.insert_into_layout(Divider(Qt.Orientation.Horizontal))
 
         def _try_toggle() -> bool:
-            if not tool_toggle.isVisible():
+            if not self.selection_tool_is_active:
                 return False
             tool_toggle.toggle()
             return True
