@@ -1,17 +1,13 @@
 """Helper functions for processing ControlNet configuration data for use with the ComfyUI API."""
 import logging
-import re
 from typing import cast, Optional
 
 from src.api.comfyui.comfyui_types import (NodeInfoResponse, CONTROLNET_PREPROCESSOR_CATEGORY, IntParamDef,
                                            BoolParamDef, FloatParamDef, StrParamDef, ParamDef)
-from src.api.comfyui.diffusion_workflow_builder import DiffusionWorkflowBuilder, ExtensionModelType
 from src.api.comfyui.nodes.controlnet.dynamic_preprocessor_node import DynamicPreprocessorNode
 from src.api.controlnet.control_parameter import ControlParameter
 from src.api.controlnet.controlnet_preprocessor import ControlNetPreprocessor
-from src.config.cache import Cache
 from src.util.parameter import TYPE_INT, TYPE_BOOL, TYPE_FLOAT, TYPE_STR
-from src.util.shared_constants import EDIT_MODE_TXT2IMG
 
 # If a preprocessor name ends in "Preprocessor", we can leave that part out of the display name.
 PREPROCESSOR_SUFFIX = 'Preprocessor'
@@ -146,89 +142,3 @@ def get_all_preprocessors(node_data: dict[str, NodeInfoResponse]) -> list[Contro
         preprocessor.has_mask_input = has_mask_input
         preprocessors.append(preprocessor)
     return preprocessors
-
-
-def diffusion_workflow_builder_with_cache_applied(seed: Optional[int] = None) -> DiffusionWorkflowBuilder:
-    """Creates and returns a diffusion workflow builder, applying cached image generation parameters.
-
-    Parameters:
-    -----------
-    seed: Optional[int] = None
-        Optional override for the cached seed value, to be used when generating multiple batches with sequential seed
-        values.
-    """
-    cache = Cache()
-    model_name = cache.get(Cache.SD_MODEL)
-    workflow_builder = DiffusionWorkflowBuilder(model_name)
-    workflow_builder.batch_size = cache.get(Cache.BATCH_SIZE)
-    workflow_builder.prompt = cache.get(Cache.PROMPT)
-    workflow_builder.negative_prompt = cache.get(Cache.NEGATIVE_PROMPT)
-    workflow_builder.steps = cache.get(Cache.SAMPLING_STEPS)
-    workflow_builder.cfg_scale = cache.get(Cache.GUIDANCE_SCALE)
-    workflow_builder.image_size = cache.get(Cache.GENERATION_SIZE)
-
-    sampler = cache.get(Cache.SAMPLING_METHOD)
-
-    if sampler != '':
-        workflow_builder.sampler = sampler
-
-    scheduler = cache.get(Cache.SCHEDULER)
-    if scheduler != '':
-        workflow_builder.scheduler = scheduler
-
-    if seed is None:
-        workflow_builder.seed = int(cache.get(Cache.SEED))
-    else:
-        workflow_builder.seed = seed
-
-    # Find and add LoRA and Hypernetwork models:
-    available_loras = cache.get(Cache.LORA_MODELS)
-    available_hypernetworks = cache.get(Cache.HYPERNETWORK_MODELS)
-    lora_name_map: dict[str, str] = {}
-    hypernet_name_map: dict[str, str] = {}
-    for model_list, model_dict in ((available_loras, lora_name_map),
-                                   (available_hypernetworks, hypernet_name_map)):
-        for model_option in model_list:
-            if '.' in model_option:
-                model_dict[model_option[:model_option.rindex('.')]] = model_option
-            model_dict[model_option] = model_option
-
-    extension_model_pattern = r'<(lora|lyco|hypernet):([^:><]+):([^:>]+)(?::([^>]+))?>'
-    for prompt, strength_multiplier in ((workflow_builder.prompt, 1.0),
-                                        (workflow_builder.negative_prompt, -1.0)):
-        extension_model_matches = list(re.finditer(extension_model_pattern, prompt))
-
-        for match in extension_model_matches:
-            model_type_name = match.group(1)
-            model_type = ExtensionModelType.HYPERNETWORK if model_type_name == 'hypernet' \
-                else ExtensionModelType.LORA
-            model_name = match.group(2)
-            model_option_dict = hypernet_name_map if model_type == ExtensionModelType.HYPERNETWORK \
-                else lora_name_map
-            if model_name not in model_option_dict:
-                logger.error(f'Extension model {model_name} specified, but not found')
-                continue
-            model_name = model_option_dict[model_name]
-            model_strength_str = match.group(3)
-            clip_strength_str = match.group(4) if match.group(4) is not None else model_strength_str
-            try:
-                model_strength = float(model_strength_str) * strength_multiplier
-                clip_strength = float(clip_strength_str) * strength_multiplier
-                workflow_builder.add_extension_model(model_name, model_strength, clip_strength, model_type)
-            except ValueError:
-                logger.error(f'Invalid strength value "{model_strength_str}" for lora "{model_name}"')
-
-        # remove the lora/hypernetwork syntax from the prompt now that the models are selected:
-        if strength_multiplier > 0:
-            workflow_builder.prompt = re.sub(extension_model_pattern, '', prompt)
-        else:
-            workflow_builder.negative_prompt = re.sub(extension_model_pattern, '', prompt)
-
-    edit_mode = cache.get(Cache.EDIT_MODE)
-    if edit_mode != EDIT_MODE_TXT2IMG:
-        workflow_builder.denoising_strength = cache.get(Cache.DENOISING_STRENGTH)
-
-    cached_config = cache.get(Cache.COMFYUI_MODEL_CONFIG)
-    if cached_config != '':
-        workflow_builder.model_config_path = cached_config
-    return workflow_builder

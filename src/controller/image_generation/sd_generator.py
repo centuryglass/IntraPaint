@@ -4,12 +4,13 @@ import logging
 from argparse import Namespace
 from typing import Optional, cast, Any
 
-from PySide6.QtCore import Signal
+from PySide6.QtCore import Signal, QSize
 from PySide6.QtGui import QImage, QIcon
 from PySide6.QtWidgets import QInputDialog, QApplication
 
 from src.api.a1111_webservice import AuthError
 from src.api.controlnet.controlnet_constants import ControlTypeDef, CONTROLNET_REUSE_IMAGE_CODE
+from src.api.controlnet.controlnet_model import ControlNetModel
 from src.api.controlnet.controlnet_preprocessor import ControlNetPreprocessor
 from src.api.webservice import WebService
 from src.config.application_config import AppConfig
@@ -17,19 +18,21 @@ from src.config.cache import Cache
 from src.config.key_config import KeyConfig
 from src.controller.image_generation.image_generator import ImageGenerator
 from src.image.layers.image_stack import ImageStack
+from src.image.layers.image_stack_utils import scale_all_layers
 from src.ui.layout.draggable_tabs.tab import Tab
 from src.ui.modal.modal_utils import show_error_dialog
 from src.ui.panel.controlnet_panel import TabbedControlNetPanel, CONTROLNET_TITLE
 from src.ui.panel.generators.stable_diffusion_panel import StableDiffusionPanel
 from src.ui.window.extra_network_window import ExtraNetworkWindow
 from src.ui.window.main_window import MainWindow
+from src.undo_stack import UndoStack
 from src.util.application_state import AppStateTracker, APP_STATE_LOADING, APP_STATE_EDITING
 from src.util.async_task import AsyncTask
 from src.util.menu_builder import menu_action
 from src.util.parameter import TYPE_LIST, TYPE_STR, TYPE_FLOAT, TYPE_DICT
 from src.util.shared_constants import PROJECT_DIR, \
     URL_REQUEST_MESSAGE, URL_REQUEST_RETRY_MESSAGE, \
-    URL_REQUEST_TITLE
+    URL_REQUEST_TITLE, PIL_SCALING_MODES, UPSCALED_LAYER_NAME, UPSCALE_ERROR_TITLE
 
 logger = logging.getLogger(__name__)
 
@@ -194,6 +197,10 @@ class SDGenerator(ImageGenerator):
         """Requests a ControlNet preprocessor preview image."""
         raise NotImplementedError()
 
+    def upscale_image(self, image: QImage, new_size: QSize, status_signal: Signal, image_signal: Signal) -> None:
+        """Upscales an image using cached upscaling settings."""
+        raise NotImplementedError()
+
     def get_gen_area_image(self, init_image: Optional[QImage] = None) -> QImage:
         """Gets the contents of the image generation area, handling any necessary preprocessing."""
         if init_image is not None:
@@ -278,8 +285,16 @@ class SDGenerator(ImageGenerator):
                     preprocessors = self.get_controlnet_preprocessors()
                     control_types = self.get_controlnet_types()
                     control_keys = self.get_controlnet_unit_cache_keys()
-                    if AppConfig().get(AppConfig.CONTROLNET_TILE_MODEL) in model_list:
+
+                    tile_model = AppConfig().get(AppConfig.CONTROLNET_TILE_MODEL)
+                    if tile_model in model_list:
                         cache.set(Cache.CONTROLNET_UPSCALING_AVAILABLE, True)
+                    else:
+                        # Check if it's present but missed due to some minor formatting issue:
+                        tile_model_display_name = ControlNetModel(tile_model).display_name
+                        model_display_names = [ControlNetModel(model_name).display_name for model_name in model_list]
+                        if tile_model_display_name in model_display_names:
+                            cache.set(Cache.CONTROLNET_UPSCALING_AVAILABLE, True)
                     if len(preprocessors) > 0 and len(control_types) > 0:
                         controlnet_panel = TabbedControlNetPanel(preprocessors,
                                                                  model_list,
@@ -384,6 +399,85 @@ class SDGenerator(ImageGenerator):
         preview_task.error_signal.connect(_handle_error)
         preview_task.preview_ready.connect(_load_preview)
         preview_task.start()
+
+    def upscale(self, new_size: QSize) -> bool:
+        """Upscale using AI upscaling modes provided by stable-diffusion-webui, returning whether upscaling
+        was attempted."""
+        assert self._window is not None
+        width = self._image_stack.width
+        height = self._image_stack.height
+        if new_size.width() <= width and new_size.height() <= height:
+            return False
+
+        upscale_method = Cache().get(Cache.UPSCALE_METHOD)
+        if upscale_method in PIL_SCALING_MODES.keys():
+            return super().upscale(new_size)
+
+        class _UpscaleTask(AsyncTask):
+            status_signal = Signal(dict)
+            image_ready = Signal(QImage)
+            error_signal = Signal(Exception)
+
+            def signals(self) -> list[Signal]:
+                return [self.status_signal, self.image_ready, self.error_signal]
+
+        def _upscale(status_signal: Signal, image_ready: Signal, error_signal: Signal) -> None:
+            try:
+                self.upscale_image(self._image_stack.qimage(), new_size, status_signal, image_ready)
+            except (IOError, KeyError, RuntimeError) as err:
+                error_signal.emit(err)
+            except Exception as err:
+                logger.error(f'unexpected error during upscale attempt: {err}')
+                error_signal.emit(err)
+
+        task = _UpscaleTask(_upscale, True)
+
+        def _apply_status_update(status_dict: dict) -> None:
+            if 'progress' in status_dict:
+                self._window.set_loading_message(status_dict['progress'])
+        task.status_signal.connect(_apply_status_update)
+
+        def handle_error(err: IOError) -> None:
+            """Show an error dialog if upscaling fails."""
+            show_error_dialog(self._window, UPSCALE_ERROR_TITLE, err)
+
+        task.error_signal.connect(handle_error)
+
+        def apply_upscaled(img: QImage) -> None:
+            """Copy the upscaled image into the image stack."""
+            with UndoStack().combining_actions('SDWebUIGenerator.upscale'):
+                if self._image_stack.confirm_no_locked_layers():
+                    scale_all_layers(self._image_stack, img.width(), img.height())
+                else:
+                    old_size = self._image_stack.size
+                    scaled_size = img.size()
+
+                    def _update_size(size=scaled_size) -> None:
+                        self._image_stack.size = size
+
+                    def _revert_size(size=old_size) -> None:
+                        self._image_stack.size = size
+
+                    UndoStack().commit_action(_update_size, _revert_size, 'SDWebUIGenerator.upscale_resize')
+                self._image_stack.create_layer(layer_name=UPSCALED_LAYER_NAME,
+                                               layer_parent=self._image_stack.layer_stack, image_data=img)
+
+        task.image_ready.connect(apply_upscaled)
+
+        def _on_finish() -> None:
+            assert self._window is not None
+            self._window.set_is_loading(False)
+            task.status_signal.disconnect(_apply_status_update)
+            task.error_signal.disconnect(handle_error)
+            task.image_ready.disconnect(apply_upscaled)
+            task.finish_signal.disconnect(_on_finish)
+
+        task.finish_signal.connect(_on_finish)
+        # TODO: get rid of this once the WebUI generator has proper queue support.
+        if hasattr(self, '_async_progress_check'):
+            self._async_progress_check()
+        task.start()
+        return True
 
     @menu_action(MENU_STABLE_DIFFUSION, 'lora_shortcut', 201, [APP_STATE_EDITING],
                  condition_check=_check_lora_available)

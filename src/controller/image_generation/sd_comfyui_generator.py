@@ -233,7 +233,7 @@ class SDComfyUIGenerator(SDGenerator):
         """Return the list of available upscale methods."""
         assert self._webservice is not None
         try:
-            return self._webservice.get_lora_models()
+            return self._webservice.get_models(ComfyModelType.UPSCALING)
         except (RuntimeError, KeyError) as err:
             logger.error(f'Loading stable-diffusion LoRA model list failed: {err}')
             return []
@@ -475,13 +475,6 @@ class SDComfyUIGenerator(SDGenerator):
         assert status is not None
         return status
 
-    def upscale(self, new_size: QSize) -> bool:
-        """Upscale using AI upscaling modes provided by stable-diffusion-webui, returning whether upscaling
-        was attempted."""
-        # TODO: Build and apply ComfyUI basic upscaling workflow (with standalone model)
-        # TODO: Build and apply ControlNet tiled upscaling workflow, integrating ultimate upscale script
-        return False
-
     def _inpaint_gen_area_crop_bounds(self) -> QRect:
         cache = Cache()
         edit_mode = cache.get(Cache.EDIT_MODE)
@@ -612,6 +605,32 @@ class SDComfyUIGenerator(SDGenerator):
                 raise RuntimeError(f'unexpected error: {unexpected_err}') from unexpected_err
         if seed is not None:
             status_signal.emit({'seed': str(seed)})
+
+    def upscale_image(self, image: QImage, new_size: QSize, status_signal: Signal, image_signal: Signal) -> None:
+        """Upscales an image using cached upscaling settings."""
+        assert self._webservice is not None
+        queue_info = self._webservice.upscale(self._image_stack.qimage(), new_size.width(),
+                                              new_size.height())
+        if 'error' in queue_info:
+            raise RuntimeError(str(queue_info['error']))
+        assert 'number' in queue_info
+        assert 'prompt_id' in queue_info
+        self._active_task_number = queue_info['number']
+        self._active_task_id = queue_info['prompt_id']
+
+        # Check progress in a loop until it finishes or something goes wrong:
+        final_status = self._repeated_progress_check(self._active_task_id, self._active_task_number, 0,
+                                                     1, status_signal)
+        if 'outputs' not in final_status:
+            raise RuntimeError(GENERATE_ERROR_TITLE)
+        image_data = self._webservice.download_images(final_status['outputs']['images'])
+        assert len(image_data) > 0
+        upscaled_image = image_data[0]
+        if upscaled_image.size() != new_size:
+            # Apply final scaling, necessary if width and height scale don't exactly match, or if using an
+            # upscaling model with a fixed scale:
+            upscaled_image = pil_image_scaling(upscaled_image, new_size)
+        image_signal.emit(upscaled_image)
 
     @menu_action(MENU_STABLE_DIFFUSION, 'lcm_mode_shortcut', 210,
                  condition_check=_check_lcm_mode_available)

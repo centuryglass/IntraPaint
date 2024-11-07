@@ -20,7 +20,6 @@ from src.config.cache import Cache
 from src.controller.image_generation.sd_generator import SD_BASE_DESCRIPTION, STABLE_DIFFUSION_CONFIG_CATEGORY, \
     SDGenerator
 from src.image.layers.image_stack import ImageStack
-from src.image.layers.image_stack_utils import scale_all_layers
 from src.ui.modal.modal_utils import show_error_dialog
 from src.ui.modal.settings_modal import SettingsModal
 from src.ui.panel.generators.generator_panel import GeneratorPanel
@@ -32,9 +31,9 @@ from src.util.application_state import AppStateTracker, APP_STATE_LOADING, APP_S
 from src.util.async_task import AsyncTask
 from src.util.menu_builder import menu_action
 from src.util.shared_constants import EDIT_MODE_TXT2IMG, EDIT_MODE_INPAINT, EDIT_MODE_IMG2IMG, PROJECT_DIR, \
-    PIL_SCALING_MODES, AUTH_ERROR, AUTH_ERROR_MESSAGE, INTERROGATE_ERROR_TITLE, INTERROGATE_ERROR_MESSAGE_NO_IMAGE, \
+    AUTH_ERROR, AUTH_ERROR_MESSAGE, INTERROGATE_ERROR_TITLE, INTERROGATE_ERROR_MESSAGE_NO_IMAGE, \
     ERROR_MESSAGE_TIMEOUT, \
-    UPSCALE_ERROR_TITLE, UPSCALED_LAYER_NAME, GENERATE_ERROR_MESSAGE_EMPTY_MASK, ERROR_MESSAGE_EXISTING_OPERATION
+    GENERATE_ERROR_MESSAGE_EMPTY_MASK, ERROR_MESSAGE_EXISTING_OPERATION
 
 logger = logging.getLogger(__name__)
 
@@ -116,14 +115,12 @@ DEFAULT_WEBUI_URL = 'http://localhost:7860'
 AUTH_ERROR_DETAIL_KEY = 'detail'
 STYLE_ERROR_TITLE = _tr('Updating prompt styles failed')
 
-
 ERROR_TITLE_SETTINGS_LOAD_FAILED = _tr('Failed to load Stable-Diffusion settings')
 ERROR_TITLE_SETTINGS_SAVE_FAILED = _tr('Failed to save Stable-Diffusion settings')
 ERROR_MESSAGE_SETTINGS_LOAD_FAILED = _tr('The connection to the Stable-Diffusion-WebUI image generator was lost. '
                                          'Connected generator settings will not be available.')
 ERROR_MESSAGE_SETTINGS_SAVE_FAILED = _tr('The connection to the Stable-Diffusion-WebUI image generator was lost. '
                                          'Any changes to connected generator settings were not saved.')
-
 
 MAX_ERROR_COUNT = 10
 MIN_RETRY_US = 300000
@@ -290,6 +287,7 @@ class SDWebUIGenerator(SDGenerator):
                         self.update_settings(remote_setting_change)
                         return
                 raise RuntimeError(f'Selected model "{model_name}" not found in available options.')
+
             cache.connect(self, Cache.SD_MODEL, _update_model)
         except (RuntimeError, KeyError) as err:
             logger.error(f'Loading WebUI model connection failed: {err}')
@@ -327,9 +325,9 @@ class SDWebUIGenerator(SDGenerator):
             return None
 
     def load_preprocessor_preview(self, preprocessor: ControlNetPreprocessor,
-                                     image: QImage, mask: Optional[QImage],
-                                     status_signal: Signal,
-                                     image_signal: Signal) -> None:
+                                  image: QImage, mask: Optional[QImage],
+                                  status_signal: Signal,
+                                  image_signal: Signal) -> None:
         """Requests a ControlNet preprocessor preview image."""
         assert self._webservice is not None
         preview_image = self._webservice.controlnet_preprocessor_preview(image, mask, preprocessor)
@@ -564,85 +562,6 @@ class SDWebUIGenerator(SDGenerator):
             task.finish_signal.connect(_finish)
         task.start()
 
-    def upscale(self, new_size: QSize) -> bool:
-        """Upscale using AI upscaling modes provided by stable-diffusion-webui, returning whether upscaling
-        was attempted."""
-        assert self._window is not None
-        width = self._image_stack.width
-        height = self._image_stack.height
-        if new_size.width() <= width and new_size.height() <= height:
-            return False
-
-        upscale_method = Cache().get(Cache.UPSCALE_METHOD)
-        if upscale_method in PIL_SCALING_MODES.keys():
-            return super().upscale(new_size)
-
-        class _UpscaleTask(AsyncTask):
-            image_ready = Signal(QImage)
-            error_signal = Signal(Exception)
-
-            def signals(self) -> list[Signal]:
-                return [self.image_ready, self.error_signal]
-
-        def _upscale(image_ready: Signal, error_signal: Signal) -> None:
-            try:
-                assert self._webservice is not None
-                image_response = self._webservice.upscale(self._image_stack.qimage(), new_size.width(),
-                                                          new_size.height())
-                images = image_response['images']
-                info = image_response['info']
-                if info is not None:
-                    logger.debug(f'Upscaling result info: {info}')
-                image_ready.emit(images[-1])
-            except ReadTimeout:
-                error_signal.emit(RuntimeError(ERROR_MESSAGE_TIMEOUT))
-            except (IOError, RuntimeError) as err:
-                error_signal.emit(err)
-            except Exception as err:
-                logger.error(f'unexpected error during upscale attempt: {err}')
-                error_signal.emit(err)
-
-        task = _UpscaleTask(_upscale, True)
-
-        def handle_error(err: IOError) -> None:
-            """Show an error dialog if upscaling fails."""
-            show_error_dialog(self._window, UPSCALE_ERROR_TITLE, err)
-
-        task.error_signal.connect(handle_error)
-
-        def apply_upscaled(img: QImage) -> None:
-            """Copy the upscaled image into the image stack."""
-            with UndoStack().combining_actions('SDWebUIGenerator.upscale'):
-                if self._image_stack.confirm_no_locked_layers():
-                    scale_all_layers(self._image_stack, img.width(), img.height())
-                else:
-                    old_size = self._image_stack.size
-                    scaled_size = img.size()
-
-                    def _update_size(size=scaled_size) -> None:
-                        self._image_stack.size = size
-
-                    def _revert_size(size=old_size) -> None:
-                        self._image_stack.size = size
-
-                    UndoStack().commit_action(_update_size, _revert_size, 'SDWebUIGenerator.upscale_resize')
-                self._image_stack.create_layer(layer_name=UPSCALED_LAYER_NAME,
-                                               layer_parent=self._image_stack.layer_stack, image_data=img)
-
-        task.image_ready.connect(apply_upscaled)
-
-        def _on_finish() -> None:
-            assert self._window is not None
-            self._window.set_is_loading(False)
-            task.error_signal.disconnect(handle_error)
-            task.image_ready.disconnect(apply_upscaled)
-            task.finish_signal.disconnect(_on_finish)
-
-        task.finish_signal.connect(_on_finish)
-        self._async_progress_check()
-        task.start()
-        return True
-
     def cancel_generation(self) -> None:
         """Cancels image generation, if in-progress"""
         assert self._webservice is not None
@@ -703,6 +622,17 @@ class SDWebUIGenerator(SDGenerator):
         except Exception as unexpected_err:
             logger.error('Unexpected error:', unexpected_err)
             raise RuntimeError(f'unexpected error: {unexpected_err}') from unexpected_err
+
+    def upscale_image(self, image: QImage, new_size: QSize, status_signal: Signal, image_signal: Signal) -> None:
+        """Upscales an image using cached upscaling settings."""
+        assert self._webservice is not None
+        image_response = self._webservice.upscale(self._image_stack.qimage(), new_size.width(),
+                                                  new_size.height())
+        images = image_response['images']
+        info = image_response['info']
+        if info is not None:
+            logger.debug(f'Upscaling result info: {info}')
+        image_signal.emit(images[-1])
 
     @menu_action(MENU_STABLE_DIFFUSION, 'prompt_style_shortcut', 200, [APP_STATE_EDITING],
                  condition_check=_check_prompt_styles_available)

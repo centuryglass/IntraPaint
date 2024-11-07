@@ -23,6 +23,19 @@ class ComfyNode:
         self._node_input_keys = node_input_keys
         self._output_count = output_count
 
+    def __deepcopy__(self, memo: dict[int, Any]) -> 'ComfyNode':
+        data = deepcopy(self._inputs)
+        input_keys = set(self._node_input_keys)
+        node_copy = ComfyNode(self._class_type, data, input_keys, self._output_count)
+        memo[id(self)] = node_copy
+        return node_copy
+
+    def clear_connections(self) -> None:
+        """Removes all inputs from other nodes."""
+        for input_key in self._node_input_keys:
+            if input_key in self._inputs:
+                del self._inputs[input_key]
+
     @property
     def output_count(self) -> int:
         """Returns the number of outputs the node provides."""

@@ -1,4 +1,5 @@
 """Manages a set of connected ComfyUI nodes."""
+from copy import deepcopy
 from typing import Any
 
 from src.api.comfyui.nodes.comfy_node import ComfyNode
@@ -10,6 +11,13 @@ class ComfyNodeGraph:
     def __init__(self) -> None:
         self._node_key_dict: dict[ComfyNode, str] = {}
         self._next_key_number = 3
+
+    def __deepcopy__(self, memo: dict[int, Any]) -> 'ComfyNodeGraph':
+        graph_copy = ComfyNodeGraph()
+        for node in self._node_key_dict:
+            graph_copy.add_node(deepcopy(node))
+        memo[id(self)] = graph_copy
+        return graph_copy
 
     def add_node(self, node: ComfyNode) -> None:
         """Adds a new node to the graph."""

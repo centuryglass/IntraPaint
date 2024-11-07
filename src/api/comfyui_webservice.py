@@ -13,21 +13,28 @@ from json import JSONDecodeError
 from typing import cast, Optional, TypedDict, NotRequired, Any, Generator
 
 import websocket
-from PySide6.QtCore import QBuffer
+from PySide6.QtCore import QBuffer, QSize
 from PySide6.QtGui import QImage
 
-import src.api.comfyui.comfyui_types as comfyui_types
-from src.api.comfyui.controlnet_comfyui_utils import get_all_preprocessors, \
-    diffusion_workflow_builder_with_cache_applied
+from src.api.comfyui.basic_upscale_workflow_builder import build_basic_upscaling_workflow
+from src.api.comfyui.comfyui_types import QueueAdditionRequest, QueueAdditionResponse, QueueDeletionRequest, \
+    ImageFileReference, PromptExecOutputs, NodeInfoResponse, SystemStatResponse, ImageUploadParams, \
+    IMAGE_UPLOAD_FILE_NAME, ImageUploadResponse, MaskUploadParams, QueueInfoResponse, ACTIVE_QUEUE_KEY, \
+    PENDING_QUEUE_KEY, QueueHistoryResponse
+from src.api.comfyui.controlnet_comfyui_utils import get_all_preprocessors
 from src.api.comfyui.diffusion_workflow_builder import DiffusionWorkflowBuilder
+from src.api.comfyui.latent_upscale_workflow_builder import LatentUpscaleWorkflowBuilder
 from src.api.comfyui.nodes.ksampler_node import KSAMPLER_NAME
+from src.api.comfyui.nodes.ultimate_upscale_node import ULTIMATE_UPSCALE_NODE_NAME
 from src.api.comfyui.preprocessor_preview_workflow_builder import PreprocessorPreviewWorkflowBuilder
 from src.api.controlnet.controlnet_category_builder import ControlNetCategoryBuilder
 from src.api.controlnet.controlnet_constants import CONTROLNET_REUSE_IMAGE_CODE
+from src.api.controlnet.controlnet_model import ControlNetModel
 from src.api.controlnet.controlnet_preprocessor import ControlNetPreprocessor
 from src.api.controlnet.controlnet_unit import ControlNetUnit
 from src.api.webservice import WebService, MULTIPART_FORM_DATA_TYPE
 from src.api.webui.controlnet_webui_constants import ControlTypeDef
+from src.config.application_config import AppConfig
 from src.config.cache import Cache
 
 logger = logging.getLogger(__name__)
@@ -43,6 +50,10 @@ EXTENDED_TIMEOUT = 90
 TYPE_PNG_IMAGE = 'image/png'
 INTRAPAINT_UPLOAD_SUBFOLDER = 'IntraPaint'
 LORA_EXTENSION = '.safetensors'
+
+TILE_PREPROCESSOR_NODE_NAME = 'TilePreprocessor'
+TILE_PREPROCESSOR_DOWNSAMPLING_PARAM_KEY = 'pyrUp_iters'
+TILE_PREPROCESSOR_RESOLUTION_KEY = 'resolution'
 
 # Keys used when extracting data from the KSampler node definition:
 SAMPLER_OPTION_KEY = 'sampler_name'
@@ -112,7 +123,7 @@ class AsyncTaskProgress(TypedDict):
     """The status of an async ComfyUI task, including queue index and generated image data when relevant."""
     status: AsyncTaskStatus
     index: NotRequired[int]  # Only used if statis is PENDING
-    outputs: NotRequired[comfyui_types.PromptExecOutputs]  # Only used if status is FINISHED
+    outputs: NotRequired[PromptExecOutputs]  # Only used if status is FINISHED
 
 
 class ComfyUiWebservice(WebService):
@@ -123,7 +134,7 @@ class ComfyUiWebservice(WebService):
     def __init__(self, url: str) -> None:
         super().__init__(url)
         self._preprocessor_cache: Optional[list[ControlNetPreprocessor]] = None
-        self._ksampler_info: Optional[comfyui_types.NodeInfoResponse] = None
+        self._ksampler_info: Optional[NodeInfoResponse] = None
         self._client_id = str(uuid.uuid4())
 
     # General utility:
@@ -132,7 +143,7 @@ class ComfyUiWebservice(WebService):
         """Gets the list of sampling method names from KSampler node info."""
         if self._ksampler_info is None:
             info_endpoint = f'{ComfyEndpoints.OBJECT_INFO}/{KSAMPLER_NAME}'
-            self._ksampler_info = cast(comfyui_types.NodeInfoResponse, self.get(info_endpoint).json()[KSAMPLER_NAME])
+            self._ksampler_info = cast(NodeInfoResponse, self.get(info_endpoint).json()[KSAMPLER_NAME])
         required_inputs = self._ksampler_info['input']['required']
         assert SAMPLER_OPTION_KEY in required_inputs and isinstance(required_inputs[SAMPLER_OPTION_KEY], list)
         return cast(list[str], required_inputs[SAMPLER_OPTION_KEY][0])
@@ -141,10 +152,16 @@ class ComfyUiWebservice(WebService):
         """Gets the list of sampling scheduler names from KSampler node info."""
         if self._ksampler_info is None:
             info_endpoint = f'{ComfyEndpoints.OBJECT_INFO}/{KSAMPLER_NAME}'
-            self._ksampler_info = cast(comfyui_types.NodeInfoResponse, self.get(info_endpoint).json())
+            self._ksampler_info = cast(NodeInfoResponse, self.get(info_endpoint).json()[KSAMPLER_NAME])
         required_inputs = self._ksampler_info['input']['required']
         assert SCHEDULER_OPTION_KEY in required_inputs and isinstance(required_inputs[SCHEDULER_OPTION_KEY], list)
         return cast(list[str], required_inputs[SCHEDULER_OPTION_KEY][0])
+
+    def is_node_available(self, node_name: str) -> bool:
+        """Checks if a node with the given name is available."""
+        info_endpoint = f'{ComfyEndpoints.OBJECT_INFO}/{node_name}'
+        node_info = cast(dict[str, NodeInfoResponse], self.get(info_endpoint).json())
+        return node_name in node_info
 
     def get_embeddings(self) -> list[str]:
         """Returns the list of available embedding files."""
@@ -158,9 +175,9 @@ class ComfyUiWebservice(WebService):
         """Returns the list of installed extension files."""
         return cast(list[str], self.get(ComfyEndpoints.EXTENSIONS, timeout=DEFAULT_TIMEOUT).json())
 
-    def get_system_stats(self) -> comfyui_types.SystemStatResponse:
+    def get_system_stats(self) -> SystemStatResponse:
         """Returns information about the system and device running Stable-Diffusion."""
-        return cast(comfyui_types.SystemStatResponse,
+        return cast(SystemStatResponse,
                     self.get(ComfyEndpoints.SYSTEM_STATS, timeout=DEFAULT_TIMEOUT).json())
 
     def get_models(self, model_type: ComfyModelType) -> list[str]:
@@ -191,7 +208,7 @@ class ComfyUiWebservice(WebService):
     def get_controlnet_preprocessors(self, update_cache=False) -> list[ControlNetPreprocessor]:
         """Scans all nodes for valid preprocessor nodes, and returns the list of parameterized options."""
         if update_cache or self._preprocessor_cache is None:
-            node_data = cast(dict[str, comfyui_types.NodeInfoResponse],
+            node_data = cast(dict[str, NodeInfoResponse],
                              self.get(ComfyEndpoints.OBJECT_INFO, timeout=DEFAULT_TIMEOUT).json())
             self._preprocessor_cache = get_all_preprocessors(node_data)
         return deepcopy(self._preprocessor_cache)
@@ -212,9 +229,9 @@ class ComfyUiWebservice(WebService):
         return control_type_builder.get_control_types()
 
     def upload_image(self, image: QImage, name: Optional[str] = None, subfolder: Optional[str] = None,
-                     temp=False, overwrite=True) -> comfyui_types.ImageFileReference:
+                     temp=False, overwrite=True) -> ImageFileReference:
         """Uploads an image for img2img, inpainting, ControlNet, etc."""
-        body: comfyui_types.ImageUploadParams = {
+        body: ImageUploadParams = {
             'type': 'temp' if temp else 'input',
             'subfolder': INTRAPAINT_UPLOAD_SUBFOLDER
         }
@@ -230,21 +247,21 @@ class ComfyUiWebservice(WebService):
             name = 'src_image.png'
         elif not name.endswith('.png'):
             name = f'{name}.png'
-        files = {comfyui_types.IMAGE_UPLOAD_FILE_NAME: (name, buf.data().data(), TYPE_PNG_IMAGE)}
-        res = cast(comfyui_types.ImageUploadResponse, self.post(ComfyEndpoints.IMG_UPLOAD,
-                                                                body=body,
-                                                                body_format=MULTIPART_FORM_DATA_TYPE,
-                                                                files=files,
-                                                                timeout=EXTENDED_TIMEOUT).json())
-        file_ref: comfyui_types.ImageFileReference = {
+        files = {IMAGE_UPLOAD_FILE_NAME: (name, buf.data().data(), TYPE_PNG_IMAGE)}
+        res = cast(ImageUploadResponse, self.post(ComfyEndpoints.IMG_UPLOAD,
+                                                  body=body,
+                                                  body_format=MULTIPART_FORM_DATA_TYPE,
+                                                  files=files,
+                                                  timeout=EXTENDED_TIMEOUT).json())
+        file_ref: ImageFileReference = {
             'filename': res['name'],
             'subfolder': '' if 'subfolder' not in res else res['subfolder'],
             'type': res['type']
         }
         return file_ref
 
-    def upload_mask(self, mask: QImage, ref_image: comfyui_types.ImageFileReference, subfolder: Optional[str] = None,
-                    overwrite=True) -> comfyui_types.ImageFileReference:
+    def upload_mask(self, mask: QImage, ref_image: ImageFileReference, subfolder: Optional[str] = None,
+                    overwrite=True) -> ImageFileReference:
         """Upload an inpainting mask for a particular image.
 
         The ref_image parameter should contain data returned by a previous upload_image request. Mask size must match
@@ -258,7 +275,7 @@ class ComfyUiWebservice(WebService):
         buf.open(QBuffer.OpenModeFlag.WriteOnly)
         mask.save(buf, 'PNG')  # type: ignore
         buf.close()
-        body: comfyui_types.MaskUploadParams = {
+        body: MaskUploadParams = {
             'original_ref': json.dumps(ref_image),
             'subfolder': INTRAPAINT_UPLOAD_SUBFOLDER
         }
@@ -267,20 +284,18 @@ class ComfyUiWebservice(WebService):
         if overwrite:
             body['overwrite'] = '1'
         mask_name = f'mask_{ref_image["filename"]}'
-        files = {comfyui_types.IMAGE_UPLOAD_FILE_NAME: (mask_name, buf.data().data(), TYPE_PNG_IMAGE)}
-        res = cast(comfyui_types.ImageUploadResponse, self.post(ComfyEndpoints.MASK_UPLOAD,
-                                                                body=body,
-                                                                body_format=MULTIPART_FORM_DATA_TYPE,
-                                                                files=files,
-                                                                timeout=EXTENDED_TIMEOUT).json())
-        file_ref: comfyui_types.ImageFileReference = {
+        files = {IMAGE_UPLOAD_FILE_NAME: (mask_name, buf.data().data(), TYPE_PNG_IMAGE)}
+        res = cast(ImageUploadResponse, self.post(ComfyEndpoints.MASK_UPLOAD, body=body,
+                                                  body_format=MULTIPART_FORM_DATA_TYPE, files=files,
+                                                  timeout=EXTENDED_TIMEOUT).json())
+        file_ref: ImageFileReference = {
             'filename': res['name'],
             'subfolder': '' if 'subfolder' not in res else res['subfolder'],
             'type': res['type']
         }
         return file_ref
 
-    def download_images(self, image_refs: list[comfyui_types.ImageFileReference]) -> list[QImage]:
+    def download_images(self, image_refs: list[ImageFileReference]) -> list[QImage]:
         """Download a list of images from ComfyUI as ARGB QImages."""
         images: list[QImage] = []
         for image_ref in image_refs:
@@ -298,9 +313,14 @@ class ComfyUiWebservice(WebService):
                 logger.error(f'Skipping image {image_ref}: {err}')
         return images
 
-    def _build_diffusion_body(self, seed: Optional[int] = None) -> DiffusionWorkflowBuilder:
+    def _build_diffusion_body(self, seed: Optional[int] = None,
+                              workflow_builder: Optional[DiffusionWorkflowBuilder] = None) -> DiffusionWorkflowBuilder:
         """Apply cached parameters to begin building a ComfyUI workflow."""
-        workflow_builder = diffusion_workflow_builder_with_cache_applied(seed)
+        if workflow_builder is None:
+            workflow_builder = DiffusionWorkflowBuilder()
+        workflow_builder.load_cached_settings()
+        if seed is not None:
+            workflow_builder.seed = seed
         config_names = self.get_models(ComfyModelType.CONFIG)
         if workflow_builder.model_config_path not in config_names:
             # Check available config, and if one matches the stable diffusion model name, use that one:
@@ -317,8 +337,8 @@ class ComfyUiWebservice(WebService):
         return workflow_builder
 
     def _prepare_controlnet_data(self, workflow_builder: DiffusionWorkflowBuilder,
-                                 gen_area_control_image: QImage | comfyui_types.ImageFileReference,
-                                 image_references: dict[str, comfyui_types.ImageFileReference]) -> None:
+                                 gen_area_control_image: QImage | ImageFileReference,
+                                 image_references: dict[str, ImageFileReference]) -> None:
         """Loads ControlNet units from the cache into a workflow builder.
 
         Parameters:
@@ -337,7 +357,7 @@ class ComfyUiWebservice(WebService):
         cache = Cache()
         if (isinstance(gen_area_control_image, dict)
                 and CONTROLNET_REUSE_IMAGE_CODE not in image_references):
-            image_references[CONTROLNET_REUSE_IMAGE_CODE] = cast(comfyui_types.ImageFileReference,
+            image_references[CONTROLNET_REUSE_IMAGE_CODE] = cast(ImageFileReference,
                                                                  gen_area_control_image)
         for control_unit_key in (Cache.CONTROLNET_ARGS_0_COMFYUI, Cache.CONTROLNET_ARGS_1_COMFYUI,
                                  Cache.CONTROLNET_ARGS_2_COMFYUI):
@@ -376,20 +396,20 @@ class ComfyUiWebservice(WebService):
                                                  float(control_unit.control_start.value),
                                                  float(control_unit.control_end.value))
 
-    def get_queue_info(self) -> comfyui_types.QueueInfoResponse:
+    def get_queue_info(self) -> QueueInfoResponse:
         """Get info on the set of queued jobs."""
         res_body = self.get(ComfyEndpoints.QUEUE, timeout=DEFAULT_TIMEOUT).json()
-        for queue_key in [comfyui_types.ACTIVE_QUEUE_KEY, comfyui_types.PENDING_QUEUE_KEY]:
+        for queue_key in [ACTIVE_QUEUE_KEY, PENDING_QUEUE_KEY]:
             assert queue_key in res_body
             queue_list = res_body[queue_key]
             assert isinstance(queue_list, list)
             res_body[queue_key] = [tuple(queue_entry) for queue_entry in queue_list]
-        return cast(comfyui_types.QueueInfoResponse, res_body)
+        return cast(QueueInfoResponse, res_body)
 
     def check_queue_entry(self, entry_uuid: str, task_number: int) -> AsyncTaskProgress:
         """Returns the status of a queued task, along with associated data when relevant."""
         endpoint = f'{ComfyEndpoints.HISTORY}/{entry_uuid}'
-        history_response = cast(comfyui_types.QueueHistoryResponse, self.get(endpoint, timeout=DEFAULT_TIMEOUT).json())
+        history_response = cast(QueueHistoryResponse, self.get(endpoint, timeout=DEFAULT_TIMEOUT).json())
         if entry_uuid in history_response:
             entry_history = history_response[entry_uuid]
             if entry_history['status']['status_str'] == 'error':
@@ -402,7 +422,7 @@ class ComfyUiWebservice(WebService):
                 for output_data in entry_history['outputs'].values():
                     if 'images' in output_data:
                         for reference in output_data['images']:
-                            progress['outputs']['images'].append(cast(comfyui_types.ImageFileReference, reference))
+                            progress['outputs']['images'].append(cast(ImageFileReference, reference))
                 return progress
         queue_info = self.get_queue_info()
         for running_task in queue_info['queue_running']:
@@ -420,9 +440,9 @@ class ComfyUiWebservice(WebService):
         return {'status': AsyncTaskStatus.NOT_FOUND}
 
     def txt2img(self,
-                control_image: QImage | comfyui_types.ImageFileReference,
-                control_image_refs: dict[str, comfyui_types.ImageFileReference],
-                seed: Optional[int] = None) -> comfyui_types.QueueAdditionResponse:
+                control_image: QImage | ImageFileReference,
+                control_image_refs: dict[str, ImageFileReference],
+                seed: Optional[int] = None) -> QueueAdditionResponse:
         """Queues an async text-to-image job with the ComfyUI server.
 
         Most parameters are read directly from the cache, where they should have been written from UI inputs. Calling
@@ -449,17 +469,17 @@ class ComfyUiWebservice(WebService):
             workflow_builder.denoising_strength = 1.0
         self._prepare_controlnet_data(workflow_builder, control_image, control_image_refs)
         prompt = workflow_builder.build_workflow().get_workflow_dict()
-        body: comfyui_types.QueueAdditionRequest = {'prompt': prompt, 'client_id': self._client_id}
-        res = cast(comfyui_types.QueueAdditionResponse, self.post(ComfyEndpoints.PROMPT, body=body,
-                                                                  timeout=DEFAULT_TIMEOUT).json())
+        body: QueueAdditionRequest = {'prompt': prompt, 'client_id': self._client_id}
+        res = cast(QueueAdditionResponse, self.post(ComfyEndpoints.PROMPT, body=body,
+                                                    timeout=DEFAULT_TIMEOUT).json())
 
         res['seed'] = workflow_builder.seed
         res['uploaded_images'] = control_image_refs
         return res
 
-    def img2img(self, image: QImage | comfyui_types.ImageFileReference,
-                control_image_refs: dict[str, comfyui_types.ImageFileReference],
-                seed: Optional[int] = None) -> comfyui_types.QueueAdditionResponse:
+    def img2img(self, image: QImage | ImageFileReference,
+                control_image_refs: dict[str, ImageFileReference],
+                seed: Optional[int] = None) -> QueueAdditionResponse:
         """Queues an async image-to-image job with the ComfyUI server.
 
         Most parameters are read directly from the cache, where they should have been written from UI inputs. Calling
@@ -489,7 +509,7 @@ class ComfyUiWebservice(WebService):
             image_reference = control_image_refs[CONTROLNET_REUSE_IMAGE_CODE]
         else:
             if isinstance(image, dict):
-                image_reference = cast(comfyui_types.ImageFileReference, image)
+                image_reference = cast(ImageFileReference, image)
             else:
                 image_reference = self.upload_image(image)
             control_image_refs[CONTROLNET_REUSE_IMAGE_CODE] = image_reference
@@ -498,17 +518,17 @@ class ComfyUiWebservice(WebService):
         workflow_builder.set_source_image_from_reference(image_reference)
         self._prepare_controlnet_data(workflow_builder, image_reference, control_image_refs)
         prompt = workflow_builder.build_workflow().get_workflow_dict()
-        body: comfyui_types.QueueAdditionRequest = {'prompt': prompt, 'client_id': self._client_id}
-        res = cast(comfyui_types.QueueAdditionResponse, self.post(ComfyEndpoints.PROMPT, body=body,
-                                                                  timeout=DEFAULT_TIMEOUT).json())
+        body: QueueAdditionRequest = {'prompt': prompt, 'client_id': self._client_id}
+        res = cast(QueueAdditionResponse, self.post(ComfyEndpoints.PROMPT, body=body,
+                                                    timeout=DEFAULT_TIMEOUT).json())
         res['seed'] = workflow_builder.seed
         res['uploaded_images'] = control_image_refs
         return res
 
-    def inpaint(self, image: QImage | comfyui_types.ImageFileReference,
-                mask: QImage | comfyui_types.ImageFileReference,
-                control_image_refs: dict[str, comfyui_types.ImageFileReference],
-                seed: Optional[int] = None) -> comfyui_types.QueueAdditionResponse:
+    def inpaint(self, image: QImage | ImageFileReference,
+                mask: QImage | ImageFileReference,
+                control_image_refs: dict[str, ImageFileReference],
+                seed: Optional[int] = None) -> QueueAdditionResponse:
         """Queues an async inpainting job with the ComfyUI server.
 
         Most parameters are read directly from the cache, where they should have been written from UI inputs. Calling
@@ -537,12 +557,12 @@ class ComfyUiWebservice(WebService):
             image_reference = control_image_refs[CONTROLNET_REUSE_IMAGE_CODE]
         else:
             if isinstance(image, dict):
-                image_reference = cast(comfyui_types.ImageFileReference, image)
+                image_reference = cast(ImageFileReference, image)
             else:
                 image_reference = self.upload_image(image)
             control_image_refs[CONTROLNET_REUSE_IMAGE_CODE] = image_reference
         if isinstance(mask, dict):
-            mask_reference = cast(comfyui_types.ImageFileReference, mask)
+            mask_reference = cast(ImageFileReference, mask)
         else:
             mask_reference = self.upload_mask(mask, image_reference)
         workflow_builder = self._build_diffusion_body(seed)
@@ -550,16 +570,16 @@ class ComfyUiWebservice(WebService):
         workflow_builder.set_mask_from_reference(mask_reference)
         self._prepare_controlnet_data(workflow_builder, image_reference, control_image_refs)
         prompt = workflow_builder.build_workflow().get_workflow_dict()
-        body: comfyui_types.QueueAdditionRequest = {'prompt': prompt, 'client_id': self._client_id}
-        res = cast(comfyui_types.QueueAdditionResponse, self.post(ComfyEndpoints.PROMPT, body=body,
-                                                                  timeout=DEFAULT_TIMEOUT).json())
+        body: QueueAdditionRequest = {'prompt': prompt, 'client_id': self._client_id}
+        res = cast(QueueAdditionResponse, self.post(ComfyEndpoints.PROMPT, body=body,
+                                                    timeout=DEFAULT_TIMEOUT).json())
         res['seed'] = workflow_builder.seed
         res['uploaded_images'] = control_image_refs
         res['uploaded_mask'] = mask_reference
         return res
 
     def controlnet_preprocessor_preview(self, image: QImage, mask: QImage,
-                                        preprocessor: ControlNetPreprocessor) -> comfyui_types.QueueAdditionResponse:
+                                        preprocessor: ControlNetPreprocessor) -> QueueAdditionResponse:
         """Runs a minimal workflow to load a ControlNet preprocessor preview."""
         image_reference = self.upload_image(image) if preprocessor.has_image_input else None
         if image_reference is not None and preprocessor.has_mask_input:
@@ -569,14 +589,82 @@ class ComfyUiWebservice(WebService):
         workflow_builder = PreprocessorPreviewWorkflowBuilder(preprocessor)
         workflow = workflow_builder.build_workflow(image_reference, mask_reference)
         prompt = workflow.get_workflow_dict()
-        body: comfyui_types.QueueAdditionRequest = {'prompt': prompt, 'client_id': self._client_id}
-        return cast(comfyui_types.QueueAdditionResponse, self.post(ComfyEndpoints.PROMPT, body=body,
-                                                                   timeout=DEFAULT_TIMEOUT).json())
+        body: QueueAdditionRequest = {'prompt': prompt, 'client_id': self._client_id}
+        return cast(QueueAdditionResponse, self.post(ComfyEndpoints.PROMPT, body=body,
+                                                     timeout=DEFAULT_TIMEOUT).json())
+
+    def upscale(self, image: QImage, width: int, height: int) -> QueueAdditionResponse:
+        """Upscale an image using an upscaling model and/or a latent updcaling workflow."""
+        config = AppConfig()
+        cache = Cache()
+
+        upscale_multiplier = max(width / image.width(), height / image.height())
+        assert upscale_multiplier > 1.0
+
+        image_reference = self.upload_image(image)
+
+        # Check for valid upscaling model:
+        upscale_model: Optional[str] = cache.get(Cache.UPSCALE_METHOD)
+        upscale_model_options = self.get_models(ComfyModelType.UPSCALING)
+        if upscale_model not in upscale_model_options:
+            upscale_model = None
+
+        if cache.get(Cache.CONTROLNET_UPSCALING):
+            tile_size = cache.get(Cache.GENERATION_SIZE)
+            ultimate_upscale_script_available = False
+            controlnet_tile_preprocessor: Optional[ControlNetPreprocessor] = None
+            controlnet_tile_model: Optional[str] = None
+
+            # Check for "Ultimate SD Upscaler" script:
+            if self.is_node_available(ULTIMATE_UPSCALE_NODE_NAME):
+                ultimate_upscale_script_available = True
+
+            # Check for valid ControlNet tile model:
+            saved_tile_model = ControlNetModel(config.get(AppConfig.CONTROLNET_TILE_MODEL))
+            available_models = [ControlNetModel(model_str) for model_str in self.get_controlnets()]
+            for available_model in available_models:
+                if available_model.display_name == saved_tile_model.display_name:
+                    controlnet_tile_model = available_model.full_model_name
+                    break
+            if controlnet_tile_model is not None:
+                for preprocessor in self.get_controlnet_preprocessors():
+                    if preprocessor.name == TILE_PREPROCESSOR_NODE_NAME:
+                        controlnet_tile_preprocessor = deepcopy(preprocessor)
+                        break
+            if controlnet_tile_preprocessor is not None:
+                for parameter in controlnet_tile_preprocessor.parameters:
+                    if parameter.key == TILE_PREPROCESSOR_DOWNSAMPLING_PARAM_KEY:
+                        tile_downsampling = cache.get(Cache.CONTROLNET_DOWNSAMPLE_RATE)
+                        if isinstance(parameter.default_value, int):
+                            tile_downsampling = round(tile_downsampling)
+                        parameter.value = tile_downsampling
+                        break
+                controlnet_tile_preprocessor.set_value(TILE_PREPROCESSOR_DOWNSAMPLING_PARAM_KEY,
+                                                       cache.get(Cache.CONTROLNET_DOWNSAMPLE_RATE))
+            else:
+                controlnet_tile_model = None
+            workflow_builder = LatentUpscaleWorkflowBuilder(image_reference, upscale_multiplier, QSize(width, height),
+                                                            tile_size, ultimate_upscale_script_available,
+                                                            upscale_model, controlnet_tile_preprocessor,
+                                                            controlnet_tile_model)
+            self._build_diffusion_body(None, workflow_builder)
+            workflow_node_graph = workflow_builder.build_workflow()
+
+        else:  # Basic upscaling workflow:
+            if upscale_model is None:
+                raise RuntimeError(f'No valid upscaling model, cached value was "{cache.get(Cache.UPSCALE_METHOD)}"')
+            workflow_node_graph = build_basic_upscaling_workflow(image_reference, upscale_model)
+
+        prompt = workflow_node_graph.get_workflow_dict()
+        body: QueueAdditionRequest = {'prompt': prompt, 'client_id': self._client_id}
+        res = cast(QueueAdditionResponse, self.post(ComfyEndpoints.PROMPT, body=body,
+                                                    timeout=DEFAULT_TIMEOUT).json())
+        return res
 
     def interrupt(self, task_id: Optional[str] = None) -> None:
         """Stops the active workflow, and removes a task from the queue if task_id is not None."""
         if task_id is not None:
-            queue_removal_body: comfyui_types.QueueDeletionRequest = {
+            queue_removal_body: QueueDeletionRequest = {
                 'delete': [task_id]
             }
             self.post(ComfyEndpoints.QUEUE, body=queue_removal_body)

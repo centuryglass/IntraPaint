@@ -1,12 +1,14 @@
 """Unified class for building text to image, image to image, and inpainting ComfyUI workflows."""
-import random
+import logging
+import re
+from copy import deepcopy
 from dataclasses import dataclass
 from enum import Enum
 from typing import Optional
 
 from PySide6.QtCore import QSize
 
-import src.api.comfyui.comfyui_types as comfy_type
+from src.api.comfyui.comfyui_types import ImageFileReference
 from src.api.comfyui.nodes.comfy_node import ComfyNode
 from src.api.comfyui.nodes.comfy_node_graph import ComfyNodeGraph
 from src.api.comfyui.nodes.controlnet.apply_controlnet_node import ApplyControlNetNode
@@ -26,17 +28,18 @@ from src.api.comfyui.nodes.repeat_latent_node import RepeatLatentNode
 from src.api.comfyui.nodes.save_image_node import SaveImageNode
 from src.api.comfyui.nodes.vae.vae_decode_node import VAEDecodeNode
 from src.api.comfyui.nodes.vae.vae_encode_node import VAEEncodeNode
+from src.api.comfyui.workflow_builder_utils import random_seed, image_ref_to_str
 from src.api.controlnet.controlnet_constants import CONTROLNET_MODEL_NONE
 from src.api.controlnet.controlnet_preprocessor import ControlNetPreprocessor
+from src.config.cache import Cache
+from src.util.shared_constants import EDIT_MODE_TXT2IMG
 
-random.seed()
-
+logger = logging.getLogger(__name__)
 DEFAULT_STEP_COUNT = 30
 DEFAULT_CFG = 8.0
 DEFAULT_SIZE = 512
 DEFAULT_SAMPLER = 'euler'
 DEFAULT_SCHEDULER = 'normal'
-MAX_SEED = 0xffffffffffffffff
 MAX_BATCH_SIZE = 64
 
 
@@ -47,31 +50,30 @@ class ExtensionModelType(Enum):
 
 
 @dataclass
-class _ControlInfo:
+class ControlNetUnitData:
+    """All nodes associated with a single ControlNet input."""
     model_node: Optional[LoadControlNetNode]
-    preprocessor_parameters: ControlNetPreprocessor
     preprocessor_node: Optional[DynamicPreprocessorNode]
+    control_apply_node: ApplyControlNetNode
+    preprocessor: Optional[ControlNetPreprocessor]
     control_image: str
-    strength: float
-    start_step: float
-    end_step: float
 
 
 class DiffusionWorkflowBuilder:
     """Unified class for building text to image, image to image, and inpainting ComfyUI workflows."""
 
-    def __init__(self, sd_model: str) -> None:
+    def __init__(self) -> None:
         self._batch_size = 1
         self._prompt = ''
         self._negative = ''
         self._steps = DEFAULT_STEP_COUNT
         self._cfg_scale = DEFAULT_CFG
         self._size = QSize(DEFAULT_SIZE, DEFAULT_SIZE)
-        self._sd_model = sd_model
+        self._sd_model = ''
         self._denoising = 1.0
         self._sampler: str = DEFAULT_SAMPLER
         self._scheduler: str = DEFAULT_SCHEDULER
-        self._seed = random.randrange(0, MAX_SEED)
+        self._seed = random_seed()
         self._filename_prefix = ''
 
         # Optional params that can be set to alter diffusion behavior:
@@ -80,9 +82,9 @@ class DiffusionWorkflowBuilder:
         self._mask: Optional[str] = None
 
         # model_name, model_strength, clip_strength, model_type
-        self._extension_models: list[tuple[str, float, float, ExtensionModelType]] = []
+        self._extension_model_nodes: list[LoraLoaderNode | HypernetLoaderNode] = []
 
-        self._controlnet_units: list[_ControlInfo] = []
+        self._controlnet_units: list[ControlNetUnitData] = []
 
         # TODO: not yet supported:
         # self._is_inpainting_model = False
@@ -183,7 +185,7 @@ class DiffusionWorkflowBuilder:
     @seed.setter
     def seed(self, seed: int) -> None:
         if seed < 0:
-            seed = random.randrange(0, MAX_SEED)
+            seed = random_seed()
         self._seed = seed
 
     @property
@@ -207,15 +209,9 @@ class DiffusionWorkflowBuilder:
     def source_image(self, source_image: Optional[str]) -> None:
         self._source_image = source_image
 
-    @staticmethod
-    def _image_ref_to_str(source_image: comfy_type.ImageFileReference) -> str:
-        if 'subfolder' in source_image and source_image['subfolder'] != '':
-            return f'{source_image["subfolder"]}/{source_image["filename"]}'
-        return source_image['filename']
-
-    def set_source_image_from_reference(self, source_image: comfy_type.ImageFileReference) -> None:
+    def set_source_image_from_reference(self, source_image: ImageFileReference) -> None:
         """Converts a ComfyUI API image reference to an appropriate string format and assigns it to source_image."""
-        self.source_image = self._image_ref_to_str(source_image)
+        self.source_image = image_ref_to_str(source_image)
 
     @property
     def mask(self) -> Optional[str]:
@@ -228,9 +224,9 @@ class DiffusionWorkflowBuilder:
     def mask(self, mask: Optional[str]) -> None:
         self._mask = mask
 
-    def set_mask_from_reference(self, mask_reference: comfy_type.ImageFileReference) -> None:
+    def set_mask_from_reference(self, mask_reference: ImageFileReference) -> None:
         """Converts a ComfyUI API image reference to an appropriate string format and assigns it to the mask."""
-        self.mask = self._image_ref_to_str(mask_reference)
+        self.mask = image_ref_to_str(mask_reference)
 
     @property
     def image_size(self) -> QSize:
@@ -253,20 +249,33 @@ class DiffusionWorkflowBuilder:
     def add_extension_model(self, model_name: str, model_strength: float, clip_strength: float,
                             model_type: ExtensionModelType) -> None:
         """Adds a LoRA or Hypernetwork model to the workflow. Models are applied in the order that they're added."""
-        self._extension_models.append((model_name, model_strength, clip_strength, model_type))
+        if model_type == ExtensionModelType.LORA:
+            self._extension_model_nodes.append(LoraLoaderNode(model_name, model_strength, clip_strength))
+        else:
+            self._extension_model_nodes.append(HypernetLoaderNode(model_name, model_strength))
+
+    @property
+    def extension_model_nodes(self) -> list[LoraLoaderNode | HypernetLoaderNode]:
+        """Returns the list of extension model nodes, in the order that they should be applied."""
+        return [*self._extension_model_nodes]
+
+    @property
+    def controlnet_unit_nodes(self) -> list[ControlNetUnitData]:
+        """Returns the list of ControlNet unit nodes, with associated data."""
+        return [*self._controlnet_units]
 
     def add_controlnet_unit(self, model_name: str, preprocessor: ControlNetPreprocessor,
-                            control_image_ref: comfy_type.ImageFileReference,
+                            control_image_ref: ImageFileReference,
                             strength: float, start_step: float, end_step: float) -> None:
         """Adds a new ControlNet unit to the workflow."""
-        control_image_str = self._image_ref_to_str(control_image_ref)
+        control_image_str = image_ref_to_str(control_image_ref)
 
         model_node: Optional[LoadControlNetNode] = None
         preprocessor_node: Optional[DynamicPreprocessorNode] = None
 
         # Check for and reuse identical preprocessor nodes or control models:
         for control_unit_data in self._controlnet_units:
-            if control_unit_data.preprocessor_parameters == preprocessor \
+            if control_unit_data.preprocessor == preprocessor \
                     and control_unit_data.control_image == control_image_str:
                 preprocessor_node = control_unit_data.preprocessor_node
             if control_unit_data.model_node is not None and control_unit_data.model_node.model_name == model_name:
@@ -279,8 +288,9 @@ class DiffusionWorkflowBuilder:
                 control_inputs[parameter.key] = parameter.value
             preprocessor_node = DynamicPreprocessorNode(preprocessor.name, control_inputs, preprocessor.has_image_input,
                                                         preprocessor.has_mask_input)
-        new_control_unit = _ControlInfo(model_node, preprocessor, preprocessor_node, control_image_str, strength,
-                                        start_step, end_step)
+        control_apply_node = ApplyControlNetNode(strength, start_step, end_step)
+        new_control_unit = ControlNetUnitData(model_node, preprocessor_node, control_apply_node, preprocessor,
+                                              control_image_str)
         self._controlnet_units.append(new_control_unit)
 
     def build_workflow(self) -> ComfyNodeGraph:
@@ -302,22 +312,21 @@ class DiffusionWorkflowBuilder:
         vae_model_node = model_loading_node
         clip_model_node = model_loading_node
 
-        for model_name, model_strength, clip_strength, extension_model_type in self._extension_models:
-            if extension_model_type == ExtensionModelType.LORA:
-                lora_node = LoraLoaderNode(model_name, model_strength, clip_strength)
-                workflow.connect_nodes(lora_node, LoraLoaderNode.CLIP,
+        for extension_node in self._extension_model_nodes:
+            if isinstance(extension_node, LoraLoaderNode):
+                workflow.connect_nodes(extension_node, LoraLoaderNode.CLIP,
                                        clip_model_node, clip_out_index)
-                workflow.connect_nodes(lora_node, LoraLoaderNode.MODEL,
+                workflow.connect_nodes(extension_node, LoraLoaderNode.MODEL,
                                        sd_model_node, model_out_index)
-                clip_model_node = lora_node
+                clip_model_node = extension_node
                 clip_out_index = LoraLoaderNode.IDX_CLIP
-                sd_model_node = lora_node
+                sd_model_node = extension_node
                 model_out_index = LoraLoaderNode.IDX_MODEL
-            else:  # hypernetwork
-                hypernet_node = HypernetLoaderNode(model_name, model_strength)
-                workflow.connect_nodes(hypernet_node, HypernetLoaderNode.MODEL,
+            else:
+                assert isinstance(extension_node, HypernetLoaderNode)
+                workflow.connect_nodes(extension_node, HypernetLoaderNode.MODEL,
                                        sd_model_node, model_out_index)
-                sd_model_node = hypernet_node
+                sd_model_node = extension_node
                 model_out_index = HypernetLoaderNode.IDX_MODEL
 
         # Load image source:
@@ -380,8 +389,7 @@ class DiffusionWorkflowBuilder:
                 if controlnet_unit.preprocessor_node.has_mask_input and mask_load_node is not None:
                     workflow.connect_nodes(controlnet_unit.preprocessor_node, DynamicPreprocessorNode.MASK,
                                            mask_load_node, LoadImageMaskNode.IDX_MASK)
-            control_apply_node = ApplyControlNetNode(controlnet_unit.strength, controlnet_unit.start_step,
-                                                     controlnet_unit.end_step)
+            control_apply_node = controlnet_unit.control_apply_node
             workflow.connect_nodes(control_apply_node, ApplyControlNetNode.POSITIVE,
                                    positive_node, positive_out_idx)
             workflow.connect_nodes(control_apply_node, ApplyControlNetNode.NEGATIVE,
@@ -424,4 +432,89 @@ class DiffusionWorkflowBuilder:
         save_image_node = SaveImageNode(self.filename_prefix)
         workflow.connect_nodes(save_image_node, SaveImageNode.IMAGES,
                                latent_decode_node, VAEDecodeNode.IDX_IMAGE)
-        return workflow
+        # Changes to the returned graph shouldn't affect the workflow builder, so create a deep copy to return:
+        final_workflow = deepcopy(workflow)
+
+        # Before returning the copy, clear all connections in saved nodes to prevent potential issues if the workflow
+        # is built more than once:
+        for node in self._extension_model_nodes:
+            node.clear_connections()
+        for controlnet_unit in self._controlnet_units:
+            if controlnet_unit.preprocessor_node is not None:
+                controlnet_unit.preprocessor_node.clear_connections()
+            if controlnet_unit.model_node is not None:
+                controlnet_unit.model_node.clear_connections()
+            controlnet_unit.control_apply_node.clear_connections()
+        return final_workflow
+
+    def load_cached_settings(self) -> None:
+        """Loads and applies cached parameters."""
+        cache = Cache()
+        self.sd_model = cache.get(Cache.SD_MODEL)
+        self.batch_size = cache.get(Cache.BATCH_SIZE)
+        self.prompt = cache.get(Cache.PROMPT)
+        self.negative_prompt = cache.get(Cache.NEGATIVE_PROMPT)
+        self.steps = cache.get(Cache.SAMPLING_STEPS)
+        self.cfg_scale = cache.get(Cache.GUIDANCE_SCALE)
+        self.image_size = cache.get(Cache.GENERATION_SIZE)
+        sampler = cache.get(Cache.SAMPLING_METHOD)
+        if sampler != '':
+            self.sampler = sampler
+        scheduler = cache.get(Cache.SCHEDULER)
+        if scheduler != '':
+            self.scheduler = scheduler
+        seed = cache.get(Cache.SEED)
+        if seed < 0:
+            seed = random_seed()
+        self.seed = seed
+
+        # Find and add LoRA and Hypernetwork models:
+        available_loras = cache.get(Cache.LORA_MODELS)
+        available_hypernetworks = cache.get(Cache.HYPERNETWORK_MODELS)
+        lora_name_map: dict[str, str] = {}
+        hypernet_name_map: dict[str, str] = {}
+        for model_list, model_dict in ((available_loras, lora_name_map),
+                                       (available_hypernetworks, hypernet_name_map)):
+            for model_option in model_list:
+                if '.' in model_option:
+                    model_dict[model_option[:model_option.rindex('.')]] = model_option
+                model_dict[model_option] = model_option
+
+        extension_model_pattern = r'<(lora|lyco|hypernet):([^:><]+):([^:>]+)(?::([^>]+))?>'
+        for prompt, strength_multiplier in ((self.prompt, 1.0),
+                                            (self.negative_prompt, -1.0)):
+            extension_model_matches = list(re.finditer(extension_model_pattern, prompt))
+
+            for match in extension_model_matches:
+                model_type_name = match.group(1)
+                model_type = ExtensionModelType.HYPERNETWORK if model_type_name == 'hypernet' \
+                    else ExtensionModelType.LORA
+                model_name = match.group(2)
+                model_option_dict = hypernet_name_map if model_type == ExtensionModelType.HYPERNETWORK \
+                    else lora_name_map
+                if model_name not in model_option_dict:
+                    logger.error(f'Extension model {model_name} specified, but not found')
+                    continue
+                model_name = model_option_dict[model_name]
+                model_strength_str = match.group(3)
+                clip_strength_str = match.group(4) if match.group(4) is not None else model_strength_str
+                try:
+                    model_strength = float(model_strength_str) * strength_multiplier
+                    clip_strength = float(clip_strength_str) * strength_multiplier
+                    self.add_extension_model(model_name, model_strength, clip_strength, model_type)
+                except ValueError:
+                    logger.error(f'Invalid strength value "{model_strength_str}" for lora "{model_name}"')
+
+            # remove the lora/hypernetwork syntax from the prompt now that the models are selected:
+            if strength_multiplier > 0:
+                self.prompt = re.sub(extension_model_pattern, '', prompt)
+            else:
+                self.negative_prompt = re.sub(extension_model_pattern, '', prompt)
+
+            edit_mode = cache.get(Cache.EDIT_MODE)
+            if edit_mode != EDIT_MODE_TXT2IMG:
+                self.denoising_strength = cache.get(Cache.DENOISING_STRENGTH)
+
+            cached_config = cache.get(Cache.COMFYUI_MODEL_CONFIG)
+            if cached_config != '':
+                self.model_config_path = cached_config

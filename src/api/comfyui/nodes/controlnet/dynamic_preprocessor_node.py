@@ -29,6 +29,13 @@ class DynamicPreprocessorNode(ComfyNode):
         self._has_mask_input = has_mask_input
         super().__init__(node_name, node_inputs, inputs, 1)
 
+    def __deepcopy__(self, memo: dict[int, Any]) -> 'DynamicPreprocessorNode':
+        data_dict = self.get_dict()
+        node_copy = DynamicPreprocessorNode(data_dict['class_type'], data_dict['inputs'], self.has_image_input,
+                                            self.has_mask_input)
+        memo[id(self)] = node_copy
+        return node_copy
+
     @property
     def has_image_input(self) -> bool:
         """Returns whether this node requires an image input."""

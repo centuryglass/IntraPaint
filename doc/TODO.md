@@ -1,5 +1,9 @@
 # Development tasks
 
+More bugs:
+- Cached model and sampler are used even if we don't find them in the API
+- Catch the error message that shows up when you try to scale an image more than 4x and display something more user-friendly.  Better yet, figure out how to repeat upscaling to get greater than 4x multipliers
+
 # v.1.1.0 Plans: ComfyUI support and API expansions
 ## Goals:
 - Provide support for the ComfyUI API as an alternate image generator choice, keeping feature-parity with WebUI implementations across all features:
